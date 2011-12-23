@@ -1,117 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab1LWBf3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 20:35:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47191 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761Ab1LWBfU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 20:35:20 -0500
-Date: Thu, 22 Dec 2011 17:38:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
- fix blkcg percpu alloc deadlock
-Message-Id: <20111222173820.3461be5d.akpm@linux-foundation.org>
-In-Reply-To: <20111223012112.GB12738@redhat.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
-	<20111222135925.de3221c8.akpm@linux-foundation.org>
-	<20111222220911.GK17084@google.com>
-	<20111222142058.41316ee0.akpm@linux-foundation.org>
-	<20111222224117.GL17084@google.com>
-	<20111222145426.5844df96.akpm@linux-foundation.org>
-	<20111222230047.GN17084@google.com>
-	<20111222151649.de57746f.akpm@linux-foundation.org>
-	<20111222232433.GQ17084@google.com>
-	<20111222154138.d6c583e3.akpm@linux-foundation.org>
-	<20111223012112.GB12738@redhat.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1756226Ab1LWBkS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 20:40:18 -0500
+Received: from mga09.intel.com ([134.134.136.24]:48775 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753761Ab1LWBkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Dec 2011 20:40:15 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="89596370"
+Subject: Re: [patch 1/2]scsi: scsi_run_queue() doesn't use local list to
+ handle starved sdev
+From: Shaohua Li <shaohua.li@intel.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
+        "Ted Ts'o" <tytso@mit.edu>, "Wu, Fengguang" <fengguang.wu@intel.com>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+In-Reply-To: <1324603045.9282.2.camel@dabdike.cust.hotspot.t-mobile.com>
+References: <1324523412.22361.471.camel@sli10-conroe>
+	 <1324578449.9709.15.camel@dabdike.int.hansenpartnership.com>
+	 <1324600851.22361.475.camel@sli10-conroe>
+	 <1324603045.9282.2.camel@dabdike.cust.hotspot.t-mobile.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Dec 2011 09:53:34 +0800
+Message-ID: <1324605214.22361.490.camel@sli10-conroe>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Dec 2011 20:21:12 -0500 Vivek Goyal <vgoyal@redhat.com> wrote:
-
-> On Thu, Dec 22, 2011 at 03:41:38PM -0800, Andrew Morton wrote:
-> > 
-> > If the code *does* correctly handle ->stats_cpu == NULL then we have
-> > options.
-> > 
-> > a) Give userspace a new procfs/debugfs file to start stats gathering
-> >    on a particular cgroup/request_queue pair.  Allocate the stats
-> >    memory in that.
-> > 
-> > b) Or allocate stats_cpu on the first call to blkio_read_stat_cpu()
-> >    and return zeroes for this first call.
+On Thu, 2011-12-22 at 19:17 -0600, James Bottomley wrote:
+> On Fri, 2011-12-23 at 08:40 +0800, Shaohua Li wrote:
+> > On Thu, 2011-12-22 at 18:27 +0000, James Bottomley wrote:
+> > > On Thu, 2011-12-22 at 11:10 +0800, Shaohua Li wrote:
+> > > > scsi_run_queue() picks off all sdev from host starved_list to a local list,
+> > > > then handle them. If there are multiple threads running scsi_run_queue(),
+> > > > the starved_list will get messed. This is quite common, because request
+> > > > rq_affinity is on by default.
+> > > > 
+> > > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > > > ---
+> > > >  drivers/scsi/scsi_lib.c |   21 ++++++++++++++-------
+> > > >  1 file changed, 14 insertions(+), 7 deletions(-)
+> > > > 
+> > > > Index: linux/drivers/scsi/scsi_lib.c
+> > > > ===================================================================
+> > > > --- linux.orig/drivers/scsi/scsi_lib.c	2011-12-21 16:56:23.000000000 +0800
+> > > > +++ linux/drivers/scsi/scsi_lib.c	2011-12-22 09:33:09.000000000 +0800
+> > > > @@ -401,9 +401,8 @@ static inline int scsi_host_is_busy(stru
+> > > >   */
+> > > >  static void scsi_run_queue(struct request_queue *q)
+> > > >  {
+> > > > -	struct scsi_device *sdev = q->queuedata;
+> > > > +	struct scsi_device *sdev = q->queuedata, *head_sdev = NULL;
+> > > >  	struct Scsi_Host *shost;
+> > > > -	LIST_HEAD(starved_list);
+> > > >  	unsigned long flags;
+> > > >  
+> > > >  	/* if the device is dead, sdev will be NULL, so no queue to run */
+> > > > @@ -415,9 +414,8 @@ static void scsi_run_queue(struct reques
+> > > >  		scsi_single_lun_run(sdev);
+> > > >  
+> > > >  	spin_lock_irqsave(shost->host_lock, flags);
+> > > > -	list_splice_init(&shost->starved_list, &starved_list);
+> > > >  
+> > > > -	while (!list_empty(&starved_list)) {
+> > > > +	while (!list_empty(&shost->starved_list)) {
+> > > 
+> > > The original reason for working from a copy instead of the original list
+> > > was that the device can end up back on the starved list because of a
+> > > variety of conditions in the HBA and so this would cause the loop not to
+> > > exit, so this piece of the patch doesn't look right to me.
+> > +               /*
+> > +                * the head sdev is no longer starved and removed from the
+> > +                * starved list, select a new sdev as head.
+> > +                */
+> > +               if (head_sdev == sdev && list_empty(&sdev->starved_entry))
+> > +                       head_sdev = NULL;
+> > I had this in the loop, which is to guarantee the loop will exit if a
+> > device is removed from the starved list.
 > 
-> But the purpose of stats is that they are gathered even if somebody
-> has not read them even once?
+> And the non-head sdevs? which can also get put back onto the list
+yes, it will be put back to the list tail. Note we always handle the
+head sdev first. move the cursor of list iterating to next dev and next,
+we will hit head_sdev == sdev eventually, then the loop exit. or the
+cursor isn't moving, which means we have scsi_host_is_busy(). in both
+cases, the loop will exit.
 
-That's not a useful way of using stats.  The normal usage would be to
-record the stats then start the workload then monitor how the stats
-have changed as work proceeds.
-
-> So if I create a cgroup and put some
-> task into it which does some IO, I think stat collection should start
-> immediately without user taking any action.
-
-If you really want to know the stats since cgroup creation then trigger
-the stats initialisation from userspace when creating the blkio_cgroup.
-
-> Forcing the user to first
-> read a stat before the collection starts is kind of odd to me.
-
-Well one could add a separate stats_enable knob.  Doing it
-automatically from read() would be for approximate-back-compatibility
-with existing behaviour.
-
-Plus (again) this way we also avoid burdening non-stats-users with the
-overhead of stats.
-
-> > 
-> > c) Or change the low-level code to do
-> >    blkio_group.want_stats_cpu=true, then test that at the top level
-> >    after we've determined that blkio_group.stats_cpu is NULL.
-> > 
-> > d) Or, worse, punt the allocation into a workqueue thread.
+> What's the reason for not just traversing the list once using list
+> splice?
 > 
-> I implemented a patch to punt the allocation using a worker thread. Tejun
-> did not like it. I personally think that it is less intrusive to fix this
-> specific problem.
-> 
-> https://lkml.org/lkml/2011/12/19/291
+> Basically, the changelog doesn't seem to explain what you're doing and
+> the logic looks flawed.
+The main reason is we have multiple CPU trying to get the list to its
+local list and then handle it, then putback unprocessed entries back. we
+have multiple cpu handles blk softirq, because request rq_affinity is on
+default. And the putback always happen, because scsi_run_queue is called
+after every request finish. When it's called, scsi_host has just one
+free slot. The in-coordination of multiple threads handle of the starved
+list will mess the list. I observed dev which doesn't get chance to
+dispatch request is put to starved list tail, while dev which dispatches
+request is still at head. eg, this will cause unfairness. This means
+some devices will get starved.
 
-hm.
+Thanks,
+Shaohua 
 
-Look, the basic problem here is a highish-level design one.  We're
-attempting to do a high-level heavyweight intialization operation in a
-low-level place.  How do we fix that *properly*?  It has to be by
-performing the heavyweight operation in an appropriate place.
-
-> > 
-> > Note that all these option will permit us to use GFP_KERNEL, which is
-> > better.
-> > 
-> > Note that a) and b) means that users get control over whether these
-> > stats are accumulated at all, so many won't incur needless memory and
-> > CPU consumption.
-> > 
-> > I think I like b).  Fix the code so it doesn't oops when ->stats_cpu is
-> > NULL, then turn on stats gathering the first time someone tries to read
-> > the stats.
-> > 
-> > (Someone appears to have misspelled "throttle" as "throtl" for no
-> > apparent reason about 1000 times.  Sigh.)
-> 
-> That someone would be me. I thought that throtl communicates the meaning
-> and keeps the length of all the strings relatively short. But if it does
-> not look good, I can change it.
-
-It's unconventional.  We do usually avoid the odd abbreviations and
-just spell the whole thing out.
