@@ -1,57 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab1LWS1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 13:27:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45264 "EHLO mx1.redhat.com"
+	id S1757602Ab1LWSin (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 13:38:43 -0500
+Received: from mga11.intel.com ([192.55.52.93]:20815 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752641Ab1LWS1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 13:27:06 -0500
-Message-ID: <4EF4C7E7.9060409@redhat.com>
-Date: Fri, 23 Dec 2011 16:26:47 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL for v3.2-rc] media fix
-Content-Type: text/plain; charset=UTF-8
+	id S1752641Ab1LWSil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 13:38:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99761527"
+Subject: Re: [tip:sched/urgent] sched: Fix select_idle_sibling() regression
+ in selecting an idle SMT sibling
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "Shi, Alex" <alex.shi@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "efault@gmx.de" <efault@gmx.de>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>
+Date: Fri, 23 Dec 2011 10:43:34 -0800
+In-Reply-To: <1324520161.17054.190.camel@debian>
+References: <1323978421.1984.244.camel@sbsiddha-desk.sc.intel.com>
+	 <tip-ab2789213d224202237292d78aaa0c386c7b28b2@git.kernel.org>
+	 <CAGjg+kEOkkjnQQJJyGQzGApV5asM5oqvRwEr2VkJy9G5gg1rxw@mail.gmail.com>
+	 <1324471944.10752.8.camel@twins>
+	 <1324496556.21294.11.camel@sbsiddha-desk.sc.intel.com>
+	 <1324517502.17054.174.camel@debian>
+	 <1324519393.21294.20.camel@sbsiddha-desk.sc.intel.com>
+	 <1324520161.17054.190.camel@debian>
+Organization: Intel Corp
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
+Message-ID: <1324665814.4167.32.camel@sbsiddha-desk.sc.intel.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, 2011-12-21 at 18:16 -0800, Shi, Alex wrote:
+> On Thu, 2011-12-22 at 10:03 +0800, Siddha, Suresh B wrote:
+> > On Wed, 2011-12-21 at 17:31 -0800, Shi, Alex wrote:
+> > > This patch partly fixed a performance regression that triggered by
+> > > 4dcfe1025b513c2c, but issue still exists.
+> > 
+> > So how much was the regression caused by the commit 4dcfe1025b513c2c and
+> > how much did we recover with this fix I posted. If we are talking about
+> > the regression caused by this single commit 4dcfe1025b513c2c, then I
+> > don't know of any other related fixes other than the recent fix we
+> > pushed upstream (ab2789213d224202237292d78aaa0c386c7b28b2).
+> 
+> A little complex for the whole thing. 
+> on 4 sockets EX machine, 3~5% hackbench thread regression due to 4dcfe
+> can be recovered by ab2789. 
+> 
+> But on 2 sockets SNB machine, 1024 clients loop netperf TCP-RR has about
+> 9% regression. and your patch seem recover 2~3%. 
+> 
+> And on a 2 sockets nhm, one of our private benchmark was impact much 20
+> +% regression. that benchmark just run 4 process, each of process open a
+> thread, and the thread tasks is to locate randomly pages and than read
+> from 4 times/write 1 time data into a page.  The ab2789 commit seems no
+> help our benchmark. 
 
-Please pull from:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
+Ok. Can you please try couple of experiments with two kernels? Two
+kernels being the base kernel (prior to 4dcfe1025b513c2c) and the second
+kernel with the commit ab2789213d224202237292d78aaa0c386c7b28b2.
 
-For a last time fix for the omap3 driver.
+One experiment with p-states turned off and the second experiment with
+c-states turned off.
 
-Thanks and Happy Seasons!
-Mauro
+I suspect mostly deeper core c-states might be contributing to the
+behavior that you are seeing.
 
-
-Latest commit at the branch: 
-c070e38e4ee005f55895df177a9e14d90d6204b3 [media] omap3isp: Fix crash caused by subdevs now having a pointer to devnodes
-The following changes since commit 4b5d8da88e3fab76700e89488a8c65c54facb9a3:
-
-  Revert "[media] af9015: limit I2C access to keep FW happy" (2011-12-12 16:02:15 -0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-media v4l_for_linus
-
-for you to fetch changes up to c070e38e4ee005f55895df177a9e14d90d6204b3:
-
-  [media] omap3isp: Fix crash caused by subdevs now having a pointer to devnodes (2011-12-19 18:07:41 -0200)
-
-----------------------------------------------------------------
-Laurent Pinchart (1):
-      [media] omap3isp: Fix crash caused by subdevs now having a pointer to devnodes
-
- drivers/media/video/omap3isp/ispccdc.c |    2 +-
- drivers/media/video/omap3isp/ispstat.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+thanks,
+suresh
 
