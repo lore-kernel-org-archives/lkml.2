@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab1LWRkW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 12:40:22 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:43305 "EHLO mgw2.diku.dk"
+	id S932144Ab1LWRkV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:40:21 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:43315 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932109Ab1LWRjr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 12:39:47 -0500
+	id S932110Ab1LWRjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 12:39:48 -0500
 From: Julia Lawall <julia@diku.dk>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 8/9] arch/powerpc/sysdev/fsl_rmu.c: introduce missing kfree
-Date: Fri, 23 Dec 2011 18:39:33 +0100
-Message-Id: <1324661974-17281-8-git-send-email-julia@diku.dk>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 9/9] drivers/staging/media/as102/as102_usb_drv.c: shift position of allocation code
+Date: Fri, 23 Dec 2011 18:39:34 +0100
+Message-Id: <1324661974-17281-9-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rmu needs to be freed before leaving the function in an error case.
+The conditional after the kzalloc says that the tested expression should
+never be true, but if it were, the allocated data would have to be freed.
+This change just moves the allocation below the test, to avoid any
+possibility of the problem.
 
 A simplified version of the semantic match that finds the problem is as
 follows: (http://coccinelle.lip6.fr)
@@ -58,19 +60,37 @@ print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- arch/powerpc/sysdev/fsl_rmu.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/media/as102/as102_usb_drv.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_rmu.c b/arch/powerpc/sysdev/fsl_rmu.c
-index 02445a5..1548578 100644
---- a/arch/powerpc/sysdev/fsl_rmu.c
-+++ b/arch/powerpc/sysdev/fsl_rmu.c
-@@ -1081,6 +1081,7 @@ int fsl_rio_setup_rmu(struct rio_mport *mport, struct device_node *node)
- 	if (!msg_addr) {
- 		pr_err("%s: unable to find 'reg' property of message-unit\n",
- 			node->full_name);
-+		kfree(rmu);
- 		return -ENOMEM;
+diff --git a/drivers/staging/media/as102/as102_usb_drv.c b/drivers/staging/media/as102/as102_usb_drv.c
+index 7bcb28c..d775be0 100644
+--- a/drivers/staging/media/as102/as102_usb_drv.c
++++ b/drivers/staging/media/as102/as102_usb_drv.c
+@@ -353,12 +353,6 @@ static int as102_usb_probe(struct usb_interface *intf,
+ 
+ 	ENTER();
+ 
+-	as102_dev = kzalloc(sizeof(struct as102_dev_t), GFP_KERNEL);
+-	if (as102_dev == NULL) {
+-		err("%s: kzalloc failed", __func__);
+-		return -ENOMEM;
+-	}
+-
+ 	/* This should never actually happen */
+ 	if ((sizeof(as102_usb_id_table) / sizeof(struct usb_device_id)) !=
+ 	    (sizeof(as102_device_names) / sizeof(const char *))) {
+@@ -366,6 +360,12 @@ static int as102_usb_probe(struct usb_interface *intf,
+ 		return -EINVAL;
  	}
- 	msg_start = of_read_number(msg_addr, aw);
+ 
++	as102_dev = kzalloc(sizeof(struct as102_dev_t), GFP_KERNEL);
++	if (as102_dev == NULL) {
++		err("%s: kzalloc failed", __func__);
++		return -ENOMEM;
++	}
++
+ 	/* Assign the user-friendly device name */
+ 	for (i = 0; i < (sizeof(as102_usb_id_table) /
+ 			 sizeof(struct usb_device_id)); i++) {
 
