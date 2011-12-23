@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757949Ab1LWWyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 17:54:07 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:42353 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757901Ab1LWWyE (ORCPT
+	id S1757960Ab1LWXAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 18:00:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50250 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757914Ab1LWXAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 17:54:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111223010042.GA12738@redhat.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
-	<1324590326-10135-8-git-send-email-tj@kernel.org>
-	<20111223010042.GA12738@redhat.com>
-Date: Fri, 23 Dec 2011 14:54:03 -0800
-X-Google-Sender-Auth: E_8bocMxr2287Q7eyROrVPVQYuM
-Message-ID: <CAOS58YOH10ecpV3z1mR=uUnz0+hqdkBOF0q4HkXSSC-LiQjU+w@mail.gmail.com>
-Subject: Re: [PATCH 7/7] block: fix deadlock through percpu allocation in blk-cgroup
+	Fri, 23 Dec 2011 18:00:19 -0500
+Date: Fri, 23 Dec 2011 15:00:13 -0800
 From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: akpm@linux-foundation.org, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Menage <paul@paulmenage.org>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v2] cgroup: Remove task_lock() from cgroup_post_fork()
+Message-ID: <20111223230013.GV17084@google.com>
+References: <1324610723-30080-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324610723-30080-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Dec 23, 2011 at 04:25:23AM +0100, Frederic Weisbecker wrote:
+> cgroup_post_fork() is protected between threadgroup_change_begin()
+> and threadgroup_change_end() against concurrent changes of the
+> child's css_set in cgroup_task_migrate(). Also the child can't
+> exit and call cgroup_exit() at this stage, this means it's css_set
+> can't be changed with init_css_set concurrently.
+> 
+> For these reasons, we don't need to hold task_lock() on the child
+> because it's css_set can only remain stable in this place.
+> 
+> Let's remove the lock there.
+> 
+> v2: Update comment to explain that we are safe against
+> cgroup_exit()
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Containers <containers@lists.linux-foundation.org>
+> Cc: Cgroups <cgroups@vger.kernel.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Paul Menage <paul@paulmenage.org>
+> Cc: Mandeep Singh Baines <msb@chromium.org>
 
-On Thu, Dec 22, 2011 at 5:00 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> So this pool is global and shared by all devices (both by CFQ and
-> throttling logic). I am not sure if there are any advantages of having
-> this pool per queue. In one of the mails you mentioned that dm is having
-> one pool across many devices which defeats the purpose of having mempool.
->
-> **********************************************************************
-> It seemed the problem was dm sharing the same pool from multiple devices
-> (which defeats the purpose of using mempool BTW)
-> *********************************************************************
->
-> Not sure why devices sharing a mempool is a bad idea. Having a global pool
-> definitely simplifies the implementation a lot in this case.
-
-Ooh, sharing breaks the forward progress guarantee by mempool. blkcg
-isn't using mempool for that. It's just using it as allocation buffer
-so it isn't relevant.
+Li, does this look good to you?
 
 Thanks.
 
