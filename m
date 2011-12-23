@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab1LWRkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 12:40:21 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:43315 "EHLO mgw2.diku.dk"
+	id S932095Ab1LWRjn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:39:43 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:43261 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932110Ab1LWRjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 12:39:48 -0500
+	id S1754224Ab1LWRjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 12:39:41 -0500
 From: Julia Lawall <julia@diku.dk>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-media@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] drivers/staging/media/as102/as102_usb_drv.c: shift position of allocation code
-Date: Fri, 23 Dec 2011 18:39:34 +0100
-Message-Id: <1324661974-17281-9-git-send-email-julia@diku.dk>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/9] drivers/mfd/88pm860x-i2c.c: introduce missing kfree
+Date: Fri, 23 Dec 2011 18:39:26 +0100
+Message-Id: <1324661974-17281-1-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The conditional after the kzalloc says that the tested expression should
-never be true, but if it were, the allocated data would have to be freed.
-This change just moves the allocation below the test, to avoid any
-possibility of the problem.
+Error handling code following a kzalloc should free the allocated data.  At
+this point, chip has been allocated and some fields have been initialized,
+but it has not been stored anywhere, so it should be freed before leaving
+the function.
 
 A simplified version of the semantic match that finds the problem is as
 follows: (http://coccinelle.lip6.fr)
@@ -60,37 +58,19 @@ print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/staging/media/as102/as102_usb_drv.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/mfd/88pm860x-i2c.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/staging/media/as102/as102_usb_drv.c b/drivers/staging/media/as102/as102_usb_drv.c
-index 7bcb28c..d775be0 100644
---- a/drivers/staging/media/as102/as102_usb_drv.c
-+++ b/drivers/staging/media/as102/as102_usb_drv.c
-@@ -353,12 +353,6 @@ static int as102_usb_probe(struct usb_interface *intf,
- 
- 	ENTER();
- 
--	as102_dev = kzalloc(sizeof(struct as102_dev_t), GFP_KERNEL);
--	if (as102_dev == NULL) {
--		err("%s: kzalloc failed", __func__);
--		return -ENOMEM;
--	}
--
- 	/* This should never actually happen */
- 	if ((sizeof(as102_usb_id_table) / sizeof(struct usb_device_id)) !=
- 	    (sizeof(as102_device_names) / sizeof(const char *))) {
-@@ -366,6 +360,12 @@ static int as102_usb_probe(struct usb_interface *intf,
- 		return -EINVAL;
+diff --git a/drivers/mfd/88pm860x-i2c.c b/drivers/mfd/88pm860x-i2c.c
+index 630f1b5..f93dd95 100644
+--- a/drivers/mfd/88pm860x-i2c.c
++++ b/drivers/mfd/88pm860x-i2c.c
+@@ -286,6 +286,7 @@ static int __devinit pm860x_probe(struct i2c_client *client,
+ 		ret = PTR_ERR(chip->regmap);
+ 		dev_err(&client->dev, "Failed to allocate register map: %d\n",
+ 				ret);
++		kfree(chip);
+ 		return ret;
  	}
- 
-+	as102_dev = kzalloc(sizeof(struct as102_dev_t), GFP_KERNEL);
-+	if (as102_dev == NULL) {
-+		err("%s: kzalloc failed", __func__);
-+		return -ENOMEM;
-+	}
-+
- 	/* Assign the user-friendly device name */
- 	for (i = 0; i < (sizeof(as102_usb_id_table) /
- 			 sizeof(struct usb_device_id)); i++) {
+ 	chip->client = client;
 
