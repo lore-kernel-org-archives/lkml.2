@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab1LWMnj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 07:43:39 -0500
-Received: from andromeda.dapyr.net ([206.212.254.10]:60303 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751747Ab1LWMnh (ORCPT
+	id S1756946Ab1LWMum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 07:50:42 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57194 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673Ab1LWMuf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 07:43:37 -0500
-Date: Fri, 23 Dec 2011 08:43:30 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: "Liu, Jinsong" <jinsong.liu@intel.com>
-Cc: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "jeremy.fitzhardinge@citrix.com" <jeremy.fitzhardinge@citrix.com>,
-        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
-        "Shan, Haitao" <haitao.shan@intel.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        "Kleen, Andi" <andi.kleen@intel.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 02/10] xen/mce: Change the machine check point
-Message-ID: <20111223124330.GB25286@andromeda.dapyr.net>
-References: <DE8DF0795D48FD4CA783C40EC829233596B7@SHSMSX101.ccr.corp.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DE8DF0795D48FD4CA783C40EC829233596B7@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.9i
+	Fri, 23 Dec 2011 07:50:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAMhs6Yyu2A-t-ZwksE8zUZygG68ReWtVZ+QjVL=8Z8bTdKWeLg@mail.gmail.com>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+ <alpine.LRH.2.00.1112231047000.21599@twin.jikos.cz> <CAOh0hwPbV5=QU=bB6Atw5taGW8CN9r8UesE=ZhKrO+sRDY0_3A@mail.gmail.com>
+ <CAOh0hwNrOHVOx6eFf6EM8MmGwjeCP4-PfCHtMPnBQm4th91Q8Q@mail.gmail.com> <CAMhs6Yyu2A-t-ZwksE8zUZygG68ReWtVZ+QjVL=8Z8bTdKWeLg@mail.gmail.com>
+From: Gaurav Saxena <grvsaxena419@gmail.com>
+Date: Fri, 23 Dec 2011 18:20:04 +0530
+Message-ID: <CAOh0hwM+htm9K2MrRkH5tbS5dokGoqSiSwuPREMBYzeTV8Ucmg@mail.gmail.com>
+Subject: Re: Intercepting system calls
+To: Maxin B John <maxin.john@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 23, 2011 at 10:24:29AM +0000, Liu, Jinsong wrote:
-> >From 80221e743d1a693670d701f383da26c8e5d5bf98 Mon Sep 17 00:00:00 2001
-> From: Liu Jinsong <jinsong.liu@intel.com>
-> Date: Wed, 7 Dec 2011 05:26:16 +0800
-> Subject: [PATCH 02/10] xen/mce: Change the machine check point
-> 
-> This patch backport from Jeremy's pvops commit
-> 073349667402682c997394b3fcdbbeb6707f368f
+Hello Maxin,
+Thanks a lot for your reply.
 
-Include the git tree address please.
-> 
-> Enable MCE support in dom0, so that if a MCE happen and that MCE impact
+On Fri, Dec 23, 2011 at 5:59 PM, Maxin B John <maxin.john@gmail.com> wrote:
+> Hi,
+>
+> On Fri, Dec 23, 2011 at 1:59 PM, Gaurav Saxena <grvsaxena419@gmail.com> wrote:
+>> I found that Ubuntu does not have a kprobe enabled kernel. :( I don't
+>> think I could use kprobes then.
+>
+> Probably you can find a solution using Systemtap.
+>
+> Have a look at this example:
+> http://sourceware.org/systemtap/examples/general/badname.stp
+>
+> It just needs some modifications to meet your needs.
+Thanks for your help , but I saw systemtap page and it says
+prerequisites for using system tap are linux kernel with kprobes
+enabled.
+I think I would need to find another way of tapping it. :(
+>
+> HTH,
+> Maxin B. John
+>
+>> On Fri, Dec 23, 2011 at 3:20 PM, Gaurav Saxena <grvsaxena419@gmail.com> wrote:
+>>> Hello Jiri
+>>>
+>>> On Fri, Dec 23, 2011 at 3:17 PM, Jiri Kosina <jkosina@suse.cz> wrote:
+>>>> On Thu, 22 Dec 2011, Gaurav Saxena wrote:
+>>>>
+>>>>> I am writing an application for which I need to intercept some
+>>>>> filesystem system calls eg. unlink. I need unlink to call my code
+>>>>> before deleting abc so that I could probably prevent unlink . I would
+>>>>> like to implement this in a kernel module instead of modifying kernel
+>>>>> code itself. I would like to intercept system calls by replacing
+>>>>> system calls but I have not been able to find any method of doing that
+>>>>> in linux > 3.0. Please suggest some method of doing that.
+>>>>
+>>>> Write a kernel module that instruments sys_unlink() via krpobes. See
+>>>> Documentation/kprobes.txt for details.
+>>> Ok. I am looking at its details, will try that. But how could a probe
+>>> prevent execution of a system call?
+>>>>
+>>>> --
+>>>> Jiri Kosina
+>>>> SUSE Labs
+>>>>
+>>>
+>>>
+>>>
+>>> --
+>>> Thanks and Regards ,
+>>> Gaurav
+>>
+>>
+>>
+>> --
+>> Thanks and Regards ,
+>> Gaurav
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-impacts
-> dom0, dom0 can receive a vMCE.
-> 
-> Signed-off-by: Liu, Jinsong <jinsong.liu@intel.com>
-> Signed-off-by: Ke, Liping <liping.ke@intel.com>
-> Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> ---
->  arch/x86/xen/enlighten.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index b073e4c..13e7a16 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -526,7 +526,7 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
->  	 * Look for known traps using IST, and substitute them
->  	 * appropriately.  The debugger ones are the only ones we care
->  	 * about.  Xen will handle faults like double_fault and
-> -	 * machine_check, so we should never see them.  Warn if
-> +	 * nmi, so we should never see them.  Warn if
->  	 * there's an unexpected IST-using fault handler.
->  	 */
->  	if (addr == (unsigned long)debug)
-> @@ -541,7 +541,10 @@ static int cvt_gate_to_trap(int vector, const gate_desc *val,
->  		return 0;
->  #ifdef CONFIG_X86_MCE
->  	} else if (addr == (unsigned long)machine_check) {
-> -		return 0;
-> +		if (xen_initial_domain())
-
-Why can't this be done on DomU?
-> +			addr = (unsigned long)machine_check;
-> +		else
-> +			return 0;
->  #endif
->  	} else {
->  		/* Some other trap using IST? */
-> -- 
-> 1.6.5.6
 
 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
-
+-- 
+Thanks and Regards ,
+Gaurav
