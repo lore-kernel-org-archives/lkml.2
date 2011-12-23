@@ -1,106 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757099Ab1LWNT7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 08:19:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:50721 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757021Ab1LWNT4 (ORCPT
+	id S1757107Ab1LWNWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 08:22:13 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:34218 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754251Ab1LWNWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 08:19:56 -0500
-Date: Fri, 23 Dec 2011 05:19:15 -0800
-From: tip-bot for Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
-Message-ID: <tip-55205c916e179e09773d98d290334d319f45ac6b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        vladimir.zapolskiy@nokia.com, will.deacon@arm.com,
-        robert.richter@amd.com, oprofile-list@lists.sourceforge.net,
-        stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        oprofile-list@lists.sourceforge.net, robert.richter@amd.com,
-        vladimir.zapolskiy@nokia.com, will.deacon@arm.com, stable@kernel.org,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20111222151540.GB16765@erda.amd.com>
-References: <20111222151540.GB16765@erda.amd.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] oprofile, arm/sh: Fix oprofile_arch_exit()
-  linkage issue
-Git-Commit-ID: 55205c916e179e09773d98d290334d319f45ac6b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 23 Dec 2011 08:22:09 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Date: Fri, 23 Dec 2011 18:52:08 +0530
+Message-ID: <CAB4K4y79kiTWxQ7yaLRAPe5wOYPYY1RO2U-M9Dt8bZysefOgkA@mail.gmail.com>
+Subject: [PATCH 1/2] Squashfs: add assert to cache entry refcount
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Phillip Lougher <phillip@squashfs.org.uk>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 23 Dec 2011 05:19:22 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  55205c916e179e09773d98d290334d319f45ac6b
-Gitweb:     http://git.kernel.org/tip/55205c916e179e09773d98d290334d319f45ac6b
-Author:     Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
-AuthorDate: Thu, 22 Dec 2011 16:15:40 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 23 Dec 2011 11:58:34 +0100
+>From a7bb6c920bdc8341830387cff72726629dfd8730 Mon Sep 17 00:00:00 2001
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Date: Fri, 23 Dec 2011 17:25:48 +0530
+Subject: [PATCH 1/2] Squashfs: add assert to cache entry refcount
 
-oprofile, arm/sh: Fix oprofile_arch_exit() linkage issue
+squashfs_cache_put() function decrements refcount, if the given
+function is incorrectly used, refcount can have negative value.
 
-This change fixes a linking problem, which happens if oprofile
-is selected to be compiled as built-in:
+Add ASSERT to entry->refcount, enabled if CONFIG_SQUASHFS_DEBUGGER
+is defined.
 
-  `oprofile_arch_exit' referenced in section `.init.text' of
-  arch/arm/oprofile/built-in.o: defined in discarded section
-  `.exit.text' of arch/arm/oprofile/built-in.o
-
-The problem is appeared after commit 87121ca504, which
-introduced oprofile_arch_exit() calls from __init function. Note
-that the aforementioned commit has been backported to stable
-branches, and the problem is known to be reproduced at least
-with 3.0.13 and 3.1.5 kernels.
-
-Signed-off-by: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: oprofile-list <oprofile-list@lists.sourceforge.net>
-Cc: <stable@kernel.org>
-Link: http://lkml.kernel.org/r/20111222151540.GB16765@erda.amd.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
 ---
- arch/arm/oprofile/common.c |    2 +-
- arch/sh/oprofile/common.c  |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ fs/squashfs/cache.c       |    8 ++++----
+ fs/squashfs/squashfs_fs.h |   10 ++++++++++
+ 2 files changed, 14 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index c074e66..4e0a371 100644
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -116,7 +116,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 	return oprofile_perf_init(ops);
- }
- 
--void __exit oprofile_arch_exit(void)
-+void oprofile_arch_exit(void)
+diff --git a/fs/squashfs/cache.c b/fs/squashfs/cache.c
+index f744be9..88d986a 100644
+--- a/fs/squashfs/cache.c
++++ b/fs/squashfs/cache.c
+@@ -58,7 +58,7 @@
+ #include "squashfs.h"
+
+ /*
+- * Look-up block in cache, and increment usage count.  If not in cache, read
++ * Look-up block in cache, and increment reference count.  If not in
+cache, read
+  * and decompress it from disk.
+  */
+ struct squashfs_cache_entry *squashfs_cache_get(struct super_block *sb,
+@@ -177,15 +177,15 @@ out:
+
+
+ /*
+- * Release cache entry, once usage count is zero it can be reused.
++ * Release cache entry, once reference count is zero it can be reused.
+  */
+ void squashfs_cache_put(struct squashfs_cache_entry *entry)
  {
- 	oprofile_perf_exit();
- }
-diff --git a/arch/sh/oprofile/common.c b/arch/sh/oprofile/common.c
-index b4c2d2b..e4dd5d5 100644
---- a/arch/sh/oprofile/common.c
-+++ b/arch/sh/oprofile/common.c
-@@ -49,7 +49,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 	return oprofile_perf_init(ops);
- }
- 
--void __exit oprofile_arch_exit(void)
-+void oprofile_arch_exit(void)
- {
- 	oprofile_perf_exit();
- 	kfree(sh_pmu_op_name);
-@@ -60,5 +60,5 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 	ops->backtrace = sh_backtrace;
- 	return -ENODEV;
- }
--void __exit oprofile_arch_exit(void) {}
-+void oprofile_arch_exit(void) {}
- #endif /* CONFIG_HW_PERF_EVENTS */
+ 	struct squashfs_cache *cache = entry->cache;
+
+ 	spin_lock(&cache->lock);
+-	entry->refcount--;
+-	if (entry->refcount == 0) {
++	ASSERT(entry->refcount);
++	if (!(--entry->refcount)) {
+ 		cache->unused++;
+ 		/*
+ 		 * If there's any processes waiting for a block to become
+diff --git a/fs/squashfs/squashfs_fs.h b/fs/squashfs/squashfs_fs.h
+index e8e1464..db6cf53 100644
+--- a/fs/squashfs/squashfs_fs.h
++++ b/fs/squashfs/squashfs_fs.h
+@@ -463,4 +463,14 @@ struct squashfs_xattr_id_table {
+ 	__le32			unused;
+ };
+
++#ifdef CONFIG_SQUASHFS_DEBUGGER
++#define ASSERT(x)                                                       \
++	if (!(x)) {                                                     \
++		printk(KERN_WARNING "assertion failed %s:%d: %s\n",     \
++			__FILE__, __LINE__, #x);                         \
++	}
++#else
++#define ASSERT(x) do { } while (0)
++#endif
++
+ #endif
+-- 
+1.6.0.3
