@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757960Ab1LWXAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 18:00:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50250 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757914Ab1LWXAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 18:00:19 -0500
-Date: Fri, 23 Dec 2011 15:00:13 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH v2] cgroup: Remove task_lock() from cgroup_post_fork()
-Message-ID: <20111223230013.GV17084@google.com>
-References: <1324610723-30080-1-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324610723-30080-1-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757997Ab1LWXNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 18:13:44 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:35969 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757970Ab1LWXNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 18:13:42 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Jarkko Nikula <jarkko.nikula@bitmer.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Subject: [PATCH 0/4] Amstrad Delta: access MODEM_RESET GPIO pin over a regulator
+Date: Sat, 24 Dec 2011 00:12:20 +0100
+Message-Id: <1324681944-19067-1-git-send-email-jkrzyszt@tis.icnet.pl>
+X-Mailer: git-send-email 1.7.3.4
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 23, 2011 at 04:25:23AM +0100, Frederic Weisbecker wrote:
-> cgroup_post_fork() is protected between threadgroup_change_begin()
-> and threadgroup_change_end() against concurrent changes of the
-> child's css_set in cgroup_task_migrate(). Also the child can't
-> exit and call cgroup_exit() at this stage, this means it's css_set
-> can't be changed with init_css_set concurrently.
-> 
-> For these reasons, we don't need to hold task_lock() on the child
-> because it's css_set can only remain stable in this place.
-> 
-> Let's remove the lock there.
-> 
-> v2: Update comment to explain that we are safe against
-> cgroup_exit()
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Containers <containers@lists.linux-foundation.org>
-> Cc: Cgroups <cgroups@vger.kernel.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> Cc: Mandeep Singh Baines <msb@chromium.org>
+The Amstrad Delta on-board latch2 bit named MODEM_NRESET, now available
+as a GPIO pin AMS_DELTA_GPIO_PIN_NMODEM_RESET, is used to power up/down
+(bring into/out of a reset state) two distinct on-board devices
+simultaneously: the modem, and the voice codec. As a consequence, that
+bit is, or can be, manipulated concurrently by two drivers, or their
+platform provided hooks.
 
-Li, does this look good to you?
+Instead of updating those drivers to use the gpiolib API as a new method
+of controlling the MODEM_NRESET pin state, like it was done to other
+drivers accessing latch2 pins, and still being vulnerable to potential
+concurrency conflicts, or trying to solve that sharing issue with a
+custom piece of code, set up a fixed regulator device on top of that
+GPIO pin and update both drivers to manipulate that regulator, not the
+GPIO pin directly.
 
-Thanks.
+Janusz Krzysztofik (4):
+  ARM: OMAP1: ams-delta: set up regulator over modem reset GPIO pin
+  ASoC: cx20442: add bias control over a platform provided regulator
+  ARM: OMAP1: ams-delta: update the modem to use regulator API
+  ASoC: OMAP: ams-delta: drop .set_bias_level callback
+
+ arch/arm/mach-omap1/Kconfig                       |    2 +
+ arch/arm/mach-omap1/board-ams-delta.c             |  116 +++++++++++++++++++--
+ arch/arm/plat-omap/include/plat/board-ams-delta.h |    1 -
+ sound/soc/codecs/cx20442.c                        |   58 ++++++++++-
+ sound/soc/omap/ams-delta.c                        |   34 ------
+ 5 files changed, 165 insertions(+), 46 deletions(-)
 
 -- 
-tejun
+1.7.3.4
+
