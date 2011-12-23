@@ -1,64 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757546Ab1LWRbw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 12:31:52 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35958 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110Ab1LWRbs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 12:31:48 -0500
-MIME-Version: 1.0
-From: Phil Miller <mille121@illinois.edu>
-Date: Fri, 23 Dec 2011 11:31:26 -0600
-X-Google-Sender-Auth: hDxQJ5xdIz7YEvj0nnE7W2xN3aE
-Message-ID: <CAMDbWJG4u62qmBgxhaYZCuL+5897defC1cy5tNMd+M+9BhWS+g@mail.gmail.com>
-Subject: [REGRESSION,STABLE,BISECTED] Hang on resume from standby in 3.1.[56], 3.2-rc*
-To: Thomas Gleixner <tglx@linutronix.de>, Greg Kroah-Hartman <greg@kroah.com>,
-        stable@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1757561Ab1LWRih (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:38:37 -0500
+Received: from mga11.intel.com ([192.55.52.93]:38892 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757538Ab1LWRif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 12:38:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="99744657"
+Subject: Re: [PATCH] dmaengine: Add support for MEMCPY for imx-dma.
+From: Vinod Koul <vinod.koul@intel.com>
+To: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1324051191-19507-1-git-send-email-javier.martin@vista-silicon.com>
+References: <1324051191-19507-1-git-send-email-javier.martin@vista-silicon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Dec 2011 23:08:38 +0530
+Message-ID: <1324661918.1633.35.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've got a Dell Precision T1500 (lspci, dmidecode, and dmesg output at
-http://charm.cs.uiuc.edu/~phil/linux-suspend-hang/ ) that I generally
-suspend when I'm out of the house or asleep, and wake up when I want
-to use it. Sadly, a recent change to the kernel has disrupted that
-happy state of affairs. When I run the most recent stable or
-pre-release versions, the kernel hangs on resume. I can still switch
-virtual consoles, and get keyboard output echoed to the screen, but no
-userspace code seems to be running (e.g. login doesn't give me a
-password prompt after entering a username), nor does the system
-respond to ping or SSH connections.
+On Fri, 2011-12-16 at 16:59 +0100, Javier Martin wrote:
+> MEMCPY transfers allow DMA copies from memory to
+> memory. This patch has been tested with dmatest
+> device driver.
+> 
+> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+> ---
+>  drivers/dma/imx-dma.c |   37 ++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 36 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> index d99f71c..222cd7b 100644
+> --- a/drivers/dma/imx-dma.c
+> +++ b/drivers/dma/imx-dma.c
+> @@ -196,7 +196,8 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
+>  	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>  	struct imx_dma_data *data = chan->private;
+>  
+> -	imxdmac->dma_request = data->dma_request;
+> +	if (data != NULL)
+> +		imxdmac->dma_request = data->dma_request;
+>  
+>  	dma_async_tx_descriptor_init(&imxdmac->desc, chan);
+>  	imxdmac->desc.tx_submit = imxdma_tx_submit;
+> @@ -328,6 +329,37 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+>  	return &imxdmac->desc;
+>  }
+>  
+> +static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
+> +	struct dma_chan *chan, dma_addr_t dest,
+> +	dma_addr_t src, size_t len, unsigned long flags)
+> +{
+> +	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+> +	struct imxdma_engine *imxdma = imxdmac->imxdma;
+> +	int ret;
+> +
+> +	dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
+> +			__func__, imxdmac->channel, src, dest, len);
+> +
+> +	if (imxdmac->status == DMA_IN_PROGRESS)
+> +		return NULL;
+> +
+> +	imxdmac->status = DMA_IN_PROGRESS;
+why? prepare doesn't mean DMA is in progress. You can get multiple
+descriptors for same channel by calling prepare multiple times.
+Even one descriptor can be memcpy whereas other is slave...
+In issue_pending this should be moved to DMA_IN_PROGRESS
+> +
+> +	ret = imx_dma_config_channel(imxdmac->imxdma_channel,
+> +			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
+> +			       IMX_DMA_MEMSIZE_32 | IMX_DMA_TYPE_LINEAR,
+> +			       0, 0);
+> +	if (ret)
+> +		return NULL;
+> +
+> +	ret = imx_dma_setup_single(imxdmac->imxdma_channel, src, len,
+> +				   dest, DMA_MODE_WRITE);
+> +	if (ret)
+> +		return NULL;
+> +
+> +	return &imxdmac->desc;
+> +}
+> +
+>  static void imxdma_issue_pending(struct dma_chan *chan)
+>  {
+>  	/*
+> @@ -348,6 +380,7 @@ static int __init imxdma_probe(struct platform_device *pdev)
+>  
+>  	dma_cap_set(DMA_SLAVE, imxdma->dma_device.cap_mask);
+>  	dma_cap_set(DMA_CYCLIC, imxdma->dma_device.cap_mask);
+> +	dma_cap_set(DMA_MEMCPY, imxdma->dma_device.cap_mask);
+>  
+>  	/* Initialize channel parameters */
+>  	for (i = 0; i < MAX_DMA_CHANNELS; i++) {
+> @@ -381,11 +414,13 @@ static int __init imxdma_probe(struct platform_device *pdev)
+>  	imxdma->dma_device.device_tx_status = imxdma_tx_status;
+>  	imxdma->dma_device.device_prep_slave_sg = imxdma_prep_slave_sg;
+>  	imxdma->dma_device.device_prep_dma_cyclic = imxdma_prep_dma_cyclic;
+> +	imxdma->dma_device.device_prep_dma_memcpy = imxdma_prep_dma_memcpy;
+>  	imxdma->dma_device.device_control = imxdma_control;
+>  	imxdma->dma_device.device_issue_pending = imxdma_issue_pending;
+>  
+>  	platform_set_drvdata(pdev, imxdma);
+>  
+> +	imxdma->dma_device.copy_align = 2; /* 2^2 = 4 bytes alignment */
+>  	imxdma->dma_device.dev->dma_parms = &imxdma->dma_parms;
+>  	dma_set_max_seg_size(imxdma->dma_device.dev, 0xffffff);
+>  
 
-Bisection between v3.1 and v3.1.6 points to the following commit as the culprit:
-=====
-commit aeed6baa702a285cf03b7dc4182ffc1a7f4e4ed6
-Author: Thomas Gleixner <tglx@linutronix.de>
-Date:   Fri Dec 2 16:02:45 2011 +0100
 
-    clockevents: Set noop handler in clockevents_exchange_device()
+-- 
+~Vinod
 
-    commit de28f25e8244c7353abed8de0c7792f5f883588c upstream.
-
-    If a device is shutdown, then there might be a pending interrupt,
-    which will be processed after we reenable interrupts, which causes the
-    original handler to be run. If the old handler is the (broadcast)
-    periodic handler the shutdown state might hang the kernel completely.
-
-    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-:040000 040000 1cfa477e4be68746d7ef2818a430d50424b06572
-ccd4ef67437a19acba03df2debac6eb8c5957b30 M	kernel
-=====
-
-I've tested that reverting this commit also restores my ability to
-resume from suspend on 3.2-rc6.
-
-If there's anything else I can do to help diagnose this issue or get
-it fixed, I'm happy to help.
-
-Thanks.
-
-Phil
