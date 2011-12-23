@@ -1,134 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1LWCNw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Dec 2011 21:13:52 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56988 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765Ab1LWCNt (ORCPT
+	id S1754095Ab1LWCXc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Dec 2011 21:23:32 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59097 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246Ab1LWCXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Dec 2011 21:13:49 -0500
-Date: Thu, 22 Dec 2011 18:13:33 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 2/3] cgroup: remove double-checking locking from
- attach_task_by_pid
-Message-ID: <20111223021333.GM13529@google.com>
-References: <1324601873-20773-1-git-send-email-msb@chromium.org>
- <1324601873-20773-2-git-send-email-msb@chromium.org>
+	Thu, 22 Dec 2011 21:23:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324601873-20773-2-git-send-email-msb@chromium.org>
-X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20211.28256.111279.27933@quad.stoffel.home>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+ <CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
+ <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com> <20211.28256.111279.27933@quad.stoffel.home>
+From: Gaurav Saxena <grvsaxena419@gmail.com>
+Date: Fri, 23 Dec 2011 07:52:59 +0530
+Message-ID: <CAOh0hwPeveaEaNv_mjNVLM36JSbObX4n5y1jC_Yp5MwdBA0Sxw@mail.gmail.com>
+Subject: Re: Intercepting system calls
+To: John Stoffel <john@stoffel.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not going to work. Will fix up and resend. Need to goto
-the top as suggested by Tejun.
+Hello John,
 
-Mandeep Singh Baines (msb@chromium.org) wrote:
-> By reading group_leader after taking the threadgroup_lock, we can
-> avoid the double-check locking. This removes the return of
-> -EAGAIN so we can cleanup cgroup_procs_write at the same time.
-> 
-> The suggestion was made here:
-> 
-> https://lkml.org/lkml/2011/12/22/371
-> 
-> Suggested-by: Tejun Heo <tj@kernel.org>
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: containers@lists.linux-foundation.org
-> Cc: cgroups@vger.kernel.org
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> ---
->  kernel/cgroup.c |   40 ++++++----------------------------------
->  1 files changed, 6 insertions(+), 34 deletions(-)
-> 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 032139d..a5f7d1b 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -2234,9 +2234,6 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
->  			ret= -ESRCH;
->  			goto out_unlock_cgroup;
->  		}
-> -		/* we check later for a group_leader race with de_thread */
-> -		if (threadgroup)
-> -			tsk = tsk->group_leader;
->  		/*
->  		 * even if we're attaching all tasks in the thread group, we
->  		 * only need to check permissions on one of them.
-> @@ -2252,33 +2249,17 @@ static int attach_task_by_pid(struct cgroup *cgrp, u64 pid, bool threadgroup)
->  		get_task_struct(tsk);
->  		rcu_read_unlock();
->  	} else {
-> -		if (threadgroup)
-> -			tsk = current->group_leader;
-> -		else
-> -			tsk = current;
-> +		tsk = current;
->  		get_task_struct(tsk);
->  	}
->  
->  	threadgroup_lock(tsk);
-> -
-> -	if (threadgroup) {
-> -		if (!thread_group_leader(tsk)) {
-> -			/*
-> -			 * a race with de_thread from another thread's exec()
-> -			 * may strip us of our leadership, if this happens,
-> -			 * there is no choice but to throw this task away and
-> -			 * try again (from cgroup_procs_write); this is
-> -			 * "double-double-toil-and-trouble-check locking".
-> -			 */
-> -			ret = -EAGAIN;
-> -			goto out_unlock_threadgroup;
-> -		}
-> -		ret = cgroup_attach_proc(cgrp, tsk);
-> -	} else
-> +	if (threadgroup)
-> +		ret = cgroup_attach_proc(cgrp, tsk->group_leader);
-> +	else
->  		ret = cgroup_attach_task(cgrp, tsk);
-> -
-> -out_unlock_threadgroup:
->  	threadgroup_unlock(tsk);
-> +
->  	put_task_struct(tsk);
->  out_unlock_cgroup:
->  	cgroup_unlock();
-> @@ -2292,16 +2273,7 @@ static int cgroup_tasks_write(struct cgroup *cgrp, struct cftype *cft, u64 pid)
->  
->  static int cgroup_procs_write(struct cgroup *cgrp, struct cftype *cft, u64 tgid)
->  {
-> -	int ret;
-> -	do {
-> -		/*
-> -		 * attach_proc fails with -EAGAIN if threadgroup leadership
-> -		 * changes in the middle of the operation, in which case we need
-> -		 * to find the task_struct for the new leader and start over.
-> -		 */
-> -		ret = attach_task_by_pid(cgrp, tgid, true);
-> -	} while (ret == -EAGAIN);
-> -	return ret;
-> +	return attach_task_by_pid(cgrp, tgid, true);
->  }
->  
->  /**
-> -- 
-> 1.7.3.1
-> 
+On Thu, Dec 22, 2011 at 11:22 PM, John Stoffel <john@stoffel.org> wrote:
+>>>>>> "Gaurav" == Gaurav Saxena <grvsaxena419@gmail.com> writes:
+>
+>>> Intercepting system calls is very bad, don't do it.
+>
+> Gaurav> Oh. I will not do it then, could you suggest me something so
+> Gaurav> that I could prevent unlink on some file say using kernel
+> Gaurav> support. I want to save file on unlink how could I do that
+> Gaurav> without kernel support, or how could I do that using a kernel
+> Gaurav> module.
+>
+> Write a FUSE module to mount the filesystem through, inside your FUSE
+> module you can intercept the unlink/truncate/write calls and decide
+> what you want to have happen.
+>
+> John
+I would like to write it differently for each type of filesystem ?
+Because what operations to call after my function depends on this.
+Also Can I mount "/" in this way ?
+
+
+-- 
+Thanks and Regards ,
+Gaurav
