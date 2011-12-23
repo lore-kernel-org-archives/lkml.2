@@ -1,162 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757738Ab1LWUom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 15:44:42 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37230 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757698Ab1LWUoj (ORCPT
+	id S1757749Ab1LWUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 15:45:09 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:48580 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754332Ab1LWUpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 15:44:39 -0500
-Date: Fri, 23 Dec 2011 21:44:28 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, kernel@pengutronix.de,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] serial/efm32: add new driver
-Message-ID: <20111223204428.GI24496@pengutronix.de>
-References: <20111221202847.4ffeba10@bob.linux.org.uk>
- <1324561092-1945-1-git-send-email-u.kleine-koenig@pengutronix.de>
- <201112231035.23215.arnd@arndb.de>
+	Fri, 23 Dec 2011 15:45:07 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgAFAI/m9E55LbVv/2dsb2JhbABDhQ+mKIEAgQaBcgEBBAEjDwEYAQojEAgBAhgCAiYCAhQlAyETh3qmOYQnAY0DBBOBHIlKM2MElQGSSQ
+Date: Sat, 24 Dec 2011 07:45:03 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: nowhere <nowhere@hakkenden.ath.cx>
+Cc: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+Message-ID: <20111223204503.GC12731@dastard>
+References: <1324437036.4677.5.camel@hakkenden.homenet>
+ <20111221095249.GA28474@tiehlicka.suse.cz>
+ <20111221225512.GG23662@dastard>
+ <1324630880.562.6.camel@rybalov.eng.ttk.net>
+ <20111223102027.GB12731@dastard>
+ <1324638242.562.15.camel@rybalov.eng.ttk.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <201112231035.23215.arnd@arndb.de>
+In-Reply-To: <1324638242.562.15.camel@rybalov.eng.ttk.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Arnd,
-
-On Fri, Dec 23, 2011 at 10:35:22AM +0000, Arnd Bergmann wrote:
-> On Thursday 22 December 2011, Uwe Kleine-K�nig wrote:
+On Fri, Dec 23, 2011 at 03:04:02PM +0400, nowhere wrote:
+> В Пт., 23/12/2011 в 21:20 +1100, Dave Chinner пишет:
+> > On Fri, Dec 23, 2011 at 01:01:20PM +0400, nowhere wrote:
+> > > В Чт., 22/12/2011 в 09:55 +1100, Dave Chinner пишет:
+> > > > On Wed, Dec 21, 2011 at 10:52:49AM +0100, Michal Hocko wrote:
+> > > > > [Let's CC linux-mm]
+> > > > > 
+> > > > > On Wed 21-12-11 07:10:36, Nikolay S. wrote:
+> > > > > > Hello,
+> > > > > > 
+> > > > > > I'm using 3.2-rc5 on a machine, which atm does almost nothing except
+> > > > > > file system operations and network i/o (i.e. file server). And there is
+> > > > > > a problem with kswapd.
+> > > > > 
+> > > > > What kind of filesystem do you use?
+> > > > > 
+> > > > > > 
+> > > > > > I'm playing with dd:
+> > > > > > dd if=/some/big/file of=/dev/null bs=8M
+> > > > > > 
+> > > > > > I.e. I'm filling page cache.
+> > > > > > 
+> > > > > > So when the machine is just rebooted, kswapd during this operation is
+> > > > > > almost idle, just 5-8 percent according to top.
+> > > > > > 
+> > > > > > After ~5 days of uptime (5 days,  2:10), the same operation demands ~70%
+> > > > > > for kswapd:
+> > > > > > 
+> > > > > >   PID USER      S %CPU %MEM    TIME+  SWAP COMMAND
+> > > > > >   420 root      R   70  0.0  22:09.60    0 kswapd0
+> > > > > > 17717 nowhere   D   27  0.2   0:01.81  10m dd
+> > > > > > 
+> > > > > > In fact, kswapd cpu usage on this operation steadily increases over
+> > > > > > time.
+> > > > > > 
+> > > > > > Also read performance degrades over time. After reboot:
+> > > > > > dd if=/some/big/file of=/dev/null bs=8M
+> > > > > > 1019+1 records in
+> > > > > > 1019+1 records out
+> > > > > > 8553494018 bytes (8.6 GB) copied, 16.211 s, 528 MB/s
+> > > > > > 
+> > > > > > After ~5 days uptime:
+> > > > > > dd if=/some/big/file of=/dev/null bs=8M
+> > > > > > 1019+1 records in
+> > > > > > 1019+1 records out
+> > > > > > 8553494018 bytes (8.6 GB) copied, 29.0507 s, 294 MB/s
+> > > > > > 
+> > > > > > Whereas raw disk sequential read performance stays the same:
+> > > > > > dd if=/some/big/file of=/dev/null bs=8M iflag=direct
+> > > > > > 1019+1 records in
+> > > > > > 1019+1 records out
+> > > > > > 8553494018 bytes (8.6 GB) copied, 14.7286 s, 581 MB/s
+> > > > > > 
+> > > > > > Also after dropping caches, situation somehow improves, but not to the
+> > > > > > state of freshly restarted system:
+> > > > > >   PID USER      S %CPU %MEM    TIME+  SWAP COMMAND
+> > > > > >   420 root      S   39  0.0  23:31.17    0 kswapd0
+> > > > > > 19829 nowhere   D   24  0.2   0:02.72 7764 dd
+> > > > > > 
+> > > > > > perf shows:
+> > > > > > 
+> > > > > >     31.24%  kswapd0  [kernel.kallsyms]  [k] _raw_spin_lock
+> > > > > >     26.19%  kswapd0  [kernel.kallsyms]  [k] shrink_slab
+> > > > > >     16.28%  kswapd0  [kernel.kallsyms]  [k] prune_super
+> > > > > >      6.55%  kswapd0  [kernel.kallsyms]  [k] grab_super_passive
+> > > > > >      5.35%  kswapd0  [kernel.kallsyms]  [k] down_read_trylock
+> > > > > >      4.03%  kswapd0  [kernel.kallsyms]  [k] up_read
+> > > > > >      2.31%  kswapd0  [kernel.kallsyms]  [k] put_super
+> > > > > >      1.81%  kswapd0  [kernel.kallsyms]  [k] drop_super
+> > > > > >      0.99%  kswapd0  [kernel.kallsyms]  [k] __put_super
+> > > > > >      0.25%  kswapd0  [kernel.kallsyms]  [k] __isolate_lru_page
+> > > > > >      0.23%  kswapd0  [kernel.kallsyms]  [k] free_pcppages_bulk
+> > > > > >      0.19%  kswapd0  [r8169]            [k] rtl8169_interrupt
+> > > > > >      0.15%  kswapd0  [kernel.kallsyms]  [k] twa_interrupt
+> > > > > 
+> > > > > Quite a lot of time spent shrinking slab (dcache I guess) and a lot of
+> > > > > spin lock contention.
+> > > > 
+> > > > That's just scanning superblocks, not apparently doing anything
+> > > > useful like shrinking dentries or inodes attached to each sb. i.e.
+> > > > the shrinkers are being called an awful lot and basically have
+> > > > nothing to do. I'd be suspecting a problem higher up in the stack to
+> > > > do with how shrink_slab is operating or being called.
+> > > > 
+> > > > I'd suggest gathering event traces for mm_shrink_slab_start/
+> > > > mm_shrink_slab_end to try to see how the shrinkers are being
+> > > > driven...
+> > > > 
+> > > > Cheers,
+> > > > 
+> > > > Dave.
+> > > 
+> > > I have recompiled kernel with tracers, and today the problem is visible
+> > > again. So here is the trace for mm_shrink_slab_start (it is HUGE):
+> > > 
+> > >          kswapd0   421 [000] 103976.627873: mm_shrink_slab_start: prune_super+0x0 0xffff88011b00d300: objects to shrink 12 gfp_flags GFP_KERNELGFP_NOTRACK pgs_scanned 32 lru_pgs 942483 cache items 1500 delt
+> > >          kswapd0   421 [000] 103976.627882: mm_shrink_slab_start: prune_super+0x0 0xffff88011a20ab00: objects to shrink 267 gfp_flags GFP_KERNELGFP_NOTRACK pgs_scanned 32 lru_pgs 942483 cache items 5300 del
+> > 
+> > And possibly useless in this form. I need to see the
+> > mm_shrink_slab_start/mm_shrink_slab_end events interleaved so I can
+> > see exactly how much work each shrinker call is doing, and the start
+> > events are truncated so not all the info I need is present.
+> > 
+> > Perhaps you should install trace-cmd.
+> > 
+> > $ trace-cmd record -e mm_shrink_slab*
+> > (wait 30s, then ^C)
+> > $ trace-cmd report > shrink.trace
+> > 
+> > And then compress and attach the trace file or put up on the web
+> > somewhere for me ot download if it's too large for email...
+> > 
+> > As it is, there's ~940k pages in the LRU, and shrink_slab is being
+> > called after 32, 95, 8, 8, 32 and 32 pages on the LRU have been
+> > scanned. That seems like the shrinkers are being called rather too
+> > often.
+> > 
+> > The end traces indicate the shrinker caches aren't able to free
+> > anything. So it looks like the vmscan code has got itself in a
+> > situation where it is not scanning many pages between shrinker
+> > callouts, and the shrinkers scan but can't make any progress. Looks
+> > like a vmscan balancing problem right now, not anything to do with
+> > the shrinker code. A better trace will confirm that.
+> > 
+> > FWIW, if you use trace-cmd, it might be worthwhile collecting all the
+> > vmscan trace events too, as that might help the VM folk understand
+> > the problem without needing to ask you for more info.
 > 
-> > @@ -0,0 +1,14 @@
-> > +* Energymicro efm32 UART
-> > +
-> > +Required properties:
-> > +- compatible : Should be "efm32,usart"
-> > +- reg : Address and length of the register set
-> > +- interrupts : Should contain uart interrupt
-> > +
-> > +Example:
-> > +
-> > +uart@0x4000c400 {
-> > +	compatible = "efm32,usart";
-> > +	reg = <0x4000c400 0x400>;
-> > +	interrupts = <15>;
-> > +};
+> ./trace-cmd record -e vmscan/*
 > 
-> Do you know if the usart was actually designed by energymicro or licensed
-> from another party? If it is a licensed part, it would be better to
-> list the "compatible" value under the company name that made it.
-I don't know so I passed the question to them.
- 
-> I would suggest that you also support the "clock-frequency" and/or
-> "current-speed" properties that are defined for serial ports, see the
-> of_serial driver.
-I will have a look to find out what they mean and update the patch
-accordingly.
- 
-> > diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-> > index 925a1e5..cfeb0f3 100644
-> > --- a/drivers/tty/serial/Kconfig
-> > +++ b/drivers/tty/serial/Kconfig
-> > @@ -1610,4 +1610,14 @@ config SERIAL_XILINX_PS_UART_CONSOLE
-> >  	help
-> >  	  Enable a Xilinx PS UART port to be the system console.
-> >  
-> > +config SERIAL_EFM32_USART
-> > +	bool "EFM32 USART port."
-> > +	depends on ARCH_EFM32
-> > +	select SERIAL_CORE
-> 
-> Why not tristate? If it's not a console, you should be able to use
-> it as a module.
-Hmm, in theory yes. (In practice modules on mmu are not that trivial,
-see the corresponding thread on lakml.) I will update but I guess I can
-only build test that configuration.
- 
-> I would generally prefer not to make the driver depend on the
-> platform, so we can get better compile time coverage. I think a better
-> set of dependencies would be
-> 
-> 	depends on HAVE_CLK
-> 	depends on OF
-> 	default ARCH_EFM32
-I'd prefer something like:
+> Here is the report of trace-cmd while dd'ing
+> https://80.237.6.56/report-dd.xz
 
-	depends on HAVE_CLK
-	depends on ARCH_EFM32 || I_DO_BUILD_COVERAGE_TESTING
+Ok, it's not a shrink_slab() problem - it's just being called ~100uS
+by kswapd. The pattern is:
 
-This would make it easier for Joe User to pick the right options for his
-kernel (assuming he found out to better keep I_DO_BUILD_COVERAGE_TESTING
-disabled). There is no hard dependency on OF in the driver and I guess
-at least the in-production (and out-of-tree) usage will still stick to
-non-OF because it saves some RAM. So I'd prefer not to add that.
-(And it would help build coverage testing ;-)
+	- reclaim 94 (batches of 32,32,30) pages from iinactive list
+	  of zone 1, node 0, prio 12
+	- call shrink_slab
+		- scan all caches
+		- all shrinkers return 0 saying nothing to shrink
+	- 40us gap
+	- reclaim 10-30 pages from inactive list of zone 2, node 0, prio 12
+	- call shrink_slab
+		- scan all caches
+		- all shrinkers return 0 saying nothing to shrink
+	- 40us gap
+	- isolate 9 pages from LRU zone ?, node ?, none isolated, none freed
+	- isolate 22 pages from LRU zone ?, node ?, none isolated, none freed
+	- call shrink_slab
+		- scan all caches
+		- all shrinkers return 0 saying nothing to shrink
+	40us gap
 
-> > +static void efm32_usart_write32(struct efm32_usart_port *efm_port,
-> > +		u32 value, unsigned offset)
-> > +{
-> > +	__raw_writel(value, efm_port->port.membase + offset);
-> > +}
-> > +
-> > +static u32 efm32_usart_read32(struct efm32_usart_port *efm_port,
-> > +		unsigned offset)
-> > +{
-> > +	return __raw_readl(efm_port->port.membase + offset);
-> > +}
-> 
-> Please use writel_relaxed() instead of __raw_writel().
-ok
+And it just repeats over and over again. After a while, nid=0,zone=1
+drops out of the traces, so reclaim only comes in batches of 10-30
+pages from zone 2 between each shrink_slab() call.
 
-> > +static int __devinit efm32_usart_probe(struct platform_device *pdev)
-> > +{
-> > +	struct efm32_usart_port *efm_port;
-> > +	struct resource *res;
-> > +	int ret;
-> > +
-> > +	efm_port = kzalloc(sizeof(*efm_port), GFP_KERNEL);
-> > +	if (!efm_port) {
-> > +		dev_dbg(&pdev->dev, "failed to allocate private data\n");
-> > +		return -ENOMEM;
-> > +	}
-> > +
-> > +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> > +	if (!res) {
-> > +		ret = -ENODEV;
-> > +		dev_dbg(&pdev->dev, "failed to determine base address\n");
-> > +		goto err_get_base;
-> > +	}
-> > +
-> > +	if (resource_size(res) < 60) {
-> > +		ret = -EINVAL;
-> > +		dev_dbg(&pdev->dev, "memory resource too small\n");
-> > +		goto err_too_small;
-> > +	}
-> 
-> of_iomap() would be simpler here. I think you can leave out the assignment to 
-> mapbase, and go straight to membase here.
-but ioremap is only done in .request_port, so it's necessary to have two
-steps here, isn't it?
- 
-> checking the resource size should not be necessary, because that would imply
-> having an invalid device tree, which you don't have to check at run time.
-hmm, I prefer an error message over an access to unmapped memory even if
-that can only happen when the device tree is broken.
+The trace starts at 111209.881s, with 944776 pages on the LRUs. It
+finishes at 111216.1 with kswapd going to sleep on node 0 with
+930067 pages on the LRU. So 7 seconds to free 15,000 pages (call it
+2,000 pages/s) which is awfully slow....
 
-Best regards and thanks for your comments,
-Uwe
+vmscan gurus - time for you to step in now...
 
+Cheers,
+
+Dave.
 -- 
-Pengutronix e.K.                           | Uwe Kleine-K�nig            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Dave Chinner
+david@fromorbit.com
