@@ -1,15 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab1LWMba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 07:31:30 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:53176 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756820Ab1LWM2E (ORCPT
+	id S1756992Ab1LWMbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 07:31:33 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:65440 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756793Ab1LWM2B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 07:28:04 -0500
-Date: Fri, 23 Dec 2011 13:27:28 +0100
+	Fri, 23 Dec 2011 07:28:01 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Fri, 23 Dec 2011 13:27:22 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 09/14] Microblaze: adapt for dma_map_ops changes
+Subject: [PATCH 03/14] MIPS: adapt for dma_map_ops changes
 In-reply-to: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -26,11 +29,8 @@ Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Message-id: <1324643253-3024-10-git-send-email-m.szyprowski@samsung.com>
-MIME-version: 1.0
+Message-id: <1324643253-3024-4-git-send-email-m.szyprowski@samsung.com>
 X-Mailer: git-send-email 1.7.7.3
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
 References: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,97 +38,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 
-Adapt core Microblaze architecture code for dma_map_ops changes: replace
+Adapt core MIPS architecture code for dma_map_ops changes: replace
 alloc/free_coherent with generic alloc/free methods.
 
 Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/microblaze/include/asm/dma-mapping.h |   18 ++++++++++++------
- arch/microblaze/kernel/dma.c              |   10 ++++++----
- 2 files changed, 18 insertions(+), 10 deletions(-)
+ arch/mips/include/asm/dma-mapping.h |   18 ++++++++++++------
+ arch/mips/mm/dma-default.c          |    8 ++++----
+ 2 files changed, 16 insertions(+), 10 deletions(-)
 
-diff --git a/arch/microblaze/include/asm/dma-mapping.h b/arch/microblaze/include/asm/dma-mapping.h
-index 3a3e5b8..0ee58d2 100644
---- a/arch/microblaze/include/asm/dma-mapping.h
-+++ b/arch/microblaze/include/asm/dma-mapping.h
-@@ -123,28 +123,34 @@ static inline int dma_mapping_error(struct device *dev, dma_addr_t dma_addr)
- #define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
- #define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
+diff --git a/arch/mips/include/asm/dma-mapping.h b/arch/mips/include/asm/dma-mapping.h
+index 7aa37dd..cbd41f5 100644
+--- a/arch/mips/include/asm/dma-mapping.h
++++ b/arch/mips/include/asm/dma-mapping.h
+@@ -57,25 +57,31 @@ dma_set_mask(struct device *dev, u64 mask)
+ extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+ 	       enum dma_data_direction direction);
  
 -static inline void *dma_alloc_coherent(struct device *dev, size_t size,
--					dma_addr_t *dma_handle, gfp_t flag)
+-				       dma_addr_t *dma_handle, gfp_t gfp)
 +#define dma_alloc_coherent(d,s,h,f)	dma_alloc_attrs(d,s,h,f,NULL)
 +
 +static inline void *dma_alloc_attrs(struct device *dev, size_t size,
-+				    dma_addr_t *dma_handle, gfp_t flag,
++				    dma_addr_t *dma_handle, gfp_t gfp,
 +				    struct dma_attrs *attrs)
  {
+ 	void *ret;
  	struct dma_map_ops *ops = get_dma_ops(dev);
- 	void *memory;
  
- 	BUG_ON(!ops);
+-	ret = ops->alloc_coherent(dev, size, dma_handle, gfp);
++	ret = ops->alloc(dev, size, dma_handle, gfp, NULL);
  
--	memory = ops->alloc_coherent(dev, size, dma_handle, flag);
-+	memory = ops->alloc(dev, size, dma_handle, flag, attrs);
+ 	debug_dma_alloc_coherent(dev, size, *dma_handle, ret);
  
- 	debug_dma_alloc_coherent(dev, size, *dma_handle, memory);
- 	return memory;
+ 	return ret;
  }
  
 -static inline void dma_free_coherent(struct device *dev, size_t size,
--				     void *cpu_addr, dma_addr_t dma_handle)
+-				     void *vaddr, dma_addr_t dma_handle)
 +#define dma_free_coherent(d,s,c,h) dma_free_attrs(d,s,c,h,NULL)
 +
 +static inline void dma_free_attrs(struct device *dev, size_t size,
-+				  void *cpu_addr, dma_addr_t dma_handle,
++				  void *vaddr, dma_addr_t dma_handle,
 +				  struct dma_attrs *attrs)
  {
  	struct dma_map_ops *ops = get_dma_ops(dev);
  
- 	BUG_ON(!ops);
- 	debug_dma_free_coherent(dev, size, cpu_addr, dma_handle);
--	ops->free_coherent(dev, size, cpu_addr, dma_handle);
-+	ops->free(dev, size, cpu_addr, dma_handle, attrs);
+-	ops->free_coherent(dev, size, vaddr, dma_handle);
++	ops->free(dev, size, vaddr, dma_handle, NULL);
+ 
+ 	debug_dma_free_coherent(dev, size, vaddr, dma_handle);
  }
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index 4608491..3fab204 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -98,7 +98,7 @@ void *dma_alloc_noncoherent(struct device *dev, size_t size,
+ EXPORT_SYMBOL(dma_alloc_noncoherent);
  
- static inline void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
-diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.c
-index 65a4af4..a2bfa2c 100644
---- a/arch/microblaze/kernel/dma.c
-+++ b/arch/microblaze/kernel/dma.c
-@@ -33,7 +33,8 @@ static unsigned long get_dma_direct_offset(struct device *dev)
- #define NOT_COHERENT_CACHE
- 
- static void *dma_direct_alloc_coherent(struct device *dev, size_t size,
--				dma_addr_t *dma_handle, gfp_t flag)
-+				       dma_addr_t *dma_handle, gfp_t flag,
-+				       struct dma_attrs *attrs)
+ static void *mips_dma_alloc_coherent(struct device *dev, size_t size,
+-	dma_addr_t * dma_handle, gfp_t gfp)
++	dma_addr_t * dma_handle, gfp_t gfp, struct dma_attrs *attrs)
  {
- #ifdef NOT_COHERENT_CACHE
- 	return consistent_alloc(flag, size, dma_handle);
-@@ -57,7 +58,8 @@ static void *dma_direct_alloc_coherent(struct device *dev, size_t size,
- }
+ 	void *ret;
  
- static void dma_direct_free_coherent(struct device *dev, size_t size,
--			      void *vaddr, dma_addr_t dma_handle)
-+				     void *vaddr, dma_addr_t dma_handle,
-+				     struct dma_attrs *attrs)
+@@ -132,7 +132,7 @@ void dma_free_noncoherent(struct device *dev, size_t size, void *vaddr,
+ EXPORT_SYMBOL(dma_free_noncoherent);
+ 
+ static void mips_dma_free_coherent(struct device *dev, size_t size, void *vaddr,
+-	dma_addr_t dma_handle)
++	dma_addr_t dma_handle, struct dma_attrs *attrs)
  {
- #ifdef NOT_COHERENT_CACHE
- 	consistent_free(size, vaddr);
-@@ -176,8 +178,8 @@ dma_direct_sync_sg_for_device(struct device *dev,
- }
+ 	unsigned long addr = (unsigned long) vaddr;
+ 	int order = get_order(size);
+@@ -323,8 +323,8 @@ void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+ EXPORT_SYMBOL(dma_cache_sync);
  
- struct dma_map_ops dma_direct_ops = {
--	.alloc_coherent	= dma_direct_alloc_coherent,
--	.free_coherent	= dma_direct_free_coherent,
-+	.alloc		= dma_direct_alloc_coherent,
-+	.free		= dma_direct_free_coherent,
- 	.map_sg		= dma_direct_map_sg,
- 	.unmap_sg	= dma_direct_unmap_sg,
- 	.dma_supported	= dma_direct_dma_supported,
+ static struct dma_map_ops mips_default_dma_map_ops = {
+-	.alloc_coherent = mips_dma_alloc_coherent,
+-	.free_coherent = mips_dma_free_coherent,
++	.alloc = mips_dma_alloc_coherent,
++	.free = mips_dma_free_coherent,
+ 	.map_page = mips_dma_map_page,
+ 	.unmap_page = mips_dma_unmap_page,
+ 	.map_sg = mips_dma_map_sg,
 -- 
 1.7.1.569.g6f426
 
