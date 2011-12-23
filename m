@@ -1,95 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab1L0J0B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 04:26:01 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61012 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab1L0JZ7 convert rfc822-to-8bit (ORCPT
+	id S1753123Ab1L0JnP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 04:43:15 -0500
+Received: from mailx.hitachi.co.jp ([133.145.228.49]:59259 "EHLO
+	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab1L0JnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 04:25:59 -0500
+	Tue, 27 Dec 2011 04:43:12 -0500
+X-AuditID: b753bd60-98392ba000007b1b-f9-4ef992aad9fc
+X-AuditID: b753bd60-98392ba000007b1b-f9-4ef992aad9fc
+From: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+Subject: [RFC PATCH 1/5][RESEND] livedump: Add notifier-call-chain into
+ do_page_fault
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: hpa@zytor.com, Andrew Morton <akpm@linux-foundation.org>,
+        Andy Lutomirski <luto@mit.edu>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Kevin Hilman <khilman@ti.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Michal Marek <mmarek@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
+        x86@kernel.org, yrl.pp-manager.tt@hitachi.com
+Date: Fri, 23 Dec 2011 22:14:41 +0900
+Message-ID: <20111223131441.13217.69129.stgit@t3500.sdl.hitachi.co.jp>
+In-Reply-To: <20111223131441.13217.68917.stgit@t3500.sdl.hitachi.co.jp>
+References: <20111223131441.13217.68917.stgit@t3500.sdl.hitachi.co.jp>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <25B60CDC2F704E4E9D88FFD52780CB4C05EC64DBD3@SC-VEXCH1.marvell.com>
-References: <1324974344.2351.5.camel@phoenix> <CAMPhdO_QL3ahf4+F70Bg7FHKq5mrbbofN_BTz8dpcBLea9BNAw@mail.gmail.com>
- <25B60CDC2F704E4E9D88FFD52780CB4C05EC64DBD3@SC-VEXCH1.marvell.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Tue, 27 Dec 2011 17:25:38 +0800
-Message-ID: <CAMPhdO8=L1KGmn_OihoMmMWNDahZ5+3u7M+BNuT3FcSfExHm1w@mail.gmail.com>
-Subject: Re: [PATCH RESEND] ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
-To: Haojian Zhuang <hzhuang1@marvell.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 5:18 PM, Haojian Zhuang <hzhuang1@marvell.com> wrote:
->
-> ________________________________________
-> From: Eric Miao [eric.y.miao@gmail.com]
-> Sent: Tuesday, December 27, 2011 5:11 PM
-> To: Axel Lin
-> Cc: linux-kernel@vger.kernel.org; Haojian Zhuang; Russell King; linux-arm-kernel@lists.infradead.org; linux-pcmcia@lists.infradead.org
-> Subject: Re: [PATCH RESEND] ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
->
-> On Tue, Dec 27, 2011 at 4:25 PM, Axel Lin <axel.lin@gmail.com> wrote:
->> If pxa2xx_drv_pcmcia_add_one fails, it will go to err1 error path.
->> Add a missing clk_put in the error path.
->>
->> Checking the ret value after the for loop is redundant, it is always false.
->> Thus remove the redundant checking.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Acked-by: Eric Miao <eric.y.miao@gmail.com>
->
->> ---
->>  drivers/pcmcia/pxa2xx_base.c |   12 +++---------
->>  1 files changed, 3 insertions(+), 9 deletions(-)
->>
->> diff --git a/drivers/pcmcia/pxa2xx_base.c b/drivers/pcmcia/pxa2xx_base.c
->> index a87e272..64d433e 100644
->> --- a/drivers/pcmcia/pxa2xx_base.c
->> +++ b/drivers/pcmcia/pxa2xx_base.c
->> @@ -328,21 +328,15 @@ static int pxa2xx_drv_pcmcia_probe(struct platform_device *dev)
->>                        goto err1;
->>        }
->>
->> -       if (ret) {
->> -               while (--i >= 0)
->> -                       soc_pcmcia_remove_one(&sinfo->skt[i]);
->> -               kfree(sinfo);
->> -               clk_put(clk);
->> -       } else {
->> -               pxa2xx_configure_sockets(&dev->dev);
->> -               dev_set_drvdata(&dev->dev, sinfo);
->> -       }
->> +       pxa2xx_configure_sockets(&dev->dev);
->> +       dev_set_drvdata(&dev->dev, sinfo);
->>
->>        return 0;
->>
->>  err1:
->>        while (--i >= 0)
->>                soc_pcmcia_remove_one(&sinfo->skt[i]);
->> +       clk_put(clk);
->>        kfree(sinfo);
->>  err0:
->>        return ret;
->> --
->> 1.7.5.4
->>
->>
->>
-> Wait a minute.
->
-> The original code will check whether pxa2xx_drv_pcmcia_add_one() successful. If it fails, we'll remove all devices that we registered.
->
-> But Axel removed these code. Why?
+This patch adds notifier-call-chain that is called in do_page_fault.
+This can be used to check whether page fault occurs for the normal reason,
+or it is caused by special write protection, for example Live Dump.
 
-If it fails, it will jump to err1 anyway. The check there is redundant.
+Signed-off-by: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Cc: Andy Lutomirski <luto@mit.edu>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+---
+
+ arch/x86/include/asm/traps.h |    2 ++
+ arch/x86/mm/fault.c          |    7 +++++++
+ 2 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
+index 0012d09..7bf6081 100644
+--- a/arch/x86/include/asm/traps.h
++++ b/arch/x86/include/asm/traps.h
+@@ -89,4 +89,6 @@ asmlinkage void smp_thermal_interrupt(void);
+ asmlinkage void mce_threshold_interrupt(void);
+ #endif
+ 
++extern struct atomic_notifier_head page_fault_notifier_list;
++
+ #endif /* _ASM_X86_TRAPS_H */
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 5db0490..2f8e2a9 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -985,6 +985,8 @@ static int fault_in_kernel_space(unsigned long address)
+ 	return address >= TASK_SIZE_MAX;
+ }
+ 
++ATOMIC_NOTIFIER_HEAD(page_fault_notifier_list);
++
+ /*
+  * This routine handles page faults.  It determines the address,
+  * and the problem, and then passes it off to one of the appropriate
+@@ -1008,6 +1010,11 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+ 	/* Get the faulting address: */
+ 	address = read_cr2();
+ 
++	if (atomic_notifier_call_chain(
++				&page_fault_notifier_list, error_code, regs) &
++			NOTIFY_OK)
++		return;
++
+ 	/*
+ 	 * Detect and handle instructions that would cause a page fault for
+ 	 * both a tracked kernel page and a userspace page.
+
