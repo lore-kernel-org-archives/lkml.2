@@ -1,110 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757969Ab1LWV41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 16:56:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50727 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757885Ab1LWVx3 (ORCPT
+	id S1757988Ab1LWV4b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 16:56:31 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:57938 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab1LWVx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 16:53:29 -0500
+	Fri, 23 Dec 2011 16:53:28 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Nelson Elhage <nelhage@nelhage.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: linux-kernel@vger.kernel.org, David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 07/15] perf: builtin-record: Document and check that mmap_pages must be a power of two.
-Date: Fri, 23 Dec 2011 19:53:10 -0200
-Message-Id: <1324677198-5191-8-git-send-email-acme@infradead.org>
+Subject: [PATCH 02/15] perf tools: Fix comm for processes with named threads
+Date: Fri, 23 Dec 2011 19:53:05 -0200
+Message-Id: <1324677198-5191-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1324677198-5191-1-git-send-email-acme@infradead.org>
 References: <1324677198-5191-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nelson Elhage <nelhage@nelhage.com>
+From: David Ahern <dsahern@gmail.com>
 
-Now that we automatically point users at it, let's provide them some
-guidance so that they hopefully don't just get mysterious EINVAL's
-from the kernel.
+perf does not properly handle monitoring of processes with named threads.
+For example:
 
+$ ps -C myapp -L
+  PID   LWP TTY          TIME CMD
+25118 25118 ?        00:00:00 myapp
+25118 25119 ?        00:00:00 myapp:worker
+
+perf record -e cs -c 1 -fo /tmp/perf.data -p 25118 -- sleep 10
+perf report --stdio -i /tmp/perf.data
+   100.00%  myapp:worker  [kernel.kallsyms]  [k] perf_event_task_sched_out
+
+The process name is set to the name of the last thread it finds for the
+process.
+
+The Problem:
+perf-top and perf-record both create a thread_map of threads to be
+monitored. That map is used in perf_event__synthesize_thread_map which
+loops over the entries in thread_map and calls __event__synthesize_thread
+to generate COMM and MMAP events.
+
+__event__synthesize_thread calls perf_event__synthesize_comm which opens
+/proc/pid/status, reads the name of the task and its thread group id.
+That's all fine. The problem is that it then reads /proc/pid/task and
+generates COMM events for each task it finds - but using the name found
+in /proc/pid/status where pid is the thread of interest.
+
+The end result (looping over thread_map + synthesizing comm events for
+each thread each time) means the name of the last thread processed sets
+the name for all threads in the process - which is not good for
+multithreaded processes with named threads.
+
+The Fix:
+perf_event__synthesize_comm has an input argument (full) that decides
+whether to process task entries for each pid it is passed. It currently
+never set to 0 (perf_event__synthesize_comm has a single caller and it
+always passes the value 1). Let's fix that.
+
+Add the full input argument to __event__synthesize_thread which passes
+it to perf_event__synthesize_comm. For thread/process monitoring set full
+to 0 which means COMM and MMAP events are only generated for the pid
+passed to it. For system wide monitoring set full to 1 so that COMM events
+are generated for all threads in a process.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1324301972-22740-4-git-send-email-nelhage@nelhage.com
-Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
-[ committer note: Made it work after 50a682c ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1324578603-12762-2-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-record.txt |    2 +-
- tools/perf/builtin-record.c              |    3 +++
- tools/perf/util/evlist.c                 |    2 ++
- tools/perf/util/util.h                   |   11 +++++++++++
- 4 files changed, 17 insertions(+), 1 deletions(-)
+ tools/perf/util/event.c |   37 ++++++++++++++++++++++++++++++++-----
+ 1 files changed, 32 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 5a520f8..2937f7e 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -89,7 +89,7 @@ OPTIONS
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index b7c7f39..a578726 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -261,11 +261,12 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
  
- -m::
- --mmap-pages=::
--	Number of mmap data pages.
-+	Number of mmap data pages. Must be a power of two.
+ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      union perf_event *mmap_event,
+-				      pid_t pid, perf_event__handler_t process,
++				      pid_t pid, int full,
++					  perf_event__handler_t process,
+ 				      struct perf_tool *tool,
+ 				      struct machine *machine)
+ {
+-	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, 1,
++	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
+ 						 process, machine);
+ 	if (tgid == -1)
+ 		return -1;
+@@ -279,7 +280,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 				      struct machine *machine)
+ {
+ 	union perf_event *comm_event, *mmap_event;
+-	int err = -1, thread;
++	int err = -1, thread, j;
  
- -g::
- --call-graph::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 56bb447..e873ae2 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -279,6 +279,9 @@ try_again:
- 			    "/proc/sys/kernel/perf_event_mlock_kb,\n"
- 			    "or try again with a smaller value of -m/--mmap_pages.\n"
- 			    "(current value: %d)\n", opts->mmap_pages);
-+		else if (!is_power_of_2(opts->mmap_pages))
-+			die("--mmap_pages/-m value must be a power of two.");
+ 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
+ 	if (comm_event == NULL)
+@@ -292,11 +293,37 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 	err = 0;
+ 	for (thread = 0; thread < threads->nr; ++thread) {
+ 		if (__event__synthesize_thread(comm_event, mmap_event,
+-					       threads->map[thread],
++					       threads->map[thread], 0,
+ 					       process, tool, machine)) {
+ 			err = -1;
+ 			break;
+ 		}
 +
- 		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
++		/*
++		 * comm.pid is set to thread group id by
++		 * perf_event__synthesize_comm
++		 */
++		if ((int) comm_event->comm.pid != threads->map[thread]) {
++			bool need_leader = true;
++
++			/* is thread group leader in thread_map? */
++			for (j = 0; j < threads->nr; ++j) {
++				if ((int) comm_event->comm.pid == threads->map[j]) {
++					need_leader = false;
++					break;
++				}
++			}
++
++			/* if not, generate events for it */
++			if (need_leader &&
++			    __event__synthesize_thread(comm_event,
++						      mmap_event,
++						      comm_event->comm.pid, 0,
++						      process, tool, machine)) {
++				err = -1;
++				break;
++			}
++		}
+ 	}
+ 	free(mmap_event);
+ out_free_comm:
+@@ -333,7 +360,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 		if (*end) /* only interested in proper numerical dirents */
+ 			continue;
+ 
+-		__event__synthesize_thread(comm_event, mmap_event, pid,
++		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
+ 					   process, tool, machine);
  	}
  
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 963d63d..fa18370 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -563,6 +563,8 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
-         /* 512 kiB: default amount of unprivileged mlocked memory */
-         if (pages == UINT_MAX)
-                 pages = (512 * 1024) / page_size;
-+	else if (!is_power_of_2(pages))
-+		return -EINVAL;
- 
- 	mask = pages * page_size - 1;
- 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 0128906..37be34d 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -245,4 +245,15 @@ int readn(int fd, void *buf, size_t size);
- #define _STR(x) #x
- #define STR(x) _STR(x)
- 
-+/*
-+ *  Determine whether some value is a power of two, where zero is
-+ * *not* considered a power of two.
-+ */
-+
-+static inline __attribute__((const))
-+bool is_power_of_2(unsigned long n)
-+{
-+	return (n != 0 && ((n & (n - 1)) == 0));
-+}
-+
- #endif
 -- 
 1.7.8.rc0.35.gee6df
 
