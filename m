@@ -1,99 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab1LWLUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 06:20:13 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18487 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756721Ab1LWLUH convert rfc822-to-8bit (ORCPT
+	id S1756738Ab1LWLUK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 06:20:10 -0500
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:1705
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756720Ab1LWLUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 23 Dec 2011 06:20:07 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Fri, 23 Dec 2011 03:20:07 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: Alok Chauhan <alokc@nvidia.com>, Olof Johansson <olof@lixom.net>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "bones@secretlab.ca" <bones@secretlab.ca>,
-        "paul.gortmaker@windriver.com" <paul.gortmaker@windriver.com>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dgreid@google.com" <dgreid@google.com>
-Date: Fri, 23 Dec 2011 16:50:00 +0530
-Subject: RE: [PATCH] i2c: tegra: Add delay before reset the controller
-Thread-Topic: [PATCH] i2c: tegra: Add delay before reset the controller
-Thread-Index: AczA9ZxzAn/Jn73iT+SgJWUzkwqrWAAbiW6gAAAfbDA=
-Message-ID: <96C9D994977DD0439FB6D3FE3B13DD907DBD3A93D3@BGMAIL01.nvidia.com>
-References: <1324550480-26308-1-git-send-email-alokc@nvidia.com>
- <CAOesGMire-13yiA9gVQYFWdTa6ZLJLbTW8qoRoPMRQ1ExavVUQ@mail.gmail.com>
- <7A0BFCFE3DA5CD47B0FB7984326F201A134F2CCC73@BGMAIL01.nvidia.com>
-In-Reply-To: <7A0BFCFE3DA5CD47B0FB7984326F201A134F2CCC73@BGMAIL01.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+X-SpamScore: -9
+X-BigFish: VPS-9(zz1432N98dKzz1202hzz8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LWNM5C-02-0GD-02
+X-M-MSG: 
+Date: Fri, 23 Dec 2011 12:19:58 +0100
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
+ samples
+Message-ID: <20111223111958.GE16765@erda.amd.com>
+References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
+ <1323969824-9711-5-git-send-email-robert.richter@amd.com>
+ <20111223103329.GC4749@elte.hu>
 MIME-Version: 1.0
-Content-Language: en-US
 Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+In-Reply-To: <20111223103329.GC4749@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Alok Chauhan
+On 23.12.11 11:33:29, Ingo Molnar wrote:
 > 
-> Hi,
+> * Robert Richter <robert.richter@amd.com> wrote:
 > 
-> (Adding Laxman Dewangan)
+> > This patch adds a script to collect and display IBS samples.
+> > There are the following options:
+> > 
+> >  perf script ibs [ibs_op|ibs_fetch] [-c period] <command>
+> > 
+> > Examples for usage:
+> > 
+> >  perf script ibs ibs_op <command>
+> >  perf script ibs ibs_fetch <command>
+> >  perf script record ibs ibs_op -c 500000 <command>
+> >  perf script report ibs
+> >  perf script record ibs ibs_op -c 500000 <command> | perf script report ibs
 > 
-> >This change causes problems systems with some models of i2c TPMs, since the
-> first transaction to them will always time out (TPM quirk), and the delay
-> means that the tpm will have time to go back to sleep and thus timeout >even
-> on the retry. So you'll never make progress.
-> Working on this.
-> 
-> -Alok
-> 
-> 
-> -----Original Message-----
-> From: Olof Johansson [mailto:olof@lixom.net]
-> Sent: Friday, December 23, 2011 2:48 AM
-> To: Alok Chauhan
-> Cc: khali@linux-fr.org; ben-linux@fluff.org; Stephen Warren;
-> bones@secretlab.ca; paul.gortmaker@windriver.com; linux-i2c@vger.kernel.org;
-> linux-kernel@vger.kernel.org; linux-tegra@vger.kernel.org; dgreid@google.com
-> Subject: Re: [PATCH] i2c: tegra: Add delay before reset the controller
-> 
-> Hi,
-> 
-> (Adding linux-tegra and Dylan Reid who was debugging this before)
-> 
-> On Thu, Dec 22, 2011 at 2:41 AM, Alok Chauhan <alokc@nvidia.com> wrote:
-> > From: Alok Chauhan <alokc@nvidia.com>
-> >
-> > In NACK error condition, I2C controller violates clock-to-data setup
-> > time before stop. In Software, because of this reset of controller is
-> > happening before I2C controller could complete STOP condition.
-> >
-> > Added worst case delay of 1 ms (assuming lowest clock frequency will
-> > be 1 KHZ) before reset the controller in case of NACK error.
-> 
-> This change causes problems systems with some models of i2c TPMs, since the
-> first transaction to them will always time out (TPM quirk), and the delay
-> means that the tpm will have time to go back to sleep and thus timeout even on
-> the retry. So you'll never make progress.
-> 
-> In other words: this patch will break some systems and thus shouldn't be
-> applied.
-> 
-I think the  delay should be calculated based on speed. So if it is 100KHz, then
-delay is 10mcro second for 1 bit. We should wait for 2 bit (ack clock to be complete and
-stop pulse to be transmitted).
-This patch will make sure that i2c driver will not break the specs i.e. in case of NACK error, the stop
-signal should be completed by i2c controller before resetting controller.
-I will prefer of having the udelay(2*1000000/speed).
+> So, cannot we just integrate this into regular perf record and 
+> perf report?
+
+As stated in the cover letter, perf record is already there:
+
+ perf record -e ibs_op:r0 -c 100000 -R -a <command>
+ perf record -e ibs_fetch:r0 -c 100000 -R -a <command>
+
+For perf report I was looking at parsing perf.data to output a dump
+for ibs samples, but it turned out to be more useful to implement this
+with perf script.
+
+What we might do later to integrate ibs more into HW event sampling is
+to redirect perfctr event requests for clk_unhalted/ops_count in
+conjunction with the precise bit to ibs_op (clk_unhalted/ops). We
+would then have e.g. a precise perf top. But this is clearly out of
+the scope of this patch series.
 
 > 
-> -Olof
+> Also, could you quote example output of "perf script report ibs"?
+
+IBS_FETCH sample on cpu6	IBS0: 0x00170003186a186a IBS1: 0x0000000000444780 IBS2:0x000000041af26780
+IBS_FETCH sample on cpu6	IBS0: 0x00170003186a186a IBS1: 0x00007f5efb44e3b2 IBS2:0x000000042fcff3b2
+IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff81065273 IBS2:0x0000000001065273
+IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff811a6320 IBS2:0x00000000011a6320
+IBS_FETCH sample on cpu6	IBS0: 0x01370003186a186a IBS1: 0xffffffff81065255 IBS2:0x0000000001065255
+IBS_FETCH sample on cpu7	IBS0: 0x00170004186a186a IBS1: 0x00007fbf0c687ca0 IBS2:0x000000041d345ca0
+IBS_FETCH sample on cpu7	IBS0: 0x00170003186a186a IBS1: 0x000000000043bb80 IBS2:0x000000041c351b80
+IBS_FETCH sample on cpu7	IBS0: 0x01370003186a186a IBS1: 0xffffffff813d5790 IBS2:0x00000000013d5790
+IBS_FETCH sample on cpu7	IBS0: 0x00030001186a186a IBS1: 0xffffffff8102bd00 IBS2:0x00000000013d5d00
+
+
+IBS_OP sample on cpu0            IBS0: 0x000000000006186a IBS1: 0xffffffff811a8297 IBS2: 0x0000000000490047
+        IBS3: 0x0000000000000000 IBS4: 0x0000070300000000 IBS5: 0x0000000000000000 IBS6: 0x0000000000000000
+IBS_OP sample on cpu4            IBS0: 0x000000000006186a IBS1: 0xffffffff8100840d IBS2: 0x0000000000040004
+        IBS3: 0x0000000000000000 IBS4: 0x0000000000000000 IBS5: 0x0000000000000000 IBS6: 0x0000000000000000
+IBS_OP sample on cpu0            IBS0: 0x000000000006186a IBS1: 0xffffffff811a8297 IBS2: 0x0000000000120008
+        IBS3: 0x0000000000000000 IBS4: 0x0000000700060012 IBS5: 0xffff88041df23918 IBS6: 0x000000041df23918
+IBS_OP sample on cpu0            IBS0: 0x000000000006186a IBS1: 0xffffffff811a8297 IBS2: 0x0000000000270002
+        IBS3: 0x0000000000000000 IBS4: 0x0000064b00070092 IBS5: 0xffff88041dd93198 IBS6: 0x000000041dd93198
+IBS_OP sample on cpu0            IBS0: 0x000000000006186a IBS1: 0xffffffff811a8297 IBS2: 0x00000000002d0002
+        IBS3: 0x0000000000000000 IBS4: 0x0000064a00070092 IBS5: 0xffff88041e3acd18 IBS6: 0x000000041e3acd18
+IBS_OP sample on cpu0            IBS0: 0x000000000006186a IBS1: 0xffffffff811a8297 IBS2: 0x0000000000160006
+        IBS3: 0x0000000000000000 IBS4: 0x000008a000070092 IBS5: 0xffff88041e217990 IBS6: 0x000000041e217990
+IBS_OP sample on cpu1            IBS0: 0x000000000006186a IBS1: 0xffffffff8100840d IBS2: 0x0000000000040004
+        IBS3: 0x0000000000000000 IBS4: 0x0000000000000000 IBS5: 0x0000000000000000 IBS6: 0x0000000000000000
+IBS_OP sample on cpu3            IBS0: 0x000000000006186a IBS1: 0xffffffff8100840d IBS2: 0x0000000000040004
+        IBS3: 0x0000000000000000 IBS4: 0x0000000000000000 IBS5: 0x0000000000000000 IBS6: 0x0000000000000000
+IBS_OP sample on cpu0            IBS0: 0x000000000006186a IBS1: 0xffffffff811a8297 IBS2: 0x000000000012000e
+        IBS3: 0x0000000000000000 IBS4: 0x0000000300060012 IBS5: 0xffff88041effa8d0 IBS6: 0x000000041effa8d0
+
+Esp. IBS_OP is not that good looking, but it shows how to use it and
+can also be beautified and extended later. It gives the user a
+direction about how to access ibs.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
