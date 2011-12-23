@@ -1,178 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757286Ab1LWO0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 09:26:12 -0500
-Received: from mail.tpi.com ([70.99.223.143]:1392 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754198Ab1LWO0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 09:26:09 -0500
-Message-ID: <4EF48F64.4010509@canonical.com>
-Date: Fri, 23 Dec 2011 07:25:40 -0700
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	id S1757096Ab1LWOiP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 09:38:15 -0500
+Received: from Mycroft.westnet.com ([216.187.52.7]:34740 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751539Ab1LWOiN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 09:38:13 -0500
 MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, Seth Forshee <seth.forshee@canonical.com>,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        Marcel Selhorst <m.selhorst@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net
-Subject: Re: [PATCH 2/3] TPM: Close data_pending and data_buffer races
-References: <1323196162-2717-1-git-send-email-tim.gardner@canonical.com> <1323196162-2717-3-git-send-email-tim.gardner@canonical.com> <4EF0B9F8.9020305@linux.vnet.ibm.com> <4EF0E465.5060704@canonical.com> <4EF36C1F.6040409@linux.vnet.ibm.com> <4EF37A7A.2060504@canonical.com> <4EF38CBD.3080302@linux.vnet.ibm.com>
-In-Reply-To: <4EF38CBD.3080302@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <20212.37458.896503.997111@quad.stoffel.home>
+Date: Fri, 23 Dec 2011 09:38:10 -0500
+From: "John Stoffel" <john@stoffel.org>
+To: Gaurav Saxena <grvsaxena419@gmail.com>
+Cc: John Stoffel <john@stoffel.org>,
+        richard -rw- weinberger <richard.weinberger@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Intercepting system calls
+In-Reply-To: <CAOh0hwPeveaEaNv_mjNVLM36JSbObX4n5y1jC_Yp5MwdBA0Sxw@mail.gmail.com>
+References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
+	<CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
+	<CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
+	<20211.28256.111279.27933@quad.stoffel.home>
+	<CAOh0hwPeveaEaNv_mjNVLM36JSbObX4n5y1jC_Yp5MwdBA0Sxw@mail.gmail.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2011 01:02 PM, Rajiv Andrade wrote:
->
-> Thanks, Rajiv Andrade Security Development IBM Linux Technology Center
->
-> On 22-12-2011 16:44, Tim Gardner wrote:
->> On 12/22/2011 10:42 AM, Rajiv Andrade wrote:
->>> On 20-12-2011 17:39, Tim Gardner wrote:
->>>> On 12/20/2011 09:38 AM, Rajiv Andrade wrote:
->>>>> On 06/12/11 16:29, Tim Gardner wrote:
->>>>>> There is a race betwen tpm_read() and tpm_write where both
->>>>>> chip->data_pending
->>>>>> and chip->data_buffer can be changed by tpm_write() when tpm_read()
->>>>>> clears chip->data_pending, but before tpm_read() grabs the mutex.
->>>>>>
->>>>>> Protect changes to chip->data_pending and chip->data_buffer by
->>>>>> expanding
->>>>>> the scope of chip->buffer_mutex.
->>>>>>
->>>>>> Reported-by: Seth Forshee<seth.forshee@canonical.com>
->>>>>> Cc: Debora Velarde<debora@linux.vnet.ibm.com>
->>>>>> Cc: Rajiv Andrade<srajiv@linux.vnet.ibm.com>
->>>>>> Cc: Marcel Selhorst<m.selhorst@sirrix.com>
->>>>>> Cc: tpmdd-devel@lists.sourceforge.net
->>>>>> Cc: stable@vger.kernel.org
->>>>>> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
->>>>>> ---
->>>>>> drivers/char/tpm/tpm.c | 17 +++++++++--------
->>>>>> 1 files changed, 9 insertions(+), 8 deletions(-)
->>>>>>
->>>>>> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
->>>>>> index b366b34..70bf9e5 100644
->>>>>> --- a/drivers/char/tpm/tpm.c
->>>>>> +++ b/drivers/char/tpm/tpm.c
->>>>>> @@ -1074,12 +1074,15 @@ ssize_t tpm_write(struct file *file, const
->>>>>> char __user *buf,
->>>>>> struct tpm_chip *chip = file->private_data;
->>>>>> size_t in_size = size, out_size;
->>>>>>
->>>>>> + mutex_lock(&chip->buffer_mutex);
->>>>>> +
->>>>>> /* cannot perform a write until the read has cleared
->>>>>> either via tpm_read or a user_read_timer timeout */
->>>>>> - while (atomic_read(&chip->data_pending) != 0)
->>>>>> + while (atomic_read(&chip->data_pending) != 0) {
->>>>>> + mutex_unlock(&chip->buffer_mutex);
->>>>>> msleep(TPM_TIMEOUT);
->>>>>> -
->>>>>> - mutex_lock(&chip->buffer_mutex);
->>>>>> + mutex_lock(&chip->buffer_mutex);
->>>>>> + }
->>>>>>
->>>>>> if (in_size> TPM_BUFSIZE)
->>>>>> in_size = TPM_BUFSIZE;
->>>>>> @@ -1112,22 +1115,20 @@ ssize_t tpm_read(struct file *file, char
->>>>>> __user *buf,
->>>>>>
->>>>>> del_singleshot_timer_sync(&chip->user_read_timer);
->>>>>> flush_work_sync(&chip->work);
->>>>>> - ret_size = atomic_read(&chip->data_pending);
->>>>>> - atomic_set(&chip->data_pending, 0);
->>>>>> + mutex_lock(&chip->buffer_mutex);
->>>>>> + ret_size = atomic_xchg(&chip->data_pending, 0);
->>>>>> if (ret_size> 0) { /* relay data */
->>>>>> ssize_t orig_ret_size = ret_size;
->>>>>> if (size< ret_size)
->>>>>> ret_size = size;
->>>>>>
->>>>>> - mutex_lock(&chip->buffer_mutex);
->>>>>> rc = copy_to_user(buf, chip->data_buffer, ret_size);
->>>>>> memset(chip->data_buffer, 0, orig_ret_size);
->>>>>> if (rc)
->>>>>> ret_size = -EFAULT;
->>>>>
->>>>> What about just moving atomic_set(&chip->data_pending, 0); to here?
->>>>> If I'm not missing anything, this would be cleaner.
->>>>>
->>>>> Rajiv
->>>>
->>>> I'm not sure I agree. Moving just that statement doesn't close the
->>>> race. Perhaps you could send me your version of this patch so that its
->>>> clear what you are suggesting.
->>>>
->>>> rtg
->>> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
->>> index 6a8771f..6a37212b 100644
->>> --- a/drivers/char/tpm/tpm.c
->>> +++ b/drivers/char/tpm/tpm.c
->>> @@ -1210,7 +1210,6 @@ ssize_t tpm_read(struct file *file, char __user
->>> *buf,
->>> del_singleshot_timer_sync(&chip->user_read_timer);
->>> flush_work_sync(&chip->work);
->>> ret_size = atomic_read(&chip->data_pending);
->>> - atomic_set(&chip->data_pending, 0);
->>> if (ret_size> 0) { /* relay data */
->>> if (size< ret_size)
->>> ret_size = size;
->>> @@ -1223,6 +1222,7 @@ ssize_t tpm_read(struct file *file, char __user
->>> *buf,
->>> mutex_unlock(&chip->buffer_mutex);
->>> } + atomic_set(&chip->data_pending, 0);
->>> return ret_size;
->>> }
->>>
->>> If we reset chip->data_pending after the buffer was copied to userspace,
->>> it's guaranteed that tpm_write() won't touch such buffer before
->>> tpm_read()
->>> handles it, given it polls chip->data_pending first.
->>>
->>
->> NAK - this patch makes it worse (if I'm reading your email client
->> garbled patch correctly). Now it races with tpm_write() as well as
->> timeout_work(). You cannot futz with chip->data_pending outside of the
->> exclusion zones. Consider what will happen if a user process just
->> loops doing reads. chip->data_pending gets cleared every time
->> tpm_read() is called, regardless of what tpm_write() or timeout_work()
->> are doing at the time.
->
-> Not sure how it's displaying for you, but your mail client is eating all
-> whitespaces when sending. Look back here what I said:
->
-> http://marc.info/?l=tpmdd-devel&m=132439922903276&w=2
->
+>>>>> "Gaurav" == Gaurav Saxena <grvsaxena419@gmail.com> writes:
 
-You're right. I'm not sure whats going on with my Thunderbird client, 
-but it appears to be a change in behavior. I've been using this specific 
-instance since Ubuntu 10.04 was released.
+Gaurav> Hello John,
+Gaurav> On Thu, Dec 22, 2011 at 11:22 PM, John Stoffel <john@stoffel.org> wrote:
+>>>>>>> "Gaurav" == Gaurav Saxena <grvsaxena419@gmail.com> writes:
+>> 
+>>>> Intercepting system calls is very bad, don't do it.
+>> 
+Gaurav> Oh. I will not do it then, could you suggest me something so
+Gaurav> that I could prevent unlink on some file say using kernel
+Gaurav> support. I want to save file on unlink how could I do that
+Gaurav> without kernel support, or how could I do that using a kernel
+Gaurav> module.
+>> 
+>> Write a FUSE module to mount the filesystem through, inside your FUSE
+>> module you can intercept the unlink/truncate/write calls and decide
+>> what you want to have happen.
 
-> It's inside the mutex region.
->
+Gaurav> I would like to write it differently for each type of filesystem ?
+Gaurav> Because what operations to call after my function depends on this.
+Gaurav> Also Can I mount "/" in this way ?
 
-Actually, the patch you sent (https://lkml.org/lkml/2011/12/22/257) is 
-_outside_ the mutex area, but I got your drift.
+Sounds like you really want to use inotify() then, but intercepting
+calls to write/truncate/unlink isn't going to be easy to handle across
+a large spectrum of filesystems without a bunch of hacking.  
 
-Even clearing chip->data_pending _inside_ the mutex area, I'm not sure 
-it closes all of the race windows. I think its still possible to race 
-with mod_timer() and del_singleshot_timer_sync(). Therein lies my point, 
-if the exclusion code is not _obviously_ correct for something this 
-simple, then its probably not. I think my patch is the correct approach.
+Maybe if you can explain your requirements more clearly, with an
+example of what you're trying to accomplish, then people could help
+you more.
 
-> This would require another fix though. tpm_write() doesn't check
-> tpm_transmit return code (and it should).
-> In case it returns an error (< 0), chip->data_pending would remain the
-> same forever with that change.
->
+Also, it might be more appropriate to talk to the 'fs-devel' mailing
+list.  I think it's on kernel.org, but not sure.
 
-This observation is also correct, but not relevant to the exclusion 
-races. It deserves a separate patch.
+John
 
-<snip>
--- 
-Tim Gardner tim.gardner@canonical.com
