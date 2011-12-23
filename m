@@ -1,97 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab1LWKxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 05:53:45 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42779 "EHLO mx3.mail.elte.hu"
+	id S1756700Ab1LWKz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 05:55:57 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43021 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756635Ab1LWKxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 05:53:40 -0500
-Date: Fri, 23 Dec 2011 11:51:28 +0100
+	id S1754069Ab1LWKzz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 05:55:55 -0500
+Date: Fri, 23 Dec 2011 11:53:57 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Frank Rowand <frank.rowand@am.sony.com>
-Cc: Mathieu Desnoyers <compudj@krystal.dyndns.org>, Greg KH <greg@kroah.com>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lttng-dev@lists.lttng.org" <lttng-dev@lists.lttng.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Avi Kivity <avi@redhat.com>, Robert Richter <robert.richter@amd.com>,
+        Benjamin Block <bebl@mageta.org>,
+        Hans Rosenfeld <hans.rosenfeld@amd.com>, hpa@zytor.com,
+        tglx@linutronix.de, suresh.b.siddha@intel.com, eranian@google.com,
+        brgerst@gmail.com, Andreas.Herrmann3@amd.com, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Benjamin Block <benjamin.block@amd.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [lttng-dev] [PATCH 09/11] sched: export task_prio to GPL modules
-Message-ID: <20111223105128.GF4749@elte.hu>
-References: <1322780830.4699.62.camel@twins>
- <20111201231751.GA4961@kroah.com>
- <20111205141749.GC28866@elte.hu>
- <20111206214446.GD1247@kroah.com>
- <20111208052354.GC9485@elte.hu>
- <20111208232709.GA19820@kroah.com>
- <20111219104915.GA19861@elte.hu>
- <20111219153053.GA21548@Krystal>
- <20111220110813.GA19105@elte.hu>
- <4EF10237.8040700@am.sony.com>
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC 4/5] x86, perf: implements lwp-perf-integration (rc1)
+Message-ID: <20111223105357.GG4749@elte.hu>
+References: <20111220091511.GB3091@elte.hu>
+ <4EF05996.8030807@redhat.com>
+ <20111220100916.GA20788@elte.hu>
+ <20111220152758.GA30127@8bytes.org>
+ <20111220184004.GE8408@elte.hu>
+ <20111221000716.GB30127@8bytes.org>
+ <20111221123442.GB6071@elte.hu>
+ <4EF1D4B6.3020408@redhat.com>
+ <20111221132233.GB31186@elte.hu>
+ <20111221224900.GD30127@8bytes.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EF10237.8040700@am.sony.com>
+In-Reply-To: <20111221224900.GD30127@8bytes.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
 	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
 	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frank Rowand <frank.rowand@am.sony.com> wrote:
+* Joerg Roedel <joro@8bytes.org> wrote:
 
-> On 12/20/11 03:08, Ingo Molnar wrote:
+> On Wed, Dec 21, 2011 at 02:22:33PM +0100, Ingo Molnar wrote:
 > > 
-> > (Cc:-ing Arnaldo on this as well.)
+> > * Avi Kivity <avi@redhat.com> wrote:
+> > > I hate to re-enter this thread, but this "niche use case" is 
+> > > exactly what LWP is designed for. [...]
 > > 
-> > * Mathieu Desnoyers <compudj@krystal.dyndns.org> wrote:
-> > 
+> > It's not the only usecase that it can be used in, and that is 
+> > what matters to me.
 > 
-> < snip >
-> 
-> > I think your concentration on ABIs is missing a very fundamental 
-> > property of instrumentation:
-> > 
-> >   the life-time and persistence of instrumentation data is 
-> >   typically very short ('days' is already an exception - typical 
-> >   is minutes, at most hours), and for that reason we havent been 
-> >   getting much pressure from users to maintain a perf.data ABI - 
-> >   but we are doing it nevertheless.
-> > 
-> > Instrumentation is fundamentally about the 'here and now' and so 
-> > it fundamentally differs from things like backup formats and 
-> > database formats. An ABI does not hurt and we are maintaining 
-> > it, but you are overrating its importance significantly.
-> 
-> Just to provide visibility to a different use case...
-> 
-> The life time of my data is typically weeks, months, or years 
-> (though I am not likely to re-process year old raw data).
+> The really sad thing about it is, that this only matters to 
+> you. [...]
 
-I'm not saying that it's absolutely never done: for example 
-monitoring/logging on a production box and evaluating events 
-only once per month would certainly qualify.
-
-I just say that the overwhelming majority of usecases utilize 
-traces on a short time-span and that we must keep the common 
-usecase in mind when supporting not so common usecases.
-
-It's the same deal as with -rt: compared to the 'normal' usage 
-of Linux -rt is somewhat of a special case - yet it's still 
-something very much worth doing, as long as the main usecase is 
-always kept in mind.
+What the hell are you talking about? Precise, skid-free profiles 
+matter to pretty much *every* single developer profiling 
+user-space code on AMD CPUs. That you are not representing them 
+properly in this thread qualifies you, not me.
 
 Thanks,
 
