@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab1LWRIH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 12:08:07 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57666 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab1LWRIE (ORCPT
+	id S1757511Ab1LWRKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 12:10:10 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:60285 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab1LWRKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 12:08:04 -0500
+	Fri, 23 Dec 2011 12:10:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111223145014.4bb74f30@pyx>
-References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
- <CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
- <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
- <20211.28256.111279.27933@quad.stoffel.home> <20111223145014.4bb74f30@pyx>
-From: Gaurav Saxena <grvsaxena419@gmail.com>
-Date: Fri, 23 Dec 2011 22:37:32 +0530
-Message-ID: <CAOh0hwNt7bDf5zJy086U=QcMa_5HCMv_KOKmeGnisb8hF3Eujw@mail.gmail.com>
-Subject: Re: Intercepting system calls
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: John Stoffel <john@stoffel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <CAB2ybb_XcwLd8fx+vvditt+MUq2L2+WmsUpxH-gBKsbrVk7jGA@mail.gmail.com>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+	<CAF6AEGtOjO6Z6yfHz-ZGz3+NuEMH2M-8=20U6+-xt-gv9XtzaQ@mail.gmail.com>
+	<20111220171437.GC3883@phenom.ffwll.local>
+	<201112211727.17104.arnd@arndb.de>
+	<CAB2ybb_XcwLd8fx+vvditt+MUq2L2+WmsUpxH-gBKsbrVk7jGA@mail.gmail.com>
+Date: Fri, 23 Dec 2011 11:10:07 -0600
+Message-ID: <CAF6AEGtGR0-vtfrP4i++kBxb2wGgGzv2MDu-K3CjmhEBXQyDnA@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
+ sharing mechanism
+From: Rob Clark <robdclark@gmail.com>
+To: "Semwal, Sumit" <sumit.semwal@ti.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Daniel Vetter <daniel@ffwll.ch>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux@arm.linux.org.uk,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        linux-media@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan
-
-On Fri, Dec 23, 2011 at 8:20 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Write a FUSE module to mount the filesystem through, inside your FUSE
->> module you can intercept the unlink/truncate/write calls and decide
->> what you want to have happen.
+On Fri, Dec 23, 2011 at 4:00 AM, Semwal, Sumit <sumit.semwal@ti.com> wrote:
+> On Wed, Dec 21, 2011 at 10:57 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Tuesday 20 December 2011, Daniel Vetter wrote:
+>>> > I'm thinking for a first version, we can get enough mileage out of it by saying:
+>>> > 1) only exporter can mmap to userspace
+>>> > 2) only importers that do not need CPU access to buffer..
 >
-> Using fanotify and/or a custom security module (or selinux rules) might
-> well also be a cleaner way to do it, depending what is actually intended.
->
-> Trying to do stuff like archive 'old versions' isn't just about unlink
-> however because many programs update the inplace file rather than
-> unlink/replace.
-I will see what SELinux offers but as far as I know I would need a
-kernel recompile/ reinstall for that which most of the users would
-avoid. I would still try doing these if I don't find any other way,
-but still kprobes seemed a better way but ubuntu kernel does not
-enable them.
+> Thanks Rob - and the exporter can do the mmap outside of dma-buf
+> usage, right?
 
+Yes
 
--- 
-Thanks and Regards ,
-Gaurav
+> I mean, we don't need to provide an mmap to dma_buf()
+> and restrict it to exporter, when the exporter has more 'control' of
+> the buffer anyways.
+
+No, if it is only for the exporter, it really doesn't need to be in
+dmabuf (ie. the exporter already knows how he is)
+
+BR,
+-R
+
+>>
+> BR,
+> ~Sumit.
