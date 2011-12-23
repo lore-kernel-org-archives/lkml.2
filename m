@@ -1,106 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753402Ab1LWIJL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 03:09:11 -0500
-Received: from mga14.intel.com ([143.182.124.37]:12199 "EHLO mga14.intel.com"
+	id S1753801Ab1LWI6k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 03:58:40 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:44265 "EHLO mx2.parallels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751680Ab1LWIJI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 03:09:08 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="50029018"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-CC: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Jiang, Yunhong" <yunhong.jiang@intel.com>,
-        "jeremy.fitzhardinge@citrix.com" <jeremy.fitzhardinge@citrix.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: RE: [Xen-devel] Linux 3.1.0 Xen RAS rebase
-Thread-Topic: [Xen-devel] Linux 3.1.0 Xen RAS rebase
-Thread-Index: AQHMwR/TW8DpiUUASEeT9gUPm1anxpXo9axg
-Date: Fri, 23 Dec 2011 08:08:58 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335943F@SHSMSX101.ccr.corp.intel.com>
-References: <DE8DF0795D48FD4CA783C40EC829233587C7@SHSMSX101.ccr.corp.intel.com>
- <20111223030608.GB7218@andromeda.dapyr.net>
-In-Reply-To: <20111223030608.GB7218@andromeda.dapyr.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752437Ab1LWI6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 03:58:31 -0500
+Message-ID: <4EF4428D.6010103@parallels.com>
+Date: Fri, 23 Dec 2011 12:57:49 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
+To: Jason Baron <jbaron@redhat.com>
+CC: <davem@davemloft.net>, <linux-kernel@vger.kernel.org>,
+        <paul@paulmenage.org>, <lizf@cn.fujitsu.com>,
+        <kamezawa.hiroyu@jp.fujitsu.com>, <ebiederm@xmission.com>,
+        <gthelen@google.com>, <netdev@vger.kernel.org>, <linux-mm@kvack.org>,
+        <kirill@shutemov.name>, <avagin@parallels.com>, <devel@openvz.org>,
+        <eric.dumazet@gmail.com>, <cgroups@vger.kernel.org>
+Subject: Re: [PATCH v9 3/9] socket: initial cgroup code.
+References: <1323676029-5890-1-git-send-email-glommer@parallels.com> <1323676029-5890-4-git-send-email-glommer@parallels.com> <20111222211028.GB3916@redhat.com>
+In-Reply-To: <20111222211028.GB3916@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk wrote:
-> On Thu, Dec 22, 2011 at 09:57:55AM +0000, Liu, Jinsong wrote:
->> Recently we did dom0 Xen RAS rebase work.
-> 
-> Hey Liu,
-> 
-> Thank you for posting this. Couple of questions:
->  1). How does one test these patches?
+On 12/23/2011 01:10 AM, Jason Baron wrote:
+> On Mon, Dec 12, 2011 at 11:47:03AM +0400, Glauber Costa wrote:
+>> +
+>> +static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
+>> +void sock_update_memcg(struct sock *sk)
+>> +{
+>> +	/* A socket spends its whole life in the same cgroup */
+>> +	if (sk->sk_cgrp) {
+>> +		WARN_ON(1);
+>> +		return;
+>> +	}
+>> +	if (static_branch(&memcg_socket_limit_enabled)) {
+>> +		struct mem_cgroup *memcg;
+>> +
+>> +		BUG_ON(!sk->sk_prot->proto_cgroup);
+>> +
+>> +		rcu_read_lock();
+>> +		memcg = mem_cgroup_from_task(current);
+>> +		if (!mem_cgroup_is_root(memcg)) {
+>> +			mem_cgroup_get(memcg);
+>> +			sk->sk_cgrp = sk->sk_prot->proto_cgroup(memcg);
+>> +		}
+>> +		rcu_read_unlock();
+>> +	}
+>> +}
+>> +EXPORT_SYMBOL(sock_update_memcg);
+>> +
+>> +void sock_release_memcg(struct sock *sk)
+>> +{
+>> +	if (static_branch(&memcg_socket_limit_enabled)&&  sk->sk_cgrp) {
+>> +		struct mem_cgroup *memcg;
+>> +		WARN_ON(!sk->sk_cgrp->memcg);
+>> +		memcg = sk->sk_cgrp->memcg;
+>> +		mem_cgroup_put(memcg);
+>> +	}
+>> +}
+>
+> Hi Glauber,
+>
+> I think for 'sock_release_memcg()', you want:
+>
+> static inline sock_release_memcg(sk)
+> {
+> 	if (static_branch())
+> 		__sock_release_memcg();
+> }
+>
+> And then re-define the current sock_release_memcg ->  __sock_release_memcg().
+> In that way the straight line path is a single no-op. As currently
+> written, there is function call and then an immediate return.
+>
 
-These patches include mce, cpu online/offline, cpu hotadd, memory hotadd.
-Testing method of these features are
-1. mce: a normal way is to inject error through EINJ user interface, and getting mcelog at dom0 side
-2. cpu online/offline: by echoing sysfs/.../xen_pcpu user interface, and getting result at sysfs/.../xen_pcpu
-3. cpu hotadd: Intel has some new server, by pressing a button can add cpu. We can verify cpu hotadd by sysfs/.../xen_pcpu interface
-4. memory hotadd: also by pressing a button to add memory, and can verify memory hotadd by 'xl info'
+Hello Jason,
 
->  2). Please CC LKML and also the ACPI maintainer - since a majority
->      of this also touch their tree. And the memory hotadd maintainer
->      as well.
-
-OK, cc
-LKML
-ACPI maintainer: len.brown@intel.com
-memory hotadd maintianer: I'm not sure who is maintainer, but I will cc yakui.zhao@intel.com and len.brown@intel.com
-
-I'll re-send the patches later, cc above people.
-
->  3). Can any of this code (like the MCE) leverage the existing
->      generic code?
-
-Basically no, for mce, xen implement mce logic at hypervisor,
-at dom0 side, it only add mcelog interface to get log from hypervisor and transfer to kernel mcelog format.
-
->  4). Have you guys talked with Len Brown (the ACPI maintainer)
->      about some of this code and how to make it fit within his
->      goals?
-
-Not yet, but will.
-
-Thanks,
-Jinsong
-
-> 
-> Thanks!
->> 
->> Basically it rebased from Jeremy's pvops (2.6.32), to Konrad's pvops
->> (3.1.0, branch "devel/acpi-cpufreq.v3") patch 1: for mcelog logic
->> patch 2: for dom0 vmce 
->> patch 3: for cpu sysfs and cpu online/offline
->> patch 4: for cpu hotadd
->> patch 5: for memory hotadd prepare work
->> patch 6: for memory hotadd
->> patch 7: for cpu hotadd prepare work
->> patch 8: complement cpu hotadd lacked at Konrad's tree
->> patch 9: update PM logic
->> patch 10: upate cpu online/offline logic
->> 
->> 
->> Thanks,
->> Jinsong
->> _______________________________________________
->> Xen-devel mailing list
->> Xen-devel@lists.xensource.com
->> http://lists.xensource.com/xen-devel
+Thanks for the tip. I may be wrong here, but I don't think that the 
+release performance matters to that level. But your suggestion seems 
+good nevertheless. Since this is already sitting on a tree, would you 
+like to send a patch for that?
 
