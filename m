@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab1LXWVv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 17:21:51 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:13959 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753416Ab1LXWVX (ORCPT
+	id S1754926Ab1LXWzb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 17:55:31 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47310 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab1LXWz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 17:21:23 -0500
-X-Authority-Analysis: v=2.0 cv=T8IOvo2Q c=1 sm=0 a=QETZmXXmyubuBiJjAgCHWw==:17 a=YU8HmM6wsVwA:10 a=ayC55rCoAAAA:8 a=ersyLoyZyrwa3_OOiu8A:9 a=XxWkru6UDOmNnCge:21 a=SK3LtTMDP6ayuSf5:21 a=QETZmXXmyubuBiJjAgCHWw==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 97.103.252.48
-From: Phillip Susi <psusi@cfl.rr.com>
-To: vgoyal@redhat.com
-Cc: joe@perches.com, kzak@redhat.com, linux-kernel@vger.kernel.org,
-        jaxboe@fusionio.com, Phillip Susi <psusi@cfl.rr.com>
-Subject: [PATCH 2/2] Add BLKPG_GET_PARTITION operation
-Date: Sat, 24 Dec 2011 17:21:15 -0500
-Message-Id: <1324765275-2091-2-git-send-email-psusi@cfl.rr.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1324765275-2091-1-git-send-email-psusi@cfl.rr.com>
-References: <4EF645DC.3000202@cfl.rr.com>
- <1324765275-2091-1-git-send-email-psusi@cfl.rr.com>
+	Sat, 24 Dec 2011 17:55:29 -0500
+Date: Sat, 24 Dec 2011 22:55:25 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: file locking fix for 3.2
+Message-ID: <20111224225525.GR23916@ZenIV.linux.org.uk>
+References: <20111224215012.GA23495@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111224215012.GA23495@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new operation to the BLKPG ioctl to read the partition.
-This allows user space to find the current start and length
-of a partition without having to open the partition and use
-the long depreciated HDIO_GETGEO ioctl.
+On Sat, Dec 24, 2011 at 04:50:12PM -0500, J. Bruce Fields wrote:
 
-Signed-off-by: Phillip Susi <psusi@cfl.rr.com>
----
- block/ioctl.c         |   15 +++++++++++++++
- include/linux/blkpg.h |    1 +
- 2 files changed, 16 insertions(+), 0 deletions(-)
+>     locks: fix null dereference on lease-break failure path
+>     
+>     Commit 778fc546f749c588aa2f6cd50215d2715c374252 "locks: fix tracking of
+>     inprogress lease breaks" introduced a null dereference on failure to
+>     allocate memory.
+>     
+>     This means an open (without O_NONBLOCK set) on a file with a lease
+>     applied (generally only done when Samba or nfsd (with v4) is running)
+>     could crash if a kmalloc() fails.
 
-diff --git a/block/ioctl.c b/block/ioctl.c
-index 08b2bd6..fad9064 100644
---- a/block/ioctl.c
-+++ b/block/ioctl.c
-@@ -141,6 +141,21 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
- 			bdput(bdevp);
- 			disk_put_part(part);
- 			return 0;
-+		case BLKPG_GET_PARTITION:
-+			mutex_lock(&bdev->bd_mutex);
-+			part = disk_get_part(disk, partno);
-+			if (!part)
-+			{
-+				mutex_unlock(&bdev->bd_mutex);
-+				return -ENXIO;
-+			}
-+			p.start = part->start_sect << 9;
-+			p.length = part->nr_sects << 9;
-+			disk_put_part(part);
-+			mutex_unlock(&bdev->bd_mutex);
-+			if (copy_to_user(a.data, &p, sizeof(struct blkpg_partition)))
-+				return -EFAULT;
-+			return 0;
- 		default:
- 			return -EINVAL;
- 	}
-diff --git a/include/linux/blkpg.h b/include/linux/blkpg.h
-index a851944..72bf5e2 100644
---- a/include/linux/blkpg.h
-+++ b/include/linux/blkpg.h
-@@ -41,6 +41,7 @@ struct blkpg_ioctl_arg {
- #define BLKPG_ADD_PARTITION	1
- #define BLKPG_DEL_PARTITION	2
- #define BLKPG_RESIZE_PARTITION	3
-+#define BLKPG_GET_PARTITION	4
- 
- /* Sizes of name fields. Unused at present. */
- #define BLKPG_DEVNAMELTH	64
--- 
-1.7.5.4
-
+NULL?  AFAICS, lease_alloc() returns ERR_PTR() on failure...  I really
+don't like the look of that code, TBH - at the very least it needs to
+be commented a lot.  E.g. the rules for calling or not calling ->lm_break()
+are really not obvious - AFAICS, we do that if
+	i_have_this_lease || (mode & O_NONBLOCK)
+is true *or* if allocation has succeeded.  The former condition is what'll
+end up with -EWOULDBLOCK; I can understand not wanting to return that in
+preference to -ENOMEM, but...  Do we want to skip ->lm_break() stuff only
+in case of allocation failures that won't be overridden by -EWOULDBLOCK?
