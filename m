@@ -1,83 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab1LXCff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 21:35:35 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:48072 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754817Ab1LXCfd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 21:35:33 -0500
-Date: Sat, 24 Dec 2011 03:35:29 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: rostedt@goodmis.org, mingo@redhat.com, paulus@samba.org,
-        acme@ghostprotocols.net, a.p.zijlstra@chello.nl,
-        linux-kernel@vger.kernel.org, aarapov@redhat.com
-Subject: Re: [PATCHvFIXED 7/7] ftrace, perf: Add filter support for function
- trace event
-Message-ID: <20111224023527.GE28309@somewhere.redhat.com>
-References: <1324468136-3997-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-1-git-send-email-jolsa@redhat.com>
- <1324493791-5688-8-git-send-email-jolsa@redhat.com>
- <20111221220756.GL17668@somewhere>
- <20111222125558.GB1646@m.brq.redhat.com>
- <20111222152609.GC1646@m.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111222152609.GC1646@m.brq.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755494Ab1LXDAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 22:00:31 -0500
+Received: from shutemov.name ([188.40.19.243]:42416 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754656Ab1LXDAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 22:00:25 -0500
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [PATCH 2/6] memcg: mark more functions/variables as static
+Date: Sat, 24 Dec 2011 05:00:15 +0200
+Message-Id: <1324695619-5537-2-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.4.5
+In-Reply-To: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
+References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 04:26:09PM +0100, Jiri Olsa wrote:
-> On Thu, Dec 22, 2011 at 01:55:58PM +0100, Jiri Olsa wrote:
-> > On Wed, Dec 21, 2011 at 11:07:58PM +0100, Frederic Weisbecker wrote:
-> > > On Wed, Dec 21, 2011 at 07:56:31PM +0100, Jiri Olsa wrote:
-> > > > Adding support to filter function trace event via perf
-> > > > interface. It is now possible to use filter interface
-> > > > in the perf tool like:
-> > > > 
-> > > >   perf record -e ftrace:function --filter="(ip == mm_*)" ls
-> > > > 
-> > > > The filter syntax is restricted to the the 'ip' field only,
-> > > > and following operators are accepted '==' '!=' '||', ending
-> > > > up with the filter strings like:
-> > > > 
-> > > >   "ip == f1 f2 ..." || "ip != f3 f4 ..." ...
-> > > 
-> > > Having the functions seperated like this sort of violates the
-> > > grammar of the filtering interface.
-> > > 
-> > > The typical way to do this would have been to stringify the
-> > > functions: ip == "f1 f2"
-> > > 
-> > > I feel a bit uncomfortable with "ip == f1 f2" scheme but perhaps
-> > > we can live with that. Especially as otherwise that would
-> > > require us to type "ip == \"f1 f2\"" for the whole filtering expression.
-> > 
-> > ugh, just realized there's a problem with this in the patch actually,
-> > and it's not working as expected. I'll send out new version soon.. 
-> > 
-> > thanks,
-> > jirka
-> > 
-> > > 
-> > > Thoughts?
-> 
-> how about this one.. ;)
-> 
-> for some reason I presumed ftrace_set_filter would deal with ' '
-> as a filter separator.. but it needs to be done before we use
-> this function... (ftrace_set_notrace respectively)
-> 
-> so now you could use one of following:
-> 
-> perf record -e ftrace:function --filter '(ip == do_execve,sys_*,ext*)' ls
-> perf record -e ftrace:function --filter '(ip == "do_execve,sys_*,ext*")' ls
-> perf record -e ftrace:function --filter '(ip == "do_execve sys_* ext*")' ls
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-Nice! ;)
+Based on sparse output.
 
-Thanks!
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ mm/memcontrol.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index a5e92bd..4bac3a2 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -59,7 +59,7 @@
+ 
+ struct cgroup_subsys mem_cgroup_subsys __read_mostly;
+ #define MEM_CGROUP_RECLAIM_RETRIES	5
+-struct mem_cgroup *root_mem_cgroup __read_mostly;
++static struct mem_cgroup *root_mem_cgroup __read_mostly;
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+@@ -1573,7 +1573,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+  * unused nodes. But scan_nodes is lazily updated and may not cotain
+  * enough new information. We need to do double check.
+  */
+-bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
++static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
+ {
+ 	int nid;
+ 
+@@ -1608,7 +1608,7 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *memcg)
+ 	return 0;
+ }
+ 
+-bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
++static bool mem_cgroup_reclaimable(struct mem_cgroup *memcg, bool noswap)
+ {
+ 	return test_mem_cgroup_node_reclaimable(memcg, 0, noswap);
+ }
+@@ -1782,7 +1782,7 @@ static void memcg_oom_recover(struct mem_cgroup *memcg)
+ /*
+  * try to call OOM killer. returns false if we should exit memory-reclaim loop.
+  */
+-bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
++static bool mem_cgroup_handle_oom(struct mem_cgroup *memcg, gfp_t mask)
+ {
+ 	struct oom_wait_info owait;
+ 	bool locked, need_to_kill;
+@@ -3765,7 +3765,7 @@ try_to_free:
+ 	goto move_account;
+ }
+ 
+-int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
++static int mem_cgroup_force_empty_write(struct cgroup *cont, unsigned int event)
+ {
+ 	return mem_cgroup_force_empty(mem_cgroup_from_cont(cont), true);
+ }
+@@ -4044,7 +4044,7 @@ struct mcs_total_stat {
+ 	s64 stat[NR_MCS_STAT];
+ };
+ 
+-struct {
++static struct {
+ 	char *local_name;
+ 	char *total_name;
+ } memcg_stat_strings[NR_MCS_STAT] = {
+-- 
+1.7.7.3
+
