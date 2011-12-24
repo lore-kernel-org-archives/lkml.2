@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754900Ab1LXVgf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 16:36:35 -0500
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:27246 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab1LXVgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 16:36:31 -0500
-X-Authority-Analysis: v=2.0 cv=APbyNIPv c=1 sm=0 a=QETZmXXmyubuBiJjAgCHWw==:17 a=acFpV6Ajmw0A:10 a=LNmbJxpDd3oA:10 a=8nJEP1OIZ-IA:10 a=xe8BsctaAAAA:8 a=UMrV0lYrjPYvGOAw_lkA:9 a=wPNLvfGTeEIA:10 a=QETZmXXmyubuBiJjAgCHWw==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 97.103.252.48
-Message-ID: <4EF645DC.3000202@cfl.rr.com>
-Date: Sat, 24 Dec 2011 16:36:28 -0500
-From: Phillip Susi <psusi@cfl.rr.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1756004Ab1LXVuU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 16:50:20 -0500
+Received: from fieldses.org ([174.143.236.118]:40861 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751819Ab1LXVuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Dec 2011 16:50:15 -0500
+Date: Sat, 24 Dec 2011 16:50:12 -0500
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: file locking fix for 3.2
+Message-ID: <20111224215012.GA23495@fieldses.org>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: joe@perches.com, kzak@redhat.com, linux-kernel@vger.kernel.org,
-        jaxboe@fusionio.com
-Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
-References: <4EE6990A.9010202@cfl.rr.com> <1323735382-5972-1-git-send-email-psusi@cfl.rr.com> <20111219202527.GF7175@redhat.com> <4EF13C30.4050307@cfl.rr.com> <20111221204641.GB27789@redhat.com>
-In-Reply-To: <20111221204641.GB27789@redhat.com>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Please pull the following change from the for-3.2 branch at:
 
-On 12/21/2011 03:46 PM, Vivek Goyal wrote:
-> I guess taking disk mutex will help us providing mutual exclusion between
-> multiple ioctls or multiple instances of same ioctl. Like, while you are
-> extending a partition and checking for overlap, you don't want another call
-> making progress on next partition which might overlap with this partition.
+	git://linux-nfs.org/~bfields/linux.git for-3.2
 
-Good point; I will put it back and grab it in the correct order.
+One small 3.2 regression in the file-locking code.  Seems like an
+unlikely bug (null dereference on kmalloc failure), but the fix is a
+one-liner.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+--b.
 
-iQEcBAEBAgAGBQJO9kXcAAoJEJrBOlT6nu75NcMH/jC8YXfpB6jnCjKtPxP2Hw8G
-vRfCULFi3h8WQbRmhR4AvayMJfwTYNkA/QB7TxZ0bYEm8SawesJuVyAKWLe1qutB
-AFUEFL6d8+lt8vMcpsK1LWFBACEPd2TIN+oMttbaLTm2J+SOotnCdkKk691cIX8g
-PtxEIeAB3NBBxfJ8hJUee3CQb4E0yg7zefdBEctLUC5Y3bKzAHtD5OvboyWf6Ycj
-4+VONmaBwHS10hvXnk1CjLJXgjVs5lG+gKniW29SqdnKFbZ3zGl7Ye+QyUyjH9FU
-xltg/a+qV5Zx2e3EAi3uTkqaSUgsgo4dCKdCIAmR5+FyhbooJV8xV4d4rdMJvFU=
-=taVc
------END PGP SIGNATURE-----
+J. Bruce Fields (1):
+      locks: fix null dereference on lease-break failure path
+
+ fs/locks.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit b67e18a8e3425725cc17cc7633bccb06fb3c9eda
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Mon Dec 19 17:57:11 2011 -0500
+
+    locks: fix null dereference on lease-break failure path
+    
+    Commit 778fc546f749c588aa2f6cd50215d2715c374252 "locks: fix tracking of
+    inprogress lease breaks" introduced a null dereference on failure to
+    allocate memory.
+    
+    This means an open (without O_NONBLOCK set) on a file with a lease
+    applied (generally only done when Samba or nfsd (with v4) is running)
+    could crash if a kmalloc() fails.
+    
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 3b0d05d..96a487a 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1214,8 +1214,8 @@ int __break_lease(struct inode *inode, unsigned int mode)
+ 	if ((flock == NULL) || !IS_LEASE(flock))
+ 		goto out;
+ 
+-	if (!locks_conflict(flock, new_fl))
+-		goto out;
++	if (flock->fl_type == F_RDLCK && !want_write)
++		goto out; /* no conflict */
+ 
+ 	for (fl = flock; fl && IS_LEASE(fl); fl = fl->fl_next)
+ 		if (fl->fl_owner == current->files)
