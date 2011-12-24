@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753118Ab1LXF3X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 00:29:23 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42139 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab1LXF3U convert rfc822-to-8bit (ORCPT
+	id S1753556Ab1LXFrB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 00:47:01 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53881 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111Ab1LXFq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 00:29:20 -0500
-MIME-Version: 1.0
-From: Yang Bai <hamo.by@gmail.com>
-Date: Sat, 24 Dec 2011 13:28:59 +0800
-Message-ID: <CAO_0yfOpkoznd=-wG=ay+knJ0_tVwziK_6QbTHX4-0TvsiXdCw@mail.gmail.com>
-Subject: [PATCH][RESEND] KVM: fix undeclared MAY_{READ,WRITE,ACCESS}
+	Sat, 24 Dec 2011 00:46:58 -0500
+From: hamo.by@gmail.com
 To: avi@redhat.com, mtosatti@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yang Bai <hamo.by@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Cc: hamo.by@gmail.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] KVM: fix undeclared MAY_{READ,WRITE,ACCESS}
+Date: Sat, 24 Dec 2011 13:46:35 +0800
+Message-Id: <1324705595-4035-1-git-send-email-hamo.by@gmail.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 08a95a511af91a2a6c42f2a8f13b99402a39e84b checksdevice
-assignment permission but forgot to include thedefinition of
-MAY_{READ,WRITE,ACCESS} in linux/fs.hInclude it and this fix the build
-error here:http://buildbot.b1-systems.de/kvm/builders/i386/builds/401
-Signed-off-by: Yang Bai <hamo.by@gmail.com>--- virt/kvm/assigned-dev.c
-|    1 + 1 files changed, 1 insertions(+), 0 deletions(-)
-diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.cindex
-da9690e..1d9dad0 100644--- a/virt/kvm/assigned-dev.c+++
-b/virt/kvm/assigned-dev.c@@ -18,6 +18,7 @@ #include
-<linux/interrupt.h> #include <linux/slab.h> #include
-<linux/namei.h>+#include <linux/fs.h> #include "irq.h"  static struct
-kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head
-*head,-- 1.7.7.3
+From: Yang Bai <hamo.by@gmail.com>
 
+commit 08a95a511af91a2a6c42f2a8f13b99402a39e84b checks
+device assignment permission but forgot to include the
+definition of MAY_{READ,WRITE,ACCESS} in linux/fs.h
+Include it and this fix the build error here:
+http://buildbot.b1-systems.de/kvm/builders/i386/builds/401
+
+Signed-off-by: Yang Bai <hamo.by@gmail.com>
+---
+ virt/kvm/assigned-dev.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/virt/kvm/assigned-dev.c b/virt/kvm/assigned-dev.c
+index da9690e..1d9dad0 100644
+--- a/virt/kvm/assigned-dev.c
++++ b/virt/kvm/assigned-dev.c
+@@ -18,6 +18,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/slab.h>
+ #include <linux/namei.h>
++#include <linux/fs.h>
+ #include "irq.h"
+ 
+ static struct kvm_assigned_dev_kernel *kvm_find_assigned_dev(struct list_head *head,
 -- 
-    """
-    Keep It Simple,Stupid.
-    """
+1.7.7.3
 
-Chinese Name: 白杨
-Nick Name: Hamo
-Homepage: http://hamobai.com/
-GPG KEY ID: 0xA4691A33
-Key fingerprint = 09D5 2D78 8E2B 0995 CF8E  4331 33C4 3D24 A469 1A33
