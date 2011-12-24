@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab1LXMhS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 07:37:18 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:42109 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230Ab1LXMhP (ORCPT
+	id S1754884Ab1LXMyf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 07:54:35 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46549 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752916Ab1LXMyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 07:37:15 -0500
-Date: Sat, 24 Dec 2011 12:37:13 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-Cc: linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, eric.miao@linaro.org,
-        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>
-Subject: Re: [PATCHv2] Regulator: Add Anatop regulator driver
-Message-ID: <20111224123713.GB13778@sirena.org.uk>
-References: <1323265998-29088-2-git-send-email-paul.liu@linaro.org>
- <1324458211-1612-1-git-send-email-paul.liu@linaro.org>
- <20111222113337.GL4546@opensource.wolfsonmicro.com>
+	Sat, 24 Dec 2011 07:54:33 -0500
+Date: Sat, 24 Dec 2011 12:54:16 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: a.p.zijlstra@chello.nl
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: perf event group siblings not counting in mainline
+Message-ID: <20111224125415.GA14559@mudshark.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111222113337.GL4546@opensource.wolfsonmicro.com>
-X-Cookie: Justice, n.:
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 11:33:38AM +0000, Mark Brown wrote:
-> On Wed, Dec 21, 2011 at 05:03:31PM +0800, Ying-Chun Liu (PaulLiu) wrote:
+Hi Peter,
 
-> > +	if (anatop_reg->rdata->control_reg) {
-> > +		val = anatop_reg->rdata->min_bit_val +
-> > +			(uv - reg->constraints->min_uV) / 25000;
+If I try using perf with event groups on a mainline kernel, only the group
+leader counts:
 
-> You're not checking that the resulting voltage matches the constraints
-> or updating selector.
 
-Also on re-reading this looks *very* broken - you're using the
-constraints value in your set_voltage() operation.  The runtime
-constraints a system has should have *no* impact on the way you ask for
-a specific voltage from the regulator.
+linaro@mashed-potato:~$ perf stat --no-scale -g -e task-clock -e cpu-clock -e cs -- ls
+hwb  linux
+
+ Performance counter stats for 'ls':
+
+         17.545541 task-clock                #    0.634 CPUs utilized
+          0.000000 cpu-clock
+                 0 cs                        #    0.000 M/sec
+
+       0.027684984 seconds time elapsed
+
+
+This is fixed by b79387ef ("perf: Fix enable_on_exec for sibling events")
+in -next (20111222) but I can't see this queued anywhere for 3.2 (I thought
+I might see it in -rc7).
+
+Is this going in for the final cut, or will groups just be borked until 3.3?
+
+Cheers,
+
+Will
