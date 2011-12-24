@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753650Ab1LXBUY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 20:20:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:40296 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab1LXBUW (ORCPT
+	id S1754630Ab1LXB0d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 20:26:33 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:27014 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab1LXB0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 20:20:22 -0500
-Message-ID: <4EF528CC.1020800@gentoo.org>
-Date: Sat, 24 Dec 2011 03:20:12 +0200
-From: Stratos Psomadakis <psomas@gentoo.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Fri, 23 Dec 2011 20:26:30 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6569"; a="149666651"
+X-IronPort-AV: E=Sophos;i="4.71,399,1320652800"; 
+   d="scan'208";a="151785784"
+Message-ID: <4EF52A34.70409@qca.qualcomm.com>
+Date: Sat, 24 Dec 2011 03:26:12 +0200
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: JBottomley@parallels.com, matthew@wil.cx,
-        James.Bottomley@HansenPartnership.com
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Martin.vGagern@gmx.net, kernel@gentoo.org
-Subject: Re: [PATCH] scsi/sym53c8xx_2: Fix NULL pointer dereference in slave_destroy
-References: <1322958234-9749-1-git-send-email-psomas@gentoo.org>
-In-Reply-To: <1322958234-9749-1-git-send-email-psomas@gentoo.org>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigE5289A1B0A86530A85E6EAAC"
+To: Michal Marek <mmarek@suse.cz>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: linux-next: build failure after merge of the final tree (wireless
+ tree related)
+References: <20111222165849.df5ea3e2997375de24f1490b@canb.auug.org.au> <4EF3616D.5050506@suse.cz>
+In-Reply-To: <4EF3616D.5050506@suse.cz>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.64.10.226]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigE5289A1B0A86530A85E6EAAC
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 12/22/2011 06:57 PM, Michal Marek wrote:
+> Dne 22.12.2011 06:58, Stephen Rothwell napsal(a):
+>> Hi ,
+>>
+>> After merging the final tree, today's linux-next build (powerpc
+>> allyesconfig) failed like this:
+>>
+>> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ')' before 'KBUILD_MODNAME'
+>> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: 'KBUILD_MODNAME' undeclared here (not in a function)
+> [...]
+>>
+>> I can't figure out what goes wrong here.  On the compile command line,
+>> KBUILD_MODNAME is not defined, but KBUILD_BASE_NAME is.
+> 
+> scripts/Makefile.lib says
+> # Note: It's possible that one object gets potentially linked into more
+> #       than one module. In that case KBUILD_MODNAME will be set to foo_bar,
+> #       where foo and bar are the name of the modules.
+> 
+> but reality does not match this comment:
+> modname_flags  = $(if $(filter 1,$(words $(modname))),\
+>                  -D"KBUILD_MODNAME=KBUILD_STR($(call name-fix,$(modname)))")
+> 
+> But I wonder why you need to link all the object files twice?
 
-On 12/04/2011 02:23 AM, psomas@gentoo.org wrote:
-> From: Stratos Psomadakis <psomas@gentoo.org>
->
-> sym53c8xx_slave_destroy unconditionally assumes that sym53c8xx_slave_al=
-loc has
-> succesesfully allocated a sym_lcb. This can lead to a NULL pointer dere=
-ference
-> (exposed by commit 4e6c82b).
->
-> Signed-off-by: Stratos Psomadakis <psomas@gentoo.org>
-> Cc: stable@vger.kernel.org
-> ---
->
->  drivers/scsi/sym53c8xx_2/sym_glue.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/scsi/sym53c8xx_2/sym_glue.c b/drivers/scsi/sym53c8=
-xx_2/sym_glue.c
-> index b4543f5..76432f8 100644
-> --- a/drivers/scsi/sym53c8xx_2/sym_glue.c
-> +++ b/drivers/scsi/sym53c8xx_2/sym_glue.c
-> @@ -839,6 +839,10 @@ static void sym53c8xx_slave_destroy(struct scsi_de=
-vice *sdev)
->  	struct sym_lcb *lp =3D sym_lp(tp, sdev->lun);
->  	unsigned long flags;
-> =20
-> +	/* if slave_alloc returned before allocating a sym_lcb, return */
-> +	if (!lp)
-> +		return;
-> +
->  	spin_lock_irqsave(np->s.host->host_lock, flags);
-> =20
->  	if (lp->busy_itlq || lp->busy_itl) {
-resent (directly to the SCSI and sym53c8xx_2 maintainers)
+No particular reason. I just didn't know that it's not allowed.
 
---=20
-Stratos Psomadakis
-<psomas@gentoo.org>
+> Usually, drivers have a foo_common.ko and foo_{usb,pci,whatever}.ko
+that provide
+> the pci/usb/whatever driver.
 
+I have been planning to do the same for ath6kl. I just need to do a bit
+of interface cleanup before I can cleanly separate the core module. I'll
+start looking at that next.
 
-
---------------enigE5289A1B0A86530A85E6EAAC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAk71KNEACgkQid1lVeNDMmCQAwCeM79TwQOH0QONKUaStLcmpdDv
-sHsAoJDmw6w2x/iIpD1MIms5Iw+/3Awh
-=75sb
------END PGP SIGNATURE-----
-
---------------enigE5289A1B0A86530A85E6EAAC--
+Kalle
