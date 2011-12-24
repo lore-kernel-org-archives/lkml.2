@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab1LXWzb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 17:55:31 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47310 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab1LXWz3 (ORCPT
+	id S1755027Ab1LXX0O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 18:26:14 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41173 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754362Ab1LXX0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 17:55:29 -0500
-Date: Sat, 24 Dec 2011 22:55:25 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: file locking fix for 3.2
-Message-ID: <20111224225525.GR23916@ZenIV.linux.org.uk>
-References: <20111224215012.GA23495@fieldses.org>
+	Sat, 24 Dec 2011 18:26:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111224215012.GA23495@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1324327927-6886-1-git-send-email-robherring2@gmail.com>
+References: <1323876538-20406-8-git-send-email-robherring2@gmail.com>
+	<1324327927-6886-1-git-send-email-robherring2@gmail.com>
+Date: Sun, 25 Dec 2011 00:26:09 +0100
+Message-ID: <CACRpkdY3=4b4P7N-oK1UyHbY-FEzm=nvaGzuD_28Mbof1msY2Q@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: pl061: convert to use generic irq chip
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Linus Walleij <linus.ml.walleij@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 24, 2011 at 04:50:12PM -0500, J. Bruce Fields wrote:
+On Mon, Dec 19, 2011 at 9:52 PM, Rob Herring <robherring2@gmail.com> wrote:
 
->     locks: fix null dereference on lease-break failure path
->     
->     Commit 778fc546f749c588aa2f6cd50215d2715c374252 "locks: fix tracking of
->     inprogress lease breaks" introduced a null dereference on failure to
->     allocate memory.
->     
->     This means an open (without O_NONBLOCK set) on a file with a lease
->     applied (generally only done when Samba or nfsd (with v4) is running)
->     could crash if a kmalloc() fails.
+> From: Rob Herring <rob.herring@calxeda.com>
+>
+> Convert the pl061 irq_chip code to use the generic irq chip code.
+>
+> This has the side effect of using 32-bit accesses rather than 8-bit
+> accesses to interrupt registers. The h/w TRM and testing seem to indicate
+> this is fine.
+>
+> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+> Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> Cc: Linus Walleij <linus.ml.walleij@gmail.com>
+> ---
+> v2:
+> - put struct irq_chip_generic pointer into struct pl061_gpio instead of domain
+> ptr.
 
-NULL?  AFAICS, lease_alloc() returns ERR_PTR() on failure...  I really
-don't like the look of that code, TBH - at the very least it needs to
-be commented a lot.  E.g. the rules for calling or not calling ->lm_break()
-are really not obvious - AFAICS, we do that if
-	i_have_this_lease || (mode & O_NONBLOCK)
-is true *or* if allocation has succeeded.  The former condition is what'll
-end up with -EWOULDBLOCK; I can understand not wanting to return that in
-preference to -ENOMEM, but...  Do we want to skip ->lm_break() stuff only
-in case of allocation failures that won't be overridden by -EWOULDBLOCK?
+Looks good to me.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+
+Thanks,
+Linus Walleij
