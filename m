@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832Ab1LXRnm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 12:43:42 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:53327 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab1LXRnk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 12:43:40 -0500
-Date: Sat, 24 Dec 2011 17:43:37 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm-fixes
-Message-ID: <alpine.DEB.2.00.1112241742500.17632@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755179Ab1LXSh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 13:37:28 -0500
+Received: from smtp.urbi.com.br ([200.152.50.27]:42886 "EHLO
+	muttley.urbi.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab1LXSh1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Dec 2011 13:37:27 -0500
+X-Greylist: delayed 951 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Dec 2011 13:37:26 EST
+From: "WEBMAIL OFFICE" <c.care_web@blumail.org>
+Reply-To: c.care_web@pkuit.com
+Subject: New Update Of Webmail Account!!!
+Date: Sat, 24 Dec 2011 14:33:26 -0300
+Message-Id: <20111224171957.M15310@blumail.org>
+X-Mailer: Open WebMail 2.51 20050627
+X-OriginatingIP: 41.203.64.130 (lcaldas)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+	charset=utf-8
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Account Owner,
 
-Hi Linus,
+This message is from webmail hosting messaging center to all our
+account owners. We are currently upgrading our data base and e-mail center
+for this year 2011. We are deleting all unused account to create more
+space for new one and to prevent spam mails. To prevent your account from
+closing you will have to update it below so that we will know that it's a
+present used account.
 
-Happy Christmas, two fixes, one for radeon, one for vmwgfx.
+Warning!!! E-mail owner that refuses to update his or her Email,within
+48hrs of receiving this warning will lose his or her E-mail permanently.
+You are required to send us the below information via email below.
 
-Dave.
+CONFIRM YOUR E-MAIL IDENTITY BELOW:
 
-The following changes since commit b9e26dfdad5a4f9cbdaacafac6998614cc9c41bc:
+First Name:____________________________
+Last Name:_____________________________
+E-mail Username:________________________
+E-mail Password:_______________________
 
-  Merge git://git.infradead.org/mtd-2.6 (2011-12-20 18:39:37 -0800)
+Click on reply and send us the above details.
 
-are available in the git repository at:
+Warning!!!
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
+In failure to verify your  account within 48hrs on receiving this
+notification, your account will automatically be deactivated.
+Thank you for using webmail Account.
+Warning Code: QATO8B52AXV
 
-Alex Deucher (1):
-      drm/radeon/kms: bail on BTC parts if MC ucode is missing
-
-Xi Wang (1):
-      vmwgfx: fix incorrect VRAM size check in vmw_kms_fb_create()
-
- drivers/gpu/drm/radeon/evergreen.c  |   12 ++++++++++++
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c |    6 +++---
- 2 files changed, 15 insertions(+), 3 deletions(-)
+Kind Regards,
+Webmail Account Service Team Management.
+Thanks for your co-operation.
+Copyright @2011 WEBMAIL OFFICE All rights reserved.
