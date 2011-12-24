@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab1LXMCr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 07:02:47 -0500
-Received: from pal-213-228-181-48.netvisao.pt ([213.228.181.48]:55027 "EHLO
-	smtp.decimal.pt" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab1LXMCq (ORCPT
+	id S1754862Ab1LXMhS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 07:37:18 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:42109 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753230Ab1LXMhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 07:02:46 -0500
-X-Greylist: delayed 412 seconds by postgrey-1.27 at vger.kernel.org; Sat, 24 Dec 2011 07:02:46 EST
-From: "Jorge Bastos" <mysql.jorge@decimal.pt>
-To: "'Jan Kara'" <jack@suse.cz>
-Cc: <linux-kernel@vger.kernel.org>, <reiserfs-devel@vger.kernel.org>,
-        <haiyangz@microsoft.com>, <hjanssen@microsoft.com>
-References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt> <20111213180707.GI11747@quack.suse.cz>
-In-Reply-To: <20111213180707.GI11747@quack.suse.cz>
-Subject: RE: Reiserfs.c bug in 3.2-rc5
-Date: Sat, 24 Dec 2011 11:55:43 -0000
-Message-ID: <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
+	Sat, 24 Dec 2011 07:37:15 -0500
+Date: Sat, 24 Dec 2011 12:37:13 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+Cc: linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-kernel@vger.kernel.org, eric.miao@linaro.org,
+        Nancy Chen <Nancy.Chen@freescale.com>, Liam Girdwood <lrg@ti.com>
+Subject: Re: [PATCHv2] Regulator: Add Anatop regulator driver
+Message-ID: <20111224123713.GB13778@sirena.org.uk>
+References: <1323265998-29088-2-git-send-email-paul.liu@linaro.org>
+ <1324458211-1612-1-git-send-email-paul.liu@linaro.org>
+ <20111222113337.GL4546@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acy5wfSSX7s9dQ7LT+Ch0yz93/DxAgIZnOmw
-Content-Language: pt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222113337.GL4546@opensource.wolfsonmicro.com>
+X-Cookie: Justice, n.:
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Howdy,
+On Thu, Dec 22, 2011 at 11:33:38AM +0000, Mark Brown wrote:
+> On Wed, Dec 21, 2011 at 05:03:31PM +0800, Ying-Chun Liu (PaulLiu) wrote:
 
-> >
-> > What can be done here?
->   The assertion failing is:
->         BUG_ON(nblocks > journal->j_trans_max);
-> in do_journal_begin_r(). That means that reiserfs_create() tried to
-> start a
-> transaction with more credits than allowed by the journal.
-> 
->   When did you started to see this problem? Also do you use SELinux (or
-> generally security labels)?
-> 
+> > +	if (anatop_reg->rdata->control_reg) {
+> > +		val = anatop_reg->rdata->min_bit_val +
+> > +			(uv - reg->constraints->min_uV) / 25000;
 
-No SELinux, the only change is from 3.1.1 to 3.2-rc5.
-Tried the new 3.2-rc7 and the problem persists.
+> You're not checking that the resulting voltage matches the constraints
+> or updating selector.
 
-Is there a way that the ReiserFS people can commit the fix?
-
-Jorge,
-
+Also on re-reading this looks *very* broken - you're using the
+constraints value in your set_voltage() operation.  The runtime
+constraints a system has should have *no* impact on the way you ask for
+a specific voltage from the regulator.
