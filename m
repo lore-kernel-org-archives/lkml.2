@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab1LXDA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 22:00:27 -0500
-Received: from shutemov.name ([188.40.19.243]:42411 "EHLO shutemov.name"
+	id S1755402Ab1LXDCe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Dec 2011 22:02:34 -0500
+Received: from ozlabs.org ([203.10.76.45]:53210 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab1LXDAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 22:00:25 -0500
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [PATCH 1/6] memcg: fix unused variable warning
-Date: Sat, 24 Dec 2011 05:00:14 +0200
-Message-Id: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.4.5
+	id S1752015Ab1LXDCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Dec 2011 22:02:33 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        virtualization <virtualization@lists.linux-foundation.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RESENDx2] [PULL] virtio: fix barriers for virtio-mmio
+In-Reply-To: <CAK=WgbacH1tXHJiHNKLNNsFA7-vnFT_J6vYOANh0wzGyUj8Zpg@mail.gmail.com>
+References: <8739cbkgv2.fsf@rustcorp.com.au> <CA+55aFyvMkAtXPRxiFR+UpZKGHMhp8Vd9aYg1dkaoKMwD5MLcw@mail.gmail.com> <CA+55aFzKU0GWqpQo2AzAawoVm=qPaJiwKTcifeYApyZP_Hj3nQ@mail.gmail.com> <CAK=WgbacH1tXHJiHNKLNNsFA7-vnFT_J6vYOANh0wzGyUj8Zpg@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Sat, 24 Dec 2011 13:31:14 +1030
+Message-ID: <87pqfeisg5.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
+On Fri, 23 Dec 2011 13:35:26 +0200, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Fri, Dec 23, 2011 at 11:35 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On x86, there really is never any reason to use the heavy memory
+> > barriers unless you are talking to a real device. And last I saw,
+> > "virtio" was still about virtual IO.
 
-mm/memcontrol.c: In function ‘memcg_check_events’:
-mm/memcontrol.c:784:22: warning: unused variable ‘do_numainfo’ [-Wunused-variable]
+Not any more, as the commit message describes.
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- mm/memcontrol.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+But I missed that they're using rpmsg, which isn't merged yet.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index d643bd6..a5e92bd 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -781,14 +781,15 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
- 	/* threshold event is triggered in finer grain than soft limit */
- 	if (unlikely(mem_cgroup_event_ratelimit(memcg,
- 						MEM_CGROUP_TARGET_THRESH))) {
--		bool do_softlimit, do_numainfo;
-+		bool do_softlimit;
- 
--		do_softlimit = mem_cgroup_event_ratelimit(memcg,
--						MEM_CGROUP_TARGET_SOFTLIMIT);
- #if MAX_NUMNODES > 1
-+		bool do_numainfo;
- 		do_numainfo = mem_cgroup_event_ratelimit(memcg,
- 						MEM_CGROUP_TARGET_NUMAINFO);
- #endif
-+		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-+						MEM_CGROUP_TARGET_SOFTLIMIT);
- 		preempt_enable();
- 
- 		mem_cgroup_threshold(memcg);
--- 
-1.7.7.3
-
+Sorry for the noise,
+Rusty.
+PS. Switching barriers by bus type is too crude anyway, let's come up
+    with something better...
