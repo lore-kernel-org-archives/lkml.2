@@ -1,41 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab1LXDCe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Dec 2011 22:02:34 -0500
-Received: from ozlabs.org ([203.10.76.45]:53210 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015Ab1LXDCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Dec 2011 22:02:33 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Ohad Ben-Cohen <ohad@wizery.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        virtualization <virtualization@lists.linux-foundation.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RESENDx2] [PULL] virtio: fix barriers for virtio-mmio
-In-Reply-To: <CAK=WgbacH1tXHJiHNKLNNsFA7-vnFT_J6vYOANh0wzGyUj8Zpg@mail.gmail.com>
-References: <8739cbkgv2.fsf@rustcorp.com.au> <CA+55aFyvMkAtXPRxiFR+UpZKGHMhp8Vd9aYg1dkaoKMwD5MLcw@mail.gmail.com> <CA+55aFzKU0GWqpQo2AzAawoVm=qPaJiwKTcifeYApyZP_Hj3nQ@mail.gmail.com> <CAK=WgbacH1tXHJiHNKLNNsFA7-vnFT_J6vYOANh0wzGyUj8Zpg@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Sat, 24 Dec 2011 13:31:14 +1030
-Message-ID: <87pqfeisg5.fsf@rustcorp.com.au>
+	id S1751903Ab1LXFNs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 00:13:48 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41025 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868Ab1LXFNq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Dec 2011 00:13:46 -0500
+Date: Fri, 23 Dec 2011 21:13:34 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Tejun Heo <tj@kernel.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, linux-ide@vger.kernel.org,
+        x86@kernel.org
+Subject: Re: linux-next: Tree for Dec 21
+In-Reply-To: <20111223004244.GU17084@google.com>
+Message-ID: <alpine.LSU.2.00.1112232058550.3225@eggly.anvils>
+References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au> <20111221151503.4d78f94f.akpm@linux-foundation.org> <20111222150836.af172886.akpm@linux-foundation.org> <20111222232036.GP17084@google.com> <20111222152427.c944c747.akpm@linux-foundation.org>
+ <20111222233843.GR17084@google.com> <20111222154427.89b245c7.akpm@linux-foundation.org> <20111222234639.GS17084@google.com> <20111223004244.GU17084@google.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Dec 2011 13:35:26 +0200, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> On Fri, Dec 23, 2011 at 11:35 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > On x86, there really is never any reason to use the heavy memory
-> > barriers unless you are talking to a real device. And last I saw,
-> > "virtio" was still about virtual IO.
+On Thu, 22 Dec 2011, Tejun Heo wrote:
+> On Thu, Dec 22, 2011 at 03:46:39PM -0800, Tejun Heo wrote:
+> > On Thu, Dec 22, 2011 at 03:44:27PM -0800, Andrew Morton wrote:
+> > > > Weird, I can't reproduce the problem on block/for-3.3/core.  Trying
+> > > > linux-next... hmmm, it works there too.
+> > > 
+> > > This machine is next to my desk, about 50 yards from your cube ;)
+> > 
+> > Heh, physical access feels like such distant concept.  :)
+> > 
+> > I'll test with the config and if I still can't reproduce it, play with
+> > your machine.
+> 
+> Couldn't reproduce it on block/for-3.3 or next & you were already
+> gone.  Is anyone else seeing this?
 
-Not any more, as the commit message describes.
+Twice today, on ThinkPad T420s running 3.2.0-rc6-next-20111222.
+I haven't seen it at all under heavy load, but twice when simply
+rebuilding the kernel - I think both times it hung with
+"LD whatever/built-in.o" the last line on screen.
 
-But I missed that they're using rpmsg, which isn't merged yet.
+I had (a variant of) kdb in, here's the stack it gave me, but I think
+I've got a bug in there which has missed out a number of stackframes:
+so don't waste time puzzling over any anomalies in it, but there's
+enough to suggest it's the same as Andrew was seeing.
 
-Sorry for the noise,
-Rusty.
-PS. Switching barriers by bus type is too crude anyway, let's come up
-    with something better...
+ffff880013ac2100    28524    28522   1*  D  ffff880013ac2538  sh
+RSP              RIP              Function (args)
+ffff88004165f820 ffffffff814e559a _raw_spin_unlock_irq+0x31
+ffff88004165f858 ffffffff811d2867 get_request_wait+0xab
+ffff88004165f8b8 ffffffff811cfb75 elv_merge+0xa0
+ffff88004165fd18 ffffffff810ca90c do_writepages+0x1f
+ffff88004165fd28 ffffffff810c2671 __filemap_fdatawrite_range+0x4e
+ffff88004165fd68 ffffffff810c2e92 filemap_flush+0x17
+ffff88004165fd78 ffffffff8116533e ext4_alloc_da_blocks+0x28
+ffff88004165fd88 ffffffff81160f6a ext4_release_file+0x2e
+ffff88004165fdb8 ffffffff811077d4 __fput+0x107
+ffff88004165fe08 ffffffff81107899 fput+0x15
+ffff88004165fe18 ffffffff81104037 filp_close+0x6b
+ffff88004165fe48 ffffffff81056b47 close_files+0x16a
+ffff88004165fea8 ffffffff81057f31 put_files_struct+0x21
+ffff88004165fed8 ffffffff81058107 exit_files+0x46
+ffff88004165ff08 ffffffff81058648 do_exit+0x20e
+ffff88004165ff48 ffffffff810588d1 do_group_exit+0x7d
+ffff88004165ff78 ffffffff8105890e sys_exit_group+0x12
+
+I interrupted a few more times, yes, once or twice I caught it
+in some cfq io_context business: didn't take much notice because
+I thought I'd saved the stack to log, but it hasn't appeared in my
+/var/log/messages after reboot.  Once or twice there was another
+sh running on another cpu, showing a very similar stack.
+
+Hugh
