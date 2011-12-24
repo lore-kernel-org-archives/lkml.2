@@ -1,129 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab1LXXoF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 24 Dec 2011 18:44:05 -0500
-Received: from rose.urlnameserver.com ([199.168.186.150]:35225 "EHLO
-	rose.urlnameserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754362Ab1LXXoD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 24 Dec 2011 18:44:03 -0500
-From: "Tanitiim Muzigi" <jinglejingleplus@gmail.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-To: jinglejingleplus@gmail.com
-Date: Sat, 24 Dec 2011 20:52:53 +0200
-Subject: reklam muziginiz (jingle) ile ilgili
+	id S1756183Ab1LXXum (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 24 Dec 2011 18:50:42 -0500
+Received: from fieldses.org ([174.143.236.118]:49805 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913Ab1LXXui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 24 Dec 2011 18:50:38 -0500
+Date: Sat, 24 Dec 2011 18:50:35 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: file locking fix for 3.2
+Message-ID: <20111224235035.GA23711@fieldses.org>
+References: <20111224215012.GA23495@fieldses.org>
+ <20111224225525.GR23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-9
-Content-Transfer-Encoding: 8BIT
-X-Mailer: aspNetEmail ver 3.6.0.77
-Message-ID: <COMPUTERee062cb5d7d84011a1311c611bb803b3@computer>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - rose.urlnameserver.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - gmail.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111224225525.GR23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Merhaba,
+On Sat, Dec 24, 2011 at 10:55:25PM +0000, Al Viro wrote:
+> On Sat, Dec 24, 2011 at 04:50:12PM -0500, J. Bruce Fields wrote:
+> 
+> >     locks: fix null dereference on lease-break failure path
+> >     
+> >     Commit 778fc546f749c588aa2f6cd50215d2715c374252 "locks: fix tracking of
+> >     inprogress lease breaks" introduced a null dereference on failure to
+> >     allocate memory.
+> >     
+> >     This means an open (without O_NONBLOCK set) on a file with a lease
+> >     applied (generally only done when Samba or nfsd (with v4) is running)
+> >     could crash if a kmalloc() fails.
+> 
+> NULL?  AFAICS, lease_alloc() returns ERR_PTR() on failure...
 
-    ben reklam müzikleri hazýrlamakta olan þirketlerin sanatçýsý Okan Akdeniz.
+Erp, you're right.
 
-    Reklam mÜziklerinde kendi giriþimlerimin olmasý adýna size reklam müziði
+(The fix is still right, it's the changelog that's wrong; happy to
+fix and resend if it's wanted....)
 
-    dediðimiz kurumsal jingle hazýrladým.
+> I really
+> don't like the look of that code, TBH - at the very least it needs to
+> be commented a lot.  E.g. the rules for calling or not calling ->lm_break()
+> are really not obvious - AFAICS, we do that if
+> 	i_have_this_lease || (mode & O_NONBLOCK)
+> is true *or* if allocation has succeeded.  The former condition is what'll
+> end up with -EWOULDBLOCK; I can understand not wanting to return that in
+> preference to -ENOMEM, but...  Do we want to skip ->lm_break() stuff only
+> in case of allocation failures that won't be overridden by -EWOULDBLOCK?
 
-     Ajans olmadýðýmýz için rakam oldukça uygun. Amacým zaten her
+We do want to break leases at least in the O_NONBLOCK case so that a
+caller can make forward progress by retrying open(.,O_NONBLOCK).
 
-    konuda olduðu gibi aracýlarýn reklamlarýnýn olmasý ve gerçek emek harcayan
+In the other cases I don't think there's any logic to the current
+behavior.  Something like:
 
-    mutfaðýndaki kiþilerin bilinmemesi durumunu aþýp kendi sunumumu yapmak.
+-	if (IS_ERR(new_fl) && !i_have_this_lease
+-			&& ((mode & O_NONBLOCK) == 0)) {
+-		error = PTR_ERR(new_fl);
+-		goto out;
+-	}
+-
+...
+ 		error = -EWOULDBLOCK;
+ 		goto out;
+ 	}
+-
++	if (IS_ERR(new_fl)) {
++		error = PTR_ERR(new_fl);
++		goto out;
++	}
+ restart:
+ 	break_time = flock->fl_break_time;
+ 	if (break_time != 0) {
 
-    Müzisyen ekibimle birlikte birçok büyük þirketlere reklam müziklerini biz
+would be a little less convoluted.
 
-    hazýrlamaktayýz. Ama pek bilinmeyiz. efe raký, ankamol, abalýoðlu, havan
+Or we could just do it the really obvious way:
 
-    erkek giyim kc göksu alýþveriþ merkezi, PTT, Pamukkale Otobüs Þirketi gibi
+ 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
++	if (IS_ERR(new_fl))
++		return PTR_ERR(new_fl);
+ 
+ 	lock_flocks();
+... 
+-	if (IS_ERR(new_fl) && !i_have_this_lease
+-			&& ((mode & O_NONBLOCK) == 0)) {
+-		error = PTR_ERR(new_fl);
+-		goto out;
+-	}
+-
 
-    bir çok yere reklam müziklerini ben hazýrladým.
+Then you're returning -ENOMEM in a case when we really didn't need to do
+an allocation, but is that really a problem?  It's a rare case, and
+opens can already fail with -ENOMEM for other reasons, and I'd rather
+not have the extra hair.
 
-    Nerelerde kullanabilirsiniz?
+?
 
-     * Radyo ve TV en yaygýn olaný
-
-     * Þirket telefonu bekleme müziði olarak
-
-     * Fuar standlarda
-
-     * Web sayfanýzda ingilizce ve türkçe ayrý ayrý yapýlan reklam müzikleriyle
-
-    daha kýsa versiyonu
-
-     * tanýtým cd lerinizde hem ingilizce hem türkçe
-
-     * Þirket çalýþanlarýnýzýn cep telefonlarýnda telefon sesi olarak
-
-    Dahasý sizin yaratýcýlýðýnýza kalmýþ.
-
-     Neden gerekli?
-
-     Çünkü müzik unutulmaz görsel reklam ve broþurler yok olur gider. Pirelli,
-
-    saray saray saray, eti eti eti...Nasýl? hemen aklýnýza geldi melodisi.
-
-    Yýllar öncesinden olmasýna raðmen... Daha fazla bu konuda söze gerek yok
-
-    sanýrým.
-
-     Lütfen daha geniþ bilgi için jingleplus.com da reklam müzikleri
-
-    bölümünden referanslarýma bakýn. Yani bu iþte neredeyse 10 yýldýr varým.
-
-    Ayrýca sanatçýlara beste satmaktayým. En son Rafet El Roman ýn sevdim ama
-
-    sonu yoktu adlý þarkýsýnýn bestecisiyim. Size özel hazýrlamýþ olduðum 2
-
-    örnek demo ücretsizdir. Dinlemenizi istiyorum. Beðenirseniz alýrsýnýz.
-
-    Ýstediðiniz deðiþiklikleri size hazýrlar hatta 1 senelikte her türlü
-
-    reklam müziðinize seslendirmelerinizi de ücretsiz yaparým. Bunun yanýnda
-
-    yeni örnek isterseniz ve benimle çalýþmak
-
-    isterseniz telefonumuz 05353725885 .Bana en azýndan olumlu ya da olumsuz
-
-    cevap yazarsanýz çok memnun olurum.
-
-     Ýyi çalýþmalar ve bol kazançlý günler dilerim.
-
-     Ve not: Reklam müziklerimi beðeneceðinize eminim. Ayrýca dilerseniz
-
-    ingilizce olarakta seslendirilebileceðini bilmenizi istiyorum. ( web
-
-    sayfasý ve yurt dýþý tanýtým CD leri için)
-
-    
-
-jingleplus.com
-
-        
-
-     Halkla iliþkiler Pazarlama
-
-     Ahmet Odabaþý
-
-     Cep: 0535 372 58 85
-
-    diðer iletiþim adresi :ahmetodabasi@yahoo.com.tr
-
-
-
-
-
-
-
+--b.
