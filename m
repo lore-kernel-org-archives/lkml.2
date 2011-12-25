@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab1LYKWQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 05:22:16 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:26613 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab1LYKWO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 05:22:14 -0500
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 80.237.6.56
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19bWMN6IyFIIdZ59keBrkh2G6i4e4McHyA=
-Message-ID: <1324808519.29243.8.camel@hakkenden.homenet>
-Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
-From: "Nikolay S." <nowhere@hakkenden.ath.cx>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Sun, 25 Dec 2011 14:21:59 +0400
-In-Reply-To: <CAJd=RBDa4LT1gbh6zPx+bzoOtSUeX=puJe6DVC-WyKoF4nw-dg@mail.gmail.com>
-References: <1324437036.4677.5.camel@hakkenden.homenet>
-	 <20111221095249.GA28474@tiehlicka.suse.cz> <20111221225512.GG23662@dastard>
-	 <1324630880.562.6.camel@rybalov.eng.ttk.net>
-	 <20111223102027.GB12731@dastard>
-	 <1324638242.562.15.camel@rybalov.eng.ttk.net>
-	 <20111223204503.GC12731@dastard>
-	 <CAJd=RBDa4LT1gbh6zPx+bzoOtSUeX=puJe6DVC-WyKoF4nw-dg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 8BIT
-Mime-Version: 1.0
+	id S1753215Ab1LYK6o (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 05:58:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:23487 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752156Ab1LYK6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Dec 2011 05:58:41 -0500
+Message-ID: <4EF701C7.9080907@redhat.com>
+Date: Sun, 25 Dec 2011 12:58:15 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu>
+In-Reply-To: <20111223103620.GD4749@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Вс., 25/12/2011 в 17:09 +0800, Hillf Danton пишет:
-> On Sat, Dec 24, 2011 at 4:45 AM, Dave Chinner <david@fromorbit.com> wrote:
-> [...]
-> >
-> > Ok, it's not a shrink_slab() problem - it's just being called ~100uS
-> > by kswapd. The pattern is:
-> >
-> >        - reclaim 94 (batches of 32,32,30) pages from iinactive list
-> >          of zone 1, node 0, prio 12
-> >        - call shrink_slab
-> >                - scan all caches
-> >                - all shrinkers return 0 saying nothing to shrink
-> >        - 40us gap
-> >        - reclaim 10-30 pages from inactive list of zone 2, node 0, prio 12
-> >        - call shrink_slab
-> >                - scan all caches
-> >                - all shrinkers return 0 saying nothing to shrink
-> >        - 40us gap
-> >        - isolate 9 pages from LRU zone ?, node ?, none isolated, none freed
-> >        - isolate 22 pages from LRU zone ?, node ?, none isolated, none freed
-> >        - call shrink_slab
-> >                - scan all caches
-> >                - all shrinkers return 0 saying nothing to shrink
-> >        40us gap
-> >
-> > And it just repeats over and over again. After a while, nid=0,zone=1
-> > drops out of the traces, so reclaim only comes in batches of 10-30
-> > pages from zone 2 between each shrink_slab() call.
-> >
-> > The trace starts at 111209.881s, with 944776 pages on the LRUs. It
-> > finishes at 111216.1 with kswapd going to sleep on node 0 with
-> > 930067 pages on the LRU. So 7 seconds to free 15,000 pages (call it
-> > 2,000 pages/s) which is awfully slow....
-> >
-> Hi all,
-> 
-> In hope, the added debug info is helpful.
-> 
-> Hillf
-> ---
-> 
-> --- a/mm/memcontrol.c	Fri Dec  9 21:57:40 2011
-> +++ b/mm/memcontrol.c	Sun Dec 25 17:08:14 2011
-> @@ -1038,7 +1038,11 @@ void mem_cgroup_lru_del_list(struct page
->  		memcg = root_mem_cgroup;
->  	mz = page_cgroup_zoneinfo(memcg, page);
->  	/* huge page split is done under lru_lock. so, we have no races. */
-> -	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
-> +	if (WARN_ON_ONCE(MEM_CGROUP_ZSTAT(mz, lru) <
-> +				(1 << compound_order(page))))
-> +		MEM_CGROUP_ZSTAT(mz, lru) = 0;
-> +	else
-> +		MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
->  }
-> 
->  void mem_cgroup_lru_del(struct page *page)
+On 12/23/2011 12:36 PM, Ingo Molnar wrote:
+> * Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
+>
+> > Here some interesting perf reports from inside the guest:
+> > 
+> > Baseline:
+> >   29.79%   ebizzy  [kernel.kallsyms]   [k] native_flush_tlb_others
+> >   18.70%   ebizzy  libc-2.12.so        [.] __GI_memcpy
+> >    7.23%   ebizzy  [kernel.kallsyms]   [k] get_page_from_freelist
+> >    5.38%   ebizzy  [kernel.kallsyms]   [k] __do_page_fault
+> >    4.50%   ebizzy  [kernel.kallsyms]   [k] ____pagevec_lru_add
+> >    3.58%   ebizzy  [kernel.kallsyms]   [k] default_send_IPI_mask_logical
+> >    3.26%   ebizzy  [kernel.kallsyms]   [k] native_flush_tlb_single
+> >    2.82%   ebizzy  [kernel.kallsyms]   [k] handle_pte_fault
+> >    2.16%   ebizzy  [kernel.kallsyms]   [k] kunmap_atomic
+> >    2.10%   ebizzy  [kernel.kallsyms]   [k] _spin_unlock_irqrestore
+> >    1.90%   ebizzy  [kernel.kallsyms]   [k] down_read_trylock
+> >    1.65%   ebizzy  [kernel.kallsyms]   [k] __mem_cgroup_commit_charge.clone.4
+> >    1.60%   ebizzy  [kernel.kallsyms]   [k] up_read
+> >    1.24%   ebizzy  [kernel.kallsyms]   [k] __alloc_pages_nodemask
+> > 
+> > Gang:
+> >   22.53%   ebizzy  libc-2.12.so       [.] __GI_memcpy
+> >    9.73%   ebizzy  [kernel.kallsyms]  [k] ____pagevec_lru_add
+> >    8.22%   ebizzy  [kernel.kallsyms]  [k] get_page_from_freelist
+> >    7.80%   ebizzy  [kernel.kallsyms]  [k] default_send_IPI_mask_logical
+> >    7.68%   ebizzy  [kernel.kallsyms]  [k] native_flush_tlb_others
+> >    6.22%   ebizzy  [kernel.kallsyms]  [k] __do_page_fault
+> >    5.54%   ebizzy  [kernel.kallsyms]  [k] native_flush_tlb_single
+> >    4.44%   ebizzy  [kernel.kallsyms]  [k] _spin_unlock_irqrestore
+> >    2.90%   ebizzy  [kernel.kallsyms]  [k] kunmap_atomic
+> >    2.78%   ebizzy  [kernel.kallsyms]  [k] __mem_cgroup_commit_charge.clone.4
+> >    2.76%   ebizzy  [kernel.kallsyms]  [k] handle_pte_fault
+> >    2.16%   ebizzy  [kernel.kallsyms]  [k] __mem_cgroup_uncharge_common
+> >    1.59%   ebizzy  [kernel.kallsyms]  [k] down_read_trylock
+> >    1.43%   ebizzy  [kernel.kallsyms]  [k] up_read
+> > 
+> > I see the main difference between both the reports is:
+> > native_flush_tlb_others.
+>
+> So it would be important to figure out why ebizzy gets into so 
+> many TLB flushes and why gang scheduling makes it go away.
 
-Hello,
+The second part is easy - a remote tlb flush involves IPIs to many other
+vcpus (possible waking them up and scheduling them), then busy-waiting
+until they acknowledge the flush.  Gang scheduling is really good here
+since it shortens the busy wait, would be even better if we schedule
+halted vcpus (see the yield_on_hlt module parameter, set to 0). 
+Directed yield on PLE should provide intermediate results between doing
+nothing and gang sched.
 
-Uhm.., is this patch against 3.2-rc4? I can not apply it. There's no
-mem_cgroup_lru_del_list(), but void mem_cgroup_del_lru_list(). Should I
-place changes there?
+The first part appears to be unrelated to ebizzy itself - it's the
+kunmap_atomic() flushing ptes.  It could be eliminated by switching to a
+non-highmem kernel, or by allocating more PTEs for kmap_atomic() and
+batching the flush.
 
-And also, -rc7 is here. May the problem be addressed as part of some
-ongoing work? Is there any reason to try -rc7 (the problem requires
-several days of uptime to become obvious)?
+btw you can get an additional speedup by enabling x2apic, for
+default_send_IPI_mask_logical().
+
+-- 
+error compiling committee.c: too many arguments to function
 
