@@ -1,104 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818Ab1LYSTx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 13:19:53 -0500
-Received: from fieldses.org ([174.143.236.118]:55071 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753613Ab1LYSTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 13:19:51 -0500
-Date: Sun, 25 Dec 2011 13:19:48 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: file locking fix for 3.2
-Message-ID: <20111225181948.GA26288@fieldses.org>
-References: <20111224215012.GA23495@fieldses.org>
- <20111224225525.GR23916@ZenIV.linux.org.uk>
- <20111224235035.GA23711@fieldses.org>
- <20111225000542.GS23916@ZenIV.linux.org.uk>
+	id S1753804Ab1LYSge (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 13:36:34 -0500
+Received: from smtprelay0007.b.hostedemail.com ([64.98.42.7]:38083 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752824Ab1LYSgb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Dec 2011 13:36:31 -0500
+X-Panda: scanned!
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 1459
+Date: Sun, 25 Dec 2011 18:36:29 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Cc: davej@redhat.com, cpufreq@vger.kernel.org
+Message-ID: <388674780.142932.1324838189780.JavaMail.mail@webmail18>
+References: <1982761334.142905.1324837801755.JavaMail.mail@webmail18>
+Subject: cpufreq userspace governor doesn't work for Intel Core 2 Gen 2 CPUs
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111225000542.GS23916@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Webmail
+X-Originating-IP: [46.147.5.122]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 25, 2011 at 12:05:42AM +0000, Al Viro wrote:
-> On Sat, Dec 24, 2011 at 06:50:35PM -0500, J. Bruce Fields wrote:
-> 
-> > Then you're returning -ENOMEM in a case when we really didn't need to do
-> > an allocation, but is that really a problem?  It's a rare case, and
-> > opens can already fail with -ENOMEM for other reasons, and I'd rather
-> > not have the extra hair.
-> 
-> I'm certainly OK with that variant; if the folks maintaining fs/locks.c
+Hello,
 
-I've been more-or-less assuming that's me, not that I've been doing much
-real maintenance to speak of.
+On my Intel Core i5 CPU with acpi-cpufreq module loaded I do this
 
-> are happy with it, I'd suggest going for it.  Note that you don't need
-> to touch locks_conflict() call at all if you bail out early on allocation
-> failure and it's definitely simpler and cleaner that way.
+# echo 2000000 | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_setspeed
 
-Yep.
+then
 
-With no more -rc, and no chance to test anything myself till I'm back
-from the holidays, my preference would be for Linus to merge the
-already-posted one-liner.  Then I can queue up the below for 3.3.
+# cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_cur_freq
+2000000
+2000000
+2000000
+2000000
 
---b.
+so theoretically it should work.
 
-commit 72acf27f6c20573d555d6b4450a7a9d41c4c9d5a
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Sun Dec 25 10:51:37 2011 -0700
+However i7z (http://code.google.com/p/i7z/) shows that CPU frequency is freely floating
+and turbo boost gets enabled as soon as I have any discernible load, in other words 
+userspace CPU frequency driver doesn't work at all and it doesn't really enforce the specified
+CPU frequency.
 
-    locks: simplify allocation in break_lease
-    
-    The code bends over backwards to avoid returning -ENOMEM in cases where
-    the allocation wasn't really necessary.
-    
-    But there's nothing really *wrong* with returning -ENOMEM in those
-    cases: break_lease callers can already return -ENOMEM for other reasons.
-    So let's not take so much trouble over a rare case, and keep the code
-    simpler.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Best wishes,
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 96a487a..0bd1745 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1205,6 +1205,8 @@ int __break_lease(struct inode *inode, unsigned int mode)
- 	int want_write = (mode & O_ACCMODE) != O_RDONLY;
- 
- 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
-+	if (IS_ERR(new_fl))
-+		return PTR_ERR(new_fl);
- 
- 	lock_flocks();
- 
-@@ -1214,19 +1216,13 @@ int __break_lease(struct inode *inode, unsigned int mode)
- 	if ((flock == NULL) || !IS_LEASE(flock))
- 		goto out;
- 
--	if (flock->fl_type == F_RDLCK && !want_write)
--		goto out; /* no conflict */
-+	if (!locks_conflict(flock, new_fl))
-+		goto out;
- 
- 	for (fl = flock; fl && IS_LEASE(fl); fl = fl->fl_next)
- 		if (fl->fl_owner == current->files)
- 			i_have_this_lease = 1;
- 
--	if (IS_ERR(new_fl) && !i_have_this_lease
--			&& ((mode & O_NONBLOCK) == 0)) {
--		error = PTR_ERR(new_fl);
--		goto out;
--	}
--
- 	break_time = 0;
- 	if (lease_break_time > 0) {
- 		break_time = jiffies + lease_break_time * HZ;
+Artem
