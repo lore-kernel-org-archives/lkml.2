@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab1LYK6o (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 05:58:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23487 "EHLO mx1.redhat.com"
+	id S1753299Ab1LYLDL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 06:03:11 -0500
+Received: from uucp.gnuu.de ([83.246.114.63]:1116 "EHLO uucp.gnuu.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752156Ab1LYK6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 05:58:41 -0500
-Message-ID: <4EF701C7.9080907@redhat.com>
-Date: Sun, 25 Dec 2011 12:58:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752731Ab1LYLDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Dec 2011 06:03:08 -0500
+Date: Sun, 25 Dec 2011 12:01:09 +0100
+From: =?iso-8859-1?Q?J=F6rg?= Sommer <joerg@alea.gnuu.de>
+To: Alexander Graf <agraf@suse.de>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Current kernel fails to compile with KVM on PowerPC
+Message-ID: <20111225110109.GA28757@alea.gnuu.de>
+References: <20111107194838.GA23558@alea.gnuu.de>
+ <20111220202711.GD6830@alea.gnuu.de>
+ <C3B4A5C9-0AE0-49C8-A349-879ADDA01804@suse.de>
+ <20111224103108.GA19586@alea.gnuu.de>
+ <20111224111359.GB3938@alea.gnuu.de>
+ <C40CA3A1-2397-423B-96B3-CBEE4EA7EA30@suse.de>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu>
-In-Reply-To: <20111223103620.GD4749@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
+Content-Disposition: inline
+In-Reply-To: <C40CA3A1-2397-423B-96B3-CBEE4EA7EA30@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2011 12:36 PM, Ingo Molnar wrote:
-> * Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
->
-> > Here some interesting perf reports from inside the guest:
-> > 
-> > Baseline:
-> >   29.79%   ebizzy  [kernel.kallsyms]   [k] native_flush_tlb_others
-> >   18.70%   ebizzy  libc-2.12.so        [.] __GI_memcpy
-> >    7.23%   ebizzy  [kernel.kallsyms]   [k] get_page_from_freelist
-> >    5.38%   ebizzy  [kernel.kallsyms]   [k] __do_page_fault
-> >    4.50%   ebizzy  [kernel.kallsyms]   [k] ____pagevec_lru_add
-> >    3.58%   ebizzy  [kernel.kallsyms]   [k] default_send_IPI_mask_logical
-> >    3.26%   ebizzy  [kernel.kallsyms]   [k] native_flush_tlb_single
-> >    2.82%   ebizzy  [kernel.kallsyms]   [k] handle_pte_fault
-> >    2.16%   ebizzy  [kernel.kallsyms]   [k] kunmap_atomic
-> >    2.10%   ebizzy  [kernel.kallsyms]   [k] _spin_unlock_irqrestore
-> >    1.90%   ebizzy  [kernel.kallsyms]   [k] down_read_trylock
-> >    1.65%   ebizzy  [kernel.kallsyms]   [k] __mem_cgroup_commit_charge.clone.4
-> >    1.60%   ebizzy  [kernel.kallsyms]   [k] up_read
-> >    1.24%   ebizzy  [kernel.kallsyms]   [k] __alloc_pages_nodemask
-> > 
-> > Gang:
-> >   22.53%   ebizzy  libc-2.12.so       [.] __GI_memcpy
-> >    9.73%   ebizzy  [kernel.kallsyms]  [k] ____pagevec_lru_add
-> >    8.22%   ebizzy  [kernel.kallsyms]  [k] get_page_from_freelist
-> >    7.80%   ebizzy  [kernel.kallsyms]  [k] default_send_IPI_mask_logical
-> >    7.68%   ebizzy  [kernel.kallsyms]  [k] native_flush_tlb_others
-> >    6.22%   ebizzy  [kernel.kallsyms]  [k] __do_page_fault
-> >    5.54%   ebizzy  [kernel.kallsyms]  [k] native_flush_tlb_single
-> >    4.44%   ebizzy  [kernel.kallsyms]  [k] _spin_unlock_irqrestore
-> >    2.90%   ebizzy  [kernel.kallsyms]  [k] kunmap_atomic
-> >    2.78%   ebizzy  [kernel.kallsyms]  [k] __mem_cgroup_commit_charge.clone.4
-> >    2.76%   ebizzy  [kernel.kallsyms]  [k] handle_pte_fault
-> >    2.16%   ebizzy  [kernel.kallsyms]  [k] __mem_cgroup_uncharge_common
-> >    1.59%   ebizzy  [kernel.kallsyms]  [k] down_read_trylock
-> >    1.43%   ebizzy  [kernel.kallsyms]  [k] up_read
-> > 
-> > I see the main difference between both the reports is:
-> > native_flush_tlb_others.
->
-> So it would be important to figure out why ebizzy gets into so 
-> many TLB flushes and why gang scheduling makes it go away.
 
-The second part is easy - a remote tlb flush involves IPIs to many other
-vcpus (possible waking them up and scheduling them), then busy-waiting
-until they acknowledge the flush.  Gang scheduling is really good here
-since it shortens the busy wait, would be even better if we schedule
-halted vcpus (see the yield_on_hlt module parameter, set to 0). 
-Directed yield on PLE should provide intermediate results between doing
-nothing and gang sched.
+--fdj2RfSjLxBAspz7
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The first part appears to be unrelated to ebizzy itself - it's the
-kunmap_atomic() flushing ptes.  It could be eliminated by switching to a
-non-highmem kernel, or by allocating more PTEs for kmap_atomic() and
-batching the flush.
+Alexander Graf hat am Sat 24. Dec, 18:05 (+0100) geschrieben:
+> On 24.12.2011, at 12:13, J=C3=B6rg Sommer wrote:
+> > J=C3=B6rg Sommer hat am Sat 24. Dec, 11:31 (+0100) geschrieben:
+> >> Alexander Graf hat am Fri 23. Dec, 14:50 (+0100) geschrieben:
+> >>> On 20.12.2011, at 21:27, J=C3=B6rg Sommer wrote:
+> >>>>=20
+> >>>> I'm so sorry to have to report a new bug in one of your patches. It =
+was
+> >>>> covered by the one above. I've picked the commit for it from your git
+> >>>> repository and now, the kernel build fails with this error:
+> >>>>=20
+> >>>> BOOTCC  arch/powerpc/boot/fdt_strerror.o
+> >>>> BOOTAR  arch/powerpc/boot/wrapper.a
+> >>>> WRAP    arch/powerpc/boot/zImage.pmac
+> >>>> WRAP    arch/powerpc/boot/zImage.coff
+> >>>> ERROR: "kvmppc_h_pr" [arch/powerpc/kvm/kvm.ko] undefined!
+> >>>> make[3]: *** [__modpost] Fehler 1
+> >>>> make[2]: *** [modules] Fehler 2
+> >>>> make[2]: *** Warte auf noch nicht beendete Prozesse...
+> >>>> WRAP    arch/powerpc/boot/zImage.miboot
+> >>>> make[1]: *** [deb-pkg] Fehler 2
+> >>>> make: *** [deb-pkg] Fehler 2
 
-btw you can get an additional speedup by enabling x2apic, for
-default_send_IPI_mask_logical().
+> I was actually thinking of:
+>=20
+> commit dfc209648daf8ba4197e71376b76c95fd26fd272
+> Author: Andreas Schwab <schwab@linux-m68k.org>
+> Date:   Tue Nov 8 07:17:39 2011 +0000
 
--- 
-error compiling committee.c: too many arguments to function
+> But yes :). I guess we need to make sure this commit also lands in 3.2 :(.
 
+So there are at least two commits they must go into 3.2 to make the
+kernel build again, from my point of view:
+
+=E2=80=A2 KVM: PPC: protect use of kvmppc_h_pr
+=E2=80=A2 KVM: PPC: move compute_tlbie_rb to book3s_64 common header
+
+Bye, J=C3=B6rg.
+--=20
+And 1.1.81 is officially BugFree(tm), so if you receive any bug-reports
+on it, you know they are just evil lies.
+            (Linus Torvalds)
+
+--fdj2RfSjLxBAspz7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature http://en.wikipedia.org/wiki/OpenPGP
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk73AnUACgkQwe0mZwH1VIBUjACfRdFXMLvoD+iT1YMGsL5rmotO
+PCAAoLu6xF7o2YjkccxEoEK/NG1hFzdw
+=SSNV
+-----END PGP SIGNATURE-----
+
+--fdj2RfSjLxBAspz7--
