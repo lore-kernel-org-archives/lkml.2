@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753603Ab1LYNSF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 08:18:05 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:50332 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935Ab1LYNSD convert rfc822-to-8bit (ORCPT
+	id S1753567Ab1LYN3p (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 08:29:45 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:58140 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab1LYN3n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 08:18:03 -0500
-X-IronPort-AV: E=Sophos;i="4.71,408,1320652800"; 
-   d="scan'208";a="610710935"
-Message-ID: <1324819077.5195.5.camel@lade.trondhjem.org>
-Subject: Re: [PATCH 4/6] SUNPRC: cleanup RPC PipeFS pipes upcall interface
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Sun, 25 Dec 2011 14:17:57 +0100
-In-Reply-To: <20111122144159.479.68045.stgit@localhost6.localdomain6>
-References: <20111122134514.479.9848.stgit@localhost6.localdomain6>
-	 <20111122144159.479.68045.stgit@localhost6.localdomain6>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 25 Dec 2011 13:17:58.0173 (UTC) FILETIME=[9EB4ACD0:01CCC307]
+	Sun, 25 Dec 2011 08:29:43 -0500
+Message-ID: <4EF7253E.3070606@kernel.dk>
+Date: Sun, 25 Dec 2011 14:29:34 +0100
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, Hugh Dickins <hughd@google.com>,
+        x86@kernel.org
+Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be allowed
+ to create io_context
+References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au> <20111221151503.4d78f94f.akpm@linux-foundation.org> <20111222150836.af172886.akpm@linux-foundation.org> <20111222232036.GP17084@google.com> <20111222152427.c944c747.akpm@linux-foundation.org> <20111222233843.GR17084@google.com> <20111222154427.89b245c7.akpm@linux-foundation.org> <20111222234639.GS17084@google.com> <20111223004244.GU17084@google.com> <alpine.LSU.2.00.1112232058550.3225@eggly.anvils> <20111225010238.GA6013@htj.dyndns.org>
+In-Reply-To: <20111225010238.GA6013@htj.dyndns.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-22 at 18:41 +0300, Stanislav Kinsbursky wrote: 
-> RPC pipe upcall doesn't requires only private pipe data. Thus RPC inode
-> references in this code can be removed.
+On 2011-12-25 02:02, Tejun Heo wrote:
+> While fixing io_context creation / task exit race condition,
+> 6e736be7f2 "block: make ioc get/put interface more conventional and
+> fix race on alloction" also prevented an exiting (%PF_EXITING) task
+> from creating its own io_context.  This is incorrect as exit path may
+> issue IOs, e.g. from exit_files(), and if those IOs are the first ones
+> issued by the task, io_context needs to be created to process the IOs.
 > 
-> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Combined with the existing problem of io_context / io_cq creation
+> failure having the possibility of stalling IO, this problem results in
+> deterministic full IO lockup with certain workloads.
 > 
-> ---
->  fs/nfs/blocklayout/blocklayoutdev.c |    2 +-
->  fs/nfs/blocklayout/blocklayoutdm.c  |    2 +-
->  fs/nfs/idmap.c                      |    4 ++--
->  include/linux/sunrpc/rpc_pipe_fs.h  |    2 +-
->  net/sunrpc/auth_gss/auth_gss.c      |    3 +--
->  net/sunrpc/rpc_pipe.c               |    3 +--
->  6 files changed, 7 insertions(+), 9 deletions(-)
-> 
-> diff --git a/fs/nfs/blocklayout/blocklayoutdev.c b/fs/nfs/blocklayout/blocklayoutdev.c
-> index a83b393..44dc348 100644
-> --- a/fs/nfs/blocklayout/blocklayoutdev.c
-> +++ b/fs/nfs/blocklayout/blocklayoutdev.c
-> @@ -168,7 +168,7 @@ nfs4_blk_decode_device(struct nfs_server *server,
->  
->  	dprintk("%s CALLING USERSPACE DAEMON\n", __func__);
->  	add_wait_queue(&bl_wq, &wq);
-> -	if (rpc_queue_upcall(bl_device_pipe->d_inode, &msg) < 0) {
-> +	if (rpc_queue_upcall(RPC_I(bl_device_pipe->d_inode)->pipe, &msg) < 0) {
+> Fix it by allowing io_context creation regardless of %PF_EXITING for
+> %current.
 
-Needs a rebase: the above doesn't apply...
-
-> 		remove_wait_queue(&bl_wq, &wq);
->  		goto out;
->  	}
-
+Thanks, applied.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Jens Axboe
 
