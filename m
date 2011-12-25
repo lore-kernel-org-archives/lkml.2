@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820Ab1LYQvf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 11:51:35 -0500
+	id S1753756Ab1LYQv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 11:51:29 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:57032 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab1LYQvV (ORCPT
+	with ESMTP id S1753615Ab1LYQvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 11:51:21 -0500
+	Sun, 25 Dec 2011 11:51:19 -0500
 From: Andy Lutomirski <luto@amacapital.net>
 To: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
         john stultz <johnstul@us.ibm.com>, Arun Sharma <asharma@fb.com>
@@ -14,9 +14,9 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Thomas Gleixner <tglx@linutronix.de>,
         Richard Cochran <richardcochran@gmail.com>,
         Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 3/4] x86-64: Optimize vdso clock_gettime
-Date: Sun, 25 Dec 2011 08:51:02 -0800
-Message-Id: <a288f365bafedd86f26f462d7a01803c3151bf78.1324831829.git.luto@amacapital.net>
+Subject: [PATCH 2/4] x86-64: Add __vdso_clock_gettime_ns vsyscall
+Date: Sun, 25 Dec 2011 08:51:01 -0800
+Message-Id: <bfda46b29ab69c531543ac77f1cfd1f0e3adea77.1324831829.git.luto@amacapital.net>
 X-Mailer: git-send-email 1.7.7.4
 In-Reply-To: <cover.1324831829.git.luto@amacapital.net>
 References: <cover.1324831829.git.luto@amacapital.net>
@@ -26,247 +26,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a small improvement.
+This is just for the ABI.  The next patch optimizes the implementation.
 
 Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- arch/x86/include/asm/vgtod.h   |   21 +++++++---
- arch/x86/kernel/vsyscall_64.c  |   25 +++++++++++-
- arch/x86/vdso/vclock_gettime.c |   89 ++++++++++++++++++++++-----------------
- 3 files changed, 89 insertions(+), 46 deletions(-)
+ arch/x86/vdso/vclock_gettime.c |   70 ++++++++++++++++++++++++++++++---------
+ arch/x86/vdso/vdso.lds.S       |    7 ++++
+ 2 files changed, 61 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/vgtod.h b/arch/x86/include/asm/vgtod.h
-index 815285b..03b4999 100644
---- a/arch/x86/include/asm/vgtod.h
-+++ b/arch/x86/include/asm/vgtod.h
-@@ -7,11 +7,6 @@
- struct vsyscall_gtod_data {
- 	seqlock_t	lock;
- 
--	/* open coded 'struct timespec' */
--	time_t		wall_time_sec;
--	u32		wall_time_nsec;
--
--	struct timezone sys_tz;
- 	struct { /* extract of a clocksource struct */
- 		int vclock_mode;
- 		cycle_t	cycle_last;
-@@ -19,8 +14,22 @@ struct vsyscall_gtod_data {
- 		u32	mult;
- 		u32	shift;
- 	} clock;
--	struct timespec wall_to_monotonic;
-+
-+	/* open coded 'struct timespec' */
-+	time_t		wall_time_sec;
-+	u32		wall_time_nsec;
-+	u32		monotonic_time_nsec;
-+	time_t		monotonic_time_sec;
-+
-+	/* Flat counts for clock_ns_get */
-+	u64		wall_time_flat_ns;
-+	u64		monotonic_time_flat_ns;
-+	u64		wall_time_coarse_flat_ns;
-+	u64		monotonic_time_coarse_flat_ns;
-+
-+	struct timezone sys_tz;
- 	struct timespec wall_time_coarse;
-+	struct timespec monotonic_time_coarse;
- };
- extern struct vsyscall_gtod_data vsyscall_gtod_data;
- 
-diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
-index b56c65de..9c2e148 100644
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -91,6 +91,7 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
- 			struct clocksource *clock, u32 mult)
- {
- 	unsigned long flags;
-+	struct timespec monotonic;
- 
- 	write_seqlock_irqsave(&vsyscall_gtod_data.lock, flags);
- 
-@@ -100,10 +101,32 @@ void update_vsyscall(struct timespec *wall_time, struct timespec *wtm,
- 	vsyscall_gtod_data.clock.mask		= clock->mask;
- 	vsyscall_gtod_data.clock.mult		= mult;
- 	vsyscall_gtod_data.clock.shift		= clock->shift;
-+
- 	vsyscall_gtod_data.wall_time_sec	= wall_time->tv_sec;
- 	vsyscall_gtod_data.wall_time_nsec	= wall_time->tv_nsec;
--	vsyscall_gtod_data.wall_to_monotonic	= *wtm;
-+
-+	monotonic = timespec_add(*wall_time, *wtm);
-+	vsyscall_gtod_data.monotonic_time_sec	= monotonic.tv_sec;
-+	vsyscall_gtod_data.monotonic_time_nsec	= monotonic.tv_nsec;
-+
- 	vsyscall_gtod_data.wall_time_coarse	= __current_kernel_time();
-+	vsyscall_gtod_data.monotonic_time_coarse =
-+		timespec_add(vsyscall_gtod_data.wall_time_coarse, *wtm);
-+
-+	/* generate flat data for clock_ns_get */
-+	vsyscall_gtod_data.wall_time_flat_ns =
-+		vsyscall_gtod_data.wall_time_sec * NSEC_PER_SEC +
-+		vsyscall_gtod_data.wall_time_nsec;
-+	vsyscall_gtod_data.monotonic_time_flat_ns =
-+		vsyscall_gtod_data.monotonic_time_sec * NSEC_PER_SEC +
-+		vsyscall_gtod_data.monotonic_time_nsec;
-+
-+	vsyscall_gtod_data.wall_time_coarse_flat_ns =
-+		vsyscall_gtod_data.wall_time_coarse.tv_sec * NSEC_PER_SEC +
-+		vsyscall_gtod_data.wall_time_coarse.tv_nsec;
-+	vsyscall_gtod_data.monotonic_time_coarse_flat_ns =
-+		vsyscall_gtod_data.monotonic_time_coarse.tv_sec * NSEC_PER_SEC +
-+		vsyscall_gtod_data.monotonic_time_coarse.tv_nsec;
- 
- 	write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
- }
 diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
-index c8a2b46..fe960ac 100644
+index 6bc0e72..c8a2b46 100644
 --- a/arch/x86/vdso/vclock_gettime.c
 +++ b/arch/x86/vdso/vclock_gettime.c
-@@ -94,26 +94,36 @@ notrace static noinline void do_realtime(struct timespec *ts)
+@@ -82,7 +82,7 @@ notrace static inline long vgetns(void)
+ 	return (v * gtod->clock.mult) >> gtod->clock.shift;
+ }
+ 
+-notrace static noinline int do_realtime(struct timespec *ts)
++notrace static noinline void do_realtime(struct timespec *ts)
+ {
+ 	unsigned long seq, ns;
+ 	do {
+@@ -92,10 +92,9 @@ notrace static noinline int do_realtime(struct timespec *ts)
+ 		ns = vgetns();
+ 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
  	timespec_add_ns(ts, ns);
+-	return 0;
  }
  
-+notrace static noinline u64 do_realtime_ns(void)
-+{
-+	unsigned long seq, ns;
-+	do {
-+		seq = read_seqbegin(&gtod->lock);
-+		ns = gtod->wall_time_flat_ns + vgetns();
-+	} while (unlikely(read_seqretry(&gtod->lock, seq)));
-+	return ns;
-+}
-+
- notrace static noinline void do_monotonic(struct timespec *ts)
+-notrace static noinline int do_monotonic(struct timespec *ts)
++notrace static noinline void do_monotonic(struct timespec *ts)
  {
--	unsigned long seq, ns, secs;
-+	unsigned long seq, ns;
+ 	unsigned long seq, ns, secs;
  	do {
- 		seq = read_seqbegin(&gtod->lock);
--		secs = gtod->wall_time_sec;
--		ns = gtod->wall_time_nsec + vgetns();
--		secs += gtod->wall_to_monotonic.tv_sec;
--		ns += gtod->wall_to_monotonic.tv_nsec;
-+		ts->tv_sec = gtod->monotonic_time_sec;
-+		ts->tv_nsec = gtod->monotonic_time_nsec;
-+		ns = vgetns();
- 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
-+	timespec_add_ns(ts, ns);
-+}
- 
--	/* wall_time_nsec, vgetns(), and wall_to_monotonic.tv_nsec
--	 * are all guaranteed to be nonnegative.
--	 */
--	while (ns >= NSEC_PER_SEC) {
--		ns -= NSEC_PER_SEC;
--		++secs;
--	}
--	ts->tv_sec = secs;
--	ts->tv_nsec = ns;
-+notrace static noinline u64 do_monotonic_ns(void)
-+{
-+	unsigned long seq, ns;
-+	do {
-+		seq = read_seqbegin(&gtod->lock);
-+		ns = gtod->monotonic_time_flat_ns + vgetns();
-+	} while (unlikely(read_seqretry(&gtod->lock, seq)));
-+	return ns;
+@@ -115,11 +114,9 @@ notrace static noinline int do_monotonic(struct timespec *ts)
+ 	}
+ 	ts->tv_sec = secs;
+ 	ts->tv_nsec = ns;
+-
+-	return 0;
  }
  
- notrace static noinline void do_realtime_coarse(struct timespec *ts)
-@@ -126,26 +136,26 @@ notrace static noinline void do_realtime_coarse(struct timespec *ts)
- 	} while (unlikely(read_seqretry(&gtod->lock, seq)));
- }
- 
-+notrace static noinline u64 do_realtime_coarse_ns(void)
-+{
-+	/* This is atomic on x86-64. */
-+	return ACCESS_ONCE(gtod->wall_time_coarse_flat_ns);
-+}
-+
- notrace static noinline void do_monotonic_coarse(struct timespec *ts)
+-notrace static noinline int do_realtime_coarse(struct timespec *ts)
++notrace static noinline void do_realtime_coarse(struct timespec *ts)
  {
--	unsigned long seq, ns, secs;
-+	unsigned long seq;
+ 	unsigned long seq;
  	do {
- 		seq = read_seqbegin(&gtod->lock);
--		secs = gtod->wall_time_coarse.tv_sec;
--		ns = gtod->wall_time_coarse.tv_nsec;
--		secs += gtod->wall_to_monotonic.tv_sec;
--		ns += gtod->wall_to_monotonic.tv_nsec;
-+		ts->tv_sec = gtod->monotonic_time_coarse.tv_sec;
-+		ts->tv_nsec = gtod->monotonic_time_coarse.tv_nsec;
+@@ -127,10 +124,9 @@ notrace static noinline int do_realtime_coarse(struct timespec *ts)
+ 		ts->tv_sec = gtod->wall_time_coarse.tv_sec;
+ 		ts->tv_nsec = gtod->wall_time_coarse.tv_nsec;
  	} while (unlikely(read_seqretry(&gtod->lock, seq)));
-+}
+-	return 0;
+ }
  
--	/* wall_time_nsec and wall_to_monotonic.tv_nsec are
--	 * guaranteed to be between 0 and NSEC_PER_SEC.
--	 */
--	if (ns >= NSEC_PER_SEC) {
--		ns -= NSEC_PER_SEC;
--		++secs;
--	}
--	ts->tv_sec = secs;
--	ts->tv_nsec = ns;
-+notrace static noinline u64 do_monotonic_coarse_ns(void)
-+{
-+	/* This is atomic on x86-64. */
-+	return ACCESS_ONCE(gtod->monotonic_time_coarse_flat_ns);
+-notrace static noinline int do_monotonic_coarse(struct timespec *ts)
++notrace static noinline void do_monotonic_coarse(struct timespec *ts)
+ {
+ 	unsigned long seq, ns, secs;
+ 	do {
+@@ -150,25 +146,29 @@ notrace static noinline int do_monotonic_coarse(struct timespec *ts)
+ 	}
+ 	ts->tv_sec = secs;
+ 	ts->tv_nsec = ns;
+-
+-	return 0;
  }
  
  notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
-@@ -178,37 +188,38 @@ int clock_gettime(clockid_t, struct timespec *)
- 
- notrace int __vdso_clock_gettime_ns(clockid_t clock, struct timens *t)
  {
--	/* This implementation is slow.  It will be improved later. */
--
- 	struct timespec ts;
- 	int error;
- 
  	switch (clock) {
  	case CLOCK_REALTIME:
- 		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
--			do_realtime(&ts);
--			goto done;
-+			t->ns = do_realtime_ns();
-+			t->padding = 0;
+-		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+-			return do_realtime(ts);
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_realtime(ts);
 +			return 0;
- 		}
++		}
  		break;
  	case CLOCK_MONOTONIC:
- 		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
--			do_monotonic(&ts);
--			goto done;
-+			t->ns = do_monotonic_ns();
-+			t->padding = 0;
+-		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE))
+-			return do_monotonic(ts);
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_monotonic(ts);
 +			return 0;
- 		}
++		}
  		break;
  	case CLOCK_REALTIME_COARSE:
--		do_realtime_coarse(&ts);
--		goto done;
-+		t->ns = do_realtime_coarse_ns();
-+		t->padding = 0;
+-		return do_realtime_coarse(ts);
++		do_realtime_coarse(ts);
 +		return 0;
  	case CLOCK_MONOTONIC_COARSE:
--		do_monotonic_coarse(&ts);
--		goto done;
-+		t->ns = do_monotonic_coarse_ns();
-+		t->padding = 0;
+-		return do_monotonic_coarse(ts);
++		do_monotonic_coarse(ts);
 +		return 0;
  	}
  
- 	error = vdso_fallback_gettime(clock, &ts);
- 	if (error)
- 		return error;
+ 	return vdso_fallback_gettime(clock, ts);
+@@ -176,6 +176,44 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ int clock_gettime(clockid_t, struct timespec *)
+ 	__attribute__((weak, alias("__vdso_clock_gettime")));
  
--done:
- 	t->ns = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
- 	t->padding = 0;
- 	return 0;
++notrace int __vdso_clock_gettime_ns(clockid_t clock, struct timens *t)
++{
++	/* This implementation is slow.  It will be improved later. */
++
++	struct timespec ts;
++	int error;
++
++	switch (clock) {
++	case CLOCK_REALTIME:
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_realtime(&ts);
++			goto done;
++		}
++		break;
++	case CLOCK_MONOTONIC:
++		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
++			do_monotonic(&ts);
++			goto done;
++		}
++		break;
++	case CLOCK_REALTIME_COARSE:
++		do_realtime_coarse(&ts);
++		goto done;
++	case CLOCK_MONOTONIC_COARSE:
++		do_monotonic_coarse(&ts);
++		goto done;
++	}
++
++	error = vdso_fallback_gettime(clock, &ts);
++	if (error)
++		return error;
++
++done:
++	t->ns = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
++	t->padding = 0;
++	return 0;
++}
++
+ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+ {
+ 	long ret;
+diff --git a/arch/x86/vdso/vdso.lds.S b/arch/x86/vdso/vdso.lds.S
+index b96b267..238f500 100644
+--- a/arch/x86/vdso/vdso.lds.S
++++ b/arch/x86/vdso/vdso.lds.S
+@@ -17,6 +17,10 @@
+ VERSION {
+ 	LINUX_2.6 {
+ 	global:
++		/*
++		 * These are the original vsyscalls.  They have weak symbols
++		 * without the __vdso_ prefix for ABI compatibility.
++		 */
+ 		clock_gettime;
+ 		__vdso_clock_gettime;
+ 		gettimeofday;
+@@ -25,6 +29,9 @@ VERSION {
+ 		__vdso_getcpu;
+ 		time;
+ 		__vdso_time;
++
++		/* New vsyscalls are just plain functions. */
++		__vdso_clock_gettime_ns;
+ 	local: *;
+ 	};
+ }
 -- 
 1.7.7.4
 
