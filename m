@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab1LYPzu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 10:55:50 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:56048 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab1LYPzs convert rfc822-to-8bit (ORCPT
+	id S1753420Ab1LYQI3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 11:08:29 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:58710 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab1LYQI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 10:55:48 -0500
+	Sun, 25 Dec 2011 11:08:26 -0500
 MIME-Version: 1.0
-In-Reply-To: <1324824127-10540-1-git-send-email-geert@linux-m68k.org>
-References: <1324824127-10540-1-git-send-email-geert@linux-m68k.org>
-Date: Sun, 25 Dec 2011 16:55:47 +0100
-Message-ID: <CAFLxGvx7p=meL5fujby_sc+CM3UUe7jbgSzSKpqLaWwXJopo+A@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.2-rc7
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au>
+References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au>
+Date: Sun, 25 Dec 2011 17:08:24 +0100
+Message-ID: <CA+icZUWYC1kYf19Zw1Jg2onAOpj3P4pRVt5h6HJp5RxuowTXZw@mail.gmail.com>
+Subject: Re: linux-next: Tree for Dec 21
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 25, 2011 at 3:42 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
->  + src/arch/um/os-Linux/skas/process.c: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function):  => 321, 552
->  + src/arch/um/os-Linux/skas/process.c: error: (Each undeclared identifier is reported only once:  => 321
->  + src/arch/um/os-Linux/skas/process.c: error: for each function it appears in.):  => 321
->  + src/arch/um/os-Linux/start_up.c: error: 'PTRACE_O_TRACESYSGOOD' undeclared (first use in this function):  => 302, 244
->  + src/arch/um/os-Linux/start_up.c: error: 'PTRACE_SETOPTIONS' undeclared (first use in this function):  => 243, 301
->  + src/arch/um/os-Linux/start_up.c: error: (Each undeclared identifier is reported only once:  => 243
->  + src/arch/um/os-Linux/start_up.c: error: for each function it appears in.):  => 243
+On Wed, Dec 21, 2011 at 7:47 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
+>
+> Changes since 20111220:
+>
 
-*confused*
+[ CC mjg59 ]
 
-UML 3.2-rc7 builds fine here.
-Both i386 and x86_64.
+What happened to drivers-x86 listed in [1]?
 
--- 
-Thanks,
-//richard
+$ git clone git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86
+Cloning into 'platform-drivers-x86'...
+fatal: The remote end hung up unexpectedly
+
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees#l184
