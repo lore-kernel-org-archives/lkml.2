@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab1LZP31 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 10:29:27 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49246 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755563Ab1LZP3Z convert rfc822-to-8bit (ORCPT
+	id S1755663Ab1LZPae (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 10:30:34 -0500
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:35002 "HELO
+	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755605Ab1LZPac (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 10:29:25 -0500
-Date: Mon, 26 Dec 2011 16:29:19 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
-cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
+	Mon, 26 Dec 2011 10:30:32 -0500
+To: linux-scsi@vger.kernel.org, JBottomley@parallels.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] b43: support new RX header, noticed to be used in 598.314+
- fw
-Message-ID: <alpine.DEB.2.00.1112261608140.12108@axis700.grange>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Subject: [PATCH 2/3 v4] mpt2sas: use pci_dev->revision
+Cc: akpm@linux-foundation.org
+Content-Disposition: inline
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Organization: MontaVista Software Inc.
+Date: Mon, 26 Dec 2011 19:29:26 +0300
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:Bv6yiztzH+28u9i7DPoB0F/ntf5Jq9VA4p1xKqRh2qI
- ER+OJ/bZvl8E/YZV5CezOWRwZwBh3KZThgjDIVMpbuaHHO5FDr
- ffXIIfmUhQexvsFRaTsg+OjerV5aWpfe1SooRfmBZDdbxH7nod
- ZYwrVWROtKM540DpvLrJ4qlF8GWSWdyzlTwe7ZAdLG2mY/9FXF
- eyLpw+xonccxPX7iPgnO4gPBXkRYZxtIGfEdEj0QzxWY+0UQGs
- OpPPW3YU+BkzmLIKDZr/3sVzDiJqw8y9IrDa2MJdh7RJ1y/1Rd
- pzebBMhhTnECPEPYOu4aEVJ74nekZJ8SQt6+y49EPvsvGcwtjm
- zluRww06Qj6DI21DQhDQs8fAzNQvy+zB8dBw7SPvBgEIGvFv7+
- jgzxzRmG7u7ng==
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112261929.26333.sshtylyov@ru.mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The driver reads PCI revision ID from the PCI configuration register while it's
+already stored by PCI subsystem in the 'revision' field of 'struct pci_dev'...
 
-Sorry for "simulating" a reply - I'm not subscribed to linux-wireless, so,
-cannot (easily) reply.
-   
-The commit in subject line
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
 
-commit 17030f48e31adde5b043741c91ba143f5f7db0fd
-From: Rafa³ Mi³ecki <zajec5@gmail.com>
-Date: Thu, 11 Aug 2011 17:16:27 +0200
-Subject: [PATCH] b43: support new RX header, noticed to be used in 598.314+ fw
-
-breaks my b43 SDIO card in 3.2-ish kernels. Given the approaching 
-3.2-final release, would be nice to have it fixed before that. The card 
-I've got is marked with some "SD-Link11g" from some "C-guys, Inc." from 
-Taiwan:-) Using firmware version 410.31754. Do I really _have_ to update 
-or is the driver supposed to handle "all" firmware versions, or at least 
-not drop ones, it used to support before?
-
-Thanks
-Guennadi
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+The patch is refreshed against the recent Linus' tree.
+
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    4 +---
+ drivers/scsi/mpt2sas/mpt2sas_ctl.c  |    4 +---
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_base.c
+===================================================================
+--- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -1992,12 +1992,10 @@ _base_display_ioc_capabilities(struct MP
+ {
+ 	int i = 0;
+ 	char desc[16];
+-	u8 revision;
+ 	u32 iounit_pg1_flags;
+ 	u32 bios_version;
+ 
+ 	bios_version = le32_to_cpu(ioc->bios_pg3.BiosVersion);
+-	pci_read_config_byte(ioc->pdev, PCI_CLASS_REVISION, &revision);
+ 	strncpy(desc, ioc->manu_pg0.ChipName, 16);
+ 	printk(MPT2SAS_INFO_FMT "%s: FWVersion(%02d.%02d.%02d.%02d), "
+ 	   "ChipRevision(0x%02x), BiosVersion(%02d.%02d.%02d.%02d)\n",
+@@ -2006,7 +2004,7 @@ _base_display_ioc_capabilities(struct MP
+ 	   (ioc->facts.FWVersion.Word & 0x00FF0000) >> 16,
+ 	   (ioc->facts.FWVersion.Word & 0x0000FF00) >> 8,
+ 	   ioc->facts.FWVersion.Word & 0x000000FF,
+-	   revision,
++	   ioc->pdev->revision,
+ 	   (bios_version & 0xFF000000) >> 24,
+ 	   (bios_version & 0x00FF0000) >> 16,
+ 	   (bios_version & 0x0000FF00) >> 8,
+Index: linux-2.6/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+===================================================================
+--- linux-2.6.orig/drivers/scsi/mpt2sas/mpt2sas_ctl.c
++++ linux-2.6/drivers/scsi/mpt2sas/mpt2sas_ctl.c
+@@ -1026,7 +1026,6 @@ _ctl_getiocinfo(void __user *arg)
+ {
+ 	struct mpt2_ioctl_iocinfo karg;
+ 	struct MPT2SAS_ADAPTER *ioc;
+-	u8 revision;
+ 
+ 	if (copy_from_user(&karg, arg, sizeof(karg))) {
+ 		printk(KERN_ERR "failure at %s:%d/%s()!\n",
+@@ -1046,8 +1045,7 @@ _ctl_getiocinfo(void __user *arg)
+ 		karg.adapter_type = MPT2_IOCTL_INTERFACE_SAS2;
+ 	if (ioc->pfacts)
+ 		karg.port_number = ioc->pfacts[0].PortNumber;
+-	pci_read_config_byte(ioc->pdev, PCI_CLASS_REVISION, &revision);
+-	karg.hw_rev = revision;
++	karg.hw_rev = ioc->pdev->revision;
+ 	karg.pci_id = ioc->pdev->device;
+ 	karg.subsystem_device = ioc->pdev->subsystem_device;
+ 	karg.subsystem_vendor = ioc->pdev->subsystem_vendor;
