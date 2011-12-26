@@ -1,157 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab1LZGw3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 01:52:29 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37672 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab1LZGwX (ORCPT
+	id S1752692Ab1LZG5d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 01:57:33 -0500
+Received: from shutemov.name ([188.40.19.243]:55431 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751476Ab1LZG50 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 01:52:23 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Date: Mon, 26 Dec 2011 15:52:04 +0900
-From: Yasunori Goto <y-goto@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <1324633794.24803.48.camel@twins>
-References: <20111222094241.C691.E1E9C6FF@jp.fujitsu.com> <1324633794.24803.48.camel@twins>
-Message-Id: <20111226155204.CE44.E1E9C6FF@jp.fujitsu.com>
+	Mon, 26 Dec 2011 01:57:26 -0500
+Date: Mon, 26 Dec 2011 08:57:24 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 5/6] memcg: fix broken boolen expression
+Message-ID: <20111226065724.GA13459@shutemov.name>
+References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
+ <1324695619-5537-5-git-send-email-kirill@shutemov.name>
+ <20111226153138.0376bd66.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20111226153138.0376bd66.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 2011-12-22 at 09:42 +0900, Yasunori Goto wrote:
-> > I found TASK_DEAD task is able to be woken up in special condition.
-> > I would like to report this bug. Please check it.
+On Mon, Dec 26, 2011 at 03:31:38PM +0900, KAMEZAWA Hiroyuki wrote:
+> On Sat, 24 Dec 2011 05:00:18 +0200
+> "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 > 
-> How did you find it? Manual inspection? Inspection of a core-dump?
+> > From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> > 
+> > action != CPU_DEAD || action != CPU_DEAD_FROZEN is always true.
+> > 
+> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+> 
+> maybe this should go stable..
 
-Original trouble occurred on a distributor's kernel which is based on 2.6.32.
-Kernel called BUG() because TASK_DEAD task was scheduled again.
-I chased it with trace in crash dump, and I confirmed this sequence.
-
-In my code review, current 3.2-rc6 seems to have same problem, so I posted 
-this report.
-
+CC stable@
 
 > 
-> > Here is the sequence how it occurs.
-> > 
-> > ----------------------------------+-----------------------------
-> >                                   |
-> >            CPU A                  |             CPU B
-> > ----------------------------------+-----------------------------
-> > TASK A calls exit()....
-> > 
-> > do_exit()
-> > 
-> >   exit_mm()
-> >     down_read(mm->mmap_sem);
-> >     
-> >     rwsem_down_failed_common()
-> > 
-> >       set TASK_UNINTERRUPTIBLE
-> >       set waiter.task <= task A
-> >       list_add to sem->wait_list
-> >            :
-> >       raw_spin_unlock_irq()
-> >       (I/O interruption occured)
-> > 
-> >                                       __rwsem_do_wake(mmap_sem)
-> > 
-> >                                         list_del(&waiter->list);
-> >                                         waiter->task = NULL
-> >                                         wake_up_process(task A)
-> >                                           try_to_wake_up()
-> >                                              (task is still
-> >                                                TASK_UNINTERRUPTIBLE)
-> >                                               p->on_rq is still 1.)
-> > 
-> >                                               ttwu_do_wakeup()
-> >                                                  (*A)
-> >                                                    :
-> >      (I/O interruption handler finished)
-> > 
-> >       if (!waiter.task) 
-> >           schedule() is not called
-> >           due to waiter.task is NULL.
-> >       
-> >       tsk->state = TASK_RUNNING
-> > 
-> >           :
-> >                                               check_preempt_curr();
-> >                                                   :
-> >   task->state = TASK_DEAD
-> >                                               (*B)
-> >                                         <---    set TASK_RUNNING (*C)
-> > 
-> > 
-> > 
-> >      schedule()
-> >      (exit task is running again)
-> >      BUG_ON() is called!
-> > --------------------------------------------------------
-> 
-> <snip>
-> 
-> > This is very bad senario.
-> > But, I suppose this phenomenon is able to occur on a guest system of
-> > virtual machine too.
-> > 
-> > Please fix it.
-> > 
-> > I suppose task->pi_lock should be held when task->state is changed to 
-> > TASK_DEAD like the following patch (not tested yet).
-> > Because try_to_wake_up() hold it before checking task state.
-> 
-> I don't think this can actually happen, note the raw_spin_unlock_wait()
-> in do_exit() long before setting TASK_DEAD, that should synchronize
-> against the in-progress wakeup and ensure its finished and has set
-> TASK_RUNNING. Spurious wakeups after that won't see a state to act on
-> and will terminate immediately without touching state.
-
-As Oleg-san said, raw_spin_unlock_wait() is called before exit_mm().
-This race condition occurred after using rwsem of mmap_sem in exit_mm().
-
-Thanks.
-
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
 > 
 > > ---
-> >  kernel/exit.c |    3 +++
-> >  1 file changed, 3 insertions(+)
+> >  mm/memcontrol.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
 > > 
-> > Index: linux-3.2-rc4/kernel/exit.c
-> > ===================================================================
-> > --- linux-3.2-rc4.orig/kernel/exit.c
-> > +++ linux-3.2-rc4/kernel/exit.c
-> > @@ -1038,8 +1038,11 @@ NORET_TYPE void do_exit(long code)
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index b27ce0f..3833a7b 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -2100,7 +2100,7 @@ static int __cpuinit memcg_cpu_hotplug_callback(struct notifier_block *nb,
+> >  		return NOTIFY_OK;
+> >  	}
 > >  
-> >         preempt_disable();
-> >         exit_rcu();
-> > +
-> > +       spin_lock(&tsk->pi_lock, flags);
-> >         /* causes final put_task_struct in finish_task_switch(). */
-> >         tsk->state = TASK_DEAD;
-> > +       spin_unlock(&tsk->pi_lock, flags);
-> >         schedule();
-> >         BUG();
-> >         /* Avoid "noreturn function does return".  */ 
+> > -	if ((action != CPU_DEAD) || action != CPU_DEAD_FROZEN)
+> > +	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
+> >  		return NOTIFY_OK;
+> >  
+> >  	for_each_mem_cgroup(iter)
+> > -- 
+> > 1.7.7.3
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
 > 
-> Note, ->pi_lock is a raw_spinlock_t, those should've been raw_spin_*().
-
-
-
 
 -- 
-Yasunori Goto 
-
-
+ Kirill A. Shutemov
