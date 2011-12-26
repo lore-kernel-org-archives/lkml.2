@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab1LZLjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 06:39:39 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:36802 "EHLO relay.sw.ru"
+	id S1755095Ab1LZLjz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 06:39:55 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:9261 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754585Ab1LZLjf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 06:39:35 -0500
-Subject: [PATCH v3 3/7] SUNRPC: send notification events on pipefs sb creation
- and destruction
+	id S1755022Ab1LZLjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 06:39:51 -0500
+Subject: [PATCH v3 5/7] SUNRPC: put pipefs superblock link on network namespace
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Mon, 26 Dec 2011 15:39:13 +0300
-Message-ID: <20111226113913.13216.49396.stgit@localhost6.localdomain6>
+Date: Mon, 26 Dec 2011 15:39:30 +0300
+Message-ID: <20111226113930.13216.24458.stgit@localhost6.localdomain6>
 In-Reply-To: <20111226113504.13216.19798.stgit@localhost6.localdomain6>
 References: <20111226113504.13216.19798.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,110 +25,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They will be used to notify subscribers about pipefs superblock creation and
-destruction.
-Subcribers will have to create their dentries on passed superblock on mount
-event and destroy otherwise.
+We have modules (like, pNFS blocklayout module) which creates pipes on
+rpc_pipefs. Thus we need per-net operations for them. To make it possible we
+require appropriate super block. So we have to put sb link on network namespace
+context. Note, that it's not strongly required to create pipes in per-net
+operations. IOW, if pipefs wasn't mounted yet, that no sb link reference will
+present on network namespace and in this case we need just need to pass through
+pipe creation. Pipe dentry will be created during pipefs mount notification.
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- include/linux/sunrpc/rpc_pipe_fs.h |    8 ++++++++
- net/sunrpc/rpc_pipe.c              |   32 ++++++++++++++++++++++++++++++++
- 2 files changed, 40 insertions(+), 0 deletions(-)
+ net/sunrpc/netns.h    |    2 ++
+ net/sunrpc/rpc_pipe.c |    4 ++++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index 08aae01..733ef50 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -43,6 +43,14 @@ RPC_I(struct inode *inode)
- 	return container_of(inode, struct rpc_inode, vfs_inode);
- }
+diff --git a/net/sunrpc/netns.h b/net/sunrpc/netns.h
+index d013bf2..b384252 100644
+--- a/net/sunrpc/netns.h
++++ b/net/sunrpc/netns.h
+@@ -9,6 +9,8 @@ struct cache_detail;
+ struct sunrpc_net {
+ 	struct proc_dir_entry *proc_net_rpc;
+ 	struct cache_detail *ip_map_cache;
++
++	struct super_block *pipefs_sb;
+ };
  
-+extern int rpc_pipefs_notifier_register(struct notifier_block *);
-+extern void rpc_pipefs_notifier_unregister(struct notifier_block *);
-+
-+enum {
-+	RPC_PIPEFS_MOUNT,
-+	RPC_PIPEFS_UMOUNT,
-+};
-+
- extern ssize_t rpc_pipe_generic_upcall(struct file *, struct rpc_pipe_msg *,
- 				       char __user *, size_t);
- extern int rpc_queue_upcall(struct inode *, struct rpc_pipe_msg *);
+ extern int sunrpc_net_id;
 diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index ff41fef..07fb7dd 100644
+index 1de840d..831e81d 100644
 --- a/net/sunrpc/rpc_pipe.c
 +++ b/net/sunrpc/rpc_pipe.c
-@@ -28,8 +28,10 @@
- #include <linux/sunrpc/rpc_pipe_fs.h>
- #include <linux/sunrpc/cache.h>
- #include <linux/nsproxy.h>
-+#include <linux/notifier.h>
- 
- #include "netns.h"
-+#include "sunrpc.h"
- 
- static struct vfsmount *rpc_mnt __read_mostly;
- static int rpc_mount_count;
-@@ -41,6 +43,20 @@ static struct kmem_cache *rpc_inode_cachep __read_mostly;
- 
- #define RPC_UPCALL_TIMEOUT (30*HZ)
- 
-+static BLOCKING_NOTIFIER_HEAD(rpc_pipefs_notifier_list);
-+
-+int rpc_pipefs_notifier_register(struct notifier_block *nb)
-+{
-+	return blocking_notifier_chain_cond_register(&rpc_pipefs_notifier_list, nb);
-+}
-+EXPORT_SYMBOL_GPL(rpc_pipefs_notifier_register);
-+
-+void rpc_pipefs_notifier_unregister(struct notifier_block *nb)
-+{
-+	blocking_notifier_chain_unregister(&rpc_pipefs_notifier_list, nb);
-+}
-+EXPORT_SYMBOL_GPL(rpc_pipefs_notifier_unregister);
-+
- static void rpc_purge_list(struct rpc_inode *rpci, struct list_head *head,
- 		void (*destroy_msg)(struct rpc_pipe_msg *), int err)
- {
-@@ -998,6 +1014,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+@@ -1030,6 +1030,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
  	struct inode *inode;
  	struct dentry *root;
  	struct net *net = data;
-+	int err;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
+ 	int err;
  
  	sb->s_blocksize = PAGE_CACHE_SIZE;
- 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
-@@ -1015,8 +1032,20 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
- 	}
- 	if (rpc_populate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF, NULL))
- 		return -ENOMEM;
-+	err = blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
-+					   RPC_PIPEFS_MOUNT,
-+					   sb);
-+	if (err)
-+		goto err_depopulate;
+@@ -1054,6 +1055,7 @@ rpc_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (err)
+ 		goto err_depopulate;
  	sb->s_fs_info = get_net(net);
++	sn->pipefs_sb = sb;
  	return 0;
-+
-+err_depopulate:
-+	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
-+					   RPC_PIPEFS_UMOUNT,
-+					   sb);
-+	__rpc_depopulate(root, files, RPCAUTH_lockd, RPCAUTH_RootEOF);
-+	return err;
- }
  
- static struct dentry *
-@@ -1031,6 +1060,9 @@ void rpc_kill_sb(struct super_block *sb)
+ err_depopulate:
+@@ -1074,7 +1076,9 @@ rpc_mount(struct file_system_type *fs_type,
+ void rpc_kill_sb(struct super_block *sb)
+ {
  	struct net *net = sb->s_fs_info;
++	struct sunrpc_net *sn = net_generic(net, sunrpc_net_id);
  
++	sn->pipefs_sb = NULL;
  	put_net(net);
-+	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
-+					   RPC_PIPEFS_UMOUNT,
-+					   sb);
- 	kill_litter_super(sb);
- }
- 
+ 	blocking_notifier_call_chain(&rpc_pipefs_notifier_list,
+ 					   RPC_PIPEFS_UMOUNT,
 
