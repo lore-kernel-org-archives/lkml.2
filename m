@@ -1,43 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347Ab1LZRmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 12:42:21 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:24239 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751902Ab1LZRmU (ORCPT
+	id S1752472Ab1LZRpp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 12:45:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48458 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751950Ab1LZRpn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 12:42:20 -0500
-X-IronPort-AV: E=Sophos;i="4.71,411,1320620400"; 
-   d="scan'208";a="136907041"
-Date: Mon, 26 Dec 2011 18:42:17 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: alan@linux.intel.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: question about lqasc_release_port in drivers/tty/serial/lantiq.c
-Message-ID: <alpine.DEB.2.02.1112261839190.1873@localhost6.localdomain6>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Mon, 26 Dec 2011 12:45:43 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <1324900599-20804-1-git-send-email-consul.kautuk@gmail.com>
+References: <1324900599-20804-1-git-send-email-consul.kautuk@gmail.com>
+Date: Mon, 26 Dec 2011 12:45:41 -0500
+Message-ID: <CAFPAmTRJix3hYitz3V=__Wsc70px3mXUx9TXHC+QK5UYcKwxag@mail.gmail.com>
+Subject: Re: [PATCH 1/1] swapfile: swap_info_get: Check for swap_info[type] == NULL
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Eric B Munson <emunson@mgebm.net>, Pekka Enberg <penberg@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function lqasc_release_port in the file drivers/tty/serial/lantiq.c is 
-defined as follows:
+Hi,
 
-static void
-lqasc_release_port(struct uart_port *port)
-{
-  	if (port->flags & UPF_IOREMAP) {
-         	iounmap(port->membase);
- 		port->membase = NULL;
- 	}
-}
+Sorry, please ignore the patch file below.
 
-But port->membase is initialized using devm_ioremap_nocache, implying that 
-it should be freed with devm_ioremap.  devm_ioremap, however, requires an 
-additional &pdev->dev argument.  Maybe the call to iounmap is not needed 
-at all?
+I made a mistake in understanding the code logic.
+I now understand that the first "bad_nofile" validation check
+is good enough for checking the validity of the value in the "type" variable.
 
-julia
+
+On Mon, Dec 26, 2011 at 6:56 AM, Kautuk Consul <consul.kautuk@gmail.com> wrote:
+> From: Kautuk Consul <consul.kautuk@gmail.com>
+>
+> If the swapfile type encoded within entry.val is corrupted in
+> such a way that the swap_info[type] == NULL, then the code in
+> swap_info_get will cause a NULL pointer exception.
+>
+> Assuming that the code in swap_info_get attempts to validate the
+> swapfile type by checking its range, another bad_nofile check would
+> be to check for check whether the swap_info[type] pointer is NULL.
+>
+> Adding a NULL check for swap_info[type] to be reagrded as a "bad_nofile"
+> error scenario.
+>
+> Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+> ---
+>  mm/swapfile.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/mm/swapfile.c b/mm/swapfile.c
+> index b1cd120..7bdbe91 100644
+> --- a/mm/swapfile.c
+> +++ b/mm/swapfile.c
+> @@ -483,6 +483,8 @@ static struct swap_info_struct *swap_info_get(swp_entry_t entry)
+>        if (type >= nr_swapfiles)
+>                goto bad_nofile;
+>        p = swap_info[type];
+> +       if (!p)
+> +               goto bad_nofile;
+>        if (!(p->flags & SWP_USED))
+>                goto bad_device;
+>        offset = swp_offset(entry);
+> --
+> 1.7.6
+>
