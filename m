@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755733Ab1LZPlX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 10:41:23 -0500
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:54710 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755687Ab1LZPlV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 10:41:21 -0500
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Organization: MontaVista Software Inc.
-To: linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 0/3] SCSI: use pci_dev->revision
-Date: Mon, 26 Dec 2011 19:40:15 +0300
-User-Agent: KMail/1.9.10
-Cc: James.Bottomley@suse.de, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-References: <201112261920.48250.sshtylyov@ru.mvista.com>
-In-Reply-To: <201112261920.48250.sshtylyov@ru.mvista.com>
+	id S1755751Ab1LZPsr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 10:48:47 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29718 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755430Ab1LZPsp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 10:48:45 -0500
+Date: Mon, 26 Dec 2011 16:42:57 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Kirill Tkhai <kirill.tkhai@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Kirill Tkhai <tkhai@yandex.ru>
+Subject: Re: [PATCH]sched: stop hrtick timer if running task is switching
+	from fair scheduling class to another
+Message-ID: <20111226154257.GA21445@redhat.com>
+References: <1324584060.4222.15.camel@hp>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201112261940.15534.sshtylyov@ru.mvista.com>
+In-Reply-To: <1324584060.4222.15.camel@hp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On 12/23, Kirill Tkhai wrote:
+>
+> [PATCH]sched: stop hrtick timer if running task is switching from fair
+> scheduling class to another
+>
+> We have to stop hrtick timer to avoid excess interrupt. Not-fair tasks
+> are not interested in fair's hrtick. RT class uses its own fixed
+> timeslice (in case of RR), which doesn't depend on current value of hrtick
+> timer.
 
-On Monday 26 December 2011 07:20:47 pm Sergei Shtylyov wrote:
+Well. I shouldn't try to comment this patch, I do not really understand
+this code.
 
-> This patchset converts the remaining cases of reading the PCI revision register
-> directly to using the value already cached by PCI subsystem in the 'revision'
-> field of 'struct pci_dev'.
+But since nobody else replies...
 
-> The patchset wasn't merged in either 2.6.39, 3.0, 3.1, or 3.2 time -- hopefully
-> it can be merged to 3.3 at least...
+> @@ -5271,6 +5271,13 @@ static void switched_from_fair(struct rq *rq,
+> struct task_struct *p)
+>  		place_entity(cfs_rq, se, 0);
+>  		se->vruntime -= cfs_rq->min_vruntime;
+>  	}
+> +
+> +	/*
+> +	 * Other scheduling classes are not interested in fair's hrtick timer.
+> +	 */
+> +	if (task_current(rq, p) && sched_feat(HRTICK))
+> +		hrtick_clear(rq);
+> +
+>  }
 
-> James B., you seem to consistently ignore this patchset without telling me what
-> is wrong with it; in all my attempts at submitting it I got no feedback what
-> so ever.  Andrew M., as James seem to ignore this patchset, maybe you could
-> queue it?
+May be... but in this case, perhaps instead we should teach
+dequeue_task_fair() or put_prev_task_fair() to do this. Then we can
+probably remove __schedule()->hrtick_clear().
 
-   Forgot to add that all the analogous patches to other sybsystems (except
-these three to the SCSI subsystem and to the Fusion MPT driver) have been merged
-long ago, without much hassle...
+I simply can't understand the current hrtick logic. For example,
+why dequeue_task_fair() does hrtick_update() ? OK, probably
+because "nr_running < sched_nr_latency" can become true. But at
+least this doesn't make sense to me when p == rq->curr, say,
+__schedule() path.
 
-WBR, Sergei
+Hmm. In any case, how it is possible to do hrtick_start() with
+rq->lock held? hrtimer_restart() may want to wakeup_softirqd().
+
+Peter, Ingo, does this code really work? SCHED_FEAT(HRTICK) == 0
+by default, and afaics you can't change it without CONFIG_SCHED_DEBUG.
+
+Confused...
+
+Oleg.
+
