@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab1LZMUR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 07:20:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49803 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753192Ab1LZMUO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 07:20:14 -0500
-Date: Mon, 26 Dec 2011 12:20:11 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/9] drivers/mfd/88pm860x-i2c.c: introduce missing kfree
-Message-ID: <20111226122011.GG8722@opensource.wolfsonmicro.com>
-References: <1324661974-17281-1-git-send-email-julia@diku.dk>
- <20111226120855.GB17760@sirena.org.uk>
- <alpine.DEB.2.02.1112261318050.1873@localhost6.localdomain6>
+	id S1755433Ab1LZMUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 07:20:30 -0500
+Received: from d1.icnet.pl ([212.160.220.21]:54472 "EHLO d1.icnet.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755038Ab1LZMUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 07:20:25 -0500
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: alsa-devel@alsa-project.org
+Subject: Re: [alsa-devel] [PATCH 2/4] ASoC: cx20442: add bias control over a platform provided regulator
+Date: Mon, 26 Dec 2011 13:18:13 +0100
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        Liam Girdwood <lrg@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>
+References: <1324681944-19067-1-git-send-email-jkrzyszt@tis.icnet.pl> <1324681944-19067-3-git-send-email-jkrzyszt@tis.icnet.pl> <20111226110201.GA8722@opensource.wolfsonmicro.com>
+In-Reply-To: <20111226110201.GA8722@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1112261318050.1873@localhost6.localdomain6>
-X-Cookie: You are fairminded, just and loving.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112261318.14549.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 26, 2011 at 01:18:54PM +0100, Julia Lawall wrote:
-> On Mon, 26 Dec 2011, Mark Brown wrote:
+On Monday 26 of December 2011 at 12:02:01, Mark Brown wrote:
+> On Sat, Dec 24, 2011 at 12:12:22AM +0100, Janusz Krzysztofik wrote:
+> 
+> > +	case SND_SOC_BIAS_ON:
+> > +	case SND_SOC_BIAS_PREPARE:
+> > +		if (IS_ERR(cx20442->por.regulator)) {
+> > +			err = PTR_ERR(cx20442->por.regulator);
+> > +		} else if (!cx20442->por.enabled) {
+> > +			err = regulator_enable(cx20442->por.regulator);
+> > +			if (!err)
+> > +				cx20442->por.enabled = true;
+> > +		}
+> > +		break;
+> > +	case SND_SOC_BIAS_STANDBY:
+> > +	case SND_SOC_BIAS_OFF:
+> > +		if (IS_ERR(cx20442->por.regulator)) {
+> > +			err = PTR_ERR(cx20442->por.regulator);
+> > +		} else if (cx20442->por.enabled) {
+> > +			err = regulator_disable(cx20442->por.regulator);
+> > +			if (!err)
+> > +				cx20442->por.enabled = false;
+> > +		}
+> > +	}
+> > +	mutex_unlock(&cx20442->por.lock);
+> 
+> You can avoid the mutex and simplify the code by relying on the fact
+> that the only possible transitions are:
+> 
+>    OFF <-> STANDBY <-> PREPARE <-> ON
+> 
+> which would look a lot more natural - you shouldn't need to remember if
+> the regulator is enabled, you should just turn it on in the STANDBY to
+> PREPARE transition and turn it off in the ON to PREPARE or PREPARE to
+> STANDBY transitions.
 
-> >With this and probably a bunch of the other corrections in this series a
-> >conversion to devm_kazlloc() would be a more complete fix as it prevents
-> >people introducing similar missing cleanup paths in future.  Not sure if
-> >spatch can generate that automatically though...
-
-> I saw a patch for that recently, and looked into it a little bit,
-> but I wasn't sure what should be done.  What are the criteria for
-> using devm_kzalloc?
-
-It's good for any allocation that lasts for the lifetime of the device -
-most driver data allocated in probe() fits well, for example.
+OK, will do, thanks for the hint.
+Janusz
