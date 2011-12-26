@@ -1,99 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab1LZSld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 13:41:33 -0500
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:34311 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1LZSlb (ORCPT
+	id S1752929Ab1LZTO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 14:14:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44199 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752168Ab1LZTO4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 13:41:31 -0500
-Date: Mon, 26 Dec 2011 16:41:22 -0200
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: Karen Xie <kxie@chelsio.com>
-Cc: linux-scsi@vger.kernel.org, netdev@vger.kernel.org, michaelc@cs.wisc.edu,
-        davem@davemloft.net, JBottomley@parallels.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] libcxgbi: do not print a message when memory allocation
- fails
-Message-ID: <20111226184122.GA4277@oc1711230544.ibm.com>
-References: <1323877583-6844-1-git-send-email-cascardo@linux.vnet.ibm.com>
- <8A71B368A89016469F72CD08050AD3340AA0DF94@maui.asicdesigners.com>
+	Mon, 26 Dec 2011 14:14:56 -0500
+Date: Mon, 26 Dec 2011 19:14:53 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>
+Subject: Re: [RFC][PATCH 1/2] PM / Sleep: Introduce "late suspend" and "early
+ resume" of devices
+Message-ID: <20111226191452.GM8722@opensource.wolfsonmicro.com>
+References: <201112230029.20174.rjw@sisk.pl>
+ <201112230030.17485.rjw@sisk.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8A71B368A89016469F72CD08050AD3340AA0DF94@maui.asicdesigners.com>
+In-Reply-To: <201112230030.17485.rjw@sisk.pl>
+X-Cookie: You are fairminded, just and loving.
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 11122618-2362-0000-0000-000005DB6E23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 04:52:42PM -0800, Karen Xie wrote:
-> The patch looks fine to me.
-> 
-> Thanks,
-> Karen
-> 
+On Fri, Dec 23, 2011 at 12:30:17AM +0100, Rafael J. Wysocki wrote:
 
-Hi, Karen.
+> For the above reasons, introduce new device suspend/resume phases,
+> "late suspend" and "early resume" (and analogously for hibernation)
+> whose callback will be executed with runtime PM disabled and with
+> device interrupts enabled and whose callback pointers generally may
+> point to runtime suspend/resume routines.
 
-Thanks for your quick response.
+I can't claim to have gone through the code with a fine toothcomb but
+from an interface point of view this is really clear and helpful,
+should be very useful:
 
-Care to send a proper Acked-by? It seems this patch has not yet catch up
-in James' tree.
-
-Regards.
-Cascardo.
-
-
-> -----Original Message-----
-> From: Thadeu Lima de Souza Cascardo [mailto:cascardo@linux.vnet.ibm.com]
-> 
-> Sent: Wednesday, December 14, 2011 7:46 AM
-> To: linux-scsi@vger.kernel.org
-> Cc: netdev@vger.kernel.org; Karen Xie; michaelc@cs.wisc.edu;
-> davem@davemloft.net; JBottomley@parallels.com;
-> linux-kernel@vger.kernel.org; Thadeu Lima de Souza Cascardo
-> Subject: [PATCH] libcxgbi: do not print a message when memory allocation
-> fails
-> 
-> In alloc_pdu, libcxgbi tries to allocate a skb with GFP_ATOMIC, which
-> may potentially fail. When it happens, the current code prints a warning
-> message.
-> 
-> When the system is under IO stress, this failure may happen lots of
-> times and it usually scares users.
-> 
-> Instead of printing the warning message, the code now increases the
-> tx_dropped statistics for the ethernet interface wich is doing the iscsi
-> task.
-> 
-> Signed-off-by: Thadeu Lima de Souza Cascardo
-> <cascardo@linux.vnet.ibm.com>
-> ---
->  drivers/scsi/cxgbi/libcxgbi.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/scsi/cxgbi/libcxgbi.c
-> b/drivers/scsi/cxgbi/libcxgbi.c
-> index c10f74a..3422bc2 100644
-> --- a/drivers/scsi/cxgbi/libcxgbi.c
-> +++ b/drivers/scsi/cxgbi/libcxgbi.c
-> @@ -1862,8 +1862,9 @@ int cxgbi_conn_alloc_pdu(struct iscsi_task *task,
-> u8 opcode)
->  
->  	tdata->skb = alloc_skb(cdev->skb_tx_rsvd + headroom,
-> GFP_ATOMIC);
->  	if (!tdata->skb) {
-> -		pr_warn("alloc skb %u+%u, opcode 0x%x failed.\n",
-> -			cdev->skb_tx_rsvd, headroom, opcode);
-> +		struct cxgbi_sock *csk = cconn->cep->csk;
-> +		struct net_device *ndev = cdev->ports[csk->port_id];
-> +		ndev->stats.tx_dropped++;
->  		return -ENOMEM;
->  	}
->  
-> -- 
-> 1.7.4.4
-> 
-
+Reviewed-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
