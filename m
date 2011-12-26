@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab1LZJZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 04:25:14 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52782 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab1LZJYf (ORCPT
+	id S1754025Ab1LZJdd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 04:33:33 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50900 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752647Ab1LZJd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 04:24:35 -0500
-From: Sumit Semwal <sumit.semwal@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mm@kvack.org>, <linaro-mm-sig@lists.linaro.org>,
-        <dri-devel@lists.freedesktop.org>, <linux-media@vger.kernel.org>,
-        <arnd@arndb.de>, <airlied@redhat.com>
-CC: <linux@arm.linux.org.uk>, <jesse.barker@linaro.org>,
-        <m.szyprowski@samsung.com>, <rob@ti.com>, <daniel@ffwll.ch>,
-        <t.stanislaws@samsung.com>, <patches@linaro.org>,
-        Sumit Semwal <sumit.semwal@ti.com>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [PATCH 3/3] dma-buf: mark EXPERIMENTAL for 1st release.
-Date: Mon, 26 Dec 2011 14:53:17 +0530
-Message-ID: <1324891397-10877-4-git-send-email-sumit.semwal@ti.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1324891397-10877-1-git-send-email-sumit.semwal@ti.com>
-References: <1324891397-10877-1-git-send-email-sumit.semwal@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 26 Dec 2011 04:33:26 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 26 Dec 2011 18:32:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Glauber Costa <glommer@parallels.com>, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        eric.dumazet@gmail.com, cgroups@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Paul Menage <paul@paulmenage.org>, Greg Thelen <gthelen@google.com>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH] Partial revert
+ "Basic kernel memory functionality for the Memory Controller"
+Message-Id: <20111226183207.1c40b8f4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111222104339.GA8833@tiehlicka.suse.cz>
+References: <1324543990-27784-1-git-send-email-glommer@parallels.com>
+	<20111222104339.GA8833@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark dma-buf buffer sharing API as EXPERIMENTAL for first release.
-We will remove this in later versions, once it gets smoothed out
-and has more users.
+On Thu, 22 Dec 2011 11:43:39 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
-Signed-off-by: Sumit Semwal <sumit.semwal@ti.com>
----
- drivers/base/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> On Thu 22-12-11 12:53:10, Glauber Costa wrote:
+> > This reverts commit e5671dfae59b165e2adfd4dfbdeab11ac8db5bda.
+> > 
+> > After a follow up discussion with Michal, it was agreed it would
+> > be better to leave the kmem controller with just the tcp files,
+> > deferring the behavior of the other general memory.kmem.* files
+> > for a later time, when more caches are controlled.
+> 
+> "Because generic kmem files are not used by tcp accounting and it is
+> not clear how other slab caches would fit into the scheme."
+> 
+> > 
+> > We are reverting the original commit so we can track the reference.
+> > Part of the patch is kept, because it was used by the later tcp
+> > code. Conflicts are shown in the bottom. init/Kconfig is removed from
+> > the revert entirely.
+> > 
+> > Signed-off-by: Glauber Costa <glommer@parallels.com>
+> > CC: Kirill A. Shutemov <kirill@shutemov.name>
+> > CC: Paul Menage <paul@paulmenage.org>
+> > CC: Greg Thelen <gthelen@google.com>
+> > CC: Johannes Weiner <jweiner@redhat.com>
+> > CC: Michal Hocko <mhocko@suse.cz>
+> > CC: David S. Miller <davem@davemloft.net>
+> 
+> Acked-by: Michal Hocko <mhocko@suse.cz>
+> 
 
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index 8a0e87f..e95c67e 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -178,6 +178,7 @@ config DMA_SHARED_BUFFER
- 	bool "Buffer framework to be shared between drivers"
- 	default n
- 	select ANON_INODES
-+	depends on EXPERIMENTAL
- 	help
- 	  This option enables the framework for buffer-sharing between
- 	  multiple drivers. A buffer is associated with a file using driver
--- 
-1.7.5.4
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
 
