@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751325Ab1LZRFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 12:05:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49606 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750855Ab1LZRFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 12:05:15 -0500
-Date: Mon, 26 Dec 2011 17:59:30 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <kirill.tkhai@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Kirill Tkhai <tkhai@yandex.ru>
-Subject: SCHED_RR && time_slice
-Message-ID: <20111226165930.GA4075@redhat.com>
-References: <1324584060.4222.15.camel@hp>
+	id S1751391Ab1LZRKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 12:10:36 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:48448 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750804Ab1LZRKe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 12:10:34 -0500
+X-IronPort-AV: E=Sophos;i="4.71,411,1320620400"; 
+   d="scan'208";a="136904605"
+Date: Mon, 26 Dec 2011 18:10:32 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: grant.likely@secretlab.ca, linus.walleij@stericsson.com
+cc: linux-kernel@vger.kernel.org
+Subject: question about bgpio_remove (drivers/gpio/gpio-generic.c)
+Message-ID: <alpine.DEB.2.02.1112261804000.1873@localhost6.localdomain6>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324584060.4222.15.camel@hp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23, Kirill Tkhai wrote:
->
-> RT class uses its own fixed
-> timeslice (in case of RR),
+The function bgpio_remove in the file drivers/gpio/gpio-generic.c is 
+defind as follows:
 
-which looks confusing too, btw.
+int bgpio_remove(struct bgpio_chip *bgc)
+{
+         int err = gpiochip_remove(&bgc->gc);
 
-sched_set_scheduler() does not initialize rt.time_slice, and
-INIT_TASK() sets time_slice = HZ (not DEF_TIMESLICE).
+ 	kfree(bgc);
 
-Oleg.
+ 	return err;
+}
+EXPORT_SYMBOL_GPL(bgpio_remove);
 
+But bgc is allocated using devm_kzalloc, not kzalloc, and thus the kfree 
+would seem to result in a dangling pointer.  On the other hand, this 
+function does not have access to the information required to call 
+devm_kfree (&pdev->dev).  Since the function is exported, should the 
+interface be maintained, and the allocation of bgc converted to use 
+kzalloc?  Or should the interface be changed to add the required 
+information.  The callers in the kernel have the require information 
+available.
+
+thanks,
+julia
