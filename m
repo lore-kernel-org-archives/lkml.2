@@ -1,99 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab1LZSiZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 13:38:25 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61573 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1LZSiX (ORCPT
+	id S1752865Ab1LZSld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 13:41:33 -0500
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:34311 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab1LZSlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 13:38:23 -0500
-Date: Mon, 26 Dec 2011 10:37:56 -0800 (PST)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-X-X-Sender: torvalds@i5.linux-foundation.org
-To: "J. Bruce Fields" <bfields@fieldses.org>
-cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	Mon, 26 Dec 2011 13:41:31 -0500
+Date: Mon, 26 Dec 2011 16:41:22 -0200
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Karen Xie <kxie@chelsio.com>
+Cc: linux-scsi@vger.kernel.org, netdev@vger.kernel.org, michaelc@cs.wisc.edu,
+        davem@davemloft.net, JBottomley@parallels.com,
         linux-kernel@vger.kernel.org
-Subject: Re: file locking fix for 3.2
-In-Reply-To: <20111225181948.GA26288@fieldses.org>
-Message-ID: <alpine.LFD.2.02.1112261035240.27600@i5.linux-foundation.org>
-References: <20111224215012.GA23495@fieldses.org> <20111224225525.GR23916@ZenIV.linux.org.uk> <20111224235035.GA23711@fieldses.org> <20111225000542.GS23916@ZenIV.linux.org.uk> <20111225181948.GA26288@fieldses.org>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+Subject: Re: [PATCH] libcxgbi: do not print a message when memory allocation
+ fails
+Message-ID: <20111226184122.GA4277@oc1711230544.ibm.com>
+References: <1323877583-6844-1-git-send-email-cascardo@linux.vnet.ibm.com>
+ <8A71B368A89016469F72CD08050AD3340AA0DF94@maui.asicdesigners.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8A71B368A89016469F72CD08050AD3340AA0DF94@maui.asicdesigners.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11122618-2362-0000-0000-000005DB6E23
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 14, 2011 at 04:52:42PM -0800, Karen Xie wrote:
+> The patch looks fine to me.
+> 
+> Thanks,
+> Karen
+> 
 
-I'm committing the appended version instead. It removes all the games with 
-IS_ERR(), and just does the checking at the allocation point, the way the 
-other lease_alloc() user does too.
+Hi, Karen.
 
-Holler if you see something odd in there..
+Thanks for your quick response.
 
-                   Linus
----
-commit 6d4b9e38d3980826abccfbd90e95bf4bd41b8dd2
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Mon Dec 26 10:25:26 2011 -0800
+Care to send a proper Acked-by? It seems this patch has not yet catch up
+in James' tree.
 
-    vfs: fix handling of lock allocation failure in lease-break case
-    
-    Bruce Fields notes that commit 778fc546f749 ("locks: fix tracking of
-    inprogress lease breaks") introduced a possible error pointer
-    dereference on failure to allocate memory.  locks_conflict() will
-    dereference the passed-in new lease lock structure that may be an error pointer.
-    
-    This means an open (without O_NONBLOCK set) on a file with a lease
-    applied (generally only done when Samba or nfsd (with v4) is running)
-    could crash if a kmalloc() fails.
-    
-    So instead of playing games with IS_ERROR() all over the place, just
-    check the allocation failure early.  That makes the code more
-    straightforward, and avoids this possible bad pointer dereference.
-    
-    Based-on-patch-by: J. Bruce Fields <bfields@redhat.com>
-    Cc: Al Viro <viro@zeniv.linux.org.uk>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
----
- fs/locks.c |   11 +++--------
- 1 files changed, 3 insertions(+), 8 deletions(-)
+Regards.
+Cascardo.
 
-diff --git a/fs/locks.c b/fs/locks.c
-index 3b0d05dcd7c1..637694bf3a03 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1205,6 +1205,8 @@ int __break_lease(struct inode *inode, unsigned int mode)
- 	int want_write = (mode & O_ACCMODE) != O_RDONLY;
- 
- 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
-+	if (IS_ERR(new_fl))
-+		return PTR_ERR(new_fl);
- 
- 	lock_flocks();
- 
-@@ -1221,12 +1223,6 @@ int __break_lease(struct inode *inode, unsigned int mode)
- 		if (fl->fl_owner == current->files)
- 			i_have_this_lease = 1;
- 
--	if (IS_ERR(new_fl) && !i_have_this_lease
--			&& ((mode & O_NONBLOCK) == 0)) {
--		error = PTR_ERR(new_fl);
--		goto out;
--	}
--
- 	break_time = 0;
- 	if (lease_break_time > 0) {
- 		break_time = jiffies + lease_break_time * HZ;
-@@ -1284,8 +1280,7 @@ restart:
- 
- out:
- 	unlock_flocks();
--	if (!IS_ERR(new_fl))
--		locks_free_lock(new_fl);
-+	locks_free_lock(new_fl);
- 	return error;
- }
- 
+
+> -----Original Message-----
+> From: Thadeu Lima de Souza Cascardo [mailto:cascardo@linux.vnet.ibm.com]
+> 
+> Sent: Wednesday, December 14, 2011 7:46 AM
+> To: linux-scsi@vger.kernel.org
+> Cc: netdev@vger.kernel.org; Karen Xie; michaelc@cs.wisc.edu;
+> davem@davemloft.net; JBottomley@parallels.com;
+> linux-kernel@vger.kernel.org; Thadeu Lima de Souza Cascardo
+> Subject: [PATCH] libcxgbi: do not print a message when memory allocation
+> fails
+> 
+> In alloc_pdu, libcxgbi tries to allocate a skb with GFP_ATOMIC, which
+> may potentially fail. When it happens, the current code prints a warning
+> message.
+> 
+> When the system is under IO stress, this failure may happen lots of
+> times and it usually scares users.
+> 
+> Instead of printing the warning message, the code now increases the
+> tx_dropped statistics for the ethernet interface wich is doing the iscsi
+> task.
+> 
+> Signed-off-by: Thadeu Lima de Souza Cascardo
+> <cascardo@linux.vnet.ibm.com>
+> ---
+>  drivers/scsi/cxgbi/libcxgbi.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/scsi/cxgbi/libcxgbi.c
+> b/drivers/scsi/cxgbi/libcxgbi.c
+> index c10f74a..3422bc2 100644
+> --- a/drivers/scsi/cxgbi/libcxgbi.c
+> +++ b/drivers/scsi/cxgbi/libcxgbi.c
+> @@ -1862,8 +1862,9 @@ int cxgbi_conn_alloc_pdu(struct iscsi_task *task,
+> u8 opcode)
+>  
+>  	tdata->skb = alloc_skb(cdev->skb_tx_rsvd + headroom,
+> GFP_ATOMIC);
+>  	if (!tdata->skb) {
+> -		pr_warn("alloc skb %u+%u, opcode 0x%x failed.\n",
+> -			cdev->skb_tx_rsvd, headroom, opcode);
+> +		struct cxgbi_sock *csk = cconn->cep->csk;
+> +		struct net_device *ndev = cdev->ports[csk->port_id];
+> +		ndev->stats.tx_dropped++;
+>  		return -ENOMEM;
+>  	}
+>  
+> -- 
+> 1.7.4.4
+> 
+
