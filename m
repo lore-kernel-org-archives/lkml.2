@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751532Ab1LZRRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 12:17:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab1LZRRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 12:17:37 -0500
-Date: Mon, 26 Dec 2011 18:11:51 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Yasunori Goto <y-goto@jp.fujitsu.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
-	condition
-Message-ID: <20111226171151.GA4472@redhat.com>
-References: <1324633794.24803.48.camel@twins> <20111223154137.GA27901@redhat.com> <20111226172357.CE4D.E1E9C6FF@jp.fujitsu.com>
+	id S1751609Ab1LZRTY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 12:19:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51273 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab1LZRTX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 12:19:23 -0500
+Message-ID: <4EF8AC83.9040705@lwfinger.net>
+Date: Mon, 26 Dec 2011 11:18:59 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111226172357.CE4D.E1E9C6FF@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
+        linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] b43: support new RX header, noticed to be used in 598.314+
+ fw
+References: <alpine.DEB.2.00.1112261608140.12108@axis700.grange>
+In-Reply-To: <alpine.DEB.2.00.1112261608140.12108@axis700.grange>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26, Yasunori Goto wrote:
+On 12/26/2011 09:29 AM, Guennadi Liakhovetski wrote:
+> Hi
 >
-> >
-> > IIRC, this was already discussed a bit. Say, try_to_wake_up(TASK_INTERRUPTIBLE)
-> > can wakeup a TASK_UNINTERRUPTIBLE task if it temporary sets INTERRUPTIBLE but
-> > doesn't call schedule() in this state.
+> Sorry for "simulating" a reply - I'm not subscribed to linux-wireless, so,
+> cannot (easily) reply.
 >
-> Oleg-san,
+> The commit in subject line
 >
-> Could you point the discussion?
-> I don't understand yet how it occurred...
+> commit 17030f48e31adde5b043741c91ba143f5f7db0fd
+> From: Rafa³ Mi³ecki<zajec5@gmail.com>
+> Date: Thu, 11 Aug 2011 17:16:27 +0200
+> Subject: [PATCH] b43: support new RX header, noticed to be used in 598.314+ fw
+>
+> breaks my b43 SDIO card in 3.2-ish kernels. Given the approaching
+> 3.2-final release, would be nice to have it fixed before that. The card
+> I've got is marked with some "SD-Link11g" from some "C-guys, Inc." from
+> Taiwan:-) Using firmware version 410.31754. Do I really _have_ to update
+> or is the driver supposed to handle "all" firmware versions, or at least
+> not drop ones, it used to support before?
 
-Suppose that the task T does
+The only cards that *need* to use the new-style firmware are those for which 
+firmware does not exist in the older versions. As this is not the case for your 
+device, something else is wrong.
 
-	set_current_state(TASK_INTERRUPTIBLE);
+Please post the details for your card. If you had a PCI system, I would ask for 
+'lspci -n'. Please do the same for the SDIO card.
 
-	set_current_state(TASK_UNINTERRUPTIBLE);
-	schedule();
+ From your message, it appears that 3.1 works OK. If that is true, would it be 
+possible for you to bisect this problem?
 
-try_to_wake_up(TASK_UNINTERRUPTIBLE) in between can observe this task
-in TASK_INTERRUPTIBLE state. Then it can set RUNNING/WAKING after T
-sets ->state = TASK_UNINTERRUPTIBLE.
-
-For example, this is possibly if T simply does wait_event() twice when
-the the 1st wait_event() doesn't sleep.
-
-Basically this is the same race you described, but I think you found
-the case when we can't tolerate the spurious wakeup.
-
-Oleg.
-
+Larry
