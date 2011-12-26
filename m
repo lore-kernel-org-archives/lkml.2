@@ -1,80 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab1LZMbQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 07:31:16 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:55736 "EHLO d1.icnet.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754802Ab1LZMbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 07:31:12 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 4/4] ASoC: OMAP: ams-delta: drop .set_bias_level callback
-Date: Mon, 26 Dec 2011 13:30:22 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: Tony Lindgren <tony@atomide.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Liam Girdwood <lrg@ti.com>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        alsa-devel@alsa-project.org
-References: <1324681944-19067-1-git-send-email-jkrzyszt@tis.icnet.pl> <1324681944-19067-5-git-send-email-jkrzyszt@tis.icnet.pl> <20111226110348.GB8722@opensource.wolfsonmicro.com>
-In-Reply-To: <20111226110348.GB8722@opensource.wolfsonmicro.com>
+	id S1755421Ab1LZMdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 07:33:15 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:44718 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754121Ab1LZMdM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 07:33:12 -0500
+Date: Mon, 26 Dec 2011 12:33:08 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Andrzej Prochyra <andrzej@prochyra.name>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Platform: samsung-laptop: add DMI information for
+ Samsung N150 Plus
+Message-ID: <20111226123308.GA11817@srcf.ucam.org>
+References: <87ty4ss0z4.fsf@prochyra.name>
+ <CAHR064h7a=RQq=p1J+gKpC5_6ow8ChUFFkC39HwtmerHaMksjw@mail.gmail.com>
+ <87ty4qdpna.fsf@prochyra.name>
+ <CAHR064gZdnmsMjhr3Vp3BumrkZ07FWgEADLLqqkxP_aCca5ZuQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112261330.22783.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHR064gZdnmsMjhr3Vp3BumrkZ07FWgEADLLqqkxP_aCca5ZuQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 of December 2011 at 12:03:49, Mark Brown wrote:
-> On Sat, Dec 24, 2011 at 12:12:24AM +0100, Janusz Krzysztofik wrote:
+On Mon, Dec 26, 2011 at 10:51:36AM +0100, Corentin Chary wrote:
+> > (The MAINTAINERS file gives the git tree
+> > git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git
+> > in the X86 PLATFORM DRIVERS section but this does not seem to exist.)
 > 
-> > +struct regulator_consumer_data {
-> > +	struct mutex lock;
-> > +	struct regulator *regulator;
-> > +	bool enabled;
-> > +};
-> > +
-> > +static int regulator_toggle(struct regulator_consumer_data *consumer,
-> > +		bool enable)
-> > +{
-> > +	int err = 0;
-> > +
-> > +	if (!consumer->regulator)
-> > +		return -ENODEV;
-> > +
-> > +	mutex_lock(&consumer->lock);
-> > +	if (IS_ERR(consumer->regulator)) {
-> > +		err = PTR_ERR(consumer->regulator);
-> > +	} else if (enable) {
-> > +		if (!consumer->enabled) {
-> > +			err = regulator_enable(consumer->regulator);
-> > +			consumer->enabled = true;
-> > +		}
-> > +	} else {
-> > +		if (consumer->enabled) {
-> > +			err = regulator_disable(consumer->regulator);
-> > +			consumer->enabled = false;
-> > +		}
-> > +	}
-> > +	mutex_unlock(&consumer->lock);
-> > +
-> > +	return err;
-> > +}
-> > +
-> 
-> Why's this code not been dropped and what is it for?
+> Matthew, should MAINTAINERS be updated with your new tree, or will you
+> re-create the kernel.org tree in the future ?
 
-It is, and will be, used by another regulator consumer, the modem. The 
-device is controlled by the generic serial8250 driver, extended with a 
-custom .pm hook which enables/disables the regulator. The above code, 
-temporarily shared with the ASoC device before updated, is now just 
-moved down the board file where the modem related bits are located (see 
-patch 3/4).
+Should be updated. My mistake. I'll send a patch next week.
 
-Any hints like that for the codec driver?
-
-Thanks,
-Janusz
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
