@@ -1,105 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab1LZOXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 09:23:48 -0500
-Received: from mga03.intel.com ([143.182.124.21]:43425 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754282Ab1LZOXp convert rfc822-to-8bit (ORCPT
+	id S1755575Ab1LZO6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 09:58:40 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57495 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755551Ab1LZO6j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 09:23:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="50691116"
-From: "Liu, Jinsong" <jinsong.liu@intel.com>
-To: Avi Kivity <avi@redhat.com>
-CC: Jan Kiszka <jan.kiszka@siemens.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        "Garrett D'Amore" <garrett@nexenta.com>, kvm <kvm@vger.kernel.org>,
-        "Li, Susie" <susie.li@intel.com>
-Subject: RE: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer
- feature in the absence of in-kernel APIC
-Thread-Topic: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer
- feature in the absence of in-kernel APIC
-Thread-Index: AQHMw8J0EMLo04NprEiFAJB5/AX+ZJXuK93g
-Date: Mon, 26 Dec 2011 14:23:39 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC8292335C418@SHSMSX101.ccr.corp.intel.com>
-References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
- <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
- <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
- <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
- <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
- <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
- <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
- <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
- <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com>
- <4EF1146D.208@siemens.com> <4EF1B081.3010109@siemens.com>
- <4EF1B423.8050707@siemens.com> <4EF1B67D.7010603@redhat.com>
- <DE8DF0795D48FD4CA783C40EC82923358DEA@SHSMSX101.ccr.corp.intel.com>
- <4EF71919.40201@redhat.com>
- <DE8DF0795D48FD4CA783C40EC8292335BFA0@SHSMSX101.ccr.corp.intel.com>
- <4EF85BF3.9010903@redhat.com>
-In-Reply-To: <4EF85BF3.9010903@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 26 Dec 2011 09:58:39 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jingoo Han <jg1.han@samsung.com>,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] video: s3c-fb: Make runtime PM functional again
+Date: Mon, 26 Dec 2011 14:58:25 +0000
+Message-Id: <1324911505-31715-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avi Kivity wrote:
-> On 12/26/2011 10:11 AM, Liu, Jinsong wrote:
->>> 
->>> It breaks live migration: if you start a guest on a TSC-deadline
->>> capable host kernel, and migrate it to a TSC-deadline incapable host
->>> kernel, you end up with a broken guest.
->>> 
->>> More broadly, kvm never exposes features transparently to the guest,
->>> it always passes them to userspace first, so userspace controls the
->>> ABI exposed to the guest.  This prevents the following scenario:
->> 
->> Do you mean, by the method qemu control cpuid exposing, it can avoid
->> live migration broken issue by 
->> 1. user probe the lowest ability host of whole pool where vm may
->> live migrate; 
->> 2. only if the lowest ablility host support the feature can user
->> enable the feature when boot a vm; 
->> 3. if the lowest ability host didn't support the feature (say tsc
->> deadline timer as example), user disable the feature when boot a vm;
->> In this way, live migration wouldn't be broken. Right? 
-> 
-> Right.
+The change in "video: s3c-fb: modify runtime pm functions" (commit
+35784b) renders the runtime power management for the device completely
+ineffectual as while it leaves runtime power management notionally
+enabled a runtime power reference is held for the entire time the device
+is registered meaning it will never actually do anything.
 
-Thanks Avi, for your detailed explanation, fix a long misunderstanding I had for live migration.
+A further issue is introduced as runtime power management is added
+during the system suspend path which is not something which drivers are
+supposed to do and would interact poorly if there were any operations
+done in the runtime power management callbacks.
 
-Best Regards,
-Jinsong
+While this does make things simpler (the main motivation for the
+original change) it will not only cause us to use more power in the
+framebuffer controller but will also prevent us entering lower power
+domain and SoC wide states as we can never power down the domain
+containing the device.  Since neither of these things is desirable
+revert the change.
 
-> 
->> or, do you mean qemu-kvm solve live migration broken issue by some
->> other method? 
-> 
-> The method you outlined, or any other method, such as partitioning the
-> cluster according to hardware capabilities.
-> 
->> 
->>> 
->>> - a guest is started on some hardware, which doesn't support some
->>> cpuid feature (say AVX for example)
->>> - the guest or one of its applications are broken wrt AVX, but
->>> because the feature is not exposed, it works correctly
->>> - the host hardware is upgraded to one which supports AVX
->>> - the guest is now broken
->> 
->> You mean, live migrate from 'old' (which doesn't support the
->> feature) platform to 'new' platform would broken? 
-> 
-> Live migration, or even just a guest restart on updated hardware.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/video/s3c-fb.c |   51 +++++++++++++++++++++++++++++------------------
+ 1 files changed, 31 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
+index e531ebc..690b44e 100644
+--- a/drivers/video/s3c-fb.c
++++ b/drivers/video/s3c-fb.c
+@@ -1036,8 +1036,30 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
+ 	return ret;
+ }
+ 
++static int s3c_fb_open(struct fb_info *info, int user)
++{
++	struct s3c_fb_win *win = info->par;
++	struct s3c_fb *sfb = win->parent;
++
++	pm_runtime_get_sync(sfb->dev);
++
++	return 0;
++}
++
++static int s3c_fb_release(struct fb_info *info, int user)
++{
++	struct s3c_fb_win *win = info->par;
++	struct s3c_fb *sfb = win->parent;
++
++	pm_runtime_put_sync(sfb->dev);
++
++	return 0;
++}
++
+ static struct fb_ops s3c_fb_ops = {
+ 	.owner		= THIS_MODULE,
++	.fb_open	= s3c_fb_open,
++	.fb_release	= s3c_fb_release,
+ 	.fb_check_var	= s3c_fb_check_var,
+ 	.fb_set_par	= s3c_fb_set_par,
+ 	.fb_blank	= s3c_fb_blank,
+@@ -1436,6 +1458,7 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	platform_set_drvdata(pdev, sfb);
++	pm_runtime_put_sync(sfb->dev);
+ 
+ 	return 0;
+ 
+@@ -1468,6 +1491,8 @@ static int __devexit s3c_fb_remove(struct platform_device *pdev)
+ 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
+ 	int win;
+ 
++	pm_runtime_get_sync(sfb->dev);
++
+ 	for (win = 0; win < S3C_FB_MAX_WIN; win++)
+ 		if (sfb->windows[win])
+ 			s3c_fb_release_win(sfb, sfb->windows[win]);
+@@ -1488,7 +1513,7 @@ static int __devexit s3c_fb_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM_SLEEP
++#ifdef CONFIG_PM
+ static int s3c_fb_suspend(struct device *dev)
+ {
+ 	struct platform_device *pdev = to_platform_device(dev);
+@@ -1509,8 +1534,6 @@ static int s3c_fb_suspend(struct device *dev)
+ 		clk_disable(sfb->lcd_clk);
+ 
+ 	clk_disable(sfb->bus_clk);
+-	pm_runtime_put_sync(sfb->dev);
+-
+ 	return 0;
+ }
+ 
+@@ -1522,7 +1545,6 @@ static int s3c_fb_resume(struct device *dev)
+ 	struct s3c_fb_win *win;
+ 	int win_no;
+ 
+-	pm_runtime_get_sync(sfb->dev);
+ 	clk_enable(sfb->bus_clk);
+ 
+ 	if (!sfb->variant.has_clksel)
+@@ -1561,19 +1583,11 @@ static int s3c_fb_resume(struct device *dev)
+ 
+ 	return 0;
+ }
++#else
++#define s3c_fb_suspend NULL
++#define s3c_fb_resume  NULL
+ #endif
+ 
+-#ifdef CONFIG_PM_RUNTIME
+-static int s3c_fb_runtime_suspend(struct device *dev)
+-{
+-	return 0;
+-}
+-
+-static int s3c_fb_runtime_resume(struct device *dev)
+-{
+-	return 0;
+-}
+-#endif
+ 
+ #define VALID_BPP124 (VALID_BPP(1) | VALID_BPP(2) | VALID_BPP(4))
+ #define VALID_BPP1248 (VALID_BPP124 | VALID_BPP(8))
+@@ -1896,10 +1910,7 @@ static struct platform_device_id s3c_fb_driver_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(platform, s3c_fb_driver_ids);
+ 
+-static const struct dev_pm_ops s3c_fb_pm_ops = {
+-	SET_SYSTEM_SLEEP_PM_OPS(s3c_fb_suspend, s3c_fb_resume)
+-	SET_RUNTIME_PM_OPS(s3c_fb_runtime_suspend, s3c_fb_runtime_resume, NULL)
+-};
++static UNIVERSAL_DEV_PM_OPS(s3cfb_pm_ops, s3c_fb_suspend, s3c_fb_resume, NULL);
+ 
+ static struct platform_driver s3c_fb_driver = {
+ 	.probe		= s3c_fb_probe,
+@@ -1908,7 +1919,7 @@ static struct platform_driver s3c_fb_driver = {
+ 	.driver		= {
+ 		.name	= "s3c-fb",
+ 		.owner	= THIS_MODULE,
+-		.pm	= &s3c_fb_pm_ops,
++		.pm	= &s3cfb_pm_ops,
+ 	},
+ };
+ 
+-- 
+1.7.7.3
 
