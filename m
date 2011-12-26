@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab1LZMdP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 07:33:15 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:44718 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab1LZMdM (ORCPT
+	id S1755412Ab1LZMft (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 07:35:49 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35596 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754795Ab1LZMfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 07:33:12 -0500
-Date: Mon, 26 Dec 2011 12:33:08 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Andrzej Prochyra <andrzej@prochyra.name>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Platform: samsung-laptop: add DMI information for
- Samsung N150 Plus
-Message-ID: <20111226123308.GA11817@srcf.ucam.org>
-References: <87ty4ss0z4.fsf@prochyra.name>
- <CAHR064h7a=RQq=p1J+gKpC5_6ow8ChUFFkC39HwtmerHaMksjw@mail.gmail.com>
- <87ty4qdpna.fsf@prochyra.name>
- <CAHR064gZdnmsMjhr3Vp3BumrkZ07FWgEADLLqqkxP_aCca5ZuQ@mail.gmail.com>
+	Mon, 26 Dec 2011 07:35:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHR064gZdnmsMjhr3Vp3BumrkZ07FWgEADLLqqkxP_aCca5ZuQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1324808519.29243.8.camel@hakkenden.homenet>
+References: <1324437036.4677.5.camel@hakkenden.homenet>
+	<20111221095249.GA28474@tiehlicka.suse.cz>
+	<20111221225512.GG23662@dastard>
+	<1324630880.562.6.camel@rybalov.eng.ttk.net>
+	<20111223102027.GB12731@dastard>
+	<1324638242.562.15.camel@rybalov.eng.ttk.net>
+	<20111223204503.GC12731@dastard>
+	<CAJd=RBDa4LT1gbh6zPx+bzoOtSUeX=puJe6DVC-WyKoF4nw-dg@mail.gmail.com>
+	<1324808519.29243.8.camel@hakkenden.homenet>
+Date: Mon, 26 Dec 2011 20:35:46 +0800
+Message-ID: <CAJd=RBAyw2rapPPhYFYKxyjEQ-EAG2j_UCP-4A6Uk5GSP5LE6A@mail.gmail.com>
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+From: Hillf Danton <dhillf@gmail.com>
+To: "Nikolay S." <nowhere@hakkenden.ath.cx>
+Cc: Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 26, 2011 at 10:51:36AM +0100, Corentin Chary wrote:
-> > (The MAINTAINERS file gives the git tree
-> > git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git
-> > in the X86 PLATFORM DRIVERS section but this does not seem to exist.)
-> 
-> Matthew, should MAINTAINERS be updated with your new tree, or will you
-> re-create the kernel.org tree in the future ?
+On Sun, Dec 25, 2011 at 6:21 PM, Nikolay S. <nowhere@hakkenden.ath.cx> wrote:
+>
+> Uhm.., is this patch against 3.2-rc4? I can not apply it. There's no
+> mem_cgroup_lru_del_list(), but void mem_cgroup_del_lru_list(). Should I
+> place changes there?
+>
+> And also, -rc7 is here. May the problem be addressed as part of some
+> ongoing work? Is there any reason to try -rc7 (the problem requires
+> several days of uptime to become obvious)?
+>
 
-Should be updated. My mistake. I'll send a patch next week.
+Sorry, Nikolay, it is not based on the -next, nor on the -rc5(I assumed it was).
+The following is based on -next, and if you want to test -rc5, please
+grep MEM_CGROUP_ZSTAT mm/memcontrol.c and change it.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Best regard
+
+Hillf
+---
+
+--- a/mm/memcontrol.c	Mon Dec 26 20:34:38 2011
++++ b/mm/memcontrol.c	Mon Dec 26 20:37:54 2011
+@@ -1076,7 +1076,11 @@ void mem_cgroup_lru_del_list(struct page
+ 	VM_BUG_ON(!memcg);
+ 	mz = page_cgroup_zoneinfo(memcg, page);
+ 	/* huge page split is done under lru_lock. so, we have no races. */
+-	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
++	if (WARN_ON_ONCE(MEM_CGROUP_ZSTAT(mz, lru) <
++				(1 << compound_order(page))))
++		MEM_CGROUP_ZSTAT(mz, lru) = 0;
++	else
++		MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+ }
+
+ void mem_cgroup_lru_del(struct page *page)
