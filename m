@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433Ab1LZMUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 07:20:30 -0500
-Received: from d1.icnet.pl ([212.160.220.21]:54472 "EHLO d1.icnet.pl"
+	id S1755137Ab1LZMZb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 07:25:31 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:28723 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755038Ab1LZMUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 07:20:25 -0500
-From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
-Organization: Tele-Info-System, Poznan, PL
-To: alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] [PATCH 2/4] ASoC: cx20442: add bias control over a platform provided regulator
-Date: Mon, 26 Dec 2011 13:18:13 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; i686; ; )
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Tony Lindgren <tony@atomide.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        Liam Girdwood <lrg@ti.com>, Jarkko Nikula <jarkko.nikula@bitmer.com>
-References: <1324681944-19067-1-git-send-email-jkrzyszt@tis.icnet.pl> <1324681944-19067-3-git-send-email-jkrzyszt@tis.icnet.pl> <20111226110201.GA8722@opensource.wolfsonmicro.com>
-In-Reply-To: <20111226110201.GA8722@opensource.wolfsonmicro.com>
+	id S1754539Ab1LZMZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 07:25:28 -0500
+Message-ID: <4EF867A2.2020003@parallels.com>
+Date: Mon, 26 Dec 2011 16:25:06 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112261318.14549.jkrzyszt@tis.icnet.pl>
-X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH] SUNRPC: make SUNPRC clients list per network namespace
+ context
+References: <20111214081918.2804.59143.stgit@localhost6.localdomain6> <1324817295.5195.0.camel@lade.trondhjem.org>
+In-Reply-To: <1324817295.5195.0.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 26 of December 2011 at 12:02:01, Mark Brown wrote:
-> On Sat, Dec 24, 2011 at 12:12:22AM +0100, Janusz Krzysztofik wrote:
-> 
-> > +	case SND_SOC_BIAS_ON:
-> > +	case SND_SOC_BIAS_PREPARE:
-> > +		if (IS_ERR(cx20442->por.regulator)) {
-> > +			err = PTR_ERR(cx20442->por.regulator);
-> > +		} else if (!cx20442->por.enabled) {
-> > +			err = regulator_enable(cx20442->por.regulator);
-> > +			if (!err)
-> > +				cx20442->por.enabled = true;
-> > +		}
-> > +		break;
-> > +	case SND_SOC_BIAS_STANDBY:
-> > +	case SND_SOC_BIAS_OFF:
-> > +		if (IS_ERR(cx20442->por.regulator)) {
-> > +			err = PTR_ERR(cx20442->por.regulator);
-> > +		} else if (cx20442->por.enabled) {
-> > +			err = regulator_disable(cx20442->por.regulator);
-> > +			if (!err)
-> > +				cx20442->por.enabled = false;
-> > +		}
-> > +	}
-> > +	mutex_unlock(&cx20442->por.lock);
-> 
-> You can avoid the mutex and simplify the code by relying on the fact
-> that the only possible transitions are:
-> 
->    OFF <-> STANDBY <-> PREPARE <-> ON
-> 
-> which would look a lot more natural - you shouldn't need to remember if
-> the regulator is enabled, you should just turn it on in the STANDBY to
-> PREPARE transition and turn it off in the ON to PREPARE or PREPARE to
-> STANDBY transitions.
+25.12.2011 16:48, Trond Myklebust пишет:
+> On Wed, 2011-12-14 at 12:19 +0300, Stanislav Kinsbursky wrote:
+>> This patch moves static SUNRPC clients list and it's lock to sunrpc_net
+>> structure.
+>> Currently this list is used only for debug purposes. But later it will be used
+>> also for selecting clients by networks namespace on PipeFS mount/umount events.
+>> Per-network namespace lists will make this faster and simplier.
+>>
+>> Note: client list is taken from "init_net" network namespace context in
+>> rpc_show_tasks(). This will be changed with making SUNRPC sysctl's per network
+>> namespace context.
+>>
+>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+>
+> This doesn't seem to integrate with any of your patch series, and
+> conflicts with everything that touches netns.h, for instance...
+>
 
-OK, will do, thanks for the hint.
-Janusz
+Yep, you are right. Currently this path doesn't apply, if you'll try to apply 
+patches in the same order I've sent them.
+This is caused by different development branches.
+Anyway, most of the patches will not apply to current tree.
+And I'll be glad to rebase and resent them on request.
+
+-- 
+Best regards,
+Stanislav Kinsbursky
