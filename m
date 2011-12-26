@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab1LZLvc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 06:51:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64582 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754966Ab1LZLvb (ORCPT
+	id S1755376Ab1LZMJC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 07:09:02 -0500
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:38204 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755329Ab1LZMI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 06:51:31 -0500
-From: Kautuk Consul <consul.kautuk@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Eric B Munson <emunson@mgebm.net>, Pekka Enberg <penberg@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Kautuk Consul <consul.kautuk@gmail.com>
-Subject: [PATCH 1/1] swapfile: swap_info_get: Check for swap_info[type] == NULL
-Date: Mon, 26 Dec 2011 17:26:39 +0530
-Message-Id: <1324900599-20804-1-git-send-email-consul.kautuk@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	Mon, 26 Dec 2011 07:08:59 -0500
+Date: Mon, 26 Dec 2011 12:08:55 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/9] drivers/mfd/88pm860x-i2c.c: introduce missing kfree
+Message-ID: <20111226120855.GB17760@sirena.org.uk>
+References: <1324661974-17281-1-git-send-email-julia@diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324661974-17281-1-git-send-email-julia@diku.dk>
+X-Cookie: Not every question deserves an answer.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kautuk Consul <consul.kautuk@gmail.com>
+On Fri, Dec 23, 2011 at 06:39:26PM +0100, Julia Lawall wrote:
+> Error handling code following a kzalloc should free the allocated data.  At
+> this point, chip has been allocated and some fields have been initialized,
+> but it has not been stored anywhere, so it should be freed before leaving
+> the function.
 
-If the swapfile type encoded within entry.val is corrupted in
-such a way that the swap_info[type] == NULL, then the code in
-swap_info_get will cause a NULL pointer exception.
-
-Assuming that the code in swap_info_get attempts to validate the
-swapfile type by checking its range, another bad_nofile check would
-be to check for check whether the swap_info[type] pointer is NULL.
-
-Adding a NULL check for swap_info[type] to be reagrded as a "bad_nofile"
-error scenario.
-
-Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
----
- mm/swapfile.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index b1cd120..7bdbe91 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -483,6 +483,8 @@ static struct swap_info_struct *swap_info_get(swp_entry_t entry)
- 	if (type >= nr_swapfiles)
- 		goto bad_nofile;
- 	p = swap_info[type];
-+	if (!p)
-+		goto bad_nofile;
- 	if (!(p->flags & SWP_USED))
- 		goto bad_device;
- 	offset = swp_offset(entry);
--- 
-1.7.6
-
+With this and probably a bunch of the other corrections in this series a
+conversion to devm_kazlloc() would be a more complete fix as it prevents
+people introducing similar missing cleanup paths in future.  Not sure if
+spatch can generate that automatically though...
