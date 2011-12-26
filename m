@@ -1,81 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753431Ab1LYX4M (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 18:56:12 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:56930 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab1LYX4G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 18:56:06 -0500
-Date: Mon, 26 Dec 2011 10:55:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: sedat.dilek@gmail.com
-Cc: Sedat Dilek <sedat.dilek@googlemail.com>,
-        linux-next <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: linux-next: Tree for Dec 21
-Message-Id: <20111226105553.fa2d0a56eeed088a4c4f58cb@canb.auug.org.au>
-In-Reply-To: <CA+icZUWYC1kYf19Zw1Jg2onAOpj3P4pRVt5h6HJp5RxuowTXZw@mail.gmail.com>
-References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au>
-	<CA+icZUWYC1kYf19Zw1Jg2onAOpj3P4pRVt5h6HJp5RxuowTXZw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	id S1753383Ab1LZBae (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 20:30:34 -0500
+Received: from mga03.intel.com ([143.182.124.21]:57400 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752601Ab1LZBa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Dec 2011 20:30:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="89434890"
+Subject: [Fwd: [patch] intel_idle: Delete meaningless local_irq_disable()
+ call in intel_idle.c.]
+From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
+Reply-To: yanmin_zhang@linux.intel.com
+To: akpm@linux-foundation.org
+Cc: LKML <linux-kernel@vger.kernel.org>, shaohua.li@intel.com,
+        len.brown@intel.com, mingmingx.zhang@intel.com
+Content-Type: text/plain; charset="UTF-8"
+Organization: UMG
+Date: Mon, 26 Dec 2011 09:28:20 +0800
+Message-ID: <1324862905.3860.1.camel@ymzhang>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__26_Dec_2011_10_55_53_+1100_KRcEnnd00INPGHpU"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__26_Dec_2011_10_55_53_+1100_KRcEnnd00INPGHpU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Andrew,
 
-Hi Sedat,
+Would you like to accept the patch into your testing tree?
 
-On Sun, 25 Dec 2011 17:08:24 +0100 Sedat Dilek <sedat.dilek@googlemail.com>=
- wrote:
->
-> [ CC mjg59 ]
->=20
-> What happened to drivers-x86 listed in [1]?
->=20
-> $ git clone git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-=
-drivers-x86
-> Cloning into 'platform-drivers-x86'...
-> fatal: The remote end hung up unexpectedly
+Thanks,
+Yanmin
 
-It is just one of many trees that have not been resurrected on kernel.org
-yet since the rebuild.  The version I have (from the last time it was
-fetchable) contains nothing.
+-------- Forwarded Message --------
+From: Zhang, MingmingX <mingmingx.zhang@intel.com>
+To: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
+Cc: yanmin_zhang@linux.intel.com <yanmin_zhang@linux.intel.com>, Li,
+Shaohua <shaohua.li@intel.com>, Brown, Len <len.brown@intel.com>
+Subject: [patch] intel_idle: Delete meaningless local_irq_disable() call
+in intel_idle.c.
+Date: Fri, 23 Dec 2011 01:57:29 +0000
 
-Matthew, is it ever coming back?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+From: mzha38X <mingmingx.zhang@intel.com>
 
---Signature=_Mon__26_Dec_2011_10_55_53_+1100_KRcEnnd00INPGHpU
-Content-Type: application/pgp-signature
+intel_idle.c is a bit misleading in a sense that local_irq_disable,it
+actually does nothing. Real irq disable happens earlier in process_32.c:cpu_idle.
+Basically, cpuidle_state->enter is called, cpu irq is disabled.
+cpuidle_state->enter would turn on irq when exiting.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+intel_idle doesn't follow this assumption. Although it doesn't
+cause real issue, it misleads developers. Below patch deletes
+the calling to local_irq_disable() at entry.
 
-iQIcBAEBCAAGBQJO97gJAAoJEECxmPOUX5FEzYwQAKPFbPJiAYlMfxA3bX0OCk1/
-ZmTamYdYjtraXzAB1VoH9Mj4JwuNy/JBQLb141tQvk9eUMZZCDhZO4VDKJrRZSIt
-JiYrdwOehjvLOA+vyxihJU/0F093F4lQcMgsfOq75tcPvaDiyd8Q0XEV3Db3XDpJ
-mCttWg47BvSNQkQtPJL8HFWIES9xkqdKvxDUiYDVElmAI6NnP1oYtf5VvhfrVTmH
-msHm+sven/Lfqc6K0bM8hRadmWFccyLtmjya7zlfg6CxPLDvwhtY+3Cm0EA1xTd5
-flkdTtrSkQL16V6isiycqS0f0EiEdBf0/kiQr9/fMRaOMqOWQ7XCaaQUcLoIkqmg
-QRVNyN6bj/2Z7yyUCPVJMp4Wfbme2iy/O6Uh970EcgDLbAKC2F0UriVMzl6Fhj07
-nEonNXUXJ4Tq5GLnQ7q/xBZOrrxfVaHN2pMe3JEtPN1y5BFGyymxmeD3bdICYe9W
-BjMiv0HFiQWIf6KINjORIFObmmvIa4TBh5Mu/OWwygXtjxRXEoXeMePPp2e6pKHu
-TmCM3dDxHQC2mpunHCDSWmg2bTfeqSJ6YA4zyVj9KD/yhfF9oD9FwVB3fqVbhw9V
-1iUoRKcOwVmYz6vycjVNNFb/7Mud0y97Q+bSzZ2qQe8W63hMGpnD3t9VscTHibQb
-yF+mA1U27o8CmGkY7QEt
-=hstO
------END PGP SIGNATURE-----
+Signed-off-by: mzha38X <mingmingx.zhang@intel.com>
+---
+ drivers/idle/intel_idle.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
---Signature=_Mon__26_Dec_2011_10_55_53_+1100_KRcEnnd00INPGHpU--
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+index 5d2f8e1..28f0394 100644
+--- a/drivers/idle/intel_idle.c
++++ b/drivers/idle/intel_idle.c
+@@ -247,8 +247,6 @@ static int intel_idle(struct cpuidle_device *dev,
+ 
+ 	cstate = (((eax) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
+ 
+-	local_irq_disable();
+-
+ 	/*
+ 	 * leave_mm() to avoid costly and often unnecessary wakeups
+ 	 * for flushing the user TLB's associated with the active mm.
+-- 
+1.7.1
+
+
