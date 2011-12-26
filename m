@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab1LZUST (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 15:18:19 -0500
-Received: from fieldses.org ([174.143.236.118]:54315 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752874Ab1LZUSP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 15:18:15 -0500
-Date: Mon, 26 Dec 2011 15:18:12 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-nfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: file locking fix for 3.2
-Message-ID: <20111226201812.GB31492@fieldses.org>
-References: <20111224215012.GA23495@fieldses.org>
- <20111224225525.GR23916@ZenIV.linux.org.uk>
- <20111224235035.GA23711@fieldses.org>
- <20111225000542.GS23916@ZenIV.linux.org.uk>
- <20111225181948.GA26288@fieldses.org>
- <alpine.LFD.2.02.1112261035240.27600@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1112261035240.27600@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753243Ab1LZUTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 15:19:51 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:40103 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752963Ab1LZUTt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 15:19:49 -0500
+Date: Mon, 26 Dec 2011 15:19:36 -0500 (EST)
+Message-Id: <20111226.151936.1114579002330233726.davem@davemloft.net>
+To: axel.lin@gmail.com
+Cc: linux-kernel@vger.kernel.org, yevgenyp@mellanox.co.il,
+        jackm@dev.mellanox.co.il, marcela@dev.mellanox.co.il,
+        eugenia@mellanox.co.il, netdev@vger.kernel.org
+Subject: Re: [PATCH] mlx4: Add missing include of linux/slab.h
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1324892134.9765.1.camel@phoenix>
+References: <1324892134.9765.1.camel@phoenix>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 26 Dec 2011 12:19:41 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 26, 2011 at 10:37:56AM -0800, Linus Torvalds wrote:
-> 
-> I'm committing the appended version instead. It removes all the games with 
-> IS_ERR(), and just does the checking at the allocation point, the way the 
-> other lease_alloc() user does too.
-> 
-> Holler if you see something odd in there..
+From: Axel Lin <axel.lin@gmail.com>
+Date: Mon, 26 Dec 2011 17:35:34 +0800
 
-Looks fine to me.
+> Include linux/slab.h to fix below build error:
 
-> @@ -1284,8 +1280,7 @@ restart:
->  
->  out:
->  	unlock_flocks();
-> -	if (!IS_ERR(new_fl))
-> -		locks_free_lock(new_fl);
-> +	locks_free_lock(new_fl);
->  	return error;
->  }
->  
+You make no indication whatsoever what source tree you see this
+error in.
 
-(And, oops, I missed that last check--thanks for catching it.)
+By trial and error I figured out that your patch only applies to
+the net-next tree, so I added it there.
 
---b.
+But I should not have to go through such a sequence just to figure out
+what tree your patch is for, so please indicate this properly in the
+future.
