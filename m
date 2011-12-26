@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755144Ab1LZLu7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 06:50:59 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:13286 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754641Ab1LZLu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 06:50:57 -0500
-Message-ID: <4EF85F8B.6070004@parallels.com>
-Date: Mon, 26 Dec 2011 15:50:35 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2 0/6] SUNPRC: cleanup PipeFS for network-namespace-aware
- users
-References: <20111226114042.13743.73804.stgit@localhost6.localdomain6>
-In-Reply-To: <20111226114042.13743.73804.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755263Ab1LZLvc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 06:51:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64582 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754966Ab1LZLvb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 06:51:31 -0500
+From: Kautuk Consul <consul.kautuk@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Eric B Munson <emunson@mgebm.net>, Pekka Enberg <penberg@kernel.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Kautuk Consul <consul.kautuk@gmail.com>
+Subject: [PATCH 1/1] swapfile: swap_info_get: Check for swap_info[type] == NULL
+Date: Mon, 26 Dec 2011 17:26:39 +0530
+Message-Id: <1324900599-20804-1-git-send-email-consul.kautuk@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Trond.
-This patch set depend on
-"SUNRPC: initial part of making pipefs work in net ns"
-and
-"SUNRPC: remove non-exclusive pipe creation from RPC pipefs"
+From: Kautuk Consul <consul.kautuk@gmail.com>
 
-I'm not sure about did you applied them already or not, so I've rebased and 
-resent them too.
+If the swapfile type encoded within entry.val is corrupted in
+such a way that the swap_info[type] == NULL, then the code in
+swap_info_get will cause a NULL pointer exception.
 
+Assuming that the code in swap_info_get attempts to validate the
+swapfile type by checking its range, another bad_nofile check would
+be to check for check whether the swap_info[type] pointer is NULL.
+
+Adding a NULL check for swap_info[type] to be reagrded as a "bad_nofile"
+error scenario.
+
+Signed-off-by: Kautuk Consul <consul.kautuk@gmail.com>
+---
+ mm/swapfile.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index b1cd120..7bdbe91 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -483,6 +483,8 @@ static struct swap_info_struct *swap_info_get(swp_entry_t entry)
+ 	if (type >= nr_swapfiles)
+ 		goto bad_nofile;
+ 	p = swap_info[type];
++	if (!p)
++		goto bad_nofile;
+ 	if (!(p->flags & SWP_USED))
+ 		goto bad_device;
+ 	offset = swp_offset(entry);
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.6
+
