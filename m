@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab1LZPZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 10:25:29 -0500
-Received: from mail.dev.rtsoft.ru ([213.79.90.226]:44897 "HELO
-	mail.dev.rtsoft.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753660Ab1LZPZZ (ORCPT
+	id S1755636Ab1LZP31 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 10:29:27 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:49246 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755563Ab1LZP3Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 10:25:25 -0500
-To: linux-scsi@vger.kernel.org, JBottomley@parallels.com
-Subject: [PATCH 1/3] atp870u: use pci_dev->revision
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Disposition: inline
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Organization: MontaVista Software Inc.
-Date: Mon, 26 Dec 2011 19:24:19 +0300
+	Mon, 26 Dec 2011 10:29:25 -0500
+Date: Mon, 26 Dec 2011 16:29:19 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
+cc: linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] b43: support new RX header, noticed to be used in 598.314+
+ fw
+Message-ID: <alpine.DEB.2.00.1112261608140.12108@axis700.grange>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112261924.19382.sshtylyov@ru.mvista.com>
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:Bv6yiztzH+28u9i7DPoB0F/ntf5Jq9VA4p1xKqRh2qI
+ ER+OJ/bZvl8E/YZV5CezOWRwZwBh3KZThgjDIVMpbuaHHO5FDr
+ ffXIIfmUhQexvsFRaTsg+OjerV5aWpfe1SooRfmBZDdbxH7nod
+ ZYwrVWROtKM540DpvLrJ4qlF8GWSWdyzlTwe7ZAdLG2mY/9FXF
+ eyLpw+xonccxPX7iPgnO4gPBXkRYZxtIGfEdEj0QzxWY+0UQGs
+ OpPPW3YU+BkzmLIKDZr/3sVzDiJqw8y9IrDa2MJdh7RJ1y/1Rd
+ pzebBMhhTnECPEPYOu4aEVJ74nekZJ8SQt6+y49EPvsvGcwtjm
+ zluRww06Qj6DI21DQhDQs8fAzNQvy+zB8dBw7SPvBgEIGvFv7+
+ jgzxzRmG7u7ng==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver uses PCI_CLASS_REVISION instead of PCI_REVISION_ID, so it wasn't
-converted by commit 44c10138fd4bbc4b6d6bff0873c24902f2a9da65 (PCI: Change all
-drivers to use pci_device->revision).
+Hi
 
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Sorry for "simulating" a reply - I'm not subscribed to linux-wireless, so,
+cannot (easily) reply.
+   
+The commit in subject line
 
+commit 17030f48e31adde5b043741c91ba143f5f7db0fd
+From: Rafa³ Mi³ecki <zajec5@gmail.com>
+Date: Thu, 11 Aug 2011 17:16:27 +0200
+Subject: [PATCH] b43: support new RX header, noticed to be used in 598.314+ fw
+
+breaks my b43 SDIO card in 3.2-ish kernels. Given the approaching 
+3.2-final release, would be nice to have it fixed before that. The card 
+I've got is marked with some "SD-Link11g" from some "C-guys, Inc." from 
+Taiwan:-) Using firmware version 410.31754. Do I really _have_ to update 
+or is the driver supposed to handle "all" firmware versions, or at least 
+not drop ones, it used to support before?
+
+Thanks
+Guennadi
 ---
-The patch is against the current Linus' tree.
-
- drivers/scsi/atp870u.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/drivers/scsi/atp870u.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/atp870u.c
-+++ linux-2.6/drivers/scsi/atp870u.c
-@@ -2583,7 +2583,7 @@ static int atp870u_probe(struct pci_dev 
- 	 * this than via the PCI device table
- 	 */
- 	if (ent->device == PCI_DEVICE_ID_ARTOP_AEC7610) {
--		error = pci_read_config_byte(pdev, PCI_CLASS_REVISION, &atpdev->chip_ver);
-+		atpdev->chip_ver = pdev->revision;
- 		if (atpdev->chip_ver < 2)
- 			goto err_eio;
- 	}
-@@ -2602,7 +2602,7 @@ static int atp870u_probe(struct pci_dev 
- 	base_io &= 0xfffffff8;
- 
- 	if ((ent->device == ATP880_DEVID1)||(ent->device == ATP880_DEVID2)) {
--		error = pci_read_config_byte(pdev, PCI_CLASS_REVISION, &atpdev->chip_ver);
-+		atpdev->chip_ver = pdev->revision;
- 		pci_write_config_byte(pdev, PCI_LATENCY_TIMER, 0x80);//JCC082803
- 
- 		host_id = inb(base_io + 0x39);
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
