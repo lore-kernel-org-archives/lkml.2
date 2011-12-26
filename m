@@ -1,94 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361Ab1LZScV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 13:32:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49544 "EHLO
+	id S1752607Ab1LZSiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 13:38:25 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61573 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614Ab1LZScT (ORCPT
+	with ESMTP id S1751345Ab1LZSiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 13:32:19 -0500
-Message-ID: <4EF8BDAF.6050402@lwfinger.net>
-Date: Mon, 26 Dec 2011 12:32:15 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
-MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org,
+	Mon, 26 Dec 2011 13:38:23 -0500
+Date: Mon, 26 Dec 2011 10:37:56 -0800 (PST)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+X-X-Sender: torvalds@i5.linux-foundation.org
+To: "J. Bruce Fields" <bfields@fieldses.org>
+cc: Al Viro <viro@zeniv.linux.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        b43-dev <b43-dev@lists.infradead.org>
-Subject: Re: [PATCH] b43: fix regression in PIO case
-References: <alpine.DEB.2.00.1112261608140.12108@axis700.grange> <alpine.DEB.2.00.1112261824000.12108@axis700.grange> <4EF8B42C.2020402@lwfinger.net> <alpine.DEB.2.00.1112261909550.12108@axis700.grange>
-In-Reply-To: <alpine.DEB.2.00.1112261909550.12108@axis700.grange>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
+        linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: file locking fix for 3.2
+In-Reply-To: <20111225181948.GA26288@fieldses.org>
+Message-ID: <alpine.LFD.2.02.1112261035240.27600@i5.linux-foundation.org>
+References: <20111224215012.GA23495@fieldses.org> <20111224225525.GR23916@ZenIV.linux.org.uk> <20111224235035.GA23711@fieldses.org> <20111225000542.GS23916@ZenIV.linux.org.uk> <20111225181948.GA26288@fieldses.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/2011 12:17 PM, Guennadi Liakhovetski wrote:
-> On Mon, 26 Dec 2011, Larry Finger wrote:
->
->> On 12/26/2011 11:28 AM, Guennadi Liakhovetski wrote:
->>> This patch fixes the regression, introduced by
->>>
->>> commit 17030f48e31adde5b043741c91ba143f5f7db0fd
->>> From: Rafa³ Mi³ecki<zajec5@gmail.com>
->>> Date: Thu, 11 Aug 2011 17:16:27 +0200
->>> Subject: [PATCH] b43: support new RX header, noticed to be used in 598.314+
->>> fw
->>>
->>> in PIO case.
->>>
->>> Signed-off-by: Guennadi Liakhovetski<g.liakhovetski@gmx.de>
->>> ---
->>> diff --git a/drivers/net/wireless/b43/pio.c b/drivers/net/wireless/b43/pio.c
->>> index ce8a4bd..b64b64c 100644
->>> --- a/drivers/net/wireless/b43/pio.c
->>> +++ b/drivers/net/wireless/b43/pio.c
->>> @@ -617,9 +617,19 @@ static bool pio_rx_frame(struct b43_pio_rxqueue *q)
->>>    	const char *err_msg = NULL;
->>>    	struct b43_rxhdr_fw4 *rxhdr =
->>>    		(struct b43_rxhdr_fw4 *)wl->pio_scratchspace;
->>> +	size_t rxhdr_size = sizeof(*rxhdr);
->>>
->>>    	BUILD_BUG_ON(sizeof(wl->pio_scratchspace)<   sizeof(*rxhdr));
->>> -	memset(rxhdr, 0, sizeof(*rxhdr));
->>> +	switch (dev->fw.hdr_format) {
->>> +	case B43_FW_HDR_410:
->>> +	case B43_FW_HDR_351:
->>> +		rxhdr_size -= sizeof(rxhdr->format_598) -
->>> +			sizeof(rxhdr->format_351);
->>> +		break;
->>> +	case B43_FW_HDR_598:
->>> +		break;
->>> +	}
->>
->> I do not think the above will work for format_410. By my count, the format_410
->> struct is 4 bytes longer than the format_351 struct.
->
-> I think you're looking at struct b43_txhdr, whereas the problem is in
-> struct b43_rxhdr_fw4.
->
-> Thanks
-> Guennadi
->
->>
->> Even if it does work, I suggest using the following:
->>
->> 	size_t rxhdr_size;
->>
->>     	BUILD_BUG_ON(sizeof(wl->pio_scratchspace)<   sizeof(*rxhdr));
->> 	switch (dev->fw.hdr_format) {
->> 	case B43_FW_HDR_351:
->> 		rxhdr_size = sizeof(rxhdr->format_351);
->> 		break;
->> 	case B43_FW_HDR_410:
 
-You are correct - I was looking in the wrong place. Even so, I prefer setting 
-rxhdr_size in the case branches, and not adjust one preset earlier.
+I'm committing the appended version instead. It removes all the games with 
+IS_ERR(), and just does the checking at the allocation point, the way the 
+other lease_alloc() user does too.
 
-Larry
+Holler if you see something odd in there..
 
+                   Linus
+---
+commit 6d4b9e38d3980826abccfbd90e95bf4bd41b8dd2
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Mon Dec 26 10:25:26 2011 -0800
+
+    vfs: fix handling of lock allocation failure in lease-break case
+    
+    Bruce Fields notes that commit 778fc546f749 ("locks: fix tracking of
+    inprogress lease breaks") introduced a possible error pointer
+    dereference on failure to allocate memory.  locks_conflict() will
+    dereference the passed-in new lease lock structure that may be an error pointer.
+    
+    This means an open (without O_NONBLOCK set) on a file with a lease
+    applied (generally only done when Samba or nfsd (with v4) is running)
+    could crash if a kmalloc() fails.
+    
+    So instead of playing games with IS_ERROR() all over the place, just
+    check the allocation failure early.  That makes the code more
+    straightforward, and avoids this possible bad pointer dereference.
+    
+    Based-on-patch-by: J. Bruce Fields <bfields@redhat.com>
+    Cc: Al Viro <viro@zeniv.linux.org.uk>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ fs/locks.c |   11 +++--------
+ 1 files changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/fs/locks.c b/fs/locks.c
+index 3b0d05dcd7c1..637694bf3a03 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -1205,6 +1205,8 @@ int __break_lease(struct inode *inode, unsigned int mode)
+ 	int want_write = (mode & O_ACCMODE) != O_RDONLY;
+ 
+ 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
++	if (IS_ERR(new_fl))
++		return PTR_ERR(new_fl);
+ 
+ 	lock_flocks();
+ 
+@@ -1221,12 +1223,6 @@ int __break_lease(struct inode *inode, unsigned int mode)
+ 		if (fl->fl_owner == current->files)
+ 			i_have_this_lease = 1;
+ 
+-	if (IS_ERR(new_fl) && !i_have_this_lease
+-			&& ((mode & O_NONBLOCK) == 0)) {
+-		error = PTR_ERR(new_fl);
+-		goto out;
+-	}
+-
+ 	break_time = 0;
+ 	if (lease_break_time > 0) {
+ 		break_time = jiffies + lease_break_time * HZ;
+@@ -1284,8 +1280,7 @@ restart:
+ 
+ out:
+ 	unlock_flocks();
+-	if (!IS_ERR(new_fl))
+-		locks_free_lock(new_fl);
++	locks_free_lock(new_fl);
+ 	return error;
+ }
+ 
