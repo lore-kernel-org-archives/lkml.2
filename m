@@ -1,188 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab1LZOEH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 09:04:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58173 "EHLO mx1.redhat.com"
+	id S1755549Ab1LZOSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 09:18:34 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51711 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754317Ab1LZOED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 09:04:03 -0500
-Date: Mon, 26 Dec 2011 16:05:55 +0200
-From: Michael S Tsirkin <mst@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>, Jonas Bonn <jonas@southpole.se>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCHv2 RFC] pci: add pci_iomap_range
-Message-ID: <20111226140449.GA18077@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wr9xp9cr.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-To: unlisted-recipients:; (no To-header on input)
+	id S1754282Ab1LZOSa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 09:18:30 -0500
+Subject: Re: Current kernel fails to compile with KVM on PowerPC
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=windows-1252
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <20111225110109.GA28757@alea.gnuu.de>
+Date: Mon, 26 Dec 2011 15:18:14 +0100
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        kvm list <kvm@vger.kernel.org>, kvm-ppc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <68FBAE93-2F91-43F9-AAE2-75A934588DD5@suse.de>
+References: <20111107194838.GA23558@alea.gnuu.de> <20111220202711.GD6830@alea.gnuu.de> <C3B4A5C9-0AE0-49C8-A349-879ADDA01804@suse.de> <20111224103108.GA19586@alea.gnuu.de> <20111224111359.GB3938@alea.gnuu.de> <C40CA3A1-2397-423B-96B3-CBEE4EA7EA30@suse.de> <20111225110109.GA28757@alea.gnuu.de>
+To: =?iso-8859-1?Q?J=F6rg_Sommer?= <joerg@alea.gnuu.de>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Virtio drivers should map the part of the range they need, not necessarily
-all of it. They also need non-cacheable mapping even for
-prefetchable BARs.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
----
+On 25.12.2011, at 12:01, Jörg Sommer wrote:
 
->Rusty Russell wrote:
->> I think that we should add a forcenocache flag.
->> This will let devices put the cap structure in
->> the prefetcheable BAR. That has an advantage that
->> it can be located anywhere in the 2^64 space,
->> while non-prefetcheable BARs are limited to lower 4G
->> for devices behind a PCI-to-PCI bridge.
->OK, want to respin that patch (or patch on top and I'll fold?)
+> Alexander Graf hat am Sat 24. Dec, 18:05 (+0100) geschrieben:
+>> On 24.12.2011, at 12:13, Jörg Sommer wrote:
+>>> Jörg Sommer hat am Sat 24. Dec, 11:31 (+0100) geschrieben:
+>>>> Alexander Graf hat am Fri 23. Dec, 14:50 (+0100) geschrieben:
+>>>>> On 20.12.2011, at 21:27, Jörg Sommer wrote:
+>>>>>> 
+>>>>>> I'm so sorry to have to report a new bug in one of your patches. It was
+>>>>>> covered by the one above. I've picked the commit for it from your git
+>>>>>> repository and now, the kernel build fails with this error:
+>>>>>> 
+>>>>>> BOOTCC  arch/powerpc/boot/fdt_strerror.o
+>>>>>> BOOTAR  arch/powerpc/boot/wrapper.a
+>>>>>> WRAP    arch/powerpc/boot/zImage.pmac
+>>>>>> WRAP    arch/powerpc/boot/zImage.coff
+>>>>>> ERROR: "kvmppc_h_pr" [arch/powerpc/kvm/kvm.ko] undefined!
+>>>>>> make[3]: *** [__modpost] Fehler 1
+>>>>>> make[2]: *** [modules] Fehler 2
+>>>>>> make[2]: *** Warte auf noch nicht beendete Prozesse...
+>>>>>> WRAP    arch/powerpc/boot/zImage.miboot
+>>>>>> make[1]: *** [deb-pkg] Fehler 2
+>>>>>> make: *** [deb-pkg] Fehler 2
+> 
+>> I was actually thinking of:
+>> 
+>> commit dfc209648daf8ba4197e71376b76c95fd26fd272
+>> Author: Andreas Schwab <schwab@linux-m68k.org>
+>> Date:   Tue Nov 8 07:17:39 2011 +0000
+> 
+>> But yes :). I guess we need to make sure this commit also lands in 3.2 :(.
+> 
+> So there are at least two commits they must go into 3.2 to make the
+> kernel build again, from my point of view:
+> 
+> • KVM: PPC: protect use of kvmppc_h_pr
+> • KVM: PPC: move compute_tlbie_rb to book3s_64 common header
 
-Here comes (warning - untested). This is on top of master.
-As I'm moving this function for portability into
-a separate file, it might be a good idea for this
-to be rebased on top of my linux-next tree?
+Yup, thanks :). All compile fixes that piled up in my tree are now with Avi to push to 3.2 :).
 
-The whole mmio rework is not 3.3 material yes, is it?
 
- include/asm-generic/io.h    |    5 ++++
- include/asm-generic/iomap.h |   13 ++++++++++++
- lib/iomap.c                 |   46 +++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 58 insertions(+), 6 deletions(-)
+Alex
 
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 9120887..78aa159 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -286,6 +286,11 @@ static inline void writesb(const void __iomem *addr, const void *buf, int len)
- /* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
- struct pci_dev;
- extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
-+extern void __iomem *pci_iomap_range(struct pci_dev *dev, int bar,
-+				     unsigned offset,
-+				     unsigned long minlen,
-+				     unsigned long maxlen,
-+				     bool force_nocache);
- static inline void pci_iounmap(struct pci_dev *dev, void __iomem *p)
- {
- }
-diff --git a/include/asm-generic/iomap.h b/include/asm-generic/iomap.h
-index 98dcd76..584a2b6 100644
---- a/include/asm-generic/iomap.h
-+++ b/include/asm-generic/iomap.h
-@@ -70,8 +70,21 @@ extern void ioport_unmap(void __iomem *);
- /* Create a virtual mapping cookie for a PCI BAR (memory or IO) */
- struct pci_dev;
- extern void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max);
-+extern void __iomem *pci_iomap_range(struct pci_dev *dev, int bar,
-+				     unsigned offset,
-+				     unsigned long minlen,
-+				     unsigned long maxlen,
-+				     bool force_nocache);
- extern void pci_iounmap(struct pci_dev *dev, void __iomem *);
- #else
-+static inline void __iomem *pci_iomap_range(struct pci_dev *dev, int bar,
-+					    unsigned offset,
-+					    unsigned long minlen,
-+					    unsigned long maxlen,
-+					    bool force_nocache);
-+{
-+	return NULL;
-+}
- struct pci_dev;
- static inline void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long max)
- {
-diff --git a/lib/iomap.c b/lib/iomap.c
-index 5dbcb4b..efa7c29 100644
---- a/lib/iomap.c
-+++ b/lib/iomap.c
-@@ -243,33 +243,47 @@ EXPORT_SYMBOL(ioport_unmap);
- 
- #ifdef CONFIG_PCI
- /**
-- * pci_iomap - create a virtual mapping cookie for a PCI BAR
-+ * pci_iomap_range - create a virtual mapping cookie for a PCI BAR
-  * @dev: PCI device that owns the BAR
-  * @bar: BAR number
-- * @maxlen: length of the memory to map
-+ * @offset: map memory at the given offset in BAR
-+ * @minlen: min length of the memory to map
-+ * @maxlen: max length of the memory to map
-  *
-  * Using this function you will get a __iomem address to your device BAR.
-  * You can access it using ioread*() and iowrite*(). These functions hide
-  * the details if this is a MMIO or PIO address space and will just do what
-  * you expect from them in the correct way.
-  *
-+ * @minlen specifies the minimum length to map. We check that BAR is
-+ * large enough.
-  * @maxlen specifies the maximum length to map. If you want to get access to
-- * the complete BAR without checking for its length first, pass %0 here.
-+ * the complete BAR from offset to the end, pass %0 here.
-+ * @force_nocache makes the mapping noncacheable even if the BAR
-+ * is prefetcheable. It has no effect otherwise.
-  * */
--void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
-+void __iomem *pci_iomap_range(struct pci_dev *dev, int bar,
-+			      unsigned offset,
-+			      unsigned long minlen,
-+			      unsigned long maxlen,
-+			      bool force_nocache)
- {
- 	resource_size_t start = pci_resource_start(dev, bar);
- 	resource_size_t len = pci_resource_len(dev, bar);
- 	unsigned long flags = pci_resource_flags(dev, bar);
- 
--	if (!len || !start)
-+	if (len <= offset || !start)
-+		return NULL;
-+	len -= offset;
-+	start += offset;
-+	if (len < minlen)
- 		return NULL;
- 	if (maxlen && len > maxlen)
- 		len = maxlen;
- 	if (flags & IORESOURCE_IO)
- 		return ioport_map(start, len);
- 	if (flags & IORESOURCE_MEM) {
--		if (flags & IORESOURCE_CACHEABLE)
-+		if (!force_nocache && (flags & IORESOURCE_CACHEABLE))
- 			return ioremap(start, len);
- 		return ioremap_nocache(start, len);
- 	}
-@@ -277,10 +291,30 @@ void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
- 	return NULL;
- }
- 
-+/**
-+ * pci_iomap - create a virtual mapping cookie for a PCI BAR
-+ * @dev: PCI device that owns the BAR
-+ * @bar: BAR number
-+ * @maxlen: length of the memory to map
-+ *
-+ * Using this function you will get a __iomem address to your device BAR.
-+ * You can access it using ioread*() and iowrite*(). These functions hide
-+ * the details if this is a MMIO or PIO address space and will just do what
-+ * you expect from them in the correct way.
-+ *
-+ * @maxlen specifies the maximum length to map. If you want to get access to
-+ * the complete BAR without checking for its length first, pass %0 here.
-+ * */
-+void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
-+{
-+	return pci_iomap_range(dev, bar, 0, 0, maxlen, false);
-+}
-+
- void pci_iounmap(struct pci_dev *dev, void __iomem * addr)
- {
- 	IO_COND(addr, /* nothing */, iounmap(addr));
- }
- EXPORT_SYMBOL(pci_iomap);
-+EXPORT_SYMBOL(pci_iomap_range);
- EXPORT_SYMBOL(pci_iounmap);
- #endif /* CONFIG_PCI */
--- 
-1.7.8.382.g3daff
