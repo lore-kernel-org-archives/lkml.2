@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab1LZGv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 01:51:28 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37638 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab1LZGvV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 01:51:21 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 26 Dec 2011 15:50:08 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 1/6] memcg: fix unused variable warning
-Message-Id: <20111226155008.9ab21c6f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20111226064734.GA13355@shutemov.name>
-References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
-	<20111226152531.e0335ec4.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111226063652.GA13273@shutemov.name>
-	<20111226154252.d3621532.kamezawa.hiroyu@jp.fujitsu.com>
-	<20111226064734.GA13355@shutemov.name>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1751992Ab1LZGwT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 01:52:19 -0500
+Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:38106 "EHLO
+	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751340Ab1LZGwI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 01:52:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAF6AEGs-Xgi_kmz5oag76=4v20RP5PfAM2-pyt_PyvWizgdW8Q@mail.gmail.com>
+References: <1324283611-18344-1-git-send-email-sumit.semwal@ti.com>
+ <20111220193117.GD3883@phenom.ffwll.local> <CAPM=9tzi5MyCBMJhWBM_ouL=QOaxX3K6KZ8K+t7dUYJLQrF+yA@mail.gmail.com>
+ <CAB2ybb-+VTR=V1hwhF1GKxgkhTrssZ1JVOwcP6spO5O3AXqivA@mail.gmail.com> <CAF6AEGs-Xgi_kmz5oag76=4v20RP5PfAM2-pyt_PyvWizgdW8Q@mail.gmail.com>
+From: "Semwal, Sumit" <sumit.semwal@ti.com>
+Date: Mon, 26 Dec 2011 12:21:45 +0530
+Message-ID: <CAB2ybb-iAN_GPoUkPaEgUyhZmm9mZfoC9cf6oeaPehhCnHGu4g@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC v3 0/2] Introduce DMA buffer sharing mechanism
+To: Rob Clark <rob@ti.com>
+Cc: Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, m.szyprowski@samsung.com,
+        t.stanislaws@samsung.com, patches@linaro.org, daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Dec 2011 08:47:34 +0200
-"Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-
-> On Mon, Dec 26, 2011 at 03:42:52PM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Mon, 26 Dec 2011 08:36:52 +0200
-> > "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-> > 
-> > > On Mon, Dec 26, 2011 at 03:25:31PM +0900, KAMEZAWA Hiroyuki wrote:
-> > > > On Sat, 24 Dec 2011 05:00:14 +0200
-> > > > "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-> > > > 
-> > > > > From: "Kirill A. Shutemov" <kirill@shutemov.name>
-> > > > > 
-> > > > > mm/memcontrol.c: In function $B!F(Bmemcg_check_events$B!G(B:
-> > > > > mm/memcontrol.c:784:22: warning: unused variable $B!F(Bdo_numainfo$B!G(B [-Wunused-variable]
-> > > > > 
-> > > > > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> > > > 
-> > > > Hmm ? Doesn't this fix cause a new Warning ?
-> > > > 
-> > > > mm/memcontrol.c: In function ?memcg_check_events?:
-> > > > mm/memcontrol.c:789: warning: ISO C90 forbids mixed declarations and code
-> > > 
-> > > I don't see how. The result code is:
-> > > 
-> > > 	if (unlikely(mem_cgroup_event_ratelimit(memcg,
-> > > 						MEM_CGROUP_TARGET_THRESH))) {
-> > > 		bool do_softlimit;
-> > > 
-> > > #if MAX_NUMNODES > 1
-> > > 		bool do_numainfo;
-> > > 		do_numainfo = mem_cgroup_event_ratelimit(memcg,
-> > > 						MEM_CGROUP_TARGET_NUMAINFO);
-> > > #endif
-> > > 		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> > > 						MEM_CGROUP_TARGET_SOFTLIMIT);
-> > > 		preempt_enable();
-> > > 
-> > > 		mem_cgroup_threshold(memcg);
-> > > 
-> > 
-> > Ah. please see linux-next and rebase onto that.
-> 
-> The patchset is on top of next-20111222. Have I missed something?
-> 
-Ah, ok. my mistake. Sorry.
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
-
-
-
+On Fri, Dec 23, 2011 at 10:50 PM, Rob Clark <rob@ti.com> wrote:
+> On Fri, Dec 23, 2011 at 4:08 AM, Semwal, Sumit <sumit.semwal@ti.com> wrote:
+>> On Wed, Dec 21, 2011 at 1:50 AM, Dave Airlie <airlied@gmail.com> wrote:
+>> <snip>
+>>>>
+>>>> Hence for both patches:
+>>>> Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+>>>
+>>> Yeah I'm with Daniel, I like this one, I can definitely build the drm
+>>> buffer sharing layer on top of this.
+>>>
+>>> How do we see this getting merged? I'm quite happy to push it to Linus
+>>> if we don't have an identified path, though it could go via a Linaro
+>>> tree as well.
+>>>
+>>> so feel free to add:
+>>> Reviewed-by: Dave Airlie <airlied@redhat.com>
+>> Thanks Daniel and Dave!
+>>
+>> I guess we can start with staging for 3.3, and see how it shapes up. I
+>> will post the latest patch version pretty soon.
+>
+> not sure about staging, but could make sense to mark as experimental.
+Thanks, I will mark it experimental for the first version; we can
+remove that once it is more widely used and tested.
+>
+>> Arnd, Dave: do you have any preference on the path it takes to get
+>> merged? In my mind, Linaro tree might make more sense, but I would
+>> leave it upto you gentlemen.
+>
+> Looks like Dave is making some progress on drm usage of buffer sharing
+> between gpu's.. if that is ready to go in at the same time, it might
+> be a bit logistically simpler for him to put dmabuf in the same pull
+> req.  I don't have strong preference one way or another, so do what is
+> collectively simpler ;-)
+:) Right - I am quite happy for it to get merged in either ways :)
+>
+> BR,
+> -R
+Best regards,
+~Sumit.
