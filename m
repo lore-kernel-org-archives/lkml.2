@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661Ab1LZLhZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 06:37:25 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:44107 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab1LZLhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 06:37:20 -0500
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-In-Reply-To: <4EF838BD.60406@redhat.com>
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <87vcp4t45p.fsf@linux.vnet.ibm.com> <4EF838BD.60406@redhat.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 26 Dec 2011 17:03:07 +0530
-Message-ID: <87d3bbtvnw.fsf@linux.vnet.ibm.com>
+	id S1754681Ab1LZLjK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 06:39:10 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:30926 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754585Ab1LZLjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 06:39:09 -0500
+Subject: [PATCH v3 0/7] SUNRPC: initial part of making pipefs work in net ns
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Mon, 26 Dec 2011 15:38:48 +0300
+Message-ID: <20111226113504.13216.19798.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 11122601-9264-0000-0000-000000819653
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 26 Dec 2011 11:05:01 +0200, Avi Kivity <avi@redhat.com> wrote:
-> On 12/26/2011 05:14 AM, Nikunj A Dadhania wrote:
-> > > 
-> > > btw you can get an additional speedup by enabling x2apic, for
-> > > default_send_IPI_mask_logical().
-> > > 
-> > In the host?
-> >
-> 
-> In the host, 
->
-The machine(IBM x3650 M2, Nehalem) does not seem to support x2apic. 
+This patch-set was created in context of clone of git branch:
+git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
 
-I have enabled the following in my config;
+v3:
+1) Rebased on tag "v3.2-rc7".
 
-[root@krm1 linux-tip]# grep X2APIC .config
-CONFIG_X86_X2APIC=y
-[root@krm1 linux-tip]#
+v2:
+1) Rebased of current repo state (i.e. all commits were pulled before apply)
 
-And booted the kernel with "apic=verbose" command. 
+This patch-set implements pipefs superblock creation per network namespace
+context instead of using single one for all possible contexts. Also, it
+provides pipefs dentries creation and destruction helpers for kernel routines.
 
-[root@krm1 linux-tip]# dmesg | grep -i x2apic
-[root@krm1 linux-tip]# 
+Additional description of the idea about how to make RPC pipefs work per
+network namespace context can be found in the letter titled "SUNRPC: "RPC
+pipefs per network namespace" preparations", which has been sent already to
+linux-nfs@vger.kernel.org.
+The following series consists of:
 
-Does not give anything. I safely assumed that x2apic is not
-supported. Is there something to do in the bios to enable this?
+---
 
-> for the guest:
-> 
->  qemu -cpu ...,+x2apic
-> 
-I need to try this, i have libvirt setup. Let me dig how to enable this
-through xml file.
+Stanislav Kinsbursky (7):
+      SUNRPC: create RPC pipefs superblock per network namespace context
+      SUNRPC: hold current network namespace while pipefs superblock is active
+      SUNRPC: send notification events on pipefs sb creation and destruction
+      SUNRPC: pipefs dentry lookup helper introduced
+      SUNRPC: put pipefs superblock link on network namespace
+      SUNRPC: pipefs per-net operations helper introduced
+      SUNRPC: added debug messages to RPC pipefs
 
-Regards
-Nikunj
 
+ include/linux/sunrpc/rpc_pipe_fs.h |   14 ++++
+ net/sunrpc/netns.h                 |    3 +
+ net/sunrpc/rpc_pipe.c              |  113 +++++++++++++++++++++++++++++++++++-
+ net/sunrpc/sunrpc_syms.c           |    1 
+ 4 files changed, 129 insertions(+), 2 deletions(-)
+
+-- 
+Signature
