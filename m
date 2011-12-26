@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753383Ab1LZBae (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 25 Dec 2011 20:30:34 -0500
-Received: from mga03.intel.com ([143.182.124.21]:57400 "EHLO mga03.intel.com"
+	id S1753509Ab1LZBcA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 25 Dec 2011 20:32:00 -0500
+Received: from mga03.intel.com ([143.182.124.21]:46934 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752601Ab1LZBa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 25 Dec 2011 20:30:28 -0500
+	id S1752601Ab1LZBbw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 25 Dec 2011 20:31:52 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89434890"
-Subject: [Fwd: [patch] intel_idle: Delete meaningless local_irq_disable()
- call in intel_idle.c.]
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: akpm@linux-foundation.org
-Cc: LKML <linux-kernel@vger.kernel.org>, shaohua.li@intel.com,
-        len.brown@intel.com, mingmingx.zhang@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Organization: UMG
-Date: Mon, 26 Dec 2011 09:28:20 +0800
-Message-ID: <1324862905.3860.1.camel@ymzhang>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+   d="scan'208";a="89435109"
+From: "Tian, Kevin" <kevin.tian@intel.com>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+CC: "jeremy@goop.org" <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "liang.tang@oracle.com" <liang.tang@oracle.com>,
+        "Yu, Ke" <ke.yu@intel.com>, "konrad@kernel.org" <konrad@kernel.org>,
+        "lenb@kernel.org" <lenb@kernel.org>
+Subject: RE: [Xen-devel] [PATCH 3/8] ACPI: processor: add
+ __acpi_processor_[un]register_driver helpers.
+Thread-Topic: [Xen-devel] [PATCH 3/8] ACPI: processor: add
+ __acpi_processor_[un]register_driver helpers.
+Thread-Index: AQHMwR8jSQj+OztfxUuz+mAW9L1uCZXtWRMw
+Date: Mon, 26 Dec 2011 01:31:45 +0000
+Message-ID: <AADFC41AFE54684AB9EE6CBC0274A5D10145B9@SHSMSX102.ccr.corp.intel.com>
+References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
+ <1322673664-14642-4-git-send-email-konrad.wilk@oracle.com>
+ <20111216220342.GC9832@phenom.dumpdata.com>
+ <625BA99ED14B2D499DC4E29D8138F1506E01AABC7A@shsmsx502.ccr.corp.intel.com>
+ <20111219142626.GB27772@andromeda.dapyr.net>
+ <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
+ <20111220153145.GB13253@andromeda.dapyr.net>
+ <625BA99ED14B2D499DC4E29D8138F1506E01AAC469@shsmsx502.ccr.corp.intel.com>
+ <20111223030103.GA7218@andromeda.dapyr.net>
+In-Reply-To: <20111223030103.GA7218@andromeda.dapyr.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+> From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
+> Sent: Friday, December 23, 2011 11:01 AM
+> 
+> > > OK. Lets put the # VCPU != PCPU aside. Say dom0 will boot with all
+> > > CPUs and then later on the admin starts unplugging them.
+> >
+> > This should be communicated to major Xen based distributions, so that it's
+> > an agreed approach since in majority case dom0 is configured as UP or
+> > a few VCPUs.
+> 
+> I am not saying that is it the agreed approach. There has to be
+> flexibility in supporting both. But what I want to understand whether
+> the requirement for VCPU != PCPU can be put aside and put in the drivers
+> later on.
 
-Would you like to accept the patch into your testing tree?
+sure. VCPU!=PCPU requirement is orthogonal to the basic part for gearing
+ACPI information to Xen.
 
-Thanks,
-Yanmin
+> 
+> So that the first approach is not changing the generic drivers (much).
+> The reason I am asking about this is two-fold:
+>  1). For new distros (Ubuntu, Fedora), the default is all VCPUs.
 
--------- Forwarded Message --------
-From: Zhang, MingmingX <mingmingx.zhang@intel.com>
-To: linux-kernel@vger.kernel.org <linux-kernel@vger.kernel.org>
-Cc: yanmin_zhang@linux.intel.com <yanmin_zhang@linux.intel.com>, Li,
-Shaohua <shaohua.li@intel.com>, Brown, Len <len.brown@intel.com>
-Subject: [patch] intel_idle: Delete meaningless local_irq_disable() call
-in intel_idle.c.
-Date: Fri, 23 Dec 2011 01:57:29 +0000
+good to know that.
 
-From: mzha38X <mingmingx.zhang@intel.com>
+>      Enterprising users might use dom0_max_vcpus to limit the VCPU count,
+>      but most won't.
+>      Which mean we can concentrate on bringing the _Pxx/_Cxx parsing
+>      up to the hypervisor. Which is really neccessary on any chipset
+>      which has the notion of TurboBoost (otherwise the Xen scheduler
+>      won't pick this up and won't engage this mode in certain
+>      workloads).
+>  2). The ACPI maintainers are busy with ACPI 5.0. I don't know how
+>      much work this is, but it probably means tons of stuff with
+>      embedded platforms and tons of regression testing. So if there
+>      is a patch that does not impact the generic code much (or any)
+>      it will make their life easier. Which also means we can built
+>      on top that for the VCPU != PCPU case.
+> 
+> That is what I am trying to understand.
 
-intel_idle.c is a bit misleading in a sense that local_irq_disable,it
-actually does nothing. Real irq disable happens earlier in process_32.c:cpu_idle.
-Basically, cpuidle_state->enter is called, cpu irq is disabled.
-cpuidle_state->enter would turn on irq when exiting.
+no problem. this incremental approach should work.
 
-intel_idle doesn't follow this assumption. Although it doesn't
-cause real issue, it misleads developers. Below patch deletes
-the calling to local_irq_disable() at entry.
-
-Signed-off-by: mzha38X <mingmingx.zhang@intel.com>
----
- drivers/idle/intel_idle.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 5d2f8e1..28f0394 100644
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -247,8 +247,6 @@ static int intel_idle(struct cpuidle_device *dev,
- 
- 	cstate = (((eax) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1;
- 
--	local_irq_disable();
--
- 	/*
- 	 * leave_mm() to avoid costly and often unnecessary wakeups
- 	 * for flushing the user TLB's associated with the active mm.
--- 
-1.7.1
-
-
+Thanks
+Kevin
