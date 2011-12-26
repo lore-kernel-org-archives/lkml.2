@@ -1,160 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab1LZIAs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 03:00:48 -0500
-Received: from exprod5og117.obsmtp.com ([64.18.0.149]:41821 "HELO
-	exprod5og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753794Ab1LZIAl convert rfc822-to-8bit (ORCPT
+	id S1753888Ab1LZIMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 03:12:36 -0500
+Received: from mga01.intel.com ([192.55.52.88]:47416 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752647Ab1LZIMZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 03:00:41 -0500
-From: Vinh Huu Tuong Nguyen <vhtnguyen@apm.com>
-References: <1324385081-30824-1-git-send-email-vhtnguyen@apm.com>
-	<CA+5PVA41Haf-_H3UoR1O3VFbC3XtgScyo5hekNjt0VWxunL-fg@mail.gmail.com>
-	<e10be3d24de889e9e80d2fd76de9dcd8@mail.gmail.com> <CA+5PVA4cjiUvn4YavkFs6Jx87YpO8yHZZbm4pcPJQn1r1cggUA@mail.gmail.com>
-In-Reply-To: <CA+5PVA4cjiUvn4YavkFs6Jx87YpO8yHZZbm4pcPJQn1r1cggUA@mail.gmail.com>
-MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AczAHe41hWUqHAsyRCKkDyjswttozQDgxttg
-Date: Mon, 26 Dec 2011 15:00:38 +0700
-Message-ID: <adc28ecd196e3cb9af86094e039f01b6@mail.gmail.com>
-Subject: RE: [PATCH 3/3] powerpc/44x: Add support PCI-E for APM821xx SoC and
- Bluestone board
-To: Josh Boyer <jwboyer@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Anton Blanchard <anton@samba.org>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Tony Breeds <tony@bakeyournoodle.com>,
-        Rob Herring <rob.herring@calxeda.com>, Jiri Kosina <jkosina@suse.cz>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Ayman El-Khashab <ayman@elkhashab.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 26 Dec 2011 03:12:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="106029273"
+From: "Liu, Jinsong" <jinsong.liu@intel.com>
+To: Avi Kivity <avi@redhat.com>
+CC: Jan Kiszka <jan.kiszka@siemens.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        "Garrett D'Amore" <garrett@nexenta.com>, kvm <kvm@vger.kernel.org>,
+        "Li, Susie" <susie.li@intel.com>
+Subject: RE: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer
+ feature in the absence of in-kernel APIC
+Thread-Topic: [PATCH v2] KVM: x86: Prevent exposing TSC deadline timer
+ feature in the absence of in-kernel APIC
+Thread-Index: AQHMwwIG65pe18Q0XkOi8Rq83oI6DJXtwc6Q
+Date: Mon, 26 Dec 2011 08:11:15 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC8292335BFA0@SHSMSX101.ccr.corp.intel.com>
+References: <CAB9v_DFOm8eDwR5YsqLfUEtr0ku2Zp=NCOaEjkSmxJFcpQ9nPA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E287D8A556C@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFs_Rz04+waeBpVoJsLX+Ao7vQ4EtH2TJsX6jHZewWLQA@mail.gmail.com>
+ <CAB9v_DEz44d54tZMyFenNoNNyu3LSA6dw31S_G8MaWp7UbAULQ@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E289048778E@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DFL9K+hSum4k_TJBBP4jcenFiqggyzNNk3QHiPhkiqtxA@mail.gmail.com>
+ <BC00F5384FCFC9499AF06F92E8B78A9E28904877AE@shsmsx502.ccr.corp.intel.com>
+ <CAB9v_DEA4HJ2Xyc_fMrZ9gi9oNmKPTmG5LLCiwgsPDHbhgRaQw@mail.gmail.com>
+ <CA+55aFwZ02yUBbUjJYuXjZnKcQRHC7uT9T1dckZQNSaC6SdnvA@mail.gmail.com>
+ <4EF1146D.208@siemens.com> <4EF1B081.3010109@siemens.com>
+ <4EF1B423.8050707@siemens.com> <4EF1B67D.7010603@redhat.com>
+ <DE8DF0795D48FD4CA783C40EC82923358DEA@SHSMSX101.ccr.corp.intel.com>
+ <4EF71919.40201@redhat.com>
+In-Reply-To: <4EF71919.40201@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------Original Message-----
-From: Josh Boyer [mailto:jwboyer@gmail.com]
-Sent: Thursday, December 22, 2011 3:20 AM
-To: Vinh Huu Tuong Nguyen
-Cc: Benjamin Herrenschmidt; Paul Mackerras; Matt Porter; Kumar Gala; Paul
-Gortmaker; Anton Blanchard; Dave Kleikamp; Grant Likely; Tony Breeds; Rob
-Herring; Jiri Kosina; Lucas De Marchi; Ayman El-Khashab;
-linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] powerpc/44x: Add support PCI-E for APM821xx SoC
-and Bluestone board
+Avi Kivity wrote:
+> On 12/22/2011 05:41 PM, Liu, Jinsong wrote:
+>> Avi Kivity wrote:
+>>> On 12/21/2011 12:25 PM, Jan Kiszka wrote:
+>>>> We must not report the TSC deadline timer feature on our own when
+>>>> user space provides the APIC as we have no clue about its features.
+>>> 
+>>> We must not report the TSC deadline timer feature on our own,
+>>> period. We should just update the timer mode mask there.  Don't
+>>> know how this slipped through review. 
+>>> 
+>>> I think your original idea was correct.  Add a new KVM_CAP for the
+>>> tsc deadline timer.  Userspace can add the bit to cpuid if either it
+>>> implements the feature in a userspace apic, or if it finds the new
+>>> capability and uses the kernel apic.
+>> 
+>> Is it necessary to use KVM_CAP? If I didn't misunderstand, the
+>> KVM_CAP sulotion would be: 
+>> 1. qemu get kvm tsc deadline timer capability by KVM_CAP_...;
+>> 2. qemu add cpuid bit
+>>         if ((guest use qemu apic && qemu emualte tsc deadline timer)
+>>            || (guest use kvm apic && kvm emulate tsc deadline timer
+>> (KVM_CAP))) 
+>> 3. qemu ioctl KVM_SET_CPUID2
+>> 4. kvm expose the feature to guest by saving it at
+>> vcpu->arch.cpuid_entries, 
+> 
+> Correct.
+> 
+>> seems it's logically redundant.
+> 
+> What's logically redundant?
+> 
+>> Jan's patch v2 is a straight forward and simple fix. in the patch   
+>> if (apic) { ... } means apic (and then its sub-logic tsc deadline
+>> timer) emulated by kvm, that's enough: if quest use kvm apic, it's
+>> OK to add cpuid bit and expose to guest; 
+>> if guest don't use kvm apic, it will not touch cpuid bit;
+>> 
+> 
+> It breaks live migration: if you start a guest on a TSC-deadline
+> capable host kernel, and migrate it to a TSC-deadline incapable host
+> kernel, you end up with a broken guest.
+> 
+> More broadly, kvm never exposes features transparently to the guest,
+> it always passes them to userspace first, so userspace controls the
+> ABI exposed to the guest.  This prevents the following scenario:
 
-On Tue, Dec 20, 2011 at 11:47 PM, Vinh Huu Tuong Nguyen
-<vhtnguyen@apm.com> wrote:
->> +
->> +       mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
->> +               mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) |
->> +               (PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTPYN));
->> +
->> +       /* Poll for PHY reset */
->> +       timeout = 0;
->> +       while ((!(mfdcri(SDR0, PESDR0_460EX_RSTSTA +
->> +                       (port->index * 0x55)) & 0x1)) &&
->> +                (timeout < PCIE_PHY_RESET_TIMEOUT)) {
->> +               udelay(10);
->> +               timeout++;
->> +       }
->> +
->> +       if (timeout < PCIE_PHY_RESET_TIMEOUT) {
->> +               mtdcri(SDR0, port->sdr_base + PESDRn_RCSSET,
->> +                       (mfdcri(SDR0, port->sdr_base + PESDRn_RCSSET) &
->> +                       ~(PESDRx_RCSSET_RSTGU | PESDRx_RCSSET_RSTDL)) |
->> +                       PESDRx_RCSSET_RSTPYN);
->> +
->> +               port->has_ibpre = 1;
->> +
->> +               return 0;
->> +       } else {
->> +               printk(KERN_INFO "PCIE: Can't reset PHY\n");
->> +               return -1;
->> +       }
->
-> If we can't reset the PHY, does this whole function essentially fail?
-> Do the devices not get renumbered, etc?  If so, you probably want to
-> make that KERN_ERR.
-> [Vinh Nguyen] if we can't reset the PHY, maybe the device can't work
-> properly. I will update codes to return the error in case PHY can't
-reset.
+Do you mean, by the method qemu control cpuid exposing, it can avoid live migration broken issue by
+1. user probe the lowest ability host of whole pool where vm may live migrate;
+2. only if the lowest ablility host support the feature can user enable the feature when boot a vm;
+3. if the lowest ability host didn't support the feature (say tsc deadline timer as example), user disable the feature when boot a vm;
+In this way, live migration wouldn't be broken. Right?
 
-OK.
+or, do you mean qemu-kvm solve live migration broken issue by some other method?
 
->> @@ -1751,9 +1856,9 @@ static void __init
-> ppc4xx_configure_pciex_PIMs(struct ppc4xx_pciex_port *port,
->>                 * if it works
->>                 */
->>                out_le32(mbase + PECFG_PIM0LAL, 0x00000000);
->> -               out_le32(mbase + PECFG_PIM0LAH, 0x00000000);
->> +               out_le32(mbase + PECFG_PIM0LAH, 0x00000008); /* Moving
-> on HB */
->>                out_le32(mbase + PECFG_PIM1LAL, 0x00000000);
->> -               out_le32(mbase + PECFG_PIM1LAH, 0x00000000);
->> +               out_le32(mbase + PECFG_PIM1LAH, 0x0000000c); /* Moving
-> on HB */
->>                out_le32(mbase + PECFG_PIM01SAH, 0xffff0000);
->>                out_le32(mbase + PECFG_PIM01SAL, 0x00000000);
->
-> Why are these values changed, and are those changes only needed on
-> APM821xx?
-> [Vinh Nguyen] In system memory map of 460EX chip, we have an "alias DDR
-> SDRAM" area that is Local Memory Alias for HB(high bandwidth), so we
-tried
-> to initialize it for speedup. For APM821xx, although we didn't mention
-> about this area, this configuration still works well. So we keep it.
+> 
+> - a guest is started on some hardware, which doesn't support some
+> cpuid feature (say AVX for example)
+> - the guest or one of its applications are broken wrt AVX, but because
+> the feature is not exposed, it works correctly
+> - the host hardware is upgraded to one which supports AVX
+> - the guest is now broken
 
-This function isn't just called for 460EX or APM821xx SoCs.  It's
-called on any 4xx SoC with PCIe configured.
-Is this change going to work on them all?  If not, it needs to be
-conditionalized.
-[Vinh Nguyen] I will update my codes as your comments. Please see next
-submitted                                     codes.
->> diff --git a/arch/powerpc/sysdev/ppc4xx_pci.h
-> b/arch/powerpc/sysdev/ppc4xx_pci.h
->> index 32ce763..faf3017 100644
->> --- a/arch/powerpc/sysdev/ppc4xx_pci.h
->> +++ b/arch/powerpc/sysdev/ppc4xx_pci.h
->> @@ -441,6 +441,7 @@
->>  /*
->>  * Config space register offsets
->>  */
->> +#define PECFG_ECDEVCTL         0x060
->>  #define PECFG_ECRTCTL          0x074
->>
->>  #define PECFG_BAR0LMPA         0x210
->> @@ -448,6 +449,7 @@
->>  #define PECFG_BAR1MPA          0x218
->>  #define PECFG_BAR2LMPA         0x220
->>  #define PECFG_BAR2HMPA         0x224
->> +#define PECFG_ECDEVCAPPA       0x25c
->>
->>  #define PECFG_PIMEN            0x33c
->>  #define PECFG_PIM0LAL          0x340
->> @@ -494,5 +496,7 @@ enum
->>        LNKW_X8                 = 0x8
->>  };
->>
->> +/* Timout for reset phy */
->> +#define PCIE_PHY_RESET_TIMEOUT 10
->
-> Is this value applicable to all the 44x devices with PCI-e?
-> [Vinh Nguyen] At this time, we only checked this on APM821xx chips.
+You mean, live migrate from 'old' (which doesn't support the feature) platform to 'new' platform would broken?
 
-Then it should probably be conditionalized somehow.  Or put as a
-worst-case value that will work for them all.
-[Vinh Nguyen] At this time, this definition is called in
-apm821xx_pciex_init_port_hw function that is used only for apm821xx chip.
-So I think it's ok, but as your recommendation, I'll check with various
-boards that I have to get the best value and update it in next submitted
-codes.
-Best regards,
-Vinh Nguyen.
+Thanks,
+Jinsong
