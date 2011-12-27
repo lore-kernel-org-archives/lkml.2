@@ -1,55 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab1L0JRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 04:17:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51253 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab1L0JRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 04:17:47 -0500
-Message-ID: <4EF98D29.1080809@redhat.com>
-Date: Tue, 27 Dec 2011 11:17:29 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752993Ab1L0JWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 04:22:13 -0500
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:57716 "EHLO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752578Ab1L0JWL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 04:22:11 -0500
+From: Haojian Zhuang <hzhuang1@marvell.com>
+To: Eric Miao <eric.y.miao@gmail.com>, Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-pcmcia@lists.infradead.org" <linux-pcmcia@lists.infradead.org>
+Date: Tue, 27 Dec 2011 01:18:59 -0800
+Subject: RE: [PATCH RESEND] ARM: pxa: fix error handling in
+ pxa2xx_drv_pcmcia_probe
+Thread-Topic: [PATCH RESEND] ARM: pxa: fix error handling in
+ pxa2xx_drv_pcmcia_probe
+Thread-Index: AczEd4LKeeqf3NxBT42xD0ee6XDxfQAAQ6Ro
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C05EC64DBD3@SC-VEXCH1.marvell.com>
+References: <1324974344.2351.5.camel@phoenix>,<CAMPhdO_QL3ahf4+F70Bg7FHKq5mrbbofN_BTz8dpcBLea9BNAw@mail.gmail.com>
+In-Reply-To: <CAMPhdO_QL3ahf4+F70Bg7FHKq5mrbbofN_BTz8dpcBLea9BNAw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <87vcp4t45p.fsf@linux.vnet.ibm.com> <877h1iu2md.fsf@linux.vnet.ibm.com>
-In-Reply-To: <877h1iu2md.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2011 05:15 AM, Nikunj A Dadhania wrote:
-> On Mon, 26 Dec 2011 08:44:58 +0530, Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
-> > On Sun, 25 Dec 2011 12:58:15 +0200, Avi Kivity <avi@redhat.com> wrote:
-> > > On 12/23/2011 12:36 PM, Ingo Molnar wrote:
-> > > > * Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
-> > > >
-> > [...]
-> > > > > 
-> > > > > I see the main difference between both the reports is:
-> > > > > native_flush_tlb_others.
-> > > >
-> > > > So it would be important to figure out why ebizzy gets into so 
-> > > > many TLB flushes and why gang scheduling makes it go away.
-> > > 
-> > > The second part is easy - a remote tlb flush involves IPIs to many other
-> > > vcpus (possible waking them up and scheduling them), then busy-waiting
-> > > until they acknowledge the flush.  Gang scheduling is really good here
-> > > since it shortens the busy wait, would be even better if we schedule
-> > > halted vcpus (see the yield_on_hlt module parameter, set to 0). 
-> > I will check this.
-> > 
-> I am seeing a drop of ~44% when setting yield_on_hlt = 0
+
+________________________________________
+From: Eric Miao [eric.y.miao@gmail.com]
+Sent: Tuesday, December 27, 2011 5:11 PM
+To: Axel Lin
+Cc: linux-kernel@vger.kernel.org; Haojian Zhuang; Russell King; linux-arm-kernel@lists.infradead.org; linux-pcmcia@lists.infradead.org
+Subject: Re: [PATCH RESEND] ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
+
+On Tue, Dec 27, 2011 at 4:25 PM, Axel Lin <axel.lin@gmail.com> wrote:
+> If pxa2xx_drv_pcmcia_add_one fails, it will go to err1 error path.
+> Add a missing clk_put in the error path.
 >
+> Checking the ret value after the for loop is redundant, it is always false.
+> Thus remove the redundant checking.
+>
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-A drop of 44% of what?
+Acked-by: Eric Miao <eric.y.miao@gmail.com>
 
--- 
-error compiling committee.c: too many arguments to function
+> ---
+>  drivers/pcmcia/pxa2xx_base.c |   12 +++---------
+>  1 files changed, 3 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/pcmcia/pxa2xx_base.c b/drivers/pcmcia/pxa2xx_base.c
+> index a87e272..64d433e 100644
+> --- a/drivers/pcmcia/pxa2xx_base.c
+> +++ b/drivers/pcmcia/pxa2xx_base.c
+> @@ -328,21 +328,15 @@ static int pxa2xx_drv_pcmcia_probe(struct platform_device *dev)
+>                        goto err1;
+>        }
+>
+> -       if (ret) {
+> -               while (--i >= 0)
+> -                       soc_pcmcia_remove_one(&sinfo->skt[i]);
+> -               kfree(sinfo);
+> -               clk_put(clk);
+> -       } else {
+> -               pxa2xx_configure_sockets(&dev->dev);
+> -               dev_set_drvdata(&dev->dev, sinfo);
+> -       }
+> +       pxa2xx_configure_sockets(&dev->dev);
+> +       dev_set_drvdata(&dev->dev, sinfo);
+>
+>        return 0;
+>
+>  err1:
+>        while (--i >= 0)
+>                soc_pcmcia_remove_one(&sinfo->skt[i]);
+> +       clk_put(clk);
+>        kfree(sinfo);
+>  err0:
+>        return ret;
+> --
+> 1.7.5.4
+>
+>
+>
+Wait a minute.
 
+The original code will check whether pxa2xx_drv_pcmcia_add_one() successful. If it fails, we'll remove all devices that we registered.
+
+But Axel removed these code. Why?
+
+Thanks
+Haojian
