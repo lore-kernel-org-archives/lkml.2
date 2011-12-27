@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab1L0QaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 11:30:18 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:43384 "EHLO mgw2.diku.dk"
+	id S1754487Ab1L0QaY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 11:30:24 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:43396 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753253Ab1L0QaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 11:30:15 -0500
+	id S1754030Ab1L0QaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 11:30:16 -0500
 From: Julia Lawall <julia.lawall@lip6.fr>
 To: Julia Lawall <julia@diku.dk>
 Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
         Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
         linux-kernel@vger.kernel.org, mmarek@suse.cz,
         Julia Lawall <julia@diku.dk>
-Subject: [PATCH 1/2] scripts/coccinelle: semantic patches related to devm_ functions
-Date: Tue, 27 Dec 2011 17:30:06 +0100
-Message-Id: <1325003407-28033-1-git-send-email-julia.lawall@lip6.fr>
+Subject: [PATCH 2/2] scripts/coccinelle: semantic patches related to devm_ functions
+Date: Tue, 27 Dec 2011 17:30:07 +0100
+Message-Id: <1325003407-28033-2-git-send-email-julia.lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,121 +23,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Julia Lawall <julia@diku.dk>
 
 devm_ functions allocate memory that is to remain allocated until the
-device is detached.  This patch checks for opportunities for using the
-function devm_request_and_ioremap.
+device is detached.  This patch checks for freeing of such memory using
+standard memory freeing functions.
 
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
 
-diff --git a/scripts/coccinelle/api/devm_request_and_ioremap.cocci b/scripts/coccinelle/api/devm_request_and_ioremap.cocci
+diff --git a/scripts/coccinelle/free/devm_free.cocci b/scripts/coccinelle/free/devm_free.cocci
 new file mode 100644
-index 0000000..46beb81
+index 0000000..c0cd3e2
 --- /dev/null
-+++ b/scripts/coccinelle/api/devm_request_and_ioremap.cocci
-@@ -0,0 +1,105 @@
-+/// Reimplement a call to devm_request_mem_region followed by a call to ioremap
-+/// or ioremap_nocache by a call to devm_request_and_ioremap.
-+/// Devm_request_and_ioremap was introduced in
-+/// 72f8c0bfa0de64c68ee59f40eb9b2683bffffbb0.  It makes the code much more
-+/// concise.
++++ b/scripts/coccinelle/free/devm_free.cocci
+@@ -0,0 +1,71 @@
++/// Find uses of standard freeing functons on values allocated using devm_
++/// functions.  Values allocated using the devm_functions are freed when
++/// the device is detached, and thus the use of the standard freeing
++/// function would cause a double free.
++/// See Documentation/driver-model/devres.txt for more information.
 +///
++/// A difficulty of detecting this problem is that the standard freeing
++/// function might be called from a different function than the one
++/// containing the allocation function.  It is thus necessary to make the
++/// connection between the allocation function and the freeing function.
++/// Here this is done using the specific argument text, which is prone to
++/// false positives.  There is no rule for the request_region and
++/// request_mem_region variants because this heuristic seems to be a bit
++/// less reliable in these cases.
 +///
-+// Confidence: High
++// Confidence: Moderate
 +// Copyright: (C) 2011 Julia Lawall, INRIA/LIP6.  GPLv2.
 +// Copyright: (C) 2011 Gilles Muller, INRIA/LiP6.  GPLv2.
 +// URL: http://coccinelle.lip6.fr/
 +// Comments:
 +// Options: -no_includes -include_headers
 +
-+virtual patch
 +virtual org
 +virtual report
 +virtual context
 +
-+@nm@
-+expression myname;
-+identifier i;
++@r depends on context || org || report@
++expression x;
 +@@
 +
-+struct platform_driver i = { .driver = { .name = myname } };
-+
-+@depends on patch@
-+expression dev,res,size;
-+@@
-+
-+-if (!devm_request_mem_region(dev, res->start, size,
-+-                              \(res->name\|dev_name(dev)\))) {
-+-   ...
-+-   return ...;
-+-}
-+... when != res->start
 +(
-+-devm_ioremap(dev,res->start,size)
-++devm_request_and_ioremap(dev,res)
++ x = devm_kzalloc(...)
 +|
-+-devm_ioremap_nocache(dev,res->start,size)
-++devm_request_and_ioremap(dev,res)
++ x = devm_request_irq(...)
++|
++ x = devm_ioremap(...)
++|
++ x = devm_ioremap_nocache(...)
++|
++ x = devm_ioport_map(...)
 +)
-+... when any
-+    when != res->start
 +
-+// this rule is separate from the previous one, because a single file can
-+// have multiple values of myname
-+@depends on patch@
-+expression dev,res,size;
-+expression nm.myname;
++@pb@
++expression r.x;
++position p;
 +@@
 +
-+-if (!devm_request_mem_region(dev, res->start, size,myname)) {
-+-   ...
-+-   return ...;
-+-}
-+... when != res->start
 +(
-+-devm_ioremap(dev,res->start,size)
-++devm_request_and_ioremap(dev,res)
++* kfree@p(x)
 +|
-+-devm_ioremap_nocache(dev,res->start,size)
-++devm_request_and_ioremap(dev,res)
-+)
-+... when any
-+    when != res->start
-+
-+
-+@pb depends on org || report || context@
-+expression dev,res,size;
-+expression nm.myname;
-+position p1,p2;
-+@@
-+
-+*if
-+  (!devm_request_mem_region@p1(dev, res->start, size,
-+                              \(res->name\|dev_name(dev)\|myname\))) {
-+   ...
-+   return ...;
-+}
-+... when != res->start
-+(
-+*devm_ioremap@p2(dev,res->start,size)
++* free_irq@p(x)
 +|
-+*devm_ioremap_nocache@p2(dev,res->start,size)
++* iounmap@p(x)
++|
++* ioport_unmap@p(x)
 +)
-+... when any
-+    when != res->start
 +
 +@script:python depends on org@
-+p1 << pb.p1;
-+p2 << pb.p2;
++p << pb.p;
 +@@
 +
-+cocci.print_main("INFO: replace by devm_request_and_ioremap",p1)
-+cocci.print_secs("",p2)
++msg="WARNING: invalid free of devm_ allocated data"
++coccilib.org.print_todo(p[0], msg)
 +
 +@script:python depends on report@
-+p1 << pb.p1;
-+p2 << pb.p2;
++p << pb.p;
 +@@
 +
-+msg = "INFO: devm_request_mem_region followed by ioremap on line %s can be replaced by devm_request_and_ioremap" % (p2[0].line)
-+coccilib.report.print_report(p1[0],msg)
++msg="WARNING: invalid free of devm_ allocated data"
++coccilib.report.print_report(p[0], msg)
++
+
