@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754691Ab1L0RUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 12:20:19 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47137 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754464Ab1L0RUR (ORCPT
+	id S1754722Ab1L0RWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 12:22:30 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:40089 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab1L0RW1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 12:20:17 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@liniux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Still check other interrupts if we get a wm831x touchscreen IRQ
-Date: Tue, 27 Dec 2011 17:20:10 +0000
-Message-Id: <1325006410-22147-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
+	Tue, 27 Dec 2011 12:22:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EF3BACA.1080405@gmail.com>
+References: <4EF3BACA.1080405@gmail.com>
+Date: Tue, 27 Dec 2011 14:22:26 -0300
+Message-ID: <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com>
+Subject: Re: [bluetooth] linux-3.x regression (bisected)
+From: Andre Guedes <andre.guedes@openbossa.org>
+To: Rene Herman <rene.herman@gmail.com>
+Cc: "Gustavo F. Padovan" <padovan@profusion.mobi>,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is possible that we will see another interrupt triggering at the same
-time as the touchscreen interrupts so it's still worth checking other
-possible sources. Almost all of the win from the fast path comes from only
-needing to read the primary register and saving the I/O costs.
+Hi Rene,
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm831x-irq.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+On Thu, Dec 22, 2011 at 8:18 PM, Rene Herman <rene.herman@gmail.com> wrote:
+> Good day.
+>
+> A while ago, my noname USB Bluetooth adapter stopped working, with from that
+> point on only "Bluetooth: hci0 command tx timeout" appearing in the kernel
+> messages.
+>
+> I just now got around to looking at it and bisected this to commit
+> eead27da60df80a112d1ac3ea482226e9794c26b:
+>
+> ===
+> Author: Andre Guedes <andre.guedes@openbossa.org>
+> Date:   Thu Jun 30 19:20:55 2011 -0300
+>
+>    Bluetooth: Add lmp_host_le_capable() macro
+>
+>    Since we have the extended LMP features properly implemented, we
+>    should check the LMP_HOST_LE bit to know if the host supports LE.
+>
+>    Signed-off-by: Andre Guedes <andre.guedes@openbossa.org>
+>    Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+> ===
+>
+> while that commit cannot be reverted outright due to dependencies, reverting
+> it functionally fixes things for me. That is, Bluetooth works again after
+> applying (to linux-3.1.6):
+>
+> ===
+> diff --git a/net/bluetooth/hci_core.c b/net/bluetooth/hci_core.c
+> index 56943ad..c7f794e 100644
+> --- a/net/bluetooth/hci_core.c
+> +++ b/net/bluetooth/hci_core.c
+> @@ -540,7 +540,7 @@ int hci_dev_open(__u16 dev)
+>                ret = __hci_request(hdev, hci_init_req, 0,
+>
+> msecs_to_jiffies(HCI_INIT_TIMEOUT));
+>
+> -               if (lmp_host_le_capable(hdev))
+> +               if (lmp_le_capable(hdev))
+>                        ret = __hci_request(hdev, hci_le_init_req, 0,
+>
+> msecs_to_jiffies(HCI_INIT_TIMEOUT));
+> ===
+>
+> It seems that my adapter wasn't ready for the change. It is a:
+>
+> 002 Device 002: ID 1131:1004 Integrated System Solution Corp. Bluetooth
+> Device
+>
+> If more specific information is wanted (to add adapter-specific quirk
+> handling, perhaps?) please be verbose on how to obtain it. I don't know
+> anything about Bluetooth
 
-diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
-index 7be5f09..bec4d05 100644
---- a/drivers/mfd/wm831x-irq.c
-+++ b/drivers/mfd/wm831x-irq.c
-@@ -472,8 +472,7 @@ static irqreturn_t wm831x_irq_thread(int irq, void *data)
- 		handle_nested_irq(wm831x->irq_base + WM831X_IRQ_TCHPD);
- 	if (primary & WM831X_TCHDATA_INT)
- 		handle_nested_irq(wm831x->irq_base + WM831X_IRQ_TCHDATA);
--	if (primary & (WM831X_TCHDATA_EINT | WM831X_TCHPD_EINT))
--		goto out;
-+	primary &= ~(WM831X_TCHDATA_EINT | WM831X_TCHPD_EINT);
- 
- 	for (i = 0; i < ARRAY_SIZE(wm831x_irqs); i++) {
- 		int offset = wm831x_irqs[i].reg - 1;
--- 
-1.7.7.3
+Could you please send us the kernel log messages with Bluetooth debug
+enabled? Here goes the instructions:
 
+1. Compile kernel with CONFIG_DYNAMIC_DEBUG=y.
+2. Load Bluetooth module.
+3. Run the following commands to turn debug on (remember to mount debugfs
+first):
+--
+$ echo "file hci_core.c +pf" > /sys/kernel/debug/dynamic_debug/control
+$ echo "file hci_event.c +pf" > /sys/kernel/debug/dynamic_debug/control
+$ echo "file mgmt.c +pf" > /sys/kernel/debug/dynamic_debug/control
+$ echo "file btusb.c +pf" > /sys/kernel/debug/dynamic_debug/control
+--
+4. Plug the Bluetooth adapter.
+
+Thanks in advance,
+
+Andre
