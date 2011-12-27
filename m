@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754247Ab1L0OCY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:02:24 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:44218 "EHLO mgw2.diku.dk"
+	id S1754264Ab1L0OCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:02:50 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:44216 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab1L0OBn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:01:43 -0500
+	id S1754088Ab1L0OBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:01:40 -0500
 From: Julia Lawall <julia@diku.dk>
-To: Matt Mackall <mpm@selenic.com>
-Cc: kernel-janitors@vger.kernel.org, Herbert Xu <herbert@gondor.hengli.com.au>,
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: kernel-janitors@vger.kernel.org, linux-watchdog@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/6] drivers/char/hw_random/tx4939-rng.c: use devm_request_and_ioremap
-Date: Tue, 27 Dec 2011 15:01:30 +0100
-Message-Id: <1324994491-21828-6-git-send-email-julia@diku.dk>
+Subject: [PATCH 4/6] drivers/watchdog/dw_wdt.c: use devm_request_and_ioremap
+Date: Tue, 27 Dec 2011 15:01:29 +0100
+Message-Id: <1324994491-21828-5-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1324994491-21828-1-git-send-email-julia@diku.dk>
 References: <1324994491-21828-1-git-send-email-julia@diku.dk>
@@ -61,23 +61,24 @@ expression nm.myname;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/char/hw_random/tx4939-rng.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/watchdog/dw_wdt.c |    6 +-----
+ 1 file changed, 1 insertion(+), 5 deletions(-)
 
-diff --git a/drivers/char/hw_random/tx4939-rng.c b/drivers/char/hw_random/tx4939-rng.c
-index 0bc0cb7..de473ef 100644
---- a/drivers/char/hw_random/tx4939-rng.c
-+++ b/drivers/char/hw_random/tx4939-rng.c
-@@ -115,10 +115,7 @@ static int __init tx4939_rng_probe(struct platform_device *dev)
- 	rngdev = devm_kzalloc(&dev->dev, sizeof(*rngdev), GFP_KERNEL);
- 	if (!rngdev)
+diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+index 1b0e3dd..63d7b58 100644
+--- a/drivers/watchdog/dw_wdt.c
++++ b/drivers/watchdog/dw_wdt.c
+@@ -300,11 +300,7 @@ static int __devinit dw_wdt_drv_probe(struct platform_device *pdev)
+ 	if (!mem)
+ 		return -EINVAL;
+ 
+-	if (!devm_request_mem_region(&pdev->dev, mem->start, resource_size(mem),
+-				     "dw_wdt"))
+-		return -ENOMEM;
+-
+-	dw_wdt.regs = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
++	dw_wdt.regs = devm_request_and_ioremap(&pdev->dev, mem);
+ 	if (!dw_wdt.regs)
  		return -ENOMEM;
--	if (!devm_request_mem_region(&dev->dev, r->start, resource_size(r),
--				     dev_name(&dev->dev)))
--		return -EBUSY;
--	rngdev->base = devm_ioremap(&dev->dev, r->start, resource_size(r));
-+	rngdev->base = devm_request_and_ioremap(&dev->dev, r);
- 	if (!rngdev->base)
- 		return -EBUSY;
  
 
