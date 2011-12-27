@@ -1,365 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425Ab1L0KRH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 05:17:07 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47534 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753217Ab1L0KRF (ORCPT
+	id S1753408Ab1L0K3D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 05:29:03 -0500
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:58437 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab1L0K3B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 05:17:05 -0500
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
-To: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org
-Cc: patches@linaro.org, eric.miao@linaro.org,
-        "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>,
-        Nancy Chen <Nancy.Chen@freescale.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Subject: [PATCH v3] Regulator: Add Anatop regulator driver
-Date: Tue, 27 Dec 2011 18:16:34 +0800
-Message-Id: <1324980994-18462-1-git-send-email-paul.liu@linaro.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1324458211-1612-1-git-send-email-paul.liu@linaro.org>
-References: <1324458211-1612-1-git-send-email-paul.liu@linaro.org>
+	Tue, 27 Dec 2011 05:29:01 -0500
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+In-Reply-To: <4EF98CB4.2050408@redhat.com>
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <87vcp4t45p.fsf@linux.vnet.ibm.com> <4EF838BD.60406@redhat.com> <87d3bbtvnw.fsf@linux.vnet.ibm.com> <4EF85D50.8000204@redhat.com> <87aa6eu6o8.fsf@linux.vnet.ibm.com> <4EF98CB4.2050408@redhat.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Tue, 27 Dec 2011 15:54:42 +0530
+Message-ID: <87lipyia6t.fsf@abhimanyu.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 11122710-4790-0000-0000-000000978C44
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+On Tue, 27 Dec 2011 11:15:32 +0200, Avi Kivity <avi@redhat.com> wrote:
+> On 12/27/2011 03:47 AM, Nikunj A Dadhania wrote:
+[...]
+> > Though in the guest dmesg, I still do not see any x2apic logs. I am
+> > missing something obvious here. 
+> >
+> 
+> Check that X2APIC is enabled in the guest .config, as well as
+> CONFIG_KVM_GUEST.
+> 
+X2APIC is not enabled
+CONFIG_KVM_GUEST is enabled.
+Its a 2.6.32 based distro kernel.
 
-Anatop is an integrated regulator inside i.MX6 SoC.
-There are 3 digital regulators which controls PU, CORE (ARM), and SOC.
-And 3 analog regulators which controls 1P1, 2P5, 3P0 (USB).
-This patch adds the Anatop regulator driver.
-
-Signed-off-by: Nancy Chen <Nancy.Chen@freescale.com>
-Signed-off-by: Ying-Chun Liu (PaulLiu) <paul.liu@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>
----
- drivers/regulator/Kconfig                  |    6 +
- drivers/regulator/Makefile                 |    1 +
- drivers/regulator/anatop-regulator.c       |  214 ++++++++++++++++++++++++++++
- include/linux/regulator/anatop-regulator.h |   63 ++++++++
- 4 files changed, 284 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/anatop-regulator.c
- create mode 100644 include/linux/regulator/anatop-regulator.h
-
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 9713b1b..fc22b8d 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -327,5 +327,11 @@ config REGULATOR_AAT2870
- 	  If you have a AnalogicTech AAT2870 say Y to enable the
- 	  regulator driver.
- 
-+config REGULATOR_ANATOP
-+	tristate "ANATOP LDO regulators"
-+	depends on SOC_IMX6
-+	help
-+	  Say y here to support ANATOP LDOs regulators.
-+
- endif
- 
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 93a6318..990c332 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -46,5 +46,6 @@ obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
- obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
- obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
-+obj-$(CONFIG_REGULATOR_ANATOP) += anatop-regulator.o
- 
- ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
-diff --git a/drivers/regulator/anatop-regulator.c b/drivers/regulator/anatop-regulator.c
-new file mode 100644
-index 0000000..a925bcc
---- /dev/null
-+++ b/drivers/regulator/anatop-regulator.c
-@@ -0,0 +1,214 @@
-+/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#include <linux/slab.h>
-+#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/anatop-regulator.h>
-+
-+static int anatop_set_voltage(struct regulator_dev *reg, int min_uV,
-+				  int max_uV, unsigned *selector)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	u32 val, rega, sel;
-+	int uv;
-+
-+	uv = min_uV;
-+	pr_debug("%s: uv %d, min %d, max %d\n", __func__,
-+		 uv, anatop_reg->rdata->min_voltage,
-+		 anatop_reg->rdata->max_voltage);
-+
-+	if (uv < anatop_reg->rdata->min_voltage
-+	    || uv > anatop_reg->rdata->max_voltage) {
-+		if (max_uV > anatop_reg->rdata->min_voltage)
-+			uv = anatop_reg->rdata->min_voltage;
-+		else
-+			return -EINVAL;
-+	}
-+
-+	if (uv < reg->constraints->min_uV || uv > reg->constraints->max_uV)
-+		return -EINVAL;
-+
-+	if (anatop_reg->rdata->control_reg) {
-+		sel = (uv - anatop_reg->rdata->min_voltage) / 25000;
-+		val = anatop_reg->rdata->min_bit_val + sel;
-+		rega = (__raw_readl(anatop_reg->rdata->control_reg) &
-+		       ~(anatop_reg->rdata->vol_bit_mask <<
-+			 anatop_reg->rdata->vol_bit_shift));
-+		*selector = sel;
-+		pr_debug("%s: calculated val %d\n", __func__, val);
-+		__raw_writel((val << anatop_reg->rdata->vol_bit_shift) | rega,
-+			     anatop_reg->rdata->control_reg);
-+		return 0;
-+	} else {
-+		return -ENOTSUPP;
-+	}
-+}
-+
-+static int anatop_get_voltage_sel(struct regulator_dev *reg)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(reg);
-+	int selector;
-+	struct anatop_regulator_data *rdata = anatop_reg->rdata;
-+
-+	if (rdata->control_reg) {
-+		u32 val = (__raw_readl(rdata->control_reg) <<
-+			   rdata->vol_bit_shift) & rdata->vol_bit_mask;
-+		selector = val - rdata->min_bit_val;
-+		return selector;
-+	} else {
-+		return -ENOTSUPP;
-+	}
-+}
-+
-+static int anatop_list_voltage(struct regulator_dev *dev, unsigned selector)
-+{
-+	struct anatop_regulator *anatop_reg = rdev_get_drvdata(dev);
-+	int uv;
-+	struct anatop_regulator_data *rdata = anatop_reg->rdata;
-+
-+	uv = rdata->min_voltage
-+		+ selector * 25000;
-+	pr_debug("vddio = %d, selector = %u\n", uv, selector);
-+	return uv;
-+}
-+
-+static struct regulator_ops anatop_rops = {
-+	.set_voltage     = anatop_set_voltage,
-+	.get_voltage_sel = anatop_get_voltage_sel,
-+	.list_voltage    = anatop_list_voltage,
-+};
-+
-+static struct regulator_desc anatop_reg_desc[] = {
-+	{
-+		.name = "vddpu",
-+		.id = ANATOP_VDDPU,
-+		.ops = &anatop_rops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vddcore",
-+		.id = ANATOP_VDDCORE,
-+		.ops = &anatop_rops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vddsoc",
-+		.id = ANATOP_VDDSOC,
-+		.ops = &anatop_rops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd2p5",
-+		.id = ANATOP_VDD2P5,
-+		.ops = &anatop_rops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd1p1",
-+		.id = ANATOP_VDD1P1,
-+		.ops = &anatop_rops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+	{
-+		.name = "vdd3p0",
-+		.id = ANATOP_VDD3P0,
-+		.ops = &anatop_rops,
-+		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE
-+	},
-+};
-+
-+int anatop_regulator_probe(struct platform_device *pdev)
-+{
-+	struct regulator_desc *rdesc;
-+	struct regulator_dev *rdev;
-+	struct anatop_regulator *sreg;
-+	struct regulator_init_data *initdata;
-+
-+	initdata = pdev->dev.platform_data;
-+	sreg = initdata->driver_data;
-+
-+	spin_lock_init(&sreg->lock);
-+
-+	if (pdev->id > ANATOP_SUPPLY_NUM) {
-+		dev_err(&pdev->dev, "failed to register regulator id %d\n",
-+			pdev->id);
-+		return -EINVAL;
-+	} else {
-+		rdesc = &anatop_reg_desc[pdev->id];
-+	}
-+
-+	/* register regulator */
-+	rdev = regulator_register(rdesc, &pdev->dev,
-+				  pdev->dev.platform_data, sreg);
-+	platform_set_drvdata(pdev, rdev);
-+
-+	if (IS_ERR(rdev)) {
-+		dev_err(&pdev->dev, "failed to register %s\n",
-+			rdesc->name);
-+		return PTR_ERR(rdev);
-+	}
-+
-+	return 0;
-+}
-+
-+int anatop_regulator_remove(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-+	regulator_unregister(rdev);
-+	return 0;
-+}
-+
-+struct platform_driver anatop_reg = {
-+	.driver = {
-+		.name	= "anatop_reg",
-+	},
-+	.probe	= anatop_regulator_probe,
-+	.remove	= anatop_regulator_remove,
-+};
-+
-+int anatop_regulator_init(void)
-+{
-+	return platform_driver_register(&anatop_reg);
-+}
-+
-+void anatop_regulator_exit(void)
-+{
-+	platform_driver_unregister(&anatop_reg);
-+}
-+
-+postcore_initcall(anatop_regulator_init);
-+module_exit(anatop_regulator_exit);
-+
-+MODULE_AUTHOR("Freescale Semiconductor, Inc.");
-+MODULE_DESCRIPTION("ANATOP Regulator driver");
-+MODULE_LICENSE("GPL");
-+
-diff --git a/include/linux/regulator/anatop-regulator.h b/include/linux/regulator/anatop-regulator.h
-new file mode 100644
-index 0000000..b29b009
---- /dev/null
-+++ b/include/linux/regulator/anatop-regulator.h
-@@ -0,0 +1,63 @@
-+/*
-+ * Copyright (C) 2011 Freescale Semiconductor, Inc. All Rights Reserved.
-+ */
-+
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#ifndef __ANATOP_REGULATOR_H
-+#define __ANATOP_REGULATOR_H
-+#include <linux/regulator/driver.h>
-+
-+/* regulator supplies for Anatop */
-+enum anatop_regulator_supplies {
-+	ANATOP_VDDPU,
-+	ANATOP_VDDCORE,
-+	ANATOP_VDDSOC,
-+	ANATOP_VDD2P5,
-+	ANATOP_VDD1P1,
-+	ANATOP_VDD3P0,
-+	ANATOP_SUPPLY_NUM
-+};
-+
-+struct anatop_regulator {
-+	struct regulator_desc regulator;
-+	struct anatop_regulator *parent;
-+	struct anatop_regulator_data *rdata;
-+	struct completion done;
-+
-+	spinlock_t         lock;
-+	struct notifier_block nb;
-+
-+};
-+
-+
-+struct anatop_regulator_data {
-+	const char *name;
-+
-+	u32 control_reg;
-+	int vol_bit_shift;
-+	int vol_bit_mask;
-+	int min_bit_val;
-+	int min_voltage;
-+	int max_voltage;
-+};
-+
-+int anatop_register_regulator(
-+		struct anatop_regulator *reg_data, int reg,
-+		      struct regulator_init_data *initdata);
-+
-+#endif /* __ANATOP_REGULATOR_H */
--- 
-1.7.7.3
+Nikunj
 
