@@ -1,46 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab1L0PgC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 10:36:02 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57648 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536Ab1L0Pf7 (ORCPT
+	id S1754652Ab1L0Pge (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 10:36:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54966 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754609Ab1L0PgE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 10:35:59 -0500
+	Tue, 27 Dec 2011 10:36:04 -0500
 From: Namhyung Kim <namhyung@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH -tip:perf/core 1/4] perf session: Remove impossible condition check
-Date: Wed, 28 Dec 2011 00:35:48 +0900
-Message-Id: <1325000151-4463-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH -tip:perf/core 3/4] perf top: Fix a memory leak
+Date: Wed, 28 Dec 2011 00:35:50 +0900
+Message-Id: <1325000151-4463-3-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1325000151-4463-1-git-send-email-namhyung@gmail.com>
+References: <1325000151-4463-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 'size' cannot be 0 because it was set to 8 on the
-above line in case it was 0 and never changed.
+The 'buf' should be freed when symbol wasn't found too.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- tools/perf/util/session.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ tools/perf/builtin-top.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index d9318d8a9ba1..1139f3c6dec5 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1004,8 +1004,7 @@ more:
- 		}
- 	}
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index c3836b966ccf..4f81eeb99875 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -351,7 +351,6 @@ static void perf_top__prompt_symbol(struct perf_top *top, const char *msg)
+ 	if (!found) {
+ 		fprintf(stderr, "Sorry, %s is not active.\n", buf);
+ 		sleep(1);
+-		return;
+ 	} else
+ 		perf_top__parse_source(top, found);
  
--	if (size == 0 ||
--	    (skip = perf_session__process_event(self, &event, tool, head)) < 0) {
-+	if ((skip = perf_session__process_event(self, &event, tool, head)) < 0) {
- 		dump_printf("%#" PRIx64 " [%#x]: skipping unknown header type: %d\n",
- 			    head, event.header.size, event.header.type);
- 		/*
 -- 
 1.7.6
 
