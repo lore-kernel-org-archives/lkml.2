@@ -1,114 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab1L0JR2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 04:17:28 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35496 "EHLO mx2.suse.de"
+	id S1753209Ab1L0JRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 04:17:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51253 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750994Ab1L0JRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 04:17:21 -0500
-Date: Tue, 27 Dec 2011 10:17:17 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Hugh Dickins <hughd@google.com>, Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Announcement - memcg-devel git tree
-Message-ID: <20111227091717.GA8537@tiehlicka.suse.cz>
+	id S1752662Ab1L0JRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 04:17:47 -0500
+Message-ID: <4EF98D29.1080809@redhat.com>
+Date: Tue, 27 Dec 2011 11:17:29 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <87vcp4t45p.fsf@linux.vnet.ibm.com> <877h1iu2md.fsf@linux.vnet.ibm.com>
+In-Reply-To: <877h1iu2md.fsf@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-let me announce memcg-devel git tree which is currently hosted at
-github (https://github.com/mstsxfx/memcg-devel). The tree is based on
-Linus' tree and it contains most of the memcg patches (apart from the last
-that went into mmotm - which will get there shortly).
-For a short summary we currently have:
-Andrew Morton (2):
-      mm-vmscan-distinguish-between-memcg-triggering-reclaim-and-memcg-being-scanned-checkpatch-fixes
-      memcg-make-mem_cgroup_split_huge_fixup-more-efficient-fix
+On 12/27/2011 05:15 AM, Nikunj A Dadhania wrote:
+> On Mon, 26 Dec 2011 08:44:58 +0530, Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
+> > On Sun, 25 Dec 2011 12:58:15 +0200, Avi Kivity <avi@redhat.com> wrote:
+> > > On 12/23/2011 12:36 PM, Ingo Molnar wrote:
+> > > > * Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
+> > > >
+> > [...]
+> > > > > 
+> > > > > I see the main difference between both the reports is:
+> > > > > native_flush_tlb_others.
+> > > >
+> > > > So it would be important to figure out why ebizzy gets into so 
+> > > > many TLB flushes and why gang scheduling makes it go away.
+> > > 
+> > > The second part is easy - a remote tlb flush involves IPIs to many other
+> > > vcpus (possible waking them up and scheduling them), then busy-waiting
+> > > until they acknowledge the flush.  Gang scheduling is really good here
+> > > since it shortens the busy wait, would be even better if we schedule
+> > > halted vcpus (see the yield_on_hlt module parameter, set to 0). 
+> > I will check this.
+> > 
+> I am seeing a drop of ~44% when setting yield_on_hlt = 0
+>
 
-Hugh Dickins (1):
-      mm: memcg: remove unused node/section info from pc->flags fix
+A drop of 44% of what?
 
-Johannes Weiner (18):
-      mm: memcg: consolidate hierarchy iteration primitives
-      mm: vmscan: distinguish global reclaim from global LRU scanning
-      mm: vmscan: distinguish between memcg triggering reclaim and memcg being scanned
-      mm: memcg: per-priority per-zone hierarchy scan generations
-      mm: move memcg hierarchy reclaim to generic reclaim code
-      mm: memcg: remove optimization of keeping the root_mem_cgroup LRU lists empty
-      mm: vmscan: convert global reclaim to per-memcg LRU lists
-      mm: collect LRU list heads into struct lruvec
-      mm: make per-memcg LRU lists exclusive
-      mm: memcg: remove unused node/section info from pc->flags
-      mm: memcg: shorten preempt-disabled section around event checks
-      mm: oom_kill: remove memcg argument from oom_kill_task()
-      mm: unify remaining mem_cont, mem, etc. variable names to memcg
-      mm: memcg: clean up fault accounting
-      mm: memcg: lookup_page_cgroup (almost) never returns NULL
-      mm: page_cgroup: check page_cgroup arrays in lookup_page_cgroup() only when necessary
-      mm: memcg: remove unneeded checks from newpage_charge()
-      mm: memcg: remove unneeded checks from uncharge_page()
-
-KAMEZAWA Hiroyuki (2):
-      memcg: make mem_cgroup_split_huge_fixup() more efficient
-      memcg: add mem_cgroup_replace_page_cache() to fix LRU issue
-
-* What is the tree good for?
-Well, after Andrew discontinued his mmotm tree it became much harder to
-develop memcg patches. linux-next is a moving target so it is not the
-right choice if somebody wants to develop patches and keep them in shape
-for a longer time.
-We have discussed that with Johannes and he came with an idea that we
-could maintain memcg specific git tree. So here it is ;)
-The tree is not aimed for Linus or Andrew to pull from. It is only for
-memcg developers to have a common ground.
-
-* How is the tree organized?
-We have a master branch which tracks linus and we will have `since-XYZ'
-branches which will contain all acked patches on top of the XYZ linus
-release. Johannes found the name since-XYZ little bit confusing becaue
-tags usually refer to future release but my argument was that it should
-be clear on what we are based rather than a target where the patches go
-as we do not know that release.
-But I am open to changes, of course.
-
-* What is the workflow?
-Master branch will be updated whenever Linus releases a new version or
-when some of the memcg patch depends on generic mm code.
-since-XYZ will be updated when the patch either gets accepted by Andrew
-or it gets ack from all (most) of maintainers.
-If a patch depends on a generic mm code we will just merge the
-respective commit into the branch and apply the memcg patch on top of
-it.
-When Linus releases a new kernel version we will create a new since-XYZ
-branch and rebase the previous (size-XYZ-1) on top of it. If some of the
-patches were accepted git rebase will recognize that and drop them.
-This means that git log master..since-XYZ will always lists patches that
-are not merged yet.
-
-* Who will maintain the tree?
-Currently it is me and Johannes.
-
-# For read only access - aka developer
-$ git remote add github-memcg git://github.com/mstsxfx/memcg-devel.git
-$ git fetch github-memcg
-$ git branch mydevel github-memcg/since-XYZ
-
-I hope this help you.
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+error compiling committee.c: too many arguments to function
+
