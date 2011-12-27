@@ -1,102 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab1L0XGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 18:06:04 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:51041 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab1L0XGB convert rfc822-to-8bit (ORCPT
+	id S1752535Ab1L0XH6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 18:07:58 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:60734 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752314Ab1L0XH4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 18:06:01 -0500
-Date: Wed, 28 Dec 2011 00:05:57 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: =?ISO-8859-2?Q?Rafa=B3_Mi=B3ecki?= <zajec5@gmail.com>
-cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] b43: fix regression in PIO case
-In-Reply-To: <CACna6ry1tKXtUSQHknkEbzBq_gZUyxn1-9Guba2a56xzx242SA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112272359240.6684@axis700.grange>
-References: <alpine.DEB.2.00.1112261608140.12108@axis700.grange> <alpine.DEB.2.00.1112261824000.12108@axis700.grange> <CACna6ry1tKXtUSQHknkEbzBq_gZUyxn1-9Guba2a56xzx242SA@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:9C8YcmzlBOJhwQXJaVCz0w2izO9wxh4HXPaIjIGi3dY
- YXbCmN+2fFNsS485fw/dkqdj873nuBmcjCTQ0I6B5ex8ZzktBD
- m3aJbx5nEfaIRrbTheKj9QOZCiUaGgaBPwr72O/cAqIBwZoMr0
- 8jfFwvZQgYtbq/GA89uMqhmpRkWsJhdLEkbyBJoLwnmj/PA2v0
- mBi7Tw5j0i1Ce6/7Prwwun8jqYYjEJDnTBbkJCYYEuHSOfMCIG
- vvzP3bzsBAM7AreGQIRQQwUJWNHaaT+LhpOVZmaD6fJhyRoVIw
- Lp0AmDen8Z/5fsEmIoGhAanMzPR3zD1jXAFi+RgkM0/+GoVwlK
- sUJpaBmI/IC1e6iuXk6jeIpXeKKgVM3H8lFySPF9ajvHHqjT90
- A7CgKNFHSdToQ==
+	Tue, 27 Dec 2011 18:07:56 -0500
+Date: Wed, 28 Dec 2011 10:07:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Rajeshwari Shinde <rajeshwari.s@samsung.com>,
+        Padmavathi Venna <padma.v@samsung.com>
+Subject: linux-next: manual merge of the s5p tree with the arm tree
+Message-Id: <20111228100741.5a6a6f36055d2ea06c1d4014@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Dec_2011_10_07_41_+1100_ZP22pmQAOFC9mt.R"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Dec 2011, Rafał Miłecki wrote:
+--Signature=_Wed__28_Dec_2011_10_07_41_+1100_ZP22pmQAOFC9mt.R
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> W dniu 26 grudnia 2011 18:28 użytkownik Guennadi Liakhovetski
-> <g.liakhovetski@gmx.de> napisał:
-> > This patch fixes the regression, introduced by
-> >
-> > commit 17030f48e31adde5b043741c91ba143f5f7db0fd
-> > From: Rafał Miłecki <zajec5@gmail.com>
-> > Date: Thu, 11 Aug 2011 17:16:27 +0200
-> > Subject: [PATCH] b43: support new RX header, noticed to be used in 598.314+ fw
-> >
-> > in PIO case.
-> >
-> > Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> > ---
-> > diff --git a/drivers/net/wireless/b43/pio.c b/drivers/net/wireless/b43/pio.c
-> > index ce8a4bd..b64b64c 100644
-> > --- a/drivers/net/wireless/b43/pio.c
-> > +++ b/drivers/net/wireless/b43/pio.c
-> > @@ -617,9 +617,19 @@ static bool pio_rx_frame(struct b43_pio_rxqueue *q)
-> >        const char *err_msg = NULL;
-> >        struct b43_rxhdr_fw4 *rxhdr =
-> >                (struct b43_rxhdr_fw4 *)wl->pio_scratchspace;
-> > +       size_t rxhdr_size = sizeof(*rxhdr);
-> >
-> >        BUILD_BUG_ON(sizeof(wl->pio_scratchspace) < sizeof(*rxhdr));
-> > -       memset(rxhdr, 0, sizeof(*rxhdr));
-> > +       switch (dev->fw.hdr_format) {
-> > +       case B43_FW_HDR_410:
-> > +       case B43_FW_HDR_351:
-> > +               rxhdr_size -= sizeof(rxhdr->format_598) -
-> > +                       sizeof(rxhdr->format_351);
-> > +               break;
-> > +       case B43_FW_HDR_598:
-> > +               break;
-> > +       }
-> > +       memset(rxhdr, 0, rxhdr_size);
-> 
-> Huuh, that's really tricky. Can you just do "normal" conditions as
-> Larry suggested, please?
+Hi Kukjin,
 
-Sorry? I absolutely see nothing tricky there. Do you think this would look 
-"less tricky" to you:
+Today's linux-next merge of the s5p tree got a conflict in
+arch/arm/mach-s3c64xx/Makefile between commit b024043b6d0d ("ARM: 7245/1:
+S3C64XX: introduce arch/arm/mach-s3c64xx/common.[ch]") from the arm tree
+and commits 8f8a8d269bb4 ("ARM: S3C64XX: Add basic cpuidle driver"),
+a60879e7ca17 ("ARM: SAMSUNG: Remove SDHCI bus clocks from platform
+data"), 875a59374cd1 ("ARM: SAMSUNG: Consolidation of SPI platform
+devices to plat-samsung") and 4566c7f7612f ("ARM: S3C64XX: Modified files
+for SPI consolidation work") from the s5p tree.
 
-	switch (dev->fw.hdr_format) {
-	case B43_FW_HDR_410:
-	case B43_FW_HDR_351:
-		rxhdr_size = offsetof(struct b43_rxhdr_fw4,
-					format_351) +
-			sizeof(rxhdr_size->format_351);
-		break;
-	case B43_FW_HDR_598:
-		rxhdr_size = sizeof(*rxhdr);
-		break;
-	}
+I fixed it up (I think - see below) and can carry the fix as necessary.
 
-?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Thanks
-Guennadi
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+diff --cc arch/arm/mach-s3c64xx/Makefile
+index f37016c,2244c42..0000000
+--- a/arch/arm/mach-s3c64xx/Makefile
++++ b/arch/arm/mach-s3c64xx/Makefile
+@@@ -19,29 -19,29 +19,29 @@@ obj-y				+=3D common.o clock.
+  obj-$(CONFIG_CPU_S3C6400)	+=3D s3c6400.o
+  obj-$(CONFIG_CPU_S3C6410)	+=3D s3c6410.o
+ =20
+ -obj-y				+=3D irq.o
+ -obj-y				+=3D irq-eint.o
+ +# PM
+ +
+ +obj-$(CONFIG_PM)		+=3D pm.o irq-pm.o sleep.o
+++obj-$(CONFIG_CPU_IDLE)		+=3D cpuidle.o
+ =20
+  # DMA support
+ =20
+  obj-$(CONFIG_S3C64XX_DMA)	+=3D dma.o
+ =20
+ -# Device setup
+ +# Device support
+ =20
+ -obj-$(CONFIG_S3C64XX_SETUP_I2C0) +=3D setup-i2c0.o
+ -obj-$(CONFIG_S3C64XX_SETUP_I2C1) +=3D setup-i2c1.o
+ -obj-$(CONFIG_S3C64XX_SETUP_IDE) +=3D setup-ide.o
+ -obj-$(CONFIG_S3C64XX_SETUP_KEYPAD) +=3D setup-keypad.o
+ -obj-$(CONFIG_S3C64XX_SETUP_FB_24BPP) +=3D setup-fb-24bpp.o
+ -obj-$(CONFIG_S3C64XX_SETUP_SDHCI_GPIO) +=3D setup-sdhci-gpio.o
+ -obj-$(CONFIG_S3C64XX_SETUP_SPI) +=3D setup-spi.o
+ +obj-y				+=3D dev-uart.o
+ +obj-y				+=3D dev-audio.o
+- obj-$(CONFIG_S3C64XX_DEV_SPI)	+=3D dev-spi.o
+ =20
+ -# PM
+ +# Device setup
+ =20
+ -obj-$(CONFIG_PM)		+=3D pm.o
+ -obj-$(CONFIG_PM)		+=3D sleep.o
+ -obj-$(CONFIG_PM)		+=3D irq-pm.o
+ -obj-$(CONFIG_CPU_IDLE)		+=3D cpuidle.o
+ +obj-$(CONFIG_S3C64XX_SETUP_FB_24BPP)	+=3D setup-fb-24bpp.o
+ +obj-$(CONFIG_S3C64XX_SETUP_I2C0)	+=3D setup-i2c0.o
+ +obj-$(CONFIG_S3C64XX_SETUP_I2C1)	+=3D setup-i2c1.o
+ +obj-$(CONFIG_S3C64XX_SETUP_IDE)		+=3D setup-ide.o
+ +obj-$(CONFIG_S3C64XX_SETUP_KEYPAD)	+=3D setup-keypad.o
+- obj-$(CONFIG_S3C64XX_SETUP_SDHCI)	+=3D setup-sdhci.o
+ +obj-$(CONFIG_S3C64XX_SETUP_SDHCI_GPIO)	+=3D setup-sdhci-gpio.o
+++obj-$(CONFIG_S3C64XX_SETUP_SPI)		+=3D setup-spi.o
+ =20
+  # Machine support
+ =20
+
+--Signature=_Wed__28_Dec_2011_10_07_41_+1100_ZP22pmQAOFC9mt.R
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO+k+9AAoJEECxmPOUX5FEj9AP/Rp9jOtc5+x22/pHjLkAgbmv
+PuaOorcF3usdin+iouJCXZHXD8bXa8770m+eu1Ccgol8qY+bOkLFmelm8Wf+wzyO
+465nNcUsoiWRkB07O2NYE1eNSgkF4V3t8q8dcEFXQ72ynCx4ktxSkJ0H4m0/20Ia
+UxKjRy3Bn5MJnOB4kEutAgDMttvRhVrJ1GVis3zVNFVSyjBp7QGHwcLA7TuERJo5
+nL6BnDuoB62xJm0fApt5D6DvlMLEBdA3trizTW9rOhI85msY22UHzI0xBV0dIJIy
+1Y/jorpE6eCNex2s9Hl0w/tAWeeMrZFquG1VWRbkxONtZRSrWsKO1l/gKS/3UIhN
+7qCUrniJGJ1DFTJYRDOJQoi85vLiOeg0az5QJKJtsTS0d2EvxC2cf7kUmquVqYAd
+5Bg1vGlSALnqUbqz4xzsjfY+uR81YLqbkSN4lELOGH5tsXFk1jlIODdVuj3rotbt
+3fyMsajCsKHI77YR+ZlcGjAofZ9N624Xnf/1fiY774mxRHNUHwsUaaFxZWydQNzj
+PVGrNaGajnKCNfeF+U8pqYuHPIGuoOyifUVzEPYuHaoyz6mtawgVNTe28I2G4wdj
+E17bcsNOTnmZOENnOo58plhxQ/A/neFFDUUXDlKsljbDX9vYDU5++9koRTFquVOl
+8N6RAld6Q+ztgxo9RG4c
+=UxSD
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Dec_2011_10_07_41_+1100_ZP22pmQAOFC9mt.R--
