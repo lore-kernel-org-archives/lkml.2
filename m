@@ -1,143 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab1L0O2i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:28:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46591 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754070Ab1L0O2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:28:37 -0500
-Date: Tue, 27 Dec 2011 15:28:34 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 6/6] memcg: drop redundant brackets
-Message-ID: <20111227142834.GP5344@tiehlicka.suse.cz>
-References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
- <1324695619-5537-6-git-send-email-kirill@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324695619-5537-6-git-send-email-kirill@shutemov.name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754457Ab1L0O2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:28:49 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39890 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754391Ab1L0O2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:28:44 -0500
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH -block/for-next 0/2] blktrace: bio-based device tracing improvement v3
+Date: Tue, 27 Dec 2011 23:28:31 +0900
+Message-Id: <1324996113-1837-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 24-12-11 05:00:19, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill@shutemov.name>
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+Hello,
 
-I wasn't very convinced at first but it makes some sense as we should be
-consistent. So
-Acked-by: Michal Hocko <mhocko@suse.cz>
+The blktrace is used to report block device activities to user space
+using kernel tracepoint but it was focused to block I/O request struct.
+Thus bio-based devices (i.e. loop, ram, md, ...) which don't make use
+of the request structure could not be supported well - the tool only
+can detect a limited number of events such as queuing, cloning and
+remapping but it cannot know when the I/O activity is completed.
 
-> ---
->  mm/memcontrol.c |   28 ++++++++++++++--------------
->  1 files changed, 14 insertions(+), 14 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3833a7b..48cba05 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -73,7 +73,7 @@ static int really_do_swap_account __initdata = 0;
->  #endif
->  
->  #else
-> -#define do_swap_account		(0)
-> +#define do_swap_account		0
->  #endif
->  
->  
-> @@ -113,9 +113,9 @@ enum mem_cgroup_events_target {
->  	MEM_CGROUP_TARGET_NUMAINFO,
->  	MEM_CGROUP_NTARGETS,
->  };
-> -#define THRESHOLDS_EVENTS_TARGET (128)
-> -#define SOFTLIMIT_EVENTS_TARGET (1024)
-> -#define NUMAINFO_EVENTS_TARGET	(1024)
-> +#define THRESHOLDS_EVENTS_TARGET 128
-> +#define SOFTLIMIT_EVENTS_TARGET 1024
-> +#define NUMAINFO_EVENTS_TARGET	1024
->  
->  struct mem_cgroup_stat_cpu {
->  	long count[MEM_CGROUP_STAT_NSTATS];
-> @@ -148,7 +148,7 @@ struct mem_cgroup_per_zone {
->  						/* use container_of	   */
->  };
->  /* Macro for accessing counter */
-> -#define MEM_CGROUP_ZSTAT(mz, idx)	((mz)->count[(idx)])
-> +#define MEM_CGROUP_ZSTAT(mz, idx)	((mz)->count[idx])
->  
->  struct mem_cgroup_per_node {
->  	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
-> @@ -346,8 +346,8 @@ static bool move_file(void)
->   * Maximum loops in mem_cgroup_hierarchical_reclaim(), used for soft
->   * limit reclaim to prevent infinite loops, if they ever occur.
->   */
-> -#define	MEM_CGROUP_MAX_RECLAIM_LOOPS		(100)
-> -#define	MEM_CGROUP_MAX_SOFT_LIMIT_RECLAIM_LOOPS	(2)
-> +#define	MEM_CGROUP_MAX_RECLAIM_LOOPS		100
-> +#define	MEM_CGROUP_MAX_SOFT_LIMIT_RECLAIM_LOOPS	2
->  
->  enum charge_type {
->  	MEM_CGROUP_CHARGE_TYPE_CACHE = 0,
-> @@ -368,11 +368,11 @@ enum mem_type {
->  	_KMEM,
->  };
->  
-> -#define MEMFILE_PRIVATE(x, val)	(((x) << 16) | (val))
-> -#define MEMFILE_TYPE(val)	(((val) >> 16) & 0xffff)
-> +#define MEMFILE_PRIVATE(x, val)	((x) << 16 | (val))
-> +#define MEMFILE_TYPE(val)	((val) >> 16 & 0xffff)
->  #define MEMFILE_ATTR(val)	((val) & 0xffff)
->  /* Used for OOM nofiier */
-> -#define OOM_CONTROL		(0)
-> +#define OOM_CONTROL		0
->  
->  /*
->   * Reclaim flags for mem_cgroup_hierarchical_reclaim
-> @@ -1913,7 +1913,7 @@ struct memcg_stock_pcp {
->  	unsigned int nr_pages;
->  	struct work_struct work;
->  	unsigned long flags;
-> -#define FLUSHING_CACHED_CHARGE	(0)
-> +#define FLUSHING_CACHED_CHARGE	0
->  };
->  static DEFINE_PER_CPU(struct memcg_stock_pcp, memcg_stock);
->  static DEFINE_MUTEX(percpu_charge_mutex);
-> @@ -2094,7 +2094,7 @@ static int __cpuinit memcg_cpu_hotplug_callback(struct notifier_block *nb,
->  	struct memcg_stock_pcp *stock;
->  	struct mem_cgroup *iter;
->  
-> -	if ((action == CPU_ONLINE)) {
-> +	if (action == CPU_ONLINE) {
->  		for_each_mem_cgroup(iter)
->  			synchronize_mem_cgroup_on_move(iter, cpu);
->  		return NOTIFY_OK;
-> @@ -2458,8 +2458,8 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
->  
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
->  
-> -#define PCGF_NOCOPY_AT_SPLIT ((1 << PCG_LOCK) | (1 << PCG_MOVE_LOCK) |\
-> -			(1 << PCG_MIGRATION))
-> +#define PCGF_NOCOPY_AT_SPLIT (1 << PCG_LOCK | 1 << PCG_MOVE_LOCK |\
-> +		1 << PCG_MIGRATION)
->  /*
->   * Because tail pages are not marked as "used", set it. We're under
->   * zone->lru_lock, 'splitting on pmd' and compound_lock.
-> -- 
-> 1.7.7.3
-> 
+bio_endio(), the I/O completion callback, can be used to fix this
+problem by adding appropriate tracepoint in it. However it was called
+from other paths too (normal request-based block devices and some of
+nested block I/O handling routines) so that we should recognize such
+cases to prevent duplicated reports. In this series, BIO_IN_FLIGHT flag
+is introduced and used for that purpose.
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Note that (bio-based) dm already supported completion report by adding
+the tracepoint into the path manually. With this patches, it will be
+converted to use generic mechanism.
+
+Changes from v2:
+ * rebased on current block/for-next
+
+Changes from v1:
+ * kill __bio_endio()
+ * use BIO_IN_FLIGHT flag
+
+Any feedbacks are welcome.
+
+Thanks.
+
+
+Namhyung Kim (2):
+  block: introduce BIO_IN_FLIGHT flag
+  block: don't export block_bio_complete tracepoint
+
+ block/blk-core.c          |    6 +++++-
+ drivers/md/dm.c           |    1 -
+ fs/bio.c                  |    7 +++++++
+ include/linux/blk_types.h |    1 +
+ 4 files changed, 13 insertions(+), 2 deletions(-)
+
+--
+1.7.6
+
