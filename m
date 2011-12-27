@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab1L0ORI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:17:08 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53688 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754395Ab1L0OQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:16:19 -0500
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jingoo Han <jg1.han@samsung.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 6/6] video: s3c-fb: Don't keep device runtime active when open
-Date: Tue, 27 Dec 2011 14:16:12 +0000
-Message-Id: <1324995372-3410-6-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1324995372-3410-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20111227141550.GA3331@opensource.wolfsonmicro.com>
- <1324995372-3410-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	id S1754482Ab1L0ORZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:17:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45814 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754386Ab1L0ORJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:17:09 -0500
+Date: Tue, 27 Dec 2011 15:17:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 5/6] memcg: fix broken boolen expression
+Message-ID: <20111227141706.GO5344@tiehlicka.suse.cz>
+References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
+ <1324695619-5537-5-git-send-email-kirill@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324695619-5537-5-git-send-email-kirill@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow the controller to be runtime suspended when the screen is blanked
-by not taking a runtime reference while the device is open. This allows
-greater system wide power savings when used with a standard application
-layer and ensures that the screen does not blank unless requested.
+On Sat 24-12-11 05:00:18, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> 
+> action != CPU_DEAD || action != CPU_DEAD_FROZEN is always true.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/video/s3c-fb.c |   22 ----------------------
- 1 files changed, 0 insertions(+), 22 deletions(-)
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-index 84cf631..0c63b69 100644
---- a/drivers/video/s3c-fb.c
-+++ b/drivers/video/s3c-fb.c
-@@ -1070,30 +1070,8 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
- 	return ret;
- }
- 
--static int s3c_fb_open(struct fb_info *info, int user)
--{
--	struct s3c_fb_win *win = info->par;
--	struct s3c_fb *sfb = win->parent;
--
--	pm_runtime_get_sync(sfb->dev);
--
--	return 0;
--}
--
--static int s3c_fb_release(struct fb_info *info, int user)
--{
--	struct s3c_fb_win *win = info->par;
--	struct s3c_fb *sfb = win->parent;
--
--	pm_runtime_put_sync(sfb->dev);
--
--	return 0;
--}
--
- static struct fb_ops s3c_fb_ops = {
- 	.owner		= THIS_MODULE,
--	.fb_open	= s3c_fb_open,
--	.fb_release	= s3c_fb_release,
- 	.fb_check_var	= s3c_fb_check_var,
- 	.fb_set_par	= s3c_fb_set_par,
- 	.fb_blank	= s3c_fb_blank,
+Thanks!
+
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index b27ce0f..3833a7b 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2100,7 +2100,7 @@ static int __cpuinit memcg_cpu_hotplug_callback(struct notifier_block *nb,
+>  		return NOTIFY_OK;
+>  	}
+>  
+> -	if ((action != CPU_DEAD) || action != CPU_DEAD_FROZEN)
+> +	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
+>  		return NOTIFY_OK;
+>  
+>  	for_each_mem_cgroup(iter)
+> -- 
+> 1.7.7.3
+> 
+
 -- 
-1.7.7.3
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
