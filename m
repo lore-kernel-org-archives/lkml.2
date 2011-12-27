@@ -1,85 +1,495 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab1L0JqT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 04:46:19 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43700 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752550Ab1L0JqR (ORCPT
+	id S1753390Ab1L0JsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 04:48:04 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:22712 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752807Ab1L0JsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 04:46:17 -0500
-MIME-Version: 1.0
-Date: Tue, 27 Dec 2011 15:16:16 +0530
-Message-ID: <CAB4K4y62oCFphQWzeR+Cwdc+EBhp+fGFjzFXyXyjOTiyjwh_sQ@mail.gmail.com>
-Subject: [PATCH] Squashfs: optimise squashfs_cache_get entry search
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-To: Phillip Lougher <phillip@squashfs.org.uk>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 27 Dec 2011 04:48:01 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-49-4ef9944da3c5
+From: Donggeun Kim <dg77.kim@samsung.com>
+To: linux-pm@vger.kernel.org
+Cc: len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl, rdunlap@xenotime.net,
+        cbouatmailru@gmail.com, pali.rohar@gmail.com, prakity@mavell.com,
+        broonie@opensource.wolfsonmicro.com, lars@metafoo.de,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        dg77.kim@samsung.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 2/2] power: Charger-Manager: add properties for
+ power-supply-class
+Date: Tue, 27 Dec 2011 18:47:49 +0900
+Message-id: <1324979269-2453-3-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1324979269-2453-1-git-send-email-dg77.kim@samsung.com>
+References: <1324979269-2453-1-git-send-email-dg77.kim@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 207aafb6e1dde1bc8d7f04be5c803f30a337c188 Mon Sep 17 00:00:00 2001
-From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
-Date: Tue, 27 Dec 2011 15:10:04 +0530
-Subject: [PATCH] Squashfs: optimise squashfs_cache_get entry search
+Charger Manager provides power-supply-class aggregating
+information from multiple chargers and a fuel-gauge.
 
-squashfs_cache_get() iterates over all entries to search for
- block its looking for. Often get() / put() are called for
- same block.
-
-If we cache the current entry index, then we can optimise the
-subsequent *_get() calls.
-
-Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- fs/squashfs/cache.c          |   11 ++++++++---
- fs/squashfs/squashfs_fs_sb.h |    1 +
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ Documentation/power/charger-manager.txt |   14 ++
+ drivers/power/charger-manager.c         |  295 ++++++++++++++++++++++++++++++-
+ include/linux/power/charger-manager.h   |   17 ++
+ 3 files changed, 325 insertions(+), 1 deletions(-)
 
-diff --git a/fs/squashfs/cache.c b/fs/squashfs/cache.c
-index 516ce2d..fbd9670 100644
---- a/fs/squashfs/cache.c
-+++ b/fs/squashfs/cache.c
-@@ -70,11 +70,15 @@ struct squashfs_cache_entry
-*squashfs_cache_get(struct super_block *sb,
- 	spin_lock(&cache->lock);
-
- 	while (1) {
--		for (i = 0; i < cache->entries; i++)
--			if (cache->entry[i].block == block)
-+		for (i = cache->curr_blk, n = 0; n < cache->entries; n++) {
-+			if (cache->entry[i].block == block) {
-+				cache->curr_blk = i;
- 				break;
-+			}
-+			i = (i + 1) % cache->entries;
+diff --git a/Documentation/power/charger-manager.txt b/Documentation/power/charger-manager.txt
+index 10edc36..55f2170 100644
+--- a/Documentation/power/charger-manager.txt
++++ b/Documentation/power/charger-manager.txt
+@@ -98,6 +98,11 @@ battery), an instance of Charger Manager is attached to it.
+ 
+ struct charger_desc {
+ 
++char *psy_name;
++	: The power-supply-class name of the battery. Default is
++	"battery" if psy_name is NULL. Users can access the psy entries
++	at "/sys/class/power_supply/[psy_name]/".
++
+ enum polling_modes polling_mode;
+ 	: CM_POLL_DISABLE: do not poll this battery.
+ 	  CM_POLL_ALWAYS: always poll this battery.
+@@ -106,6 +111,12 @@ enum polling_modes polling_mode;
+ 	  CM_POLL_CHARGING_ONLY: poll this battery if and only if the
+ 				 battery is being charged.
+ 
++unsigned int fullbatt_uV;
++	: If specified with a non-zero value, Charger Manager assumes
++	that the battery is full (capacity = 100) if the battery is not being
++	charged and the battery voltage is equal to or greater than
++	fullbatt_uV.
++
+ unsigned int polling_interval_ms;
+ 	: Required polling interval in ms. Charger Manager will poll
+ 	this battery every polling_interval_ms or more frequently.
+@@ -131,10 +142,13 @@ char *psy_fuel_gauge;
+ 	: Power-supply-class name of the fuel gauge.
+ 
+ int (*temperature_out_of_range)(int *mC);
++bool measure_battery_temp;
+ 	: This callback returns 0 if the temperature is safe for charging,
+ 	a positive number if it is too hot to charge, and a negative number
+ 	if it is too cold to charge. With the variable mC, the callback returns
+ 	the temperature in 1/1000 of centigrade.
++	The source of temperature can be battery or ambient one according to
++	the value of measure_battery_temp.
+ };
+ 
+ 5. Other Considerations
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index c90cefc..b1beef1 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -123,6 +123,32 @@ static bool is_ext_pwr_online(struct charger_manager *cm)
+ }
+ 
+ /**
++ * get_batt_uV - Get the voltage level of the battery
++ * @cm: the Charger Manager representing the battery.
++ * @uV: the voltage level returned.
++ *
++ * Returns 0 if there is no error.
++ * Returns a negative value on error.
++ */
++static int get_batt_uV(struct charger_manager *cm, int *uV)
++{
++	union power_supply_propval val;
++	int ret;
++
++	if (cm->fuel_gauge)
++		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++				POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
++	else
++		return -ENODEV;
++
++	if (ret)
++		return ret;
++
++	*uV = val.intval;
++	return 0;
++}
++
++/**
+  * is_charging - Returns true if the battery is being charged.
+  * @cm: the Charger Manager representing the battery.
+  */
+@@ -370,6 +396,208 @@ static bool cm_monitor(void)
+ 	return stop;
+ }
+ 
++static int charger_get_property(struct power_supply *psy,
++		enum power_supply_property psp,
++		union power_supply_propval *val)
++{
++	struct charger_manager *cm = container_of(psy,
++			struct charger_manager, charger_psy);
++	struct charger_desc *desc = cm->desc;
++	int i, ret = 0, uV;
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		if (is_charging(cm))
++			val->intval = POWER_SUPPLY_STATUS_CHARGING;
++		else if (is_ext_pwr_online(cm))
++			val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		else
++			val->intval = POWER_SUPPLY_STATUS_DISCHARGING;
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		if (cm->emergency_stop > 0)
++			val->intval = POWER_SUPPLY_HEALTH_OVERHEAT;
++		else if (cm->emergency_stop < 0)
++			val->intval = POWER_SUPPLY_HEALTH_COLD;
++		else
++			val->intval = POWER_SUPPLY_HEALTH_GOOD;
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		if (is_batt_present(cm))
++			val->intval = 1;
++		else
++			val->intval = 0;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		ret = get_batt_uV(cm, &i);
++		val->intval = i;
++		break;
++	case POWER_SUPPLY_PROP_CURRENT_NOW:
++		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++				POWER_SUPPLY_PROP_CURRENT_NOW, val);
++		break;
++	case POWER_SUPPLY_PROP_TEMP:
++		/* in thenth of centigrade */
++		if (cm->last_temp_mC == INT_MIN)
++			desc->temperature_out_of_range(&cm->last_temp_mC);
++		val->intval = cm->last_temp_mC / 100;
++		if (!desc->measure_battery_temp)
++			ret = -ENODEV;
++		break;
++	case POWER_SUPPLY_PROP_TEMP_AMBIENT:
++		/* in thenth of centigrade */
++		if (cm->last_temp_mC == INT_MIN)
++			desc->temperature_out_of_range(&cm->last_temp_mC);
++		val->intval = cm->last_temp_mC / 100;
++		if (desc->measure_battery_temp)
++			ret = -ENODEV;
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		if (!cm->fuel_gauge) {
++			ret = -ENODEV;
++			break;
 +		}
-
--		if (i == cache->entries) {
-+		if (n == cache->entries) {
- 			/*
- 			 * Block not in cache, if all cache entries are used
- 			 * go to sleep waiting for one to become available.
-@@ -240,6 +244,7 @@ struct squashfs_cache *squashfs_cache_init(char
-*name, int entries,
- 		goto cleanup;
++
++		if (!is_batt_present(cm)) {
++			/* There is no battery. Assume 100% */
++			val->intval = 100;
++			break;
++		}
++
++		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++					POWER_SUPPLY_PROP_CAPACITY, val);
++		if (ret)
++			break;
++
++		if (val->intval > 100) {
++			val->intval = 100;
++			break;
++		}
++		if (val->intval < 0)
++			val->intval = 0;
++
++		/* Do not adjust SOC when charging: voltage is overrated */
++		if (is_charging(cm))
++			break;
++
++		/*
++		 * If the capacity value is inconsistent, calibrate it base on
++		 * the battery voltage values and the thresholds given as desc
++		 */
++		ret = get_batt_uV(cm, &uV);
++		if (ret) {
++			/* Voltage information not available. No calibration */
++			ret = 0;
++			break;
++		}
++
++		if (desc->fullbatt_uV > 0 && uV >= desc->fullbatt_uV &&
++		    !is_charging(cm)) {
++			val->intval = 100;
++			break;
++		}
++
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		if (is_ext_pwr_online(cm))
++			val->intval = 1;
++		else
++			val->intval = 0;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_FULL:
++		if (cm->fuel_gauge) {
++			if (cm->fuel_gauge->get_property(cm->fuel_gauge,
++			    POWER_SUPPLY_PROP_CHARGE_FULL, val) == 0)
++				break;
++		}
++
++		if (is_ext_pwr_online(cm)) {
++			/* Not full if it's charging. */
++			if (is_charging(cm)) {
++				val->intval = 0;
++				break;
++			}
++			/*
++			 * Full if it's powered but not charging andi
++			 * not forced stop by emergency
++			 */
++			if (!cm->emergency_stop) {
++				val->intval = 1;
++				break;
++			}
++		}
++
++		/* Full if it's over the fullbatt voltage */
++		ret = get_batt_uV(cm, &uV);
++		if (!ret && desc->fullbatt_uV > 0 && uV >= desc->fullbatt_uV &&
++		    !is_charging(cm)) {
++			val->intval = 1;
++			break;
++		}
++
++		/* Full if the cap is 100 */
++		if (cm->fuel_gauge) {
++			ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++					POWER_SUPPLY_PROP_CAPACITY, val);
++			if (!ret && val->intval >= 100 && !is_charging(cm)) {
++				val->intval = 1;
++				break;
++			}
++		}
++
++		val->intval = 0;
++		ret = 0;
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_NOW:
++		if (is_charging(cm)) {
++			ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
++						POWER_SUPPLY_PROP_CHARGE_NOW,
++						val);
++			if (ret) {
++				val->intval = 1;
++				ret = 0;
++			} else {
++				/* If CHARGE_NOW is supplied, use it */
++				val->intval = (val->intval > 0) ?
++						val->intval : 1;
++			}
++		} else {
++			val->intval = 0;
++		}
++		break;
++	default:
++		return -EINVAL;
++	}
++	return ret;
++}
++
++#define NUM_CHARGER_PSY_OPTIONAL	(4)
++static enum power_supply_property default_charger_props[] = {
++	/* Guaranteed to provide */
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_CHARGE_FULL,
++	/*
++	 * Optional properties are:
++	 * POWER_SUPPLY_PROP_CHARGE_NOW,
++	 * POWER_SUPPLY_PROP_CURRENT_NOW,
++	 * POWER_SUPPLY_PROP_TEMP, and
++	 * POWER_SUPPLY_PROP_TEMP_AMBIENT,
++	 */
++};
++
++static struct power_supply psy_default = {
++	.name = "battery",
++	.type = POWER_SUPPLY_TYPE_BATTERY,
++	.properties = default_charger_props,
++	.num_properties = ARRAY_SIZE(default_charger_props),
++	.get_property = charger_get_property,
++};
++
+ /**
+  * cm_setup_timer - For in-suspend monitoring setup wakeup alarm
+  *		    for suspend_again.
+@@ -533,6 +761,7 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 	struct charger_desc *desc = dev_get_platdata(&pdev->dev);
+ 	struct charger_manager *cm;
+ 	int ret = 0, i = 0;
++	union power_supply_propval val;
+ 
+ 	if (g_desc && !rtc_dev && g_desc->rtc_name) {
+ 		rtc_dev = rtc_class_open(g_desc->rtc_name);
+@@ -627,11 +856,68 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, cm);
+ 
++	memcpy(&cm->charger_psy, &psy_default,
++				sizeof(psy_default));
++	if (!desc->psy_name) {
++		strncpy(cm->psy_name_buf, psy_default.name,
++				PSY_NAME_MAX);
++	} else {
++		strncpy(cm->psy_name_buf, desc->psy_name, PSY_NAME_MAX);
++	}
++	cm->charger_psy.name = cm->psy_name_buf;
++
++	/* Allocate for psy properties because they may vary */
++	cm->charger_psy.properties = kzalloc(sizeof(enum power_supply_property)
++				* (ARRAY_SIZE(default_charger_props) +
++				NUM_CHARGER_PSY_OPTIONAL),
++				GFP_KERNEL);
++	if (!cm->charger_psy.properties) {
++		dev_err(&pdev->dev, "Cannot allocate for psy properties.\n");
++		ret = -ENOMEM;
++		goto err_chg_stat;
++	}
++	memcpy(cm->charger_psy.properties, default_charger_props,
++		sizeof(enum power_supply_property) *
++		ARRAY_SIZE(default_charger_props));
++	cm->charger_psy.num_properties = psy_default.num_properties;
++
++	/* Find which optional psy-properties are available */
++	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
++					  POWER_SUPPLY_PROP_CHARGE_NOW, &val)) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_CHARGE_NOW;
++		cm->charger_psy.num_properties++;
++	}
++	if (!cm->fuel_gauge->get_property(cm->fuel_gauge,
++					  POWER_SUPPLY_PROP_CURRENT_NOW,
++					  &val)) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_CURRENT_NOW;
++		cm->charger_psy.num_properties++;
++	}
++	if (!desc->measure_battery_temp) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_TEMP_AMBIENT;
++		cm->charger_psy.num_properties++;
++	}
++	if (desc->measure_battery_temp) {
++		cm->charger_psy.properties[cm->charger_psy.num_properties] =
++				POWER_SUPPLY_PROP_TEMP;
++		cm->charger_psy.num_properties++;
++	}
++
++	ret = power_supply_register(NULL, &cm->charger_psy);
++	if (ret) {
++		dev_err(&pdev->dev, "Cannot register charger-manager with"
++				" name \"%s\".\n", cm->charger_psy.name);
++		goto err_register;
++	}
++
+ 	ret = regulator_bulk_get(&pdev->dev, desc->num_charger_regulators,
+ 				 desc->charger_regulators);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Cannot get charger regulators.\n");
+-		goto err_chg_stat;
++		goto err_bulk_get;
  	}
-
-+	cache->curr_blk = 0;
- 	cache->next_blk = 0;
- 	cache->unused = entries;
- 	cache->entries = entries;
-diff --git a/fs/squashfs/squashfs_fs_sb.h b/fs/squashfs/squashfs_fs_sb.h
-index 651f0b3..52934a2 100644
---- a/fs/squashfs/squashfs_fs_sb.h
-+++ b/fs/squashfs/squashfs_fs_sb.h
-@@ -28,6 +28,7 @@
- struct squashfs_cache {
- 	char			*name;
- 	int			entries;
-+	int			curr_blk;
- 	int			next_blk;
- 	int			num_waiters;
- 	int			unused;
+ 
+ 	ret = try_charger_enable(cm, true);
+@@ -651,6 +937,10 @@ err_chg_enable:
+ 	if (desc->charger_regulators)
+ 		regulator_bulk_free(desc->num_charger_regulators,
+ 					desc->charger_regulators);
++err_bulk_get:
++	power_supply_unregister(&cm->charger_psy);
++err_register:
++	kfree(cm->charger_psy.properties);
+ err_chg_stat:
+ 	kfree(cm->charger_stat);
+ err_no_charger_stat:
+@@ -675,6 +965,9 @@ static int __devexit charger_manager_remove(struct platform_device *pdev)
+ 	if (desc->charger_regulators)
+ 		regulator_bulk_free(desc->num_charger_regulators,
+ 					desc->charger_regulators);
++
++	power_supply_unregister(&cm->charger_psy);
++	kfree(cm->charger_psy.properties);
+ 	kfree(cm->charger_stat);
+ 	kfree(cm->desc);
+ 	kfree(cm);
+diff --git a/include/linux/power/charger-manager.h b/include/linux/power/charger-manager.h
+index 1af4c17..c0b7b04 100644
+--- a/include/linux/power/charger-manager.h
++++ b/include/linux/power/charger-manager.h
+@@ -48,8 +48,12 @@ struct charger_global_desc {
+ 
+ /**
+  * struct charger_desc
++ * @psy_name: the name of power-supply-class for charger manager
+  * @polling_mode:
+  *	Determine which polling mode will be used
++ * @fullbatt_uV: voltage in microvolt
++ *	If it is not being charged and VBATT >= fullbatt_uV,
++ *	it is assumed to be full.
+  * @polling_interval_ms: interval in millisecond at which
+  *	charger manager will monitor battery health
+  * @battery_present:
+@@ -63,11 +67,18 @@ struct charger_global_desc {
+  *	return_value > 0: overheat
+  *	return_value == 0: normal
+  *	return_value < 0: cold
++ * @measure_battery_temp:
++ *	true: measure battery temperature
++ *	false: measure ambient temperature
+  */
+ struct charger_desc {
++	char *psy_name;
++
+ 	enum polling_modes polling_mode;
+ 	unsigned int polling_interval_ms;
+ 
++	unsigned int fullbatt_uV;
++
+ 	enum data_source battery_present;
+ 
+ 	char **psy_charger_stat;
+@@ -78,6 +89,7 @@ struct charger_desc {
+ 	char *psy_fuel_gauge;
+ 
+ 	int (*temperature_out_of_range)(int *mC);
++	bool measure_battery_temp;
+ };
+ 
+ #define PSY_NAME_MAX	30
+@@ -93,6 +105,8 @@ struct charger_desc {
+  * @emergency_stop:
+  *	When setting true, stop charging
+  * @last_temp_mC: the measured temperature in milli-Celsius
++ * @psy_name_buf: the name of power-supply-class for charger manager
++ * @charger_psy: power_supply for charger manager
+  * @status_save_ext_pwr_inserted:
+  *	saved status of external power before entering suspend-to-RAM
+  * @status_save_batt:
+@@ -111,6 +125,9 @@ struct charger_manager {
+ 	int emergency_stop;
+ 	int last_temp_mC;
+ 
++	char psy_name_buf[PSY_NAME_MAX + 1];
++	struct power_supply charger_psy;
++
+ 	bool status_save_ext_pwr_inserted;
+ 	bool status_save_batt;
+ };
 -- 
-1.6.0.3
+1.7.4.1
+
