@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab1L0OLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:11:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45293 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751626Ab1L0OLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:11:30 -0500
-Date: Tue, 27 Dec 2011 15:11:28 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH 4/6] memcg: mark stat field of mem_cgroup struct as
- __percpu
-Message-ID: <20111227141128.GN5344@tiehlicka.suse.cz>
-References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
- <1324695619-5537-4-git-send-email-kirill@shutemov.name>
+	id S1754327Ab1L0OP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:15:56 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53668 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754177Ab1L0OPy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:15:54 -0500
+Date: Tue, 27 Dec 2011 14:15:51 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jingoo Han <jg1.han@samsung.com>,
+        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>
+Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: [PATCH 0/6] video: s3c-fb: Use runtime suspend while blanked
+Message-ID: <20111227141550.GA3331@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1324695619-5537-4-git-send-email-kirill@shutemov.name>
+X-Cookie: Tomorrow, you can be anywhere.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 24-12-11 05:00:17, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill@shutemov.name>
-> 
-> It fixes a lot of sparse warnings.
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+This patch series (the first two of which I posted the other day)
+improves the runtime power management in the s3c-fb driver by moving it
+to keeping the device runtime suspended when the screen is powered down
+by userspace.  This saves a trivial amount of power in the framebuffer
+controller and allows the SoC core code to enter system wide idle
+states which offer much more substantial gains.
 
-Looks good.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Currently it's only lightly tested but it certainly seems to the right
+thing for me.
 
-Thanks
+Mark Brown (6):
+      video: s3c-fb: Make runtime PM functional again
+      video: s3c-fb: Use s3c_fb_enable() to enable the framebuffer
+      video: s3c-fb: Disable runtime PM in error paths from probe
+      video: s3c-fb: Take a runtime PM reference when unblanked
+      video: s3c-fb: Hold runtime PM references when touching registers
+      video: s3c-fb: Don't keep device runtime active when open
 
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 627c19e..b27ce0f 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -291,7 +291,7 @@ struct mem_cgroup {
->  	/*
->  	 * percpu counter.
->  	 */
-> -	struct mem_cgroup_stat_cpu *stat;
-> +	struct mem_cgroup_stat_cpu __percpu *stat;
->  	/*
->  	 * used when a cpu is offlined or other synchronizations
->  	 * See mem_cgroup_read_stat().
-> -- 
-> 1.7.7.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+ drivers/video/s3c-fb.c |  127 ++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 92 insertions(+), 35 deletions(-)
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
