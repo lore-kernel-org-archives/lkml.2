@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753475Ab1L0JwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 04:52:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38897 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751455Ab1L0Jv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 04:51:58 -0500
-Message-ID: <4EF99532.3010803@redhat.com>
-Date: Tue, 27 Dec 2011 11:51:46 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753294Ab1L0KGe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 05:06:34 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65427 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab1L0KGc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 05:06:32 -0500
+Message-ID: <4EF998A3.4070403@linaro.org>
+Date: Tue, 27 Dec 2011 18:06:27 +0800
+From: "Ying-Chun Liu (PaulLiu)" <paul.liu@linaro.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111114 Icedove/3.1.16
 MIME-Version: 1.0
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <87vcp4t45p.fsf@linux.vnet.ibm.com> <877h1iu2md.fsf@linux.vnet.ibm.com> <4EF98D29.1080809@redhat.com> <87ty4mic23.fsf@abhimanyu.in.ibm.com>
-In-Reply-To: <87ty4mic23.fsf@abhimanyu.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: linux-kernel@vger.kernel.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org
+Subject: Re: [PATCHv2] Regulator: Add Anatop regulator driver
+References: <1323265998-29088-2-git-send-email-paul.liu@linaro.org> <1324458211-1612-1-git-send-email-paul.liu@linaro.org> <20111222113337.GL4546@opensource.wolfsonmicro.com>
+In-Reply-To: <20111222113337.GL4546@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2011 11:44 AM, Nikunj A Dadhania wrote:
-> > > I am seeing a drop of ~44% when setting yield_on_hlt = 0
-> > >
-> > 
-> > A drop of 44% of what?
-> > 
-> records/sec
->
-> Ebizzy - 2VM running in parallel, both having gang scheduling enabled.
->
->                     yield_on_hlt=1         yield_on_hlt=0
->  EbzyRecords/sec      41955.50               23285.00            -44 
->
->
+(2011年12月22日 19:33), Mark Brown wrote:
+> 
+>> +#include <linux/platform_device.h>
+>> +#include <linux/regulator/machine.h>
+> 
+> Why does your regulator driver need this?  That suggests a layering
+> violation.
+> 
 
-Interesting, are you overcommitting vcpus?
+Sorry, I'm not sure what does this mean.
+But if I want to access regulator_constraints, shouldn't I include this
+header file?
 
--- 
-error compiling committee.c: too many arguments to function
+Yours Sincerely,
+Paul
 
