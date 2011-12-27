@@ -1,41 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab1L0Kxy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 05:53:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753717Ab1L0Kxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 05:53:50 -0500
-Message-ID: <4EF9A3AD.8020806@redhat.com>
-Date: Tue, 27 Dec 2011 12:53:33 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1753855Ab1L0K4D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 05:56:03 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44921 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753450Ab1L0K4A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 05:56:00 -0500
+Date: Tue, 27 Dec 2011 10:55:56 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Donggeun Kim <dg77.kim@samsung.com>
+Cc: linux-pm@vger.kernel.org, len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl,
+        rdunlap@xenotime.net, cbouatmailru@gmail.com, pali.rohar@gmail.com,
+        prakity@mavell.com, lars@metafoo.de, kyungmin.park@samsung.com,
+        myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] power: introduce Charger-Manager
+Message-ID: <20111227105555.GG2870@opensource.wolfsonmicro.com>
+References: <1324979269-2453-1-git-send-email-dg77.kim@samsung.com>
 MIME-Version: 1.0
-To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-CC: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <87vcp4t45p.fsf@linux.vnet.ibm.com> <877h1iu2md.fsf@linux.vnet.ibm.com> <4EF98D29.1080809@redhat.com> <87ty4mic23.fsf@abhimanyu.in.ibm.com> <4EF99532.3010803@redhat.com> <87obuuiatw.fsf@abhimanyu.in.ibm.com> <4EF99F3A.6070203@redhat.com> <87ipl2i9bl.fsf@abhimanyu.in.ibm.com>
-In-Reply-To: <87ipl2i9bl.fsf@abhimanyu.in.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324979269-2453-1-git-send-email-dg77.kim@samsung.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2011 12:43 PM, Nikunj A Dadhania wrote:
-> > > > Interesting, are you overcommitting vcpus?
-> > > > 
-> > > Yes(1:2). On a 8cpu machine, have 2VMs running, which is 8vcpus each.
-> > 
-> > Ah, yield_on_hlt=0 isn't any good with overcommit.  The vcpu stays
-> > scheduled when idle, so other vcpus don't get to use its cpu time.
-> > 
-> This is similar to booting the guest with idle=poll kernel parameter?
+On Tue, Dec 27, 2011 at 06:47:47PM +0900, Donggeun Kim wrote:
 
-Yes, only with lower power consumption.
+> Changes for v3:
+>     - rename variables and functions
+>     - clean up code
+>     - add build dependency of RTC_CLASS and REGULATOR
 
--- 
-error compiling committee.c: too many arguments to function
-
+Does it actually depend on REGULATOR?  It looks like it just uses get
+and enable which are stubbed out automatically by the API.
