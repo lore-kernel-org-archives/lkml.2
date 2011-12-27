@@ -1,135 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab1L0ISA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 03:18:00 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:50746 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751183Ab1L0IRy (ORCPT
+	id S1752816Ab1L0IWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 03:22:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42957 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab1L0IWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 03:17:54 -0500
-Message-ID: <1324973866.2351.3.camel@phoenix>
-Subject: [PATCH] pcmcia: Convert to DEFINE_PCI_DEVICE_TABLE
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Maxime Bizon <mbizon@freebox.fr>, Arjan Van De Ven <arjanv@redhat.com>,
-        Jun Komuro <komurojun-mbn@nifty.com>,
-        Yoichi Yuasa <yuasa@linux-mips.org>,
-        Dominik Brodowski <linux@brodo.de>, linux-pcmcia@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Tue, 27 Dec 2011 16:17:46 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Dec 2011 03:22:10 -0500
+Message-ID: <1324974236.1165.43.camel@sauron.fi.intel.com>
+Subject: Re: [PATCH 2/2] drivers/mtd/maps/lantiq-flash.c: drop iounmap for
+ devm_ allocated data
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Julia Lawall <julia@diku.dk>
+Cc: David Woodhouse <dwmw2@infradead.org>, kernel-janitors@vger.kernel.org,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Tue, 27 Dec 2011 10:23:56 +0200
+In-Reply-To: <1324921081-13161-2-git-send-email-julia@diku.dk>
+References: <1324921081-13161-2-git-send-email-julia@diku.dk>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-2TZQfsQjRjvrGma/qK/z"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
-tables. Also convert to use PCI_DEVICE macro for better readablity.
 
-Cc: Maxime Bizon <mbizon@freebox.fr>
-Cc: Arjan Van De Ven <arjanv@redhat.com>
-Cc: Jun Komuro <komurojun-mbn@nifty.com>
-Cc: Yoichi Yuasa <yuasa@linux-mips.org>
-Cc: Dominik Brodowski <linux@brodo.de>
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/pcmcia/bcm63xx_pcmcia.c |    2 +-
- drivers/pcmcia/i82092.c         |   11 +++--------
- drivers/pcmcia/pd6729.c         |    9 ++-------
- drivers/pcmcia/vrc4173_cardu.c  |    7 ++-----
- drivers/pcmcia/yenta_socket.c   |    2 +-
- 5 files changed, 9 insertions(+), 22 deletions(-)
+--=-2TZQfsQjRjvrGma/qK/z
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/drivers/pcmcia/bcm63xx_pcmcia.c b/drivers/pcmcia/bcm63xx_pcmcia.c
-index 693577e..c2e997a 100644
---- a/drivers/pcmcia/bcm63xx_pcmcia.c
-+++ b/drivers/pcmcia/bcm63xx_pcmcia.c
-@@ -475,7 +475,7 @@ static void __devexit bcm63xx_cb_exit(struct pci_dev *dev)
- 	bcm63xx_cb_dev = NULL;
- }
- 
--static struct pci_device_id bcm63xx_cb_table[] = {
-+static DEFINE_PCI_DEVICE_TABLE(bcm63xx_cb_table) = {
- 	{
- 		.vendor		= PCI_VENDOR_ID_BROADCOM,
- 		.device		= BCM6348_CPU_ID,
-diff --git a/drivers/pcmcia/i82092.c b/drivers/pcmcia/i82092.c
-index 3e447d0..1703523 100644
---- a/drivers/pcmcia/i82092.c
-+++ b/drivers/pcmcia/i82092.c
-@@ -26,14 +26,9 @@
- MODULE_LICENSE("GPL");
- 
- /* PCI core routines */
--static struct pci_device_id i82092aa_pci_ids[] = {
--	{
--	      .vendor = PCI_VENDOR_ID_INTEL,
--	      .device = PCI_DEVICE_ID_INTEL_82092AA_0,
--	      .subvendor = PCI_ANY_ID,
--	      .subdevice = PCI_ANY_ID,
--	 },
--	 {} 
-+static DEFINE_PCI_DEVICE_TABLE(i82092aa_pci_ids) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_82092AA_0) },
-+	{ }
- };
- MODULE_DEVICE_TABLE(pci, i82092aa_pci_ids);
- 
-diff --git a/drivers/pcmcia/pd6729.c b/drivers/pcmcia/pd6729.c
-index 96c72e9..5928247 100644
---- a/drivers/pcmcia/pd6729.c
-+++ b/drivers/pcmcia/pd6729.c
-@@ -763,13 +763,8 @@ static void __devexit pd6729_pci_remove(struct pci_dev *dev)
- 	kfree(socket);
- }
- 
--static struct pci_device_id pd6729_pci_ids[] = {
--	{
--		.vendor		= PCI_VENDOR_ID_CIRRUS,
--		.device		= PCI_DEVICE_ID_CIRRUS_6729,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID,
--	},
-+static DEFINE_PCI_DEVICE_TABLE(pd6729_pci_ids) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_CIRRUS, PCI_DEVICE_ID_CIRRUS_6729) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(pci, pd6729_pci_ids);
-diff --git a/drivers/pcmcia/vrc4173_cardu.c b/drivers/pcmcia/vrc4173_cardu.c
-index c6d36b3..cd0a315 100644
---- a/drivers/pcmcia/vrc4173_cardu.c
-+++ b/drivers/pcmcia/vrc4173_cardu.c
-@@ -563,11 +563,8 @@ static int __devinit vrc4173_cardu_setup(char *options)
- 
- __setup("vrc4173_cardu=", vrc4173_cardu_setup);
- 
--static struct pci_device_id vrc4173_cardu_id_table[] __devinitdata = {
--	{	.vendor		= PCI_VENDOR_ID_NEC,
--		.device		= PCI_DEVICE_ID_NEC_NAPCCARD,
--		.subvendor	= PCI_ANY_ID,
--		.subdevice	= PCI_ANY_ID, },
-+static DEFINE_PCI_DEVICE_TABLE(vrc4173_cardu_id_table) = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_NEC, PCI_DEVICE_ID_NEC_NAPCCARD) },
-         {0, }
- };
- 
-diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
-index 9dc565c..9dcff7f 100644
---- a/drivers/pcmcia/yenta_socket.c
-+++ b/drivers/pcmcia/yenta_socket.c
-@@ -1352,7 +1352,7 @@ static const struct dev_pm_ops yenta_pm_ops = {
- 		.driver_data	= CARDBUS_TYPE_##type,	\
- 	}
- 
--static struct pci_device_id yenta_table[] = {
-+static DEFINE_PCI_DEVICE_TABLE(yenta_table) = {
- 	CB_ID(PCI_VENDOR_ID_TI, PCI_DEVICE_ID_TI_1031, TI),
- 
- 	/*
--- 
-1.7.5.4
+On Mon, 2011-12-26 at 18:38 +0100, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+>=20
+> Data allocated with devm_ioremap or devm_ioremap_nocache should not be
+> freed using iounmap, because doing so causes a dangling pointer, and a
+> subsequent double free.
+>=20
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>=20
+> // <smpl>
+> @r@
+> expression x;
+> @@
+> (
+>  x =3D devm_ioremap(...)
+> |
+>  x =3D devm_ioremap_nocache(...)
+> )
+>=20
+> @@
+> expression r.x;
+> @@
+> * iounmap(x)
+> // </smpl>
 
+Thanks Julia,
 
+surely this semantic patch script is worth adding to scripts/coccinelle?
+Are you going to take care of this?
+
+>=20
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+>=20
+> ---
+>  drivers/mtd/maps/lantiq-flash.c |    6 +-----
+>  1 file changed, 1 insertion(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/mtd/maps/lantiq-flash.c b/drivers/mtd/maps/lantiq-fl=
+ash.c
+> index 4f10e27..7b889de 100644
+> --- a/drivers/mtd/maps/lantiq-flash.c
+> +++ b/drivers/mtd/maps/lantiq-flash.c
+> @@ -159,7 +159,7 @@ ltq_mtd_probe(struct platform_device *pdev)
+>  	if (!ltq_mtd->mtd) {
+>  		dev_err(&pdev->dev, "probing failed\n");
+>  		err =3D -ENXIO;
+> -		goto err_unmap;
+> +		goto err_free;
+>  	}
+
+Pushed to l2-mtd-2.6.git, thanks!
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-2TZQfsQjRjvrGma/qK/z
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJO+YCdAAoJECmIfjd9wqK0G7YP+gI+o6z25nl4ROlhH4+KkQXx
+6LamIGEq+TWAjsTIZb/kAjaNtI7ZxQ5EnmTrdn4RjWw4YvrUXPadG4DYZ521lMLY
+6dgStsekEKV3Q5Bs4cXFfWPDouAoJdkhjSsFr5sH0VxtEXr/YppWQdPpujpxJlG0
+K8ywEQfbQLhWYWHf8OYi9O4+YKo+Ur9tSqMPc+0AXTtu0aAnHwNJFZ6AUF338+uc
+TUZ98RDp1HyCVNBIhOinGXeFjHqOZRaNSRRt8v65P+LeNKn+nKf7AZaHXsTTwBC4
+OkwSvZtM9qYKwYribDZpbBVTgNA2PRrxSL7Q3Iiahjib7ck29GPuQTkEdWwBkZc+
+Djy9dCD1ZDG25VlF77BwKkSBx1jiRvEeL5wsT4M+Z7HFItgf1m5Vmdxxf4BzClPa
+V94MLUIUYZizuU1FtPM0rhMLUgLJX5+Uvvbh3SclD5trw+5WpBDOtamsjN8iJhIW
+fswXdRvpPsAZt67sZXOT8bt3CH7G0ZmfW1yxF7e/hthcno0jGcSSaaX2BKcwvShs
+1N4faVREhQTy1+dptRVpm1npGomBS55UUqQnx0fzzLcDKVNvohuDeA5v0TdrnDC1
+yeWjvZKAjcs8l0m+yuxUAPQ9urNKfFtR1DDzy7OrXahwYz8bpvp6rtxx9uwlHatt
+700zv6DShlZ5cokBcJQ3
+=13wt
+-----END PGP SIGNATURE-----
+
+--=-2TZQfsQjRjvrGma/qK/z--
 
