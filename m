@@ -1,67 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752185Ab1L0WaV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 17:30:21 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57933 "EHLO
+	id S1752240Ab1L0WdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 17:33:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43585 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925Ab1L0WaS (ORCPT
+	with ESMTP id S1751925Ab1L0WdI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 17:30:18 -0500
-Date: Tue, 27 Dec 2011 14:30:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vivek Goyal <vgoyal@redhat.com>, avi@redhat.com, nate@cpanel.net,
-        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
- and fix blkcg percpu alloc deadlock
-Message-ID: <20111227223012.GJ17712@google.com>
-References: <20111222232433.GQ17084@google.com>
- <20111222154138.d6c583e3.akpm@linux-foundation.org>
- <20111223012112.GB12738@redhat.com>
- <20111222173820.3461be5d.akpm@linux-foundation.org>
- <20111223025411.GD12738@redhat.com>
- <20111222191144.78aec23a.akpm@linux-foundation.org>
- <20111223145856.GB16818@redhat.com>
- <20111227132501.ad7f895f.akpm@linux-foundation.org>
- <20111227220753.GH17712@google.com>
- <20111227142156.7943446e.akpm@linux-foundation.org>
+	Tue, 27 Dec 2011 17:33:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111227142156.7943446e.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EFA4024.5000909@bootc.net>
+References: <4EFA4024.5000909@bootc.net>
+Date: Tue, 27 Dec 2011 23:33:07 +0100
+Message-ID: <CAA93jw7EKP7zDeHbPUMnqY4iW1dkmgBa_OOoB570tq5G7aKMfQ@mail.gmail.com>
+Subject: Re: e1000e interface hang on 82574L
+From: Dave Taht <dave.taht@gmail.com>
+To: Chris Boot <bootc@bootc.net>
+Cc: netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Andrew.
+On Tue, Dec 27, 2011 at 11:01 PM, Chris Boot <bootc@bootc.net> wrote:
+> Hi folks,
+>
+> Another networking issue I've run into, this time with e1000e (Intel
+> Corporation 82574L Gigabit). My new VM cluster appears to drop a NIC - the
+> port stops responding within Linux and shows the link as being down with
+> ethtool. My ISP says 'Ports running Half Duplex or reduced speed' on the
+> port.
+>
+> When the port stops working I see this in dmesg:
+>
+> [35481.659629] ------------[ cut here ]------------
+> [35481.667837] WARNING: at net/sched/sch_generic.c:255
+> dev_watchdog+0xe9/0x148()
+> [35481.676370] Hardware name: X9SCL/X9SCM
+> [35481.684793] NETDEV WATCHDOG: eth2 (e1000e): transmit queue 0 timed out
+> [35481.684795] Modules linked in: hmac sha256_generic dlm configfs
+> ebtable_nat ebtables acpi_cpufreq mperf cpufreq_stats cpufreq_conservative
+> cpufreq_userspace cpufreq_powersave microcode xt_NOTRACK ip_set_hash_net
+> act_police cls_basic cls_flow cls_fw cls_u32 sch_tbf sch_prio sch_htb
+> sch_hfsc sch_ingress sch_sfq xt_connlimit xt_realm xt_addrtype
+> ip_set_hash_ip iptable_raw xt_comment xt_recent ipt_ULOG ipt_REJECT
+> ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+> nf_nat_tftp nf_nat_snmp_basic nf_conntrack_snmp nf_nat_sip nf_nat_pptp
+> nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp ip6_queue nf_nat_amanda
+> xt_set ip_set nf_conntrack_tftp nf_conntrack_sip nf_conntrack_sane
+> nf_conntrack_proto_udplite nf_conntrack_proto_sctp nf_conntrack_pptp
+> nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns
+> nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_h323 nf_conntrack_ftp
+> ts_kmp nf_conntrack_amanda xt_TPROXY xt_NFLOG nfnetlink_log nf_tproxy_core
+> xt_time xt_TCPMSS xt_tcpmss xt_sctp xt_policy xt_pkttype xt_physdev xt_owner
+> xt_NFQUEUE xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange
+> xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_connmark xt_CLASSIFY
+> xt_AUDIT ip6t_LOG ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack
+> ip6table_raw ipt_LOG xt_tcpudp ip6table_mangle xt_state iptable_nat nf_nat
+> nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_mangle nfnetlink
+> iptable_filter ip_tables ip6table_filter ip6_tables x_tables bridge stp
+> bonding w83627ehf hwmon_vid coretemp sha1_ssse3 sha1_generic crc32c_intel
+> aesni_intel cryptd aes_x86_64 aes_generic ipmi_poweroff ipmi_devintf ipmi_si
+> ipmi_msghandler vhost_net macvtap macvlan tun drbd lru_cache cn loop
+> kvm_intel kvm snd_pcm snd_timer snd iTCO_wdt soundcore psmouse
+> snd_page_alloc i2c_i801 i2c_core cdc_acm iTCO_vendor_support joydev evdev
+> serio_raw processor button pcspkr thermal_sys ext4 mbcache jbd2 crc16 dm_mod
+> raid1 md_mod sd_mod crc_t10dif usb_storage uas usbhid hid ahci libahci
+> libata igb ehci_hcd scsi_mod usbcore e1000e dca usb_common [last unloaded:
+> scsi_wait_scan]
+> [35481.685740] Pid: 0, comm: swapper/4 Not tainted 3.2.0-rc6+ #4
+> [35481.685744] Call Trace:
+> [35481.685746]  <IRQ>  [<ffffffff810467ed>] ? warn_slowpath_common+0x78/0x8c
+> [35481.685849]  [<ffffffff81046899>] ? warn_slowpath_fmt+0x45/0x4a
+> [35481.685875]  [<ffffffff810aeaa0>] ? perf_event_task_tick+0x166/0x1ab
+> [35481.686018]  [<ffffffff81294219>] ? netif_tx_lock+0x40/0x72
+> [35481.686090]  [<ffffffff8129437a>] ? dev_watchdog+0xe9/0x148
+> [35481.686136]  [<ffffffff81051e58>] ? run_timer_softirq+0x19a/0x261
+> [35481.686176]  [<ffffffff81294291>] ? netif_tx_unlock+0x46/0x46
+> [35481.686215]  [<ffffffff810659bb>] ? timekeeping_get_ns+0xd/0x2a
+> [35481.686286]  [<ffffffff8104bdd4>] ? __do_softirq+0xb9/0x177
+> [35481.686365]  [<ffffffff81341d6c>] ? call_softirq+0x1c/0x30
+> [35481.686530]  [<ffffffff8100f841>] ? do_softirq+0x3c/0x7b
+> [35481.686580]  [<ffffffff8104c03c>] ? irq_exit+0x3c/0x9a
+> [35481.686742]  [<ffffffff81023e58>] ? smp_apic_timer_interrupt+0x74/0x82
+> [35481.686820]  [<ffffffff813405de>] ? apic_timer_interrupt+0x6e/0x80
+> [35481.686826]  <EOI>  [<ffffffff811ddf49>] ? intel_idle+0xea/0x119
+> [35481.686991]  [<ffffffff811ddf28>] ? intel_idle+0xc9/0x119
+> [35481.687051]  [<ffffffff8125dce3>] ? cpuidle_idle_call+0xec/0x179
+> [35481.687089]  [<ffffffff8100d255>] ? cpu_idle+0xa1/0xe8
+> [35481.687143]  [<ffffffff810706ee>] ? arch_local_irq_restore+0x2/0x8
+> [35481.687189]  [<ffffffff8132d191>] ? start_secondary+0x1d5/0x1db
+> [35481.687234] ---[ end trace 01e9907674757948 ]---
+> [35481.687817] e1000e 0000:05:00.0: eth2: Reset adapter
+>
+> To try to regain connectivity I bring down the bond and the interface
+> (eth2), then unload e1000e. Upon loading the module again:
+>
+> [36021.888962] e1000e: Intel(R) PRO/1000 Network Driver - 1.5.1-k
+> [36021.900258] e1000e: Copyright(c) 1999 - 2011 Intel Corporation.
+> [36021.911446] e1000e 0000:00:19.0: PCI INT A -> GSI 20 (level, low) -> IRQ
+> 20
+> [36021.923204] e1000e 0000:00:19.0: setting latency timer to 64
+> [36021.923372] e1000e 0000:00:19.0: irq 45 for MSI/MSI-X
+> [36022.202737] e1000e 0000:00:19.0: eth2: (PCI Express:2.5GT/s:Width x1)
+> 00:25:90:56:ac:75
+> [36022.214480] e1000e 0000:00:19.0: eth3: Intel(R) PRO/1000 Network
+> Connection
+> [36022.227506] e1000e 0000:00:19.0: eth3: MAC: 10, PHY: 11, PBA No:
+> FFFFFF-0FF
+> [36022.239789] e1000e 0000:05:00.0: Disabling ASPM L0s
+> [36022.239805] e1000e 0000:05:00.0: enabling device (0000 -> 0002)
+> [36022.239829] e1000e 0000:05:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ
+> 16
+> [36022.239921] e1000e 0000:05:00.0: setting latency timer to 64
+> [36022.240963] e1000e 0000:05:00.0: irq 64 for MSI/MSI-X
+> [36022.240995] e1000e 0000:05:00.0: irq 65 for MSI/MSI-X
+> [36022.241028] e1000e 0000:05:00.0: irq 66 for MSI/MSI-X
+> [36022.241596] e1000e 0000:05:00.0: PCI INT A disabled
+> [36022.241606] e1000e: probe of 0000:05:00.0 failed with error -2
+> [36022.304706] udevd[3634]: renamed network interface eth2 to eth3
+>
+> I then don't get an eth2 interface. Only a reboot brings the interface back.
+> This has happened twice so far on this server in the past week, both times
+> using v3.2-rc7-3-g4962516.
+>
+> lspci -vnn shows:
+>
+> 05:00.0 Ethernet controller [0200]: Intel Corporation 82574L Gigabit Network
+> Connection [8086:10d3]
+>        Subsystem: Super Micro Computer Inc Device [15d9:0000]
+>        Flags: bus master, fast devsel, latency 0, IRQ 16
+>        Memory at fbd00000 (32-bit, non-prefetchable) [size=128K]
+>        I/O ports at e000 [size=32]
+>        Memory at fbd20000 (32-bit, non-prefetchable) [size=16K]
+>        Capabilities: [c8] Power Management version 2
+>        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
+>        Capabilities: [e0] Express Endpoint, MSI 00
+>        Capabilities: [a0] MSI-X: Enable+ Count=5 Masked-
+>        Capabilities: [100] Advanced Error Reporting
+>        Capabilities: [140] Device Serial Number 00-25-90-ff-ff-56-ac-74
+>        Kernel driver in use: e1000e
+>
+> Thanks,
+> Chris
+>
+> --
+> Chris Boot
+> bootc@bootc.net
 
-On Tue, Dec 27, 2011 at 02:21:56PM -0800, Andrew Morton wrote:
-> <autorepeat>For those users who don't want the stats, stats shouldn't
-> consume any resources at all.
+I too am experiencing problems with  the e1000e. It takes hours to happen,
+sometimes days, under a sustained, heavy load (10 iperfs, 1 netperf RR, ping)
 
-Hmmm.... For common use cases - a few cgroups doing IOs to most likely
-single physical device and maybe a couple virtual ones, I don't think
-this would show up anywhere both in terms of memory and process
-overhead.  While avoding it would be nice, I don't think that should
-be the focus of optimization or design decisions.
+while :
+do
+for i in `seq 1 10`
+do
+iperf -w254k -t 60 -c MY_SERVER &
+done
+netperf -H MY_SERVER -t TCP_RR &
+wait
+sleep2
+done
 
-> And I bet that the majority of the minority who want stats simply want
-> to know "how much IO is this cgroup doing", and don't need per-cgroup,
-> per-device accounting.
-> 
-> And it could be that the minority of the minority who want per-device,
-> per-cgroup stats only want those for a minority of the time.
-> 
-> IOW, what happens if we give 'em atomic_add() and be done with it?
+but eventually...
+ifconfig will show the e1000e receiving packets, but none will be
+transmitted. I kill off the qdisc
+(tc del dev eth0 root) and sometimes it comes back (so I was assuming
+it was a problem with qfq) - but
+this morning I managed to get a full on kernel panic from it and
+scribble it down.
 
-I really don't know.  That surely is an enticing idea tho.  Jens,
-Vivek, can you guys chime in?  Is gutting out (or drastically
-simplifying) cgroup-dev stats an option?  Are there users who are
-actually interested in this stuff?
+This is with net-next as of c5e1fd8ccae09f574d6f978c90c2b968ee29030c -
+but I have
+been experiencing lockups since I started fiddling with BQL last
+month. That said,
+I wouldn't consider my environment terribly normal as I'm running with
+no tso, no
+gso,  tx rings of 64, at 100Mbit, BQL's limit at 4500 bytes, and the QFQ qdisc,
 
-Thanks.
+and I was willing to write it off
+to being too early to jump on net-next until now.
+
+The super duper new fair QFQ based shaping script I've been testing is at:
+
+https://github.com/dtaht/deBloat/blob/master/src/staqfq.lua
+
+and my scribbled down morning's panic was:
+
+__schedule_bug
+_shedule
+atomic_notifier_call_chain
+__cond_resched
+_cond_resched
+__kmalloc
+[drm_ks_helper]
+[drm_kms_help]
+drm_crtc_helper_set_config
+drm_fb_helper_restore_fb_mode
+drm_fb_helper_force_kernel_mode
+drm_fb_helper_panic
+notifier_call_chain
+atomic_notifier_call_chain
+panic
+oops_end
+no_context
+__bad_area_nosemeaphore
+_do_page_Fault
+? T something
+qfq_deactivate_class
+qfq_deactivate_class
+qfq_reset_qdisc
+m@cruithne:~$ more trace.txt
+__schedule_bug
+_shedule
+atomic_notifier_call_chain
+__cond_resched
+_cond_resched
+__kmalloc
+[drm_ks_helper]
+[drm_kms_help]
+drm_crtc_helper_set_config
+drm_fb_helper_restore_fb_mode
+drm_fb_helper_force_kernel_mode
+drm_fb_helper_panic
+notifier_call_chain
+atomic_notifier_call_chain
+panic
+oops_end
+no_context
+__bad_area_nosemeaphore
+_do_page_Fault
+? T something
+qfq_deactivate_class
+qfq_deactivate_class
+qfq_reset_qdisc
+qdisc_reset
+dev_deactivate_queue
+dev_deativate_many
+qdic_graft
+tc_get_qdisc
+zone_statistics
+rtnetlink_rcv_msg
+rtnetlink_rcv
+netlink_rcu_sb
+rtnetlink_rcv
+netlink_unicast
+netlink_sendmsg
+sock_sendmsg
+unlock_page
+__do_fault
+move_addr_to_kernel
+verify_iovec
+__sys_sendmsg
+handle_mm_fault
+do_page_fault
+sys_sendmsg
+system_call_fastpath
+
 
 -- 
-tejun
+Dave Täht
+SKYPE: davetaht
+http://www.bufferbloat.net
