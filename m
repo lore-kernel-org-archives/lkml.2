@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750886Ab1L0UFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 15:05:46 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35336 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1L0UFo (ORCPT
+	id S1751069Ab1L0UGO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 15:06:14 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:45659 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab1L0UFu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 15:05:44 -0500
-Subject: Re: [tpmdd-devel] [PATCH 2/3] TPM: Close data_pending and
-	data_buffer races
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        Marcel Selhorst <m.selhorst@sirrix.com>
-Date: Tue, 27 Dec 2011 15:02:44 -0500
-In-Reply-To: <4EF48F64.4010509@canonical.com>
-References: <1323196162-2717-1-git-send-email-tim.gardner@canonical.com>
-	 <1323196162-2717-3-git-send-email-tim.gardner@canonical.com>
-	 <4EF0B9F8.9020305@linux.vnet.ibm.com>	<4EF0E465.5060704@canonical.com>
-	 <4EF36C1F.6040409@linux.vnet.ibm.com>	<4EF37A7A.2060504@canonical.com>
-	 <4EF38CBD.3080302@linux.vnet.ibm.com> <4EF48F64.4010509@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325016165.2313.45.camel@falcor>
+	Tue, 27 Dec 2011 15:05:50 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: greg@kroah.com, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org, konrad.wilk@oracle.com,
+        kurt.hackel@oracle.com, sjenning@linux.vnet.ibm.com,
+        chris.mason@oracle.com
+Subject: Re: [PATCH V2 1/6] drivers/staging/ramster: cluster/messaging foundation
+In-Reply-To: Your message of "Thu, 22 Dec 2011 07:50:50 PST."
+             <20111222155050.GA21405@ca-server1.us.oracle.com>
+From: Valdis.Kletnieks@vt.edu
+References: <20111222155050.GA21405@ca-server1.us.oracle.com>
 Mime-Version: 1.0
-x-cbid: 11122720-7282-0000-0000-0000053807FD
+Content-Type: multipart/signed; boundary="==_Exmh_1325016332_3579P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 27 Dec 2011 15:05:32 -0500
+Message-ID: <243729.1325016332@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4EFA2510.0159,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-23 at 07:25 -0700, Tim Gardner wrote:
-> On 12/22/2011 01:02 PM, Rajiv Andrade wrote:
+--==_Exmh_1325016332_3579P
+Content-Type: text/plain; charset=us-ascii
 
-<snip>
+On Thu, 22 Dec 2011 07:50:50 PST, Dan Magenheimer said:
 
-> > It's inside the mutex region.
-> >
-> 
-> Actually, the patch you sent (https://lkml.org/lkml/2011/12/22/257) is 
-> _outside_ the mutex area, but I got your drift.
+> Copy cluster subdirectory from ocfs2.  These files implement
+> the basic cluster discovery, mapping, heartbeat / keepalive, and
+> messaging ("o2net") that ramster requires for internode communication.
 
-Yes, thanks for pointing it out in your original comments. I haven't
-tested the following patch, but perhaps it will help clarify the updated
-version, that I think Rajiv was describing ... 
+Instead of doing this, can we have the shared files copied to a common
+subdirectory so that ramster and ocfs2 can share them, and we only
+have to fix bugs once?
 
-diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
-index 6a8771f..7dafd95 100644
---- a/drivers/char/tpm/tpm.c
-+++ b/drivers/char/tpm/tpm.c
-@@ -1210,7 +1210,6 @@ ssize_t tpm_read(struct file *file, char __user *buf,
- 	del_singleshot_timer_sync(&chip->user_read_timer);
- 	flush_work_sync(&chip->work);
- 	ret_size = atomic_read(&chip->data_pending);
--	atomic_set(&chip->data_pending, 0);
- 	if (ret_size > 0) {	/* relay data */
- 		if (size < ret_size)
- 			ret_size = size;
-@@ -1221,8 +1220,10 @@ ssize_t tpm_read(struct file *file, char __user *buf,
- 		if (rc)
- 			ret_size = -EFAULT;
- 
-+		atomic_set(&chip->data_pending, 0);
- 		mutex_unlock(&chip->buffer_mutex);
--	}
-+	} else if (ret_size < 0)
-+		atomic_set(&chip->data_pending, 0);
- 
- 	return ret_size;
- }
+--==_Exmh_1325016332_3579P
+Content-Type: application/pgp-signature
 
-> Even clearing chip->data_pending _inside_ the mutex area, I'm not sure 
-> it closes all of the race windows. I think its still possible to race 
-> with mod_timer() and del_singleshot_timer_sync(). Therein lies my point, 
-> if the exclusion code is not _obviously_ correct for something this 
-> simple, then its probably not. I think my patch is the correct approach.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-With the above patch, tpm_read() resets the data_pending flag only after
-copying the data to userspace, resolving the original race condition
-described.
+iD8DBQFO+iUMcC3lWbTT17ARAmGfAKCENDjN79TxO+C7OZ06guBX0h6vowCgusxg
+htspX2q/+e756QN70cO8BEg=
+=d18g
+-----END PGP SIGNATURE-----
 
-> > This would require another fix though. tpm_write() doesn't check
-> > tpm_transmit return code (and it should).
-> > In case it returns an error (< 0), chip->data_pending would remain the
-> > same forever with that change.
-> >
-> 
-> This observation is also correct, but not relevant to the exclusion 
-> races. It deserves a separate patch.
-
-With the above patch, tpm_read() resets the data_pending flag only if
-set, resolving the other race condition(s).
-
-thanks,
-
-Mimi
+--==_Exmh_1325016332_3579P--
 
