@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab1L0PYl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 10:24:41 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:59193 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab1L0PYh (ORCPT
+	id S1754607Ab1L0PgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 10:36:02 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57648 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754536Ab1L0Pf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 10:24:37 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND] ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
-Date: Tue, 27 Dec 2011 16:24:33 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-pcmcia@lists.infradead.org, Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-References: <1324974344.2351.5.camel@phoenix>
-In-Reply-To: <1324974344.2351.5.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112271624.33760.marek.vasut@gmail.com>
+	Tue, 27 Dec 2011 10:35:59 -0500
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH -tip:perf/core 1/4] perf session: Remove impossible condition check
+Date: Wed, 28 Dec 2011 00:35:48 +0900
+Message-Id: <1325000151-4463-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> If pxa2xx_drv_pcmcia_add_one fails, it will go to err1 error path.
-> Add a missing clk_put in the error path.
-> 
-> Checking the ret value after the for loop is redundant, it is always false.
-> Thus remove the redundant checking.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/pcmcia/pxa2xx_base.c |   12 +++---------
->  1 files changed, 3 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/pcmcia/pxa2xx_base.c b/drivers/pcmcia/pxa2xx_base.c
-> index a87e272..64d433e 100644
-> --- a/drivers/pcmcia/pxa2xx_base.c
-> +++ b/drivers/pcmcia/pxa2xx_base.c
-> @@ -328,21 +328,15 @@ static int pxa2xx_drv_pcmcia_probe(struct
-> platform_device *dev) goto err1;
->  	}
-> 
-> -	if (ret) {
-> -		while (--i >= 0)
-> -			soc_pcmcia_remove_one(&sinfo->skt[i]);
-> -		kfree(sinfo);
-> -		clk_put(clk);
-> -	} else {
-> -		pxa2xx_configure_sockets(&dev->dev);
-> -		dev_set_drvdata(&dev->dev, sinfo);
-> -	}
-> +	pxa2xx_configure_sockets(&dev->dev);
-> +	dev_set_drvdata(&dev->dev, sinfo);
-> 
->  	return 0;
-> 
->  err1:
->  	while (--i >= 0)
->  		soc_pcmcia_remove_one(&sinfo->skt[i]);
-> +	clk_put(clk);
->  	kfree(sinfo);
->  err0:
->  	return ret;
+The 'size' cannot be 0 because it was set to 8 on the
+above line in case it was 0 and never changed.
 
-Makes sense
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ tools/perf/util/session.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-Acked-by: Marek Vasut <marek.vasut@gmail.com>
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index d9318d8a9ba1..1139f3c6dec5 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1004,8 +1004,7 @@ more:
+ 		}
+ 	}
+ 
+-	if (size == 0 ||
+-	    (skip = perf_session__process_event(self, &event, tool, head)) < 0) {
++	if ((skip = perf_session__process_event(self, &event, tool, head)) < 0) {
+ 		dump_printf("%#" PRIx64 " [%#x]: skipping unknown header type: %d\n",
+ 			    head, event.header.size, event.header.type);
+ 		/*
+-- 
+1.7.6
+
