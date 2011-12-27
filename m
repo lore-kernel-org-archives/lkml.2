@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab1L0JnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 04:43:15 -0500
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:59259 "EHLO
-	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab1L0JnM (ORCPT
+	id S1753140Ab1L0JqT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 04:46:19 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43700 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752550Ab1L0JqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 04:43:12 -0500
-X-AuditID: b753bd60-98392ba000007b1b-f9-4ef992aad9fc
-X-AuditID: b753bd60-98392ba000007b1b-f9-4ef992aad9fc
-From: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
-Subject: [RFC PATCH 1/5][RESEND] livedump: Add notifier-call-chain into
- do_page_fault
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: hpa@zytor.com, Andrew Morton <akpm@linux-foundation.org>,
-        Andy Lutomirski <luto@mit.edu>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Kevin Hilman <khilman@ti.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Michal Marek <mmarek@suse.cz>, Rik van Riel <riel@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        x86@kernel.org, yrl.pp-manager.tt@hitachi.com
-Date: Fri, 23 Dec 2011 22:14:41 +0900
-Message-ID: <20111223131441.13217.69129.stgit@t3500.sdl.hitachi.co.jp>
-In-Reply-To: <20111223131441.13217.68917.stgit@t3500.sdl.hitachi.co.jp>
-References: <20111223131441.13217.68917.stgit@t3500.sdl.hitachi.co.jp>
-User-Agent: StGIT/0.14.3
+	Tue, 27 Dec 2011 04:46:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Date: Tue, 27 Dec 2011 15:16:16 +0530
+Message-ID: <CAB4K4y62oCFphQWzeR+Cwdc+EBhp+fGFjzFXyXyjOTiyjwh_sQ@mail.gmail.com>
+Subject: [PATCH] Squashfs: optimise squashfs_cache_get entry search
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+To: Phillip Lougher <phillip@squashfs.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds notifier-call-chain that is called in do_page_fault.
-This can be used to check whether page fault occurs for the normal reason,
-or it is caused by special write protection, for example Live Dump.
+>From 207aafb6e1dde1bc8d7f04be5c803f30a337c188 Mon Sep 17 00:00:00 2001
+From: Ajeet Yadav <ajeet.yadav.77@gmail.com>
+Date: Tue, 27 Dec 2011 15:10:04 +0530
+Subject: [PATCH] Squashfs: optimise squashfs_cache_get entry search
 
-Signed-off-by: YOSHIDA Masanori <masanori.yoshida.tv@hitachi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Andy Lutomirski <luto@mit.edu>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
+squashfs_cache_get() iterates over all entries to search for
+ block its looking for. Often get() / put() are called for
+ same block.
+
+If we cache the current entry index, then we can optimise the
+subsequent *_get() calls.
+
+Signed-off-by: Ajeet Yadav <ajeet.yadav.77@gmail.com>
 ---
+ fs/squashfs/cache.c          |   11 ++++++++---
+ fs/squashfs/squashfs_fs_sb.h |    1 +
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
- arch/x86/include/asm/traps.h |    2 ++
- arch/x86/mm/fault.c          |    7 +++++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+diff --git a/fs/squashfs/cache.c b/fs/squashfs/cache.c
+index 516ce2d..fbd9670 100644
+--- a/fs/squashfs/cache.c
++++ b/fs/squashfs/cache.c
+@@ -70,11 +70,15 @@ struct squashfs_cache_entry
+*squashfs_cache_get(struct super_block *sb,
+ 	spin_lock(&cache->lock);
 
-diff --git a/arch/x86/include/asm/traps.h b/arch/x86/include/asm/traps.h
-index 0012d09..7bf6081 100644
---- a/arch/x86/include/asm/traps.h
-+++ b/arch/x86/include/asm/traps.h
-@@ -89,4 +89,6 @@ asmlinkage void smp_thermal_interrupt(void);
- asmlinkage void mce_threshold_interrupt(void);
- #endif
- 
-+extern struct atomic_notifier_head page_fault_notifier_list;
-+
- #endif /* _ASM_X86_TRAPS_H */
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 5db0490..2f8e2a9 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -985,6 +985,8 @@ static int fault_in_kernel_space(unsigned long address)
- 	return address >= TASK_SIZE_MAX;
- }
- 
-+ATOMIC_NOTIFIER_HEAD(page_fault_notifier_list);
-+
- /*
-  * This routine handles page faults.  It determines the address,
-  * and the problem, and then passes it off to one of the appropriate
-@@ -1008,6 +1010,11 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	/* Get the faulting address: */
- 	address = read_cr2();
- 
-+	if (atomic_notifier_call_chain(
-+				&page_fault_notifier_list, error_code, regs) &
-+			NOTIFY_OK)
-+		return;
-+
- 	/*
- 	 * Detect and handle instructions that would cause a page fault for
- 	 * both a tracked kernel page and a userspace page.
+ 	while (1) {
+-		for (i = 0; i < cache->entries; i++)
+-			if (cache->entry[i].block == block)
++		for (i = cache->curr_blk, n = 0; n < cache->entries; n++) {
++			if (cache->entry[i].block == block) {
++				cache->curr_blk = i;
+ 				break;
++			}
++			i = (i + 1) % cache->entries;
++		}
 
+-		if (i == cache->entries) {
++		if (n == cache->entries) {
+ 			/*
+ 			 * Block not in cache, if all cache entries are used
+ 			 * go to sleep waiting for one to become available.
+@@ -240,6 +244,7 @@ struct squashfs_cache *squashfs_cache_init(char
+*name, int entries,
+ 		goto cleanup;
+ 	}
+
++	cache->curr_blk = 0;
+ 	cache->next_blk = 0;
+ 	cache->unused = entries;
+ 	cache->entries = entries;
+diff --git a/fs/squashfs/squashfs_fs_sb.h b/fs/squashfs/squashfs_fs_sb.h
+index 651f0b3..52934a2 100644
+--- a/fs/squashfs/squashfs_fs_sb.h
++++ b/fs/squashfs/squashfs_fs_sb.h
+@@ -28,6 +28,7 @@
+ struct squashfs_cache {
+ 	char			*name;
+ 	int			entries;
++	int			curr_blk;
+ 	int			next_blk;
+ 	int			num_waiters;
+ 	int			unused;
+-- 
+1.6.0.3
