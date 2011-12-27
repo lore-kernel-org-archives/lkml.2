@@ -1,110 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487Ab1L0QaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 11:30:24 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:43396 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754030Ab1L0QaQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 11:30:16 -0500
-From: Julia Lawall <julia.lawall@lip6.fr>
-To: Julia Lawall <julia@diku.dk>
-Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, mmarek@suse.cz,
-        Julia Lawall <julia@diku.dk>
-Subject: [PATCH 2/2] scripts/coccinelle: semantic patches related to devm_ functions
-Date: Tue, 27 Dec 2011 17:30:07 +0100
-Message-Id: <1325003407-28033-2-git-send-email-julia.lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1754404Ab1L0Qfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 11:35:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34774 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab1L0Qfl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 11:35:41 -0500
+Date: Tue, 27 Dec 2011 08:35:35 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix to allow mounting a hierarchy by name
+Message-ID: <20111227163535.GA17712@google.com>
+References: <4EF9291D.7030208@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EF9291D.7030208@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Hello, Li.
 
-devm_ functions allocate memory that is to remain allocated until the
-device is detached.  This patch checks for freeing of such memory using
-standard memory freeing functions.
+On Tue, Dec 27, 2011 at 10:10:37AM +0800, Li Zefan wrote:
+> If we mount a hierarchy with a name specified, the name is unique,
+> and we can use it to mount the hierarchy without specifying its
+> set of subsystem names. This feature is documented is
+> Documentation/cgroups/cgroups.txt section 2.3
+> 
+> Here's an example:
+> 
+> 	# mount -t cgroup -o cpuset,name=myhier xxx /cgroup1
+> 	# mount -t cgroup -o name=myhier xxx /cgroup2
+> 
+> But it was broken by commit 32a8cf235e2f192eb002755076994525cdbaa35a
+> (cgroup: make the mount options parsing more accurate)
+> 
+> This fixes the regression.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Hmmm... so that has been broken over a year and nobody complained?  Is
+there any valid use case where specifying mount path as all other
+filesystems wouldn't work?  Is this 'name' thing necessary at all?
+Maybe we should rip it out instead of fixing it?  We can just leave it
+as non-functional name which does nothing but being visible in mount
+listing.
 
----
+Thanks.
 
-diff --git a/scripts/coccinelle/free/devm_free.cocci b/scripts/coccinelle/free/devm_free.cocci
-new file mode 100644
-index 0000000..c0cd3e2
---- /dev/null
-+++ b/scripts/coccinelle/free/devm_free.cocci
-@@ -0,0 +1,71 @@
-+/// Find uses of standard freeing functons on values allocated using devm_
-+/// functions.  Values allocated using the devm_functions are freed when
-+/// the device is detached, and thus the use of the standard freeing
-+/// function would cause a double free.
-+/// See Documentation/driver-model/devres.txt for more information.
-+///
-+/// A difficulty of detecting this problem is that the standard freeing
-+/// function might be called from a different function than the one
-+/// containing the allocation function.  It is thus necessary to make the
-+/// connection between the allocation function and the freeing function.
-+/// Here this is done using the specific argument text, which is prone to
-+/// false positives.  There is no rule for the request_region and
-+/// request_mem_region variants because this heuristic seems to be a bit
-+/// less reliable in these cases.
-+///
-+// Confidence: Moderate
-+// Copyright: (C) 2011 Julia Lawall, INRIA/LIP6.  GPLv2.
-+// Copyright: (C) 2011 Gilles Muller, INRIA/LiP6.  GPLv2.
-+// URL: http://coccinelle.lip6.fr/
-+// Comments:
-+// Options: -no_includes -include_headers
-+
-+virtual org
-+virtual report
-+virtual context
-+
-+@r depends on context || org || report@
-+expression x;
-+@@
-+
-+(
-+ x = devm_kzalloc(...)
-+|
-+ x = devm_request_irq(...)
-+|
-+ x = devm_ioremap(...)
-+|
-+ x = devm_ioremap_nocache(...)
-+|
-+ x = devm_ioport_map(...)
-+)
-+
-+@pb@
-+expression r.x;
-+position p;
-+@@
-+
-+(
-+* kfree@p(x)
-+|
-+* free_irq@p(x)
-+|
-+* iounmap@p(x)
-+|
-+* ioport_unmap@p(x)
-+)
-+
-+@script:python depends on org@
-+p << pb.p;
-+@@
-+
-+msg="WARNING: invalid free of devm_ allocated data"
-+coccilib.org.print_todo(p[0], msg)
-+
-+@script:python depends on report@
-+p << pb.p;
-+@@
-+
-+msg="WARNING: invalid free of devm_ allocated data"
-+coccilib.report.print_report(p[0], msg)
-+
-
+-- 
+tejun
