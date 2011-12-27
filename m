@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752252Ab1L0HTb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 02:19:31 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:19215 "EHLO
-	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab1L0HT1 (ORCPT
+	id S1752489Ab1L0HZb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 02:25:31 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:44853 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751748Ab1L0HZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 02:19:27 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: <b29237@freescale.com>
-To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>
-CC: Forrest shi <b29237@freescale.com>
-Subject: [PATCH] 	dmaengine: async_xor, fix zero address issue when xor highmem page
-Date: Tue, 27 Dec 2011 14:30:46 +0800
-Message-ID: <1324967446-28939-1-git-send-email-b29237@freescale.com>
-X-Mailer: git-send-email 1.7.5.1
+	Tue, 27 Dec 2011 02:25:24 -0500
+Date: Tue, 27 Dec 2011 08:25:11 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org, Kumar Sundararajan <kumar@fb.com>,
+        john stultz <johnstul@us.ibm.com>, Arun Sharma <asharma@fb.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 1/4] Add clock_gettime_ns syscall
+Message-ID: <20111227072511.GA2250@netboy.at.omicron.at>
+References: <cover.1324831829.git.luto@amacapital.net>
+ <16ecaa6abb8b7a25ef31970f71a42c7e2ba5416c.1324831829.git.luto@amacapital.net>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <16ecaa6abb8b7a25ef31970f71a42c7e2ba5416c.1324831829.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Forrest shi <b29237@freescale.com>
+On Sun, Dec 25, 2011 at 08:51:00AM -0800, Andy Lutomirski wrote:
+> 
+> This interface intentionally does not support sub-nanosecond
+> precision.  For one thing, light only travels about a foot per
+> nanosecond, so nanoseconds are really pretty good for networking
+> purposes.  For another, 2^64 picoseconds (say) is a short enough
+> interval to be inconvenient.  If anyone needs sub-nanosecond
+> precision for anything other than profiling, they're welcome to
+> figure out an appropriate interface.  For very precise profiling,
+> "what time is it" is the wrong question, anyway -- modern CPUs can
+> reorder things across time scales much longer than a nanosecond.
 
-	we may do_sync_xor high mem pages, in this case, page_address will
-        return zero address which cause a failure.
+This paragraph probably should be updated, since you did add a padding
+field for future sub-nanosecond reporting.
 
-	this patch uses kmap_atomic before xor the pages and kunmap_atomic
-        after it.
+Also, on re-reading this, it seems silly to be to introduce a function
+called "clock_gettime_ns" and then to say that this function cannot
+answer the question, what time is it?
 
-	Signed-off-by: b29237@freescale.com <xuelin.shi@freescale.com>
----
- crypto/async_tx/async_xor.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+If the interface is a profiling only interface, then the name should
+reflect this fact.
 
-diff --git a/crypto/async_tx/async_xor.c b/crypto/async_tx/async_xor.c
-index bc28337..5b416d1 100644
---- a/crypto/async_tx/async_xor.c
-+++ b/crypto/async_tx/async_xor.c
-@@ -26,6 +26,7 @@
- #include <linux/kernel.h>
- #include <linux/interrupt.h>
- #include <linux/mm.h>
-+#include <linux/highmem.h>
- #include <linux/dma-mapping.h>
- #include <linux/raid/xor.h>
- #include <linux/async_tx.h>
-@@ -126,7 +127,7 @@ do_sync_xor(struct page *dest, struct page **src_list, unsigned int offset,
- 	    int src_cnt, size_t len, struct async_submit_ctl *submit)
- {
- 	int i;
--	int xor_src_cnt = 0;
-+	int xor_src_cnt = 0, kmap_cnt=0;
- 	int src_off = 0;
- 	void *dest_buf;
- 	void **srcs;
-@@ -138,11 +139,13 @@ do_sync_xor(struct page *dest, struct page **src_list, unsigned int offset,
- 
- 	/* convert to buffer pointers */
- 	for (i = 0; i < src_cnt; i++)
--		if (src_list[i])
--			srcs[xor_src_cnt++] = page_address(src_list[i]) + offset;
-+		if (src_list[i]) {
-+			srcs[xor_src_cnt++] = kmap_atomic(src_list[i], KM_USER1) + offset;
-+		}
-+	kmap_cnt = xor_src_cnt;
- 	src_cnt = xor_src_cnt;
- 	/* set destination address */
--	dest_buf = page_address(dest) + offset;
-+	dest_buf = kmap_atomic(dest, KM_USER0) + offset;
- 
- 	if (submit->flags & ASYNC_TX_XOR_ZERO_DST)
- 		memset(dest_buf, 0, len);
-@@ -157,6 +160,11 @@ do_sync_xor(struct page *dest, struct page **src_list, unsigned int offset,
- 		src_off += xor_src_cnt;
- 	}
- 
-+	kunmap_atomic(dest_buf, KM_USER0);
-+	for (i = 0; i < kmap_cnt; i++) 
-+		if (src_list[i])
-+			kunmap_atomic(srcs[i], KM_USER1);
-+
- 	async_tx_sync_epilog(submit);
- }
- 
--- 
-1.7.0.4
-
-
+Thanks,
+Richard
