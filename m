@@ -1,126 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479Ab1L0GKw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 01:10:52 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:45388
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751044Ab1L0GKt (ORCPT
+	id S1751590Ab1L0GV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 01:21:56 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51969 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab1L0GVs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 01:10:49 -0500
-X-IronPort-AV: E=Sophos;i="4.71,414,1320620400"; 
-   d="scan'208";a="124769877"
-Date: Tue, 27 Dec 2011 07:10:42 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: lawall@pl-59034.rocq.inria.fr
-To: Adam Jiang <jiang.adam@gmail.com>
-cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: devm_kfree
-In-Reply-To: <CALK_+D35jwxsABqfQ7o0CEF+aDaDcccp8-q7RDEO_t4Pm_gNWg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1112270710300.7818@pl-59034.rocq.inria.fr>
-References: <1324661974-17281-1-git-send-email-julia@diku.dk> <20111226120855.GB17760@sirena.org.uk> <alpine.DEB.2.02.1112261440450.1873@localhost6.localdomain6> <CALK_+D35jwxsABqfQ7o0CEF+aDaDcccp8-q7RDEO_t4Pm_gNWg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 27 Dec 2011 01:21:48 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4EF96406.6080102@jp.fujitsu.com>
+Date: Tue, 27 Dec 2011 15:21:58 +0900
+From: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-1025713729-1324966246=:7818"
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: mmap system call does not return EOVERFLOW
+References: <4EF2F9EB.7000006@jp.fujitsu.com> <4EF36BDA.5080105@gmail.com>
+In-Reply-To: <4EF36BDA.5080105@gmail.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi, Kosaki-san
 
---8323329-1025713729-1324966246=:7818
-Content-Type: TEXT/PLAIN; charset=iso-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+> Which version are you looking at? Current code seems to don't have
+> sys_mmap().
 
-On Tue, 27 Dec 2011, Adam Jiang wrote:
+This sys_mmap() means the entrance of mmap system call for x86_64.
 
-> 2011/12/26 Julia Lawall <julia.lawall@lip6.fr>:
->> Is it reasonable to use devm_kfree in a probe function that fails or a
->> remove function that succeeds?
->
-> I cannot catch your question. If the memory is allocated by
-> devm_kzalloc(), it is not necessary to release with devm_kfree() at
-> all. It would be release once the driver was detached or destroyed.
+----------------------------------------------------------------------
+arch/x86/kernel/sys_x86_64.c:
+  84 SYSCALL_DEFINE6(mmap, unsigned long, addr, unsigned long, len,
+  85                 unsigned long, prot, unsigned long, flags,
+  86                 unsigned long, fd, unsigned long, off)
+  87 {
+  88         long error;
+  89         error = -EINVAL;
+  90         if (off & ~PAGE_MASK)
+  91                 goto out;
+  92 
+  93         error = sys_mmap_pgoff(addr, len, prot, flags, fd, off >> PAGE_SHIFT);
+  94 out:
+  95         return error;
+  96 }
+----------------------------------------------------------------------
 
-Perhaps it is undesirable to keep it around until then, as in my last
-example below where the probe function seems to want to go with a
-different solution in some cases?
+This function calls sys_mmap_pgoff, which has the argument
+"off >> PAGE_SHIFT". It means that sys_mmap_pgoff does not use off,
+which is the argument of sys_mmap, with no change, but uses the value
+obtained after off is shifted right by PAGE_SHIFT bits.
 
-I was also worried that one call could make some information required by
-another one unavailable.  For example in the following case:
+In mmap system call for x86, the following sys_mmap_pgoff is the
+entrance in kernel.
 
-drivers/dma/mpc512x_dma.c
+----------------------------------------------------------------------
+arch/x86/kernel/syscall_table_32.S:
+...
+ 194         .long sys_mmap_pgoff
+...
 
-         devm_free_irq(dev, mdma->irq, mdma);
-         irq_dispose_mapping(mdma->irq);
+mm/mmap.c:
+1080 SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+1081                 unsigned long, prot, unsigned long, flags,
+1082                 unsigned long, fd, unsigned long, pgoff)
+...
+1111         down_write(&current->mm->mmap_sem);
+1112         retval = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+1113         up_write(&current->mm->mmap_sem);
+----------------------------------------------------------------------
 
-Is it OK to call irq_dispose_mapping and then let devm_free_irq be called
-implicitly afterwards?
+> value. We have
+> no reason to make artificial limit. Why don't you meke a overflow
+> check in sys_mmap()?
 
-julia
+I consider it is better to make an overflow check in do_mmap_pgoff.
+There are two reasons:
 
+1. If we make an overflow check in the entrance of system call, we
+   have to check in sys_mmap for x86_64 and in sys_mmap_pgoff for
+   x86. It means that we have to check for each architecture
+   individually. Therefore, it is more effective to make an
+   overflow check in do_mmap_pgoff because both sys_mmap and
+   sys_mmap_pgoff call do_mmap_pgoff.
 
+2. Because the argument "offset" of sys_mmap is a multiple
+   of the page size(otherwise, EINVAL is returned.), no information
+   is lost after shifting right by PAGE_SHIFT bits. Therefore
+   to make an overflow check in do_mmap_pgoff is equivalent
+   to check in sys_mmap.
 
->
+Best Regards,
+Naotaka Hamaguchi
+
+(2011/12/23 2:41), KOSAKI Motohiro wrote:
+>> The argument "offset" is shifted right by PAGE_SHIFT bits
+>> in sys_mmap(mmap systemcall).
 >>
->> Examples from drivers/watchdog/shwdt.c:
->>
->> sh_wdt_probe:
->>
->>        ...
->>  out_unreg:
->>        unregister_reboot_notifier(&sh_wdt_notifier);
->>  out_unmap:
->> -       devm_iounmap(&pdev->dev, wdt->base);
->>  out_err:
->> -       devm_kfree(&pdev->dev, wdt);
->
-> It is necessary?
->
->>  out_release:
->> -       devm_release_mem_region(&pdev->dev, res->start, resource_size(res));
->
-> It is necessary?
->
->>
->>        return rc;
->>  }
->>
->>
->> sh_wdt_remove:
->>
->>        ...
->>        unregister_reboot_notifier(&sh_wdt_notifier);
->>        devm_release_mem_region(&pdev->dev, res->start, resource_size(res));
->>        devm_iounmap(&pdev->dev, wdt->base);
->>        devm_kfree(&pdev->dev, wdt);
->
-> These lines should be deleted if the driver has detached.
->
->>
->>        return 0;
+>> ------------------------------------------------------------------------
+>> sys_mmap(unsigned long addr, unsigned long len,
+>> 	unsigned long prot, unsigned long flags,
+>> 	unsigned long fd, unsigned long off)
+>> {
+>> 	error = sys_mmap_pgoff(addr, len, prot, flags, fd, off>>   PAGE_SHIFT);
 >> }
->>
->>
->> On the other hand, perhaps devm_kfree is needed in probe function that
->> succeeds, eg in drivers/input/keyboard/samsung-keypad.c:
->>
->>        if (pdev->dev.of_node) {
->>                devm_kfree(&pdev->dev, (void *)pdata->keymap_data->keymap);
->>                devm_kfree(&pdev->dev, (void *)pdata->keymap_data);
->>                devm_kfree(&pdev->dev, (void *)pdata);
->>        }
->>        return 0;
->>
->> julia
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
---8323329-1025713729-1324966246=:7818--
+>> ------------------------------------------------------------------------
+> 
+> Hm.
+> Which version are you looking at? Current code seems to don't have
+> sys_mmap().
+> 
+> 
+> 
+> 
+> 
+
+
