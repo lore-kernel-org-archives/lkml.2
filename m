@@ -1,110 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab1L0N6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 08:58:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44761 "EHLO mx2.suse.de"
+	id S1754167Ab1L0OBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:01:44 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:44207 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753894Ab1L0N57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 08:57:59 -0500
-Date: Tue, 27 Dec 2011 14:57:52 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org
-Subject: [PATCH] Makefiles: Disable unused-variable warning (was: Re: [PATCH
- 1/6] memcg: fix unused variable warning)
-Message-ID: <20111227135752.GK5344@tiehlicka.suse.cz>
-References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754027Ab1L0OBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:01:39 -0500
+From: Julia Lawall <julia@diku.dk>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: kernel-janitors@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 3/6] drivers/watchdog/imx2_wdt.c: use devm_request_and_ioremap
+Date: Tue, 27 Dec 2011 15:01:28 +0100
+Message-Id: <1324994491-21828-4-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1324994491-21828-1-git-send-email-julia@diku.dk>
+References: <1324994491-21828-1-git-send-email-julia@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 24-12-11 05:00:14, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill@shutemov.name>
-> 
-> mm/memcontrol.c: In function ‘memcg_check_events’:
-> mm/memcontrol.c:784:22: warning: unused variable ‘do_numainfo’ [-Wunused-variable]
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
->  mm/memcontrol.c |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d643bd6..a5e92bd 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -781,14 +781,15 @@ static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->  	/* threshold event is triggered in finer grain than soft limit */
->  	if (unlikely(mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_THRESH))) {
-> -		bool do_softlimit, do_numainfo;
-> +		bool do_softlimit;
->  
-> -		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> -						MEM_CGROUP_TARGET_SOFTLIMIT);
->  #if MAX_NUMNODES > 1
-> +		bool do_numainfo;
->  		do_numainfo = mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_NUMAINFO);
->  #endif
-> +		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> +						MEM_CGROUP_TARGET_SOFTLIMIT);
+From: Julia Lawall <julia@diku.dk>
 
-I don't like this very much. Maybe we should get rid of both do_* and
-do it with flags? But maybe it is not worth the additional code at
-all...
+Reimplement a call to devm_request_mem_region followed by a call to ioremap
+or ioremap_nocache by a call to devm_request_and_ioremap.
 
-Anyway, I am wondering why unused-but-set-variable is disabled while
-unused-variable is enabled. Shouldn't we just disable it as well rather
-than workaround this in the code? The warning is just pure noise in this
-case.
-What about something like:
+The variable res_size is then no longer needed.
+
+The semantic patch that makes this transformation is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@nm@
+expression myname;
+identifier i;
+@@
+
+struct platform_driver i = { .driver = { .name = myname } };
+
+@@
+expression dev,res,size;
+expression nm.myname;
+@@
+
+-if (!devm_request_mem_region(dev, res->start, size,
+-                              \(res->name\|dev_name(dev)\|myname\))) {
+-   ...
+-   return ...;
+-}
+... when != res->start
+(
+-devm_ioremap(dev,res->start,size)
++devm_request_and_ioremap(dev,res)
+|
+-devm_ioremap_nocache(dev,res->start,size)
++devm_request_and_ioremap(dev,res)
+)
+... when any
+    when != res->start
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
->From e1136891fe86eacf9212b2144f80ff6b75b10194 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Tue, 27 Dec 2011 14:53:06 +0100
-Subject: [PATCH] Makefiles: Disable unused-variable warning
+ drivers/watchdog/imx2_wdt.c |   11 +----------
+ 1 file changed, 1 insertion(+), 10 deletions(-)
 
-We are already disabling unused-but-set-variable and Wunused-variable
-produces some noise as well.
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
----
- Makefile |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index ea51081..25c76f3 100644
---- a/Makefile
-+++ b/Makefile
-@@ -578,6 +578,7 @@ endif
- # This warning generated too much noise in a regular build.
- # Use make W=1 to enable this warning (see scripts/Makefile.build)
- KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
-+KBUILD_CFLAGS += $(call cc-disable-warning, unused-variable)
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index b8ef2c6..c44c333 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -247,7 +247,6 @@ static struct miscdevice imx2_wdt_miscdev = {
+ static int __init imx2_wdt_probe(struct platform_device *pdev)
+ {
+ 	int ret;
+-	int res_size;
+ 	struct resource *res;
  
- ifdef CONFIG_FRAME_POINTER
- KBUILD_CFLAGS	+= -fno-omit-frame-pointer -fno-optimize-sibling-calls
--- 
-1.7.7.3
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+@@ -256,15 +255,7 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	res_size = resource_size(res);
+-	if (!devm_request_mem_region(&pdev->dev, res->start, res_size,
+-		res->name)) {
+-		dev_err(&pdev->dev, "can't allocate %d bytes at %d address\n",
+-			res_size, res->start);
+-		return -ENOMEM;
+-	}
+-
+-	imx2_wdt.base = devm_ioremap_nocache(&pdev->dev, res->start, res_size);
++	imx2_wdt.base = devm_request_and_ioremap(&pdev->dev, res);
+ 	if (!imx2_wdt.base) {
+ 		dev_err(&pdev->dev, "ioremap failed\n");
+ 		return -ENOMEM;
 
-
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
