@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753618Ab1L0BIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 20:08:15 -0500
-Received: from home.keithp.com ([63.227.221.253]:36384 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753513Ab1L0BHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 20:07:35 -0500
-From: Keith Packard <keithp@keithp.com>
-To: intel-gfx@lists.freedesktop.org, torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        Keith Packard <keithp@keithp.com>
-Subject: [PATCH 2/2] drm/i915: Disable RC6 on Sandybridge by default
-Date: Mon, 26 Dec 2011 17:02:11 -0800
-Message-Id: <1324947731-22980-3-git-send-email-keithp@keithp.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1324947731-22980-1-git-send-email-keithp@keithp.com>
-References: <1324947731-22980-1-git-send-email-keithp@keithp.com>
+	id S1754001Ab1L0BZc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 20:25:32 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40558 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753513Ab1L0BZZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 20:25:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111226121207.GF8722@opensource.wolfsonmicro.com>
+References: <1324349144-12784-1-git-send-email-tomoya.rohm@gmail.com>
+	<1324349144-12784-3-git-send-email-tomoya.rohm@gmail.com>
+	<20111220132314.GQ2866@opensource.wolfsonmicro.com>
+	<CANKRQng8N3oS2o17HPUZeonXB3KLBK9oNQj-zd9+aUUvWcTo0A@mail.gmail.com>
+	<20111222005816.GB27144@opensource.wolfsonmicro.com>
+	<CANKRQnjCTAX02wJt7StjB0rXkg3Q6bPBRYCbkgq6vS5NFd97Fg@mail.gmail.com>
+	<20111222103946.GA4546@opensource.wolfsonmicro.com>
+	<CANKRQng+H4NxaSLpZpYOCT-CdovxbToT-waz0JNMFT2AcD_gvA@mail.gmail.com>
+	<20111226121207.GF8722@opensource.wolfsonmicro.com>
+Date: Tue, 27 Dec 2011 10:25:25 +0900
+Message-ID: <CANKRQnhJhpwhGywGz=r0tVF0k+eWb4vrGkdVD9NdzRFNo9PNtA@mail.gmail.com>
+Subject: Re: [PATCH 3/3 v2] sound/soc/lapis: add platform driver for ML7213
+ IOH I2S
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Lars-Peter Clausen <lars@metafoo.de>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mike Frysinger <vapier@gentoo.org>, Daniel Mack <zonque@gmail.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RC6 fails again.
+2011/12/26 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Mon, Dec 26, 2011 at 03:33:29PM +0900, Tomoya MORINAGA wrote:
+>> 2011/12/22 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>
+>> >> Not sorted but queuing only.
+>> >> In sound/voice control system, queuing is not rare, I think.
+>> >> If necessary, though this method is very common, I can send the method
+>> >> of the queue.
+>
+>> > No, please describe the problem you're trying to fix.
+>
+>> When CPU is heavy load, this buffer is useful.
+>> The heavy load causes delaying receiving processing.
+>> If there is no buffer, stream sound/voice can be broken.
+>> If there is the buffer, it can prevent the broken sound.
+>
+> So you're just talking about standard underflows if the application
+> can't keep up?
+No. not only underflow but overflow.
 
-> I found my system freeze mostly during starting up X and KDE. Sometimes it
-> works for some minutes, sometimes it freezes immediatly. When the freeze
-> happens, everything is dead (even the reset button does not work, I need to
-> power cycle).
+> There's *no* reason for your driver to do anything about
+> this, it's a really basic thing that affects all audio hardware.  Just
+> write a driver for the hardware.
+In case driver layer doesn't have the function,
+which part works for the under/overflow ? Application ? or nothing ?
 
-> I disabled RC6, and my system runs wonderfully.
-
-> The system is a Z68 Pro board with Sandybridge i5-2500K processor, 8
-> GB of RAM and UEFI firmware.
-
-Reported-by: Kai Krakow <hurikhan77@gmail.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
----
- drivers/gpu/drm/i915/intel_display.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 8a61b81..4b7a0f2 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7922,13 +7922,11 @@ static bool intel_enable_rc6(struct drm_device *dev)
- 		return 0;
- 
- 	/*
--	 * Enable rc6 on Sandybridge if DMA remapping is disabled
-+	 * Disable rc6 on Sandybridge
- 	 */
- 	if (INTEL_INFO(dev)->gen == 6) {
--		DRM_DEBUG_DRIVER("Sandybridge: intel_iommu_enabled %s -- RC6 %sabled\n",
--				 intel_iommu_enabled ? "true" : "false",
--				 !intel_iommu_enabled ? "en" : "dis");
--		return !intel_iommu_enabled;
-+		DRM_DEBUG_DRIVER("Sandybridge: RC6 disabled\n");
-+		return 0;
- 	}
- 	DRM_DEBUG_DRIVER("RC6 enabled\n");
- 	return 1;
--- 
-1.7.7.3
-
+tomoya
