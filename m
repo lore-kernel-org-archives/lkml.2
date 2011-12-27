@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1L0OHN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:07:13 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:35600 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047Ab1L0OHM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:07:12 -0500
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH -next] net: calxeda xgmac ethernet driver add missing HAS_IOMEM dependency
-Date: Tue, 27 Dec 2011 15:07:05 +0100
-Message-Id: <1324994825-4197-1-git-send-email-heiko.carstens@de.ibm.com>
-X-Mailer: git-send-email 1.7.7.3
-x-cbid: 11122714-8372-0000-0000-00000136F042
+	id S1754199Ab1L0OIN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:08:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45002 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754046Ab1L0OIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:08:11 -0500
+Date: Tue, 27 Dec 2011 15:08:09 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 3/6] memcg: remove unused variable
+Message-ID: <20111227140809.GM5344@tiehlicka.suse.cz>
+References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
+ <1324695619-5537-3-git-send-email-kirill@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1324695619-5537-3-git-send-email-kirill@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix allyesconfig build on architectures without IOMEM:
+On Sat 24-12-11 05:00:16, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> 
+> mm/memcontrol.c: In function ‘mc_handle_file_pte’:
+> mm/memcontrol.c:5206:16: warning: variable ‘inode’ set but not used [-Wunused-but-set-variable]
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-drivers/net/ethernet/calxeda/xgmac.c:1800:2:
-  error: implicit declaration of function 'iounmap' [-Werror=implicit-function-declaration]
+Looks good.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
----
- drivers/net/ethernet/calxeda/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks!
+> ---
+>  mm/memcontrol.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 4bac3a2..627c19e 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -5203,7 +5203,6 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
+>  			unsigned long addr, pte_t ptent, swp_entry_t *entry)
+>  {
+>  	struct page *page = NULL;
+> -	struct inode *inode;
+>  	struct address_space *mapping;
+>  	pgoff_t pgoff;
+>  
+> @@ -5212,7 +5211,6 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
+>  	if (!move_file())
+>  		return NULL;
+>  
+> -	inode = vma->vm_file->f_path.dentry->d_inode;
+>  	mapping = vma->vm_file->f_mapping;
+>  	if (pte_none(ptent))
+>  		pgoff = linear_page_index(vma, addr);
+> -- 
+> 1.7.7.3
+> 
 
-diff --git a/drivers/net/ethernet/calxeda/Kconfig b/drivers/net/ethernet/calxeda/Kconfig
-index a52e725..aba435c 100644
---- a/drivers/net/ethernet/calxeda/Kconfig
-+++ b/drivers/net/ethernet/calxeda/Kconfig
-@@ -1,6 +1,6 @@
- config NET_CALXEDA_XGMAC
- 	tristate "Calxeda 1G/10G XGMAC Ethernet driver"
--
-+	depends on HAS_IOMEM
- 	select CRC32
- 	help
- 	  This is the driver for the XGMAC Ethernet IP block found on Calxeda
 -- 
-1.7.7.3
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
