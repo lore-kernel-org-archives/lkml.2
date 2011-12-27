@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab1L0Epq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 23:45:46 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39667 "EHLO
+	id S1752527Ab1L0E6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 23:58:20 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60604 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab1L0Epj (ORCPT
+	with ESMTP id S1751245Ab1L0E6O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 23:45:39 -0500
+	Mon, 26 Dec 2011 23:58:14 -0500
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 27 Dec 2011 13:44:05 +0900
+Date: Tue, 27 Dec 2011 13:56:58 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "Nikolay S." <nowhere@hakkenden.ath.cx>
-Cc: Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+To: Minchan Kim <minchan@kernel.org>
+Cc: Dave Chinner <david@fromorbit.com>, nowhere <nowhere@hakkenden.ath.cx>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
 Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
-Message-Id: <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1324954208.4634.2.camel@hakkenden.homenet>
+Message-Id: <20111227135658.08c8016a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20111227035730.GA22840@barrios-laptop.redhat.com>
 References: <1324437036.4677.5.camel@hakkenden.homenet>
 	<20111221095249.GA28474@tiehlicka.suse.cz>
 	<20111221225512.GG23662@dastard>
@@ -24,7 +25,7 @@ References: <1324437036.4677.5.camel@hakkenden.homenet>
 	<1324638242.562.15.camel@rybalov.eng.ttk.net>
 	<20111223204503.GC12731@dastard>
 	<20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
-	<1324954208.4634.2.camel@hakkenden.homenet>
+	<20111227035730.GA22840@barrios-laptop.redhat.com>
 Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
@@ -34,10 +35,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Dec 2011 06:50:08 +0400
-"Nikolay S." <nowhere@hakkenden.ath.cx> wrote:
+On Tue, 27 Dec 2011 12:57:31 +0900
+Minchan Kim <minchan@kernel.org> wrote:
 
-> В Вт., 27/12/2011 в 11:15 +0900, KAMEZAWA Hiroyuki пишет:
+> On Tue, Dec 27, 2011 at 11:15:43AM +0900, KAMEZAWA Hiroyuki wrote:
 > > On Sat, 24 Dec 2011 07:45:03 +1100
 > > Dave Chinner <david@fromorbit.com> wrote:
 > > 
@@ -84,80 +85,67 @@ On Tue, 27 Dec 2011 06:50:08 +0400
 > > >
 > >  
 > > Can you show /proc/zoneinfo ? I want to know each zone's size.
+> > 
+> > Below is my memo.
+> > 
+> > In trace log, priority = 11 or 12. Then, I think kswapd can reclaim memory
+> > to satisfy "sc.nr_reclaimed >= SWAP_CLUSTER_MAX" condition and loops again.
+> > 
+> > Seeing balance_pgdat() and trace log, I guess it does
+> > 
+> > 	wake up
+> > 
+> > 	shrink_zone(zone=0(DMA?))     => nothing to reclaim.
+> > 		shrink_slab()
+> > 	shrink_zone(zone=1(DMA32?))   => reclaim 32,32,31 pages 
+> > 		shrink_slab()
+> > 	shrink_zone(zone=2(NORMAL?))  => reclaim 13 pages. 
+> > 		srhink_slab()
+> > 
+> > 	sleep or retry.
+> > 
+> > Why shrink_slab() need to be called frequently like this ?
+> 
+> I guess it's caused by small NORMAL zone.
+
+You're right. I confirmed his zoneinfo.
+
+> The scenario I think is as follows,
+> 
+> 1. dd comsumes memory in NORMAL zone
+> 2. dd enter direct reclaim and wakeup kswapd
+> 3. kswapd reclaims some memory in NORMAL zone until it reclaims high wamrk
+> 4. schedule
+> 5. dd consumes memory again in NORMAL zone
+> 6. kswapd fail to reclaim memory by high watermark due to 5.
+> 7. loop again, goto 3.
+> 
+> The point is speed between reclaim VS memory consumption.
+> So kswapd cannot reach a point which enough pages are in NORMAL zone.
+> 
+> > 
+> > BTW. I'm sorry if I miss something ...Why only kswapd reclaims memory
+> > while 'dd' operation ? (no direct relcaim by dd.)
+> > Is this log record cpu hog after 'dd' ?
+> 
+> If above scenario is right, dd couldn't enter direct reclaim to reclaim memory.
 > 
 
-Thanks, 
-Qeustion:
- 1. does this system has no swap ?
- 2. What version of kernel which you didn't see the kswapd issue ?
- 3. Is this real host ? or virtualized ?
+I think you're right. IIUC, kswapd's behavior is what we usually see.
 
+Hmm, if I understand correctly,
 
-> $ cat /proc/zoneinfo 
-...
-Node 0, zone    DMA32
-  pages free     19620
-        min      14715
-        low      18393
-        high     22072
-        scanned  0
-        spanned  1044480
-        present  896960
-    nr_free_pages 19620
-    nr_inactive_anon 43203
-    nr_active_anon 206577
-    nr_inactive_file 412249
-    nr_active_file 126151
+ - dd's speed down is caused by kswapd's cpu consumption.
+ - kswapd's cpu consumption is enlarged by shrink_slab() (by perf)
+ - kswapd can't stop because NORMAL zone is small.
+ - memory reclaim speed is enough because dd can't get enough cpu.
 
-Then, DMA32(zone=1) files are enough large (> 32 << 12)
-Hmm. assuming all frees are used for file(of dd)
+I wonder reducing to call shrink_slab() may be a help but I'm not sure
+where lock conention comes from...
 
-
-(412249 + 126151 + 19620) >> 12 = 136
-
-So, 32, 32, 30 scan seems to work as desgined.
-
-> Node 0, zone   Normal
->   pages free     2854
->         min      2116
->         low      2645
->         high     3174
->         scanned  0
->         spanned  131072
->         present  129024
->     nr_free_pages 2854
->     nr_inactive_anon 20682
->     nr_active_anon 10262
->     nr_inactive_file 47083
->     nr_active_file 11292
-
-Hmm, NORMAL is much smaller than DMA32. (only 500MB.)
-
-Then, at priority=12,
-
-  13 << 12 = 53248
-
-13 pages per a scan seems to work as designed.
-To me,  it seems kswapd does usual work...reclaim small memory until free
-gets enough. And it seems 'dd' allocates its memory from ZONE_DMA32 because
-of gfp_t fallbacks.
-
-
-Memo.
-
-1. why shrink_slab() should be called per zone, which is not zone aware.
-   Isn't it enough to call it per priority ?
-
-2. what spinlock contention that perf showed ?
-   And if shrink_slab() doesn't consume cpu as trace shows, why perf 
-   says shrink_slab() is heavy..
-
-3. because 8/9 of memory is in DMA32, calling shrink_slab() frequently
-   at scanning NORMAL seems to be time wasting.
- 
-
-Thanks,
+Regards,
 -Kame
+
 
 
 
