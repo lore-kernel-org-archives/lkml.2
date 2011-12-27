@@ -1,124 +1,456 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1L0Nkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 08:40:53 -0500
-Received: from einhorn.in-berlin.de ([192.109.42.8]:45289 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753894Ab1L0Nku convert rfc822-to-8bit (ORCPT
+	id S1754036Ab1L0Nyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 08:54:31 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51597 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab1L0Ny3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 08:40:50 -0500
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Tue, 27 Dec 2011 14:40:39 +0100
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Axel Theilmann <theilmann@pre-sense.de>
-Cc: linux-scsi@vger.kernel.org, Huajun Li <huajun.li.lee@gmail.com>,
-        jbottomley@parallels.com, linux-kernel@vger.kernel.org
-Subject: Re: Yet another hot unplug NULL pointer dereference (was Re: status
- of oops in sd_revalidate_disk?)
-Message-ID: <20111227144039.1b5c5c20@stein>
-In-Reply-To: <4EF99C3C.8030602@pre-sense.de>
-References: <4EE8E419.8010000@pre-sense.de>
-	<CA+v9cxZFUC45WD0=+8mvH2Tq_xvX3PgaW4ttzPep0jqvqab_6w@mail.gmail.com>
-	<20111225215804.03ef9402@stein>
-	<4EF99C3C.8030602@pre-sense.de>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 27 Dec 2011 08:54:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <1324992782-1004-2-git-send-email-ygardi@codeaurora.org>
+References: <1324992782-1004-1-git-send-email-ygardi@codeaurora.org>
+	<1324992782-1004-2-git-send-email-ygardi@codeaurora.org>
+Date: Tue, 27 Dec 2011 22:54:28 +0900
+X-Google-Sender-Auth: kZDiz1kwHcBbMdBS3bXltiAkz7E
+Message-ID: <CAH9JG2Uan6-EUmJo8gtGFEWUN-JKvtNnbZxYGqsXg49qEVpPtQ@mail.gmail.com>
+Subject: Re: [PATCH V2] mmc: card: IOCTL support for Sanitize feature of eMMC v4.5
+From: Kyungmin Park <kmpark@infradead.org>
+To: Yaniv Gardi <ygardi@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Dec 27 Axel Theilmann wrote:
-> On 12/25/2011 09:58 PM, Stefan Richter wrote:
-[...
->>> Âú® 2011Âπ¥12Êúà15Êó• ‰∏äÂçà1:59ÔºåAxel Theilmann <theilmann@pre-sense.de> Ôºö
->>>> two weeks ago Huajun Li posted a patch for a kernel oops, subject
->>>> [PATCH] SCSI/sd: Fix NULL dereference in sd_revalidate_disk".
->>>> 
->>>> The patch was discussed but considered "clearly wrong". The bug shows
->>>> up for us in kernel 3.1.4 quite often when unplugging usb sticks and
->>>> it seems a few other people have the same problem:
->>>> 
->>>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/859199
->>>> https://bugzilla.redhat.com/show_bug.cgi?id=754518
->>>> https://bugzilla.novell.com/show_bug.cgi?id=722350
->>>> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=649735
->>>> 
->>>> Can anyone of you maybe give me any status update on that bug?
-...]
-> > as far as I remember, all Linux releases in 2011 have been broken WRT hot
-> > removal of block devices; some more severely, some less.  Various patches
-> > for this went in over the year, but if they fixed anything, they always
-> > uncovered the next lingering unplug related bug.  The presumed first Linux
-> 
-> so now there are 2 known NULL-pointer problems in the cd-rom code and one in
-> the scsi-disk code.
+Hi Yaniv,
 
-The two CD-ROM related traces which I posted seem to indicate a bug
-between block layer's and SCSI core lifetime managements, rather than in
-the cd-rom code particularly.  When I get the time, I will try the
-"1. open(), 2. remove device, 3. ioctl()" sequence on an sd_mod device
-instead of an sr_mod one and see where this goes.
+You maybe split the patch into block and mmc parts.
+Please see the comments inlined.
 
-> Would a complete fix for this issue be a question of locating all the
-> possible NULL-pointers and fixing them or do you think that the hotplug
-> problem has to be fixed on a more "fundamental" level?
+Thank you,
+Kyungmin Park
 
-I don't know what my two traces tell us what particularly is broken and
-where to attack the problem.
-
-In case of the sd_revalidate_disk oops from the thread which I highjacked
-(which refers to "[PATCH] SCSI/sd: Fix NULL dereference in
-sd_revalidate_disk", http://thread.gmane.org/gmane.linux.scsi/71174), the
-trouble is that nobody came up with an answer to James' question on how it
-could happen in the first place that sd_revalidate_disk(disk) could be
-called on a disk that leads to a NULL scsi_disk.  In turn, this presumably
-means among else that the answer to my earlier question --- what prevents
-the scsi_disk to go invalid slightly after that newly added NULL pointer
-check --- cannot be answered yet either.
-
-However, I do think that the pitiful state of block device unplugging
-throughout circa a whole year indicates a fundamental problem indeed.  But
-I am only familiar with one of the SCSI transport layer drivers, not with
-the kernel layers above, so what do I know.
-
-> Even if there is a more fundamental problem below that has to be fixed, it
-> would still be nice to get in fixes for the dereferences that are currently
-> known to keep peoples systems from crashing.
-> 
-> We built a kernel with Huajun's patch included and will do some tests to see
-> if the problem goes away (and no others show up).
-
-AFAIU it is not clear whether this patch actually prevents dereference of
-an invalid sdkp or only makes it considerably more unlikely.
-
-In either case, since there is apparently an underlying issue that this
-patch does not address, it is a judgment call whether such a patch is
-allowed into a kernel --- distributor kernel or mainline kernel.  If
-somebody takes it, then at least a FIXME comment should be put there that
-sd_revalidate_disk is supposed to rely on an always valid sdkp.
-
-> > With a little bit of bad luck, udisks-daemon or in older distros hald
-> > should hit the bug too.  Under kernel 3.1 I typically just got processes
-> > hanging in unkillable sleep.  With kernel 3.2-rc7 I get an instant kernel
-> > panic.
-> 
-> Yes, udisks is what probably triggers the bug for us. People removing USB
-> media before udisks is finished initializing the medium. With kernel 3.1.4
-> we get instant kernel panics as well.
-> 
-> tty, axel
-
-Sounds like both "your" and "my" bug occur at the end of the sequence
-
-    1. open(), 2. remove device, 3. ioctl() or whatever
-
-though perhaps with the extra twist in your case that this has to happen
-before the device bring-up was entirely finished...?  In my CD-ROM related
-case the bug is not timing-sensitive at all; it always happens with above
-sequence.
--- 
-Stefan Richter
--=====-==-== ==-- ==-==
-http://arcgraph.de/sr/
+On Tue, Dec 27, 2011 at 10:33 PM, Yaniv Gardi <ygardi@codeaurora.org> wrote:
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+>
+> ---
+> †block/blk-core.c † † † † †| † 15 ++++++++++--
+> †block/blk-lib.c † † † † † | † 44 +++++++++++++++++++++++++++++++++++++++
+> †block/blk-merge.c † † † † | † †6 +++++
+> †block/elevator.c † † † † †| † †8 ++++++-
+> †block/ioctl.c † † † † † † | † †9 ++++++++
+> †drivers/mmc/card/block.c †| † 50 ++++++++++++++++++++++++++++++++++++--------
+> †drivers/mmc/card/queue.c †| † †7 +++++-
+> †include/linux/blk_types.h | † †7 ++++-
+> †include/linux/blkdev.h † †| † †3 ++
+> †include/linux/fs.h † † † †| † †1 +
+> †include/linux/mmc/card.h †| † †7 ++++++
+> †kernel/trace/blktrace.c † | † †2 +
+> †12 files changed, 143 insertions(+), 16 deletions(-)
+>
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index e6c05a9..e3512a4 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -1544,7 +1544,7 @@ generic_make_request_checks(struct bio *bio)
+> † † † † † † † †goto end_io;
+> † † † †}
+>
+> - † † † if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
+> + † † † if (unlikely(!(bio->bi_rw & (REQ_DISCARD | REQ_SANITIZE)) &&
+> † † † † † † † † † † nr_sectors > queue_max_hw_sectors(q))) {
+> † † † † † † † †printk(KERN_ERR "bio too big device %s (%u > %u)\n",
+> † † † † † † † † † † † bdevname(bio->bi_bdev, b),
+> @@ -1592,6 +1592,14 @@ generic_make_request_checks(struct bio *bio)
+> † † † † † † † †goto end_io;
+> † † † †}
+>
+> + † † † if ((bio->bi_rw & REQ_SANITIZE) &&
+> + † † † † † (!blk_queue_sanitize(q))) {
+> + † † † † † † † pr_err("%s - SANITIZE request but queue "
+> + † † † † † † † † † † †"doesn't support sanitize", __func__);
+> + † † † † † † † err = -EOPNOTSUPP;
+> + † † † † † † † goto end_io;
+> + † † † }
+> +
+> † † † †if (blk_throtl_bio(q, bio))
+> † † † † † † † †return false; † /* throttled, will be resubmitted later */
+>
+> @@ -1697,7 +1705,8 @@ void submit_bio(int rw, struct bio *bio)
+> † † † † * If it's a regular read/write or a barrier with data attached,
+> † † † † * go through the normal accounting stuff before submission.
+> † † † † */
+> - † † † if (bio_has_data(bio) && !(rw & REQ_DISCARD)) {
+> + † † † if (bio_has_data(bio) &&
+> + † † † † † (!(rw & (REQ_DISCARD | REQ_SANITIZE)))) {
+> † † † † † † † †if (rw & WRITE) {
+> † † † † † † † † † † † †count_vm_events(PGPGOUT, count);
+> † † † † † † † †} else {
+> @@ -1743,7 +1752,7 @@ EXPORT_SYMBOL(submit_bio);
+> †*/
+> †int blk_rq_check_limits(struct request_queue *q, struct request *rq)
+> †{
+> - † † † if (rq->cmd_flags & REQ_DISCARD)
+> + † † † if ((rq->cmd_flags & REQ_DISCARD) || (rq->cmd_flags & REQ_SANITIZE))
+(rq->cmd_flags & (REQ_DISCARD | REA_SANITIZE))?
+> † † † † † † † †return 0;
+>
+> † † † †if (blk_rq_sectors(rq) > queue_max_sectors(q) ||
+> diff --git a/block/blk-lib.c b/block/blk-lib.c
+> index 2b461b4..76ed930 100644
+> --- a/block/blk-lib.c
+> +++ b/block/blk-lib.c
+> @@ -114,6 +114,50 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+> †}
+> †EXPORT_SYMBOL(blkdev_issue_discard);
+>
+> +int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask)
+> +{
+> + † † † DECLARE_COMPLETION_ONSTACK(wait);
+> + † † † struct request_queue *q = bdev_get_queue(bdev);
+> + † † † int type = REQ_WRITE | REQ_SANITIZE;
+> +
+> + † † † struct bio_batch bb;
+> + † † † struct bio *bio;
+> + † † † int ret = 0;
+> +
+> + † † † if (!q)
+> + † † † † † † † return -ENXIO;
+> +
+> + † † † bio = bio_alloc(gfp_mask, 1);
+> + † † † if (!bio)
+> + † † † † † † † return -ENOMEM;
+> +
+> + † † † if (!blk_queue_sanitize(q)) {
+> + † † † † † † † pr_err("%s - card doesn't support sanitize", __func__);
+You should add the bio_free-like at here?
+> + † † † † † † † return -EOPNOTSUPP;
+> + † † † }
+> +
+> + † † † atomic_set(&bb.done, 1);
+> + † † † bb.flags = 1 << BIO_UPTODATE;
+> + † † † bb.wait = &wait;
+> +
+> + † † † bio->bi_end_io = bio_batch_end_io;
+> + † † † bio->bi_bdev = bdev;
+> + † † † bio->bi_private = &bb;
+> +
+> + † † † atomic_inc(&bb.done);
+> + † † † submit_bio(type, bio);
+> +
+> + † † † /* Wait for bios in-flight */
+> + † † † if (!atomic_dec_and_test(&bb.done))
+> + † † † † † † † wait_for_completion(&wait);
+> +
+> + † † † if (!test_bit(BIO_UPTODATE, &bb.flags))
+> + † † † † † † † ret = -EIO;
+> +
+> + † † † return ret;
+> +}
+> +EXPORT_SYMBOL(blkdev_issue_sanitize);
+> +
+> †/**
+> †* blkdev_issue_zeroout - generate number of zero filed write bios
+> †* @bdev: † † †blockdev to issue
+> diff --git a/block/blk-merge.c b/block/blk-merge.c
+> index cfcc37c..f3ed15b 100644
+> --- a/block/blk-merge.c
+> +++ b/block/blk-merge.c
+> @@ -383,6 +383,12 @@ static int attempt_merge(struct request_queue *q, struct request *req,
+> † † † † † † † †return 0;
+>
+> † † † †/*
+> + † † † †* Don't merge file system requests and sanitize requests
+> + † † † †*/
+> + † † † if ((req->cmd_flags & REQ_SANITIZE) != (next->cmd_flags & REQ_SANITIZE))
+> + † † † † † † † return 0;
+> +
+> + † † † /*
+> † † † † * not contiguous
+> † † † † */
+> † † † †if (blk_rq_pos(req) + blk_rq_sectors(req) != blk_rq_pos(next))
+> diff --git a/block/elevator.c b/block/elevator.c
+> index 99838f4..4255dd9 100644
+> --- a/block/elevator.c
+> +++ b/block/elevator.c
+> @@ -88,6 +88,12 @@ int elv_rq_merge_ok(struct request *rq, struct bio *bio)
+> † † † † † † † †return 0;
+>
+> † † † †/*
+> + † † † †* Don't merge sanitize requests
+> + † † † †*/
+> + † † † if ((bio->bi_rw & REQ_SANITIZE) != (rq->bio->bi_rw & REQ_SANITIZE))
+> + † † † † † † † return 0;
+> +
+> + † † † /*
+> † † † † * different data direction or already started, don't merge
+> † † † † */
+> † † † †if (bio_data_dir(bio) != rq_data_dir(rq))
+> @@ -647,7 +653,7 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
+> † † † †if (rq->cmd_flags & REQ_SOFTBARRIER) {
+> † † † † † † † †/* barriers are scheduling boundary, update end_sector */
+> † † † † † † † †if (rq->cmd_type == REQ_TYPE_FS ||
+> - † † † † † † † † † (rq->cmd_flags & REQ_DISCARD)) {
+> + † † † † † † † † † (rq->cmd_flags & (REQ_DISCARD | REQ_SANITIZE))) {
+> † † † † † † † † † † † †q->end_sector = rq_end_sector(rq);
+> † † † † † † † † † † † †q->boundary_rq = rq;
+> † † † † † † † †}
+> diff --git a/block/ioctl.c b/block/ioctl.c
+> index ca939fc..112215d 100644
+> --- a/block/ioctl.c
+> +++ b/block/ioctl.c
+> @@ -132,6 +132,11 @@ static int blk_ioctl_discard(struct block_device *bdev, uint64_t start,
+> † † † †return blkdev_issue_discard(bdev, start, len, GFP_KERNEL, flags);
+> †}
+>
+> +static int blk_ioctl_sanitize(struct block_device *bdev)
+> +{
+> + † † † return blkdev_issue_sanitize(bdev, GFP_KERNEL);
+> +}
+> +
+> †static int put_ushort(unsigned long arg, unsigned short val)
+> †{
+> † † † †return put_user(val, (unsigned short __user *)arg);
+> @@ -216,6 +221,10 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
+> † † † † † † † †set_device_ro(bdev, n);
+> † † † † † † † †return 0;
+>
+> + † † † case BLKSANITIZE:
+> + † † † † † † † ret = blk_ioctl_sanitize(bdev);
+> + † † † † † † † † † † † break;
+> +
+> † † † †case BLKDISCARD:
+> † † † †case BLKSECDISCARD: {
+> † † † † † † † †uint64_t range[2];
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 0c959c9..06561b9 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -868,18 +868,11 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
+> † † † †unsigned int from, nr, arg;
+> † † † †int err = 0, type = MMC_BLK_SECDISCARD;
+>
+> - † † † if (!(mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))) {
+> + † † † if (!(mmc_can_secure_erase_trim(card))) {
+> † † † † † † † †err = -EOPNOTSUPP;
+> † † † † † † † †goto out;
+> † † † †}
+>
+> - † † † /* The sanitize operation is supported at v4.5 only */
+> - † † † if (mmc_can_sanitize(card)) {
+> - † † † † † † † err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> - † † † † † † † † † † † † † † † EXT_CSD_SANITIZE_START, 1, 0);
+> - † † † † † † † goto out;
+> - † † † }
+> -
+> † † † †from = blk_rq_pos(req);
+> † † † †nr = blk_rq_sectors(req);
+>
+> @@ -922,6 +915,40 @@ out:
+> † † † †return err ? 0 : 1;
+> †}
+>
+> +int mmc_blk_issue_sanitize_rq(struct mmc_queue *mq,
+> + † † † † † † † † † † † † † † †struct request *req)
+> +{
+> + † † † struct mmc_blk_data *md = mq->data;
+> + † † † struct mmc_card *card = md->queue.card;
+> + † † † int err = 0;
+> +
+> + † † † if (!(mmc_can_sanitize(card))) {
+> + † † † † † † † pr_err("%s: SANITIZE is not supported", __func__);
+> + † † † † † † † err = -EOPNOTSUPP;
+> + † † † † † † † goto out;
+> + † † † }
+> +
+> + † † † pr_debug("%s: SANITIZE is supported", __func__);
+> +
+> + † † † mmc_sd_card_set_sanitize_in_progress(card);
+> +
+> + † † † err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+> + † † † † † † † † † † † † † † † † † † † †EXT_CSD_SANITIZE_START, 1, 0);
+> +
+> + † † † if (err)
+> + † † † † † † † pr_err("%s: mmcblk: mmc_switch() failed. err=%d\n",
+> + † † † † † † † † † † †__func__, err);
+> +
+> + † † † mmc_sd_card_set_sanitize_completed(card);
+> +
+> +out:
+> + † † † spin_lock_irq(&md->lock);
+> + † † † __blk_end_request(req, err, blk_rq_bytes(req));
+> + † † † spin_unlock_irq(&md->lock);
+> +
+> + † † † return err ? 0 : 1;
+> +}
+> +
+> †static int mmc_blk_issue_flush(struct mmc_queue *mq, struct request *req)
+> †{
+> † † † †struct mmc_blk_data *md = mq->data;
+> @@ -1379,7 +1406,12 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+> † † † † † † † †goto out;
+> † † † †}
+>
+> - † † † if (req && req->cmd_flags & REQ_DISCARD) {
+> + † † † if (req && req->cmd_flags & REQ_SANITIZE) {
+> + † † † † † † † /* complete ongoing async transfer before issuing discard */
+> + † † † † † † † if (card->host && card->host->areq)
+> + † † † † † † † † † † † mmc_blk_issue_rw_rq(mq, NULL);
+> + † † † † † † † ret = mmc_blk_issue_sanitize_rq(mq, req);
+> + † † † } else if (req && req->cmd_flags & REQ_DISCARD) {
+> † † † † † † † †/* complete ongoing async transfer before issuing discard */
+> † † † † † † † †if (card->host->areq)
+> † † † † † † † † † † † †mmc_blk_issue_rw_rq(mq, NULL);
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index dcad59c..642a80d 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -140,7 +140,7 @@ static void mmc_queue_setup_discard(struct request_queue *q,
+> † † † †/* granularity must not be greater than max. discard */
+> † † † †if (card->pref_erase > max_discard)
+> † † † † † † † †q->limits.discard_granularity = 0;
+> - † † † if (mmc_can_secure_erase_trim(card) || mmc_can_sanitize(card))
+> + † † † if (mmc_can_secure_erase_trim(card))
+> † † † † † † † †queue_flag_set_unlocked(QUEUE_FLAG_SECDISCARD, q);
+Please add the QUEUE_FLAG_SANITIZE at here as other.
+> †}
+>
+> @@ -181,6 +181,11 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
+> † † † †if (mmc_can_erase(card))
+> † † † † † † † †mmc_queue_setup_discard(mq->queue, card);
+>
+> + † † † if (mmc_can_sanitize(card))
+> + † † † † † † † queue_flag_set_unlocked(QUEUE_FLAG_SANITIZE, mq->queue);
+> + † † † else
+> + † † † † † † † pr_info("%s - card doesn't support sanitize", __func__);
+Please move to it as above
+> +
+> †#ifdef CONFIG_MMC_BLOCK_BOUNCE
+> † † † †if (host->max_segs == 1) {
+> † † † † † † † †unsigned int bouncesz;
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 4053cbd..826c724 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -150,6 +150,7 @@ enum rq_flag_bits {
+> † † † †__REQ_FLUSH_SEQ, † † † †/* request for flush sequence */
+> † † † †__REQ_IO_STAT, † † † † †/* account I/O stat */
+> † † † †__REQ_MIXED_MERGE, † † †/* merge of different types, fail separately */
+> + † † † __REQ_SANITIZE, † † † † /* sanitize */
+> † † † †__REQ_NR_BITS, † † † † †/* stops here */
+> †};
+>
+> @@ -161,13 +162,15 @@ enum rq_flag_bits {
+> †#define REQ_META † † † † † † † (1 << __REQ_META)
+> †#define REQ_PRIO † † † † † † † (1 << __REQ_PRIO)
+> †#define REQ_DISCARD † † † † † †(1 << __REQ_DISCARD)
+> +#define REQ_SANITIZE † † † † † (1 << __REQ_SANITIZE)
+> †#define REQ_NOIDLE † † † † † † (1 << __REQ_NOIDLE)
+>
+> †#define REQ_FAILFAST_MASK \
+> † † † †(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
+> †#define REQ_COMMON_MASK \
+> † † † †(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_PRIO | \
+> - † † † †REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
+> + † † † †REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE | \
+> + † † † †REQ_SANITIZE)
+> †#define REQ_CLONE_MASK † † † † REQ_COMMON_MASK
+>
+> †#define REQ_RAHEAD † † † † † † (1 << __REQ_RAHEAD)
+> @@ -192,4 +195,4 @@ enum rq_flag_bits {
+> †#define REQ_MIXED_MERGE † † † † † † † †(1 << __REQ_MIXED_MERGE)
+> †#define REQ_SECURE † † † † † † (1 << __REQ_SECURE)
+>
+> -#endif /* __LINUX_BLK_TYPES_H */
+> +#endif /* __LINUX_REQ__TYPES_H */
+Why do you change this one?
+> diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> index 7084318..1197c31 100644
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -423,6 +423,7 @@ struct request_queue {
+> †#define QUEUE_FLAG_ADD_RANDOM †16 † † †/* Contributes to random pool */
+> †#define QUEUE_FLAG_SECDISCARD †17 † † †/* supports SECDISCARD */
+> †#define QUEUE_FLAG_SAME_FORCE †18 † † †/* force complete on same CPU */
+> +#define QUEUE_FLAG_SANITIZE † †19 † † †/* supports SANITIZE */
+>
+> †#define QUEUE_FLAG_DEFAULT † † ((1 << QUEUE_FLAG_IO_STAT) | † † † † † †\
+> † † † † † † † † † † † † † † † † (1 << QUEUE_FLAG_STACKABLE) † †| † † † \
+> @@ -506,6 +507,7 @@ static inline void queue_flag_clear(unsigned int flag, struct request_queue *q)
+> †#define blk_queue_stackable(q) \
+> † † † †test_bit(QUEUE_FLAG_STACKABLE, &(q)->queue_flags)
+> †#define blk_queue_discard(q) † test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
+> +#define blk_queue_sanitize(q) †test_bit(QUEUE_FLAG_SANITIZE, &(q)->queue_flags)
+> †#define blk_queue_secdiscard(q) † † † †(blk_queue_discard(q) && \
+> † † † †test_bit(QUEUE_FLAG_SECDISCARD, &(q)->queue_flags))
+>
+> @@ -955,6 +957,7 @@ static inline struct request *blk_map_queue_find_tag(struct blk_queue_tag *bqt,
+> †extern int blkdev_issue_flush(struct block_device *, gfp_t, sector_t *);
+> †extern int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+> † † † † † † † †sector_t nr_sects, gfp_t gfp_mask, unsigned long flags);
+> +extern int blkdev_issue_sanitize(struct block_device *bdev, gfp_t gfp_mask);
+> †extern int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+> † † † † † † † † † † † †sector_t nr_sects, gfp_t gfp_mask);
+> †static inline int sb_issue_discard(struct super_block *sb, sector_t block,
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 057434a..3680eef 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -319,6 +319,7 @@ struct inodes_stat_t {
+> †#define BLKPBSZGET _IO(0x12,123)
+> †#define BLKDISCARDZEROES _IO(0x12,124)
+> †#define BLKSECDISCARD _IO(0x12,125)
+> +#define BLKSANITIZE _IO(0x12, 126)
+>
+> †#define BMAP_IOCTL 1 † † † † † /* obsolete - kept for compatibility */
+> †#define FIBMAP † †_IO(0x00,1) †/* bmap access */
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 9478a6b..0890e9c 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -236,6 +236,9 @@ struct mmc_card {
+> †#define MMC_POWEROFF_SHORT † † † † † † 2
+> †#define MMC_POWEROFF_LONG † † † † † † †3
+>
+> +/* card is in sanitize progress */
+> +#define MMC_STATE_SANITIZE_IN_PROGRESS (1<<9)
+> +
+> † † † †unsigned int † † † † † †erase_size; † † /* erase size in sectors */
+> † † † †unsigned int † † † † † †erase_shift; † †/* if erase unit is power 2 */
+> † † † †unsigned int † † † † † †pref_erase; † † /* in sectors */
+> @@ -388,6 +391,10 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
+> †#define mmc_card_set_ddr_mode(c) ((c)->state |= MMC_STATE_HIGHSPEED_DDR)
+> †#define mmc_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
+> †#define mmc_sd_card_set_uhs(c) ((c)->state |= MMC_STATE_ULTRAHIGHSPEED)
+> +#define mmc_sd_card_set_sanitize_in_progress(c) ((c)->state |= \
+> + † † † † † † † MMC_STATE_SANITIZE_IN_PROGRESS)
+> +#define mmc_sd_card_set_sanitize_completed(c) ((c)->state &= \
+> + † † † † † † † ~MMC_STATE_SANITIZE_IN_PROGRESS)
+> †#define mmc_card_set_ext_capacity(c) ((c)->state |= MMC_CARD_SDXC)
+> †#define mmc_card_set_removed(c) ((c)->state |= MMC_CARD_REMOVED)
+>
+> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> index 16fc34a..2c2efc6 100644
+> --- a/kernel/trace/blktrace.c
+> +++ b/kernel/trace/blktrace.c
+> @@ -1802,6 +1802,8 @@ void blk_fill_rwbs(char *rwbs, u32 rw, int bytes)
+> † † † † † † † †rwbs[i++] = 'W';
+> † † † †else if (rw & REQ_DISCARD)
+> † † † † † † † †rwbs[i++] = 'D';
+> + † † † else if (rw & REQ_SANITIZE)
+> + † † † † † † † rwbs[i++] = 'Z';
+> † † † †else if (bytes)
+> † † † † † † † †rwbs[i++] = 'R';
+> † † † †else
+> --
+> 1.7.6
+> --
+> Sent by a consultant of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at †http://vger.kernel.org/majordomo-info.html
