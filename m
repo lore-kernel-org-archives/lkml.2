@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab1L0IEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 03:04:22 -0500
-Received: from mailout-de.gmx.net ([213.165.64.23]:54280 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750976Ab1L0IEP (ORCPT
+	id S1752212Ab1L0IFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 03:05:46 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40318 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab1L0IFj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 03:04:15 -0500
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1//gvNqwJ3/vky5gx/40QG7Kp8WVYjf5PhvdxslqG
-	voG8c/P9BDzimQ
-Subject: Re: Commit 1e5a74059f9 broke utime measurement of ptraced()
- processes
-From: Mike Galbraith <efault@gmx.de>
-To: =?UTF-8?Q?=D0=90=D1=80=D1=82=D0=B5=D0=BC_?=
-	 =?UTF-8?Q?=D0=90=D0=BD=D0=B8=D1=81=D0=B8=D0=BC=D0=BE=D0=B2?= 
-	<aanisimov@inbox.ru>
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu
-In-Reply-To: <201112271130.36907.aanisimov@inbox.ru>
-References: <201112191519.40901.aanisimov@inbox.ru>
-	 <201112241026.35726.aanisimov@inbox.ru>
-	 <1324712566.5025.12.camel@marge.simson.net>
-	 <201112271130.36907.aanisimov@inbox.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 27 Dec 2011 09:04:11 +0100
-Message-ID: <1324973051.5217.112.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	Tue, 27 Dec 2011 03:05:39 -0500
+MIME-Version: 1.0
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <201112262127.30271.rjw@sisk.pl>
+References: <1324460205-24683-1-git-send-email-dg77.kim@samsung.com>
+	<1324460205-24683-2-git-send-email-dg77.kim@samsung.com>
+	<201112262127.30271.rjw@sisk.pl>
+Date: Tue, 27 Dec 2011 17:05:38 +0900
+X-Google-Sender-Auth: cr42U0KIqJeCHRwCyxQ1E0hhgEo
+Message-ID: <CAJ0PZbRA+W12HAzp27Uzq=Cx5-1r08wmR-tamymKiP=V5X6pqw@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] power: Charger-Manager: add initial
+ Charger-Manager driver
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Donggeun Kim <dg77.kim@samsung.com>, linux-pm@vger.kernel.org,
+        len.brown@intel.com, pavel@ucw.cz, rdunlap@xenotime.net,
+        cbouatmailru@gmail.com, pali.rohar@gmail.com, prakity@marvell.com,
+        broonie@opensource.wolfsonmicro.com, lars@metafoo.de,
+        kyungmin.park@samsung.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-27 at 11:30 +0300, ÐÑ€Ñ‚ÐµÐ¼ ÐÐ½Ð¸ÑÐ¸Ð¼Ð¾Ð² wrote:
-> On Saturday 24 December 2011 10:42:46, Mike Galbraith wrote :
-> 
-> > 
-> > >   Also I'd like to know if there is a way to get reliable utime
-> > >   measurements in recent kernels.
-> > 
-> > If wakeup preemption is undesirable, you could run SCHED_BATCH.
-> 
-> > CPU utilization shifts with wakeup preemption, so there will be visible
-> > effect when you change wakeup preemption in any way.
-> 
->   Thanks, SCHED_BATCH does solve my problem. I'd like to modify the man page 
-> times (2) so that it includes a warning on utime of processes that wake each 
-> other. Do you find the following note correct?
+2011/12/27 Rafael J. Wysocki <rjw@sisk.pl>:
+> That should be called rtc_name and I'm not sure if using the name here is
+> very convenient.  Perhaps it's better if the caller is responsible for
+> opening the RTC device.
 
-Yeah, guess so.  I'd leave out the "hand a few wakeup expense...",
-that's just a small side effect of not wasting cycles doing very nearly
-back to back clock updates for no good reason.  The important thing to
-note is that utilization is affected by sleep/wakeup patterns.
+Hi Rafael,
 
-> ----- to be added to times (2) -----
->   On Linux, the user time of a process depends on pattern of wakeups of the 
-> process. The scheduler is permitted to cut waker's CPU usage and hand a few 
-> wakeup expense cycles to the wakee that preempted. As a consequence, if two 
-> processes A and B wake each other frequently (e.g., they communicate via 
-> pipes, or by sending signals) then only the collective user time of A and B is 
-> well defined; individual user times of A and B can be arbitrarily 
-> redistributed between them. If this behaviour is undesirable then both 
-> processes need to use the SCHED_BATCH scheduler class, see 
-> sched_setscheduler(2).
-> ----- to be added to times (2) -----
+Because struct rtc_device is created at rtc_device_register() call of
+rtc device driver, the caller (rtc drivers are not supposed to create
+charger manager) needs to call rtc_class_open(rtc_name) in order to
+feed struct rtc_device to charger manager. Thus, I think that
+enforcing the caller to provide struct rtc_device has no significant
+benefit. Besides, it would prohibit statically defining struct
+charger_global_desc: cannot define struct charger_global_desc example
+= { .rtc_device = rtc_class_open("blahblah") };
+
+>> +#define      CM_JIFFIES_SMALL        (2)
+>
+> Why do you want to use jiffies instead of ktime?
+>
+
+It is based on work schedule, which is based on jiffies. If we define
+the "small time" with ktime, it should be translated to jiffies
+anyway.
+
+>> +static int charger_manager_probe(struct platform_device *pdev)
+>> +{
+>> +     struct charger_desc *desc = dev_get_platdata(&pdev->dev);
+[]
+>> +     if (!desc) {
+>> +             dev_err(&pdev->dev, "No platform data (desc) found.\n");
+>> +             ret = -ENODEV;
+>> +             goto err_alloc;
+>> +     }
+>
+> Is there any way to detect whether dev_get_platdata(&pdev->dev) really points
+> to an instance of struct charger_desc ?
+
+We are verifying the member values (whether they are in the proper
+ranges) later in this probe function.
+Other than that, I don't know a method to detect whether this pointer
+is really pointing to struct charger_desc except for simply checking
+whether it is NULL or not or enforcing users to add some magic values
+in the struct to check (like mutex debug mode).
+
+>> +     /* Basic Values. Unspecified are Null or 0 */
+>> +     cm->dev = &pdev->dev;
+>> +     cm->desc = desc;
+
+We will let cm->desc to alloc some space and copy contents of desc
+into cm->desc because desc may be __initdata.
 
 
+
+Donggeun will update and submit patchset v3 mostly based on your
+valueable comments.
+
+Thank you so much, Rafael.
+
+
+Cheers! And happy new year!
+MyungJoo
+
+-- 
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab, DMC Business, Samsung Electronics
