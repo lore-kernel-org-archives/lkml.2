@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab1L0OCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:02:50 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:44216 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab1L0OBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:01:40 -0500
-From: Julia Lawall <julia@diku.dk>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: kernel-janitors@vger.kernel.org, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] drivers/watchdog/dw_wdt.c: use devm_request_and_ioremap
-Date: Tue, 27 Dec 2011 15:01:29 +0100
-Message-Id: <1324994491-21828-5-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1324994491-21828-1-git-send-email-julia@diku.dk>
-References: <1324994491-21828-1-git-send-email-julia@diku.dk>
+	id S1754213Ab1L0OEg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:04:36 -0500
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:36721 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab1L0OEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:04:33 -0500
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH -next] rcu: add missing __cpuinit annotation in rcutorture code
+Date: Tue, 27 Dec 2011 15:04:26 +0100
+Message-Id: <1324994666-4080-1-git-send-email-heiko.carstens@de.ibm.com>
+X-Mailer: git-send-email 1.7.7.3
+x-cbid: 11122714-6892-0000-0000-00000090C8C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+"rcu: Add rcutorture CPU-hotplug capability" adds cpu hotplug operations
+to the rcutorture code but produces a false positive warning about section
+mismatches:
 
-Reimplement a call to devm_request_mem_region followed by a call to ioremap
-or ioremap_nocache by a call to devm_request_and_ioremap.
+WARNING: vmlinux.o(.text+0x1e420c): Section mismatch in reference from the
+	 function rcu_torture_onoff() to the function .cpuinit.text:cpu_up()
+	 The function rcu_torture_onoff() references
+	 the function __cpuinit cpu_up().
+	 This is often because rcu_torture_onoff lacks a __cpuinit
+	 annotation or the annotation of cpu_up is wrong.
 
-The semantic patch that makes this transformation is as follows:
-(http://coccinelle.lip6.fr/)
+Just add a __cpuinit annotation so the warning goes away.
 
-// <smpl>
-@nm@
-expression myname;
-identifier i;
-@@
-
-struct platform_driver i = { .driver = { .name = myname } };
-
-@@
-expression dev,res,size;
-expression nm.myname;
-@@
-
--if (!devm_request_mem_region(dev, res->start, size,
--                              \(res->name\|dev_name(dev)\|myname\))) {
--   ...
--   return ...;
--}
-... when != res->start
-(
--devm_ioremap(dev,res->start,size)
-+devm_request_and_ioremap(dev,res)
-|
--devm_ioremap_nocache(dev,res->start,size)
-+devm_request_and_ioremap(dev,res)
-)
-... when any
-    when != res->start
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- drivers/watchdog/dw_wdt.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ kernel/rcutorture.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-index 1b0e3dd..63d7b58 100644
---- a/drivers/watchdog/dw_wdt.c
-+++ b/drivers/watchdog/dw_wdt.c
-@@ -300,11 +300,7 @@ static int __devinit dw_wdt_drv_probe(struct platform_device *pdev)
- 	if (!mem)
- 		return -EINVAL;
+diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
+index e29edc3..a58ac28 100644
+--- a/kernel/rcutorture.c
++++ b/kernel/rcutorture.c
+@@ -1399,7 +1399,7 @@ rcu_torture_shutdown(void *arg)
+  * Execute random CPU-hotplug operations at the interval specified
+  * by the onoff_interval.
+  */
+-static int
++static int __cpuinit
+ rcu_torture_onoff(void *arg)
+ {
+ 	int cpu;
+@@ -1447,7 +1447,7 @@ rcu_torture_onoff(void *arg)
+ 	return 0;
+ }
  
--	if (!devm_request_mem_region(&pdev->dev, mem->start, resource_size(mem),
--				     "dw_wdt"))
--		return -ENOMEM;
--
--	dw_wdt.regs = devm_ioremap(&pdev->dev, mem->start, resource_size(mem));
-+	dw_wdt.regs = devm_request_and_ioremap(&pdev->dev, mem);
- 	if (!dw_wdt.regs)
- 		return -ENOMEM;
- 
+-static int
++static int __cpuinit
+ rcu_torture_onoff_init(void)
+ {
+ 	if (onoff_interval <= 0)
+-- 
+1.7.7.3
 
