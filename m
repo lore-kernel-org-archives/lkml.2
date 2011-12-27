@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab1L0OJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:09:12 -0500
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:53253 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937Ab1L0OJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:09:10 -0500
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Alessandro Rubini <rubini@gnudd.com>
-Subject: [PATCH -next] debugfs: add missing #ifdef HAS_IOMEM
-Date: Tue, 27 Dec 2011 15:08:28 +0100
-Message-Id: <1324994908-4288-1-git-send-email-heiko.carstens@de.ibm.com>
-X-Mailer: git-send-email 1.7.7.3
-x-cbid: 11122714-4966-0000-0000-000000FF8CB2
+	id S1754238Ab1L0OLc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 09:11:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45293 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751626Ab1L0OLa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 09:11:30 -0500
+Date: Tue, 27 Dec 2011 15:11:28 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH 4/6] memcg: mark stat field of mem_cgroup struct as
+ __percpu
+Message-ID: <20111227141128.GN5344@tiehlicka.suse.cz>
+References: <1324695619-5537-1-git-send-email-kirill@shutemov.name>
+ <1324695619-5537-4-git-send-email-kirill@shutemov.name>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324695619-5537-4-git-send-email-kirill@shutemov.name>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"debugfs: add tools to printk 32-bit registers" adds new functions which rely
-on IOMEM functionality which is not present on all architectures and therefore
-result in compile errors:
+On Sat 24-12-11 05:00:17, Kirill A. Shutemov wrote:
+> From: "Kirill A. Shutemov" <kirill@shutemov.name>
+> 
+> It fixes a lot of sparse warnings.
+> 
+> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 
-fs/debugfs/file.c: In function 'debugfs_print_regs32':
-fs/debugfs/file.c:561:7: error: implicit declaration of function 'readl' [-Werror=implicit-function-declaration]
+Looks good.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Add an #ifdef CONFIG_HAS_IOMEM to fix this
+Thanks
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Alessandro Rubini <rubini@gnudd.com>
----
- fs/debugfs/file.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 627c19e..b27ce0f 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -291,7 +291,7 @@ struct mem_cgroup {
+>  	/*
+>  	 * percpu counter.
+>  	 */
+> -	struct mem_cgroup_stat_cpu *stat;
+> +	struct mem_cgroup_stat_cpu __percpu *stat;
+>  	/*
+>  	 * used when a cpu is offlined or other synchronizations
+>  	 * See mem_cgroup_read_stat().
+> -- 
+> 1.7.7.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index 989f07f..ea62afa 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -528,6 +528,8 @@ struct dentry *debugfs_create_blob(const char *name, mode_t mode,
- }
- EXPORT_SYMBOL_GPL(debugfs_create_blob);
- 
-+#ifdef CONFIG_HAS_IOMEM
-+
- /*
-  * The regset32 stuff is used to print 32-bit registers using the
-  * seq_file utilities. We offer printing a register set in an already-opened
-@@ -616,3 +618,5 @@ struct dentry *debugfs_create_regset32(const char *name, mode_t mode,
- 	return debugfs_create_file(name, mode, parent, regset, &fops_regset32);
- }
- EXPORT_SYMBOL_GPL(debugfs_create_regset32);
-+
-+#endif /* CONFIG_HAS_IOMEM */
 -- 
-1.7.7.3
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
