@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab1L0SrL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 13:47:11 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36473 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab1L0SrH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 13:47:07 -0500
+	id S1752123Ab1L0Srm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 13:47:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:28410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972Ab1L0Srk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 13:47:40 -0500
+Date: Tue, 27 Dec 2011 13:47:34 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        hskinnemoen@google.com
+Subject: Re: Linux 3.2-rc7
+Message-ID: <20111227184734.GA5802@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	hskinnemoen@google.com
+References: <CA+55aFxw1abaxwQbX=sQVF-J6drk8m5cKCd+rMqrpoS5vohmnA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1112261824000.12108@axis700.grange>
-References: <alpine.DEB.2.00.1112261608140.12108@axis700.grange>
-	<alpine.DEB.2.00.1112261824000.12108@axis700.grange>
-Date: Tue, 27 Dec 2011 19:47:06 +0100
-Message-ID: <CACna6ry1tKXtUSQHknkEbzBq_gZUyxn1-9Guba2a56xzx242SA@mail.gmail.com>
-Subject: Re: [PATCH] b43: fix regression in PIO case
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxw1abaxwQbX=sQVF-J6drk8m5cKCd+rMqrpoS5vohmnA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 26 grudnia 2011 18:28 użytkownik Guennadi Liakhovetski
-<g.liakhovetski@gmx.de> napisał:
-> This patch fixes the regression, introduced by
->
-> commit 17030f48e31adde5b043741c91ba143f5f7db0fd
-> From: Rafał Miłecki <zajec5@gmail.com>
-> Date: Thu, 11 Aug 2011 17:16:27 +0200
-> Subject: [PATCH] b43: support new RX header, noticed to be used in 598.314+ fw
->
-> in PIO case.
->
-> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> ---
-> diff --git a/drivers/net/wireless/b43/pio.c b/drivers/net/wireless/b43/pio.c
-> index ce8a4bd..b64b64c 100644
-> --- a/drivers/net/wireless/b43/pio.c
-> +++ b/drivers/net/wireless/b43/pio.c
-> @@ -617,9 +617,19 @@ static bool pio_rx_frame(struct b43_pio_rxqueue *q)
->        const char *err_msg = NULL;
->        struct b43_rxhdr_fw4 *rxhdr =
->                (struct b43_rxhdr_fw4 *)wl->pio_scratchspace;
-> +       size_t rxhdr_size = sizeof(*rxhdr);
->
->        BUILD_BUG_ON(sizeof(wl->pio_scratchspace) < sizeof(*rxhdr));
-> -       memset(rxhdr, 0, sizeof(*rxhdr));
-> +       switch (dev->fw.hdr_format) {
-> +       case B43_FW_HDR_410:
-> +       case B43_FW_HDR_351:
-> +               rxhdr_size -= sizeof(rxhdr->format_598) -
-> +                       sizeof(rxhdr->format_351);
-> +               break;
-> +       case B43_FW_HDR_598:
-> +               break;
-> +       }
-> +       memset(rxhdr, 0, rxhdr_size);
+On Fri, Dec 23, 2011 at 10:16:06PM -0800, Linus Torvalds wrote:
+ > There it is, likely the last -rc in before final 3.2, so please do
+ > check it out in between your holiday festivities.
+ > 
+ > Most of the changes are faily simple one-liners, but some qla4xxx
+ > driver updates stand out and in fact account for about 40% of the diff
+ > ("qla4xxx: fix flash/ddb support"). That, together with a VMWare DRI
+ > driver update and some dvb updates and the regular random driver fixes
+ > means that 80+% of the changes are in drivers.
+ > 
+ > Some net updates, some SH updates, and then a (tiny) smattering of
+ > other stuff. The appended shortlog gives the (fairly boring) details,
 
-Huuh, that's really tricky. Can you just do "normal" conditions as
-Larry suggested, please?
+https://lkml.org/lkml/2011/11/22/753 has been around since rc2, and is
+still appearing every boot for me.  I'm not sure if Havard had patches
+fixing this or not, I lost track.
 
--- 
-Rafał
+	Dave
+
