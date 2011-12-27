@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569Ab1L0OqP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 09:46:15 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:13047 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754347Ab1L0OqN (ORCPT
+	id S1754581Ab1L0PSW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 10:18:22 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49455 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498Ab1L0PST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 09:46:13 -0500
-X-IronPort-AV: E=Sophos;i="4.71,415,1320620400"; 
-   d="scan'208";a="136990967"
-Date: Tue, 27 Dec 2011 15:46:10 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Artem Bityutskiy <dedekind1@gmail.com>
-cc: David Woodhouse <dwmw2@infradead.org>, kernel-janitors@vger.kernel.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] drivers/mtd/nand/txx9ndfmc.c: use
- devm_request_and_ioremap
-In-Reply-To: <1324997145.1165.88.camel@sauron.fi.intel.com>
-Message-ID: <alpine.DEB.2.02.1112271545480.1838@localhost6.localdomain6>
-References: <1324994491-21828-1-git-send-email-julia@diku.dk>  <1324994491-21828-7-git-send-email-julia@diku.dk> <1324997145.1165.88.camel@sauron.fi.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 27 Dec 2011 10:18:19 -0500
+Date: Tue, 27 Dec 2011 16:17:43 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rudolf Marek <r.marek@assembler.cz>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Olof Johansson <olof@lixom.net>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH] i2c: Convert to DEFINE_PCI_DEVICE_TABLE
+Message-ID: <20111227151743.GA3605@pengutronix.de>
+References: <1324956897.9775.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
+Content-Disposition: inline
+In-Reply-To: <1324956897.9775.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Dec 2011, Artem Bityutskiy wrote:
 
-> On Tue, 2011-12-27 at 15:01 +0100, Julia Lawall wrote:
->> From: Julia Lawall <julia@diku.dk>
->>
->> Reimplement a call to devm_request_mem_region followed by a call to ioremap
->> or ioremap_nocache by a call to devm_request_and_ioremap.
->>
->> The semantic patch that makes this transformation is as follows:
->> (http://coccinelle.lip6.fr/)
->>
->> // <smpl>
->> @nm@
->> expression myname;
->> identifier i;
->> @@
->>
->> struct platform_driver i = { .driver = { .name = myname } };
->>
->> @@
->> expression dev,res,size;
->> expression nm.myname;
->> @@
->>
->> -if (!devm_request_mem_region(dev, res->start, size,
->> -                              \(res->name\|dev_name(dev)\|myname\))) {
->> -   ...
->> -   return ...;
->> -}
->> ... when != res->start
->> (
->> -devm_ioremap(dev,res->start,size)
->> +devm_request_and_ioremap(dev,res)
->> |
->> -devm_ioremap_nocache(dev,res->start,size)
->> +devm_request_and_ioremap(dev,res)
->> )
->> ... when any
->>     when != res->start
->> // </smpl>
->>
->> Signed-off-by: Julia Lawall <julia@diku.dk>
->
-> Pushed to l2-mtd-2.6.git, thanks!
->
-> I think this semantic patch is also useful and deserves to be added to
-> scripts/coccinelle. In general, it would be great if you sumbitted
-> useful spatches there for inclusion.
+--XsQoSWH+UP9D9v3l
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, I will add this one as well.
+On Tue, Dec 27, 2011 at 11:34:57AM +0800, Axel Lin wrote:
+> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
+> tables.
 
-julia
+Please not only describe what the patch does but also why it is needed or a
+good idea. People looking up stuff later on might not know.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--XsQoSWH+UP9D9v3l
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk754ZcACgkQD27XaX1/VRuHngCdEoilO9/t9kcSWxQdEOeKv4zM
+Fd0AoL8mhIhxJTjEw9uacYs4qG0l4UQH
+=bKvr
+-----END PGP SIGNATURE-----
+
+--XsQoSWH+UP9D9v3l--
