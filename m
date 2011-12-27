@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490Ab1L0LhA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 06:37:00 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61829 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751654Ab1L0Lg6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 06:36:58 -0500
+	id S1753625Ab1L0M13 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 07:27:29 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47062 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752822Ab1L0M11 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 07:27:27 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAK-9PRBFuVQG8cvmry5wtw7d2AM0v+D1eV+YTckox1mS7K6NGw@mail.gmail.com>
-References: <1324847148-20834-1-git-send-email-cvs268@gmail.com> <CAK-9PRBFuVQG8cvmry5wtw7d2AM0v+D1eV+YTckox1mS7K6NGw@mail.gmail.com>
-From: Chinmay V S <cvs268@gmail.com>
-Date: Tue, 27 Dec 2011 17:06:37 +0530
-Message-ID: <CAK-9PRAPTW61MWxjcwdfSWNoXhDRTgzN4WS7EM5Sr00bU8TbyQ@mail.gmail.com>
-Subject: Re: [PATCH] Optimise apply_slack() for faster execution
-To: linux-kernel <linux-kernel@vger.kernel.org>
+From: Barry Song <21cnbao@gmail.com>
+Date: Tue, 27 Dec 2011 20:27:05 +0800
+Message-ID: <CAGsJ_4yXU62GZ38fe7TCH8uKLHJvZ8jtFbJLywqv1kgC7y9V_A@mail.gmail.com>
+Subject: re: [PATCH] PM / Hibernate: Improve performance of LZO/plain
+ hibernation, checksum image
+To: bojan@rexursive.com, rjw@sisk.pl
+Cc: linux-pm@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+        DL-SHA-WorkGroupLinux <workgroup.linux@csr.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch reduces code complexity by:
-- Eliminating the need for intermediate expires_limit and mask variables.
-- Simplifying the timer-coalescing logic of discarding lesser significant bits.
+> Use threads for LZO compression/decompression on hibernate/thaw.
+> Improve buffering on hibernate/thaw.
+> Calculate/verify CRC32 of the image pages on hibernate/thaw.
 
-This leads to smaller mod_timer() and add_timer() subroutines in which
-apply_slack() is inlined. For example, on a typical x86-build, the
-patch reduces the size of mod_timer() by 16 instructions.The total
-mod_timer() function is 173 instructions i.e. the patch makes the
-function 9% smaller. A typical ARM-build also shows similar savings.
+> In my testing, this improved write/read speed by a factor of about two.
 
-original masking-logic:
-shl    %cl,%edx
-sub    $0x1,%edx
-mov    %edx,-0x10(%ebp)
-not    %edx
-and    %esi,%edx
-mov    %edx,-0x14(%ebp)
+> Signed-off-by: Bojan Smojver <bojan@rexursive.com>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-patched bitwise logic:
-shrl   %cl,-0x14(%ebp)
-shll   %cl,-0x14(%ebp)
+hi Bojan,
+this patch is definitely great!
+any plan to write the same patch for decompress and restore? i think
+that is probably more important than compression and hibernation to
+improve bootup speed.
 
-Enabling function-traces shows us that the mod_timer() and add_timer()
-functions are called ~1300 times every minute. Hence optimising these
-functions gives us some significant improvement.
-
-regards
-ChinmayVS
+Thanks
+barry
