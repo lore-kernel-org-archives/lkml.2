@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab1L0K3O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 05:29:14 -0500
-Received: from mail.pre-sense.de ([213.238.39.107]:40018 "EHLO
-	mail.pre-sense.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752631Ab1L0K3K (ORCPT
+	id S1753588Ab1L0Kcc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 05:32:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53959 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753216Ab1L0Kcb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 05:29:10 -0500
-X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Tue, 27 Dec 2011 05:29:10 EST
-Message-ID: <4EF99C3C.8030602@pre-sense.de>
-Date: Tue, 27 Dec 2011 11:21:48 +0100
-From: Axel Theilmann <theilmann@pre-sense.de>
-Organization: PRESENSE Technologies GmbH
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Tue, 27 Dec 2011 05:32:31 -0500
+Date: Tue, 27 Dec 2011 10:32:28 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>,
+        linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH] video: s3c-fb: Make runtime PM functional again
+Message-ID: <20111227103227.GA2870@opensource.wolfsonmicro.com>
+References: <1324911505-31715-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <000801ccc451$b3a853d0$1af8fb70$%han@samsung.com>
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux-scsi@vger.kernel.org, Huajun Li <huajun.li.lee@gmail.com>,
-        jbottomley@parallels.com, linux-kernel@vger.kernel.org
-Subject: Re: Yet another hot unplug NULL pointer dereference (was Re: status
- of oops in sd_revalidate_disk?)
-References: <4EE8E419.8010000@pre-sense.de> <CA+v9cxZFUC45WD0=+8mvH2Tq_xvX3PgaW4ttzPep0jqvqab_6w@mail.gmail.com> <20111225215804.03ef9402@stein>
-In-Reply-To: <20111225215804.03ef9402@stein>
-X-Enigmail-Version: 1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000801ccc451$b3a853d0$1af8fb70$%han@samsung.com>
+X-Cookie: Your domestic life may be harmonious.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25/2011 09:58 PM, Stefan Richter wrote:
+On Tue, Dec 27, 2011 at 01:40:47PM +0900, Jingoo Han wrote:
 
-moin,
+> > While this does make things simpler (the main motivation for the
+> > original change) it will not only cause us to use more power in the
+> > framebuffer controller but will also prevent us entering lower power
+> > domain and SoC wide states as we can never power down the domain
+> > containing the device.  Since neither of these things is desirable
+> > revert the change.
 
-> as far as I remember, all Linux releases in 2011 have been broken WRT hot
-> removal of block devices; some more severely, some less.  Various patches
-> for this went in over the year, but if they fixed anything, they always
-> uncovered the next lingering unplug related bug.  The presumed first Linux
+> The main difference is as follows:
+> If no fb windows are opened.
+> 	- Your patch: LCD block power is off
+> 	- My patch: LCD block power is on still.
 
-so now there are 2 known NULL-pointer problems in the cd-rom code and one in
-the scsi-disk code.
+By holding the LCD block power on your patch will also prevent the SoC
+using lower power modes like STOP and DEEP-STOP on the S3C6410.
 
-Would a complete fix for this issue be a question of locating all the
-possible NULL-pointers and fixing them or do you think that the hotplug
-problem has to be fixed on a more "fundamental" level?
+> However, after booting, probing, open is called from platform system, soon.
+> And, the default window is always opened. This means that at least one window
 
-Even if there is a more fundamental problem below that has to be fixed, it
-would still be nice to get in fixes for the dereferences that are currently
-known to keep peoples systems from crashing.
+This only happens if you enable CONFIG_FRAMEBUFFER_CONSOLE as that
+causes the console code to become a framebuffer client.
 
-We built a kernel with Huajun's patch included and will do some tests to see
-if the problem goes away (and no others show up).
+> is opened after booting. So, I don't think that "video: s3c-fb: modify runtime
+> pm functions" (commit: 35784b) cause us to use more power in the framebuffer
+> controller.
 
+If the console isn't using the framebuffer then whenever userspace
+releases we'll be able to runtime suspend the framebuffer.  This isn't
+ideal as what userspace expects is that it can hold the device open and
+use blanking to save power - I'm working on patches to do this - but
+it's a start.
 
-> With a little bit of bad luck, udisks-daemon or in older distros hald
-> should hit the bug too.  Under kernel 3.1 I typically just got processes
-> hanging in unkillable sleep.  With kernel 3.2-rc7 I get an instant kernel
-> panic.
+> My intention is that runtime pm is used only for LCD block power off when
+> suspend and resume are called.
 
-Yes, udisks is what probably triggers the bug for us. People removing USB
-media before udisks is finished initializing the medium. With kernel 3.1.4
-we get instant kernel panics as well.
-
-
-tty, axel
-
-
-
--- 
-Dipl.-Inform. Axel Theilmann             theilmann@pre-sense.de
-                               Tel.  (+49) 040  / 244 2407 - 13
-                               Fax   (+49) 040  / 244 2407 - 24
-                               Mobil (+49) 0151 / 116 18 664
-PRESENSE Technologies GmbH         Sachsenstr. 5, 20097 Hamburg
-                                         USt-IdNr.: DE263765024
-Geschäftsführer/Managing Directors       AG Hamburg, HRB 107844
-Till Dörges           Jürgen Sander              Axel Theilmann
+This isn't runtime PM at all, it's system PM which for some reason calls
+runtime PM functions.  At best the runtime PM calls won't do anything as
+they're inhibited during system PM.
