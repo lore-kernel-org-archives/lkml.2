@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab1L0Srm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 13:47:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750972Ab1L0Srk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 13:47:40 -0500
-Date: Tue, 27 Dec 2011 13:47:34 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        hskinnemoen@google.com
-Subject: Re: Linux 3.2-rc7
-Message-ID: <20111227184734.GA5802@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	hskinnemoen@google.com
-References: <CA+55aFxw1abaxwQbX=sQVF-J6drk8m5cKCd+rMqrpoS5vohmnA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxw1abaxwQbX=sQVF-J6drk8m5cKCd+rMqrpoS5vohmnA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751977Ab1L0Suw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 13:50:52 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48657 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385Ab1L0Sun (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 13:50:43 -0500
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, ngupta@vflare.org, konrad.wilk@oracle.com,
+        kurt.hackel@oracle.com, sjenning@linux.vnet.ibm.com,
+        chris.mason@oracle.com, dan.magenheimer@oracle.com
+Subject: [PATCH 6/6] staging: ramster: enable as staging driver
+Date: Tue, 27 Dec 2011 10:50:35 -0800
+Message-Id: <1325011835-2190-1-git-send-email-dan.magenheimer@oracle.com>
+X-Mailer: git-send-email 1.7.5.1
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090204.4EFA137D.012A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 23, 2011 at 10:16:06PM -0800, Linus Torvalds wrote:
- > There it is, likely the last -rc in before final 3.2, so please do
- > check it out in between your holiday festivities.
- > 
- > Most of the changes are faily simple one-liners, but some qla4xxx
- > driver updates stand out and in fact account for about 40% of the diff
- > ("qla4xxx: fix flash/ddb support"). That, together with a VMWare DRI
- > driver update and some dvb updates and the regular random driver fixes
- > means that 80+% of the changes are in drivers.
- > 
- > Some net updates, some SH updates, and then a (tiny) smattering of
- > other stuff. The appended shortlog gives the (fairly boring) details,
+Enable build of ramster as a staging driver
 
-https://lkml.org/lkml/2011/11/22/753 has been around since rc2, and is
-still appearing every boot for me.  I'm not sure if Havard had patches
-fixing this or not, I lost track.
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+---
+ drivers/staging/Kconfig  |    2 ++
+ drivers/staging/Makefile |    1 +
+ 2 files changed, 3 insertions(+), 0 deletions(-)
 
-	Dave
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 06c9081..28819c3 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -150,4 +150,6 @@ source "drivers/staging/mei/Kconfig"
+ 
+ source "drivers/staging/nvec/Kconfig"
+ 
++source "drivers/staging/ramster/Kconfig"
++
+ endif # STAGING
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index f3c5e33..f1e6ec0 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -66,3 +66,4 @@ obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4)	+= ste_rmi4/
+ obj-$(CONFIG_DRM_PSB)		+= gma500/
+ obj-$(CONFIG_INTEL_MEI)		+= mei/
+ obj-$(CONFIG_MFD_NVEC)		+= nvec/
++obj-$(CONFIG_RAMSTER)		+= ramster/
+-- 
+1.7.1
 
