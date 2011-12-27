@@ -1,134 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab1L0HzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 02:55:19 -0500
-Received: from mga03.intel.com ([143.182.124.21]:3270 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750858Ab1L0HzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 02:55:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="89804966"
-Message-ID: <4EF979DD.7030108@intel.com>
-Date: Tue, 27 Dec 2011 09:55:09 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Vinod Koul <vinod.koul@intel.com>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] intel_mid_dma: remove legacy pm interface
-References: <20111215223225.10295.40514.stgit@bob.linux.org.uk> <1324657154.1633.21.camel@vkoul-udesk3>
-In-Reply-To: <1324657154.1633.21.camel@vkoul-udesk3>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752673Ab1L0IEW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 03:04:22 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:54280 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750976Ab1L0IEP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 03:04:15 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1//gvNqwJ3/vky5gx/40QG7Kp8WVYjf5PhvdxslqG
+	voG8c/P9BDzimQ
+Subject: Re: Commit 1e5a74059f9 broke utime measurement of ptraced()
+ processes
+From: Mike Galbraith <efault@gmx.de>
+To: =?UTF-8?Q?=D0=90=D1=80=D1=82=D0=B5=D0=BC_?=
+	 =?UTF-8?Q?=D0=90=D0=BD=D0=B8=D1=81=D0=B8=D0=BC=D0=BE=D0=B2?= 
+	<aanisimov@inbox.ru>
+Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu
+In-Reply-To: <201112271130.36907.aanisimov@inbox.ru>
+References: <201112191519.40901.aanisimov@inbox.ru>
+	 <201112241026.35726.aanisimov@inbox.ru>
+	 <1324712566.5025.12.camel@marge.simson.net>
+	 <201112271130.36907.aanisimov@inbox.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Dec 2011 09:04:11 +0100
+Message-ID: <1324973051.5217.112.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/12/11 18:19, Vinod Koul wrote:
-> On Thu, 2011-12-15 at 22:32 +0000, Alan Cox wrote:
->> From: Kristen Carlson Accardi <kristen@linux.intel.com>
->>
->> Drivers should not support both legacy pm and new framework.
-> Not really.
+On Tue, 2011-12-27 at 11:30 +0300, Артем Анисимов wrote:
+> On Saturday 24 December 2011 10:42:46, Mike Galbraith wrote :
 > 
-> I am using this driver in our system where we go to D0i3 aka
-> runtime_suspend when DMA is idle.
-> Also we goto D3/S3 aka when traditional suspend is invoked.
+> > 
+> > >   Also I'd like to know if there is a way to get reliable utime
+> > >   measurements in recent kernels.
+> > 
+> > If wakeup preemption is undesirable, you could run SCHED_BATCH.
 > 
-> So we need both.
-
-There is no functional change caused by this patch.
-
-It simply moves suspend/resume calls into dev_pm_ops
-where they really belong now.  It is necessary to prevent
-kernel warnings.
-
-
->>
->> Signed-off-by: Kristen Carlson Accardi <kristen@linux.intel.com>
->> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
->> Signed-off-by: Alan Cox <alan@linux.intel.com>
->> ---
->>
->>  drivers/dma/intel_mid_dma.c      |   12 +++++++-----
->>  drivers/dma/intel_mid_dma_regs.h |    2 +-
->>  2 files changed, 8 insertions(+), 6 deletions(-)
->>
->>
->> diff --git a/drivers/dma/intel_mid_dma.c b/drivers/dma/intel_mid_dma.c
->> index 01929ed..d67cecf 100644
->> --- a/drivers/dma/intel_mid_dma.c
->> +++ b/drivers/dma/intel_mid_dma.c
->> @@ -868,7 +868,7 @@ static int intel_mid_dma_alloc_chan_resources(struct dma_chan *chan)
->>  	pm_runtime_get_sync(&mid->pdev->dev);
->>  
->>  	if (mid->state == SUSPENDED) {
->> -		if (dma_resume(mid->pdev)) {
->> +		if (dma_resume(&mid->pdev->dev)) {
->>  			pr_err("ERR_MDMA: resume failed");
->>  			return -EFAULT;
->>  		}
->> @@ -1337,8 +1337,9 @@ static void __devexit intel_mid_dma_remove(struct pci_dev *pdev)
->>  *
->>  * This function is called by OS when a power event occurs
->>  */
->> -int dma_suspend(struct pci_dev *pci, pm_message_t state)
->> +int dma_suspend(struct device *dev)
->>  {
->> +	struct pci_dev *pci = to_pci_dev(dev);
->>  	int i;
->>  	struct middma_device *device = pci_get_drvdata(pci);
->>  	pr_debug("MDMA: dma_suspend called\n");
->> @@ -1362,8 +1363,9 @@ int dma_suspend(struct pci_dev *pci, pm_message_t state)
->>  *
->>  * This function is called by OS when a power event occurs
->>  */
->> -int dma_resume(struct pci_dev *pci)
->> +int dma_resume(struct device *dev)
->>  {
->> +	struct pci_dev *pci = to_pci_dev(dev);
->>  	int ret;
->>  	struct middma_device *device = pci_get_drvdata(pci);
->>  
->> @@ -1429,6 +1431,8 @@ static const struct dev_pm_ops intel_mid_dma_pm = {
->>  	.runtime_suspend = dma_runtime_suspend,
->>  	.runtime_resume = dma_runtime_resume,
->>  	.runtime_idle = dma_runtime_idle,
->> +	.suspend = dma_suspend,
->> +	.resume = dma_resume,
->>  };
->>  
->>  static struct pci_driver intel_mid_dma_pci_driver = {
->> @@ -1437,8 +1441,6 @@ static struct pci_driver intel_mid_dma_pci_driver = {
->>  	.probe		=	intel_mid_dma_probe,
->>  	.remove		=	__devexit_p(intel_mid_dma_remove),
->>  #ifdef CONFIG_PM
->> -	.suspend = dma_suspend,
->> -	.resume = dma_resume,
->>  	.driver = {
->>  		.pm = &intel_mid_dma_pm,
->>  	},
->> diff --git a/drivers/dma/intel_mid_dma_regs.h b/drivers/dma/intel_mid_dma_regs.h
->> index c6de919..c83d35b 100644
->> --- a/drivers/dma/intel_mid_dma_regs.h
->> +++ b/drivers/dma/intel_mid_dma_regs.h
->> @@ -296,6 +296,6 @@ static inline struct intel_mid_dma_slave *to_intel_mid_dma_slave
->>  }
->>  
->>
->> -int dma_resume(struct pci_dev *pci);
->> +int dma_resume(struct device *dev);
->>  
->>  #endif /*__INTEL_MID_DMAC_REGS_H__*/
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+> > CPU utilization shifts with wakeup preemption, so there will be visible
+> > effect when you change wakeup preemption in any way.
 > 
-> 
+>   Thanks, SCHED_BATCH does solve my problem. I'd like to modify the man page 
+> times (2) so that it includes a warning on utime of processes that wake each 
+> other. Do you find the following note correct?
+
+Yeah, guess so.  I'd leave out the "hand a few wakeup expense...",
+that's just a small side effect of not wasting cycles doing very nearly
+back to back clock updates for no good reason.  The important thing to
+note is that utilization is affected by sleep/wakeup patterns.
+
+> ----- to be added to times (2) -----
+>   On Linux, the user time of a process depends on pattern of wakeups of the 
+> process. The scheduler is permitted to cut waker's CPU usage and hand a few 
+> wakeup expense cycles to the wakee that preempted. As a consequence, if two 
+> processes A and B wake each other frequently (e.g., they communicate via 
+> pipes, or by sending signals) then only the collective user time of A and B is 
+> well defined; individual user times of A and B can be arbitrarily 
+> redistributed between them. If this behaviour is undesirable then both 
+> processes need to use the SCHED_BATCH scheduler class, see 
+> sched_setscheduler(2).
+> ----- to be added to times (2) -----
+
 
