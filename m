@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab1L0Kxo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 05:53:44 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38656 "EHLO mx2.suse.de"
+	id S1753851Ab1L0Kxy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 05:53:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1800 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753371Ab1L0Kxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 05:53:42 -0500
-Date: Tue, 27 Dec 2011 11:53:40 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>, linux-wireless@vger.kernel.org
-Subject: iwl3945 didn't survive after s2ram failure
-Message-ID: <20111227105340.GD5344@tiehlicka.suse.cz>
+	id S1753717Ab1L0Kxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 05:53:50 -0500
+Message-ID: <4EF9A3AD.8020806@redhat.com>
+Date: Tue, 27 Dec 2011 12:53:33 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+CC: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <87vcp4t45p.fsf@linux.vnet.ibm.com> <877h1iu2md.fsf@linux.vnet.ibm.com> <4EF98D29.1080809@redhat.com> <87ty4mic23.fsf@abhimanyu.in.ibm.com> <4EF99532.3010803@redhat.com> <87obuuiatw.fsf@abhimanyu.in.ibm.com> <4EF99F3A.6070203@redhat.com> <87ipl2i9bl.fsf@abhimanyu.in.ibm.com>
+In-Reply-To: <87ipl2i9bl.fsf@abhimanyu.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-my laptop died (due to drained batteries) while it was suspended to
-RAM and the wireless didn't get back to life after I booted again.
-Dmesg says:
-cfg80211: Calling CRDA to update world regulatory domain
-iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, in-tree:s
-iwl3945: Copyright(c) 2003-2011 Intel Corporation
-iwl3945 0000:05:00.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
-iwl3945 0000:05:00.0: setting latency timer to 64
-iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-iwl3945 0000:05:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
-iwl3945 0000:05:00.0: EEPROM not found, EEPROM_GP=0xffffffff
-iwl3945 0000:05:00.0: Unable to init EEPROM
-iwl3945 0000:05:00.0: PCI INT A disabled
-iwl3945: probe of 0000:05:00.0 failed with error -2
+On 12/27/2011 12:43 PM, Nikunj A Dadhania wrote:
+> > > > Interesting, are you overcommitting vcpus?
+> > > > 
+> > > Yes(1:2). On a 8cpu machine, have 2VMs running, which is 8vcpus each.
+> > 
+> > Ah, yield_on_hlt=0 isn't any good with overcommit.  The vcpu stays
+> > scheduled when idle, so other vcpus don't get to use its cpu time.
+> > 
+> This is similar to booting the guest with idle=poll kernel parameter?
 
-Is there anything I can do to resurrect it?
+Yes, only with lower power consumption.
 
-Thanks a lot
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+error compiling committee.c: too many arguments to function
+
