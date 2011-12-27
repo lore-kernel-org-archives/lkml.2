@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab1L0WHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 17:07:43 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54161 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab1L0WHk (ORCPT
+	id S1752106Ab1L0WII (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 17:08:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55619 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751969Ab1L0WH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 17:07:40 -0500
-Date: Tue, 27 Dec 2011 14:07:38 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Tejun Heo <tj@kernel.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, x86@kernel.org
-Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
- allowed to create io_context
-Message-Id: <20111227140738.c9eedb7c.akpm@linux-foundation.org>
-In-Reply-To: <4EF7253E.3070606@kernel.dk>
-References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au>
-	<20111221151503.4d78f94f.akpm@linux-foundation.org>
-	<20111222150836.af172886.akpm@linux-foundation.org>
-	<20111222232036.GP17084@google.com>
-	<20111222152427.c944c747.akpm@linux-foundation.org>
-	<20111222233843.GR17084@google.com>
-	<20111222154427.89b245c7.akpm@linux-foundation.org>
-	<20111222234639.GS17084@google.com>
-	<20111223004244.GU17084@google.com>
-	<alpine.LSU.2.00.1112232058550.3225@eggly.anvils>
-	<20111225010238.GA6013@htj.dyndns.org>
-	<4EF7253E.3070606@kernel.dk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 27 Dec 2011 17:07:58 -0500
+Date: Tue, 27 Dec 2011 14:07:53 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
+ and fix blkcg percpu alloc deadlock
+Message-ID: <20111227220753.GH17712@google.com>
+References: <20111222230047.GN17084@google.com>
+ <20111222151649.de57746f.akpm@linux-foundation.org>
+ <20111222232433.GQ17084@google.com>
+ <20111222154138.d6c583e3.akpm@linux-foundation.org>
+ <20111223012112.GB12738@redhat.com>
+ <20111222173820.3461be5d.akpm@linux-foundation.org>
+ <20111223025411.GD12738@redhat.com>
+ <20111222191144.78aec23a.akpm@linux-foundation.org>
+ <20111223145856.GB16818@redhat.com>
+ <20111227132501.ad7f895f.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111227132501.ad7f895f.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 25 Dec 2011 14:29:34 +0100
-Jens Axboe <axboe@kernel.dk> wrote:
+Hello,
 
-> On 2011-12-25 02:02, Tejun Heo wrote:
-> > While fixing io_context creation / task exit race condition,
-> > 6e736be7f2 "block: make ioc get/put interface more conventional and
-> > fix race on alloction" also prevented an exiting (%PF_EXITING) task
-> > from creating its own io_context.  This is incorrect as exit path may
-> > issue IOs, e.g. from exit_files(), and if those IOs are the first ones
-> > issued by the task, io_context needs to be created to process the IOs.
-> > 
-> > Combined with the existing problem of io_context / io_cq creation
-> > failure having the possibility of stalling IO, this problem results in
-> > deterministic full IO lockup with certain workloads.
-> > 
-> > Fix it by allowing io_context creation regardless of %PF_EXITING for
-> > %current.
+On Tue, Dec 27, 2011 at 01:25:01PM -0800, Andrew Morton wrote:
+> umm, we've already declared that it is OK to completely waste this
+> memory for the users (probably a majority) who will not be using
+> these stats.
 
-The patch works for me.
+We're talking about combinatorial combinations where only small subset
+is usually expected to be used and, in addition to the absolute usage,
+there's big advantage in showing behavior which users would expect.
+If 1000 cgroups are doing IOs to 1000 devices, it's expected to
+consume some amount of resource.
 
-> Thanks, applied.
+The whole io_context / blk_cgroup - request_queue association
+mechanism is based on opportunistic allocation.  It might not be the
+prettiest thing in the world but given the circumstances IMHO the
+approach fits the constraints defined by the problem.
 
-So we get another great big bisection hole in mainline.  I feel
-duty bound to rewhine about this :(
+Given the restricted nature of percpu allocation, it would be nice to
+punt it to GFP_KERNEL context *somewhere* and for block layer that
+somewhere probably can only be userland access.  I just don't see that
+fitting better here.  The suggested alternative seems much nastier
+with userland visible side effects and possibility for combinatorial
+increase in memory usage for something as benign as single cat of stat
+files.
 
+Also, such erratic userland visible behavior is deviation from the
+current one and at the same time we would be bound to the
+idiosyncracies later when we can improve the implementation.
+
+I can't see how that can be a better tradeoff.  It shifts the problem
+to even more cumbersome corner.
+
+> Also, has this stuff been tested at that scale?  I fear to think what
+> 10000 allocations will do to fragmetnation of the vmalloc() arena.
+
+Percpu allocator doesn't use vmalloc directly.  It maps address ranges
+(which is at least 32k and usually much larger) from vmalloc space and
+allocate it using simplistic extent allocator.
+
+Thanks.
+
+-- 
+tejun
