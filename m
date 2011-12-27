@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752453Ab1L0XdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 18:33:10 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54495 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396Ab1L0XdG (ORCPT
+	id S1752584Ab1L0Xdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 18:33:36 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:45976 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab1L0Xdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 18:33:06 -0500
-Date: Tue, 27 Dec 2011 15:33:04 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
-Message-Id: <20111227153304.c585c5f6.akpm@linux-foundation.org>
-In-Reply-To: <20111223124920.661126615@openvz.org>
-References: <20111223124741.711871189@openvz.org>
-	<20111223124920.661126615@openvz.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	Tue, 27 Dec 2011 18:33:35 -0500
+Date: Wed, 28 Dec 2011 10:33:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>,
+        Thomas Abraham <thomas.abraham@linaro.org>
+Subject: linux-next: manual merge of the s5p tree with the arm tree
+Message-Id: <20111228103326.b4f211f3c46127b8acf2dda6@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Dec_2011_10_33_26_+1100_k8yY/QI4_M.0PVL3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Dec 2011 16:47:42 +0400
-Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+--Signature=_Wed__28_Dec_2011_10_33_26_+1100_k8yY/QI4_M.0PVL3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> The routine XORs the given pointer with a random value
-> producing an ID (32 or 64 bit, depending on the arch).
-> 
-> Since it's a valuable information -- only CAP_SYS_ADMIN
-> is allowed to obtain it.
-> 
->  - Tejun worried about the single poison value was a weak side -
->    leaking one makes all the IDs vulnerable. To address this
->    several poison values - one per object type - are introduced.
->    They are stored in a plain array.
->  - Pekka proposed to initialized poison values in the late_initcall callback
->  - ... and move the code to mm/util.c
->
-> ...
->
+Hi Kukjin,
 
-The code in general looks simple and reasonable to me.  I'm too much of
-a security weenie to pass judgement on the security aspects.
+Today's linux-next merge of the s5p tree got a conflict in
+arch/arm/mach-s5p64x0/init.c between commit 95af214becab ("ARM: 7246/1:
+S5P64X0: introduce arch/arm/mach-s5p64x0/common.[ch]") from the arm tree
+and commit afba7f91e640 ("ARM: SAMSUNG: remove struct
+'s3c24xx_uart_clksrc' and all uses of it") from the s5p tree.
 
->
-> ...
->
-> --- linux-2.6.git.orig/mm/Kconfig
-> +++ linux-2.6.git/mm/Kconfig
-> @@ -373,3 +373,19 @@ config CLEANCACHE
->  	  in a negligible performance hit.
->  
->  	  If unsure, say Y to enable cleancache
-> +
-> +config GENERIC_OBJECT_ID
-> +	bool "Enable generic object ID infrastructure"
-> +	depends on CHECKPOINT_RESTORE
+I just removed the file, but the latter patch will probably need applying
+in some form to arch/arm/mach-s5p64x0/common.c.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Is c/r useless without GENERIC_OBJECT_ID?  If so, perhaps a `select'
-would be good here.
+--Signature=_Wed__28_Dec_2011_10_33_26_+1100_k8yY/QI4_M.0PVL3
+Content-Type: application/pgp-signature
 
-> +	default n
-> +	help
-> +	  Turn on the functionality that can generate IDs for kernel
-> +	  objects, which are exported to userspace via /proc filesystem.
-> +
-> +	  It is useful if you need to examinate kernel objects and test
-> +	  if they are shared between several tasks. These IDs should never
-> +	  be used for anything but the "sameness" test. Besides, the IDs are
-> +	  dynamic and valid only while object is alive, once it get freed or
-> +	  kernel is rebooted -- the IDs will be changed.
-> +
-> +	  If unsure, say N here.
-> Index: linux-2.6.git/mm/Makefile
-> ===================================================================
-> --- linux-2.6.git.orig/mm/Makefile
-> +++ linux-2.6.git/mm/Makefile
-> @@ -51,3 +51,4 @@ obj-$(CONFIG_HWPOISON_INJECT) += hwpoiso
->  obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
->  obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
->  obj-$(CONFIG_CLEANCACHE) += cleancache.o
-> +obj-$(CONFIG_GENERIC_OBJECT_ID) += gen_obj_id.o
-> Index: linux-2.6.git/mm/gen_obj_id.c
-> ===================================================================
-> --- /dev/null
-> +++ linux-2.6.git/mm/gen_obj_id.c
-> @@ -0,0 +1,51 @@
-> +#include <linux/kernel.h>
-> +#include <linux/capability.h>
-> +#include <linux/random.h>
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/gen_obj_id.h>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Formally, we need more includes than this.  cache.h for __read_mostly,
-bug.h for BUG(), maybe others.  Forgetting bug.h used to be (and maybe
-still is) a popular way of breaking the build for alpha.
+iQIcBAEBCAAGBQJO+lXGAAoJEECxmPOUX5FETPEP/Aki6DwRki+X8s+CH2J5Xsvy
+5Rslm6VWJP6fJ5jCQ90aoArhbvcCD3XDnPGR7ytAY4RT+LhISYPudBE2WMPOkFY3
+6KS5oCaOFQcE6fRwmRUSX+dpTrn2ughSN6R6SopJ/5eRn3y1xkKLSC0shpkNk3C6
+BUtaHIdqgZqR/mkef/+WmwJ8pPIaXNtx59k1d+a6CcHuAZsKdS11MRnyn2becENE
+Vc3mPrBum/PEjJ6Wl4ToMXbiBhIhoN8mFg3oMkFisEGKFzs/DSPRLmTEsGWV4voI
+i90IzzLVYWeC6f6DbBlR9j9T8Nhb2JvYQ4u6JgwQ1t+1fQgVkHen0BA3xYaN9H6/
+VCbXE1B2B3yIK64D2CoPS2MMZSQHBvLRpVSTNP0hN0jVH1d9k3vzZdAOhOLbKw3k
+6ZP2y32DCWZcI4Ii3mMEgjVAajjEkN0nmI3FfPi4lCWm7yb4GPcacSxNh0aDu+5j
+duz+kcO17TGsKf4yGc/ZwUKngfRIT4nesBrKPeAqiic6QCLXNyotorq+OZITIqBB
+hL3pVHLaY3tCORr4QATbEhHrJBUWR0IlUoaMuE4mzQmojQxruV7JS4/zJujgbkkM
+PWmr1HnjVu3wsrai4MOD9YMvoz2EqaUXK/5H9rlhlZ3Pjwz+cAFoV0o6UkSyS+fH
+pDYAWQQ3qoIUig8f3jqa
+=/TmH
+-----END PGP SIGNATURE-----
 
+--Signature=_Wed__28_Dec_2011_10_33_26_+1100_k8yY/QI4_M.0PVL3--
