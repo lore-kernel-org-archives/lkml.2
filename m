@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab1L0VVd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 16:21:33 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:41693 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751276Ab1L0VVa (ORCPT
+	id S1751381Ab1L0VZJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 16:25:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54007 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751308Ab1L0VZH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 16:21:30 -0500
-Date: Tue, 27 Dec 2011 22:21:26 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Andi Kleen <andi@firstfloor.org>, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 4/4] ACPI: Do cpufreq clamping for throttling per package instead of per CPU
-Message-ID: <20111227212126.GF11715@one.firstfloor.org>
-References: <1324967687-10559-1-git-send-email-andi@firstfloor.org> <1324967687-10559-5-git-send-email-andi@firstfloor.org> <20111227164323.GA23245@srcf.ucam.org>
+	Tue, 27 Dec 2011 16:25:07 -0500
+Date: Tue, 27 Dec 2011 13:25:01 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, avi@redhat.com, nate@cpanel.net,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool and
+ fix blkcg percpu alloc deadlock
+Message-Id: <20111227132501.ad7f895f.akpm@linux-foundation.org>
+In-Reply-To: <20111223145856.GB16818@redhat.com>
+References: <20111222224117.GL17084@google.com>
+	<20111222145426.5844df96.akpm@linux-foundation.org>
+	<20111222230047.GN17084@google.com>
+	<20111222151649.de57746f.akpm@linux-foundation.org>
+	<20111222232433.GQ17084@google.com>
+	<20111222154138.d6c583e3.akpm@linux-foundation.org>
+	<20111223012112.GB12738@redhat.com>
+	<20111222173820.3461be5d.akpm@linux-foundation.org>
+	<20111223025411.GD12738@redhat.com>
+	<20111222191144.78aec23a.akpm@linux-foundation.org>
+	<20111223145856.GB16818@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111227164323.GA23245@srcf.ucam.org>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 04:43:24PM +0000, Matthew Garrett wrote:
-> On Mon, Dec 26, 2011 at 10:34:47PM -0800, Andi Kleen wrote:
+On Fri, 23 Dec 2011 09:58:56 -0500
+Vivek Goyal <vgoyal@redhat.com> wrote:
+
+> > Why do the allocation during I/O?  Can't it be done in the hotplug handler?
+> > 
 > 
-> > +	if (reduction_pctg(policy->cpu))
-> > +		printk("cpufreq notifier %ld\n", event);
-> > +
+> Even if we can do it in hotplug handler it will be very wasteful of
+> memory. So if there are 100 IO cgroups in the system, upon every block
+> device hotplug, we will allocate per cpu memory for all the 100 cgroups,
+> irrespective of the fact whether they are doing IO to the device or not.
 > 
-> Needed?
+> Now expand this to a system with 100 cgroups and 100 Luns. 10000
+> allocations for no reason. (Even if we do it for cgroups needing stats,
+> does not help much). Current scheme allocates memory for the group
+> only if a sepcific cgroup is doing IO to a specific block device. 
 
-No, i'll drop it.
+umm, we've already declared that it is OK to completely waste this
+memory for the users (probably a majority) who will not be using
+these stats.
 
--Andi
+Also, has this stuff been tested at that scale?  I fear to think what
+10000 allocations will do to fragmetnation of the vmalloc() arena.
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
