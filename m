@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753427Ab1LZW1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 17:27:19 -0500
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:60159 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751407Ab1LZW1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 17:27:17 -0500
-Message-ID: <4EF8F4B5.6000900@cs.wisc.edu>
-Date: Mon, 26 Dec 2011 16:27:01 -0600
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-CC: linux-scsi@vger.kernel.org, netdev@vger.kernel.org, kxie@chelsio.com,
-        davem@davemloft.net, JBottomley@parallels.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] libcxgbi: do not print a message when memory allocation
- fails
-References: <1323877583-6844-1-git-send-email-cascardo@linux.vnet.ibm.com>
-In-Reply-To: <1323877583-6844-1-git-send-email-cascardo@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753503Ab1L0AWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 19:22:16 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54269 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753112Ab1L0AWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 26 Dec 2011 19:22:11 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 27 Dec 2011 09:20:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: "Nikolay S." <nowhere@hakkenden.ath.cx>,
+        Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+Message-Id: <20111227092052.f2b02637.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <CAJd=RBAyw2rapPPhYFYKxyjEQ-EAG2j_UCP-4A6Uk5GSP5LE6A@mail.gmail.com>
+References: <1324437036.4677.5.camel@hakkenden.homenet>
+	<20111221095249.GA28474@tiehlicka.suse.cz>
+	<20111221225512.GG23662@dastard>
+	<1324630880.562.6.camel@rybalov.eng.ttk.net>
+	<20111223102027.GB12731@dastard>
+	<1324638242.562.15.camel@rybalov.eng.ttk.net>
+	<20111223204503.GC12731@dastard>
+	<CAJd=RBDa4LT1gbh6zPx+bzoOtSUeX=puJe6DVC-WyKoF4nw-dg@mail.gmail.com>
+	<1324808519.29243.8.camel@hakkenden.homenet>
+	<CAJd=RBAyw2rapPPhYFYKxyjEQ-EAG2j_UCP-4A6Uk5GSP5LE6A@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/14/2011 09:46 AM, Thadeu Lima de Souza Cascardo wrote:
-> In alloc_pdu, libcxgbi tries to allocate a skb with GFP_ATOMIC, which
-> may potentially fail. When it happens, the current code prints a warning
-> message.
+On Mon, 26 Dec 2011 20:35:46 +0800
+Hillf Danton <dhillf@gmail.com> wrote:
+
+> On Sun, Dec 25, 2011 at 6:21 PM, Nikolay S. <nowhere@hakkenden.ath.cx> wrote:
+> >
+> > Uhm.., is this patch against 3.2-rc4? I can not apply it. There's no
+> > mem_cgroup_lru_del_list(), but void mem_cgroup_del_lru_list(). Should I
+> > place changes there?
+> >
+> > And also, -rc7 is here. May the problem be addressed as part of some
+> > ongoing work? Is there any reason to try -rc7 (the problem requires
+> > several days of uptime to become obvious)?
+> >
 > 
-> When the system is under IO stress, this failure may happen lots of
-> times and it usually scares users.
+> Sorry, Nikolay, it is not based on the -next, nor on the -rc5(I assumed it was).
+> The following is based on -next, and if you want to test -rc5, please
+> grep MEM_CGROUP_ZSTAT mm/memcontrol.c and change it.
 > 
-> Instead of printing the warning message, the code now increases the
-> tx_dropped statistics for the ethernet interface wich is doing the iscsi
-> task.
+> Best regard
 > 
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+
+Hmm ? memcg is used ? Why do you consider this will be a help ?
+
+Thanks,
+-Kame
+
+> Hillf
 > ---
->  drivers/scsi/cxgbi/libcxgbi.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/scsi/cxgbi/libcxgbi.c b/drivers/scsi/cxgbi/libcxgbi.c
-> index c10f74a..3422bc2 100644
-> --- a/drivers/scsi/cxgbi/libcxgbi.c
-> +++ b/drivers/scsi/cxgbi/libcxgbi.c
-> @@ -1862,8 +1862,9 @@ int cxgbi_conn_alloc_pdu(struct iscsi_task *task, u8 opcode)
->  
->  	tdata->skb = alloc_skb(cdev->skb_tx_rsvd + headroom, GFP_ATOMIC);
->  	if (!tdata->skb) {
-> -		pr_warn("alloc skb %u+%u, opcode 0x%x failed.\n",
-> -			cdev->skb_tx_rsvd, headroom, opcode);
-> +		struct cxgbi_sock *csk = cconn->cep->csk;
-> +		struct net_device *ndev = cdev->ports[csk->port_id];
-> +		ndev->stats.tx_dropped++;
->  		return -ENOMEM;
->  	}
->  
+> --- a/mm/memcontrol.c	Mon Dec 26 20:34:38 2011
+> +++ b/mm/memcontrol.c	Mon Dec 26 20:37:54 2011
+> @@ -1076,7 +1076,11 @@ void mem_cgroup_lru_del_list(struct page
+>  	VM_BUG_ON(!memcg);
+>  	mz = page_cgroup_zoneinfo(memcg, page);
+>  	/* huge page split is done under lru_lock. so, we have no races. */
+> -	MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+> +	if (WARN_ON_ONCE(MEM_CGROUP_ZSTAT(mz, lru) <
+> +				(1 << compound_order(page))))
+> +		MEM_CGROUP_ZSTAT(mz, lru) = 0;
+> +	else
+> +		MEM_CGROUP_ZSTAT(mz, lru) -= 1 << compound_order(page);
+>  }
+> 
+>  void mem_cgroup_lru_del(struct page *page)
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-Looks ok to me.
-
-Reviewed-by: Mike Christie <michaelc@cs.wisc.edu>
