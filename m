@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab1L0Rw5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 12:52:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61161 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754241Ab1L0Rwy (ORCPT
+	id S1754758Ab1L0Rx3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 12:53:29 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44510 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754241Ab1L0RxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 12:52:54 -0500
-Date: Tue, 27 Dec 2011 09:52:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
-        oleg@redhat.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
- and fix blkcg percpu alloc deadlock
-Message-ID: <20111227175249.GE17712@google.com>
-References: <1324590326-10135-1-git-send-email-tj@kernel.org>
- <20111222135925.de3221c8.akpm@linux-foundation.org>
- <20111222220911.GK17084@google.com>
- <20111222142058.41316ee0.akpm@linux-foundation.org>
- <20111223014043.GC12738@redhat.com>
- <20111222175834.66559c8b.akpm@linux-foundation.org>
- <20111223025629.GE12738@redhat.com>
- <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 27 Dec 2011 12:53:22 -0500
+Subject: RE: [PATCH 00/14] DMA-mapping framework redesign preparation
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Matthew Wilcox'" <matthew@wil.cx>, linux-kernel@vger.kernel.org,
+        "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+In-Reply-To: <000901ccc471$15db8bc0$4192a340$%szyprowski@samsung.com>
+References: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
+	 <20111223163516.GO20129@parisc-linux.org>
+	 <000901ccc471$15db8bc0$4192a340$%szyprowski@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 27 Dec 2011 17:53:13 +0000
+Message-ID: <1325008393.14252.5.camel@dabdike>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, KAMEZAWA.
-
-On Mon, Dec 26, 2011 at 03:05:31PM +0900, KAMEZAWA Hiroyuki wrote:
-> From 433b56fd5644d4b1e695bc16bbf8dd78842999fd Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Mon, 26 Dec 2011 15:06:21 +0900
-> Subject: [PATCH] percpu_counter: add lazy init
+On Tue, 2011-12-27 at 09:25 +0100, Marek Szyprowski wrote:
+[...]
+> > > Usually these drivers don't touch the buffer data at all, so the mapping
+> > > in kernel virtual address space is not needed. We can introduce
+> > > DMA_ATTRIB_NO_KERNEL_MAPPING attribute which lets kernel to skip/ignore
+> > > creation of kernel virtual mapping. This way we can save previous
+> > > vmalloc area and simply some mapping operation on a few architectures.
+> > 
+> > I really think this wants to be a separate function.  dma_alloc_coherent
+> > is for allocating memory to be shared between the kernel and a driver;
+> > we already have dma_map_sg for mapping userspace I/O as an alternative
+> > interface.  This feels like it's something different again rather than
+> > an option to dma_alloc_coherent.
 > 
-> percpu_counter calls alloc_percpu(). This means percpu_counter_init()
-> assumes GFP_KERNEL context. This may call vmalloc() in percpu_counter
-> allocation and will have locks.
+> That is just a starting point for the discussion. 
 > 
-> If a caller doesn't want to assume GFP_KERNEL, we need some tricks.
-> This patch adds percpu_counter_init_lazy().
-> 
-> At lazy allocation, the function leaves fbc->counters as NULL and
-> init fbc->counters by workqueue. This work item handling is done
-> by fbc->list, so, the struct size of 'fbc' will not increase if
-> a user configs CONFIG_HOTPLUG_CPU.
+> I thought about this API a bit and came to conclusion that there is no much
+> difference between a dma_alloc_coherent which creates a mapping in kernel
+> virtual space and the one that does not. It is just a hint from the driver
+> that it will not use that mapping at all. Of course this attribute makes sense
+> only together with adding a dma_mmap_attrs() call, because otherwise drivers
+> won't be able to get access to the buffer data.
 
-This is essentially more specialized form of the mempool approach.  It
-doesn't seem any simpler to me while being less generic.  I don't see
-what the upside would be.
+This depends.  On Virtually indexed systems like PA-RISC, there are two
+ways of making a DMA range coherent.  One is to make the range uncached.
+This is incredibly slow and not what we do by default, but it can be
+used to make multiple mappings coherent.  The other is to load the
+virtual address up as a coherence index into the IOMMU.  This makes it a
+full peer in the coherence process, but means we can only designate a
+single virtual range to be coherent (not multiple mappings unless they
+happen to be congruent).  Perhaps it doesn't matter that much, since I
+don't see a use for this on PA, but if any other architecture works the
+same, you'd have to designate a single mapping as the coherent one and
+essentially promise not to use the other mapping if we followed our
+normal coherence protocols.
 
-Thanks.
+Obviously, the usual range we currently make coherent is the kernel
+mapping (that's actually the only virtual address we have by the time
+we're deep in the iommu code), so designating a different virtual
+address would need some surgery to the guts of the iommu code.
 
--- 
-tejun
+James
+
+
