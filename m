@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab1L0VuS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 16:50:18 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:41916 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463Ab1L0VuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 16:50:17 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jeff Layton <jlayton@redhat.com>
-Subject: Re: [PATCH] freezer: fix return value of freezable_schedule_timeout_killable
-Date: Tue, 27 Dec 2011 22:53:29 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0-rc7+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1324692054-5424-1-git-send-email-jlayton@redhat.com>
-In-Reply-To: <1324692054-5424-1-git-send-email-jlayton@redhat.com>
+	id S1751850Ab1L0VzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 16:55:05 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:42338 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376Ab1L0VzE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 16:55:04 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Julia Lawall <julia@diku.dk>
+Subject: Re: [PATCH] drivers/usb/class/cdc-acm.c: clear dangling pointer
+Date: Tue, 27 Dec 2011 22:56:39 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc6-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Oliver Neukum <oliver@neukum.name>, kernel-janitors@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1324645375-3535-1-git-send-email-julia@diku.dk>
+In-Reply-To: <1324645375-3535-1-git-send-email-julia@diku.dk>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201112272253.29446.rjw@sisk.pl>
+Message-Id: <201112272256.39617.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 24, 2011, Jeff Layton wrote:
-> ...it should return the return code from schedule_timeout_killable(),
-> not the one from freezer_count().
+Am Freitag, 23. Dezember 2011, 14:02:55 schrieb Julia Lawall:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> All of the current callers ignore the return code so the bug is
-> harmless but it's worth fixing.
+> On some failures, the country_code field of an acm structure is freed
+> without freeing the acm structure itself.  Elsewhere, operations including
+> memcpy and kfree are performed on the country_code field.  The patch sets
+> the country_code field to NULL when it is freed, and likewise sets the
+> country_code_size field to 0.
 > 
-> Signed-off-by: Jeff Layton <jlayton@redhat.com>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+Acked-by: Oliver NEukum <oneukum@suse.de>
 
-Applied to linux-pm/pm-freezer, will be pushed for 3.3.
+This is in principle oopsable and should go into stable.
 
-Thanks,
-Rafael
-
-
-> ---
->  include/linux/freezer.h |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
-> index 30f06c2..96b5b59 100644
-> --- a/include/linux/freezer.h
-> +++ b/include/linux/freezer.h
-> @@ -122,9 +122,11 @@ static inline int freezer_should_skip(struct task_struct *p)
->  /* Like schedule_timeout_killable(), but should not block the freezer. */
->  #define freezable_schedule_timeout_killable(timeout)			\
->  ({									\
-> +	long __retval;							\
->  	freezer_do_not_count();						\
-> -	schedule_timeout_killable(timeout);				\
-> +	__retval = schedule_timeout_killable(timeout);			\
->  	freezer_count();						\
-> +	__retval;							\
->  })
->  
->  /*
-> 
-
+	Regards
+		Oliver
