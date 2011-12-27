@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754581Ab1L0PSW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 10:18:22 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49455 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754498Ab1L0PST (ORCPT
+	id S1754588Ab1L0PYl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 10:24:41 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:59193 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab1L0PYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 10:18:19 -0500
-Date: Tue, 27 Dec 2011 16:17:43 +0100
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rudolf Marek <r.marek@assembler.cz>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        Olof Johansson <olof@lixom.net>,
-        "Mark M. Hoffman" <mhoffman@lightlink.com>,
-        Dirk Brandewie <dirk.brandewie@gmail.com>,
-        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
-        Feng Tang <feng.tang@intel.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        linux-i2c@vger.kernel.org
-Subject: Re: [PATCH] i2c: Convert to DEFINE_PCI_DEVICE_TABLE
-Message-ID: <20111227151743.GA3605@pengutronix.de>
-References: <1324956897.9775.2.camel@phoenix>
+	Tue, 27 Dec 2011 10:24:37 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND] ARM: pxa: fix error handling in pxa2xx_drv_pcmcia_probe
+Date: Tue, 27 Dec 2011 16:24:33 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-pcmcia@lists.infradead.org, Eric Miao <eric.y.miao@gmail.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>
+References: <1324974344.2351.5.camel@phoenix>
+In-Reply-To: <1324974344.2351.5.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XsQoSWH+UP9D9v3l"
-Content-Disposition: inline
-In-Reply-To: <1324956897.9775.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112271624.33760.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> If pxa2xx_drv_pcmcia_add_one fails, it will go to err1 error path.
+> Add a missing clk_put in the error path.
+> 
+> Checking the ret value after the for loop is redundant, it is always false.
+> Thus remove the redundant checking.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/pcmcia/pxa2xx_base.c |   12 +++---------
+>  1 files changed, 3 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/pcmcia/pxa2xx_base.c b/drivers/pcmcia/pxa2xx_base.c
+> index a87e272..64d433e 100644
+> --- a/drivers/pcmcia/pxa2xx_base.c
+> +++ b/drivers/pcmcia/pxa2xx_base.c
+> @@ -328,21 +328,15 @@ static int pxa2xx_drv_pcmcia_probe(struct
+> platform_device *dev) goto err1;
+>  	}
+> 
+> -	if (ret) {
+> -		while (--i >= 0)
+> -			soc_pcmcia_remove_one(&sinfo->skt[i]);
+> -		kfree(sinfo);
+> -		clk_put(clk);
+> -	} else {
+> -		pxa2xx_configure_sockets(&dev->dev);
+> -		dev_set_drvdata(&dev->dev, sinfo);
+> -	}
+> +	pxa2xx_configure_sockets(&dev->dev);
+> +	dev_set_drvdata(&dev->dev, sinfo);
+> 
+>  	return 0;
+> 
+>  err1:
+>  	while (--i >= 0)
+>  		soc_pcmcia_remove_one(&sinfo->skt[i]);
+> +	clk_put(clk);
+>  	kfree(sinfo);
+>  err0:
+>  	return ret;
 
---XsQoSWH+UP9D9v3l
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Makes sense
 
-On Tue, Dec 27, 2011 at 11:34:57AM +0800, Axel Lin wrote:
-> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
-> tables.
-
-Please not only describe what the patch does but also why it is needed or a
-good idea. People looking up stuff later on might not know.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---XsQoSWH+UP9D9v3l
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iEYEARECAAYFAk754ZcACgkQD27XaX1/VRuHngCdEoilO9/t9kcSWxQdEOeKv4zM
-Fd0AoL8mhIhxJTjEw9uacYs4qG0l4UQH
-=bKvr
------END PGP SIGNATURE-----
-
---XsQoSWH+UP9D9v3l--
+Acked-by: Marek Vasut <marek.vasut@gmail.com>
