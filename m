@@ -1,61 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970Ab1L0Nj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 08:39:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44076 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753895Ab1L0Njy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 08:39:54 -0500
-Date: Tue, 27 Dec 2011 14:39:52 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: hugetlb: add might_sleep() for gigantic page
-Message-ID: <20111227133952.GJ5344@tiehlicka.suse.cz>
-References: <CAJd=RBCXTp0GrMGw+MBDdj0K15+L5v+O2t6EcDghFk34aNwt1g@mail.gmail.com>
- <20111227125945.GH5344@tiehlicka.suse.cz>
- <CAJd=RBA70k8pCoP26hoJua=h1DHgx7eLHU0qrukJRxwoaxB65Q@mail.gmail.com>
- <20111227133021.GI5344@tiehlicka.suse.cz>
- <CAJd=RBAAbghkCK1R3VbzHyLN5aW6QgE1y+yjGofHUCxZjdTwvg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBAAbghkCK1R3VbzHyLN5aW6QgE1y+yjGofHUCxZjdTwvg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754015Ab1L0Nkx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 08:40:53 -0500
+Received: from einhorn.in-berlin.de ([192.109.42.8]:45289 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab1L0Nku convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 08:40:50 -0500
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 27 Dec 2011 14:40:39 +0100
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+To: Axel Theilmann <theilmann@pre-sense.de>
+Cc: linux-scsi@vger.kernel.org, Huajun Li <huajun.li.lee@gmail.com>,
+        jbottomley@parallels.com, linux-kernel@vger.kernel.org
+Subject: Re: Yet another hot unplug NULL pointer dereference (was Re: status
+ of oops in sd_revalidate_disk?)
+Message-ID: <20111227144039.1b5c5c20@stein>
+In-Reply-To: <4EF99C3C.8030602@pre-sense.de>
+References: <4EE8E419.8010000@pre-sense.de>
+	<CA+v9cxZFUC45WD0=+8mvH2Tq_xvX3PgaW4ttzPep0jqvqab_6w@mail.gmail.com>
+	<20111225215804.03ef9402@stein>
+	<4EF99C3C.8030602@pre-sense.de>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 27-12-11 21:38:59, Hillf Danton wrote:
-> On Tue, Dec 27, 2011 at 9:30 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> > On Tue 27-12-11 21:21:18, Hillf Danton wrote:
-> >> On Tue, Dec 27, 2011 at 8:59 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> >> > On Fri 23-12-11 21:41:08, Hillf Danton wrote:
-> >> >> From: Hillf Danton <dhillf@gmail.com>
-> >> >> Subject: [PATCH] mm: hugetlb: add might_sleep() for gigantic page
-> >> >>
-> >> >> Like the case of huge page, might_sleep() is added for gigantic page, then
-> >> >> both are treated in same way.
-> >> >
-> >> > Why do we need to call might_sleep here? There is cond_resched in the
-> >> > loop...
-> >> >
-> >>
-> >> IIUC it is the reason to add... and the comment says
-> >
-> > cond_resched calls __might_sleep so there is no reason to call
-> > might_sleep outside the loop as well.
-> >
-> Yes, thanks. And remove it in the huge page case?
+On Dec 27 Axel Theilmann wrote:
+> On 12/25/2011 09:58 PM, Stefan Richter wrote:
+[...
+>>> 在 2011年12月15日 上午1:59，Axel Theilmann <theilmann@pre-sense.de> ：
+>>>> two weeks ago Huajun Li posted a patch for a kernel oops, subject
+>>>> [PATCH] SCSI/sd: Fix NULL dereference in sd_revalidate_disk".
+>>>> 
+>>>> The patch was discussed but considered "clearly wrong". The bug shows
+>>>> up for us in kernel 3.1.4 quite often when unplugging usb sticks and
+>>>> it seems a few other people have the same problem:
+>>>> 
+>>>> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/859199
+>>>> https://bugzilla.redhat.com/show_bug.cgi?id=754518
+>>>> https://bugzilla.novell.com/show_bug.cgi?id=722350
+>>>> http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=649735
+>>>> 
+>>>> Can anyone of you maybe give me any status update on that bug?
+...]
+> > as far as I remember, all Linux releases in 2011 have been broken WRT hot
+> > removal of block devices; some more severely, some less.  Various patches
+> > for this went in over the year, but if they fixed anything, they always
+> > uncovered the next lingering unplug related bug.  The presumed first Linux
+> 
+> so now there are 2 known NULL-pointer problems in the cd-rom code and one in
+> the scsi-disk code.
 
-Yes, makes sense.
+The two CD-ROM related traces which I posted seem to indicate a bug
+between block layer's and SCSI core lifetime managements, rather than in
+the cd-rom code particularly.  When I get the time, I will try the
+"1. open(), 2. remove device, 3. ioctl()" sequence on an sd_mod device
+instead of an sr_mod one and see where this goes.
 
+> Would a complete fix for this issue be a question of locating all the
+> possible NULL-pointers and fixing them or do you think that the hotplug
+> problem has to be fixed on a more "fundamental" level?
+
+I don't know what my two traces tell us what particularly is broken and
+where to attack the problem.
+
+In case of the sd_revalidate_disk oops from the thread which I highjacked
+(which refers to "[PATCH] SCSI/sd: Fix NULL dereference in
+sd_revalidate_disk", http://thread.gmane.org/gmane.linux.scsi/71174), the
+trouble is that nobody came up with an answer to James' question on how it
+could happen in the first place that sd_revalidate_disk(disk) could be
+called on a disk that leads to a NULL scsi_disk.  In turn, this presumably
+means among else that the answer to my earlier question --- what prevents
+the scsi_disk to go invalid slightly after that newly added NULL pointer
+check --- cannot be answered yet either.
+
+However, I do think that the pitiful state of block device unplugging
+throughout circa a whole year indicates a fundamental problem indeed.  But
+I am only familiar with one of the SCSI transport layer drivers, not with
+the kernel layers above, so what do I know.
+
+> Even if there is a more fundamental problem below that has to be fixed, it
+> would still be nice to get in fixes for the dereferences that are currently
+> known to keep peoples systems from crashing.
+> 
+> We built a kernel with Huajun's patch included and will do some tests to see
+> if the problem goes away (and no others show up).
+
+AFAIU it is not clear whether this patch actually prevents dereference of
+an invalid sdkp or only makes it considerably more unlikely.
+
+In either case, since there is apparently an underlying issue that this
+patch does not address, it is a judgment call whether such a patch is
+allowed into a kernel --- distributor kernel or mainline kernel.  If
+somebody takes it, then at least a FIXME comment should be put there that
+sd_revalidate_disk is supposed to rely on an always valid sdkp.
+
+> > With a little bit of bad luck, udisks-daemon or in older distros hald
+> > should hit the bug too.  Under kernel 3.1 I typically just got processes
+> > hanging in unkillable sleep.  With kernel 3.2-rc7 I get an instant kernel
+> > panic.
+> 
+> Yes, udisks is what probably triggers the bug for us. People removing USB
+> media before udisks is finished initializing the medium. With kernel 3.1.4
+> we get instant kernel panics as well.
+> 
+> tty, axel
+
+Sounds like both "your" and "my" bug occur at the end of the sequence
+
+    1. open(), 2. remove device, 3. ioctl() or whatever
+
+though perhaps with the extra twist in your case that this has to happen
+before the device bring-up was entirely finished...?  In my CD-ROM related
+case the bug is not timing-sensitive at all; it always happens with above
+sequence.
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Stefan Richter
+-=====-==-== ==-- ==-==
+http://arcgraph.de/sr/
