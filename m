@@ -1,71 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751025Ab1L0GXu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 01:23:50 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:49999 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937Ab1L0GXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 01:23:42 -0500
-Message-ID: <4EF964F3.8090705@cn.fujitsu.com>
-Date: Tue, 27 Dec 2011 14:25:55 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH v2] cgroup: fix to allow mounting a hierarchy by name
-References: <4EF9291D.7030208@cn.fujitsu.com>
-In-Reply-To: <4EF9291D.7030208@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-27 14:22:52,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-27 14:22:52,
-	Serialize complete at 2011-12-27 14:22:52
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1752146Ab1L0GfO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 01:35:14 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:41336 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750966Ab1L0GfD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 01:35:03 -0500
+From: Andi Kleen <andi@firstfloor.org>
+To: lenb@kernel.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Fix passive zone thermal throttling
+Date: Mon, 26 Dec 2011 22:34:43 -0800
+Message-Id: <1324967687-10559-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we mount a hierarchy with a specified name, the name is unique,
-and we can use it to mount the hierarchy without specifying its
-set of subsystem names. This feature is documented is
-Documentation/cgroups/cgroups.txt section 2.3
+I have a laptop with a broken fan and it would constantly shut down
+under load. In principle passive thermal zone throttling was supposed
+to prevent that by slowing down the CPU, but this didn't work.
 
-Here's an example:
+This patchkit makes it work on my system.
 
-	# mount -t cgroup -o cpuset,name=myhier xxx /cgroup1
-	# mount -t cgroup -o name=myhier xxx /cgroup2
+It turned out to be a combination of problems: the EC driver 
+talking to the embedded controller on my system would frequently
+get out of step, which resulted in missing temperature events.
+While not completely cured it's much better now with some
+replies.
 
-But it was broken by commit 32a8cf235e2f192eb002755076994525cdbaa35a
-(cgroup: make the mount options parsing more accurate)
+The other more serious problem was that the throttling code
+never really worked on multi-core systems: it only lowers
+the frequency of a single CPU, that gets the event, but the
+other threads/cores still keep the frequency up. Also worse
+throttling would never be invoked before the lowest frequency
+is reached.
 
-This fixes the regression.
+The first patch is merely a cleanup, the other patches fix
+these problems.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
+Now that the kernel is fixed I can send the laptop in for repair.
 
-v2: fix code comment s/or/and
+-Andi
 
----
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 1042b3c..8e412fd 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1193,10 +1193,10 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 
- 	/*
- 	 * If the 'all' option was specified select all the subsystems,
--	 * otherwise 'all, 'none' and a subsystem name options were not
--	 * specified, let's default to 'all'
-+	 * otherwise if 'none', 'name=' and a subsystem name options
-+	 * were not specified, let's default to 'all'
- 	 */
--	if (all_ss || (!all_ss && !one_ss && !opts->none)) {
-+	if (all_ss || (!one_ss && !opts->none && !opts->name)) {
- 		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
- 			if (ss == NULL)
--- 
-1.7.3.1
