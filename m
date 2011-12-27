@@ -1,203 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab1L0ElC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 26 Dec 2011 23:41:02 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:31158 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754051Ab1L0Ekt (ORCPT
+	id S1754063Ab1L0Epq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 26 Dec 2011 23:45:46 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39667 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab1L0Epj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 26 Dec 2011 23:40:49 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-b8-4ef94c4fff59
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-References: <1324911505-31715-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-reply-to: <1324911505-31715-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH] video: s3c-fb: Make runtime PM functional again
-Date: Tue, 27 Dec 2011 13:40:47 +0900
-Message-id: <000801ccc451$b3a853d0$1af8fb70$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczD3usEzfj5jh04QfWGXeVkXriqfAAcLYIw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Mon, 26 Dec 2011 23:45:39 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 27 Dec 2011 13:44:05 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Nikolay S." <nowhere@hakkenden.ath.cx>
+Cc: Dave Chinner <david@fromorbit.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+Message-Id: <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1324954208.4634.2.camel@hakkenden.homenet>
+References: <1324437036.4677.5.camel@hakkenden.homenet>
+	<20111221095249.GA28474@tiehlicka.suse.cz>
+	<20111221225512.GG23662@dastard>
+	<1324630880.562.6.camel@rybalov.eng.ttk.net>
+	<20111223102027.GB12731@dastard>
+	<1324638242.562.15.camel@rybalov.eng.ttk.net>
+	<20111223204503.GC12731@dastard>
+	<20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
+	<1324954208.4634.2.camel@hakkenden.homenet>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mark
+On Tue, 27 Dec 2011 06:50:08 +0400
+"Nikolay S." <nowhere@hakkenden.ath.cx> wrote:
 
-Mark wrote:
-> -----Original Message-----
-> Subject: [PATCH] video: s3c-fb: Make runtime PM functional again
+> В Вт., 27/12/2011 в 11:15 +0900, KAMEZAWA Hiroyuki пишет:
+> > On Sat, 24 Dec 2011 07:45:03 +1100
+> > Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> > > On Fri, Dec 23, 2011 at 03:04:02PM +0400, nowhere wrote:
+> > > > В Пт., 23/12/2011 в 21:20 +1100, Dave Chinner пишет:
+> > > > > On Fri, Dec 23, 2011 at 01:01:20PM +0400, nowhere wrote:
+> > > > > > В Чт., 22/12/2011 в 09:55 +1100, Dave Chinner пишет:
+> > > > > > > On Wed, Dec 21, 2011 at 10:52:49AM +0100, Michal Hocko wrote:
+> > 
+> > > > Here is the report of trace-cmd while dd'ing
+> > > > https://80.237.6.56/report-dd.xz
+> > > 
+> > > Ok, it's not a shrink_slab() problem - it's just being called ~100uS
+> > > by kswapd. The pattern is:
+> > > 
+> > > 	- reclaim 94 (batches of 32,32,30) pages from iinactive list
+> > > 	  of zone 1, node 0, prio 12
+> > > 	- call shrink_slab
+> > > 		- scan all caches
+> > > 		- all shrinkers return 0 saying nothing to shrink
+> > > 	- 40us gap
+> > > 	- reclaim 10-30 pages from inactive list of zone 2, node 0, prio 12
+> > > 	- call shrink_slab
+> > > 		- scan all caches
+> > > 		- all shrinkers return 0 saying nothing to shrink
+> > > 	- 40us gap
+> > > 	- isolate 9 pages from LRU zone ?, node ?, none isolated, none freed
+> > > 	- isolate 22 pages from LRU zone ?, node ?, none isolated, none freed
+> > > 	- call shrink_slab
+> > > 		- scan all caches
+> > > 		- all shrinkers return 0 saying nothing to shrink
+> > > 	40us gap
+> > > 
+> > > And it just repeats over and over again. After a while, nid=0,zone=1
+> > > drops out of the traces, so reclaim only comes in batches of 10-30
+> > > pages from zone 2 between each shrink_slab() call.
+> > > 
+> > > The trace starts at 111209.881s, with 944776 pages on the LRUs. It
+> > > finishes at 111216.1 with kswapd going to sleep on node 0 with
+> > > 930067 pages on the LRU. So 7 seconds to free 15,000 pages (call it
+> > > 2,000 pages/s) which is awfully slow....
+> > > 
+> > > vmscan gurus - time for you to step in now...
+> > >
+> >  
+> > Can you show /proc/zoneinfo ? I want to know each zone's size.
 > 
-> The change in "video: s3c-fb: modify runtime pm functions" (commit
-> 35784b) renders the runtime power management for the device completely
-> ineffectual as while it leaves runtime power management notionally
-> enabled a runtime power reference is held for the entire time the device
-> is registered meaning it will never actually do anything.
-> 
-> A further issue is introduced as runtime power management is added
-> during the system suspend path which is not something which drivers are
-> supposed to do and would interact poorly if there were any operations
-> done in the runtime power management callbacks.
-> 
-> While this does make things simpler (the main motivation for the
-> original change) it will not only cause us to use more power in the
-> framebuffer controller but will also prevent us entering lower power
-> domain and SoC wide states as we can never power down the domain
-> containing the device.  Since neither of these things is desirable
-> revert the change.
-The main difference is as follows:
-If no fb windows are opened.
-	- Your patch: LCD block power is off
-	- My patch: LCD block power is on still.
 
-However, after booting, probing, open is called from platform system, soon.
-And, the default window is always opened. This means that at least one window
-is opened after booting. So, I don't think that "video: s3c-fb: modify runtime
-pm functions" (commit: 35784b) cause us to use more power in the framebuffer
-controller.
+Thanks, 
+Qeustion:
+ 1. does this system has no swap ?
+ 2. What version of kernel which you didn't see the kswapd issue ?
+ 3. Is this real host ? or virtualized ?
 
-My intention is that runtime pm is used only for LCD block power off when
-suspend and resume are called.
 
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
->  drivers/video/s3c-fb.c |   51 +++++++++++++++++++++++++++++------------------
->  1 files changed, 31 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-> index e531ebc..690b44e 100644
-> --- a/drivers/video/s3c-fb.c
-> +++ b/drivers/video/s3c-fb.c
-> @@ -1036,8 +1036,30 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
->  	return ret;
->  }
-> 
-> +static int s3c_fb_open(struct fb_info *info, int user)
-> +{
-> +	struct s3c_fb_win *win = info->par;
-> +	struct s3c_fb *sfb = win->parent;
-> +
-> +	pm_runtime_get_sync(sfb->dev);
-> +
-> +	return 0;
-> +}
-> +
-> +static int s3c_fb_release(struct fb_info *info, int user)
-> +{
-> +	struct s3c_fb_win *win = info->par;
-> +	struct s3c_fb *sfb = win->parent;
-> +
-> +	pm_runtime_put_sync(sfb->dev);
-> +
-> +	return 0;
-> +}
-> +
->  static struct fb_ops s3c_fb_ops = {
->  	.owner		= THIS_MODULE,
-> +	.fb_open	= s3c_fb_open,
-> +	.fb_release	= s3c_fb_release,
->  	.fb_check_var	= s3c_fb_check_var,
->  	.fb_set_par	= s3c_fb_set_par,
->  	.fb_blank	= s3c_fb_blank,
-> @@ -1436,6 +1458,7 @@ static int __devinit s3c_fb_probe(struct platform_device *pdev)
->  	}
-> 
->  	platform_set_drvdata(pdev, sfb);
-> +	pm_runtime_put_sync(sfb->dev);
-> 
->  	return 0;
-> 
-> @@ -1468,6 +1491,8 @@ static int __devexit s3c_fb_remove(struct platform_device *pdev)
->  	struct s3c_fb *sfb = platform_get_drvdata(pdev);
->  	int win;
-> 
-> +	pm_runtime_get_sync(sfb->dev);
-> +
->  	for (win = 0; win < S3C_FB_MAX_WIN; win++)
->  		if (sfb->windows[win])
->  			s3c_fb_release_win(sfb, sfb->windows[win]);
-> @@ -1488,7 +1513,7 @@ static int __devexit s3c_fb_remove(struct platform_device *pdev)
->  	return 0;
->  }
-> 
-> -#ifdef CONFIG_PM_SLEEP
-> +#ifdef CONFIG_PM
->  static int s3c_fb_suspend(struct device *dev)
->  {
->  	struct platform_device *pdev = to_platform_device(dev);
-> @@ -1509,8 +1534,6 @@ static int s3c_fb_suspend(struct device *dev)
->  		clk_disable(sfb->lcd_clk);
-> 
->  	clk_disable(sfb->bus_clk);
-> -	pm_runtime_put_sync(sfb->dev);
-> -
->  	return 0;
->  }
-> 
-> @@ -1522,7 +1545,6 @@ static int s3c_fb_resume(struct device *dev)
->  	struct s3c_fb_win *win;
->  	int win_no;
-> 
-> -	pm_runtime_get_sync(sfb->dev);
->  	clk_enable(sfb->bus_clk);
-> 
->  	if (!sfb->variant.has_clksel)
-> @@ -1561,19 +1583,11 @@ static int s3c_fb_resume(struct device *dev)
-> 
->  	return 0;
->  }
-> +#else
-> +#define s3c_fb_suspend NULL
-> +#define s3c_fb_resume  NULL
->  #endif
-> 
-> -#ifdef CONFIG_PM_RUNTIME
-> -static int s3c_fb_runtime_suspend(struct device *dev)
-> -{
-> -	return 0;
-> -}
-> -
-> -static int s3c_fb_runtime_resume(struct device *dev)
-> -{
-> -	return 0;
-> -}
-> -#endif
-> 
->  #define VALID_BPP124 (VALID_BPP(1) | VALID_BPP(2) | VALID_BPP(4))
->  #define VALID_BPP1248 (VALID_BPP124 | VALID_BPP(8))
-> @@ -1896,10 +1910,7 @@ static struct platform_device_id s3c_fb_driver_ids[] = {
->  };
->  MODULE_DEVICE_TABLE(platform, s3c_fb_driver_ids);
-> 
-> -static const struct dev_pm_ops s3c_fb_pm_ops = {
-> -	SET_SYSTEM_SLEEP_PM_OPS(s3c_fb_suspend, s3c_fb_resume)
-> -	SET_RUNTIME_PM_OPS(s3c_fb_runtime_suspend, s3c_fb_runtime_resume, NULL)
-> -};
-> +static UNIVERSAL_DEV_PM_OPS(s3cfb_pm_ops, s3c_fb_suspend, s3c_fb_resume, NULL);
-> 
->  static struct platform_driver s3c_fb_driver = {
->  	.probe		= s3c_fb_probe,
-> @@ -1908,7 +1919,7 @@ static struct platform_driver s3c_fb_driver = {
->  	.driver		= {
->  		.name	= "s3c-fb",
->  		.owner	= THIS_MODULE,
-> -		.pm	= &s3c_fb_pm_ops,
-> +		.pm	= &s3cfb_pm_ops,
->  	},
->  };
-> 
-> --
-> 1.7.7.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> $ cat /proc/zoneinfo 
+...
+Node 0, zone    DMA32
+  pages free     19620
+        min      14715
+        low      18393
+        high     22072
+        scanned  0
+        spanned  1044480
+        present  896960
+    nr_free_pages 19620
+    nr_inactive_anon 43203
+    nr_active_anon 206577
+    nr_inactive_file 412249
+    nr_active_file 126151
+
+Then, DMA32(zone=1) files are enough large (> 32 << 12)
+Hmm. assuming all frees are used for file(of dd)
+
+
+(412249 + 126151 + 19620) >> 12 = 136
+
+So, 32, 32, 30 scan seems to work as desgined.
+
+> Node 0, zone   Normal
+>   pages free     2854
+>         min      2116
+>         low      2645
+>         high     3174
+>         scanned  0
+>         spanned  131072
+>         present  129024
+>     nr_free_pages 2854
+>     nr_inactive_anon 20682
+>     nr_active_anon 10262
+>     nr_inactive_file 47083
+>     nr_active_file 11292
+
+Hmm, NORMAL is much smaller than DMA32. (only 500MB.)
+
+Then, at priority=12,
+
+  13 << 12 = 53248
+
+13 pages per a scan seems to work as designed.
+To me,  it seems kswapd does usual work...reclaim small memory until free
+gets enough. And it seems 'dd' allocates its memory from ZONE_DMA32 because
+of gfp_t fallbacks.
+
+
+Memo.
+
+1. why shrink_slab() should be called per zone, which is not zone aware.
+   Isn't it enough to call it per priority ?
+
+2. what spinlock contention that perf showed ?
+   And if shrink_slab() doesn't consume cpu as trace shows, why perf 
+   says shrink_slab() is heavy..
+
+3. because 8/9 of memory is in DMA32, calling shrink_slab() frequently
+   at scanning NORMAL seems to be time wasting.
+ 
+
+Thanks,
+-Kame
+
+
+
+
 
