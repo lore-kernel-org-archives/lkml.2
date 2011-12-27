@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab1L0Vrz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 16:47:55 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:52740
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751419Ab1L0Vrx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 16:47:53 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Fuzhou Chen <fuzhouch@microsoft.com>,
-        Sasha Levin <levinsasha928@gmail.com>, stable <stable@vger.kernel.org>
-Subject: [PATCH 1/1] Drivers:hv: Fix a bug in vmbus_driver_unregister()
-Date: Tue, 27 Dec 2011 13:49:37 -0800
-Message-Id: <1325022577-23081-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1751787Ab1L0VuS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 16:50:18 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:41916 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751463Ab1L0VuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 16:50:17 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jeff Layton <jlayton@redhat.com>
+Subject: Re: [PATCH] freezer: fix return value of freezable_schedule_timeout_killable
+Date: Tue, 27 Dec 2011 22:53:29 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0-rc7+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1324692054-5424-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1324692054-5424-1-git-send-email-jlayton@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112272253.29446.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function vmbus_exists() was introduced recently to deal with cases where
-the vmbus driver failed to initialize and yet other Hyper-V drivers attempted
-to register with the vmbus bus driver. This patch introduced a bug where
-vmbus_driver_unregister() would fail to unregister the driver. This patch 
-fixes the problem.
+On Saturday, December 24, 2011, Jeff Layton wrote:
+> ...it should return the return code from schedule_timeout_killable(),
+> not the one from freezer_count().
+> 
+> All of the current callers ignore the return code so the bug is
+> harmless but it's worth fixing.
+> 
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Fuzhou Chen <fuzhouch@microsoft.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Cc: stable <stable@vger.kernel.org>
----
- drivers/hv/vmbus_drv.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+Applied to linux-pm/pm-freezer, will be pushed for 3.3.
 
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index c3875f7..a220e57 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -627,10 +627,7 @@ void vmbus_driver_unregister(struct hv_driver *hv_driver)
- 	pr_info("unregistering driver %s\n", hv_driver->name);
- 
- 	if (!vmbus_exists())
--		return;
--
--	driver_unregister(&hv_driver->driver);
--
-+		driver_unregister(&hv_driver->driver);
- }
- EXPORT_SYMBOL_GPL(vmbus_driver_unregister);
- 
--- 
-1.7.4.1
+Thanks,
+Rafael
+
+
+> ---
+>  include/linux/freezer.h |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/freezer.h b/include/linux/freezer.h
+> index 30f06c2..96b5b59 100644
+> --- a/include/linux/freezer.h
+> +++ b/include/linux/freezer.h
+> @@ -122,9 +122,11 @@ static inline int freezer_should_skip(struct task_struct *p)
+>  /* Like schedule_timeout_killable(), but should not block the freezer. */
+>  #define freezable_schedule_timeout_killable(timeout)			\
+>  ({									\
+> +	long __retval;							\
+>  	freezer_do_not_count();						\
+> -	schedule_timeout_killable(timeout);				\
+> +	__retval = schedule_timeout_killable(timeout);			\
+>  	freezer_count();						\
+> +	__retval;							\
+>  })
+>  
+>  /*
+> 
 
