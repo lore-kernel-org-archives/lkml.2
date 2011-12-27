@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab1L0RKk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 12:10:40 -0500
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:57682 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754381Ab1L0RKg (ORCPT
+	id S1754691Ab1L0RUT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 12:20:19 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47137 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754464Ab1L0RUR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 12:10:36 -0500
-Date: Tue, 27 Dec 2011 17:10:33 +0000
+	Tue, 27 Dec 2011 12:20:17 -0500
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix.work@gmail.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org, mmarek@suse.cz
-Subject: Re: [PATCH 1/2] scripts/coccinelle: semantic patches related to
- devm_ functions
-Message-ID: <20111227171032.GA22729@sirena.org.uk>
-References: <1325004092-28162-1-git-send-email-julia.lawall@lip6.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325004092-28162-1-git-send-email-julia.lawall@lip6.fr>
-X-Cookie: Gloffing is a state of mine.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+To: Samuel Ortiz <sameo@liniux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Still check other interrupts if we get a wm831x touchscreen IRQ
+Date: Tue, 27 Dec 2011 17:20:10 +0000
+Message-Id: <1325006410-22147-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 05:41:31PM +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+It is possible that we will see another interrupt triggering at the same
+time as the touchscreen interrupts so it's still worth checking other
+possible sources. Almost all of the win from the fast path comes from only
+needing to read the primary register and saving the I/O costs.
 
-Something went wrong here?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-irq.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> devm_ functions allocate memory that is to remain allocated until the
-> device is detached.  This patch checks for opportunities for using the
-> function devm_request_and_ioremap.
+diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
+index 7be5f09..bec4d05 100644
+--- a/drivers/mfd/wm831x-irq.c
++++ b/drivers/mfd/wm831x-irq.c
+@@ -472,8 +472,7 @@ static irqreturn_t wm831x_irq_thread(int irq, void *data)
+ 		handle_nested_irq(wm831x->irq_base + WM831X_IRQ_TCHPD);
+ 	if (primary & WM831X_TCHDATA_INT)
+ 		handle_nested_irq(wm831x->irq_base + WM831X_IRQ_TCHDATA);
+-	if (primary & (WM831X_TCHDATA_EINT | WM831X_TCHPD_EINT))
+-		goto out;
++	primary &= ~(WM831X_TCHDATA_EINT | WM831X_TCHPD_EINT);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(wm831x_irqs); i++) {
+ 		int offset = wm831x_irqs[i].reg - 1;
+-- 
+1.7.7.3
 
-Note that devm_request_and_ioremap() is scheduled for merge in 3.3 so
-patches based on this should probably wait until after that has been
-merged.
