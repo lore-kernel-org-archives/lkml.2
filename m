@@ -1,88 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751220Ab1L1IFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 03:05:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39428 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab1L1IFa (ORCPT
+	id S1751313Ab1L1ILg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 03:11:36 -0500
+Received: from mail.windriver.com ([147.11.1.11]:54908 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab1L1ILd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 03:05:30 -0500
-Message-ID: <1325059522.18468.4.camel@phoenix>
-Subject: [PATCH v2] ASoC: Fix build error in
- sound/soc/kirkwood/kirkwood-i2s.c
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Arnaud Patard <arnaud.patard@rtp-net.org>, Andrew Lunn <andrew@lunn.ch>,
-        Nicolas Pitre <nico@fluxnic.net>, Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Date: Wed, 28 Dec 2011 16:05:22 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 28 Dec 2011 03:11:33 -0500
+From: Tiejun Chen <tiejun.chen@windriver.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/1] kmemleak/module: only scan the existed data section
+Date: Wed, 28 Dec 2011 16:11:31 +0800
+Message-ID: <1325059891-20540-1-git-send-email-tiejun.chen@windriver.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit db33f4de "ARM: Orion: Remove address map info from all platform data structures",
-the dram is removed from struct kirkwood_asoc_platform_data.
+We should only scan the sections containing data and it's size is not
+zero as well.
 
-This patch fixes below build error:
-  CC      sound/soc/kirkwood/kirkwood-i2s.o
-sound/soc/kirkwood/kirkwood-i2s.c: In function 'kirkwood_i2s_dev_probe':
-sound/soc/kirkwood/kirkwood-i2s.c:444: error: 'struct kirkwood_asoc_platform_data' has no member named 'dram'
-sound/soc/kirkwood/kirkwood-i2s.c:450: error: 'struct kirkwood_asoc_platform_data' has no member named 'dram'
-make[3]: *** [sound/soc/kirkwood/kirkwood-i2s.o] Error 1
-make[2]: *** [sound/soc/kirkwood] Error 2
-make[1]: *** [sound/soc] Error 2
-make: *** [sound] Error 2
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Nicolas Pitre <nico@fluxnic.net>
+Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
 ---
-v2: the dram field of struct kirkwood_dma_data is not being used now.
-Thus also remove it in this patch.
-This patch is against linux-next.
+ kernel/module.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
- sound/soc/kirkwood/kirkwood-i2s.c |    3 +--
- sound/soc/kirkwood/kirkwood.h     |    1 -
- 2 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
-index f6bb211..3cb9aa4 100644
---- a/sound/soc/kirkwood/kirkwood-i2s.c
-+++ b/sound/soc/kirkwood/kirkwood-i2s.c
-@@ -441,13 +441,12 @@ static __devinit int kirkwood_i2s_dev_probe(struct platform_device *pdev)
- 		goto err_ioremap;
- 	}
+diff --git a/kernel/module.c b/kernel/module.c
+index 12cfa2b..0b93c30 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2045,6 +2045,8 @@ static void kmemleak_load_module(struct module *mod, Elf_Ehdr *hdr,
+ 		if (strncmp(secstrings + sechdrs[i].sh_name, ".data", 5) != 0
+ 		    && strncmp(secstrings + sechdrs[i].sh_name, ".bss", 4) != 0)
+ 			continue;
++		if (sechdrs[i].sh_size == 0)
++			continue;
  
--	if (!data || !data->dram) {
-+	if (!data) {
- 		dev_err(&pdev->dev, "no platform data ?!\n");
- 		err = -EINVAL;
- 		goto err_ioremap;
- 	}
- 
--	priv->dram = data->dram;
- 	priv->burst = data->burst;
- 
- 	return snd_soc_register_dai(&pdev->dev, &kirkwood_i2s_dai);
-diff --git a/sound/soc/kirkwood/kirkwood.h b/sound/soc/kirkwood/kirkwood.h
-index bb6e6a5..9047436 100644
---- a/sound/soc/kirkwood/kirkwood.h
-+++ b/sound/soc/kirkwood/kirkwood.h
-@@ -123,7 +123,6 @@ struct kirkwood_dma_data {
- 	void __iomem *io;
- 	int irq;
- 	int burst;
--	struct mbus_dram_target_info *dram;
- };
- 
- #endif
+ 		kmemleak_scan_area((void *)sechdrs[i].sh_addr,
+ 				   sechdrs[i].sh_size, GFP_KERNEL);
 -- 
-1.7.5.4
-
-
+1.6.0.4
 
