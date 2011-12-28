@@ -1,109 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752995Ab1L1XTD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 18:19:03 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62125 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab1L1XTA (ORCPT
+	id S1753455Ab1L1XXK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 18:23:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52321 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab1L1XXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 18:19:00 -0500
-From: Marcos Paulo de Souza <marcos.mage@gmail.com>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Marcos Paulo de Souza <marcos.mage@gmail.com>
-Subject: [PATCH 7/7] staging: vt6656: iwctl.c: Rewrite siwrts funciton
-Date: Wed, 28 Dec 2011 21:18:31 +0000
-Message-Id: <1325107111-3197-1-git-send-email-marcos.mage@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Wed, 28 Dec 2011 18:23:08 -0500
+MIME-Version: 1.0
+Date: Wed, 28 Dec 2011 17:23:07 -0600
+Message-ID: <CAKA=qzbZ4x5u1bBM0gAECeMNutyaVzp1FmRPwKHsBEEs7984ag@mail.gmail.com>
+Subject: [PATCH RFC] IPv6: Avoid taking write lock for /proc/net/ipv6_route
+From: Josh Hunt <joshhunt00@gmail.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=e89a8f83a53f4e3d4d04b52f48f2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function has the following issues:
-	Parameter info and extra are not used
-	Wrong error handling(the function not return -EINVAL when it
-happens)
+--e89a8f83a53f4e3d4d04b52f48f2
+Content-Type: text/plain; charset=ISO-8859-1
 
-This patch simplifies this funtion, remove the not used parameters and
-fix the error handilng.
+During some debugging I needed to look into how /proc/net/ipv6_route
+operated and in my digging I found its calling fib6_clean_all() which
+uses "write_lock_bh(&table->tb6_lock)" before doing the walk of the
+table. I saw this on 2.6.32, but reading the code I believe the same
+basic idea exists in the current code. Looking at the rtnetlink code
+they are only calling "read_lock_bh(&table->tb6_lock);" via
+fib6_dump_table(). While I realize reading from proc probably isn't
+the recommended way of fetching the ipv6 route table; taking a write
+lock seems unnecessary and would probably cause network performance
+issues.
 
-Signed-off-by: Marcos Paulo de Souza <marcos.mage@gmail.com>
----
- drivers/staging/vt6656/iwctl.c    |   26 +++++++++-----------------
- drivers/staging/vt6656/iwctl.h    |    5 +----
- drivers/staging/vt6656/main_usb.c |    2 +-
- 3 files changed, 11 insertions(+), 22 deletions(-)
+To verify this I loaded up the ipv6 route table and then ran iperf in 3 cases:
+  * doing nothing
+  * reading ipv6 route table via proc (while :; do cat
+/proc/net/ipv6_route > /dev/null; done)
+  * reading ipv6 route table via rtnetlink - (while :; do ip -6 route
+show table all > /dev/null; done)
 
-diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
-index 2ad7428..3ddda65 100644
---- a/drivers/staging/vt6656/iwctl.c
-+++ b/drivers/staging/vt6656/iwctl.c
-@@ -1010,27 +1010,19 @@ void iwctl_giwrate(struct net_device *dev,
- /*
-  * Wireless Handler : set rts threshold
-  */
--
- int iwctl_siwrts(struct net_device *dev,
--             struct iw_request_info *info,
--			 struct iw_param *wrq,
--             char *extra)
-+		 struct iw_param *wrq)
- {
--	PSDevice	        pDevice = (PSDevice)netdev_priv(dev);
--	int rc = 0;
-+	PSDevice pDevice = (PSDevice)netdev_priv(dev);
-+
-+	if ((wrq->value < 0 || wrq->value > 2312) && !wrq->disabled)
-+		return -EINVAL;
- 
--    DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO " SIOCSIWRTS \n");
-+	else if (wrq->disabled)
-+		pDevice->wRTSThreshold = 2312;
- 
--	{
--	    int rthr = wrq->value;
--	    if(wrq->disabled)
--			rthr = 2312;
--	    if((rthr < 0) || (rthr > 2312)) {
--			rc = -EINVAL;
--    	}else {
--		    pDevice->wRTSThreshold = rthr;
--	    }
--    }
-+	else
-+		pDevice->wRTSThreshold = wrq->value;
- 
- 	return 0;
- }
-diff --git a/drivers/staging/vt6656/iwctl.h b/drivers/staging/vt6656/iwctl.h
-index bd38e9d..0c6e049 100644
---- a/drivers/staging/vt6656/iwctl.h
-+++ b/drivers/staging/vt6656/iwctl.h
-@@ -113,10 +113,7 @@ void iwctl_giwrate(struct net_device *dev,
-              char *extra);
- 
- int iwctl_siwrts(struct net_device *dev,
--             struct iw_request_info *info,
--			 struct iw_param *wrq,
--             char *extra);
--
-+		 struct iw_param *wrq);
- 
- int iwctl_giwrts(struct net_device *dev,
-              struct iw_request_info *info,
-diff --git a/drivers/staging/vt6656/main_usb.c b/drivers/staging/vt6656/main_usb.c
-index 64d0653..1db9f5b 100644
---- a/drivers/staging/vt6656/main_usb.c
-+++ b/drivers/staging/vt6656/main_usb.c
-@@ -1704,7 +1704,7 @@ static int  device_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
- 	// Set the desired RTS threshold
- 	case SIOCSIWRTS:
- 
--		rc = iwctl_siwrts(dev, NULL, &(wrq->u.rts), NULL);
-+		rc = iwctl_siwrts(dev, &(wrq->u.rts));
- 		break;
- 
- 	// Get the current RTS threshold
--- 
-1.7.4.4
+* Load the ipv6 route table up with:
+  * for ((i = 0;i < 4000;i++)); do ip route add unreachable 2000::$i; done
 
+* iperf commands:
+  * client: iperf -i 1 -V -c <ipv6 addr>
+  * server: iperf -V -s
+
+* iperf results - 3 runs as client, 3 runs as server (in Mbits/sec)
+  * nothing: client: 927,927,927 server: 927,927,927
+  * proc: client: 179,97,96,113 server: 142,112,133
+  * iproute: client: 928,927,928 server: 927,927,927
+
+lock_stat shows taking the write lock is causing the slowdown. Using
+this info I decided to write a version of fib6_clean_all() which
+replaces write_lock_bh(&table->tb6_lock) with
+read_lock_bh(&table->tb6_lock). With this new function I see the same
+results as with my rtnetlink iperf test. I guess my question is what
+am I missing? Is there a reason you need to take the write lock when
+reading the route table to display to proc?
+
+I attached a patch with my crude method listed above.
+
+Thanks
+Josh
+
+--e89a8f83a53f4e3d4d04b52f48f2
+Content-Type: text/x-diff; charset=US-ASCII; 
+	name="ipv6-avoid-taking-write-lock-for-proc-net-ipv6_route.patch"
+Content-Disposition: attachment; 
+	filename="ipv6-avoid-taking-write-lock-for-proc-net-ipv6_route.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gwqyydjd1
+
+Y29tbWl0IDYwNmUzNGU5MzAxYWFiNWU3M2Y0N2YyNGIyMWE2MWY4MTMzOTgzNjcKQXV0aG9yOiBK
+b3NoIEh1bnQgPGpvc2hodW50MDBAZ21haWwuY29tPgpEYXRlOiAgIFdlZCBEZWMgMjggMTQ6NTQ6
+NDQgMjAxMSAtMDgwMAoKICAgIElQdjY6IEF2b2lkIHRha2luZyB3cml0ZSBsb2NrIGZvciAvcHJv
+Yy9uZXQvaXB2Nl9yb3V0ZQoKRHVyaW5nIHNvbWUgZGVidWdnaW5nIEkgbmVlZGVkIHRvIGxvb2sg
+aW50byBob3cgL3Byb2MvbmV0L2lwdjZfcm91dGUKb3BlcmF0ZWQgYW5kIGluIG15IGRpZ2dpbmcg
+SSBmb3VuZCBpdHMgY2FsbGluZyBmaWI2X2NsZWFuX2FsbCgpIHdoaWNoIHVzZXMKIndyaXRlX2xv
+Y2tfYmgoJnRhYmxlLT50YjZfbG9jaykiIGJlZm9yZSBkb2luZyB0aGUgd2FsayBvZiB0aGUgdGFi
+bGUuIEkKZm91bmQgdGhpcyBvbiAyLjYuMzIsIGJ1dCByZWFkaW5nIHRoZSBjb2RlIEkgYmVsaWV2
+ZSB0aGUgc2FtZSBiYXNpYyBpZGVhCmV4aXN0cyBjdXJyZW50bHkuIExvb2tpbmcgYXQgdGhlIHJ0
+bmV0bGluayBjb2RlIHRoZXkgYXJlIG9ubHkgY2FsbGluZwoicmVhZF9sb2NrX2JoKCZ0YWJsZS0+
+dGI2X2xvY2spOyIgdmlhIGZpYjZfZHVtcF90YWJsZSgpLiBXaGlsZSBJIHJlYWxpemUKcmVhZGlu
+ZyBmcm9tIHByb2MgaXNuJ3QgdGhlIHJlY29tbWVuZGVkIHdheSBvZiBmZXRjaGluZyB0aGUgaXB2
+NiByb3V0ZQp0YWJsZTsgdGFraW5nIGEgd3JpdGUgbG9jayBzZWVtcyB1bm5lY2Vzc2FyeSBhbmQg
+d291bGQgcHJvYmFibHkgY2F1c2UKbmV0d29yayBwZXJmb3JtYW5jZSBpc3N1ZXMuCgpUbyB2ZXJp
+ZnkgdGhpcyBJIGxvYWRlZCB1cCB0aGUgaXB2NiByb3V0ZSB0YWJsZSBhbmQgdGhlbiByYW4gaXBl
+cmYgaW4gMwpjYXNlczoKICAqIGRvaW5nIG5vdGhpbmcKICAqIHJlYWRpbmcgaXB2NiByb3V0ZSB0
+YWJsZSB2aWEgcHJvYwogICAgKHdoaWxlIDo7IGRvIGNhdCAvcHJvYy9uZXQvaXB2Nl9yb3V0ZSA+
+IC9kZXYvbnVsbDsgZG9uZSkKICAqIHJlYWRpbmcgaXB2NiByb3V0ZSB0YWJsZSB2aWEgcnRuZXRs
+aW5rCiAgICAod2hpbGUgOjsgZG8gaXAgLTYgcm91dGUgc2hvdyB0YWJsZSBhbGwgPiAvZGV2L251
+bGw7IGRvbmUpCgoqIExvYWQgdGhlIGlwdjYgcm91dGUgdGFibGUgdXAgd2l0aDoKICAqIGZvciAo
+KGkgPSAwO2kgPCA0MDAwO2krKykpOyBkbyBpcCByb3V0ZSBhZGQgdW5yZWFjaGFibGUgMjAwMDo6
+JGk7IGRvbmUKCiogaXBlcmYgY29tbWFuZHM6CiAgKiBjbGllbnQ6IGlwZXJmIC1pIDEgLVYgLWMg
+PGlwdjYgYWRkcj4KICAqIHNlcnZlcjogaXBlcmYgLVYgLXMKCiogaXBlcmYgcmVzdWx0cyAtIDMg
+cnVucyBlYWNoIChpbiBNYml0cy9zZWMpCiAgKiBub3RoaW5nOiBjbGllbnQ6IDkyNyw5MjcsOTI3
+IHNlcnZlcjogOTI3LDkyNyw5MjcKICAqIHByb2M6IGNsaWVudDogMTc5LDk3LDk2LDExMyBzZXJ2
+ZXI6IDE0MiwxMTIsMTMzCiAgKiBpcHJvdXRlOiBjbGllbnQ6IDkyOCw5MjcsOTI4IHNlcnZlcjog
+OTI3LDkyNyw5MjcKCmxvY2tfc3RhdCBzaG93cyB0YWtpbmcgdGhlIHdyaXRlIGxvY2sgaXMgY2F1
+c2luZyB0aGUgc2xvd2Rvd24uIFVzaW5nIHRoaXMKaW5mbyBJIGRlY2lkZWQgdG8gd3JpdGUgYSB2
+ZXJzaW9uIG9mIGZpYjZfY2xlYW5fYWxsKCkgd2hpY2ggcmVwbGFjZXMKd3JpdGVfbG9ja19iaCgm
+dGFibGUtPnRiNl9sb2NrKSB3aXRoIHJlYWRfbG9ja19iaCgmdGFibGUtPnRiNl9sb2NrKS4gV2l0
+aAp0aGlzIG5ldyBmdW5jdGlvbiBJIHNlZSB0aGUgc2FtZSByZXN1bHRzIGFzIHdpdGggbXkgcnRu
+ZXRsaW5rIGlwZXJmIHRlc3QuCgpTaWduZWQtb2ZmLWJ5OiBKb3NoIEh1bnQgPGpvc2hodW50MDBA
+Z21haWwuY29tPgotLS0KCmRpZmYgLS1naXQgYS9pbmNsdWRlL25ldC9pcDZfZmliLmggYi9pbmNs
+dWRlL25ldC9pcDZfZmliLmgKaW5kZXggNTczNWEwZi4uMWQyNDJiYiAxMDA2NDQKLS0tIGEvaW5j
+bHVkZS9uZXQvaXA2X2ZpYi5oCisrKyBiL2luY2x1ZGUvbmV0L2lwNl9maWIuaApAQCAtMjAyLDYg
+KzIwMiwxMCBAQCBzdHJ1Y3QgZmliNl9ub2RlCQkqZmliNl9sb2NhdGUoc3RydWN0IGZpYjZfbm9k
+ZSAqcm9vdCwKIAkJCQkJICAgICBjb25zdCBzdHJ1Y3QgaW42X2FkZHIgKmRhZGRyLCBpbnQgZHN0
+X2xlbiwKIAkJCQkJICAgICBjb25zdCBzdHJ1Y3QgaW42X2FkZHIgKnNhZGRyLCBpbnQgc3JjX2xl
+bik7CiAKK2V4dGVybiB2b2lkCQkJZmliNl9jbGVhbl9hbGxfcm8oc3RydWN0IG5ldCAqbmV0LAor
+CQkJCQkgICAgICAgaW50ICgqZnVuYykoc3RydWN0IHJ0Nl9pbmZvICosIHZvaWQgKmFyZyksCisJ
+CQkJCSAgICAgICBpbnQgcHJ1bmUsIHZvaWQgKmFyZyk7CisKIGV4dGVybiB2b2lkCQkJZmliNl9j
+bGVhbl9hbGwoc3RydWN0IG5ldCAqbmV0LAogCQkJCQkgICAgICAgaW50ICgqZnVuYykoc3RydWN0
+IHJ0Nl9pbmZvICosIHZvaWQgKmFyZyksCiAJCQkJCSAgICAgICBpbnQgcHJ1bmUsIHZvaWQgKmFy
+Zyk7CmRpZmYgLS1naXQgYS9uZXQvaXB2Ni9pcDZfZmliLmMgYi9uZXQvaXB2Ni9pcDZfZmliLmMK
+aW5kZXggOTM3MThmMy4uMzkyNGI2NyAxMDA2NDQKLS0tIGEvbmV0L2lwdjYvaXA2X2ZpYi5jCisr
+KyBiL25ldC9pcHY2L2lwNl9maWIuYwpAQCAtMTM4MCw2ICsxMzgwLDI2IEBAIHN0YXRpYyB2b2lk
+IGZpYjZfY2xlYW5fdHJlZShzdHJ1Y3QgbmV0ICpuZXQsIHN0cnVjdCBmaWI2X25vZGUgKnJvb3Qs
+CiAJZmliNl93YWxrKCZjLncpOwogfQogCit2b2lkIGZpYjZfY2xlYW5fYWxsX3JvKHN0cnVjdCBu
+ZXQgKm5ldCwgaW50ICgqZnVuYykoc3RydWN0IHJ0Nl9pbmZvICosIHZvaWQgKmFyZyksCisJCSAg
+ICBpbnQgcHJ1bmUsIHZvaWQgKmFyZykKK3sKKwlzdHJ1Y3QgZmliNl90YWJsZSAqdGFibGU7CisJ
+c3RydWN0IGhsaXN0X25vZGUgKm5vZGU7CisJc3RydWN0IGhsaXN0X2hlYWQgKmhlYWQ7CisJdW5z
+aWduZWQgaW50IGg7CisKKwlyY3VfcmVhZF9sb2NrKCk7CisJZm9yIChoID0gMDsgaCA8IEZJQjZf
+VEFCTEVfSEFTSFNaOyBoKyspIHsKKwkJaGVhZCA9ICZuZXQtPmlwdjYuZmliX3RhYmxlX2hhc2hb
+aF07CisJCWhsaXN0X2Zvcl9lYWNoX2VudHJ5X3JjdSh0YWJsZSwgbm9kZSwgaGVhZCwgdGI2X2hs
+aXN0KSB7CisJCQlyZWFkX2xvY2tfYmgoJnRhYmxlLT50YjZfbG9jayk7CisJCQlmaWI2X2NsZWFu
+X3RyZWUobmV0LCAmdGFibGUtPnRiNl9yb290LAorCQkJCQlmdW5jLCBwcnVuZSwgYXJnKTsKKwkJ
+CXJlYWRfdW5sb2NrX2JoKCZ0YWJsZS0+dGI2X2xvY2spOworCQl9CisJfQorCXJjdV9yZWFkX3Vu
+bG9jaygpOworfQogdm9pZCBmaWI2X2NsZWFuX2FsbChzdHJ1Y3QgbmV0ICpuZXQsIGludCAoKmZ1
+bmMpKHN0cnVjdCBydDZfaW5mbyAqLCB2b2lkICphcmcpLAogCQkgICAgaW50IHBydW5lLCB2b2lk
+ICphcmcpCiB7CmRpZmYgLS1naXQgYS9uZXQvaXB2Ni9yb3V0ZS5jIGIvbmV0L2lwdjYvcm91dGUu
+YwppbmRleCAzMzk5ZGQzLi4yMGY4ZjUwIDEwMDY0NAotLS0gYS9uZXQvaXB2Ni9yb3V0ZS5jCisr
+KyBiL25ldC9pcHY2L3JvdXRlLmMKQEAgLTI2NTksNyArMjY1OSw3IEBAIHN0YXRpYyBpbnQgcnQ2
+X2luZm9fcm91dGUoc3RydWN0IHJ0Nl9pbmZvICpydCwgdm9pZCAqcF9hcmcpCiBzdGF0aWMgaW50
+IGlwdjZfcm91dGVfc2hvdyhzdHJ1Y3Qgc2VxX2ZpbGUgKm0sIHZvaWQgKnYpCiB7CiAJc3RydWN0
+IG5ldCAqbmV0ID0gKHN0cnVjdCBuZXQgKiltLT5wcml2YXRlOwotCWZpYjZfY2xlYW5fYWxsKG5l
+dCwgcnQ2X2luZm9fcm91dGUsIDAsIG0pOworCWZpYjZfY2xlYW5fYWxsX3JvKG5ldCwgcnQ2X2lu
+Zm9fcm91dGUsIDAsIG0pOwogCXJldHVybiAwOwogfQogCg==
+--e89a8f83a53f4e3d4d04b52f48f2--
