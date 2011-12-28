@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1L1VHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 16:07:55 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:51323 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754311Ab1L1VHx (ORCPT
+	id S1754579Ab1L1VIe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 16:08:34 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50082 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754311Ab1L1VIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 16:07:53 -0500
-Message-ID: <4EFB8523.6080708@gmail.com>
-Date: Wed, 28 Dec 2011 16:07:47 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 28 Dec 2011 16:08:32 -0500
+Message-ID: <4EFB83DE.7080404@solonet.org.ua>
+Date: Wed, 28 Dec 2011 23:02:22 +0200
+From: Denis Kuzmenko <linux@solonet.org.ua>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Yasunori Goto <y-goto@jp.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-References: <1324633794.24803.48.camel@twins> <20111223154137.GA27901@redhat.com> <20111226172357.CE4D.E1E9C6FF@jp.fujitsu.com> <20111226171151.GA4472@redhat.com>
-In-Reply-To: <20111226171151.GA4472@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+Subject: Re: [PATCHv2 resend] Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ selected.
+References: <4EE7BE5F.8020108@solonet.org.ua> <01e501ccc536$a6e58fb0$f4b0af10$%kim@samsung.com>
+In-Reply-To: <01e501ccc536$a6e58fb0$f4b0af10$%kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/26/11 12:11 PM), Oleg Nesterov wrote:
-> On 12/26, Yasunori Goto wrote:
->>
->>>
->>> IIRC, this was already discussed a bit. Say, try_to_wake_up(TASK_INTERRUPTIBLE)
->>> can wakeup a TASK_UNINTERRUPTIBLE task if it temporary sets INTERRUPTIBLE but
->>> doesn't call schedule() in this state.
->>
->> Oleg-san,
->>
->> Could you point the discussion?
->> I don't understand yet how it occurred...
->
-> Suppose that the task T does
->
-> 	set_current_state(TASK_INTERRUPTIBLE);
->
-> 	set_current_state(TASK_UNINTERRUPTIBLE);
-> 	schedule();
->
-> try_to_wake_up(TASK_UNINTERRUPTIBLE) in between can observe this task
-> in TASK_INTERRUPTIBLE state. Then it can set RUNNING/WAKING after T
-> sets ->state = TASK_UNINTERRUPTIBLE.
->
-> For example, this is possibly if T simply does wait_event() twice when
-> the the 1st wait_event() doesn't sleep.
->
-> Basically this is the same race you described, but I think you found
-> the case when we can't tolerate the spurious wakeup.
+Hi Kukjin,
 
-Hi
+Your patch applies (note that it looks like your email-client have
+wrapped long lines thus broke the path) and works OK. Looks good to me.
+See some additional comments below.
 
-I looked at scheduler code today briefly. now I'm afraid following code 
-have similar race.
+On 12/28/2011 09:59 AM, Kukjin Kim wrote:
+> Denis Kuzmenko wrote:
+(snip)
+>> +	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING ||
+>> S3C2412_IOTIMING)
+> 
+> As you know, CONFIG_CPU_FREQ_S3C24XX_IODEBUG is for enabling of
+> s3c_freq_iodbg() and there is no problem when CONFIG_S3C241{0,2}_IOTIMING is
+> not selected, even though s3c_freq_iodbg() is used only at
+> s3c2410-iotiming.c now. So this is not necessary to fix the problem you
+> said.
 
+I'm OK with this approach, however I don't see any future use of
+s3c_freq_iodbg() without s3c2410-iotiming.c. But it's not anyway
+critical so please pick any variant which you like.
 
-         if (task_contributes_to_load(p))
-                 rq->nr_uninterruptible--;
+(snip)
+> Well, do we really need to have '#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS'
+> here?
+> I think, just having dependency with CONFIG_S3C241{1,2}_IOTIMING can avoid
+> the build error.
 
+Yes, CONFIG_S3C241{1,2}_IOTIMING dependency is just enough.
 
+(snip)
+>> -extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+>> -				struct s3c_iotimings *timings);
+>> -
+> 
+> Yes, why is this duplicated :(
 
-Can't following schenario be happen?
+Don't have an idea. I'm new to this platform and to Linux at all so I
+don't know how it appeared.
+Just another harmless mistype I think.
 
+(snip)
+> So how about at below?
+> If you're ok, will send before v3.2.
 
-CPU0                    CPU1
---------------------------------------------------------
-deactivate_task()
-                        task->state = TASK_UNINTERRUPTIBLE;
-activate_task()
-   rq->nr_uninterruptible--;
+So, as already said, I have no objections.
+And thank you for review.
 
-                        schedule()
-                          deactivate_task()
-                            rq->nr_uninterruptible++;
-
-Totally, nr_uninterruptible wasn't incremented.
-
-
-I'm still not sure. I need to read more sched code.
-
-
-
+-- 
+Best regards, Denis Kuzmenko.
