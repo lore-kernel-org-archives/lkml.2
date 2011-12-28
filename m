@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab1L1K20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 05:28:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40961 "EHLO mx1.redhat.com"
+	id S1753622Ab1L1Kck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 05:32:40 -0500
+Received: from gate.crashing.org ([63.228.1.57]:45364 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752755Ab1L1K2Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 05:28:24 -0500
-Message-ID: <4EFAEF40.3090407@redhat.com>
-Date: Wed, 28 Dec 2011 12:28:16 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
-MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: Liu Ping Fan <kernelfans@gmail.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, aliguori@us.ibm.com, gleb@redhat.com,
-        mtosatti@redhat.com, xiaoguangrong.eric@gmail.com, jan.kiszka@web.de,
-        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Subject: Re: [PATCH v6] kvm: make vcpu life cycle separated from kvm instance
-References: <1324091975-20930-1-git-send-email-kernelfans@gmail.com> <1324975139-8836-1-git-send-email-kernelfans@gmail.com> <4EFAE72D.3080609@redhat.com> <4EFAE74F.7000200@redhat.com> <4EFAED2E.6090403@oss.ntt.co.jp>
-In-Reply-To: <4EFAED2E.6090403@oss.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752625Ab1L1Kci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 05:32:38 -0500
+Message-ID: <1325068334.6632.43.camel@pasglop>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (powerpc related)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 28 Dec 2011 21:32:14 +1100
+In-Reply-To: <20111228194949.ff20a609745e816c266f7d91@canb.auug.org.au>
+References: <20111228194949.ff20a609745e816c266f7d91@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2011 12:19 PM, Takuya Yoshikawa wrote:
->> Oops, that's only needed when the unplug API is introduced.
->>
->
->
-> I think it is OK to to add such an API later on, but I really want
-> the author to write the plan in the changelog.
+On Wed, 2011-12-28 at 19:49 +1100, Stephen Rothwell wrote:
+> Hi ,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> kernel/built-in.o: In function `irq_dispose_mapping':
+> (.opd+0x159f0): multiple definition of `irq_dispose_mapping'
+> arch/powerpc/kernel/built-in.o:(.opd+0x960): first defined here
+> kernel/built-in.o: In function `irq_create_of_mapping':
+> (.opd+0x15a20): multiple definition of `irq_create_of_mapping'
+> arch/powerpc/kernel/built-in.o:(.opd+0x9a8): first defined here
+> kernel/built-in.o: In function `.irq_create_of_mapping':
+> (.text+0x147030): multiple definition of `.irq_create_of_mapping'
+> arch/powerpc/kernel/built-in.o:(.text+0x9de0): first defined here
+> kernel/built-in.o: In function `.irq_dispose_mapping':
+> (.text+0x146f4c): multiple definition of `.irq_dispose_mapping'
+> arch/powerpc/kernel/built-in.o:(.text+0x9684): first defined here
+> 
+> I am not sure what caused this. And have just left it broken.
 
-It was in fact in the beginning of the thread. 
+Grant, is your irq remapper misbehaving ?
 
-> I am not objecting to this patch itself, but the way this kind of change
-> is being introduced seems not be in a good manner.
+Cheers,
+Ben.
 
-It should be part of a patch series that adds the API, otherwise it will
-never be tested.
-
--- 
-error compiling committee.c: too many arguments to function
 
