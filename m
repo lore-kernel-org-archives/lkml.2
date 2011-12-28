@@ -1,118 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab1L0XrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 18:47:16 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56946 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751490Ab1L0XrN (ORCPT
+	id S1752690Ab1L0Xs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 18:48:56 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:40750 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751508Ab1L0Xsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 18:47:13 -0500
-Message-ID: <4EFA58FD.9060605@lwfinger.net>
-Date: Tue, 27 Dec 2011 17:47:09 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Tue, 27 Dec 2011 18:48:54 -0500
+Message-ID: <4EFA6751.3060502@xenotime.net>
+Date: Tue, 27 Dec 2011 16:48:17 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] b43: fix regression in PIO case
-References: <alpine.DEB.2.00.1112261608140.12108@axis700.grange> <alpine.DEB.2.00.1112261824000.12108@axis700.grange> <CACna6ry1tKXtUSQHknkEbzBq_gZUyxn1-9Guba2a56xzx242SA@mail.gmail.com> <alpine.DEB.2.00.1112272359240.6684@axis700.grange>
-In-Reply-To: <alpine.DEB.2.00.1112272359240.6684@axis700.grange>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
+References: <20111223124741.711871189@openvz.org>	<20111223124920.661126615@openvz.org> <20111227153304.c585c5f6.akpm@linux-foundation.org>
+In-Reply-To: <20111227153304.c585c5f6.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2011 05:05 PM, Guennadi Liakhovetski wrote:
-> On Tue, 27 Dec 2011, Rafał Miłecki wrote:
->
->> W dniu 26 grudnia 2011 18:28 użytkownik Guennadi Liakhovetski
->> <g.liakhovetski@gmx.de>  napisał:
->>> This patch fixes the regression, introduced by
->>>
->>> commit 17030f48e31adde5b043741c91ba143f5f7db0fd
->>> From: Rafał Miłecki<zajec5@gmail.com>
->>> Date: Thu, 11 Aug 2011 17:16:27 +0200
->>> Subject: [PATCH] b43: support new RX header, noticed to be used in 598.314+ fw
->>>
->>> in PIO case.
->>>
->>> Signed-off-by: Guennadi Liakhovetski<g.liakhovetski@gmx.de>
->>> ---
->>> diff --git a/drivers/net/wireless/b43/pio.c b/drivers/net/wireless/b43/pio.c
->>> index ce8a4bd..b64b64c 100644
->>> --- a/drivers/net/wireless/b43/pio.c
->>> +++ b/drivers/net/wireless/b43/pio.c
->>> @@ -617,9 +617,19 @@ static bool pio_rx_frame(struct b43_pio_rxqueue *q)
->>>         const char *err_msg = NULL;
->>>         struct b43_rxhdr_fw4 *rxhdr =
->>>                 (struct b43_rxhdr_fw4 *)wl->pio_scratchspace;
->>> +       size_t rxhdr_size = sizeof(*rxhdr);
->>>
->>>         BUILD_BUG_ON(sizeof(wl->pio_scratchspace)<  sizeof(*rxhdr));
->>> -       memset(rxhdr, 0, sizeof(*rxhdr));
->>> +       switch (dev->fw.hdr_format) {
->>> +       case B43_FW_HDR_410:
->>> +       case B43_FW_HDR_351:
->>> +               rxhdr_size -= sizeof(rxhdr->format_598) -
->>> +                       sizeof(rxhdr->format_351);
->>> +               break;
->>> +       case B43_FW_HDR_598:
->>> +               break;
->>> +       }
->>> +       memset(rxhdr, 0, rxhdr_size);
+On 12/27/2011 03:33 PM, Andrew Morton wrote:
+> On Fri, 23 Dec 2011 16:47:42 +0400
+> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> 
+>> The routine XORs the given pointer with a random value
+>> producing an ID (32 or 64 bit, depending on the arch).
 >>
->> Huuh, that's really tricky. Can you just do "normal" conditions as
->> Larry suggested, please?
->
-> Sorry? I absolutely see nothing tricky there. Do you think this would look
-> "less tricky" to you:
->
-> 	switch (dev->fw.hdr_format) {
-> 	case B43_FW_HDR_410:
-> 	case B43_FW_HDR_351:
-> 		rxhdr_size = offsetof(struct b43_rxhdr_fw4,
-> 					format_351) +
-> 			sizeof(rxhdr_size->format_351);
-> 		break;
-> 	case B43_FW_HDR_598:
-> 		rxhdr_size = sizeof(*rxhdr);
-> 		break;
-> 	}
->
+>> Since it's a valuable information -- only CAP_SYS_ADMIN
+>> is allowed to obtain it.
+>>
+>>  - Tejun worried about the single poison value was a weak side -
+>>    leaking one makes all the IDs vulnerable. To address this
+>>    several poison values - one per object type - are introduced.
+>>    They are stored in a plain array.
+>>  - Pekka proposed to initialized poison values in the late_initcall callback
+>>  - ... and move the code to mm/util.c
+>>
+>> ...
+>>
+> 
+> The code in general looks simple and reasonable to me.  I'm too much of
+> a security weenie to pass judgement on the security aspects.
+> 
+>>
+>> ...
+>>
+>> --- linux-2.6.git.orig/mm/Kconfig
+>> +++ linux-2.6.git/mm/Kconfig
+>> @@ -373,3 +373,19 @@ config CLEANCACHE
+>>  	  in a negligible performance hit.
+>>  
+>>  	  If unsure, say Y to enable cleancache
+>> +
+>> +config GENERIC_OBJECT_ID
+>> +	bool "Enable generic object ID infrastructure"
+>> +	depends on CHECKPOINT_RESTORE
+> 
+> Is c/r useless without GENERIC_OBJECT_ID?  If so, perhaps a `select'
+> would be good here.
 
-How about this?
+Is GENERIC_OBJECT_ID useful elsewhere?  If so, then it shouldn't depend
+on CHECKPOINT_RESTORE -- it should just live in lib/ instead of in mm/
+and CHECKPOINT_RESTORE should select it.
 
-Index: wireless-testing-new/drivers/net/wireless/b43/pio.c
-===================================================================
---- wireless-testing-new.orig/drivers/net/wireless/b43/pio.c
-+++ wireless-testing-new/drivers/net/wireless/b43/pio.c
-@@ -617,9 +617,20 @@ static bool pio_rx_frame(struct b43_pio_
-         const char *err_msg = NULL;
-         struct b43_rxhdr_fw4 *rxhdr =
-                 (struct b43_rxhdr_fw4 *)wl->pio_scratchspace;
-+       size_t rxhdr_size;
+>> +	default n
+>> +	help
+>> +	  Turn on the functionality that can generate IDs for kernel
+>> +	  objects, which are exported to userspace via /proc filesystem.
+>> +
+>> +	  It is useful if you need to examinate kernel objects and test
+>> +	  if they are shared between several tasks. These IDs should never
+>> +	  be used for anything but the "sameness" test. Besides, the IDs are
+>> +	  dynamic and valid only while object is alive, once it get freed or
+>> +	  kernel is rebooted -- the IDs will be changed.
+>> +
+>> +	  If unsure, say N here.
 
-         BUILD_BUG_ON(sizeof(wl->pio_scratchspace) < sizeof(*rxhdr));
--       memset(rxhdr, 0, sizeof(*rxhdr));
-+       switch (dev->fw.hdr_format) {
-+       case B43_FW_HDR_410:
-+       case B43_FW_HDR_351:
-+               rxhdr_size = sizeof(rxhdr->format_351);
-+               break;
-+       case B43_FW_HDR_598:
-+       default:
-+               rxhdr_size = sizeof(rxhdr->format_598);
-+               break;
-+       }
-+       memset(rxhdr, 0, rxhdr_size);
 
-         /* Check if we have data and wait for it to get ready. */
-         if (q->rev >= 8) {
-
-Larry
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
