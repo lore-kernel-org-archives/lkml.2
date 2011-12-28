@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752029Ab1L1JC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 04:02:29 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45367 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429Ab1L1JC0 (ORCPT
+	id S1752166Ab1L1JOX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 04:14:23 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:42865 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab1L1JOV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 04:02:26 -0500
-Message-ID: <1325063055.1165.103.camel@sauron.fi.intel.com>
-Subject: Re: linux-next: manual merge of the staging tree with the l2-mtd
- tree
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 28 Dec 2011 11:04:15 +0200
-In-Reply-To: <1325062442.1165.95.camel@sauron.fi.intel.com>
-References: <20111228175440.fa8c027e41dbeaccddb0e6ea@canb.auug.org.au>
-	 <1325062442.1165.95.camel@sauron.fi.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-eKfsrffDQRrlDsbqBAKj"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+	Wed, 28 Dec 2011 04:14:21 -0500
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>
+Subject: RE: [PATCH 1/2] MFD: TPS65217: Add new mfd device for TPS65217
+Thread-Topic: [PATCH 1/2] MFD: TPS65217: Add new mfd device for TPS65217
+Thread-Index: AQHMwTK1zssV+wAOUUeoOy+ljcxe7pXo4nEAgAaiSnA=
+Date: Wed, 28 Dec 2011 09:14:13 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC103ECA4@DBDE01.ent.ti.com>
+References: <1324617679-14301-1-git-send-email-anilkumar@ti.com>
+ <20111223104918.GD2834@opensource.wolfsonmicro.com>
+In-Reply-To: <20111223104918.GD2834@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.157.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mark,
 
---=-eKfsrffDQRrlDsbqBAKj
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Thanks for reviewing these patches.
 
-On Wed, 2011-12-28 at 10:54 +0200, Artem Bityutskiy wrote:
-> On Wed, 2011-12-28 at 17:54 +1100, Stephen Rothwell wrote:
-> > Hi Greg,
-> >=20
-> > Today's linux-next merge of the staging tree got a conflict in
-> > drivers/staging/spectra/lld_mtd.c between a series of commits from the
-> > l2-mtd tree and commit be7f39c5ecf5 ("Staging: delete spectra driver")
-> > from the staging tree.
-> >=20
-> > I just removed the file.
->=20
-> Oh, it is in staging, I somehow missed that and pushed a small clean-up
-> to the MTD tree (because the driver is an MTD driver). I'll kill that
-> commit now.
->=20
-> Apologies for the hassle.
+On Fri, Dec 23, 2011 at 16:19:18, Mark Brown wrote:
+> On Fri, Dec 23, 2011 at 10:51:19AM +0530, AnilKumar Ch wrote:
+> > The TPS65217 chip is a power management IC for Portable Navigation Systems
+> > and Tablet Computing devices. It contains the following components:
+> 
+> I can't help but thinking that there ought to be more code sharing
+> between the various TI PMIC drivers.
+> 
+> > +static int tps65217_i2c_read_device(struct tps65217_dev *tps65217, char reg,
+> > +				  int bytes, void *dest)
+> > +{
+> > +	struct i2c_client *i2c = tps65217->i2c_client;
+> > +	struct i2c_msg xfer[2];
+> > +	int ret;
+> 
+> Use regmap for the register I/O, this will save a lot of code and will
+> also give access to things like the register cache code.
+> 
 
-Actually, I was thinking about a different commit. Anyway, thanks for
-fixing this up - removing the file is fine.
+All the I2C read and writes moved to regmap read and writes.
 
---=20
-Best Regards,
-Artem Bityutskiy
+> > +	tps65217 = kzalloc(sizeof(struct tps65217_dev), GFP_KERNEL);
+> > +	if (tps65217 == NULL)
+> > +		return -ENOMEM;
+> 
+> Use devm_kzalloc(), it saves all the unwinding code.
 
---=-eKfsrffDQRrlDsbqBAKj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Changed kzalloc to devm_kzalloc
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> 
+> > +/* All register addresses */
+> > +#define TPS65217_REG_CHIPID		0X00
+> 
+> You should verify this as part of the probe() routine - read it back to
+> make sure it's what's expected, and log the chip revision too in case it
+> is useful for diagnostics.
+> 
 
-iQIcBAABAgAGBQJO+tuPAAoJECmIfjd9wqK0tiYP/3Kn1CcBLSIdRXNGt+b2e1wU
-CyRkb8x1C2/JVg2Eb5Yvl99JH2Kzf0OxakSR8RCe3DBoxTdX/TFW2xTNorpWNtIq
-nFHrXSSyQE0zSR7lFN3bByYn8Kcym6S9t/ExRG5c2ZRiPrgFK0dMcS7QDLArwgi4
-YPLLlovx4ZDXS6Z5rPw8YN6qmbkqKUzHxbH5puud7oB2b2lupftUDX6BXT++D/nq
-lrPLMFmvPY335ETJb4PM91pSKFsnNeWPtoYf8QN4wELJ7mRNyMhQqXTiDVCMQ6MV
-Ak8YDVaNgT56cj58LgneK9im+QC8k0wd3VJf9PEP1eYvAJsJnZfLS/zNYZAajDBu
-fDIwEfWX8Fjxm1Tu7O4ZJrEwxqDPJTRWWCbvs770qjASw1OmK9aUkZMkyJtDDuiI
-5XTop0CJAkDP6L4H7C/wbo0ic+bj3nHA/CQBeTjmqKzTq0kAd+HGcsxVdJqAI4lc
-8Ih3ar3YkGacW848lx4Ss3UumRIvNgwqSVnCH1L6nrYP66TBsj5M3f89d1yk7Act
-qGo0St+rHIy/tN5DFaYauiZN1xm7qDKyHC8RabBzCZq6N1xmwj45pPQ+WMoK0ReI
-WLDa0V2jnB+yQsyY0tTk0X68ijY8YQ+o61v34DhcrW4lv4uT/Th1hyoEQi9SHdve
-1HlUw2UThtukGbolC51Z
-=vyk7
------END PGP SIGNATURE-----
+Added chip verification code to mfd probe and printing the regulator ID &
+version number.
 
---=-eKfsrffDQRrlDsbqBAKj--
-
+Thanks
+AnilKumar
