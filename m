@@ -1,123 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1L1Wbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 17:31:42 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:49233 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754624Ab1L1Wbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 17:31:37 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
-	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
-	Ev3UOAE7C14zkfPNvlLF2T8Ff+r4Imfq1mfCdsup6WJsaU5S+NoIzbzxLcYOS7kf
-	+SfFUS2unZ1ZgOwDsiRWTQy0ycrS/NPj8FwgKGBxytmR+qBtDk0hgOY2fyA97++l
-	jz8BI85T+Xb/+5EJV8zkh+ifkfGP660aorWU1rWFYE4=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.8.2
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 28 Dec 2011 14:31:35 -0800
-Message-ID: <7vd3b8z5tk.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1754675Ab1L1Wpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 17:45:45 -0500
+Received: from outmail013.snc4.facebook.com ([66.220.144.147]:37609 "EHLO
+	intmgw005.snc4.facebook.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754631Ab1L1Wpm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 17:45:42 -0500
+Date: Wed, 28 Dec 2011 14:45:36 -0800
+From: Arun Sharma <asharma@fb.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Arun Sharma <asharma@fb.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Kumar Sundararajan <kumar@fb.com>, linux-kernel@vger.kernel.org,
+        john stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH 1/4] Add clock_gettime_ns syscall
+Message-ID: <20111228224536.GA1025@dev3310.snc6.facebook.com>
+References: <cover.1324831829.git.luto@amacapital.net>
+ <16ecaa6abb8b7a25ef31970f71a42c7e2ba5416c.1324831829.git.luto@amacapital.net>
+ <4EFB67AB.7060707@fb.com>
+ <CALCETrVz1ADNxeLzPmeWXPU5ApfKURH2vnged2A2Vng8-hUxcw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: B3F914F4-31A3-11E1-B182-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Disposition: inline
+In-Reply-To: <CALCETrVz1ADNxeLzPmeWXPU5ApfKURH2vnged2A2Vng8-hUxcw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git 1.7.8.2 is available. It contains
-accumulated fixes that applies to the 1.7.8.X maintenance track that have
-already been applied to the 'master' branch to be part of the upcoming
-1.7.9 release.
+On Wed, Dec 28, 2011 at 12:13:37PM -0800, Andy Lutomirski wrote:
+> > How about returning a (signed) long as the time in ns? This way, we save
+> a store and a load and the value can be passed in registers.
+> >
+> > This shouldn't preclude future expansion via extra args.
+> 
+> With an unconditional store to a pointer?  If a null pointer is allowed,
+> the branch will probably kill any performance gain.
 
-The release tarballs are found at:
+No - please see the patch below.
 
-    http://code.google.com/p/git-core/downloads/list
+> 
+> The downside is that this is probably a non-starter for a syscall on 32-bit
+> architectures.  I'll see what the i386 ABI says.  I wonder if returning a
+> struct will use registers for future expansion.
+> 
 
-and their SHA-1 checksums are:
+I was thinking of doing something similar to lseek() on 32 bit archs
+(i.e. by using a type similar to off_t that maps to the right thing for
+both 32 and 64 bit).
 
-7187c1af96db0c181b801957d6e152ec7cd60ab6  git-1.7.8.2.tar.gz
-9047175e5c46aa3260c42e6b4459cf4ee5a7bb8a  git-htmldocs-1.7.8.2.tar.gz
-cc394a0a9689297fddad40c1ccbded0ba9d708da  git-manpages-1.7.8.2.tar.gz
+I used the code below to benchmark the performance of clock_gettime()
+vs clock_gettime_ns() when the client is interested in a nanosec based
+interface.
 
-Also the following public repositories all have a copy of the v1.7.8.2
-tag and the maint branch that the tag points at:
+gettimespec: 3.19 secs
+getns: 2.54 secs (21% faster)
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+ -Arun
 
+PS: I didn't have to delete struct timens. I meant to drop timens.ns
+(since its the return value now).
 
-Git v1.7.8.2 Release Notes
-==========================
+>From 2a9bb81b56c2034f444c3caa6cf8fbfd47f1d888 Mon Sep 17 00:00:00 2001
+From: Arun Sharma <asharma@fb.com>
+Date: Wed, 28 Dec 2011 11:10:37 -0800
+Subject: [PATCH] Make clock_gettime_ns return nanosecs
 
-Fixes since v1.7.8.1
---------------------
+This should speed things up a bit, while leaving room for
+future expansion (eg: return additional info in a struct
+passed in as an extra arg).
 
- * Porcelain commands like "git reset" did not distinguish deletions
-   and type-changes from ordinary modification, and reported them with
-   the same 'M' moniker. They now use 'D' (for deletion) and 'T' (for
-   type-change) to match "git status -s" and "git diff --name-status".
+Signed-off-by: Arun Sharma <asharma@fb.com>
+---
+ arch/x86/vdso/vclock_gettime.c |   22 ++++++----------------
+ include/linux/syscalls.h       |    3 +--
+ include/linux/time.h           |    5 -----
+ kernel/posix-timers.c          |   11 ++++-------
+ 4 files changed, 11 insertions(+), 30 deletions(-)
 
- * The configuration file parser used for sizes (e.g. bigFileThreshold)
-   did not correctly interpret 'g' suffix.
+diff --git a/arch/x86/vdso/vclock_gettime.c b/arch/x86/vdso/vclock_gettime.c
+index f9c08b2..41f613c 100644
+--- a/arch/x86/vdso/vclock_gettime.c
++++ b/arch/x86/vdso/vclock_gettime.c
+@@ -219,7 +219,7 @@ notrace int __vdso_clock_gettime(clockid_t clock, struct timespec *ts)
+ int clock_gettime(clockid_t, struct timespec *)
+ 	__attribute__((weak, alias("__vdso_clock_gettime")));
+ 
+-notrace int __vdso_clock_gettime_ns(clockid_t clock, struct timens *t)
++notrace long __vdso_clock_gettime_ns(clockid_t clock)
+ {
+ 	struct timespec ts;
+ 	int error;
+@@ -227,35 +227,25 @@ notrace int __vdso_clock_gettime_ns(clockid_t clock, struct timens *t)
+ 	switch (clock) {
+ 	case CLOCK_REALTIME:
+ 		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
+-			t->ns = do_realtime_ns();
+-			t->padding = 0;
+-			return 0;
++			return do_realtime_ns();
+ 		}
+ 		break;
+ 	case CLOCK_MONOTONIC:
+ 		if (likely(gtod->clock.vclock_mode != VCLOCK_NONE)) {
+-			t->ns = do_monotonic_ns();
+-			t->padding = 0;
+-			return 0;
++			return do_monotonic_ns();
+ 		}
+ 		break;
+ 	case CLOCK_REALTIME_COARSE:
+-		t->ns = do_realtime_coarse_ns();
+-		t->padding = 0;
+-		return 0;
++		return do_realtime_coarse_ns();
+ 	case CLOCK_MONOTONIC_COARSE:
+-		t->ns = do_monotonic_coarse_ns();
+-		t->padding = 0;
+-		return 0;
++		return do_monotonic_coarse_ns();
+ 	}
+ 
+ 	error = vdso_fallback_gettime(clock, &ts);
+ 	if (error)
+ 		return error;
+ 
+-	t->ns = ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
+-	t->padding = 0;
+-	return 0;
++	return ts.tv_sec * NSEC_PER_SEC + ts.tv_nsec;
+ }
+ 
+ notrace int __vdso_gettimeofday(struct timeval *tv, struct timezone *tz)
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index b351ab6..63759aa 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -317,8 +317,7 @@ asmlinkage long sys_clock_settime(clockid_t which_clock,
+ 				const struct timespec __user *tp);
+ asmlinkage long sys_clock_gettime(clockid_t which_clock,
+ 				struct timespec __user *tp);
+-asmlinkage long sys_clock_gettime_ns(clockid_t which_clock,
+-				struct timens __user *tp);
++asmlinkage long sys_clock_gettime_ns(clockid_t which_clock);
+ asmlinkage long sys_clock_adjtime(clockid_t which_clock,
+ 				struct timex __user *tx);
+ asmlinkage long sys_clock_getres(clockid_t which_clock,
+diff --git a/include/linux/time.h b/include/linux/time.h
+index d4488b1..b306178 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -27,11 +27,6 @@ struct timezone {
+ 	int	tz_dsttime;	/* type of dst correction */
+ };
+ 
+-struct timens {
+-	u64	ns;		/* nanoseconds since the relevant epoch */
+-	u64	padding;	/* for future expansion (UTC offset? sub-ns?) */
+-};
+-
+ #ifdef __KERNEL__
+ 
+ extern struct timezone sys_tz;
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index 1b6ad2d..b87e3dc 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -980,8 +980,7 @@ SYSCALL_DEFINE2(clock_gettime, const clockid_t, which_clock,
+ 	return error;
+ }
+ 
+-SYSCALL_DEFINE2(clock_gettime_ns, const clockid_t, which_clock,
+-		struct timens __user *, tp)
++SYSCALL_DEFINE1(clock_gettime_ns, const clockid_t, which_clock)
+ {
+ 	/*
+ 	 * This implementation isn't as fast as it could be, but the syscall
+@@ -991,8 +990,8 @@ SYSCALL_DEFINE2(clock_gettime_ns, const clockid_t, which_clock,
+ 
+ 	struct k_clock *kc = clockid_to_kclock(which_clock);
+ 	struct timespec kernel_timespec;
+-	struct timens timens;
+ 	int error;
++	long ns;
+ 
+ 	if (!kc)
+ 		return -EINVAL;
+@@ -1000,11 +999,9 @@ SYSCALL_DEFINE2(clock_gettime_ns, const clockid_t, which_clock,
+ 	error = kc->clock_get(which_clock, &kernel_timespec);
+ 
+ 	if (!error) {
+-		timens.ns = kernel_timespec.tv_sec * NSEC_PER_SEC
++		ns = kernel_timespec.tv_sec * NSEC_PER_SEC
+ 			+ kernel_timespec.tv_nsec;
+-		timens.padding = 0;
+-
+-		error = copy_to_user(tp, &timens, sizeof(timens));
++		return ns;
+ 	}
+ 
+ 	return error;
+-- 
+1.7.4
 
- * The replacement implemention for snprintf used on platforms with
-   native snprintf that is broken did not use va_copy correctly.
+==== getns.c ====
 
- * LF-to-CRLF streaming filter replaced all LF with CRLF, which might
-   be techinically correct but not friendly to people who are trying
-   to recover from earlier mistakes of using CRLF in the repository
-   data in the first place. It now refrains from doing so for LF that
-   follows a CR.
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+#include <dlfcn.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
 
- * git native connection going over TCP (not over SSH) did not set
-   SO_KEEPALIVE option which failed to receive link layer errors.
+volatile int sum;
 
- * "git branch -m <current branch> HEAD" is an obvious no-op but was not
-   allowed.
+int
+main(int argc, char *argv[])
+{
+        unsigned long v;
+        void *vdso = dlopen("linux-vdso.so.1", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
+        unsigned long (*vdso_func)();
+        void *vp;
+	int i;
 
- * "git checkout -m" did not recreate the conflicted state in a "both
-   sides added, without any common ancestor version" conflict
-   situation.
+        if (!vdso) {
+                printf("Warning: failed to find vDSO\n");
+                return;
+        }
 
- * "git cherry-pick $commit" (not a range) created an unnecessary
-   sequencer state and interfered with valid workflow to use the
-   command during a session to cherry-pick multiple commits.
+        vdso_func = dlsym(vdso, "__vdso_clock_gettime_ns");
+        if (!vdso_func) {
+                printf("Warning: failed to find vdso_func in vDSO\n");
+                return;
+        }
+        v = (*vdso_func)(CLOCK_REALTIME);
+	printf("%lx %ld\n", v, v);
+	for (i = 0; i < 100000000; i++) {
+		sum += (*vdso_func)(CLOCK_REALTIME);
+	}
+        v = (*vdso_func)(CLOCK_REALTIME);
+	printf("%lx %ld\n", v, v);
+}
 
- * You could make "git commit" segfault by giving the "--no-message"
-   option.
+=== gettimespec.c ===
 
- * "fast-import" did not correctly update an existing notes tree,
-   possibly corrupting the fan-out.
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+#include <dlfcn.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
 
- * "git fetch-pack" accepted unqualified refs that do not begin with
-   refs/ by mistake and compensated it by matching the refspec with
-   tail-match, which was doubly wrong. This broke fetching from a
-   repository with a funny named ref "refs/foo/refs/heads/master" and a
-   'master' branch with "git fetch-pack refs/heads/master", as the
-   command incorrectly considered the former a "match".
+#define NSECS_PER_SEC 1000000000
 
- * "git log --follow" did not honor the rename threshold score given
-   with the -M option (e.g. "-M50%").
+volatile int sum;
 
- * "git mv" gave suboptimal error/warning messages when it overwrites
-   target files. It also did not pay attention to "-v" option.
+int
+main(int argc, char *argv[])
+{
+        unsigned long v;
+        void *vdso = dlopen("linux-vdso.so.1", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD);
+        unsigned long (*vdso_func)();
+        void *vp;
+	int i;
+	struct timespec ts;
 
- * Authenticated "git push" over dumb HTTP were broken with a recent
-   change and failed without asking for password when username is
-   given.
+        if (!vdso) {
+                printf("Warning: failed to find vDSO\n");
+                return;
+        }
 
- * "git push" to an empty repository over HTTP were broken with a
-   recent change to the ref handling.
+        vdso_func = dlsym(vdso, "__vdso_clock_gettime");
+        if (!vdso_func) {
+                printf("Warning: failed to find vdso_func in vDSO\n");
+                return;
+        }
+        v = (*vdso_func)(CLOCK_REALTIME, &ts);
+        v = ts.tv_sec * NSECS_PER_SEC + ts.tv_nsec;
+	printf("%lx %ld\n", v, v);
+	for (i = 0; i < 100000000; i++) {
+		(*vdso_func)(CLOCK_REALTIME, &ts);
+		 v = ts.tv_sec * NSECS_PER_SEC + ts.tv_nsec;
+		 sum +=v;
+	}
+        v = (*vdso_func)(CLOCK_REALTIME, &ts);
+	v = ts.tv_sec * NSECS_PER_SEC + ts.tv_nsec;
+	printf("%lx %ld\n", v, v);
+}
 
- * "git push -v" forgot how to be verbose by mistake. It now properly
-   becomes verbose when asked to.
-
- * When a "reword" action in "git rebase -i" failed to run "commit --amend",
-   we did not give the control back to the user to resolve the situation, and
-   instead kept the original commit log message.
-
-Also contains minor fixes and documentation updates.
