@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520Ab1L1TVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 14:21:09 -0500
-Received: from cox.rootnode.net ([89.248.165.14]:53613 "EHLO cox.rootnode.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754359Ab1L1TVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 14:21:08 -0500
-From: Szymon Janc <szymon@janc.net.pl>
-To: =?utf-8?q?Tom=C3=A1=C5=A1_Janou=C5=A1ek?= <tomi@nomi.cz>
-Subject: Re: [REGRESSION] resume takes 10s longer due to e1b6eb3 (Bluetooth: Increase HCI reset timeout ...)
-Date: Wed, 28 Dec 2011 20:21:04 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-686-pae; KDE/4.7.4; i686; ; )
-Cc: Gustavo Padovan <padovan@profusion.mobi>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-References: <20111118184017.GA5052@nomi.cz> <201112232143.20937.szymon@janc.net.pl> <20111223204849.GA23712@nomi.cz>
-In-Reply-To: <20111223204849.GA23712@nomi.cz>
+	id S1754519Ab1L1TY7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 14:24:59 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:51639 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754064Ab1L1TYy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 14:24:54 -0500
+Message-ID: <4EFB7AED.1090408@xenotime.net>
+Date: Wed, 28 Dec 2011 12:24:13 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201112282021.04658.szymon@janc.net.pl>
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.8 (cox.rootnode.net [0.0.0.0]); Wed, 28 Dec 2011 20:21:04 +0100 (CET)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Wed Dec 28 20:21:04 2011
-X-DSPAM-Confidence: 0.9948
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4efb6c20180371804284693
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: linux-next: Tree for Dec 28 (fs-writeback)
+References: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au>
+In-Reply-To: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tomáš,
+On 12/28/2011 01:18 AM, Stephen Rothwell wrote:
+> Hi all,
+> 
+> I got bored :-(  I also hate tree wide, flag day changes :-(
+> 
+> Changes since 20111222:
 
-> Tell me what you need and how can I get that, and I'm all yours.
 
-We need to figure out why command complete event to reset command is not 
-received and we get timeout for your bt chip.
+(on both i386 and x86_64 builds:)
 
-So first please provide kernel debug logs and hcidump while resuming (with 
-timeout set to 10s). Also for kernel logs please make sure you have kernel 
-prints timestamps enabled.
 
-hcidump -t
+fs/fs-writeback.c:510:11: error: 'PAGE_CACHE_SHIFT' undeclared (first use in this function)
 
-kernel:
-echo "module bluetooth +pf" >/sys/kernel/debug/dynamic_debug/control
-echo "module btusb +pf" >/sys/kernel/debug/dynamic_debug/control
+
+Needs to #include <linux/pagemap.h> ??
 
 -- 
-Szymon K. Janc
-szymon@janc.net.pl // GG: 1383435
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
