@@ -1,110 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304Ab1L1Rui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 12:50:38 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43270 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753823Ab1L1Rug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 12:50:36 -0500
-Date: Wed, 28 Dec 2011 09:50:25 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>
-cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
- allowed to create io_context
-In-Reply-To: <20111228164836.GP17712@google.com>
-Message-ID: <alpine.LSU.2.00.1112280939390.3320@eggly.anvils>
-References: <20111222150836.af172886.akpm@linux-foundation.org> <20111222232036.GP17084@google.com> <20111222152427.c944c747.akpm@linux-foundation.org> <20111222233843.GR17084@google.com> <20111222154427.89b245c7.akpm@linux-foundation.org>
- <20111222234639.GS17084@google.com> <20111223004244.GU17084@google.com> <alpine.LSU.2.00.1112232058550.3225@eggly.anvils> <20111225010238.GA6013@htj.dyndns.org> <alpine.LSU.2.00.1112280010550.1398@eggly.anvils> <20111228164836.GP17712@google.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	id S1754250Ab1L1RzL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 12:55:11 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36114 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753832Ab1L1RzJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 12:55:09 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20111121145337.817092864@chello.nl>
+References: <20111121145114.049265181@chello.nl>
+	<20111121145337.817092864@chello.nl>
+Date: Wed, 28 Dec 2011 17:55:06 +0000
+Message-ID: <CABPqkBRBN=Dh07K9++P+0wL-FfDGLw16Mx5qS9fgsJPVdND4qQ@mail.gmail.com>
+Subject: Re: [RFC][PATCH 5/6] perf: Extend the mmap control page with time
+ (TSC) fields
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: mingo@elte.hu, William Cohen <wcohen@redhat.com>,
+        linux-kernel@vger.kernel.org, Arun Sharma <asharma@fb.com>,
+        Vince Weaver <vince@deater.net>
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Dec 2011, Tejun Heo wrote:
-> On Wed, Dec 28, 2011 at 12:33:01AM -0800, Hugh Dickins wrote:
-> 
-> > However, there are a couple of other unhealthy symptoms I've noticed
-> > under load in -next's block/cfq layer, both with and without your patch.
-> > 
-> > One is kernel BUG at block/cfq-iosched.c:2585!
-> > 	BUG_ON(RB_EMPTY_ROOT(&cfqq->sort_list));
-> > 
-> > cfq_dispatch_request+0x1a
-> > cfq_dispatch_requests+0x5c
-> > blk_peek_request+0x195
-> > scsi_request_fn+0x6a
-> > __blk_run_queue+0x16
-> > scsi_run_queue+0x18a
-> > scsi_next_command+0x36
-> > scsi_io_completion+0x426
-> > scsi_finish_command+0xaf
-> > scsi_softirq_done+0xdd
-> > blk_done_softirq+0x6c
-> > __do_softirq+0x80
-> > call_softirq+0x1c
-> > do_softirq+0x33
-> > irq_exit+0x3f
-> > do_IRQ+0x97
-> > ret_from_intr
-> > 
-> > I've had that one four times now on different machines; but quicker
-> > to reproduce are these warnings from CONFIG_DEBUG_LIST=y:
-> > 
-> > ------------[ cut here ]------------
-> > WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-> > Hardware name: 4174AY9
-> > list_del corruption. prev->next should be ffff880005aa1380, but was 6b6b6b6b6b6b6b6b
-> > Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device
-> > Pid: 29241, comm: cc1 Tainted: G        W    3.2.0-rc6-next-20111222 #18
-> > Call Trace:
-> >  <IRQ>  [<ffffffff810544b4>] warn_slowpath_common+0x80/0x98
-> >  [<ffffffff81054560>] warn_slowpath_fmt+0x41/0x43
-> >  [<ffffffff811fc1a1>] __list_del_entry+0x8d/0x98
-> >  [<ffffffff811df8ab>] cfq_remove_request+0x3b/0xdf
-> >  [<ffffffff811df989>] cfq_dispatch_insert+0x3a/0x87
-> >  [<ffffffff811dfb3b>] cfq_dispatch_request+0x65/0x92
-> >  [<ffffffff811dfbc4>] cfq_dispatch_requests+0x5c/0x133
-> >  [<ffffffff812e103e>] ? scsi_request_fn+0x3b6/0x3d3
-> >  [<ffffffff811d3069>] blk_peek_request+0x195/0x1a6
-> >  [<ffffffff812e103e>] ? scsi_request_fn+0x3b6/0x3d3
-> >  [<ffffffff812e0cf5>] scsi_request_fn+0x6d/0x3d3
-> >  [<ffffffff811d0730>] __blk_run_queue+0x19/0x1b
-> >  [<ffffffff811d0bfd>] blk_run_queue+0x21/0x35
-> >  [<ffffffff812e08c4>] scsi_run_queue+0x11f/0x1b9
-> >  [<ffffffff812e205c>] scsi_next_command+0x36/0x46
-> >  [<ffffffff812e24dc>] scsi_io_completion+0x426/0x4a9
-> >  [<ffffffff812dc0b2>] scsi_finish_command+0xaf/0xb8
-> >  [<ffffffff812e200c>] scsi_softirq_done+0xdd/0xe5
-> >  [<ffffffff811d79c6>] blk_done_softirq+0x76/0x8a
-> >  [<ffffffff8105a28d>] __do_softirq+0x98/0x136
-> >  [<ffffffff814e649c>] call_softirq+0x1c/0x30
-> >  [<ffffffff8102f187>] do_softirq+0x38/0x81
-> >  [<ffffffff8105a596>] irq_exit+0x4e/0xb6
-> >  [<ffffffff8102ee9e>] do_IRQ+0x97/0xae
-> >  [<ffffffff814e49f0>] common_interrupt+0x70/0x70
-> >  <EOI>  [<ffffffff814e4a8e>] ? retint_swapgs+0xe/0x13
-> > ---[ end trace 61fdaa1b260613d1 ]---
-> 
-> Hmm... that looks like cfqq being freed before unlinked.  I'll try to
-> reproduce it.  Is there any particular workload you were running?
+On Mon, Nov 21, 2011 at 2:51 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> Extend the mmap control page with fields so that userspace can compute
+> time deltas relative to the provided time fields.
+>
+> Currently only implemented for x86 with constant and nonstop TSC.
+>
 
-"It's the tmpfs swapping test that I've been running, with variations,
-for years.  System booted with mem=700M and 1.5G swap, two repetitious
-make -j20 kernel builds (of a 2.6.24 kernel: I stuck with that because
-the balance of built to unbuilt source grows smaller with later kernels),
-one directly in a tmpfs, the other in a 1k-block ext2 (that I drive with
-ext4's CONFIG_EXT4_USE_FOR_EXT23) on /dev/loop0 on a 450MB tmpfs file."
+It is not obvious to me how one would use time_mult, time_shift, time_offset
++ TSC to complement time_enabled/time_running to compute the correct
+scaling factor. The patch does not include any example. Woud you mind
+describing the method?
 
-I doubt much of that (quoted from an older mail to someone else about
-one of the many other bugs it's found) is relevant: maybe just plenty
-of file I/O and swapping.
+Thanks.
 
-Hugh
+
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Arun Sharma <asharma@fb.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |   14 ++++++++++++++
+>  include/linux/perf_event.h       |    4 +++-
+>  kernel/events/core.c             |   21 ++++++++++++++-------
+>  3 files changed, 31 insertions(+), 8 deletions(-)
+> Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
+> +++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
+> @@ -32,6 +32,7 @@
+>  #include <asm/compat.h>
+>  #include <asm/smp.h>
+>  #include <asm/alternative.h>
+> +#include <asm/timer.h>
+>
+>  #include "perf_event.h"
+>
+> @@ -1621,6 +1622,19 @@ static struct pmu pmu = {
+>        .event_idx      = x86_pmu_event_idx,
+>  };
+>
+> +void perf_update_user_clock(struct perf_event_mmap_page *userpg, u64 now)
+> +{
+> +       if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC))
+> +               return;
+> +
+> +       if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
+> +               return;
+> +
+> +       userpg->time_mult = this_cpu_read(cyc2ns);
+> +       userpg->time_shift = CYC2NS_SCALE_FACTOR;
+> +       userpg->time_offset = this_cpu_read(cyc2ns_offset) - now;
+> +}
+> +
+>  /*
+>  * callchain support
+>  */
+> Index: linux-2.6/include/linux/perf_event.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/perf_event.h
+> +++ linux-2.6/include/linux/perf_event.h
+> @@ -290,12 +290,14 @@ struct perf_event_mmap_page {
+>        __s64   offset;                 /* add to hardware event value */
+>        __u64   time_enabled;           /* time event active */
+>        __u64   time_running;           /* time event on cpu */
+> +       __u32   time_mult, time_shift;
+> +       __u64   time_offset;
+>
+>                /*
+>                 * Hole for extension of the self monitor capabilities
+>                 */
+>
+> -       __u64   __reserved[123];        /* align to 1k */
+> +       __u64   __reserved[121];        /* align to 1k */
+>
+>        /*
+>         * Control data for the mmap() data buffer.
+> Index: linux-2.6/kernel/events/core.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/events/core.c
+> +++ linux-2.6/kernel/events/core.c
+> @@ -3203,17 +3203,22 @@ static int perf_event_index(struct perf_
+>  }
+>
+>  static void calc_timer_values(struct perf_event *event,
+> +                               u64 *now,
+>                                u64 *enabled,
+>                                u64 *running)
+>  {
+> -       u64 now, ctx_time;
+> +       u64 ctx_time;
+>
+> -       now = perf_clock();
+> -       ctx_time = event->shadow_ctx_time + now;
+> +       *now = perf_clock();
+> +       ctx_time = event->shadow_ctx_time + *now;
+>        *enabled = ctx_time - event->tstamp_enabled;
+>        *running = ctx_time - event->tstamp_running;
+>  }
+>
+> +void __weak perf_update_user_clock(struct perf_event_mmap_page *userpg, u64 now)
+> +{
+> +}
+> +
+>  /*
+>  * Callers need to ensure there can be no nesting of this function, otherwise
+>  * the seqlock logic goes bad. We can not serialize this because the arch
+> @@ -3223,7 +3228,7 @@ void perf_event_update_userpage(struct p
+>  {
+>        struct perf_event_mmap_page *userpg;
+>        struct ring_buffer *rb;
+> -       u64 enabled, running;
+> +       u64 enabled, running, now;
+>
+>        rcu_read_lock();
+>        /*
+> @@ -3235,7 +3240,7 @@ void perf_event_update_userpage(struct p
+>         * because of locking issue as we can be called in
+>         * NMI context
+>         */
+> -       calc_timer_values(event, &enabled, &running);
+> +       calc_timer_values(event, &now, &enabled, &running);
+>        rb = rcu_dereference(event->rb);
+>        if (!rb)
+>                goto unlock;
+> @@ -3260,6 +3265,8 @@ void perf_event_update_userpage(struct p
+>        userpg->time_running = running +
+>                        atomic64_read(&event->child_total_time_running);
+>
+> +       perf_update_user_clock(userpg, now);
+> +
+>        barrier();
+>        ++userpg->lock;
+>        preempt_enable();
+> @@ -3692,7 +3699,7 @@ static void perf_output_read_group(struc
+>  static void perf_output_read(struct perf_output_handle *handle,
+>                             struct perf_event *event)
+>  {
+> -       u64 enabled = 0, running = 0;
+> +       u64 enabled = 0, running = 0, now;
+>        u64 read_format = event->attr.read_format;
+>
+>        /*
+> @@ -3705,7 +3712,7 @@ static void perf_output_read(struct perf
+>         * NMI context
+>         */
+>        if (read_format & PERF_FORMAT_TOTAL_TIMES)
+> -               calc_timer_values(event, &enabled, &running);
+> +               calc_timer_values(event, &now, &enabled, &running);
+>
+>        if (event->attr.read_format & PERF_FORMAT_GROUP)
+>                perf_output_read_group(handle, event, enabled, running);
+>
+>
