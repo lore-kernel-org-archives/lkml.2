@@ -1,78 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753626Ab1L1Xhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 18:37:51 -0500
-Received: from ironport02-1.csupomona.edu ([134.71.187.45]:34251 "EHLO
-	ironport02-1.csupomona.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752182Ab1L1Xhn (ORCPT
+	id S1753569Ab1L1Xmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 18:42:44 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61829 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab1L1Xmm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 18:37:43 -0500
-X-Greylist: delayed 970 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Dec 2011 18:37:43 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvwEAIij+06GR/cU/2dsb2JhbABErGaBBYIzNIEANQGeIp89iF4XgxoEiDeMSgGSVQ
-Date: Wed, 28 Dec 2011 15:19:25 -0800
-From: "Paul B. Henson" <henson@acm.org>
-To: linux-kernel@vger.kernel.org
-Subject: Broken suspend to RAM on Asus P8P67-M motherboard (bad BIOS?)
-Message-ID: <20111228231919.GI8711@bender.csupomona.edu>
+	Wed, 28 Dec 2011 18:42:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111228224536.GA1025@dev3310.snc6.facebook.com>
+References: <cover.1324831829.git.luto@amacapital.net> <16ecaa6abb8b7a25ef31970f71a42c7e2ba5416c.1324831829.git.luto@amacapital.net>
+ <4EFB67AB.7060707@fb.com> <CALCETrVz1ADNxeLzPmeWXPU5ApfKURH2vnged2A2Vng8-hUxcw@mail.gmail.com>
+ <20111228224536.GA1025@dev3310.snc6.facebook.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 28 Dec 2011 15:42:20 -0800
+Message-ID: <CALCETrW+9OoEQnP1+9MJX+JO5Ch42QhUeo8i=k9YdaCwWhg=Xw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] Add clock_gettime_ns syscall
+To: Arun Sharma <asharma@fb.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Kumar Sundararajan <kumar@fb.com>, linux-kernel@vger.kernel.org,
+        john stultz <johnstul@us.ibm.com>,
+        Richard Cochran <richardcochran@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have an Asus P8P67-M Pro motherboard which fails to suspend to ram
-under Linux yet suspends successfully under Windows 7.
+On Wed, Dec 28, 2011 at 2:45 PM, Arun Sharma <asharma@fb.com> wrote:
+> On Wed, Dec 28, 2011 at 12:13:37PM -0800, Andy Lutomirski wrote:
+>> > How about returning a (signed) long as the time in ns? This way, we save
+>> a store and a load and the value can be passed in registers.
+>> >
+>> > This shouldn't preclude future expansion via extra args.
+>>
+>> With an unconditional store to a pointer?  If a null pointer is allowed,
+>> the branch will probably kill any performance gain.
+>
+> No - please see the patch below.
+>
+>>
+>> The downside is that this is probably a non-starter for a syscall on 32-bit
+>> architectures.  I'll see what the i386 ABI says.  I wonder if returning a
+>> struct will use registers for future expansion.
+>>
+>
+> I was thinking of doing something similar to lseek() on 32 bit archs
+> (i.e. by using a type similar to off_t that maps to the right thing for
+> both 32 and 64 bit).
 
-Under Windows 7, suspending results in the typical slowly blinking
-power light, and the system wakes up correctly.
+Huh?  That nanosecond count really needs to be 64 bits (or more).
+2^32 nanoseconds is a rather short time.
 
-Under Linux (tested with 3.0.7 and 3.1.6), on entering suspend mode the
-power light turns off and stays off, it does *not* blink. On attempting
-to wake up, the power light turns on momentarily and the fans spin up,
-the power light goes off again and the fans spin down, then the power
-light/fans come on but nothing happens, the box is completely wedged,
-not even the reset button works, requiring a hard power cycle to bring
-back.
+>
+> I used the code below to benchmark the performance of clock_gettime()
+> vs clock_gettime_ns() when the client is interested in a nanosec based
+> interface.
+>
+> gettimespec: 3.19 secs
+> getns: 2.54 secs (21% faster)
+>
+>  -Arun
+>
+> PS: I didn't have to delete struct timens. I meant to drop timens.ns
+> (since its the return value now).
 
-While working on the issue, I noticed the following suspicious ACPI
-errors logged when doing a core test of STR:
+How are you keeping the ability to add extra fields?
 
-Dec 28 14:28:41 htpc-lr kernel: ACPI: Preparing to enter system sleep
-state S3
-Dec 28 14:28:41 htpc-lr kernel: ACPI Error: [RAMB] Namespace lookup
-failure, AE_NOT_FOUND (20110623/psargs-359)
-Dec 28 14:28:41 htpc-lr kernel: ACPI Error: Method parse/execution
-failed [\_PTS] (Node ffff88011e8a3a38), AE_NOT_FOUND
-(20110623/psparse-536)
+FWIW, returning a long long on i386 generates nice code (two registers
+used), but returning a struct bigger than 64 bits uses a pointer
+passed in via the stack (i.e. worse than passing a pointer as a
+parameter).  Returning a struct with two 64-bit ints on x86-64 uses
+registers, which is rather unfortunate.
 
-There is also an ACPI complaint during boot:
+Something like:
 
-ACPI Error: [RAMB] Namespace lookup failure, AE_NOT_FOUND
-(20110623/psargs-359)
-ACPI Exception: AE_NOT_FOUND, Could not execute arguments for [RAMW]
-(Region) (20110623/nsinit-349)
+u64 __vdso_clock_gettime_ns(clock_t clockid, struct timens_extra *extra)
+{
+  extra->padding = 0;
+  return <the time>;
+}
 
-The core test worked fine with no issues. I'm pretty sure the root cause
-of the problem is that the system is not correctly entering S3 due to
-these ACPI issues (given the lack of the usual blinking power light).
-I'm guessing there's something broken in the BIOS and have opened a
-support request with Asus.
 
-However, given it "works under Windows (tm)" 8-/, I don't anticipate a timely
-response from Asus <sigh>.
-
-Clearly Windows is working around whatever BIOS problem exists. If it's
-not too ugly or distasteful, it would be nice if Linux could do so as
-well, I hate it when Windows seems more robust ;). I would have normally
-opened a bug, but as the kernel bugzilla is still down it seems the
-recommendation is to post to the mailing list instead. I'm not
-subscribed to the list, but if someone working on power
-management/suspend code is interested in trying to get Linux working as
-well as Windows on this hardware, I'd greatly appreciate being contacted
-directly; or CC'd if there is any discussion on the list.
-
-Thanks much...
-
+might be okay.
