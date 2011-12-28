@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab1L1DIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 22:08:06 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58786 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753101Ab1L1DID (ORCPT
+	id S1753229Ab1L1DZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 22:25:46 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:39904 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753042Ab1L1DZp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 22:08:03 -0500
-Message-ID: <4EFA87E4.8040609@gmail.com>
-Date: Wed, 28 Dec 2011 11:07:16 +0800
-From: Wang Sheng-Hui <shhuiw@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110617 Thunderbird/3.1.11
+	Tue, 27 Dec 2011 22:25:45 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm/migrate.c: remove the unused macro lru_to_page
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Wed, 28 Dec 2011 12:25:42 +0900
+Message-ID: <CABiHV1T0+JFLErDHgYQkC+xfyGFSbQ3bkNrtfgVnfVi2U-ADTw@mail.gmail.com>
+Subject: About recovery status of patchwork.kernel.org
+From: Geunsik Lim <leemgs1@gmail.com>
+To: warthog19@eaglescrag.net
+Cc: linux-kernel@vger.kernel.org, ftpadmin@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lru_to_page is not used in mm/migrate.c. Drop it.
+Dear John 'Warthog9' Hawley,
+Do you still maintain patchwork.kernel.org that opened on 31-Dec-2008
+for monitoring LKML?
+I can not connect to patchwork.kernel.org website after a security
+breach of kernel.org recently.
+Please, share me the status of patchwork.kernel.org service currently
+if you can ?
 
-Signed-off-by: Wang Sheng-Hui <shhuiw@gmail.com>
----
- mm/migrate.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Thanks reading.
 
-diff --git a/mm/migrate.c b/mm/migrate.c
-index 640002a..99da494 100644
---- a/mm/migrate.c
-+++ b/mm/migrate.c
-@@ -39,8 +39,6 @@
- 
- #include "internal.h"
- 
--#define lru_to_page(_head) (list_entry((_head)->prev, struct page, lru))
--
- /*
-  * migrate_prep() needs to be called before we start compiling a list of pages
-  * to be migrated using isolate_lru_page(). If scheduling work on other CPUs is
--- 
-1.7.1
+
+Best regards,
+Geunsik Lim,  DMC Lab, Samsung Electronics
+Homepage: http://leemgs.fedorapeople.org
+--------------------------------------------------------------------------------------------------------
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+--------------------------------------------------------------------------------------------------------
