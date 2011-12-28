@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab1L1QQM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 11:16:12 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43907 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753011Ab1L1QQI convert rfc822-to-8bit (ORCPT
+	id S1754090Ab1L1QSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 11:18:18 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42514 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753989Ab1L1QSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 11:16:08 -0500
-Date: Wed, 28 Dec 2011 14:16:44 -0200
-From: Gustavo Padovan <padovan@profusion.mobi>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: Rene Herman <rene.herman@gmail.com>,
-        Andre Guedes <andre.guedes@openbossa.org>,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [bluetooth] linux-3.x regression (bisected)
-Message-ID: <20111228161644.GB23292@joana>
-Mail-Followup-To: David Herrmann <dh.herrmann@googlemail.com>,
-	Rene Herman <rene.herman@gmail.com>,
-	Andre Guedes <andre.guedes@openbossa.org>,
-	linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-	Marcel Holtmann <marcel@holtmann.org>
-References: <4EF3BACA.1080405@gmail.com>
- <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com>
- <4EFA1EB8.9090005@gmail.com>
- <20111227203008.GA13870@joana>
- <4EFA447C.3030906@gmail.com>
- <20111228012248.GC13870@joana>
- <20111228012850.GD13870@joana>
- <4EFA7696.6060506@gmail.com>
- <20111228155225.GA23292@joana>
- <CANq1E4ROqGMkd-M+zMJtzdqC1j9AcUztJ+L2S0tsqtyiQhA89A@mail.gmail.com>
+	Wed, 28 Dec 2011 11:18:16 -0500
+Date: Wed, 28 Dec 2011 20:18:09 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
+Message-ID: <20111228161809.GQ27266@moon>
+References: <20111223124741.711871189@openvz.org>
+ <20111223124920.661126615@openvz.org>
+ <20111228160655.GL17712@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <CANq1E4ROqGMkd-M+zMJtzdqC1j9AcUztJ+L2S0tsqtyiQhA89A@mail.gmail.com>
+In-Reply-To: <20111228160655.GL17712@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
-
-* David Herrmann <dh.herrmann@googlemail.com> [2011-12-28 17:04:11 +0100]:
-
-> On Wed, Dec 28, 2011 at 4:52 PM, Gustavo Padovan <padovan@profusion.mobi> wrote:
-> ..snip..
-> > I think this patch can do handling, let's see what others think.
-> >
-> >        Gustavo
-> >
-> >
-> > ---
-> > Author: Gustavo F. Padovan <padovan@profusion.mobi>
-> > Date:   Wed Dec 28 13:40:02 2011 -0200
-> >
-> >    Bluetooth: Fix lmp_host_le_capable() check for broken devices
-> >
-> >    Some dongles reports a wrong Local Extended Features leading the kernel
-> >    think that dongle support LE while it don't.
-> >
-> >    The fix here is just rely on a bit in Local Features (LE Capable) to tell
-> >    us if the device really supports LE.
-> >
-> >    LE Host Capable is the only bit used from Local Extended Features in our
-> >    kernel.
-> >
-> >    Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
-> >
-> > diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
-> > index 5e2e984..c693111 100644
-> > --- a/include/net/bluetooth/hci_core.h
-> > +++ b/include/net/bluetooth/hci_core.h
-> > @@ -676,7 +676,11 @@ void hci_conn_del_sysfs(struct hci_conn *conn);
-> >  #define lmp_le_capable(dev)        ((dev)->features[4] & LMP_LE)
-> >
-> >  /* ----- Extended LMP capabilities ----- */
-> > -#define lmp_host_le_capable(dev)   ((dev)->extfeatures[0] & LMP_HOST_LE)
-> > +/* Some crap dongles does not report a proper Local Extended Features causing
-> > + * the kernel to wrongly init it as a LE device. So first check if it is LE
-> > + * capable (controller) which is a info from the Local Features */
-> > +#define lmp_host_le_capable(dev)    ( lmp_le_capable(dev) && \
-> > +                                       (dev)->extfeatures[0] & LMP_HOST_LE)
-> >
-> >  /* ----- HCI protocols ----- */
-> >  static inline int hci_proto_connect_ind(struct hci_dev *hdev, bdaddr_t *bdaddr,
+On Wed, Dec 28, 2011 at 08:06:55AM -0800, Tejun Heo wrote:
+> Hello, Cyrill.
 > 
-> Next time we use the extfeatures for something else, we will break
-> this device again. Can't we fix dev->extfeatures on initialization
-> based on a blacklist/quirklist? Or is dev->extfeatures modified after
-> initialzation of the device somewhere?
+> Just my 2 cents.
+> 
+> On Fri, Dec 23, 2011 at 04:47:42PM +0400, Cyrill Gorcunov wrote:
+> > +unsigned long gen_obj_id(void *ptr, int type)
+> > +{
+> > +	if (!capable(CAP_SYS_ADMIN) || !ptr)
+> > +		return 0;
+> > +
+> > +	BUG_ON(type >= GEN_OBJ_ID_TYPES);
+> > +
+> > +	/*
+> > +	 * Note the simple XOR is used here not in a sake
+> > +	 * of security by any means, but rather to break
+> > +	 * an "impression" that such IDs means something
+> > +	 * other than a number which can be used for comparison
+> > +	 * with another number generated by this helper only.
+> > +	 */
+> > +	return ((unsigned long)ptr) ^ gen_obj_cookie[type];
+> > +}
+> 
+> To me, XOR & CAP_SYS_ADMIN combination doesn't make much sense.  With
+> CAP_SYS_ADMIN, there's no reason for XOR - we can just export
+> pointers.  If we plan on removing CAP_SYS_ADMIN restriction down the
+> road, XOR doesn't help much.  It's too weak.  The XOR is unnecessary
+> with CAP_SYS_ADMIN and useless without it.  It seems pointless to me.
+> If we're going down this route, I think doing cryptographically safe
+> hash would be much better.
+> 
 
-Sure, we will, but I don't see us using another bit of extfeatures in the near
-future (after the next Core Spec release maybe) and I don't wanna got that far
-in this fix right now.
+Hi Tejun, thanks for comment! Yes, XOR is useless here in security meaning,
+but it simply breaks impression that these generating numbers "mean" somthing
+(I remained them as Vasily asked).
 
-	Gustavo
+I personally fine to simply leave plain pointers here and root-only access
+since that is enough for us (and our tool will require root privileges
+anyway :)
+
+OTOH, we could add some sha2 here with pointer+cookie as an initial value but I fear
+this will bring more code comlexity and computing sha2 hash is not that
+fast operation, which should be taken into account (note on x86-32 since
+pointers are 32bit values one could compute prehash for all space covered
+and if an attacker will know somehow cookie value the hash will be easily
+broken, not sure if it's really usefull for someone, since if you have root
+access to the machine such IDs will be the last thing attacker should be
+interested in :)
+
+And it seems noone except us need this interface yet, so maybe sticking with
+"pointer exported under root-only" would be enough?
+
+	Cyrill
