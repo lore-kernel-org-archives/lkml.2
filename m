@@ -1,59 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab1L1WRf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 17:17:35 -0500
-Received: from smtpq4.tb.mail.iss.as9143.net ([212.54.42.167]:52450 "EHLO
-	smtpq4.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754616Ab1L1WRd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 17:17:33 -0500
-Message-ID: <4EFB957A.5070606@gmail.com>
-Date: Wed, 28 Dec 2011 23:17:30 +0100
-From: Rene Herman <rene.herman@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
+	id S1754671Ab1L1Wbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 17:31:42 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:49233 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754624Ab1L1Wbh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 17:31:37 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:subject
+	:cc:date:message-id:mime-version:content-type; q=dns; s=sasl; b=
+	Ev3UOAE7C14zkfPNvlLF2T8Ff+r4Imfq1mfCdsup6WJsaU5S+NoIzbzxLcYOS7kf
+	+SfFUS2unZ1ZgOwDsiRWTQy0ycrS/NPj8FwgKGBxytmR+qBtDk0hgOY2fyA97++l
+	jz8BI85T+Xb/+5EJV8zkh+ifkfGP660aorWU1rWFYE4=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.8.2
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 28 Dec 2011 14:31:35 -0800
+Message-ID: <7vd3b8z5tk.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: Gustavo Padovan <padovan@profusion.mobi>,
-        Andre Guedes <andre.guedes@openbossa.org>,
-        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Subject: Re: [bluetooth] linux-3.x regression (bisected)
-References: <4EF3BACA.1080405@gmail.com> <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com> <4EFA1EB8.9090005@gmail.com> <20111227203008.GA13870@joana> <4EFA447C.3030906@gmail.com> <20111228012248.GC13870@joana> <20111228012850.GD13870@joana> <4EFA7696.6060506@gmail.com> <20111228155225.GA23292@joana> <1325090923.1965.282.camel@aeonflux>
-In-Reply-To: <1325090923.1965.282.camel@aeonflux>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ziggo-spambar: ---
-X-Ziggo-spamscore: -3.6
-X-Ziggo-spamreport: ALL_TRUSTED=-1,BAYES_00=-1.9,FREEMAIL_FROM=0.5,PROLO_TRUST_RDNS=-3,RDNS_DYNAMIC=0.982,SPF_NEUTRAL=0.779,TW_XF=0.077
-X-Ziggo-Spam-Status: No
-X-Spam-Flag: No
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: B3F914F4-31A3-11E1-B182-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28-12-11 17:48, Marcel Holtmann wrote:
+The latest maintenance release Git 1.7.8.2 is available. It contains
+accumulated fixes that applies to the 1.7.8.X maintenance track that have
+already been applied to the 'master' branch to be part of the upcoming
+1.7.9 release.
 
-> < HCI Command: Read Local Extended Features (0x04|0x0004) plen 1
->       page 1
-> > HCI Event: Command Complete (0x0e) plen 14
->       Read Local Extended Features (0x04|0x0004) ncmd 1
->       status 0x00 page 0 max 0
->       Features: 0xff 0xfe 0xff 0x7e 0x98 0x19 0x00 0x80
->
-> And this is correct. Page 0 is the same as local features. Storing this
-> as page 1 is the issue here. We request page 1, but we are getting page
-> 0 instead. So yes, the controller is broken, but not as broken as it
-> gets us false information.
+The release tarballs are found at:
 
-By the way, while the bluetooth (2.0) spec seems to consist of a 1230 
-page document that I am most certainly not going to study ...
+    http://code.google.com/p/git-core/downloads/list
 
-... I couldn't help noticing that the HCI_Read_Local_Extended_Features 
-command is in fact specified to return "The highest features page number 
-which contains non-zero bits for the local device", and if I look at the 
-above, it seems to indeed return max=0.
+and their SHA-1 checksums are:
 
-Is it as such not in fact the case that the dongle is spec-compliant, 
-whereas it's the linux code that neglects to check that return value in 
-order to make sure that it requested a valid page?
+7187c1af96db0c181b801957d6e152ec7cd60ab6  git-1.7.8.2.tar.gz
+9047175e5c46aa3260c42e6b4459cf4ee5a7bb8a  git-htmldocs-1.7.8.2.tar.gz
+cc394a0a9689297fddad40c1ccbded0ba9d708da  git-manpages-1.7.8.2.tar.gz
 
-Rene.
+Also the following public repositories all have a copy of the v1.7.8.2
+tag and the maint branch that the tag points at:
+
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+
+Git v1.7.8.2 Release Notes
+==========================
+
+Fixes since v1.7.8.1
+--------------------
+
+ * Porcelain commands like "git reset" did not distinguish deletions
+   and type-changes from ordinary modification, and reported them with
+   the same 'M' moniker. They now use 'D' (for deletion) and 'T' (for
+   type-change) to match "git status -s" and "git diff --name-status".
+
+ * The configuration file parser used for sizes (e.g. bigFileThreshold)
+   did not correctly interpret 'g' suffix.
+
+ * The replacement implemention for snprintf used on platforms with
+   native snprintf that is broken did not use va_copy correctly.
+
+ * LF-to-CRLF streaming filter replaced all LF with CRLF, which might
+   be techinically correct but not friendly to people who are trying
+   to recover from earlier mistakes of using CRLF in the repository
+   data in the first place. It now refrains from doing so for LF that
+   follows a CR.
+
+ * git native connection going over TCP (not over SSH) did not set
+   SO_KEEPALIVE option which failed to receive link layer errors.
+
+ * "git branch -m <current branch> HEAD" is an obvious no-op but was not
+   allowed.
+
+ * "git checkout -m" did not recreate the conflicted state in a "both
+   sides added, without any common ancestor version" conflict
+   situation.
+
+ * "git cherry-pick $commit" (not a range) created an unnecessary
+   sequencer state and interfered with valid workflow to use the
+   command during a session to cherry-pick multiple commits.
+
+ * You could make "git commit" segfault by giving the "--no-message"
+   option.
+
+ * "fast-import" did not correctly update an existing notes tree,
+   possibly corrupting the fan-out.
+
+ * "git fetch-pack" accepted unqualified refs that do not begin with
+   refs/ by mistake and compensated it by matching the refspec with
+   tail-match, which was doubly wrong. This broke fetching from a
+   repository with a funny named ref "refs/foo/refs/heads/master" and a
+   'master' branch with "git fetch-pack refs/heads/master", as the
+   command incorrectly considered the former a "match".
+
+ * "git log --follow" did not honor the rename threshold score given
+   with the -M option (e.g. "-M50%").
+
+ * "git mv" gave suboptimal error/warning messages when it overwrites
+   target files. It also did not pay attention to "-v" option.
+
+ * Authenticated "git push" over dumb HTTP were broken with a recent
+   change and failed without asking for password when username is
+   given.
+
+ * "git push" to an empty repository over HTTP were broken with a
+   recent change to the ref handling.
+
+ * "git push -v" forgot how to be verbose by mistake. It now properly
+   becomes verbose when asked to.
+
+ * When a "reword" action in "git rebase -i" failed to run "commit --amend",
+   we did not give the control back to the user to resolve the situation, and
+   instead kept the original commit log message.
+
+Also contains minor fixes and documentation updates.
