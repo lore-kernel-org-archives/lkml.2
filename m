@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab1L1HQt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 02:16:49 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:37728 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab1L1HQr (ORCPT
+	id S1753432Ab1L1HWk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 02:22:40 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:52557 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab1L1HWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 02:16:47 -0500
-Date: Wed, 28 Dec 2011 18:16:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build warning after merge of the rr tree
-Message-Id: <20111228181640.d299620c8e66237509fbba37@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Dec_2011_18_16_40_+1100_QEizd7v/yjjGQuel"
+	Wed, 28 Dec 2011 02:22:38 -0500
+Date: Wed, 28 Dec 2011 11:22:32 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
+        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
+Message-ID: <20111228072232.GA27266@moon>
+References: <20111223124741.711871189@openvz.org>
+ <20111223124920.661126615@openvz.org>
+ <249444.1325030069@turing-police.cc.vt.edu>
+ <20111227160224.c59080e6.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111227160224.c59080e6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Dec_2011_18_16_40_+1100_QEizd7v/yjjGQuel
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 27, 2011 at 04:02:24PM -0800, Andrew Morton wrote:
+...
+> > 
+> > > +	  kernel is rebooted -- the IDs will be changed.
+> > 
+> > s/ --/,/
+> 
+> heh, I avoided mentioning these things because I usually rewrite the
+> user-facing text when merging patches from non-native English speakers.
+> 
 
-Hi Rusty,
+:) Thanks!
 
-After merging the rr tree, today's linux-next build (x86_64 allmodconfig)
-produced this warning:
-
-drivers/net/virtio_net.c: In function 'virtnet_open':
-drivers/net/virtio_net.c:732:3: warning: passing argument 1 of 'queue_delay=
-ed_work' from incompatible pointer type [enabled by default]
-include/linux/workqueue.h:352:12: note: expected 'struct workqueue_struct *=
-' but argument is of type 'struct workqueue_struct **'
-
-Introduced by commit c49a776ffe1b ("virtio_net: use non-reentrant workqueue=
-").
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__28_Dec_2011_18_16_40_+1100_QEizd7v/yjjGQuel
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO+sJYAAoJEECxmPOUX5FEp2EP/juvr9AbIKe2cgJxQlSmiN5Z
-b0SRVm9dUkRzobZvLmeGDz3eU3yiCiThb733IgKiGBqnenhRYssG6vw99LXduSvV
-2LaFKiWteQqvEaYvOGlXEqtyuepyJ/wScnh5zcgrtEHq2aPJubVje3fxvK2PrC9u
-t/Th6YrJeGy6nvqFwjHGX11G3zpDwXamBLK513YXRWbWCv5WX7yHLUur3lyJ+KL3
-HUpupda70X6AFjXxMVg9uvwsQ7//tERo/qgo/mMnHcIzD8KB0EpwdzOxWNcrZtPL
-/oSF0am/xD5F0NQjGmcDM2e54KJmJhAWpUFWnpdk4d1sCNJd9MIZRoRoTwq2VFuZ
-dpGHp0Q7CmbCuA+0tBpEuVE5wT/t57cAGkTXtlgIfjnTaOHHlbS956MEGRPzuz5S
-cbldx66EURAxE8iIaRLZB8JJEvHcIXKLOBxyW2KeKTXEebpSWPLIRtjmt1w7tUOJ
-8tDW4N3rSCpQVl9B8tddJZRQgn2aPRwt4UzIBbhmuydUp3i+oQ6fiQ2SLXHhYZGX
-yTxoYDKPc+GTdn39xqzQqjD6cSRlkVz1S9BGSnLxD0EI/Uz7L07gO95psKdU7fHp
-Y/YIzwS3PY+ccEXhxO2AL8vu0YaOcaPvWFGF1HqLMsb2c9Ce4K2WUXO7ZWMsbpmp
-MPymseuocN26AjW9Ggcu
-=OZgO
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Dec_2011_18_16_40_+1100_QEizd7v/yjjGQuel--
+	Cyrill
