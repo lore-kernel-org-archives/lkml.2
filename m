@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab1L1VT1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 16:19:27 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:55931 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754207Ab1L1VTY (ORCPT
+	id S1754517Ab1L1VdV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 16:33:21 -0500
+Received: from sunflower.ift.uni.wroc.pl ([156.17.88.33]:62021 "EHLO
+	sunflower.ift.uni.wroc.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab1L1VdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 16:19:24 -0500
-Date: Wed, 28 Dec 2011 13:19:18 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
- allowed to create io_context
-Message-ID: <20111228211918.GA3516@google.com>
-References: <20111222233843.GR17084@google.com>
- <20111222154427.89b245c7.akpm@linux-foundation.org>
- <20111222234639.GS17084@google.com>
- <20111223004244.GU17084@google.com>
- <alpine.LSU.2.00.1112232058550.3225@eggly.anvils>
- <20111225010238.GA6013@htj.dyndns.org>
- <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
- <20111228164836.GP17712@google.com>
- <alpine.LSU.2.00.1112280939390.3320@eggly.anvils>
- <CAOS58YOzUcZz41+H+7dk5FteHy+Ufrtpk9dvdPqX6eie-GHi0Q@mail.gmail.com>
+	Wed, 28 Dec 2011 16:33:19 -0500
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Dec 2011 16:33:19 EST
+Date: Wed, 28 Dec 2011 22:23:33 +0100
+From: =?utf-8?Q?=C5=81ukasz?= Michalik <lmi@ift.uni.wroc.pl>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+        "Dmitry V. Levin" <ldv@altlinux.org>
+Subject: Re: Possible bug introduced in commit 9b84cca
+Message-ID: <20111228212333.GE20378@havoc.ift.uni.wroc.pl>
+References: <201112281955.55200.vda.linux@googlemail.com>
+ <4EFB850C.4030801@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M/SuVGWktc5uNpra"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOS58YOzUcZz41+H+7dk5FteHy+Ufrtpk9dvdPqX6eie-GHi0Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4EFB850C.4030801@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 28, 2011 at 09:55:12AM -0800, Tejun Heo wrote:
-> Hello,
-> 
-> On Wed, Dec 28, 2011 at 9:50 AM, Hugh Dickins <hughd@google.com> wrote:
-> > "It's the tmpfs swapping test that I've been running, with variations,
-> > for years.  System booted with mem=700M and 1.5G swap, two repetitious
-> > make -j20 kernel builds (of a 2.6.24 kernel: I stuck with that because
-> > the balance of built to unbuilt source grows smaller with later kernels),
-> > one directly in a tmpfs, the other in a 1k-block ext2 (that I drive with
-> > ext4's CONFIG_EXT4_USE_FOR_EXT23) on /dev/loop0 on a 450MB tmpfs file."
-> >
-> > I doubt much of that (quoted from an older mail to someone else about
-> > one of the many other bugs it's found) is relevant: maybe just plenty
-> > of file I/O and swapping.
-> 
-> Plain -j4 build isn't triggering anything.  I'll try to replicate the condition.
 
-It's not too reliable but I can reproduce it with -j 22 allmodconfig
-build inside qemu w/ 512M of memory.  I'll try to find out what's
-going on.
+--M/SuVGWktc5uNpra
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On 22:07 2011-12-28 +0100, Denys Vlasenko wrote:
+> On Thu, Nov 17, 2011 at 10:25:26AM +0100, =C5=81ukasz Michalik wrote:
+> > The bug only happens on recent linux.  I've bisected the kernel and
+> > found that it was introduced by 9b84cca2564b9 [2] in linux.git, so
+> > pretty much everything since 3.0-rc2 is affected.
+>=20
+> =C5=81ukasz, looks like 3.0-rc1 is affected too.
+>=20
 
--- 
-tejun
+Yeah, my git foo failed me back then.  3.0-rc1 is the the first
+upstream tag that contains that change.
+
+--=20
+Pozdrawiam,
+=C5=81ukasz P. Michalik
+
+--M/SuVGWktc5uNpra
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iEYEARECAAYFAk77iNUACgkQ2Du0fXZKF/WDUACgqMQSR/WJ4AnagFSR8sF6UuH6
+ZZQAn0MJyuFLa1P6zSMxFj1m4gzQEK4Z
+=ZqVZ
+-----END PGP SIGNATURE-----
+
+--M/SuVGWktc5uNpra--
