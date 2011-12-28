@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1L1Oht (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 09:37:49 -0500
-Received: from mail.solarflare.com ([216.237.3.220]:43729 "EHLO
-	ocex02.SolarFlarecom.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753936Ab1L1Ohk (ORCPT
+	id S1753914Ab1L1Opg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 09:45:36 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45155 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752825Ab1L1Opd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 09:37:40 -0500
-Message-ID: <1325083051.2327.47.camel@deadeye>
-Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on
- low-end broads.
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-CC: <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
-        Roger Luethi <rl@hellgate.ch>
-Date: Wed, 28 Dec 2011 15:37:31 +0100
-In-Reply-To: <1325075319-13464-1-git-send-email-gurligebis@gentoo.org>
-References: <1325075319-13464-1-git-send-email-gurligebis@gentoo.org>
-Organization: Solarflare Communications
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Wed, 28 Dec 2011 09:45:33 -0500
+Message-ID: <4EFB2B8A.9010902@gmail.com>
+Date: Wed, 28 Dec 2011 08:45:30 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-X-Originating-IP: [176.99.104.76]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-6.800.1017-18604.005
-X-TM-AS-Result: No--2.580200-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>
+Subject: [PULL] Devicetree for 3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-28 at 12:28 +0000, Bjarke Istrup Pedersen wrote:
-> Working around problem causing high CPU load and hanging system when
-> there is alot of network trafic.
-> 
-> It is kind of an ugly way to work around it, but it allows the Soekris
-> net5501 to have trafic between two of it's NICs without hanging so much
-> that the watchdog kicks in and does a hard reboot of the system.
-> 
-> There is more info on the problem here:
-> http://http://lists.soekris.com/pipermail/soekris-tech/2010-October/016889.html
-> 
-> Tested with positive results on two Soekris net5501-70 boxes.
+Grant,
 
-This is completely wrong.  In a UP configuration the extra spinlock
-calls have no effect (except perhaps a small delay).  In an SMP
-configuration they will cause rhine_tx() to deadlock when it also tries
-to acquire the spinlock.
+Please pull device tree updates for 3.3. Pretty much a random collection
+of minor changes. I'm including i2c-designware DT binding support here
+as I've gotten no response from Ben.
 
-Ben.
+Rob
 
-[...]
-> diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
-> index f34dd99..8c77dcd 100644
-> --- a/drivers/net/ethernet/via/via-rhine.c
-> +++ b/drivers/net/ethernet/via/via-rhine.c
-> @@ -1567,6 +1567,9 @@ static irqreturn_t rhine_interrupt(int irq, void *dev_instance)
->         int boguscnt = max_interrupt_work;
->         int handled = 0;
->  
-> +       if (!spin_trylock(&rp->lock))
-> +               return IRQ_RETVAL(handled);
-> +
->         while ((intr_status = get_intr_status(dev))) {
->                 handled = 1;
->  
-> @@ -1616,6 +1619,8 @@ static irqreturn_t rhine_interrupt(int irq, void *dev_instance)
->                 }
->         }
->  
-> +       spin_unlock(&rp->lock);
-> +
->         if (debug > 3)
->                 netdev_dbg(dev, "exiting interrupt, status=%08x\n",
->                            ioread16(ioaddr + IntrStatus));
+The following changes since commit 384703b8e6cd4c8ef08512e596024e028c91c339:
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+  Linux 3.2-rc6 (2011-12-16 18:36:26 -0800)
 
+are available in the git repository at:
+  git://sources.calxeda.com/kernel/linux.git for-grant
+
+Benoit Cousson (1):
+      of/base: Take NULL string into account for property with multiple
+strings
+
+David Daney (1):
+      OF/device-tree: Add some entries to vendor-prefixes.txt
+
+Dong Aisheng (1):
+      dt: reform for_each_property to for_each_property_of_node
+
+Olof Johansson (1):
+      dt/i2c: Enumerate some of the known trivial i2c devices
+
+Rob Herring (3):
+      i2c-designware: add OF binding support
+      dt: add empty of_get_node/of_put_node functions
+      irq: check domain hwirq range for DT translate
+
+Sam Ravnborg (1):
+      of/pdt: fix section mismatch warning
+
+Uwe Kleine-König (1):
+      ARM/of: allow *machine_desc.dt_compat to be const
+
+ .../devicetree/bindings/i2c/i2c-designware.txt     |   22 ++++++++
+ .../devicetree/bindings/i2c/trivial-devices.txt    |   58
+++++++++++++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |    3 +
+ arch/arm/include/asm/mach/arch.h                   |    2 +-
+ drivers/i2c/busses/i2c-designware-platdrv.c        |   12 ++++
+ drivers/of/base.c                                  |   10 ++--
+ drivers/of/fdt.c                                   |    4 +-
+ drivers/of/pdt.c                                   |    2 +-
+ include/linux/of.h                                 |   33 ++++++------
+ include/linux/of_fdt.h                             |    4 +-
+ kernel/irq/irqdomain.c                             |    3 +
+ 11 files changed, 124 insertions(+), 29 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-designware.txt
+ create mode 100644
+Documentation/devicetree/bindings/i2c/trivial-devices.txt
