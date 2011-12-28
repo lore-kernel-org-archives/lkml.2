@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753722Ab1L1NDn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 08:03:43 -0500
-Received: from v027182.home.net.pl ([89.161.155.4]:34958 "HELO
-	v027182.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753181Ab1L1NDl (ORCPT
+	id S1753803Ab1L1NRz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 08:17:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60244 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753479Ab1L1NRt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 08:03:41 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Dec 2011 08:03:40 EST
-Date: Wed, 28 Dec 2011 13:56:31 +0100
-From: Wojciech Zygmunt Porczyk <wojciech@porczyk.eu>
-To: Gaurav Saxena <grvsaxena419@gmail.com>
-Cc: John Stoffel <john@stoffel.org>,
-        richard -rw- weinberger <richard.weinberger@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Intercepting system calls
-Message-ID: <20111228125631.GB9894@nb24cis>
-References: <CAOh0hwO03GJ2ApNW6GV5fJKJ4S+hTv3An7vLTO4qaL4U9grdJg@mail.gmail.com>
- <CAFLxGvyWWCAfk-fCCc3NhCE=KbE-Y7ivO5gynSbCubxPC8d-uw@mail.gmail.com>
- <CAOh0hwOpzXRp9k70qK6rWURE5414c0=A2ALEBtL=77xxDW9hiw@mail.gmail.com>
- <20211.28256.111279.27933@quad.stoffel.home>
- <CAOh0hwPeveaEaNv_mjNVLM36JSbObX4n5y1jC_Yp5MwdBA0Sxw@mail.gmail.com>
- <20212.37458.896503.997111@quad.stoffel.home>
- <CAOh0hwOO3iMmP5kKUvN6cexHU0dUPra1qD-_UCP_4_qSVx7Euw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; x-action=pgp-signed
-In-Reply-To: <CAOh0hwOO3iMmP5kKUvN6cexHU0dUPra1qD-_UCP_4_qSVx7Euw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 28 Dec 2011 08:17:49 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] proc: Update for change of ->show_options() to struct dentry *
+Date: Wed, 28 Dec 2011 13:17:21 +0000
+Message-Id: <1325078242-25601-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+The change "vfs: switch ->show_options() to struct dentry *" in -next
+updated the filesystems to use a struct dentry * as the second paremeter
+for show_options() but procfs wasn't converted. Do the conversion.
 
-On Fri, Dec 23, 2011 at 10:33:45PM +0530, Gaurav Saxena wrote:
-> I am trying to write an application which would create a backup for
-> the system so that it could be restored as it is. For example I create
-> a backup using my application. I just do nothing at time of backup so
-> it would be fast. Now whenever I see any deletion I would save that
-> file so that I could restore it.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ fs/proc/inode.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-You almost certainly wan't to research LVM(-like) snapshots. They are
-operating in block layer, so you can restore fs "as it was", with COW
-feature they do "nothing" at creation and just save overwritten data
-somewhere else.
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index e80cb5a..d839bfd 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -106,9 +106,9 @@ void __init proc_init_inodecache(void)
+ 					     init_once);
+ }
+ 
+-static int proc_show_options(struct seq_file *seq, struct vfsmount *vfs)
++static int proc_show_options(struct seq_file *seq, struct dentry *root)
+ {
+-	struct super_block *sb = vfs->mnt_sb;
++	struct super_block *sb = root->d_sb;
+ 	struct pid_namespace *pid = sb->s_fs_info;
+ 
+ 	if (pid->pid_gid)
+-- 
+1.7.7.3
 
-See: lvcreate(8), xfs_freeze(8). Maybe btrfs(8) ("btrfs subvolume
-snapshot") but btrfs is not really production-ready, so get lvm2+xfs.
-
-- -- 
-regards
-WZJP
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iEYEARECAAYFAk77Ef8ACgkQDgvLOJe6jMmQuACfassIV+vXCTmvMCTUqa81wgFf
-lBcAoLwYdPf59FEJ7sl/lzyHLLo4pG2r
-=Zt0G
------END PGP SIGNATURE-----
