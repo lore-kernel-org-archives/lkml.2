@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab1L1A1x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 19:27:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:14033 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751607Ab1L1A1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 19:27:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="90794861"
-Subject: Re: [Fwd: [patch] intel_idle: Delete meaningless
- local_irq_disable() call in intel_idle.c.]
-From: Yanmin Zhang <yanmin_zhang@linux.intel.com>
-Reply-To: yanmin_zhang@linux.intel.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, shaohua.li@intel.com,
-        len.brown@intel.com, mingmingx.zhang@intel.com
-In-Reply-To: <20111227161034.1969c006.akpm@linux-foundation.org>
-References: <1324862905.3860.1.camel@ymzhang>
-	 <20111227161034.1969c006.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: UMG
-Date: Wed, 28 Dec 2011 08:27:12 +0800
-Message-ID: <1325032032.3860.17.camel@ymzhang>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1752954Ab1L1AlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 19:41:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41506 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752526Ab1L1AlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 19:41:11 -0500
+Date: Tue, 27 Dec 2011 16:41:02 -0800
+From: Tejun Heo <tj@kernel.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
+        oleg@redhat.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
+ and fix blkcg percpu alloc deadlock
+Message-ID: <20111228004102.GK17712@google.com>
+References: <1324590326-10135-1-git-send-email-tj@kernel.org>
+ <20111222135925.de3221c8.akpm@linux-foundation.org>
+ <20111222220911.GK17084@google.com>
+ <20111222142058.41316ee0.akpm@linux-foundation.org>
+ <20111223014043.GC12738@redhat.com>
+ <20111222175834.66559c8b.akpm@linux-foundation.org>
+ <20111223025629.GE12738@redhat.com>
+ <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111227175249.GE17712@google.com>
+ <20111228091402.c45a08f6.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111228091402.c45a08f6.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-27 at 16:10 -0800, Andrew Morton wrote:
-> On Mon, 26 Dec 2011 09:28:20 +0800
-> Yanmin Zhang <yanmin_zhang@linux.intel.com> wrote:
-> 
-> > Andrew,
-> > 
-> > Would you like to accept the patch into your testing tree?
-> 
-> hm, that's three indel_idle patches which I have now.  Someone wake up
-> lenb!
-> 
-> > intel_idle.c is a bit misleading in a sense that local_irq_disable,it
-> 
+Hello,
 
-> I'd suggest adding this as well:
-Agree. It'll be clearer.
-
+On Wed, Dec 28, 2011 at 09:14:02AM +0900, KAMEZAWA Hiroyuki wrote:
+> > This is essentially more specialized form of the mempool approach.  It
+> > doesn't seem any simpler to me while being less generic.  I don't see
+> > what the upside would be.
 > 
-> --- a/drivers/idle/intel_idle.c~drivers-idle-intel_idlec-remove-redundant-local_irq_disable-call-fix
-> +++ a/drivers/idle/intel_idle.c
-> @@ -232,6 +232,7 @@ static int get_driver_data(int cstate)
->   * @drv: cpuidle driver
->   * @index: index of cpuidle state
->   *
-> + * Must be called under local_irq_disable().
->   */
->  static int intel_idle(struct cpuidle_device *dev,
->  		struct cpuidle_driver *drv, int index)
+> Hm, but this never causes -ENOMEM error, at all.
 
+Ooh, I missed the part it falls back to the global counter if percpu
+counters aren't allocated yet.  Yeah, this is an interesting approach.
+I'll think more about it.
 
+Thanks.
+
+-- 
+tejun
