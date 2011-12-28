@@ -1,55 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab1L1Bxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 20:53:31 -0500
-Received: from smtpq2.gn.mail.iss.as9143.net ([212.54.34.165]:36732 "EHLO
-	smtpq2.gn.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752836Ab1L1Bx2 (ORCPT
+	id S1753082Ab1L1CEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 21:04:37 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:38215 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752723Ab1L1CEf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 20:53:28 -0500
-Message-ID: <4EFA7696.6060506@gmail.com>
-Date: Wed, 28 Dec 2011 02:53:26 +0100
-From: Rene Herman <rene.herman@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
+	Tue, 27 Dec 2011 21:04:35 -0500
 MIME-Version: 1.0
-To: Andre Guedes <andre.guedes@openbossa.org>
-CC: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [bluetooth] linux-3.x regression (bisected)
-References: <4EF3BACA.1080405@gmail.com> <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com> <4EFA1EB8.9090005@gmail.com> <20111227203008.GA13870@joana> <4EFA447C.3030906@gmail.com> <20111228012248.GC13870@joana> <20111228012850.GD13870@joana>
-In-Reply-To: <20111228012850.GD13870@joana>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ziggo-spambar: ---
-X-Ziggo-spamscore: -3.6
-X-Ziggo-spamreport: ALL_TRUSTED=-1,BAYES_00=-1.9,FREEMAIL_FROM=0.5,PROLO_TRUST_RDNS=-3,RDNS_DYNAMIC=0.982,SPF_NEUTRAL=0.779
-X-Ziggo-Spam-Status: No
-X-Spam-Flag: No
+In-Reply-To: <4EF96406.6080102@jp.fujitsu.com>
+References: <4EF2F9EB.7000006@jp.fujitsu.com> <4EF36BDA.5080105@gmail.com> <4EF96406.6080102@jp.fujitsu.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Tue, 27 Dec 2011 21:04:13 -0500
+Message-ID: <CAHGf_=rW6_94NbxB1cUbrXo+YntDy7RM26XMcqk_SHXVESaSzg@mail.gmail.com>
+Subject: Re: [PATCH] mm: mmap system call does not return EOVERFLOW
+To: Naotaka Hamaguchi <n.hamaguchi@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28-12-11 02:28, Gustavo Padovan wrote:
-
->> For some reason your adapter is returning here the same value of
->> Read Local Features. I would say your device is broken.  The only
->> fix I have in mind now is throw away the device.
+> ----------------------------------------------------------------------
+> arch/x86/kernel/syscall_table_32.S:
+> ...
+>  194         .long sys_mmap_pgoff
+> ...
 >
-> Yes, I have one of these ISSC devices, it's completely broken
-> device.
+> mm/mmap.c:
+> 1080 SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
+> 1081                 unsigned long, prot, unsigned long, flags,
+> 1082                 unsigned long, fd, unsigned long, pgoff)
+> ...
+> 1111         down_write(&current->mm->mmap_sem);
+> 1112         retval = do_mmap_pgoff(file, addr, len, prot, flags, pgoff);
+> 1113         up_write(&current->mm->mmap_sem);
+> ----------------------------------------------------------------------
+>
+>> value. We have
+>> no reason to make artificial limit. Why don't you meke a overflow
+>> check in sys_mmap()?
+>
+> I consider it is better to make an overflow check in do_mmap_pgoff.
+> There are two reasons:
+>
+> 1. If we make an overflow check in the entrance of system call, we
+>   have to check in sys_mmap for x86_64 and in sys_mmap_pgoff for
+>   x86. It means that we have to check for each architecture
+>   individually. Therefore, it is more effective to make an
+>   overflow check in do_mmap_pgoff because both sys_mmap and
+>   sys_mmap_pgoff call do_mmap_pgoff.
 
-It worked well upto and including 2.6.29 though.
+arch/x86/include/asm/posix_types_32.h
+---------------------------------------------
+typedef long            __kernel_off_t;
 
-This would seem to be the kind of thing other subsystems use quirk 
-handling for. The device identifies itself as "1131:1004":
 
-Bus 002 Device 002: ID 1131:1004 Integrated System Solution Corp. 
-Bluetooth Device
-
-Do you guys have infra-structure in place for adapter-specific (quitk) 
-handling?
-
-Rene.
+So, your patch introduce 2GB limitation to 32bit arch. It makes no sense.
 
 
 
+> 2. Because the argument "offset" of sys_mmap is a multiple
+>   of the page size(otherwise, EINVAL is returned.), no information
+>   is lost after shifting right by PAGE_SHIFT bits. Therefore
+>   to make an overflow check in do_mmap_pgoff is equivalent
+>   to check in sys_mmap.
