@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab1L1TY7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 14:24:59 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:51639 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754064Ab1L1TYy (ORCPT
+	id S1754532Ab1L1T0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 14:26:16 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:65472 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab1L1T0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 14:24:54 -0500
-Message-ID: <4EFB7AED.1090408@xenotime.net>
-Date: Wed, 28 Dec 2011 12:24:13 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 28 Dec 2011 14:26:11 -0500
+Message-ID: <4EFB6D4F.6070002@gmail.com>
+Date: Wed, 28 Dec 2011 21:26:07 +0200
+From: Konstantinos Skarlatos <k.skarlatos@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: linux-next: Tree for Dec 28 (fs-writeback)
-References: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au>
-In-Reply-To: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+To: linux-kernel@vger.kernel.org
+CC: Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Btrfs: blocked for more than 120 seconds, made worse by 3.2 rc7
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2011 01:18 AM, Stephen Rothwell wrote:
-> Hi all,
-> 
-> I got bored :-(  I also hate tree wide, flag day changes :-(
-> 
-> Changes since 20111222:
+Hello all:
+I have two machines with btrfs, that give me the "blocked for more than 
+120 seconds" message. After that I cannot write anything to disk, i am 
+unable to unmount the btrfs filesystem and i can only reboot with 
+sysrq-trigger.
 
+It always happens when i write many files with rsync over network. When 
+i used 3.2rc6 it happened randomly on both machines after 50-500gb of 
+writes. with rc7 it happens after much less writes, probably 10gb or so, 
+but only on machine 1 for the time being. machine 2 has not crashed yet 
+after 200gb of writes and I am still testing that.
 
-(on both i386 and x86_64 builds:)
+machine 1: btrfs on a 6tb sparse file, mounted as loop, on a xfs 
+filesystem that lies on a 10TB md raid5. mount options 
+compress=zlib,compress-force
 
+machine 2: btrfs over md raid 5 (4x2TB)=5.5TB filesystem. mount options 
+compress=zlib,compress-force
 
-fs/fs-writeback.c:510:11: error: 'PAGE_CACHE_SHIFT' undeclared (first use in this function)
+pastebins:
 
+machine1:
+3.2rc7 http://pastebin.com/u583G7jK
+3.2rc6 http://pastebin.com/L12TDaXa
 
-Needs to #include <linux/pagemap.h> ??
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+machine2:
+3.2rc6 http://pastebin.com/khD0wGXx
+3.2rc7 (not crashed yet)
