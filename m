@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149Ab1L1RVb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 12:21:31 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:34635 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779Ab1L1RV2 (ORCPT
+	id S1754209Ab1L1RYY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 12:24:24 -0500
+Received: from smtpq2.gn.mail.iss.as9143.net ([212.54.34.165]:55237 "EHLO
+	smtpq2.gn.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753812Ab1L1RYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 12:21:28 -0500
-Date: Wed, 28 Dec 2011 17:21:51 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
-Message-ID: <20111228172151.3a121d59@pyramind.ukuu.org.uk>
-In-Reply-To: <20111228170521.GT27266@moon>
-References: <20111222125639.360640574@openvz.org>
-	<20111222131139.457264003@openvz.org>
-	<20111228165114.04fcae0f@pyramind.ukuu.org.uk>
-	<20111228170521.GT27266@moon>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 28 Dec 2011 12:24:20 -0500
+Message-ID: <4EFB50C2.4070600@gmail.com>
+Date: Wed, 28 Dec 2011 18:24:18 +0100
+From: Rene Herman <rene.herman@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Gustavo Padovan <padovan@profusion.mobi>,
+        Andre Guedes <andre.guedes@openbossa.org>,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [bluetooth] linux-3.x regression (bisected)
+References: <4EF3BACA.1080405@gmail.com> <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com> <4EFA1EB8.9090005@gmail.com> <20111227203008.GA13870@joana> <4EFA447C.3030906@gmail.com> <20111228012248.GC13870@joana> <20111228012850.GD13870@joana> <4EFA7696.6060506@gmail.com> <20111228155225.GA23292@joana> <1325090923.1965.282.camel@aeonflux>
+In-Reply-To: <1325090923.1965.282.camel@aeonflux>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Ziggo-spambar: ---
+X-Ziggo-spamscore: -3.6
+X-Ziggo-spamreport: ALL_TRUSTED=-1,BAYES_00=-1.9,FREEMAIL_FROM=0.5,PROLO_TRUST_RDNS=-3,RDNS_DYNAMIC=0.982,SPF_NEUTRAL=0.779
+X-Ziggo-Spam-Status: No
+X-Spam-Flag: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It can happen in case of object re-allocated from slab. But in case
-> of two living pids it's impossible to get same pointers for different
-> objects. Or I misunderstood the question, Alan? It's up to application
-> to not compare objects from dead tasks.
+On 28-12-11 17:48, Marcel Holtmann wrote:
 
-How will it know the task has not died and been reallocated, or its
-resources not been freed and reallocated during the comparison ?
+> The correct patch would be something like this:
+>
+> diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+> index 919e3c0..b6eb9c5 100644
+> --- a/net/bluetooth/hci_event.c
+> +++ b/net/bluetooth/hci_event.c
+> @@ -711,7 +711,8 @@ static void hci_cc_read_local_ext_features(struct hci_dev *h
+>          if (rp->status)
+>                  return;
+>
+> -       memcpy(hdev->extfeatures, rp->features, 8);
+> +       if (rp->page == 1)
+> +               memcpy(hdev->extfeatures, rp->features, 8);
+>
+>          hci_req_complete(hdev, HCI_OP_READ_LOCAL_EXT_FEATURES, rp->status);
+>   }
+>
+> The current patch is actually fully broken anyway. So besides switching
+> LE on when requesting page 0, you will also switch it off when
+> requesting any other page and it accidentally returns 0x00 since we
+> unconditionally overwrite it.
 
-Your comparison appears to have a zero time validity - you can ask "is A
-the same as B" but by the time you get an answer your answer may no
-longer be true. It also externalises a current implementation
-detail in a very ugly way.
+Don't know anything about pages, but... I can confirm that the above 
+works for me as well.
 
-Would it also not be better to do the job right and simply have an
-interface to ask "who shares with A" or even something a bit more high
-level, it seems you are creating something nastier by trying to push all
-this in userspace than if you did the job or part of it kernel side where
-you had access to the right locking infrastructure and where the public
-API doesn't need to expose innards of the kernel ?
+Rene.
 
-Alan
