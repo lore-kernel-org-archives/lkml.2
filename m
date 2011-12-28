@@ -1,116 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab1L1IdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 03:33:18 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44872 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab1L1IdO (ORCPT
+	id S1751591Ab1L1Idp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 03:33:45 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:35373 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab1L1IdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 03:33:14 -0500
-Date: Wed, 28 Dec 2011 00:33:01 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Tejun Heo <tj@kernel.org>
-cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
- allowed to create io_context
-In-Reply-To: <20111225010238.GA6013@htj.dyndns.org>
-Message-ID: <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
-References: <20111221174733.9ba0861e762e8d96844b060b@canb.auug.org.au> <20111221151503.4d78f94f.akpm@linux-foundation.org> <20111222150836.af172886.akpm@linux-foundation.org> <20111222232036.GP17084@google.com> <20111222152427.c944c747.akpm@linux-foundation.org>
- <20111222233843.GR17084@google.com> <20111222154427.89b245c7.akpm@linux-foundation.org> <20111222234639.GS17084@google.com> <20111223004244.GU17084@google.com> <alpine.LSU.2.00.1112232058550.3225@eggly.anvils> <20111225010238.GA6013@htj.dyndns.org>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 28 Dec 2011 03:33:23 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-39-4efad4516615
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Russell King'" <rmk@arm.linux.org.uk>,
+        "'Thomas Abraham'" <thomas.abraham@linaro.org>
+References: <20111228103326.b4f211f3c46127b8acf2dda6@canb.auug.org.au>
+In-reply-to: <20111228103326.b4f211f3c46127b8acf2dda6@canb.auug.org.au>
+Subject: RE: linux-next: manual merge of the s5p tree with the arm tree
+Date: Wed, 28 Dec 2011 17:33:19 +0900
+Message-id: <01fd01ccc53b$5a2c5960$0e850c20$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: ko
+Thread-index: AczE8AFOCeRcqbhSSHS1ok3Zad8zAAAR1EJQ
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 24 Dec 2011, Tejun Heo wrote:
-
-> While fixing io_context creation / task exit race condition,
-> 6e736be7f2 "block: make ioc get/put interface more conventional and
-> fix race on alloction" also prevented an exiting (%PF_EXITING) task
-> from creating its own io_context.  This is incorrect as exit path may
-> issue IOs, e.g. from exit_files(), and if those IOs are the first ones
-> issued by the task, io_context needs to be created to process the IOs.
+Stephen Rothwell wrote:
 > 
-> Combined with the existing problem of io_context / io_cq creation
-> failure having the possibility of stalling IO, this problem results in
-> deterministic full IO lockup with certain workloads.
+> Hi Kukjin,
 > 
-> Fix it by allowing io_context creation regardless of %PF_EXITING for
-> %current.
+> Today's linux-next merge of the s5p tree got a conflict in
+> arch/arm/mach-s5p64x0/init.c between commit 95af214becab ("ARM: 7246/1:
+> S5P64X0: introduce arch/arm/mach-s5p64x0/common.[ch]") from the arm tree
+> and commit afba7f91e640 ("ARM: SAMSUNG: remove struct
+> 's3c24xx_uart_clksrc' and all uses of it") from the s5p tree.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Andrew Morton <akpm@linux-foundation.org>
-> Reported-by: Hugh Dickins <hughd@google.com>
+> I just removed the file, but the latter patch will probably need applying
+> in some form to arch/arm/mach-s5p64x0/common.c.
 
-Thanks, I think I've now built enough kernels on -next plus your patch
-to say that it does indeed solve that problem.
+OK, let me fix it.
+Thanks for your time :)
 
-However, there are a couple of other unhealthy symptoms I've noticed
-under load in -next's block/cfq layer, both with and without your patch.
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-One is kernel BUG at block/cfq-iosched.c:2585!
-	BUG_ON(RB_EMPTY_ROOT(&cfqq->sort_list));
-
-cfq_dispatch_request+0x1a
-cfq_dispatch_requests+0x5c
-blk_peek_request+0x195
-scsi_request_fn+0x6a
-__blk_run_queue+0x16
-scsi_run_queue+0x18a
-scsi_next_command+0x36
-scsi_io_completion+0x426
-scsi_finish_command+0xaf
-scsi_softirq_done+0xdd
-blk_done_softirq+0x6c
-__do_softirq+0x80
-call_softirq+0x1c
-do_softirq+0x33
-irq_exit+0x3f
-do_IRQ+0x97
-ret_from_intr
-
-I've had that one four times now on different machines; but quicker
-to reproduce are these warnings from CONFIG_DEBUG_LIST=y:
-
-------------[ cut here ]------------
-WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-Hardware name: 4174AY9
-list_del corruption. prev->next should be ffff880005aa1380, but was 6b6b6b6b6b6b6b6b
-Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device
-Pid: 29241, comm: cc1 Tainted: G        W    3.2.0-rc6-next-20111222 #18
-Call Trace:
- <IRQ>  [<ffffffff810544b4>] warn_slowpath_common+0x80/0x98
- [<ffffffff81054560>] warn_slowpath_fmt+0x41/0x43
- [<ffffffff811fc1a1>] __list_del_entry+0x8d/0x98
- [<ffffffff811df8ab>] cfq_remove_request+0x3b/0xdf
- [<ffffffff811df989>] cfq_dispatch_insert+0x3a/0x87
- [<ffffffff811dfb3b>] cfq_dispatch_request+0x65/0x92
- [<ffffffff811dfbc4>] cfq_dispatch_requests+0x5c/0x133
- [<ffffffff812e103e>] ? scsi_request_fn+0x3b6/0x3d3
- [<ffffffff811d3069>] blk_peek_request+0x195/0x1a6
- [<ffffffff812e103e>] ? scsi_request_fn+0x3b6/0x3d3
- [<ffffffff812e0cf5>] scsi_request_fn+0x6d/0x3d3
- [<ffffffff811d0730>] __blk_run_queue+0x19/0x1b
- [<ffffffff811d0bfd>] blk_run_queue+0x21/0x35
- [<ffffffff812e08c4>] scsi_run_queue+0x11f/0x1b9
- [<ffffffff812e205c>] scsi_next_command+0x36/0x46
- [<ffffffff812e24dc>] scsi_io_completion+0x426/0x4a9
- [<ffffffff812dc0b2>] scsi_finish_command+0xaf/0xb8
- [<ffffffff812e200c>] scsi_softirq_done+0xdd/0xe5
- [<ffffffff811d79c6>] blk_done_softirq+0x76/0x8a
- [<ffffffff8105a28d>] __do_softirq+0x98/0x136
- [<ffffffff814e649c>] call_softirq+0x1c/0x30
- [<ffffffff8102f187>] do_softirq+0x38/0x81
- [<ffffffff8105a596>] irq_exit+0x4e/0xb6
- [<ffffffff8102ee9e>] do_IRQ+0x97/0xae
- [<ffffffff814e49f0>] common_interrupt+0x70/0x70
- <EOI>  [<ffffffff814e4a8e>] ? retint_swapgs+0xe/0x13
----[ end trace 61fdaa1b260613d1 ]---
-
-Hugh
