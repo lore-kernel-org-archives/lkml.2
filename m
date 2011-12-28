@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab1L1VeG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 16:34:06 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:39172 "EHLO
+	id S1754608Ab1L1Vsi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 16:48:38 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:11807 "EHLO
 	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753164Ab1L1VeE (ORCPT
+	by vger.kernel.org with ESMTP id S1754244Ab1L1Vsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 16:34:04 -0500
+	Wed, 28 Dec 2011 16:48:35 -0500
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtoKAN6H+055LbVv/2dsb2JhbABEqyuBOoEGgXIBAQQBOhwjBQsIAxguFCUDIROHerUsE4sZYwSVAZJJ
-Date: Thu, 29 Dec 2011 08:33:59 +1100
+X-IronPort-Anti-Spam-Result: AtoKAGyL+055LbVv/2dsb2JhbABEqyuBOoEGgXIBAQQBJxMcIwULCAMOCi4UJQMhE4d6tSMTi3wElQGKc4dW
+Date: Thu, 29 Dec 2011 08:48:32 +1100
 From: Dave Chinner <david@fromorbit.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "Nikolay S." <nowhere@hakkenden.ath.cx>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
-Message-ID: <20111228213359.GF12731@dastard>
-References: <1324437036.4677.5.camel@hakkenden.homenet>
- <20111221095249.GA28474@tiehlicka.suse.cz>
- <20111221225512.GG23662@dastard>
- <1324630880.562.6.camel@rybalov.eng.ttk.net>
- <20111223102027.GB12731@dastard>
- <1324638242.562.15.camel@rybalov.eng.ttk.net>
- <20111223204503.GC12731@dastard>
- <20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
- <1324954208.4634.2.camel@hakkenden.homenet>
- <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
+To: Konstantinos Skarlatos <k.skarlatos@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Linux Btrfs <linux-btrfs@vger.kernel.org>,
+        Chris Mason <chris.mason@oracle.com>
+Subject: Re: Btrfs: blocked for more than 120 seconds, made worse by 3.2 rc7
+Message-ID: <20111228214832.GG12731@dastard>
+References: <4EFB6D4F.6070002@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4EFB6D4F.6070002@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 01:44:05PM +0900, KAMEZAWA Hiroyuki wrote:
-> To me,  it seems kswapd does usual work...reclaim small memory until free
-> gets enough. And it seems 'dd' allocates its memory from ZONE_DMA32 because
-> of gfp_t fallbacks.
+On Wed, Dec 28, 2011 at 09:26:07PM +0200, Konstantinos Skarlatos wrote:
+> Hello all:
+> I have two machines with btrfs, that give me the "blocked for more
+> than 120 seconds" message. After that I cannot write anything to
+> disk, i am unable to unmount the btrfs filesystem and i can only
+> reboot with sysrq-trigger.
 > 
+> It always happens when i write many files with rsync over network.
+> When i used 3.2rc6 it happened randomly on both machines after
+> 50-500gb of writes. with rc7 it happens after much less writes,
+> probably 10gb or so, but only on machine 1 for the time being.
+> machine 2 has not crashed yet after 200gb of writes and I am still
+> testing that.
 > 
-> Memo.
+> machine 1: btrfs on a 6tb sparse file, mounted as loop, on a xfs
+> filesystem that lies on a 10TB md raid5. mount options
+> compress=zlib,compress-force
 > 
-> 1. why shrink_slab() should be called per zone, which is not zone aware.
->    Isn't it enough to call it per priority ?
+> machine 2: btrfs over md raid 5 (4x2TB)=5.5TB filesystem. mount
+> options compress=zlib,compress-force
+> 
+> pastebins:
+> 
+> machine1:
+> 3.2rc7 http://pastebin.com/u583G7jK
+> 3.2rc6 http://pastebin.com/L12TDaXa
 
-It is intended that it should be zone aware, but the current
-shrinkers only have global LRUs and hence cannot discriminate
-between objects from different zones easily. And if only a single
-node/zone is being scanned, then we still have to call shirnk_slab()
-to try to free objects in that zone/node, despite it's current
-global scope.
+These two are caused by it taking longer than 120s for XFS to fsync
+the loop file. Writing a signficant chunk of a sparse 6TB file on a
+software RAID5  volume is going to take some time.  However, if IO
+is not occurring, then somewhere below XFS an IO has gone missing
+(MD or hardware problem) because the fsync on the XFS file is
+blocked waiting for an IO completion.
 
-I have some prototype patches that make the major slab caches and
-shrinkers zone/node aware - that is the eventual goal here - but
-first all the major slab cache LRUs need to be converted to be node
-aware first. Then we can pass a nodemask into shrink_slab() and down
-to the shrinkers so that those that have per-node LRUs can scan only
-the appropriate nodes for objects to free. This is someting that I'm
-working on in my spare time, but I have very little of that at the
-moment, unfortunately.
+> machine2:
+> 3.2rc6 http://pastebin.com/khD0wGXx
+> 3.2rc7 (not crashed yet)
 
-> 2. what spinlock contention that perf showed ?
->    And if shrink_slab() doesn't consume cpu as trace shows, why perf 
->    says shrink_slab() is heavy..
-
-There isn't any spin lock contention - it's just showing how
-expensive locking superblocks is when it's being done every few
-microseconds for no good reason.
-
-> 3. because 8/9 of memory is in DMA32, calling shrink_slab() frequently
->    at scanning NORMAL seems to be time wasting.
-
-Especially as the shrink_slab() calls are returning zero pages freed
-every single time (i.e. the slab caches are empty). kswapd needs to
-back off here, I think, or free more memory at a time. Only freeing
-100 pages at a time is pretty inefficient, esp. as we have 4 orders
-of magnitude more pages on the LRU and that is consuming >90% of
-RAM...
+These don't have XFS in the picture, but also appear to be hung
+waiting on IO completion with MD stuck in
+make_request()->get_active_stripe(). That, to me, indicates an MD
+problem.....
 
 Cheers,
 
