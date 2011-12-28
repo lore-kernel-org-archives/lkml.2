@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751633Ab1L1Gys (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 01:54:48 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:60585 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751205Ab1L1Gyq (ORCPT
+	id S1753363Ab1L1GzW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 01:55:22 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50921 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751942Ab1L1Gyx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 01:54:46 -0500
-Date: Wed, 28 Dec 2011 17:54:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Subject: linux-next: manual merge of the staging tree with the l2-mtd tree
-Message-Id: <20111228175440.fa8c027e41dbeaccddb0e6ea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Dec_2011_17_54_40_+1100_=HNlTWXOo7Y0TPg7"
+	Wed, 28 Dec 2011 01:54:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EF9AA59.7050003@oss.ntt.co.jp>
+References: <1324091975-20930-1-git-send-email-kernelfans@gmail.com>
+	<1324975139-8836-1-git-send-email-kernelfans@gmail.com>
+	<4EF9AA59.7050003@oss.ntt.co.jp>
+Date: Wed, 28 Dec 2011 14:54:52 +0800
+Message-ID: <CAFgQCTu+qO=_Pc3Nps5N+esB0a9xYu83nRUT4Q6JepM6pAZYAA@mail.gmail.com>
+Subject: Re: [PATCH v6] kvm: make vcpu life cycle separated from kvm instance
+From: Liu ping fan <kernelfans@gmail.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        aliguori@us.ibm.com, gleb@redhat.com, mtosatti@redhat.com,
+        xiaoguangrong.eric@gmail.com, jan.kiszka@web.de,
+        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Dec_2011_17_54_40_+1100_=HNlTWXOo7Y0TPg7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+2011/12/27 Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>:
+> (2011/12/27 17:38), Liu Ping Fan wrote:
+>> From: Liu Ping Fan<pingfank@linux.vnet.ibm.com>
+>>
+>> Currently, vcpu can be destructed only when kvm instance destroyed.
+>> Change this to vcpu's destruction before kvm instance, so vcpu MUST
+>> and CAN be destroyed before kvm's destroy.
+>
+> I really don't understand why this big change can be justified by only
+> 3 lines.
+>
+I think just recording what this patch does, not the whole story about
+it. Right?
+>>
+>> Signed-off-by: Liu Ping Fan<pingfank@linux.vnet.ibm.com>
+>> ---
+>>   arch/x86/kvm/i8254.c     |   10 +++--
+>>   arch/x86/kvm/i8259.c     |   17 +++++--
+>>   arch/x86/kvm/x86.c       |   53 +++++++++++-----------
+>>   include/linux/kvm_host.h |   20 +++-----
+>>   virt/kvm/irq_comm.c      |    6 ++-
+>>   virt/kvm/kvm_main.c      |  110 +++++++++++++++++++++++++++++++++++-----------
+>>   6 files changed, 140 insertions(+), 76 deletions(-)
+>>
+>
+> You are introducing kvm_arch_vcpu_zap().
+>
+> Then, apart from the "zap" naming issue I mentioned last time,
+Yes, I will correct "zap", as you said, its meaning is quite different
+from destroy. :-)
 
-Hi Greg,
+> what about other architectures than x86?
+>
+Have not considered it in detail yet. At first step, I just want to
+figure out the whole frame, then, I will push them on other arch.
+Maybe you foresee some problem when extending this onto other arch,
+please tell me, thanks ：-).
+>
+>> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+>> index 900c763..b88d418d 100644
+>> --- a/include/linux/kvm_host.h
+>> +++ b/include/linux/kvm_host.h
+>> @@ -117,6 +117,7 @@ enum {
+>>
+>>   struct kvm_vcpu {
+>>       struct kvm *kvm;
+>> +     struct list_head list;
+>>   #ifdef CONFIG_PREEMPT_NOTIFIERS
+>>       struct preempt_notifier preempt_notifier;
+>>   #endif
+>> @@ -251,12 +252,14 @@ struct kvm {
+>>       struct mm_struct *mm; /* userspace tied to this vm */
+>>       struct kvm_memslots *memslots;
+>>       struct srcu_struct srcu;
+>> +     struct srcu_struct srcu_vcpus;
+>> +
+>
+> Another srcu.  This alone is worth explaining in the changelog IMO.
+>
+Sorry, but why? I think it is just a srcu, and because it has
+different aim and want a independent grace period, so not multiplex
+kvm->srcu.
 
-Today's linux-next merge of the staging tree got a conflict in
-drivers/staging/spectra/lld_mtd.c between a series of commits from the
-l2-mtd tree and commit be7f39c5ecf5 ("Staging: delete spectra driver")
-from the staging tree.
+thanks and regards,
+ping fan
 
-I just removed the file.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__28_Dec_2011_17_54_40_+1100_=HNlTWXOo7Y0TPg7
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO+r0wAAoJEECxmPOUX5FESZsP/0Nt+IdfdxlaOaGI416BLqgk
-Ek4uwRmMEB3XWmONyFdBInANFCx+4DK4VVp7MUE0h4Dwyi6QA/A7YRAVB/6ts8fS
-f2IEobLEJ/0oriSM0gKlZoY7PG7wEbbcOo/MVThfTsvJNNQ6HQNmx7QcSrdiMG75
-k8zzaZ1SZV0MK/5Y7JtKxVJb0bVLnEENkIEHRwcwUuFDhCtrDqFVneV41lgBtO2r
-FjQOwzJ1LKVSl07NY/CTTBSitQW2hoG5ZORyoN52O0HpI5FWTTRKl8EfGyWZhZHL
-1ZBm3o0dQm7A4QiLPkdyUK7pTK7uwXMDIPv1s+7KzmUpi6aKg5gpOfjPZXUHFmhM
-o7hsr0ZdYsDPzb3yZmkO2a9Alhf0TSh/ORyE/fVhNVD6OnAvkVVzOBvw3AS02xiF
-ibFPYjfJoudPN+7QOiD+63CCMCa7AAOrJSWja2+whpaG8kOt2U/TIHeiKrI0Q5cI
-86otk0ypoVEwZqqGY9Ixp1uG1f+VJrW+rinbEPxFKaARlGjrlDSPtGXMkghVQhbj
-+AQKGohqeHWn+IPXmkF+lTD3w0lyYXrQVPoj4RHwgj+lsNZNrZnqf3AvHQJYYukC
-H6fcdxeOYS9lYgxnurJT99vCj5S8KwuqFAykG5NzI/oQlsxeIAHD0Vx7fQko/plj
-TzN+Dad9pUHEaRQ581+6
-=iG3a
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Dec_2011_17_54_40_+1100_=HNlTWXOo7Y0TPg7--
+>        Takuya
+>
+>>   #ifdef CONFIG_KVM_APIC_ARCHITECTURE
+>>       u32 bsp_vcpu_id;
+>>   #endif
+>> -     struct kvm_vcpu *vcpus[KVM_MAX_VCPUS];
+>> +     struct list_head vcpus;
+>>       atomic_t online_vcpus;
+>> -     int last_boosted_vcpu;
+>> +     int last_boosted_vcpu_id;
+>>       struct list_head vm_list;
+>>       struct mutex lock;
+>>       struct kvm_io_bus *buses[KVM_NR_BUSES];
