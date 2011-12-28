@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab1L1D4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 22:56:51 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:57915 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753185Ab1L1D4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 22:56:49 -0500
-From: Liu Bo <liubo2009@cn.fujitsu.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <jaxboe@fusionio.com>, <hch@lst.de>, <tj@kernel.org>
-Subject: [PATCH] Documentation: drop stale I/O barrier descriptions
-Date: Wed, 28 Dec 2011 11:53:36 +0800
-Message-Id: <1325044416-12580-1-git-send-email-liubo2009@cn.fujitsu.com>
-X-Mailer: git-send-email 1.6.5.2
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-28 11:55:58,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-28 11:55:59,
-	Serialize complete at 2011-12-28 11:55:59
+	id S1753285Ab1L1ERd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 23:17:33 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:33947 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752268Ab1L1ERc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 23:17:32 -0500
+Date: Wed, 28 Dec 2011 15:17:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Subject: linux-next: manual merge of the kvm tree with the rr tree
+Message-Id: <20111228151721.ceff9dc7d7e1c1ab56518aa4@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for double mails, missing to cc LKML...
-===
+--Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Since we've applied writeback_cache_control.txt and removed barrier.txt,
-drop the related descriptions in biodoc.txt.
+Hi all,
 
-Signed-off-by: Liu Bo <liubo2009@cn.fujitsu.com>
----
- Documentation/block/biodoc.txt |   21 ++-------------------
- 1 files changed, 2 insertions(+), 19 deletions(-)
+Today's linux-next merge of the kvm tree got a conflict in
+arch/x86/kvm/mmu.c between commit d6e5215aba76 ("module_param: make bool
+parameters really bool (arch)") from the rr tree and commit d750ea28865d
+("KVM: MMU: remove oos_shadow parameter") from the kvm tree.
 
-diff --git a/Documentation/block/biodoc.txt b/Documentation/block/biodoc.txt
-index e418dc0..2ce818f 100644
---- a/Documentation/block/biodoc.txt
-+++ b/Documentation/block/biodoc.txt
-@@ -48,8 +48,7 @@ Description of Contents:
- 	- Highmem I/O support
- 	- I/O scheduler modularization
-   1.2 Tuning based on high level requirements/capabilities
--	1.2.1 I/O Barriers
--	1.2.2 Request Priority/Latency
-+	1.2.1 Request Priority/Latency
-   1.3 Direct access/bypass to lower layers for diagnostics and special
-       device operations
- 	1.3.1 Pre-built commands
-@@ -261,23 +260,7 @@ unused). As far as user applications are concerned they would need an
- additional mechanism either via open flags or ioctls, or some other upper
- level mechanism to communicate such settings to block.
- 
--1.2.1 I/O Barriers
--
--There is a way to enforce strict ordering for i/os through barriers.
--All requests before a barrier point must be serviced before the barrier
--request and any other requests arriving after the barrier will not be
--serviced until after the barrier has completed. This is useful for higher
--level control on write ordering, e.g flushing a log of committed updates
--to disk before the corresponding updates themselves.
--
--A flag in the bio structure, BIO_BARRIER is used to identify a barrier i/o.
--The generic i/o scheduler would make sure that it places the barrier request and
--all other requests coming after it after all the previous requests in the
--queue. Barriers may be implemented in different ways depending on the
--driver. For more details regarding I/O barriers, please read barrier.txt
--in this directory.
--
--1.2.2 Request Priority/Latency
-+1.2.1 Request Priority/Latency
- 
- Todo/Under discussion:
- Arjan's proposed request priority scheme allows higher levels some broad
--- 
-1.6.5.2
+The latter just removed the code modified by the former, so I did that.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO+phRAAoJEECxmPOUX5FEvjcQAKiTFAbrsni3Ew+pT4fEry3x
+OGv/XXQuNBHIdcg0LXdec0u/24SjR+KFlACZQ4rDr06o5L8tbVZ89chntnf4algx
+8kKLxdmDktrc0NQFHCLom0216AMUSqpthEq12i6N8rbI+XbmeR73fOAS8otqW4YQ
+AzbgkQZ/0hphSISp7S+lu3pwIIxXns0Ok/M5SAUcfCA3X43Eit50ILBoeV5zcFmD
+5s01ZDZQo5x9EUDKwgeJCUgqy+P9DGpTDv/3zQJoqoMJyZMsuz1FKSddC6M313E1
+fwg/YhnWz/kpqklBuohoeC6BgdxCy7ryE4NDBwrUOgp3ZzQUWJzJWCSFAxuG3Vab
+UKWWzUDrIpyhMlPT9nXmJFMSFxyU8b4jQhu441eyiS5hS9vLA8whMKAf0E9oxWvo
+zCyw5Eank1Bv+AXj4cq9WK1jAs14grClTQMR0y+6j6IKg2OdEhHvIcIkk82GmrQI
+UDirUeBUJ4pqm8bLn80PsFrYIPPS5MkDKkx9FH8YrwGuyZKmGmvz++Dqu4KWPYrd
+DWGvvo8KMxjtv9mhiTIJf97+UQNPZ0AjHaE6fTup7fIK9Pbp14hh9GkEV+91LgdQ
+8xs2kQcRTldLF6d9gdAiT409fPyUpz+sgoERChiPWI1VEwbUjbUKas5JAFqOnYOb
+K4TrTjFp3sJ/lBgmx/MP
+=yXEs
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1--
