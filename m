@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608Ab1L1Vsi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 16:48:38 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:11807 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754244Ab1L1Vsf (ORCPT
+	id S1754621Ab1L1VyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 16:54:08 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58721 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754586Ab1L1VyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 16:48:35 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtoKAGyL+055LbVv/2dsb2JhbABEqyuBOoEGgXIBAQQBJxMcIwULCAMOCi4UJQMhE4d6tSMTi3wElQGKc4dW
-Date: Thu, 29 Dec 2011 08:48:32 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Konstantinos Skarlatos <k.skarlatos@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Linux Btrfs <linux-btrfs@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>
-Subject: Re: Btrfs: blocked for more than 120 seconds, made worse by 3.2 rc7
-Message-ID: <20111228214832.GG12731@dastard>
-References: <4EFB6D4F.6070002@gmail.com>
+	Wed, 28 Dec 2011 16:54:07 -0500
+Date: Wed, 28 Dec 2011 22:53:33 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rudolf Marek <r.marek@assembler.cz>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Olof Johansson <olof@lixom.net>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Feng Tang <feng.tang@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH RESEND] i2c: Convert to DEFINE_PCI_DEVICE_TABLE
+Message-ID: <20111228215333.GA13515@pengutronix.de>
+References: <1325076512.6997.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bg08WKrSYDhXBjb5"
 Content-Disposition: inline
-In-Reply-To: <4EFB6D4F.6070002@gmail.com>
+In-Reply-To: <1325076512.6997.1.camel@phoenix>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 28, 2011 at 09:26:07PM +0200, Konstantinos Skarlatos wrote:
-> Hello all:
-> I have two machines with btrfs, that give me the "blocked for more
-> than 120 seconds" message. After that I cannot write anything to
-> disk, i am unable to unmount the btrfs filesystem and i can only
-> reboot with sysrq-trigger.
-> 
-> It always happens when i write many files with rsync over network.
-> When i used 3.2rc6 it happened randomly on both machines after
-> 50-500gb of writes. with rc7 it happens after much less writes,
-> probably 10gb or so, but only on machine 1 for the time being.
-> machine 2 has not crashed yet after 200gb of writes and I am still
-> testing that.
-> 
-> machine 1: btrfs on a 6tb sparse file, mounted as loop, on a xfs
-> filesystem that lies on a 10TB md raid5. mount options
-> compress=zlib,compress-force
-> 
-> machine 2: btrfs over md raid 5 (4x2TB)=5.5TB filesystem. mount
-> options compress=zlib,compress-force
-> 
-> pastebins:
-> 
-> machine1:
-> 3.2rc7 http://pastebin.com/u583G7jK
-> 3.2rc6 http://pastebin.com/L12TDaXa
 
-These two are caused by it taking longer than 120s for XFS to fsync
-the loop file. Writing a signficant chunk of a sparse 6TB file on a
-software RAID5  volume is going to take some time.  However, if IO
-is not occurring, then somewhere below XFS an IO has gone missing
-(MD or hardware problem) because the fsync on the XFS file is
-blocked waiting for an IO completion.
+--bg08WKrSYDhXBjb5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> machine2:
-> 3.2rc6 http://pastebin.com/khD0wGXx
-> 3.2rc7 (not crashed yet)
+On Wed, Dec 28, 2011 at 08:48:32PM +0800, Axel Lin wrote:
+> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
+> tables.
+>=20
+> Use DEFINE_PCI_DEVICE_TABLE ensures we make the pci_device_id table const
+> and marked as __devinitconst.
+>=20
+> This also fixes some warnings from checkpatch:
+> e.g.
+> WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
+> #1096: FILE: i2c/busses/i2c-intel-mid.c:1096:
+> +static struct pci_device_id intel_mid_i2c_ids[] =3D {
+>=20
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-These don't have XFS in the picture, but also appear to be hung
-waiting on IO completion with MD stuck in
-make_request()->get_active_stripe(). That, to me, indicates an MD
-problem.....
+Cool, thanks for the update!
 
-Cheers,
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--bg08WKrSYDhXBjb5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEYEARECAAYFAk77j90ACgkQD27XaX1/VRtAbQCdFBrZGeDihrgq7W1Ckl24Mw4U
+M6sAn3WRWfjPravbkxQtGSDGvlouDpXU
+=c5TY
+-----END PGP SIGNATURE-----
+
+--bg08WKrSYDhXBjb5--
