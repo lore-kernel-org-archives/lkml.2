@@ -1,67 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750940Ab1L1FBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 00:01:00 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:13163 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750696Ab1L1FA4 (ORCPT
+	id S1750863Ab1L1FGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 00:06:13 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:54086 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737Ab1L1FGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 00:00:56 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7b95ae00000198b-13-4efaa287b483
-Message-id: <4EFAA280.3030307@samsung.com>
-Date: Wed, 28 Dec 2011 14:00:48 +0900
-From: Donggeun Kim <dg77.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419
- Thunderbird/3.1.9
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-pm@vger.kernel.org, len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl,
-        rdunlap@xenotime.net, cbouatmailru@gmail.com, pali.rohar@gmail.com,
-        prakity@mavell.com, lars@metafoo.de, kyungmin.park@samsung.com,
-        myungjoo.ham@samsung.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/2] power: Charger-Manager: add initial Charger-Manager
- driver
-References: <1324979269-2453-1-git-send-email-dg77.kim@samsung.com>
- <1324979269-2453-2-git-send-email-dg77.kim@samsung.com>
- <20111227113611.GH2870@opensource.wolfsonmicro.com>
-In-reply-to: <20111227113611.GH2870@opensource.wolfsonmicro.com>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 28 Dec 2011 00:06:10 -0500
+Date: Wed, 28 Dec 2011 16:05:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: linux-next: manual merge of the driver-core tree with the s5p tree
+Message-Id: <20111228160559.778fb178a9e9a8d938dc98b8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011년 12월 27일 20:36, Mark Brown wrote:
-> On Tue, Dec 27, 2011 at 06:47:48PM +0900, Donggeun Kim wrote:
-> 
->> +		/*
->> +		 * Abnormal battery state - Stop charging forcibly,
->> +		 * even if charger was enabled at the other places
->> +		 */
->> +		err = regulator_bulk_disable(desc->num_charger_regulators,
->> +					desc->charger_regulators);
->> +
->> +		for (i = 0; i < desc->num_charger_regulators; i++) {
->> +			if (regulator_is_enabled(
->> +				    desc->charger_regulators[i].consumer)) {
->> +				regulator_force_disable(
->> +					desc->charger_regulators[i].consumer);
->> +				dev_warn(cm->dev,
->> +					"Disable regulator(%s) forcibly.\n",
->> +					desc->charger_regulators[i].supply);
->> +			}
-> 
-> Just implement a regulator_bulk_force_disable() operation; this is a
-> totally reasonable thing to want to do and other drivers may have the
-> same need.  Actually, looking at what you've written here it's totally
-> sensible and we should probably also roll the attempt to do a normal
-> disable() into force_disable() - there can't be many situations in which
-> trying a clean shutdown first isn't the right thing to do.
-> 
-Okay.
-The patch for 'regulator_bulk_force_disable' will be sent regardless of
-this patchset.
+--Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
--Donggeun
+Hi Greg,
+
+Today's linux-next merge of the driver-core tree got a conflict in
+arch/arm/mach-s3c2440/clock.c between commit 0cfb26e1fb9d ("ARM: SAMSUNG:
+register uart clocks to clock lookup list") from the s5p tree and commit
+4a858cfc9af8 ("arm: convert sysdev_class to a regular subsystem") from
+the driver-core tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-s3c2440/clock.c
+index c9879af,d895759..0000000
+--- a/arch/arm/mach-s3c2440/clock.c
++++ b/arch/arm/mach-s3c2440/clock.c
+@@@ -110,47 -107,7 +109,47 @@@ static struct clk s3c2440_clk_ac97 =3D=20
+  	.ctrlbit	=3D S3C2440_CLKCON_CAMERA,
+  };
+ =20
+ +static unsigned long  s3c2440_fclk_n_getrate(struct clk *clk)
+ +{
+ +	unsigned long ucon0, ucon1, ucon2, divisor;
+ +
+ +	/* the fun of calculating the uart divisors on the s3c2440 */
+ +	ucon0 =3D __raw_readl(S3C24XX_VA_UART0 + S3C2410_UCON);
+ +	ucon1 =3D __raw_readl(S3C24XX_VA_UART1 + S3C2410_UCON);
+ +	ucon2 =3D __raw_readl(S3C24XX_VA_UART2 + S3C2410_UCON);
+ +
+ +	ucon0 &=3D S3C2440_UCON0_DIVMASK;
+ +	ucon1 &=3D S3C2440_UCON1_DIVMASK;
+ +	ucon2 &=3D S3C2440_UCON2_DIVMASK;
+ +
+ +	if (ucon0 !=3D 0)
+ +		divisor =3D (ucon0 >> S3C2440_UCON_DIVSHIFT) + 6;
+ +	else if (ucon1 !=3D 0)
+ +		divisor =3D (ucon1 >> S3C2440_UCON_DIVSHIFT) + 21;
+ +	else if (ucon2 !=3D 0)
+ +		divisor =3D (ucon2 >> S3C2440_UCON_DIVSHIFT) + 36;
+ +	else
+ +		/* manual calims 44, seems to be 9 */
+ +		divisor =3D 9;
+ +
+ +	return clk_get_rate(clk->parent) / divisor;
+ +}
+ +
+ +static struct clk s3c2440_clk_fclk_n =3D {
+ +	.name		=3D "fclk_n",
+ +	.parent		=3D &clk_f,
+ +	.ops		=3D &(struct clk_ops) {
+ +		.get_rate	=3D s3c2440_fclk_n_getrate,
+ +	},
+ +};
+ +
+ +static struct clk_lookup s3c2440_clk_lookup[] =3D {
+ +	CLKDEV_INIT(NULL, "clk_uart_baud1", &s3c24xx_uclk),
+ +	CLKDEV_INIT(NULL, "clk_uart_baud2", &clk_p),
+ +	CLKDEV_INIT(NULL, "clk_uart_baud3", &s3c2440_clk_fclk_n),
+ +};
+ +
+- static int s3c2440_clk_add(struct sys_device *sysdev)
++ static int s3c2440_clk_add(struct device *dev)
+  {
+  	struct clk *clock_upll;
+  	struct clk *clock_h;
+
+--Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO+qO3AAoJEECxmPOUX5FE6Q8P/19U7Fw+Uvn5fSZex1rlrwOF
+fnCoVMXhpzMsRWkrChJ7OAVz1YcpBRIVYbCMdjroOG2uAyDdxUQV9bpfwCK8Oc8L
+wZcnMDMdpd8aAXVryTDjSP0PfzaQjs+gpTs6lWd2KpCKiTtB8SQuax6LXNz0a0BM
+b45wvhlgjMAg/kbJVrbK3lT6FmiZDOKRNEpYZVfsa2xpGvnAJshYemns7qU+2E2H
+z5aBJyGjJXgPKXhPsxai9CgeKXS0D104vMRU0pYxeVTTjkbQjMHYsDwkRWWw+FLs
+qzvrAoLAe0w+WdLF+dy++Pw98k8ZmNODPsnd9VkP5C4zkNeO829KcFXSC2o9en69
+jjusAY80y4iKkLYxwYyUcCRqZh6wy0OojPfaUOSc+cLF/GJOrgLgy0GosZ3b0JYs
+4HCYUg0fvAogt86MOqKlz1nSuV8598KBU1fFR9gsPFzKghHk9Dx2qIWVPOW8oUeK
+JbijyXuAE118kUszvfRbKU8K1Sr5EI2vqa5E/fNC78eh54Q+gAW3lmJkc9allDaw
+8r0msmo1eXNFmaceGD0TtfYaqDjGrsXMc47yj2plulm3yr26C25aNb3/enrAWtVQ
+MKPkYYM7lT7ccZk1pIidv+SI7qWaLXESBMKvtVffSpE1IQGybUrwrIyBmCEjIfvE
+065d/oguRG+SNqfBiBcJ
+=jvdc
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye--
