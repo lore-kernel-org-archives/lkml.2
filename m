@@ -1,32 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab1L1MRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 07:17:11 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:50271 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab1L1MRJ (ORCPT
+	id S1752644Ab1L1MbC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 07:31:02 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:44784 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751213Ab1L1MbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 07:17:09 -0500
-X-Nat-Received: from [202.181.97.72]:49350 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1325074613.20392
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v10 0/2] security: Yama LSM
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1324498624-31868-1-git-send-email-keescook@chromium.org>
-In-Reply-To: <1324498624-31868-1-git-send-email-keescook@chromium.org>
-Message-Id: <201112282116.AFE13558.FOLSHJMOOVQFtF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 28 Dec 2011 21:16:51 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 28122011 #6270028, status: clean
+	Wed, 28 Dec 2011 07:31:00 -0500
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Roger Luethi <rl@hellgate.ch>,
+        Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Subject: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+Date: Wed, 28 Dec 2011 12:28:39 +0000
+Message-Id: <1325075319-13464-1-git-send-email-gurligebis@gentoo.org>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there seems to be no big problems/objections to this module,
-I think this module is ready to go to 3.3 via security-testing tree.
+Working around problem causing high CPU load and hanging system when
+there is alot of network trafic.
 
-Happy holidays!
+It is kind of an ugly way to work around it, but it allows the Soekris
+net5501 to have trafic between two of it's NICs without hanging so much
+that the watchdog kicks in and does a hard reboot of the system.
+
+There is more info on the problem here:
+http://http://lists.soekris.com/pipermail/soekris-tech/2010-October/016889.html
+
+Tested with positive results on two Soekris net5501-70 boxes.
+
+Signed-off-by: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+---
+ drivers/net/ethernet/via/via-rhine.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+index f34dd99..8c77dcd 100644
+--- a/drivers/net/ethernet/via/via-rhine.c
++++ b/drivers/net/ethernet/via/via-rhine.c
+@@ -1567,6 +1567,9 @@ static irqreturn_t rhine_interrupt(int irq, void *dev_instance)
+ 	int boguscnt = max_interrupt_work;
+ 	int handled = 0;
+ 
++	if (!spin_trylock(&rp->lock))
++		return IRQ_RETVAL(handled);
++
+ 	while ((intr_status = get_intr_status(dev))) {
+ 		handled = 1;
+ 
+@@ -1616,6 +1619,8 @@ static irqreturn_t rhine_interrupt(int irq, void *dev_instance)
+ 		}
+ 	}
+ 
++	spin_unlock(&rp->lock);
++
+ 	if (debug > 3)
+ 		netdev_dbg(dev, "exiting interrupt, status=%08x\n",
+ 			   ioread16(ioaddr + IntrStatus));
+-- 
+1.7.8
+
