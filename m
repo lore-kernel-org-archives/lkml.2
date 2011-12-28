@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab1L1HmW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 02:42:22 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57687 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab1L1HmU (ORCPT
+	id S1751134Ab1L1Hyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 02:54:52 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:49985 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab1L1Hyt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 02:42:20 -0500
-Date: Wed, 28 Dec 2011 11:42:14 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
+	Wed, 28 Dec 2011 02:54:49 -0500
+Date: Wed, 28 Dec 2011 18:54:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Tejun Heo <tj@kernel.org>,
-        Matt Helsley <matthltc@us.ibm.com>, Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
-Message-ID: <20111228074214.GC27266@moon>
-References: <20111223124741.711871189@openvz.org>
- <20111223124920.661126615@openvz.org>
- <20111227152344.c8c140d3.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111227152344.c8c140d3.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: linux-next: manual merge of the akpm tree with Linus' tree
+Message-Id: <20111228185438.63b46e806d8e11310b34ec9d@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 03:23:44PM -0800, Andrew Morton wrote:
-> On Fri, 23 Dec 2011 16:47:42 +0400
-> Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> 
-> > The routine XORs the given pointer with a random value
-> > producing an ID (32 or 64 bit, depending on the arch).
-> > 
-> > Since it's a valuable information -- only CAP_SYS_ADMIN
-> > is allowed to obtain it.
-> > 
-> >  - Tejun worried about the single poison value was a weak side -
-> >    leaking one makes all the IDs vulnerable. To address this
-> >    several poison values - one per object type - are introduced.
-> >    They are stored in a plain array.
-> >  - Pekka proposed to initialized poison values in the late_initcall callback
-> >  - ... and move the code to mm/util.c
-> 
-> I'm trying to remember what this is all about, and I don't want to have
-> to remember all the discussion from last time this came up!
-> 
-> Please, do cover all this in the changelogs: tell us what the code is
-> all for and try to capture the design decisions thus far.  It's a
-> useful reminder for current reviewers and is very valuable for new
-> reviewers.
-> 
+--Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Actually, not much was changed here, but indeed I've missed some changelong
-snippets, sorry, will update next time. In short -- if to export these values
-to unprivilege users we're to use strong encryption with some expansion of
-the former pointers, and even more -- since kernel pointers do cover not
-that big space (espec in case of x86-32) one could prehash all possible values
-and if (for some reason) the cookie vector become known to an attacker, the
-plain encryption would not work, but require some additional security
-protection. Ie, none of scheme such as sha1(pointer ^ cookie) will be
-enough.
+Hi Andrew,
 
-So as a first step I thought root-only access should be better until more
-clever scheme would be developed. Actually there is an option to simply
-inject counters into kernel structures which we compare (ie vm, files and etc),
-but it increase kernel memory consumption too much.
+Today's linux-next merge of the akpm tree got a conflict in
+include/linux/lglock.h between commit e30e2fdfe562 ("VFS: Fix race
+between CPU hotplug and lglocks") from Linus' tree and commit
+"brlocks/lglocks: clean up code" from the akpm tree.
 
-> The root-only restriction sounds like a pretty bad one.  I suspect it
-> really isn't that bad but again, the changelog should discuss the pros
-> and cons here.
-> 
-> A thought: if all we're trying to do here is to check for the sameness
-> of objects, can we push the comparison into the kernel so we don't have
-> this exporting-sensitive-info problem at all?  Just return a boolean to
-> userspace?
-> 
-> Something like
-> 
-> int sys_pid_fields_equal(pid_t pid1, pid_t pid2, enum pid_field field_id);
-> 
-> ?
-> 
-> For /proc/pid/fdinfo/* userspace can open /proc/pid1/fdinfo/0 and
-> /proc/pid2/fdinfo/0 and call sys_are_these_files_the_same(fd1, fd2, ...).
-> 
-> Perhaps sys_pid_fields_equal() can use sys_are_these_files_the_same()
-> as well, if we can think up a way of passing it two fds to represent
-> the two pids.
-> 
-> Have a think about it ;)
-> 
+Given the extent of the conflict and that this patch also conflicts in
+several other files (fs/dcache.c, fs/file_table.c, fs/namei.c,
+fs/namespace.c - presumably against the vfs tree), I have dropped this
+patch (and the following
+"brlocks-lglocks-clean-up-code-checkpatch-fixes") from the akpm tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Good idea! Maybe we could simply extend prctl then?
-And thanks a lot for feedback, Andrew!
+--Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S
+Content-Type: application/pgp-signature
 
-	Cyrill
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJO+ss+AAoJEECxmPOUX5FE9bAP/A0xGFMWdkIl/tIj8X0CxwmS
+WxwGRsu0VYYfG34vpzQQW4V2dd0Kr307FvyH7heruP8/pat13pGLIvU08iordwgm
+2Iq2Xcpwj6DNGW9FOYobAFf+CTnUyoGC+t6mFYlT3TWB73vNnjbTXHSYIMOoQO0a
+YjE7gRNaFwbDZbpAA51IufDRAlwOs8qynspuamxwJbfTdacYZqUhS9p8LR91W2Mx
+UVGslr1nEBkwY7A5ruK/b1rX5RiI1RgsdC++UeALVSvAqUOyRNkJ+ROaunq88BY/
+gSS55mtqyqMAQcWzOmSi+V2bsWd4eQH76Emdf+8Jg7ks7k1ob8T+a/NW/8CTgsgf
+1VzG9aXdG6wc3iF8LRZ2gwz2Y6CWC2TGA3FmaYgoHKgmpInqtYdc/atHnYx1cPwh
+SsmVkk+zMUhP1pnKGsbGxr6O6MTlLkASOWAlZQHR+RHv3V8uTgI0IsMK3fIY3CLF
+U7SLg/5bzCk6itgHCS4enmy039pgfWIWO7WUIBGbzinLnCQnE60YgWuLFGHgx6R8
+3tE9BgyGaDsUiDOSna1WDVSx/qzB9H/B30qyHJ28tLm32joYZGN8jaCSs4ipjl2g
+sON3SXocvu0zufGNodumIDhVq4eHICY9G/Ne6QKhOPd7HFOV0WOhwN8aue3yAU25
+cAwFKOO72me6BwIMxssP
+=YpGt
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S--
