@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab1L1VdV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 16:33:21 -0500
-Received: from sunflower.ift.uni.wroc.pl ([156.17.88.33]:62021 "EHLO
-	sunflower.ift.uni.wroc.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab1L1VdT (ORCPT
+	id S1754557Ab1L1VeG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 16:34:06 -0500
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:39172 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753164Ab1L1VeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 16:33:19 -0500
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 28 Dec 2011 16:33:19 EST
-Date: Wed, 28 Dec 2011 22:23:33 +0100
-From: =?utf-8?Q?=C5=81ukasz?= Michalik <lmi@ift.uni.wroc.pl>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-        "Dmitry V. Levin" <ldv@altlinux.org>
-Subject: Re: Possible bug introduced in commit 9b84cca
-Message-ID: <20111228212333.GE20378@havoc.ift.uni.wroc.pl>
-References: <201112281955.55200.vda.linux@googlemail.com>
- <4EFB850C.4030801@redhat.com>
+	Wed, 28 Dec 2011 16:34:04 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtoKAN6H+055LbVv/2dsb2JhbABEqyuBOoEGgXIBAQQBOhwjBQsIAxguFCUDIROHerUsE4sZYwSVAZJJ
+Date: Thu, 29 Dec 2011 08:33:59 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "Nikolay S." <nowhere@hakkenden.ath.cx>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+Message-ID: <20111228213359.GF12731@dastard>
+References: <1324437036.4677.5.camel@hakkenden.homenet>
+ <20111221095249.GA28474@tiehlicka.suse.cz>
+ <20111221225512.GG23662@dastard>
+ <1324630880.562.6.camel@rybalov.eng.ttk.net>
+ <20111223102027.GB12731@dastard>
+ <1324638242.562.15.camel@rybalov.eng.ttk.net>
+ <20111223204503.GC12731@dastard>
+ <20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
+ <1324954208.4634.2.camel@hakkenden.homenet>
+ <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M/SuVGWktc5uNpra"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EFB850C.4030801@redhat.com>
+In-Reply-To: <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 27, 2011 at 01:44:05PM +0900, KAMEZAWA Hiroyuki wrote:
+> To me,  it seems kswapd does usual work...reclaim small memory until free
+> gets enough. And it seems 'dd' allocates its memory from ZONE_DMA32 because
+> of gfp_t fallbacks.
+> 
+> 
+> Memo.
+> 
+> 1. why shrink_slab() should be called per zone, which is not zone aware.
+>    Isn't it enough to call it per priority ?
 
---M/SuVGWktc5uNpra
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It is intended that it should be zone aware, but the current
+shrinkers only have global LRUs and hence cannot discriminate
+between objects from different zones easily. And if only a single
+node/zone is being scanned, then we still have to call shirnk_slab()
+to try to free objects in that zone/node, despite it's current
+global scope.
 
-On 22:07 2011-12-28 +0100, Denys Vlasenko wrote:
-> On Thu, Nov 17, 2011 at 10:25:26AM +0100, =C5=81ukasz Michalik wrote:
-> > The bug only happens on recent linux.  I've bisected the kernel and
-> > found that it was introduced by 9b84cca2564b9 [2] in linux.git, so
-> > pretty much everything since 3.0-rc2 is affected.
->=20
-> =C5=81ukasz, looks like 3.0-rc1 is affected too.
->=20
+I have some prototype patches that make the major slab caches and
+shrinkers zone/node aware - that is the eventual goal here - but
+first all the major slab cache LRUs need to be converted to be node
+aware first. Then we can pass a nodemask into shrink_slab() and down
+to the shrinkers so that those that have per-node LRUs can scan only
+the appropriate nodes for objects to free. This is someting that I'm
+working on in my spare time, but I have very little of that at the
+moment, unfortunately.
 
-Yeah, my git foo failed me back then.  3.0-rc1 is the the first
-upstream tag that contains that change.
+> 2. what spinlock contention that perf showed ?
+>    And if shrink_slab() doesn't consume cpu as trace shows, why perf 
+>    says shrink_slab() is heavy..
 
---=20
-Pozdrawiam,
-=C5=81ukasz P. Michalik
+There isn't any spin lock contention - it's just showing how
+expensive locking superblocks is when it's being done every few
+microseconds for no good reason.
 
---M/SuVGWktc5uNpra
-Content-Type: application/pgp-signature
+> 3. because 8/9 of memory is in DMA32, calling shrink_slab() frequently
+>    at scanning NORMAL seems to be time wasting.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Especially as the shrink_slab() calls are returning zero pages freed
+every single time (i.e. the slab caches are empty). kswapd needs to
+back off here, I think, or free more memory at a time. Only freeing
+100 pages at a time is pretty inefficient, esp. as we have 4 orders
+of magnitude more pages on the LRU and that is consuming >90% of
+RAM...
 
-iEYEARECAAYFAk77iNUACgkQ2Du0fXZKF/WDUACgqMQSR/WJ4AnagFSR8sF6UuH6
-ZZQAn0MJyuFLa1P6zSMxFj1m4gzQEK4Z
-=ZqVZ
------END PGP SIGNATURE-----
+Cheers,
 
---M/SuVGWktc5uNpra--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
