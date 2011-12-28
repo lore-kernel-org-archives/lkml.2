@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab1L1ERd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 27 Dec 2011 23:17:33 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:33947 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752268Ab1L1ERc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 27 Dec 2011 23:17:32 -0500
-Date: Wed, 28 Dec 2011 15:17:21 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Subject: linux-next: manual merge of the kvm tree with the rr tree
-Message-Id: <20111228151721.ceff9dc7d7e1c1ab56518aa4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1"
+	id S1753341Ab1L1EiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 27 Dec 2011 23:38:00 -0500
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:43198 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753253Ab1L1Eh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 27 Dec 2011 23:37:58 -0500
+Date: Tue, 27 Dec 2011 20:29:59 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
+Message-ID: <20111228042959.GA2477@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1324901803.31721.4.camel@lappy>
+ <20111226163148.GC2435@linux.vnet.ibm.com>
+ <1324977203.28904.1.camel@lappy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324977203.28904.1.camel@lappy>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 11122804-5112-0000-0000-0000037BDFB6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 27, 2011 at 11:13:23AM +0200, Sasha Levin wrote:
+> On Mon, 2011-12-26 at 08:31 -0800, Paul E. McKenney wrote:
+> > Except that when I try looking for task_notify_func() in current mainline,
+> > I get nothing.
+> > 
+> > Where is task_notify_func() coming from? 
+> 
+> I was testing linux-next, it actually comes from the android tree:
+> drivers/staging/android/lowmemorykiller.c
 
-Hi all,
+That does sound familiar...  I wonder if the stuff in staging is current
+Android or historical stuff.
 
-Today's linux-next merge of the kvm tree got a conflict in
-arch/x86/kvm/mmu.c between commit d6e5215aba76 ("module_param: make bool
-parameters really bool (arch)") from the rr tree and commit d750ea28865d
-("KVM: MMU: remove oos_shadow parameter") from the kvm tree.
+							Thanx, Paul
 
-The latter just removed the code modified by the former, so I did that.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJO+phRAAoJEECxmPOUX5FEvjcQAKiTFAbrsni3Ew+pT4fEry3x
-OGv/XXQuNBHIdcg0LXdec0u/24SjR+KFlACZQ4rDr06o5L8tbVZ89chntnf4algx
-8kKLxdmDktrc0NQFHCLom0216AMUSqpthEq12i6N8rbI+XbmeR73fOAS8otqW4YQ
-AzbgkQZ/0hphSISp7S+lu3pwIIxXns0Ok/M5SAUcfCA3X43Eit50ILBoeV5zcFmD
-5s01ZDZQo5x9EUDKwgeJCUgqy+P9DGpTDv/3zQJoqoMJyZMsuz1FKSddC6M313E1
-fwg/YhnWz/kpqklBuohoeC6BgdxCy7ryE4NDBwrUOgp3ZzQUWJzJWCSFAxuG3Vab
-UKWWzUDrIpyhMlPT9nXmJFMSFxyU8b4jQhu441eyiS5hS9vLA8whMKAf0E9oxWvo
-zCyw5Eank1Bv+AXj4cq9WK1jAs14grClTQMR0y+6j6IKg2OdEhHvIcIkk82GmrQI
-UDirUeBUJ4pqm8bLn80PsFrYIPPS5MkDKkx9FH8YrwGuyZKmGmvz++Dqu4KWPYrd
-DWGvvo8KMxjtv9mhiTIJf97+UQNPZ0AjHaE6fTup7fIK9Pbp14hh9GkEV+91LgdQ
-8xs2kQcRTldLF6d9gdAiT409fPyUpz+sgoERChiPWI1VEwbUjbUKas5JAFqOnYOb
-K4TrTjFp3sJ/lBgmx/MP
-=yXEs
------END PGP SIGNATURE-----
-
---Signature=_Wed__28_Dec_2011_15_17_21_+1100_Jy38hWvT0cWM9VY1--
