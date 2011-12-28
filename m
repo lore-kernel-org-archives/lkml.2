@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab1L1KZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 05:25:45 -0500
-Received: from gate.crashing.org ([63.228.1.57]:43739 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753307Ab1L1KZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 05:25:43 -0500
-Message-ID: <1325067910.6632.42.camel@pasglop>
-Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 28 Dec 2011 21:25:10 +1100
-In-Reply-To: <CA+55aFyr69__vsorCXKZ7UezvXkCkZaot3=5b5xSHaYBEJ2ZKQ@mail.gmail.com>
-References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
-	 <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com>
-	 <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
-	 <20111220162315.GC10752@google.com>
-	 <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com>
-	 <20111220202854.GH10752@google.com>
-	 <alpine.DEB.2.00.1112210851230.9601@router.home>
-	 <20111221170535.GB9213@google.com>
-	 <CA+55aFyr69__vsorCXKZ7UezvXkCkZaot3=5b5xSHaYBEJ2ZKQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753547Ab1L1K2P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 05:28:15 -0500
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:57933 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753402Ab1L1K2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 05:28:11 -0500
+Message-ID: <4EFAEF89.8050306@oss.ntt.co.jp>
+Date: Wed, 28 Dec 2011 19:29:29 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+MIME-Version: 1.0
+To: Liu ping fan <kernelfans@gmail.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        aliguori@us.ibm.com, gleb@redhat.com, mtosatti@redhat.com,
+        xiaoguangrong.eric@gmail.com, jan.kiszka@web.de,
+        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+Subject: Re: [PATCH v6] kvm: make vcpu life cycle separated from kvm instance
+References: <1324091975-20930-1-git-send-email-kernelfans@gmail.com>	<1324975139-8836-1-git-send-email-kernelfans@gmail.com>	<4EF9AA59.7050003@oss.ntt.co.jp> <CAFgQCTu+qO=_Pc3Nps5N+esB0a9xYu83nRUT4Q6JepM6pAZYAA@mail.gmail.com>
+In-Reply-To: <CAFgQCTu+qO=_Pc3Nps5N+esB0a9xYu83nRUT4Q6JepM6pAZYAA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-21 at 18:19 -0800, Linus Torvalds wrote:
-> On Wed, Dec 21, 2011 at 9:05 AM, Tejun Heo <tj@kernel.org> wrote:
-> >
-> > machines.  (cc'ing arch) Does anyone have better insight here?  How
-> > much more expensive are local irq save/restore compared to inc/dec'ing
-> > preempt count on various archs?
-> 
-> I think powerpc does sw irq disable, so it's pretty much the same.
+(2011/12/28 15:54), Liu ping fan wrote:
 
-On 64-bit only, but it's probably still better than going for an atomic
-op, our atomics tend to be handled at the l2 level and so are sloooow.
+>> You are introducing kvm_arch_vcpu_zap().
+>>
+>> Then, apart from the "zap" naming issue I mentioned last time,
+> Yes, I will correct "zap", as you said, its meaning is quite different
+> from destroy. :-)
+>
+>> what about other architectures than x86?
+>>
+> Have not considered it in detail yet. At first step, I just want to
+> figure out the whole frame, then, I will push them on other arch.
+> Maybe you foresee some problem when extending this onto other arch,
+> please tell me, thanks ：-).
 
- .../...
+I do not mind if those are supported or not now.
 
-> So I really suspect that we could just say: "make the irq-safe version
-> be the *only* version", and no architecture will really care. Sure, it
-> can be more expensive, but it usually isn't. Only when done badly and
-> stupidly is it nasty.
+But if not, you should write what is currently supported and what should
+be done in the future.
 
-Agreed, keep it simple, or we'll just grow more bugs like this one.
+Of course, you should at least make sure that other architectures will
+not be broken by your patch.
 
-Cheers,
-Ben.
+>>
+>>> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+>>> index 900c763..b88d418d 100644
+>>> --- a/include/linux/kvm_host.h
+>>> +++ b/include/linux/kvm_host.h
+>>> @@ -117,6 +117,7 @@ enum {
+>>>
+>>>    struct kvm_vcpu {
+>>>        struct kvm *kvm;
+>>> +     struct list_head list;
+>>>    #ifdef CONFIG_PREEMPT_NOTIFIERS
+>>>        struct preempt_notifier preempt_notifier;
+>>>    #endif
+>>> @@ -251,12 +252,14 @@ struct kvm {
+>>>        struct mm_struct *mm; /* userspace tied to this vm */
+>>>        struct kvm_memslots *memslots;
+>>>        struct srcu_struct srcu;
+>>> +     struct srcu_struct srcu_vcpus;
+>>> +
+>>
+>> Another srcu.  This alone is worth explaining in the changelog IMO.
+>>
+> Sorry, but why? I think it is just a srcu, and because it has
+> different aim and want a independent grace period, so not multiplex
+> kvm->srcu.
 
+I cannot say what MUST be explained in the changelog.
+But many well known maintainers are telling the importance of changelog.
 
+It is up to you, and KVM maintainers.
+
+	Takuya
