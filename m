@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab1L1R5z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 12:57:55 -0500
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:28405 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753832Ab1L1R5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 12:57:53 -0500
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtkKAARX+05tgySC/2dsb2JhbABDqx6BOoEGgXIBAQQBOhwjBQsIAw44FCUDIYgNArVCE4sZYwSVAYkdiRk
-Date: Wed, 28 Dec 2011 18:57:51 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marc Vertes <marc.vertes@sigfox.com>, linux-watchdog@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 28 (via_wdt)
-Message-ID: <20111228175751.GA14460@infomag.iguana.be>
-References: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au> <4EFB5BF2.3020600@xenotime.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EFB5BF2.3020600@xenotime.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754248Ab1L1SRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 13:17:14 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:48731 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754045Ab1L1SRN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 13:17:13 -0500
+Date: Wed, 28 Dec 2011 10:17:10 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, Roger Luethi <rl@hellgate.ch>
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on
+ low-end broads.
+Message-ID: <20111228101710.51c4893f@nehalam.linuxnetplumber.net>
+In-Reply-To: <CACPM=kX2hcGt3XXDJkCAcOjv=5oqSHChhhphUAyRhR_PsNFEEQ@mail.gmail.com>
+References: <1325075319-13464-1-git-send-email-gurligebis@gentoo.org>
+	<1325083051.2327.47.camel@deadeye>
+	<CACPM=kWpGnBOuKPUK9MgzyETe4VmvEtVXkYtPA_+Xgn=COkCPw@mail.gmail.com>
+	<1325092423.2327.70.camel@deadeye>
+	<CACPM=kX2hcGt3XXDJkCAcOjv=5oqSHChhhphUAyRhR_PsNFEEQ@mail.gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randi,
-
-> via_wdt needs a MODULE_LICENSE():
-> 
-> WARNING: modpost: missing MODULE_LICENSE() in drivers/watchdog/via_wdt.o
-> see include/linux/module.h for more information
-
-Fixed.
-
-Thanks,
-Wim.
-
+Looks like the hardware isn't really disabling interrupts correctly to support
+NAPI. NAPI is supposed to be friendly and under load the work should move to
+ksoftirqd. I suspect the IRQ management in this driver is borked.
+There is some stupid spin loops in the IRQ handler that happen when looking for
+Tx IRQ. I would run with debug set  and see if this is triggering.
