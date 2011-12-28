@@ -1,115 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1L1Qsp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 11:48:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46091 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab1L1Qsm (ORCPT
+	id S1754143Ab1L1Qth (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 11:49:37 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:57119 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754019Ab1L1Qte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 11:48:42 -0500
-Date: Wed, 28 Dec 2011 08:48:36 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
- allowed to create io_context
-Message-ID: <20111228164836.GP17712@google.com>
-References: <20111222150836.af172886.akpm@linux-foundation.org>
- <20111222232036.GP17084@google.com>
- <20111222152427.c944c747.akpm@linux-foundation.org>
- <20111222233843.GR17084@google.com>
- <20111222154427.89b245c7.akpm@linux-foundation.org>
- <20111222234639.GS17084@google.com>
- <20111223004244.GU17084@google.com>
- <alpine.LSU.2.00.1112232058550.3225@eggly.anvils>
- <20111225010238.GA6013@htj.dyndns.org>
- <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 28 Dec 2011 11:49:34 -0500
+Message-ID: <1325090923.1965.282.camel@aeonflux>
+Subject: Re: [bluetooth] linux-3.x regression (bisected)
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Gustavo Padovan <padovan@profusion.mobi>
+Cc: Rene Herman <rene.herman@gmail.com>,
+        Andre Guedes <andre.guedes@openbossa.org>,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Date: Wed, 28 Dec 2011 08:48:43 -0800
+In-Reply-To: <20111228155225.GA23292@joana>
+References: <4EF3BACA.1080405@gmail.com>
+	 <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com>
+	 <4EFA1EB8.9090005@gmail.com> <20111227203008.GA13870@joana>
+	 <4EFA447C.3030906@gmail.com> <20111228012248.GC13870@joana>
+	 <20111228012850.GD13870@joana> <4EFA7696.6060506@gmail.com>
+	 <20111228155225.GA23292@joana>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Hugh.
+Hi Gustavo,
 
-On Wed, Dec 28, 2011 at 12:33:01AM -0800, Hugh Dickins wrote:
-> Thanks, I think I've now built enough kernels on -next plus your patch
-> to say that it does indeed solve that problem.
-
-Awesome, thanks for verifying the fix.
-
-> However, there are a couple of other unhealthy symptoms I've noticed
-> under load in -next's block/cfq layer, both with and without your patch.
+> > >>For some reason your adapter is returning here the same value of
+> > >>Read Local Features. I would say your device is broken.  The only
+> > >>fix I have in mind now is throw away the device.
+> > >
+> > >Yes, I have one of these ISSC devices, it's completely broken
+> > >device.
+> > 
+> > It worked well upto and including 2.6.29 though.
 > 
-> One is kernel BUG at block/cfq-iosched.c:2585!
-> 	BUG_ON(RB_EMPTY_ROOT(&cfqq->sort_list));
+> We never used Extended Features before 2.6.39
 > 
-> cfq_dispatch_request+0x1a
-> cfq_dispatch_requests+0x5c
-> blk_peek_request+0x195
-> scsi_request_fn+0x6a
-> __blk_run_queue+0x16
-> scsi_run_queue+0x18a
-> scsi_next_command+0x36
-> scsi_io_completion+0x426
-> scsi_finish_command+0xaf
-> scsi_softirq_done+0xdd
-> blk_done_softirq+0x6c
-> __do_softirq+0x80
-> call_softirq+0x1c
-> do_softirq+0x33
-> irq_exit+0x3f
-> do_IRQ+0x97
-> ret_from_intr
+> > 
+> > This would seem to be the kind of thing other subsystems use quirk
+> > handling for. The device identifies itself as "1131:1004":
+> > 
+> > Bus 002 Device 002: ID 1131:1004 Integrated System Solution Corp.
+> > Bluetooth Device
+> > 
+> > Do you guys have infra-structure in place for adapter-specific
+> > (quitk) handling?
 > 
-> I've had that one four times now on different machines; but quicker
-> to reproduce are these warnings from CONFIG_DEBUG_LIST=y:
+> I think this patch can do handling, let's see what others think.
 > 
-> ------------[ cut here ]------------
-> WARNING: at lib/list_debug.c:53 __list_del_entry+0x8d/0x98()
-> Hardware name: 4174AY9
-> list_del corruption. prev->next should be ffff880005aa1380, but was 6b6b6b6b6b6b6b6b
-> Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device
-> Pid: 29241, comm: cc1 Tainted: G        W    3.2.0-rc6-next-20111222 #18
-> Call Trace:
->  <IRQ>  [<ffffffff810544b4>] warn_slowpath_common+0x80/0x98
->  [<ffffffff81054560>] warn_slowpath_fmt+0x41/0x43
->  [<ffffffff811fc1a1>] __list_del_entry+0x8d/0x98
->  [<ffffffff811df8ab>] cfq_remove_request+0x3b/0xdf
->  [<ffffffff811df989>] cfq_dispatch_insert+0x3a/0x87
->  [<ffffffff811dfb3b>] cfq_dispatch_request+0x65/0x92
->  [<ffffffff811dfbc4>] cfq_dispatch_requests+0x5c/0x133
->  [<ffffffff812e103e>] ? scsi_request_fn+0x3b6/0x3d3
->  [<ffffffff811d3069>] blk_peek_request+0x195/0x1a6
->  [<ffffffff812e103e>] ? scsi_request_fn+0x3b6/0x3d3
->  [<ffffffff812e0cf5>] scsi_request_fn+0x6d/0x3d3
->  [<ffffffff811d0730>] __blk_run_queue+0x19/0x1b
->  [<ffffffff811d0bfd>] blk_run_queue+0x21/0x35
->  [<ffffffff812e08c4>] scsi_run_queue+0x11f/0x1b9
->  [<ffffffff812e205c>] scsi_next_command+0x36/0x46
->  [<ffffffff812e24dc>] scsi_io_completion+0x426/0x4a9
->  [<ffffffff812dc0b2>] scsi_finish_command+0xaf/0xb8
->  [<ffffffff812e200c>] scsi_softirq_done+0xdd/0xe5
->  [<ffffffff811d79c6>] blk_done_softirq+0x76/0x8a
->  [<ffffffff8105a28d>] __do_softirq+0x98/0x136
->  [<ffffffff814e649c>] call_softirq+0x1c/0x30
->  [<ffffffff8102f187>] do_softirq+0x38/0x81
->  [<ffffffff8105a596>] irq_exit+0x4e/0xb6
->  [<ffffffff8102ee9e>] do_IRQ+0x97/0xae
->  [<ffffffff814e49f0>] common_interrupt+0x70/0x70
->  <EOI>  [<ffffffff814e4a8e>] ? retint_swapgs+0xe/0x13
-> ---[ end trace 61fdaa1b260613d1 ]---
+> 	Gustavo
+> 
+> 
+> ---
+> Author: Gustavo F. Padovan <padovan@profusion.mobi>
+> Date:   Wed Dec 28 13:40:02 2011 -0200
+> 
+>     Bluetooth: Fix lmp_host_le_capable() check for broken devices
+>     
+>     Some dongles reports a wrong Local Extended Features leading the kernel
+>     think that dongle support LE while it don't.
+>     
+>     The fix here is just rely on a bit in Local Features (LE Capable) to tell
+>     us if the device really supports LE.
+>     
+>     LE Host Capable is the only bit used from Local Extended Features in our
+>     kernel.
+>     
+>     Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+> 
+> diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
+> index 5e2e984..c693111 100644
+> --- a/include/net/bluetooth/hci_core.h
+> +++ b/include/net/bluetooth/hci_core.h
+> @@ -676,7 +676,11 @@ void hci_conn_del_sysfs(struct hci_conn *conn);
+>  #define lmp_le_capable(dev)        ((dev)->features[4] & LMP_LE)
+>  
+>  /* ----- Extended LMP capabilities ----- */
+> -#define lmp_host_le_capable(dev)   ((dev)->extfeatures[0] & LMP_HOST_LE)
+> +/* Some crap dongles does not report a proper Local Extended Features causing
 
-Hmm... that looks like cfqq being freed before unlinked.  I'll try to
-reproduce it.  Is there any particular workload you were running?
+the page 1 is called host features and not local extended features.
 
-Thanks.
+> + * the kernel to wrongly init it as a LE device. So first check if it is LE
+> + * capable (controller) which is a info from the Local Features */
+> +#define lmp_host_le_capable(dev)    ( lmp_le_capable(dev) && \
+> +                                       (dev)->extfeatures[0] & LMP_HOST_LE)
 
--- 
-tejun
+< HCI Command: Read Local Extended Features (0x04|0x0004) plen 1
+     page 1
+> HCI Event: Command Complete (0x0e) plen 14
+     Read Local Extended Features (0x04|0x0004) ncmd 1
+     status 0x00 page 0 max 0
+     Features: 0xff 0xfe 0xff 0x7e 0x98 0x19 0x00 0x80
+
+And this is correct. Page 0 is the same as local features. Storing this
+as page 1 is the issue here. We request page 1, but we are getting page
+0 instead. So yes, the controller is broken, but not as broken as it
+gets us false information. We are just getting different information
+than we requested. And we are being stupid here.
+
+Here is the original patch that introduced this behavior:
+
+commit 971e3a4bbcbf7378315b85150853d86be59cffe0
+Author: Andre Guedes <andre.guedes@openbossa.org>
+Date:   Thu Jun 30 19:20:52 2011 -0300
+
+    Bluetooth: Add extfeatures to struct hci_dev
+
+And even here we should have called this hostfeatures since that is what
+page 1 really is.
+
+The correct patch would be something like this:
+
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 919e3c0..b6eb9c5 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -711,7 +711,8 @@ static void hci_cc_read_local_ext_features(struct hci_dev *h
+        if (rp->status)
+                return;
+ 
+-       memcpy(hdev->extfeatures, rp->features, 8);
++       if (rp->page == 1)
++               memcpy(hdev->extfeatures, rp->features, 8);
+ 
+        hci_req_complete(hdev, HCI_OP_READ_LOCAL_EXT_FEATURES, rp->status);
+ }
+
+The current patch is actually fully broken anyway. So besides switching
+LE on when requesting page 0, you will also switch it off when
+requesting any other page and it accidentally returns 0x00 since we
+unconditionally overwrite it.
+
+Regards
+
+Marcel
+
+
