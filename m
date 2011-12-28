@@ -1,99 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab1L1WOm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 17:14:42 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34490 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754616Ab1L1WOl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 17:14:41 -0500
-Message-ID: <1325110478.16729.7.camel@joe2Laptop>
-Subject: Re: [PATCH] sep: SEP update
-From: Joe Perches <joe@perches.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
-        Mark Allyn <mark.a.allyn@intel.com>
-Date: Wed, 28 Dec 2011 14:14:38 -0800
-In-Reply-To: <20111228173748.3323.89307.stgit@bob.linux.org.uk>
-References: <20111228173748.3323.89307.stgit@bob.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1754660Ab1L1WRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 17:17:35 -0500
+Received: from smtpq4.tb.mail.iss.as9143.net ([212.54.42.167]:52450 "EHLO
+	smtpq4.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754616Ab1L1WRd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 17:17:33 -0500
+Message-ID: <4EFB957A.5070606@gmail.com>
+Date: Wed, 28 Dec 2011 23:17:30 +0100
+From: Rene Herman <rene.herman@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Gustavo Padovan <padovan@profusion.mobi>,
+        Andre Guedes <andre.guedes@openbossa.org>,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [bluetooth] linux-3.x regression (bisected)
+References: <4EF3BACA.1080405@gmail.com> <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com> <4EFA1EB8.9090005@gmail.com> <20111227203008.GA13870@joana> <4EFA447C.3030906@gmail.com> <20111228012248.GC13870@joana> <20111228012850.GD13870@joana> <4EFA7696.6060506@gmail.com> <20111228155225.GA23292@joana> <1325090923.1965.282.camel@aeonflux>
+In-Reply-To: <1325090923.1965.282.camel@aeonflux>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Ziggo-spambar: ---
+X-Ziggo-spamscore: -3.6
+X-Ziggo-spamreport: ALL_TRUSTED=-1,BAYES_00=-1.9,FREEMAIL_FROM=0.5,PROLO_TRUST_RDNS=-3,RDNS_DYNAMIC=0.982,SPF_NEUTRAL=0.779,TW_XF=0.077
+X-Ziggo-Spam-Status: No
+X-Spam-Flag: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-28 at 17:37 +0000, Alan Cox wrote:
-> From: Mark Allyn <mark.a.allyn@intel.com>
-> The new driver supports the kernel crypto layer, passes the coding style checks,
-> passes human taste checks and has proper kernel-doc formatted comments.
+On 28-12-11 17:48, Marcel Holtmann wrote:
 
-These are just taste comments.
+> < HCI Command: Read Local Extended Features (0x04|0x0004) plen 1
+>       page 1
+> > HCI Event: Command Complete (0x0e) plen 14
+>       Read Local Extended Features (0x04|0x0004) ncmd 1
+>       status 0x00 page 0 max 0
+>       Features: 0xff 0xfe 0xff 0x7e 0x98 0x19 0x00 0x80
+>
+> And this is correct. Page 0 is the same as local features. Storing this
+> as page 1 is the issue here. We request page 1, but we are getting page
+> 0 instead. So yes, the controller is broken, but not as broken as it
+> gets us false information.
 
-> diff --git a/drivers/staging/sep/sep_crypto.c b/drivers/staging/sep/sep_crypto.c
-[]
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+By the way, while the bluetooth (2.0) spec seems to consist of a 1230 
+page document that I am most certainly not going to study ...
 
-> +/* #define DEBUG */
-> +#include <linux/init.h>
-[]
-> +	sep_work->callback = funct;
-> +	sep_work->data = data;
-> +	INIT_WORK(&sep_work->work, sep_do_callback);
-> +	result = queue_work(work_queue, &sep_work->work);
-> +	if (!result) {
-> +		pr_debug("sep_crypto: queue_work failed\n");
+... I couldn't help noticing that the HCI_Read_Local_Extended_Features 
+command is in fact specified to return "The highest features page number 
+which contains non-zero bits for the local device", and if I look at the 
+above, it seems to indeed return max=0.
 
-So these pr_debug and any other pr_<level> become:
-		pr_debug("queue_work failed\n");
+Is it as such not in fact the case that the dongle is spec-compliant, 
+whereas it's the linux code that neglects to check that return value in 
+order to make sure that it requested a valid page?
 
-> +/* Debug - prints only if DEBUG is defined; follows kernel debug model */
-> +static void sep_dump(struct sep_device *sep, char *stg, void *start, int len)
-> +{
-> +#if 0
-> +	int ct1;
-> +	u8 *ptt;
-> +
-> +	dev_dbg(&sep->pdev->dev,
-> +		"Dump of %s starting at %08lx for %08x bytes\n",
-> +		stg, (unsigned long)start, len);
-> +	for (ct1 = 0; ct1 < len; ct1 += 1) {
-> +		ptt = (u8 *)(start + ct1);
-> +		dev_dbg(&sep->pdev->dev, "%02x ", *ptt);
-> +		if (ct1 % 16 == 15)
-> +			dev_dbg(&sep->pdev->dev, "\n");
-> +	}
-
-While this is #if 0, more likely it should
-use print_hex_dump_bytes
-
-> +/**
-> + * RFC2451: Weak key check
-> + * Returns: 1 (weak), 0 (not weak)
-> + */
-> +static int sep_weak_key(const u8 *key, unsigned int keylen)
-> +{
-> +	static const u8 parity[] = {
-> +	8, 1, 0, 8, 0, 8, 8, 0, 0, 8, 8, 0, 8, 0, 2, 8,
-> +	0, 8, 8, 0, 8, 0, 0, 8, 8,
-> +	0, 0, 8, 0, 8, 8, 3,
-
-Any reason this is formatted with line lengths of 16, 9, 7
-instea of all 16?
-
-> +	0, 8, 8, 0, 8, 0, 0, 8, 8, 0, 0, 8, 0, 8, 8, 0,
-> +	8, 0, 0, 8, 0, 8, 8, 0, 0,
-> +	8, 8, 0, 8, 0, 0, 8,
-
-> +	if (!((n - (w >> 3)) & w)) {
-> +		if (n < 0x41415151) {
-
-Perhaps use a switch/case instead of an 
-difficult to read binary chop?
-
-
-> +			/* Portion of msg is nulled (no data) */
-> +			msg[0] = (u32)0;
-
-The casts of zero are odd.
-
+Rene.
