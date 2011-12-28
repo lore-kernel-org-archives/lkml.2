@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1L1Opg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 09:45:36 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45155 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab1L1Opd (ORCPT
+	id S1753936Ab1L1POo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 10:14:44 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64934 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752875Ab1L1POk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 09:45:33 -0500
-Message-ID: <4EFB2B8A.9010902@gmail.com>
-Date: Wed, 28 Dec 2011 08:45:30 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Wed, 28 Dec 2011 10:14:40 -0500
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: [PULL] Devicetree for 3.3
+In-Reply-To: <1325083051.2327.47.camel@deadeye>
+References: <1325075319-13464-1-git-send-email-gurligebis@gentoo.org>
+	<1325083051.2327.47.camel@deadeye>
+Date: Wed, 28 Dec 2011 16:14:39 +0100
+X-Google-Sender-Auth: PEtifHPRc1Vp4U7o8Yv9NdYYyzs
+Message-ID: <CACPM=kWpGnBOuKPUK9MgzyETe4VmvEtVXkYtPA_+Xgn=COkCPw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Roger Luethi <rl@hellgate.ch>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant,
+2011/12/28 Ben Hutchings <bhutchings@solarflare.com>:
+> On Wed, 2011-12-28 at 12:28 +0000, Bjarke Istrup Pedersen wrote:
+>> Working around problem causing high CPU load and hanging system when
+>> there is alot of network trafic.
+>>
+>> It is kind of an ugly way to work around it, but it allows the Soekris
+>> net5501 to have trafic between two of it's NICs without hanging so much
+>> that the watchdog kicks in and does a hard reboot of the system.
+>>
+>> There is more info on the problem here:
+>> http://http://lists.soekris.com/pipermail/soekris-tech/2010-October/016889.html
+>>
+>> Tested with positive results on two Soekris net5501-70 boxes.
+>
+> This is completely wrong.  In a UP configuration the extra spinlock
+> calls have no effect (except perhaps a small delay).  In an SMP
+> configuration they will cause rhine_tx() to deadlock when it also tries
+> to acquire the spinlock.
+>
+> Ben.
 
-Please pull device tree updates for 3.3. Pretty much a random collection
-of minor changes. I'm including i2c-designware DT binding support here
-as I've gotten no response from Ben.
+Okay, the Soekris net5501-70 boxes are single-core, and I haven't got
+any SMP boxes with that nic.
+Is there a better solution for the problem then, to avoid it hanging
+the box on a non-smp machine with a slow (500mhz) cpu?
 
-Rob
+/Bjarke
 
-The following changes since commit 384703b8e6cd4c8ef08512e596024e028c91c339:
-
-  Linux 3.2-rc6 (2011-12-16 18:36:26 -0800)
-
-are available in the git repository at:
-  git://sources.calxeda.com/kernel/linux.git for-grant
-
-Benoit Cousson (1):
-      of/base: Take NULL string into account for property with multiple
-strings
-
-David Daney (1):
-      OF/device-tree: Add some entries to vendor-prefixes.txt
-
-Dong Aisheng (1):
-      dt: reform for_each_property to for_each_property_of_node
-
-Olof Johansson (1):
-      dt/i2c: Enumerate some of the known trivial i2c devices
-
-Rob Herring (3):
-      i2c-designware: add OF binding support
-      dt: add empty of_get_node/of_put_node functions
-      irq: check domain hwirq range for DT translate
-
-Sam Ravnborg (1):
-      of/pdt: fix section mismatch warning
-
-Uwe Kleine-König (1):
-      ARM/of: allow *machine_desc.dt_compat to be const
-
- .../devicetree/bindings/i2c/i2c-designware.txt     |   22 ++++++++
- .../devicetree/bindings/i2c/trivial-devices.txt    |   58
-++++++++++++++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |    3 +
- arch/arm/include/asm/mach/arch.h                   |    2 +-
- drivers/i2c/busses/i2c-designware-platdrv.c        |   12 ++++
- drivers/of/base.c                                  |   10 ++--
- drivers/of/fdt.c                                   |    4 +-
- drivers/of/pdt.c                                   |    2 +-
- include/linux/of.h                                 |   33 ++++++------
- include/linux/of_fdt.h                             |    4 +-
- kernel/irq/irqdomain.c                             |    3 +
- 11 files changed, 124 insertions(+), 29 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-designware.txt
- create mode 100644
-Documentation/devicetree/bindings/i2c/trivial-devices.txt
+> [...]
+>> diff --git a/drivers/net/ethernet/via/via-rhine.c b/drivers/net/ethernet/via/via-rhine.c
+>> index f34dd99..8c77dcd 100644
+>> --- a/drivers/net/ethernet/via/via-rhine.c
+>> +++ b/drivers/net/ethernet/via/via-rhine.c
+>> @@ -1567,6 +1567,9 @@ static irqreturn_t rhine_interrupt(int irq, void *dev_instance)
+>>         int boguscnt = max_interrupt_work;
+>>         int handled = 0;
+>>
+>> +       if (!spin_trylock(&rp->lock))
+>> +               return IRQ_RETVAL(handled);
+>> +
+>>         while ((intr_status = get_intr_status(dev))) {
+>>                 handled = 1;
+>>
+>> @@ -1616,6 +1619,8 @@ static irqreturn_t rhine_interrupt(int irq, void *dev_instance)
+>>                 }
+>>         }
+>>
+>> +       spin_unlock(&rp->lock);
+>> +
+>>         if (debug > 3)
+>>                 netdev_dbg(dev, "exiting interrupt, status=%08x\n",
+>>                            ioread16(ioaddr + IntrStatus));
+>
+> --
+> Ben Hutchings, Staff Engineer, Solarflare
+> Not speaking for my employer; that's the marketing department's job.
+> They asked us to note that Solarflare product names are trademarked.
+>
