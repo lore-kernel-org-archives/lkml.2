@@ -1,69 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751134Ab1L1Hyw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 02:54:52 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:49985 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab1L1Hyt (ORCPT
+	id S1751181Ab1L1H7v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 02:59:51 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:45556 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab1L1H7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 02:54:49 -0500
-Date: Wed, 28 Dec 2011 18:54:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: linux-next: manual merge of the akpm tree with Linus' tree
-Message-Id: <20111228185438.63b46e806d8e11310b34ec9d@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S"
+	Wed, 28 Dec 2011 02:59:49 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-4c-4efacc6ce1ec
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Denis Kuzmenko'" <linux@solonet.org.ua>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+References: <4EE7BE5F.8020108@solonet.org.ua>
+In-reply-to: <4EE7BE5F.8020108@solonet.org.ua>
+Subject: RE: [PATCHv2 resend] Fix compilation error when
+ CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
+Date: Wed, 28 Dec 2011 16:59:40 +0900
+Message-id: <01e501ccc536$a6e58fb0$f4b0af10$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: ko
+Thread-index: Acy521dEOjX22gjRRwSi3vHZcMnpvQLQKdLQ
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Denis Kuzmenko wrote:
+> 
+> Fix compilation error when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
+> 
+> Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+> ---
+> 
+> Patch is against 3.2-rc4.
+> CONFIG_S3C2410_IOTIMING is not selected for MACH_MINI2440. Because of this
+> the
+> file s3c2410-iotiming.c is not ever compiled and enabling
+> CONFIG_CPU_FREQ_S3C24XX_DEBUGFS option caused undefined reference to
+> function
+> s3c2410_iotiming_debugfs defined in that file. s3c2410_iotiming_debugfs
+> defined
+> as NULL for this case.
+> 
+> Changelog:
+> v1 -> v2
+> New CONFIG_ symbols S3C241{0,2}_IOTIMING were removed as It was observed
+> that
+> they already present but hidden from user.
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index e084b7e..133d005 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -2118,7 +2118,7 @@ config CPU_FREQ_S3C24XX_DEBUG
+> 
+>  config CPU_FREQ_S3C24XX_IODEBUG
+>  	bool "Debug CPUfreq Samsung driver IO timing"
+> -	depends on CPU_FREQ_S3C24XX
+> +	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING ||
+> S3C2412_IOTIMING)
 
-Hi Andrew,
+As you know, CONFIG_CPU_FREQ_S3C24XX_IODEBUG is for enabling of
+s3c_freq_iodbg() and there is no problem when CONFIG_S3C241{0,2}_IOTIMING is
+not selected, even though s3c_freq_iodbg() is used only at
+s3c2410-iotiming.c now. So this is not necessary to fix the problem you
+said.
 
-Today's linux-next merge of the akpm tree got a conflict in
-include/linux/lglock.h between commit e30e2fdfe562 ("VFS: Fix race
-between CPU hotplug and lglocks") from Linus' tree and commit
-"brlocks/lglocks: clean up code" from the akpm tree.
+>  	help
+>  	  Enable s3c_freq_iodbg for the Samsung S3C CPUfreq core
+> 
+> diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+> b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+> index dac4760..c465252 100644
+> --- a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+> +++ b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+> @@ -202,13 +202,23 @@ extern int s3c_plltab_register(struct
+> cpufreq_frequency_table *plls,
+>  extern struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void);
+>  extern struct s3c_iotimings *s3c_cpufreq_getiotimings(void);
+> 
+> -extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
+> -				     struct s3c_cpufreq_config *cfg,
+> -				     union s3c_iobank *iob);
+> -
+> -extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
+> -				     struct s3c_cpufreq_config *cfg,
+> -				     union s3c_iobank *iob);
+> +#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+> +	#ifdef CONFIG_S3C2410_IOTIMING
+> +	extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
+> +					     struct s3c_cpufreq_config *cfg,
+> +					     union s3c_iobank *iob);
+> +	#else
+> +	#define s3c2410_iotiming_debugfs	NULL
+> +	#endif
+> +
+> +	#ifdef CONFIG_S3C2412_IOTIMING
+> +	extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
+> +					     struct s3c_cpufreq_config *cfg,
+> +					     union s3c_iobank *iob);
+> +	#else
+> +	#define s3c2412_iotiming_debugfs	NULL
+> +	#endif
+> +#endif
 
-Given the extent of the conflict and that this patch also conflicts in
-several other files (fs/dcache.c, fs/file_table.c, fs/namei.c,
-fs/namespace.c - presumably against the vfs tree), I have dropped this
-patch (and the following
-"brlocks-lglocks-clean-up-code-checkpatch-fixes") from the akpm tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Well, do we really need to have '#ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS'
+here?
+I think, just having dependency with CONFIG_S3C241{1,2}_IOTIMING can avoid
+the build error.
 
---Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S
-Content-Type: application/pgp-signature
+> 
+>  #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+>  #define s3c_cpufreq_debugfs_call(x) x
+> @@ -241,10 +251,7 @@ extern void s3c2410_iotiming_set(struct
+> s3c_cpufreq_config *cfg,
+>  #endif /* CONFIG_S3C2410_IOTIMING */
+> 
+>  /* S3C2412 compatible routines */
+> -
+> -extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+> -				struct s3c_iotimings *timings);
+> -
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Yes, why is this duplicated :(
 
-iQIcBAEBCAAGBQJO+ss+AAoJEECxmPOUX5FE9bAP/A0xGFMWdkIl/tIj8X0CxwmS
-WxwGRsu0VYYfG34vpzQQW4V2dd0Kr307FvyH7heruP8/pat13pGLIvU08iordwgm
-2Iq2Xcpwj6DNGW9FOYobAFf+CTnUyoGC+t6mFYlT3TWB73vNnjbTXHSYIMOoQO0a
-YjE7gRNaFwbDZbpAA51IufDRAlwOs8qynspuamxwJbfTdacYZqUhS9p8LR91W2Mx
-UVGslr1nEBkwY7A5ruK/b1rX5RiI1RgsdC++UeALVSvAqUOyRNkJ+ROaunq88BY/
-gSS55mtqyqMAQcWzOmSi+V2bsWd4eQH76Emdf+8Jg7ks7k1ob8T+a/NW/8CTgsgf
-1VzG9aXdG6wc3iF8LRZ2gwz2Y6CWC2TGA3FmaYgoHKgmpInqtYdc/atHnYx1cPwh
-SsmVkk+zMUhP1pnKGsbGxr6O6MTlLkASOWAlZQHR+RHv3V8uTgI0IsMK3fIY3CLF
-U7SLg/5bzCk6itgHCS4enmy039pgfWIWO7WUIBGbzinLnCQnE60YgWuLFGHgx6R8
-3tE9BgyGaDsUiDOSna1WDVSx/qzB9H/B30qyHJ28tLm32joYZGN8jaCSs4ipjl2g
-sON3SXocvu0zufGNodumIDhVq4eHICY9G/Ne6QKhOPd7HFOV0WOhwN8aue3yAU25
-cAwFKOO72me6BwIMxssP
-=YpGt
------END PGP SIGNATURE-----
+> +#ifdef CONFIG_S3C2412_IOTIMING
+>  extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+>  				struct s3c_iotimings *timings);
+> 
+> @@ -253,6 +260,11 @@ extern int s3c2412_iotiming_calc(struct
+> s3c_cpufreq_config *cfg,
+> 
+>  extern void s3c2412_iotiming_set(struct s3c_cpufreq_config *cfg,
+>  				 struct s3c_iotimings *iot);
+> +#else
+> +#define s3c2412_iotiming_calc NULL
+> +#define s3c2412_iotiming_get NULL
+> +#define s3c2412_iotiming_set NULL
+> +#endif
+> 
+>  #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUG
+>  #define s3c_freq_dbg(x...) printk(KERN_INFO x)
 
---Signature=_Wed__28_Dec_2011_18_54_38_+1100_DHNbhTbdaUak/y2S--
+So how about at below?
+If you're ok, will send before v3.2.
+
+---
+>From 41bb50bd22cdc6d3aa7fb75efab78d341f932ae5 Mon Sep 17 00:00:00 2001
+From: Denis Kuzmenko <linux@solonet.org.ua>
+Date: Wed, 28 Dec 2011 14:04:51 +0900
+Subject: [PATCH] ARM: SAMSUNG: Fix build error when selecting
+CPU_FREQ_S3C24XX_DEBUGFS on S3C2440
+
+Following is happened when CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+is selected without building of s3c2410-iotiming.c file:
+
+arch/arm/mach-s3c2440/built-in.o:(.data+0x38c): undefined reference to
+`s3c2410_iotiming_debugfs
+
+Basically, the CONFIG_S3C2410_IOTIMING is not selected for
+MACH_MINI2440. Because the s3c2410-iotiming.c is not ever
+compiled and enabling CONFIG_CPU_FREQ_S3C24XX_DEBUGFS option
+caused undefined reference to s3c2410_iotiming_debugfs()
+defined in that file.  The s3c2410_iotiming_debugfs defined
+as NULL for this case.
+
+Signed-off-by: Denis Kuzmenko <linux@solonet.org.ua>
+[kgene.kim@samsung.com: removed useless changes]
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+ arch/arm/plat-samsung/include/plat/cpu-freq-core.h |   25
+++++++++++++--------
+ 1 files changed, 15 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+index dac4760..95509d8 100644
+--- a/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
++++ b/arch/arm/plat-samsung/include/plat/cpu-freq-core.h
+@@ -202,14 +202,6 @@ extern int s3c_plltab_register(struct
+cpufreq_frequency_table *plls,
+ extern struct s3c_cpufreq_config *s3c_cpufreq_getconfig(void);
+ extern struct s3c_iotimings *s3c_cpufreq_getiotimings(void);
+ 
+-extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
+-
+-extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
+-				     struct s3c_cpufreq_config *cfg,
+-				     union s3c_iobank *iob);
+-
+ #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUGFS
+ #define s3c_cpufreq_debugfs_call(x) x
+ #else
+@@ -226,6 +218,10 @@ extern void s3c2410_cpufreq_setrefresh(struct
+s3c_cpufreq_config *cfg);
+ extern void s3c2410_set_fvco(struct s3c_cpufreq_config *cfg);
+ 
+ #ifdef CONFIG_S3C2410_IOTIMING
++extern void s3c2410_iotiming_debugfs(struct seq_file *seq,
++				     struct s3c_cpufreq_config *cfg,
++				     union s3c_iobank *iob);
++
+ extern int s3c2410_iotiming_calc(struct s3c_cpufreq_config *cfg,
+ 				 struct s3c_iotimings *iot);
+ 
+@@ -235,6 +231,7 @@ extern int s3c2410_iotiming_get(struct
+s3c_cpufreq_config *cfg,
+ extern void s3c2410_iotiming_set(struct s3c_cpufreq_config *cfg,
+ 				 struct s3c_iotimings *iot);
+ #else
++#define s3c2410_iotiming_debugfs NULL
+ #define s3c2410_iotiming_calc NULL
+ #define s3c2410_iotiming_get NULL
+ #define s3c2410_iotiming_set NULL
+@@ -242,8 +239,10 @@ extern void s3c2410_iotiming_set(struct
+s3c_cpufreq_config *cfg,
+ 
+ /* S3C2412 compatible routines */
+ 
+-extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+-				struct s3c_iotimings *timings);
++#ifdef CONFIG_S3C2412_IOTIMING
++extern void s3c2412_iotiming_debugfs(struct seq_file *seq,
++				     struct s3c_cpufreq_config *cfg,
++				     union s3c_iobank *iob);
+ 
+ extern int s3c2412_iotiming_get(struct s3c_cpufreq_config *cfg,
+ 				struct s3c_iotimings *timings);
+@@ -253,6 +252,12 @@ extern int s3c2412_iotiming_calc(struct
+s3c_cpufreq_config *cfg,
+ 
+ extern void s3c2412_iotiming_set(struct s3c_cpufreq_config *cfg,
+ 				 struct s3c_iotimings *iot);
++#else
++#define s3c2412_iotiming_debugfs NULL
++#define s3c2412_iotiming_calc NULL
++#define s3c2412_iotiming_get NULL
++#define s3c2412_iotiming_set NULL
++#endif /* CONFIG_S3C2412_IOTIMING */
+ 
+ #ifdef CONFIG_CPU_FREQ_S3C24XX_DEBUG
+ #define s3c_freq_dbg(x...) printk(KERN_INFO x)
+-- 
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
