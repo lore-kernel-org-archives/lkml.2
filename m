@@ -1,117 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751299Ab1L1IB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 03:01:56 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:46758 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750716Ab1L1IBy (ORCPT
+	id S1751220Ab1L1IFc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 03:05:32 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39428 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750760Ab1L1IFa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 03:01:54 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-81-4efaccf11f80
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Russell King'" <rmk@arm.linux.org.uk>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Rajeshwari Shinde'" <rajeshwari.s@samsung.com>,
-        "'Padmavathi Venna'" <padma.v@samsung.com>
-References: <20111228100741.5a6a6f36055d2ea06c1d4014@canb.auug.org.au>
-In-reply-to: <20111228100741.5a6a6f36055d2ea06c1d4014@canb.auug.org.au>
-Subject: RE: linux-next: manual merge of the s5p tree with the arm tree
-Date: Wed, 28 Dec 2011 17:01:53 +0900
-Message-id: <01ea01ccc536$f6584e70$e308eb50$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: AczE7JzdLpi4+V9uRdSSVJYoenvonAAAzeDQ
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 28 Dec 2011 03:05:30 -0500
+Message-ID: <1325059522.18468.4.camel@phoenix>
+Subject: [PATCH v2] ASoC: Fix build error in
+ sound/soc/kirkwood/kirkwood-i2s.c
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnaud Patard <arnaud.patard@rtp-net.org>, Andrew Lunn <andrew@lunn.ch>,
+        Nicolas Pitre <nico@fluxnic.net>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+Date: Wed, 28 Dec 2011 16:05:22 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> 
-> Hi Kukjin,
-> 
-Hi Stephen :)
+Since commit db33f4de "ARM: Orion: Remove address map info from all platform data structures",
+the dram is removed from struct kirkwood_asoc_platform_data.
 
-> Today's linux-next merge of the s5p tree got a conflict in
-> arch/arm/mach-s3c64xx/Makefile between commit b024043b6d0d ("ARM: 7245/1:
-> S3C64XX: introduce arch/arm/mach-s3c64xx/common.[ch]") from the arm tree
-> and commits 8f8a8d269bb4 ("ARM: S3C64XX: Add basic cpuidle driver"),
-> a60879e7ca17 ("ARM: SAMSUNG: Remove SDHCI bus clocks from platform
-> data"), 875a59374cd1 ("ARM: SAMSUNG: Consolidation of SPI platform
-> devices to plat-samsung") and 4566c7f7612f ("ARM: S3C64XX: Modified files
-> for SPI consolidation work") from the s5p tree.
-> 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
-> 
+This patch fixes below build error:
+  CC      sound/soc/kirkwood/kirkwood-i2s.o
+sound/soc/kirkwood/kirkwood-i2s.c: In function 'kirkwood_i2s_dev_probe':
+sound/soc/kirkwood/kirkwood-i2s.c:444: error: 'struct kirkwood_asoc_platform_data' has no member named 'dram'
+sound/soc/kirkwood/kirkwood-i2s.c:450: error: 'struct kirkwood_asoc_platform_data' has no member named 'dram'
+make[3]: *** [sound/soc/kirkwood/kirkwood-i2s.o] Error 1
+make[2]: *** [sound/soc/kirkwood] Error 2
+make[1]: *** [sound/soc] Error 2
+make: *** [sound] Error 2
 
-Looks good to me.
-Thanks.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Nicolas Pitre <nico@fluxnic.net>
+---
+v2: the dram field of struct kirkwood_dma_data is not being used now.
+Thus also remove it in this patch.
+This patch is against linux-next.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+ sound/soc/kirkwood/kirkwood-i2s.c |    3 +--
+ sound/soc/kirkwood/kirkwood.h     |    1 -
+ 2 files changed, 1 insertions(+), 3 deletions(-)
 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/mach-s3c64xx/Makefile
-> index f37016c,2244c42..0000000
-> --- a/arch/arm/mach-s3c64xx/Makefile
-> +++ b/arch/arm/mach-s3c64xx/Makefile
-> @@@ -19,29 -19,29 +19,29 @@@ obj-y				+= common.o
-> clock.
->   obj-$(CONFIG_CPU_S3C6400)	+= s3c6400.o
->   obj-$(CONFIG_CPU_S3C6410)	+= s3c6410.o
-> 
->  -obj-y				+= irq.o
->  -obj-y				+= irq-eint.o
->  +# PM
->  +
->  +obj-$(CONFIG_PM)		+= pm.o irq-pm.o sleep.o
-> ++obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
-> 
->   # DMA support
-> 
->   obj-$(CONFIG_S3C64XX_DMA)	+= dma.o
-> 
->  -# Device setup
->  +# Device support
-> 
->  -obj-$(CONFIG_S3C64XX_SETUP_I2C0) += setup-i2c0.o
->  -obj-$(CONFIG_S3C64XX_SETUP_I2C1) += setup-i2c1.o
->  -obj-$(CONFIG_S3C64XX_SETUP_IDE) += setup-ide.o
->  -obj-$(CONFIG_S3C64XX_SETUP_KEYPAD) += setup-keypad.o
->  -obj-$(CONFIG_S3C64XX_SETUP_FB_24BPP) += setup-fb-24bpp.o
->  -obj-$(CONFIG_S3C64XX_SETUP_SDHCI_GPIO) += setup-sdhci-gpio.o
->  -obj-$(CONFIG_S3C64XX_SETUP_SPI) += setup-spi.o
->  +obj-y				+= dev-uart.o
->  +obj-y				+= dev-audio.o
-> - obj-$(CONFIG_S3C64XX_DEV_SPI)	+= dev-spi.o
-> 
->  -# PM
->  +# Device setup
-> 
->  -obj-$(CONFIG_PM)		+= pm.o
->  -obj-$(CONFIG_PM)		+= sleep.o
->  -obj-$(CONFIG_PM)		+= irq-pm.o
->  -obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
->  +obj-$(CONFIG_S3C64XX_SETUP_FB_24BPP)	+= setup-fb-24bpp.o
->  +obj-$(CONFIG_S3C64XX_SETUP_I2C0)	+= setup-i2c0.o
->  +obj-$(CONFIG_S3C64XX_SETUP_I2C1)	+= setup-i2c1.o
->  +obj-$(CONFIG_S3C64XX_SETUP_IDE)		+= setup-ide.o
->  +obj-$(CONFIG_S3C64XX_SETUP_KEYPAD)	+= setup-keypad.o
-> - obj-$(CONFIG_S3C64XX_SETUP_SDHCI)	+= setup-sdhci.o
->  +obj-$(CONFIG_S3C64XX_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
-> ++obj-$(CONFIG_S3C64XX_SETUP_SPI)		+= setup-spi.o
-> 
->   # Machine support
-> 
+diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
+index f6bb211..3cb9aa4 100644
+--- a/sound/soc/kirkwood/kirkwood-i2s.c
++++ b/sound/soc/kirkwood/kirkwood-i2s.c
+@@ -441,13 +441,12 @@ static __devinit int kirkwood_i2s_dev_probe(struct platform_device *pdev)
+ 		goto err_ioremap;
+ 	}
+ 
+-	if (!data || !data->dram) {
++	if (!data) {
+ 		dev_err(&pdev->dev, "no platform data ?!\n");
+ 		err = -EINVAL;
+ 		goto err_ioremap;
+ 	}
+ 
+-	priv->dram = data->dram;
+ 	priv->burst = data->burst;
+ 
+ 	return snd_soc_register_dai(&pdev->dev, &kirkwood_i2s_dai);
+diff --git a/sound/soc/kirkwood/kirkwood.h b/sound/soc/kirkwood/kirkwood.h
+index bb6e6a5..9047436 100644
+--- a/sound/soc/kirkwood/kirkwood.h
++++ b/sound/soc/kirkwood/kirkwood.h
+@@ -123,7 +123,6 @@ struct kirkwood_dma_data {
+ 	void __iomem *io;
+ 	int irq;
+ 	int burst;
+-	struct mbus_dram_target_info *dram;
+ };
+ 
+ #endif
+-- 
+1.7.5.4
+
+
 
