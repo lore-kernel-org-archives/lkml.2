@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750863Ab1L1FGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 00:06:13 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:54086 "EHLO
+	id S1750878Ab1L1FMo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 00:12:44 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:57052 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737Ab1L1FGK (ORCPT
+	with ESMTP id S1750714Ab1L1FMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 00:06:10 -0500
-Date: Wed, 28 Dec 2011 16:05:59 +1100
+	Wed, 28 Dec 2011 00:12:42 -0500
+Date: Wed, 28 Dec 2011 16:12:31 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: linux-next: manual merge of the driver-core tree with the s5p tree
-Message-Id: <20111228160559.778fb178a9e9a8d938dc98b8@canb.auug.org.au>
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: linux-next: manual merge of the driver-core tree with the arm tree
+Message-Id: <20111228161231.ff6448eb7f03120bd25b19dd@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta4 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye"
+ boundary="Signature=_Wed__28_Dec_2011_16_12_31_+1100_=X4kJpbexEBZcNll"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye
+--Signature=_Wed__28_Dec_2011_16_12_31_+1100_=X4kJpbexEBZcNll
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -33,10 +33,10 @@ Content-Transfer-Encoding: quoted-printable
 Hi Greg,
 
 Today's linux-next merge of the driver-core tree got a conflict in
-arch/arm/mach-s3c2440/clock.c between commit 0cfb26e1fb9d ("ARM: SAMSUNG:
-register uart clocks to clock lookup list") from the s5p tree and commit
-4a858cfc9af8 ("arm: convert sysdev_class to a regular subsystem") from
-the driver-core tree.
+arch/arm/mach-s3c64xx/common.c between commit b024043b6d0d ("ARM: 7245/1:
+S3C64XX: introduce arch/arm/mach-s3c64xx/common.[ch]") from the arm tree
+and commit edbaa603eb80 ("driver-core: remove sysdev.h usage") from the
+driver-core tree (where it is called arch/arm/mach-s3c64xx/irq-eint.c).
 
 Just context changes.  I fixed it up (see below) and can carry the fix as
 necessary.
@@ -44,79 +44,220 @@ necessary.
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/mach-s3c2440/clock.c
-index c9879af,d895759..0000000
---- a/arch/arm/mach-s3c2440/clock.c
-+++ b/arch/arm/mach-s3c2440/clock.c
-@@@ -110,47 -107,7 +109,47 @@@ static struct clk s3c2440_clk_ac97 =3D=20
-  	.ctrlbit	=3D S3C2440_CLKCON_CAMERA,
-  };
+diff --cc arch/arm/mach-s3c64xx/common.c
+index 8ae5b16,e3e75d1..0000000
+--- a/arch/arm/mach-s3c64xx/common.c
++++ b/arch/arm/mach-s3c64xx/common.c
+@@@ -15,182 -13,21 +15,182 @@@
+   */
  =20
- +static unsigned long  s3c2440_fclk_n_getrate(struct clk *clk)
+  #include <linux/kernel.h>
+ +#include <linux/init.h>
+ +#include <linux/module.h>
+  #include <linux/interrupt.h>
+ +#include <linux/ioport.h>
+- #include <linux/sysdev.h>
++ #include <linux/device.h>
+ -#include <linux/gpio.h>
+ -#include <linux/irq.h>
+ +#include <linux/serial_core.h>
+ +#include <linux/platform_device.h>
+  #include <linux/io.h>
+ +#include <linux/dma-mapping.h>
+ +#include <linux/irq.h>
+ +#include <linux/gpio.h>
+ =20
+ +#include <asm/mach/arch.h>
+ +#include <asm/mach/map.h>
+  #include <asm/hardware/vic.h>
+ =20
+ -#include <plat/regs-irqtype.h>
+ +#include <mach/map.h>
+ +#include <mach/hardware.h>
+  #include <mach/regs-gpio.h>
+ -#include <plat/gpio-cfg.h>
+ =20
+ -#include <mach/map.h>
+  #include <plat/cpu.h>
+ +#include <plat/clock.h>
+ +#include <plat/devs.h>
+  #include <plat/pm.h>
+ +#include <plat/gpio-cfg.h>
+ +#include <plat/irq-uart.h>
+ +#include <plat/irq-vic-timer.h>
+ +#include <plat/regs-irqtype.h>
+ +#include <plat/regs-serial.h>
+ +
+ +#include "common.h"
+ +
+ +/* uart registration process */
+ +
+ +void __init s3c64xx_init_uarts(struct s3c2410_uartcfg *cfg, int no)
  +{
- +	unsigned long ucon0, ucon1, ucon2, divisor;
- +
- +	/* the fun of calculating the uart divisors on the s3c2440 */
- +	ucon0 =3D __raw_readl(S3C24XX_VA_UART0 + S3C2410_UCON);
- +	ucon1 =3D __raw_readl(S3C24XX_VA_UART1 + S3C2410_UCON);
- +	ucon2 =3D __raw_readl(S3C24XX_VA_UART2 + S3C2410_UCON);
- +
- +	ucon0 &=3D S3C2440_UCON0_DIVMASK;
- +	ucon1 &=3D S3C2440_UCON1_DIVMASK;
- +	ucon2 &=3D S3C2440_UCON2_DIVMASK;
- +
- +	if (ucon0 !=3D 0)
- +		divisor =3D (ucon0 >> S3C2440_UCON_DIVSHIFT) + 6;
- +	else if (ucon1 !=3D 0)
- +		divisor =3D (ucon1 >> S3C2440_UCON_DIVSHIFT) + 21;
- +	else if (ucon2 !=3D 0)
- +		divisor =3D (ucon2 >> S3C2440_UCON_DIVSHIFT) + 36;
- +	else
- +		/* manual calims 44, seems to be 9 */
- +		divisor =3D 9;
- +
- +	return clk_get_rate(clk->parent) / divisor;
+ +	s3c24xx_init_uartdevs("s3c6400-uart", s3c64xx_uart_resources, cfg, no);
  +}
  +
- +static struct clk s3c2440_clk_fclk_n =3D {
- +	.name		=3D "fclk_n",
- +	.parent		=3D &clk_f,
- +	.ops		=3D &(struct clk_ops) {
- +		.get_rate	=3D s3c2440_fclk_n_getrate,
+ +/* table of supported CPUs */
+ +
+ +static const char name_s3c6400[] =3D "S3C6400";
+ +static const char name_s3c6410[] =3D "S3C6410";
+ +
+ +static struct cpu_table cpu_ids[] __initdata =3D {
+ +	{
+ +		.idcode		=3D S3C6400_CPU_ID,
+ +		.idmask		=3D S3C64XX_CPU_MASK,
+ +		.map_io		=3D s3c6400_map_io,
+ +		.init_clocks	=3D s3c6400_init_clocks,
+ +		.init_uarts	=3D s3c64xx_init_uarts,
+ +		.init		=3D s3c6400_init,
+ +		.name		=3D name_s3c6400,
+ +	}, {
+ +		.idcode		=3D S3C6410_CPU_ID,
+ +		.idmask		=3D S3C64XX_CPU_MASK,
+ +		.map_io		=3D s3c6410_map_io,
+ +		.init_clocks	=3D s3c6410_init_clocks,
+ +		.init_uarts	=3D s3c64xx_init_uarts,
+ +		.init		=3D s3c6410_init,
+ +		.name		=3D name_s3c6410,
  +	},
  +};
  +
- +static struct clk_lookup s3c2440_clk_lookup[] =3D {
- +	CLKDEV_INIT(NULL, "clk_uart_baud1", &s3c24xx_uclk),
- +	CLKDEV_INIT(NULL, "clk_uart_baud2", &clk_p),
- +	CLKDEV_INIT(NULL, "clk_uart_baud3", &s3c2440_clk_fclk_n),
+ +/* minimal IO mapping */
+ +
+ +/* see notes on uart map in arch/arm/mach-s3c64xx/include/mach/debug-macr=
+o.S */
+ +#define UART_OFFS (S3C_PA_UART & 0xfffff)
+ +
+ +static struct map_desc s3c_iodesc[] __initdata =3D {
+ +	{
+ +		.virtual	=3D (unsigned long)S3C_VA_SYS,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_SYSCON),
+ +		.length		=3D SZ_4K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)S3C_VA_MEM,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_SROM),
+ +		.length		=3D SZ_4K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)(S3C_VA_UART + UART_OFFS),
+ +		.pfn		=3D __phys_to_pfn(S3C_PA_UART),
+ +		.length		=3D SZ_4K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)VA_VIC0,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_VIC0),
+ +		.length		=3D SZ_16K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)VA_VIC1,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_VIC1),
+ +		.length		=3D SZ_16K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)S3C_VA_TIMER,
+ +		.pfn		=3D __phys_to_pfn(S3C_PA_TIMER),
+ +		.length		=3D SZ_16K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)S3C64XX_VA_GPIO,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_GPIO),
+ +		.length		=3D SZ_4K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)S3C64XX_VA_MODEM,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_MODEM),
+ +		.length		=3D SZ_4K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)S3C_VA_WATCHDOG,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_WATCHDOG),
+ +		.length		=3D SZ_4K,
+ +		.type		=3D MT_DEVICE,
+ +	}, {
+ +		.virtual	=3D (unsigned long)S3C_VA_USB_HSPHY,
+ +		.pfn		=3D __phys_to_pfn(S3C64XX_PA_USB_HSPHY),
+ +		.length		=3D SZ_1K,
+ +		.type		=3D MT_DEVICE,
+ +	},
  +};
  +
-- static int s3c2440_clk_add(struct sys_device *sysdev)
-+ static int s3c2440_clk_add(struct device *dev)
-  {
-  	struct clk *clock_upll;
-  	struct clk *clock_h;
+ +struct sysdev_class s3c64xx_sysclass =3D {
+ +	.name	=3D "s3c64xx-core",
+ +};
+ +
+ +static struct sys_device s3c64xx_sysdev =3D {
+ +	.cls	=3D &s3c64xx_sysclass,
+ +};
+ +
+ +/* read cpu identification code */
+ +
+ +void __init s3c64xx_init_io(struct map_desc *mach_desc, int size)
+ +{
+ +	/* initialise the io descriptors we need for initialisation */
+ +	iotable_init(s3c_iodesc, ARRAY_SIZE(s3c_iodesc));
+ +	iotable_init(mach_desc, size);
+ +	init_consistent_dma_size(SZ_8M);
+ +
+ +	/* detect cpu id */
+ +	s3c64xx_init_cpu();
+ +
+ +	s3c_init_cpu(samsung_cpu_id, cpu_ids, ARRAY_SIZE(cpu_ids));
+ +}
+ +
+ +static __init int s3c64xx_sysdev_init(void)
+ +{
+ +	sysdev_class_register(&s3c64xx_sysclass);
+ +	return sysdev_register(&s3c64xx_sysdev);
+ +}
+ +core_initcall(s3c64xx_sysdev_init);
+ +
+ +/*
+ + * setup the sources the vic should advertise resume
+ + * for, even though it is not doing the wake
+ + * (set_irq_wake needs to be valid)
+ + */
+ +#define IRQ_VIC0_RESUME (1 << (IRQ_RTC_TIC - IRQ_VIC0_BASE))
+ +#define IRQ_VIC1_RESUME (1 << (IRQ_RTC_ALARM - IRQ_VIC1_BASE) |	\
+ +			 1 << (IRQ_PENDN - IRQ_VIC1_BASE) |	\
+ +			 1 << (IRQ_HSMMC0 - IRQ_VIC1_BASE) |	\
+ +			 1 << (IRQ_HSMMC1 - IRQ_VIC1_BASE) |	\
+ +			 1 << (IRQ_HSMMC2 - IRQ_VIC1_BASE))
+ +
+ +void __init s3c64xx_init_irq(u32 vic0_valid, u32 vic1_valid)
+ +{
+ +	printk(KERN_DEBUG "%s: initialising interrupts\n", __func__);
+ +
+ +	/* initialise the pair of VICs */
+ +	vic_init(VA_VIC0, IRQ_VIC0_BASE, vic0_valid, IRQ_VIC0_RESUME);
+ +	vic_init(VA_VIC1, IRQ_VIC1_BASE, vic1_valid, IRQ_VIC1_RESUME);
+ +
+ +	/* add the timer sub-irqs */
+ +	s3c_init_vic_timer_irq(5, IRQ_TIMER0);
+ +}
+ =20
+  #define eint_offset(irq)	((irq) - IRQ_EINT(0))
+  #define eint_irq_to_bit(irq)	((u32)(1 << eint_offset(irq)))
 
---Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye
+--Signature=_Wed__28_Dec_2011_16_12_31_+1100_=X4kJpbexEBZcNll
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJO+qO3AAoJEECxmPOUX5FE6Q8P/19U7Fw+Uvn5fSZex1rlrwOF
-fnCoVMXhpzMsRWkrChJ7OAVz1YcpBRIVYbCMdjroOG2uAyDdxUQV9bpfwCK8Oc8L
-wZcnMDMdpd8aAXVryTDjSP0PfzaQjs+gpTs6lWd2KpCKiTtB8SQuax6LXNz0a0BM
-b45wvhlgjMAg/kbJVrbK3lT6FmiZDOKRNEpYZVfsa2xpGvnAJshYemns7qU+2E2H
-z5aBJyGjJXgPKXhPsxai9CgeKXS0D104vMRU0pYxeVTTjkbQjMHYsDwkRWWw+FLs
-qzvrAoLAe0w+WdLF+dy++Pw98k8ZmNODPsnd9VkP5C4zkNeO829KcFXSC2o9en69
-jjusAY80y4iKkLYxwYyUcCRqZh6wy0OojPfaUOSc+cLF/GJOrgLgy0GosZ3b0JYs
-4HCYUg0fvAogt86MOqKlz1nSuV8598KBU1fFR9gsPFzKghHk9Dx2qIWVPOW8oUeK
-JbijyXuAE118kUszvfRbKU8K1Sr5EI2vqa5E/fNC78eh54Q+gAW3lmJkc9allDaw
-8r0msmo1eXNFmaceGD0TtfYaqDjGrsXMc47yj2plulm3yr26C25aNb3/enrAWtVQ
-MKPkYYM7lT7ccZk1pIidv+SI7qWaLXESBMKvtVffSpE1IQGybUrwrIyBmCEjIfvE
-065d/oguRG+SNqfBiBcJ
-=jvdc
+iQIcBAEBCAAGBQJO+qU/AAoJEECxmPOUX5FEmikQAIkoJA/oVGdyyJyT6RDKmlYP
+wtocUPX10tCplR9o4bIAejA4DpoCNCZJF3pnEb2o504uUOcEBuwifoc+v776puk2
+ojWbvlDmeNVCAbDby7PbzCZ35cI4SlPBCGWT4xvX9B9LN8rLWbFArNpTeD87wXad
+iWd6EuzKpCMgx6sRLCp9yMrEsHJWMW5FgrxglYTqax18JrR3Wk3yBcgBk0ZHA9GM
+A2oXuAE8k0YQQU4/S7TThiHXzgfoZF8OUwOBtCFMsrADKER5+Is5Mj1+8rTMcY0k
+yGkbkM2hEv9wID9r4CBIJI5/yuMncik+OMkNl6qG5w+aqfB9jskhFpQV+5yn9ZE8
+lH5kI7JkEeZaILa5lsaCx8o9ANE0XgA8JkbKBFNCflUI0mjVWubjckylOQmnOIAl
+qkM8FCuLi/lvmipADZ9JF/666VmC/4QSDzbd3E+8ckjIN+xEM4c/LTXXUvJzWYNM
+rXY4f2Uha+mbmtr0+Uf/nLViScjevL1gRRA0HQ/TI9X50jTFa/gXM5D2Jx0oqy5U
+rZfzckhUC+OCejy5QvhAl1YQ5Qiz9jwANtylt9emeWV06akszC/Y4oWRQyFww7i8
+atLEBjg2Uzbh54YUEVK0+JAVa8sO18ZlzePCWbbU4qArGipMweuGiCGhXndL7oBT
+lm0GWLlkt7H2BgVYRlzO
+=/Vnm
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__28_Dec_2011_16_05_59_+1100_l4nMClGxi0_ANyye--
+--Signature=_Wed__28_Dec_2011_16_12_31_+1100_=X4kJpbexEBZcNll--
