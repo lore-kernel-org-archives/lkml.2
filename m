@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab1L1XzR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 18:55:17 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:9628 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab1L1XzO (ORCPT
+	id S1754473Ab1L2AJK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 19:09:10 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:60005 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab1L2AJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 18:55:14 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-9a-4efbac608713
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20111227141550.GA3331@opensource.wolfsonmicro.com>
- <1324995372-3410-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1324995372-3410-6-git-send-email-broonie@opensource.wolfsonmicro.com>
-In-reply-to: <1324995372-3410-6-git-send-email-broonie@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH 6/6] video: s3c-fb: Don't keep device runtime active when
- open
-Date: Thu, 29 Dec 2011 08:55:12 +0900
-Message-id: <000b01ccc5bc$235c0b20$6a142160$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczEoh0qPU7zdmlKQ7CJIRWhWjUt8gBGgFVg
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 28 Dec 2011 19:09:07 -0500
+Message-ID: <4EFBAF99.3010208@gmail.com>
+Date: Thu, 29 Dec 2011 02:08:57 +0200
+From: Konstantinos Skarlatos <k.skarlatos@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: linux-cifs@vger.kernel.org, jlayton@redhat.com
+Subject: cifs: ls of mount point gives input/output error (probably related
+ to CIFS: getdents() broken for large dirs)
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Tuesday, December 27, 2011 11:16 PM
-> To: Jingoo Han; Florian Tobias Schandinat
-> Cc: linux-fbdev@vger.kernel.org; linux-kernel@vger.kernel.org; Mark Brown
-> Subject: [PATCH 6/6] video: s3c-fb: Don't keep device runtime active when open
-> 
-> Allow the controller to be runtime suspended when the screen is blanked
-> by not taking a runtime reference while the device is open. This allows
-> greater system wide power savings when used with a standard application
-> layer and ensures that the screen does not blank unless requested.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+I mount via cifs a windows XP share, df gives me correct sizes, but when 
+I ls the mount point i get input/output error.
+strace: http://pastebin.com/WXf8M1nu
 
-		Acked-by: Jingoo Han <jg1.han@samsung.com>
+mount --verbose -t cifs -o username=administrator,password=blahblah 
+//192.168.0.11/jobs /mnt/backups/montaz/jobs
+mount.cifs kernel mount options: 
+ip=192.168.0.11,unc=\\192.168.0.11\jobs,,ver=1,user=administrator,pass=********
 
-> ---
->  drivers/video/s3c-fb.c |   22 ----------------------
->  1 files changed, 0 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/video/s3c-fb.c b/drivers/video/s3c-fb.c
-> index 84cf631..0c63b69 100644
-> --- a/drivers/video/s3c-fb.c
-> +++ b/drivers/video/s3c-fb.c
-> @@ -1070,30 +1070,8 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
->  	return ret;
->  }
-> 
-> -static int s3c_fb_open(struct fb_info *info, int user)
-> -{
-> -	struct s3c_fb_win *win = info->par;
-> -	struct s3c_fb *sfb = win->parent;
-> -
-> -	pm_runtime_get_sync(sfb->dev);
-> -
-> -	return 0;
-> -}
-> -
-> -static int s3c_fb_release(struct fb_info *info, int user)
-> -{
-> -	struct s3c_fb_win *win = info->par;
-> -	struct s3c_fb *sfb = win->parent;
-> -
-> -	pm_runtime_put_sync(sfb->dev);
-> -
-> -	return 0;
-> -}
-> -
->  static struct fb_ops s3c_fb_ops = {
->  	.owner		= THIS_MODULE,
-> -	.fb_open	= s3c_fb_open,
-> -	.fb_release	= s3c_fb_release,
->  	.fb_check_var	= s3c_fb_check_var,
->  	.fb_set_par	= s3c_fb_set_par,
->  	.fb_blank	= s3c_fb_blank,
-> --
-> 1.7.7.3
+df
+//192.168.0.11/jobs                                       114464  
+105196      9268  92% /mnt/backups/montaz/jobs
 
+ls /mnt/backups/montaz/jobs/
+ls: reading directory /mnt/backups/montaz/jobs/: Input/output error
+total 0
+
+the fun thing is that i can cd to a lower level directory, and ls works 
+fine there! only the mount point has the problem
+
+ls /mnt/backups/montaz/jobs/test
+total 44K
+drwxr-xr-x 1 root root    0 Apr 30  2010 blah blah/
+......
+
+kernel version 3.2rc7
+
+this seems to be related to :
+https://lkml.org/lkml/2011/8/1/427
+Re: [3.0.0+][Regression][Bisected] CIFS: getdents() broken for large dirs
+
+Please CC because i am not subscribed
