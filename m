@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab1L2RSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 12:18:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37070 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329Ab1L2RSr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 12:18:47 -0500
-Date: Thu, 29 Dec 2011 18:12:56 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Kirill Tkhai <kirill.tkhai@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: SCHED_RR && time_slice
-Message-ID: <20111229171256.GA5955@redhat.com>
-References: <1324584060.4222.15.camel@hp> <20111226165930.GA4075@redhat.com> <1325177015.9304.9.camel@hp>
+	id S1754790Ab1L2RUO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 12:20:14 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48153 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748Ab1L2RUL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 12:20:11 -0500
+Message-ID: <4EFCA147.50206@vflare.org>
+Date: Thu, 29 Dec 2011 12:20:07 -0500
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325177015.9304.9.camel@hp>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: Re: [PATCH] staging: zcache: add crypto API support
+References: <1325082113-2843-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1325082113-2843-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29, Kirill Tkhai wrote:
->
-> Thanks for the answers, Oleg.
->
-> On Mon, 2011-12-26 at 17:59 +0100, Oleg Nesterov wrote:
-> > On 12/23, Kirill Tkhai wrote:
-> > >
-> > > RT class uses its own fixed
-> > > timeslice (in case of RR),
-> >
-> > which looks confusing too, btw.
-> >
-> > sched_set_scheduler() does not initialize rt.time_slice, and
-> > INIT_TASK() sets time_slice = HZ (not DEF_TIMESLICE).
-> >
->
-> I talk about task_tick_rt().
+On 12/28/2011 09:21 AM, Seth Jennings wrote:
 
-me too ;)
+> This patch allow zcache to use the crypto API for page compression.
+> It replaces the direct LZO compress/decompress calls with calls
+> into the crypto compression API. The compressor to be used is
+> specified in the kernel boot line with the zcache parameter like:
+> zcache=lzo or zcache=deflate.  If the specified compressor can't
+> be loaded, zcache uses lzo as the default compressor.
+> 
+> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 
-> When time_slice is over, it is being
-> renewed. New value is DEF_TIMESLICE. This happens in case of SCHED_RR
-> class.
 
-Yes, but I was talking about initial value of time_slice, when the
-task switches to SCHED_RR.
 
-Oleg.
+Acked-by: Nitin Gupta <ngupta@vflare.org>
 
+Thanks,
+Nitin
