@@ -1,38 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab1L2Deu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 22:34:50 -0500
-Received: from ozlabs.org ([203.10.76.45]:54182 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329Ab1L2Des (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 22:34:48 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the rr tree
-In-Reply-To: <20111228181640.d299620c8e66237509fbba37@canb.auug.org.au>
-References: <20111228181640.d299620c8e66237509fbba37@canb.auug.org.au>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 29 Dec 2011 13:50:06 +1030
-Message-ID: <87k45ggj2x.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753190Ab1L2Dom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 22:44:42 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:50416 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab1L2Doi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 22:44:38 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-a1-4efbe206e37c
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Denis Kuzmenko'" <linux@solonet.org.ua>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Ben Dooks'" <ben-linux@fluff.org>
+References: <4EE7BE5F.8020108@solonet.org.ua>
+ <01e501ccc536$a6e58fb0$f4b0af10$%kim@samsung.com>
+ <4EFB83DE.7080404@solonet.org.ua>
+In-reply-to: <4EFB83DE.7080404@solonet.org.ua>
+Subject: RE: [PATCHv2 resend] Fix compilation error when
+ CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
+Date: Thu, 29 Dec 2011 12:44:04 +0900
+Message-id: <029101ccc5dc$1c718360$55548a20$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: ko
+Thread-index: AczFpNxnNJ7mwTCIRYOfHZc9Eg1JLwANmu+A
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 Dec 2011 18:16:40 +1100, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-Non-text part: multipart/signed
-> Hi Rusty,
+Denis Kuzmenko wrote:
 > 
-> After merging the rr tree, today's linux-next build (x86_64 allmodconfig)
-> produced this warning:
+> Hi Kukjin,
 > 
-> drivers/net/virtio_net.c: In function 'virtnet_open':
-> drivers/net/virtio_net.c:732:3: warning: passing argument 1 of 'queue_delayed_work' from incompatible pointer type [enabled by default]
-> include/linux/workqueue.h:352:12: note: expected 'struct workqueue_struct *' but argument is of type 'struct workqueue_struct **'
+Hi Denis,
 
-Oops, thanks.  Fixed.
+> Your patch applies (note that it looks like your email-client have
 
-Cheers,
-Rusty.
+Yeah, if over 76 columns, my e-mail client changes its line so maybe
+happened wrapped long lines.
+
+> wrapped long lines thus broke the path) and works OK. Looks good to me.
+> See some additional comments below.
+> 
+> On 12/28/2011 09:59 AM, Kukjin Kim wrote:
+> > Denis Kuzmenko wrote:
+> (snip)
+> >> +	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING ||
+> >> S3C2412_IOTIMING)
+> >
+> > As you know, CONFIG_CPU_FREQ_S3C24XX_IODEBUG is for enabling of
+> > s3c_freq_iodbg() and there is no problem when
+> CONFIG_S3C241{0,2}_IOTIMING is
+> > not selected, even though s3c_freq_iodbg() is used only at
+> > s3c2410-iotiming.c now. So this is not necessary to fix the problem you
+> > said.
+> 
+> I'm OK with this approach, however I don't see any future use of
+> s3c_freq_iodbg() without s3c2410-iotiming.c. But it's not anyway
+> critical so please pick any variant which you like.
+> 
+Yes. I think we need to sort out the CPUFREQ on S3C24XX next time :)
+
+(snip)
+
+> (snip)
+> > So how about at below?
+> > If you're ok, will send before v3.2.
+> 
+> So, as already said, I have no objections.
+> And thank you for review.
+> 
+
+Thanks and Happy New Year!
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
