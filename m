@@ -1,48 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab1L2RUO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 12:20:14 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:48153 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab1L2RUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 12:20:11 -0500
-Message-ID: <4EFCA147.50206@vflare.org>
-Date: Thu, 29 Dec 2011 12:20:07 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1754805Ab1L2RVi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 12:21:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24913 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748Ab1L2RVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 12:21:35 -0500
+Date: Thu, 29 Dec 2011 12:21:02 -0500
+From: Dave Jones <davej@redhat.com>
+To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Cc: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        linux-modules@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] kbuild: add target to install gzipped modules
+Message-ID: <20111229172101.GB4101@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+	Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+	linux-modules@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>
-Subject: Re: [PATCH] staging: zcache: add crypto API support
-References: <1325082113-2843-1-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1325082113-2843-1-git-send-email-sjenning@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2011 09:21 AM, Seth Jennings wrote:
+On Thu, Dec 29, 2011 at 01:50:18PM -0200, Lucas De Marchi wrote:
+ > Add target in Makefile to compress the module after it's installed.
+ > Module-init-tools and libkmod can handle gzipped modules.
+ > 
+ > This is not much useful for distributions because the package will gzip
+ > the modules and call depmod in a install rule. 
 
-> This patch allow zcache to use the crypto API for page compression.
-> It replaces the direct LZO compress/decompress calls with calls
-> into the crypto compression API. The compressor to be used is
-> specified in the kernel boot line with the zcache parameter like:
-> zcache=lzo or zcache=deflate.  If the specified compressor can't
-> be loaded, zcache uses lzo as the default compressor.
-> 
-> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+It might actually be a worthwhile thing for distributions.
 
+For a Fedora kernel, gzipping modules saves around 80MB of diskspace per
+installed kernel.  That the RPM is compressed is irrelevant, the on-disk
+footprint is more interesting, given that the bulk of the modules installed
+will never even be loaded.
 
+	Dave
 
-Acked-by: Nitin Gupta <ngupta@vflare.org>
-
-Thanks,
-Nitin
