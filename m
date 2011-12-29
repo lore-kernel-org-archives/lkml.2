@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391Ab1L2UvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 15:51:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39574 "EHLO
+	id S1754406Ab1L2UwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 15:52:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39645 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab1L2UvJ (ORCPT
+	with ESMTP id S1753454Ab1L2UwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 15:51:09 -0500
-Date: Thu, 29 Dec 2011 12:50:47 -0800
-From: tip-bot for Nelson Elhage <nelhage@nelhage.com>
-Message-ID: <tip-41d0d933494ce10eb77758a1168b08e317c42e8e@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        nelhage@nelhage.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        nelhage@nelhage.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1324301972-22740-4-git-send-email-nelhage@nelhage.com>
-References: <1324301972-22740-4-git-send-email-nelhage@nelhage.com>
+	Thu, 29 Dec 2011 15:52:02 -0500
+Date: Thu, 29 Dec 2011 12:51:34 -0800
+From: tip-bot for Robert Richter <robert.richter@amd.com>
+Message-ID: <tip-8cdfa78a885d94a79205d183a611ebc4876d6f33@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
+        hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
+        robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
+        robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1323248577-11268-7-git-send-email-robert.richter@amd.com>
+References: <1323248577-11268-7-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: builtin-record:
-  Document and check that mmap_pages must be a power of two.
-Git-Commit-ID: 41d0d933494ce10eb77758a1168b08e317c42e8e
+Subject: [tip:perf/core] perf tools: Improve macros for struct feature_ops
+Git-Commit-ID: 8cdfa78a885d94a79205d183a611ebc4876d6f33
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,95 +31,84 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:50:53 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:51:39 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  41d0d933494ce10eb77758a1168b08e317c42e8e
-Gitweb:     http://git.kernel.org/tip/41d0d933494ce10eb77758a1168b08e317c42e8e
-Author:     Nelson Elhage <nelhage@nelhage.com>
-AuthorDate: Mon, 19 Dec 2011 08:39:32 -0500
+Commit-ID:  8cdfa78a885d94a79205d183a611ebc4876d6f33
+Gitweb:     http://git.kernel.org/tip/8cdfa78a885d94a79205d183a611ebc4876d6f33
+Author:     Robert Richter <robert.richter@amd.com>
+AuthorDate: Wed, 7 Dec 2011 10:02:56 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 23 Dec 2011 16:53:58 -0200
+CommitDate: Fri, 23 Dec 2011 16:56:27 -0200
 
-perf: builtin-record: Document and check that mmap_pages must be a power of two.
+perf tools: Improve macros for struct feature_ops
 
-Now that we automatically point users at it, let's provide them some
-guidance so that they hopefully don't just get mysterious EINVAL's
-from the kernel.
+Reducing duplication and line size by extending function names for
+print and write from a single name.
 
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1324301972-22740-4-git-send-email-nelhage@nelhage.com
-Signed-off-by: Nelson Elhage <nelhage@nelhage.com>
-[ committer note: Made it work after 50a682c ]
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Link: http://lkml.kernel.org/r/1323248577-11268-7-git-send-email-robert.richter@amd.com
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-record.txt |    2 +-
- tools/perf/builtin-record.c              |    3 +++
- tools/perf/util/evlist.c                 |    2 ++
- tools/perf/util/util.h                   |   11 +++++++++++
- 4 files changed, 17 insertions(+), 1 deletions(-)
+ tools/perf/util/header.c |   40 ++++++++++++++++++++++------------------
+ 1 files changed, 22 insertions(+), 18 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
-index 5a520f8..2937f7e 100644
---- a/tools/perf/Documentation/perf-record.txt
-+++ b/tools/perf/Documentation/perf-record.txt
-@@ -89,7 +89,7 @@ OPTIONS
+diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
+index 5b01449..4c48be8 100644
+--- a/tools/perf/util/header.c
++++ b/tools/perf/util/header.c
+@@ -1065,26 +1065,30 @@ struct feature_ops {
+ 	bool full_only;
+ };
  
- -m::
- --mmap-pages=::
--	Number of mmap data pages.
-+	Number of mmap data pages. Must be a power of two.
- 
- -g::
- --call-graph::
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 56bb447..e873ae2 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -279,6 +279,9 @@ try_again:
- 			    "/proc/sys/kernel/perf_event_mlock_kb,\n"
- 			    "or try again with a smaller value of -m/--mmap_pages.\n"
- 			    "(current value: %d)\n", opts->mmap_pages);
-+		else if (!is_power_of_2(opts->mmap_pages))
-+			die("--mmap_pages/-m value must be a power of two.");
+-#define FEAT_OPA(n, w, p) \
+-	[n] = { .name = #n, .write = w, .print = p }
+-#define FEAT_OPF(n, w, p) \
+-	[n] = { .name = #n, .write = w, .print = p, .full_only = true }
++#define FEAT_OPA(n, func) \
++	[n] = { .name = #n, .write = write_##func, .print = print_##func }
++#define FEAT_OPF(n, func) \
++	[n] = { .name = #n, .write = write_##func, .print = print_##func, .full_only = true }
 +
- 		die("failed to mmap with %d (%s)\n", errno, strerror(errno));
- 	}
++/* feature_ops not implemented: */
++#define print_trace_info		NULL
++#define print_build_id			NULL
  
-diff --git a/tools/perf/util/evlist.c b/tools/perf/util/evlist.c
-index 963d63d..fa18370 100644
---- a/tools/perf/util/evlist.c
-+++ b/tools/perf/util/evlist.c
-@@ -563,6 +563,8 @@ int perf_evlist__mmap(struct perf_evlist *evlist, unsigned int pages,
-         /* 512 kiB: default amount of unprivileged mlocked memory */
-         if (pages == UINT_MAX)
-                 pages = (512 * 1024) / page_size;
-+	else if (!is_power_of_2(pages))
-+		return -EINVAL;
+ static const struct feature_ops feat_ops[HEADER_LAST_FEATURE] = {
+-	FEAT_OPA(HEADER_TRACE_INFO, write_trace_info, NULL),
+-	FEAT_OPA(HEADER_BUILD_ID, write_build_id, NULL),
+-	FEAT_OPA(HEADER_HOSTNAME, write_hostname, print_hostname),
+-	FEAT_OPA(HEADER_OSRELEASE, write_osrelease, print_osrelease),
+-	FEAT_OPA(HEADER_VERSION, write_version, print_version),
+-	FEAT_OPA(HEADER_ARCH, write_arch, print_arch),
+-	FEAT_OPA(HEADER_NRCPUS, write_nrcpus, print_nrcpus),
+-	FEAT_OPA(HEADER_CPUDESC, write_cpudesc, print_cpudesc),
+-	FEAT_OPA(HEADER_CPUID, write_cpuid, print_cpuid),
+-	FEAT_OPA(HEADER_TOTAL_MEM, write_total_mem, print_total_mem),
+-	FEAT_OPA(HEADER_EVENT_DESC, write_event_desc, print_event_desc),
+-	FEAT_OPA(HEADER_CMDLINE, write_cmdline, print_cmdline),
+-	FEAT_OPF(HEADER_CPU_TOPOLOGY, write_cpu_topology, print_cpu_topology),
+-	FEAT_OPF(HEADER_NUMA_TOPOLOGY, write_numa_topology, print_numa_topology),
++	FEAT_OPA(HEADER_TRACE_INFO,	trace_info),
++	FEAT_OPA(HEADER_BUILD_ID,	build_id),
++	FEAT_OPA(HEADER_HOSTNAME,	hostname),
++	FEAT_OPA(HEADER_OSRELEASE,	osrelease),
++	FEAT_OPA(HEADER_VERSION,	version),
++	FEAT_OPA(HEADER_ARCH,		arch),
++	FEAT_OPA(HEADER_NRCPUS,		nrcpus),
++	FEAT_OPA(HEADER_CPUDESC,	cpudesc),
++	FEAT_OPA(HEADER_CPUID,		cpuid),
++	FEAT_OPA(HEADER_TOTAL_MEM,	total_mem),
++	FEAT_OPA(HEADER_EVENT_DESC,	event_desc),
++	FEAT_OPA(HEADER_CMDLINE,	cmdline),
++	FEAT_OPF(HEADER_CPU_TOPOLOGY,	cpu_topology),
++	FEAT_OPF(HEADER_NUMA_TOPOLOGY,	numa_topology),
+ };
  
- 	mask = pages * page_size - 1;
- 
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 0128906..37be34d 100644
---- a/tools/perf/util/util.h
-+++ b/tools/perf/util/util.h
-@@ -245,4 +245,15 @@ int readn(int fd, void *buf, size_t size);
- #define _STR(x) #x
- #define STR(x) _STR(x)
- 
-+/*
-+ *  Determine whether some value is a power of two, where zero is
-+ * *not* considered a power of two.
-+ */
-+
-+static inline __attribute__((const))
-+bool is_power_of_2(unsigned long n)
-+{
-+	return (n != 0 && ((n & (n - 1)) == 0));
-+}
-+
- #endif
+ struct header_print_data {
