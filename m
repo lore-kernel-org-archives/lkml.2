@@ -1,50 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224Ab1L2J1T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 04:27:19 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:36120 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926Ab1L2J1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 04:27:16 -0500
-Message-ID: <4EFC3270.9020109@monstr.eu>
-Date: Thu, 29 Dec 2011 10:27:12 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S1752439Ab1L2KES (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 05:04:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49359 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061Ab1L2KEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 05:04:14 -0500
+Message-ID: <4EFC3B17.1040601@redhat.com>
+Date: Thu, 29 Dec 2011 12:04:07 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Ryan Mallon <rmallon@gmail.com>
-Subject: Re: [PATCH 1/4] block: xsysace: Don't use NO_IRQ
-References: <1324477932-19262-1-git-send-email-monstr@monstr.eu>
-In-Reply-To: <1324477932-19262-1-git-send-email-monstr@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Stephan_B=E4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
+CC: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: KVM guest-kernel panics double fault
+References: <4EFBC973.1040905@tu-ilmenau.de>
+In-Reply-To: <4EFBC973.1040905@tu-ilmenau.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Simek wrote:
-> Drivers shouldn't use NO_IRQ. Microblaze and PPC
-> define NO_IRQ as 0 and this reference will be removed
-> in near future.
-> 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Rob Herring <rob.herring@calxeda.com>
-> CC: Ryan Mallon <rmallon@gmail.com>
-> ---
->  drivers/block/xsysace.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
+On 12/29/2011 03:59 AM, Stephan Bärwolf wrote:
+> Hello guys,
+>
+> I am sorry to disturb you this short before New Year, but I think this
+> shouldn't wait until next year.
+>
+> After experiencing crashes in virtual maschines and considering kernel /
+> qemu / kvm / cpu -bugs, I discovered the following (see patch) issue.
+> Because unpriviledged users can crash VMs, I think it is a serious one
+> and needs short-term attention.
+>
+> The patch I wrote is against 3.2-rc7 but I always tested with linux 3.1.6.
+> Hopfully it solve the problems to your satisfaction.
 
-Grant: Can you give me your ACK?
 
-Thanks,
-Michal
+Thanks for the report and patch.
+
+
+> Subject: [PATCH] KVM: fix missing "illegal instruction"-trap in guests
+> within non-64bit protected modes
+>
+> On hosts without this patch, 32bit guests will crash for
+> example by simply executing following nasm-demo-application:
+>
+>         [bits 32]
+>         global _start
+>         SECTION .text
+>         _start: syscall
+>
+> (I am not sure if this can be exploited in more worse ways,
+> like breaking out of VMs in more complex szenarios?
+> But I tested it with win32 and linux - both always crashed)
+>
+>         Disassembly of section .text:
+>
+>         00000000 <_start>:
+>            0:   0f 05                   syscall
+>
+> The reason seems a missing "invalid opcode"-trap (int6) for the
+> syscall opcode "0f05", which is not available on 32bit cpus.
+> Intel's "Intel 64 and IA-32 Architecture Software Developers
+> Manual" (http://www.intel.com/content/dam/doc/manual/
+> 64-ia-32-architectures-software-developer-manual-325462.pdf)
+> documents on page 1804 (4-586) "syscall" is only available
+> in 64bit longmode. So "syscall" must trap in real- and
+> virtual 8086 -mode, as also in all non-64bit protected-modes.
+
+However, 'syscall' is available in compatibility mode on 32-bit cpus.
+
+> 0001-KVM-fix-missing-illegal-instruction-trap-in-guests-w.patch
+>  	/* syscall is not available in real mode */
+> +	/* 
+> +	   "0f05" is also not available in
+> +	   all non-64-bit protected modes (16&
+> +	   32bit) or virtual 8086 mode		 
+> +	   Only 64bit longmode supports this opcode
+> +	*/
+>  	if (ctxt->mode == X86EMUL_MODE_REAL ||
+> +	    ctxt->mode == X86EMUL_MODE_PROT16 ||
+> +	    ctxt->mode == X86EMUL_MODE_PROT32 ||
+>  	    ctxt->mode == X86EMUL_MODE_VM86)
+>  		return emulate_ud(ctxt);
+>  
+>
+
+The PROT32 check should be qualifed by a checking the the guest cpuid
+vendor is not AMD.  Otherwise a guest that was migrated from an AMD host
+to an Intel host (this is what this emulation was written for in the
+first place) will #UD unexpectedly.
+
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+error compiling committee.c: too many arguments to function
+
