@@ -1,129 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752006Ab1L2IUI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 03:20:08 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37387 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab1L2IUE (ORCPT
+	id S1752020Ab1L2IiH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 03:38:07 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40979 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab1L2IiF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 03:20:04 -0500
-Message-ID: <4EFC22B0.5080406@kernel.dk>
-Date: Thu, 29 Dec 2011 09:20:00 +0100
-From: Jens Axboe <axboe@kernel.dk>
+	Thu, 29 Dec 2011 03:38:05 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block IO patches for 3.2-rc
-X-Enigmail-Version: 1.3.4
+Date: Thu, 29 Dec 2011 16:38:03 +0800
+Message-ID: <CALZhoSRVNp=Sj2u2GHiQhuHOEdrfiM58KzG+RutvJV=8CoCpTQ@mail.gmail.com>
+Subject: ftrace performance impact with different configuration
+From: Lei Wen <adrian.wenl@gmail.com>
+To: Rabin Vincent <rabin@rab.in>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: leiwen@marvell.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-A trivial patch and two bug fixes that should make it
-into 3.2 final:
+Since we all know tracing is a good toy to play, but enable it in the
+defconfig would introduce extra effort for
+the product system. Here I test with different configuration, and
+maybe someone could base my data to
+further decrease system overhead when enabling it as defconfig but not
+enabling it. It is most useful for product kernel,
+as we could enable it latter on the fly.
 
-- Fix a regression introduced when shrinking the tag
-  queue depth dynamically on a device using the block
-  layer tagging.
+I am using iperf test over one ARMv5 board with kernel 3.0. The test
+environment setting as below:
+For TCP testing
+PC side: 	    iperf -s -f m -w 128k
+Board side:    iperf -c 192.168.1.100 -t 300 -i 1 -f m -r -w 128k
 
-- Fix a potential oops/crash on an edge merge case
-  of CFQ cfqq queues.
+For UDP testing
+PC side:       iperf -s -f m -u -w 128k
+Board side:   iperf -c 192.168.1.100 -t 300 -i 1 -f m -r -u -b 500m -l
+1470 -w 128k
 
-- Trivial cleanup.
-
-Please pull!
-
-
-  git://git.kernel.dk/linux-block.git for-linus
-
-Dan Williams (1):
-      block: fix blk_queue_end_tag()
-
-Shaohua Li (1):
-      block, cfq: fix empty queue crash caused by request merge
-
-majianpeng (1):
-      block: re-use existing 'reading' variable instead of checking direction again
-
- block/blk-map.c     |    2 +-
- block/blk-tag.c     |   13 ++-----------
- block/cfq-iosched.c |   12 ++++++++++++
- 3 files changed, 15 insertions(+), 12 deletions(-)
+The data is listed the pattern as: (sender speed/receiver speed), and
+the unit is as Mbit/s
+Also here ftrace enabled means we only enable the option of function
+tracer and dynamic tracer
+With no ftrace and no debugfs built in:     tcp: 155/188   udp: 276/197
+With no ftrace but with debugfs built in:   tcp: 149/184    udp:270/187
+With ftrace built in:                                tcp: 136/164
+udp:254/141
+With ftrace buit in but with modification:  tcp:  148/167   udp:263/174
 
 
-diff --git a/block/blk-map.c b/block/blk-map.c
-index 164cd00..623e1cd 100644
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -311,7 +311,7 @@ int blk_rq_map_kern(struct request_queue *q, struct request *rq, void *kbuf,
- 	if (IS_ERR(bio))
- 		return PTR_ERR(bio);
- 
--	if (rq_data_dir(rq) == WRITE)
-+	if (!reading)
- 		bio->bi_rw |= REQ_WRITE;
- 
- 	if (do_copy)
-diff --git a/block/blk-tag.c b/block/blk-tag.c
-index e74d6d1..4af6f5c 100644
---- a/block/blk-tag.c
-+++ b/block/blk-tag.c
-@@ -282,18 +282,9 @@ EXPORT_SYMBOL(blk_queue_resize_tags);
- void blk_queue_end_tag(struct request_queue *q, struct request *rq)
- {
- 	struct blk_queue_tag *bqt = q->queue_tags;
--	int tag = rq->tag;
-+	unsigned tag = rq->tag; /* negative tags invalid */
- 
--	BUG_ON(tag == -1);
--
--	if (unlikely(tag >= bqt->max_depth)) {
--		/*
--		 * This can happen after tag depth has been reduced.
--		 * But tag shouldn't be larger than real_max_depth.
--		 */
--		WARN_ON(tag >= bqt->real_max_depth);
--		return;
--	}
-+	BUG_ON(tag >= bqt->real_max_depth);
- 
- 	list_del_init(&rq->queuelist);
- 	rq->cmd_flags &= ~REQ_QUEUED;
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 4c12869..3548705 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1655,6 +1655,8 @@ cfq_merged_requests(struct request_queue *q, struct request *rq,
- 		    struct request *next)
- {
- 	struct cfq_queue *cfqq = RQ_CFQQ(rq);
-+	struct cfq_data *cfqd = q->elevator->elevator_data;
-+
- 	/*
- 	 * reposition in fifo if next is older than rq
- 	 */
-@@ -1669,6 +1671,16 @@ cfq_merged_requests(struct request_queue *q, struct request *rq,
- 	cfq_remove_request(next);
- 	cfq_blkiocg_update_io_merged_stats(&(RQ_CFQG(rq))->blkg,
- 					rq_data_dir(next), rq_is_sync(next));
-+
-+	cfqq = RQ_CFQQ(next);
-+	/*
-+	 * all requests of this queue are merged to other queues, delete it
-+	 * from the service tree. If it's the active_queue,
-+	 * cfq_dispatch_requests() will choose to expire it or do idle
-+	 */
-+	if (cfq_cfqq_on_rr(cfqq) && RB_EMPTY_ROOT(&cfqq->sort_list) &&
-+	    cfqq != cfqd->active_queue)
-+		cfq_del_cfqq_rr(cfqd, cfqq);
- }
- 
- static int cfq_allow_merge(struct request_queue *q, struct request *rq,
+Here the modification metioned above is:
+diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
+index d530a44..5d51e35 100644
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -105,7 +105,7 @@ void tracepoint_update_probe_range(struct
+tracepoint * const *begin,
+ #define TP_ARGS(args...)       args
+ #define TP_CONDITION(args...)  args
 
--- 
-Jens Axboe
+-#ifdef CONFIG_TRACEPOINTS
++#ifndef CONFIG_TRACEPOINTS
 
+By this modification, I suppose the tracepoint would not involve extra
+performance penalty.
+I do this change is for arm don't support jump label yet, and I think
+the best jump label could achieve
+also cannot exceed the result by this modification.
+
+So it seems to me that:
+1. tracepoint without jump label support could greatly bring down the
+system performance even they are only built in but not enabled
+2. Seem dynamic ftrace also could involve some penalty for the running
+system, although it patching the running kernel with nop stub...
+
+For the second item, is there anyone done some research before that
+could zero the cost for the running system when the tracing is not
+enabled yet?
+
+Thanks,
+Lei
