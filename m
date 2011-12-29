@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab1L2PtG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 10:49:06 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:54311 "EHLO
+	id S1754087Ab1L2P4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 10:56:17 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50666 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab1L2PtA (ORCPT
+	with ESMTP id S1752113Ab1L2P4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 10:49:00 -0500
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-To: Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-modules@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] kbuild: add target to install xz modules
-Date: Thu, 29 Dec 2011 13:50:19 -0200
-Message-Id: <1325173819-26274-2-git-send-email-lucas.demarchi@profusion.mobi>
-X-Mailer: git-send-email 1.7.8.1
-In-Reply-To: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
-References: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
+	Thu, 29 Dec 2011 10:56:15 -0500
+From: Fabio Estevam <festevam@gmail.com>
+To: broonie@opensource.wolfsonmicro.com
+Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH 1/2] regulator: mc13783: Convert to devm_kzalloc()
+Date: Thu, 29 Dec 2011 13:56:02 -0200
+Message-Id: <1325174163-27955-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add target in Makefile to compress the module with XZ  after it's
-installed. kmod can handle modules compressed with xz and it's replacing
-module-init-tools.
+Convert mc13783-regulator driver to use devm_kzalloc().
 
-Signed-off-by: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 ---
- Makefile                 |    6 +++++-
- scripts/Makefile.modinst |    7 +++++++
- 2 files changed, 12 insertions(+), 1 deletions(-)
+ drivers/regulator/mc13783-regulator.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index baddcfe..f06f886 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1104,9 +1104,10 @@ PHONY += modules_prepare
- modules_prepare: prepare scripts
+diff --git a/drivers/regulator/mc13783-regulator.c b/drivers/regulator/mc13783-regulator.c
+index 8479082..04e1915 100644
+--- a/drivers/regulator/mc13783-regulator.c
++++ b/drivers/regulator/mc13783-regulator.c
+@@ -344,7 +344,7 @@ static int __devinit mc13783_regulator_probe(struct platform_device *pdev)
  
- # Target to install modules
--PHONY += modules_install modules_install_gz
-+PHONY += modules_install modules_install_gz modules_install_xz
- modules_install: _modinst_bare _modinst_post
- modules_install_gz: _modinst_gz _modinst_post
-+modules_install_xz: _modinst_xz _modinst_post
+ 	dev_dbg(&pdev->dev, "%s id %d\n", __func__, pdev->id);
  
- PHONY += _modinst_
- _modinst_:
-@@ -1127,6 +1128,9 @@ _modinst_bare: _modinst_
- _modinst_gz: _modinst_
- 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modinst compression=gz
+-	priv = kzalloc(sizeof(*priv) +
++	priv = devm_kzalloc(&pdev->dev, sizeof(*priv) +
+ 			pdata->num_regulators * sizeof(priv->regulators[0]),
+ 			GFP_KERNEL);
+ 	if (!priv)
+@@ -374,8 +374,6 @@ err:
+ 	while (--i >= 0)
+ 		regulator_unregister(priv->regulators[i]);
  
-+_modinst_xz: _modinst_
-+	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modinst compression=xz
-+
- # This depmod is only for convenience to give the initial
- # boot a modules.dep even before / is mounted read-write.  However the
- # boot script depmod is the master version.
-diff --git a/scripts/Makefile.modinst b/scripts/Makefile.modinst
-index 442f953..297c546 100644
---- a/scripts/Makefile.modinst
-+++ b/scripts/Makefile.modinst
-@@ -24,6 +24,9 @@ quiet_cmd_modules_install = INSTALL $@
- quiet_cmd_modules_compress_gz = GZ      $@.gz
-       cmd_modules_compress_gz = gzip $(2)/$(notdir $@)
+-	kfree(priv);
+-
+ 	return ret;
+ }
  
-+quiet_cmd_modules_compress_xz = XZ      $@.xz
-+      cmd_modules_compress_xz = xz $(2)/$(notdir $@)
-+
- # Modules built outside the kernel source tree go into extra by default
- INSTALL_MOD_DIR ?= extra
- ext-mod-dir = $(INSTALL_MOD_DIR)$(subst $(patsubst %/,%,$(KBUILD_EXTMOD)),,$(@D))
-@@ -34,6 +37,10 @@ $(modules):
- 	$(call cmd,modules_install,$(MODLIB)/$(modinst_dir))
- ifeq ($(compression),gz)
- 	$(call cmd,modules_compress_gz,$(MODLIB)/$(modinst_dir))
-+else
-+ifeq ($(compression),xz)
-+	$(call cmd,modules_compress_xz,$(MODLIB)/$(modinst_dir))
-+endif
- endif
+@@ -391,7 +389,6 @@ static int __devexit mc13783_regulator_remove(struct platform_device *pdev)
+ 	for (i = 0; i < pdata->num_regulators; i++)
+ 		regulator_unregister(priv->regulators[i]);
  
+-	kfree(priv);
+ 	return 0;
+ }
  
 -- 
-1.7.8.1
+1.7.1
 
