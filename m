@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754664Ab1L2ATc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 19:19:32 -0500
-Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:52844 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753560Ab1L2AT3 (ORCPT
+	id S1754674Ab1L2AWH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 19:22:07 -0500
+Received: from smtpq2.tb.mail.iss.as9143.net ([212.54.42.165]:41895 "EHLO
+	smtpq2.tb.mail.iss.as9143.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753800Ab1L2AWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 19:19:29 -0500
-Message-ID: <4EFBB1F9.5050506@fb.com>
-Date: Wed, 28 Dec 2011 16:19:05 -0800
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 28 Dec 2011 19:22:05 -0500
+Message-ID: <4EFBB2A9.5040804@gmail.com>
+Date: Thu, 29 Dec 2011 01:22:01 +0100
+From: Rene Herman <rene.herman@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Kumar Sundararajan <kumar@fb.com>, <linux-kernel@vger.kernel.org>,
-        john stultz <johnstul@us.ibm.com>,
-        Richard Cochran <richardcochran@gmail.com>
-Subject: Re: [PATCH 1/4] Add clock_gettime_ns syscall
-References: <cover.1324831829.git.luto@amacapital.net> <16ecaa6abb8b7a25ef31970f71a42c7e2ba5416c.1324831829.git.luto@amacapital.net> <4EFB67AB.7060707@fb.com> <CALCETrVz1ADNxeLzPmeWXPU5ApfKURH2vnged2A2Vng8-hUxcw@mail.gmail.com> <20111228224536.GA1025@dev3310.snc6.facebook.com> <CALCETrW+9OoEQnP1+9MJX+JO5Ch42QhUeo8i=k9YdaCwWhg=Xw@mail.gmail.com>
-In-Reply-To: <CALCETrW+9OoEQnP1+9MJX+JO5Ch42QhUeo8i=k9YdaCwWhg=Xw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: Gustavo Padovan <padovan@profusion.mobi>,
+        Andre Guedes <andre.guedes@openbossa.org>,
+        linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
+Subject: Re: [bluetooth] linux-3.x regression (bisected)
+References: <4EF3BACA.1080405@gmail.com> <CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com> <4EFA1EB8.9090005@gmail.com> <20111227203008.GA13870@joana> <4EFA447C.3030906@gmail.com> <20111228012248.GC13870@joana> <20111228012850.GD13870@joana> <4EFA7696.6060506@gmail.com> <20111228155225.GA23292@joana> <1325090923.1965.282.camel@aeonflux> <4EFB957A.5070606@gmail.com> <1325113623.1965.289.camel@aeonflux>
+In-Reply-To: <1325113623.1965.289.camel@aeonflux>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.18.252]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.5.7110,1.0.211,0.0.0000
- definitions=2011-12-28_08:2011-12-28,2011-12-28,1970-01-01 signatures=0
-X-Proofpoint-Spam-Reason: safe
+X-Ziggo-spambar: ---
+X-Ziggo-spamscore: -3.6
+X-Ziggo-spamreport: ALL_TRUSTED=-1,BAYES_00=-1.9,FREEMAIL_FROM=0.5,PROLO_TRUST_RDNS=-3,RDNS_DYNAMIC=0.982,SPF_NEUTRAL=0.779
+X-Ziggo-Spam-Status: No
+X-Spam-Flag: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/11 3:42 PM, Andy Lutomirski wrote:
+On 29-12-11 00:07, Marcel Holtmann wrote:
 
-> Something like:
+>> By the way, while the bluetooth (2.0) spec seems to consist of a 1230
+>> page document that I am most certainly not going to study ...
+>>
+>> ... I couldn't help noticing that the HCI_Read_Local_Extended_Features
+>> command is in fact specified to return "The highest features page number
+>> which contains non-zero bits for the local device", and if I look at the
+>> above, it seems to indeed return max=0.
+>>
+>> Is it as such not in fact the case that the dongle is spec-compliant,
+>> whereas it's the linux code that neglects to check that return value in
+>> order to make sure that it requested a valid page?
 >
-> u64 __vdso_clock_gettime_ns(clock_t clockid, struct timens_extra *extra)
-> {
->    extra->padding = 0;
->    return<the time>;
-> }
+> the Linux code indeed is broken for not checking the returned page, but
+> it is broken for different reasons.
 >
->
-> might be okay.
+> However the expected result from the dongle would be an error code and
+> not just returning page 0 instead.
 
-I think you want s64 as the return type (for both 32 and 64 bit). This 
-is what I was trying to suggest as well.
+Okay. Just as an additional data point:
 
-  -Arun (Clicks the virtually non-existent like button)
+I came across the HCI_Read_Local_Supported_Commands command in the spec 
+a few pages up and quickly verified that the adapter doesn't in fact 
+deny support for the HCI_Read_Local_Extended_Features command.
+
+That is, after applying the below, I do get:
+
+hci_cc_read_local_commands:hci0 status 0x0
+hci_cc_read_local_commands:hci0 commands[14] 0xe8
+
+which does claim support for the command (bit 6 of commands[14]).
+
+Thought I'd check since if it hadn't, that would imply a certain fix but 
+that can't be used then.
+
+I'll stand by to test whatever final solution is arrived at.
+
+(although I don't personally care, linux 3.0.y and 3.1.y may want it as 
+well at that point I guess).
+
+Rene.
+
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 8fe270c..0ac87ea 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -622,6 +622,7 @@ static void hci_cc_read_local_commands(struct 
+hci_dev *hdev, struct sk_buff *skb
+                 goto done;
+
+         memcpy(hdev->commands, rp->commands, sizeof(hdev->commands));
++       BT_DBG("%s commands[14] 0x%x", hdev->name, rp->commands[14]);
+
+         if (test_bit(HCI_INIT, &hdev->flags) && (hdev->commands[5] & 0x10))
+                 hci_setup_link_policy(hdev);
