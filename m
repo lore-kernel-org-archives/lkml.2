@@ -1,103 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab1L2BDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 20:03:50 -0500
-Received: from mail.us.es ([193.147.175.20]:49399 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753544Ab1L2BDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 20:03:48 -0500
-Date: Thu, 29 Dec 2011 02:03:30 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: David Miller <davem@davemloft.net>
-Cc: rdunlap@xenotime.net, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 28 (nfnetlink)
-Message-ID: <20111229010330.GA2663@1984>
-References: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au>
- <4EFB87CC.6020105@xenotime.net>
- <20111228.153304.1267926241298522965.davem@davemloft.net>
+	id S1754830Ab1L2Bap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 20:30:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53417 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754413Ab1L2Bam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 20:30:42 -0500
+Date: Thu, 29 Dec 2011 01:30:39 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: lrg@ti.com, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] regulator: Add S5M8767 regulator driver
+Message-ID: <20111229013038.GA3684@opensource.wolfsonmicro.com>
+References: <1324971386-4447-1-git-send-email-sbkim73@samsung.com>
+ <1324971386-4447-2-git-send-email-sbkim73@samsung.com>
+ <05a301ccc4f4$fda97fb0$f8fc7f10$@com>
+ <20111228172431.GE26400@opensource.wolfsonmicro.com>
+ <000401ccc5b7$f0a16da0$d1e448e0$@com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="fUYQa+Pmc3FrFX/N"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111228.153304.1267926241298522965.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <000401ccc5b7$f0a16da0$d1e448e0$@com>
+X-Cookie: You too can wear a nose mitten.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 29, 2011 at 08:25:09AM +0900, Sangbeom Kim wrote:
+> On Wed, Dec 28, 2011 at 02:25 AM, Mark Brown wrote:
 
---fUYQa+Pmc3FrFX/N
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> > Looks like at least the first two of these got lost somewhere - perhaps
+> > an old version got resent by mistake?
 
-On Wed, Dec 28, 2011 at 03:33:04PM -0500, David Miller wrote:
-> From: Randy Dunlap <rdunlap@xenotime.net>
-> Date: Wed, 28 Dec 2011 13:19:08 -0800
-> 
-> > On 12/28/2011 01:18 AM, Stephen Rothwell wrote:
-> >> Hi all,
-> >> 
-> >> I got bored :-(  I also hate tree wide, flag day changes :-(
-> >> 
-> >> Changes since 20111222:
-> > 
-> > 
-> > 
-> > warning: (NETFILTER_XT_MATCH_NFACCT) selects NETFILTER_NETLINK_ACCT which has unmet direct dependencies (NET && INET && NETFILTER && NETFILTER_ADVANCED)
-> > 
-> > and then
-> > 
-> > ERROR: "nfnetlink_subsys_unregister" [net/netfilter/nfnetlink_acct.ko] undefined!
-> > ERROR: "nfnetlink_subsys_register" [net/netfilter/nfnetlink_acct.ko] undefined!
-> > 
-> > 
-> > Full randconfig file is attached.
-> 
-> Pablo please fix this, thanks.
+> I'm very sorry. It's my mistake.
+> I had already resent updated V3 Patch.
+> But My git server has some problem.
+> Delivery take a few hours or a few days. ¤Ð.¤Ð
 
-Please, apply the following patch.
-
---fUYQa+Pmc3FrFX/N
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-netfilter-Kconfig-fix-unmet-xt_nfacct-dependencies.patch"
-
->From 3e52c20b633f9c829eaa9fe693a0cbef10ac4d02 Mon Sep 17 00:00:00 2001
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-Date: Thu, 29 Dec 2011 01:50:25 +0100
-Subject: [PATCH] netfilter: Kconfig: fix unmet xt_nfacct dependencies
-
-warning: (NETFILTER_XT_MATCH_NFACCT) selects NETFILTER_NETLINK_ACCT which has
-nmet direct dependencies (NET && INET && NETFILTER && NETFILTER_ADVANCED)
-
-and then
-
-ERROR: "nfnetlink_subsys_unregister" [net/netfilter/nfnetlink_acct.ko]
-ndefined!
-ERROR: "nfnetlink_subsys_register" [net/netfilter/nfnetlink_acct.ko]
-+undefined!
-
-Reported-by: Randy Dunlap <rdunlap@xenotime.net>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
----
- net/netfilter/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-index f6275a0..f8ac4ef 100644
---- a/net/netfilter/Kconfig
-+++ b/net/netfilter/Kconfig
-@@ -908,7 +908,7 @@ config NETFILTER_XT_MATCH_MULTIPORT
- 
- config NETFILTER_XT_MATCH_NFACCT
- 	tristate '"nfacct" match support'
--	default m if NETFILTER_ADVANCED=n
-+	depends on NETFILTER_ADVANCED
- 	select NETFILTER_NETLINK_ACCT
- 	help
- 	  This option allows you to use the extended accounting through
--- 
-1.7.7.3
-
-
---fUYQa+Pmc3FrFX/N--
+Oh, I see.  I got a version of the previous version delivered
+immediately before this which I had thought was the version you were
+talking about.
