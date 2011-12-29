@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819Ab1L2XHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 18:07:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41430 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754747Ab1L2XHS (ORCPT
+	id S1754847Ab1L2XTf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 18:19:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49358 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab1L2XTe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 18:07:18 -0500
-Date: Thu, 29 Dec 2011 15:07:17 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: vmscan: fix typo in isolating lru pages
-Message-Id: <20111229150717.6c8ba825.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBAp=ooYGoDqJG0qkUhRuYTsSKG9h+bUvC0dvuVCvfkCgQ@mail.gmail.com>
-References: <CAJd=RBAp=ooYGoDqJG0qkUhRuYTsSKG9h+bUvC0dvuVCvfkCgQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 29 Dec 2011 18:19:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111229.170514.1766899380937848638.davem@davemloft.net>
+References: <CACPM=kXOddA+T6vQPijR6sh8x5cMO=4baKGeKxEmMKG896Lz4g@mail.gmail.com>
+	<20111229153902.GB21946@electric-eye.fr.zoreil.com>
+	<20111229183902.GC21946@electric-eye.fr.zoreil.com>
+	<20111229.170514.1766899380937848638.davem@davemloft.net>
+Date: Fri, 30 Dec 2011 00:19:33 +0100
+X-Google-Sender-Auth: rpKu080QoY4FxZkcXp7gWRKynXU
+Message-ID: <CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: David Miller <davem@davemloft.net>
+Cc: romieu@fr.zoreil.com, shemminger@vyatta.com, bhutchings@solarflare.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rl@hellgate.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Dec 2011 20:38:41 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
+2011/12/29 David Miller <davem@davemloft.net>:
+> From: Francois Romieu <romieu@fr.zoreil.com>
+> Date: Thu, 29 Dec 2011 19:39:02 +0100
+>
+>> Francois Romieu <romieu@fr.zoreil.com> :
+>> [...]
+>>> Feel free to try the extra "new year's eve week end is getting closer"
+>>> patch below (against net-next).
+>>>
+>>> You have been warned.
+>>
+>> The one below could be a bit better.
+>
+> Obviously you'll need to resolve the use of rp->lock as an IRQ safe lock
+> in {get,src}_wol() so that this lock is consistently used as a BH safe
+> lock.  Your "Huh?" comments make it clear you are aware of this TODO. :-)
+>
+> But other than that this patch looks good to me, just some testing and
+> debugging are needed.
 
-> It is not the tag page but the cursor page that we should process, and it looks
-> a typo.
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Hugh Dickins <hughd@google.com>
-> ---
-> 
-> --- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
-> +++ b/mm/vmscan.c	Thu Dec 29 20:23:30 2011
-> @@ -1231,13 +1231,13 @@ static unsigned long isolate_lru_pages(u
-> 
->  				mem_cgroup_lru_del(cursor_page);
->  				list_move(&cursor_page->lru, dst);
-> -				isolated_pages = hpage_nr_pages(page);
-> +				isolated_pages = hpage_nr_pages(cursor_page);
->  				nr_taken += isolated_pages;
->  				nr_lumpy_taken += isolated_pages;
->  				if (PageDirty(cursor_page))
->  					nr_lumpy_dirty += isolated_pages;
->  				scan++;
-> -				pfn += isolated_pages-1;
-> +				pfn += isolated_pages - 1;
->  			} else {
->  				/*
->  				 * Check if the page is freed already.
+I got it to boot, had to revert another patch introduced in 3.1.5
+that's causing alot of people problems, but thats another talk :)
 
-This problem looks pretty benign in mainline.  But Andrea's "mm:
-vmscan: check if we isolated a compound page during lumpy scan" came
-along and uses isolated_pages rather a lot more, including using it to
-advance across the pfn array.
+It boots fine, untill it tries to bring up an interface, which causes
+it to fails with a kernel panic.
+Here is the output of the panic:
+http://dev.gentoo.org/~gurligebis/kernel/panic.txt
 
-I jiggled your patch to suit current mainline then reworked everything
-else so we end up with this result.
+/Bjarke
 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
