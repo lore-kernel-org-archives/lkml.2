@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab1L2JDb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 04:03:31 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56138 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab1L2JD1 (ORCPT
+	id S1752084Ab1L2JGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 04:06:24 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51532 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab1L2JGW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 04:03:27 -0500
-Message-ID: <1325149400.7012.2.camel@phoenix>
-Subject: [PATCH 2/2] regulator: Fix checking return value of create_regulator
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 29 Dec 2011 17:03:20 +0800
-In-Reply-To: <1325149328.7012.1.camel@phoenix>
-References: <1325149328.7012.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 29 Dec 2011 04:06:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <4EE7E0E7.1020802@solonet.org.ua>
+References: <4EE7E0E7.1020802@solonet.org.ua>
+From: Vasily <anarsoul@gmail.com>
+Date: Thu, 29 Dec 2011 12:06:00 +0300
+Message-ID: <CA+E=qVdfwXMdcN6ENeermvdoq42W3=-WvLGqRSBSxRCt=zafwQ@mail.gmail.com>
+Subject: Re: [PATCH v4] s3c/s3c24xx: arm: leds: Make s3c24xx LEDS driver use
+ gpiolib. Fix error disabling pull during probe.
+To: Denis Kuzmenko <linux@solonet.org.ua>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-create_regulator() returns NULL on fail.
+2011/12/14 Denis Kuzmenko <linux@solonet.org.ua>:
+> Make s3c24xx LEDS driver use gpiolib. Fix error disabling pull during probe.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/core.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+So, what's the difference between s3c24xx_led and leds-gpio drivers now?
+Maybe it worth to convert s3c24xx_led users to leds-gpio and drop
+s3c24xx-led completely?
+I see no reason to keep two almost identical drivers in tree.
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index fb6ea9b..5e43906 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -985,9 +985,8 @@ static int set_supply(struct regulator_dev *rdev,
- 	rdev_info(rdev, "supplied by %s\n", rdev_get_name(supply_rdev));
- 
- 	rdev->supply = create_regulator(supply_rdev, &rdev->dev, "SUPPLY");
--	if (IS_ERR(rdev->supply)) {
--		err = PTR_ERR(rdev->supply);
--		rdev->supply = NULL;
-+	if (rdev->supply == NULL) {
-+		err = -ENOMEM;
- 		return err;
- 	}
- 
--- 
-1.7.5.4
-
-
-
+Regards,
+Vasily
