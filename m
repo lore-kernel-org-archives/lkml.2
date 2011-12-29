@@ -1,86 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190Ab1L2Dom (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 22:44:42 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:50416 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751392Ab1L2Doi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 22:44:38 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-a1-4efbe206e37c
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Denis Kuzmenko'" <linux@solonet.org.ua>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Ben Dooks'" <ben-linux@fluff.org>
-References: <4EE7BE5F.8020108@solonet.org.ua>
- <01e501ccc536$a6e58fb0$f4b0af10$%kim@samsung.com>
- <4EFB83DE.7080404@solonet.org.ua>
-In-reply-to: <4EFB83DE.7080404@solonet.org.ua>
-Subject: RE: [PATCHv2 resend] Fix compilation error when
- CONFIG_CPU_FREQ_S3C24XX_DEBUGFS selected.
-Date: Thu, 29 Dec 2011 12:44:04 +0900
-Message-id: <029101ccc5dc$1c718360$55548a20$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: AczFpNxnNJ7mwTCIRYOfHZc9Eg1JLwANmu+A
-X-Brightmail-Tracker: AAAAAA==
+	id S1753401Ab1L2Dwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 22:52:50 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:55679 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752173Ab1L2Dwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Dec 2011 22:52:46 -0500
+Message-ID: <4EFBE3D1.5030608@cn.fujitsu.com>
+Date: Thu, 29 Dec 2011 11:51:45 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: fengguang.wu@intel.com
+Subject: Bug in BLKBSZSET/GET ioctl ?
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-29 11:51:57,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-29 11:51:57,
+	Serialize complete at 2011-12-29 11:51:57
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Denis Kuzmenko wrote:
-> 
-> Hi Kukjin,
-> 
-Hi Denis,
+Hi all:
 
-> Your patch applies (note that it looks like your email-client have
+This is first reported to *libguestfs*: https://bugzilla.redhat.com/show_bug.cgi?id=624335
 
-Yeah, if over 76 columns, my e-mail client changes its line so maybe
-happened wrapped long lines.
+Then, I looked into upstream util-linux and it seems nothing wrong. I'm not convinced that it's a kernel bug.
 
-> wrapped long lines thus broke the path) and works OK. Looks good to me.
-> See some additional comments below.
-> 
-> On 12/28/2011 09:59 AM, Kukjin Kim wrote:
-> > Denis Kuzmenko wrote:
-> (snip)
-> >> +	depends on CPU_FREQ_S3C24XX && (S3C2410_IOTIMING ||
-> >> S3C2412_IOTIMING)
-> >
-> > As you know, CONFIG_CPU_FREQ_S3C24XX_IODEBUG is for enabling of
-> > s3c_freq_iodbg() and there is no problem when
-> CONFIG_S3C241{0,2}_IOTIMING is
-> > not selected, even though s3c_freq_iodbg() is used only at
-> > s3c2410-iotiming.c now. So this is not necessary to fix the problem you
-> > said.
-> 
-> I'm OK with this approach, however I don't see any future use of
-> s3c_freq_iodbg() without s3c2410-iotiming.c. But it's not anyway
-> critical so please pick any variant which you like.
-> 
-Yes. I think we need to sort out the CPUFREQ on S3C24XX next time :)
+produce:
 
-(snip)
+---
+# ./util-linux/disk-utils/blockdev --getbsz /dev/sda6
+4096
+# ./util-linux/disk-utils/blockdev --setbsz 2048 /dev/sda6
+# ./util-linux/disk-utils/blockdev --getbsz /dev/sda6
+4096
+# ./util-linux/disk-utils/blockdev --setbsz 512 /dev/sda6
+# ./util-linux/disk-utils/blockdev --getbsz /dev/sda6
+4096
 
-> (snip)
-> > So how about at below?
-> > If you're ok, will send before v3.2.
-> 
-> So, as already said, I have no objections.
-> And thank you for review.
-> 
+---
 
-Thanks and Happy New Year!
+I'm not sure if it is related to write-back, but still CCed to Fengguang.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
 
+
+Thanks,
+-Wanlong Gao
