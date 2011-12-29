@@ -1,38 +1,35 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1753976Ab1LVIaD (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Thu, 22 Dec 2011 03:30:03 -0500
-Received: from smtpf6.forptr.21cn.com ([59.36.102.42]:8241 "EHLO 21cn.com"
-        rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-        id S1753536Ab1LVIaA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Thu, 22 Dec 2011 03:30:00 -0500
-HMM_SOURCE_IP: 10.27.2.8:43714.2069141155
-HMM_ATTACHE_NUM: 0000
-HMM_SOURCE_TYPE: SMTP
-0/X-Brightmail-Tracker: AAAAAA==
-1/X-Total-Score: 0:
-X-FILTER-SCORE: to=<linux-kernel@vger.kernel.orglinuxmail@tom.comlinuxmine@gmail.comlinux-ntfs-dev@lists.sourceforge.net>, score=<1324542578WB6nbQRRRRRxRR9RRoRx9oRRRHHRRRRRRRRRRRRRRRRR>  
-Reply-To: <xtay131415@126.com>
-Message-ID: <4030ACE14E19CD791BCFC7551E74E406@bcotccml>
-From: =?utf-8?B?5bygLueUnw==?= <qimingliu497@21cn.com>
-To: <linux-kernel@vger.kernel.org>, <linuxmail@tom.com>,
-        <linuxmine@gmail.com>, <linux-ntfs-dev@lists.sourceforge.net>
-Subject: 2011-12-22
-Date: Thu, 22 Dec 2011 16:28:35 +0800
+        id S1753060Ab1L2UFH (ORCPT <rfc822;robin@linux-mips.org> + 2 others);
+        Thu, 29 Dec 2011 15:05:07 -0500
+Received: from ims-m12.mx.aol.com ([64.12.207.145]:36993 "EHLO
+        ims-m12.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+        with ESMTP id S1752018Ab1L2UFD convert rfc822-to-8bit (ORCPT
+        <rfc822;linux-kernel@vger.kernel.org>);
+        Thu, 29 Dec 2011 15:05:03 -0500
+To: lingsd@gmail.com, lseaman@mindspring.com, lintangquan@126.com,
+        linux-kernel@vger.kernel.org, lipeng3818862@hotmail.com,
+        liqiang1855@hotmail.com, lagoodyear@trane.com
+Content-Transfer-Encoding: 8BIT
+Subject: 
+X-MB-Message-Source: WebUI
+X-MB-Message-Type: User
 MIME-Version: 1.0
-Content-Type: text/plain;
-        charset="utf-8"
-Content-Transfer-Encoding: base64
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+From: mcpmalachi@aim.com
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: AOL Webmail 35138-MOBILE
+Message-Id: <8CE947C183E6E66-F28-4D467@webmail-d163.sysops.aol.com>
+X-Originating-IP: [149.174.17.218]
+Date: Thu, 29 Dec 2011 15:03:40 -0500 (EST)
+x-aol-global-disposition: S
+X-AOL-SCOLL-SCORE: 0:2:158786496:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d29094efcc79c0371
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-ICAgDQoNCiAgICAgICAgICA2Li4u5Y2O5oSP56iO5Yqh5YWs5Y+45LiT5Lia5Luj55CG5YWo5Zu9
-5ZCE55yB5biCPD7mma4t6YCaLeeoji3lmIwsPD4NCg0KICDngrnmlbDlupUs6aqM6K+B5peg6Zeu
-6aKY5ZCO5LuY5qy+LDEwMCXmlL7lv4Mu5aaC5pyJ6ZyA5Y+v5p2l55S15rS96LCILi4uDQoNCiAg
-5bygYFI6MS4zLjQuMi44LjYuNi45LjUuNS45ICAgIFFROjkgMCA4IDEgOSA5IDUgOCA4DQoNCg0K
-DQoNCg0K
+.. http://rancholacienega.com/viagrachristmas.html?oyahooID=69jh6
+
 
