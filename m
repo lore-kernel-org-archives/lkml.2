@@ -1,77 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab1L2EmZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 28 Dec 2011 23:42:25 -0500
-Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:61835 "EHLO
-	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751251Ab1L2EmX (ORCPT
+	id S1752556Ab1L2Exd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Dec 2011 23:53:33 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38879 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750829Ab1L2Exa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 28 Dec 2011 23:42:23 -0500
-Date: Thu, 29 Dec 2011 04:42:22 +0000
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
-Subject: [PATCH] squashfs: add missing block release on error condition
-Message-ID: <4efbefae.oAXMu0PI4fqz/DTf%phillip@lougher.demon.co.uk>
-User-Agent: Heirloom mailx 12.5 6/20/10
+	Wed, 28 Dec 2011 23:53:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4EFB2B8A.9010902@gmail.com>
+References: <4EFB2B8A.9010902@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 28 Dec 2011 21:53:08 -0700
+X-Google-Sender-Auth: rUNm1UhmqgSQwb1QNoeoUq9-4qw
+Message-ID: <CACxGe6tM9dGGccUhhOEsah+8P=1XjYVh=KXy8J+V0pVVdoZrDA@mail.gmail.com>
+Subject: Re: [PULL] Devicetree for 3.3
+To: Rob Herring <robherring2@gmail.com>
+Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Dooks <ben-linux@fluff.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-squashfs_read_metadata forgets to release the cache block if
-an error has occurred.
+Merged, thanks.
 
-Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
----
- fs/squashfs/cache.c |   19 +++++++++++++------
- 1 files changed, 13 insertions(+), 6 deletions(-)
+g.
 
-diff --git a/fs/squashfs/cache.c b/fs/squashfs/cache.c
-index f744be9..ea6e798 100644
---- a/fs/squashfs/cache.c
-+++ b/fs/squashfs/cache.c
-@@ -332,17 +332,20 @@ int squashfs_read_metadata(struct super_block *sb, void *buffer,
- 		u64 *block, int *offset, int length)
- {
- 	struct squashfs_sb_info *msblk = sb->s_fs_info;
--	int bytes, copied = length;
-+	int bytes, res = length;
- 	struct squashfs_cache_entry *entry;
- 
- 	TRACE("Entered squashfs_read_metadata [%llx:%x]\n", *block, *offset);
- 
- 	while (length) {
- 		entry = squashfs_cache_get(sb, msblk->block_cache, *block, 0);
--		if (entry->error)
--			return entry->error;
--		else if (*offset >= entry->length)
--			return -EIO;
-+		if (entry->error) {
-+			res = entry->error;
-+			goto error;
-+		} else if (*offset >= entry->length) {
-+			res = -EIO;
-+			goto error;
-+		}
- 
- 		bytes = squashfs_copy_data(buffer, entry, *offset, length);
- 		if (buffer)
-@@ -358,7 +361,11 @@ int squashfs_read_metadata(struct super_block *sb, void *buffer,
- 		squashfs_cache_put(entry);
- 	}
- 
--	return copied;
-+	return res;
-+
-+error:
-+	squashfs_cache_put(entry);
-+	return res;
- }
- 
- 
+On Wed, Dec 28, 2011 at 7:45 AM, Rob Herring <robherring2@gmail.com> wrote:
+> Grant,
+>
+> Please pull device tree updates for 3.3. Pretty much a random collection
+> of minor changes. I'm including i2c-designware DT binding support here
+> as I've gotten no response from Ben.
+>
+> Rob
+>
+> The following changes since commit 384703b8e6cd4c8ef08512e596024e028c91c339:
+>
+>  Linux 3.2-rc6 (2011-12-16 18:36:26 -0800)
+>
+> are available in the git repository at:
+>  git://sources.calxeda.com/kernel/linux.git for-grant
+>
+> Benoit Cousson (1):
+>      of/base: Take NULL string into account for property with multiple
+> strings
+>
+> David Daney (1):
+>      OF/device-tree: Add some entries to vendor-prefixes.txt
+>
+> Dong Aisheng (1):
+>      dt: reform for_each_property to for_each_property_of_node
+>
+> Olof Johansson (1):
+>      dt/i2c: Enumerate some of the known trivial i2c devices
+>
+> Rob Herring (3):
+>      i2c-designware: add OF binding support
+>      dt: add empty of_get_node/of_put_node functions
+>      irq: check domain hwirq range for DT translate
+>
+> Sam Ravnborg (1):
+>      of/pdt: fix section mismatch warning
+>
+> Uwe Kleine-König (1):
+>      ARM/of: allow *machine_desc.dt_compat to be const
+>
+>  .../devicetree/bindings/i2c/i2c-designware.txt     |   22 ++++++++
+>  .../devicetree/bindings/i2c/trivial-devices.txt    |   58
+> ++++++++++++++++++++
+>  .../devicetree/bindings/vendor-prefixes.txt        |    3 +
+>  arch/arm/include/asm/mach/arch.h                   |    2 +-
+>  drivers/i2c/busses/i2c-designware-platdrv.c        |   12 ++++
+>  drivers/of/base.c                                  |   10 ++--
+>  drivers/of/fdt.c                                   |    4 +-
+>  drivers/of/pdt.c                                   |    2 +-
+>  include/linux/of.h                                 |   33 ++++++------
+>  include/linux/of_fdt.h                             |    4 +-
+>  kernel/irq/irqdomain.c                             |    3 +
+>  11 files changed, 124 insertions(+), 29 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-designware.txt
+>  create mode 100644
+> Documentation/devicetree/bindings/i2c/trivial-devices.txt
+
+
+
 -- 
-1.7.5.4
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
