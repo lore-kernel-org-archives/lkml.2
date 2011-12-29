@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1L2WFU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 17:05:20 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42137 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754314Ab1L2WFQ (ORCPT
+	id S1754786Ab1L2WGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 17:06:33 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:37247 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab1L2WGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 17:05:16 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: broonie@opensource.wolfsonmicro.com
-Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH v2 2/2] regulator: mc13892: Convert to devm_kzalloc()
-Date: Thu, 29 Dec 2011 20:05:00 -0200
-Message-Id: <1325196300-3930-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1325174163-27955-2-git-send-email-festevam@gmail .com>
-References: <1325174163-27955-2-git-send-email-festevam@gmail .com>
+	Thu, 29 Dec 2011 17:06:30 -0500
+Date: Thu, 29 Dec 2011 17:05:14 -0500 (EST)
+Message-Id: <20111229.170514.1766899380937848638.davem@davemloft.net>
+To: romieu@fr.zoreil.com
+Cc: gurligebis@gentoo.org, shemminger@vyatta.com, bhutchings@solarflare.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rl@hellgate.ch
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on
+ low-end broads.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20111229183902.GC21946@electric-eye.fr.zoreil.com>
+References: <CACPM=kXOddA+T6vQPijR6sh8x5cMO=4baKGeKxEmMKG896Lz4g@mail.gmail.com>
+	<20111229153902.GB21946@electric-eye.fr.zoreil.com>
+	<20111229183902.GC21946@electric-eye.fr.zoreil.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Dec 2011 14:05:18 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert mc13892-regulator driver to use devm_kzalloc().
+From: Francois Romieu <romieu@fr.zoreil.com>
+Date: Thu, 29 Dec 2011 19:39:02 +0100
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
-Changes since v1:
-- Rebased against latest linux-next
+> Francois Romieu <romieu@fr.zoreil.com> :
+> [...]
+>> Feel free to try the extra "new year's eve week end is getting closer"
+>> patch below (against net-next).
+>> 
+>> You have been warned.
+> 
+> The one below could be a bit better.
 
- drivers/regulator/mc13892-regulator.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+Obviously you'll need to resolve the use of rp->lock as an IRQ safe lock
+in {get,src}_wol() so that this lock is consistently used as a BH safe
+lock.  Your "Huh?" comments make it clear you are aware of this TODO. :-)
 
-diff --git a/drivers/regulator/mc13892-regulator.c b/drivers/regulator/mc13892-regulator.c
-index 46bfa4a..e8cfc99 100644
---- a/drivers/regulator/mc13892-regulator.c
-+++ b/drivers/regulator/mc13892-regulator.c
-@@ -538,7 +538,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
- 	if (num_regulators <= 0)
- 		return -EINVAL;
- 
--	priv = kzalloc(sizeof(*priv) +
-+	priv = devm_kzalloc(&pdev->dev, sizeof(*priv) +
- 		num_regulators * sizeof(priv->regulators[0]),
- 		GFP_KERNEL);
- 	if (!priv)
-@@ -615,7 +615,6 @@ err:
- 
- err_free:
- 	mc13xxx_unlock(mc13892);
--	kfree(priv);
- 
- 	return ret;
- }
-@@ -630,7 +629,6 @@ static int __devexit mc13892_regulator_remove(struct platform_device *pdev)
- 	for (i = 0; i < priv->num_regulators; i++)
- 		regulator_unregister(priv->regulators[i]);
- 
--	kfree(priv);
- 	return 0;
- }
- 
--- 
-1.7.1
-
+But other than that this patch looks good to me, just some testing and
+debugging are needed.
