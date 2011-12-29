@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab1L2UyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 15:54:23 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39816 "EHLO
+	id S1754543Ab1L2UzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 15:55:05 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39873 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab1L2UyV (ORCPT
+	with ESMTP id S1753579Ab1L2UzB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 15:54:21 -0500
-Date: Thu, 29 Dec 2011 12:53:52 -0800
+	Thu, 29 Dec 2011 15:55:01 -0500
+Date: Thu, 29 Dec 2011 12:54:39 -0800
 From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-1b5495043d5bc058def21f9b66fd8feaa794eb44@git.kernel.org>
+Message-ID: <tip-efad14150a0b4429f37da7245001a8096ef7ee38@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
         robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
@@ -18,11 +18,11 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
         robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
         mingo@elte.hu
-In-Reply-To: <1323248577-11268-4-git-send-email-robert.richter@amd.com>
-References: <1323248577-11268-4-git-send-email-robert.richter@amd.com>
+In-Reply-To: <1323248577-11268-5-git-send-email-robert.richter@amd.com>
+References: <1323248577-11268-5-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Moving code in some files
-Git-Commit-ID: 1b5495043d5bc058def21f9b66fd8feaa794eb44
+Subject: [tip:perf/core] perf report: Accept fifos as input file
+Git-Commit-ID: efad14150a0b4429f37da7245001a8096ef7ee38
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,605 +31,431 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:53:58 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:54:45 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1b5495043d5bc058def21f9b66fd8feaa794eb44
-Gitweb:     http://git.kernel.org/tip/1b5495043d5bc058def21f9b66fd8feaa794eb44
+Commit-ID:  efad14150a0b4429f37da7245001a8096ef7ee38
+Gitweb:     http://git.kernel.org/tip/efad14150a0b4429f37da7245001a8096ef7ee38
 Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Wed, 7 Dec 2011 10:02:53 +0100
+AuthorDate: Wed, 7 Dec 2011 10:02:54 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 23 Dec 2011 16:58:22 -0200
+CommitDate: Fri, 23 Dec 2011 17:01:03 -0200
 
-perf tools: Moving code in some files
+perf report: Accept fifos as input file
 
-Needed for later changes. No modified functionality.
+The default input file for perf report is not handled the same way as
+perf record does it for its output file. This leads to unexpected
+behavior of perf report, etc. E.g.:
+
+ # perf record -a -e cpu-cycles sleep 2 | perf report | cat
+ failed to open perf.data: No such file or directory  (try 'perf record' first)
+
+While perf record writes to a fifo, perf report expects perf.data to be
+read. This patch changes this to accept fifos as input file.
+
+Applies to the following commands:
+
+ perf annotate
+ perf buildid-list
+ perf evlist
+ perf kmem
+ perf lock
+ perf report
+ perf sched
+ perf script
+ perf timechart
+
+Also fixes char const* -> const char* type declaration for filename
+strings.
+
+v2:
+* Prevent potential null pointer access to input_name in
+  builtin-report.c. Needed due to removal of patch "perf report: Setup
+  browser if stdout is a pipe"
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1323248577-11268-4-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1323248577-11268-5-git-send-email-robert.richter@amd.com
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-buildid-list.c |   36 ++--
- tools/perf/util/header.c          |  495 ++++++++++++++++++-------------------
- 2 files changed, 264 insertions(+), 267 deletions(-)
+ tools/perf/Documentation/perf-annotate.txt     |    2 +-
+ tools/perf/Documentation/perf-buildid-list.txt |    2 +-
+ tools/perf/Documentation/perf-evlist.txt       |    2 +-
+ tools/perf/Documentation/perf-kmem.txt         |    2 +-
+ tools/perf/Documentation/perf-lock.txt         |    2 +-
+ tools/perf/Documentation/perf-report.txt       |    2 +-
+ tools/perf/Documentation/perf-sched.txt        |    2 +-
+ tools/perf/Documentation/perf-script.txt       |    2 +-
+ tools/perf/Documentation/perf-timechart.txt    |    2 +-
+ tools/perf/builtin-annotate.c                  |    3 +--
+ tools/perf/builtin-buildid-list.c              |   19 ++++++++++---------
+ tools/perf/builtin-evlist.c                    |    2 +-
+ tools/perf/builtin-kmem.c                      |    2 +-
+ tools/perf/builtin-lock.c                      |    2 +-
+ tools/perf/builtin-report.c                    |   13 ++++++++++---
+ tools/perf/builtin-sched.c                     |    2 +-
+ tools/perf/builtin-script.c                    |    4 ++--
+ tools/perf/builtin-timechart.c                 |    4 ++--
+ tools/perf/util/session.c                      |   15 +++++++++++++--
+ 19 files changed, 51 insertions(+), 33 deletions(-)
 
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 476029d..c89f9e1 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -22,7 +22,7 @@ OPTIONS
+ -------
+ -i::
+ --input=::
+-        Input file name. (default: perf.data)
++        Input file name. (default: perf.data unless stdin is a fifo)
+ 
+ -d::
+ --dsos=<dso[,dso...]>::
+diff --git a/tools/perf/Documentation/perf-buildid-list.txt b/tools/perf/Documentation/perf-buildid-list.txt
+index cc22325..25c52ef 100644
+--- a/tools/perf/Documentation/perf-buildid-list.txt
++++ b/tools/perf/Documentation/perf-buildid-list.txt
+@@ -26,7 +26,7 @@ OPTIONS
+         Show only DSOs with hits.
+ -i::
+ --input=::
+-        Input file name. (default: perf.data)
++        Input file name. (default: perf.data unless stdin is a fifo)
+ -f::
+ --force::
+ 	Don't do ownership validation.
+diff --git a/tools/perf/Documentation/perf-evlist.txt b/tools/perf/Documentation/perf-evlist.txt
+index 0cada9e..0507ec7 100644
+--- a/tools/perf/Documentation/perf-evlist.txt
++++ b/tools/perf/Documentation/perf-evlist.txt
+@@ -18,7 +18,7 @@ OPTIONS
+ -------
+ -i::
+ --input=::
+-        Input file name. (default: perf.data)
++        Input file name. (default: perf.data unless stdin is a fifo)
+ 
+ SEE ALSO
+ --------
+diff --git a/tools/perf/Documentation/perf-kmem.txt b/tools/perf/Documentation/perf-kmem.txt
+index a52fcde..7c8fbbf 100644
+--- a/tools/perf/Documentation/perf-kmem.txt
++++ b/tools/perf/Documentation/perf-kmem.txt
+@@ -23,7 +23,7 @@ OPTIONS
+ -------
+ -i <file>::
+ --input=<file>::
+-	Select the input file (default: perf.data)
++	Select the input file (default: perf.data unless stdin is a fifo)
+ 
+ --caller::
+ 	Show per-callsite statistics
+diff --git a/tools/perf/Documentation/perf-lock.txt b/tools/perf/Documentation/perf-lock.txt
+index 4a26a2f..d6b2a4f 100644
+--- a/tools/perf/Documentation/perf-lock.txt
++++ b/tools/perf/Documentation/perf-lock.txt
+@@ -29,7 +29,7 @@ COMMON OPTIONS
+ 
+ -i::
+ --input=<file>::
+-        Input file name.
++        Input file name. (default: perf.data unless stdin is a fifo)
+ 
+ -v::
+ --verbose::
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 35af0dc..9b430e9 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -19,7 +19,7 @@ OPTIONS
+ -------
+ -i::
+ --input=::
+-        Input file name. (default: perf.data)
++        Input file name. (default: perf.data unless stdin is a fifo)
+ 
+ -v::
+ --verbose::
+diff --git a/tools/perf/Documentation/perf-sched.txt b/tools/perf/Documentation/perf-sched.txt
+index 5b212b5..8ff4df9 100644
+--- a/tools/perf/Documentation/perf-sched.txt
++++ b/tools/perf/Documentation/perf-sched.txt
+@@ -40,7 +40,7 @@ OPTIONS
+ -------
+ -i::
+ --input=<file>::
+-        Input file name. (default: perf.data)
++        Input file name. (default: perf.data unless stdin is a fifo)
+ 
+ -v::
+ --verbose::
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index 7f61eaa..2f6cef4 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -106,7 +106,7 @@ OPTIONS
+ 
+ -i::
+ --input=::
+-        Input file name.
++        Input file name. (default: perf.data unless stdin is a fifo)
+ 
+ -d::
+ --debug-mode::
+diff --git a/tools/perf/Documentation/perf-timechart.txt b/tools/perf/Documentation/perf-timechart.txt
+index d7b79e2..1632b0e 100644
+--- a/tools/perf/Documentation/perf-timechart.txt
++++ b/tools/perf/Documentation/perf-timechart.txt
+@@ -27,7 +27,7 @@ OPTIONS
+         Select the output file (default: output.svg)
+ -i::
+ --input=::
+-        Select the input file (default: perf.data)
++        Select the input file (default: perf.data unless stdin is a fifo)
+ -w::
+ --width=::
+         Select the width of the SVG file (default: 1000)
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index d449645..214ba7f 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -215,7 +215,7 @@ static int __cmd_annotate(struct perf_annotate *ann)
+ 	}
+ 
+ 	if (total_nr_samples == 0) {
+-		ui__warning("The %s file has no samples!\n", ann->input_name);
++		ui__warning("The %s file has no samples!\n", session->filename);
+ 		goto out_delete;
+ 	}
+ out_delete:
+@@ -250,7 +250,6 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __used)
+ 			.ordered_samples = true,
+ 			.ordering_requires_timestamps = true,
+ 		},
+-		.input_name = "perf.data",
+ 	};
+ 	const struct option options[] = {
+ 	OPT_STRING('i', "input", &annotate.input_name, "file",
 diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index cb690a6..4895668 100644
+index 4895668..5248046 100644
 --- a/tools/perf/builtin-buildid-list.c
 +++ b/tools/perf/builtin-buildid-list.c
-@@ -39,24 +39,6 @@ static const struct option options[] = {
- 	OPT_END()
- };
+@@ -18,7 +18,7 @@
  
--static int perf_session__list_build_ids(void)
--{
--	struct perf_session *session;
--
--	session = perf_session__new(input_name, O_RDONLY, force, false,
--				    &build_id__mark_dso_hit_ops);
--	if (session == NULL)
--		return -1;
--
--	if (with_hits)
--		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
--
--	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
--
--	perf_session__delete(session);
--	return 0;
--}
--
- static int sysfs__fprintf_build_id(FILE *fp)
+ #include <libelf.h>
+ 
+-static char const *input_name = "perf.data";
++static const char *input_name;
+ static bool force;
+ static bool show_kernel;
+ static bool with_hits;
+@@ -71,16 +71,24 @@ static int perf_session__list_build_ids(void)
  {
- 	u8 kallsyms_build_id[BUILD_ID_SIZE];
-@@ -85,6 +67,24 @@ static int filename__fprintf_build_id(const char *name, FILE *fp)
- 	return fprintf(fp, "%s\n", sbuild_id);
- }
+ 	struct perf_session *session;
  
-+static int perf_session__list_build_ids(void)
-+{
-+	struct perf_session *session;
++	elf_version(EV_CURRENT);
 +
-+	session = perf_session__new(input_name, O_RDONLY, force, false,
-+				    &build_id__mark_dso_hit_ops);
-+	if (session == NULL)
-+		return -1;
-+
-+	if (with_hits)
-+		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
-+
-+	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
-+
-+	perf_session__delete(session);
-+	return 0;
-+}
-+
- static int __cmd_buildid_list(void)
- {
- 	if (show_kernel)
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 428a4a2..609d79b 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -28,9 +28,6 @@ static struct perf_trace_event_type *events;
- static u32 header_argc;
- static const char **header_argv;
+ 	session = perf_session__new(input_name, O_RDONLY, force, false,
+ 				    &build_id__mark_dso_hit_ops);
+ 	if (session == NULL)
+ 		return -1;
  
--static int dsos__write_buildid_table(struct perf_header *header, int fd);
--static int perf_session__cache_build_ids(struct perf_session *session);
--
- int perf_header__push_event(u64 id, const char *name)
- {
- 	if (strlen(name) > MAX_EVENT_NAME)
-@@ -187,6 +184,252 @@ perf_header__set_cmdline(int argc, const char **argv)
- 	return 0;
- }
- 
-+#define dsos__for_each_with_build_id(pos, head)	\
-+	list_for_each_entry(pos, head, node)	\
-+		if (!pos->has_build_id)		\
-+			continue;		\
-+		else
-+
-+static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
-+				u16 misc, int fd)
-+{
-+	struct dso *pos;
-+
-+	dsos__for_each_with_build_id(pos, head) {
-+		int err;
-+		struct build_id_event b;
-+		size_t len;
-+
-+		if (!pos->hit)
-+			continue;
-+		len = pos->long_name_len + 1;
-+		len = ALIGN(len, NAME_ALIGN);
-+		memset(&b, 0, sizeof(b));
-+		memcpy(&b.build_id, pos->build_id, sizeof(pos->build_id));
-+		b.pid = pid;
-+		b.header.misc = misc;
-+		b.header.size = sizeof(b) + len;
-+		err = do_write(fd, &b, sizeof(b));
-+		if (err < 0)
-+			return err;
-+		err = write_padded(fd, pos->long_name,
-+				   pos->long_name_len + 1, len);
-+		if (err < 0)
-+			return err;
-+	}
-+
-+	return 0;
-+}
-+
-+static int machine__write_buildid_table(struct machine *machine, int fd)
-+{
-+	int err;
-+	u16 kmisc = PERF_RECORD_MISC_KERNEL,
-+	    umisc = PERF_RECORD_MISC_USER;
-+
-+	if (!machine__is_host(machine)) {
-+		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
-+		umisc = PERF_RECORD_MISC_GUEST_USER;
-+	}
-+
-+	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
-+					  kmisc, fd);
-+	if (err == 0)
-+		err = __dsos__write_buildid_table(&machine->user_dsos,
-+						  machine->pid, umisc, fd);
-+	return err;
-+}
-+
-+static int dsos__write_buildid_table(struct perf_header *header, int fd)
-+{
-+	struct perf_session *session = container_of(header,
-+			struct perf_session, header);
-+	struct rb_node *nd;
-+	int err = machine__write_buildid_table(&session->host_machine, fd);
-+
-+	if (err)
-+		return err;
-+
-+	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+		err = machine__write_buildid_table(pos, fd);
-+		if (err)
-+			break;
-+	}
-+	return err;
-+}
-+
-+int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
-+			  const char *name, bool is_kallsyms)
-+{
-+	const size_t size = PATH_MAX;
-+	char *realname, *filename = zalloc(size),
-+	     *linkname = zalloc(size), *targetname;
-+	int len, err = -1;
-+
-+	if (is_kallsyms) {
-+		if (symbol_conf.kptr_restrict) {
-+			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
-+			return 0;
-+		}
-+		realname = (char *)name;
-+	} else
-+		realname = realpath(name, NULL);
-+
-+	if (realname == NULL || filename == NULL || linkname == NULL)
-+		goto out_free;
-+
-+	len = snprintf(filename, size, "%s%s%s",
-+		       debugdir, is_kallsyms ? "/" : "", realname);
-+	if (mkdir_p(filename, 0755))
-+		goto out_free;
-+
-+	snprintf(filename + len, sizeof(filename) - len, "/%s", sbuild_id);
-+
-+	if (access(filename, F_OK)) {
-+		if (is_kallsyms) {
-+			 if (copyfile("/proc/kallsyms", filename))
-+				goto out_free;
-+		} else if (link(realname, filename) && copyfile(name, filename))
-+			goto out_free;
-+	}
-+
-+	len = snprintf(linkname, size, "%s/.build-id/%.2s",
-+		       debugdir, sbuild_id);
-+
-+	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
-+		goto out_free;
-+
-+	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
-+	targetname = filename + strlen(debugdir) - 5;
-+	memcpy(targetname, "../..", 5);
-+
-+	if (symlink(targetname, linkname) == 0)
-+		err = 0;
-+out_free:
-+	if (!is_kallsyms)
-+		free(realname);
-+	free(filename);
-+	free(linkname);
-+	return err;
-+}
-+
-+static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
-+				 const char *name, const char *debugdir,
-+				 bool is_kallsyms)
-+{
-+	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
-+
-+	build_id__sprintf(build_id, build_id_size, sbuild_id);
-+
-+	return build_id_cache__add_s(sbuild_id, debugdir, name, is_kallsyms);
-+}
-+
-+int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
-+{
-+	const size_t size = PATH_MAX;
-+	char *filename = zalloc(size),
-+	     *linkname = zalloc(size);
-+	int err = -1;
-+
-+	if (filename == NULL || linkname == NULL)
-+		goto out_free;
-+
-+	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
-+		 debugdir, sbuild_id, sbuild_id + 2);
-+
-+	if (access(linkname, F_OK))
-+		goto out_free;
-+
-+	if (readlink(linkname, filename, size - 1) < 0)
-+		goto out_free;
-+
-+	if (unlink(linkname))
-+		goto out_free;
-+
 +	/*
-+	 * Since the link is relative, we must make it absolute:
++	 * See if this is an ELF file first:
 +	 */
-+	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
-+		 debugdir, sbuild_id, filename);
++	if (filename__fprintf_build_id(session->filename, stdout))
++		goto out;
 +
-+	if (unlink(linkname))
-+		goto out_free;
-+
-+	err = 0;
-+out_free:
-+	free(filename);
-+	free(linkname);
-+	return err;
-+}
-+
-+static int dso__cache_build_id(struct dso *dso, const char *debugdir)
-+{
-+	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
-+
-+	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
-+				     dso->long_name, debugdir, is_kallsyms);
-+}
-+
-+static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
-+{
-+	struct dso *pos;
-+	int err = 0;
-+
-+	dsos__for_each_with_build_id(pos, head)
-+		if (dso__cache_build_id(pos, debugdir))
-+			err = -1;
-+
-+	return err;
-+}
-+
-+static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
-+{
-+	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
-+	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
-+	return ret;
-+}
-+
-+static int perf_session__cache_build_ids(struct perf_session *session)
-+{
-+	struct rb_node *nd;
-+	int ret;
-+	char debugdir[PATH_MAX];
-+
-+	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
-+
-+	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
-+		return -1;
-+
-+	ret = machine__cache_build_ids(&session->host_machine, debugdir);
-+
-+	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+		ret |= machine__cache_build_ids(pos, debugdir);
-+	}
-+	return ret ? -1 : 0;
-+}
-+
-+static bool machine__read_build_ids(struct machine *machine, bool with_hits)
-+{
-+	bool ret = __dsos__read_build_ids(&machine->kernel_dsos, with_hits);
-+	ret |= __dsos__read_build_ids(&machine->user_dsos, with_hits);
-+	return ret;
-+}
-+
-+static bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
-+{
-+	struct rb_node *nd;
-+	bool ret = machine__read_build_ids(&session->host_machine, with_hits);
-+
-+	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
-+		struct machine *pos = rb_entry(nd, struct machine, rb_node);
-+		ret |= machine__read_build_ids(pos, with_hits);
-+	}
-+
-+	return ret;
-+}
-+
- static int write_trace_info(int fd, struct perf_header *h __used,
- 			    struct perf_evlist *evlist)
- {
-@@ -1136,252 +1379,6 @@ int perf_header__fprintf_info(struct perf_session *session, FILE *fp, bool full)
+ 	if (with_hits)
+ 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
+ 
+ 	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
+-
++out:
+ 	perf_session__delete(session);
  	return 0;
  }
+@@ -90,13 +98,6 @@ static int __cmd_buildid_list(void)
+ 	if (show_kernel)
+ 		return sysfs__fprintf_build_id(stdout);
  
--#define dsos__for_each_with_build_id(pos, head)	\
--	list_for_each_entry(pos, head, node)	\
--		if (!pos->has_build_id)		\
--			continue;		\
--		else
--
--static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
--				u16 misc, int fd)
--{
--	struct dso *pos;
--
--	dsos__for_each_with_build_id(pos, head) {
--		int err;
--		struct build_id_event b;
--		size_t len;
--
--		if (!pos->hit)
--			continue;
--		len = pos->long_name_len + 1;
--		len = ALIGN(len, NAME_ALIGN);
--		memset(&b, 0, sizeof(b));
--		memcpy(&b.build_id, pos->build_id, sizeof(pos->build_id));
--		b.pid = pid;
--		b.header.misc = misc;
--		b.header.size = sizeof(b) + len;
--		err = do_write(fd, &b, sizeof(b));
--		if (err < 0)
--			return err;
--		err = write_padded(fd, pos->long_name,
--				   pos->long_name_len + 1, len);
--		if (err < 0)
--			return err;
--	}
--
--	return 0;
--}
--
--static int machine__write_buildid_table(struct machine *machine, int fd)
--{
--	int err;
--	u16 kmisc = PERF_RECORD_MISC_KERNEL,
--	    umisc = PERF_RECORD_MISC_USER;
--
--	if (!machine__is_host(machine)) {
--		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
--		umisc = PERF_RECORD_MISC_GUEST_USER;
--	}
--
--	err = __dsos__write_buildid_table(&machine->kernel_dsos, machine->pid,
--					  kmisc, fd);
--	if (err == 0)
--		err = __dsos__write_buildid_table(&machine->user_dsos,
--						  machine->pid, umisc, fd);
--	return err;
--}
--
--static int dsos__write_buildid_table(struct perf_header *header, int fd)
--{
--	struct perf_session *session = container_of(header,
--			struct perf_session, header);
--	struct rb_node *nd;
--	int err = machine__write_buildid_table(&session->host_machine, fd);
--
--	if (err)
--		return err;
--
--	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
--		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		err = machine__write_buildid_table(pos, fd);
--		if (err)
--			break;
--	}
--	return err;
--}
--
--int build_id_cache__add_s(const char *sbuild_id, const char *debugdir,
--			  const char *name, bool is_kallsyms)
--{
--	const size_t size = PATH_MAX;
--	char *realname, *filename = zalloc(size),
--	     *linkname = zalloc(size), *targetname;
--	int len, err = -1;
--
--	if (is_kallsyms) {
--		if (symbol_conf.kptr_restrict) {
--			pr_debug("Not caching a kptr_restrict'ed /proc/kallsyms\n");
--			return 0;
--		}
--		realname = (char *)name;
--	} else
--		realname = realpath(name, NULL);
--
--	if (realname == NULL || filename == NULL || linkname == NULL)
--		goto out_free;
--
--	len = snprintf(filename, size, "%s%s%s",
--		       debugdir, is_kallsyms ? "/" : "", realname);
--	if (mkdir_p(filename, 0755))
--		goto out_free;
--
--	snprintf(filename + len, sizeof(filename) - len, "/%s", sbuild_id);
--
--	if (access(filename, F_OK)) {
--		if (is_kallsyms) {
--			 if (copyfile("/proc/kallsyms", filename))
--				goto out_free;
--		} else if (link(realname, filename) && copyfile(name, filename))
--			goto out_free;
--	}
--
--	len = snprintf(linkname, size, "%s/.build-id/%.2s",
--		       debugdir, sbuild_id);
--
--	if (access(linkname, X_OK) && mkdir_p(linkname, 0755))
--		goto out_free;
--
--	snprintf(linkname + len, size - len, "/%s", sbuild_id + 2);
--	targetname = filename + strlen(debugdir) - 5;
--	memcpy(targetname, "../..", 5);
--
--	if (symlink(targetname, linkname) == 0)
--		err = 0;
--out_free:
--	if (!is_kallsyms)
--		free(realname);
--	free(filename);
--	free(linkname);
--	return err;
--}
--
--static int build_id_cache__add_b(const u8 *build_id, size_t build_id_size,
--				 const char *name, const char *debugdir,
--				 bool is_kallsyms)
--{
--	char sbuild_id[BUILD_ID_SIZE * 2 + 1];
--
--	build_id__sprintf(build_id, build_id_size, sbuild_id);
--
--	return build_id_cache__add_s(sbuild_id, debugdir, name, is_kallsyms);
--}
--
--int build_id_cache__remove_s(const char *sbuild_id, const char *debugdir)
--{
--	const size_t size = PATH_MAX;
--	char *filename = zalloc(size),
--	     *linkname = zalloc(size);
--	int err = -1;
--
--	if (filename == NULL || linkname == NULL)
--		goto out_free;
--
--	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
--		 debugdir, sbuild_id, sbuild_id + 2);
--
--	if (access(linkname, F_OK))
--		goto out_free;
--
--	if (readlink(linkname, filename, size - 1) < 0)
--		goto out_free;
--
--	if (unlink(linkname))
--		goto out_free;
--
+-	elf_version(EV_CURRENT);
 -	/*
--	 * Since the link is relative, we must make it absolute:
--	 */
--	snprintf(linkname, size, "%s/.build-id/%.2s/%s",
--		 debugdir, sbuild_id, filename);
+- 	 * See if this is an ELF file first:
+- 	 */
+-	if (filename__fprintf_build_id(input_name, stdout))
+-		return 0;
 -
--	if (unlink(linkname))
--		goto out_free;
--
--	err = 0;
--out_free:
--	free(filename);
--	free(linkname);
--	return err;
--}
--
--static int dso__cache_build_id(struct dso *dso, const char *debugdir)
--{
--	bool is_kallsyms = dso->kernel && dso->long_name[0] != '/';
--
--	return build_id_cache__add_b(dso->build_id, sizeof(dso->build_id),
--				     dso->long_name, debugdir, is_kallsyms);
--}
--
--static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
--{
--	struct dso *pos;
--	int err = 0;
--
--	dsos__for_each_with_build_id(pos, head)
--		if (dso__cache_build_id(pos, debugdir))
--			err = -1;
--
--	return err;
--}
--
--static int machine__cache_build_ids(struct machine *machine, const char *debugdir)
--{
--	int ret = __dsos__cache_build_ids(&machine->kernel_dsos, debugdir);
--	ret |= __dsos__cache_build_ids(&machine->user_dsos, debugdir);
--	return ret;
--}
--
--static int perf_session__cache_build_ids(struct perf_session *session)
--{
--	struct rb_node *nd;
--	int ret;
--	char debugdir[PATH_MAX];
--
--	snprintf(debugdir, sizeof(debugdir), "%s", buildid_dir);
--
--	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
--		return -1;
--
--	ret = machine__cache_build_ids(&session->host_machine, debugdir);
--
--	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
--		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret |= machine__cache_build_ids(pos, debugdir);
--	}
--	return ret ? -1 : 0;
--}
--
--static bool machine__read_build_ids(struct machine *machine, bool with_hits)
--{
--	bool ret = __dsos__read_build_ids(&machine->kernel_dsos, with_hits);
--	ret |= __dsos__read_build_ids(&machine->user_dsos, with_hits);
--	return ret;
--}
--
--static bool perf_session__read_build_ids(struct perf_session *session, bool with_hits)
--{
--	struct rb_node *nd;
--	bool ret = machine__read_build_ids(&session->host_machine, with_hits);
--
--	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
--		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret |= machine__read_build_ids(pos, with_hits);
--	}
--
--	return ret;
--}
--
- static int do_write_feat(int fd, struct perf_header *h, int type,
- 			 struct perf_file_section **p,
- 			 struct perf_evlist *evlist)
+ 	return perf_session__list_build_ids();
+ }
+ 
+diff --git a/tools/perf/builtin-evlist.c b/tools/perf/builtin-evlist.c
+index 4c5e9e0..2676032 100644
+--- a/tools/perf/builtin-evlist.c
++++ b/tools/perf/builtin-evlist.c
+@@ -15,7 +15,7 @@
+ #include "util/parse-options.h"
+ #include "util/session.h"
+ 
+-static char const *input_name = "perf.data";
++static const char *input_name;
+ 
+ static int __cmd_evlist(void)
+ {
+diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
+index 886174e..fe1ad8f 100644
+--- a/tools/perf/builtin-kmem.c
++++ b/tools/perf/builtin-kmem.c
+@@ -19,7 +19,7 @@
+ struct alloc_stat;
+ typedef int (*sort_fn_t)(struct alloc_stat *, struct alloc_stat *);
+ 
+-static char const		*input_name = "perf.data";
++static const char		*input_name;
+ 
+ static int			alloc_flag;
+ static int			caller_flag;
+diff --git a/tools/perf/builtin-lock.c b/tools/perf/builtin-lock.c
+index 4db5e52..2296c39 100644
+--- a/tools/perf/builtin-lock.c
++++ b/tools/perf/builtin-lock.c
+@@ -326,7 +326,7 @@ alloc_failed:
+ 	die("memory allocation failed\n");
+ }
+ 
+-static char			const *input_name = "perf.data";
++static const char *input_name;
+ 
+ struct raw_event_sample {
+ 	u32			size;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 9051f6b..25d34d4 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -321,8 +321,7 @@ static int __cmd_report(struct perf_report *rep)
+ 	}
+ 
+ 	if (nr_samples == 0) {
+-		ui__warning("The %s file has no samples!\n",
+-			    rep->input_name);
++		ui__warning("The %s file has no samples!\n", session->filename);
+ 		goto out_delete;
+ 	}
+ 
+@@ -430,6 +429,7 @@ setup:
+ 
+ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ {
++	struct stat st;
+ 	char callchain_default_opt[] = "fractal,0.5,callee";
+ 	const char * const report_usage[] = {
+ 		"perf report [<options>]",
+@@ -451,7 +451,6 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 			.ordered_samples = true,
+ 			.ordering_requires_timestamps = true,
+ 		},
+-		.input_name		 = "perf.data",
+ 		.pretty_printing_style	 = "normal",
+ 	};
+ 	const struct option options[] = {
+@@ -531,10 +530,18 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 	if (report.inverted_callchain)
+ 		callchain_param.order = ORDER_CALLER;
+ 
++	if (!report.input_name || !strlen(report.input_name)) {
++		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
++			report.input_name = "-";
++		else
++			report.input_name = "perf.data";
++	}
++
+ 	if (strcmp(report.input_name, "-") != 0)
+ 		setup_browser(true);
+ 	else
+ 		use_browser = 0;
++
+ 	/*
+ 	 * Only in the newt browser we are doing integrated annotation,
+ 	 * so don't allocate extra space that won't be used in the stdio
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index 6284ed2..fb8b5f8 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -22,7 +22,7 @@
+ #include <pthread.h>
+ #include <math.h>
+ 
+-static char			const *input_name = "perf.data";
++static const char		*input_name;
+ 
+ static char			default_sort_order[] = "avg, max, switch, runtime";
+ static const char		*sort_order = default_sort_order;
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index d71b745..3d4c0c7 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -434,7 +434,7 @@ static int cleanup_scripting(void)
+ 	return scripting_ops->stop_script();
+ }
+ 
+-static char const		*input_name = "perf.data";
++static const char *input_name;
+ 
+ static int process_sample_event(struct perf_tool *tool __used,
+ 				union perf_event *event,
+@@ -1316,7 +1316,7 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 			return -1;
+ 		}
+ 
+-		input = open(input_name, O_RDONLY);
++		input = open(session->filename, O_RDONLY);	/* input_name */
+ 		if (input < 0) {
+ 			perror("failed to open file");
+ 			exit(-1);
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 135376a..3b75b2e 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -38,8 +38,8 @@
+ #define PWR_EVENT_EXIT -1
+ 
+ 
+-static char		const *input_name = "perf.data";
+-static char		const *output_name = "output.svg";
++static const char	*input_name;
++static const char	*output_name = "output.svg";
+ 
+ static unsigned int	numcpus;
+ static u64		min_freq;	/* Lowest CPU frequency seen */
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index ea17dfb..cc5e6be 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -107,8 +107,19 @@ struct perf_session *perf_session__new(const char *filename, int mode,
+ 				       bool force, bool repipe,
+ 				       struct perf_tool *tool)
+ {
+-	size_t len = filename ? strlen(filename) : 0;
+-	struct perf_session *self = zalloc(sizeof(*self) + len);
++	struct perf_session *self;
++	struct stat st;
++	size_t len;
++
++	if (!filename || !strlen(filename)) {
++		if (!fstat(STDIN_FILENO, &st) && S_ISFIFO(st.st_mode))
++			filename = "-";
++		else
++			filename = "perf.data";
++	}
++
++	len = strlen(filename);
++	self = zalloc(sizeof(*self) + len);
+ 
+ 	if (self == NULL)
+ 		goto out;
