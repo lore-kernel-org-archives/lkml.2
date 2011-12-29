@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab1L2MKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 07:10:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62351 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab1L2MKG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 07:10:06 -0500
-Date: Thu, 29 Dec 2011 06:09:56 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
-        Phil Miller <mille121@illinois.edu>
-Subject: Re: [27/27] clockevents: Set noop handler in
- clockevents_exchange_device()
-Message-ID: <20111229120956.GA31878@elie.Belkin>
-References: <20111207165611.GA19872@kroah.com>
- <20111207165602.672902223@clark.kroah.org>
+	id S1753902Ab1L2MK4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 07:10:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753787Ab1L2MKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 07:10:53 -0500
+Date: Thu, 29 Dec 2011 13:05:07 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, Denys Vlasenko <dvlasenk@redhat.com>,
+        linux-kernel@vger.kernel.org,
+        =?utf-8?Q?=C5=81ukasz?= Michalik <lmi@ift.uni.wroc.pl>,
+        "Dmitry V. Levin" <ldv@altlinux.org>
+Subject: Re: Possible bug introduced in commit 9b84cca
+Message-ID: <20111229120506.GA23653@redhat.com>
+References: <201112281955.55200.vda.linux@googlemail.com> <20111229113245.GA18062@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111207165602.672902223@clark.kroah.org>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20111229113245.GA18062@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-Greg KH wrote:
-
-> 2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+On 12/29, Oleg Nesterov wrote:
 >
-> ------------------
+> On 12/28, Denys Vlasenko wrote:
+> >
+> > Looks like after commit 9b84cca, waitpid under strace
+> > sometimes returns bogus ECHILD while child does exist.
+> >
+> > I did not yet confirm that the bug appeared exactly
+> > at this commit - Łukasz says that.
+> >
+> > I confirmed that bug exists on kernels 3.1.6 (in Fedora)
+> > and 3.1.0-rc4 (vanilla).
+> >
+> > We have a testcase which spawns N threads, each of them
+> > performs an infinite loop "fork, exit in child, waitpid
+> > in parent for the child". When straced, sometimes waitpid
+> > returns ECHILD.
 >
-> From: Thomas Gleixner <tglx@linutronix.de>
+> You mean, the natural parent gets ECHILD, not strace?
 >
-> commit de28f25e8244c7353abed8de0c7792f5f883588c upstream.
-[...]
-> --- a/kernel/time/clockevents.c
-> +++ b/kernel/time/clockevents.c
-> @@ -221,6 +221,7 @@ void clockevents_exchange_device(struct
->  	 * released list and do a notify add later.
->  	 */
->  	if (old) {
-> +		old->event_handler = clockevents_handle_noop;
->  		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
+> > The key part is here:
+> >
+> > 931   clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xf763dbd8) = 1048
+> > 1048  exit_group(42)                    = ?
+> > 931   waitpid(1048,  <unfinished ...>
+> > 1048  +++ exited with 42 +++
+> > 931   <... waitpid resumed> 0xf763d3a0, 0) = -1 ECHILD (No child processes)
+>
+> Argh. I seem to understand
+>
+> I didn't check, but I think the offending commit is 823b018e5b1196d8
+> "job control: Small reorganization of wait_consider_task()".
+>
+> ptracer sees EXIT_ZOMBIE and temporary sets EXIT_DEAD, this fools
+> the ->real_parent.
+>
+> I need to think. The fix should be simple, but perhaps it is the
+> time to kill EXIT_DEAD altogether. I'll try to make the patch
+> after vacation. In the next year ;)
+>
+> Thanks a lot Denys!
 
-This is basically the reverse of 7c1e768974 (clockevents: prevent
-clockevent event_handler ending up handler_noop, 2008-09-03).  The
-rationale for the latter still applies.  People have been reporting
-the analagous patch to this one causing hangs on resume in 3.1.y and
-3.2 release candidates:
+I've made the simple test-case, it triggers the bug.
 
- - http://thread.gmane.org/gmane.linux.kernel/1233033
- - http://thread.gmane.org/gmane.linux.kernel/1233389
- - http://thread.gmane.org/gmane.linux.kernel/1233159
- - http://thread.gmane.org/gmane.linux.kernel/1227868/focus=1230877
+Oleg.
 
-So please consider reverting it for now.
+#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <assert.h>
 
-Thanks,
-Jonathan
+int main(void)
+{
+	int pid, status;
+
+	pid = fork();
+	if (!pid) {
+		for (;;) {
+			if (!fork())
+				return 0x23;
+			assert(waitpid(-1, &status, 0) > 0);
+			assert(status == 0x2300);
+		}
+	}
+
+	assert(ptrace(PTRACE_ATTACH, pid, 0,0) == 0);
+	assert(waitpid(-1, NULL, 0) == pid);
+
+	assert(ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEFORK) == 0);
+
+	for (;;) {
+		ptrace(PTRACE_CONT, pid, 0, 0);
+		pid = waitpid(-1, NULL, 0);
+		assert(pid > 0);
+	}
+
+	return 0;
+}
+
