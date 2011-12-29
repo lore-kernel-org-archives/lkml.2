@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab1L2Uqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 15:46:47 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39481 "EHLO
+	id S1754103Ab1L2Urm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 15:47:42 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39491 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab1L2Uqq (ORCPT
+	with ESMTP id S1753525Ab1L2Urj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 15:46:46 -0500
-Date: Thu, 29 Dec 2011 12:46:10 -0800
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Message-ID: <tip-fb2baceb5a64990163e93b77ee205d0173202ee6@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, namhyung@gmail.com, mingo@elte.hu
-In-Reply-To: <1323703017-6060-8-git-send-email-namhyung@gmail.com>
-References: <1323703017-6060-8-git-send-email-namhyung@gmail.com>
+	Thu, 29 Dec 2011 15:47:39 -0500
+Date: Thu, 29 Dec 2011 12:46:57 -0800
+From: tip-bot for David Ahern <dsahern@gmail.com>
+Message-ID: <tip-defd8d38773cf9e01c69a903d04d5895b78ee74f@git.kernel.org>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, peterz@infradead.org, fweisbec@gmail.com,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org,
+        dsahern@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1324578603-12762-2-git-send-email-dsahern@gmail.com>
+References: <1324578603-12762-2-git-send-email-dsahern@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf report: Fix usage string
-Git-Commit-ID: fb2baceb5a64990163e93b77ee205d0173202ee6
+Subject: [tip:perf/core] perf tools:
+  Fix comm for processes with named threads
+Git-Commit-ID: defd8d38773cf9e01c69a903d04d5895b78ee74f
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -29,42 +30,147 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:46:17 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:47:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fb2baceb5a64990163e93b77ee205d0173202ee6
-Gitweb:     http://git.kernel.org/tip/fb2baceb5a64990163e93b77ee205d0173202ee6
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Tue, 13 Dec 2011 00:16:56 +0900
+Commit-ID:  defd8d38773cf9e01c69a903d04d5895b78ee74f
+Gitweb:     http://git.kernel.org/tip/defd8d38773cf9e01c69a903d04d5895b78ee74f
+Author:     David Ahern <dsahern@gmail.com>
+AuthorDate: Thu, 22 Dec 2011 11:30:01 -0700
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 22 Dec 2011 10:23:55 -0200
+CommitDate: Fri, 23 Dec 2011 16:10:40 -0200
 
-perf report: Fix usage string
+perf tools: Fix comm for processes with named threads
 
-perf report does not take a command from command line.
+perf does not properly handle monitoring of processes with named threads.
+For example:
 
+$ ps -C myapp -L
+  PID   LWP TTY          TIME CMD
+25118 25118 ?        00:00:00 myapp
+25118 25119 ?        00:00:00 myapp:worker
+
+perf record -e cs -c 1 -fo /tmp/perf.data -p 25118 -- sleep 10
+perf report --stdio -i /tmp/perf.data
+   100.00%  myapp:worker  [kernel.kallsyms]  [k] perf_event_task_sched_out
+
+The process name is set to the name of the last thread it finds for the
+process.
+
+The Problem:
+perf-top and perf-record both create a thread_map of threads to be
+monitored. That map is used in perf_event__synthesize_thread_map which
+loops over the entries in thread_map and calls __event__synthesize_thread
+to generate COMM and MMAP events.
+
+__event__synthesize_thread calls perf_event__synthesize_comm which opens
+/proc/pid/status, reads the name of the task and its thread group id.
+That's all fine. The problem is that it then reads /proc/pid/task and
+generates COMM events for each task it finds - but using the name found
+in /proc/pid/status where pid is the thread of interest.
+
+The end result (looping over thread_map + synthesizing comm events for
+each thread each time) means the name of the last thread processed sets
+the name for all threads in the process - which is not good for
+multithreaded processes with named threads.
+
+The Fix:
+perf_event__synthesize_comm has an input argument (full) that decides
+whether to process task entries for each pid it is passed. It currently
+never set to 0 (perf_event__synthesize_comm has a single caller and it
+always passes the value 1). Let's fix that.
+
+Add the full input argument to __event__synthesize_thread which passes
+it to perf_event__synthesize_comm. For thread/process monitoring set full
+to 0 which means COMM and MMAP events are only generated for the pid
+passed to it. For system wide monitoring set full to 1 so that COMM events
+are generated for all threads in a process.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1323703017-6060-8-git-send-email-namhyung@gmail.com
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1324578603-12762-2-git-send-email-dsahern@gmail.com
+Signed-off-by: David Ahern <dsahern@gmail.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ tools/perf/util/event.c |   37 ++++++++++++++++++++++++++++++++-----
+ 1 files changed, 32 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index b2654c9..9051f6b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -432,7 +432,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index b7c7f39..a578726 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -261,11 +261,12 @@ int perf_event__synthesize_modules(struct perf_tool *tool,
+ 
+ static int __event__synthesize_thread(union perf_event *comm_event,
+ 				      union perf_event *mmap_event,
+-				      pid_t pid, perf_event__handler_t process,
++				      pid_t pid, int full,
++					  perf_event__handler_t process,
+ 				      struct perf_tool *tool,
+ 				      struct machine *machine)
  {
- 	char callchain_default_opt[] = "fractal,0.5,callee";
- 	const char * const report_usage[] = {
--		"perf report [<options>] <command>",
-+		"perf report [<options>]",
- 		NULL
- 	};
- 	struct perf_report report = {
+-	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, 1,
++	pid_t tgid = perf_event__synthesize_comm(tool, comm_event, pid, full,
+ 						 process, machine);
+ 	if (tgid == -1)
+ 		return -1;
+@@ -279,7 +280,7 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 				      struct machine *machine)
+ {
+ 	union perf_event *comm_event, *mmap_event;
+-	int err = -1, thread;
++	int err = -1, thread, j;
+ 
+ 	comm_event = malloc(sizeof(comm_event->comm) + machine->id_hdr_size);
+ 	if (comm_event == NULL)
+@@ -292,11 +293,37 @@ int perf_event__synthesize_thread_map(struct perf_tool *tool,
+ 	err = 0;
+ 	for (thread = 0; thread < threads->nr; ++thread) {
+ 		if (__event__synthesize_thread(comm_event, mmap_event,
+-					       threads->map[thread],
++					       threads->map[thread], 0,
+ 					       process, tool, machine)) {
+ 			err = -1;
+ 			break;
+ 		}
++
++		/*
++		 * comm.pid is set to thread group id by
++		 * perf_event__synthesize_comm
++		 */
++		if ((int) comm_event->comm.pid != threads->map[thread]) {
++			bool need_leader = true;
++
++			/* is thread group leader in thread_map? */
++			for (j = 0; j < threads->nr; ++j) {
++				if ((int) comm_event->comm.pid == threads->map[j]) {
++					need_leader = false;
++					break;
++				}
++			}
++
++			/* if not, generate events for it */
++			if (need_leader &&
++			    __event__synthesize_thread(comm_event,
++						      mmap_event,
++						      comm_event->comm.pid, 0,
++						      process, tool, machine)) {
++				err = -1;
++				break;
++			}
++		}
+ 	}
+ 	free(mmap_event);
+ out_free_comm:
+@@ -333,7 +360,7 @@ int perf_event__synthesize_threads(struct perf_tool *tool,
+ 		if (*end) /* only interested in proper numerical dirents */
+ 			continue;
+ 
+-		__event__synthesize_thread(comm_event, mmap_event, pid,
++		__event__synthesize_thread(comm_event, mmap_event, pid, 1,
+ 					   process, tool, machine);
+ 	}
+ 
