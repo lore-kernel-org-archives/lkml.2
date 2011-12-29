@@ -1,61 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754716Ab1L2RGf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 12:06:35 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40775 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab1L2RGd (ORCPT
+	id S1754743Ab1L2RHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 12:07:54 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33604 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065Ab1L2RHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 12:06:33 -0500
+	Thu, 29 Dec 2011 12:07:51 -0500
+Date: Thu, 29 Dec 2011 09:07:45 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Michal Simek <monstr@monstr.eu>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: memblock and bootmem problems if start + size = 4GB
+Message-ID: <20111229170745.GE3516@google.com>
+References: <4EEF42F5.7040002@monstr.eu>
+ <20111219162835.GA24519@google.com>
+ <4EF05316.5050803@monstr.eu>
+ <20111229155836.GB3516@google.com>
+ <4EFC995A.5090904@monstr.eu>
 MIME-Version: 1.0
-Date: Thu, 29 Dec 2011 20:06:32 +0300
-Message-ID: <CA+X1aCQRpJ_NwJBSBp+vDN37p+oipJNz=6T5LdJdqzxTiSWWWA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Add partition resize function to BLKPG ioctl
-From: Maxim Patlasov <maxim.patlasov@gmail.com>
-To: psusi@cfl.rr.com
-Cc: vgoyal@redhat.com, joe@perches.com, kzak@redhat.com,
-        linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EFC995A.5090904@monstr.eu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Phillip,
+Hello,
 
-The patch seems to have some problems:
+On Thu, Dec 29, 2011 at 05:46:18PM +0100, Michal Simek wrote:
+> First of all I don't like to use your term "extend range coverages".
+> We don't want to extend any ranges - we just wanted to place memory to the end
+> of address space and be able to work with.
 
-1. Typo in part_nr_sects_write_begin:
+It is, as long as we use address ranges.  Either we can express length
+of zero or include the last address.
 
-> +	write_seqcount_begin(&seq);
+> It is limitation which should be fixed somehow.
+> And I would expect that PFN_XX(base + size) will be in u32 range.
+>
+> Probably the best solution will be to use PFN macro in one place and
+> do not covert addresses in common code.
+> 
+> + change parameters in bootmem code because some arch do
+> free_bootmem_node(..., PFN_PHYS(), ...)
+> and
+> reserve_bootmem_node(..., PFN_PHYS(), ...)
 
-It should be write_seqcount_begin(seq). Similar issue in
-part_nr_sects_write_end().
+So now we're talking about a lot of code just for ONE page and
+regardless of the representation in the memblock or other memory
+management code, I think trying to use that page is fundamentally a
+bad idea.  There are a lot of places in the kernel where phys_addr_t
+is used.  Using that one last page risks obscure overflow bug if any
+of them is using [start,end) ranges and bugs triggered such way would
+be extremely difficult to track down.  It doesn't make any sense to do
+that for that one last page.  It's less severe but in the same vein as
+trying to use %NULL as a valid address.  It's an absurdly silly
+tradeoff.
 
-2. part_nr_sects_write_begin/end is never called.
+So, FWIW, I think that is a horrible idea.
 
-3. part->seq should be initialized with seqcount_init().
+> >  On
+> >extreme cases, people even carry separate valid flag to use %NULL as
+> >valid address, which is pretty silly, IMHO.  So, unless there's some
+> >benefit that I'm missing, I still think it's an overkill.  It's more
+> >complex and difficult to test and verify.  Why bother for a single
+> >page?
+> 
+> Where do you think this page should be placed? In common code or in architecture memory
+> code where one page from the top of 4G should be subtract?
 
-Btw, do we really need both part_nr_sects_write_begin and
-part_nr_sects_write_end? What about:
+With the pending updates to memblock code in tip scheduled for the
+coming merge window, I *think* it would be a single (or a few) line
+change in memblock_add_region() where it checks for overflow.
 
-#if BITS_PER_LONG == 32 && defined(CONFIG_LBDAF)
-static inline void part_nr_sects_write(struct hd_struct *part,
-sector_t nr_sects)
-{
-        write_seqcount_begin(&part->seq);
-        part->nr_sects = nr_sects;
-        write_seqcount_end(&part->seq);
-}
-#else
-static inline void part_nr_sects_write(struct hd_struct *part,
-sector_t nr_sects)
-{
-        part->nr_sects = nr_sects;
-}
-#endif
+Thanks.
 
-and use part_nr_sects_write(part, length) instead of part->nr_sects =
-length in case BLKPG_RESIZE_PARTITION?
-
-Thanks,
-Maxim
+-- 
+tejun
