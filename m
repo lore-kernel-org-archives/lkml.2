@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126Ab1L2Tm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 14:42:58 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36279 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063Ab1L2Tmz (ORCPT
+	id S1753228Ab1L2UL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 15:11:57 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40672 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab1L2UL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 14:42:55 -0500
-Date: Thu, 29 Dec 2011 14:39:44 -0500 (EST)
-Message-Id: <20111229.143944.1971586044787221232.davem@davemloft.net>
-To: rdunlap@xenotime.net
-Cc: pablo@netfilter.org, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 28 (nfnetlink)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4EFCB70C.50409@xenotime.net>
-References: <20111228.153304.1267926241298522965.davem@davemloft.net>
-	<20111229010330.GA2663@1984>
-	<4EFCB70C.50409@xenotime.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 29 Dec 2011 11:39:46 -0800 (PST)
+	Thu, 29 Dec 2011 15:11:56 -0500
+Date: Thu, 29 Dec 2011 14:11:49 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Christoph Anton Mitterer <calestyo@scientia.net>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>, linux-kernel@vger.kernel.org
+Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
+Message-ID: <20111229201149.GB1674@elie.Belkin>
+References: <bbdbd01d4965ae789384bc1f9d0a2426@imap.dd24.net>
+ <20110902233806.GA22157@elie>
+ <20110905091918.GC2221@redhat.com>
+ <265f56a4dc9f5d3edeca3d101e445353@imap.dd24.net>
+ <20110908084913.GB2195@redhat.com>
+ <1321228952.3362.15.camel@fermat.scientia.net>
+ <20111114014615.GC16508@elie.hsd1.il.comcast.net>
+ <1321466933.3364.16.camel@fermat.scientia.net>
+ <20111118074552.GB2203@redhat.com>
+ <1325171851.3907.33.camel@fermat.scientia.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325171851.3907.33.camel@fermat.scientia.net>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
-Date: Thu, 29 Dec 2011 10:53:00 -0800
+Christoph Anton Mitterer wrote:
 
-> On 12/28/2011 05:03 PM, Pablo Neira Ayuso wrote:
->> On Wed, Dec 28, 2011 at 03:33:04PM -0500, David Miller wrote:
->>> From: Randy Dunlap <rdunlap@xenotime.net>
->>> Date: Wed, 28 Dec 2011 13:19:08 -0800
->>>
->>>> On 12/28/2011 01:18 AM, Stephen Rothwell wrote:
->>>>> Hi all,
->>>>>
->>>>> I got bored :-(  I also hate tree wide, flag day changes :-(
->>>>>
->>>>> Changes since 20111222:
->>>>
->>>>
->>>>
->>>> warning: (NETFILTER_XT_MATCH_NFACCT) selects NETFILTER_NETLINK_ACCT which has unmet direct dependencies (NET && INET && NETFILTER && NETFILTER_ADVANCED)
->>>>
->>>> and then
->>>>
->>>> ERROR: "nfnetlink_subsys_unregister" [net/netfilter/nfnetlink_acct.ko] undefined!
->>>> ERROR: "nfnetlink_subsys_register" [net/netfilter/nfnetlink_acct.ko] undefined!
->>>>
->>>>
->>>> Full randconfig file is attached.
->>>
->>> Pablo please fix this, thanks.
->> 
->> Please, apply the following patch.
-> 
-> Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+> The logging is basically identical to what I've send before.
+>
+> So either there is some weird hardware damage,.. or (as I suggested
+> before) it might be just some different revision or so of the chipset,
+> behaving different?!
+>
+> Guess it's pointless to send you the same logging output again, but if
+> you'd like to I can do so.
 
-Applied, thanks everyone.
+Yes, please do, or provide a link and summary so we don't have to hunt
+it down.
+
+Hope that helps,
+Jonathan
