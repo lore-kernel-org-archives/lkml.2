@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1L2XTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 18:19:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49358 "EHLO
+	id S1754880Ab1L2XhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 18:37:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49888 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab1L2XTe convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754806Ab1L2XhS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 18:19:34 -0500
+	Thu, 29 Dec 2011 18:37:18 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111229.170514.1766899380937848638.davem@davemloft.net>
+In-Reply-To: <CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
 References: <CACPM=kXOddA+T6vQPijR6sh8x5cMO=4baKGeKxEmMKG896Lz4g@mail.gmail.com>
 	<20111229153902.GB21946@electric-eye.fr.zoreil.com>
 	<20111229183902.GC21946@electric-eye.fr.zoreil.com>
 	<20111229.170514.1766899380937848638.davem@davemloft.net>
-Date: Fri, 30 Dec 2011 00:19:33 +0100
-X-Google-Sender-Auth: rpKu080QoY4FxZkcXp7gWRKynXU
-Message-ID: <CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
+	<CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
+Date: Fri, 30 Dec 2011 00:37:17 +0100
+X-Google-Sender-Auth: -m78il5YlgXbNM8_R0qSYVXK9ME
+Message-ID: <CACPM=kVfsXgFhKheevTS1pm7kCoezKO3M+102O=PRbXzxebxxg@mail.gmail.com>
 Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
 From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
 To: David Miller <davem@davemloft.net>
@@ -27,38 +28,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/29 David Miller <davem@davemloft.net>:
-> From: Francois Romieu <romieu@fr.zoreil.com>
-> Date: Thu, 29 Dec 2011 19:39:02 +0100
->
->> Francois Romieu <romieu@fr.zoreil.com> :
->> [...]
->>> Feel free to try the extra "new year's eve week end is getting closer"
->>> patch below (against net-next).
->>>
->>> You have been warned.
+2011/12/30 Bjarke Istrup Pedersen <gurligebis@gentoo.org>:
+> 2011/12/29 David Miller <davem@davemloft.net>:
+>> From: Francois Romieu <romieu@fr.zoreil.com>
+>> Date: Thu, 29 Dec 2011 19:39:02 +0100
 >>
->> The one below could be a bit better.
+>>> Francois Romieu <romieu@fr.zoreil.com> :
+>>> [...]
+>>>> Feel free to try the extra "new year's eve week end is getting closer"
+>>>> patch below (against net-next).
+>>>>
+>>>> You have been warned.
+>>>
+>>> The one below could be a bit better.
+>>
+>> Obviously you'll need to resolve the use of rp->lock as an IRQ safe lock
+>> in {get,src}_wol() so that this lock is consistently used as a BH safe
+>> lock.  Your "Huh?" comments make it clear you are aware of this TODO. :-)
+>>
+>> But other than that this patch looks good to me, just some testing and
+>> debugging are needed.
 >
-> Obviously you'll need to resolve the use of rp->lock as an IRQ safe lock
-> in {get,src}_wol() so that this lock is consistently used as a BH safe
-> lock.  Your "Huh?" comments make it clear you are aware of this TODO. :-)
+> I got it to boot, had to revert another patch introduced in 3.1.5
+> that's causing alot of people problems, but thats another talk :)
 >
-> But other than that this patch looks good to me, just some testing and
-> debugging are needed.
+> It boots fine, untill it tries to bring up an interface, which causes
+> it to fails with a kernel panic.
+> Here is the output of the panic:
+> http://dev.gentoo.org/~gurligebis/kernel/panic.txt
+>
+> /Bjarke
 
-I got it to boot, had to revert another patch introduced in 3.1.5
-that's causing alot of people problems, but thats another talk :)
+Hmm, it seems like this problem isn't related to the driver, but
+related to the current HEAD of net-next :)
 
-It boots fine, untill it tries to bring up an interface, which causes
-it to fails with a kernel panic.
-Here is the output of the panic:
-http://dev.gentoo.org/~gurligebis/kernel/panic.txt
+Would it be a problem if I try and use the patch on top of a clean
+3.1.6 kernel ?
 
 /Bjarke
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
