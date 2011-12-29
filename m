@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690Ab1L2RbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 12:31:15 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:38885 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752204Ab1L2RbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 12:31:12 -0500
-Date: Thu, 29 Dec 2011 11:31:39 -0600
-From: Ben Myers <bpm@sgi.com>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] XFS update for 3.2
-Message-ID: <20111229173139.GL21646@sgi.com>
+	id S1754781Ab1L2Rf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 12:35:58 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:39278 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab1L2Rf4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 12:35:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4EFC9872.7000708@suse.cz>
+References: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi> <4EFC9872.7000708@suse.cz>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Thu, 29 Dec 2011 15:35:34 -0200
+Message-ID: <CAMOw1v6GhA+B2oXcVK4YZULb6kq=-NFTv-=-4eYB0ukZ9acP-w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] kbuild: add target to install gzipped modules
+To: Michal Marek <mmarek@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>, linux-modules@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+2011/12/29 Michal Marek <mmarek@suse.cz>:
+> Dne 29.12.2011 16:50, Lucas De Marchi napsal(a):
+>> Add target in Makefile to compress the module after it's installed.
+>> Module-init-tools and libkmod can handle gzipped modules.
+>
+> I am not convinced that this is a needed feature. Compressing elf files
+> means that depmod and modinfo need to read the whole compressed file
+> from disk and unpack it, while only a couple of bytes need to be read.
 
-Please pull the following fixes for 3.2.  Quoting Christoph Hellwig:
-"These two small fixes fix issues with periodic metadata writeback and
-sync not being able [to] write file size updates to disk in some cases."
-These have not gone through -next because we have 3.3 work in the
-oss/master branch right now, but they merged and built cleanly on
-3.2-rc7.  They have been tested thoroughly by Mark Tinguely and myself.
-It is late in the cycle and I will submit them later for 3.2-stable if
-you prefer.
+How many times do you need to call depmod / modinfo?
 
-Have a happy New Year!
+The operation that is used most of the time is to load modules. The
+reason for having modules gzipped is the same one as for kernel image:
+fast bootup on slow disks and less disk space used per installed
+kernel.
 
-Thanks,
-       Ben
 
-The following changes since commit 371de6e4e0042adf4f9b54c414154f57414ddd37:
-  Keith Packard (1):
-        drm/i915: Disable RC6 on Sandybridge by default
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Christoph Hellwig (2):
-      xfs: log the inode in ->write_inode calls for kupdate
-      xfs: log all dirty inodes in xfs_fs_sync_fs
-
- fs/xfs/xfs_super.c |   30 +++++-------------------------
- fs/xfs/xfs_sync.c  |   36 ++++++++++++++++++++++++++++++++++++
- fs/xfs/xfs_sync.h  |    2 ++
- 3 files changed, 43 insertions(+), 25 deletions(-)
+Lucas De Marchi
