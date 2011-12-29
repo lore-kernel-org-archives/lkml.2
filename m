@@ -1,120 +1,274 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371Ab1L2QN1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 11:13:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9629 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752944Ab1L2QNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 11:13:25 -0500
-Date: Thu, 29 Dec 2011 18:15:23 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v6 09/11] virtio: net: Add freeze, restore handlers to
- support S4
-Message-ID: <20111229161523.GB2300@redhat.com>
-References: <cover.1324553223.git.amit.shah@redhat.com>
- <f84fa9fdc9f5629e711cbb89a2e7efbb289d72fa.1324553223.git.amit.shah@redhat.com>
+	id S1754480Ab1L2QOW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 11:14:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:54555 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754059Ab1L2QOU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 11:14:20 -0500
+Date: Thu, 29 Dec 2011 08:14:14 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
+Message-ID: <20111229161414.GC3516@google.com>
+References: <20111223124920.661126615@openvz.org>
+ <20111228160655.GL17712@google.com>
+ <20111228161809.GQ27266@moon>
+ <20111228162653.GM17712@google.com>
+ <20111228164055.GR27266@moon>
+ <20111228164522.GO17712@google.com>
+ <20111228165336.GS27266@moon>
+ <20111228170116.GQ17712@google.com>
+ <20111228171419.GA19321@moon>
+ <20111229142438.GI4460@moon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f84fa9fdc9f5629e711cbb89a2e7efbb289d72fa.1324553223.git.amit.shah@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111229142438.GI4460@moon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 04:58:33PM +0530, Amit Shah wrote:
-> Remove all the vqs, disable napi and detach from the netdev on
-> hibernation.
+Hello,
+
+On Thu, Dec 29, 2011 at 06:24:38PM +0400, Cyrill Gorcunov wrote:
+> Tejun, I've tried to use crypto engine here but it produced a warning
+> about being used in non-sleepable context (which takes place when we
+> read /proc/<pid>/fdinfo/* files). So I used lib/sha1.c instead. The
+> final result is below, please review.
+
+I don't know anything about cryptography and have no idea whether sha1
+is good enough, so I can't really say much. :)
+
+Which part triggered the context warning?  IIRC, crypto context
+preparation and actual calculation can be done in separate steps.
+Can't the calculation part be done from non-sleepable context?
+
+cc'ing Herbert & David and quoting the whole message.
+
+Thanks.
+
+> The output as expected is sha1 hash but note I still placed root-only
+> access here since I prefer security guys to confirm if such production
+> is indeed safe to be exported for regular users.
 > 
-> Re-create vqs after restoring from a hibernated image, re-enable napi
-> and re-attach the netdev.  This keeps networking working across
-> hibernation.
+> | [root@localhost ~]# cat /proc/2/ns/net 
+> | id:	ebfc829fc16a466c9c02b031ceab65c277040c02
 > 
-> Signed-off-by: Amit Shah <amit.shah@redhat.com>
+> 	Cyrill
 > ---
->  drivers/net/virtio_net.c |   46 ++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 46 insertions(+), 0 deletions(-)
+> From: Cyrill Gorcunov <gorcunov@openvz.org>
+> Subject: Add routine for generating an ID for kernel pointer v2
 > 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index 7a2a5bf..b31670f 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -1159,6 +1159,48 @@ static void __devexit virtnet_remove(struct virtio_device *vdev)
->  	free_netdev(vi->dev);
->  }
->  
-> +#ifdef CONFIG_PM
-> +static int virtnet_freeze(struct virtio_device *vdev)
+> The routine XORs the given pointer with a random value,
+> expands the production to sha1 message block and compute
+> the sha1 hash producing an ID.
+> 
+> Util confirmed that the production is a safe one to be
+> exported for the unprivileged users CAP_SYS_ADMIN guird
+> is used.
+> 
+> Because the routine might be used in non-sleepable context
+> built-in realization of sha1 is chosen instead of crypto
+> manager and its helpers.
+> 
+> v1:
+>  - Tejun worried about the single poison value was a weak side -
+>    leaking one makes all the IDs vulnerable. To address this
+>    several poison values - one per object type - are introduced.
+>    They are stored in a plain array.
+>  - Pekka proposed to initialized poison values in the late_initcall callback
+>  - ... and move the code to mm/util.c, but eventually it's moved
+>    to an own file.
+> 
+> v2:
+>  - Tejun suggested to use crypto engine instead of plain XOR and
+>    provide hashes to unprivilege users as well.
+>  - A number of fixes for Kconfig prompt from Valdis
+>  - Andrew pointed more #incclude's are needed
+> 
+> Based-on-patch-from: Pavel Emelyanov <xemul@parallels.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Glauber Costa <glommer@parallels.com>
+> CC: Andi Kleen <andi@firstfloor.org>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Matt Helsley <matthltc@us.ibm.com>
+> CC: Pekka Enberg <penberg@kernel.org>
+> CC: Eric Dumazet <eric.dumazet@gmail.com>
+> CC: Vasiliy Kulikov <segoon@openwall.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Alexey Dobriyan <adobriyan@gmail.com>
+> CC: Valdis.Kletnieks@vt.edu
+> ---
+>  include/linux/gen_obj_id.h |   26 ++++++++++++++
+>  mm/Kconfig                 |   18 ++++++++++
+>  mm/Makefile                |    1 
+>  mm/gen_obj_id.c            |   81 +++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 126 insertions(+)
+> 
+> Index: linux-2.6.git/include/linux/gen_obj_id.h
+> ===================================================================
+> --- /dev/null
+> +++ linux-2.6.git/include/linux/gen_obj_id.h
+> @@ -0,0 +1,26 @@
+> +#ifndef _LINUX_GEN_OBJ_ID_H
+> +#define _LINUX_GEN_OBJ_ID_H
+> +
+> +#include <linux/cryptohash.h>
+> +#include <linux/err.h>
+> +
+> +#ifdef __KERNEL__
+> +
+> +enum {
+> +	GEN_OBJ_ID_TYPES,
+> +};
+> +#define GEN_OBJ_ID_DIGEST_SIZE	(SHA_DIGEST_WORDS * sizeof(__u32))
+> +#define GEN_OBJ_ID_BUF_SIZE	(GEN_OBJ_ID_DIGEST_SIZE * 2)
+> +
+> +#ifdef CONFIG_GENERIC_OBJECT_ID
+> +extern int gen_obj_id(void *ptr, int type, char *dst, unsigned long size);
+> +#else
+> +static inline int gen_obj_id(void *ptr, int type, char *dst, unsigned long size)
 > +{
-> +	struct virtnet_info *vi = vdev->priv;
+> +	return -EINVAL;
+> +}
+> +#endif
 > +
-> +	virtqueue_disable_cb(vi->rvq);
-> +	virtqueue_disable_cb(vi->svq);
-> +	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_CTRL_VQ))
-> +		virtqueue_disable_cb(vi->cvq);
+> +#endif /* __KERNEL__ */
+> +#endif /* _LINUX_GEN_OBJ_ID_H */
+> Index: linux-2.6.git/mm/Kconfig
+> ===================================================================
+> --- linux-2.6.git.orig/mm/Kconfig
+> +++ linux-2.6.git/mm/Kconfig
+> @@ -373,3 +373,21 @@ config CLEANCACHE
+>  	  in a negligible performance hit.
+>  
+>  	  If unsure, say Y to enable cleancache
 > +
-> +	netif_device_detach(vi->dev);
-> +	cancel_delayed_work_sync(&vi->refill);
+> +config GENERIC_OBJECT_ID
+> +	bool "Enable generic object ID infrastructure"
+> +	depends on CHECKPOINT_RESTORE
+> +	depends on CRYPTO_SHA1
+> +	default n
+> +	help
+> +	  Turn on functionality that can generate IDs for kernel
+> +	  objects, which are exported to the userspace via /proc
+> +	  filesystem.
 > +
-> +	if (netif_running(vi->dev))
-> +		napi_disable(&vi->napi);
+> +	  It is useful if you need to examine kernel objects and test
+> +	  if they are shared between several tasks. These IDs should never
+> +	  be used for anything but the "sameness" test. The IDs are dynamic
+> +	  and valid only while object is alive. Once it get freed or kernel
+> +	  is rebooted, the IDs will be changed.
 > +
-> +	remove_vq_common(vi);
+> +	  If unsure, say N here.
+> Index: linux-2.6.git/mm/Makefile
+> ===================================================================
+> --- linux-2.6.git.orig/mm/Makefile
+> +++ linux-2.6.git/mm/Makefile
+> @@ -51,3 +51,4 @@ obj-$(CONFIG_HWPOISON_INJECT) += hwpoiso
+>  obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+>  obj-$(CONFIG_DEBUG_KMEMLEAK_TEST) += kmemleak-test.o
+>  obj-$(CONFIG_CLEANCACHE) += cleancache.o
+> +obj-$(CONFIG_GENERIC_OBJECT_ID) += gen_obj_id.o
+> Index: linux-2.6.git/mm/gen_obj_id.c
+> ===================================================================
+> --- /dev/null
+> +++ linux-2.6.git/mm/gen_obj_id.c
+> @@ -0,0 +1,81 @@
+> +#include <linux/kernel.h>
+> +#include <linux/capability.h>
+> +#include <linux/cryptohash.h>
+> +#include <linux/string.h>
+> +#include <linux/random.h>
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/cache.h>
+> +#include <linux/bug.h>
+> +#include <linux/err.h>
+> +
+> +#include <linux/gen_obj_id.h>
+> +
+> +static unsigned long gen_obj_cookie[GEN_OBJ_ID_TYPES] __read_mostly;
+> +
+> +int gen_obj_id(void *ptr, int type, char *dst, unsigned long size)
+> +{
+> +	__u32 hash[SHA_DIGEST_WORDS];
+> +	__u32 workspace[SHA_WORKSPACE_WORDS];
+> +	__u8 extract[SHA_MESSAGE_BYTES];
+> +	__u8 *t = (__u8 *)hash;
+> +	unsigned long id;
+> +	int i;
+> +
+> +	BUG_ON(type >= GEN_OBJ_ID_TYPES);
+> +
+> +	if (!capable(CAP_SYS_ADMIN) ||
+> +	    size < GEN_OBJ_ID_BUF_SIZE) {
+> +		memset(dst, '0', size);
+> +		return -EINVAL;
+> +	}
+> +
+> +	id = ((unsigned long)ptr) ^ gen_obj_cookie[type];
+> +
+> +	BUILD_BUG_ON(SHA_MESSAGE_BYTES % sizeof(long));
+> +
+> +	/*
+> +	 * Expand the ID to the whole message block.
+> +	 */
+> +	for (i = 0; i < (SHA_MESSAGE_BYTES / sizeof(long)); i++)
+> +		((long *)extract)[i] = id;
+> +
+> +	sha_init(hash);
+> +	sha_transform(hash, extract, workspace);
+> +
+> +	snprintf(dst, size,
+> +		 "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x"
+> +		 "%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x",
+> +		 t[ 0], t[ 1], t[ 2], t[ 3], t[ 4],
+> +		 t[ 5], t[ 6], t[ 7], t[ 8], t[ 9],
+> +		 t[10], t[11], t[12], t[13], t[14],
+> +		 t[15], t[16], t[17], t[18], t[19]);
 > +
 > +	return 0;
 > +}
 > +
-> +static int virtnet_restore(struct virtio_device *vdev)
+> +static __init int gen_obj_cookie_init(void)
 > +{
-> +	struct virtnet_info *vi = vdev->priv;
-> +	int err;
+> +#if BITS_PER_LONG == 64
+> +	const unsigned long emergency_cookie = 0xefcdab8967452301;
+> +#else
+> +	const unsigned long emergency_cookie = 0x98badcf9;
+> +#endif
+> +	int i;
 > +
-> +	err = init_vqs(vi);
-> +	if (err)
-> +		return err;
-> +
-> +	if (netif_running(vi->dev))
-
-Can virtnet close run at this point?
-If yes it's a bug.
-
-> +		virtnet_napi_enable(vi);
-> +
-> +	netif_device_attach(vi->dev);
-> +
-
-Not that open/close start/stop refill,
-I wonder whether this is a problem.
-For example, can virtnet_close run at this point,
-and cancel refill?
-
-> +	if (!try_fill_recv(vi, GFP_KERNEL))
-> +		schedule_delayed_work(&vi->refill, 0);
-
-This needs to be switched to non reentrant wq too?
-
+> +	for (i = 0; i < GEN_OBJ_ID_TYPES; i++) {
+> +		get_random_bytes(&gen_obj_cookie[i],
+> +				 sizeof(unsigned long));
+> +		/*
+> +		 * In 'impossible' case of random-bytes = 0
+> +		 * we still would have non-zero value.
+> +		 */
+> +		gen_obj_cookie[i] =
+> +			(gen_obj_cookie[i] & __PAGE_OFFSET) +
+> +			(emergency_cookie & ~__PAGE_OFFSET);
+> +	}
 > +
 > +	return 0;
 > +}
-> +#endif
 > +
->  static struct virtio_device_id id_table[] = {
->  	{ VIRTIO_ID_NET, VIRTIO_DEV_ANY_ID },
->  	{ 0 },
-> @@ -1183,6 +1225,10 @@ static struct virtio_driver virtio_net_driver = {
->  	.probe =	virtnet_probe,
->  	.remove =	__devexit_p(virtnet_remove),
->  	.config_changed = virtnet_config_changed,
-> +#ifdef CONFIG_PM
-> +	.freeze =	virtnet_freeze,
-> +	.restore =	virtnet_restore,
-> +#endif
->  };
->  
->  static int __init init(void)
-> -- 
-> 1.7.7.4
+> +late_initcall(gen_obj_cookie_init);
+
+-- 
+tejun
