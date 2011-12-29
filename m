@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab1L2U4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 15:56:43 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39999 "EHLO
+	id S1754635Ab1L2U53 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 15:57:29 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:40038 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab1L2U4k (ORCPT
+	with ESMTP id S1753579Ab1L2U5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 15:56:40 -0500
-Date: Thu, 29 Dec 2011 12:56:11 -0800
+	Thu, 29 Dec 2011 15:57:25 -0500
+Date: Thu, 29 Dec 2011 12:56:58 -0800
 From: tip-bot for Robert Richter <robert.richter@amd.com>
-Message-ID: <tip-b1e5a9bee3c342dd3281aef76d1be1044dd8addf@git.kernel.org>
+Message-ID: <tip-37a058ea006de0cc24553637afa788594a975176@git.kernel.org>
 Cc: acme@redhat.com, linux-kernel@vger.kernel.org, eranian@google.com,
         hpa@zytor.com, mingo@redhat.com, peterz@infradead.org,
-        robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
+        robert.richter@amd.com, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, acme@redhat.com, peterz@infradead.org,
-        robert.richter@amd.com, fweisbec@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <1323248577-11268-8-git-send-email-robert.richter@amd.com>
-References: <1323248577-11268-8-git-send-email-robert.richter@amd.com>
+        linux-kernel@vger.kernel.org, acme@redhat.com, robert.richter@amd.com,
+        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1323969824-9711-4-git-send-email-robert.richter@amd.com>
+References: <1323969824-9711-4-git-send-email-robert.richter@amd.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Use for_each_set_bit()
-  to iterate over feature flags
-Git-Commit-ID: b1e5a9bee3c342dd3281aef76d1be1044dd8addf
+Subject: [tip:perf/core] perf script:
+  Add generic perl handler to process events
+Git-Commit-ID: 37a058ea006de0cc24553637afa788594a975176
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,391 +30,170 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:56:17 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Thu, 29 Dec 2011 12:57:03 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b1e5a9bee3c342dd3281aef76d1be1044dd8addf
-Gitweb:     http://git.kernel.org/tip/b1e5a9bee3c342dd3281aef76d1be1044dd8addf
+Commit-ID:  37a058ea006de0cc24553637afa788594a975176
+Gitweb:     http://git.kernel.org/tip/37a058ea006de0cc24553637afa788594a975176
 Author:     Robert Richter <robert.richter@amd.com>
-AuthorDate: Wed, 7 Dec 2011 10:02:57 +0100
+AuthorDate: Thu, 15 Dec 2011 18:23:43 +0100
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 23 Dec 2011 17:03:36 -0200
+CommitDate: Fri, 23 Dec 2011 17:05:48 -0200
 
-perf tools: Use for_each_set_bit() to iterate over feature flags
+perf script: Add generic perl handler to process events
 
-This patch introduces the for_each_set_bit() macro and modifies feature
-implementation to use it.
+The current perf scripting facility only supports tracepoints. This
+patch implements a generic perl handler to support other events than
+tracepoints too.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
+This patch introduces a function process_event() that is called by perf
+for each sample. The function is called with byte streams as arguments
+containing information about the event, its attributes, the sample and
+raw data. Perl's unpack() function can easily be used for byte decoding.
+The following is the default implementation for process_event() that can
+also be generated with perf script:
+
+ # Packed byte string args of process_event():
+ #
+ # $event:       union perf_event        util/event.h
+ # $attr:        struct perf_event_attr  linux/perf_event.h
+ # $sample:      struct perf_sample      util/event.h
+ # $raw_data:    perf_sample->raw_data   util/event.h
+
+ sub process_event
+ {
+         my ($event, $attr, $sample, $raw_data) = @_;
+
+         my @event       = unpack("LSS", $event);
+         my @attr        = unpack("LLQQQQQLLQQ", $attr);
+         my @sample      = unpack("QLLQQQQQLL", $sample);
+         my @raw_data    = unpack("C*", $raw_data);
+
+         use Data::Dumper;
+         print Dumper \@event, \@attr, \@sample, \@raw_data;
+ }
+
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1323248577-11268-8-git-send-email-robert.richter@amd.com
+Link: http://lkml.kernel.org/r/1323969824-9711-4-git-send-email-robert.richter@amd.com
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/header.c               |  118 ++++++++------------------------
- tools/perf/util/header.h               |    6 +-
- tools/perf/util/include/linux/bitops.h |  118 ++++++++++++++++++++++++++++++++
- 3 files changed, 149 insertions(+), 93 deletions(-)
+ .../perf/util/scripting-engines/trace-event-perl.c |   73 ++++++++++++++++++--
+ 1 files changed, 67 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 7132683..e509a9d 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -8,6 +8,7 @@
- #include <stdlib.h>
- #include <linux/list.h>
- #include <linux/kernel.h>
-+#include <linux/bitops.h>
- #include <sys/utsname.h>
+diff --git a/tools/perf/util/scripting-engines/trace-event-perl.c b/tools/perf/util/scripting-engines/trace-event-perl.c
+index a82ce43..e30749e 100644
+--- a/tools/perf/util/scripting-engines/trace-event-perl.c
++++ b/tools/perf/util/scripting-engines/trace-event-perl.c
+@@ -30,6 +30,7 @@
+ #include "../thread.h"
+ #include "../event.h"
+ #include "../trace-event.h"
++#include "../evsel.h"
  
- #include "evlist.h"
-@@ -1353,7 +1354,7 @@ static int perf_file_section__fprintf_info(struct perf_file_section *section,
- 				"%d, continuing...\n", section->offset, feat);
- 		return 0;
- 	}
--	if (feat < HEADER_TRACE_INFO || feat >= HEADER_LAST_FEATURE) {
-+	if (feat >= HEADER_LAST_FEATURE) {
- 		pr_warning("unknown feature %d\n", feat);
- 		return 0;
- 	}
-@@ -1390,6 +1391,8 @@ static int do_write_feat(int fd, struct perf_header *h, int type,
- 	int ret = 0;
- 
- 	if (perf_header__has_feat(h, type)) {
-+		if (!feat_ops[type].write)
-+			return -1;
- 
- 		(*p)->offset = lseek(fd, 0, SEEK_CUR);
- 
-@@ -1416,6 +1419,7 @@ static int perf_header__adds_write(struct perf_header *header,
- 	struct perf_file_section *feat_sec, *p;
- 	int sec_size;
- 	u64 sec_start;
-+	int feat;
- 	int err;
- 
- 	session = container_of(header, struct perf_session, header);
-@@ -1433,61 +1437,10 @@ static int perf_header__adds_write(struct perf_header *header,
- 	sec_start = header->data_offset + header->data_size;
- 	lseek(fd, sec_start + sec_size, SEEK_SET);
- 
--	err = do_write_feat(fd, header, HEADER_TRACE_INFO, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_TRACE_INFO);
--
--	err = do_write_feat(fd, header, HEADER_BUILD_ID, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_BUILD_ID);
--
--	err = do_write_feat(fd, header, HEADER_HOSTNAME, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_HOSTNAME);
--
--	err = do_write_feat(fd, header, HEADER_OSRELEASE, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_OSRELEASE);
--
--	err = do_write_feat(fd, header, HEADER_VERSION, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_VERSION);
--
--	err = do_write_feat(fd, header, HEADER_ARCH, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_ARCH);
--
--	err = do_write_feat(fd, header, HEADER_NRCPUS, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_NRCPUS);
--
--	err = do_write_feat(fd, header, HEADER_CPUDESC, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_CPUDESC);
--
--	err = do_write_feat(fd, header, HEADER_CPUID, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_CPUID);
--
--	err = do_write_feat(fd, header, HEADER_TOTAL_MEM, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_TOTAL_MEM);
--
--	err = do_write_feat(fd, header, HEADER_CMDLINE, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_CMDLINE);
--
--	err = do_write_feat(fd, header, HEADER_EVENT_DESC, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_EVENT_DESC);
--
--	err = do_write_feat(fd, header, HEADER_CPU_TOPOLOGY, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_CPU_TOPOLOGY);
--
--	err = do_write_feat(fd, header, HEADER_NUMA_TOPOLOGY, &p, evlist);
--	if (err)
--		perf_header__clear_feat(header, HEADER_NUMA_TOPOLOGY);
-+	for_each_set_bit(feat, header->adds_features, HEADER_FEAT_BITS) {
-+		if (do_write_feat(fd, header, feat, &p, evlist))
-+			perf_header__clear_feat(header, feat);
-+	}
- 
- 	lseek(fd, sec_start, SEEK_SET);
- 	/*
-@@ -1634,20 +1587,20 @@ static int perf_header__getbuffer64(struct perf_header *header,
- int perf_header__process_sections(struct perf_header *header, int fd,
- 				  void *data,
- 				  int (*process)(struct perf_file_section *section,
--				  struct perf_header *ph,
--				  int feat, int fd, void *data))
-+						 struct perf_header *ph,
-+						 int feat, int fd, void *data))
- {
--	struct perf_file_section *feat_sec;
-+	struct perf_file_section *feat_sec, *sec;
- 	int nr_sections;
- 	int sec_size;
--	int idx = 0;
--	int err = -1, feat = 1;
-+	int feat;
-+	int err;
- 
- 	nr_sections = bitmap_weight(header->adds_features, HEADER_FEAT_BITS);
- 	if (!nr_sections)
- 		return 0;
- 
--	feat_sec = calloc(sizeof(*feat_sec), nr_sections);
-+	feat_sec = sec = calloc(sizeof(*feat_sec), nr_sections);
- 	if (!feat_sec)
- 		return -1;
- 
-@@ -1655,20 +1608,16 @@ int perf_header__process_sections(struct perf_header *header, int fd,
- 
- 	lseek(fd, header->data_offset + header->data_size, SEEK_SET);
- 
--	if (perf_header__getbuffer64(header, fd, feat_sec, sec_size))
-+	err = perf_header__getbuffer64(header, fd, feat_sec, sec_size);
-+	if (err < 0)
- 		goto out_free;
- 
--	err = 0;
--	while (idx < nr_sections && feat < HEADER_LAST_FEATURE) {
--		if (perf_header__has_feat(header, feat)) {
--			struct perf_file_section *sec = &feat_sec[idx++];
--
--			err = process(sec, header, feat, fd, data);
--			if (err < 0)
--				break;
--		}
--		++feat;
-+	for_each_set_bit(feat, header->adds_features, HEADER_LAST_FEATURE) {
-+		err = process(sec++, header, feat, fd, data);
-+		if (err < 0)
-+			goto out_free;
- 	}
-+	err = 0;
- out_free:
- 	free(feat_sec);
- 	return err;
-@@ -1903,32 +1852,21 @@ static int perf_file_section__process(struct perf_file_section *section,
- 		return 0;
- 	}
- 
-+	if (feat >= HEADER_LAST_FEATURE) {
-+		pr_debug("unknown feature %d, continuing...\n", feat);
-+		return 0;
-+	}
-+
- 	switch (feat) {
- 	case HEADER_TRACE_INFO:
- 		trace_report(fd, false);
- 		break;
--
- 	case HEADER_BUILD_ID:
- 		if (perf_header__read_build_ids(ph, fd, section->offset, section->size))
- 			pr_debug("Failed to read buildids, continuing...\n");
- 		break;
--
--	case HEADER_HOSTNAME:
--	case HEADER_OSRELEASE:
--	case HEADER_VERSION:
--	case HEADER_ARCH:
--	case HEADER_NRCPUS:
--	case HEADER_CPUDESC:
--	case HEADER_CPUID:
--	case HEADER_TOTAL_MEM:
--	case HEADER_CMDLINE:
--	case HEADER_EVENT_DESC:
--	case HEADER_CPU_TOPOLOGY:
--	case HEADER_NUMA_TOPOLOGY:
--		break;
--
- 	default:
--		pr_debug("unknown feature %d, continuing...\n", feat);
-+		break;
- 	}
- 
- 	return 0;
-diff --git a/tools/perf/util/header.h b/tools/perf/util/header.h
-index 09365b3..ac4ec95 100644
---- a/tools/perf/util/header.h
-+++ b/tools/perf/util/header.h
-@@ -10,7 +10,8 @@
- #include <linux/bitmap.h>
- 
- enum {
--	HEADER_TRACE_INFO = 1,
-+	HEADER_RESERVED		= 0,	/* always cleared */
-+	HEADER_TRACE_INFO	= 1,
- 	HEADER_BUILD_ID,
- 
- 	HEADER_HOSTNAME,
-@@ -27,10 +28,9 @@ enum {
- 	HEADER_NUMA_TOPOLOGY,
- 
- 	HEADER_LAST_FEATURE,
-+	HEADER_FEAT_BITS	= 256,
- };
- 
--#define HEADER_FEAT_BITS			256
--
- struct perf_file_section {
- 	u64 offset;
- 	u64 size;
-diff --git a/tools/perf/util/include/linux/bitops.h b/tools/perf/util/include/linux/bitops.h
-index 305c848..62cdee7 100644
---- a/tools/perf/util/include/linux/bitops.h
-+++ b/tools/perf/util/include/linux/bitops.h
-@@ -9,6 +9,17 @@
- #define BITS_PER_BYTE           8
- #define BITS_TO_LONGS(nr)       DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
- 
-+#define for_each_set_bit(bit, addr, size) \
-+	for ((bit) = find_first_bit((addr), (size));		\
-+	     (bit) < (size);					\
-+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
-+
-+/* same as for_each_set_bit() but use bit as value to start with */
-+#define for_each_set_bit_cont(bit, addr, size) \
-+	for ((bit) = find_next_bit((addr), (size), (bit));	\
-+	     (bit) < (size);					\
-+	     (bit) = find_next_bit((addr), (size), (bit) + 1))
-+
- static inline void set_bit(int nr, unsigned long *addr)
- {
- 	addr[nr / BITS_PER_LONG] |= 1UL << (nr % BITS_PER_LONG);
-@@ -30,4 +41,111 @@ static inline unsigned long hweight_long(unsigned long w)
- 	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
+ #include <EXTERN.h>
+ #include <perl.h>
+@@ -247,11 +248,11 @@ static inline struct event *find_cache_event(int type)
+ 	return event;
  }
  
-+#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
+-static void perl_process_event(union perf_event *pevent __unused,
+-			       struct perf_sample *sample,
+-			       struct perf_evsel *evsel,
+-			       struct machine *machine __unused,
+-			       struct thread *thread)
++static void perl_process_tracepoint(union perf_event *pevent __unused,
++				    struct perf_sample *sample,
++				    struct perf_evsel *evsel,
++				    struct machine *machine __unused,
++				    struct thread *thread)
+ {
+ 	struct format_field *field;
+ 	static char handler[256];
+@@ -267,6 +268,9 @@ static void perl_process_event(union perf_event *pevent __unused,
+ 
+ 	dSP;
+ 
++	if (evsel->attr.type != PERF_TYPE_TRACEPOINT)
++		return;
 +
-+/**
-+ * __ffs - find first bit in word.
-+ * @word: The word to search
-+ *
-+ * Undefined if no bit exists, so code should check against 0 first.
-+ */
-+static __always_inline unsigned long __ffs(unsigned long word)
+ 	type = trace_parse_common_type(data);
+ 
+ 	event = find_cache_event(type);
+@@ -334,6 +338,42 @@ static void perl_process_event(union perf_event *pevent __unused,
+ 	LEAVE;
+ }
+ 
++static void perl_process_event_generic(union perf_event *pevent __unused,
++				       struct perf_sample *sample,
++				       struct perf_evsel *evsel __unused,
++				       struct machine *machine __unused,
++				       struct thread *thread __unused)
 +{
-+	int num = 0;
++	dSP;
 +
-+#if BITS_PER_LONG == 64
-+	if ((word & 0xffffffff) == 0) {
-+		num += 32;
-+		word >>= 32;
-+	}
-+#endif
-+	if ((word & 0xffff) == 0) {
-+		num += 16;
-+		word >>= 16;
-+	}
-+	if ((word & 0xff) == 0) {
-+		num += 8;
-+		word >>= 8;
-+	}
-+	if ((word & 0xf) == 0) {
-+		num += 4;
-+		word >>= 4;
-+	}
-+	if ((word & 0x3) == 0) {
-+		num += 2;
-+		word >>= 2;
-+	}
-+	if ((word & 0x1) == 0)
-+		num += 1;
-+	return num;
++	if (!get_cv("process_event", 0))
++		return;
++
++	ENTER;
++	SAVETMPS;
++	PUSHMARK(SP);
++	XPUSHs(sv_2mortal(newSVpvn((const char *)pevent, pevent->header.size)));
++	XPUSHs(sv_2mortal(newSVpvn((const char *)&evsel->attr, sizeof(evsel->attr))));
++	XPUSHs(sv_2mortal(newSVpvn((const char *)sample, sizeof(*sample))));
++	XPUSHs(sv_2mortal(newSVpvn((const char *)sample->raw_data, sample->raw_size)));
++	PUTBACK;
++	call_pv("process_event", G_SCALAR);
++	SPAGAIN;
++	PUTBACK;
++	FREETMPS;
++	LEAVE;
 +}
 +
-+/*
-+ * Find the first set bit in a memory region.
-+ */
-+static inline unsigned long
-+find_first_bit(const unsigned long *addr, unsigned long size)
++static void perl_process_event(union perf_event *pevent,
++			       struct perf_sample *sample,
++			       struct perf_evsel *evsel,
++			       struct machine *machine,
++			       struct thread *thread)
 +{
-+	const unsigned long *p = addr;
-+	unsigned long result = 0;
-+	unsigned long tmp;
-+
-+	while (size & ~(BITS_PER_LONG-1)) {
-+		if ((tmp = *(p++)))
-+			goto found;
-+		result += BITS_PER_LONG;
-+		size -= BITS_PER_LONG;
-+	}
-+	if (!size)
-+		return result;
-+
-+	tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
-+	if (tmp == 0UL)		/* Are any bits set? */
-+		return result + size;	/* Nope. */
-+found:
-+	return result + __ffs(tmp);
++	perl_process_tracepoint(pevent, sample, evsel, machine, thread);
++	perl_process_event_generic(pevent, sample, evsel, machine, thread);
 +}
 +
-+/*
-+ * Find the next set bit in a memory region.
-+ */
-+static inline unsigned long
-+find_next_bit(const unsigned long *addr, unsigned long size, unsigned long offset)
-+{
-+	const unsigned long *p = addr + BITOP_WORD(offset);
-+	unsigned long result = offset & ~(BITS_PER_LONG-1);
-+	unsigned long tmp;
+ static void run_start_sub(void)
+ {
+ 	dSP; /* access to Perl stack */
+@@ -555,7 +595,28 @@ static int perl_generate_script(const char *outfile)
+ 	fprintf(ofp, "sub print_header\n{\n"
+ 		"\tmy ($event_name, $cpu, $secs, $nsecs, $pid, $comm) = @_;\n\n"
+ 		"\tprintf(\"%%-20s %%5u %%05u.%%09u %%8u %%-20s \",\n\t       "
+-		"$event_name, $cpu, $secs, $nsecs, $pid, $comm);\n}");
++		"$event_name, $cpu, $secs, $nsecs, $pid, $comm);\n}\n");
 +
-+	if (offset >= size)
-+		return size;
-+	size -= result;
-+	offset %= BITS_PER_LONG;
-+	if (offset) {
-+		tmp = *(p++);
-+		tmp &= (~0UL << offset);
-+		if (size < BITS_PER_LONG)
-+			goto found_first;
-+		if (tmp)
-+			goto found_middle;
-+		size -= BITS_PER_LONG;
-+		result += BITS_PER_LONG;
-+	}
-+	while (size & ~(BITS_PER_LONG-1)) {
-+		if ((tmp = *(p++)))
-+			goto found_middle;
-+		result += BITS_PER_LONG;
-+		size -= BITS_PER_LONG;
-+	}
-+	if (!size)
-+		return result;
-+	tmp = *p;
-+
-+found_first:
-+	tmp &= (~0UL >> (BITS_PER_LONG - size));
-+	if (tmp == 0UL)		/* Are any bits set? */
-+		return result + size;	/* Nope. */
-+found_middle:
-+	return result + __ffs(tmp);
-+}
-+
- #endif
++	fprintf(ofp,
++		"\n# Packed byte string args of process_event():\n"
++		"#\n"
++		"# $event:\tunion perf_event\tutil/event.h\n"
++		"# $attr:\tstruct perf_event_attr\tlinux/perf_event.h\n"
++		"# $sample:\tstruct perf_sample\tutil/event.h\n"
++		"# $raw_data:\tperf_sample->raw_data\tutil/event.h\n"
++		"\n"
++		"sub process_event\n"
++		"{\n"
++		"\tmy ($event, $attr, $sample, $raw_data) = @_;\n"
++		"\n"
++		"\tmy @event\t= unpack(\"LSS\", $event);\n"
++		"\tmy @attr\t= unpack(\"LLQQQQQLLQQ\", $attr);\n"
++		"\tmy @sample\t= unpack(\"QLLQQQQQLL\", $sample);\n"
++		"\tmy @raw_data\t= unpack(\"C*\", $raw_data);\n"
++		"\n"
++		"\tuse Data::Dumper;\n"
++		"\tprint Dumper \\@event, \\@attr, \\@sample, \\@raw_data;\n"
++		"}\n");
+ 
+ 	fclose(ofp);
+ 
