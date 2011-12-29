@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754848Ab1L2Qvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 11:51:49 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:60189 "EHLO mgw2.diku.dk"
+	id S1754865Ab1L2Qvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 11:51:53 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:60183 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754679Ab1L2Qvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754690Ab1L2Qvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 29 Dec 2011 11:51:38 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Liam Girdwood <lrg@ti.com>
@@ -13,9 +13,9 @@ Cc: kernel-janitors@vger.kernel.org,
         Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 10/10] sound/soc/davinci/davinci-vcif.c: use devm_ functions
-Date: Thu, 29 Dec 2011 17:51:20 +0100
-Message-Id: <1325177489-13815-2-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 1/10] sound/soc/au1x/ac97c.c: use devm_ functions
+Date: Thu, 29 Dec 2011 17:51:29 +0100
+Message-Id: <1325177489-13815-11-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1325177489-13815-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1325177489-13815-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -33,47 +33,94 @@ device and is only freed in the remove function.
 Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
 
 ---
- sound/soc/davinci/davinci-vcif.c |   14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ sound/soc/au1x/ac97c.c |   40 +++++++++++++---------------------------
+ 1 file changed, 13 insertions(+), 27 deletions(-)
 
-diff --git a/sound/soc/davinci/davinci-vcif.c b/sound/soc/davinci/davinci-vcif.c
-index 70ce10c..da030ff 100644
---- a/sound/soc/davinci/davinci-vcif.c
-+++ b/sound/soc/davinci/davinci-vcif.c
-@@ -210,7 +210,9 @@ static int davinci_vcif_probe(struct platform_device *pdev)
- 	struct davinci_vcif_dev *davinci_vcif_dev;
- 	int ret;
+diff --git a/sound/soc/au1x/ac97c.c b/sound/soc/au1x/ac97c.c
+index 7771934..c5ac244 100644
+--- a/sound/soc/au1x/ac97c.c
++++ b/sound/soc/au1x/ac97c.c
+@@ -229,35 +229,34 @@ static int __devinit au1xac97c_drvprobe(struct platform_device *pdev)
+ 	struct resource *iores, *dmares;
+ 	struct au1xpsc_audio_data *ctx;
  
--	davinci_vcif_dev = kzalloc(sizeof(struct davinci_vcif_dev), GFP_KERNEL);
-+	davinci_vcif_dev = devm_kzalloc(&pdev->dev,
-+					sizeof(struct davinci_vcif_dev),
-+					GFP_KERNEL);
- 	if (!davinci_vcif_dev) {
- 		dev_dbg(&pdev->dev,
- 			"could not allocate memory for private data\n");
-@@ -235,23 +237,15 @@ static int davinci_vcif_probe(struct platform_device *pdev)
- 	ret = snd_soc_register_dai(&pdev->dev, &davinci_vcif_dai);
- 	if (ret != 0) {
- 		dev_err(&pdev->dev, "could not register dai\n");
--		goto fail;
+-	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
++	ctx = devm_kzalloc(&pdev->dev, sizeof(*ctx), GFP_KERNEL);
+ 	if (!ctx)
+ 		return -ENOMEM;
+ 
+ 	mutex_init(&ctx->lock);
+ 
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!iores) {
+-		ret = -ENODEV;
+-		goto out0;
+-	}
++	if (!iores)
++		return -ENODEV;
+ 
+-	ret = -EBUSY;
+-	if (!request_mem_region(iores->start, resource_size(iores),
+-				pdev->name))
+-		goto out0;
++	if (!devm_request_mem_region(&pdev->dev, iores->start,
++				     resource_size(iores),
++				     pdev->name))
++		return -EBUSY;
+ 
+-	ctx->mmio = ioremap_nocache(iores->start, resource_size(iores));
++	ctx->mmio = devm_ioremap_nocache(&pdev->dev, iores->start,
++					 resource_size(iores));
+ 	if (!ctx->mmio)
+-		goto out1;
++		return -EBUSY;
+ 
+ 	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+ 	if (!dmares)
+-		goto out2;
++		return -EBUSY;
+ 	ctx->dmaids[SNDRV_PCM_STREAM_PLAYBACK] = dmares->start;
+ 
+ 	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+ 	if (!dmares)
+-		goto out2;
++		return -EBUSY;
+ 	ctx->dmaids[SNDRV_PCM_STREAM_CAPTURE] = dmares->start;
+ 
+ 	/* switch it on */
+@@ -271,33 +270,20 @@ static int __devinit au1xac97c_drvprobe(struct platform_device *pdev)
+ 
+ 	ret = snd_soc_register_dai(&pdev->dev, &au1xac97c_dai_driver);
+ 	if (ret)
+-		goto out2;
 +		return ret;
- 	}
  
+ 	ac97c_workdata = ctx;
  	return 0;
 -
--fail:
--	kfree(davinci_vcif_dev);
--
+-out2:
+-	iounmap(ctx->mmio);
+-out1:
+-	release_mem_region(iores->start, resource_size(iores));
+-out0:
+-	kfree(ctx);
 -	return ret;
  }
  
- static int davinci_vcif_remove(struct platform_device *pdev)
+ static int __devexit au1xac97c_drvremove(struct platform_device *pdev)
  {
--	struct davinci_vcif_dev *davinci_vcif_dev = dev_get_drvdata(&pdev->dev);
--
+ 	struct au1xpsc_audio_data *ctx = platform_get_drvdata(pdev);
+-	struct resource *r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 
  	snd_soc_unregister_dai(&pdev->dev);
--	kfree(davinci_vcif_dev);
+ 
+ 	WR(ctx, AC97_ENABLE, EN_D);	/* clock off, disable */
+ 
+-	iounmap(ctx->mmio);
+-	release_mem_region(r->start, resource_size(r));
+-	kfree(ctx);
+-
+ 	ac97c_workdata = NULL;	/* MDEV */
  
  	return 0;
- }
 
