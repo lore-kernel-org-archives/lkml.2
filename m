@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab1L2Qkm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 11:40:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33006 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754227Ab1L2Qkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 11:40:40 -0500
-Message-ID: <4EFC9872.7000708@suse.cz>
-Date: Thu, 29 Dec 2011 17:42:26 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-modules@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] kbuild: add target to install gzipped modules
-References: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
-In-Reply-To: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
-Content-Type: text/plain; charset=ISO-8859-2
+	id S1754705Ab1L2Qnj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 11:43:39 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37462 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab1L2Qnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 11:43:37 -0500
+Message-ID: <1325177015.9304.9.camel@hp>
+Subject: Re: SCHED_RR && time_slice
+From: Kirill Tkhai <kirill.tkhai@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 29 Dec 2011 20:43:35 +0400
+In-Reply-To: <20111226165930.GA4075@redhat.com>
+References: <1324584060.4222.15.camel@hp> <20111226165930.GA4075@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 29.12.2011 16:50, Lucas De Marchi napsal(a):
-> Add target in Makefile to compress the module after it's installed.
-> Module-init-tools and libkmod can handle gzipped modules.
+Thanks for the answers, Oleg.
 
-I am not convinced that this is a needed feature. Compressing elf files
-means that depmod and modinfo need to read the whole compressed file
-from disk and unpack it, while only a couple of bytes need to be read.
-Those concerned about disk space either compile only the few needed
-modules and/or use some compressed filesystem, which allows for random
-access.
+On Mon, 2011-12-26 at 17:59 +0100, Oleg Nesterov wrote:
+> On 12/23, Kirill Tkhai wrote:
+> >
+> > RT class uses its own fixed
+> > timeslice (in case of RR),
+> 
+> which looks confusing too, btw.
+> 
+> sched_set_scheduler() does not initialize rt.time_slice, and
+> INIT_TASK() sets time_slice = HZ (not DEF_TIMESLICE).
+> 
 
+I talk about task_tick_rt(). When time_slice is over, it is being
+renewed. New value is DEF_TIMESLICE. This happens in case of SCHED_RR
+class.
 
-> This is not much useful for distributions because the package will gzip
-> the modules and call depmod in a install rule. However for those
-> compiling the kernel on their own and debugging module loading, it's
-> useful so depmod doesn't have to be called twice and we don't have to
-> manually compress the modules.
+Kirill
 
-I understand that you need *.ko.gz support in kmod for the sake of
-feature parity and that such patch would help you with debugging. But I
-doubt there is use for it apart of developing kmod. Wouldn't an external
-script like this do the same job for you?
-
-#!/bin/sh
-make "$@" modules_install
-rel="$(make -s "$@" kernelrelease)"
-find "/lib/modules/$rel" -name '*.ko' -exec gzip '{}' ';'
-depmod "$rel"
-
-Michal
