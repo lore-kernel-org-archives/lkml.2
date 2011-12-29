@@ -1,18 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab1L2MlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 07:41:09 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:21899 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753579Ab1L2MjY (ORCPT
+	id S1754181Ab1L2MjU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 07:39:20 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:60912 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753978Ab1L2MjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 07:39:24 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 29 Dec 2011 13:39:05 +0100
+	Thu, 29 Dec 2011 07:39:18 -0500
+Date: Thu, 29 Dec 2011 13:39:02 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 04/11] mm: page_alloc: introduce alloc_contig_range()
+Subject: [PATCH 01/11] mm: page_alloc: set_migratetype_isolate: drain PCP prior
+ to isolating
 In-reply-to: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
@@ -30,8 +28,11 @@ Cc: Michal Nazarewicz <mina86@mina86.com>,
         Chunsang Jeong <chunsang.jeong@linaro.org>,
         Dave Hansen <dave@linux.vnet.ibm.com>,
         Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Message-id: <1325162352-24709-5-git-send-email-m.szyprowski@samsung.com>
+Message-id: <1325162352-24709-2-git-send-email-m.szyprowski@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.7.3
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
 References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -39,243 +40,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michal Nazarewicz <mina86@mina86.com>
 
-This commit adds the alloc_contig_range() function which tries
-to allocate given range of pages.  It tries to migrate all
-already allocated pages that fall in the range thus freeing them.
-Once all pages in the range are freed they are removed from the
-buddy system thus allocated for the caller to use.
+When set_migratetype_isolate() sets pageblock's migrate type, it does
+not change each page_private data.  This makes sense, as the function
+has no way of knowing what kind of information page_private stores.
 
-__alloc_contig_migrate_range() borrows some code from KAMEZAWA
-Hiroyuki's __alloc_contig_pages().
+Unfortunately, if a page is on PCP list, it's page_private indicates
+its migrate type.  This means, that if a page on PCP list gets
+isolated, a call to free_pcppages_bulk() will assume it has the old
+migrate type rather than MIGRATE_ISOLATE.  This means, that a page
+which should be isolated, will end up on a free list of it's old
+migrate type.
+
+Coincidentally, at the very end, set_migratetype_isolate() calls
+drain_all_pages() which leads to calling free_pcppages_bulk(), which
+does the wrong thing.
+
+To avoid this situation, this commit moves the draining prior to
+setting pageblock's migratetype and moving pages from old free list to
+MIGRATETYPE_ISOLATE's free list.
+
+Because of spin locks this is a non-trivial change however as both
+set_migratetype_isolate() and free_pcppages_bulk() grab zone->lock.
+To solve this problem, this commit renames free_pcppages_bulk() to
+__free_pcppages_bulk() and changes it so that it no longer grabs
+zone->lock instead requiring caller to hold it.  This commit later
+adds a __zone_drain_all_pages() function which works just like
+drain_all_pages() expects that it drains only pages from a single zone
+and assumes that caller holds zone->lock.
+
+A side effect is that instead of draining pages from all zones,
+set_migratetype_isolate() now drain only pages from zone pageblock it
+operates on is in.
 
 Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
 ---
- include/linux/page-isolation.h |    3 +
- mm/page_alloc.c                |  190 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 193 insertions(+), 0 deletions(-)
+ mm/page_alloc.c |   56 ++++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 43 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-index 051c1b1..d305080 100644
---- a/include/linux/page-isolation.h
-+++ b/include/linux/page-isolation.h
-@@ -33,5 +33,8 @@ test_pages_isolated(unsigned long start_pfn, unsigned long end_pfn);
- extern int set_migratetype_isolate(struct page *page);
- extern void unset_migratetype_isolate(struct page *page);
- 
-+/* The below functions must be run on a range from a single zone. */
-+int alloc_contig_range(unsigned long start, unsigned long end);
-+void free_contig_range(unsigned long pfn, unsigned nr_pages);
- 
- #endif
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index f88b320..47b0a85 100644
+index 2b8ba3a..f88b320 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -57,6 +57,7 @@
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
- #include <linux/prefetch.h>
-+#include <linux/migrate.h>
+@@ -590,15 +590,16 @@ static inline int free_pages_check(struct page *page)
+  *
+  * And clear the zone's pages_scanned counter, to hold off the "all pages are
+  * pinned" detection logic.
++ *
++ * Caller must hold zone->lock.
+  */
+-static void free_pcppages_bulk(struct zone *zone, int count,
++static void __free_pcppages_bulk(struct zone *zone, int count,
+ 					struct per_cpu_pages *pcp)
+ {
+ 	int migratetype = 0;
+ 	int batch_free = 0;
+ 	int to_free = count;
  
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -5711,6 +5712,195 @@ out:
- 	spin_unlock_irqrestore(&zone->lock, flags);
+-	spin_lock(&zone->lock);
+ 	zone->all_unreclaimable = 0;
+ 	zone->pages_scanned = 0;
+ 
+@@ -628,13 +629,13 @@ static void free_pcppages_bulk(struct zone *zone, int count,
+ 			page = list_entry(list->prev, struct page, lru);
+ 			/* must delete as __free_one_page list manipulates */
+ 			list_del(&page->lru);
++
+ 			/* MIGRATE_MOVABLE list may include MIGRATE_RESERVEs */
+ 			__free_one_page(page, zone, 0, page_private(page));
+ 			trace_mm_page_pcpu_drain(page, 0, page_private(page));
+ 		} while (--to_free && --batch_free && !list_empty(list));
+ 	}
+ 	__mod_zone_page_state(zone, NR_FREE_PAGES, count);
+-	spin_unlock(&zone->lock);
  }
  
-+static unsigned long pfn_align_to_maxpage_down(unsigned long pfn)
+ static void free_one_page(struct zone *zone, struct page *page, int order,
+@@ -1067,14 +1068,14 @@ void drain_zone_pages(struct zone *zone, struct per_cpu_pages *pcp)
+ 	unsigned long flags;
+ 	int to_drain;
+ 
+-	local_irq_save(flags);
++	spin_lock_irqsave(&zone->lock, flags);
+ 	if (pcp->count >= pcp->batch)
+ 		to_drain = pcp->batch;
+ 	else
+ 		to_drain = pcp->count;
+-	free_pcppages_bulk(zone, to_drain, pcp);
++	__free_pcppages_bulk(zone, to_drain, pcp);
+ 	pcp->count -= to_drain;
+-	local_irq_restore(flags);
++	spin_unlock_irqrestore(&zone->lock, flags);
+ }
+ #endif
+ 
+@@ -1099,7 +1100,9 @@ static void drain_pages(unsigned int cpu)
+ 
+ 		pcp = &pset->pcp;
+ 		if (pcp->count) {
+-			free_pcppages_bulk(zone, pcp->count, pcp);
++			spin_lock(&zone->lock);
++			__free_pcppages_bulk(zone, pcp->count, pcp);
++			spin_unlock(&zone->lock);
+ 			pcp->count = 0;
+ 		}
+ 		local_irq_restore(flags);
+@@ -1122,6 +1125,32 @@ void drain_all_pages(void)
+ 	on_each_cpu(drain_local_pages, NULL, 1);
+ }
+ 
++/* Caller must hold zone->lock. */
++static void __zone_drain_local_pages(void *arg)
 +{
-+	return pfn & ~(MAX_ORDER_NR_PAGES - 1);
-+}
++	struct per_cpu_pages *pcp;
++	struct zone *zone = arg;
++	unsigned long flags;
 +
-+static unsigned long pfn_align_to_maxpage_up(unsigned long pfn)
-+{
-+	return ALIGN(pfn, MAX_ORDER_NR_PAGES);
-+}
-+
-+static struct page *
-+__cma_migrate_alloc(struct page *page, unsigned long private, int **resultp)
-+{
-+	return alloc_page(GFP_HIGHUSER_MOVABLE);
-+}
-+
-+static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-+{
-+	/* This function is based on compact_zone() from compaction.c. */
-+
-+	unsigned long pfn = start;
-+	int ret = -EBUSY;
-+	unsigned tries = 0;
-+
-+	struct compact_control cc = {
-+		.nr_migratepages = 0,
-+		.order = -1,
-+		.zone = page_zone(pfn_to_page(start)),
-+		.sync = true,
-+	};
-+	INIT_LIST_HEAD(&cc.migratepages);
-+
-+	migrate_prep_local();
-+
-+	while (pfn < end || cc.nr_migratepages) {
-+		/* Abort on signal */
-+		if (fatal_signal_pending(current)) {
-+			ret = -EINTR;
-+			goto done;
-+		}
-+
-+		/* Get some pages to migrate. */
-+		if (list_empty(&cc.migratepages)) {
-+			cc.nr_migratepages = 0;
-+			pfn = isolate_migratepages_range(cc.zone, &cc,
-+							 pfn, end);
-+			if (!pfn) {
-+				ret = -EINTR;
-+				goto done;
-+			}
-+			tries = 0;
-+		}
-+
-+		/* Try to migrate. */
-+		ret = migrate_pages(&cc.migratepages, __cma_migrate_alloc,
-+				    0, false, true);
-+
-+		/* Migrated all of them? Great! */
-+		if (list_empty(&cc.migratepages))
-+			continue;
-+
-+		/* Try five times. */
-+		if (++tries == 5) {
-+			ret = ret < 0 ? ret : -EBUSY;
-+			goto done;
-+		}
-+
-+		/* Before each time drain everything and reschedule. */
-+		lru_add_drain_all();
-+		drain_all_pages();
-+		cond_resched();
++	local_irq_save(flags);
++	pcp = &per_cpu_ptr(zone->pageset, smp_processor_id())->pcp;
++	if (pcp->count) {
++		/* Caller holds zone->lock, no need to grab it. */
++		__free_pcppages_bulk(zone, pcp->count, pcp);
++		pcp->count = 0;
 +	}
-+	ret = 0;
-+
-+done:
-+	/* Make sure all pages are isolated. */
-+	if (!ret) {
-+		lru_add_drain_all();
-+		drain_all_pages();
-+		if (WARN_ON(test_pages_isolated(start, end)))
-+			ret = -EBUSY;
-+	}
-+
-+	/* Release pages */
-+	putback_lru_pages(&cc.migratepages);
-+
-+	return ret;
++	local_irq_restore(flags);
 +}
 +
-+/**
-+ * alloc_contig_range() -- tries to allocate given range of pages
-+ * @start:	start PFN to allocate
-+ * @end:	one-past-the-last PFN to allocate
-+ *
-+ * The PFN range does not have to be pageblock or MAX_ORDER_NR_PAGES
-+ * aligned, hovewer it's callers responsibility to guarantee that we
-+ * are the only thread that changes migrate type of pageblocks the
-+ * pages fall in.
-+ *
-+ * Returns zero on success or negative error code.  On success all
-+ * pages which PFN is in (start, end) are allocated for the caller and
-+ * need to be freed with free_contig_range().
++/*
++ * Like drain_all_pages() but operates on a single zone.  Caller must
++ * hold zone->lock.
 + */
-+int alloc_contig_range(unsigned long start, unsigned long end)
++static void __zone_drain_all_pages(struct zone *zone)
 +{
-+	unsigned long outer_start, outer_end;
-+	int ret;
-+
-+	/*
-+	 * What we do here is we mark all pageblocks in range as
-+	 * MIGRATE_ISOLATE.  Because of the way page allocator work, we
-+	 * align the range to MAX_ORDER pages so that page allocator
-+	 * won't try to merge buddies from different pageblocks and
-+	 * change MIGRATE_ISOLATE to some other migration type.
-+	 *
-+	 * Once the pageblocks are marked as MIGRATE_ISOLATE, we
-+	 * migrate the pages from an unaligned range (ie. pages that
-+	 * we are interested in).  This will put all the pages in
-+	 * range back to page allocator as MIGRATE_ISOLATE.
-+	 *
-+	 * When this is done, we take the pages in range from page
-+	 * allocator removing them from the buddy system.  This way
-+	 * page allocator will never consider using them.
-+	 *
-+	 * This lets us mark the pageblocks back as
-+	 * MIGRATE_CMA/MIGRATE_MOVABLE so that free pages in the
-+	 * MAX_ORDER aligned range but not in the unaligned, original
-+	 * range are put back to page allocator so that buddy can use
-+	 * them.
-+	 */
-+
-+	ret = start_isolate_page_range(pfn_align_to_maxpage_down(start),
-+				       pfn_align_to_maxpage_up(end));
-+	if (ret)
-+		goto done;
-+
-+	ret = __alloc_contig_migrate_range(start, end);
-+	if (ret)
-+		goto done;
-+
-+	/*
-+	 * Pages from [start, end) are within a MAX_ORDER_NR_PAGES
-+	 * aligned blocks that are marked as MIGRATE_ISOLATE.  What's
-+	 * more, all pages in [start, end) are free in page allocator.
-+	 * What we are going to do is to allocate all pages from
-+	 * [start, end) (that is remove them from page allocater).
-+	 *
-+	 * The only problem is that pages at the beginning and at the
-+	 * end of interesting range may be not aligned with pages that
-+	 * page allocator holds, ie. they can be part of higher order
-+	 * pages.  Because of this, we reserve the bigger range and
-+	 * once this is done free the pages we are not interested in.
-+	 */
-+
-+	ret = 0;
-+	while (!PageBuddy(pfn_to_page(start & (~0UL << ret))))
-+		if (WARN_ON(++ret >= MAX_ORDER)) {
-+			ret = -EINVAL;
-+			goto done;
-+		}
-+
-+	outer_start = start & (~0UL << ret);
-+	outer_end = isolate_freepages_range(page_zone(pfn_to_page(outer_start)),
-+					    outer_start, end, NULL);
-+	if (!outer_end) {
-+		ret = -EBUSY;
-+		goto done;
-+	}
-+	outer_end += outer_start;
-+
-+	/* Free head and tail (if any) */
-+	if (start != outer_start)
-+		free_contig_range(outer_start, start - outer_start);
-+	if (end != outer_end)
-+		free_contig_range(end, outer_end - end);
-+
-+	ret = 0;
-+done:
-+	undo_isolate_page_range(pfn_align_to_maxpage_down(start),
-+				pfn_align_to_maxpage_up(end));
-+	return ret;
++	on_each_cpu(__zone_drain_local_pages, zone, 1);
 +}
 +
-+void free_contig_range(unsigned long pfn, unsigned nr_pages)
-+{
-+	for (; nr_pages--; ++pfn)
-+		__free_page(pfn_to_page(pfn));
-+}
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- /*
-  * All pages in the range must be isolated before calling this.
+ #ifdef CONFIG_HIBERNATION
+ 
+ void mark_free_pages(struct zone *zone)
+@@ -1202,7 +1231,9 @@ void free_hot_cold_page(struct page *page, int cold)
+ 		list_add(&page->lru, &pcp->lists[migratetype]);
+ 	pcp->count++;
+ 	if (pcp->count >= pcp->high) {
+-		free_pcppages_bulk(zone, pcp->batch, pcp);
++		spin_lock(&zone->lock);
++		__free_pcppages_bulk(zone, pcp->batch, pcp);
++		spin_unlock(&zone->lock);
+ 		pcp->count -= pcp->batch;
+ 	}
+ 
+@@ -3684,10 +3715,10 @@ static int __zone_pcp_update(void *data)
+ 		pset = per_cpu_ptr(zone->pageset, cpu);
+ 		pcp = &pset->pcp;
+ 
+-		local_irq_save(flags);
+-		free_pcppages_bulk(zone, pcp->count, pcp);
++		spin_lock_irqsave(&zone->lock, flags);
++		__free_pcppages_bulk(zone, pcp->count, pcp);
+ 		setup_pageset(pset, batch);
+-		local_irq_restore(flags);
++		spin_unlock_irqrestore(&zone->lock, flags);
+ 	}
+ 	return 0;
+ }
+@@ -5657,13 +5688,12 @@ int set_migratetype_isolate(struct page *page)
+ 
+ out:
+ 	if (!ret) {
++		__zone_drain_all_pages(zone);
+ 		set_pageblock_migratetype(page, MIGRATE_ISOLATE);
+ 		move_freepages_block(zone, page, MIGRATE_ISOLATE);
+ 	}
+ 
+ 	spin_unlock_irqrestore(&zone->lock, flags);
+-	if (!ret)
+-		drain_all_pages();
+ 	return ret;
+ }
+ 
 -- 
 1.7.1.569.g6f426
 
