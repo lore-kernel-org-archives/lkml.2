@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754612Ab1L2QVa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 11:21:30 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44741 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432Ab1L2QV2 (ORCPT
+	id S1754637Ab1L2QXW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 11:23:22 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60203 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754227Ab1L2QXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 11:21:28 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=rrYGrSk31WUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=pGLkceISAAAA:8 a=tiYEVMgxcTES9AiF14sA:9 a=rlNRB61zkL8a9JZLiY8A:7 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325175685.24045.5.camel@gandalf.stny.rr.com>
-Subject: Re: ftrace performance impact with different configuration
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: Lei Wen <adrian.wenl@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, leiwen@marvell.com
-Date: Thu, 29 Dec 2011 11:21:25 -0500
-In-Reply-To: <CAH+eYFDb4r235jAGjr7j5R5C+9YK9WeXXjVZGWQUB=330sOi0Q@mail.gmail.com>
-References: <CALZhoSRVNp=Sj2u2GHiQhuHOEdrfiM58KzG+RutvJV=8CoCpTQ@mail.gmail.com>
-	 <CAH+eYFDb4r235jAGjr7j5R5C+9YK9WeXXjVZGWQUB=330sOi0Q@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 29 Dec 2011 11:23:19 -0500
+Date: Thu, 29 Dec 2011 08:23:13 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix to allow mounting a hierarchy by name
+Message-ID: <20111229162313.GD3516@google.com>
+References: <4EF9291D.7030208@cn.fujitsu.com>
+ <20111227163535.GA17712@google.com>
+ <4EFAB2E2.4040008@cn.fujitsu.com>
+ <20111228163631.GN17712@google.com>
+ <4EFBD55E.5030106@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EFBD55E.5030106@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-29 at 21:12 +0530, Rabin Vincent wrote:
-> On Thu, Dec 29, 2011 at 14:08, Lei Wen <adrian.wenl@gmail.com> wrote:
-> > 2. Seem dynamic ftrace also could involve some penalty for the running
-> > system, although it patching the running kernel with nop stub...
-> >
-> > For the second item, is there anyone done some research before that
-> > could zero the cost for the running system when the tracing is not
-> > enabled yet?
+Hello,
+
+On Thu, Dec 29, 2011 at 10:50:06AM +0800, Li Zefan wrote:
+> Tejun Heo wrote:
+> > Hello, Li.
+> > 
+> > On Wed, Dec 28, 2011 at 02:10:42PM +0800, Li Zefan wrote:
+> >> The "name" option was introduced along with the "none" option, so we
+> >> can distinguish between different cgroup hierarchies which have no
+> >> bound subsystems, like this:
+> >>
+> >> 	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
+> >> 	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
+> >>
+> >> As the name is unique, we have this "mount by hierarchy name" feature.
+> > 
+> > I could be missing something but does that add anything other than
+> > naming convenience?
 > 
-> One thing that needs to be fixed (for ARM) is that for the new-style
-> mcounts, the nop that's currently being done is not really a nop -- it
-> removes the function call, but there is still an unnecessary push/pop
-> sequence.  This should be modified to have the push {lr} removed too.
-> (Two instructions replaced instead of one.)
+> The name option is necessary, otherwise how can we mount hierarchies
+> as shown in the above example?
 
+I don't think mounting itself would be a problem.  We don't need name
+option to create multiple tmpfs instances, right?  The problem is
+referencing to them after they're created.  Filesystems generally
+don't need such identifier because, once they're created, they can be
+referenced by their mount points.  I'm still not very familiar with
+different corners of cgroup, so it's entirely possible that I'm
+missing something.  If I am, please point me to it.
 
-Unfortunately you can't do this, at least not when the kernel is
-preemptible.
+> > If it's a redundant feature which has been broken over a year without
+> > anyone complaining, it really doesn't need to exist.  It might not
+> > save a lot of code but would save some WTH moments.
+> > 
+> 
+> The redundant feature is mouting existing hierarchies by specifying name
+> only, and the cleanup patch I sent has this feature removed in effect.
+> 
+> kernel/cgroup.c |   15 +++++++--------
+> 1 files changed, 7 insertions(+), 8 deletions(-)
+> 
+> This is why I'm not so keen to remove the feature.
 
-Say we have:
+Code reduction is definitely a plus and I don't want to remove a
+useful feature either, but an unusual redundant feature without
+necessity is confusing / misleading even if it doesn't necessasrily
+add a lot of code complexity.
 
-	push lr
-	call mcount
+Also, I at least want to understand why it's actually necessary before
+applying the patches.  :)
 
-then we convert it to:
+Thanks.
 
-	nop
-	nop
-
-The conversion to nop should not be an issue, and this is what would be
-done when the system boots up. But then we enable tracing, some low
-priority task could have been preempted after executing the first nop,
-and we call stop machine to do the conversions (if no stop machine, then
-lets just say a higher prio task is running while we do the
-conversions). Then we add both the push lr and call back. But when that
-lower priority task gets scheduled in again, it would have looked like
-it ran:
-
-	nop
-	call mcount
-
-Since the call to mcount requires that the lr was pushed, this process
-will crash when the return is done and we never saved the lr.
-
-If you don't like the push. the best thing you can do is convert to:
-
-	jmp 1f
-	call mcount
-1:
-
-This may not be as cheap as two nops, but it may be better than a push.
-
--- Steve
-
-
+-- 
+tejun
