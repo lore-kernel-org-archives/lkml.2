@@ -1,108 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902Ab1L2MK4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 07:10:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27754 "EHLO mx1.redhat.com"
+	id S1753928Ab1L2MMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 07:12:48 -0500
+Received: from mga14.intel.com ([143.182.124.37]:17773 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753787Ab1L2MKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 07:10:53 -0500
-Date: Thu, 29 Dec 2011 13:05:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Denys Vlasenko <dvlasenk@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        =?utf-8?Q?=C5=81ukasz?= Michalik <lmi@ift.uni.wroc.pl>,
-        "Dmitry V. Levin" <ldv@altlinux.org>
-Subject: Re: Possible bug introduced in commit 9b84cca
-Message-ID: <20111229120506.GA23653@redhat.com>
-References: <201112281955.55200.vda.linux@googlemail.com> <20111229113245.GA18062@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111229113245.GA18062@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753810Ab1L2MMq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 07:12:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="90521950"
+Date: Thu, 29 Dec 2011 12:25:31 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Rakib Mullick <rakib.mullick@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] staging, gma500: Fix warning in power.c
+Message-ID: <20111229122531.08e17846@bob.linux.org.uk>
+In-Reply-To: <CADZ9YHiW=RcS2bJd3hgNk+kwtQu5=8wgYM1rqv1EO9pbad7aBA@mail.gmail.com>
+References: <1324579605.19018.3.camel@localhost.localdomain>
+	<20111228140445.70c11f9c@bob.linux.org.uk>
+	<CADZ9YHhORC2N-vs3DjwXnCQCkcTEbieF4xqBxPiXskdZu7WySg@mail.gmail.com>
+	<CADZ9YHiW=RcS2bJd3hgNk+kwtQu5=8wgYM1rqv1EO9pbad7aBA@mail.gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29, Oleg Nesterov wrote:
->
-> On 12/28, Denys Vlasenko wrote:
-> >
-> > Looks like after commit 9b84cca, waitpid under strace
-> > sometimes returns bogus ECHILD while child does exist.
-> >
-> > I did not yet confirm that the bug appeared exactly
-> > at this commit - Łukasz says that.
-> >
-> > I confirmed that bug exists on kernels 3.1.6 (in Fedora)
-> > and 3.1.0-rc4 (vanilla).
-> >
-> > We have a testcase which spawns N threads, each of them
-> > performs an infinite loop "fork, exit in child, waitpid
-> > in parent for the child". When straced, sometimes waitpid
-> > returns ECHILD.
->
-> You mean, the natural parent gets ECHILD, not strace?
->
-> > The key part is here:
-> >
-> > 931   clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xf763dbd8) = 1048
-> > 1048  exit_group(42)                    = ?
-> > 931   waitpid(1048,  <unfinished ...>
-> > 1048  +++ exited with 42 +++
-> > 931   <... waitpid resumed> 0xf763d3a0, 0) = -1 ECHILD (No child processes)
->
-> Argh. I seem to understand
->
-> I didn't check, but I think the offending commit is 823b018e5b1196d8
-> "job control: Small reorganization of wait_consider_task()".
->
-> ptracer sees EXIT_ZOMBIE and temporary sets EXIT_DEAD, this fools
-> the ->real_parent.
->
-> I need to think. The fix should be simple, but perhaps it is the
-> time to kill EXIT_DEAD altogether. I'll try to make the patch
-> after vacation. In the next year ;)
->
-> Thanks a lot Denys!
+> Do I have to resend the patch, prepared against -rc7? Patch is on it's
+> way towards mainline through linux-next (Greg took it in his tree
+> previously). It might conflict during merging, not sure. If requires I
+> can send it again.
 
-I've made the simple test-case, it triggers the bug.
+What I meant was that the old driver is marked BROKEN for -next (ie
+won't be built), and in fact I sent GregKH a request to delete it.
 
-Oleg.
+The driver in updated form has moved to drivers/gpu/drm/gma500 in the
+-next tree.
 
-#include <sys/ptrace.h>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <assert.h>
-
-int main(void)
-{
-	int pid, status;
-
-	pid = fork();
-	if (!pid) {
-		for (;;) {
-			if (!fork())
-				return 0x23;
-			assert(waitpid(-1, &status, 0) > 0);
-			assert(status == 0x2300);
-		}
-	}
-
-	assert(ptrace(PTRACE_ATTACH, pid, 0,0) == 0);
-	assert(waitpid(-1, NULL, 0) == pid);
-
-	assert(ptrace(PTRACE_SETOPTIONS, pid, 0, PTRACE_O_TRACEFORK) == 0);
-
-	for (;;) {
-		ptrace(PTRACE_CONT, pid, 0, 0);
-		pid = waitpid(-1, NULL, 0);
-		assert(pid > 0);
-	}
-
-	return 0;
-}
-
+Alan
