@@ -1,102 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab1L2Lts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 06:49:48 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33552 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752427Ab1L2Lto convert rfc822-to-8bit (ORCPT
+	id S1753663Ab1L2LwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 06:52:18 -0500
+Received: from s15407518.onlinehome-server.info ([82.165.136.167]:49515 "EHLO
+	s15407518.onlinehome-server.info" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753205Ab1L2LwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 06:49:44 -0500
+	Thu, 29 Dec 2011 06:52:15 -0500
+From: Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
+To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH] s3c_adc_battery: average over more than one adc sample
+Date: Thu, 29 Dec 2011 12:52:07 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.37-2-686; KDE/4.4.5; i686; ; )
+Cc: Vasily Khoruzhick <anarsoul@gmail.com>, linux-kernel@vger.kernel.org,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Heiko =?iso-8859-1?q?St=FCbner?= <heiko@sntech.de>
 MIME-Version: 1.0
-In-Reply-To: <4EFC52F0.1010709@t-online.de>
-References: <87ty4ss0z4.fsf@prochyra.name>
-	<CAHR064h7a=RQq=p1J+gKpC5_6ow8ChUFFkC39HwtmerHaMksjw@mail.gmail.com>
-	<87ty4qdpna.fsf@prochyra.name>
-	<20111224142028.GA32171@srcf.ucam.org>
-	<CANq1E4S+Sa1BERtR6aNH-ypRo+oJ1fRXkuVa+tREy5qVodv2pw@mail.gmail.com>
-	<CAHR064jyubYf5d_KekB8+wqmGXcm8v4Gg9jVt3W9Kx_Ljh++GA@mail.gmail.com>
-	<CANq1E4T9LtrBgAxhZAcZZc_gN5yuBm0Yn1ukYiWFvH84hKavBA@mail.gmail.com>
-	<4EFC3FA8.6020401@gmail.com>
-	<4EFC52F0.1010709@t-online.de>
-Date: Thu, 29 Dec 2011 12:49:41 +0100
-Message-ID: <CAHR064hwKj7TvEb=+HWWYYCAwkQ976MQid1PKhJgPqafpPBhwQ@mail.gmail.com>
-Subject: Re: [PATCH] Platform: samsung-laptop: add DMI information for Samsung
- N150 Plus
-From: Corentin Chary <corentin.chary@gmail.com>
-To: =?UTF-8?Q?Richard_Sch=C3=BCtz?= <r.schtz@t-online.de>
-Cc: David Herrmann <dh.herrmann@googlemail.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Andrzej Prochyra <andrzej@prochyra.name>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Zhang, Rui" <rui.zhang@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201112291252.08563.heiko@sntech.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 29, 2011 at 12:45 PM, Richard Schütz <r.schtz@t-online.de> wrote:
-> Am 29.12.2011 11:23, schrieb Corentin Chary:
->>
->> On 12/26/2011 11:22 AM, David Herrmann wrote:
->>
->>> On Mon, Dec 26, 2011 at 10:49 AM, Corentin Chary
->>> <corentin.chary@gmail.com> wrote:
->>>>
->>>> On Sat, Dec 24, 2011 at 3:28 PM, David Herrmann
->>>> <dh.herrmann@googlemail.com> wrote:
->>>>>
->>>>> On Sat, Dec 24, 2011 at 3:20 PM, Matthew
->>>>> Garrett<mjg59@srcf.ucam.org> wrote:
->>>>>>
->>>>>> On Sat, Dec 24, 2011 at 02:12:57PM +0000, Andrzej Prochyra wrote:
->>>>>>>
->>>>>>> 'acpi_video0' not functional. Brightness can be controlled through
->>>>>>> intel_backlight interface. There are 21 brightness levels and the
->>>>>>> backlight can be turned off.
->>>>>>
->>>>>>
->>>>>> If acpi_video0 doesn't work then we either need to work out why
->>>>>> it's not
->>>>>> working or make it vanish completely, so this patch isn't the correct
->>>>>> approach.
->>>>>
->>>>>
->>>>> Just to make clear, intel_backlight isn't working properly either. If
->>>>> my laptop boots with backlight at 50% then intel_backlight will only
->>>>> work in the range 0%-50% on my machine. If I use the samsung module to
->>>>> set it to 100% then intel_backlight works correctly in the range
->>>>> 0-100% until next reboot/suspend.
->
->
-> The same problem exists on my N145 Plus, too.
->
->>>>> So I'd recommend staying with the samsung module and disabling the
->>>>> acpi_backlight entirely. The samsung module is the only backlight
->>>>> control which works properly.
->>>>
->>>>
->>>> Can I take a look at the DSDT to see how it's broken ?
->>>> If it's really not functional, then it should be added to the
->>>> blacklist in video_detect.c
->>>
->>>
->>> Raw and disassembled dsdt is attached.
->>
->>
->> Took a quick look but didn't find anything obvious. What happens exactly
->> with acpi_video0 ?
->
->
-> Either Samsung's ACPI is totally broken [ACPI Warning: _BQC returned an
-> invalid level (20110623/video-472)] or they just don't support backlight
-> setting via ACPI at all. Therefore it's implemented in the SABI stuff. So
-> every device that needs SABI should be blacklisted in video_detect.
+Some sources for adc battery information provide only inaccurate results
+where the read value differs from the real value with positive and negative
+offsets. For such sources it can be more accurate to collect two or more
+value sample and use the average of all collected values.
 
-And that's ? Because new laptops that use SABI seems to have a working
-acpi_video0.
-Currently, N1{4,5}* seems to be affected.
+This patch adds pdata options volt_samples, current_samples and
+backup_volt_samples to specifiy the number of samples to collect,
+reads the specified number of samples and calculates the average of those.
+For unset sample-number-values a default of 1 is assumed.
 
+Signed-off-by: Heiko Stuebner <heiko@sntech.de>
+---
+ drivers/power/s3c_adc_battery.c |   25 ++++++++++++++++++++++---
+ include/linux/s3c_adc_battery.h |    4 ++++
+ 2 files changed, 26 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/power/s3c_adc_battery.c b/drivers/power/s3c_adc_battery.c
+index d32d0d7..98520a8 100644
+--- a/drivers/power/s3c_adc_battery.c
++++ b/drivers/power/s3c_adc_battery.c
+@@ -47,6 +47,22 @@ static void s3c_adc_bat_ext_power_changed(struct power_supply *psy)
+ 		msecs_to_jiffies(JITTER_DELAY));
+ }
+ 
++static int gather_samples(struct s3c_adc_client *client, int num, int channel)
++{
++	int value, i;
++
++	/* default to 1 if nothing is set */
++	if (num < 1)
++		num = 1;
++
++	value = 0;
++	for (i = 0; i < num; i++)
++		value += s3c_adc_read(client, channel);
++	value /= num;
++
++	return value;
++}
++
+ static enum power_supply_property s3c_adc_backup_bat_props[] = {
+ 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
+ 	POWER_SUPPLY_PROP_VOLTAGE_MIN,
+@@ -67,7 +83,8 @@ static int s3c_adc_backup_bat_get_property(struct power_supply *psy,
+ 	if (bat->volt_value < 0 ||
+ 		jiffies_to_msecs(jiffies - bat->timestamp) >
+ 			BAT_POLL_INTERVAL) {
+-		bat->volt_value = s3c_adc_read(bat->client,
++		bat->volt_value = gather_samples(bat->client,
++			bat->pdata->backup_volt_samples,
+ 			bat->pdata->backup_volt_channel);
+ 		bat->volt_value *= bat->pdata->backup_volt_mult;
+ 		bat->timestamp = jiffies;
+@@ -139,9 +156,11 @@ static int s3c_adc_bat_get_property(struct power_supply *psy,
+ 	if (bat->volt_value < 0 || bat->cur_value < 0 ||
+ 		jiffies_to_msecs(jiffies - bat->timestamp) >
+ 			BAT_POLL_INTERVAL) {
+-		bat->volt_value = s3c_adc_read(bat->client,
++		bat->volt_value = gather_samples(bat->client,
++			bat->pdata->volt_samples,
+ 			bat->pdata->volt_channel) * bat->pdata->volt_mult;
+-		bat->cur_value = s3c_adc_read(bat->client,
++		bat->cur_value = gather_samples(bat->client,
++			bat->pdata->current_samples,
+ 			bat->pdata->current_channel) * bat->pdata->current_mult;
+ 		bat->timestamp = jiffies;
+ 	}
+diff --git a/include/linux/s3c_adc_battery.h b/include/linux/s3c_adc_battery.h
+index fbe58b7..99dadbf 100644
+--- a/include/linux/s3c_adc_battery.h
++++ b/include/linux/s3c_adc_battery.h
+@@ -25,6 +25,10 @@ struct s3c_adc_bat_pdata {
+ 	const unsigned int current_channel;
+ 	const unsigned int backup_volt_channel;
+ 
++	const unsigned int volt_samples;
++	const unsigned int current_samples;
++	const unsigned int backup_volt_samples;
++
+ 	const unsigned int volt_mult;
+ 	const unsigned int current_mult;
+ 	const unsigned int backup_volt_mult;
 -- 
-Corentin Chary
-http://xf.iksaif.net
+1.7.2.3
+
