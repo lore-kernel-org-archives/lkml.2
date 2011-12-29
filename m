@@ -1,65 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab1L2Rxv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 12:53:51 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:39987 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754795Ab1L2Rxt (ORCPT
+	id S1754845Ab1L2R7M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 12:59:12 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40505 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754746Ab1L2R7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 12:53:49 -0500
-Message-ID: <4EFCB70C.50409@xenotime.net>
-Date: Thu, 29 Dec 2011 10:53:00 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 29 Dec 2011 12:59:11 -0500
+Date: Thu, 29 Dec 2011 17:59:05 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH 1/2] regulator: mc13783: Convert to devm_kzalloc()
+Message-ID: <20111229175904.GG2909@opensource.wolfsonmicro.com>
+References: <1325174163-27955-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-CC: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 28 (nfnetlink)
-References: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au> <4EFB87CC.6020105@xenotime.net> <20111228.153304.1267926241298522965.davem@davemloft.net> <20111229010330.GA2663@1984>
-In-Reply-To: <20111229010330.GA2663@1984>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325174163-27955-1-git-send-email-festevam@gmail.com>
+X-Cookie: You will contract a rare disease.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2011 05:03 PM, Pablo Neira Ayuso wrote:
-> On Wed, Dec 28, 2011 at 03:33:04PM -0500, David Miller wrote:
->> From: Randy Dunlap <rdunlap@xenotime.net>
->> Date: Wed, 28 Dec 2011 13:19:08 -0800
->>
->>> On 12/28/2011 01:18 AM, Stephen Rothwell wrote:
->>>> Hi all,
->>>>
->>>> I got bored :-(  I also hate tree wide, flag day changes :-(
->>>>
->>>> Changes since 20111222:
->>>
->>>
->>>
->>> warning: (NETFILTER_XT_MATCH_NFACCT) selects NETFILTER_NETLINK_ACCT which has unmet direct dependencies (NET && INET && NETFILTER && NETFILTER_ADVANCED)
->>>
->>> and then
->>>
->>> ERROR: "nfnetlink_subsys_unregister" [net/netfilter/nfnetlink_acct.ko] undefined!
->>> ERROR: "nfnetlink_subsys_register" [net/netfilter/nfnetlink_acct.ko] undefined!
->>>
->>>
->>> Full randconfig file is attached.
->>
->> Pablo please fix this, thanks.
+On Thu, Dec 29, 2011 at 01:56:02PM -0200, Fabio Estevam wrote:
+> Convert mc13783-regulator driver to use devm_kzalloc().
 > 
-> Please, apply the following patch.
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
-
-Thanks.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Applied, thanks.
