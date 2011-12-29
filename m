@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab1L2Qvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 11:51:43 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:60176 "EHLO mgw2.diku.dk"
+	id S1754873Ab1L2QxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 11:53:08 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:60209 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754673Ab1L2Qvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 11:51:38 -0500
+	id S1754668Ab1L2Qvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 29 Dec 2011 11:51:42 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Liam Girdwood <lrg@ti.com>
 Cc: kernel-janitors@vger.kernel.org,
@@ -13,9 +13,9 @@ Cc: kernel-janitors@vger.kernel.org,
         Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
         alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
         Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 7/10] sound/soc/codecs/jz4740.c: use devm_ functions
-Date: Thu, 29 Dec 2011 17:51:23 +0100
-Message-Id: <1325177489-13815-5-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 6/10] sound/soc/au1x/psc-i2s.c: use devm_ functions
+Date: Thu, 29 Dec 2011 17:51:24 +0100
+Message-Id: <1325177489-13815-6-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1325177489-13815-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1325177489-13815-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -33,85 +33,94 @@ device and is only freed in the remove function.
 Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
 
 ---
- sound/soc/codecs/jz4740.c |   36 ++++++++++--------------------------
- 1 file changed, 10 insertions(+), 26 deletions(-)
+ sound/soc/au1x/psc-i2s.c |   42 ++++++++++++++----------------------------
+ 1 file changed, 14 insertions(+), 28 deletions(-)
 
-diff --git a/sound/soc/codecs/jz4740.c b/sound/soc/codecs/jz4740.c
-index d73d283..ccbf0ac 100644
---- a/sound/soc/codecs/jz4740.c
-+++ b/sound/soc/codecs/jz4740.c
-@@ -353,29 +353,29 @@ static int __devinit jz4740_codec_probe(struct platform_device *pdev)
- 	struct jz4740_codec *jz4740_codec;
- 	struct resource *mem;
+diff --git a/sound/soc/au1x/psc-i2s.c b/sound/soc/au1x/psc-i2s.c
+index 5c1dc8a..0607ba3 100644
+--- a/sound/soc/au1x/psc-i2s.c
++++ b/sound/soc/au1x/psc-i2s.c
+@@ -295,33 +295,34 @@ static int __devinit au1xpsc_i2s_drvprobe(struct platform_device *pdev)
+ 	int ret;
+ 	struct au1xpsc_audio_data *wd;
  
--	jz4740_codec = kzalloc(sizeof(*jz4740_codec), GFP_KERNEL);
-+	jz4740_codec = devm_kzalloc(&pdev->dev, sizeof(*jz4740_codec),
-+				    GFP_KERNEL);
- 	if (!jz4740_codec)
+-	wd = kzalloc(sizeof(struct au1xpsc_audio_data), GFP_KERNEL);
++	wd = devm_kzalloc(&pdev->dev, sizeof(struct au1xpsc_audio_data),
++			  GFP_KERNEL);
+ 	if (!wd)
  		return -ENOMEM;
  
- 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!mem) {
- 		dev_err(&pdev->dev, "Failed to get mmio memory resource\n");
--		ret = -ENOENT;
--		goto err_free_codec;
-+		return -ENOENT;
- 	}
+ 	iores = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!iores) {
+-		ret = -ENODEV;
+-		goto out0;
+-	}
++	if (!iores)
++		return -ENODEV;
  
--	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
-+	mem = devm_request_mem_region(&pdev->dev, mem->start,
-+				      resource_size(mem), pdev->name);
- 	if (!mem) {
- 		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
--		ret = -EBUSY;
--		goto err_free_codec;
+ 	ret = -EBUSY;
+-	if (!request_mem_region(iores->start, resource_size(iores),
+-				pdev->name))
+-		goto out0;
++	if (!devm_request_mem_region(&pdev->dev, iores->start,
++				     resource_size(iores),
++				     pdev->name))
 +		return -EBUSY;
- 	}
  
--	jz4740_codec->base = ioremap(mem->start, resource_size(mem));
-+	jz4740_codec->base = devm_ioremap(&pdev->dev, mem->start,
-+					  resource_size(mem));
- 	if (!jz4740_codec->base) {
- 		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
--		ret = -EBUSY;
--		goto err_release_mem_region;
+-	wd->mmio = ioremap(iores->start, resource_size(iores));
++	wd->mmio = devm_ioremap(&pdev->dev, iores->start,
++				resource_size(iores));
+ 	if (!wd->mmio)
+-		goto out1;
 +		return -EBUSY;
- 	}
- 	jz4740_codec->mem = mem;
  
-@@ -385,33 +385,17 @@ static int __devinit jz4740_codec_probe(struct platform_device *pdev)
- 			&soc_codec_dev_jz4740_codec, &jz4740_codec_dai, 1);
- 	if (ret) {
- 		dev_err(&pdev->dev, "Failed to register codec\n");
--		goto err_iounmap;
-+		return ret;
- 	}
+ 	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+ 	if (!dmares)
+-		goto out2;
++		return -EBUSY;
+ 	wd->dmaids[SNDRV_PCM_STREAM_PLAYBACK] = dmares->start;
  
- 	return 0;
+ 	dmares = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+ 	if (!dmares)
+-		goto out2;
++		return -EBUSY;
+ 	wd->dmaids[SNDRV_PCM_STREAM_CAPTURE] = dmares->start;
+ 
+ 	/* preserve PSC clock source set up by platform (dev.platform_data
+@@ -349,23 +350,12 @@ static int __devinit au1xpsc_i2s_drvprobe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, wd);
+ 
+-	ret = snd_soc_register_dai(&pdev->dev, &wd->dai_drv);
+-	if (!ret)
+-		return 0;
 -
--err_iounmap:
--	iounmap(jz4740_codec->base);
--err_release_mem_region:
--	release_mem_region(mem->start, resource_size(mem));
--err_free_codec:
--	kfree(jz4740_codec);
--
+-out2:
+-	iounmap(wd->mmio);
+-out1:
+-	release_mem_region(iores->start, resource_size(iores));
+-out0:
+-	kfree(wd);
 -	return ret;
++	return snd_soc_register_dai(&pdev->dev, &wd->dai_drv);
  }
  
- static int __devexit jz4740_codec_remove(struct platform_device *pdev)
+ static int __devexit au1xpsc_i2s_drvremove(struct platform_device *pdev)
  {
--	struct jz4740_codec *jz4740_codec = platform_get_drvdata(pdev);
--	struct resource *mem = jz4740_codec->mem;
--
- 	snd_soc_unregister_codec(&pdev->dev);
+ 	struct au1xpsc_audio_data *wd = platform_get_drvdata(pdev);
+-	struct resource *r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
  
--	iounmap(jz4740_codec->base);
--	release_mem_region(mem->start, resource_size(mem));
--
- 	platform_set_drvdata(pdev, NULL);
--	kfree(jz4740_codec);
+ 	snd_soc_unregister_dai(&pdev->dev);
  
+@@ -374,10 +364,6 @@ static int __devexit au1xpsc_i2s_drvremove(struct platform_device *pdev)
+ 	au_writel(PSC_CTRL_DISABLE, PSC_CTRL(wd));
+ 	au_sync();
+ 
+-	iounmap(wd->mmio);
+-	release_mem_region(r->start, resource_size(r));
+-	kfree(wd);
+-
  	return 0;
  }
+ 
 
