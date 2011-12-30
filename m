@@ -1,81 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab1L3Ic1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 03:32:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40862 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461Ab1L3IcY (ORCPT
+	id S1752127Ab1L3Ist (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 03:48:49 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:33358 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751505Ab1L3Isp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 03:32:24 -0500
-Date: Fri, 30 Dec 2011 00:32:18 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.2-rc7
-Message-ID: <20111230083218.GA21621@core.coreip.homeip.net>
+	Fri, 30 Dec 2011 03:48:45 -0500
+Message-ID: <4EFD7AE3.8020403@tao.ma>
+Date: Fri, 30 Dec 2011 16:48:35 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="G4iJoqBmSsgzjUCe"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: do not drain pagevecs for mlock
+References: <1325226961-4271-1-git-send-email-tm@tao.ma> <CAHGf_=qOGy3MQgiFyfeG82+gbDXTBT5KQjgR7JqMfQ7e7RSGpA@mail.gmail.com>
+In-Reply-To: <CAHGf_=qOGy3MQgiFyfeG82+gbDXTBT5KQjgR7JqMfQ7e7RSGpA@mail.gmail.com>
+Content-Type: multipart/mixed;
+ boundary="------------070102030707020608010108"
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------070102030707020608010108
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
---G4iJoqBmSsgzjUCe
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 12/30/2011 04:11 PM, KOSAKI Motohiro wrote:
+> 2011/12/30 Tao Ma <tm@tao.ma>:
+>> In our test of mlock, we have found some severe performance regression
+>> in it. Some more investigations show that mlocked is blocked heavily
+>> by lur_add_drain_all which calls schedule_on_each_cpu and flush the work
+>> queue which is very slower if we have several cpus.
+>>
+>> So we have tried 2 ways to solve it:
+>> 1. Add a per cpu counter for all the pagevecs so that we don't schedule
+>>   and flush the lru_drain work if the cpu doesn't have any pagevecs(I
+>>   have finished the codes already).
+>> 2. Remove the lru_add_drain_all.
+>>
+>> The first one has some problems since in our product system, all the cpus
+>> are busy, so I guess there is very little chance for a cpu to have 0 pagevecs
+>> except that you run several consecutive mlocks.
+>>
+>> From the commit log which added this function(8891d6da), it seems that we
+>> don't have to call it. So the 2nd one seems to be both easy and workable and
+>> comes this patch.
+> 
+> Could you please show us your system environment and benchmark programs?
+> Usually lru_drain_** is very fast than mlock() body because it makes
+> plenty memset(page).
+The system environment is: 16 core Xeon E5620. 24G memory.
 
-Hi Linus,
+I have attached the program. It is very simple and just uses mlock/munlock.
 
-Please pull from:
+Thanks
+Tao
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+--------------070102030707020608010108
+Content-Type: text/x-csrc;
+ name="test_mlock.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="test_mlock.c"
 
-to receive updates for the input subsystem. Just a couple of fixups to
-the Sentelic touchpad driver...
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <time.h>
+#include <sys/time.h>
+#include <sys/mman.h>
 
-Changelog:
----------
+#define MM_SZ1 24
+#define MM_SZ2 56
+#define MM_SZ3 4168
 
-Tai-hwa Liang (2):
-      Input: sentelic - release mutex upon register write failure
-      Input: sentelic - fix retrieving number of buttons
+void mlock_test()
+{
+	char ptr1[MM_SZ1];
+	char ptr2[MM_SZ2];
+	char ptr3[MM_SZ3];
 
+	if(0 != mlock(ptr1, MM_SZ1) )
+		perror("mlock MM_SZ1\n");
+	if(0 != mlock(ptr2, MM_SZ2) )
+		perror("mlock MM_SZ2\n");
+	if(0 != mlock(ptr3, MM_SZ3) )
+		perror("mlock MM_SZ3\n");
 
-Diffstat:
---------
+	if(0 != munlock(ptr1, MM_SZ1) )
+		perror("munlock MM_SZ1\n");       
+	if(0 != munlock(ptr2, MM_SZ2) )
+		perror("munlock MM_SZ2\n");
+	if(0 != munlock(ptr3, MM_SZ3) )
+		perror("munlock MM_SZ3\n");
+}
 
- drivers/input/mouse/sentelic.c |    8 ++++----
- drivers/input/mouse/sentelic.h |    3 ++-
- 2 files changed, 6 insertions(+), 5 deletions(-)
+int main(int argc, char *argv[])
+{
+	int ret, opt;
+	int i,cnt;
 
---=20
-Dmitry
+	while((opt = getopt(argc, argv, "c:")) != -1 )
+	{
+		switch(opt){
+		case 'c':
+			cnt = atoi(optarg);
+			break;
+		default:
+			printf("Usage: %s [-c count] arg...\n", argv[0]);
+			exit(EXIT_FAILURE);
+		}
+	}
 
+	for(i = 0; i < cnt; i++)
+		mlock_test();
 
---G4iJoqBmSsgzjUCe
-Content-Type: application/pgp-signature
+	return 0;
+}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJO/XcRAAoJEH70+W8r6ZYqNO0QAJoYCnV9g1Ww0ZyUVOaPVrBb
-sfMyC3oTI6SJVQJmMDW7iXXK+Z8ZBnped09XkMz14F44zHkD5Oe8aQDyMatm+c7i
-lMK8nDQSitxna5URmGwTrUa5ObSPPoISBTVQg+dy5PnjiDsKebvHVMKmmsIypPU8
-EWhSQGvWHW9qZYqn+xJXJmbRpNzrX3NBYg1L5ooyC63s6t2LXHRVog31O87Q361H
-qJF+W0OsTY4rzXTWrlYCXU+tVHHcQhNxO1FvIsNXhOtWuBjOunscD9mP5B40ydkE
-3/EExY1+G9gtHJA6Fy62byijx3+Q627jX1kvqCx4gAUpncVZrLDMo/0jl9VqjfDG
-gB/faIhfqvGV2ajhuSzvxbo1u97HVsi6/o9kYoOShcCH1/unUKFulRP0q39g6GZG
-z7Ideb7yxe8U+KkTYlg9gO7algGz/j2cxagccksbQJpjdtbWJpEhBmYREdC8gnDB
-I7DRrUzVeoCFBJT4OffhLeUNuaU/+85yuI3q32DkydETABozzbJRtwrRth+x659z
-vVeRctZQdwPax1LSzGonoP6znV+WOnXyM09/R6iwdNbdGnm7t/XtIu22HM3FI4uy
-xDp7LoI/gubF1waT0V0s0oxxOtqTSqgXGSEO8jR0yY1hz8dEjvkp3YxNrYJFRt98
-ttCkO8ZpNnHsznh7G8SU
-=gfIV
------END PGP SIGNATURE-----
-
---G4iJoqBmSsgzjUCe--
+--------------070102030707020608010108--
