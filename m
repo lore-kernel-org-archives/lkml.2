@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755133Ab1L3ECc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 23:02:32 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:63011 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754987Ab1L3EC2 (ORCPT
+	id S1755142Ab1L3EG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 23:06:26 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:40035 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754999Ab1L3EGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 23:02:28 -0500
-Message-ID: <4EFD37D1.9040201@gmail.com>
-Date: Thu, 29 Dec 2011 23:02:25 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] pagemap: document KPF_THP and make page-types aware
- of it
-References: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324506228-18327-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1324506228-18327-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Thu, 29 Dec 2011 23:06:23 -0500
+Message-ID: <1325217971.4022.1.camel@phoenix>
+Subject: [PATCH v2] pxa/hx4700: add platform device and I2C info for AK4641
+ codec
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Philipp Zabel <philipp.zabel@gmail.com>,
+        Dmitry Artamonow <mad_soft@inbox.ru>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 30 Dec 2011 12:06:11 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(12/21/11 5:23 PM), Naoya Horiguchi wrote:
-> page-types, which is a common user of pagemap, gets aware of thp
-> with this patch. This helps system admins and kernel hackers know
-> about how thp works.
-> Here is a sample output of page-types over a thp:
-> 
->    $ page-types -p<pid>  --raw --list
-> 
->    voffset offset  len     flags
->    ...
->    7f9d40200       3f8400  1       ___U_lA____Ma_bH______t____________
->    7f9d40201       3f8401  1ff     ________________T_____t____________
-> 
->                 flags      page-count       MB  symbolic-flags                     long-symbolic-flags
->    0x0000000000410000             511        1  ________________T_____t____________        compound_tail,thp
->    0x000000000040d868               1        0  ___U_lA____Ma_bH______t____________        uptodate,lru,active,mmap,anonymous,swapbacked,compound_head,thp
-> 
-> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
-> Acked-by: Wu Fengguang<fengguang.wu@intel.com>
+The audio on hx4700 needs this to properly work.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
+Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Marek Vasut <marek.vasut@gmail.com>
+---
+v2: Avoid rename AK4641 power GPIOs.
+
+ arch/arm/mach-pxa/hx4700.c |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-pxa/hx4700.c b/arch/arm/mach-pxa/hx4700.c
+index fb9b62d..208eef1 100644
+--- a/arch/arm/mach-pxa/hx4700.c
++++ b/arch/arm/mach-pxa/hx4700.c
+@@ -45,6 +45,7 @@
+ #include <mach/hx4700.h>
+ #include <mach/irda.h>
+ 
++#include <sound/ak4641.h>
+ #include <video/platform_lcd.h>
+ #include <video/w100fb.h>
+ 
+@@ -765,6 +766,28 @@ static struct i2c_board_info __initdata pi2c_board_info[] = {
+ };
+ 
+ /*
++ * Asahi Kasei AK4641 on I2C
++ */
++
++static struct ak4641_platform_data ak4641_info = {
++	.gpio_power = GPIO27_HX4700_CODEC_ON,
++	.gpio_npdn  = GPIO109_HX4700_CODEC_nPDN,
++};
++
++static struct i2c_board_info i2c_board_info[] __initdata = {
++	{
++		I2C_BOARD_INFO("ak4641", 0x12),
++		.platform_data = &ak4641_info,
++	},
++};
++
++static struct platform_device audio = {
++	.name	= "hx4700-audio",
++	.id	= -1,
++};
++
++
++/*
+  * PCMCIA
+  */
+ 
+@@ -790,6 +813,7 @@ static struct platform_device *devices[] __initdata = {
+ 	&gpio_vbus,
+ 	&power_supply,
+ 	&strataflash,
++	&audio,
+ 	&pcmcia,
+ };
+ 
+@@ -827,6 +851,7 @@ static void __init hx4700_init(void)
+ 	pxa_set_ficp_info(&ficp_info);
+ 	pxa27x_set_i2c_power_info(NULL);
+ 	pxa_set_i2c_info(NULL);
++	i2c_register_board_info(0, ARRAY_AND_SIZE(i2c_board_info));
+ 	i2c_register_board_info(1, ARRAY_AND_SIZE(pi2c_board_info));
+ 	pxa2xx_set_spi_info(2, &pxa_ssp2_master_info);
+ 	spi_register_board_info(ARRAY_AND_SIZE(tsc2046_board_info));
+-- 
+1.7.5.4
+
 
 
