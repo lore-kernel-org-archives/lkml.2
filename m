@@ -1,201 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab1L3D0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 22:26:12 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:46843 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965Ab1L3D0H (ORCPT
+	id S1755051Ab1L3DjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 22:39:24 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:44148 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754971Ab1L3DjW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 22:26:07 -0500
-Date: Thu, 29 Dec 2011 19:25:59 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Shridhar Rasal <srasal@nvidia.com>,
-        "rydberg@euromail.se" <rydberg@euromail.se>,
-        Rakesh Iyer <riyer@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH 1/1] input: keyboard: Set configuration registers
-Message-ID: <20111230032559.GB17850@core.coreip.homeip.net>
-References: <1323415758-16822-1-git-send-email-srasal@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF1751860550@HQMAIL01.nvidia.com>
- <3849551.l2KNPKMSmh@dtor-d630.eng.vmware.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17518605E5@HQMAIL01.nvidia.com>
+	Thu, 29 Dec 2011 22:39:22 -0500
+Message-ID: <4EFD3266.4080701@gmail.com>
+Date: Thu, 29 Dec 2011 22:39:18 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17518605E5@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] pagemap: avoid splitting thp when reading /proc/pid/pagemap
+References: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324506228-18327-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1324506228-18327-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 03:17:54PM -0800, Stephen Warren wrote:
-> Dmitry Torokhov wrote at Friday, December 09, 2011 2:25 PM:
-> > On Friday, December 09, 2011 12:10:43 PM Stephen Warren wrote:
-> > > Shridhar Rasal wrote at Friday, December 09, 2011 12:29 AM:
-> > > > To: dmitry.torokhov@gmail.com
-> > > > Cc: rydberg@euromail.se; Stephen Warren; Rakesh Iyer;
-> > > > linux-kernel@vger.kernel.org; linux- input@vger.kernel.org;
-> > > > linux-tegra@vger.kernel.org; Shridhar Rasal Subject: [PATCH 1/1] input:
-> > > > keyboard: Set configuration registers
-> > > >
-> > > > -Set only REQUIRED row and column configuration register to
-> > > > PROPER values to avoid continuously generating KBC input events.
-> > > > -Use *en* field in pin_cfg, to check GPIO_x_ROW_EN register
-> > > > should be set or clear.
-> > > >
-> > > > Signed-off-by: Shridhar Rasal <srasal@nvidia.com>
-> > >
-> > > I wondered if num==0 could be used instead of a new en field, but 0 is a
-> > > valid row/column number, so no. As such,
-> > >
-> > > Acked-by: Stephen Warren <swarren@nvidia.com>
-> > 
-> > Can we pass in number of pin_cfg instances in pdata and simply do not
-> > mention unneeded pins instead?
+(12/21/11 5:23 PM), Naoya Horiguchi wrote:
+> Thp split is not necessary if we explicitly check whether pmds are
+> mapping thps or not. This patch introduces the check and the code
+> to generate pagemap entries for pmds mapping thps, which results in
+> less performance impact of pagemap on thp.
 > 
-> IIUC, the array is currently a fixed size (based on the set of pins
-> Supported by the KBC), hence that won't work; there's an entry for each
-> pin saying which row/column it is.
+> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
+> Reviewed-by: Andi Kleen<ak@linux.intel.com>
 > 
-> However, I suppose if we were to change the structure of the pdata to be:
+> Changes since v1:
+>    - move pfn declaration to the beginning of pagemap_pte_range()
+> ---
+>   fs/proc/task_mmu.c |   49 +++++++++++++++++++++++++++++++++++++++++++------
+>   1 files changed, 43 insertions(+), 6 deletions(-)
 > 
-> struct tegra_kbc_pin_cfg {
->     bool is_row;
->     u8 row_col_id;
->     u8 pin_id;
-> };
+> diff --git 3.2-rc5.orig/fs/proc/task_mmu.c 3.2-rc5/fs/proc/task_mmu.c
+> index e418c5a..0df61ab 100644
+> --- 3.2-rc5.orig/fs/proc/task_mmu.c
+> +++ 3.2-rc5/fs/proc/task_mmu.c
+> @@ -600,6 +600,9 @@ struct pagemapread {
+>   	u64 *buffer;
+>   };
 > 
-> Then struct tegra_kbc_platform_data could indeed have a pointer to a
-> variable-sized array of these, which would avoid the "en" member.
+> +#define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+> +#define PAGEMAP_WALK_MASK	(PMD_MASK)
+> +
+>   #define PM_ENTRY_BYTES      sizeof(u64)
+>   #define PM_STATUS_BITS      3
+>   #define PM_STATUS_OFFSET    (64 - PM_STATUS_BITS)
+> @@ -658,6 +661,22 @@ static u64 pte_to_pagemap_entry(pte_t pte)
+>   	return pme;
+>   }
 > 
+> +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> +static u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
+> +{
+> +	u64 pme = 0;
+> +	if (pte_present(pte))
 
-How about we change bool to enum instead, like in the patch below?
+When does pte_present() return 0?
 
--- 
-Dmitry
+> +		pme = PM_PFRAME(pte_pfn(pte) + offset)
+> +			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+> +	return pme;
+> +}
+> +#else
+> +static inline u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+>   static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>   			     struct mm_walk *walk)
+>   {
+> @@ -665,14 +684,34 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+>   	struct pagemapread *pm = walk->private;
+>   	pte_t *pte;
+>   	int err = 0;
+> -
+> -	split_huge_page_pmd(walk->mm, pmd);
+> +	u64 pfn = PM_NOT_PRESENT;
+> 
+>   	/* find the first VMA at or above 'addr' */
+>   	vma = find_vma(walk->mm, addr);
+> -	for (; addr != end; addr += PAGE_SIZE) {
+> -		u64 pfn = PM_NOT_PRESENT;
+> 
+> +	spin_lock(&walk->mm->page_table_lock);
+> +	if (pmd_trans_huge(*pmd)) {
+> +		if (pmd_trans_splitting(*pmd)) {
+> +			spin_unlock(&walk->mm->page_table_lock);
+> +			wait_split_huge_page(vma->anon_vma, pmd);
+> +		} else {
+> +			for (; addr != end; addr += PAGE_SIZE) {
+> +				int offset = (addr&  ~PAGEMAP_WALK_MASK)
+> +					>>  PAGE_SHIFT;
+
+implicit narrowing conversion. offset should be unsigned long.
 
 
-Input: tegra-kbc - allow skipping setting up some of GPIO pins
+> +				pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
+> +							       offset);
 
-From: Shridhar Rasal <srasal@nvidia.com>
-
-Allow marking some of GPIO pins as ignored to to avoid continuously
-generating KBC input events.
-
-Signed-off-by: Shridhar Rasal <srasal@nvidia.com>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
-
- arch/arm/mach-tegra/include/mach/kbc.h |    8 +++++++-
- drivers/input/keyboard/tegra-kbc.c     |   34 +++++++++++++++++++++++++-------
- 2 files changed, 34 insertions(+), 8 deletions(-)
+This (pte_t*) cast looks introduce new implicit assumption. Please don't
+put x86 assumption here directly.
 
 
-diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
-index 20bb054..72e28bd 100644
---- a/arch/arm/mach-tegra/include/mach/kbc.h
-+++ b/arch/arm/mach-tegra/include/mach/kbc.h
-@@ -36,8 +36,14 @@
- #define KBC_MAX_COL	8
- #define KBC_MAX_KEY	(KBC_MAX_ROW * KBC_MAX_COL)
- 
-+enum tegra_pin_type {
-+	PIN_CFG_COL,
-+	PIN_CFG_ROW,
-+	PIN_CFG_IGNORE,
-+};
-+
- struct tegra_kbc_pin_cfg {
--	bool is_row;
-+	enum tegra_pin_type type;
- 	unsigned char num;
- };
- 
-diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-index a136e2e..09f383a 100644
---- a/drivers/input/keyboard/tegra-kbc.c
-+++ b/drivers/input/keyboard/tegra-kbc.c
-@@ -455,10 +455,18 @@ static void tegra_kbc_config_pins(struct tegra_kbc *kbc)
- 		row_cfg &= ~r_mask;
- 		col_cfg &= ~c_mask;
- 
--		if (pdata->pin_cfg[i].is_row)
-+		switch (pdata->pin_cfg[i].type) {
-+		case PIN_CFG_ROW:
- 			row_cfg |= ((pdata->pin_cfg[i].num << 1) | 1) << r_shft;
--		else
-+			break;
-+
-+		case PIN_CFG_COL:
- 			col_cfg |= ((pdata->pin_cfg[i].num << 1) | 1) << c_shft;
-+			break;
-+
-+		case PIN_CFG_IGNORE:
-+			break;
-+		}
- 
- 		writel(row_cfg, kbc->mmio + r_offs);
- 		writel(col_cfg, kbc->mmio + c_offs);
-@@ -563,7 +571,8 @@ tegra_kbc_check_pin_cfg(const struct tegra_kbc_platform_data *pdata,
- 	for (i = 0; i < KBC_MAX_GPIO; i++) {
- 		const struct tegra_kbc_pin_cfg *pin_cfg = &pdata->pin_cfg[i];
- 
--		if (pin_cfg->is_row) {
-+		switch (pin_cfg->type) {
-+		case PIN_CFG_ROW:
- 			if (pin_cfg->num >= KBC_MAX_ROW) {
- 				dev_err(dev,
- 					"pin_cfg[%d]: invalid row number %d\n",
-@@ -571,13 +580,25 @@ tegra_kbc_check_pin_cfg(const struct tegra_kbc_platform_data *pdata,
- 				return false;
- 			}
- 			(*num_rows)++;
--		} else {
-+			break;
-+
-+		case PIN_CFG_COL:
- 			if (pin_cfg->num >= KBC_MAX_COL) {
- 				dev_err(dev,
- 					"pin_cfg[%d]: invalid column number %d\n",
- 					i, pin_cfg->num);
- 				return false;
- 			}
-+			break;
-+
-+		case PIN_CFG_IGNORE:
-+			break;
-+
-+		default:
-+			dev_err(dev,
-+				"pin_cfg[%d]: invalid entry type %d\n",
-+				pin_cfg->type, pin_cfg->num);
-+			return false;
- 		}
- 	}
- 
-@@ -594,7 +615,6 @@ tegra_kbc_dt_parse_pdata(struct platform_device *pdev)
- 	if (!np)
- 		return NULL;
- 
--	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata)
- 		return NULL;
- 
-@@ -616,12 +636,12 @@ tegra_kbc_dt_parse_pdata(struct platform_device *pdev)
- 	 */
- 	for (i = 0; i < KBC_MAX_ROW; i++) {
- 		pdata->pin_cfg[i].num = i;
--		pdata->pin_cfg[i].is_row = true;
-+		pdata->pin_cfg[i].type = PIN_CFG_ROW;
- 	}
- 
- 	for (i = 0; i < KBC_MAX_COL; i++) {
- 		pdata->pin_cfg[KBC_MAX_ROW + i].num = i;
--		pdata->pin_cfg[KBC_MAX_ROW + i].is_row = false;
-+		pdata->pin_cfg[KBC_MAX_ROW + i].type = PIN_CFG_COL;
- 	}
- 
- 	return pdata;
+
+
+> +				err = add_to_pagemap(addr, pfn, pm);
+> +				if (err)
+> +					break;
+> +			}
+> +			spin_unlock(&walk->mm->page_table_lock);
+> +			return err;
+> +		}
+> +	} else {
+> +		spin_unlock(&walk->mm->page_table_lock);
+> +	}
+
+coding standard violation. plz run check_patch.pl.
+
+
