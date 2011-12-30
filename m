@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592Ab1L3Qkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 11:40:52 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57178 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab1L3Qkv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 11:40:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111230153741.GA2167@redhat.com>
-References: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
- <20111229172101.GB4101@redhat.com> <4EFD913E.7010707@suse.cz> <20111230153741.GA2167@redhat.com>
-From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Date: Fri, 30 Dec 2011 14:40:29 -0200
-Message-ID: <CAMOw1v6U+pTHbR=qZQyeQ0_oUOwKudxc=fyhLgcVCT=B_-2_kQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] kbuild: add target to install gzipped modules
-To: Dave Jones <davej@redhat.com>, Michal Marek <mmarek@suse.cz>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-modules@vger.kernel.org,
+	id S1751612Ab1L3Qmn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 11:42:43 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59204 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750871Ab1L3Qmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 11:42:42 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Brian King <brking@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Cc: Jan Engelhardt <jengelh@medozas.de>, Kay Sievers <kay.sievers@vrfy.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: [PATCH] staging: zcache: fix serialization bug in zv stats
+Date: Fri, 30 Dec 2011 10:42:15 -0600
+Message-Id: <1325263335-16254-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 11123016-3534-0000-0000-000004138A39
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 30, 2011 at 1:37 PM, Dave Jones <davej@redhat.com> wrote:
-> On Fri, Dec 30, 2011 at 11:23:58AM +0100, Michal Marek wrote:
->  > On 29.12.2011 18:21, Dave Jones wrote:
->  > > On Thu, Dec 29, 2011 at 01:50:18PM -0200, Lucas De Marchi wrote:
->  > >  > Add target in Makefile to compress the module after it's installed.
->  > >  > Module-init-tools and libkmod can handle gzipped modules.
->  > >  >
->  > >  > This is not much useful for distributions because the package will gzip
->  > >  > the modules and call depmod in a install rule.
->  > >
->  > > It might actually be a worthwhile thing for distributions.
->  > >
->  > > For a Fedora kernel, gzipping modules saves around 80MB of diskspace per
->  > > installed kernel.  That the RPM is compressed is irrelevant, the on-disk
->  > > footprint is more interesting, given that the bulk of the modules installed
->  > > will never even be loaded.
->  >
->  > But it kills performance of the tools.
->
-> How often do you run depmod ?
->
-> If modprobe is a bottleneck, you have other problems.
+In a multithreaded workload, the zv_curr_dist_counts
+and zv_cumul_dist_counts statistics are being corrupted
+because the increments and decrements in zv_create
+and zv_free are not atomic.
 
-modprobe is not a problem because it needs to read the entire blob to
-insert regardless. The only affected tools would be depmod and
-modinfo, but if this is really a problem, we could change the loader
-of gz and xz files to stop when the ".modinfo" section was read for
-the modinfo command.
+This patch converts these statistics and their corresponding
+increments/decrements/reads to atomic operations.
 
-As I said, I don't want to debate here whether it's good or not to
-have compressed modules. It would be nice though to cook up some
-numbers on different setups with the different compression methods
-(none, gz, xz).
+Based on v3.2-rc7
 
-Lucas De Marchi
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 56c1f9c..d39bb51 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -655,8 +655,8 @@ static unsigned int zv_max_zsize = (PAGE_SIZE / 8) * 7;
+  */
+ static unsigned int zv_max_mean_zsize = (PAGE_SIZE / 8) * 5;
+ 
+-static unsigned long zv_curr_dist_counts[NCHUNKS];
+-static unsigned long zv_cumul_dist_counts[NCHUNKS];
++static atomic_t zv_curr_dist_counts[NCHUNKS];
++static atomic_t zv_cumul_dist_counts[NCHUNKS];
+ 
+ static struct zv_hdr *zv_create(struct xv_pool *xvpool, uint32_t pool_id,
+ 				struct tmem_oid *oid, uint32_t index,
+@@ -675,8 +675,8 @@ static struct zv_hdr *zv_create(struct xv_pool *xvpool, uint32_t pool_id,
+ 			&page, &offset, ZCACHE_GFP_MASK);
+ 	if (unlikely(ret))
+ 		goto out;
+-	zv_curr_dist_counts[chunks]++;
+-	zv_cumul_dist_counts[chunks]++;
++	atomic_inc(&zv_curr_dist_counts[chunks]);
++	atomic_inc(&zv_cumul_dist_counts[chunks]);
+ 	zv = kmap_atomic(page, KM_USER0) + offset;
+ 	zv->index = index;
+ 	zv->oid = *oid;
+@@ -698,7 +698,7 @@ static void zv_free(struct xv_pool *xvpool, struct zv_hdr *zv)
+ 
+ 	ASSERT_SENTINEL(zv, ZVH);
+ 	BUG_ON(chunks >= NCHUNKS);
+-	zv_curr_dist_counts[chunks]--;
++	atomic_dec(&zv_curr_dist_counts[chunks]);
+ 	size -= sizeof(*zv);
+ 	BUG_ON(size == 0);
+ 	INVERT_SENTINEL(zv, ZVH);
+@@ -738,7 +738,7 @@ static int zv_curr_dist_counts_show(char *buf)
+ 	char *p = buf;
+ 
+ 	for (i = 0; i < NCHUNKS; i++) {
+-		n = zv_curr_dist_counts[i];
++		n = atomic_read(&zv_curr_dist_counts[i]);
+ 		p += sprintf(p, "%lu ", n);
+ 		chunks += n;
+ 		sum_total_chunks += i * n;
+@@ -754,7 +754,7 @@ static int zv_cumul_dist_counts_show(char *buf)
+ 	char *p = buf;
+ 
+ 	for (i = 0; i < NCHUNKS; i++) {
+-		n = zv_cumul_dist_counts[i];
++		n = atomic_read(&zv_cumul_dist_counts[i]);
+ 		p += sprintf(p, "%lu ", n);
+ 		chunks += n;
+ 		sum_total_chunks += i * n;
+-- 
+1.7.5.4
+
