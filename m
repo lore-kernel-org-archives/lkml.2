@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690Ab1L3Rf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 12:35:56 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:43610 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab1L3Rfw (ORCPT
+	id S1751833Ab1L3Rpl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 12:45:41 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:45408 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621Ab1L3Rpj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 12:35:52 -0500
-Message-ID: <4EFDF671.7020101@linux.vnet.ibm.com>
-Date: Fri, 30 Dec 2011 11:35:45 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Fri, 30 Dec 2011 12:45:39 -0500
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        Brian King <brking@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>,
-        Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: zcache: fix serialization bug in zv stats
-References: <<1325263335-16254-1-git-send-email-sjenning@linux.vnet.ibm.com>> <d9558871-53ec-4d49-8df4-c09bee100a49@default>
-In-Reply-To: <d9558871-53ec-4d49-8df4-c09bee100a49@default>
+In-Reply-To: <4EFD6F22.5010501@monstr.eu>
+References: <4EEF42F5.7040002@monstr.eu>
+	<20111219162835.GA24519@google.com>
+	<4EF05316.5050803@monstr.eu>
+	<20111229155836.GB3516@google.com>
+	<4EFC995A.5090904@monstr.eu>
+	<20111229170745.GE3516@google.com>
+	<4EFD6F22.5010501@monstr.eu>
+Date: Sat, 31 Dec 2011 02:45:37 +0900
+X-Google-Sender-Auth: qCRdpxeGIsp9D81xLJWrj7ADu4s
+Message-ID: <CAOS58YPtNRK3mhAp26585+nWFL44kghfAh8vfiB=kdEYmn_8bg@mail.gmail.com>
+Subject: Re: memblock and bootmem problems if start + size = 4GB
+From: Tejun Heo <tj@kernel.org>
+To: monstr@monstr.eu
+Cc: Andrew Morton <akpm@linux-foundation.org>, Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 11123017-7408-0000-0000-0000019437C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2011 11:02 AM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->> Sent: Friday, December 30, 2011 9:42 AM
->> To: Greg Kroah-Hartman
->> Cc: Seth Jennings; Dan Magenheimer; Brian King; devel@driverdev.osuosl.org; linux-
->> kernel@vger.kernel.org
->> Subject: [PATCH] staging: zcache: fix serialization bug in zv stats
->>
->> In a multithreaded workload, the zv_curr_dist_counts
->> and zv_cumul_dist_counts statistics are being corrupted
->> because the increments and decrements in zv_create
->> and zv_free are not atomic.
->>
->> This patch converts these statistics and their corresponding
->> increments/decrements/reads to atomic operations.
->>
->> Based on v3.2-rc7
->>
->> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> 
-> I'm inclined to nack this change, at least unless inside an #ifdef DEBUG,
+Hello,
 
-I guess I didn't respond to this suggestion.  We could put #ifdef DEBUG
-around the updates in zv_create and zv_free and around the two sysfs
-*_show functions.  Kinda messy though.  I guess it might not matter
-if we'll be re-evaluating this whole thing soon.
+On Fri, Dec 30, 2011 at 4:58 PM, Michal Simek <monstr@monstr.eu> wrote:
+> I haven't said to replace phys_addr_t!
+> My point was something like this (just as example on parisc and
+> free_bootmem_node).
+> The problematic part is kmemleak code which could be good reason not to
+> change it.
 
-I'd just like to have it correct in mainline until then.
+I think it's still a bad idea and you haven't provided any
+justification for it.  Think about it - any user which uses pa() may
+get that last page and if that user is using [start,end) range, it may
+overflow.  It doesn't even matter how you implement it.  I just can't
+understand why you obsess about that last page.  It doesn't matter.
+Just add those few lines to exclude the last single page and be done
+with it.  Unless you're gonna provide rationale for why adding such
+risk and more complexity makes sense for that single last page which
+most BIOSes wouldn't even map, I don't really think this thread is
+going anywhere.
 
---
-Seth
+Thanks.
 
+-- 
+tejun
