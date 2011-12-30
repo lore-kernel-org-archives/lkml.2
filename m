@@ -1,89 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab1L3Uso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 15:48:44 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64314 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab1L3Usm (ORCPT
+	id S1751950Ab1L3VBf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 16:01:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34366 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab1L3VBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 15:48:42 -0500
-Date: Sat, 31 Dec 2011 00:48:36 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
-Message-ID: <20111230204836.GP4806@moon>
-References: <20111228164522.GO17712@google.com>
- <20111228165336.GS27266@moon>
- <20111228170116.GQ17712@google.com>
- <20111228171419.GA19321@moon>
- <20111229142438.GI4460@moon>
- <20111229161414.GC3516@google.com>
- <20111229162453.GC4806@moon>
- <20111230002309.GA11508@gondor.apana.org.au>
- <20111230073655.GE4806@moon>
- <4EFE1FA4.3090207@gmail.com>
+	Fri, 30 Dec 2011 16:01:34 -0500
+Date: Fri, 30 Dec 2011 13:01:24 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Darren Hart <dvhltc@us.ibm.com>
+Subject: Re: [GIT PULL] futex fixlet
+In-Reply-To: <CA+55aFzPfysGq+ihMioGXASs3ixn9RBOuju2UhygKY_qtoo_Ag@mail.gmail.com>
+Message-ID: <alpine.LSU.2.00.1112301219590.1777@eggly.anvils>
+References: <20111229210707.GA22300@elte.hu> <CA+55aFydsXqRg-QwfVBuUOSfpGQ24MjgWaK-z+3Qvgn-BHn6Tw@mail.gmail.com> <1325264878.30917.11.camel@twins> <CA+55aFzPfysGq+ihMioGXASs3ixn9RBOuju2UhygKY_qtoo_Ag@mail.gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EFE1FA4.3090207@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 30, 2011 at 03:31:32PM -0500, KOSAKI Motohiro wrote:
-> (12/30/11 2:36 AM), Cyrill Gorcunov wrote:
-> >On Fri, Dec 30, 2011 at 11:23:09AM +1100, Herbert Xu wrote:
-> >>On Thu, Dec 29, 2011 at 08:24:53PM +0400, Cyrill Gorcunov wrote:
-> >>>
-> >>>Probably I've had to crypto_alloc_hash earlier and simply keep a reference
-> >>>to algo but since I'm not sure if looking for modules in late-init-call
-> >>>is good idea.
-> >>
-> >>Right, the allocation needs to occur in a sleepable context.
-> >>
-> >>If you're just hashing something small and have no need for
-> >>hardware acceleration then lib/sha1.c is fine.
-> >>
+On Fri, 30 Dec 2011, Linus Torvalds wrote:
+> On Fri, Dec 30, 2011 at 9:07 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 > >
-> >Hi, yeah, it's just one message block hashing so I've switched
-> >to lib/sha1.c. Herbert, I'm more interested in security analysis
-> >-- would the sha1(msg), where the 'msg' is the kernel pointer
-> >XOR'ed with random value and expanded to the 512 bits would be
-> >safe enough for export to unprivilege users?
+> > So I _think_ you're completely right and we can simply kill the whole
+> > thing, but I've been trying very hard to forget everything kernel
+> > related for a week, and I really shouldn't kick-start my brain until
+> > somewhere next week.
 > 
-> Even if now we don't know an attacking way of sha1 reverse hashing,
-> we may discover within 10 years. Many secure messages lost from
-> hardware speedup and new algorithm attack. so, nobody can say it's
-> abi safe.
->
+> Ok.
+> 
+> Ingo, I'd suggest you put a patch like that into -next, and mark it
+> for stable after it has gotten lots more testing.
 
-Yes, I know. But there is a big difference between direct hash crack and
-indirect crack caused by limited space of data used for such hash. That's
-the reason why random cookie was used and xor production was expanded to
-the whole message block.
+Yes, we shouldn't rush in what we don't understand.  But mostly I agree
+with you, and Peter, that we've gathered too much cargo-cult in here.
 
-> And, if you don't use perfect hash, you may have a hash collision
-> risk. What's happen if different pointer makes same ID?
+> 
+> Something like the appended *totally* untested code. It compiles, but
+> maybe there really is some "!page->mapping" case that could possibly
+> matter.
 
-Well, strictly speaking this is pretty bad case for me. Of course this
-wont lead to catastrophic results for user-space application I think
-but definitely I would prefer to not have collisions here.
+I think there is such a case.  I located (Peter's reply to) 2008-04-08
+lkml mail, in which Nick says
 
-Guys, this become more and more complex, finally I fear someone
-propose to do ideal hashing run-time ;) Maybe we can step back and
-live with root-only and plain pointers here? I'm not sure who else
-might need such facility except us, and if once there will be a candidate
--- we could take a look on hashing again and provide safe hashes there. No?
+> What I'm worried about with this is invalidate or truncate races.
+> With direct IO, it obviously doesn't matter because the only
+> requirement is that the page existed at the address at some point
+> during the syscall... 
+> 
+> So I'd really like you to not carry the page around in the key, but
+> just continue using the same key we have now. Also, lock the page
+> and ensure it hasn't been truncated before taking the inode from the
+> key and incrementing its count (page lock's extra atomics should be
+> more or less cancelled out by fewer mmap_sem atomic ops).
 
-	Cyrill
+and rewrites what Peter posted earlier to include this fragment
+
+> +       lock_page(page);
+> +       if (!page->mapping) { /* PageAnon pages shouldn't get caught here */
+> +               unlock_page(page);
+> +               put_page(page);
+> +               goto again;
+> +       }
+
+Right, it's standard procedure to check page->mapping after locking the
+page, to make sure that it hasn't just been truncated (or invalidated).
+
+(And since the PageAnon bit is actually kept inside page->mapping, it's
+impossible to find a PageAnon with !page->mapping: which suits fine here.)
+
+Now, I don't think truncation (or hole punching) is an issue: it would
+be okay to return -EFAULT if we caught a moment when it was truncated.
+
+But invalidation?  Someone doing an echo to /proc/sys/vm/drop_caches
+at the wrong moment causing this futex path to fail?  The invalidate
+used in drop_caches does back off if the page is mapped, but who's to
+say that page reclaim didn't just unmap it independently.  And it can't
+do much on shmem mappings, which would be the common shared futex case:
+but we kept that general, so it could be a real filesystem mapping.
+
+I believe that's why Nick put in the "goto again" that's caused
+so much trouble.  But I'm not sure what's the best way forward.
+
+My first thought was to fall back to the original pre-38d47c1b70
+code in the !page->mapping case: we only want this page and its
+page->mapping as a quick way to discover page->mapping->host.
+So fall back to mmap_sem, find_extend_vma,
+vma->vm_file->f_path.dentry->d_inode?
+
+But the old code had its own problem, with VM_NONLINEAR mappings,
+where you really need page->index to find the offset.  So the old
+code had its own fallback to get_user_pages and looking up the page.
+We don't really want to have a fallback to a fallback like that.
+
+Oh, I've just had a slightly evil thought: although the !page->mapping
+needs fallback to discover the inode, its page->index remains valid
+until the page is actually freed (and we rely upon that thoughout
+mm/truncate.c).
+
+If we're not rushing for 3.2 final (this is no new regression),
+I'd prefer to do such a patch later in the day if that's okay -
+or by all means beat me to it.
+
+Or am I just getting over-excited about invalidation?
+
+Hugh
+
+> 
+> I can't see it, though - but we should definitely get some testing for
+> this before I'd put it in a release. Since we do that
+> "get_user_pages_fast()" and ask for a writable page, the result should
+> be as stable as it will ever get. There is still the race with
+> hugepage splitting, but at least that one has a comment.
+> 
+>  kernel/futex.c |   20 ++++++++++++--------
+>  1 files changed, 12 insertions(+), 8 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index ea87f4d2f455..8d2ee2f66418 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -310,21 +310,25 @@ again:
+>  	if (page != page_head) {
+>  		get_page(page_head);
+>  		put_page(page);
+> +		/* Avoid "unused label" for non-THP config */
+> +		if (0)
+> +			goto again;
+>  	}
+>  #endif
+>  
+>  	lock_page(page_head);
+> +
+> +	/*
+> +	 * If the page doesn't have a mapping associated with it,
+> +	 * this is either an anonymous page that was accessed RO
+> +	 * (so no COW etc) and we would just return EFAULT anyway,
+> +	 * or some special case page (ZERO_PAGE, gate area, special
+> +	 * mapping..).
+> +	 */
+>  	if (!page_head->mapping) {
+>  		unlock_page(page_head);
+>  		put_page(page_head);
+> -		/*
+> -		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
+> -		* trying to find one. RW mapping would have COW'd (and thus
+> -		* have a mapping) so this page is RO and won't ever change.
+> -		*/
+> -		if ((page_head == ZERO_PAGE(address)))
+> -			return -EFAULT;
+> -		goto again;
+> +		return -EFAULT;
+>  	}
+>  
+>  	/*
