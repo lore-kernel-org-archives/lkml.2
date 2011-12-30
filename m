@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab1L3J5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 04:57:19 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37365 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752028Ab1L3J5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 04:57:17 -0500
-Date: Fri, 30 Dec 2011 10:55:21 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
- samples
-Message-ID: <20111230095521.GA12077@elte.hu>
-References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
- <1323969824-9711-5-git-send-email-robert.richter@amd.com>
- <20111223103329.GC4749@elte.hu>
- <20111223111958.GE16765@erda.amd.com>
- <20111223135340.GB21382@elte.hu>
- <1324649698.24803.55.camel@twins>
- <20111223144040.GB2297@elte.hu>
- <20111223161701.GF16765@erda.amd.com>
- <20111223163930.GA5983@elte.hu>
- <20111223165030.GG16765@erda.amd.com>
+	id S1752760Ab1L3J5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 04:57:38 -0500
+Received: from [85.183.114.52] ([85.183.114.52]:58692 "EHLO Dublin.logfs.org"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752585Ab1L3J5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 04:57:35 -0500
+X-Greylist: delayed 1327 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Dec 2011 04:57:35 EST
+Date: Fri, 30 Dec 2011 10:36:38 +0100
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Roland Dreier <roland@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Steve Hodgson <steve@purestorage.com>
+Subject: Re: [PATCH] btree: Export btree_get_prev() so modules can use
+	btree_for_each
+Message-ID: <20111230093638.GC26473@logfs.org>
+References: <1325062439-1325-1-git-send-email-roland@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111223165030.GG16765@erda.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1325062439-1325-1-git-send-email-roland@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Robert Richter <robert.richter@amd.com> wrote:
-
-> > Once something like 'perf report' works for some useful 
-> > looking sub-case you can also tack on all the extra IBS 
-> > goodies that specialized tools might need as well, i have no 
-> > problem with providing that.
+On Wed, 28 December 2011 00:53:59 -0800, Roland Dreier wrote:
 > 
-> Isn't that outlook I gave about pebs like implementation of 
-> the precise bit with IBS "useful enough"? This would be on top 
-> patches anyway, so no need to hold back current patches.
+> From: Steve Hodgson <steve@purestorage.com>
+> 
+> The btree_for_each API is implemented with macros that internally call
+> btree_get_prev(), so if btree_get_prev() isn't exported then modules
+> fail to link if they try to use one of the btree_for_each macros.  Since
+> the rest of the btree API is exported, we should keep things orthogonal
+> and make this work too.
+> 
+> Cc: Joern Engel <joern@logfs.org>
+> Signed-off-by: Roland Dreier <roland@purestorage.com>
 
-An 'outlook' is not something I can test before sending commits 
-to Linus.
+Acked-by: Joern Engel <joern@logfs.org>
 
-To help your effort we could tentatively put the patches into a 
-separate tip:perf/ibs topic branch if everyone agrees otherwise, 
-which can go upstream once it's complete and usable.
+> ---
+>  lib/btree.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/lib/btree.c b/lib/btree.c
+> index 2a34392..e5ec1e9 100644
+> --- a/lib/btree.c
+> +++ b/lib/btree.c
+> @@ -357,6 +357,7 @@ miss:
+>  	}
+>  	return NULL;
+>  }
+> +EXPORT_SYMBOL_GPL(btree_get_prev);
+>  
+>  static int getpos(struct btree_geo *geo, unsigned long *node,
+>  		unsigned long *key)
+> -- 
+> 1.7.5.4
+> 
 
-Thanks,
+Jörn
 
-	Ingo
+-- 
+"Error protection by error detection and correction."
+-- from a university class
