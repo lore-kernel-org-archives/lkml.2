@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab1L3J5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 04:57:38 -0500
-Received: from [85.183.114.52] ([85.183.114.52]:58692 "EHLO Dublin.logfs.org"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752585Ab1L3J5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 04:57:35 -0500
-X-Greylist: delayed 1327 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Dec 2011 04:57:35 EST
-Date: Fri, 30 Dec 2011 10:36:38 +0100
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Roland Dreier <roland@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Steve Hodgson <steve@purestorage.com>
-Subject: Re: [PATCH] btree: Export btree_get_prev() so modules can use
-	btree_for_each
-Message-ID: <20111230093638.GC26473@logfs.org>
-References: <1325062439-1325-1-git-send-email-roland@kernel.org>
+	id S1752681Ab1L3J7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 04:59:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:45292 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052Ab1L3J7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 04:59:04 -0500
+Date: Fri, 30 Dec 2011 01:58:46 -0800
+From: tip-bot for Alan Cox <alan@linux.intel.com>
+Message-ID: <tip-kpnaimplltk6d1lolusqj3ae@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, alan@linux.intel.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86/intel config: Fix the APB_TIMER selection
+Git-Commit-ID: 7c9c3a1e5fc8728e948b8fa3cbcfcfb86db3afda
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1325062439-1325-1-git-send-email-roland@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Fri, 30 Dec 2011 01:58:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 28 December 2011 00:53:59 -0800, Roland Dreier wrote:
-> 
-> From: Steve Hodgson <steve@purestorage.com>
-> 
-> The btree_for_each API is implemented with macros that internally call
-> btree_get_prev(), so if btree_get_prev() isn't exported then modules
-> fail to link if they try to use one of the btree_for_each macros.  Since
-> the rest of the btree API is exported, we should keep things orthogonal
-> and make this work too.
-> 
-> Cc: Joern Engel <joern@logfs.org>
-> Signed-off-by: Roland Dreier <roland@purestorage.com>
+Commit-ID:  7c9c3a1e5fc8728e948b8fa3cbcfcfb86db3afda
+Gitweb:     http://git.kernel.org/tip/7c9c3a1e5fc8728e948b8fa3cbcfcfb86db3afda
+Author:     Alan Cox <alan@linux.intel.com>
+AuthorDate: Thu, 29 Dec 2011 14:43:16 +0000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 29 Dec 2011 21:53:17 +0100
 
-Acked-by: Joern Engel <joern@logfs.org>
+x86/intel config: Fix the APB_TIMER selection
 
-> ---
->  lib/btree.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/lib/btree.c b/lib/btree.c
-> index 2a34392..e5ec1e9 100644
-> --- a/lib/btree.c
-> +++ b/lib/btree.c
-> @@ -357,6 +357,7 @@ miss:
->  	}
->  	return NULL;
->  }
-> +EXPORT_SYMBOL_GPL(btree_get_prev);
->  
->  static int getpos(struct btree_geo *geo, unsigned long *node,
->  		unsigned long *key)
-> -- 
-> 1.7.5.4
-> 
+Seems Kconfig SELECT isn't selecting things hierarchically when
+selected.
 
-Jörn
+config APB_TIMER
+       def_bool y if X86_INTEL_MID
+       prompt "Intel MID APB Timer Support" if X86_INTEL_MID
+       select DW_APB_TIMER
+       depends on X86_INTEL_MID && SFI
 
--- 
-"Error protection by error detection and correction."
--- from a university class
+when we select APB_TIMER doesn't select DW_APB_TIMER so do it by
+hand.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-kpnaimplltk6d1lolusqj3ae@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/Kconfig |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 07620bc..78fbb34 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -409,12 +409,14 @@ config X86_MRST
+ 	depends on PCI
+ 	depends on PCI_GOANY
+ 	depends on X86_IO_APIC
++	select X86_INTEL_MID
++	select SFI
++	select DW_APB_TIMER
+ 	select APB_TIMER
+ 	select I2C
+ 	select SPI
+ 	select INTEL_SCU_IPC
+ 	select X86_PLATFORM_DEVICES
+-	select X86_INTEL_MID
+ 	---help---
+ 	  Moorestown is Intel's Low Power Intel Architecture (LPIA) based Moblin
+ 	  Internet Device(MID) platform. Moorestown consists of two chips:
+@@ -428,12 +430,14 @@ config X86_MDFLD
+ 	depends on PCI
+ 	depends on PCI_GOANY
+ 	depends on X86_IO_APIC
++	select X86_INTEL_MID
++	select SFI
++	select DW_APB_TIMER
+ 	select APB_TIMER
+ 	select I2C
+ 	select SPI
+ 	select INTEL_SCU_IPC
+ 	select X86_PLATFORM_DEVICES
+-	select X86_INTEL_MID
+ 	---help---
+ 	  Medfield is Intel's Low Power Intel Architecture (LPIA) based Moblin
+ 	  Internet Device(MID) platform. 
