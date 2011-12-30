@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab1L3BUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 20:20:50 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:39709 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272Ab1L3BUr (ORCPT
+	id S1754454Ab1L3BVu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 20:21:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57335 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab1L3BVs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 20:20:47 -0500
-Message-ID: <1325208040.9599.5.camel@phoenix>
-Subject: [PATCH 3/3] ASoC: Use dai_fmt in poodle machine driver
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Date: Fri, 30 Dec 2011 09:20:40 +0800
-In-Reply-To: <1325207771.9599.1.camel@phoenix>
-References: <1325207771.9599.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 29 Dec 2011 20:21:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <20111229235312.GA27092@electric-eye.fr.zoreil.com>
+References: <CACPM=kXOddA+T6vQPijR6sh8x5cMO=4baKGeKxEmMKG896Lz4g@mail.gmail.com>
+	<20111229153902.GB21946@electric-eye.fr.zoreil.com>
+	<20111229183902.GC21946@electric-eye.fr.zoreil.com>
+	<20111229.170514.1766899380937848638.davem@davemloft.net>
+	<CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
+	<CACPM=kVfsXgFhKheevTS1pm7kCoezKO3M+102O=PRbXzxebxxg@mail.gmail.com>
+	<20111229235312.GA27092@electric-eye.fr.zoreil.com>
+Date: Fri, 30 Dec 2011 02:21:47 +0100
+X-Google-Sender-Auth: Llx1_5OWHx-br3XMWAWCCVP8gbA
+Message-ID: <CACPM=kX01NgO_Vd8nKECno940e=j0NbpQVhe46X30ZYpO9BVrA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rl@hellgate.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/pxa/poodle.c |   14 ++------------
- 1 files changed, 2 insertions(+), 12 deletions(-)
+2011/12/30 Francois Romieu <romieu@fr.zoreil.com>:
+> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+> [...]
+>> Would it be a problem if I try and use the patch on top of a clean
+>> 3.1.6 kernel ?
+>
+> You will have to "cd drivers/net && patch -p5 ..." as the paths are
+> different. Avoid suspend/resume/runtime PM.
 
-diff --git a/sound/soc/pxa/poodle.c b/sound/soc/pxa/poodle.c
-index a321b4d..fd0ed10 100644
---- a/sound/soc/pxa/poodle.c
-+++ b/sound/soc/pxa/poodle.c
-@@ -121,18 +121,6 @@ static int poodle_hw_params(struct snd_pcm_substream *substream,
- 		break;
- 	}
- 
--	/* set codec DAI configuration */
--	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S |
--		SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
--	if (ret < 0)
--		return ret;
--
--	/* set cpu DAI configuration */
--	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S |
--		SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_CBS_CFS);
--	if (ret < 0)
--		return ret;
--
- 	/* set the codec system clock for DAC and ADC */
- 	ret = snd_soc_dai_set_sysclk(codec_dai, WM8731_SYSCLK_XTAL, clk,
- 		SND_SOC_CLOCK_IN);
-@@ -263,6 +251,8 @@ static struct snd_soc_dai_link poodle_dai = {
- 	.platform_name = "pxa-pcm-audio",
- 	.codec_name = "wm8731.0-001b",
- 	.init = poodle_wm8731_init,
-+	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
-+		   SND_SOC_DAIFMT_CBS_CFS,
- 	.ops = &poodle_ops,
- };
- 
--- 
-1.7.5.4
+The driver seems to be working fine on 3.1.6 - tried VPN'ing into my
+network using my phone, and tried copying some files, which seems to
+be working.
+Not sure if it will be a problem when there is more bandwidth, but so
+far it looks alot better.
 
+The log is flodded with this debug info, in case you need it:
 
+Dec 30 01:19:27 woodpecker kernel: via-rhine 0000:00:08.0: lan0:
+Interrupt, status 00000002
+Dec 30 01:19:27 woodpecker kernel: via-rhine 0000:00:06.0: wan0:
+Interrupt, status 00000001
+Dec 30 01:19:27 woodpecker kernel: via-rhine 0000:00:06.0: wan0:
+Interrupt, status 00000001
+Dec 30 01:19:27 woodpecker kernel: via-rhine 0000:00:08.0: lan0:
+Interrupt, status 00000002
+Dec 30 01:19:27 woodpecker kernel: via-rhine 0000:00:08.0: lan0:
+Interrupt, status 00000002
+Dec 30 01:19:27 woodpecker kernel: via-rhine 0000:00:08.0: lan0:
+Interrupt, status 00000001
+Dec 30 01:19:27 woodpecker kernel: via-rhine 0000:00:06.0: wan0:
+Interrupt, status 00000002
 
+Looking forward to seeing this in mainline, without the log spamming :)
+
+/Bjarke
+
+> --
+> Ueimor
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
