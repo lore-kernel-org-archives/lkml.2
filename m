@@ -1,174 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261Ab1L3FvC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 00:51:02 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:40329 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab1L3Fu7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 00:50:59 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-61-4efd5141cdbd
-From: Sangbeom Kim <sbkim73@samsung.com>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: lrg@ti.com, sameo@linux.intel.com, linux-kernel@vger.kernel.org
-References: <1325112925-9140-1-git-send-email-sbkim73@samsung.com>
- <20111229105729.GF2909@opensource.wolfsonmicro.com>
-In-reply-to: <20111229105729.GF2909@opensource.wolfsonmicro.com>
-Subject: RE: [PATCH v3 RESEND] regulator: Add S5M8767A regulator driver
-Date: Fri, 30 Dec 2011 14:50:59 +0900
-Message-id: <002901ccc6b7$0180e100$0482a300$@com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: AczGGKxaq1BXDLEYTnClUIQwQeNhhQAazsqw
-X-Brightmail-Tracker: AAAAAA==
+	id S1751355Ab1L3F4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 00:56:38 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:56436 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750916Ab1L3F4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 00:56:35 -0500
+Message-ID: <4EFD531C.50300@cn.fujitsu.com>
+Date: Fri, 30 Dec 2011 13:58:52 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix to allow mounting a hierarchy by name
+References: <4EF9291D.7030208@cn.fujitsu.com> <20111227163535.GA17712@google.com> <4EFAB2E2.4040008@cn.fujitsu.com> <20111228163631.GN17712@google.com> <4EFBD55E.5030106@cn.fujitsu.com> <20111229162313.GD3516@google.com>
+In-Reply-To: <20111229162313.GD3516@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-30 13:55:43,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-12-30 13:55:44,
+	Serialize complete at 2011-12-30 13:55:44
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 29, 2011 at 07:58 PM, Mark Brown wrote:
-> > +static int s5m8767_get_voltage_sel(struct regulator_dev *rdev)
-> > +{
+Tejun Heo wrote:
+> Hello,
 > 
-> ...
+> On Thu, Dec 29, 2011 at 10:50:06AM +0800, Li Zefan wrote:
+>> Tejun Heo wrote:
+>>> Hello, Li.
+>>>
+>>> On Wed, Dec 28, 2011 at 02:10:42PM +0800, Li Zefan wrote:
+>>>> The "name" option was introduced along with the "none" option, so we
+>>>> can distinguish between different cgroup hierarchies which have no
+>>>> bound subsystems, like this:
+>>>>
+>>>> 	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
+>>>> 	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
+>>>>
+>>>> As the name is unique, we have this "mount by hierarchy name" feature.
+>>>
+>>> I could be missing something but does that add anything other than
+>>> naming convenience?
+>>
+>> The name option is necessary, otherwise how can we mount hierarchies
+>> as shown in the above example?
 > 
-> > +	if (rdev->desc && rdev->desc->ops && rdev->desc->ops->list_voltage)
-> > +		return rdev->desc->ops->list_voltage(rdev, val);
-> > +
-> > +	return val;
-> > +}
-> 
-> This looks really strange - get_voltage_sel() should return a selector
-> but the return value of list_voltage() is a voltage.
-I misunderstood this function.
-I will change code to return a selector.
+> I don't think mounting itself would be a problem.  We don't need name
+> option to create multiple tmpfs instances, right?  The problem is
 
-> > +static int s5m8767_reg_disable_suspend(struct regulator_dev *rdev)
-> > +{
-> > +	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
-> > +	int ret, reg;
-> > +	int  mask = 0, pattern = 0;
-> > +	int reg_id = s5m8767_get_reg_id(rdev);
-> > +
-> > +	switch (reg_id) {
-> > +	case S5M8767_LDO1 ... S5M8767_LDO28:
-> > +		mask = 0xc0;
-> > +		pattern = 0xc0;
-> > +		break;
-> > +	case S5M8767_BUCK1 ... S5M8767_BUCK9:
-> > +		mask = 0xc0;
-> > +		pattern = 0xc0;
-> > +		break;
-> > +	}
-> 
-> Looks like mask and pattern are always the same?  Shouldn't this return
-> an error if reg_id is out of bounds?
-On Initial version of S5M8767, Each mask and pattern of 
-LDO and BUCK is different.
-But, New version of S5M8767, that is S5M8767A, 
-which has same mask and pattern.
+Right, but you can't mount the same tmpfs instance in more than one mount
+point.
 
-> > +	ret = s5m8767_get_register(rdev, &reg);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	return s5m_reg_update(s5m8767->iodev, reg, ~pattern, mask);
+> referencing to them after they're created.  Filesystems generally
+> don't need such identifier because, once they're created, they can be
+> referenced by their mount points.  I'm still not very familiar with
+> different corners of cgroup, so it's entirely possible that I'm
+> missing something.  If I am, please point me to it.
 > 
-> The above looks like it's going to update the same registers as the
-> regular enable and disable which isn't right, this function is for
-> updating suspend mode configuration.
 
-What's exact meaning of updating suspend mode configuration?
-As I know, The purpose of set_suspend_enable is that
-enabling voltage output during suspend mode.
-So, I implement same register enable and disable.
+Normal filesystems can have multi mount points, and an fs instance
+is identified by device name, but cgroupfs ignores device name like
+other pseudo filesystems. Instead a set of subsystems is used, so
+to mount the same cgroupfs instance in different mount points, we
+can do this:
 
-> > +static int s5m8767_set_voltage_time_sel(struct regulator_dev *rdev,
-> > +					     unsigned int old_sel,
-> > +					     unsigned int new_sel)
-> > +{
-> 
-> > +	s5m_reg_read(s5m8767->iodev, reg, &val);
-> > +	val = val & mask;
-> > +
-> > +	if (old_sel < new_sel)
-> > +		return DIV_ROUND_UP(desc->step * (i - val),
-> > +					s5m8767->ramp_delay);
-> > +	else
-> > +		return 0;
-> 
-> Why does this function need to read from the hardware?  It's not
-> reading a ramp configuration from the hardware and the start and finish
-> selectors are both supplied as arguments.
-It is just for verification.
-I will change it with no h/w reading.
+	# mount -t cgroup -o cpuset xxx /cgroup1
+	# mount -t cgroup -o cpuset xxx /cgroup2
 
-> > +	size = sizeof(struct regulator_dev *) * S5M8767_REG_MAX;
-> > +	s5m8767->rdev = kzalloc(size, GFP_KERNEL);
-> > +	if (!s5m8767->rdev) {
-> > +		kfree(s5m8767);
-> 
-> You shouldn't mix devm_ and regular functions.
-> 
-> > +		return -ENOMEM;
-> > +	}
-> 
-> Why not use devm_kzalloc() for this too?
-> 
-> > +	s5m8767->num_regulators = pdata->num_regulators;
-> 
-> Just pass in fixed size arrays of regulator configurations - the core
-> can handle unconfigured regulators.
-Ok, I will change it.
+Now we have the "none" option, so a cgroupfs can have no subsystems
+bound to it, and we allow multi instances of such cgroupfs, so we
+have to assign names to each instance:
 
-> > +	do {
-> > +		ret = s5m_reg_read(s5m8767->iodev, reg, &val);
-> > +		if (ret)
-> > +			return ret;
-> > +
-> > +		s5m_reg_update(s5m8767->iodev, reg,
-> > +				((val & 0x3f) | 0x40), 0xff);
-> > +		reg++;
-> > +		if ((reg == S5M8767_REG_LDO9CTRL) ||
-> > +			(reg == S5M8767_REG_LDO11CTRL) ||
-> > +			(reg == S5M8767_REG_LDO13CTRL) ||
-> > +			(reg == S5M8767_REG_LDO17CTRL))
-> > +			reg++;
-> > +	} while (reg <= S5M8767_REG_LDO16CTRL);
+	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
+	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
+
+Then we want to also mount "hier1" in another mount point, we can't
+do this:
+
+	# mount -t cgroup -o none xxx /mnt
+
+because we have two different instances with "none" subsystem. So
+we specify its name:
+
+	# mount -t cgroup -o none,name=hier1 xxx /mnt
+
+Hope I have made things clear to you?
+
+>>> If it's a redundant feature which has been broken over a year without
+>>> anyone complaining, it really doesn't need to exist.  It might not
+>>> save a lot of code but would save some WTH moments.
+>>>
+>>
+>> The redundant feature is mouting existing hierarchies by specifying name
+>> only, and the cleanup patch I sent has this feature removed in effect.
+>>
+>> kernel/cgroup.c |   15 +++++++--------
+>> 1 files changed, 7 insertions(+), 8 deletions(-)
+>>
+>> This is why I'm not so keen to remove the feature.
 > 
-> What does this do?
-This is SMDK4412 specific code.
-I will delete it for the general purpose.
-
-> > +	if (s5m8767->buck2_ramp || s5m8767->buck3_ramp
-> > +		|| s5m8767->buck4_ramp) {
-> > +		if (s5m8767->ramp_delay < 15)
-> > +			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-> > +					s5m8767->ramp_delay - 1, 0xf0);
-> > +		else if (s5m8767->ramp_delay == 15)
-> > +			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-> > +					0xc0, 0xf0);
-> > +		else if (s5m8767->ramp_delay == 25)
-> > +			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-> > +					0xd0, 0xf0);
-> > +		else if (s5m8767->ramp_delay == 50)
-> > +			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-> > +					0xe0, 0xf0);
-> > +		else if (s5m8767->ramp_delay == 100)
-> > +			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-> > +					0xf0, 0xf0);
-> > +		else
-> > +			s5m_reg_update(s5m8767->iodev, S5M8767_REG_DVSRAMP,
-> > +					0x90, 0xf0);
-> > +	}
+> Code reduction is definitely a plus and I don't want to remove a
+> useful feature either, but an unusual redundant feature without
+> necessity is confusing / misleading even if it doesn't necessasrily
+> add a lot of code complexity.
 > 
-> This looks like a switch statement.
-I will change it with switch statement.
+> Also, I at least want to understand why it's actually necessary before
+> applying the patches.  :)
+> 
 
-Thanks for your good review.
-Happy New year Mark,
+What I try to fix here is the behavior of "mount -t cgroup -o name=xxx ..."
+(no other options are specified), so what behavior do we want?
 
-Sangbeom.
+1. find if any existing cgroupfs instance matches the name, which is
+the orginal behavior.
 
+2. the same as "mount -t cgroup -o all,name=xxx ...", which is the
+current behavior due to the commit that broke (1).
+
+3. make it invalid and fail to mount.
+
+4. any other idea?
