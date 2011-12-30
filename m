@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab1L3Sp7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 13:45:59 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41862 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751675Ab1L3Sp5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 13:45:57 -0500
+	id S1751671Ab1L3ThM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 14:37:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142Ab1L3ThK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 14:37:10 -0500
+Date: Fri, 30 Dec 2011 14:37:05 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: x86@kernel.org, jbarnes@virtuousgeek.org
+Subject: Dell Studio 1536 needs pci=nocrs to boot.
+Message-ID: <20111230193704.GA2874@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org,
+	jbarnes@virtuousgeek.org
 MIME-Version: 1.0
-In-Reply-To: <20111230180347.GA3647@electric-eye.fr.zoreil.com>
-References: <CACPM=kXOddA+T6vQPijR6sh8x5cMO=4baKGeKxEmMKG896Lz4g@mail.gmail.com>
-	<20111229153902.GB21946@electric-eye.fr.zoreil.com>
-	<20111229183902.GC21946@electric-eye.fr.zoreil.com>
-	<20111229.170514.1766899380937848638.davem@davemloft.net>
-	<CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
-	<CACPM=kVfsXgFhKheevTS1pm7kCoezKO3M+102O=PRbXzxebxxg@mail.gmail.com>
-	<20111229235312.GA27092@electric-eye.fr.zoreil.com>
-	<CACPM=kXTqY1kVWrEMB-Z0Lqy6t+rXvMzixcSUy7fAz6g_ajV9g@mail.gmail.com>
-	<20111230125655.GA32031@electric-eye.fr.zoreil.com>
-	<CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com>
-	<20111230180347.GA3647@electric-eye.fr.zoreil.com>
-Date: Fri, 30 Dec 2011 19:45:56 +0100
-X-Google-Sender-Auth: pvHk1k71rzHh2dIeiFaDfGezusQ
-Message-ID: <CACPM=kUo9Dj8107hExVKUGrNkNdPERWPgyn+KtZYZAssJrR7tQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
-From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rl@hellgate.ch
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/30 Francois Romieu <romieu@fr.zoreil.com>:
-> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
-> [...]
->> Great, let me know when there is more to test :)
->
-> It's done. I have removed linux-kernel from the Cc: where patches are sent
-> since there is netdev.
->
-> If you don't crash trivially, feel free to :
-> 1. loop ip link up / down + module removal / insertion under traffic
-> 2. loop ethtool / vlan commands under traffic
-> 3. do the same as above and perform suspend / resume
+Some machines don't boot unless passed pci=nocrs.
+(See https://bugzilla.redhat.com/show_bug.cgi?id=770308 for details of
+  one report. Waiting on dmidecode output for others).
 
-I can try and do some ip link up and down. - the kernel is built
-without module support, to make it as compact as possible.
-I can also try ethtool and see if that breaks anything.
-It's a headless router, so it doesn't have support for suspend and resume :)
+Currently there is a DMI whitelist, even though the default is on.
 
-/Bjarke
+This patch extends that dmi list to add a blacklist to automatically
+apply disable it when necessary.
 
-> --
-> Ueimor
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Signed-off-by: Dave Jones <davej@redhat.com>
+
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 404f21a..2704a9c 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -24,6 +24,12 @@ static int __init set_use_crs(const struct dmi_system_id *id)
+ 	return 0;
+ }
+ 
++static int __init set_nouse_crs(const struct dmi_system_id *id)
++{
++	pci_use_crs = false;
++	return 0;
++}
++
+ static const struct dmi_system_id pci_use_crs_table[] __initconst = {
+ 	/* http://bugzilla.kernel.org/show_bug.cgi?id=14183 */
+ 	{
+@@ -54,6 +60,18 @@ static const struct dmi_system_id pci_use_crs_table[] __initconst = {
+ 			DMI_MATCH(DMI_BIOS_VENDOR, "American Megatrends Inc."),
+ 		},
+ 	},
++
++	/* Now for the blacklist.. */
++
++	/* https://bugzilla.redhat.com/show_bug.cgi?id=770308 */
++	{
++		.callback = set_nouse_crs,
++		.ident = "Dell Studio 1536",
++		.matches = {
++			DMI_MATCH(DMI_BOARD_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_BOARD_NAME, "0M273C"),
++		},
++	},
+ 	{}
+ };
+ 
