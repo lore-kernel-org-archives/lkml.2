@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab1L3LNc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 06:13:32 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41890 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959Ab1L3LNa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 06:13:30 -0500
+	id S1753075Ab1L3L1b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 06:27:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60590 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751851Ab1L3L13 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 06:27:29 -0500
+Date: Fri, 30 Dec 2011 11:27:23 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Dave Jones <davej@redhat.com>,
+        Jan Kara <jack@suse.cz>, Andy Isaacson <adi@hexapodia.org>,
+        Johannes Weiner <jweiner@redhat.com>, Nai Xia <nai.xia@gmail.com>,
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/11] mm: Isolate pages for immediate reclaim on their
+ own LRU
+Message-ID: <20111230112723.GD15729@suse.de>
+References: <1323877293-15401-1-git-send-email-mgorman@suse.de>
+ <1323877293-15401-12-git-send-email-mgorman@suse.de>
+ <20111217160822.GA10064@barrios-laptop.redhat.com>
+ <20111219132615.GL3487@suse.de>
+ <20111220071026.GA19025@barrios-laptop.redhat.com>
+ <20111220095544.GP3487@suse.de>
+ <alpine.LSU.2.00.1112231039030.17640@eggly.anvils>
+ <20111229165951.GA15729@suse.de>
+ <4EFCC008.30803@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20111230005849.11559.78948.stgit@notabene.brown>
-References: <20111230004947.11559.81184.stgit@notabene.brown>
-	<20111230005849.11559.78948.stgit@notabene.brown>
-Date: Fri, 30 Dec 2011 13:13:28 +0200
-Message-ID: <CANOLnOM7QbF5aMb1iW0W2t6B1q1J+cROMU8SpD185DyC33w4kA@mail.gmail.com>
-Subject: Re: [PATCH 5/5] bq27x00 - don't report power-supply change so often.
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: NeilBrown <neilb@suse.de>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4EFCC008.30803@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CCing Lars who added this. I vaguely recall something about generating
-events to make some battery monitors update but I forget the details
-now, maybe it was about something else. Also CCing Anton (the
-maintainer).
+On Thu, Dec 29, 2011 at 02:31:20PM -0500, Rik van Riel wrote:
+> On 12/29/2011 11:59 AM, Mel Gorman wrote:
+> 
+> >I considered a few ways of fixing this. The obvious one is to add a
+> >new page flag but that is difficult to justify as the high-cpu-usage
+> >problem should only occur when there is a lot of writeback to slow
+> >storage which I believe is a rare case. It is not a suitable use for
+> >an extended page flag.
+> 
+> Actually, don't we already have three LRU related
+> bits in the page flags?
+> 
 
-On Fri, Dec 30, 2011 at 2:58 AM, NeilBrown <neilb@suse.de> wrote:
-> A power_supply_changed should only be reported on significant changes
-> such as transition between charging and not.  Incremental changes
-> such as charge increasing should not be reported - that can easily
-> be polled for.
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
->
->  drivers/power/bq27x00_battery.c |   15 ++++++++++++---
->  1 files changed, 12 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
-> index bb16f5b..7993a17 100644
-> --- a/drivers/power/bq27x00_battery.c
-> +++ b/drivers/power/bq27x00_battery.c
-> @@ -57,11 +57,15 @@
->  #define BQ27000_FLAG_CHGS              BIT(7)
->  #define BQ27000_FLAG_FC                        BIT(5)
->
-> +#define BQ27000_FLAGS_IMPORTANT                (BQ27000_FLAG_FC|BQ27000_FLAG_CHGS|BIT(31))
-> +
->  #define BQ27500_REG_SOC                        0x2C
->  #define BQ27500_REG_DCAP               0x3C /* Design capacity */
->  #define BQ27500_FLAG_DSC               BIT(0)
->  #define BQ27500_FLAG_FC                        BIT(9)
->
-> +#define BQ27500_FLAGS_IMPORTANT                (BQ27500_FLAG_FC|BQ27500_FLAG_DSC|BIT(31))
-> +
->  #define BQ27000_RS                     20 /* Resistor sense */
->
->  struct bq27x00_device_info;
-> @@ -259,6 +263,7 @@ static void bq27x00_update(struct bq27x00_device_info *di)
->  {
->        struct bq27x00_reg_cache cache = {0, };
->        bool is_bq27500 = di->chip == BQ27500;
-> +       int flags_changed;
->
->        cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, is_bq27500);
->        if (cache.flags >= 0) {
-> @@ -280,10 +285,14 @@ static void bq27x00_update(struct bq27x00_device_info *di)
->
->        /* Ignore current_now which is a snapshot of the current battery state
->         * and is likely to be different even between two consecutive reads */
-> -       if (memcmp(&di->cache, &cache, sizeof(cache) - sizeof(int)) != 0) {
-> -               di->cache = cache;
-> +       flags_changed = di->cache.flags ^ cache.flags;
-> +       di->cache = cache;
-> +       if (is_bq27500)
-> +               flags_changed &= BQ27500_FLAGS_IMPORTANT;
-> +       else
-> +               flags_changed &= BQ27000_FLAGS_IMPORTANT;
-> +       if (flags_changed)
->                power_supply_changed(&di->bat);
-> -       }
->
->        di->last_update = jiffies;
->  }
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Yes - PG_active, PG_unevictable and PG_swapbacked
 
+> We could stop using those as bit flags, and use
+> them as a number instead. That way we could encode
+> up to 7 or 8 (depending on how we use all-zeroes)
+> LRU lists with the number of bits we have now.
+> 
+
+I wondered about this and I felt there were two problems.
+
+One was reading and updating them atomically.  To do this safely,
+the page would either need to be locked, have the page isolated from
+the LRU without any other references or be protected by the zone->lru
+lock. For the most part we are accessing these bits under the page lock
+and in cases such as rotate_reclaimable_page()[1] or truncation that do
+not necessarily hold the page lock, we would depend on the zone->lru to
+prevent parallel changes (particularly updating PageActive).  I did not
+spot a case where we were not protected by some combination of the page
+lock and zone->lru so it should be fine but there might be a corner
+case I missed. Can you think of one? If a case is missed, it means
+that it is possible to get an invalid LRU index leading to corruption.
+
+The other problem is that certain operations become more expensive. We
+can no longer check one bit for PageActive for example. We'd have
+to read the LRU index and see if it corresponds to an activated
+page or not. This is not insurmountable but there would be a small
+hit for any path that currently checks PageSwapBacked, PageActive
+or PageUnevictable.
+
+[1] I noticed another bug in the LRU immediate patch. It's possible
+to call pagevec_putback_from_immediate on a page isolated for reclaim
+because the check for PageLRU is wrong.
 
 -- 
-Gražvydas
+Mel Gorman
+SUSE Labs
