@@ -1,143 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab1L3DSV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 22:18:21 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61149 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754952Ab1L3DSU (ORCPT
+	id S1755062Ab1L3D0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 22:26:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46843 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754965Ab1L3D0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 22:18:20 -0500
-Message-ID: <1325215093.2569.8.camel@phoenix>
-Subject: [PATCH 3/3] ASoC: pxa: Convert corgi to use snd_soc_register_card()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-Date: Fri, 30 Dec 2011 11:18:13 +0800
-In-Reply-To: <1325214804.2569.3.camel@phoenix>
-References: <1325214804.2569.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 29 Dec 2011 22:26:07 -0500
+Date: Thu, 29 Dec 2011 19:25:59 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Shridhar Rasal <srasal@nvidia.com>,
+        "rydberg@euromail.se" <rydberg@euromail.se>,
+        Rakesh Iyer <riyer@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH 1/1] input: keyboard: Set configuration registers
+Message-ID: <20111230032559.GB17850@core.coreip.homeip.net>
+References: <1323415758-16822-1-git-send-email-srasal@nvidia.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF1751860550@HQMAIL01.nvidia.com>
+ <3849551.l2KNPKMSmh@dtor-d630.eng.vmware.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17518605E5@HQMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17518605E5@HQMAIL01.nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use snd_soc_register_card() instead of creating a "soc-audio" platform device.
+On Fri, Dec 09, 2011 at 03:17:54PM -0800, Stephen Warren wrote:
+> Dmitry Torokhov wrote at Friday, December 09, 2011 2:25 PM:
+> > On Friday, December 09, 2011 12:10:43 PM Stephen Warren wrote:
+> > > Shridhar Rasal wrote at Friday, December 09, 2011 12:29 AM:
+> > > > To: dmitry.torokhov@gmail.com
+> > > > Cc: rydberg@euromail.se; Stephen Warren; Rakesh Iyer;
+> > > > linux-kernel@vger.kernel.org; linux- input@vger.kernel.org;
+> > > > linux-tegra@vger.kernel.org; Shridhar Rasal Subject: [PATCH 1/1] input:
+> > > > keyboard: Set configuration registers
+> > > >
+> > > > -Set only REQUIRED row and column configuration register to
+> > > > PROPER values to avoid continuously generating KBC input events.
+> > > > -Use *en* field in pin_cfg, to check GPIO_x_ROW_EN register
+> > > > should be set or clear.
+> > > >
+> > > > Signed-off-by: Shridhar Rasal <srasal@nvidia.com>
+> > >
+> > > I wondered if num==0 could be used instead of a new en field, but 0 is a
+> > > valid row/column number, so no. As such,
+> > >
+> > > Acked-by: Stephen Warren <swarren@nvidia.com>
+> > 
+> > Can we pass in number of pin_cfg instances in pdata and simply do not
+> > mention unneeded pins instead?
+> 
+> IIUC, the array is currently a fixed size (based on the set of pins
+> Supported by the KBC), hence that won't work; there's an entry for each
+> pin saying which row/column it is.
+> 
+> However, I suppose if we were to change the structure of the pdata to be:
+> 
+> struct tegra_kbc_pin_cfg {
+>     bool is_row;
+>     u8 row_col_id;
+>     u8 pin_id;
+> };
+> 
+> Then struct tegra_kbc_platform_data could indeed have a pointer to a
+> variable-sized array of these, which would avoid the "en" member.
+> 
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- arch/arm/mach-pxa/corgi.c |    9 +++++++++
- sound/soc/pxa/corgi.c     |   43 +++++++++++++++++++++++--------------------
- 2 files changed, 32 insertions(+), 20 deletions(-)
+How about we change bool to enum instead, like in the patch below?
 
-diff --git a/arch/arm/mach-pxa/corgi.c b/arch/arm/mach-pxa/corgi.c
-index 66600f0..11f1e73 100644
---- a/arch/arm/mach-pxa/corgi.c
-+++ b/arch/arm/mach-pxa/corgi.c
-@@ -436,6 +436,14 @@ static struct platform_device corgiled_device = {
- };
- 
- /*
-+ * Corgi Audio
-+ */
-+static struct platform_device corgi_audio_device = {
-+	.name	= "corgi-audio",
-+	.id	= -1,
-+};
-+
-+/*
-  * MMC/SD Device
-  *
-  * The card detect interrupt isn't debounced so we delay it by 250ms
-@@ -641,6 +649,7 @@ static struct platform_device *devices[] __initdata = {
- 	&corgifb_device,
- 	&corgikbd_device,
- 	&corgiled_device,
-+	&corgi_audio_device,
- 	&sharpsl_nand_device,
- 	&sharpsl_rom_device,
- };
-diff --git a/sound/soc/pxa/corgi.c b/sound/soc/pxa/corgi.c
-index 30ebce2..bc21944 100644
---- a/sound/soc/pxa/corgi.c
-+++ b/sound/soc/pxa/corgi.c
-@@ -291,7 +291,7 @@ static struct snd_soc_dai_link corgi_dai = {
- };
- 
- /* corgi audio machine driver */
--static struct snd_soc_card snd_soc_corgi = {
-+static struct snd_soc_card corgi = {
- 	.name = "Corgi",
- 	.owner = THIS_MODULE,
- 	.dai_link = &corgi_dai,
-@@ -305,38 +305,41 @@ static struct snd_soc_card snd_soc_corgi = {
- 	.num_dapm_routes = ARRAY_SIZE(corgi_audio_map),
- };
- 
--static struct platform_device *corgi_snd_device;
--
--static int __init corgi_init(void)
-+static int __devinit corgi_probe(struct platform_device *pdev)
- {
-+	struct snd_soc_card *card = &corgi;
- 	int ret;
- 
--	if (!(machine_is_corgi() || machine_is_shepherd() ||
--	      machine_is_husky()))
--		return -ENODEV;
--
--	corgi_snd_device = platform_device_alloc("soc-audio", -1);
--	if (!corgi_snd_device)
--		return -ENOMEM;
--
--	platform_set_drvdata(corgi_snd_device, &snd_soc_corgi);
--	ret = platform_device_add(corgi_snd_device);
-+	card->dev = &pdev->dev;
- 
-+	ret = snd_soc_register_card(card);
- 	if (ret)
--		platform_device_put(corgi_snd_device);
--
-+		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n",
-+			ret);
- 	return ret;
- }
- 
--static void __exit corgi_exit(void)
-+static int __devexit corgi_remove(struct platform_device *pdev)
- {
--	platform_device_unregister(corgi_snd_device);
-+	struct snd_soc_card *card = platform_get_drvdata(pdev);
-+
-+	snd_soc_unregister_card(card);
-+	return 0;
- }
- 
--module_init(corgi_init);
--module_exit(corgi_exit);
-+static struct platform_driver corgi_driver = {
-+	.driver		= {
-+		.name	= "corgi-audio",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= corgi_probe,
-+	.remove		= __devexit_p(corgi_remove),
-+};
-+
-+module_platform_driver(corgi_driver);
- 
- /* Module information */
- MODULE_AUTHOR("Richard Purdie");
- MODULE_DESCRIPTION("ALSA SoC Corgi");
- MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:corgi-audio");
 -- 
-1.7.5.4
+Dmitry
 
 
+Input: tegra-kbc - allow skipping setting up some of GPIO pins
 
+From: Shridhar Rasal <srasal@nvidia.com>
+
+Allow marking some of GPIO pins as ignored to to avoid continuously
+generating KBC input events.
+
+Signed-off-by: Shridhar Rasal <srasal@nvidia.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ arch/arm/mach-tegra/include/mach/kbc.h |    8 +++++++-
+ drivers/input/keyboard/tegra-kbc.c     |   34 +++++++++++++++++++++++++-------
+ 2 files changed, 34 insertions(+), 8 deletions(-)
+
+
+diff --git a/arch/arm/mach-tegra/include/mach/kbc.h b/arch/arm/mach-tegra/include/mach/kbc.h
+index 20bb054..72e28bd 100644
+--- a/arch/arm/mach-tegra/include/mach/kbc.h
++++ b/arch/arm/mach-tegra/include/mach/kbc.h
+@@ -36,8 +36,14 @@
+ #define KBC_MAX_COL	8
+ #define KBC_MAX_KEY	(KBC_MAX_ROW * KBC_MAX_COL)
+ 
++enum tegra_pin_type {
++	PIN_CFG_COL,
++	PIN_CFG_ROW,
++	PIN_CFG_IGNORE,
++};
++
+ struct tegra_kbc_pin_cfg {
+-	bool is_row;
++	enum tegra_pin_type type;
+ 	unsigned char num;
+ };
+ 
+diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+index a136e2e..09f383a 100644
+--- a/drivers/input/keyboard/tegra-kbc.c
++++ b/drivers/input/keyboard/tegra-kbc.c
+@@ -455,10 +455,18 @@ static void tegra_kbc_config_pins(struct tegra_kbc *kbc)
+ 		row_cfg &= ~r_mask;
+ 		col_cfg &= ~c_mask;
+ 
+-		if (pdata->pin_cfg[i].is_row)
++		switch (pdata->pin_cfg[i].type) {
++		case PIN_CFG_ROW:
+ 			row_cfg |= ((pdata->pin_cfg[i].num << 1) | 1) << r_shft;
+-		else
++			break;
++
++		case PIN_CFG_COL:
+ 			col_cfg |= ((pdata->pin_cfg[i].num << 1) | 1) << c_shft;
++			break;
++
++		case PIN_CFG_IGNORE:
++			break;
++		}
+ 
+ 		writel(row_cfg, kbc->mmio + r_offs);
+ 		writel(col_cfg, kbc->mmio + c_offs);
+@@ -563,7 +571,8 @@ tegra_kbc_check_pin_cfg(const struct tegra_kbc_platform_data *pdata,
+ 	for (i = 0; i < KBC_MAX_GPIO; i++) {
+ 		const struct tegra_kbc_pin_cfg *pin_cfg = &pdata->pin_cfg[i];
+ 
+-		if (pin_cfg->is_row) {
++		switch (pin_cfg->type) {
++		case PIN_CFG_ROW:
+ 			if (pin_cfg->num >= KBC_MAX_ROW) {
+ 				dev_err(dev,
+ 					"pin_cfg[%d]: invalid row number %d\n",
+@@ -571,13 +580,25 @@ tegra_kbc_check_pin_cfg(const struct tegra_kbc_platform_data *pdata,
+ 				return false;
+ 			}
+ 			(*num_rows)++;
+-		} else {
++			break;
++
++		case PIN_CFG_COL:
+ 			if (pin_cfg->num >= KBC_MAX_COL) {
+ 				dev_err(dev,
+ 					"pin_cfg[%d]: invalid column number %d\n",
+ 					i, pin_cfg->num);
+ 				return false;
+ 			}
++			break;
++
++		case PIN_CFG_IGNORE:
++			break;
++
++		default:
++			dev_err(dev,
++				"pin_cfg[%d]: invalid entry type %d\n",
++				pin_cfg->type, pin_cfg->num);
++			return false;
+ 		}
+ 	}
+ 
+@@ -594,7 +615,6 @@ tegra_kbc_dt_parse_pdata(struct platform_device *pdev)
+ 	if (!np)
+ 		return NULL;
+ 
+-	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
+ 	if (!pdata)
+ 		return NULL;
+ 
+@@ -616,12 +636,12 @@ tegra_kbc_dt_parse_pdata(struct platform_device *pdev)
+ 	 */
+ 	for (i = 0; i < KBC_MAX_ROW; i++) {
+ 		pdata->pin_cfg[i].num = i;
+-		pdata->pin_cfg[i].is_row = true;
++		pdata->pin_cfg[i].type = PIN_CFG_ROW;
+ 	}
+ 
+ 	for (i = 0; i < KBC_MAX_COL; i++) {
+ 		pdata->pin_cfg[KBC_MAX_ROW + i].num = i;
+-		pdata->pin_cfg[KBC_MAX_ROW + i].is_row = false;
++		pdata->pin_cfg[KBC_MAX_ROW + i].type = PIN_CFG_COL;
+ 	}
+ 
+ 	return pdata;
