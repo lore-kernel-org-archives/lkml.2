@@ -1,83 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab1L3WZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 17:25:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44715 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab1L3WZo (ORCPT
+	id S1752595Ab1L3W20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 17:28:26 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:57754 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab1L3W2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 17:25:44 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=rrYGrSk31WUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Oc60lQwaBigmYfxwCdkA:9 a=QnvJoPpAVbnYh0NSU_MA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325283941.24045.15.camel@gandalf.stny.rr.com>
-Subject: Re: ftrace performance impact with different configuration
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Philippe =?ISO-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
-Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        leiwen@marvell.com, Lei Wen <adrian.wenl@gmail.com>,
-        linux-kernel@vger.kernel.org
-Date: Fri, 30 Dec 2011 17:25:41 -0500
-In-Reply-To: <23257775.9kkYY4quUh@laptop>
-References: <CALZhoSRVNp=Sj2u2GHiQhuHOEdrfiM58KzG+RutvJV=8CoCpTQ@mail.gmail.com>
-	 <CAH+eYFDb4r235jAGjr7j5R5C+9YK9WeXXjVZGWQUB=330sOi0Q@mail.gmail.com>
-	 <1325175685.24045.5.camel@gandalf.stny.rr.com> <23257775.9kkYY4quUh@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.0.3-3 
-Content-Transfer-Encoding: 8bit
+	Fri, 30 Dec 2011 17:28:23 -0500
+Date: Fri, 30 Dec 2011 23:19:38 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rl@hellgate.ch
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+Message-ID: <20111230221938.GA6197@electric-eye.fr.zoreil.com>
+References: <CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com> <CACPM=kVfsXgFhKheevTS1pm7kCoezKO3M+102O=PRbXzxebxxg@mail.gmail.com> <20111229235312.GA27092@electric-eye.fr.zoreil.com> <CACPM=kXTqY1kVWrEMB-Z0Lqy6t+rXvMzixcSUy7fAz6g_ajV9g@mail.gmail.com> <20111230125655.GA32031@electric-eye.fr.zoreil.com> <CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com> <20111230180347.GA3647@electric-eye.fr.zoreil.com> <CACPM=kXWXUE+JcVhkz-6tGZ2YyteN9sGA80+Pnw6+LaJ-eNWBA@mail.gmail.com> <20111230215024.GA5513@electric-eye.fr.zoreil.com> <CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com>
 Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-12-30 at 14:07 +0100, Philippe Rétornaz wrote:
+Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+[...]
+> Does not build with patch:
 
-> Sorry about being a bit naive, but why it is not possible to do it in two 
-> steps ?
-> call stop_machine to put the jmp which skip the call to mcount
-> Then wait until all tasks hits schedule() (synchronize_sched() ?)
+Neither did it here. My head is already elsewhere.
 
-Here's the problem. With a preemptible kernel, hitting schedule() does
-not mean that you can guarantee that all tasks have not been
-interrupted.
+[...]
+> Wouldn't it be an idea to move the declarations to a via-rhine.h file,
+> and include it, to work around it, and seperate it like it should be?
 
+Code could be correctly ordered too. Forward declare it. It's good enough
+in the meantime.
 
-	nop (use to be push lr)
-	------------> interrupt
-			set NEED_RESCHED
-			end of interrupt
-			preempt_schedule()
-				schedule()
-
-	[ another processes is now running ]
-	call stop_machine()
-	put in push lr
-	call stop_machine()
-	put in call to mcount
-
-	everything seems to be running fine.
-
-	the low priority task gets scheduled again...
-
-
-				schedule() finishes
-			preempt_schedule() finishes
-			back at tail of return_from_intr in entry_64.S
-			iret
-	call mcount
-			pop lr (which was never pushed)
-			jmp lr
-
-Now we jump back to some random stuff and the stack is corrupted.
-
-There's no way to safely modify two instructions that depend on each
-other in a preemptible kernel, with the exception of waiting for all
-CPUs to hit idle (which may never happen on a busy system). And even
-that may be racy.
-
--- Steve
-
-> Then modify both instructions to put in place the two nops since we know that 
-> nobody is calling mcount.
-
-
+-- 
+Ueimor
