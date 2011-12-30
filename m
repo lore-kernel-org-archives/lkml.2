@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751009Ab1L3PZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 10:25:52 -0500
-Received: from usmamail.tilera.com ([206.83.70.75]:45588 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750753Ab1L3PZu (ORCPT
+	id S1751191Ab1L3Pav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 10:30:51 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:61642 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab1L3Pat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 10:25:50 -0500
-Message-ID: <4EFDD7FA.9000903@tilera.com>
-Date: Fri, 30 Dec 2011 10:25:46 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Fri, 30 Dec 2011 10:30:49 -0500
+Message-ID: <4EFDD925.3050806@gmail.com>
+Date: Fri, 30 Dec 2011 09:30:45 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Gilad Ben-Yossef <gilad@benyossef.com>, <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, <linux-mm@kvack.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v4 5/5] mm: Only IPI CPUs to drain local pages if they
- exist
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com> <1321960128-15191-6-git-send-email-gilad@benyossef.com> <20111223102810.GT3487@suse.de> <CAOtvUMd6+ZZVLp-FbbEwbq3UZLRvSRo+_MMYj1aCGT3gBhxMwg@mail.gmail.com> <20111230150421.GE15729@suse.de>
-In-Reply-To: <20111230150421.GE15729@suse.de>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset="ISO-8859-15"
+To: David Daney <ddaney.cavm@gmail.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, devicetree-discuss@lists.ozlabs.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Subject: Re: [PATCH v2 0/4] irq/of: Cleanup and Enchance irq_domain support.
+References: <1323916330-8865-1-git-send-email-ddaney.cavm@gmail.com>
+In-Reply-To: <1323916330-8865-1-git-send-email-ddaney.cavm@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2011 10:04 AM, Mel Gorman wrote:
-> On Sun, Dec 25, 2011 at 11:39:59AM +0200, Gilad Ben-Yossef wrote:
->> I think of it more of as a CPU isolation feature then pure performance.
->> If you have a system with a couple of dozens of CPUs (Tilera, SGI, Cavium
->> or the various virtual NUMA folks) you tend to want to break up the system
->> into sets of CPUs that work of separate tasks.
-> Even with the CPUs isolated, how often is it the case that many of
-> the CPUs have 0 pages on their per-cpu lists? I checked a bunch of
-> random machines just there and in every case all CPUs had at least
-> one page on their per-cpu list. In other words I believe that in
-> many cases the exact same number of IPIs will be used but with the
-> additional cost of allocating a cpumask.
+David,
 
-Just to chime in here from the Tilera point of view, it is indeed important
-to handle the case when all the CPUs have 0 pages in their per-cpu lists,
-because it may be that the isolated CPUs are not running kernel code at
-all, but instead running very jitter-sensitive user-space code doing direct
-MMIO.  So it's worth the effort, in that scenario, to avoid perturbing the
-cpus with no per-cpu pages.
+On 12/14/2011 08:32 PM, David Daney wrote:
+> From: David Daney <david.daney@cavium.com>
+> 
+> Back in early Nov. I send the first version of this patch set.  Now
+> things are heating up again in the world of irq_domain, so I wanted to
+> try to get some closure on the issues I had.  The Octeon patch is
+> included here to show how I am using irq_domain, but is part of a much
+> larger effort to merge Octeon device tree support.
+> 
+> The basic problem I am attempting to solve is using irq domains when
+> there is a 'non-linear' mapping of hwirq <--> irq within a domain.
+> Octeon has a single set of irq numbers that is used across two
+> different implementations of the interrupt controller as well as more
+> than 10 different SOCs all which use different subsets of the irq
+> number space.  The result is that the hwirq to irq mapping function
+> contains many gaps and discontinuities, it is really quite random.
+> 
+> The existing irq domain infrastructure assumes a continuous linear
+> mapping of hwirq to irq that can be encapsulated by the irq_base,
+> hwirq_base and nr_irq elements of struct irq_domain.  This is not
+> suitable for the Octeon implementation.
+> 
+> The gist of my change is to add an optional iterator function to
+> irq_domain_ops which knows how to iterate over the irq numbers in a
+> given domain.  For simple linear domains (those currently supported),
+> we iterate using the current method based on irq_base, hwirq_base and
+> nr_irq.
+> 
+> Summary of the patches:
+> 
+> 1) Get rid of some unused code to make subsequent changes simpler.
+> 
+> 2) Cleanup the data type used by various hwirq functions and users.
+> 
+> 3) Add the irq iterator, and fix up the ARM GIC code to use it instead
+> of the current irq_domain_for_each_irq().
+> 
+> 4) Add the Octeon users of the interface.
+> 
+> In an earlier exchange, Rob Herring had said:
+> 
+>    ... Handling sparse irqs is a potentially common problem, so we
+>    should address that in the core irqdomain code.
+> 
+> Which is what this patch set is doing.
+> 
+> There was a suggestion that perhaps having .to_irq() return a magic
+> value if there was no mapping would also work.  However I prefer this
+> approach as it separates the concepts of iteration and mapping of irq
+> numbers.
+> 
+> Please comment.
 
-And in general, as multi-core continues to scale up, it will be
-increasingly worth the effort to avoid doing operations that hit every
-single cpu "just in case".
+Can we first have a patch that just allows irq domains to be enabled on
+MIPS. It collides because of multiple versions of irq_create_of_mapping.
 
-> As a way of mitigating that, I would suggest this is done in two passes.
-> The first would check if at least 50% of the CPUs have no pages on their
-> per-cpu list. Then and only then allocate the per-cpu mask to limit the
-> IPIs. Use a separate patch that counts in /proc/vmstat how many times the
-> per-cpu mask was allocated as an approximate measure of how often this
-> logic really reduces the number of IPI calls in practice and report that
-> number with the patch - i.e. this patch reduces the number of times IPIs
-> are globally transmitted by X% for some workload. 
-
-It's really a question of how important it is to avoid the IPIs, even to a
-relatively small number of cpus.  If only a few cpus are running
-jitter-sensitive code, you may still want to take steps to avoid
-interrupting them.  I do think the right strategy is to optimistically try
-to allocate the cpumask, and only if it fails, send IPIs to every cpu.
-
-Alternately, since we really don't want more than one cpu running the drain
-code anyway, you could imagine using a static cpumask, along with a lock to
-serialize attempts to drain all the pages.  (Locking here would be tricky,
-since we need to run on_each_cpu with interrupts enabled, but there's
-probably some reasonable way to make it work.)
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+Rob
