@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274Ab1L3Nvh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 08:51:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64882 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738Ab1L3Nvf convert rfc822-to-8bit (ORCPT
+	id S1751532Ab1L3OHh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 09:07:37 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60596 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751256Ab1L3OHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 08:51:35 -0500
+	Fri, 30 Dec 2011 09:07:35 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111230125655.GA32031@electric-eye.fr.zoreil.com>
-References: <CACPM=kXOddA+T6vQPijR6sh8x5cMO=4baKGeKxEmMKG896Lz4g@mail.gmail.com>
-	<20111229153902.GB21946@electric-eye.fr.zoreil.com>
-	<20111229183902.GC21946@electric-eye.fr.zoreil.com>
-	<20111229.170514.1766899380937848638.davem@davemloft.net>
-	<CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
-	<CACPM=kVfsXgFhKheevTS1pm7kCoezKO3M+102O=PRbXzxebxxg@mail.gmail.com>
-	<20111229235312.GA27092@electric-eye.fr.zoreil.com>
-	<CACPM=kXTqY1kVWrEMB-Z0Lqy6t+rXvMzixcSUy7fAz6g_ajV9g@mail.gmail.com>
-	<20111230125655.GA32031@electric-eye.fr.zoreil.com>
-Date: Fri, 30 Dec 2011 14:51:34 +0100
-X-Google-Sender-Auth: Df__-tIiCfJhaceSThjNtYzkbK8
-Message-ID: <CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com>
-Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
-From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rl@hellgate.ch
+In-Reply-To: <4EFD92AF.7000402@suse.cz>
+References: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi>
+ <4EFC9872.7000708@suse.cz> <CAMOw1v6GhA+B2oXcVK4YZULb6kq=-NFTv-=-4eYB0ukZ9acP-w@mail.gmail.com>
+ <4EFD92AF.7000402@suse.cz>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Fri, 30 Dec 2011 12:07:14 -0200
+Message-ID: <CAMOw1v4SCpOXuGmFXGfk01gRdzgvV0G0QR-wmJHRbd3XHpVFMg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] kbuild: add target to install gzipped modules
+To: Michal Marek <mmarek@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>, linux-modules@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/30 Francois Romieu <romieu@fr.zoreil.com>:
-> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
-> [...]
->> Sorry for asking a probably obvious question, but whats next to get it
->> fixed and ready for inclusion?
+On Fri, Dec 30, 2011 at 8:30 AM, Michal Marek <mmarek@suse.cz> wrote:
+> On 29.12.2011 18:35, Lucas De Marchi wrote:
+>> The operation that is used most of the time is to load modules. The
+>> reason for having modules gzipped is the same one as for kernel image:
 >
-> It should be there for testing and deeper review within a pair of hours.
-> I ended up vandalizing most of the locking. From a testing viewpoint it
-> means some amount of work (not mine :o) ) to get a decent coverage.
+> The reason for having the kernel compressed is that the x86 bootloader
+> reads the kernel (and initrd) using bios calls. That's not the case for
+> modules.
 
-Great, let me know when there is more to test :)
+It could be when it was added, but it's not anymore.
 
-/Bjarke
 
-> Once it is known tested and reviewed - it may need a few iterations - it
-> can be formally submitted for inclusion.
->
-> --
-> Ueimor
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Really, I wouldn't like the discussion to be whether having compressed
+modules is good or not, but rather if it's good to have a install rule
+that does all the things the right way and only once, given people
+*are using* compressed modules.
+
+Lucas De Marchi
