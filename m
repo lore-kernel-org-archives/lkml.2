@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab1L3RIm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 12:08:42 -0500
-Received: from casper.infradead.org ([85.118.1.10]:50743 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab1L3RIk convert rfc822-to-8bit (ORCPT
+	id S1751645Ab1L3R1X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 12:27:23 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53564 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab1L3R1U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 12:08:40 -0500
-Message-ID: <1325264878.30917.11.camel@twins>
-Subject: Re: [GIT PULL] futex fixlet
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhltc@us.ibm.com>,
-        Hugh Dickins <hughd@google.com>
-Date: Fri, 30 Dec 2011 18:07:58 +0100
-In-Reply-To: <CA+55aFydsXqRg-QwfVBuUOSfpGQ24MjgWaK-z+3Qvgn-BHn6Tw@mail.gmail.com>
-References: <20111229210707.GA22300@elte.hu>
-	 <CA+55aFydsXqRg-QwfVBuUOSfpGQ24MjgWaK-z+3Qvgn-BHn6Tw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 30 Dec 2011 12:27:20 -0500
+Message-ID: <4EFDF470.9050104@linux.vnet.ibm.com>
+Date: Fri, 30 Dec 2011 11:27:12 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>,
+        Brian King <brking@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Konrad Wilk <konrad.wilk@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>
+Subject: Re: [PATCH] staging: zcache: fix serialization bug in zv stats
+References: <<1325263335-16254-1-git-send-email-sjenning@linux.vnet.ibm.com>> <d9558871-53ec-4d49-8df4-c09bee100a49@default>
+In-Reply-To: <d9558871-53ec-4d49-8df4-c09bee100a49@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 11123017-1780-0000-0000-000001FA5EE0
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000242; HX=3.00000180; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00100634; UDB=6.00025812; UTC=2011-12-30
+ 17:27:19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-29 at 17:26 -0800, Linus Torvalds wrote:
-> Why do we even bother to check "page->mapping" at all? What's the
-> *use* of that loop? My gut feeling is that *that* is the fundamental
-> problem, and we should just get rid of it, rather than add all these
-> totally random work-arounds for the problem.
+On 12/30/2011 11:02 AM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Sent: Friday, December 30, 2011 9:42 AM
+>> To: Greg Kroah-Hartman
+>> Cc: Seth Jennings; Dan Magenheimer; Brian King; devel@driverdev.osuosl.org; linux-
+>> kernel@vger.kernel.org
+>> Subject: [PATCH] staging: zcache: fix serialization bug in zv stats
+>>
+>> In a multithreaded workload, the zv_curr_dist_counts
+>> and zv_cumul_dist_counts statistics are being corrupted
+>> because the increments and decrements in zv_create
+>> and zv_free are not atomic.
+>>
+>> This patch converts these statistics and their corresponding
+>> increments/decrements/reads to atomic operations.
+>>
+>> Based on v3.2-rc7
+>>
+>> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
 > 
-> Peter Z? That "if (!page->mapping) goto again" actually goes back to
-> 38d47c1b7075, in 2008. Why does it exist in the first place? There's
-> no comment nor explanation in the changelog.
-> 
-> Why don't we just unconditionally return -EFAULT? What is the retry
-> actually supposed to *do*? If somebody races with a mmap/munmap, why
-> the hell would we care? What is it doing? 
+> I'm inclined to nack this change, at least unless inside an #ifdef DEBUG,
+> as these counts are interesting to a developer but not useful to a normal
+> end user, whereas the incremental cost for atomic_inc and atomic_dec are
+> non-trivial.  I don't think any off-by-one in these counters could
+> result in a bug and, before promotion from staging, they probably
+> should just go away.  (They are fun to "watch -d" though ;-)
 
-Vague memory seems to suggest it was to do with an unmap race, now the
-only such race we care about is swapping, if someone has a futex and
-does munmap+mmap under us we really don't care and you get to keep
-whatever result that yields.
+In my test, it hammers on particular chunk size and the counter is off
+by hundreds :-/
 
-That said, the ->mapping test is wrong because ->mapping is not actually
-cleared when the page is unmapped.
+I too was worried about performance impact, however, my tests showed
+no degradation.  That's probably because there are bigger bottlenecks
+elsewhere.
 
-Also, I suspect the is_page_cache_freeable() test in pageout() avoids
-the worst of it. It keeps the page around if we have a reference to it,
-so a minor fault will then quickly re-instate the same page without loss
-of data.
+Perhaps we can commit this for now, so that the code is correct, and
+revisit this when we try to replace zbud with zsmalloc.  I'm sure
+we'll have to rethink the statistics at that time.
 
-So I _think_ you're completely right and we can simply kill the whole
-thing, but I've been trying very hard to forget everything kernel
-related for a week, and I really shouldn't kick-start my brain until
-somewhere next week.
+The only other option, IMO, is the remove the chunk stats altogether
+until we can find a solution that is both fast and correct.
 
+I think that continuing with incorrect stats, regardless of the degree
+to which they are incorrect, isn't really a viable option.
+
+--
+Seth
 
