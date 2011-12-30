@@ -1,30 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572Ab1L3Jxv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 04:53:51 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:38915 "EHLO mx3.mail.elte.hu"
+	id S1752623Ab1L3J5T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 04:57:19 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37365 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751431Ab1L3Jxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 04:53:49 -0500
-Date: Fri, 30 Dec 2011 10:51:47 +0100
+	id S1752028Ab1L3J5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 04:57:17 -0500
+Date: Fri, 30 Dec 2011 10:55:21 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Avi Kivity <avi@redhat.com>
-Cc: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-Message-ID: <20111230095147.GA10543@elte.hu>
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com>
- <20111219112326.GA15090@elte.hu>
- <87sjke1a53.fsf@abhimanyu.in.ibm.com>
- <4EF1B85F.7060105@redhat.com>
- <877h1o9dp7.fsf@linux.vnet.ibm.com>
- <20111223103620.GD4749@elte.hu>
- <4EF701C7.9080907@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/4] perf script: Add script to collect and display IBS
+ samples
+Message-ID: <20111230095521.GA12077@elte.hu>
+References: <1323969824-9711-1-git-send-email-robert.richter@amd.com>
+ <1323969824-9711-5-git-send-email-robert.richter@amd.com>
+ <20111223103329.GC4749@elte.hu>
+ <20111223111958.GE16765@erda.amd.com>
+ <20111223135340.GB21382@elte.hu>
+ <1324649698.24803.55.camel@twins>
+ <20111223144040.GB2297@elte.hu>
+ <20111223161701.GF16765@erda.amd.com>
+ <20111223163930.GA5983@elte.hu>
+ <20111223165030.GG16765@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EF701C7.9080907@redhat.com>
+In-Reply-To: <20111223165030.GG16765@erda.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -38,18 +43,23 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Avi Kivity <avi@redhat.com> wrote:
+* Robert Richter <robert.richter@amd.com> wrote:
 
-> [...]
+> > Once something like 'perf report' works for some useful 
+> > looking sub-case you can also tack on all the extra IBS 
+> > goodies that specialized tools might need as well, i have no 
+> > problem with providing that.
 > 
-> The first part appears to be unrelated to ebizzy itself - it's 
-> the kunmap_atomic() flushing ptes.  It could be eliminated by 
-> switching to a non-highmem kernel, or by allocating more PTEs 
-> for kmap_atomic() and batching the flush.
+> Isn't that outlook I gave about pebs like implementation of 
+> the precise bit with IBS "useful enough"? This would be on top 
+> patches anyway, so no need to hold back current patches.
 
-Nikunj, please only run pure 64-bit/64-bit combinations - by the 
-time any fix goes upstream and trickles down to distros 32-bit 
-guests will be even less relevant than they are today.
+An 'outlook' is not something I can test before sending commits 
+to Linus.
+
+To help your effort we could tentatively put the patches into a 
+separate tip:perf/ibs topic branch if everyone agrees otherwise, 
+which can go upstream once it's complete and usable.
 
 Thanks,
 
