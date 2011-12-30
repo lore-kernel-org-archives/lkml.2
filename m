@@ -1,50 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab1L3XcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 18:32:01 -0500
-Received: from smtp4.epfl.ch ([128.178.224.218]:43528 "HELO smtp4.epfl.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752080Ab1L3XcA convert rfc822-to-8bit (ORCPT
+	id S1752583Ab1L3Xv5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 18:51:57 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35383 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752203Ab1L3Xvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 18:32:00 -0500
-From: Philippe =?ISO-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
-        leiwen@marvell.com, Lei Wen <adrian.wenl@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: ftrace performance impact with different configuration
-Date: Sat, 31 Dec 2011 00:31:55 +0100
-Message-ID: <2631878.q7bjHk7YBM@laptop>
-Organization: EPFL - STI - LSRO1
-User-Agent: KMail/4.7.4 (Linux/3.1.6-1.fc16.x86_64; KDE/4.7.4; x86_64; ; )
-In-Reply-To: <1325283941.24045.15.camel@gandalf.stny.rr.com>
-References: <CALZhoSRVNp=Sj2u2GHiQhuHOEdrfiM58KzG+RutvJV=8CoCpTQ@mail.gmail.com> <23257775.9kkYY4quUh@laptop> <1325283941.24045.15.camel@gandalf.stny.rr.com>
+	Fri, 30 Dec 2011 18:51:53 -0500
+Message-ID: <4EFE4E89.6000607@gmail.com>
+Date: Fri, 30 Dec 2011 18:51:37 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Herbert Xu <herbert@gondor.hengli.com.au>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
+References: <20111228164522.GO17712@google.com> <20111228165336.GS27266@moon> <20111228170116.GQ17712@google.com> <20111228171419.GA19321@moon> <20111229142438.GI4460@moon> <20111229161414.GC3516@google.com> <20111229162453.GC4806@moon> <20111230002309.GA11508@gondor.apana.org.au> <20111230073655.GE4806@moon> <4EFE1FA4.3090207@gmail.com> <20111230204836.GP4806@moon>
+In-Reply-To: <20111230204836.GP4806@moon>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 30 décembre 2011 17:25:41 Steven Rostedt a écrit :
-> On Fri, 2011-12-30 at 14:07 +0100, Philippe Rétornaz wrote:
-> > Sorry about being a bit naive, but why it is not possible to do it in
-> > two
-> > steps ?
-> > call stop_machine to put the jmp which skip the call to mcount
-> > Then wait until all tasks hits schedule() (synchronize_sched() ?)
-> (...)
-> There's no way to safely modify two instructions that depend on each
-> other in a preemptible kernel, with the exception of waiting for all
-> CPUs to hit idle (which may never happen on a busy system). And even
-> that may be racy.
-> 
+(12/30/11 3:48 PM), Cyrill Gorcunov wrote:
+> On Fri, Dec 30, 2011 at 03:31:32PM -0500, KOSAKI Motohiro wrote:
+>> (12/30/11 2:36 AM), Cyrill Gorcunov wrote:
+>>> On Fri, Dec 30, 2011 at 11:23:09AM +1100, Herbert Xu wrote:
+>>>> On Thu, Dec 29, 2011 at 08:24:53PM +0400, Cyrill Gorcunov wrote:
+>>>>>
+>>>>> Probably I've had to crypto_alloc_hash earlier and simply keep a reference
+>>>>> to algo but since I'm not sure if looking for modules in late-init-call
+>>>>> is good idea.
+>>>>
+>>>> Right, the allocation needs to occur in a sleepable context.
+>>>>
+>>>> If you're just hashing something small and have no need for
+>>>> hardware acceleration then lib/sha1.c is fine.
+>>>>
+>>>
+>>> Hi, yeah, it's just one message block hashing so I've switched
+>>> to lib/sha1.c. Herbert, I'm more interested in security analysis
+>>> -- would the sha1(msg), where the 'msg' is the kernel pointer
+>>> XOR'ed with random value and expanded to the 512 bits would be
+>>> safe enough for export to unprivilege users?
+>>
+>> Even if now we don't know an attacking way of sha1 reverse hashing,
+>> we may discover within 10 years. Many secure messages lost from
+>> hardware speedup and new algorithm attack. so, nobody can say it's
+>> abi safe.
+>>
+>
+> Yes, I know. But there is a big difference between direct hash crack and
+> indirect crack caused by limited space of data used for such hash. That's
+> the reason why random cookie was used and xor production was expanded to
+> the whole message block.
+>
+>> And, if you don't use perfect hash, you may have a hash collision
+>> risk. What's happen if different pointer makes same ID?
+>
+> Well, strictly speaking this is pretty bad case for me. Of course this
+> wont lead to catastrophic results for user-space application I think
+> but definitely I would prefer to not have collisions here.
+>
+> Guys, this become more and more complex, finally I fear someone
+> propose to do ideal hashing run-time ;) Maybe we can step back and
+> live with root-only and plain pointers here? I'm not sure who else
+> might need such facility except us, and if once there will be a candidate
+> -- we could take a look on hashing again and provide safe hashes there. No?
 
-Thanks for the detailed explanation, I got it now. I guess the only way would 
-be to use the freezer api like freeze_processes() is doing. Looks like it does 
-not worth the pain.
+But recently kernel security fashion are, we don't expose a kernel 
+pointer at all even though the file is root only. I'm not sure how
+much effective such fashion. but you seems run opposite way.
 
-Thanks ! 
-
-Philippe
+I doubt user land can implement good comparison way. Why you gave up 
+Andrew's sys_are_these_files_the_same() idea?
 
