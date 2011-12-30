@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754960Ab1L3Agk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 29 Dec 2011 19:36:40 -0500
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:35292 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab1L3AgW (ORCPT
+	id S1753000Ab1L3BFc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 29 Dec 2011 20:05:32 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62906 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab1L3BF2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 29 Dec 2011 19:36:22 -0500
-Message-ID: <4EFD075B.3090803@snapgear.com>
-Date: Fri, 30 Dec 2011 10:35:39 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Thu, 29 Dec 2011 20:05:28 -0500
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: <linux-m68k@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] m68k/mac: Make CONFIG_HEARTBEAT unavailable on Mac
-References: <1325185383-19449-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1325185383-19449-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20111229120956.GA31878@elie.Belkin>
+References: <20111207165611.GA19872@kroah.com> <20111207165602.672902223@clark.kroah.org>
+ <20111229120956.GA31878@elie.Belkin>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 29 Dec 2011 17:05:06 -0800
+X-Google-Sender-Auth: pj7pi-WLetTDorIA5wqigTSoCxU
+Message-ID: <CA+55aFxzM0DamY13ZP_xnOzvcTfyyZtHFc8gismerqDVvGiuWA@mail.gmail.com>
+Subject: Re: [27/27] clockevents: Set noop handler in clockevents_exchange_device()
+To: Jonathan Nieder <jrnieder@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, akpm@linux-foundation.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Phil Miller <mille121@illinois.edu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/12/11 05:03, Geert Uytterhoeven wrote:
-> mac_heartbeat() was never really implemented.
+On Thu, Dec 29, 2011 at 4:09 AM, Jonathan Nieder <jrnieder@gmail.com> wrote:
 >
-> Signed-off-by: Geert Uytterhoeven<geert@linux-m68k.org>
+> This is basically the reverse of 7c1e768974 (clockevents: prevent
+> clockevent event_handler ending up handler_noop, 2008-09-03).  The
+> rationale for the latter still applies.
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
+Hmm. You seem to be right. Instead of applying this to stable, it
+looks like we should revert it from mainline.
 
-Regards
-Greg
-
-
->   arch/m68k/Kconfig.devices |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
+>                  People have been reporting
+> the analagous patch to this one causing hangs on resume in 3.1.y and
+> 3.2 release candidates:
 >
-> diff --git a/arch/m68k/Kconfig.devices b/arch/m68k/Kconfig.devices
-> index c3bd7e2..a8eff5a 100644
-> --- a/arch/m68k/Kconfig.devices
-> +++ b/arch/m68k/Kconfig.devices
-> @@ -8,8 +8,8 @@ config ARCH_MAY_HAVE_PC_FDC
->   menu "Platform devices"
+>  - http://thread.gmane.org/gmane.linux.kernel/1233033
+>  - http://thread.gmane.org/gmane.linux.kernel/1233389
+>  - http://thread.gmane.org/gmane.linux.kernel/1233159
+>  - http://thread.gmane.org/gmane.linux.kernel/1227868/focus=1230877
 >
->   config HEARTBEAT
-> -	bool "Use power LED as a heartbeat" if AMIGA || APOLLO || ATARI || MAC ||Q40
-> -	default y if !AMIGA&&  !APOLLO&&  !ATARI&&  !MAC&&  !Q40&&  HP300
-> +	bool "Use power LED as a heartbeat" if AMIGA || APOLLO || ATARI || Q40
-> +	default y if !AMIGA&&  !APOLLO&&  !ATARI&&  !Q40&&  HP300
->   	help
->   	  Use the power-on LED on your machine as a load meter.  The exact
->   	  behavior is platform-dependent, but normally the flash frequency is
+> So please consider reverting it for now.
 
+Thomas? It does seem to be broken and there do seem to be regression
+reports about it.
 
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Should I revert it, or do you have alternative fixes?
+
+                 Linus
