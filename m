@@ -1,83 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab1L3WzK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 17:55:10 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:5942 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959Ab1L3WzG convert rfc822-to-8bit (ORCPT
+	id S1752535Ab1L3XcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 18:32:01 -0500
+Received: from smtp4.epfl.ch ([128.178.224.218]:43528 "HELO smtp4.epfl.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752080Ab1L3XcA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 17:55:06 -0500
-X-IronPort-AV: E=Sophos;i="4.71,434,1320652800"; 
-   d="scan'208";a="612157807"
-Message-ID: <1325285705.10984.4.camel@lade.trondhjem.org>
-Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
- context
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Fri, 30 Dec 2011 17:55:05 -0500
-In-Reply-To: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 30 Dec 2011 18:32:00 -0500
+From: Philippe =?ISO-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-arm-kernel@lists.infradead.org, Rabin Vincent <rabin@rab.in>,
+        leiwen@marvell.com, Lei Wen <adrian.wenl@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: ftrace performance impact with different configuration
+Date: Sat, 31 Dec 2011 00:31:55 +0100
+Message-ID: <2631878.q7bjHk7YBM@laptop>
+Organization: EPFL - STI - LSRO1
+User-Agent: KMail/4.7.4 (Linux/3.1.6-1.fc16.x86_64; KDE/4.7.4; x86_64; ; )
+In-Reply-To: <1325283941.24045.15.camel@gandalf.stny.rr.com>
+References: <CALZhoSRVNp=Sj2u2GHiQhuHOEdrfiM58KzG+RutvJV=8CoCpTQ@mail.gmail.com> <23257775.9kkYY4quUh@laptop> <1325283941.24045.15.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 30 Dec 2011 22:55:06.0327 (UTC) FILETIME=[12C26670:01CCC746]
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-11-29 at 13:10 +0300, Stanislav Kinsbursky wrote: 
-> This patch set was created in context of clone of git
-> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
-> tag: v3.1
+Le vendredi 30 décembre 2011 17:25:41 Steven Rostedt a écrit :
+> On Fri, 2011-12-30 at 14:07 +0100, Philippe Rétornaz wrote:
+> > Sorry about being a bit naive, but why it is not possible to do it in
+> > two
+> > steps ?
+> > call stop_machine to put the jmp which skip the call to mcount
+> > Then wait until all tasks hits schedule() (synchronize_sched() ?)
+> (...)
+> There's no way to safely modify two instructions that depend on each
+> other in a preemptible kernel, with the exception of waiting for all
+> CPUs to hit idle (which may never happen on a busy system). And even
+> that may be racy.
 > 
-> This patch set depends on previous patch sets titled:
-> 1) "SUNRPC: initial part of making pipefs work in net ns"
-> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
-> 3) "SUNRPC: make RPC clients use network-namespace-aware PipeFS routines"
-> 4) "NFS: create clients and IDMAP pipes per network namespace"
-> 
-> This patch set is the final part of making SUNRPC PipeFS and it's users work in
-> network namespace context.
-> 
-> The following series consists of:
-> 
-> ---
-> 
-> Stanislav Kinsbursky (5):
->       NFS: handle blocklayout pipe PipeFS dentry by network namespace aware routines
->       NFS: blocklayout pipe creation per network namespace context introduced
->       NFS: blocklayout PipeFS notifier introduced
->       NFS: remove RPC PipeFS mount point reference from blocklayout routines
->       SUNRPC: kernel PipeFS mount point creation routines removed
-> 
-> 
->  fs/nfs/blocklayout/blocklayout.c    |  154 ++++++++++++++++++++++++++++-------
->  fs/nfs/blocklayout/blocklayout.h    |    3 -
->  fs/nfs/blocklayout/blocklayoutdev.c |    5 +
->  fs/nfs/blocklayout/blocklayoutdm.c  |    7 +-
->  fs/nfs/inode.c                      |    1 
->  fs/nfs/netns.h                      |    1 
->  include/linux/sunrpc/rpc_pipe_fs.h  |    2 
->  net/sunrpc/rpc_pipe.c               |   21 -----
->  8 files changed, 137 insertions(+), 57 deletions(-)
 
+Thanks for the detailed explanation, I got it now. I guess the only way would 
+be to use the freezer api like freeze_processes() is doing. Looks like it does 
+not worth the pain.
 
-These patches need rebasing in order to apply on top of 3.2-rc7...
+Thanks ! 
 
-Cheers
-  Trond
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+Philippe
 
