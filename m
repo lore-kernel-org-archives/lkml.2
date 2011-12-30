@@ -1,127 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab1L3F4i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 00:56:38 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:56436 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750916Ab1L3F4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 00:56:35 -0500
-Message-ID: <4EFD531C.50300@cn.fujitsu.com>
-Date: Fri, 30 Dec 2011 13:58:52 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: fix to allow mounting a hierarchy by name
-References: <4EF9291D.7030208@cn.fujitsu.com> <20111227163535.GA17712@google.com> <4EFAB2E2.4040008@cn.fujitsu.com> <20111228163631.GN17712@google.com> <4EFBD55E.5030106@cn.fujitsu.com> <20111229162313.GD3516@google.com>
-In-Reply-To: <20111229162313.GD3516@google.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-30 13:55:43,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-12-30 13:55:44,
-	Serialize complete at 2011-12-30 13:55:44
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751410Ab1L3Gg5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 01:36:57 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:59496 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751131Ab1L3Ggy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 01:36:54 -0500
+From: Tao Ma <tm@tao.ma>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] mm: do not drain pagevecs for mlock
+Date: Fri, 30 Dec 2011 14:36:01 +0800
+Message-Id: <1325226961-4271-1-git-send-email-tm@tao.ma>
+X-Mailer: git-send-email 1.7.4.1
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> Hello,
-> 
-> On Thu, Dec 29, 2011 at 10:50:06AM +0800, Li Zefan wrote:
->> Tejun Heo wrote:
->>> Hello, Li.
->>>
->>> On Wed, Dec 28, 2011 at 02:10:42PM +0800, Li Zefan wrote:
->>>> The "name" option was introduced along with the "none" option, so we
->>>> can distinguish between different cgroup hierarchies which have no
->>>> bound subsystems, like this:
->>>>
->>>> 	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
->>>> 	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
->>>>
->>>> As the name is unique, we have this "mount by hierarchy name" feature.
->>>
->>> I could be missing something but does that add anything other than
->>> naming convenience?
->>
->> The name option is necessary, otherwise how can we mount hierarchies
->> as shown in the above example?
-> 
-> I don't think mounting itself would be a problem.  We don't need name
-> option to create multiple tmpfs instances, right?  The problem is
+In our test of mlock, we have found some severe performance regression
+in it. Some more investigations show that mlocked is blocked heavily
+by lur_add_drain_all which calls schedule_on_each_cpu and flush the work
+queue which is very slower if we have several cpus.
 
-Right, but you can't mount the same tmpfs instance in more than one mount
-point.
+So we have tried 2 ways to solve it:
+1. Add a per cpu counter for all the pagevecs so that we don't schedule
+   and flush the lru_drain work if the cpu doesn't have any pagevecs(I
+   have finished the codes already).
+2. Remove the lru_add_drain_all.
 
-> referencing to them after they're created.  Filesystems generally
-> don't need such identifier because, once they're created, they can be
-> referenced by their mount points.  I'm still not very familiar with
-> different corners of cgroup, so it's entirely possible that I'm
-> missing something.  If I am, please point me to it.
-> 
+The first one has some problems since in our product system, all the cpus
+are busy, so I guess there is very little chance for a cpu to have 0 pagevecs
+except that you run several consecutive mlocks.
 
-Normal filesystems can have multi mount points, and an fs instance
-is identified by device name, but cgroupfs ignores device name like
-other pseudo filesystems. Instead a set of subsystems is used, so
-to mount the same cgroupfs instance in different mount points, we
-can do this:
+>From the commit log which added this function(8891d6da), it seems that we
+don't have to call it. So the 2nd one seems to be both easy and workable and
+comes this patch.
 
-	# mount -t cgroup -o cpuset xxx /cgroup1
-	# mount -t cgroup -o cpuset xxx /cgroup2
+Thanks
+Tao
 
-Now we have the "none" option, so a cgroupfs can have no subsystems
-bound to it, and we allow multi instances of such cgroupfs, so we
-have to assign names to each instance:
+>From 8cdf7f7ed236367e85151db65ae06f781aca7d77 Mon Sep 17 00:00:00 2001
+From: Tao Ma <boyu.mt@taobao.com>
+Date: Fri, 30 Dec 2011 14:20:08 +0800
+Subject: [PATCH] mm: do not drain pagevecs for mlock
 
-	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
-	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
+In 8891d6da, lru_add_drain_all is added to mlock to flush all the per
+cpu pagevecs. It makes this system call runs much slower than the
+predecessor(For a 16 core Xeon E5620, it is around 20 times). And the
+the more cores we have, the more the performance penalty because of the
+nasty call to schedule_on_each_cpu.
 
-Then we want to also mount "hier1" in another mount point, we can't
-do this:
+>From the commit log of 8891d6da we can see that "it isn't must.  but it
+reduce the failure of moving to unevictable list.  its failure can rescue
+in vmscan later." Christoph Lameter removes the call in mlockall(ML_FUTURE),
+So this patch just removes all the call from mlock/mlockall.
 
-	# mount -t cgroup -o none xxx /mnt
+Without this patch:
+time ./test_mlock -c 100000
 
-because we have two different instances with "none" subsystem. So
-we specify its name:
+real    0m20.566s
+user    0m0.074s
+sys     0m12.759s
 
-	# mount -t cgroup -o none,name=hier1 xxx /mnt
+With this patch:
+time ./test_mlock -c 100000
 
-Hope I have made things clear to you?
+real	0m1.675s
+user	0m0.049s
+sys	0m1.622s
 
->>> If it's a redundant feature which has been broken over a year without
->>> anyone complaining, it really doesn't need to exist.  It might not
->>> save a lot of code but would save some WTH moments.
->>>
->>
->> The redundant feature is mouting existing hierarchies by specifying name
->> only, and the cleanup patch I sent has this feature removed in effect.
->>
->> kernel/cgroup.c |   15 +++++++--------
->> 1 files changed, 7 insertions(+), 8 deletions(-)
->>
->> This is why I'm not so keen to remove the feature.
-> 
-> Code reduction is definitely a plus and I don't want to remove a
-> useful feature either, but an unusual redundant feature without
-> necessity is confusing / misleading even if it doesn't necessasrily
-> add a lot of code complexity.
-> 
-> Also, I at least want to understand why it's actually necessary before
-> applying the patches.  :)
-> 
+Cc: David Rientjes <rientjes@google.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Tao Ma <boyu.mt@taobao.com>
+---
+ mm/mlock.c |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-What I try to fix here is the behavior of "mount -t cgroup -o name=xxx ..."
-(no other options are specified), so what behavior do we want?
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 4f4f53b..bb5fc42 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -487,8 +487,6 @@ SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
+ 	if (!can_do_mlock())
+ 		return -EPERM;
+ 
+-	lru_add_drain_all();	/* flush pagevec */
+-
+ 	down_write(&current->mm->mmap_sem);
+ 	len = PAGE_ALIGN(len + (start & ~PAGE_MASK));
+ 	start &= PAGE_MASK;
+@@ -557,9 +555,6 @@ SYSCALL_DEFINE1(mlockall, int, flags)
+ 	if (!can_do_mlock())
+ 		goto out;
+ 
+-	if (flags & MCL_CURRENT)
+-		lru_add_drain_all();	/* flush pagevec */
+-
+ 	down_write(&current->mm->mmap_sem);
+ 
+ 	lock_limit = rlimit(RLIMIT_MEMLOCK);
+-- 
+1.7.4.1
 
-1. find if any existing cgroupfs instance matches the name, which is
-the orginal behavior.
-
-2. the same as "mount -t cgroup -o all,name=xxx ...", which is the
-current behavior due to the commit that broke (1).
-
-3. make it invalid and fail to mount.
-
-4. any other idea?
