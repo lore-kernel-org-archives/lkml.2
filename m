@@ -1,34 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab1L3KaK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 05:30:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58819 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750777Ab1L3KaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 05:30:08 -0500
-Message-ID: <4EFD92AF.7000402@suse.cz>
-Date: Fri, 30 Dec 2011 11:30:07 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1752640Ab1L3Kha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 05:37:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38264 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751005Ab1L3Kh2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 30 Dec 2011 05:37:28 -0500
+Date: Fri, 30 Dec 2011 10:37:25 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: lrg@ti.com, sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 RESEND] regulator: Add S5M8767A regulator driver
+Message-ID: <20111230103725.GB2766@opensource.wolfsonmicro.com>
+References: <1325112925-9140-1-git-send-email-sbkim73@samsung.com>
+ <20111229105729.GF2909@opensource.wolfsonmicro.com>
+ <002901ccc6b7$0180e100$0482a300$@com>
 MIME-Version: 1.0
-To: Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Cc: Sam Ravnborg <sam@ravnborg.org>, linux-modules@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] kbuild: add target to install gzipped modules
-References: <1325173819-26274-1-git-send-email-lucas.demarchi@profusion.mobi> <4EFC9872.7000708@suse.cz> <CAMOw1v6GhA+B2oXcVK4YZULb6kq=-NFTv-=-4eYB0ukZ9acP-w@mail.gmail.com>
-In-Reply-To: <CAMOw1v6GhA+B2oXcVK4YZULb6kq=-NFTv-=-4eYB0ukZ9acP-w@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <002901ccc6b7$0180e100$0482a300$@com>
+X-Cookie: Stay away from flying saucers today.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.12.2011 18:35, Lucas De Marchi wrote:
-> The operation that is used most of the time is to load modules. The
-> reason for having modules gzipped is the same one as for kernel image:
+On Fri, Dec 30, 2011 at 02:50:59PM +0900, Sangbeom Kim wrote:
+> On Thu, Dec 29, 2011 at 07:58 PM, Mark Brown wrote:
 
-The reason for having the kernel compressed is that the x86 bootloader
-reads the kernel (and initrd) using bios calls. That's not the case for
-modules.
+> > > +	ret = s5m8767_get_register(rdev, &reg);
+> > > +	if (ret)
+> > > +		return ret;
+> > > +
+> > > +	return s5m_reg_update(s5m8767->iodev, reg, ~pattern, mask);
 
-Michal
+> > The above looks like it's going to update the same registers as the
+> > regular enable and disable which isn't right, this function is for
+> > updating suspend mode configuration.
+
+> What's exact meaning of updating suspend mode configuration?
+> As I know, The purpose of set_suspend_enable is that
+> enabling voltage output during suspend mode.
+> So, I implement same register enable and disable.
+
+If there's only the one set of registers you should just not implement
+this function.  Some regulators have separate registers for configuring
+the state they go into when suspended so they need a separate call to
+configure that mode.
+
+> > > +	do {
+> > > +		ret = s5m_reg_read(s5m8767->iodev, reg, &val);
+> > > +		if (ret)
+> > > +			return ret;
+> > > +
+> > > +		s5m_reg_update(s5m8767->iodev, reg,
+> > > +				((val & 0x3f) | 0x40), 0xff);
+> > > +		reg++;
+> > > +		if ((reg == S5M8767_REG_LDO9CTRL) ||
+> > > +			(reg == S5M8767_REG_LDO11CTRL) ||
+> > > +			(reg == S5M8767_REG_LDO13CTRL) ||
+> > > +			(reg == S5M8767_REG_LDO17CTRL))
+> > > +			reg++;
+> > > +	} while (reg <= S5M8767_REG_LDO16CTRL);
+
+> > What does this do?
+
+> This is SMDK4412 specific code.
+> I will delete it for the general purpose.
+
+OK.  Is it something that's missing from the framework or was it just
+done this way for a quick test?
