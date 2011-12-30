@@ -1,114 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410Ab1L3Gg5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 01:36:57 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:59496 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751131Ab1L3Ggy (ORCPT
+	id S1751624Ab1L3HhD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 02:37:03 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:32953 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217Ab1L3HhB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 01:36:54 -0500
-From: Tao Ma <tm@tao.ma>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mm: do not drain pagevecs for mlock
-Date: Fri, 30 Dec 2011 14:36:01 +0800
-Message-Id: <1325226961-4271-1-git-send-email-tm@tao.ma>
-X-Mailer: git-send-email 1.7.4.1
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	Fri, 30 Dec 2011 02:37:01 -0500
+Date: Fri, 30 Dec 2011 11:36:55 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [patch 1/4] Add routine for generating an ID for kernel pointer
+Message-ID: <20111230073655.GE4806@moon>
+References: <20111228162653.GM17712@google.com>
+ <20111228164055.GR27266@moon>
+ <20111228164522.GO17712@google.com>
+ <20111228165336.GS27266@moon>
+ <20111228170116.GQ17712@google.com>
+ <20111228171419.GA19321@moon>
+ <20111229142438.GI4460@moon>
+ <20111229161414.GC3516@google.com>
+ <20111229162453.GC4806@moon>
+ <20111230002309.GA11508@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111230002309.GA11508@gondor.apana.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In our test of mlock, we have found some severe performance regression
-in it. Some more investigations show that mlocked is blocked heavily
-by lur_add_drain_all which calls schedule_on_each_cpu and flush the work
-queue which is very slower if we have several cpus.
+On Fri, Dec 30, 2011 at 11:23:09AM +1100, Herbert Xu wrote:
+> On Thu, Dec 29, 2011 at 08:24:53PM +0400, Cyrill Gorcunov wrote:
+> >
+> > Probably I've had to crypto_alloc_hash earlier and simply keep a reference
+> > to algo but since I'm not sure if looking for modules in late-init-call
+> > is good idea.
+> 
+> Right, the allocation needs to occur in a sleepable context.
+> 
+> If you're just hashing something small and have no need for
+> hardware acceleration then lib/sha1.c is fine.
+> 
 
-So we have tried 2 ways to solve it:
-1. Add a per cpu counter for all the pagevecs so that we don't schedule
-   and flush the lru_drain work if the cpu doesn't have any pagevecs(I
-   have finished the codes already).
-2. Remove the lru_add_drain_all.
+Hi, yeah, it's just one message block hashing so I've switched
+to lib/sha1.c. Herbert, I'm more interested in security analysis
+-- would the sha1(msg), where the 'msg' is the kernel pointer
+XOR'ed with random value and expanded to the 512 bits would be
+safe enough for export to unprivilege users?
 
-The first one has some problems since in our product system, all the cpus
-are busy, so I guess there is very little chance for a cpu to have 0 pagevecs
-except that you run several consecutive mlocks.
-
->From the commit log which added this function(8891d6da), it seems that we
-don't have to call it. So the 2nd one seems to be both easy and workable and
-comes this patch.
-
-Thanks
-Tao
-
->From 8cdf7f7ed236367e85151db65ae06f781aca7d77 Mon Sep 17 00:00:00 2001
-From: Tao Ma <boyu.mt@taobao.com>
-Date: Fri, 30 Dec 2011 14:20:08 +0800
-Subject: [PATCH] mm: do not drain pagevecs for mlock
-
-In 8891d6da, lru_add_drain_all is added to mlock to flush all the per
-cpu pagevecs. It makes this system call runs much slower than the
-predecessor(For a 16 core Xeon E5620, it is around 20 times). And the
-the more cores we have, the more the performance penalty because of the
-nasty call to schedule_on_each_cpu.
-
->From the commit log of 8891d6da we can see that "it isn't must.  but it
-reduce the failure of moving to unevictable list.  its failure can rescue
-in vmscan later." Christoph Lameter removes the call in mlockall(ML_FUTURE),
-So this patch just removes all the call from mlock/mlockall.
-
-Without this patch:
-time ./test_mlock -c 100000
-
-real    0m20.566s
-user    0m0.074s
-sys     0m12.759s
-
-With this patch:
-time ./test_mlock -c 100000
-
-real	0m1.675s
-user	0m0.049s
-sys	0m1.622s
-
-Cc: David Rientjes <rientjes@google.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Tao Ma <boyu.mt@taobao.com>
----
- mm/mlock.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
-
-diff --git a/mm/mlock.c b/mm/mlock.c
-index 4f4f53b..bb5fc42 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -487,8 +487,6 @@ SYSCALL_DEFINE2(mlock, unsigned long, start, size_t, len)
- 	if (!can_do_mlock())
- 		return -EPERM;
- 
--	lru_add_drain_all();	/* flush pagevec */
--
- 	down_write(&current->mm->mmap_sem);
- 	len = PAGE_ALIGN(len + (start & ~PAGE_MASK));
- 	start &= PAGE_MASK;
-@@ -557,9 +555,6 @@ SYSCALL_DEFINE1(mlockall, int, flags)
- 	if (!can_do_mlock())
- 		goto out;
- 
--	if (flags & MCL_CURRENT)
--		lru_add_drain_all();	/* flush pagevec */
--
- 	down_write(&current->mm->mmap_sem);
- 
- 	lock_limit = rlimit(RLIMIT_MEMLOCK);
--- 
-1.7.4.1
-
+	Cyrill
