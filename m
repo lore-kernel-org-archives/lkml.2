@@ -1,82 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1LaAeF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 19:34:05 -0500
-Received: from alcazar.beanwood.com ([70.85.129.230]:55040 "EHLO
+	id S1752772Ab1LaAd5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 19:33:57 -0500
+Received: from alcazar.beanwood.com ([70.85.129.230]:55037 "EHLO
 	alcazar.beanwood.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab1LaAdz (ORCPT
+	with ESMTP id S1752449Ab1LaAdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 30 Dec 2011 19:33:55 -0500
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Fri, 30 Dec 2011 19:33:55 EST
 From: Andrew Ayer <agwa@andrewayer.name>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] x86: Hook up new fchmodat4 syscall
-Date: Fri, 30 Dec 2011 16:26:51 -0800
-Message-Id: <1325291211-30354-3-git-send-email-agwa@andrewayer.name>
+Subject: [PATCH 0/2] vfs: POSIX-compliant version of fchmodat with flag argument
+Date: Fri, 30 Dec 2011 16:26:49 -0800
+Message-Id: <1325291211-30354-1-git-send-email-agwa@andrewayer.name>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1325291211-30354-1-git-send-email-agwa@andrewayer.name>
-References: <1325291211-30354-1-git-send-email-agwa@andrewayer.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andrew Ayer <agwa@andrewayer.name>
----
- arch/x86/ia32/ia32entry.S          |    1 +
- arch/x86/include/asm/unistd_32.h   |    3 ++-
- arch/x86/include/asm/unistd_64.h   |    2 ++
- arch/x86/kernel/syscall_table_32.S |    1 +
- 4 files changed, 6 insertions(+), 1 deletions(-)
+Hi,
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index a6253ec..32248c5 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -852,4 +852,5 @@ ia32_sys_call_table:
- 	.quad sys_setns
- 	.quad compat_sys_process_vm_readv
- 	.quad compat_sys_process_vm_writev
-+	.quad sys_fchmodat4
- ia32_syscall_end:
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index 599c77d..112b299 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -354,10 +354,11 @@
- #define __NR_setns		346
- #define __NR_process_vm_readv	347
- #define __NR_process_vm_writev	348
-+#define __NR_fchmodat4		349
- 
- #ifdef __KERNEL__
- 
--#define NR_syscalls 349
-+#define NR_syscalls 350
- 
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index 0431f19..21564f9 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -686,6 +686,8 @@ __SYSCALL(__NR_getcpu, sys_getcpu)
- __SYSCALL(__NR_process_vm_readv, sys_process_vm_readv)
- #define __NR_process_vm_writev			311
- __SYSCALL(__NR_process_vm_writev, sys_process_vm_writev)
-+#define __NR_fchmodat4				312
-+__SYSCALL(__NR_fchmodat4, sys_fchmodat4)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index 9a0e312..bff82a6 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -348,3 +348,4 @@ ENTRY(sys_call_table)
- 	.long sys_setns
- 	.long sys_process_vm_readv
- 	.long sys_process_vm_writev
-+	.long sys_fchmodat4
--- 
-1.7.1
+The below patches implement a 4 argument version of fchmodat (fchmodat4)
+that supports a flag argument, as specified by POSIX.  Currently, the
+glibc wrapper has a flag argument, but fails with EOPNOTSUPP if you
+specify AT_SYMLINK_NOFOLLOW. POSIX says that fchmodat should only fail
+with EOPNOTSUPP if you specify AT_SYMLINK_NOFOLLOW and the path actually
+refers to a symbolic link (and the system doesn't support changing the
+mode of symbolic links).  Unfortunately glibc can't do better because
+the current syscall doesn't have a flag argument.
+
+In addition to supporting AT_SYMLINK_NOFOLLOW, this also supports the
+AT_EMPTY_PATH flag, just like fchownat.
+
+Besides the POSIX-compliance, this patch will make it possible to
+ensure, in a race-free way, that you do not follow symlinks when
+chmodding. Previously, you could open a file with O_NOFOLLOW and fchmod
+it, but this only worked if you had read or write permissions on the
+file.  Now you can open the file with O_PATH|O_NOFOLLOW and do fchmodat
+with AT_EMPTY_PATH.
+
+Any feedback is welcome.
+
+Cheers, 
+Andrew
 
