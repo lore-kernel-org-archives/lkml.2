@@ -1,124 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab1LaSj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Dec 2011 13:39:26 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54013 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab1LaSjY (ORCPT
+	id S1753297Ab1LaTaU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Dec 2011 14:30:20 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43223 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111Ab1LaTaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Dec 2011 13:39:24 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Date: Sat, 31 Dec 2011 19:39:18 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-References: <20111230235421.GA6054@redhat.com> <CA+55aFyqm4FbW=--7U4ULk1EBb6RLP0sRgtokODBYnZNiJXWew@mail.gmail.com>
-In-Reply-To: <CA+55aFyqm4FbW=--7U4ULk1EBb6RLP0sRgtokODBYnZNiJXWew@mail.gmail.com>
+	Sat, 31 Dec 2011 14:30:18 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201112311939.19170.marek.vasut@gmail.com>
+In-Reply-To: <20111231150133.280130@gmx.net>
+References: <20111231150133.280130@gmx.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 31 Dec 2011 11:29:56 -0800
+X-Google-Sender-Auth: 8ZKZmGBQ0KelRT9tOV4Wf6EKHGo
+Message-ID: <CA+55aFyFuKVgzuOuszb+UyCh98R2TZ_QiS0TCWJjJX5zEwLSWw@mail.gmail.com>
+Subject: Re: loading firmware while usermodehelper disabled.
+To: drahemmaps@gmx.net
+Cc: davej@redhat.com, linux-kernel@vger.kernel.org, mjg@redhat.com,
+        gregkh@suse.de, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Dec 30, 2011 at 3:54 PM, Dave Jones <davej@redhat.com> wrote:
-> > We're getting a bunch of reports against Fedora 16
-> > (still using 3.1) which look like some drivers are trying to
-> > load firmware on resume from suspend, while usermodehelper
-> > is disabled.
-> 
-> Ok, buggy drivers. You *must*not* load firmware in your resume path,
-> since there is no actual guarantee that any particular device will be
-> resumed after the disk that contains the firmware images.
-> 
-> So it's very simple: drivers that load firmware at resume time are
-> buggy. No ifs, buts, or maybes about it.
-> 
-> > Here are some example traces:
-> > 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=746411
-> 
-> It's isight_firmware_load(), in the isight_firmware driver. The driver
-> doesn't actually do anything but load the firmware, and is apparently
-> not very good at that either.
-> 
-> It should either fake a disconnect and reconnect of the device (and
-> let the reconnect then load the firmware through udev or something) or
-> it should just save the firmware image in memory from the original
-> load, and make the resume just re-initialize it - not load it.
+On Sat, Dec 31, 2011 at 7:01 AM,  <drahemmaps@gmx.net> wrote:
+>>
+>> So it's very simple: drivers that load firmware at resume time are
+>> buggy. No ifs, buts, or maybes about it.
+>
+> Or are they?
 
-Hey,
+Yes they are.
 
-maybe we should implement such thing into the firmware loader itself? Allow it 
--- for example via some node in /dev -- to force loading firmware into some 
-buffer in kernel just before suspend so it'll certainly be readily available at 
-resume time?
+> You see, PCMCIA cards [don't know about the pccard express stuff]
+> have to deal with a notable exception from this rule since:
+>
+> pcmcia: improve check for same card in slot after resume
+> "88b060d6c03fcb9e4d2018b4349954c4242a5c7f"
+>
+> This patch changed the way how suspend/resume is handled.
 
-M
+Yes, that's problematic. As is the USB thing making resume a probe event too.
 
-> 
-> It's also possible that it could be considered a USB layer bug, and
-> the USB layer should just not rebind the devices directly in the
-> resume function, but do it somehow later. HOWEVER, that would only
-> work for "random" USB devices that aren't in use by user space (like
-> disks etc might be). So I think that in general the real solution is
-> always just "make sure that the firmware is in memory before the
-> suspend even happens".
-> 
-> Greg - has the USB resume logic been changed lately?
-> 
-> Matthew? Any comments about that particular driver?
-> 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=771002
-> 
-> Same issue, different driver. Again, it's USB, and it's possible that
-> USB just makes it really hard to do this correctly (ie the "save
-> firmware image across suspend so that you don't have to load it at
-> resume time").
-> 
-> It's also possible that we should blame the firmware code, which is
-> expressly written to encourage these kinds of bugs. It may be that i
-> tshould be the firmware code that has a "get_firmware()" +
-> "put_firmware()" model, and it should cache the firmware explicitly if
-> the config supports suspend, so that a firmware read at resume time
-> would actually work. The whole "request_firmware()" interface really
-> is very prone to these kinds of bugs.
-> 
-> But it's possible this could be fixed at the driver level by doing the
-> caching there.
-> 
-> In this case it's the rtl8192cu driver, so Larry, Chaoming, John etc
-> added to the cc for that one.
-> 
-> > This possibly sounds like the problem that
-> > caca9510ff4e5d842c0589110243d60927836222 was trying to fix, but that
-> > patch is present in the kernels
-> > being reported.
-> 
-> No, caca9510ff4e is only for the case where you actually compile the
-> firmware *into* the kernel, so it's part of the kernel image. That's
-> useful mainly for avoiding modules and initrd images, thus allowing
-> things like having root directly on a disk that needs firmware to be
-> loaded. Quite unusual, and it doesn't really work all that well.
-> 
-> Oh, and some people use it for the Radeon firmware with the radeon DRM
-> code built it.
-> 
-> It really does need to be fixed at a driver level (possibly with the
-> help of firmware/usb support infrastructure).
-> 
->                   Linus
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+But it doesn't change the fact that if a driver needs to load the
+firmware at such an event, then the driver is buggy. The reason really
+is very very simple: there is no guarantee at all that the backing
+store for the firmware has been resumed first!
+
+It really is that simple.
+
+And as mentioned, I do agree that the underlying *cause* for all these
+bugs is that our firmware loading helper routines are totally full of
+sh*t. The whole "request_firmware()" logic makes it very very easy for
+drivers to get this wrong, and then some bus interfaces (pcmcia and
+usb) make it almost impossible for drivers to do it right by turning
+"suspend/resume" into "detach/probe".
+
+But what the driver *should* be doing is to load the firmware at
+device open time (NOT at "driver load time" - because that can and
+does happen too early too, for the case of built-in drivers!) and
+simply keep the firmware around in the case of a suspend/resume event,
+so that it doesn't have to re-load it off a disk (or network, or
+whatever) that hasn't been resumed yet!
+
+And this really does solve all problems.
+
+There are drivers that do this right, so it's not impossible. For a
+network driver, for example, you should load the firmware into memory
+when the device is opened the first time, and you should unload it
+only when the device is downed. If you follow those fairly simple
+rules, you're all good - at a resume event you either do nothing at
+all about the firmware (network device not up) or you have the
+firmware in memory and can just re-load it onto the card.
+
+For an example of this, look at
+
+    drivers/net/ethernet/realtek/r8169.c
+
+and its explicit caching of firmware (see "rtl_request_firmware()" and
+the whole "rtl_fw" handling), which actually makes it fairly easy for
+the rest of the driver to do things right.
+
+However, I really do think that it's
+
+ (a) very error-prone
+
+ (b) complexity all over
+
+for drivers to have to know to do this on their own. So we have a
+*few* drivers that do this correctly (after having done it wrong, and
+then fixing it), but most drivers don't. And I really think that the
+request_firmware() interface is the problem: the firmware layer should
+be doing this kind of caching for the drivers, so that drivers
+wouldn't *have* to.
+
+For example, if somebody builds a kernel that doesn't support suspend
+or hibernation, then the caching is pointless, so a really *good*
+caching model would take that into account and just say "I won't waste
+memory on that case". But duplicating that kind of logic for every
+driver that needs firmware is just totally crazy. But if we had a good
+interface to request_firmware(), we might be able to do that kind of
+thing automatically.
+
+                           Linus
