@@ -1,125 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab1LaCQl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 21:16:41 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42232 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab1LaCQi (ORCPT
+	id S1752811Ab1LaC0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 21:26:10 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:43581 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab1LaC0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 21:16:38 -0500
-Message-ID: <4EFE7080.5060302@gmail.com>
-Date: Sat, 31 Dec 2011 04:16:32 +0200
-From: Konstantinos Skarlatos <k.skarlatos@gmail.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Fri, 30 Dec 2011 21:26:06 -0500
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>, Avi Kivity <avi@redhat.com>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+In-Reply-To: <878vlu4bgh.fsf@linux.vnet.ibm.com>
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Sat, 31 Dec 2011 07:51:15 +0530
+Message-ID: <87pqf5mqg4.fsf@abhimanyu.in.ibm.com>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>,
-        Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org
-Subject: Re: cifs: ls of mount point gives input/output error (probably related
- to CIFS: getdents() broken for large dirs)
-References: <4EFBAF99.3010208@gmail.com> <20111228210420.2a422d11@corrin.poochiereds.net> <4EFC413A.80302@gmail.com> <20111229083930.77fafba8@tlielax.poochiereds.net> <4EFC7124.3060900@gmail.com> <4EFD7EBB.2060708@gmail.com> <20111230081120.3f7710f1@tlielax.poochiereds.net> <4EFDFC4E.30102@gmail.com> <4EFE3130.8030500@gmail.com>
-In-Reply-To: <4EFE3130.8030500@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 11123016-5490-0000-0000-00000074F87C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/12/2011 11:46 μμ, Konstantinos Skarlatos wrote:
-> On 30/12/2011 8:00 μμ, Konstantinos Skarlatos wrote:
->> On 30/12/2011 3:11 μμ, Jeff Layton wrote:
->>> On Fri, 30 Dec 2011 11:04:59 +0200
->>> Konstantinos Skarlatos<k.skarlatos@gmail.com> wrote:
->>>
->>>> On 29/12/2011 3:54 μμ, Konstantinos Skarlatos wrote:
->>>>> On Πέμπτη, 29 Δεκέμβριος 2011 3:39:30 μμ, Jeff Layton wrote:
->>>>>> On Thu, 29 Dec 2011 12:30:18 +0200
->>>>>> Konstantinos Skarlatos<k.skarlatos@gmail.com> wrote:
->>>>>>
->>>>>>> On 29/12/2011 4:04 πμ, Jeff Layton wrote:
->>>>>>>> On Thu, 29 Dec 2011 02:08:57 +0200
->>>>>>>> Konstantinos Skarlatos<k.skarlatos@gmail.com> wrote:
->>>>>>>>
->>>>>>>>> I mount via cifs a windows XP share, df gives me correct sizes,
->>>>>>>>> but when
->>>>>>>>> I ls the mount point i get input/output error.
->>>>>>>>> strace: http://pastebin.com/WXf8M1nu
->>>>>>>>>
->>>>>>>>> mount --verbose -t cifs -o
->>>>>>>>> username=administrator,password=blahblah
->>>>>>>>> //192.168.0.11/jobs /mnt/backups/montaz/jobs
->>>>>>>>> mount.cifs kernel mount options:
->>>>>>>>> ip=192.168.0.11,unc=\\192.168.0.11\jobs,,ver=1,user=administrator,pass=********
->>>>>>>>>
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> df
->>>>>>>>> //192.168.0.11/jobs 114464
->>>>>>>>> 105196 9268 92% /mnt/backups/montaz/jobs
->>>>>>>>>
->>>>>>>>> ls /mnt/backups/montaz/jobs/
->>>>>>>>> ls: reading directory /mnt/backups/montaz/jobs/: Input/output
->>>>>>>>> error
->>>>>>>>> total 0
->>>>>>>>>
->>>>>>>>> the fun thing is that i can cd to a lower level directory, and ls
->>>>>>>>> works
->>>>>>>>> fine there! only the mount point has the problem
->>>>>>>>>
->>>>>>>>> ls /mnt/backups/montaz/jobs/test
->>>>>>>>> total 44K
->>>>>>>>> drwxr-xr-x 1 root root 0 Apr 30 2010 blah blah/
->>>>>>>>> ......
->>>>>>>>>
->>>>>>>>> kernel version 3.2rc7
->>>>>>>>>
->>>>>>>>> this seems to be related to :
->>>>>>>>> https://lkml.org/lkml/2011/8/1/427
->>>>>>>>> Re: [3.0.0+][Regression][Bisected] CIFS: getdents() broken for
->>>>>>>>> large dirs
->>>>>>>>>
->>>>>>>> Hmmm, maybe. What makes you think that it's related? What sort of
->>>>>>>> server are you seeing this against?
->>>>>>> Windows XP service pack 2 (greek)
->>>>>>
->>>>>> How many files are in the directory?
->>>>>>
->>>>> 140 folders and 20 files
->>>>>
->>>> Attached is a tcp dump of my session.
->>> I tried reproducing this here, but wasn't able to. Testing against my
->>> xp box worked fine.
->>>
->>> Most likely, the FIND_FILE responses are falling afoul of the code in
->>> coalesce_t2 or check2ndT2. Unfortunately that code is pretty
->>> complicated and I'm not certain what the problem actually is...
->>>
->>> One thing that's interesting is that the total data being sent in the
->>> request is rather large (16336 bytes). I think that's legit, but maybe
->>> it's exceeding the end of the buffer once we try to coalesce it.
->>>
->>> Would it be possible to get the cFYI output from this test?
->> I did not get a cFYI output from that test, but i redid a
->> mount-ls-umount and am attaching the tcpdump
->> Also here http://pastebin.com/J20uC6kU you can find the cifsFYI and
->> the contents of /proc/fs/cifs/DebugData form the same test
->>>
->>> Is this a regression? Did it work with earlier kernels and only
->>> recently start failing?
->>>
->> I do not know, and i am a bit afraid to downgrade this machine below
->> 3.0 due to some changes arch linux has introduced recently. I can
->> always set up a few virtual machines though, and i can even request
->> permission from my company to give you shell access if you like. Which
->> kernel versions would you like me to test?
-> I just tested 3.1.5-1-ARCH on a virtual machine and it works, so it is
-> probably a regression... On the same virtual machine 3.2-rc7 produces
-> input/output error. The virtual machine is a fresh install of arch linux.
-> here is the relevant pastebin http://pastebin.com/BwX2DqJC
-> and attached is the tcpdump
-> As a am a noob to all this, what should I do next in order to help you?
-> maybe compile a 3.1 kernel from official sources to make sure no patches
-> from arch linux interfere?
->
-After some testing, vanilla 3.1.6 does not have this bug and 3.2.0-rc1 
-has it.
+On Fri, 30 Dec 2011 15:40:06 +0530, Nikunj A Dadhania <nikunj@linux.vnet.ibm.com> wrote:
+> On Fri, 30 Dec 2011 10:51:47 +0100, Ingo Molnar <mingo@elte.hu> wrote:
+> > 
+> > * Avi Kivity <avi@redhat.com> wrote:
+> > 
+> > > [...]
+> > > 
+> > > The first part appears to be unrelated to ebizzy itself - it's 
+> > > the kunmap_atomic() flushing ptes.  It could be eliminated by 
+> > > switching to a non-highmem kernel, or by allocating more PTEs 
+> > > for kmap_atomic() and batching the flush.
+> > 
+> > Nikunj, please only run pure 64-bit/64-bit combinations - by the 
+> > time any fix goes upstream and trickles down to distros 32-bit 
+> > guests will be even less relevant than they are today.
+> > 
+> Sure Ingo, got a 64bit guest working yesterday and I am in process of
+> getting the benchmark numbers for the same.
+> 
+Here is the results collected from the 64bit VM runs. 
+
+Avi, x2apic is enabled in the both guest/host. 
+
+One more change in the test setup is I am creating and destroying the VM
+for each benchmark run. Earlier, I used to create 2/4/8 VMs and run 5
+benchmarks one by one(VM was not fresh for some benchmark)
+
+    PLE - Test Setup:
+    =================
+    - x3850x5 machine - PLE enabled
+    - 8 CPUs (HT disabled)
+    - 264GB memory
+    - VM details:
+       - Guest kernel: 2.6.32 based enterprise kernel
+       - 1024MB memory
+       - 8 VCPUs
+    - During gang runs, vcpus are pinned
+
+    Results:
+     * GangVsBase - Gang vs Baseline kernel
+     * GangVsPin  - Gang vs Baseline kernel + vcpus pinned
+     * V1 - Using set_next_buddy
+     * V2 - Using set_gang_buddy
+     * Results are % improvement/degradation
+    +-------------+-----------------------+----------------------+
+    |             |          V1           |           V2         |
+    +  Benchmarks +-----------+-----------+-----------+----------+
+    |             | GngVsBase | GngVsPin  | GngVsBase | GngVsPin |
+    +-------------+-----------+-----------+-----------+----------+
+    |  kbench-2vm |       -4  |       -5  |       -1  |       -1 |
+    |  kbench-4vm |      -13  |       -3  |        3  |       12 |
+    |  kbench-8vm |      -11  |        0  |       -5  |        5 |
+    +-------------+-----------+-----------+-----------+----------+
+    |  ebizzy-2vm |       -1  |       -2  |       17  |       16 |
+    |  ebizzy-4vm |        4  |        6  |       58  |       61 |
+    |  ebizzy-8vm |        3  |       25  |       68  |      103 |
+    +-------------+-----------+-----------+-----------+----------+
+    | specjbb-2vm |       -7  |        0  |       -6  |        1 |
+    | specjbb-4vm |       19  |       30  |       -5  |        3 |
+    | specjbb-8vm |       -6  |        1  |        5  |       15 |
+    +-------------+-----------+-----------+-----------+----------+
+    |  hbench-2vm |       -1  |       -6  |       18  |       14 |
+    |  hbench-4vm |      -64  |       -9  |       -2  |       31 |
+    |  hbench-8vm |      -28  |       10  |       32  |       53 |
+    +-------------+-----------+-----------+-----------+----------+
+    |  dbench-2vm |       -3  |       -5  |       -2  |       -3 |
+    |  dbench-4vm |        9  |        0  |        3  |       -5 |
+    |  dbench-8vm |       -3  |      -23  |       -8  |      -26 |
+    +-------------+-----------+-----------+-----------+----------+
+
+    The best and worst case in V2(GangVsBase). 
+
+    ebizzy 8vm (improved 68%)
+    +------------+--------------------+--------------------+----------+
+    |                               Ebizzy                            |
+    +------------+--------------------+--------------------+----------+
+    | Parameter  | GangBase           |   Gang V2          | % imprv  |
+    +------------+--------------------+--------------------+----------+
+    |      ebizzy|            2531.75 |            4268.12 |       68 |
+    |    EbzyUser|              32.60 |              60.70 |       86 |
+    |     EbzySys|             165.48 |             171.05 |       -3 |
+    |    EbzyReal|              60.00 |              60.00 |        0 |
+    |     BwUsage|    568645533105.00 |    767186043286.00 |       34 |
+    |    HostIdle|              89.00 |              89.00 |        0 |
+    |     UsrTime|               2.00 |               4.00 |      100 |
+    |     SysTime|              12.00 |              13.00 |       -8 |
+    |      IOWait|               3.00 |               4.00 |      -33 |
+    |    IdleTime|              81.00 |              77.00 |       -4 |
+    |         TPS|              12.00 |              12.00 |        0 |
+    +-----------------------------------------------------------------+
+
+    GangV2:
+    27.45%       ebizzy  libc-2.12.so            [.] __memcpy_ssse3_back
+    12.12%       ebizzy  [kernel.kallsyms]       [k] clear_page
+     9.22%       ebizzy  [kernel.kallsyms]       [k] __do_page_fault
+     6.91%       ebizzy  [kernel.kallsyms]       [k] flush_tlb_others_ipi
+     4.06%       ebizzy  [kernel.kallsyms]       [k] get_page_from_freelist
+     4.04%       ebizzy  [kernel.kallsyms]       [k] ____pagevec_lru_add
+
+    GangBase:
+    45.08%       ebizzy  [kernel.kallsyms]       [k] flush_tlb_others_ipi
+    15.38%       ebizzy  libc-2.12.so            [.] __memcpy_ssse3_back
+     7.00%       ebizzy  [kernel.kallsyms]       [k] clear_page
+     4.88%       ebizzy  [kernel.kallsyms]       [k] __do_page_fault
+
+    dbench 8vm (degraded -8%)
+    +------------+--------------------+--------------------+----------+
+    |                               Dbench                            |
+    +------------+--------------------+--------------------+----------+
+    | Parameter  | GangBase           |   Gang V2          | % imprv  |
+    +------------+--------------------+--------------------+----------+
+    |      dbench|               2.27 |               2.09 |       -8 |
+    |     BwUsage|    138973336762.00 |    187382519973.00 |       34 |
+    |    HostIdle|              95.00 |              93.00 |        2 |
+    |      IOWait|              20.00 |              19.00 |        5 |
+    |    IdleTime|              78.00 |              78.00 |        0 |
+    |         TPS|              13.00 |              14.00 |        7 |
+    | CacheMisses|        81611667.00 |        72959014.00 |       10 |
+    |   CacheRefs|      4990591975.00 |      4624251595.00 |       -7 |
+    |BranchMisses|       812569051.00 |      1162137278.00 |      -43 |
+    |    Branches|     20196543212.00 |     30318934960.00 |       50 |
+    |Instructions|     99519592926.00 |    152169154440.00 |      -52 |
+    |      Cycles|    265699995531.00 |    330718402913.00 |      -24 |
+    |     PageFlt|           36083.00 |           35897.00 |        0 |
+    |   ContextSW|         3170710.00 |         8304284.00 |     -161 |
+    |   CPUMigrat|           63387.00 |          155521.00 |     -145 |
+    +-----------------------------------------------------------------+
+    dbench needs some more love, i will get the perf top caller for
+    that.
+
+    non-PLE - Test Setup:
+    =====================
+    - x3650 M2 machine
+    - 8 CPUs (HT disabled)
+    - 64GB memory
+    - VM details:
+       - Guest kernel: 2.6.32 based enterprise kernel
+       - 1024MB memory
+       - 8 VCPUs
+    - During gang runs, vcpus are pinned
+
+    Results:
+     * GangVsBase - Gang vs Baseline kernel
+     * GangVsPin  - Gang vs Baseline kernel + vcpus pinned
+     * V1 - using set_next_buddy
+     * V2 - using set_gang_buddy
+     * Results are % improvement/degradation
+    +-------------+-----------------------+----------------------+
+    |             |          V1           |           V2         |
+    +  Benchmarks +-----------+-----------+-----------+----------+
+    |             | GngVsBase | GngVsPin  | GngVsBase | GngVsPin |
+    +-------------+-----------+-----------+-----------+----------+
+    |  kbench-2vm |        0  |        2  |       -7  |       -5 |
+    |  kbench-4vm |        2  |       -3  |        7  |        2 |
+    |  kbench-8vm |        0  |       -1  |       -1  |       -3 |
+    +-------------+-----------+-----------+-----------+----------+
+    |  ebizzy-2vm |      221  |      109  |      241  |      122 |
+    |  ebizzy-4vm |      215  |      173  |      366  |      304 |
+    |  ebizzy-8vm |      225  |       88  |      331  |      149 |
+    +-------------+-----------+-----------+-----------+----------+
+    | specjbb-2vm |       -5  |       -3  |       -7  |       -5 |
+    | specjbb-4vm |       29  |       -4  |        3  |      -23 |
+    | specjbb-8vm |        6  |       -6  |       16  |        2 |
+    +-------------+-----------+-----------+-----------+----------+
+    |  hbench-2vm |      -16  |        2  |       15  |       29 |
+    |  hbench-4vm |      -25  |        2  |       32  |       47 |
+    |  hbench-8vm |      -46  |      -19  |       35  |       47 |
+    +-------------+-----------+-----------+-----------+----------+
+    |  dbench-2vm |        0  |        1  |       -5  |       -3 |
+    |  dbench-4vm |       -9  |       -4  |       -2  |        2 |
+    |  dbench-8vm |      -52  |       17  |      -30  |       69 |
+    +-------------+-----------+-----------+-----------+----------+
+
+    The best and worst case in V2(GangVsBase). 
+
+    ebizzy 8vm (improved 331%)
+    +------------+--------------------+--------------------+----------+
+    |                               Ebizzy                            |
+    +------------+--------------------+--------------------+----------+
+    | Parameter  | GangBase           |   Gang V2          | % imprv  |
+    +------------+--------------------+--------------------+----------+
+    |      ebizzy|             719.50 |            3101.38 |      331 |
+    |    EbzyUser|               3.79 |              58.04 |     1432 |
+    |     EbzySys|              66.61 |             140.04 |     -110 |
+    |    EbzyReal|              60.00 |              60.00 |        0 |
+    |     BwUsage|    526550032993.00 |    652012141757.00 |       23 |
+    |    HostIdle|              59.00 |              62.00 |       -5 |
+    |     SysTime|               5.00 |              11.00 |     -120 |
+    |      IOWait|               4.00 |               4.00 |        0 |
+    |    IdleTime|              89.00 |              79.00 |      -11 |
+    |         TPS|              11.00 |              12.00 |        9 |
+    +-----------------------------------------------------------------+
+
+    GangV2:
+    27.96%       ebizzy  libc-2.12.so            [.] __memcpy_ssse3_back
+    12.13%       ebizzy  [kernel.kallsyms]       [k] clear_page
+    11.66%       ebizzy  [kernel.kallsyms]       [k] __bitmap_empty
+    11.54%       ebizzy  [kernel.kallsyms]       [k] flush_tlb_others_ipi
+     5.93%       ebizzy  [kernel.kallsyms]       [k] __do_page_fault
+
+    GangBase;
+    36.34%       ebizzy  [kernel.kallsyms]  [k] __bitmap_empty
+    35.95%       ebizzy  [kernel.kallsyms]  [k] flush_tlb_others_ipi
+     8.52%       ebizzy  libc-2.12.so       [.] __memcpy_ssse3_back
+
+    dbench 8vm (degraded -30%)
+    +------------+--------------------+--------------------+----------+
+    |                               Dbench                            |
+    +------------+--------------------+--------------------+----------+
+    | Parameter  | GangBase           |   Gang V2          | % imprv  |
+    +------------+--------------------+--------------------+----------+
+    |      dbench|               2.01 |               1.38 |      -30 |
+    |     BwUsage|    100408068913.00 |    176095548113.00 |       75 |
+    |    HostIdle|              82.00 |              74.00 |        9 |
+    |      IOWait|              25.00 |              23.00 |        8 |
+    |    IdleTime|              74.00 |              71.00 |       -4 |
+    |         TPS|              13.00 |              13.00 |        0 |
+    | CacheMisses|       137351386.00 |       267116184.00 |      -94 |
+    |   CacheRefs|      4347880250.00 |      5830408064.00 |       34 |
+    |BranchMisses|       602120546.00 |      1110592466.00 |      -84 |
+    |    Branches|     22275747114.00 |     39163309805.00 |       75 |
+    |Instructions|    107942079625.00 |    195313721170.00 |      -80 |
+    |      Cycles|    271014283494.00 |    481886203993.00 |      -77 |
+    |     PageFlt|           44373.00 |           47679.00 |       -7 |
+    |   ContextSW|         3318033.00 |        11598234.00 |     -249 |
+    |   CPUMigrat|           82475.00 |          423066.00 |     -412 |
+    +-----------------------------------------------------------------+
+
+Regards
+Nikunj
+
