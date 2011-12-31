@@ -1,83 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167Ab1LaOcq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Dec 2011 09:32:46 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52532 "EHLO
+	id S1753183Ab1LaOzZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Dec 2011 09:55:25 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60032 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753100Ab1LaOcn (ORCPT
+	with ESMTP id S1753111Ab1LaOzX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Dec 2011 09:32:43 -0500
+	Sat, 31 Dec 2011 09:55:23 -0500
 MIME-Version: 1.0
-In-Reply-To: <20111229150717.6c8ba825.akpm@linux-foundation.org>
-References: <CAJd=RBAp=ooYGoDqJG0qkUhRuYTsSKG9h+bUvC0dvuVCvfkCgQ@mail.gmail.com>
-	<20111229150717.6c8ba825.akpm@linux-foundation.org>
-Date: Sat, 31 Dec 2011 22:25:29 +0800
-Message-ID: <CAJd=RBAp-nC2-VoxgfZ2NjDz08hVkjD_YOoRWuO54ASQCL5hvA@mail.gmail.com>
-Subject: Re: [PATCH] mm: vmscan: fix typo in isolating lru pages
+In-Reply-To: <4EFCA4F9.7070703@gmail.com>
+References: <CAJd=RBBJG+hLLc3mR-WzByU1gZEcdFUAoZzyir+1A4a0tVnSmg@mail.gmail.com>
+	<4EFCA4F9.7070703@gmail.com>
+Date: Sat, 31 Dec 2011 22:55:22 +0800
+Message-ID: <CAJd=RBCuh=zDLZ7J9sV_p_ghoXP-VX6PEAx01t8p_pziTimxnA@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscam: check page order in isolating lru pages
 From: Hillf Danton <dhillf@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
         Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id pBVEXP5j028393
 
-On Fri, Dec 30, 2011 at 7:07 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 29 Dec 2011 20:38:41 +0800
-> Hillf Danton <dhillf@gmail.com> wrote:
->
->> It is not the tag page but the cursor page that we should process, and it looks
->> a typo.
+On Fri, Dec 30, 2011 at 1:35 AM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+> (12/29/11 7:45 AM), Hillf Danton wrote:
 >>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> Cc: Michal Hocko <mhocko@suse.cz>
->> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: David Rientjes <rientjes@google.com>
->> Cc: Hugh Dickins <hughd@google.com>
+>> Before we try to isolate physically contiguous pages, check for page order
+>> is
+>> added, and if the reclaim order is no larger than page order, we should
+>> give up
+>> the attempt.
+>>
+>> Signed-off-by: Hillf Danton<dhillf@gmail.com>
+>> Cc: Michal Hocko<mhocko@suse.cz>
+>> Cc: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>> Cc: Andrew Morton<akpm@linux-foundation.org>
+>> Cc: David Rientjes<rientjes@google.com>
+>> Cc: Hugh Dickins<hughd@google.com>
 >> ---
 >>
->> --- a/mm/vmscan.c     Thu Dec 29 20:20:16 2011
->> +++ b/mm/vmscan.c     Thu Dec 29 20:23:30 2011
->> @@ -1231,13 +1231,13 @@ static unsigned long isolate_lru_pages(u
+>> --- a/mm/vmscan.c       Thu Dec 29 20:20:16 2011
+>> +++ b/mm/vmscan.c       Thu Dec 29 20:28:14 2011
+>> @@ -1162,6 +1162,7 @@ static unsigned long isolate_lru_pages(u
+>>                unsigned long end_pfn;
+>>                unsigned long page_pfn;
+>>                int zone_id;
+>> +               unsigned int isolated_pages = 0;
 >>
->>                               mem_cgroup_lru_del(cursor_page);
->>                               list_move(&cursor_page->lru, dst);
->> -                             isolated_pages = hpage_nr_pages(page);
->> +                             isolated_pages = hpage_nr_pages(cursor_page);
->>                               nr_taken += isolated_pages;
->>                               nr_lumpy_taken += isolated_pages;
->>                               if (PageDirty(cursor_page))
->>                                       nr_lumpy_dirty += isolated_pages;
->>                               scan++;
->> -                             pfn += isolated_pages-1;
->> +                             pfn += isolated_pages - 1;
->>                       } else {
->>                               /*
->>                                * Check if the page is freed already.
+>>                page = lru_to_page(src);
+>>                prefetchw_prev_lru_page(page, src, flags);
+>> @@ -1172,7 +1173,7 @@ static unsigned long isolate_lru_pages(u
+>>                case 0:
+>>                        mem_cgroup_lru_del(page);
+>>                        list_move(&page->lru, dst);
+>> -                       nr_taken += hpage_nr_pages(page);
+>> +                       isolated_pages = hpage_nr_pages(page);
+>>                        break;
+>>
+>>                case -EBUSY:
+>> @@ -1184,8 +1185,11 @@ static unsigned long isolate_lru_pages(u
+>>                        BUG();
+>>                }
+>>
+>> +               nr_taken += isolated_pages;
+>>                if (!order)
+>>                        continue;
+>> +               if (isolated_pages != 1&&  isolated_pages>= (1<<  order))
+>> +                       continue;
 >
-> This problem looks pretty benign in mainline.  But Andrea's "mm:
-> vmscan: check if we isolated a compound page during lumpy scan" came
-> along and uses isolated_pages rather a lot more, including using it to
-> advance across the pfn array.
 >
-> I jiggled your patch to suit current mainline then reworked everything
-> else so we end up with this result.
+> strange space alignment. and I don't think we need "isolated_pages != 1"
+> check.
 >
-Hi folks
+> Otherwise, Looks good to me.
+>
+> Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+>
 
-Thanks for your comments, ack and nack, in 2011.
+Hi KOSAKI
 
-Happy New Year
+It is re-prepared and please review again.
+1, changelog is updated,
+2, the check for page order is refined,
+3, comment is also added.
 
-Hillf Danton
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Thanks
+Hillf
+
+===cut please===
+From: Hillf Danton <dhillf@gmail.com>
+Subject: [PATCH] mm: vmscam: check page order in isolating lru pages
+
+Before try to isolate physically contiguous pages, check for page order is
+added, and if it is not regular page, we should give up the attempt.
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mel Gorman <mgorman@suse.de>
+---
+
+--- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
++++ b/mm/vmscan.c	Sat Dec 31 22:44:16 2011
+@@ -1162,6 +1162,7 @@ static unsigned long isolate_lru_pages(u
+ 		unsigned long end_pfn;
+ 		unsigned long page_pfn;
+ 		int zone_id;
++		unsigned int isolated_pages = 1;
+
+ 		page = lru_to_page(src);
+ 		prefetchw_prev_lru_page(page, src, flags);
+@@ -1172,7 +1173,7 @@ static unsigned long isolate_lru_pages(u
+ 		case 0:
+ 			mem_cgroup_lru_del(page);
+ 			list_move(&page->lru, dst);
+-			nr_taken += hpage_nr_pages(page);
++			isolated_pages = hpage_nr_pages(page);
+ 			break;
+
+ 		case -EBUSY:
+@@ -1184,8 +1185,12 @@ static unsigned long isolate_lru_pages(u
+ 			BUG();
+ 		}
+
++		nr_taken += isolated_pages;
+ 		if (!order)
+ 			continue;
++		/* try pfn-based isolation only for regular page */
++		if (isolated_pages != 1)
++			continue;
+
+ 		/*
+ 		 * Attempt to take all pages in the order aligned region
+@@ -1227,7 +1232,6 @@ static unsigned long isolate_lru_pages(u
+ 				break;
+
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+-				unsigned int isolated_pages;
+
+ 				mem_cgroup_lru_del(cursor_page);
+ 				list_move(&cursor_page->lru, dst);
