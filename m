@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752673Ab1LaLsF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Dec 2011 06:48:05 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53317 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385Ab1LaLsB convert rfc822-to-8bit (ORCPT
+	id S1752807Ab1LaLsZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Dec 2011 06:48:25 -0500
+Received: from mx3.schottelius.org ([77.109.138.221]:39837 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385Ab1LaLsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Dec 2011 06:48:01 -0500
+	Sat, 31 Dec 2011 06:48:23 -0500
+Date: Sat, 31 Dec 2011 12:48:26 +0100
+From: Nico Schottelius <nico-linux-20111201@schottelius.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: Nico Schottelius <nico-linux-20111201@schottelius.org>,
+        LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        b43-dev@lists.infradead.org, Greg KH <gregkh@suse.de>
+Subject: Re: BCM43224 hanging [3.2.0-rc5]
+Message-ID: <20111231114826.GD2305@ethz.ch>
+Mail-Followup-To: Nico Schottelius <nico-linux-20111201@schottelius.org>,
+	Arend van Spriel <arend@broadcom.com>,
+	LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+	b43-dev@lists.infradead.org, Greg KH <gregkh@suse.de>
+References: <20111201224851.GB20536@ethz.ch>
+ <4ED8B610.2010703@broadcom.com>
+ <20111202150128.GC3096@schottelius.org>
+ <20111207190821.GA1775@schottelius.org>
+ <20111212181619.GD1975@schottelius.org>
+ <20111214112148.GE3191@ethz.ch>
+ <20111222102408.GA2643@schottelius.org>
+ <4EF32E4B.7050307@broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <20111227184734.GA5802@redhat.com>
-References: <CA+55aFxw1abaxwQbX=sQVF-J6drk8m5cKCd+rMqrpoS5vohmnA@mail.gmail.com>
-	<20111227184734.GA5802@redhat.com>
-Date: Sat, 31 Dec 2011 12:47:59 +0100
-Message-ID: <CAFQmdRYn6VVGVoDN+-_5jfme2a_W2Z-H8J8TsdtdXJmC=LY7cA@mail.gmail.com>
-Subject: Re: Linux 3.2-rc7
-From: Havard Skinnemoen <hskinnemoen@google.com>
-To: Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EF32E4B.7050307@broadcom.com>
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: brief (Linux 3.2.0-rc7-00003-g4962516 x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 7:47 PM, Dave Jones <davej@redhat.com> wrote:
-> On Fri, Dec 23, 2011 at 10:16:06PM -0800, Linus Torvalds wrote:
->  > There it is, likely the last -rc in before final 3.2, so please do
->  > check it out in between your holiday festivities.
->  >
->  > Most of the changes are faily simple one-liners, but some qla4xxx
->  > driver updates stand out and in fact account for about 40% of the diff
->  > ("qla4xxx: fix flash/ddb support"). That, together with a VMWare DRI
->  > driver update and some dvb updates and the regular random driver fixes
->  > means that 80+% of the changes are in drivers.
->  >
->  > Some net updates, some SH updates, and then a (tiny) smattering of
->  > other stuff. The appended shortlog gives the (fairly boring) details,
->
-> https://lkml.org/lkml/2011/11/22/753 has been around since rc2, and is
-> still appearing every boot for me.  I'm not sure if Havard had patches
-> fixing this or not, I lost track.
+Hey Arend,
 
-Yes, I did, and Greg picked them up. Not sure what happened after that.
+Arend van Spriel [Thu, Dec 22, 2011 at 02:19:07PM +0100]:
+> On 12/22/2011 11:24 AM, Nico Schottelius wrote:
+> > Update:
+> > 
+> > - dmesg with hanging logs
+> > - The hang problem seems to happen ONLY with a specific access point: c8:6c:87:a9:df:a9
+> >   -> this is a zyxel P-2802HWL-I1, running at channel 13, with WPA2-PSK.
+> >   -> If you need more information, just let me know
+> > - Using wlan with the Samsung S2 as access point seems to work fine
+> 
+> Is the Samsung AP also on channel 13? If not, could you try it?
 
-(sorry about the delay; I'm on vacation and have been offline for a few days)
+No it's not and I cannot change it. But I changed the other AP
+from 13 to channel 3 and now the hang issue is gone. So this is
+definitely related to the specific frequence.
 
-Havard
+Hope this is enough information to get it fixed evetually :-)
+
+Cheers,
+
+Nico
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
