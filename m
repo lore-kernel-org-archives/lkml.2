@@ -1,45 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab1LaM0I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Dec 2011 07:26:08 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:47567 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752999Ab1LaM0A (ORCPT
+	id S1753080Ab1LaMto (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Dec 2011 07:49:44 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60880 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab1LaMtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Dec 2011 07:26:00 -0500
-Date: Sat, 31 Dec 2011 13:17:10 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rl@hellgate.ch
-Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
-Message-ID: <20111231121710.GB9842@electric-eye.fr.zoreil.com>
-References: <CACPM=kXTqY1kVWrEMB-Z0Lqy6t+rXvMzixcSUy7fAz6g_ajV9g@mail.gmail.com> <20111230125655.GA32031@electric-eye.fr.zoreil.com> <CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com> <20111230180347.GA3647@electric-eye.fr.zoreil.com> <CACPM=kXWXUE+JcVhkz-6tGZ2YyteN9sGA80+Pnw6+LaJ-eNWBA@mail.gmail.com> <20111230215024.GA5513@electric-eye.fr.zoreil.com> <CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com> <20111230221938.GA6197@electric-eye.fr.zoreil.com> <CACPM=kXAr46BXAc3t8puRB37NeFy_ZEOWZa0H=DnSioagSLpxA@mail.gmail.com> <CACPM=kWn41S85eLgj4G+c6cN0WBgqF=6MigSwa9QBOxD1Uh64A@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACPM=kWn41S85eLgj4G+c6cN0WBgqF=6MigSwa9QBOxD1Uh64A@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	Sat, 31 Dec 2011 07:49:41 -0500
+Message-ID: <4EFF04E3.70200@gmail.com>
+Date: Sat, 31 Dec 2011 14:49:39 +0200
+From: Konstantinos Skarlatos <k.skarlatos@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org
+Subject: Re: cifs: ls of mount point gives input/output error (probably related
+ to CIFS: getdents() broken for large dirs)
+References: <4EFBAF99.3010208@gmail.com> <20111228210420.2a422d11@corrin.poochiereds.net> <4EFC413A.80302@gmail.com> <20111229083930.77fafba8@tlielax.poochiereds.net> <4EFC7124.3060900@gmail.com> <4EFD7EBB.2060708@gmail.com> <20111230081120.3f7710f1@tlielax.poochiereds.net> <4EFDFC4E.30102@gmail.com> <20111231065922.05727805@tlielax.poochiereds.net>
+In-Reply-To: <20111231065922.05727805@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
-[...]
-> Also tried connect a machine to one of the ports, and copying a large
-> file across (something that before could make it lock up within 15
-> secords) - also worked without any problems - CPU usage around 15%
-> (mostly "top" using that), so thats not bad at all.
-> 
-> Is there any other testcases that I should try out?
+On Σάββατο, 31 Δεκέμβριος 2011 1:59:22 μμ, Jeff Layton wrote:
+> On Fri, 30 Dec 2011 20:00:46 +0200
+> Konstantinos Skarlatos<k.skarlatos@gmail.com>  wrote:
+>
+>> On 30/12/2011 3:11 μμ, Jeff Layton wrote:
+>>> On Fri, 30 Dec 2011 11:04:59 +0200
+>>> Konstantinos Skarlatos<k.skarlatos@gmail.com>   wrote:
+>>>
+>>>> On 29/12/2011 3:54 μμ, Konstantinos Skarlatos wrote:
+>>>>> On Πέμπτη, 29 Δεκέμβριος 2011 3:39:30 μμ, Jeff Layton wrote:
+>>>>>> On Thu, 29 Dec 2011 12:30:18 +0200
+>>>>>> Konstantinos Skarlatos<k.skarlatos@gmail.com>    wrote:
+>>>>>>
+>>>>>>> On 29/12/2011 4:04 πμ, Jeff Layton wrote:
+>>>>>>>> On Thu, 29 Dec 2011 02:08:57 +0200
+>>>>>>>> Konstantinos Skarlatos<k.skarlatos@gmail.com>     wrote:
+>>>>>>>>
+>>>>>>>>> I mount via cifs a windows XP share, df gives me correct sizes,
+>>>>>>>>> but when
+>>>>>>>>> I ls the mount point i get input/output error.
+>>>>>>>>> strace: http://pastebin.com/WXf8M1nu
+>>>>>>>>>
+>>>>>>>>> mount --verbose -t cifs -o username=administrator,password=blahblah
+>>>>>>>>> //192.168.0.11/jobs /mnt/backups/montaz/jobs
+>>>>>>>>> mount.cifs kernel mount options:
+>>>>>>>>> ip=192.168.0.11,unc=\\192.168.0.11\jobs,,ver=1,user=administrator,pass=********
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> df
+>>>>>>>>> //192.168.0.11/jobs                                       114464
+>>>>>>>>> 105196      9268  92% /mnt/backups/montaz/jobs
+>>>>>>>>>
+>>>>>>>>> ls /mnt/backups/montaz/jobs/
+>>>>>>>>> ls: reading directory /mnt/backups/montaz/jobs/: Input/output error
+>>>>>>>>> total 0
+>>>>>>>>>
+>>>>>>>>> the fun thing is that i can cd to a lower level directory, and ls
+>>>>>>>>> works
+>>>>>>>>> fine there! only the mount point has the problem
+>>>>>>>>>
+>>>>>>>>> ls /mnt/backups/montaz/jobs/test
+>>>>>>>>> total 44K
+>>>>>>>>> drwxr-xr-x 1 root root    0 Apr 30  2010 blah blah/
+>>>>>>>>> ......
+>>>>>>>>>
+>>>>>>>>> kernel version 3.2rc7
+>>>>>>>>>
+>>>>>>>>> this seems to be related to :
+>>>>>>>>> https://lkml.org/lkml/2011/8/1/427
+>>>>>>>>> Re: [3.0.0+][Regression][Bisected] CIFS: getdents() broken for
+>>>>>>>>> large dirs
+>>>>>>>>>
+>>>>>>>> Hmmm, maybe. What makes you think that it's related? What sort of
+>>>>>>>> server are you seeing this against?
+>>>>>>> Windows XP service pack 2 (greek)
+>>>>>>
+>>>>>> How many files are in the directory?
+>>>>>>
+>>>>> 140 folders and 20 files
+>>>>>
+>>>> Attached is a tcp dump of my session.
+>>> I tried reproducing this here, but wasn't able to. Testing against my
+>>> xp box worked fine.
+>>>
+>>> Most likely, the FIND_FILE responses are falling afoul of the code in
+>>> coalesce_t2 or check2ndT2. Unfortunately that code is pretty
+>>> complicated and I'm not certain what the problem actually is...
+>>>
+>>> One thing that's interesting is that the total data being sent in the
+>>> request is rather large (16336 bytes). I think that's legit, but maybe
+>>> it's exceeding the end of the buffer once we try to coalesce it.
+>>>
+>>> Would it be possible to get the cFYI output from this test?
+>> I did not get a cFYI output from that test, but i redid a
+>> mount-ls-umount and am attaching the tcpdump
+>> Also here http://pastebin.com/J20uC6kU you can find the cifsFYI and the
+>> contents of /proc/fs/cifs/DebugData form the same test
+>>>
+>>> Is this a regression? Did it work with earlier kernels and only
+>>> recently start failing?
+>>>
+>> I do not know, and i am a bit afraid to downgrade this machine below 3.0
+>> due to some changes arch linux has introduced recently. I can always set
+>> up a few virtual machines though, and i can even request permission from
+>> my company to give you shell access if you like. Which kernel versions
+>> would you like me to test?
+>
+>
+> Ok, that tells us a little:
+>
+> -------------------[snip]---------------------
+> [96268.787078] fs/cifs/cifssmb.c: In FindFirst for
+> [96268.787083] fs/cifs/transport.c: For smb_command 50
+> [96268.787086] fs/cifs/transport.c: Sending smb:  total_len 88
+>
+> ...FIND_FIRST command is sent
+>
+> [96268.787690] fs/cifs/connect.c: RFC1002 header 0x1104
+> [96268.787697] fs/cifs/connect.c: missing 12048 bytes from transact2, check next response
+> [96268.787865] fs/cifs/connect.c: RFC1002 header 0x1104
+> [96268.787870] fs/cifs/connect.c: missing 12036 bytes from transact2, check next response
+> [96268.788037] fs/cifs/connect.c: RFC1002 header 0x1104
+> [96268.788042] fs/cifs/connect.c: missing 12036 bytes from transact2, check next response
+> [96268.788371] fs/cifs/connect.c: RFC1002 header 0xdb0
+> [96268.788375] fs/cifs/connect.c: missing 12888 bytes from transact2, check next response
+>
+> ...all four parts of the response are collected here
+>
+> [96268.788391] fs/cifs/transport.c: cifs_sync_mid_result: cmd=50 mid=12 state=16
+>
+> ...but the state at this point is MID_RESPONSE_MALFORMED
+>
+> [96268.788395] fs/cifs/cifssmb.c: Error in FindFirst = -5
+> [96268.788397] fs/cifs/readdir.c: initiate cifs search rc -5
+> [96268.788398] fs/cifs/readdir.c: CIFS VFS: leaving cifs_readdir (xid = 737644) rc = -5
+>
+> ...which makes readdir return -EIO
+>
+> -------------------[snip]---------------------
+>
+> Based on that, it looks like something in one of these frames caused
+> coalesce_t2() to return an error. I don't see the problem right offhand
+> in the capture, but T2 response handling is pretty complex so it can be
+> hard to see.
+>
+> Would it be possible for you to rebuild your kernel (or just cifs.ko)
+> with this patch? Once you do that, rerun the test with cFYI turned up,
+> and it should help point out what the problem is.
+>
+> Thanks,
 
-Same thing + random ethtool link management commands.
-Same thing + random cable unplug/plug.
-Same thing + pktgen facing the lan interface.
-
-Everything at the same time.
-
--- 
-Ueimor
+Ok i am now rebuilding the kernel and will report when i have results.
