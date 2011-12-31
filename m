@@ -1,105 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab1LaAWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 19:22:32 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53440 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752037Ab1LaAW2 (ORCPT
+	id S1752846Ab1LaAeA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 19:34:00 -0500
+Received: from alcazar.beanwood.com ([70.85.129.230]:55038 "EHLO
+	alcazar.beanwood.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484Ab1LaAdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 19:22:28 -0500
-MIME-Version: 1.0
-In-Reply-To: <20111230235421.GA6054@redhat.com>
-References: <20111230235421.GA6054@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 30 Dec 2011 16:22:06 -0800
-X-Google-Sender-Auth: SVceJ502rWsGZQSo67be3H80Ih4
-Message-ID: <CA+55aFyqm4FbW=--7U4ULk1EBb6RLP0sRgtokODBYnZNiJXWew@mail.gmail.com>
-Subject: Re: loading firmware while usermodehelper disabled.
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>
-Cc: Matthew Garrett <mjg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 30 Dec 2011 19:33:55 -0500
+From: Andrew Ayer <agwa@andrewayer.name>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] vfs: Add POSIX-compliant version of fchmodat syscall
+Date: Fri, 30 Dec 2011 16:26:50 -0800
+Message-Id: <1325291211-30354-2-git-send-email-agwa@andrewayer.name>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1325291211-30354-1-git-send-email-agwa@andrewayer.name>
+References: <1325291211-30354-1-git-send-email-agwa@andrewayer.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 30, 2011 at 3:54 PM, Dave Jones <davej@redhat.com> wrote:
-> We're getting a bunch of reports against Fedora 16
-> (still using 3.1) which look like some drivers are trying to
-> load firmware on resume from suspend, while usermodehelper
-> is disabled.
+This adds a 4 argument version of fchmodat (fchmodat4) that
+supports a flag argument, as specified by POSIX.  It supports
+the same two flags as fchownat: AT_SYMLINK_NOFOLLOW and AT_EMPTY_PATH.
 
-Ok, buggy drivers. You *must*not* load firmware in your resume path,
-since there is no actual guarantee that any particular device will be
-resumed after the disk that contains the firmware images.
+Signed-off-by: Andrew Ayer <agwa@andrewayer.name>
+---
+ fs/open.c                |   21 +++++++++++++++++++--
+ include/linux/syscalls.h |    2 ++
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
-So it's very simple: drivers that load firmware at resume time are
-buggy. No ifs, buts, or maybes about it.
+diff --git a/fs/open.c b/fs/open.c
+index 22c41b5..c3dfdaa 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -452,6 +452,9 @@ static int chmod_common(struct path *path, umode_t mode)
+ 	struct iattr newattrs;
+ 	int error;
+ 
++	if (S_ISLNK(inode->i_mode))
++		return -EOPNOTSUPP;
++
+ 	error = mnt_want_write(path->mnt);
+ 	if (error)
+ 		return error;
+@@ -484,10 +487,24 @@ SYSCALL_DEFINE2(fchmod, unsigned int, fd, mode_t, mode)
+ 
+ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
+ {
++	return sys_fchmodat4(dfd, filename, mode, 0);
++}
++
++SYSCALL_DEFINE4(fchmodat4, int, dfd, const char __user *, filename,
++		mode_t, mode, int, flag)
++{
+ 	struct path path;
+ 	int error;
++	int lookup_flags;
++
++	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) != 0)
++		return -EINVAL;
+ 
+-	error = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++	lookup_flags = (flag & AT_SYMLINK_NOFOLLOW) ? 0 : LOOKUP_FOLLOW;
++	if (flag & AT_EMPTY_PATH)
++		lookup_flags |= LOOKUP_EMPTY;
++
++	error = user_path_at(dfd, filename, lookup_flags, &path);
+ 	if (!error) {
+ 		error = chmod_common(&path, mode);
+ 		path_put(&path);
+@@ -497,7 +514,7 @@ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
+ 
+ SYSCALL_DEFINE2(chmod, const char __user *, filename, mode_t, mode)
+ {
+-	return sys_fchmodat(AT_FDCWD, filename, mode);
++	return sys_fchmodat4(AT_FDCWD, filename, mode, 0);
+ }
+ 
+ static int chown_common(struct path *path, uid_t user, gid_t group)
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 86a24b1..c84795b 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -770,6 +770,8 @@ asmlinkage long sys_futimesat(int dfd, const char __user *filename,
+ asmlinkage long sys_faccessat(int dfd, const char __user *filename, int mode);
+ asmlinkage long sys_fchmodat(int dfd, const char __user * filename,
+ 			     mode_t mode);
++asmlinkage long sys_fchmodat4(int dfd, const char __user * filename,
++			     mode_t mode, int flag);
+ asmlinkage long sys_fchownat(int dfd, const char __user *filename, uid_t user,
+ 			     gid_t group, int flag);
+ asmlinkage long sys_openat(int dfd, const char __user *filename, int flags,
+-- 
+1.7.1
 
-> Here are some example traces:
->
-> https://bugzilla.redhat.com/show_bug.cgi?id=746411
-
-It's isight_firmware_load(), in the isight_firmware driver. The driver
-doesn't actually do anything but load the firmware, and is apparently
-not very good at that either.
-
-It should either fake a disconnect and reconnect of the device (and
-let the reconnect then load the firmware through udev or something) or
-it should just save the firmware image in memory from the original
-load, and make the resume just re-initialize it - not load it.
-
-It's also possible that it could be considered a USB layer bug, and
-the USB layer should just not rebind the devices directly in the
-resume function, but do it somehow later. HOWEVER, that would only
-work for "random" USB devices that aren't in use by user space (like
-disks etc might be). So I think that in general the real solution is
-always just "make sure that the firmware is in memory before the
-suspend even happens".
-
-Greg - has the USB resume logic been changed lately?
-
-Matthew? Any comments about that particular driver?
-
-> https://bugzilla.redhat.com/show_bug.cgi?id=771002
-
-Same issue, different driver. Again, it's USB, and it's possible that
-USB just makes it really hard to do this correctly (ie the "save
-firmware image across suspend so that you don't have to load it at
-resume time").
-
-It's also possible that we should blame the firmware code, which is
-expressly written to encourage these kinds of bugs. It may be that i
-tshould be the firmware code that has a "get_firmware()" +
-"put_firmware()" model, and it should cache the firmware explicitly if
-the config supports suspend, so that a firmware read at resume time
-would actually work. The whole "request_firmware()" interface really
-is very prone to these kinds of bugs.
-
-But it's possible this could be fixed at the driver level by doing the
-caching there.
-
-In this case it's the rtl8192cu driver, so Larry, Chaoming, John etc
-added to the cc for that one.
-
-> This possibly sounds like the problem that caca9510ff4e5d842c0589110243d60927836222
-> was trying to fix, but that patch is present in the kernels
-> being reported.
-
-No, caca9510ff4e is only for the case where you actually compile the
-firmware *into* the kernel, so it's part of the kernel image. That's
-useful mainly for avoiding modules and initrd images, thus allowing
-things like having root directly on a disk that needs firmware to be
-loaded. Quite unusual, and it doesn't really work all that well.
-
-Oh, and some people use it for the Radeon firmware with the radeon DRM
-code built it.
-
-It really does need to be fixed at a driver level (possibly with the
-help of firmware/usb support infrastructure).
-
-                  Linus
