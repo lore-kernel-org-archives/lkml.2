@@ -1,152 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab1LaNmG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Dec 2011 08:42:06 -0500
-Received: from nm6-vm0.bullet.mail.ird.yahoo.com ([77.238.189.210]:27101 "HELO
-	nm6-vm0.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753146Ab1LaNlo convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Dec 2011 08:41:44 -0500
-X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Sat, 31 Dec 2011 08:41:43 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 508355.14925.bm@omp1007.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=BBHfHvQkrIsHpvgb0ECSRmFXN9uhLmj9iKg0XCWW8ah9VJ+xHtae11hJbZ/h8svUj3+8xC/v39QzEn/OtuX9u/rc1DeJ3ymtqqig5mmRILRrxGb0Jol5dcITWTQrNc4Hj7nQ8qHOy46r5q4harhcmeZ0gk2GQ3vUdlcCPLXfKxg=;
-X-YMail-OSG: cuc_8_sVM1mWiKRkMHGgil_tDw66DUOE_XrmLpN5PiELQMT
- d3jRygTtbG1FoGhRkLT.hXl0XXdJYqFRxUjapPmh1DqGeo8e7HdpvOcTNulz
- B.zA6HVFV9c3fpSp4Z_Gz8.J.zQdDd3wA6ql9BGAd1tF7PYak2elErcXh8.W
- t6Q22aA9BM_GdjKXhwAylv_roOH.6_Pp9.hzGT8gueVArJ248UgI5YrPwKNl
- LjzlMi106YLlNW7tvWO6IgEVr9Vx6dgFYpGgAR2x_014nSesljxu7gw1LBZn
- OBAnoBMzYxbwVpZVWrFMcF_ySFzVcsGULmcsHNDr4kIxISboBZ0b3RoBxn4r
- t_AEcGC1CO7dkCEzSe1YGnEQ0DHicR8PW6V22a0Pp2.65MwovtaOo9pZwh3O
- pMm7etS1m.5aJOTtbXUXE7L4EEQnl_bgzbNTycvg4fJgwgYQlptyKWL7Qo8P
- NXliu5gfe.QkXjlXyxiR2r6I03aSOI3BH3UwfbT0dlA--
-X-Mailer: YahooMailClassic/15.0.4 YahooMailWebService/0.8.115.331698
-Message-ID: <1325338529.24725.YahooMailClassic@web29008.mail.ird.yahoo.com>
-Date: Sat, 31 Dec 2011 13:35:29 +0000 (GMT)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: Re: [PATCH v2] pxa/hx4700: add platform device and I2C info for AK4641 codec
-To: linux-kernel@vger.kernel.org, Axel Lin <axel.lin@gmail.com>
-Cc: Philipp Zabel <philipp.zabel@gmail.com>,
-        Dmitry Artamonow <mad_soft@inbox.ru>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1325217971.4022.1.camel@phoenix>
+	id S1753167Ab1LaOcq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Dec 2011 09:32:46 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52532 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753100Ab1LaOcn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Dec 2011 09:32:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20111229150717.6c8ba825.akpm@linux-foundation.org>
+References: <CAJd=RBAp=ooYGoDqJG0qkUhRuYTsSKG9h+bUvC0dvuVCvfkCgQ@mail.gmail.com>
+	<20111229150717.6c8ba825.akpm@linux-foundation.org>
+Date: Sat, 31 Dec 2011 22:25:29 +0800
+Message-ID: <CAJd=RBAp-nC2-VoxgfZ2NjDz08hVkjD_YOoRWuO54ASQCL5hvA@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscan: fix typo in isolating lru pages
+From: Hillf Danton <dhillf@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
+        Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id pBVEXP5j028393
 
-Works for me on linux-3.2-rc7.
+On Fri, Dec 30, 2011 at 7:07 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 29 Dec 2011 20:38:41 +0800
+> Hillf Danton <dhillf@gmail.com> wrote:
+>
+>> It is not the tag page but the cursor page that we should process, and it looks
+>> a typo.
+>>
+>> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+>> Cc: Michal Hocko <mhocko@suse.cz>
+>> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: David Rientjes <rientjes@google.com>
+>> Cc: Hugh Dickins <hughd@google.com>
+>> ---
+>>
+>> --- a/mm/vmscan.c ¬† ¬† Thu Dec 29 20:20:16 2011
+>> +++ b/mm/vmscan.c ¬† ¬† Thu Dec 29 20:23:30 2011
+>> @@ -1231,13 +1231,13 @@ static unsigned long isolate_lru_pages(u
+>>
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† mem_cgroup_lru_del(cursor_page);
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† list_move(&cursor_page->lru, dst);
+>> - ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† isolated_pages = hpage_nr_pages(page);
+>> + ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† isolated_pages = hpage_nr_pages(cursor_page);
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† nr_taken += isolated_pages;
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† nr_lumpy_taken += isolated_pages;
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† if (PageDirty(cursor_page))
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† nr_lumpy_dirty += isolated_pages;
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† scan++;
+>> - ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† pfn += isolated_pages-1;
+>> + ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† pfn += isolated_pages - 1;
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† } else {
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† /*
+>> ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬† ¬†* Check if the page is freed already.
+>
+> This problem looks pretty benign in mainline. ¬†But Andrea's "mm:
+> vmscan: check if we isolated a compound page during lumpy scan" came
+> along and uses isolated_pages rather a lot more, including using it to
+> advance across the pfn array.
+>
+> I jiggled your patch to suit current mainline then reworked everything
+> else so we end up with this result.
+>
+Hi folks
 
-Tested-by: Paul Parsons <lost.distance@yahoo.com>
+Thanks for your comments, ack and nack, in 2011.
 
---- On Fri, 30/12/11, Axel Lin <axel.lin@gmail.com> wrote:
+Happy New Year
 
-> From: Axel Lin <axel.lin@gmail.com>
-> Subject: [PATCH v2] pxa/hx4700: add platform device and I2C info for AK4641 codec
-> To: linux-kernel@vger.kernel.org
-> Cc: "Philipp Zabel" <philipp.zabel@gmail.com>, "Dmitry Artamonow" <mad_soft@inbox.ru>, "Mark Brown" <broonie@opensource.wolfsonmicro.com>, "Liam Girdwood" <lrg@ti.com>, "Haojian Zhuang" <haojian.zhuang@marvell.com>, "Eric Miao" <eric.y.miao@gmail.com>, linux-arm-kernel@lists.infradead.org
-> Date: Friday, 30 December, 2011, 4:06
-> The audio on hx4700 needs this to
-> properly work.
-> 
-> Signed-off-by: Philipp Zabel <philipp.zabel@gmail.com>
-> Signed-off-by: Dmitry Artamonow <mad_soft@inbox.ru>
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Acked-by: Marek Vasut <marek.vasut@gmail.com>
-> ---
-> v2: Avoid rename AK4641 power GPIOs.
-> 
->  arch/arm/mach-pxa/hx4700.c |†††25
-> +++++++++++++++++++++++++
->  1 files changed, 25 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-pxa/hx4700.c
-> b/arch/arm/mach-pxa/hx4700.c
-> index fb9b62d..208eef1 100644
-> --- a/arch/arm/mach-pxa/hx4700.c
-> +++ b/arch/arm/mach-pxa/hx4700.c
-> @@ -45,6 +45,7 @@
->  #include <mach/hx4700.h>
->  #include <mach/irda.h>
->  
-> +#include <sound/ak4641.h>
->  #include <video/platform_lcd.h>
->  #include <video/w100fb.h>
->  
-> @@ -765,6 +766,28 @@ static struct i2c_board_info
-> __initdata pi2c_board_info[] = {
->  };
->  
->  /*
-> + * Asahi Kasei AK4641 on I2C
-> + */
-> +
-> +static struct ak4641_platform_data ak4641_info = {
-> +††† .gpio_power = GPIO27_HX4700_CODEC_ON,
-> +††† .gpio_npdn† =
-> GPIO109_HX4700_CODEC_nPDN,
-> +};
-> +
-> +static struct i2c_board_info i2c_board_info[] __initdata =
-> {
-> +††† {
-> +††† †††
-> I2C_BOARD_INFO("ak4641", 0x12),
-> +††† ††† .platform_data =
-> &ak4641_info,
-> +††† },
-> +};
-> +
-> +static struct platform_device audio = {
-> +††† .name††† =
-> "hx4700-audio",
-> +††† .id††† = -1,
-> +};
-> +
-> +
-> +/*
-> † * PCMCIA
-> † */
->  
-> @@ -790,6 +813,7 @@ static struct platform_device
-> *devices[] __initdata = {
->  ††† &gpio_vbus,
->  ††† &power_supply,
->  ††† &strataflash,
-> +††† &audio,
->  ††† &pcmcia,
->  };
->  
-> @@ -827,6 +851,7 @@ static void __init hx4700_init(void)
->  ††† pxa_set_ficp_info(&ficp_info);
->  ††† pxa27x_set_i2c_power_info(NULL);
->  ††† pxa_set_i2c_info(NULL);
-> +††† i2c_register_board_info(0,
-> ARRAY_AND_SIZE(i2c_board_info));
->  ††† i2c_register_board_info(1,
-> ARRAY_AND_SIZE(pi2c_board_info));
->  ††† pxa2xx_set_spi_info(2,
-> &pxa_ssp2_master_info);
->  †††
-> spi_register_board_info(ARRAY_AND_SIZE(tsc2046_board_info));
-> -- 
-> 1.7.5.4
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe
-> linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at† http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at† http://www.tux.org/lkml/
-> 
+Hillf Danton
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
