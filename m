@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab1LaAk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 30 Dec 2011 19:40:29 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:56871 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab1LaAk0 (ORCPT
+	id S1752690Ab1LaBhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 30 Dec 2011 20:37:38 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47031 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448Ab1LaBhg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 30 Dec 2011 19:40:26 -0500
-Date: Sat, 31 Dec 2011 00:40:16 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Message-ID: <20111231004015.GA23226@srcf.ucam.org>
-References: <20111230235421.GA6054@redhat.com>
- <CA+55aFyqm4FbW=--7U4ULk1EBb6RLP0sRgtokODBYnZNiJXWew@mail.gmail.com>
+	Fri, 30 Dec 2011 20:37:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyqm4FbW=--7U4ULk1EBb6RLP0sRgtokODBYnZNiJXWew@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CACPM=kXAr46BXAc3t8puRB37NeFy_ZEOWZa0H=DnSioagSLpxA@mail.gmail.com>
+References: <CACPM=kV8NwYLAdODQHxYmJ21X0RmZ8KJT9szKdY2xa-DsesvQg@mail.gmail.com>
+	<CACPM=kVfsXgFhKheevTS1pm7kCoezKO3M+102O=PRbXzxebxxg@mail.gmail.com>
+	<20111229235312.GA27092@electric-eye.fr.zoreil.com>
+	<CACPM=kXTqY1kVWrEMB-Z0Lqy6t+rXvMzixcSUy7fAz6g_ajV9g@mail.gmail.com>
+	<20111230125655.GA32031@electric-eye.fr.zoreil.com>
+	<CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com>
+	<20111230180347.GA3647@electric-eye.fr.zoreil.com>
+	<CACPM=kXWXUE+JcVhkz-6tGZ2YyteN9sGA80+Pnw6+LaJ-eNWBA@mail.gmail.com>
+	<20111230215024.GA5513@electric-eye.fr.zoreil.com>
+	<CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com>
+	<20111230221938.GA6197@electric-eye.fr.zoreil.com>
+	<CACPM=kXAr46BXAc3t8puRB37NeFy_ZEOWZa0H=DnSioagSLpxA@mail.gmail.com>
+Date: Sat, 31 Dec 2011 02:37:36 +0100
+X-Google-Sender-Auth: qZPB7eZE1_chtp9j-Nhq4N4Jooo
+Message-ID: <CACPM=kWn41S85eLgj4G+c6cN0WBgqF=6MigSwa9QBOxD1Uh64A@mail.gmail.com>
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rl@hellgate.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 30, 2011 at 04:22:06PM -0800, Linus Torvalds wrote:
+2011/12/30 Bjarke Istrup Pedersen <gurligebis@gentoo.org>:
+> 2011/12/30 Francois Romieu <romieu@fr.zoreil.com>:
+>> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+>> [...]
+>>> Does not build with patch:
+>>
+>> Neither did it here. My head is already elsewhere.
+>>
+>> [...]
+>>> Wouldn't it be an idea to move the declarations to a via-rhine.h file,
+>>> and include it, to work around it, and seperate it like it should be?
+>>
+>> Code could be correctly ordered too. Forward declare it. It's good enough
+>> in the meantime.
+>
+> Forward declaring it makes it compile just fine.
+>
+> I'll try and do some stress test of it when the rest of the house goes
+> to sleep, so I don't cut off the net :)
+>
+> /Bjarke
 
-> It's isight_firmware_load(), in the isight_firmware driver. The driver
-> doesn't actually do anything but load the firmware, and is apparently
-> not very good at that either.
-> 
-> It should either fake a disconnect and reconnect of the device (and
-> let the reconnect then load the firmware through udev or something) or
-> it should just save the firmware image in memory from the original
-> load, and make the resume just re-initialize it - not load it.
+Okay, this is beginning to look great.
+Just tried randomly up'ing/down'ing the interfaces on the router while
+there was alot of trafic going between them (a client downloading a
+knoppix live dvd using bittorrent) - survived without a single bump.
+Also tried connect a machine to one of the ports, and copying a large
+file across (something that before could make it lock up within 15
+secords) - also worked without any problems - CPU usage around 15%
+(mostly "top" using that), so thats not bad at all.
 
-Mm. My recollection is that these devices retained their firmware over 
-suspend/resume, so wouldn't resume with a USB id that matched the driver 
-and so this code shouldn't be called. It seems that either I was 
-horribly wrong about that, or something's changed in the USB layer 
-that's resulting in them resetting themselves. Newer devices don't 
-require this, so I'll need to try to chase up some older hardware to 
-figure out what's going on.
+Is there any other testcases that I should try out?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+/Bjarke
+
+>> --
+>> Ueimor
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
