@@ -1,103 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752533Ab1LaL2T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Dec 2011 06:28:19 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:51148 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752342Ab1LaL2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Dec 2011 06:28:17 -0500
-Message-ID: <4EFEF1AF.9060001@metafoo.de>
-Date: Sat, 31 Dec 2011 12:27:43 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	id S1752631Ab1LaLhp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Dec 2011 06:37:45 -0500
+Received: from mail2.charite.de ([141.42.206.200]:38707 "EHLO mail2.charite.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752379Ab1LaLhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 31 Dec 2011 06:37:42 -0500
+Date: Sat, 31 Dec 2011 12:37:40 +0100
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: 3.2.0-rc7+: WARNING: at arch/x86/mm/pageattr.c:877
+ change_page_attr_set_clr+0x243/0x354()
+Message-ID: <20111231113740.GG14070@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Grazvydas Ignotas <notasas@gmail.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Anton Vorontsov <cbouatmailru@gmail.com>
-Subject: Re: [PATCH 5/5] bq27x00 - don't report power-supply change so often.
-References: <20111230004947.11559.81184.stgit@notabene.brown>	<20111230005849.11559.78948.stgit@notabene.brown> <CANOLnOM7QbF5aMb1iW0W2t6B1q1J+cROMU8SpD185DyC33w4kA@mail.gmail.com>
-In-Reply-To: <CANOLnOM7QbF5aMb1iW0W2t6B1q1J+cROMU8SpD185DyC33w4kA@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/30/2011 12:13 PM, Grazvydas Ignotas wrote:
-> CCing Lars who added this. I vaguely recall something about generating
-> events to make some battery monitors update but I forget the details
-> now, maybe it was about something else. Also CCing Anton (the
-> maintainer).
-> 
-> On Fri, Dec 30, 2011 at 2:58 AM, NeilBrown <neilb@suse.de> wrote:
->> A power_supply_changed should only be reported on significant changes
->> such as transition between charging and not.  Incremental changes
->> such as charge increasing should not be reported - that can easily
->> be polled for.
+>From today's git pull:
 
-Well, you can also poll for those "significant" changes, too. The point of
-adding this was to have a centralized point where polling takes place instead
-of letting each battery monitor do this on its own. Though if, as you wrote in
-the cover letter, the some properties change every time the values are read it
-might makes sense to exclude these from the comparison. On the other hand one
-event every 6 minutes doesn't really sound harmful and I would suspect that
-battery monitors will use a similar interval when manually polling the device.
+...
+[    6.369829] ACPI: Power Button [PWRF]
+[    6.381614] hpwdt 0000:01:04.0: PCI INT A -> GSI 21 (level, low) -> IRQ 21
+[    6.381700] hpwdt: New timer passed in is 30 seconds.
+[    6.381855] ------------[ cut here ]------------
+[    6.381914] WARNING: at arch/x86/mm/pageattr.c:877 change_page_attr_set_clr+0x243/0x354()
+[    6.381991] Hardware name: ProLiant DL360 G5
+[    6.382063] Modules linked in: thermal(+) hpwdt(+) psmouse(+) container
+[    6.382220] thermal LNXTHERM:00: registered as thermal_zone0
+[    6.382222] ACPI: Thermal Zone [THM0] (8 C)
+[    6.382386]  button processor
+[    6.382503] Pid: 676, comm: modprobe Not tainted 3.2.0-rc7+ #18
+[    6.382559] Call Trace:
+[    6.382622]  [<c102babc>] ? warn_slowpath_common+0x6c/0x95
+[    6.382678]  [<c101c7c5>] ? change_page_attr_set_clr+0x243/0x354
+[    6.382735]  [<c101c7c5>] ? change_page_attr_set_clr+0x243/0x354
+[    6.382793]  [<c102bb00>] ? warn_slowpath_null+0x1b/0x1f
+[    6.382849]  [<c101c7c5>] ? change_page_attr_set_clr+0x243/0x354
+[    6.382906]  [<c101b7b5>] ? __ioremap_caller+0x365/0x45c
+[    6.382961]  [<c101c92d>] ? set_memory_x+0x57/0x5b
+[    6.383022]  [<f842c5b8>] ? hpwdt_init_one+0x207/0x3c2 [hpwdt]
+[    6.383081]  [<c115dd06>] ? pci_device_probe+0x47/0x68
+[    6.383140]  [<c11aa177>] ? driver_probe_device+0x4a/0x13a
+[    6.383207]  [<c115dbd4>] ? pci_match_device+0xf/0x8a
+[    6.383262]  [<c11aa2c9>] ? __driver_attach+0x62/0x64
+[    6.383318]  [<c11aa267>] ? driver_probe_device+0x13a/0x13a
+[    6.383374]  [<c11a9613>] ? bus_for_each_dev+0x3e/0x62
+[    6.383430]  [<c115dc72>] ? pci_dev_put+0xd/0xd
+[    6.383484]  [<c11a9f39>] ? driver_attach+0x19/0x1e
+[    6.383539]  [<c11aa267>] ? driver_probe_device+0x13a/0x13a
+[    6.383595]  [<c11a9cbb>] ? bus_add_driver+0x17d/0x24d
+[    6.383650]  [<c115dc72>] ? pci_dev_put+0xd/0xd
+[    6.383705]  [<c11aa4a9>] ? driver_register+0x57/0xec
+[    6.383760]  [<c115e0bf>] ? __pci_register_driver+0x31/0x92
+[    6.383818]  [<c1001027>] ? do_one_initcall+0x27/0x150
+[    6.383875]  [<c101c99e>] ? set_memory_nx+0x57/0x5b
+[    6.383931]  [<f8431000>] ? 0xf8430fff
+[    6.383986]  [<c1054446>] ? sys_init_module+0xdff/0x1a14
+[    6.384051]  [<c126fa97>] ? sysenter_do_call+0x12/0x26
+[    6.384108] ---[ end trace d99102c5cb722e75 ]---
+[    6.384170] hpwdt: CRU Base Address:   0xfff69800
+[    6.384171] hpwdt: CRU Offset Address: 0x0
+[    6.384172] hpwdt: CRU Length:         0x8000
+[    6.384173] hpwdt: CRU Mapped Address: f842e0dc
+[    6.384176] hpwdt 0000:01:04.0: HP Watchdog Timer Driver: NMI decoding initialized, allow kernel dump: OFF (default = 0/OFF), priority: LAST (default = 0/LAST).
+[    6.384351] hpwdt 0000:01:04.0: HP Watchdog Timer Driver: 1.3.0, timer margin: 30 seconds (nowayout=0).
 
-- Lars
-
->>
->> Signed-off-by: NeilBrown <neilb@suse.de>
->> ---
->>
->>  drivers/power/bq27x00_battery.c |   15 ++++++++++++---
->>  1 files changed, 12 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
->> index bb16f5b..7993a17 100644
->> --- a/drivers/power/bq27x00_battery.c
->> +++ b/drivers/power/bq27x00_battery.c
->> @@ -57,11 +57,15 @@
->>  #define BQ27000_FLAG_CHGS              BIT(7)
->>  #define BQ27000_FLAG_FC                        BIT(5)
->>
->> +#define BQ27000_FLAGS_IMPORTANT                (BQ27000_FLAG_FC|BQ27000_FLAG_CHGS|BIT(31))
->> +
->>  #define BQ27500_REG_SOC                        0x2C
->>  #define BQ27500_REG_DCAP               0x3C /* Design capacity */
->>  #define BQ27500_FLAG_DSC               BIT(0)
->>  #define BQ27500_FLAG_FC                        BIT(9)
->>
->> +#define BQ27500_FLAGS_IMPORTANT                (BQ27500_FLAG_FC|BQ27500_FLAG_DSC|BIT(31))
->> +
->>  #define BQ27000_RS                     20 /* Resistor sense */
->>
->>  struct bq27x00_device_info;
->> @@ -259,6 +263,7 @@ static void bq27x00_update(struct bq27x00_device_info *di)
->>  {
->>        struct bq27x00_reg_cache cache = {0, };
->>        bool is_bq27500 = di->chip == BQ27500;
->> +       int flags_changed;
->>
->>        cache.flags = bq27x00_read(di, BQ27x00_REG_FLAGS, is_bq27500);
->>        if (cache.flags >= 0) {
->> @@ -280,10 +285,14 @@ static void bq27x00_update(struct bq27x00_device_info *di)
->>
->>        /* Ignore current_now which is a snapshot of the current battery state
->>         * and is likely to be different even between two consecutive reads */
->> -       if (memcmp(&di->cache, &cache, sizeof(cache) - sizeof(int)) != 0) {
->> -               di->cache = cache;
->> +       flags_changed = di->cache.flags ^ cache.flags;
->> +       di->cache = cache;
->> +       if (is_bq27500)
->> +               flags_changed &= BQ27500_FLAGS_IMPORTANT;
->> +       else
->> +               flags_changed &= BQ27000_FLAGS_IMPORTANT;
->> +       if (flags_changed)
->>                power_supply_changed(&di->bat);
->> -       }
->>
->>        di->last_update = jiffies;
->>  }
-
+-- 
+Ralf Hildebrandt
+  Geschäftsbereich IT | Abteilung Netzwerk
+  Charité - Universitätsmedizin Berlin
+  Campus Benjamin Franklin
+  Hindenburgdamm 30 | D-12203 Berlin
+  Tel. +49 30 450 570 155 | Fax: +49 30 450 570 962
+  ralf.hildebrandt@charite.de | http://www.charite.de
+	    
