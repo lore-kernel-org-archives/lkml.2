@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274Ab2AAMmK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 07:42:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15870 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751999Ab2AAMmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 07:42:07 -0500
-Message-ID: <4F00547A.9090204@redhat.com>
-Date: Sun, 01 Jan 2012 14:41:30 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752317Ab2AANaI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 08:30:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64540 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab2AANaF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jan 2012 08:30:05 -0500
+Date: Sun, 1 Jan 2012 21:29:38 +0800
+From: Richard Zhao <richard.zhao@linaro.org>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de, shawn.guo@linaro.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com, eric.miao@linaro.org, patches@linaro.org
+Subject: Re: [PATCH] dma/imx-sdma: add wmb before enable/run a channel
+Message-ID: <20120101132935.GA1914@richard-laptop>
+References: <1325388460-20678-1-git-send-email-richard.zhao@linaro.org>
+ <20120101071425.GA25978@pengutronix.de>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        apkm@linux-foundation.org
-Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to flush
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com> <1321960128-15191-5-git-send-email-gilad@benyossef.com> <alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
-In-Reply-To: <alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120101071425.GA25978@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/23/2011 08:23 AM, Pekka Enberg wrote:
-> On Tue, 22 Nov 2011, Gilad Ben-Yossef wrote:
->> static void flush_all(struct kmem_cache *s)
->> {
->> -    on_each_cpu(flush_cpu_slab, s, 1);
->> +    cpumask_var_t cpus;
->> +    struct kmem_cache_cpu *c;
->> +    int cpu;
->> +
->> +    if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
->
-> __GFP_NOWARN too maybe?
->
->> +        for_each_online_cpu(cpu) {
->> +            c = per_cpu_ptr(s->cpu_slab, cpu);
->> +            if (c->page)
->> +                cpumask_set_cpu(cpu, cpus);
->> +        }
->> +        on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
->> +        free_cpumask_var(cpus);
->> +    } else
->> +        on_each_cpu(flush_cpu_slab, s, 1);
->> }
->
+On Sun, Jan 01, 2012 at 08:14:25AM +0100, Uwe Kleine-König wrote:
+> Hello Richard,
+> 
+> On Sun, Jan 01, 2012 at 11:27:40AM +0800, Richard Zhao wrote:
+> > dma_alloc_coherent memory may be bufferable. We need to add
+> > nececcary memory barrier.
+> necessary
+> 
+> > 
+> > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+> > ---
+> >  drivers/dma/imx-sdma.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> > index 2ebb2bc..8cd9492 100644
+> > --- a/drivers/dma/imx-sdma.c
+> > +++ b/drivers/dma/imx-sdma.c
+> > @@ -403,6 +403,7 @@ static int sdma_run_channel(struct sdma_channel *sdmac)
+> >  
+> >  	init_completion(&sdmac->done);
+> >  
+> > +	wmb();
+> >  	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
+> >  
+> >  	ret = wait_for_completion_timeout(&sdmac->done, HZ);
+> > @@ -809,6 +810,7 @@ out:
+> >  
+> >  static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
+> >  {
+> > +	wmb();
+> >  	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
+> >  }
+> I don't know the sdma code very well, but wouldn't it be nice to call
+> sdma_enable_channel() in sdma_run_channel() instead of open coding it?
+right.
+> 
+> As you probably need some rearrangements to have sdma_enable_channel()
+> declared in sdma_run_channel() this might be better done with a seperate
+> patch.
+It'll save one wmb.
 
-Since this seems to be a common pattern, how about:
-
-   zalloc_cpumask_var_or_all_online_cpus(&cpus, GFTP_ATOMIC);
-   ...
-   free_cpumask_var(cpus);
-
-The long-named function at the top of the block either returns a newly
-allocated zeroed cpumask, or a static cpumask with all online cpus set. 
-The code in the middle is only allowed to set bits in the cpumask
-(should be the common usage).  free_cpumask_var() needs to check whether
-the freed object is the static variable.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Thanks
+Richard
+> 
+> Best regards
+> Uwe
+> 
+> -- 
+> Pengutronix e.K.                           | Uwe Kleine-König            |
+> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
