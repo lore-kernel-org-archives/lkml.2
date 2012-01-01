@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab2AAQMO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 11:12:14 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40870 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803Ab2AAQML convert rfc822-to-8bit (ORCPT
+	id S1751810Ab2AAQRz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 11:17:55 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:45144 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750925Ab2AAQRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 11:12:11 -0500
+	Sun, 1 Jan 2012 11:17:53 -0500
+Date: Sun, 1 Jan 2012 11:17:52 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Matthew Garrett <mjg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+In-Reply-To: <201201011322.34483.oliver@neukum.org>
+Message-ID: <Pine.LNX.4.44L0.1201011105200.4534-100000@netrider.rowland.org>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <4F00547A.9090204@redhat.com>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-	<1321960128-15191-5-git-send-email-gilad@benyossef.com>
-	<alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
-	<4F00547A.9090204@redhat.com>
-Date: Sun, 1 Jan 2012 18:12:10 +0200
-Message-ID: <CAOtvUMcCzK=tNkHudOrzxjdGkdkZPt02krO8QYRGjyXm+cvRSw@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        apkm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 1, 2012 at 2:41 PM, Avi Kivity <avi@redhat.com> wrote:
-> On 11/23/2011 08:23 AM, Pekka Enberg wrote:
->> On Tue, 22 Nov 2011, Gilad Ben-Yossef wrote:
->>> static void flush_all(struct kmem_cache *s)
->>> {
->>> -    on_each_cpu(flush_cpu_slab, s, 1);
->>> +    cpumask_var_t cpus;
->>> +    struct kmem_cache_cpu *c;
->>> +    int cpu;
->>> +
->>> +    if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
->>
->> __GFP_NOWARN too maybe?
->>
->>> +        for_each_online_cpu(cpu) {
->>> +            c = per_cpu_ptr(s->cpu_slab, cpu);
->>> +            if (c->page)
->>> +                cpumask_set_cpu(cpu, cpus);
->>> +        }
->>> +        on_each_cpu_mask(cpus, flush_cpu_slab, s, 1);
->>> +        free_cpumask_var(cpus);
->>> +    } else
->>> +        on_each_cpu(flush_cpu_slab, s, 1);
->>> }
->>
->
-> Since this seems to be a common pattern, how about:
->
->   zalloc_cpumask_var_or_all_online_cpus(&cpus, GFTP_ATOMIC);
->   ...
->   free_cpumask_var(cpus);
->
-> The long-named function at the top of the block either returns a newly
-> allocated zeroed cpumask, or a static cpumask with all online cpus set.
-> The code in the middle is only allowed to set bits in the cpumask
-> (should be the common usage).  free_cpumask_var() needs to check whether
-> the freed object is the static variable.
+On Sun, 1 Jan 2012, Oliver Neukum wrote:
 
-Thanks for the feedback and advice! I totally agree the repeating
-pattern needs abstracting.
+> Am Sonntag, 1. Januar 2012, 03:21:45 schrieb Alan Stern:
+> > On Sat, 31 Dec 2011, Oliver Neukum wrote:
+> 
+> > > We are definitely going through do_unbind_rebind(). But I don't think
+> > > it matters why we got there. We seem to be calling probe() too early.
+> > > And we need to guarantee that a driver can request firmware in probe()
+> > > 
+> > > So something has changed in the resume code path further up.
+> > 
+> > For at least a year and a half, it has been true that rebinding takes
+> 
+> Yes, so I don't understand why we haven't been hitting this issue
+> all that time.
 
-I ended up chosing to try a different abstraction though - basically a wrapper
-on_each_cpu_cond that gets a predicate function to run per CPU to
-build the mask
-to send the IPI to. It seems cleaner to me not having to mess with
-free_cpumask_var
-and it abstracts more of the general pattern.
+Perhaps if Matthew compared logs from an old and a new system with 
+appropriate debugging options configured, something might show up.
 
-I intend to run the new code through some more testing tomorrow and send out V5
-of the patch set. I'd be delighted if you can have a look through it then.
+> > place during the complete phase of system resume.  Clearly that is too 
+> > early to load firmware.  When do you think we should do it instead?
+> 
+> I think we ought to delay until right after user space is unfrozen.
+> The devices are gone anyway, so we lose nothing but have the ability
+> to call helpers.
 
-Thanks!
-Gilad
+That's true.  But doing it will be a nuisance.  The nice thing about 
+the current situation is that the driver core automatically iterates 
+over all interfaces.
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
+> > And how should we keep track of which interfaces need rebinding?
+> 
+> I guess this calls for a brute force approach. We can kick khubd and have
+> it walk all busses checking for  needs_binding.
 
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+Ugh.  At a minimum, let's use a different process, not khubd.
+
+As Linus pointed out, the real problem here is the firmware loader.  
+The way it is now, a driver can't always depend on the data being
+available, even during a normal boot.  It ought to use an asynchronous
+approach; then none of these problems would arise.
+
+Alan Stern
+
