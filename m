@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab2AAHdE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 02:33:04 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48550 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2AAHdD (ORCPT
+	id S1751604Ab2AAHtQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 02:49:16 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60554 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850Ab2AAHtP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 02:33:03 -0500
-Date: Sun, 1 Jan 2012 01:32:55 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Arnaud Patard <arnaud.patard@rtp-net.org>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Roman Mamedov <rm@romanrm.ru>,
-        Manuel Roeder <manuel_roeder@gmx.de>,
-        Michael Ott <michael@king-coder.de>
-Subject: [2.6.37 -> 2.6.38 regression] "mv64xxx: I2C bus locked, block: 1,
- time_left: 0" every few seconds
-Message-ID: <20120101073255.GA2402@elie.hsd1.il.comcast.net>
-References: <20120101042401.4bef017e@natsu>
+	Sun, 1 Jan 2012 02:49:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120101042401.4bef017e@natsu>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1325162352-24709-2-git-send-email-m.szyprowski@samsung.com>
+References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
+	<1325162352-24709-2-git-send-email-m.szyprowski@samsung.com>
+Date: Sun, 1 Jan 2012 09:49:13 +0200
+Message-ID: <CAOtvUMeAVgDwRNsDTcG07ChYnAuNgNJjQ+sKALJ79=Ezikos-A@mail.gmail.com>
+Subject: Re: [PATCH 01/11] mm: page_alloc: set_migratetype_isolate: drain PCP
+ prior to isolating
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Shariq Hasnain <shariq.hasnain@linaro.org>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Roman Mamedov wrote[1]:
-
-> This bug is still present for me in the latest kernel version in
-> Debian testing (3.1.6).
+On Thu, Dec 29, 2011 at 2:39 PM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> From: Michal Nazarewicz <mina86@mina86.com>
 >
-> The last properly working kernel version seems to be:
-[...]
-> And the problem occurs since:
-[...]
+> When set_migratetype_isolate() sets pageblock's migrate type, it does
+> not change each page_private data.  This makes sense, as the function
+> has no way of knowing what kind of information page_private stores.
+...
+>
+>
+> A side effect is that instead of draining pages from all zones,
+> set_migratetype_isolate() now drain only pages from zone pageblock it
+> operates on is in.
+>
+...
 
-Thanks.  Arnaud, any hints?  To summarize:
 
- - Michael Ott reported with Debian kernel 2.6.38-3 (which is closely
-   based on stable v2.6.38.2):
+>
+> +/* Caller must hold zone->lock. */
+> +static void __zone_drain_local_pages(void *arg)
+> +{
+> +       struct per_cpu_pages *pcp;
+> +       struct zone *zone = arg;
+> +       unsigned long flags;
+> +
+> +       local_irq_save(flags);
+> +       pcp = &per_cpu_ptr(zone->pageset, smp_processor_id())->pcp;
+> +       if (pcp->count) {
+> +               /* Caller holds zone->lock, no need to grab it. */
+> +               __free_pcppages_bulk(zone, pcp->count, pcp);
+> +               pcp->count = 0;
+> +       }
+> +       local_irq_restore(flags);
+> +}
+> +
+> +/*
+> + * Like drain_all_pages() but operates on a single zone.  Caller must
+> + * hold zone->lock.
+> + */
+> +static void __zone_drain_all_pages(struct zone *zone)
+> +{
+> +       on_each_cpu(__zone_drain_local_pages, zone, 1);
+> +}
+> +
 
-	syslog tell me every few seconds:
-	i2c i2c-0: mv64xxx: I2C bus locked, block: 1, time_left: 0
+Please consider whether sending an IPI to all processors in the system
+and interrupting them is appropriate here.
 
- - Manuel Roeder reported the same and found that upstream v2.6.38
-   triggers the problem and v2.6.37.6 does not.
+You seem to assume that it is probable that each CPU of the possibly
+4,096 (MAXSMP on x86) has a per-cpu page
+for the specified zone, otherwise you're just interrupting them out of
+doing something useful, or save power idle
+for nothing.
 
- - Roman Mamedov finds the bug present in Debian 3.1.6-1 (which
-   is closely based on stable v3.1.6) and Debian 2.6.37-2 (based on
-   stable v2.6.37.2) but not Debian 2.6.37-1 (based on mainline
-   v2.6.37).
+While that may or may not be a reasonable assumption for the general
+drain_all_pages that drains pcps from
+all zones, I feel it is less likely to be the right thing once you
+limit the drain to a single zone.
 
-The regression range described above seems a little inconsistent to
-me, so maybe there's something more going on.
+Some background on my attempt to reduce "IPI noise" in the system in
+this context is probably useful here as
+well: https://lkml.org/lkml/2011/11/22/133
 
-Jonathan
+Thanks :-)
+Gilad
 
-[1] http://bugs.debian.org/622325
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
