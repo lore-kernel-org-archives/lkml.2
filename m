@@ -1,55 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab2AAOWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 09:22:09 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64383 "EHLO
+	id S1752702Ab2AAOim (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 09:38:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37761 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752353Ab2AAOWI convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752353Ab2AAOij (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 09:22:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <1324541855-19911-4-git-send-email-haojian.zhuang@marvell.com>
-References: <1324541855-19911-1-git-send-email-haojian.zhuang@marvell.com>
-	<1324541855-19911-4-git-send-email-haojian.zhuang@marvell.com>
-Date: Sun, 1 Jan 2012 15:22:07 +0100
-Message-ID: <CACRpkda_0ECowDhg2wWx9wLHgVVcRKycLYR=AgNrHVBum2ibLw@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] gpio: pxa: request pinmux function for gpio
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, arnd@arndb.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sun, 1 Jan 2012 09:38:39 -0500
+From: Richard Zhao <richard.zhao@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com, eric.miao@linaro.org, patches@linaro.org
+Subject: [PATCH v2 0/2] imx-sdma: memory barrier fix 
+Date: Sun,  1 Jan 2012 22:38:10 +0800
+Message-Id: <1325428692-11473-1-git-send-email-richard.zhao@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 9:17 AM, Haojian Zhuang
-<haojian.zhuang@marvell.com> wrote:
+Changes in v2:
+ - add "let sdma_run_channel call sdma_enable_channel"
 
-> While gpio is requested for pxa, gpio driver will request function ready
-> on pin.
-(...)
+[PATCH v2 1/2] dma/imx-sdma: let sdma_run_channel call sdma_enable_channel
+[PATCH v2 2/2] dma/imx-sdma: add wmb before enable a channel
 
-> +#ifdef CONFIG_PINMUX
-> +static int pxa_gpio_request(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       return pinmux_request_gpio(chip->base + offset);
-> +}
-> +
-> +static void pxa_gpio_free(struct gpio_chip *chip, unsigned offset)
-> +{
-> +       pinmux_free_gpio(chip->base + offset);
-> +}
-> +#else
-> +static int pxa_gpio_request(struct gpio_chip *chip, unsigned offset) {return 0;}
-> +static void pxa_gpio_free(struct gpio_chip *chip, unsigned offset) {}
-> +#endif
-> +
-
-Skip the #ifdef, the pinmux portion of pinctrl already provides stubs if
-CONFIG_PINMUX is not selected. See <linux/pinctrl/pinmux.h>
-
-Yours,
-Linus Walleij
+Thanks
+Richard
