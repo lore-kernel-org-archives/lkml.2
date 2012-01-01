@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab2AAOOp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 09:14:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48519 "EHLO
+	id S1752640Ab2AAOPy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 09:15:54 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56679 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab2AAOOh convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752353Ab2AAOPv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 09:14:37 -0500
+	Sun, 1 Jan 2012 09:15:51 -0500
 MIME-Version: 1.0
 In-Reply-To: <1324541855-19911-2-git-send-email-haojian.zhuang@marvell.com>
 References: <1324541855-19911-1-git-send-email-haojian.zhuang@marvell.com>
 	<1324541855-19911-2-git-send-email-haojian.zhuang@marvell.com>
-Date: Sun, 1 Jan 2012 15:14:36 +0100
-Message-ID: <CACRpkdbYyennCeRO3K4M-ya=svyxYD4Nuc9iQ5zDqWjzoZBQGg@mail.gmail.com>
+Date: Sun, 1 Jan 2012 15:15:51 +0100
+Message-ID: <CACRpkdbvta3chYeMS=J94ehaOcEXp1OBnU74qSSCAO--PbehLg@mail.gmail.com>
 Subject: Re: [PATCH v3 1/3] pinctrl: enable pinmux for mmp series
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Haojian Zhuang <haojian.zhuang@marvell.com>
@@ -29,24 +29,36 @@ On Thu, Dec 22, 2011 at 9:17 AM, Haojian Zhuang
 <haojian.zhuang@marvell.com> wrote:
 
 > Support PXA168/PXA910/MMP2 pinmux. Now only support function switch.
+
 (...)
 
->  drivers/pinctrl/Kconfig          |   22 +
->  drivers/pinctrl/Makefile         |    4 +
->  drivers/pinctrl/pinctrl-pxa3xx.c |  244 +++++++++
->  drivers/pinctrl/pinctrl-pxa3xx.h |  264 ++++++++++
->  drivers/pinctrl/pinmux-mmp2.c    |  723 +++++++++++++++++++++++++++
->  drivers/pinctrl/pinmux-pxa168.c  |  652 ++++++++++++++++++++++++
->  drivers/pinctrl/pinmux-pxa910.c  | 1008 ++++++++++++++++++++++++++++++++++++++
+> +config PINCTRL_PXA3xx
+> +       bool
+> +       select PINMUX
+> +
 
-As per earlier discussion, all files should be named pinctrl-* not pinmux-*.
+Good,
 
-Can you respin this quickly? I think it's looking good overall
-and seems like a nice merge candidate. Remaining problems
-can surely be fixed in-tree.
+> +config PINMUX_MMP2
+> +       bool "MMP2 pinmux driver"
+> +       depends on ARCH_MMP
+> +       select PINCTRL_PXA3xx
+> +       select PINCONF
+> +
+> +config PINMUX_PXA168
+> +       bool "PXA168 pinmux driver"
+> +       depends on ARCH_MMP
+> +       select PINCTRL_PXA3xx
+> +       select PINCONF
+> +
+> +config PINMUX_PXA910
+> +       bool "PXA910 pinmux driver"
+> +       depends on ARCH_MMP
+> +       select PINCTRL_PXA3xx
+> +       select PINCONF
+> +
 
-I am even attempted to merge this as it is and fix the renaming myself,
-but prefer not to since I might screw something up.
+Please rename these PINCTRL_* too.
 
-Yours,
+Thanks,
 Linus Walleij
