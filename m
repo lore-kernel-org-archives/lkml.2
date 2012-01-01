@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab2AARGO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 12:06:14 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49668 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925Ab2AARGK (ORCPT
+	id S1752783Ab2AARXB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 12:23:01 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42716 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2AARXA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 12:06:10 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Oliver Neukum <oliver@neukum.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Date: Sun, 1 Jan 2012 18:06:06 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-References: <20111230235421.GA6054@redhat.com> <201201011328.41311.oliver@neukum.org> <201201011732.23069.marek.vasut@gmail.com>
-In-Reply-To: <201201011732.23069.marek.vasut@gmail.com>
+	Sun, 1 Jan 2012 12:23:00 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201011806.07150.marek.vasut@gmail.com>
+Date: Sun, 1 Jan 2012 17:22:58 +0000
+X-Google-Sender-Auth: lcyC5FNr6VdXuBKTae8MrnYsRK8
+Message-ID: <CAO+b5-pig48acSXAYKH09QHCL9EtzTis=mpn=OnE=cvCv+0EzA@mail.gmail.com>
+Subject: block: WARN_ON_ONCE(ev->block <= 0) triggered in __disk_unblock_events()
+From: Bart Van Assche <bvanassche@acm.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Am Sonntag, 1. Januar 2012, 10:54:47 schrieb Marek Vasut:
-> > > > Am Samstag, 31. Dezember 2011, 19:39:18 schrieb Marek Vasut:
-> > > > > maybe we should implement such thing into the firmware loader
-> > > > > itself? Allow it -- for example via some node in /dev -- to force
-> > > > > loading firmware into some buffer in kernel just before suspend so
-> > > > > it'll certainly be readily available at resume time?
-> > > > 
-> > > > This is difficult. We don't know at suspend time which firmware we
-> > > > will need at resume time.
-> > > 
-> > > That's not actually true ... you can ask the drivers if they need to
-> > > load firmware after resume ... that can be implemented and udev can
-> > > handle it. The driver should know if the hardware it's controlling is
-> > > stupid or not.
-> > 
-> > Device IDs can morph due to a power loss. After resumption another driver
-> > would bind.
-> 
-> What do you mean? I don't think I quite follow.
+Hello,
 
-Ah I see ... you mean like you can swap the devices (eg. usb devices) when the 
-computer is asleep. Yea, that's an issue.
+In a workload that involves a lot of scsi_remove_hosts() calls (srp-ha
+patch set stress test) I get the call stack below after about 30 to 50
+iterations. Is this a known issue ? Does this indicate a race
+condition in the block layer ? I can trigger this issue not only with
+3.2-rc7 but also with 3.1.6. I haven't tried any other kernel versions
+yet.
 
-On the other hand, you'd expect those to keep pestering udev to load firmware 
-later in the wakeup process (maybe it can be somehow defered?). But if we 
-actually implemented some pre-suspend FW cache, it might help the speed of 
-resume a bit, right ?
+Thanks,
 
-M
-> 
-> M
-> 
-> > 	Regards
-> > 	
-> > 		Oliver
+Bart.
+
+------------[ cut here ]------------
+WARNING: at block/genhd.c:1466 __disk_unblock_events+0xf5/0x110()
+Hardware name: P5Q DELUXE
+Modules linked in: ib_srp scsi_transport_srp scsi_tgt snd_pcm_oss
+snd_mixer_oss snd_seq snd_seq_device af_packet rdma_ucm rdma_cm iw_cm
+ib_addr ib_ipoib ib_cm ib_sa ib_uverbs ib_umad mlx4_ib ib_mad ib_core
+microcode cpufreq_conservative cpufreq_userspace cpufreq_powersave
+acpi_cpufreq mperf dm_mod snd_hda_codec_hdmi snd_hda_codec_analog
+snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_timer snd sr_mod sg
+mlx4_core intel_agp cdrom i2c_i801 intel_gtt soundcore agpgart
+i2c_core pcspkr snd_page_alloc button uhci_hcd sd_mod crc_t10dif
+ehci_hcd usbcore usb_common edd ext3 mbcache jbd
+ fan ata_generic ata_piix pata_marvell ahci libahci libata scsi_mod
+thermal processor thermal_sys hwmon
+Pid: 4133, comm: edd_id Not tainted 3.2.0-rc7+ #1
+Call Trace:
+ [<ffffffff8104669f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff810466fa>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff811e8fd5>] __disk_unblock_events+0xf5/0x110
+ [<ffffffff811eae5a>] disk_unblock_events+0x1a/0x20
+ [<ffffffff8117c980>] __blkdev_get+0x1b0/0x430
+ [<ffffffff8117cfb0>] ? blkdev_get+0x3b0/0x3b0
+ [<ffffffff8117cc53>] blkdev_get+0x53/0x3b0
+ [<ffffffff813e8d7b>] ? _raw_spin_unlock+0x2b/0x50
+ [<ffffffff8117cfb0>] ? blkdev_get+0x3b0/0x3b0
+ [<ffffffff8117d012>] blkdev_open+0x62/0x80
+ [<ffffffff81142b22>] __dentry_open+0x212/0x390
+ [<ffffffff813e8d7b>] ? _raw_spin_unlock+0x2b/0x50
+ [<ffffffff811cf840>] ? devcgroup_seq_read+0x160/0x160
+ [<ffffffff81143e01>] nameidata_to_filp+0x71/0x80
+ [<ffffffff81152966>] do_last+0xb6/0x7e0
+ [<ffffffff81154578>] path_openat+0xd8/0x420
+ [<ffffffff8110b9c3>] ? might_fault+0x53/0xb0
+ [<ffffffff811549e9>] do_filp_open+0x49/0xa0
+ [<ffffffff813e8d7b>] ? _raw_spin_unlock+0x2b/0x50
+ [<ffffffff811617c4>] ? alloc_fd+0xf4/0x150
+ [<ffffffff81143f11>] do_sys_open+0x101/0x1e0
+ [<ffffffff81144010>] sys_open+0x20/0x30
+ [<ffffffff813f0e6b>] system_call_fastpath+0x16/0x1b
+---[ end trace 1afaff519afd7a94 ]---
