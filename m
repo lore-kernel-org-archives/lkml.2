@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab2AAQu6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 11:50:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40574 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab2AAQuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 11:50:55 -0500
-Message-ID: <4F008ECA.5040703@redhat.com>
-Date: Sun, 01 Jan 2012 18:50:18 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1752798Ab2AARGO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 12:06:14 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:49668 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925Ab2AARGK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jan 2012 12:06:10 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+Date: Sun, 1 Jan 2012 18:06:06 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Matthew Garrett <mjg@redhat.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+References: <20111230235421.GA6054@redhat.com> <201201011328.41311.oliver@neukum.org> <201201011732.23069.marek.vasut@gmail.com>
+In-Reply-To: <201201011732.23069.marek.vasut@gmail.com>
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        apkm@linux-foundation.org
-Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to flush
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com> <1321960128-15191-5-git-send-email-gilad@benyossef.com> <alpine.LFD.2.02.1111230822270.1773@tux.localdomain> <4F00547A.9090204@redhat.com> <CAOtvUMcCzK=tNkHudOrzxjdGkdkZPt02krO8QYRGjyXm+cvRSw@mail.gmail.com>
-In-Reply-To: <CAOtvUMcCzK=tNkHudOrzxjdGkdkZPt02krO8QYRGjyXm+cvRSw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201201011806.07150.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/2012 06:12 PM, Gilad Ben-Yossef wrote:
-> >
-> > Since this seems to be a common pattern, how about:
-> >
-> >   zalloc_cpumask_var_or_all_online_cpus(&cpus, GFTP_ATOMIC);
-> >   ...
-> >   free_cpumask_var(cpus);
-> >
-> > The long-named function at the top of the block either returns a newly
-> > allocated zeroed cpumask, or a static cpumask with all online cpus set.
-> > The code in the middle is only allowed to set bits in the cpumask
-> > (should be the common usage).  free_cpumask_var() needs to check whether
-> > the freed object is the static variable.
->
-> Thanks for the feedback and advice! I totally agree the repeating
-> pattern needs abstracting.
->
-> I ended up chosing to try a different abstraction though - basically a wrapper
-> on_each_cpu_cond that gets a predicate function to run per CPU to
-> build the mask
-> to send the IPI to. It seems cleaner to me not having to mess with
-> free_cpumask_var
-> and it abstracts more of the general pattern.
->
+> > Am Sonntag, 1. Januar 2012, 10:54:47 schrieb Marek Vasut:
+> > > > Am Samstag, 31. Dezember 2011, 19:39:18 schrieb Marek Vasut:
+> > > > > maybe we should implement such thing into the firmware loader
+> > > > > itself? Allow it -- for example via some node in /dev -- to force
+> > > > > loading firmware into some buffer in kernel just before suspend so
+> > > > > it'll certainly be readily available at resume time?
+> > > > 
+> > > > This is difficult. We don't know at suspend time which firmware we
+> > > > will need at resume time.
+> > > 
+> > > That's not actually true ... you can ask the drivers if they need to
+> > > load firmware after resume ... that can be implemented and udev can
+> > > handle it. The driver should know if the hardware it's controlling is
+> > > stupid or not.
+> > 
+> > Device IDs can morph due to a power loss. After resumption another driver
+> > would bind.
+> 
+> What do you mean? I don't think I quite follow.
 
-This converts the algorithm to O(NR_CPUS) from a potentially lower
-complexity algorithm.  Also, the existing algorithm may not like to be
-driven by cpu number.  Both are true for kvm.
+Ah I see ... you mean like you can swap the devices (eg. usb devices) when the 
+computer is asleep. Yea, that's an issue.
 
--- 
-error compiling committee.c: too many arguments to function
+On the other hand, you'd expect those to keep pestering udev to load firmware 
+later in the wakeup process (maybe it can be somehow defered?). But if we 
+actually implemented some pre-suspend FW cache, it might help the speed of 
+resume a bit, right ?
 
+M
+> 
+> M
+> 
+> > 	Regards
+> > 	
+> > 		Oliver
