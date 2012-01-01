@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab2AAMJW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 07:09:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55078 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab2AAMJV convert rfc822-to-8bit (ORCPT
+	id S1752146Ab2AAMW1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 07:22:27 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:39274 "EHLO
+	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab2AAMWZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 07:09:21 -0500
+	Sun, 1 Jan 2012 07:22:25 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: loading firmware while usermodehelper disabled.
+Date: Sun, 1 Jan 2012 13:22:34 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Matthew Garrett <mjg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1112312033240.28510-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1112312033240.28510-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20111231121710.GB9842@electric-eye.fr.zoreil.com>
-References: <CACPM=kXTqY1kVWrEMB-Z0Lqy6t+rXvMzixcSUy7fAz6g_ajV9g@mail.gmail.com>
-	<20111230125655.GA32031@electric-eye.fr.zoreil.com>
-	<CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com>
-	<20111230180347.GA3647@electric-eye.fr.zoreil.com>
-	<CACPM=kXWXUE+JcVhkz-6tGZ2YyteN9sGA80+Pnw6+LaJ-eNWBA@mail.gmail.com>
-	<20111230215024.GA5513@electric-eye.fr.zoreil.com>
-	<CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com>
-	<20111230221938.GA6197@electric-eye.fr.zoreil.com>
-	<CACPM=kXAr46BXAc3t8puRB37NeFy_ZEOWZa0H=DnSioagSLpxA@mail.gmail.com>
-	<CACPM=kWn41S85eLgj4G+c6cN0WBgqF=6MigSwa9QBOxD1Uh64A@mail.gmail.com>
-	<20111231121710.GB9842@electric-eye.fr.zoreil.com>
-Date: Sun, 1 Jan 2012 13:09:20 +0100
-X-Google-Sender-Auth: kdX3Wg7nIjQuBHzHeR6Nl-EK52A
-Message-ID: <CACPM=kXD8+RF1D=-RskbkKOby8U00X9cmYKCC65Ct8mGqztqyw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
-From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-To: Francois Romieu <romieu@fr.zoreil.com>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rl@hellgate.ch
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201011322.34483.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/12/31 Francois Romieu <romieu@fr.zoreil.com>:
-> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
-> [...]
->> Also tried connect a machine to one of the ports, and copying a large
->> file across (something that before could make it lock up within 15
->> secords) - also worked without any problems - CPU usage around 15%
->> (mostly "top" using that), so thats not bad at all.
->>
->> Is there any other testcases that I should try out?
->
-> Same thing + random ethtool link management commands.
-> Same thing + random cable unplug/plug.
-> Same thing + pktgen facing the lan interface.
->
-> Everything at the same time.
+Am Sonntag, 1. Januar 2012, 03:21:45 schrieb Alan Stern:
+> On Sat, 31 Dec 2011, Oliver Neukum wrote:
 
-I tried messing around with plugging cables and playing with ethtool
-at the same time, while there was alot of trafic, which went fine :)
-Happy new year btw :)
+> > We are definitely going through do_unbind_rebind(). But I don't think
+> > it matters why we got there. We seem to be calling probe() too early.
+> > And we need to guarantee that a driver can request firmware in probe()
+> > 
+> > So something has changed in the resume code path further up.
+> 
+> For at least a year and a half, it has been true that rebinding takes
 
-/Bjarke
+Yes, so I don't understand why we haven't been hitting this issue
+all that time.
 
-> --
-> Ueimor
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> place during the complete phase of system resume.  Clearly that is too 
+> early to load firmware.  When do you think we should do it instead?
+
+I think we ought to delay until right after user space is unfrozen.
+The devices are gone anyway, so we lose nothing but have the ability
+to call helpers.
+ 
+> And how should we keep track of which interfaces need rebinding?
+
+I guess this calls for a brute force approach. We can kick khubd and have
+it walk all busses checking for  needs_binding.
+
+> P.S.: Oliver, it looks like there's a bunch of dead code in
+> usb_suspend_interface() and usb_resume_interface().  I don't see how
+> either one can be executed with a driver that doesn't have both suspend
+> and resume methods.  Such cases should be filtered out when
+> usb_suspend() calls do_unbind_rebind().  The only odd thing that can
+> happen is when a driver doesn't support reset-resume.  Do you agree?
+
+I agree.
+
+	Regards
+		Oliver
