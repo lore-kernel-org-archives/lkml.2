@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751531Ab2AAXmm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 18:42:42 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:56106 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab2AAXmi (ORCPT
+	id S1751478Ab2AAXsr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 18:48:47 -0500
+Received: from static-87-79-237-121.netcologne.de ([87.79.237.121]:11896 "EHLO
+	herc.mirbsd.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab2AAXsp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 18:42:38 -0500
-Date: Sun, 01 Jan 2012 18:42:34 -0500 (EST)
-Message-Id: <20120101.184234.350480175566737629.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 01 Jan 2012 15:42:36 -0800 (PST)
+	Sun, 1 Jan 2012 18:48:45 -0500
+Date: Sun, 1 Jan 2012 23:45:51 +0000 (UTC)
+From: Thorsten Glaser <tg@mirbsd.de>
+X-X-Sender: tg@herc.mirbsd.org
+To: Jonathan Nieder <jrnieder@gmail.com>
+cc: Nicholas Bellinger <nab@linux-iscsi.org>, Greg Ungerer <gerg@uclinux.org>,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: Re: [m68k] in modpost: "strlen" [iscsi_target_mod.ko] undefined!
+ (and others)
+In-Reply-To: <20120101233931.GA25837@elie.hsd1.il.comcast.net>
+Message-ID: <Pine.BSM.4.64L.1201012342490.20109@herc.mirbsd.org>
+References: <20111116181424.14920.7730.reportbug@ara5.mirbsd.org>
+ <Pine.BSM.4.64L.1111301751500.12725@herc.mirbsd.org>
+ <CAMuHMdW8t8Q7OqxJM602iLG4aSv1KMTY-fhiGS7hyy8xBReh1A@mail.gmail.com>
+ <Pine.BSM.4.64L.1112181741430.856@herc.mirbsd.org>
+ <Pine.BSM.4.64L.1112181929380.856@herc.mirbsd.org>
+ <Pine.BSM.4.64L.1201012310590.20109@herc.mirbsd.org>
+ <20120101233931.GA25837@elie.hsd1.il.comcast.net>
+X-Message-Flag: Your mailer is broken. Get an update at http://www.washington.edu/pine/getpine/pcpine.html for free.
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jonathan Nieder dixit:
 
-1) mlx4 driver stops working after a ring size change due to forgotten
-   clear of the queue vector value, fix from Yevgeny Petrilin.
+>Could you suggest a patch to arch/m68k/Makefile to do that?
 
-2) RX multicast filter in skge is not restored after resume, breaking
-   ipv6 amongst other things, fix from Florian Zumbiehl.
+No, I patched it in debian/config/m68k/defines instead.
 
-3) Fix sync message handling in IPVS, from Julian Anastasov.
+I’d rather know why upstream doesn’t use -ffreestanding on
+_all_ architectures. A kernel is _not_ a hosted environment,
+and GCC is right to bring in problems like this.
 
-4) ctnetlink timeout sanity checks never work due to signedness,
-   fix from Xi Wang.
+>    Then drop -ffreestanding from the main Makefile because it isn't
+>    needed anymore and implies -fno-builtin, which is wrong now.
 
-Please pull, thanks a lot!
+This is wrong, GCC builtins are only valid on hosted platforms,
+not on freestanding platforms. (Nobody prevents GCC from using
+a memcpy builtin that uses, say, SSE instructions, which must
+not be used inside kernel code, for an example on a better-known
+architecture.) A kernel must always be compiled freestanding,
+as do bootloaders. At least since the advent of gcc 3.[34].
 
-The following changes since commit c7f46b7aa4ae5cbef32eb5e016512a14f936affa:
-
-  Merge branch 'fix/asoc' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2011-12-31 11:55:06 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Florian Zumbiehl (1):
-      skge: restore rx multicast filter on resume and after config changes
-
-Julian Anastasov (1):
-      ipvs: try also real server with port 0 in backup server
-
-Xi Wang (1):
-      netfilter: ctnetlink: fix timeout calculation
-
-Yevgeny Petrilin (1):
-      mlx4_en: nullify cq->vector field when closing completion queue
-
- drivers/net/ethernet/marvell/skge.c        |    3 +++
- drivers/net/ethernet/mellanox/mlx4/en_cq.c |    1 +
- include/net/ip_vs.h                        |    2 +-
- net/netfilter/ipvs/ip_vs_conn.c            |    2 +-
- net/netfilter/ipvs/ip_vs_ctl.c             |   10 ++++++++--
- net/netfilter/ipvs/ip_vs_sync.c            |    2 +-
- net/netfilter/nf_conntrack_netlink.c       |    4 ++--
- 7 files changed, 17 insertions(+), 7 deletions(-)
+bye,
+//mirabilos
+-- 
+“It is inappropriate to require that a time represented as
+ seconds since the Epoch precisely represent the number of
+ seconds between the referenced time and the Epoch.”
+	-- IEEE Std 1003.1b-1993 (POSIX) Section B.2.2.2
