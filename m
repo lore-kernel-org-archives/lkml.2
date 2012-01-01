@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737Ab2AAOzy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 09:55:54 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34699 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588Ab2AAOzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 09:55:52 -0500
-Date: Sun, 1 Jan 2012 15:53:54 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        x86@kernel.org, jbarnes@virtuousgeek.org
-Subject: Re: Dell Studio 1536 needs pci=nocrs to boot.
-Message-ID: <20120101145354.GA1791@elte.hu>
-References: <20111230193704.GA2874@redhat.com>
+	id S1752852Ab2AAPWh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 10:22:37 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46063 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752614Ab2AAPWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jan 2012 10:22:36 -0500
+Message-ID: <4F007A2F.5010303@gmail.com>
+Date: Sun, 01 Jan 2012 09:22:23 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111230193704.GA2874@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dong Aisheng <b29396@freescale.com>, linus.walleij@stericsson.com,
+        s.hauer@pengutronix.de, linux-kernel@vger.kernel.org,
+        rob.herring@calxeda.com, kernel@pengutronix.de, cjb@laptop.org,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com> <1324402840-32451-3-git-send-email-b29396@freescale.com> <CACRpkdbLMW-SXnr6hbpwMqG=-a0wmYtU+YnyR8uLsndUp=UBgQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbLMW-SXnr6hbpwMqG=-a0wmYtU+YnyR8uLsndUp=UBgQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Dave Jones <davej@redhat.com> wrote:
-
-> Some machines don't boot unless passed pci=nocrs.
-> (See https://bugzilla.redhat.com/show_bug.cgi?id=770308 for details of
->   one report. Waiting on dmidecode output for others).
+On 01/01/2012 08:07 AM, Linus Walleij wrote:
+> On Tue, Dec 20, 2011 at 6:40 PM, Dong Aisheng <b29396@freescale.com> wrote:
 > 
-> Currently there is a DMI whitelist, even though the default is on.
+>> From: Dong Aisheng <dong.aisheng@linaro.org>
+>>
+>> This patch provies a common API for driver to use to register pinmux
+>> mappings from dts file. It is needed for dt support.
 > 
-> This patch extends that dmi list to add a blacklist to automatically
-> apply disable it when necessary.
+> Overall I feel lost in this discussion due to limited exposure to
+> device tree concepts. If I get Stephen Warrens and one of the
+> DT people's (Rob, Grant) ACK on this I'll be happy to merge it.
 > 
-> Signed-off-by: Dave Jones <davej@redhat.com>
+> Until then, I guess it will need to be refined for the next kernel
+> cycle.
 
-Acked-by: Ingo Molnar <mingo@elte.hu>
+Yes. As Stephen has commented, this still needs a bit of work on the
+binding.
 
-Jesse, will you take this one?
-
-Thanks,
-
-	Ingo
+Rob
