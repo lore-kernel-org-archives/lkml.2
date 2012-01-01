@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251Ab2AACVu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 31 Dec 2011 21:21:50 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:60767 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750883Ab2AACVq (ORCPT
+	id S1751259Ab2AAD1z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 31 Dec 2011 22:27:55 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52577 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab2AAD1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 31 Dec 2011 21:21:46 -0500
-Date: Sat, 31 Dec 2011 21:21:45 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Oliver Neukum <oliver@neukum.org>
-cc: Matthew Garrett <mjg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-In-Reply-To: <201112311659.48427.oliver@neukum.org>
-Message-ID: <Pine.LNX.4.44L0.1112312033240.28510-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sat, 31 Dec 2011 22:27:53 -0500
+From: Richard Zhao <richard.zhao@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: kernel@pengutronix.de, shawn.guo@linaro.org, vinod.koul@intel.com,
+        dan.j.williams@intel.com, eric.miao@linaro.org, patches@linaro.org,
+        Richard Zhao <richard.zhao@linaro.org>
+Subject: [PATCH] dma/imx-sdma: add wmb before enable/run a channel
+Date: Sun,  1 Jan 2012 11:27:40 +0800
+Message-Id: <1325388460-20678-1-git-send-email-richard.zhao@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Dec 2011, Oliver Neukum wrote:
+dma_alloc_coherent memory may be bufferable. We need to add
+nececcary memory barrier.
 
-> Am Samstag, 31. Dezember 2011, 16:33:12 schrieb Alan Stern:
-> 
-> > Nothing has changed in the USB layer -- it has always been true that
-> > devices could be reset during a suspend/resume cycle.  This isn't a
-> > matter of how the stack is written or anything like that; some
-> > motherboards simply do not provide suspend power to their USB
-> > controllers.  Or the firmware reinitializes the controllers and
-> > attached devices during resume, forcing Linux's USB core to reset
-> > every device on the affected buses.
-> > 
-> > When it comes to suspend/resume, there are almost no guarantees.  :-(
-> 
-> We are definitely going through do_unbind_rebind(). But I don't think
-> it matters why we got there. We seem to be calling probe() too early.
-> And we need to guarantee that a driver can request firmware in probe()
-> 
-> So something has changed in the resume code path further up.
+Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+---
+ drivers/dma/imx-sdma.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-For at least a year and a half, it has been true that rebinding takes
-place during the complete phase of system resume.  Clearly that is too 
-early to load firmware.  When do you think we should do it instead?  
-And how should we keep track of which interfaces need rebinding?
-
-Alan Stern
-
-P.S.: Oliver, it looks like there's a bunch of dead code in
-usb_suspend_interface() and usb_resume_interface().  I don't see how
-either one can be executed with a driver that doesn't have both suspend
-and resume methods.  Such cases should be filtered out when
-usb_suspend() calls do_unbind_rebind().  The only odd thing that can
-happen is when a driver doesn't support reset-resume.  Do you agree?
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 2ebb2bc..8cd9492 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -403,6 +403,7 @@ static int sdma_run_channel(struct sdma_channel *sdmac)
+ 
+ 	init_completion(&sdmac->done);
+ 
++	wmb();
+ 	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
+ 
+ 	ret = wait_for_completion_timeout(&sdmac->done, HZ);
+@@ -809,6 +810,7 @@ out:
+ 
+ static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
+ {
++	wmb();
+ 	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
+ }
+ 
+-- 
+1.7.4.1
 
