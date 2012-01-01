@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752127Ab2AALpq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 06:45:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40277 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752026Ab2AALpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 06:45:25 -0500
-Date: Sun, 1 Jan 2012 13:47:27 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: Virtualization List <virtualization@lists.linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v6 09/11] virtio: net: Add freeze, restore handlers to
- support S4
-Message-ID: <20120101114727.GC25350@redhat.com>
-References: <cover.1324553223.git.amit.shah@redhat.com>
- <f84fa9fdc9f5629e711cbb89a2e7efbb289d72fa.1324553223.git.amit.shah@redhat.com>
- <20111229161523.GB2300@redhat.com>
- <20111230085205.GG4576@amit.redhat.com>
+	id S1752052Ab2AAMJW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 07:09:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55078 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751444Ab2AAMJV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jan 2012 07:09:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111230085205.GG4576@amit.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20111231121710.GB9842@electric-eye.fr.zoreil.com>
+References: <CACPM=kXTqY1kVWrEMB-Z0Lqy6t+rXvMzixcSUy7fAz6g_ajV9g@mail.gmail.com>
+	<20111230125655.GA32031@electric-eye.fr.zoreil.com>
+	<CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com>
+	<20111230180347.GA3647@electric-eye.fr.zoreil.com>
+	<CACPM=kXWXUE+JcVhkz-6tGZ2YyteN9sGA80+Pnw6+LaJ-eNWBA@mail.gmail.com>
+	<20111230215024.GA5513@electric-eye.fr.zoreil.com>
+	<CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com>
+	<20111230221938.GA6197@electric-eye.fr.zoreil.com>
+	<CACPM=kXAr46BXAc3t8puRB37NeFy_ZEOWZa0H=DnSioagSLpxA@mail.gmail.com>
+	<CACPM=kWn41S85eLgj4G+c6cN0WBgqF=6MigSwa9QBOxD1Uh64A@mail.gmail.com>
+	<20111231121710.GB9842@electric-eye.fr.zoreil.com>
+Date: Sun, 1 Jan 2012 13:09:20 +0100
+X-Google-Sender-Auth: kdX3Wg7nIjQuBHzHeR6Nl-EK52A
+Message-ID: <CACPM=kXD8+RF1D=-RskbkKOby8U00X9cmYKCC65Ct8mGqztqyw@mail.gmail.com>
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rl@hellgate.ch
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 30, 2011 at 03:08:19PM +0530, Amit Shah wrote:
-> > 
-> > > +	if (!try_fill_recv(vi, GFP_KERNEL))
-> > > +		schedule_delayed_work(&vi->refill, 0);
-> > 
-> > This needs to be switched to non reentrant wq too?
-> 
-> Subsequent invocations could create problems?  Note that this will be
-> the first item to be queued in the workqueue for the refill work.
-> 
-> 		Amit
+2011/12/31 Francois Romieu <romieu@fr.zoreil.com>:
+> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+> [...]
+>> Also tried connect a machine to one of the ports, and copying a large
+>> file across (something that before could make it lock up within 15
+>> secords) - also worked without any problems - CPU usage around 15%
+>> (mostly "top" using that), so thats not bad at all.
+>>
+>> Is there any other testcases that I should try out?
+>
+> Same thing + random ethtool link management commands.
+> Same thing + random cable unplug/plug.
+> Same thing + pktgen facing the lan interface.
+>
+> Everything at the same time.
 
-See recent patches on net-next.
-We switched other calls to a non reentrant wq so I think same
-reasoning applies there.
+I tried messing around with plugging cables and playing with ethtool
+at the same time, while there was alot of trafic, which went fine :)
+Happy new year btw :)
+
+/Bjarke
+
+> --
+> Ueimor
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
