@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453Ab2AAXjm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 18:39:42 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:45309 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019Ab2AAXjj convert rfc822-to-8bit (ORCPT
+	id S1751531Ab2AAXmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 18:42:42 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:56106 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab2AAXmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 18:39:39 -0500
-Date: Sun, 1 Jan 2012 17:39:31 -0600
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Thorsten Glaser <tg@mirbsd.de>
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>, Greg Ungerer <gerg@uclinux.org>,
-        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
-        target-devel@vger.kernel.org
-Subject: Re: [m68k] in modpost: "strlen" [iscsi_target_mod.ko] undefined!
- (and others)
-Message-ID: <20120101233931.GA25837@elie.hsd1.il.comcast.net>
-References: <20111116181424.14920.7730.reportbug@ara5.mirbsd.org>
- <Pine.BSM.4.64L.1111301751500.12725@herc.mirbsd.org>
- <CAMuHMdW8t8Q7OqxJM602iLG4aSv1KMTY-fhiGS7hyy8xBReh1A@mail.gmail.com>
- <Pine.BSM.4.64L.1112181741430.856@herc.mirbsd.org>
- <Pine.BSM.4.64L.1112181929380.856@herc.mirbsd.org>
- <Pine.BSM.4.64L.1201012310590.20109@herc.mirbsd.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <Pine.BSM.4.64L.1201012310590.20109@herc.mirbsd.org>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+	Sun, 1 Jan 2012 18:42:38 -0500
+Date: Sun, 01 Jan 2012 18:42:34 -0500 (EST)
+Message-Id: <20120101.184234.350480175566737629.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 01 Jan 2012 15:42:36 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thorsten Glaser wrote[1]:
-> Dixi quod…
 
->> So, please, compile the Linux kernel with -ffreestanding, too.
->
-> Just to keep this bugreport in the loop: that fixes the FTBFS error.
+1) mlx4 driver stops working after a ring size change due to forgotten
+   clear of the queue vector value, fix from Yevgeny Petrilin.
 
-Yep, sounds like a reasonable idea, though these calls to
-"strncat(buf, str, strlen(str))" in the iscsi driver are still a
-little insane.  Could you suggest a patch to arch/m68k/Makefile to do
-that?
+2) RX multicast filter in skge is not restored after resume, breaking
+   ipv6 amongst other things, fix from Florian Zumbiehl.
 
-Thanks,
-Jonathan
+3) Fix sync message handling in IPVS, from Julian Anastasov.
 
-[1] http://bugs.debian.org/648996
+4) ctnetlink timeout sanity checks never work due to signedness,
+   fix from Xi Wang.
 
-Background:
+Please pull, thanks a lot!
 
-commit 6edfba1b33c7
-Author: Andi Kleen <ak@suse.de>
-Date:   Sat Mar 25 16:29:49 2006 +0100
+The following changes since commit c7f46b7aa4ae5cbef32eb5e016512a14f936affa:
 
-    [PATCH] x86_64: Don't define string functions to builtin
+  Merge branch 'fix/asoc' of git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound (2011-12-31 11:55:06 -0800)
 
-    gcc should handle this anyways, and it causes problems when
-    sprintf is turned into strcpy by gcc behind our backs and
-    the C fallback version of strcpy is actually defining __builtin_strcpy
+are available in the git repository at:
 
-    Then drop -ffreestanding from the main Makefile because it isn't
-    needed anymore and implies -fno-builtin, which is wrong now.
-    (it was only added for x86-64, so dropping it should be safe)
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Florian Zumbiehl (1):
+      skge: restore rx multicast filter on resume and after config changes
+
+Julian Anastasov (1):
+      ipvs: try also real server with port 0 in backup server
+
+Xi Wang (1):
+      netfilter: ctnetlink: fix timeout calculation
+
+Yevgeny Petrilin (1):
+      mlx4_en: nullify cq->vector field when closing completion queue
+
+ drivers/net/ethernet/marvell/skge.c        |    3 +++
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c |    1 +
+ include/net/ip_vs.h                        |    2 +-
+ net/netfilter/ipvs/ip_vs_conn.c            |    2 +-
+ net/netfilter/ipvs/ip_vs_ctl.c             |   10 ++++++++--
+ net/netfilter/ipvs/ip_vs_sync.c            |    2 +-
+ net/netfilter/nf_conntrack_netlink.c       |    4 ++--
+ 7 files changed, 17 insertions(+), 7 deletions(-)
