@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab2AAWpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 17:45:22 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:41874 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753069Ab2AAWpT (ORCPT
+	id S1753113Ab2AAWqK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 17:46:10 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:46004 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751272Ab2AAWqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 17:45:19 -0500
-X-Sasl-enc: JlxDT84g59UwvhesSxXqAu7FVXctEFV+KyUhaX8xsTr5 1325457918
-Message-ID: <4F00E1FB.9060507@fastmail.fm>
-Date: Sun, 01 Jan 2012 22:45:15 +0000
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Matthew Garrett <mjg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-References: <20111230235421.GA6054@redhat.com> <CA+55aFyqm4FbW=--7U4ULk1EBb6RLP0sRgtokODBYnZNiJXWew@mail.gmail.com>
-In-Reply-To: <CA+55aFyqm4FbW=--7U4ULk1EBb6RLP0sRgtokODBYnZNiJXWew@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sun, 1 Jan 2012 17:46:08 -0500
+From: Edward Donovan <edward.donovan@numble.net>
+To: tglx@linutronix.de, torvalds@linux-foundation.org
+Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] genirq: better error messages for spurious IRQs
+Date: Sun,  1 Jan 2012 17:45:59 -0500
+Message-Id: <1325457959-9172-1-git-send-email-edward.donovan@numble.net>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31/12/11 00:22, Linus Torvalds wrote:
-> It's also possible that we should blame the firmware code, which is
-> expressly written to encourage these kinds of bugs. It may be that i
-> tshould be the firmware code that has a "get_firmware()" +
-> "put_firmware()" model, and it should cache the firmware explicitly if
-> the config supports suspend, so that a firmware read at resume time
-> would actually work. The whole "request_firmware()" interface really
-> is very prone to these kinds of bugs.
+We have more information than we've been giving the user, when an
+IRQ goes unhandled.  Working with bug reports, I've seen plenty
+of users asking why the kernel is suggesting 'irqpoll' when
+they're already using it.  So, when an IRQ is disabled, this
+patch just checks whether 'irqfixup' or 'irqpoll' were called,
+and has three versions of the error message, accordingly:
 
-How about these semantics for get_firmware / put_firmware:
+- 'irqfixup' eats less resources, and the docs recommend trying
+it first.  Now the code does the same.
 
-get_firmware -> checks for a cached copy of the firmware and returns
-that if it exists otherwise calls _get_firmware (i.e.
-_request_firmware). Either way we get a refcount to the firmware blob.
-This requires adding 3 members to struct firmware: the refcount, the
-name of the firmware (see @name in request_firmware) and a list head to
-cache with. We could also add and async version of this to match
-request_firmware_nowait.
+- If that does not help, recommend 'irqpoll'.
 
-put_firmware -> Removes a refcount from the firmware and frees if there
-are no more users.
+- If 'irqpoll' has not helped, most likely the firmware is too
+broken; say so.  Won't try to list every alternative case here.
 
-put_firmware is called when we are sure that we no longer need to reload
-the firmware for that device - device close time for most drivers.
+(For clarity's sake, I'd prefer to change "nobody cared" to "not
+handled", but I wouldn't want to cut the tie to archived
+discussions.  So I left the former, in parentheses, once.  Not
+sure just what's best.)
 
-USB is a more difficult case as devices can change ID but the firmware
-blob still needs to be associated with them. I don't know USB at all so
-I have no idea if we can track this. Some PCI devices may also suffer
-the same problem.
+Signed-off-by: Edward Donovan <edward.donovan@numble.net>
+---
+ kernel/irq/spurious.c |   13 +++++++++++--
+ 1 files changed, 11 insertions(+), 2 deletions(-)
 
-Hope this is useful,
+diff --git a/kernel/irq/spurious.c b/kernel/irq/spurious.c
+index dc813a9..bd2159e 100644
+--- a/kernel/irq/spurious.c
++++ b/kernel/irq/spurious.c
+@@ -194,9 +194,18 @@ __report_bad_irq(unsigned int irq, struct irq_desc *desc,
+ 	if (bad_action_ret(action_ret)) {
+ 		printk(KERN_ERR "irq event %d: bogus return value %x\n",
+ 				irq, action_ret);
++	} else if (irqfixup == 1) {
++		printk(KERN_ERR "irq %d not handled, even with \"irqfixup\": "
++				"try booting with the \"irqpoll\" option.\n",
++				irq);
++	} else if (irqfixup == 2) {
++		printk(KERN_ERR "irq %d not handled, even with \"irqpoll\": "
++				"most likely the firwmare is too broken.\n",
++				irq);
+ 	} else {
+-		printk(KERN_ERR "irq %d: nobody cared (try booting with "
+-				"the \"irqpoll\" option)\n", irq);
++		printk(KERN_ERR "irq %d not handled (nobody cared): try "
++				"booting with the \"irqfixup\" option.\n",
++				irq);
+ 	}
+ 	dump_stack();
+ 	printk(KERN_ERR "handlers:\n");
+-- 
+1.7.5.4
 
-Jack
