@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751391Ab2AAX1W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 18:27:22 -0500
-Received: from lo.gmane.org ([80.91.229.12]:56311 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751033Ab2AAX1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 18:27:19 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Gene Smith <gds@chartertn.net>
-Subject: Re: wifi iwlagn fails to authenticate after wake from suspend
-Date: Sun, 01 Jan 2012 18:26:59 -0500
-Message-ID: <jdqq44$7d9$1@dough.gmane.org>
-References: <j881g5$tdf$1@dough.gmane.org>  <alpine.DEB.2.00.1110252325090.20273@chino.kir.corp.google.com>  <j8fvka$fu0$1@dough.gmane.org>  <CA+tb8OUHNbhVN_KiEkqXJW1apFoExRM5Vrn=ES5SF3sFoGOMfA@mail.gmail.com> <1323701322.1806.24.camel@wwguy-ubuntu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 24-158-184-117.dhcp.jcsn.tn.charter.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-In-Reply-To: <1323701322.1806.24.camel@wwguy-ubuntu>
-Cc: linux-wireless@vger.kernel.org
+	id S1751453Ab2AAXjm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 18:39:42 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:45309 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751019Ab2AAXjj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 1 Jan 2012 18:39:39 -0500
+Date: Sun, 1 Jan 2012 17:39:31 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Thorsten Glaser <tg@mirbsd.de>
+Cc: Nicholas Bellinger <nab@linux-iscsi.org>, Greg Ungerer <gerg@uclinux.org>,
+        linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org,
+        target-devel@vger.kernel.org
+Subject: Re: [m68k] in modpost: "strlen" [iscsi_target_mod.ko] undefined!
+ (and others)
+Message-ID: <20120101233931.GA25837@elie.hsd1.il.comcast.net>
+References: <20111116181424.14920.7730.reportbug@ara5.mirbsd.org>
+ <Pine.BSM.4.64L.1111301751500.12725@herc.mirbsd.org>
+ <CAMuHMdW8t8Q7OqxJM602iLG4aSv1KMTY-fhiGS7hyy8xBReh1A@mail.gmail.com>
+ <Pine.BSM.4.64L.1112181741430.856@herc.mirbsd.org>
+ <Pine.BSM.4.64L.1112181929380.856@herc.mirbsd.org>
+ <Pine.BSM.4.64L.1201012310590.20109@herc.mirbsd.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <Pine.BSM.4.64L.1201012310590.20109@herc.mirbsd.org>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/12/2011 09:48 AM, wwguy wrote:
-> On Sun, 2011-12-11 at 22:36 -0800, Matías Aguirre wrote:
->> Hi,
->>
->> On Sat, Oct 29, 2011 at 2:32 AM, Gene Smith<gds@chartertn.net>  wrote:
->>> David Rientjes wrote, On 10/26/2011 02:27 AM:
->>>> So we need to bisect between 2.4.38 and 3.0.0? :)  I'm running ubuntu
->>>> 11.10 on a home laptop so I'll give this a try as well when I can if I can
->>>> put up with unity for that long.
->>
->> I've bisected the problem and narrowed the bug to changeset 73b78a2272
->> (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commit;h=73b78a22720087d2d384bdd49e9c25500ba73edd).
->>
->> Here's a patch, that applies against 3.2-rc5, that fixed the error for me:
->>
->> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.c
->> b/drivers/net/wireless/iwlwifi/iwl-agn.c
->> index bacc06c..01d5d38 100644
->> --- a/drivers/net/wireless/iwlwifi/iwl-agn.c
->> +++ b/drivers/net/wireless/iwlwifi/iwl-agn.c
->> @@ -1297,7 +1297,7 @@ int iwl_alive_start(struct iwl_priv *priv)
->>                                           BT_COEX_PRIO_TBL_EVT_INIT_CALIB2);
->>                  if (ret)
->>                          return ret;
->> -       } else {
->> +       } else if (priv->cfg->bt_params) {
->>                  /*
->>                   * default is 2-wire BT coexexistence support
->>                   */
-> this is not right, you stop the bt coex for non-combo device.
-> maybe you system has issue with BT, we seen this happen on some cases.
-> try the following module parameter and see if help
+Thorsten Glaser wrote[1]:
+> Dixi quod…
+
+>> So, please, compile the Linux kernel with -ffreestanding, too.
 >
-> $sudo modprobe iwlagn bt_coex_active=0
->
-> Thanks
-> Wey
->
+> Just to keep this bugreport in the loop: that fixes the FTBFS error.
 
-Unfortunately the latest fedora 16 kernel, 3.1.6-1.fc16.x86_64, renders 
-this fix
-ineffective and again cannot resume wifi after a sleep and must reboot.
-Therefore must stay with older kernels for this to work and for wifi to 
-resume
-after sleep:
-3.1.5-6.fc16 is still OK with bt_coex_active=0
-3.1.5-2.fc16 is also still OK with this fix.
+Yep, sounds like a reasonable idea, though these calls to
+"strncat(buf, str, strlen(str))" in the iscsi driver are still a
+little insane.  Could you suggest a patch to arch/m68k/Makefile to do
+that?
 
+Thanks,
+Jonathan
 
+[1] http://bugs.debian.org/648996
 
+Background:
 
+commit 6edfba1b33c7
+Author: Andi Kleen <ak@suse.de>
+Date:   Sat Mar 25 16:29:49 2006 +0100
+
+    [PATCH] x86_64: Don't define string functions to builtin
+
+    gcc should handle this anyways, and it causes problems when
+    sprintf is turned into strcpy by gcc behind our backs and
+    the C fallback version of strcpy is actually defining __builtin_strcpy
+
+    Then drop -ffreestanding from the main Makefile because it isn't
+    needed anymore and implies -fno-builtin, which is wrong now.
+    (it was only added for x86-64, so dropping it should be safe)
