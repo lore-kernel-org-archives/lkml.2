@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab2AAMW1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 07:22:27 -0500
-Received: from smtp-out002.kontent.com ([81.88.40.216]:39274 "EHLO
+	id S1752196Ab2AAM1D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 07:27:03 -0500
+Received: from smtp-out002.kontent.com ([81.88.40.216]:43001 "EHLO
 	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751444Ab2AAMWZ (ORCPT
+	with ESMTP id S1751444Ab2AAM1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 07:22:25 -0500
+	Sun, 1 Jan 2012 07:27:01 -0500
 From: Oliver Neukum <oliver@neukum.org>
-To: Alan Stern <stern@rowland.harvard.edu>
+To: Marek Vasut <marek.vasut@gmail.com>
 Subject: Re: loading firmware while usermodehelper disabled.
-Date: Sun, 1 Jan 2012 13:22:34 +0100
+Date: Sun, 1 Jan 2012 13:28:41 +0100
 User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Matthew Garrett <mjg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Dave Jones <davej@redhat.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming Li <chaoming_li@realsil.com.cn>,
         "John W. Linville" <linville@tuxdriver.com>,
+        Matthew Garrett <mjg@redhat.com>,
         "Greg Kroah-Hartman" <gregkh@suse.de>,
         USB list <linux-usb@vger.kernel.org>,
         Linux Wireless List <linux-wireless@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1112312033240.28510-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1112312033240.28510-100000@netrider.rowland.org>
+References: <20111230235421.GA6054@redhat.com> <201201011048.18953.oliver@neukum.org> <201201011054.47233.marek.vasut@gmail.com>
+In-Reply-To: <201201011054.47233.marek.vasut@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201011322.34483.oliver@neukum.org>
+Message-Id: <201201011328.41311.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 1. Januar 2012, 03:21:45 schrieb Alan Stern:
-> On Sat, 31 Dec 2011, Oliver Neukum wrote:
-
-> > We are definitely going through do_unbind_rebind(). But I don't think
-> > it matters why we got there. We seem to be calling probe() too early.
-> > And we need to guarantee that a driver can request firmware in probe()
+Am Sonntag, 1. Januar 2012, 10:54:47 schrieb Marek Vasut:
+> > Am Samstag, 31. Dezember 2011, 19:39:18 schrieb Marek Vasut:
+> > > maybe we should implement such thing into the firmware loader itself?
+> > > Allow it -- for example via some node in /dev -- to force loading
+> > > firmware into some buffer in kernel just before suspend so it'll
+> > > certainly be readily available at resume time?
 > > 
-> > So something has changed in the resume code path further up.
+> > This is difficult. We don't know at suspend time which firmware we will
+> > need at resume time.
 > 
-> For at least a year and a half, it has been true that rebinding takes
+> That's not actually true ... you can ask the drivers if they need to load 
+> firmware after resume ... that can be implemented and udev can handle it. The 
+> driver should know if the hardware it's controlling is stupid or not.
 
-Yes, so I don't understand why we haven't been hitting this issue
-all that time.
-
-> place during the complete phase of system resume.  Clearly that is too 
-> early to load firmware.  When do you think we should do it instead?
-
-I think we ought to delay until right after user space is unfrozen.
-The devices are gone anyway, so we lose nothing but have the ability
-to call helpers.
- 
-> And how should we keep track of which interfaces need rebinding?
-
-I guess this calls for a brute force approach. We can kick khubd and have
-it walk all busses checking for  needs_binding.
-
-> P.S.: Oliver, it looks like there's a bunch of dead code in
-> usb_suspend_interface() and usb_resume_interface().  I don't see how
-> either one can be executed with a driver that doesn't have both suspend
-> and resume methods.  Such cases should be filtered out when
-> usb_suspend() calls do_unbind_rebind().  The only odd thing that can
-> happen is when a driver doesn't support reset-resume.  Do you agree?
-
-I agree.
+Device IDs can morph due to a power loss. After resumption another driver
+would bind.
 
 	Regards
 		Oliver
