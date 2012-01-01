@@ -1,109 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604Ab2AAHtQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 02:49:16 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60554 "EHLO
+	id S1751783Ab2AAIDp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 03:03:45 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37357 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab2AAHtP convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751227Ab2AAIDm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 02:49:15 -0500
+	Sun, 1 Jan 2012 03:03:42 -0500
 MIME-Version: 1.0
 X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1325162352-24709-2-git-send-email-m.szyprowski@samsung.com>
-References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
-	<1325162352-24709-2-git-send-email-m.szyprowski@samsung.com>
-Date: Sun, 1 Jan 2012 09:49:13 +0200
-Message-ID: <CAOtvUMeAVgDwRNsDTcG07ChYnAuNgNJjQ+sKALJ79=Ezikos-A@mail.gmail.com>
-Subject: Re: [PATCH 01/11] mm: page_alloc: set_migratetype_isolate: drain PCP
- prior to isolating
+In-Reply-To: <CAOtvUMdCJEcDBD2KJ0T=Fygnag4sXaDMziYaH1oyeoQ42iZjaQ@mail.gmail.com>
+References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
+	<1321960128-15191-6-git-send-email-gilad@benyossef.com>
+	<20111223102810.GT3487@suse.de>
+	<CAOtvUMd6+ZZVLp-FbbEwbq3UZLRvSRo+_MMYj1aCGT3gBhxMwg@mail.gmail.com>
+	<20111230150421.GE15729@suse.de>
+	<4EFDD7FA.9000903@tilera.com>
+	<20111230160857.GH15729@suse.de>
+	<CAOtvUMdCJEcDBD2KJ0T=Fygnag4sXaDMziYaH1oyeoQ42iZjaQ@mail.gmail.com>
+Date: Sun, 1 Jan 2012 10:03:42 +0200
+Message-ID: <CAOtvUMcbjhV3-ZTjvLqgP0BN19qyPfCQwbZER3TTwfd5mfZong@mail.gmail.com>
+Subject: Re: [PATCH v4 5/5] mm: Only IPI CPUs to drain local pages if they exist
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
+To: Mel Gorman <mgorman@suse.de>, Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 29, 2011 at 2:39 PM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
+On Fri, Dec 30, 2011 at 10:29 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+> On Fri, Dec 30, 2011 at 6:08 PM, Mel Gorman <mgorman@suse.de> wrote:
+>> On Fri, Dec 30, 2011 at 10:25:46AM -0500, Chris Metcalf wrote:
 >
-> When set_migratetype_isolate() sets pageblock's migrate type, it does
-> not change each page_private data.  This makes sense, as the function
-> has no way of knowing what kind of information page_private stores.
-...
+>>> Alternately, since we really don't want more than one cpu running the drain
+>>> code anyway, you could imagine using a static cpumask, along with a lock to
+>>> serialize attempts to drain all the pages.  (Locking here would be tricky,
+>>> since we need to run on_each_cpu with interrupts enabled, but there's
+>>> probably some reasonable way to make it work.)
+>>>
+>>
+>> Good suggestion, that would at least shut up my complaining
+>> about allocation costs! A statically-declared mutex similar
+>> to hugetlb_instantiation_mutex should do it. The context that
+>> drain_all_pages is called from will have interrupts enabled.
+>>
+>> Serialising processes entering direct reclaim may result in some stalls
+>> but overall I think the impact of that would be less than increasing
+>> memory pressure when low on memory.
+>>
 >
+> Chris, I like the idea :-)
 >
-> A side effect is that instead of draining pages from all zones,
-> set_migratetype_isolate() now drain only pages from zone pageblock it
-> operates on is in.
->
-...
+> Actually, assuming for a second that on_each_cpu* and underlying code
+> wont mind if the cpumask will change mid call (I know it does, just thinking out
+> loud), you could say you don't even need the lock if you careful in how you
+> set/unset the per cpu bits of the cpumask, since they track the same thing...
 
+I took a look and smp_call_function_many is actually fine with the
+passed cpumask getting changed in mid call.
 
->
-> +/* Caller must hold zone->lock. */
-> +static void __zone_drain_local_pages(void *arg)
-> +{
-> +       struct per_cpu_pages *pcp;
-> +       struct zone *zone = arg;
-> +       unsigned long flags;
-> +
-> +       local_irq_save(flags);
-> +       pcp = &per_cpu_ptr(zone->pageset, smp_processor_id())->pcp;
-> +       if (pcp->count) {
-> +               /* Caller holds zone->lock, no need to grab it. */
-> +               __free_pcppages_bulk(zone, pcp->count, pcp);
-> +               pcp->count = 0;
-> +       }
-> +       local_irq_restore(flags);
-> +}
-> +
-> +/*
-> + * Like drain_all_pages() but operates on a single zone.  Caller must
-> + * hold zone->lock.
-> + */
-> +static void __zone_drain_all_pages(struct zone *zone)
-> +{
-> +       on_each_cpu(__zone_drain_local_pages, zone, 1);
-> +}
-> +
+I think this means we can do away with a single global cpumask without
+any locking and the cost becomes the allocation space for the single cpumask and
+the cache bouncing for concurrent updating of the cpumask if
+drain_all_pages races
+ against itself on other cpus.
 
-Please consider whether sending an IPI to all processors in the system
-and interrupting them is appropriate here.
+I'll spin a patch based on this idea.
 
-You seem to assume that it is probable that each CPU of the possibly
-4,096 (MAXSMP on x86) has a per-cpu page
-for the specified zone, otherwise you're just interrupting them out of
-doing something useful, or save power idle
-for nothing.
-
-While that may or may not be a reasonable assumption for the general
-drain_all_pages that drains pcps from
-all zones, I feel it is less likely to be the right thing once you
-limit the drain to a single zone.
-
-Some background on my attempt to reduce "IPI noise" in the system in
-this context is probably useful here as
-well: https://lkml.org/lkml/2011/11/22/133
-
-Thanks :-)
+Happy new year :-)
 Gilad
-
 
 
 -- 
