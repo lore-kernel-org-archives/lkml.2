@@ -1,44 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752674Ab2ABMLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 07:11:25 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48733 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751682Ab2ABMLW (ORCPT
+	id S1752698Ab2ABMSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 07:18:40 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44289 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab2ABMSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 07:11:22 -0500
-Date: Mon, 2 Jan 2012 12:11:18 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Chavan <ashish.chavan@kpitcummins.com>
-Cc: lrg <lrg@ti.com>, alsa-devel <alsa-devel@alsa-project.org>,
-        "kuninori.morimoto.gx" <kuninori.morimoto.gx@renesas.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH v8 3/3 RESEND] ASoC: da7210: Add support for
- line input and mic
-Message-ID: <20120102121117.GI2899@opensource.wolfsonmicro.com>
-References: <1325505952.12508.12.camel@matrix>
- <20120102120024.GH2899@opensource.wolfsonmicro.com>
- <1325506569.12508.15.camel@matrix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325506569.12508.15.camel@matrix>
-X-Cookie: You now have Asian Flu.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Jan 2012 07:18:37 -0500
+From: Javier Martin <javier.martin@vista-silicon.com>
+To: linux-kernel@vger.kernel.org
+Cc: dan.j.williams@intel.com, s.hauer@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, vinod.koul@intel.com,
+        Javier Martin <javier.martin@vista-silicon.com>
+Subject: [PATCH 1/2] dmaengine: Fix status handling in imx-dma.
+Date: Mon,  2 Jan 2012 13:18:25 +0100
+Message-Id: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 05:46:09PM +0530, Ashish Chavan wrote:
-> On Mon, 2012-01-02 at 12:00 +0000, Mark Brown wrote:
+Status must only be changed to DMA_IN_PROGRESS
+when the DMA transfer has really begun.
 
-> > Where are patches 1 and 2?
+However, since this driver lacks of support for
+multiple descriptors a new flag has to be introduced
+to avoid the prepare function be called multiple times.
 
-> They are already merged.
+Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+---
+ drivers/dma/imx-dma.c |   22 +++++++++++++++-------
+ 1 files changed, 15 insertions(+), 7 deletions(-)
 
-Then this isn't patch 3/3, it's a single isolated patch!  If you post it
-as though it's part of a patch series then you're saying there's another
-two patches that should be arriving at the same time which this depends
-on.  The fact that it's been posted as part of a series in the past is
-really not interesting.
+diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+index d99f71c..9a0ac14 100644
+--- a/drivers/dma/imx-dma.c
++++ b/drivers/dma/imx-dma.c
+@@ -43,6 +43,7 @@ struct imxdma_channel {
+ 	enum dma_status			status;
+ 	int				dma_request;
+ 	struct scatterlist		*sg_list;
++	bool				prepared;
+ };
+ 
+ #define MAX_DMA_CHANNELS 8
+@@ -72,6 +73,7 @@ static void imxdma_irq_handler(int channel, void *data)
+ 
+ 	imxdmac->status = DMA_SUCCESS;
+ 	imxdma_handle(imxdmac);
++	imxdmac->prepared = false;
+ }
+ 
+ static void imxdma_err_handler(int channel, void *data, int error)
+@@ -80,6 +82,7 @@ static void imxdma_err_handler(int channel, void *data, int error)
+ 
+ 	imxdmac->status = DMA_ERROR;
+ 	imxdma_handle(imxdmac);
++	imxdmac->prepared = false;
+ }
+ 
+ static void imxdma_progression(int channel, void *data,
+@@ -89,6 +92,7 @@ static void imxdma_progression(int channel, void *data,
+ 
+ 	imxdmac->status = DMA_SUCCESS;
+ 	imxdma_handle(imxdmac);
++	imxdmac->prepared = false;
+ }
+ 
+ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+@@ -103,6 +107,7 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	case DMA_TERMINATE_ALL:
+ 		imxdmac->status = DMA_ERROR;
+ 		imx_dma_disable(imxdmac->imxdma_channel);
++		imxdmac->prepared = false;
+ 		return 0;
+ 	case DMA_SLAVE_CONFIG:
+ 		if (dmaengine_cfg->direction == DMA_FROM_DEVICE) {
+@@ -204,7 +209,7 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
+ 	imxdmac->desc.flags = DMA_CTRL_ACK;
+ 
+ 	imxdmac->status = DMA_SUCCESS;
+-
++	imxdmac->prepared = false;
+ 	return 0;
+ }
+ 
+@@ -230,11 +235,9 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+ 	int i, ret, dma_length = 0;
+ 	unsigned int dmamode;
+ 
+-	if (imxdmac->status == DMA_IN_PROGRESS)
++	if (imxdmac->prepared)
+ 		return NULL;
+ 
+-	imxdmac->status = DMA_IN_PROGRESS;
+-
+ 	for_each_sg(sgl, sg, sg_len, i) {
+ 		dma_length += sg->length;
+ 	}
+@@ -264,6 +267,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+ 	if (ret)
+ 		return NULL;
+ 
++	imxdmac->prepared = true;
++
+ 	return &imxdmac->desc;
+ }
+ 
+@@ -280,9 +285,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+ 	dev_dbg(imxdma->dev, "%s channel: %d buf_len=%d period_len=%d\n",
+ 			__func__, imxdmac->channel, buf_len, period_len);
+ 
+-	if (imxdmac->status == DMA_IN_PROGRESS)
++	if (imxdmac->prepared)
+ 		return NULL;
+-	imxdmac->status = DMA_IN_PROGRESS;
+ 
+ 	ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
+ 			imxdma_progression);
+@@ -325,14 +329,18 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+ 	if (ret)
+ 		return NULL;
+ 
++	imxdmac->prepared = true;
++
+ 	return &imxdmac->desc;
+ }
+ 
+ static void imxdma_issue_pending(struct dma_chan *chan)
+ {
+ 	/*
+-	 * Nothing to do. We only have a single descriptor
++	 * Only change status since we have a single descriptor
+ 	 */
++	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
++	imxdmac->status = DMA_IN_PROGRESS;
+ }
+ 
+ static int __init imxdma_probe(struct platform_device *pdev)
+-- 
+1.7.0.4
+
