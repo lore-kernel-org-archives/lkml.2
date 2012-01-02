@@ -1,65 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab2ABI7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 03:59:00 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:13593 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab2ABI65 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:3:1>);
-	Mon, 2 Jan 2012 03:58:57 -0500
-Message-Id: <4F018015020000780006A015@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Mon, 02 Jan 2012 08:59:49 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Christoph Lameter" <cl@linux.com>
-Cc: <mingo@elte.hu>, <linux-kernel@vger.kernel.org>
-Subject: Re: irqsafe_cpu_...() 64-bit operations on 32-bit platform
-References: <4EF4581C0200007800069BA2@nat28.tlf.novell.com>
- <alpine.DEB.2.00.1112230908550.1691@router.home>
-In-Reply-To: <alpine.DEB.2.00.1112230908550.1691@router.home>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751887Ab2ABJEn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 04:04:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14874 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751157Ab2ABJEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 04:04:42 -0500
+From: Jiri Olsa <jolsa@redhat.com>
+To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+        paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 1/7] ftrace: Change filter/notrace set functions to return exit code
+Date: Mon,  2 Jan 2012 10:04:14 +0100
+Message-Id: <1325495060-6402-2-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
+References: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
+ <1325495060-6402-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 23.12.11 at 16:13, Christoph Lameter <cl@linux.com> wrote:
-> On Fri, 23 Dec 2011, Jan Beulich wrote:
-> 
->> you introduced these for 2.6.33, but I wonder about their completeness
-> 
->> in the current state: On ix86, I can add, sub, xor, etc a 64-bit variable
->> this way (through the generic implementation), but there's no way to
->> read or write such a variable. While not documented explicitly, it seems
->> like the assumption is that this_cpu_{read,write}() can be used for this
->> purpose, but that's clearly wrong.
-> 
-> Hmmm... We could add those but then you would usually not assign the
-> initial values in a situation where concurrency is an issue. Typically you 
-> would have
-> a loop over all possible cpus and then simply do a 64 bit assign to the 64
-> bit values address determined via per_cpu_ptr().
+Currently the ftrace_set_filter and ftrace_set_notrace functions
+do not return any return code. So there's no way for ftrace_ops
+user to tell wether the filter was correctly applied.
 
-You seem to assume that these would be used solely for statistical
-values, but maintaining last seen values (e.g. obtained from an
-underlying hypervisor) is just one other use.
+The set_ftrace_filter interface returns error in case the filter
+did not match:
 
-> And yes reading could be an issue if you have concurrent updates ongoing.
-> 
-> However, if you are using a loop to sum up all counters from every
-> processor then you cannot use the this_cpu ops but would have to use
-> something like get_64().
+  # echo krava > set_ftrace_filter
+  bash: echo: write error: Invalid argument
 
-I understand that, but again statistics aren't my focus here.
+Changing both ftrace_set_filter and ftrace_set_notrace functions
+to return zero if the filter was applied correctly or -E* values
+in case of error.
 
-> Reliably reading a 64 bit value on 32 bit may
-> strangely require a write operation via cmpxchg8b.
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ include/linux/ftrace.h |    4 ++--
+ kernel/trace/ftrace.c  |   15 +++++++++------
+ 2 files changed, 11 insertions(+), 8 deletions(-)
 
-Correct, but it would appear to be a read even to the compiler (only
-the actual assembly implementation would have to know that it's
-really a write).
-
-Jan
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 26eafce..523640f 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -180,9 +180,9 @@ struct dyn_ftrace {
+ };
+ 
+ int ftrace_force_update(void);
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset);
+-void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+ 			int len, int reset);
+ void ftrace_set_global_filter(unsigned char *buf, int len, int reset);
+ void ftrace_set_global_notrace(unsigned char *buf, int len, int reset);
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index b79ab33..46e1031 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -2912,8 +2912,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ 	mutex_lock(&ftrace_regex_lock);
+ 	if (reset)
+ 		ftrace_filter_reset(hash);
+-	if (buf)
+-		ftrace_match_records(hash, buf, len);
++	if (buf && !ftrace_match_records(hash, buf, len)) {
++		ret = -EINVAL;
++		goto out_regex_unlock;
++	}
+ 
+ 	mutex_lock(&ftrace_lock);
+ 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
+@@ -2923,6 +2925,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+ 
+ 	mutex_unlock(&ftrace_lock);
+ 
++ out_regex_unlock:
+ 	mutex_unlock(&ftrace_regex_lock);
+ 
+ 	free_ftrace_hash(hash);
+@@ -2939,10 +2942,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
+  * Filters denote which functions should be enabled when tracing is enabled.
+  * If @buf is NULL and reset is set, all functions will be enabled for tracing.
+  */
+-void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
+ 		       int len, int reset)
+ {
+-	ftrace_set_regex(ops, buf, len, reset, 1);
++	return ftrace_set_regex(ops, buf, len, reset, 1);
+ }
+ EXPORT_SYMBOL_GPL(ftrace_set_filter);
+ 
+@@ -2957,10 +2960,10 @@ EXPORT_SYMBOL_GPL(ftrace_set_filter);
+  * is enabled. If @buf is NULL and reset is set, all functions will be enabled
+  * for tracing.
+  */
+-void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
++int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
+ 			int len, int reset)
+ {
+-	ftrace_set_regex(ops, buf, len, reset, 0);
++	return ftrace_set_regex(ops, buf, len, reset, 0);
+ }
+ EXPORT_SYMBOL_GPL(ftrace_set_notrace);
+ /**
+-- 
+1.7.1
 
