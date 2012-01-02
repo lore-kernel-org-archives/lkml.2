@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097Ab2ABIdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 03:33:41 -0500
-Received: from smtp-out002.kontent.com ([81.88.40.216]:37631 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294Ab2ABIdj convert rfc822-to-8bit (ORCPT
+	id S1752147Ab2ABIiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 03:38:12 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:64707 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854Ab2ABIiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 03:33:39 -0500
-From: Oliver Neukum <oliver@neukum.org>
-To: Michael =?iso-8859-1?q?B=FCsch?= <m@bues.ch>
+	Mon, 2 Jan 2012 03:38:10 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: =?iso-8859-1?q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
 Subject: Re: loading firmware while usermodehelper disabled.
-Date: Mon, 2 Jan 2012 08:56:25 +0100
-User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Date: Mon, 2 Jan 2012 09:38:06 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Alan Stern <stern@rowland.harvard.edu>,
-        Matthew Garrett <mjg@redhat.com>, Dave Jones <davej@redhat.com>,
+        Oliver Neukum <oliver@neukum.org>, Matthew Garrett <mjg@redhat.com>,
+        Dave Jones <davej@redhat.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming Li <chaoming_li@realsil.com.cn>,
@@ -22,57 +23,28 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         "Greg Kroah-Hartman" <gregkh@suse.de>,
         USB list <linux-usb@vger.kernel.org>,
         Linux Wireless List <linux-wireless@vger.kernel.org>
-References: <201201011322.34483.oliver@neukum.org> <201201012227.56568.oliver@neukum.org> <20120101223913.3ff57d0f@milhouse>
-In-Reply-To: <20120101223913.3ff57d0f@milhouse>
+References: <201201011322.34483.oliver@neukum.org> <201201020517.19624.marek.vasut@gmail.com> <CA+XFjiqbU=WF+Ee7YdzQRZr4YZ00xhiMcOYawkQ9pX7DuYjbeQ@mail.gmail.com>
+In-Reply-To: <CA+XFjiqbU=WF+Ee7YdzQRZr4YZ00xhiMcOYawkQ9pX7DuYjbeQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201201020856.26235.oliver@neukum.org>
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201020938.07149.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Sonntag, 1. Januar 2012, 22:39:13 schrieb Michael Büsch:
-
-> These change-id-on-bootstrap devices usually work like this,
-> as far as I know:
+> On Mon, Jan 2, 2012 at 5:17 AM, Marek Vasut <marek.vasut@gmail.com> wrote:
+> > FYI this is not only problem with USB, but with PCMCIA too for example.
+> > 
+> > M
 > 
-> probe bootstrap device (switches hw to real device)
+> Also, PCI Express. Some Nvidia graphics cards only assume their real
+> PCI device ID during video POST (which can happen either as part of
+> system POST, if the card is primary, or during Linux startup/resume,
+> for a secondary card).
 
-And you will find no driver if the firmware is uploaded in user space.
-udev runs a firmware loader that uses libusb. usb_modeswitch
-presents you with the same problem.
+Now that's really screwed. Is that "nvidia/intel optimus" also affected by this 
+? (that thing where you have two GPUs in one laptop).
 
-> probe real device (firmware is loaded)
-
-The real driver will often be generic and have no idea the device
-needs firmware to turn it into a functional generic device. And we really don't
-want to contaminate the generic drivers with that information.
-
-So we'd need
-
-a) kernel infrastructure to track "shadow" drivers for firmware upload
-b) a heuristic to decide when a device underwent a virtual replug
-
-> Suspend machine
-> Resume machine
-> usb detects that the device is "gone"
-> probe/resume bootstrap device (switches hw to real device)
-
-We need a way to verify this is really the device which we need firmware
-for.
-
-> probe/resume real device (No need to fetch fw from userspace. It's already cached)
-
-Now we need to wait for the firmware upload to take effect. How long?
-And we need to hold off telling the driver that its device was disconnected. 
-
-> What did I get wrong?
-
-In addition you now need logic to tell the "shadow" drivers that a device
-is gone so that they can free the firmware. Oh and of course you will need
-to refcount firmware (but we probably need to do that anyway)
-
-	Regards
-		Oliver
+M
