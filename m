@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2ABWUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 17:20:03 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:51348 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab2ABWT7 (ORCPT
+	id S1753461Ab2ABWVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 17:21:52 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37414 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab2ABWVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 17:19:59 -0500
+	Mon, 2 Jan 2012 17:21:50 -0500
+Message-ID: <4F022DFA.1090105@openvz.org>
+Date: Tue, 03 Jan 2012 02:21:46 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111108 Iceape/2.0.14
 MIME-Version: 1.0
-In-Reply-To: <20120102221235.GA16012@srcf.ucam.org>
-References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
- <4F02165C.1060400@fastmail.fm> <CA+55aFwf06vRraVqtz8_2qWjxH0V=Yj5m7mEy3XVbA7+qj5k5A@mail.gmail.com>
- <20120102211904.GA15316@srcf.ucam.org> <CA+55aFwJuuvqcsgHnZ4-VhUhbVvL6beKogo1adgYyZt_ZM=H7A@mail.gmail.com>
- <20120102215028.GA15701@srcf.ucam.org> <CA+55aFz73GuHiOW1NoAuJLea_GKLepiZjrnrgpOKdQizPgnhoA@mail.gmail.com>
- <20120102221235.GA16012@srcf.ucam.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 2 Jan 2012 14:19:37 -0800
-X-Google-Sender-Auth: QKzgDHsY_PYWDtCv2-pU9L6Dr7E
-Message-ID: <CA+55aFyHvmvast_kuNddU3iotReR1mOpKM4HGAw80ma8kn+2-g@mail.gmail.com>
-Subject: Re: loading firmware while usermodehelper disabled.
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Jack Stone <jwjstone@fastmail.fm>, Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] tty: rework pty count limiting
+References: <20120102172254.11535.2653.stgit@zurg> <20120102172301.11535.10338.stgit@zurg> <20120102172903.GB19782@suse.de>
+In-Reply-To: <20120102172903.GB19782@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 2, 2012 at 2:12 PM, Matthew Garrett <mjg@redhat.com> wrote:
+Greg KH wrote:
+> On Mon, Jan 02, 2012 at 09:23:01PM +0400, Konstantin Khlebnikov wrote:
+>> After adding devpts multiple-insrances sysctl kernel.pty.max limit pty count for
+>> each devpts instance independently, while kernel.pty.nr shows total pty count.
+>>
+>> This patch restores sysctl kernel.pty.max as global limit (4096 by default),
+>> adds pty reseve for main devpts (mounted without "newinstance" argument),
+>> and new sysctl to tune it: kernel.pty.reserve (1024 by default)
+>>
+>> Also it adds devpts mount option "max=%d" to limit pty count for each devpts
+>> instance independently. (by default NR_UNIX98_PTY_MAX == 2^20)
+>>
+>> Thus devpts instances in containers cannot eat up all available pty even if we didn't
+>> set any limits, while with "max" argument we can adjust limits more precisely.
+>>
+>> Plus, now open("/dev/ptmx") return -ENOSPC in case lack of pty indexes,
+>> this is more informative than -EIO.
 >
-> The kernel that loaded the firmware to make the device work is not
-> required to be the same kernel that we're running when we suspend.
+> That's a userspace api change, why is this going to be allowed?
 
-Why do you make up all these idiotic theoretical cases that nobody
-cares about and has no relevance what-so-ever for the 99%?
+open() can return -ENOSPC in case normal fs,
+meanwhile error codes for /dev/ptmx wasn't documented at all:
+there is nothing in manpage pts, pty and ptmx.
+manpage posix_openpt and getpt refers to manpage open(2).
+I can return EIO back, if this is critical.
 
-Seriously? It's just stupid.
-
-If you have some multi-kernel setup, or depend on booting windows
-before booting Linux in order to have the firmware there, or you use
-hibernate and switch things around (hibernate, not suspend - different
-thing), and cannot load the firmware in the regular kernel, who the
-hell cares?
-
-And if you *can* load the firmware in the new kernel, just do it
-before the suspend event. Problem solved.
-
-And once more: your made-up scenario has *nothing* what-so-ever to do
-with the actual warnings that started this whole thread.
-
-You seem to *intentionally* be off in some random alternate reality
-that is not relevant to anybody else, or to the actual reported
-problems at hand.
-
-Why?
-
-                        Linus
+>
+> greg k-h
