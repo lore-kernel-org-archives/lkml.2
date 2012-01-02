@@ -1,113 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887Ab2ABJEn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 04:04:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14874 "EHLO mx1.redhat.com"
+	id S1752028Ab2ABJEp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 04:04:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43608 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751157Ab2ABJEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751410Ab2ABJEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Jan 2012 04:04:42 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 1/7] ftrace: Change filter/notrace set functions to return exit code
-Date: Mon,  2 Jan 2012 10:04:14 +0100
-Message-Id: <1325495060-6402-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com
+Subject: [PATCHv5 0/7] ftrace, perf: Adding support to use function trace
+Date: Mon,  2 Jan 2012 10:04:13 +0100
+Message-Id: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
 References: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
- <1325495060-6402-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the ftrace_set_filter and ftrace_set_notrace functions
-do not return any return code. So there's no way for ftrace_ops
-user to tell wether the filter was correctly applied.
+hi,
+here's another version of perf support for function trace
+with filter. 
 
-The set_ftrace_filter interface returns error in case the filter
-did not match:
+attached patches:
+  1/7 ftrace: Change filter/notrace set functions to return exit code
+  2/7 ftrace: Add enable/disable ftrace_ops control interface
+  3/7 ftrace, perf: Add open/close tracepoint perf registration actions
+  4/7 ftrace, perf: Add add/del tracepoint perf registration actions
+  5/7 ftrace, perf: Add support to use function tracepoint in perf
+  6/7 ftrace, perf: Distinguish ftrace function event field type
+  7/7 ftrace, perf: Add filter support for function trace event
 
-  # echo krava > set_ftrace_filter
-  bash: echo: write error: Invalid argument
+v5 changes:
+  7/7 - fixed to properly support ',' in filter expressions
 
-Changing both ftrace_set_filter and ftrace_set_notrace functions
-to return zero if the filter was applied correctly or -E* values
-in case of error.
+v4 changes:
+  2/7 - FL_GLOBAL_CONTROL changed to FL_GLOBAL_CONTROL_MASK
+      - changed WARN_ON_ONCE() to include the !preempt_count()
+      - changed this_cpu_ptr to per_cpu_ptr
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+  ommited Fix possible NULL dereferencing in __ftrace_hash_rec_update
+  (2/8 in v3)
+
+v3 changes:
+  3/8 - renamed __add/remove_ftrace_ops
+      - fixed preemtp_enable/recursion_clear order in ftrace_ops_control_func 
+      - renamed/commented API functions -  enable/disable_ftrace_function
+  
+  ommited graph tracer workarounf patch 10/10  
+
+v2 changes:
+ 01/10 - keeping the old fix instead of adding hash_has_contents func
+         I'll send separating patchset for this
+ 02/10 - using different way to avoid the issue (3/9 in v1)
+ 03/10 - using the way proposed by Steven for controling ftrace_ops
+         (4/9 in v1)
+ 06/10 - added check ensuring the ftrace:function event could be used by
+         root only (7/9 in v1)
+ 08/10 - added more description (8/9 in v1)
+ 09/10 - changed '&&' operator to '||' which seems more suitable
+         in this case (9/9 in v1)
+
+thanks,
+jirka
 ---
- include/linux/ftrace.h |    4 ++--
- kernel/trace/ftrace.c  |   15 +++++++++------
- 2 files changed, 11 insertions(+), 8 deletions(-)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 26eafce..523640f 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -180,9 +180,9 @@ struct dyn_ftrace {
- };
- 
- int ftrace_force_update(void);
--void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
- 		       int len, int reset);
--void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
- 			int len, int reset);
- void ftrace_set_global_filter(unsigned char *buf, int len, int reset);
- void ftrace_set_global_notrace(unsigned char *buf, int len, int reset);
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index b79ab33..46e1031 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2912,8 +2912,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
- 	mutex_lock(&ftrace_regex_lock);
- 	if (reset)
- 		ftrace_filter_reset(hash);
--	if (buf)
--		ftrace_match_records(hash, buf, len);
-+	if (buf && !ftrace_match_records(hash, buf, len)) {
-+		ret = -EINVAL;
-+		goto out_regex_unlock;
-+	}
- 
- 	mutex_lock(&ftrace_lock);
- 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
-@@ -2923,6 +2925,7 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
- 
- 	mutex_unlock(&ftrace_lock);
- 
-+ out_regex_unlock:
- 	mutex_unlock(&ftrace_regex_lock);
- 
- 	free_ftrace_hash(hash);
-@@ -2939,10 +2942,10 @@ ftrace_set_regex(struct ftrace_ops *ops, unsigned char *buf, int len,
-  * Filters denote which functions should be enabled when tracing is enabled.
-  * If @buf is NULL and reset is set, all functions will be enabled for tracing.
-  */
--void ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_filter(struct ftrace_ops *ops, unsigned char *buf,
- 		       int len, int reset)
- {
--	ftrace_set_regex(ops, buf, len, reset, 1);
-+	return ftrace_set_regex(ops, buf, len, reset, 1);
- }
- EXPORT_SYMBOL_GPL(ftrace_set_filter);
- 
-@@ -2957,10 +2960,10 @@ EXPORT_SYMBOL_GPL(ftrace_set_filter);
-  * is enabled. If @buf is NULL and reset is set, all functions will be enabled
-  * for tracing.
-  */
--void ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
-+int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
- 			int len, int reset)
- {
--	ftrace_set_regex(ops, buf, len, reset, 0);
-+	return ftrace_set_regex(ops, buf, len, reset, 0);
- }
- EXPORT_SYMBOL_GPL(ftrace_set_notrace);
- /**
--- 
-1.7.1
-
+ include/linux/ftrace.h             |   47 ++++++++-
+ include/linux/ftrace_event.h       |    9 +-
+ include/linux/perf_event.h         |    3 +
+ kernel/trace/ftrace.c              |  140 +++++++++++++++++++++--
+ kernel/trace/trace.h               |   11 ++-
+ kernel/trace/trace_event_perf.c    |  214 +++++++++++++++++++++++++++++-------
+ kernel/trace/trace_events.c        |   12 ++-
+ kernel/trace/trace_events_filter.c |  164 ++++++++++++++++++++++++++-
+ kernel/trace/trace_export.c        |   53 ++++++++-
+ kernel/trace/trace_kprobe.c        |    8 +-
+ kernel/trace/trace_syscalls.c      |   18 +++-
+ 11 files changed, 598 insertions(+), 81 deletions(-)
