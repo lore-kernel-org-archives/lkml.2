@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab2ABHef (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 02:34:35 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52561 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751372Ab2ABHee (ORCPT
+	id S1751400Ab2ABHk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 02:40:27 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15530 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab2ABHkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 02:34:34 -0500
-Date: Mon, 2 Jan 2012 00:34:30 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
-        rob.herring@calxeda.com, kgene.kim@samsung.com, jg1.han@samsung.com,
-        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
-        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
-        ben-linux@fluff.org, patches@linaro.org
-Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device
- tree support
-Message-ID: <20120102073430.GH13015@ponder.secretlab.ca>
-References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 2 Jan 2012 02:40:25 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sun, 01 Jan 2012 23:40:25 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: lrg@ti.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Cc: linux-tegra@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V1] regulator: Enable supply regulator if child rail is enabled.
+Date: Mon,  2 Jan 2012 13:08:45 +0530
+Message-Id: <1325489925-5148-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 11:24:31AM +0530, Thomas Abraham wrote:
-> The platform-lcd driver depends on platform-specific callbacks to setup the
-> lcd panel. These callbacks are supplied using driver's platform data. But
-> for adding device tree support for platform-lcd driver, providing such
-> callbacks is not possible (without using auxdata).
-> 
-> Since the callbacks are usually lcd panel specific, it is possible to include
-> the lcd panel specific setup and control functionality in the platform-lcd
-> driver itself, thereby eliminating the need for supplying platform specific
-> callbacks to the driver. The platform-lcd driver can include support for
-> multiple lcd panels.
-> 
-> This patchset removes the need for platform data for platform-lcd driver and
-> adds support which can be used to implement lcd panel specific functionality
-> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
-> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
-> This currently breaks build for other users of platform-lcd driver. Those can be
-> fixed if this approach is acceptable.
+During regulator_register, the rail is set on the provided
+machine constraints and if it is enabled then it is also
+require to enable the supply regulator. This will make sure
+that:
+   1. Proper reference count for supply regulator to be maintain.
+   2. Supply regulator should be enable when given rail is enabled.
 
-Approach looks okay to me.  I've not looked too deeply though.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+When given rail is registered and if it has machine constratins to
+enable the rail then it is also require to enable the supply rail for
+a given rail. This will make sure that given rail is enabled and
+proper reference count is maintained for the supply rail to avoid
+disable of supply rail even child rail is enabled.
 
-g.
+ drivers/regulator/core.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-> 
-> Thomas Abraham (4):
->   lcd: platform-lcd: Eliminate need for platform data
->   lcd: platform-lcd: Add support for Hydis hv070wsa lcd panel
->   ARM: Exynos: Remove platform data of platform-lcd driver
->   lcd: platform-lcd: Add device tree support
-> 
->  arch/arm/mach-exynos/mach-origen.c     |   25 +-----
->  drivers/video/backlight/Kconfig        |    6 ++
->  drivers/video/backlight/platform_lcd.c |  128 ++++++++++++++++++++++++++++---
->  include/video/platform_lcd.h           |   11 +--
->  4 files changed, 129 insertions(+), 41 deletions(-)
-> 
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index dbdebed..6e7a4f1 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -2801,6 +2801,14 @@ struct regulator_dev *regulator_register(struct regulator_desc *regulator_desc,
+ 		ret = set_supply(rdev, r);
+ 		if (ret < 0)
+ 			goto scrub;
++
++		/* Enable supply if rail is enabled */
++		if (rdev->desc->ops->is_enabled &&
++				rdev->desc->ops->is_enabled(rdev)) {
++			ret = regulator_enable(rdev->supply);
++			if (ret < 0)
++				goto scrub;
++		}
+ 	}
+ 
+ 	/* add consumers devices */
+-- 
+1.7.1.1
+
