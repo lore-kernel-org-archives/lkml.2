@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751025Ab2ABFfb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 00:35:31 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:46813 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab2ABFf3 (ORCPT
+	id S1751038Ab2ABFvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 00:51:44 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:61180 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2ABFvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 00:35:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <201201020517.19624.marek.vasut@gmail.com>
-References: <201201011322.34483.oliver@neukum.org> <Pine.LNX.4.44L0.1201011105200.4534-100000@netrider.rowland.org>
- <CA+55aFw-ar6dnPvn5wy=3Tv8fc_7Witri2mV=cCvH+aMv+jH1Q@mail.gmail.com> <201201020517.19624.marek.vasut@gmail.com>
-From: =?ISO-8859-1?Q?G=E1bor_Stefanik?= <netrolller.3d@gmail.com>
-Date: Mon, 2 Jan 2012 06:35:06 +0100
-Message-ID: <CA+XFjiqbU=WF+Ee7YdzQRZr4YZ00xhiMcOYawkQ9pX7DuYjbeQ@mail.gmail.com>
-Subject: Re: loading firmware while usermodehelper disabled.
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Matthew Garrett <mjg@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 2 Jan 2012 00:51:43 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-87-4f0145ed08ae
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, jg1.han@samsung.com,
+        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
+        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
+        ben-linux@fluff.org, patches@linaro.org
+Subject: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device tree
+ support
+Date: Mon, 02 Jan 2012 11:24:31 +0530
+Message-id: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+X-Mailer: git-send-email 1.6.6.rc2
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 2, 2012 at 5:17 AM, Marek Vasut <marek.vasut@gmail.com> wrote:
->
-> FYI this is not only problem with USB, but with PCMCIA too for example.
->
-> M
+The platform-lcd driver depends on platform-specific callbacks to setup the
+lcd panel. These callbacks are supplied using driver's platform data. But
+for adding device tree support for platform-lcd driver, providing such
+callbacks is not possible (without using auxdata).
 
-Also, PCI Express. Some Nvidia graphics cards only assume their real
-PCI device ID during video POST (which can happen either as part of
-system POST, if the card is primary, or during Linux startup/resume,
-for a secondary card).
+Since the callbacks are usually lcd panel specific, it is possible to include
+the lcd panel specific setup and control functionality in the platform-lcd
+driver itself, thereby eliminating the need for supplying platform specific
+callbacks to the driver. The platform-lcd driver can include support for
+multiple lcd panels.
 
--- 
-Vista: [V]iruses, [I]ntruders, [S]pyware, [T]rojans and [A]dware. :-)
+This patchset removes the need for platform data for platform-lcd driver and
+adds support which can be used to implement lcd panel specific functionality
+in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
+to the platform-lcd driver which is then used on the Exynos4 based Origen board.
+This currently breaks build for other users of platform-lcd driver. Those can be
+fixed if this approach is acceptable.
+
+Thomas Abraham (4):
+  lcd: platform-lcd: Eliminate need for platform data
+  lcd: platform-lcd: Add support for Hydis hv070wsa lcd panel
+  ARM: Exynos: Remove platform data of platform-lcd driver
+  lcd: platform-lcd: Add device tree support
+
+ arch/arm/mach-exynos/mach-origen.c     |   25 +-----
+ drivers/video/backlight/Kconfig        |    6 ++
+ drivers/video/backlight/platform_lcd.c |  128 ++++++++++++++++++++++++++++---
+ include/video/platform_lcd.h           |   11 +--
+ 4 files changed, 129 insertions(+), 41 deletions(-)
+
