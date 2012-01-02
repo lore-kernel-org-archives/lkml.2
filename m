@@ -1,67 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294Ab2ABGsX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 01:48:23 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43342 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab2ABGsV (ORCPT
+	id S1751495Ab2ABHAg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 02:00:36 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:58223 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751181Ab2ABHAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 01:48:21 -0500
+	Mon, 2 Jan 2012 02:00:21 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnVCACtUAU95LLu4/2dsb2JhbABDggWpQYEQgQaBcgEBBTocIxAIAxIGLhQlAw0UE7t5E4t8BJUBkkk
+Date: Mon, 2 Jan 2012 18:00:17 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Nikolay S." <nowhere@hakkenden.ath.cx>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+Message-ID: <20120102070017.GO23662@dastard>
+References: <20111221225512.GG23662@dastard>
+ <1324630880.562.6.camel@rybalov.eng.ttk.net>
+ <20111223102027.GB12731@dastard>
+ <1324638242.562.15.camel@rybalov.eng.ttk.net>
+ <20111223204503.GC12731@dastard>
+ <20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
+ <1324954208.4634.2.camel@hakkenden.homenet>
+ <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
+ <20111228213359.GF12731@dastard>
+ <4EFB9EE2.1050903@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-Date: Sun, 1 Jan 2012 22:48:21 -0800
-Message-ID: <CAOesGMirAda7rzZcM74fat0qV8giy3Qniqh4z_oA9OSzMAOwHg@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device tree support
-From: Olof Johansson <olof@lixom.net>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, jg1.han@samsung.com,
-        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
-        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
-        ben-linux@fluff.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EFB9EE2.1050903@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Dec 28, 2011 at 05:57:38PM -0500, KOSAKI Motohiro wrote:
+> (12/28/11 4:33 PM), Dave Chinner wrote:
+> >On Tue, Dec 27, 2011 at 01:44:05PM +0900, KAMEZAWA Hiroyuki wrote:
+> >>To me,  it seems kswapd does usual work...reclaim small memory until free
+> >>gets enough. And it seems 'dd' allocates its memory from ZONE_DMA32 because
+> >>of gfp_t fallbacks.
+> >>
+> >>
+> >>Memo.
+> >>
+> >>1. why shrink_slab() should be called per zone, which is not zone aware.
+> >>    Isn't it enough to call it per priority ?
+> >
+> >It is intended that it should be zone aware, but the current
+> >shrinkers only have global LRUs and hence cannot discriminate
+> >between objects from different zones easily. And if only a single
+> >node/zone is being scanned, then we still have to call shirnk_slab()
+> >to try to free objects in that zone/node, despite it's current
+> >global scope.
+> >
+> >I have some prototype patches that make the major slab caches and
+> >shrinkers zone/node aware - that is the eventual goal here - but
+> >first all the major slab cache LRUs need to be converted to be node
+> >aware first. Then we can pass a nodemask into shrink_slab() and down
+> >to the shrinkers so that those that have per-node LRUs can scan only
+> >the appropriate nodes for objects to free. This is someting that I'm
+> >working on in my spare time, but I have very little of that at the
+> >moment, unfortunately.
+> 
+> His machine only have one node. per node basis don't help him.
 
-On Sun, Jan 1, 2012 at 9:54 PM, Thomas Abraham
-<thomas.abraham@linaro.org> wrote:
-> The platform-lcd driver depends on platform-specific callbacks to setup the
-> lcd panel. These callbacks are supplied using driver's platform data. But
-> for adding device tree support for platform-lcd driver, providing such
-> callbacks is not possible (without using auxdata).
->
-> Since the callbacks are usually lcd panel specific, it is possible to include
-> the lcd panel specific setup and control functionality in the platform-lcd
-> driver itself, thereby eliminating the need for supplying platform specific
-> callbacks to the driver. The platform-lcd driver can include support for
-> multiple lcd panels.
->
-> This patchset removes the need for platform data for platform-lcd driver and
-> adds support which can be used to implement lcd panel specific functionality
-> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
-> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
-> This currently breaks build for other users of platform-lcd driver. Those can be
-> fixed if this approach is acceptable.
+You've got hung up on a little detail like how to define locality(*)
+and so completely missed my point.
 
-I think it would be a better idea to provide a generic binding for the
-simple LCD panels that just need one or two power GPIOs to be turned
-on (some tend to need one to activate and one for power control --
-second might in some cases be handled through a regulator I suppose).
-I'm sure there will be exceptions to this; panels that have quirks or
-requirements on various things that will either require an expanded
-binding, or custom probe functions.
+That being: Improving reclaim granularity won't help at all until
+the subsystems index their caches in a more fine grained manner.
+And with work in progress to make the shrinkers *locality* aware,
+then maybe per-priority is not sufficient, either.
 
-Especially in the case you are providing -- that lcd driver is only
-using a single gpio, and it would be much more valuable to have a
-trivial binding for this that uses shared code for this. Otherwise
-every single simple panel will need to be added over time.
+IOWs, I don't think there's a right answer to your question, but
+there's a good chance that it will be irrelevant given work that is
+in progress...
 
+Cheers,
 
--Olof
+Dave.
+
+----
+
+(*) Keep in mind that the biggest problem with the current
+LRU/shrinker implementations is not the shrinker - it's that lock
+contention in fast paths is a major performance limiting factor. In
+the VFS, that limit is hit somewhere between 8-16 concurrent
+processes all banging on a filesystem doing metadata intensive work.
+
+That's the real problem we have to solve first, and what I'm trying
+to do is solve it in a way that -aligns- to the MM architecture.
+Forcing everyone to know about MM zones is not the right way to go -
+it means we can't easily change the internals of the MM subsystem
+without touching 20-30 external shrinker implementations. IOWs,
+there needs to be a level of abstraction between the MM internals
+and the shrinker API exposed to other subsystems.
+
+However, we still need to expose some type of locality information
+through that interface to allow the MM to shrink caches in a more
+efficient manner.  Given that the allocation interfaces expose
+per-node interfaces and so programmers are familiar with this method
+of specifying locality, it seems natural to make the shrinker API
+symmetric with that. And given that most caches are allocated out of
+a single zone per node, having per-zone LRUs is just going to waste
+a lot of memory....
+
+But we should really discuss this when I post the patches again...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
