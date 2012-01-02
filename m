@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931Ab2ABJsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 04:48:51 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:58145 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab2ABJss convert rfc822-to-8bit (ORCPT
+	id S1752178Ab2ABJtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 04:49:08 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:41212 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab2ABJtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 04:48:48 -0500
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: "AnilKumar, Chimata" <anilkumar@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH 1/2] MFD: TPS65217: Add new mfd device for TPS65217
-Thread-Topic: [PATCH 1/2] MFD: TPS65217: Add new mfd device for TPS65217
-Thread-Index: AQHMwTK1zssV+wAOUUeoOy+ljcxe7pXo4nEAgAaiSnCACUWCMA==
-Date: Mon, 2 Jan 2012 09:48:40 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC103FF03@DBDE01.ent.ti.com>
-References: <1324617679-14301-1-git-send-email-anilkumar@ti.com>
- <20111223104918.GD2834@opensource.wolfsonmicro.com> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.157.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 2 Jan 2012 04:49:05 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-38-4f017d8f1c45
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Donggeun Kim <dg77.kim@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, len.brown@intel.com,
+        pavel@ucw.cz, rjw@sisk.pl, rdunlap@xenotime.net,
+        cbouatmailru@gmail.com, pali.rohar@gmail.com, prakity@mavell.com,
+        lars@metafoo.de, kyungmin.park@samsung.com, myungjoo.ham@gmail.com
+Subject: [PATCH] regulator: add regulator_force_disable() definition for
+ !CONFIG_REGULATOR
+Date: Mon, 02 Jan 2012 18:49:32 +0900
+Message-id: <1325497772-1817-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <20111228110550.GB24405@opensource.wolfsonmicro.com>
+References: <20111228110550.GB24405@opensource.wolfsonmicro.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+regulator_force_disable() was omitted in consumer.h for
+!CONFIG_REGULATOR case.
 
-> > 
-> > > +/* All register addresses */
-> > > +#define TPS65217_REG_CHIPID		0X00
-> > 
-> > You should verify this as part of the probe() routine - read it back to
-> > make sure it's what's expected, and log the chip revision too in case it
-> > is useful for diagnostics.
-> > 
-> 
-> Added chip verification code to mfd probe and printing the regulator ID &
-> version number.
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ include/linux/regulator/consumer.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-TPS65217 has two versions A and B.
-i.  TPS65217A - not supporting DVFS on AM335X
-ii. TPS65217B - supports DVFS on AM335X
+diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
+index f7756d1..889ab5a 100644
+--- a/include/linux/regulator/consumer.h
++++ b/include/linux/regulator/consumer.h
+@@ -212,6 +212,11 @@ static inline int regulator_disable(struct regulator *regulator)
+ 	return 0;
+ }
+ 
++static inline int regulator_force_disable(struct regulator *regulator)
++{
++	return 0;
++}
++
+ static inline int regulator_disable_deferred(struct regulator *regulator,
+ 					     int ms)
+ {
+-- 
+1.7.4.1
 
-Right now I am supporting the version B but not A since I am testing DVFS on
-AM335X.
-
-I have BeagleBone with me having TPS65217B, but the CHIPID reads 0x70
-(corresponds to TPS65217A)!
-I am discussing with hardware folks on what to do about this, but for
-now I will skip interpreting the CHIPID. I can print it out for reference
-though.
-
-Thanks
-AnilKumar
