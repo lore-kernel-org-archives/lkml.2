@@ -1,28 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469Ab2ABKZl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 05:25:41 -0500
+	id S1752669Ab2ABKZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 05:25:53 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:55270 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065Ab2ABKZU (ORCPT
+	with ESMTP id S1752294Ab2ABKZg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 05:25:20 -0500
+	Mon, 2 Jan 2012 05:25:36 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Christoph Lameter <cl@linux.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Christoph Lameter <cl@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
         Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: [PATCH v5 3/8] tile: Move tile to use generic on_each_cpu_mask
-Date: Mon,  2 Jan 2012 12:24:14 +0200
-Message-Id: <1325499859-2262-4-git-send-email-gilad@benyossef.com>
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>
+Subject: [PATCH v5 8/8] mm: add vmstat counters for tracking PCP drains
+Date: Mon,  2 Jan 2012 12:24:19 +0200
+Message-Id: <1325499859-2262-9-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
 References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
@@ -30,86 +28,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The API is the same as the tile private one, so just remove
-the private version of the functions
+This patch introduces two new vmstat counters: pcp_global_drain
+that counts the number of times a per-cpu pages global drain was
+requested and pcp_global_ipi_saved that counts the number of times
+the number of CPUs with per-cpu pages in any zone were less then
+1/2 of the number of online CPUs.
+
+The patch purpose is to show the usefulness of only sending an IPI
+asking to drain per-cpu pages to CPUs that actually have them
+instead of a blind global IPI. It is probably not useful by itself.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Chris Metcalf <cmetcalf@tilera.com>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>
 CC: linux-mm@kvack.org
-CC: Christoph Lameter <cl@linux-foundation.org>
 CC: Pekka Enberg <penberg@kernel.org>
 CC: Matt Mackall <mpm@selenic.com>
+CC: Sasha Levin <levinsasha928@gmail.com>
 CC: Rik van Riel <riel@redhat.com>
 CC: Andi Kleen <andi@firstfloor.org>
-CC: Sasha Levin <levinsasha928@gmail.com>
 CC: Mel Gorman <mel@csn.ul.ie>
 CC: Andrew Morton <akpm@linux-foundation.org>
 CC: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: linux-fsdevel@vger.kernel.org
 CC: Avi Kivity <avi@redhat.com>
 ---
- arch/tile/include/asm/smp.h |    7 -------
- arch/tile/kernel/smp.c      |   19 -------------------
- 2 files changed, 0 insertions(+), 26 deletions(-)
+ include/linux/vm_event_item.h |    1 +
+ mm/page_alloc.c               |    4 ++++
+ mm/vmstat.c                   |    2 ++
+ 3 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/arch/tile/include/asm/smp.h b/arch/tile/include/asm/smp.h
-index 532124a..1aa759a 100644
---- a/arch/tile/include/asm/smp.h
-+++ b/arch/tile/include/asm/smp.h
-@@ -43,10 +43,6 @@ void evaluate_message(int tag);
- /* Boot a secondary cpu */
- void online_secondary(void);
+diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+index 03b90cd..3657f6f 100644
+--- a/include/linux/vm_event_item.h
++++ b/include/linux/vm_event_item.h
+@@ -58,6 +58,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+ 		THP_COLLAPSE_ALLOC_FAILED,
+ 		THP_SPLIT,
+ #endif
++		PCP_GLOBAL_DRAIN, PCP_GLOBAL_IPI_SAVED,
+ 		NR_VM_EVENT_ITEMS
+ };
  
--/* Call a function on a specified set of CPUs (may include this one). */
--extern void on_each_cpu_mask(const struct cpumask *mask,
--			     void (*func)(void *), void *info, bool wait);
--
- /* Topology of the supervisor tile grid, and coordinates of boot processor */
- extern HV_Topology smp_topology;
- 
-@@ -91,9 +87,6 @@ void print_disabled_cpus(void);
- 
- #else /* !CONFIG_SMP */
- 
--#define on_each_cpu_mask(mask, func, info, wait)		\
--  do { if (cpumask_test_cpu(0, (mask))) func(info); } while (0)
--
- #define smp_master_cpu		0
- #define smp_height		1
- #define smp_width		1
-diff --git a/arch/tile/kernel/smp.c b/arch/tile/kernel/smp.c
-index c52224d..a44e103 100644
---- a/arch/tile/kernel/smp.c
-+++ b/arch/tile/kernel/smp.c
-@@ -87,25 +87,6 @@ void send_IPI_allbutself(int tag)
- 	send_IPI_many(&mask, tag);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 092c331..4ca6bfa 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1140,6 +1140,10 @@ void drain_all_pages(void)
+ 				cpumask_clear_cpu(cpu, cpus_with_pcps);
+ 		}
+ 	on_each_cpu_mask(cpus_with_pcps, drain_local_pages, NULL, 1);
++
++	count_vm_event(PCP_GLOBAL_DRAIN);
++	if (cpumask_weight(cpus_with_pcps) < (cpumask_weight(cpu_online_mask) / 2))
++		count_vm_event(PCP_GLOBAL_IPI_SAVED);
  }
  
--
--/*
-- * Provide smp_call_function_mask, but also run function locally
-- * if specified in the mask.
-- */
--void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
--		      void *info, bool wait)
--{
--	int cpu = get_cpu();
--	smp_call_function_many(mask, func, info, wait);
--	if (cpumask_test_cpu(cpu, mask)) {
--		local_irq_disable();
--		func(info);
--		local_irq_enable();
--	}
--	put_cpu();
--}
--
--
- /*
-  * Functions related to starting/stopping cpus.
-  */
+ #ifdef CONFIG_HIBERNATION
+diff --git a/mm/vmstat.c b/mm/vmstat.c
+index 8fd603b..daf632c 100644
+--- a/mm/vmstat.c
++++ b/mm/vmstat.c
+@@ -786,6 +786,8 @@ const char * const vmstat_text[] = {
+ 	"thp_collapse_alloc_failed",
+ 	"thp_split",
+ #endif
++	"pcp_global_drain",
++	"pcp_global_ipi_saved"
+ 
+ #endif /* CONFIG_VM_EVENTS_COUNTERS */
+ };
 -- 
 1.7.0.4
 
