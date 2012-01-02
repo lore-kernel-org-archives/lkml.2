@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2ABU5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 15:57:48 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:60057 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab2ABU5p convert rfc822-to-8bit (ORCPT
+	id S1753376Ab2ABVBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 16:01:09 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49753 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab2ABVBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 15:57:45 -0500
+	Mon, 2 Jan 2012 16:01:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <1325268453.32284.5.camel@i5>
-References: <CABiHV1T0+JFLErDHgYQkC+xfyGFSbQ3bkNrtfgVnfVi2U-ADTw@mail.gmail.com>
-	<1325268453.32284.5.camel@i5>
-Date: Tue, 3 Jan 2012 05:57:43 +0900
-Message-ID: <CABiHV1QOKPpHLZ1Rw4J9On7p5dsUn9s5HHmkzj9wVvnkbBmVyA@mail.gmail.com>
-Subject: Re: About recovery status of patchwork.kernel.org
-From: Geunsik Lim <leemgs1@gmail.com>
-To: Konstantin Ryabitsev <mricon@kernel.org>
-Cc: ftpadmin@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4F0219AB.6010505@fastmail.fm>
+References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
+ <4F02165C.1060400@fastmail.fm> <CA+55aFwf06vRraVqtz8_2qWjxH0V=Yj5m7mEy3XVbA7+qj5k5A@mail.gmail.com>
+ <4F0219AB.6010505@fastmail.fm>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 2 Jan 2012 13:00:45 -0800
+X-Google-Sender-Auth: 8vHBZYOCFLYwjT8DYLvxzpDxFzU
+Message-ID: <CA+55aFx=AEG7X2Y-LoHchgPdwNpeSkBG1J7eXprmO=czEJOD2A@mail.gmail.com>
+Subject: Re: loading firmware while usermodehelper disabled.
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oliver@neukum.org>,
+        Matthew Garrett <mjg@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 31, 2011 at 3:07 AM, Konstantin Ryabitsev <mricon@kernel.org> wrote:
-> On Wed, 2011-12-28 at 12:25 +0900, Geunsik Lim wrote:
->> Dear John 'Warthog9' Hawley,
->> Do you still maintain patchwork.kernel.org that opened on 31-Dec-2008
->> for monitoring LKML?
->> I can not connect to patchwork.kernel.org website after a security
->> breach of kernel.org recently.
->> Please, share me the status of patchwork.kernel.org service currently
->> if you can ?
+On Mon, Jan 2, 2012 at 12:55 PM, Jack Stone <jwjstone@fastmail.fm> wrote:
 >
-> Hello:
->
-> The site patchwork.kernel.org is still being resurrected, currently
-> awaiting some new hardware. We hope to bring it back to production some
-I hope that you will recover the service again ASAP.
+> The problem comes with knowing when to put the firmware - how do we tell
+> the generic driver that that device has firmware that might need to be
+> freed on disconnect. I don't know enough about USB to know if we can
+> tell if the same device has reconnected due to firmware being loaded or
+> if it was simply unplugged and a new device plugged in.
 
-> time in the future -- unfortunately, we can't provide any projected
-> availability dates at this time.
-ok.
-I understand the current status of patchwork.kernel.org thanks to you.
- Happy new year.
+Well, if we just have a 10-second timeout for the firmware flushing
+after the last "put" operation, we don't even care.
 
->
-> Best regards,
-> --
-> Konstantin Ryabitsev
-> Systems Administrator, Kernel.org
-> Montréal, Québec
+It doesn't even *matter* if the device is a physically different
+device - if the driver loads the same firmware, it will be cached, and
+it will still be correct for that (physically different, but with the
+same firmware requirements) device. So even the whole "user switched
+devices around" issue is irrelevant.
 
+Of course, if the driver is some piece-of-crap that explicitly loads
+the wrong firmware for the device it manages, the firmware will be
+wrong, but hey, "Don't do that then". The drivers job very much
+includes being able to look at the device ID (whether USB or PCIe or
+PCMCIA) and figure out which firmware image it needs to load.
 
-
--- 
-Best regards,
-Geunsik Lim ( Samsung Electronics )
-Blog : http://blog.naver.com/invain/
-Homepage: http://leemgs.fedorapeople.org
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+                   Linus
