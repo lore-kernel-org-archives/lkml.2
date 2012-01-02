@@ -1,118 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab2ABHAg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 02:00:36 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:58223 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751181Ab2ABHAV (ORCPT
+	id S1751562Ab2ABHBb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 02:01:31 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57611 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab2ABHB2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 02:00:21 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnVCACtUAU95LLu4/2dsb2JhbABDggWpQYEQgQaBcgEBBTocIxAIAxIGLhQlAw0UE7t5E4t8BJUBkkk
-Date: Mon, 2 Jan 2012 18:00:17 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Nikolay S." <nowhere@hakkenden.ath.cx>, Michal Hocko <mhocko@suse.cz>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
-Message-ID: <20120102070017.GO23662@dastard>
-References: <20111221225512.GG23662@dastard>
- <1324630880.562.6.camel@rybalov.eng.ttk.net>
- <20111223102027.GB12731@dastard>
- <1324638242.562.15.camel@rybalov.eng.ttk.net>
- <20111223204503.GC12731@dastard>
- <20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
- <1324954208.4634.2.camel@hakkenden.homenet>
- <20111227134405.9902dcbb.kamezawa.hiroyu@jp.fujitsu.com>
- <20111228213359.GF12731@dastard>
- <4EFB9EE2.1050903@gmail.com>
+	Mon, 2 Jan 2012 02:01:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4EFB9EE2.1050903@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1325472276.13595.200.camel@deadeye>
+References: <1325472276.13595.200.camel@deadeye>
+Date: Sun, 1 Jan 2012 23:01:27 -0800
+Message-ID: <CAOesGMgXRev24e0bmGD71J04=Aon7bs0YeK7mwX8Na12uR_b6A@mail.gmail.com>
+Subject: Re: Circular dependency between <linux/kernel.h> and <asm/bug.h> on ARM
+From: Olof Johansson <olof@lixom.net>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Simon Glass <sjg@chromium.org>, Russell King <rmk+kernel@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 28, 2011 at 05:57:38PM -0500, KOSAKI Motohiro wrote:
-> (12/28/11 4:33 PM), Dave Chinner wrote:
-> >On Tue, Dec 27, 2011 at 01:44:05PM +0900, KAMEZAWA Hiroyuki wrote:
-> >>To me,  it seems kswapd does usual work...reclaim small memory until free
-> >>gets enough. And it seems 'dd' allocates its memory from ZONE_DMA32 because
-> >>of gfp_t fallbacks.
-> >>
-> >>
-> >>Memo.
-> >>
-> >>1. why shrink_slab() should be called per zone, which is not zone aware.
-> >>    Isn't it enough to call it per priority ?
-> >
-> >It is intended that it should be zone aware, but the current
-> >shrinkers only have global LRUs and hence cannot discriminate
-> >between objects from different zones easily. And if only a single
-> >node/zone is being scanned, then we still have to call shirnk_slab()
-> >to try to free objects in that zone/node, despite it's current
-> >global scope.
-> >
-> >I have some prototype patches that make the major slab caches and
-> >shrinkers zone/node aware - that is the eventual goal here - but
-> >first all the major slab cache LRUs need to be converted to be node
-> >aware first. Then we can pass a nodemask into shrink_slab() and down
-> >to the shrinkers so that those that have per-node LRUs can scan only
-> >the appropriate nodes for objects to free. This is someting that I'm
-> >working on in my spare time, but I have very little of that at the
-> >moment, unfortunately.
-> 
-> His machine only have one node. per node basis don't help him.
+On Sun, Jan 1, 2012 at 6:44 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
+> Commit 87e040b6456fd3416a1f6831c1eedaef5c0a94ff ("ARM: 7017/1: Use
+> generic BUG() handler") makes BUG() use BUILD_BUG_ON().  However,
+> BUILD_BUG_ON() is not defined in <linux/bug.h> but in <linux/kernel.h>.
+>
+> arch/include/asm/bug.h does not include <linux/kernel.h> and *cannot* do
+> so because the latter already includes <asm/bug.h>.
 
-You've got hung up on a little detail like how to define locality(*)
-and so completely missed my point.
+Sure it can, but it's not ideal. Since the BUILD_BUG_ON is only used
+in bug.h in a #define, it will be resolved below the includes of
+either so there should be no ordering issue between the two.
 
-That being: Improving reclaim granularity won't help at all until
-the subsystems index their caches in a more fine grained manner.
-And with work in progress to make the shrinkers *locality* aware,
-then maybe per-priority is not sufficient, either.
+I coincidentally posted a patch earlier to do just that, I didn't see
+your email until later.
 
-IOWs, I don't think there's a right answer to your question, but
-there's a good chance that it will be irrelevant given work that is
-in progress...
+> Maybe BUILD_BUG_ON() should be moved out to a header of its own, or else
+> this particular use should be moved to some other file.  This needs to
+> be fixed somehow, as it obviously leads to build failures, e.g.:
+>
+> https://buildd.debian.org/status/fetch.php?pkg=linux-2.6&arch=armel&ver=3.2~rc7-1~experimental.1&stamp=1325142904
 
-Cheers,
+Or perhaps moving BUILD_BUG_ON to include/linux/bug.h?
 
-Dave.
+The quickest fix for now might be to take out the BUILD_BUG_ON(),
+especially so close to 3.2-final.
 
-----
 
-(*) Keep in mind that the biggest problem with the current
-LRU/shrinker implementations is not the shrinker - it's that lock
-contention in fast paths is a major performance limiting factor. In
-the VFS, that limit is hit somewhere between 8-16 concurrent
-processes all banging on a filesystem doing metadata intensive work.
-
-That's the real problem we have to solve first, and what I'm trying
-to do is solve it in a way that -aligns- to the MM architecture.
-Forcing everyone to know about MM zones is not the right way to go -
-it means we can't easily change the internals of the MM subsystem
-without touching 20-30 external shrinker implementations. IOWs,
-there needs to be a level of abstraction between the MM internals
-and the shrinker API exposed to other subsystems.
-
-However, we still need to expose some type of locality information
-through that interface to allow the MM to shrink caches in a more
-efficient manner.  Given that the allocation interfaces expose
-per-node interfaces and so programmers are familiar with this method
-of specifying locality, it seems natural to make the shrinker API
-symmetric with that. And given that most caches are allocated out of
-a single zone per node, having per-zone LRUs is just going to waste
-a lot of memory....
-
-But we should really discuss this when I post the patches again...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+-Olof
