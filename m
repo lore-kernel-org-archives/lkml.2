@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751038Ab2ABFvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 00:51:44 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:61180 "EHLO
+	id S1751353Ab2ABFwc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 00:52:32 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:61317 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab2ABFvn (ORCPT
+	with ESMTP id S1751294Ab2ABFv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 00:51:43 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-87-4f0145ed08ae
+	Mon, 2 Jan 2012 00:51:57 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-ec-4f0145fc215c
 From: Thomas Abraham <thomas.abraham@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Cc: rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
@@ -16,43 +16,100 @@ Cc: rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
         broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
         cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
         ben-linux@fluff.org, patches@linaro.org
-Subject: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device tree
- support
-Date: Mon, 02 Jan 2012 11:24:31 +0530
-Message-id: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+Subject: [RFC][PATCH 4/4] lcd: platform-lcd: Add device tree support
+Date: Mon, 02 Jan 2012 11:24:35 +0530
+Message-id: <1325483675-21908-5-git-send-email-thomas.abraham@linaro.org>
 X-Mailer: git-send-email 1.6.6.rc2
+In-reply-to: <1325483675-21908-4-git-send-email-thomas.abraham@linaro.org>
+References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+ <1325483675-21908-2-git-send-email-thomas.abraham@linaro.org>
+ <1325483675-21908-3-git-send-email-thomas.abraham@linaro.org>
+ <1325483675-21908-4-git-send-email-thomas.abraham@linaro.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The platform-lcd driver depends on platform-specific callbacks to setup the
-lcd panel. These callbacks are supplied using driver's platform data. But
-for adding device tree support for platform-lcd driver, providing such
-callbacks is not possible (without using auxdata).
+Add device tree based initialization for Hydis hv070wsa lcd panel.
 
-Since the callbacks are usually lcd panel specific, it is possible to include
-the lcd panel specific setup and control functionality in the platform-lcd
-driver itself, thereby eliminating the need for supplying platform specific
-callbacks to the driver. The platform-lcd driver can include support for
-multiple lcd panels.
+Cc: Ben Dooks <ben-linux@fluff.org>
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ drivers/video/backlight/platform_lcd.c |   33 ++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-This patchset removes the need for platform data for platform-lcd driver and
-adds support which can be used to implement lcd panel specific functionality
-in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
-to the platform-lcd driver which is then used on the Exynos4 based Origen board.
-This currently breaks build for other users of platform-lcd driver. Those can be
-fixed if this approach is acceptable.
-
-Thomas Abraham (4):
-  lcd: platform-lcd: Eliminate need for platform data
-  lcd: platform-lcd: Add support for Hydis hv070wsa lcd panel
-  ARM: Exynos: Remove platform data of platform-lcd driver
-  lcd: platform-lcd: Add device tree support
-
- arch/arm/mach-exynos/mach-origen.c     |   25 +-----
- drivers/video/backlight/Kconfig        |    6 ++
- drivers/video/backlight/platform_lcd.c |  128 ++++++++++++++++++++++++++++---
- include/video/platform_lcd.h           |   11 +--
- 4 files changed, 129 insertions(+), 41 deletions(-)
+diff --git a/drivers/video/backlight/platform_lcd.c b/drivers/video/backlight/platform_lcd.c
+index feb4fd0..ebdddfd 100644
+--- a/drivers/video/backlight/platform_lcd.c
++++ b/drivers/video/backlight/platform_lcd.c
+@@ -18,6 +18,8 @@
+ #include <linux/lcd.h>
+ #include <linux/slab.h>
+ #include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_gpio.h>
+ 
+ #include <video/platform_lcd.h>
+ 
+@@ -81,9 +83,18 @@ static struct lcd_ops platform_lcd_ops = {
+ 	.check_fb	= platform_lcd_match,
+ };
+ 
++static const struct of_device_id platform_lcd_dt_match[];
++
+ static inline struct plat_lcd_driver_data *platform_lcd_get_driver_data(
+ 			struct platform_device *pdev)
+ {
++#ifdef CONFIG_OF
++	if (pdev->dev.of_node) {
++		const struct of_device_id *match;
++		match = of_match_node(platform_lcd_dt_match, pdev->dev.of_node);
++		return (struct plat_lcd_driver_data *)match->data;
++	}
++#endif
+ 	return (struct plat_lcd_driver_data *)
+ 			platform_get_device_id(pdev)->driver_data;
+ }
+@@ -167,6 +178,19 @@ static int lcd_hv070wsa_init(struct platform_lcd *plcd)
+ 	struct plat_lcd_hydis_hv070wsa_pdata *pdata = plcd->lcd_pdata;
+ 	int err;
+ 
++#ifdef CONFIG_OF
++	if (of_have_populated_dt()) {
++		plcd->lcd_pdata = devm_kzalloc(plcd->us,
++						sizeof(*pdata), GFP_KERNEL);
++		if (!plcd->lcd_pdata) {
++			dev_err(plcd->us, "mem alloc for pdata failed\n");
++			return -ENOMEM;
++		}
++		pdata = plcd->lcd_pdata;
++		pdata->gpio = of_get_gpio(plcd->us->of_node, 0);
++	}
++#endif
++
+ 	if (!pdata) {
+ 		dev_err(plcd->us, "no platform data\n");
+ 		return -EINVAL;
+@@ -214,10 +238,19 @@ static struct platform_device_id platform_lcd_driver_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(platform, platform_lcd_driver_ids);
+ 
++#ifdef CONFIG_OF
++static const struct of_device_id platform_lcd_dt_match[] = {
++	{ .compatible = "hydis,hv070wsa", .data = (void *)HV070WSA_DRV_DATA},
++	{},
++};
++MODULE_DEVICE_TABLE(of, platform_lcd_dt_match);
++#endif
++
+ static struct platform_driver platform_lcd_driver = {
+ 	.driver		= {
+ 		.name	= "platform-lcd",
+ 		.owner	= THIS_MODULE,
++		.of_match_table = of_match_ptr(platform_lcd_dt_match),
+ 	},
+ 	.probe		= platform_lcd_probe,
+ 	.remove		= __devexit_p(platform_lcd_remove),
+-- 
+1.6.6.rc2
 
