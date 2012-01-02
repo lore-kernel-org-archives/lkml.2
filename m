@@ -1,67 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab2ABVaK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 16:30:10 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:60483 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab2ABVaI (ORCPT
+	id S1753432Ab2ABVbG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 16:31:06 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:60766 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753297Ab2ABVbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 16:30:08 -0500
+	Mon, 2 Jan 2012 16:31:03 -0500
+X-Sasl-enc: T7JTuDOTUpkZpiI8oMVF0ix4hDVXaAjpcN+ujgceqIwr 1325539862
+Message-ID: <4F022214.8070906@fastmail.fm>
+Date: Mon, 02 Jan 2012 21:31:00 +0000
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-X-Originating-IP: [178.83.130.250]
-In-Reply-To: <20120102080905.3ab2de84@x220>
-References: <20111221195410.5e4c065a@x220.fritz.box>
-	<864nwty9sq.fsf@sumi.keithp.com>
-	<20111221222626.0b8c3a30@x220.fritz.box>
-	<861urxy1pw.fsf@sumi.keithp.com>
-	<20111222014520.7ace1ab2@x220.fritz.box>
-	<20111222080928.GA3904@phenom.ffwll.local>
-	<20120102080905.3ab2de84@x220>
-Date: Mon, 2 Jan 2012 22:30:07 +0100
-X-Google-Sender-Auth: LITYnJ12ukhy1eLkllONxqRsprg
-Message-ID: <CAKMK7uGgoomEO7=WJkKw1sHMthLuPH11mS0-d7sv82yaikMspw@mail.gmail.com>
-Subject: Re: GPU hung with Linux-3.2-rc6
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Udo Steinberg <udo@hypervisor.org>
-Cc: Keith Packard <keithp@keithp.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oliver@neukum.org>,
+        Matthew Garrett <mjg@redhat.com>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org> <4F02165C.1060400@fastmail.fm> <CA+55aFwf06vRraVqtz8_2qWjxH0V=Yj5m7mEy3XVbA7+qj5k5A@mail.gmail.com> <4F0219AB.6010505@fastmail.fm> <CA+55aFx=AEG7X2Y-LoHchgPdwNpeSkBG1J7eXprmO=czEJOD2A@mail.gmail.com> <4F021CF4.9050205@fastmail.fm> <CA+55aFx2NMDSY8rmsToU-zxe+bR-gzsxc8HajNWNWfykVJqd9w@mail.gmail.com>
+In-Reply-To: <CA+55aFx2NMDSY8rmsToU-zxe+bR-gzsxc8HajNWNWfykVJqd9w@mail.gmail.com>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 2, 2012 at 08:09, Udo Steinberg <udo@hypervisor.org> wrote:
-> On Thu, 22 Dec 2011 09:22:33 +0100 Daniel Vetter (DV) wrote:
->
-> DV> Can you please apply the patch available at
-> DV>
-> DV> http://cgit.freedesktop.org/~danvet/drm/patch/?id=0b3ecfa8c9b00f50d514fbcc12e34882b0fa695a
-> DV>
-> DV> This one will let your gpu keep hanging in the "stuck on semphore wait"
-> DV> condition. Later on the hangcheck should kick in and grab a gpu error
-> DV> state (in the file i915_error_state in debugfs). Can you please attach
-> DV> that one?
->
-> Hi,
->
-> i915_error_state and dmesg are attached. This was with Linux 3.2.0-rc6 and
-> the aforementioned patch applied.
+On 02/01/12 21:23, Linus Torvalds wrote:
+> On Mon, Jan 2, 2012 at 1:09 PM, Jack Stone <jwjstone@fastmail.fm> wrote:
+>>
+>> What about USB "class" drivers e.g. usb-storage. They handle any device
+>> that reports itself as a usb mass storage device. There could be a
+>> device that needs to be bootstrapped before it becomes a generic usb
+>> mass storage device. Do we really want to have to write a new driver
+>> that is almost identical to the generic driver but handles the USB
+>> firmware correctly.
+> 
+> I'd hope that the generic driver just expose enough interfaces that
+> you could basically do a "firmware-load" driver that just loads the
+> firmware and then attaches the device to the generic driver.
 
-Thanks a lot for gathering the error state. It looks like the
-semaphore code deadlocked, which should not have happened. Can you
-please test with the my-next branch available at:
+Sounds workable.
 
-http://cgit.freedesktop.org/~danvet/drm/log/?h=my-next
+To make the firmware caching easier I would propose one extra function
+in addition to the aforemensioned get_firmware / put_firmware - a
+find_firmware function to search the cache and return the appropriate
+firmware blob. It should only be called if the caller already has a
+refcount to the firmware, it's only use is to save every driver saving a
+pointer to the firmware.
 
-It contains a few fixes for races (that might cause your issue) and
-dumps some additional information into the error state. You need to
-boot with i915.semaphores=1 because they're not enabled by default in
-that tree.
+If noone beats me to it I will try and put together an RFC for a new
+version.
 
-Again, please attach the error state if the gpu hangs.
+Thanks,
 
-Yours, Daniel
--- 
-Daniel Vetter
-daniel.vetter@ffwll.ch - +41 (0) 79 364 57 48 - http://blog.ffwll.ch
+Jack
+
