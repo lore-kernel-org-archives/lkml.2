@@ -1,78 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340Ab2ABLA4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 06:00:56 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37827 "EHLO mx2.mail.elte.hu"
+	id S1752240Ab2ABLFs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 06:05:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:7722 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751200Ab2ABLAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 06:00:55 -0500
-Date: Mon, 2 Jan 2012 11:58:56 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-Message-ID: <20120102105856.GA6661@elte.hu>
-References: <20111221123624.193898256@goodmis.org>
- <20120101180949.GA25066@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120101180949.GA25066@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751815Ab2ABLFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 06:05:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="92114722"
+Subject: Re: [PATCH] intel_mid_dma: remove legacy pm interface
+From: Vinod Koul <vinod.koul@intel.com>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+In-Reply-To: <4EF979DD.7030108@intel.com>
+References: <20111215223225.10295.40514.stgit@bob.linux.org.uk>
+	 <1324657154.1633.21.camel@vkoul-udesk3>  <4EF979DD.7030108@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Jan 2012 16:35:55 +0530
+Message-ID: <1325502355.1540.11.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2011-12-27 at 09:55 +0200, Adrian Hunter wrote:
+> On 23/12/11 18:19, Vinod Koul wrote:
+> > On Thu, 2011-12-15 at 22:32 +0000, Alan Cox wrote:
+> >> From: Kristen Carlson Accardi <kristen@linux.intel.com>
+> >>
+> >> Drivers should not support both legacy pm and new framework.
+> > Not really.
+> > 
+> > I am using this driver in our system where we go to D0i3 aka
+> > runtime_suspend when DMA is idle.
+> > Also we goto D3/S3 aka when traditional suspend is invoked.
+> > 
+> > So we need both.
+> 
+> There is no functional change caused by this patch.
+> 
+> It simply moves suspend/resume calls into dev_pm_ops
+> where they really belong now.  It is necessary to prevent
+> kernel warnings.
+Somehow I didn't read the patch correctly in first place.
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Applied now, Thanks
 
-> Hm, i'm seeing spontaneous reboot crashes with these commits 
-> applied. The reboots just happen out of the blue during an 
-> allyesconfig bootup (config attached), and they happen at 
-> random places.
+-- 
+~Vinod
 
-I've done more testing to pin down which commits are to blame.
-
-To complicate matters, re-testing with the NMI bits applied 
-produced a spontaneous reboot as well in one case, after 12 
-iterations.
-
-Just to give you an impression of how a failure looks like, the 
-serial console just stops printing mid-line:
-
- [   53.212942] calling  vt1211_init+0x0/0x9b @ 1                                                   
- [   53.212971] initcall vt1211_init+0x0/0x9b returned -19 after 23 usecs                           
- [   53.212975] calling  sm_vt8231_init+0x0/0x1b @ 1                                                
-   Booting 'Fedora'
-
-and the next message is GRUB's 'Booting ...' line.
-
-I've tested baseline -tip as well:
-
-    db6ffcaa1306: Merge branch 'out-of-tree'
-
-and it seem to be fine: it has survived 70 allyesconfig bootups 
-with the config i sent.
-
-So either the NMI bits or the 'fixes' bits are broken - or the 
-bug is somehow kernel image dependent and triggered in these two 
-trees and somehow left the baseline kernel unaffected ...
-
-Since each test takes half a day to accomplish and i don't have 
-the days to spend on this problem alone, one way we could 
-proceed from here is if you cherry-picked the '100% safe' 
-commits from your tree. I could pull those and make certain that 
-they are not crashing things.
-
-Thanks,
-
-	Ingo
