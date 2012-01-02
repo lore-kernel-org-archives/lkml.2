@@ -1,124 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab2ABKZg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 05:25:36 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55270 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931Ab2ABKZN (ORCPT
+	id S1752544Ab2ABK1B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 05:27:01 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:57690 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425Ab2ABK04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 05:25:13 -0500
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: [PATCH v5 1/8] smp: Introduce a generic on_each_cpu_mask function
-Date: Mon,  2 Jan 2012 12:24:12 +0200
-Message-Id: <1325499859-2262-2-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+	Mon, 2 Jan 2012 05:26:56 -0500
+From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+In-Reply-To: <4F017B34.109@redhat.com>
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <87ty4erb01.fsf@abhimanyu.in.ibm.com> <4F017B34.109@redhat.com>
+User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
+Date: Mon, 02 Jan 2012 15:52:40 +0530
+Message-ID: <87r4ziqu8f.fsf@abhimanyu.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+x-cbid: 12010200-7014-0000-0000-0000005BB63C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on_each_cpu_mask calls a function on processors specified my cpumask,
-which may include the local processor.
+On Mon, 02 Jan 2012 11:39:00 +0200, Avi Kivity <avi@redhat.com> wrote:
+> On 01/02/2012 06:20 AM, Nikunj A Dadhania wrote:
+[...]
+> > >     non-PLE - Test Setup:
+> > > 
+> > >     dbench 8vm (degraded -30%)
+> > >     |      dbench|               2.01 |               1.38 |      -30 |
+> >
+> >
+> >     Baseline:
+> >     57.75%         init  [kernel.kallsyms]  [k] native_safe_halt
+> >     40.88%      swapper  [kernel.kallsyms]  [k] native_safe_halt
+> >
+> >     Gang V2:
+> >     56.25%         init  [kernel.kallsyms]  [k] native_safe_halt
+> >     42.84%      swapper  [kernel.kallsyms]  [k] native_safe_halt
+> >
+> > Similar comparison here.
+> >
+> 
+> Wierd, looks like a mismeasurement... 
+>
+Getting similar numbers across different runs/reboots with dbench.
 
-All the limitation specified in smp_call_function_many apply.
+> what happens if you add a bash
+> busy loop?
+> 
+Perf output for bash busy loops inside the guest:
 
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Reviewed-by: Christoph Lameter <cl@linux.com>
-CC: Chris Metcalf <cmetcalf@tilera.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: linux-mm@kvack.org
-CC: Pekka Enberg <penberg@kernel.org>
-CC: Matt Mackall <mpm@selenic.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>
-CC: Sasha Levin <levinsasha928@gmail.com>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>
-CC: linux-fsdevel@vger.kernel.org
-CC: Avi Kivity <avi@redhat.com>
----
- include/linux/smp.h |   16 ++++++++++++++++
- kernel/smp.c        |   20 ++++++++++++++++++++
- 2 files changed, 36 insertions(+), 0 deletions(-)
+     9.93%           sh  libc-2.12.so       [.] _int_free
+     8.37%           sh  libc-2.12.so       [.] _int_malloc
+     6.14%           sh  libc-2.12.so       [.] __GI___libc_malloc
+     6.03%           sh  bash               [.] 0x480e6         
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 8cc38d3..60628d7 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -102,6 +102,13 @@ static inline void call_function_init(void) { }
- int on_each_cpu(smp_call_func_t func, void *info, int wait);
- 
- /*
-+ * Call a function on processors specified by mask, which might include
-+ * the local one.
-+ */
-+void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
-+		void *info, bool wait);
-+
-+/*
-  * Mark the boot cpu "online" so that it can call console drivers in
-  * printk() and can access its per-cpu storage.
-  */
-@@ -132,6 +139,15 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
- 		local_irq_enable();		\
- 		0;				\
- 	})
-+#define on_each_cpu_mask(mask, func, info, wait) \
-+	do {						\
-+		if (cpumask_test_cpu(0, (mask))) {	\
-+			local_irq_disable();		\
-+			(func)(info);			\
-+			local_irq_enable();		\
-+		}					\
-+	} while (0)
-+
- static inline void smp_send_reschedule(int cpu) { }
- #define num_booting_cpus()			1
- #define smp_prepare_boot_cpu()			do {} while (0)
-diff --git a/kernel/smp.c b/kernel/smp.c
-index db197d6..7c0cbd7 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -701,3 +701,23 @@ int on_each_cpu(void (*func) (void *info), void *info, int wait)
- 	return ret;
- }
- EXPORT_SYMBOL(on_each_cpu);
-+
-+/*
-+ * Call a function on processors specified by cpumask, which may include
-+ * the local processor. All the limitation specified in smp_call_function_many
-+ * apply.
-+ */
-+void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
-+			void *info, bool wait)
-+{
-+	int cpu = get_cpu();
-+
-+	smp_call_function_many(mask, func, info, wait);
-+	if (cpumask_test_cpu(cpu, mask)) {
-+		local_irq_disable();
-+		func(info);
-+		local_irq_enable();
-+	}
-+	put_cpu();
-+}
-+EXPORT_SYMBOL(on_each_cpu_mask);
--- 
-1.7.0.4
+
+loop.sh
+----------------------------------
+for i in `seq 1 8`
+do
+	while :; do :; done &
+	pid[$i]=$!;
+done
+sleep 60
+
+for i in `seq 1 8`
+do
+	kill -9 ${pid[$i]}
+done
+----------------------------------
+
+Used the following command to capture the perf events inside the guest:
+
+ssh root@192.168.123.11 'perf record -a -o loop-perf.out  --
+/root/loop.sh '
+
+Regards,
+Nikunj
 
