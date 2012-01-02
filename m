@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342Ab2ABJFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 04:05:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30702 "EHLO mx1.redhat.com"
+	id S1751903Ab2ABJFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 04:05:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39523 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752082Ab2ABJEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752065Ab2ABJEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 2 Jan 2012 04:04:47 -0500
 From: Jiri Olsa <jolsa@redhat.com>
 To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
         paulus@samba.org, acme@ghostprotocols.net, a.p.zijlstra@chello.nl
 Cc: linux-kernel@vger.kernel.org, aarapov@redhat.com,
         Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 6/7] ftrace, perf: Distinguish ftrace function event field type
-Date: Mon,  2 Jan 2012 10:04:19 +0100
-Message-Id: <1325495060-6402-7-git-send-email-jolsa@redhat.com>
+Subject: [PATCH 4/7] ftrace, perf: Add add/del tracepoint perf registration actions
+Date: Mon,  2 Jan 2012 10:04:17 +0100
+Message-Id: <1325495060-6402-5-git-send-email-jolsa@redhat.com>
 In-Reply-To: <1325495060-6402-1-git-send-email-jolsa@redhat.com>
 References: <1324493791-5688-1-git-send-email-jolsa@redhat.com>
  <1325495060-6402-1-git-send-email-jolsa@redhat.com>
@@ -21,132 +21,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding FILTER_TRACE_FN event field type for function tracepoint
-event, so it can be properly recognized within filtering code.
+Adding TRACE_REG_PERF_ADD and TRACE_REG_PERF_DEL to handle
+perf event schedule in/out actions.
 
-Currently all fields of ftrace subsystem events share the common
-field type FILTER_OTHER. Since the function trace fields need special
-care within the filtering code we need to recognize it properly,
-hence adding the FILTER_TRACE_FN event type.
+The add action is invoked for when the perf event is scheduled in,
+while the del action is invoked when the event is scheduled out.
 
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- include/linux/ftrace_event.h       |    1 +
- kernel/trace/trace_events_filter.c |    7 ++++++-
- kernel/trace/trace_export.c        |   25 ++++++++++++++++++++-----
- 3 files changed, 27 insertions(+), 6 deletions(-)
+ include/linux/ftrace_event.h    |    2 ++
+ kernel/trace/trace_event_perf.c |    4 +++-
+ kernel/trace/trace_events.c     |    2 ++
+ kernel/trace/trace_kprobe.c     |    2 ++
+ kernel/trace/trace_syscalls.c   |    4 ++++
+ 5 files changed, 13 insertions(+), 1 deletions(-)
 
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 2bf677c..dd478fc 100644
+index 195e360..2bf677c 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
-@@ -245,6 +245,7 @@ enum {
- 	FILTER_STATIC_STRING,
- 	FILTER_DYN_STRING,
- 	FILTER_PTR_STRING,
-+	FILTER_TRACE_FN,
+@@ -148,6 +148,8 @@ enum trace_reg {
+ 	TRACE_REG_PERF_UNREGISTER,
+ 	TRACE_REG_PERF_OPEN,
+ 	TRACE_REG_PERF_CLOSE,
++	TRACE_REG_PERF_ADD,
++	TRACE_REG_PERF_DEL,
  };
  
- #define EVENT_STORAGE_SIZE 128
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index f04cc31..66b74ab 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -900,6 +900,11 @@ int filter_assign_type(const char *type)
- 	return FILTER_OTHER;
+ struct ftrace_event_call;
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 0cfcc37..d72af0b 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -211,12 +211,14 @@ int perf_trace_add(struct perf_event *p_event, int flags)
+ 	list = this_cpu_ptr(pcpu_list);
+ 	hlist_add_head_rcu(&p_event->hlist_entry, list);
+ 
+-	return 0;
++	return tp_event->class->reg(tp_event, TRACE_REG_PERF_ADD, p_event);
  }
  
-+static bool is_function_field(struct ftrace_event_field *field)
-+{
-+	return field->filter_type == FILTER_TRACE_FN;
-+}
-+
- static bool is_string_field(struct ftrace_event_field *field)
+ void perf_trace_del(struct perf_event *p_event, int flags)
  {
- 	return field->filter_type == FILTER_DYN_STRING ||
-@@ -987,7 +992,7 @@ static int init_pred(struct filter_parse_state *ps,
- 			fn = filter_pred_strloc;
- 		else
- 			fn = filter_pred_pchar;
--	} else {
-+	} else if (!is_function_field(field)) {
- 		if (field->is_signed)
- 			ret = strict_strtoll(pred->regex.pattern, 0, &val);
- 		else
-diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
-index 867653c..46c35e2 100644
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -67,7 +67,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 	ret = trace_define_field(event_call, #type, #item,		\
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
++	struct ftrace_event_call *tp_event = p_event->tp_event;
+ 	hlist_del_rcu(&p_event->hlist_entry);
++	tp_event->class->reg(tp_event, TRACE_REG_PERF_DEL, p_event);
+ }
  
-@@ -77,7 +77,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 				 offsetof(typeof(field),		\
- 					  container.item),		\
- 				 sizeof(field.container.item),		\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
- 
-@@ -91,7 +91,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 		ret = trace_define_field(event_call, event_storage, #item, \
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 		mutex_unlock(&event_storage_mutex);			\
- 		if (ret)						\
- 			return ret;					\
-@@ -104,7 +104,7 @@ static void __always_unused ____ftrace_check_##name(void)	\
- 				 offsetof(typeof(field),		\
- 					  container.item),		\
- 				 sizeof(field.container.item),		\
--				 is_signed_type(type), FILTER_OTHER);	\
-+				 is_signed_type(type), filter_type);	\
- 	if (ret)							\
- 		return ret;
- 
-@@ -112,10 +112,24 @@ static void __always_unused ____ftrace_check_##name(void)	\
- #define __dynamic_array(type, item)					\
- 	ret = trace_define_field(event_call, #type, #item,		\
- 				 offsetof(typeof(field), item),		\
--				 0, is_signed_type(type), FILTER_OTHER);\
-+				 0, is_signed_type(type), filter_type);\
- 	if (ret)							\
- 		return ret;
- 
-+#define FILTER_TYPE_TRACE_FN           FILTER_TRACE_FN
-+#define FILTER_TYPE_TRACE_GRAPH_ENT    FILTER_OTHER
-+#define FILTER_TYPE_TRACE_GRAPH_RET    FILTER_OTHER
-+#define FILTER_TYPE_TRACE_CTX          FILTER_OTHER
-+#define FILTER_TYPE_TRACE_WAKE         FILTER_OTHER
-+#define FILTER_TYPE_TRACE_STACK                FILTER_OTHER
-+#define FILTER_TYPE_TRACE_USER_STACK   FILTER_OTHER
-+#define FILTER_TYPE_TRACE_BPRINT       FILTER_OTHER
-+#define FILTER_TYPE_TRACE_PRINT                FILTER_OTHER
-+#define FILTER_TYPE_TRACE_MMIO_RW      FILTER_OTHER
-+#define FILTER_TYPE_TRACE_MMIO_MAP     FILTER_OTHER
-+#define FILTER_TYPE_TRACE_BRANCH       FILTER_OTHER
-+#define FILTER_TYPE(arg)               FILTER_TYPE_##arg
-+
- #undef FTRACE_ENTRY
- #define FTRACE_ENTRY(name, struct_name, id, tstruct, print)		\
- int									\
-@@ -123,6 +137,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
- {									\
- 	struct struct_name field;					\
- 	int ret;							\
-+	int filter_type = FILTER_TYPE(id);				\
- 									\
- 	tstruct;							\
- 									\
+ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 5138fea..079a93a 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -173,6 +173,8 @@ int ftrace_event_reg(struct ftrace_event_call *call,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 5667f89..580a05e 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1912,6 +1912,8 @@ int kprobe_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 8599c1d..5e4f62e 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -667,6 +667,8 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
+@@ -691,6 +693,8 @@ static int syscall_exit_register(struct ftrace_event_call *event,
+ 		return 0;
+ 	case TRACE_REG_PERF_OPEN:
+ 	case TRACE_REG_PERF_CLOSE:
++	case TRACE_REG_PERF_ADD:
++	case TRACE_REG_PERF_DEL:
+ 		return 0;
+ #endif
+ 	}
 -- 
 1.7.1
 
