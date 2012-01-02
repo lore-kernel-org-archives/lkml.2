@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab2ABL7g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 06:59:36 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:35025 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab2ABL7b convert rfc822-to-8bit (ORCPT
+	id S1752669Ab2ABMAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 07:00:06 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38706 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752316Ab2ABMAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 06:59:31 -0500
+	Mon, 2 Jan 2012 07:00:04 -0500
+Date: Mon, 2 Jan 2012 11:59:59 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, jg1.han@samsung.com, kyungmin.park@samsung.com,
+        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
+        ben-linux@fluff.org, patches@linaro.org
+Subject: Re: [RFC][PATCH 1/4] lcd: platform-lcd: Eliminate need for platform
+ data
+Message-ID: <20120102115959.GG2899@opensource.wolfsonmicro.com>
+References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+ <1325483675-21908-2-git-send-email-thomas.abraham@linaro.org>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <4F008ECA.5040703@redhat.com>
-References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
-	<1321960128-15191-5-git-send-email-gilad@benyossef.com>
-	<alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
-	<4F00547A.9090204@redhat.com>
-	<CAOtvUMcCzK=tNkHudOrzxjdGkdkZPt02krO8QYRGjyXm+cvRSw@mail.gmail.com>
-	<4F008ECA.5040703@redhat.com>
-Date: Mon, 2 Jan 2012 13:59:30 +0200
-Message-ID: <CAOtvUMfWKpXaR6Ph1ZN6g0QhgmZtbcf=hMSgtkD-1pLpkzSuNA@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to flush
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        apkm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325483675-21908-2-git-send-email-thomas.abraham@linaro.org>
+X-Cookie: You now have Asian Flu.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 1, 2012 at 6:50 PM, Avi Kivity <avi@redhat.com> wrote:
-> On 01/01/2012 06:12 PM, Gilad Ben-Yossef wrote:
->> >
->> > Since this seems to be a common pattern, how about:
->> >
->> >   zalloc_cpumask_var_or_all_online_cpus(&cpus, GFTP_ATOMIC);
->> >   ...
->> >   free_cpumask_var(cpus);
->> >
->> > The long-named function at the top of the block either returns a newly
->> > allocated zeroed cpumask, or a static cpumask with all online cpus set.
->> > The code in the middle is only allowed to set bits in the cpumask
->> > (should be the common usage).  free_cpumask_var() needs to check whether
->> > the freed object is the static variable.
->>
->> Thanks for the feedback and advice! I totally agree the repeating
->> pattern needs abstracting.
->>
->> I ended up chosing to try a different abstraction though - basically a wrapper
->> on_each_cpu_cond that gets a predicate function to run per CPU to
->> build the mask
->> to send the IPI to. It seems cleaner to me not having to mess with
->> free_cpumask_var
->> and it abstracts more of the general pattern.
->>
->
-> This converts the algorithm to O(NR_CPUS) from a potentially lower
-> complexity algorithm.  Also, the existing algorithm may not like to be
-> driven by cpu number.  Both are true for kvm.
->
+On Mon, Jan 02, 2012 at 11:24:32AM +0530, Thomas Abraham wrote:
 
-Right, I was only thinking on my own uses, which are O(NR_CPUS) by nature.
+> @@ -10,12 +10,3 @@
+>   * published by the Free Software Foundation.
+>   *
+>  */
+> -
+> -struct plat_lcd_data;
+> -struct fb_info;
+> -
+> -struct plat_lcd_data {
+> -	void	(*set_power)(struct plat_lcd_data *, unsigned int power);
+> -	int	(*match_fb)(struct plat_lcd_data *, struct fb_info *);
+> -};
 
-I wonder if it would be better to create a safe_cpumask_var type with
-its own alloc function
-free and and sset_cpu function but no clear_cpu function so that the
-compiler will catch
-cases of trying to clear bits off of such a cpumask?
-
-It seems safer and also makes handling the free function easier.
-
-Does that makes sense or am I over engineering it? :-)
-
-Gilad
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+This is going to break all existing users as it will stop them compiling
+- they'd either need to be converted en masse to the new style as part
+of the commit doing this or the driver would need to support both
+platform data and new style configuration simultaneously.
