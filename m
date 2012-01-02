@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab2ABNtY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 08:49:24 -0500
-Received: from elettra.colt-to.towertech.it ([213.215.222.70]:57108 "EHLO
-	smtp.towertech.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab2ABNtV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 08:49:21 -0500
-X-Greylist: delayed 457 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jan 2012 08:49:21 EST
-Date: Mon, 2 Jan 2012 14:41:38 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: "P." <mailme667@yahoo.co.uk>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Ben Hutchings <ben@decadent.org.uk>, akpm@linux-foundation.org
-Subject: Re: [PATCH resend] rtc: Fix alarm rollover when day or month is
- out-of-range
-Message-ID: <20120102144138.034f5831@linux.lan.towertech.it>
-In-Reply-To: <20111231003552.GB22266@elie.Belkin>
-References: <1325289236.85273.YahooMailClassic@web27003.mail.ukl.yahoo.com>
-	<20111231003552.GB22266@elie.Belkin>
-Organization: Tower Technologies
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752753Ab2ABNvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 08:51:01 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37708 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089Ab2ABNu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 08:50:59 -0500
+Date: Mon, 2 Jan 2012 14:48:56 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
+ stop-machine, update stack tracer
+Message-ID: <20120102134856.GA32673@elte.hu>
+References: <20111221123624.193898256@goodmis.org>
+ <20120101180949.GA25066@elte.hu>
+ <20120102105856.GA6661@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120102105856.GA6661@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Dec 2011 18:35:52 -0600
-Jonathan Nieder <jrnieder@gmail.com> wrote:
 
-> From: Ben Hutchings <ben@decadent.org.uk>
-> Date: Thu, 29 Dec 2011 16:41:56 +0100
+* Ingo Molnar <mingo@elte.hu> wrote:
+
+> Just to give you an impression of how a failure looks like, the 
+> serial console just stops printing mid-line:
 > 
-> Commit f44f7f96a20a ('RTC: Initialize kernel state from RTC')
-> introduced a potential infinite loop.  If an alarm time contains a
-> wildcard month and an invalid day (> 31), or a wildcard year and an
-> invalid month (>= 12), the loop searching for the next matching date
-> will never terminate.  Treat the invalid values as wildcards.
+>  [   53.212942] calling  vt1211_init+0x0/0x9b @ 1                                                   
+>  [   53.212971] initcall vt1211_init+0x0/0x9b returned -19 after 23 usecs                           
+>  [   53.212975] calling  sm_vt8231_init+0x0/0x1b @ 1                                                
+>    Booting 'Fedora'
 > 
-> Fixes <http://bugs.debian.org/646429>, <http://bugs.debian.org/653331>
-> 
-> Reported-by: leo weppelman <leoweppelman@googlemail.com>
-> Reported-by: "P. van Gaans" <mailme667@yahoo.co.uk>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
+> and the next message is GRUB's 'Booting ...' line.
 
+here's another one:
 
- Seems reasonable, ty.
+[   53.224579] calling  sm_via686a_init+0x0/0x1b @ 1                                               
+[   53.224622] bus: 'pci': add driver via686a                                                      
+  Booting 'Fedora
 
+This occured after a series of 50 successful bootups ...
 
- Acked-by: Alessandro Zummo <a.zummo@towertech.it>
+Unfortunately this means that the 'baseline' numbers are 
+probably not reliable.
 
--- 
+Thanks,
 
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
-
+	Ingo
