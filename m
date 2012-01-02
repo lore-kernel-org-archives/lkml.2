@@ -1,131 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab2ABLw1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 06:52:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39010 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab2ABLwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 06:52:25 -0500
-Date: Mon, 2 Jan 2012 12:52:22 +0100
-From: Jan Kara <jack@suse.cz>
-To: Jorge Bastos <mysql.jorge@decimal.pt>
-Cc: "'Jan Kara'" <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        reiserfs-devel@vger.kernel.org, haiyangz@microsoft.com,
-        hjanssen@microsoft.com
-Subject: Re: Reiserfs.c bug in 3.2-rc5
-Message-ID: <20120102115222.GA3626@quack.suse.cz>
-References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>
- <20111213180707.GI11747@quack.suse.cz>
- <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
+	id S1752623Ab2ABL7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 06:59:36 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35025 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752316Ab2ABL7b convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 06:59:31 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="OXfL5xGRrasGEqWY"
-Content-Disposition: inline
-In-Reply-To: <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <4F008ECA.5040703@redhat.com>
+References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
+	<1321960128-15191-5-git-send-email-gilad@benyossef.com>
+	<alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
+	<4F00547A.9090204@redhat.com>
+	<CAOtvUMcCzK=tNkHudOrzxjdGkdkZPt02krO8QYRGjyXm+cvRSw@mail.gmail.com>
+	<4F008ECA.5040703@redhat.com>
+Date: Mon, 2 Jan 2012 13:59:30 +0200
+Message-ID: <CAOtvUMfWKpXaR6Ph1ZN6g0QhgmZtbcf=hMSgtkD-1pLpkzSuNA@mail.gmail.com>
+Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to flush
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        apkm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jan 1, 2012 at 6:50 PM, Avi Kivity <avi@redhat.com> wrote:
+> On 01/01/2012 06:12 PM, Gilad Ben-Yossef wrote:
+>> >
+>> > Since this seems to be a common pattern, how about:
+>> >
+>> >   zalloc_cpumask_var_or_all_online_cpus(&cpus, GFTP_ATOMIC);
+>> >   ...
+>> >   free_cpumask_var(cpus);
+>> >
+>> > The long-named function at the top of the block either returns a newly
+>> > allocated zeroed cpumask, or a static cpumask with all online cpus set.
+>> > The code in the middle is only allowed to set bits in the cpumask
+>> > (should be the common usage).  free_cpumask_var() needs to check whether
+>> > the freed object is the static variable.
+>>
+>> Thanks for the feedback and advice! I totally agree the repeating
+>> pattern needs abstracting.
+>>
+>> I ended up chosing to try a different abstraction though - basically a wrapper
+>> on_each_cpu_cond that gets a predicate function to run per CPU to
+>> build the mask
+>> to send the IPI to. It seems cleaner to me not having to mess with
+>> free_cpumask_var
+>> and it abstracts more of the general pattern.
+>>
+>
+> This converts the algorithm to O(NR_CPUS) from a potentially lower
+> complexity algorithm.  Also, the existing algorithm may not like to be
+> driven by cpu number.  Both are true for kvm.
+>
 
---OXfL5xGRrasGEqWY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Right, I was only thinking on my own uses, which are O(NR_CPUS) by nature.
 
-On Sat 24-12-11 11:55:43, Jorge Bastos wrote:
-> > >
-> > > What can be done here?
-> >   The assertion failing is:
-> >         BUG_ON(nblocks > journal->j_trans_max);
-> > in do_journal_begin_r(). That means that reiserfs_create() tried to
-> > start a
-> > transaction with more credits than allowed by the journal.
-> > 
-> >   When did you started to see this problem? Also do you use SELinux (or
-> > generally security labels)?
-> > 
-> 
-> No SELinux, the only change is from 3.1.1 to 3.2-rc5.
-> Tried the new 3.2-rc7 and the problem persists.
-  OK, so do I understand right that 3.1.1 is OK but 3.2-rc5/rc7 have
-the problem?
+I wonder if it would be better to create a safe_cpumask_var type with
+its own alloc function
+free and and sset_cpu function but no clear_cpu function so that the
+compiler will catch
+cases of trying to clear bits off of such a cpumask?
 
-> Is there a way that the ReiserFS people can commit the fix?
-  Sure, we just have to find where the problem is. Can you please run with
-the attached debugging patch applied and send me kernel output when the
-system crashes? Thanks.
+It seems safer and also makes handling the free function easier.
 
-								Honza
+Does that makes sense or am I over engineering it? :-)
+
+Gilad
+
 
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
---OXfL5xGRrasGEqWY
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-reiserfs-Debugging-patch.patch"
-
->From 4dd005ac485a6e86e2f81995894e9f8f6a352557 Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Mon, 2 Jan 2012 12:49:06 +0100
-Subject: [PATCH] reiserfs: Debugging patch
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/reiserfs/journal.c |    8 +++++++-
- fs/reiserfs/namei.c   |    7 +++++++
- 2 files changed, 14 insertions(+), 1 deletions(-)
-
-diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
-index eb71106..c7ff04a 100644
---- a/fs/reiserfs/journal.c
-+++ b/fs/reiserfs/journal.c
-@@ -3003,7 +3003,13 @@ static int do_journal_begin_r(struct reiserfs_transaction_handle *th,
- 	int retval;
- 
- 	reiserfs_check_lock_depth(sb, "journal_begin");
--	BUG_ON(nblocks > journal->j_trans_max);
-+	if (nblocks > journal->j_trans_max) {
-+		printk(KERN_ERR "Too many blocks for reiserfs a transaction"
-+			" (%lu > %lu)\n", nblocks,
-+			(unsigned long)journal->j_trans_max);
-+		dump_stack();
-+		return -EINVAL;
-+	}
- 
- 	PROC_INFO_INC(sb, journal.journal_being);
- 	/* set here for journal_join */
-diff --git a/fs/reiserfs/namei.c b/fs/reiserfs/namei.c
-index 80058e8..1a05abe 100644
---- a/fs/reiserfs/namei.c
-+++ b/fs/reiserfs/namei.c
-@@ -584,6 +584,7 @@ static int reiserfs_create(struct inode *dir, struct dentry *dentry, int mode,
- 		 REISERFS_QUOTA_TRANS_BLOCKS(dir->i_sb));
- 	struct reiserfs_transaction_handle th;
- 	struct reiserfs_security_handle security;
-+	int security_ret;
- 
- 	dquot_initialize(dir);
- 
-@@ -598,11 +599,17 @@ static int reiserfs_create(struct inode *dir, struct dentry *dentry, int mode,
- 		drop_new_inode(inode);
- 		return retval;
- 	}
-+	security_ret = retval;
- 	jbegin_count += retval;
- 	reiserfs_write_lock(dir->i_sb);
- 
- 	retval = journal_begin(&th, dir->i_sb, jbegin_count);
- 	if (retval) {
-+		if (retval == -EINVAL) {
-+			printk(KERN_ERR "reiserfs_security_init() returned %d"
-+				" (dir=%lu)\n", security_ret, dir->i_ino);
-+			BUG_ON(1);
-+		}
- 		drop_new_inode(inode);
- 		goto out_failed;
- 	}
--- 
-1.7.1
-
-
---OXfL5xGRrasGEqWY--
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
