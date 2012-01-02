@@ -1,95 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473Ab2ABWbe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 17:31:34 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:64152 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752523Ab2ABWbc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 17:31:32 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Jack Stone <jwjstone@fastmail.fm>
-Subject: Re: loading firmware while usermodehelper disabled.
-Date: Mon, 2 Jan 2012 23:31:27 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Matthew Garrett <mjg@redhat.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org> <201201022252.20139.marek.vasut@gmail.com> <4F022846.8080305@fastmail.fm>
-In-Reply-To: <4F022846.8080305@fastmail.fm>
+	id S1753477Ab2ABWkR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 17:40:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39716 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753297Ab2ABWkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 17:40:15 -0500
+Date: Mon, 2 Jan 2012 23:40:12 +0100
+From: Jan Kara <jack@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jan Kara <jack@suse.cz>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the ext3 tree
+Message-ID: <20120102224012.GE3626@quack.suse.cz>
+References: <20111228112254.551c2ee5a1ac8509962d6611@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201022331.27562.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111228112254.551c2ee5a1ac8509962d6611@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 02/01/12 21:52, Marek Vasut wrote:
-> >> On 02/01/12 21:23, Linus Torvalds wrote:
-> >>> On Mon, Jan 2, 2012 at 1:09 PM, Jack Stone <jwjstone@fastmail.fm> wrote:
-> >>>> What about USB "class" drivers e.g. usb-storage. They handle any
-> >>>> device that reports itself as a usb mass storage device. There could
-> >>>> be a device that needs to be bootstrapped before it becomes a generic
-> >>>> usb mass storage device. Do we really want to have to write a new
-> >>>> driver that is almost identical to the generic driver but handles the
-> >>>> USB firmware correctly.
-> >>> 
-> >>> I'd hope that the generic driver just expose enough interfaces that
-> >>> you could basically do a "firmware-load" driver that just loads the
-> >>> firmware and then attaches the device to the generic driver.
-> >> 
-> >> Sounds workable.
-> >> 
-> >> To make the firmware caching easier I would propose one extra function
-> >> in addition to the aforemensioned get_firmware / put_firmware - a
-> >> find_firmware function to search the cache and return the appropriate
-> >> firmware blob. It should only be called if the caller already has a
-> >> refcount to the firmware, it's only use is to save every driver saving a
-> >> pointer to the firmware.
-> >> 
-> >> If noone beats me to it I will try and put together an RFC for a new
-> >> version.
-> > 
-> > The problem is on systems with limited resources, most notably RAM. If
-> > you plug in many devices at once, many firmwares will be cached at one
-> > point, efectivelly doing DoS attach on the machine?
-> > 
-> > Also, how will this solve the suspect-resume issue? What if the device
-> > suspends only occasionally -- like every 24 hours -- then you'd have the
-> > FW cached all the time too?
-> 
-> Yes, at least to begin with. If we can come up with a robust scheme
-> which doesn't require the firmware to be kept in memory then that would
-> also be workable.
-> 
-> For example, drivers which know they don't ever need the firmware again
-> wouldn't need to cache it. That would probably be quite a small list -
-> there are systems that cut power to USB devices over suspend and so
-> those devices would need the firmware reloading.
+  Hi,
 
-That's the problem -- there are devices that can suspend, but in the end, the 
-port turns of the power to those devices and they loose fw anyway.
+On Wed 28-12-11 11:22:54, Stephen Rothwell wrote:
+> After merging the ext3 tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> I don't think there is anyway to avoid the memory requirement if we want
-> to be able to resume transparently to user-space (or even resume at all
-> in some setups).
-
-Well ... injecting firmware into kernel with some userland helper just before 
-suspend is no-go?
-
-M
-
+> fs/reiserfs/super.c: In function 'reiserfs_show_options':
+> fs/reiserfs/super.c:652:20: error: 'struct reiserfs_sb_info' has no member named 's_qf_names'
+> fs/reiserfs/super.c:653:50: error: 'struct reiserfs_sb_info' has no member named 's_qf_names'
+> fs/reiserfs/super.c:656:20: error: 'struct reiserfs_sb_info' has no member named 's_qf_names'
+> fs/reiserfs/super.c:657:50: error: 'struct reiserfs_sb_info' has no member named 's_qf_names'
+> fs/reiserfs/super.c:660:20: error: 'struct reiserfs_sb_info' has no member named 's_jquota_fmt'
+> fs/reiserfs/super.c:661:21: error: 'struct reiserfs_sb_info' has no member named 's_jquota_fmt'
+> fs/reiserfs/super.c:663:26: error: 'struct reiserfs_sb_info' has no member named 's_jquota_fmt'
 > 
-> Thanks,
-> 
-> Jack
+> Caused by commit 5fa84b871b97 ("reiserfs: Properly display mount options
+> in /proc/mounts").  Hint: CONFIG_QUOTA is not set in this build.
+  Ah, stupid me. Fixed now. Thanks for letting me know.
+
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
