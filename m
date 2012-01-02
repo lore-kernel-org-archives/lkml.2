@@ -1,148 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274Ab2ABGi0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 01:38:26 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:40054 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750812Ab2ABGiW (ORCPT
+	id S1751294Ab2ABGsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 01:48:23 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43342 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2ABGsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 01:38:22 -0500
-Message-ID: <4F0150D7.2010600@ti.com>
-Date: Mon, 02 Jan 2012 12:08:15 +0530
-From: Shubhrajyoti <shubhrajyoti@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Lightning/1.0b2 Thunderbird/3.1.15
+	Mon, 2 Jan 2012 01:48:21 -0500
 MIME-Version: 1.0
-To: Christopher Heiny <cheiny@synaptics.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 2/11] input: RMI4 core bus and sensor drivers.
-References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com> <1324519802-23894-3-git-send-email-cheiny@synaptics.com>
-In-Reply-To: <1324519802-23894-3-git-send-email-cheiny@synaptics.com>
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+Date: Sun, 1 Jan 2012 22:48:21 -0800
+Message-ID: <CAOesGMirAda7rzZcM74fat0qV8giy3Qniqh4z_oA9OSzMAOwHg@mail.gmail.com>
+Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device tree support
+From: Olof Johansson <olof@lixom.net>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, jg1.han@samsung.com,
+        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
+        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
+        ben-linux@fluff.org, patches@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christopher,
+Hi,
 
-On Thursday 22 December 2011 07:39 AM, Christopher Heiny wrote:
-> Signed-off-by: Christopher Heiny <cheiny@synaptics.com>
+On Sun, Jan 1, 2012 at 9:54 PM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
+> The platform-lcd driver depends on platform-specific callbacks to setup the
+> lcd panel. These callbacks are supplied using driver's platform data. But
+> for adding device tree support for platform-lcd driver, providing such
+> callbacks is not possible (without using auxdata).
 >
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> Cc: Linus Walleij <linus.walleij@stericsson.com>
-> Cc: Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-> Cc: Joeri de Gram <j.de.gram@gmail.com>
+> Since the callbacks are usually lcd panel specific, it is possible to include
+> the lcd panel specific setup and control functionality in the platform-lcd
+> driver itself, thereby eliminating the need for supplying platform specific
+> callbacks to the driver. The platform-lcd driver can include support for
+> multiple lcd panels.
 >
-> ---
->
->  drivers/input/rmi4/rmi_bus.c    |  436 ++++++++++++
->  drivers/input/rmi4/rmi_driver.c | 1488 +++++++++++++++++++++++++++++++++++++++
->  drivers/input/rmi4/rmi_driver.h |   97 +++
->  3 files changed, 2021 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/input/rmi4/rmi_bus.c b/drivers/input/rmi4/rmi_bus.c
-> new file mode 100644
-> index 0000000..e32d4ad
-> --- /dev/null
-> +++ b/drivers/input/rmi4/rmi_bus.c
-> @@ -0,0 +1,436 @@
-> +/*
-> + * Copyright (c) 2011 Synaptics Incorporated
-> + * Copyright (c) 2011 Unixphere
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/device.h>
-> +#include <linux/pm.h>
-> +#include <linux/slab.h>
-> +#include <linux/list.h>
-> +#include <linux/rmi.h>
-> +
-> +DEFINE_MUTEX(rmi_bus_mutex);
-> +
-> +static struct rmi_function_list {
-> +	struct list_head list;
-> +	struct rmi_function_handler *fh;
-> +} rmi_supported_functions;
-> +
-> +static struct rmi_character_driver_list {
-> +	struct list_head list;
-> +	struct rmi_char_driver *cd;
-> +} rmi_character_drivers;
-> +
-> +static int physical_device_count;
-> +
-> +static int rmi_bus_match(struct device *dev, struct device_driver *driver)
-> +{
-> +	struct rmi_driver *rmi_driver;
-> +	struct rmi_device *rmi_dev;
-> +	struct rmi_device_platform_data *pdata;
-> +
-> +	rmi_driver = to_rmi_driver(driver);
-> +	rmi_dev = to_rmi_device(dev);
-> +	pdata = to_rmi_platform_data(rmi_dev);
-> +	dev_dbg(dev, "Matching %s.\n", pdata->sensor_name);
-> +
-> +	if (!strcmp(pdata->driver_name, rmi_driver->driver.name)) {
-> +		rmi_dev->driver = rmi_driver;
-> +		dev_dbg(dev, "%s: Match %s to %s succeeded.\n", __func__,
-> +			pdata->driver_name, rmi_driver->driver.name);
-> +		return 1;
-> +	}
-> +
-> +	dev_err(dev, "%s: Match %s to %s failed.\n", __func__,
-> +		pdata->driver_name, rmi_driver->driver.name);
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_PM
-> +static int rmi_bus_suspend(struct device *dev)
-> +{
-> +#ifdef GENERIC_SUBSYS_PM_OPS
-> +	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> +
-> +	if (pm && pm->suspend)
-> +		return pm->suspend(dev);
-If driver-pm- suspend is not there should you not fall back to . suspend ?
+> This patchset removes the need for platform data for platform-lcd driver and
+> adds support which can be used to implement lcd panel specific functionality
+> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
+> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
+> This currently breaks build for other users of platform-lcd driver. Those can be
+> fixed if this approach is acceptable.
 
-> +#endif
-> +
-> +	return 0;
-> +}
-> +
-> +static int rmi_bus_resume(struct device *dev)
-> +{
-> +#ifdef GENERIC_SUBSYS_PM_OPS
-> +	const struct dev_pm_ops *pm = dev->driver ? dev->driver->pm : NULL;
-> +
-> +	if (pm && pm->resume)
-> +		return pm->resume(dev);
-same here?
-> +#endif
-> +
-> +	return 0;
-> +}
-> +#endif
-> +
-> +static int rmi_bus_probe(struct device *dev)
+I think it would be a better idea to provide a generic binding for the
+simple LCD panels that just need one or two power GPIOs to be turned
+on (some tend to need one to activate and one for power control --
+second might in some cases be handled through a regulator I suppose).
+I'm sure there will be exceptions to this; panels that have quirks or
+requirements on various things that will either require an expanded
+binding, or custom probe functions.
+
+Especially in the case you are providing -- that lcd driver is only
+using a single gpio, and it would be much more valuable to have a
+trivial binding for this that uses shared code for this. Otherwise
+every single simple panel will need to be added over time.
 
 
+-Olof
