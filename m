@@ -1,76 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751818Ab2ABJ5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 04:57:18 -0500
-Received: from mga03.intel.com ([143.182.124.21]:12915 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab2ABJ5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 04:57:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="91467010"
-Date: Mon, 2 Jan 2012 17:57:11 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: =?utf-8?B?77+977+977+977+9yKM=?= <chanho.min@lge.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "'Jens Axboe'" <axboe@kernel.dk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is
- detached
-Message-ID: <20120102095711.GA16570@localhost>
-References: <004401ccc932$444a0070$ccde0150$@min@lge.com>
+	id S1752026Ab2ABKIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 05:08:21 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34843 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab2ABKIS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 05:08:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <004401ccc932$444a0070$ccde0150$@min@lge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1324661918.1633.35.camel@vkoul-udesk3>
+References: <1324051191-19507-1-git-send-email-javier.martin@vista-silicon.com>
+	<1324661918.1633.35.camel@vkoul-udesk3>
+Date: Mon, 2 Jan 2012 11:08:17 +0100
+Message-ID: <CACKLOr0fVMknA+HAbgn3d9_f9tdz4L2Z9Bx4yMU7eLmr1mdXBA@mail.gmail.com>
+Subject: Re: [PATCH] dmaengine: Add support for MEMCPY for imx-dma.
+From: javier Martin <javier.martin@vista-silicon.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 06:38:21PM +0900, ï¿½ï¿½ï¿½ï¿½È£ wrote:
-> from Chanho Min <chanho.min@lge.com>
-> 
-> System may crash in backing-dev.c when removal SCSI device is detached.
-> bdi task is killed by bdi_unregister()/'khubd', but task's point remains.
-> Shortly afterward, If 'wb->wakeup_timer' is expired before
-> del_timer()/bdi_forker_thread,
-> wakeup_timer_fn() may wake up the dead thread which cause the crash.
-> 'bdi->wb.task' should be NULL as this patch.
+Hi Vinod,
+thank you for your review.
 
-Is it some race condition between del_timer() and del_timer_sync()?
+On 23 December 2011 18:38, Vinod Koul <vinod.koul@intel.com> wrote:
+>> @@ -328,6 +329,37 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+>>       return &imxdmac->desc;
+>>  }
+>>
+>> +static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
+>> +     struct dma_chan *chan, dma_addr_t dest,
+>> +     dma_addr_t src, size_t len, unsigned long flags)
+>> +{
+>> +     struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+>> +     struct imxdma_engine *imxdma = imxdmac->imxdma;
+>> +     int ret;
+>> +
+>> +     dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
+>> +                     __func__, imxdmac->channel, src, dest, len);
+>> +
+>> +     if (imxdmac->status == DMA_IN_PROGRESS)
+>> +             return NULL;
+>> +
+>> +     imxdmac->status = DMA_IN_PROGRESS;
+> why? prepare doesn't mean DMA is in progress. You can get multiple
+> descriptors for same channel by calling prepare multiple times.
+> Even one descriptor can be memcpy whereas other is slave...
+> In issue_pending this should be moved to DMA_IN_PROGRESS
 
-bdi_unregister() calls 
+According to the original developer of this file it only supports a
+single descriptor. Please, take a look at the following function:
 
-        del_timer_sync
-        bdi_wb_shutdown
-            kthread_stop
-
-in turn, and del_timer_sync() should guarantee wakeup_timer_fn() is
-no longer called to access the stopped task.
-
-Thanks,
-Fengguang
+static void imxdma_issue_pending(struct dma_chan *chan)
+{
+	/*
+	 * Nothing to do. We only have a single descriptor
+	 */
+}
 
 
-> Signed-off-by: Chanho Min <chanho.min@lge.com>
-> ---
->  mm/backing-dev.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index 71034f4..4378a5e 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -607,6 +607,7 @@ static void bdi_wb_shutdown(struct backing_dev_info
-> *bdi)
->         if (bdi->wb.task) {
->                 thaw_process(bdi->wb.task);
->                 kthread_stop(bdi->wb.task);
-> +               bdi->wb.task = NULL;
->         }
->  }
-> 
-> -- 
-> 1.7.0.4
+Also, the same behavior is present in the other prepare functions:
+"imxdma_prep_slave_sg" and "imxdma_prep_dma_cyclic".
+
+I think the less painful approach here is merging my patch so that
+multiple descriptors support can be added later.
+
+--
+Javier Martin
+Vista Silicon S.L.
+CDTUC - FASE C - Oficina S-345
+Avda de los Castros s/n
+39005- Santander. Cantabria. Spain
++34 942 25 32 60
+www.vista-silicon.com
