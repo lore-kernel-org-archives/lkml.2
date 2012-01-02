@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584Ab2ABLqc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 06:46:32 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:41653 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752196Ab2ABLqa (ORCPT
+	id S1752549Ab2ABLvR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 06:51:17 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:59335 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752064Ab2ABLvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 06:46:30 -0500
+	Mon, 2 Jan 2012 06:51:15 -0500
+Message-ID: <4F019A19.3060701@st.com>
+Date: Mon, 2 Jan 2012 17:20:49 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20110929 Thunderbird/7.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAN1soZwEj2SYa9eqH-Nyw0wvVF8kk7tn_gLu+BPDS3ZT1Has+Q@mail.gmail.com>
-References: <1324249593-3051-1-git-send-email-linus.walleij@stericsson.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF176BE92C1B@HQMAIL01.nvidia.com>
-	<CAN1soZwEj2SYa9eqH-Nyw0wvVF8kk7tn_gLu+BPDS3ZT1Has+Q@mail.gmail.com>
-Date: Mon, 2 Jan 2012 12:46:29 +0100
-Message-ID: <CACRpkdbYEbmrg+-uKn3VREe6GrKOL0urPXDFf21GZfM5fQPcUA@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: add support for group and pinmux states
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@gmail.com>
-Cc: Stephen Warren <swarren@nvidia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: "Williams, Dan J" <dan.j.williams@intel.com>,
+        Viresh KUMAR <viresh.kumar@st.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Barry Song <21cnbao@gmail.com>, Shawn Guo <shawn.guo@freescale.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Dong Aisheng <dong.aisheng@linaro.org>,
-        Rajendra Nayak <rajendra.nayak@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Shiraz HASHIM <shiraz.hashim@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Mirko GARDI <mirko.gardi@st.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>, Amit VIRDI <Amit.VIRDI@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>
+Subject: Re: dmaengine/Query: What about scatter/gather for mem to mem transfers.
+References: <4EE038BD.7010705@st.com>  <1323329870.1641.27.camel@vkoul-udesk3> <4EE06C3C.8080003@st.com>  <4EE8469B.8050201@st.com> <4EE97E77.8060703@st.com>  <8D3F6266AEB6384E807C6FFC6FE195E327F2B0@BGSMSX101.gar.corp.intel.com>  <4EE98478.5070209@st.com>  <4EE99A15.8010608@st.com>  <1324372895.1641.10087.camel@vkoul-udesk3>  <4EF0602C.4070001@st.com> <1325504133.1540.26.camel@vkoul-udesk3>
+In-Reply-To: <1325504133.1540.26.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 20, 2011 at 3:22 AM, Haojian Zhuang
-<haojian.zhuang@gmail.com> wrote:
-
-> Do we really need to configure low power mode in device driver?
-
-Who said anything about the device driver?
-
-It's just an API, I was imagining the group states being triggered
-from where it makes sense. In our case it would currently be done
-in the central system-wide runtime PM and system idle loop. Not
-in device drivers at all.
-
-> In most time,
-> user will set and tune the low power mode of pins.
+On 1/2/2012 5:05 PM, Vinod Koul wrote:
+> On Tue, 2011-12-20 at 15:45 +0530, Pratyush Anand wrote:
+>> >  On 12/20/2011 2:51 PM, Vinod Koul wrote:
+>>> >  >  On Thu, 2011-12-15 at 12:26 +0530, Pratyush Anand wrote:
+>>>>>> >  >>>>  That way existing mechanism would work well for you.
+>>>>>> >  >>>>  You need to split the chunks properly, which is what dma would do
+>>>> >  >>  anyway
+>>>>>> >  >>>>
+>>>>> >  >>>
+>>>>> >  >>>  Yes, they can be split like this, but then splitting onus will go on
+>>>> >  >>  dma
+>>>>> >  >>>  user driver, and so there would be replication of similar logic at
+>>>>> >  >>>  several places. Therefore, I was thinking to make device_prep_dma_sg
+>>>> >  >>  as
+>>>>> >  >>>  generic by adding these flags.
+>>> >  >  Well I am not sure how adding flags handles this?
+>> >
+>> >  device_prep_dma_sg has last argument as flags. dma user driver can pass
+>> >  information about inc/dec of src/dst in this flag, which can be used by
+>> >  the dma driver. I have put one such implementation at the end of mail.
+> with the split pre-done would we need to do this, hence the referred
+> implementation.
 >
-> If the low power setting
-> could be configured via sysfs, it could save a lot of time to rebuild kernel.
 
-pinctrl does not have a sysfs interface, and as per discussion with
-Grant this needs to be designed with care. I think proper device nodes
-for the pin controllers and iopctl():s is way more apropriate if we really
-want a userspace interface to pinctrl stuff.
+even with pre-done, some flag in this function will be needed. Because 
+HW also need o know whether to src and dst are in incrementing or 
+decrementing order.
 
-> Especially GPIO pins are board specific. I think that configure all low power
-> setting in board specific code is more reasonable.
 
-As outlined in my response to Stephen you supply the group states
-to your driver along with any other platform data or DT nodes.
 
-Yours,
-Linus Walleij
