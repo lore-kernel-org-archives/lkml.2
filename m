@@ -1,96 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753448Ab2ABUb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 15:31:59 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:45292 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab2ABUbz (ORCPT
+	id S1753306Ab2ABUlI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 15:41:08 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:53750 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752834Ab2ABUlG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 15:31:55 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>, Greg Kroah-Hartman <greg@kroah.com>,
-        stable@kernel.org
-Subject: [PATCH] firmware: Fix an oops on reading fw_priv->fw in sysfs loading file
-Date: Mon,  2 Jan 2012 15:31:23 -0500
-Message-Id: <1325536283-21159-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.7.7.4
-X-Spam-Score: -2.9 (--)
+	Mon, 2 Jan 2012 15:41:06 -0500
+X-Sasl-enc: olo98O7Q0LH83UMri5H2PsyNwsDqWh+qH4164iOWfX3N 1325536863
+Message-ID: <4F02165C.1060400@fastmail.fm>
+Date: Mon, 02 Jan 2012 20:41:00 +0000
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oliver Neukum <oliver@neukum.org>, Matthew Garrett <mjg@redhat.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This oops was reported recently:
-firmware_loading_store+0xf9/0x17b
-dev_attr_store+0x20/0x22
-sysfs_write_file+0x101/0x134
-vfs_write+0xac/0xf3
-sys_write+0x4a/0x6e
-system_call_fastpath+0x16/0x1b
+On 02/01/12 16:54, Alan Stern wrote:
+> What Oliver and I have been discussing is delaying the probe call until
+> after resume is finished, when userspace is back up and everything is
+> operating normally again.  It would be more awkward than the current
+> code, but it definitely can be done.
 
-The complete backtrace was unfortunately not captured, but details can be found
-here:
-https://bugzilla.redhat.com/show_bug.cgi?id=769920
+What about the case where the firmware that needs to be loaded is on the
+USB device that needs the firmware. This can be resolved at boot using
+an initrd but at resume time we don't have that.
 
-The cause is fairly clear.
+Thanks,
 
-Its caused by the fact that firmware_loading_store has a case 0 in its
-switch statement that reads and writes the fw_priv->fw poniter without the
-protection of the fw_lock mutex.  since there is a window between the time that
-_request_firmware sets fw_priv->fw to NULL and the time the corresponding sysfs
-file is unregistered, its possible for a user space application to race in, and
-write a zero to the loading file, causing a NULL dereference in
-firmware_loading_store.  Fix it by extending the protection of the fw_lock mutex
-to cover all of the firware_loading_store function.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Greg Kroah-Hartman <greg@kroah.com>
-CC: stable@kernel.org
----
- drivers/base/firmware_class.c |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 06ed6b4..3719c94 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -226,13 +226,13 @@ static ssize_t firmware_loading_store(struct device *dev,
- 	int loading = simple_strtol(buf, NULL, 10);
- 	int i;
- 
-+	mutex_lock(&fw_lock);
-+
-+	if (!fw_priv->fw)
-+		goto out;
-+
- 	switch (loading) {
- 	case 1:
--		mutex_lock(&fw_lock);
--		if (!fw_priv->fw) {
--			mutex_unlock(&fw_lock);
--			break;
--		}
- 		firmware_free_data(fw_priv->fw);
- 		memset(fw_priv->fw, 0, sizeof(struct firmware));
- 		/* If the pages are not owned by 'struct firmware' */
-@@ -243,7 +243,6 @@ static ssize_t firmware_loading_store(struct device *dev,
- 		fw_priv->page_array_size = 0;
- 		fw_priv->nr_pages = 0;
- 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
--		mutex_unlock(&fw_lock);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
-@@ -274,7 +273,8 @@ static ssize_t firmware_loading_store(struct device *dev,
- 		fw_load_abort(fw_priv);
- 		break;
- 	}
--
-+out:
-+	mutex_unlock(&fw_lock);
- 	return count;
- }
- 
--- 
-1.7.7.4
+Jack
 
