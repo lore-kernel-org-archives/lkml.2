@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753508Ab2ABXNu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 18:13:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40855 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752335Ab2ABXNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 18:13:48 -0500
-Date: Tue, 3 Jan 2012 10:13:35 +1100
-From: NeilBrown <neilb@suse.de>
-To: <b29237@freescale.com>
-Cc: <linux-raid@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <r58472@freescale.com>
-Subject: Re: [PATCH][RFC] 	RAID5/DMA/memcpy: zero copy the bio page when
- possible
-Message-ID: <20120103101335.3f8f81bc@notabene.brown>
-In-Reply-To: <1325049608-8638-1-git-send-email-b29237@freescale.com>
-References: <1325049608-8638-1-git-send-email-b29237@freescale.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/Zz8cUdVP/qSD7eNKg_PXgYF"; protocol="application/pgp-signature"
+	id S1753486Ab2ABX0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 18:26:00 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:54110 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753001Ab2ABXZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 18:25:57 -0500
+X-Sasl-enc: FIuQbs8CFTFCU2Jb7Rthzxwty5d3AVYlQS1jUmRwO8m1 1325546756
+Message-ID: <4F023D02.1030403@fastmail.fm>
+Date: Mon, 02 Jan 2012 23:25:54 +0000
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Marek Vasut <marek.vasut@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Matthew Garrett <mjg@redhat.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org> <201201022252.20139.marek.vasut@gmail.com> <4F022846.8080305@fastmail.fm> <201201022331.27562.marek.vasut@gmail.com>
+In-Reply-To: <201201022331.27562.marek.vasut@gmail.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/Zz8cUdVP/qSD7eNKg_PXgYF
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 02/01/12 22:31, Marek Vasut wrote:
+>> I don't think there is anyway to avoid the memory requirement if we want
+>> to be able to resume transparently to user-space (or even resume at all
+>> in some setups).
+> 
+> Well ... injecting firmware into kernel with some userland helper just before 
+> suspend is no-go?
 
-On Wed, 28 Dec 2011 13:20:08 +0800 <b29237@freescale.com> wrote:
+Its a perfectly good idea but you still need the full memory requirement
+during the suspend.
 
-> From: Forrest shi <b29237@freescale.com>
->=20
-> 	use bio page directly instead of copying the bio page to stripe
-> 	header page when possible.
->=20
-> 	Signed-off-by: Forrest Shi<b29237@freescale.com>
+Thanks,
 
-I'm sorry but if you want anyone to review this and comment on it you need =
-to
-give us a bit more help - like telling us what the purpose of the patch is.
+Jack
 
-There are a couple of hints but what is needed is a 'big picture'
-description.  What is the problem you are fixing?  How are you fixing it?
-What are the costs/benefits?
-
-> @@ -754,10 +764,16 @@ ops_run_compute5(struct stripe_head *sh, struct rai=
-d5_percpu *percpu)
->  		__func__, (unsigned long long)sh->sector, target);
->  	BUG_ON(!test_bit(R5_Wantcompute, &tgt->flags));
-> =20
-> -	for (i =3D disks; i--; )
-> +	for (i =3D disks; i--; ) {
-> +		struct r5dev *dev =3D &sh->dev[i];
-> +		struct page *pg =3D dev->page;
->  		if (i !=3D target)
-> -			xor_srcs[count++] =3D sh->dev[i].page;
-> -
-> +#ifdef CONFIG_OPTIMIZE_FSL_DMA_MEMCPY
-> +			if (test_bit(R5_DirectAccess, &dev->flags))
-> +				pg =3D dev->req.bi_io_vec[0].bv_page;
-> +#endif
-> +			xor_srcs[count++] =3D pg;
-> +	}
->  	atomic_inc(&sh->count);
-
-And something is very wrong here.  I think you need { } around the body of
-the 'if' statement.
-
-NeilBrown
-
-
---Sig_/Zz8cUdVP/qSD7eNKg_PXgYF
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBTwI6Hznsnt1WYoG5AQJyNg//RDkgu+EIibzC+Atu4kS8wnvgpEoQ0Cyi
-5NEiRUAHhcAhvf+yvm+qNQsZmEF79rwzFdMLbV9DXvMeCcnPUsxPtlXW9+8HN1uq
-OIhl40fJvNddl7ryIZeqxjPcr6/MxqLxe/C9M0OnmMLtLZy7G/OmKCWJRr6a6cUP
-WAjYy6Mguw8DHNpjYLRF3bJPN2zMGCtTNW8mlAAgdtLY4X92iSnSMR/LEvQw8YBf
-eAwXigEIpLcLbzaPYcgP4s1TIhT+gNZVn6dN4sRrntajcWgWUBuTqicqlVZhbWSE
-tX0yJvX3Y6ANCAcOFEtSQQcROiI+2TKUwBPm0Cm9FxpM5MSo9y9figkzn6M7AQJj
-yq95p158HBKKeyu5rFEkyTF1yIi7tPap/0oqBVXj3RnJWyOO6t81lP/U5qka0jWL
-k23EzjD5l2bWQ99vYeOpkxAN83WtvcYv5uiTq3CxnftIA9XBuzIz1gi8J6xa4LBR
-pTBVtE4SBpmiUrxggs/IqklAOvVyZAibEUxJLeEXplyKQbjP1N8SlwJYOgYY+PRs
-pIml5FIqO6dBXXPyE6Cf+GGc0jtXY/ZZmw7QLCwRuo7kVTgudHqYqG+E6Pu42pmk
-7Vgb30aC9vdKn6H+V7kFBzFhFYd8DnYyv7Vkxjm+43+Y8hnHk8fRjK6X0zfENMcW
-iG6HRpiRHd8=
-=Byx3
------END PGP SIGNATURE-----
-
---Sig_/Zz8cUdVP/qSD7eNKg_PXgYF--
