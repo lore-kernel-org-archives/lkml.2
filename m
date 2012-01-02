@@ -1,87 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752242Ab2ABKeb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 05:34:31 -0500
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:56197 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab2ABKe2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 05:34:28 -0500
-From: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>, Rik van Riel <riel@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, vatsa@linux.vnet.ibm.com,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-In-Reply-To: <4F017AD2.3090504@redhat.com>
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com>
-User-Agent: Notmuch/0.10.2+70~gf0e0053 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-redhat-linux-gnu)
-Date: Mon, 02 Jan 2012 16:00:18 +0530
-Message-ID: <87obumqtvp.fsf@abhimanyu.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-x-cbid: 12010210-8256-0000-0000-000000B430A9
+	id S1752279Ab2ABK6i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 05:58:38 -0500
+Received: from mga03.intel.com ([143.182.124.21]:38595 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488Ab2ABK6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 05:58:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="91478758"
+Subject: Re: [PATCH] dmaengine: Add support for MEMCPY for imx-dma.
+From: Vinod Koul <vinod.koul@intel.com>
+To: javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CACKLOr0fVMknA+HAbgn3d9_f9tdz4L2Z9Bx4yMU7eLmr1mdXBA@mail.gmail.com>
+References: <1324051191-19507-1-git-send-email-javier.martin@vista-silicon.com>
+	 <1324661918.1633.35.camel@vkoul-udesk3>
+	 <CACKLOr0fVMknA+HAbgn3d9_f9tdz4L2Z9Bx4yMU7eLmr1mdXBA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 02 Jan 2012 16:28:45 +0530
+Message-ID: <1325501925.1540.9.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Jan 2012 11:37:22 +0200, Avi Kivity <avi@redhat.com> wrote:
-> On 12/31/2011 04:21 AM, Nikunj A Dadhania wrote:
+On Mon, 2012-01-02 at 11:08 +0100, javier Martin wrote:
+> Hi Vinod,
+> thank you for your review.
+> 
+> On 23 December 2011 18:38, Vinod Koul <vinod.koul@intel.com> wrote:
+> >> @@ -328,6 +329,37 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+> >>       return &imxdmac->desc;
+> >>  }
+> >>
+> >> +static struct dma_async_tx_descriptor *imxdma_prep_dma_memcpy(
+> >> +     struct dma_chan *chan, dma_addr_t dest,
+> >> +     dma_addr_t src, size_t len, unsigned long flags)
+> >> +{
+> >> +     struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+> >> +     struct imxdma_engine *imxdma = imxdmac->imxdma;
+> >> +     int ret;
+> >> +
+> >> +     dev_dbg(imxdma->dev, "%s channel: %d src=0x%x dst=0x%x len=%d\n",
+> >> +                     __func__, imxdmac->channel, src, dest, len);
+> >> +
+> >> +     if (imxdmac->status == DMA_IN_PROGRESS)
+> >> +             return NULL;
+> >> +
+> >> +     imxdmac->status = DMA_IN_PROGRESS;
+> > why? prepare doesn't mean DMA is in progress. You can get multiple
+> > descriptors for same channel by calling prepare multiple times.
+> > Even one descriptor can be memcpy whereas other is slave...
+> > In issue_pending this should be moved to DMA_IN_PROGRESS
+> 
+> According to the original developer of this file it only supports a
+> single descriptor. Please, take a look at the following function:
+> 
+> static void imxdma_issue_pending(struct dma_chan *chan)
+> {
+> 	/*
+> 	 * Nothing to do. We only have a single descriptor
+> 	 */
+> }
+> 
+> 
+> Also, the same behavior is present in the other prepare functions:
+> "imxdma_prep_slave_sg" and "imxdma_prep_dma_cyclic".
+> 
+> I think the less painful approach here is merging my patch so that
+> multiple descriptors support can be added later.
+This behavior has nothing to do with single/multiple descriptors.
+Prepare means to prepare the transfer and not to submit. There are other
+APIs given to do the job. Please go thru the Documentation/dmaengine.txt
+as well.
 
-> >
-> >     non-PLE - Test Setup:
-> >     =====================
+I know some drivers are broken in this respect, but would be great if
+you can fix this behavior here as well.
 
-> >
-> >     ebizzy 8vm (improved 331%)
-[...]
-> >     GangV2:
-> >     27.96%       ebizzy  libc-2.12.so            [.] __memcpy_ssse3_back
-> >     12.13%       ebizzy  [kernel.kallsyms]       [k] clear_page
-> >     11.66%       ebizzy  [kernel.kallsyms]       [k] __bitmap_empty
-> >     11.54%       ebizzy  [kernel.kallsyms]       [k] flush_tlb_others_ipi
-> >      5.93%       ebizzy  [kernel.kallsyms]       [k] __do_page_fault
-> >
-> >     GangBase;
-> >     36.34%       ebizzy  [kernel.kallsyms]  [k] __bitmap_empty
-> >     35.95%       ebizzy  [kernel.kallsyms]  [k] flush_tlb_others_ipi
-> >      8.52%       ebizzy  libc-2.12.so       [.] __memcpy_ssse3_back
-> 
-> Same thing.  __bitmap_empty() is likely the cpumask_empty() called from
-> flush_tlb_others_ipi(), so 70% of time is spent in this loop.
-> 
-> Xen works around this particular busy loop by having a hypercall for
-> flushing the tlb, but this is very fragile (and broken wrt
-> get_user_pages_fast() IIRC).
-> 
-> >
-> >     dbench 8vm (degraded -30%)
-> >     +------------+--------------------+--------------------+----------+
-> >     |                               Dbench                            |
-> >     +------------+--------------------+--------------------+----------+
-> >     | Parameter  | GangBase           |   Gang V2          | % imprv  |
-> >     +------------+--------------------+--------------------+----------+
-> >     |      dbench|               2.01 |               1.38 |      -30 |
-> >     |     BwUsage|    100408068913.00 |    176095548113.00 |       75 |
-> >     |    HostIdle|              82.00 |              74.00 |        9 |
-> >     |      IOWait|              25.00 |              23.00 |        8 |
-> >     |    IdleTime|              74.00 |              71.00 |       -4 |
-> >     |         TPS|              13.00 |              13.00 |        0 |
-> >     | CacheMisses|       137351386.00 |       267116184.00 |      -94 |
-> >     |   CacheRefs|      4347880250.00 |      5830408064.00 |       34 |
-> >     |BranchMisses|       602120546.00 |      1110592466.00 |      -84 |
-> >     |    Branches|     22275747114.00 |     39163309805.00 |       75 |
-> >     |Instructions|    107942079625.00 |    195313721170.00 |      -80 |
-> >     |      Cycles|    271014283494.00 |    481886203993.00 |      -77 |
-> >     |     PageFlt|           44373.00 |           47679.00 |       -7 |
-> >     |   ContextSW|         3318033.00 |        11598234.00 |     -249 |
-> >     |   CPUMigrat|           82475.00 |          423066.00 |     -412 |
-> >     +-----------------------------------------------------------------+
-> >
-> 
-> Rik, what's going on?  ContextSW is relatively low in the base load,
-> looks like PLE is asleep on the wheel.
-> 
-Avi, the above dbench result is from a non-PLE machine. So PLE will not
-come into picture here.
+-- 
+~Vinod
 
