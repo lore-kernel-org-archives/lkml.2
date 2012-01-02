@@ -1,52 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903Ab2ABDdk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 1 Jan 2012 22:33:40 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:39979 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab2ABDdh (ORCPT
+	id S1752006Ab2ABERZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 1 Jan 2012 23:17:25 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54837 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751666Ab2ABERX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 1 Jan 2012 22:33:37 -0500
-Date: Mon, 2 Jan 2012 03:33:20 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Michael =?iso-8859-1?Q?B=FCsch?= <m@bues.ch>
-Cc: Oliver Neukum <oliver@neukum.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Dave Jones <davej@redhat.com>,
+	Sun, 1 Jan 2012 23:17:23 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+Date: Mon, 2 Jan 2012 05:17:19 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oliver@neukum.org>,
+        Matthew Garrett <mjg@redhat.com>, Dave Jones <davej@redhat.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming Li <chaoming_li@realsil.com.cn>,
         "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
         USB list <linux-usb@vger.kernel.org>,
         Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Message-ID: <20120102033320.GA6184@srcf.ucam.org>
-References: <201201011322.34483.oliver@neukum.org>
- <Pine.LNX.4.44L0.1201011105200.4534-100000@netrider.rowland.org>
- <CA+55aFw-ar6dnPvn5wy=3Tv8fc_7Witri2mV=cCvH+aMv+jH1Q@mail.gmail.com>
- <201201012227.56568.oliver@neukum.org>
- <20120101223913.3ff57d0f@milhouse>
+References: <201201011322.34483.oliver@neukum.org> <Pine.LNX.4.44L0.1201011105200.4534-100000@netrider.rowland.org> <CA+55aFw-ar6dnPvn5wy=3Tv8fc_7Witri2mV=cCvH+aMv+jH1Q@mail.gmail.com>
+In-Reply-To: <CA+55aFw-ar6dnPvn5wy=3Tv8fc_7Witri2mV=cCvH+aMv+jH1Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120101223913.3ff57d0f@milhouse>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201020517.19624.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 01, 2012 at 10:39:13PM +0100, Michael Büsch wrote:
+> On Sun, Jan 1, 2012 at 8:17 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > As Linus pointed out, the real problem here is the firmware loader.
+> > The way it is now, a driver can't always depend on the data being
+> > available, even during a normal boot.  It ought to use an asynchronous
+> > approach; then none of these problems would arise.
+> 
+> WRONG.
+> 
+> Alan, you're not getting it. Loading firmware as part of
+> suspend/resume is WRONG.
+> 
+> It would not be made any better by an asynchronous approach, and that
+> isn't the problem with request_firmware().
+> 
+> Suspend/resume is *special*, and it's special for a very simple
+> reason: unlike bootup or attaching a new device, suspend/resume
+> happens WHILE THE USER IS ACTIVE.
+> 
+> Loading firmware at that time is wrong. It's impossible. You have to
+> have the firmware available *before* any processes might need it, but
+> at the same time actually loading the firmware may need help from user
+> space and/or other devices. It's a chicken-and-egg problem.
+> 
+> So let me repeat one more time: Loading firmware at resume time is a
+> device driver bug. Seriously. How many times do I have to say it?
+> 
+> And making it asynchronous doesn't make it *any* less of a bug. It
+> doesn't change anything but timing, but the problem was never about
+> timing in the first place! The problem was about dependencies. User
+> space may well depend on the device, and *other* devices may well
+> depend on the device working.
+> 
+> So stop with the inanity. I've already told people what the fix is:
+> make sure that the firmware image is in memory before the suspend ever
+> happens, and just reload it from memory. NOT with
+> "request_firmware()". Because requesting the firmware at resume time
+> is buggy and wrong, and has nothing to do with "asynchronous" or
+> "synchronous". It has everything to do with "it's buggy".
+> 
+> Really really really.
+> 
+> So the problem with request_firmware() has absolutely nothing to do
+> with "asynchronous". The problem is that the firmware interfaces do
+> not cache the data in memory, and currently *cannot* sanely cache the
+> firmware data simply because the interface doesn't have any kind of
+> lifetime rules.
+> 
+> In other words: we could make "request_firmware()" cache *all*
+> firmware images forever, but there is currently no way to say "ok, the
+> device was unplugged - and not fakily so by a resume event, but for
+> real, and physically - so now you can drop the cache". Which means
+> that effectively request_firmware() can do no caching at all, because
+> it might eventually just run out of memory.
+> 
+> It is *possible* that we might tie the firmware lifetime rules to the
+> driver module lifetime. But it would probably be much better if we
+> made for an explicit model of "ok, the device is now really gone" so
+> that it would work properly with compiled-in drivers etc too.
+> 
+> And yes, the firmware would have to stay around even around a
+> resume/suspend that causes unplug events over USB. The "use USB and
+> lose power" actually happens also for built-in devices that may well
+> be disks and network cards that are *needed* by user space, so even if
+> the device has been electrically unplugged, it is still attached and
+> needs to be brought back *before* user space comes back.
+> 
+> That's the whole point of suspend/resume: we're not starting from a
+> clean slate. We are supposed to continue as if nothing happened!
+> 
+>                                   Linus
 
-> I don't get it. Why would a device enter a state after resume, that it was not
-> in at _any_ time before the machine was suspended?
+FYI this is not only problem with USB, but with PCMCIA too for example.
 
-Load firmware. Do a warm reboot. The hardware may maintain the 
-initialised state, but the new kernel will never have loaded it.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+M
