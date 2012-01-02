@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682Ab2ABIWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 03:22:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50725 "EHLO
+	id S1752031Ab2ABIZV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 03:25:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62713 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab2ABIWS (ORCPT
+	with ESMTP id S1751372Ab2ABIZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 03:22:18 -0500
-Date: Mon, 2 Jan 2012 01:22:14 -0700
+	Mon, 2 Jan 2012 03:25:19 -0500
+Date: Mon, 2 Jan 2012 01:25:14 -0700
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ryan Mallon <rmallon@gmail.com>
-Subject: Re: [PATCH 4/4] microblaze: Remove NO_IRQ from architecture
-Message-ID: <20120102082214.GF18381@ponder.secretlab.ca>
-References: <1324477932-19262-1-git-send-email-monstr@monstr.eu>
- <1324477932-19262-2-git-send-email-monstr@monstr.eu>
- <1324477932-19262-3-git-send-email-monstr@monstr.eu>
- <1324477932-19262-4-git-send-email-monstr@monstr.eu>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Paul Mackerras <paulus@samba.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: linux-next: build failure after merge of the final tree (powerpc
+ related)
+Message-ID: <20120102082514.GG18381@ponder.secretlab.ca>
+References: <20111228194949.ff20a609745e816c266f7d91@canb.auug.org.au>
+ <1325068334.6632.43.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1324477932-19262-4-git-send-email-monstr@monstr.eu>
+In-Reply-To: <1325068334.6632.43.camel@pasglop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 03:32:12PM +0100, Michal Simek wrote:
-> NO_IRQ shouldn't be used by any driver. All Microblaze
-> drivers are fixed that's why NO_IRQ can be removed.
+On Wed, Dec 28, 2011 at 09:32:14PM +1100, Benjamin Herrenschmidt wrote:
+> On Wed, 2011-12-28 at 19:49 +1100, Stephen Rothwell wrote:
+> > Hi ,
+> > 
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> > 
+> > kernel/built-in.o: In function `irq_dispose_mapping':
+> > (.opd+0x159f0): multiple definition of `irq_dispose_mapping'
+> > arch/powerpc/kernel/built-in.o:(.opd+0x960): first defined here
+> > kernel/built-in.o: In function `irq_create_of_mapping':
+> > (.opd+0x15a20): multiple definition of `irq_create_of_mapping'
+> > arch/powerpc/kernel/built-in.o:(.opd+0x9a8): first defined here
+> > kernel/built-in.o: In function `.irq_create_of_mapping':
+> > (.text+0x147030): multiple definition of `.irq_create_of_mapping'
+> > arch/powerpc/kernel/built-in.o:(.text+0x9de0): first defined here
+> > kernel/built-in.o: In function `.irq_dispose_mapping':
+> > (.text+0x146f4c): multiple definition of `.irq_dispose_mapping'
+> > arch/powerpc/kernel/built-in.o:(.text+0x9684): first defined here
+> > 
+> > I am not sure what caused this. And have just left it broken.
 > 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> CC: Ryan Mallon <rmallon@gmail.com>
+> Grant, is your irq remapper misbehaving ?
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Hmmmm, that's odd.  I've not touched it.  I'll investigate.
 
-> ---
->  arch/microblaze/include/asm/irq.h |    2 --
->  arch/microblaze/pci/pci-common.c  |    4 ++--
->  2 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/microblaze/include/asm/irq.h b/arch/microblaze/include/asm/irq.h
-> index b116a82..a175132 100644
-> --- a/arch/microblaze/include/asm/irq.h
-> +++ b/arch/microblaze/include/asm/irq.h
-> @@ -27,8 +27,6 @@ typedef unsigned long irq_hw_number_t;
->  
->  extern unsigned int nr_irq;
->  
-> -#define NO_IRQ 0
-> -
->  struct pt_regs;
->  extern void do_IRQ(struct pt_regs *regs);
->  
-> diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-> index db841c7..0d71b2e 100644
-> --- a/arch/microblaze/pci/pci-common.c
-> +++ b/arch/microblaze/pci/pci-common.c
-> @@ -242,7 +242,7 @@ int pci_read_irq_line(struct pci_dev *pci_dev)
->  			 line, pin);
->  
->  		virq = irq_create_mapping(NULL, line);
-> -		if (virq != NO_IRQ)
-> +		if (virq)
->  			irq_set_irq_type(virq, IRQ_TYPE_LEVEL_LOW);
->  	} else {
->  		pr_debug(" Got one, spec %d cells (0x%08x 0x%08x...) on %s\n",
-> @@ -253,7 +253,7 @@ int pci_read_irq_line(struct pci_dev *pci_dev)
->  		virq = irq_create_of_mapping(oirq.controller, oirq.specifier,
->  					     oirq.size);
->  	}
-> -	if (virq == NO_IRQ) {
-> +	if (!virq) {
->  		pr_debug(" Failed to map !\n");
->  		return -1;
->  	}
-> -- 
-> 1.7.5.4
-> 
