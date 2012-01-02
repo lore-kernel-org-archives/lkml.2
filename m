@@ -1,21 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab2ABVbG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 16:31:06 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:60766 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753297Ab2ABVbD (ORCPT
+	id S1753441Ab2ABVuj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 16:50:39 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:44165 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752606Ab2ABVui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 16:31:03 -0500
-X-Sasl-enc: T7JTuDOTUpkZpiI8oMVF0ix4hDVXaAjpcN+ujgceqIwr 1325539862
-Message-ID: <4F022214.8070906@fastmail.fm>
-Date: Mon, 02 Jan 2012 21:31:00 +0000
-From: Jack Stone <jwjstone@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
+	Mon, 2 Jan 2012 16:50:38 -0500
+Date: Mon, 2 Jan 2012 21:50:28 +0000
+From: Matthew Garrett <mjg@redhat.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oliver@neukum.org>,
-        Matthew Garrett <mjg@redhat.com>, Dave Jones <davej@redhat.com>,
+Cc: Jack Stone <jwjstone@fastmail.fm>, Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
         Larry Finger <Larry.Finger@lwfinger.net>,
         Chaoming Li <chaoming_li@realsil.com.cn>,
@@ -24,42 +20,59 @@ CC: Alan Stern <stern@rowland.harvard.edu>, Oliver Neukum <oliver@neukum.org>,
         USB list <linux-usb@vger.kernel.org>,
         Linux Wireless List <linux-wireless@vger.kernel.org>
 Subject: Re: loading firmware while usermodehelper disabled.
-References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org> <4F02165C.1060400@fastmail.fm> <CA+55aFwf06vRraVqtz8_2qWjxH0V=Yj5m7mEy3XVbA7+qj5k5A@mail.gmail.com> <4F0219AB.6010505@fastmail.fm> <CA+55aFx=AEG7X2Y-LoHchgPdwNpeSkBG1J7eXprmO=czEJOD2A@mail.gmail.com> <4F021CF4.9050205@fastmail.fm> <CA+55aFx2NMDSY8rmsToU-zxe+bR-gzsxc8HajNWNWfykVJqd9w@mail.gmail.com>
-In-Reply-To: <CA+55aFx2NMDSY8rmsToU-zxe+bR-gzsxc8HajNWNWfykVJqd9w@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <20120102215028.GA15701@srcf.ucam.org>
+References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
+ <4F02165C.1060400@fastmail.fm>
+ <CA+55aFwf06vRraVqtz8_2qWjxH0V=Yj5m7mEy3XVbA7+qj5k5A@mail.gmail.com>
+ <20120102211904.GA15316@srcf.ucam.org>
+ <CA+55aFwJuuvqcsgHnZ4-VhUhbVvL6beKogo1adgYyZt_ZM=H7A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFwJuuvqcsgHnZ4-VhUhbVvL6beKogo1adgYyZt_ZM=H7A@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02/01/12 21:23, Linus Torvalds wrote:
-> On Mon, Jan 2, 2012 at 1:09 PM, Jack Stone <jwjstone@fastmail.fm> wrote:
->>
->> What about USB "class" drivers e.g. usb-storage. They handle any device
->> that reports itself as a usb mass storage device. There could be a
->> device that needs to be bootstrapped before it becomes a generic usb
->> mass storage device. Do we really want to have to write a new driver
->> that is almost identical to the generic driver but handles the USB
->> firmware correctly.
-> 
-> I'd hope that the generic driver just expose enough interfaces that
-> you could basically do a "firmware-load" driver that just loads the
-> firmware and then attaches the device to the generic driver.
+On Mon, Jan 02, 2012 at 01:27:03PM -0800, Linus Torvalds wrote:
 
-Sounds workable.
+> If we didn't load the firmware before the suspend, then the resume
+> function of a device sure as hell had better not load it at resume
+> time either.
 
-To make the firmware caching easier I would propose one extra function
-in addition to the aforemensioned get_firmware / put_firmware - a
-find_firmware function to search the cache and return the appropriate
-firmware blob. It should only be called if the caller already has a
-refcount to the firmware, it's only use is to save every driver saving a
-pointer to the firmware.
+If the hardware has lost its state then refusing to load the firmware at 
+resume time isn't going to leave you with a working device.
 
-If noone beats me to it I will try and put together an RFC for a new
-version.
+> And for chrissake, don't bother making it more complicated than it is,
+> just for some theoretical hardware or situation that nobody cares
+> about.
 
-Thanks,
+It's not theoretical hardware. This appears to be the current behaviour 
+of the isight devices. If you reboot they retain their firmware. If you 
+suspend, they don't. So if we have a flow like this:
 
-Jack
+1) user boots from cold. Device comes up with generic USB ID.
+2) isight_firmware loads and binds. Firmware is loaded. Device 
+disconnects and reconnects with an ID that's bound by the UVC driver.
+3) user reboots. Device comes up with UVC ID. isight_firmware doesn't 
+bind.
+4) user suspends.
+5) user resumes. isight_firmware binds and attempts to load firmware.
 
+then just caching the firmware is inadequate - we had never previously 
+seen the device on this boot, so we've never loaded it in order to cache 
+it. isight_firmware could unconditionally load the firmware on module 
+load just in case a device is plugged in, but that seems even less 
+elegant than caching it.
+
+Now this is obviously somewhat mitigated because isight_firmware won't 
+have been autoloaded at (3), so won't be there at (5) unless the user's 
+manually loaded it. But insmodding a driver shouldn't result in stuff 
+breaking later.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
