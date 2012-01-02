@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab2ABNsn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 08:48:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50288 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab2ABNsk convert rfc822-to-8bit (ORCPT
+	id S1753119Ab2ABNtY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 08:49:24 -0500
+Received: from elettra.colt-to.towertech.it ([213.215.222.70]:57108 "EHLO
+	smtp.towertech.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838Ab2ABNtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 08:48:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120102132500.GB18443@sirena.org.uk>
-References: <1325508798-25439-1-git-send-email-jamie@jamieiles.com>
-	<1325508798-25439-2-git-send-email-jamie@jamieiles.com>
-	<20120102132500.GB18443@sirena.org.uk>
-Date: Mon, 2 Jan 2012 14:48:40 +0100
-Message-ID: <CACRpkdYxjVG2XVb5iXPmVe5uTcpemBkOA-=AcuyNx-9cWPpaiA@mail.gmail.com>
-Subject: Re: [PATCHv3 1/3] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 2 Jan 2012 08:49:21 -0500
+X-Greylist: delayed 457 seconds by postgrey-1.27 at vger.kernel.org; Mon, 02 Jan 2012 08:49:21 EST
+Date: Mon, 2 Jan 2012 14:41:38 +0100
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: "P." <mailme667@yahoo.co.uk>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Ben Hutchings <ben@decadent.org.uk>, akpm@linux-foundation.org
+Subject: Re: [PATCH resend] rtc: Fix alarm rollover when day or month is
+ out-of-range
+Message-ID: <20120102144138.034f5831@linux.lan.towertech.it>
+In-Reply-To: <20111231003552.GB22266@elie.Belkin>
+References: <1325289236.85273.YahooMailClassic@web27003.mail.ukl.yahoo.com>
+	<20111231003552.GB22266@elie.Belkin>
+Organization: Tower Technologies
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 2, 2012 at 2:25 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
+On Fri, 30 Dec 2011 18:35:52 -0600
+Jonathan Nieder <jrnieder@gmail.com> wrote:
 
-> On Mon, Jan 02, 2012 at 12:53:16PM +0000, Jamie Iles wrote:
->> The Synopsys DesignWare block is used in some ARM devices (picoxcell)
->> and can be configured to provide multiple banks of GPIO pins.
->>
->> v3:   - depend on rather than select IRQ_DOMAIN
->>       - split IRQ support into a separate patch
->> v2:   - use Rob Herring's irqdomain in generic irq chip patches
->>       - use reg property to indicate bank index
->>       - support irqs on both edges based on LinusW's u300 driver
->
-> Put stuff like this after the ---, it shouldn't end up in git history.
+> From: Ben Hutchings <ben@decadent.org.uk>
+> Date: Thu, 29 Dec 2011 16:41:56 +0100
+> 
+> Commit f44f7f96a20a ('RTC: Initialize kernel state from RTC')
+> introduced a potential infinite loop.  If an alarm time contains a
+> wildcard month and an invalid day (> 31), or a wildcard year and an
+> invalid month (>= 12), the loop searching for the next matching date
+> will never terminate.  Treat the invalid values as wildcards.
+> 
+> Fixes <http://bugs.debian.org/646429>, <http://bugs.debian.org/653331>
+> 
+> Reported-by: leo weppelman <leoweppelman@googlemail.com>
+> Reported-by: "P. van Gaans" <mailme667@yahoo.co.uk>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> Signed-off-by: Jonathan Nieder <jrnieder@gmail.com>
 
-The other day I was being told the exact opposite by Grant
-Likely, so which one is it?
 
-This was however for a totally new driver.
+ Seems reasonable, ty.
 
-I think Grants request made sense since the gitlog should
-contain the changelog and the more the better, but what do I
-know.
 
-Yours,
-Linus Walleij
+ Acked-by: Alessandro Zummo <a.zummo@towertech.it>
+
+-- 
+
+ Best regards,
+
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
