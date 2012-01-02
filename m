@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753341Ab2ABRXB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 12:23:01 -0500
+	id S1753364Ab2ABRXJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 12:23:09 -0500
 Received: from mail-ee0-f46.google.com ([74.125.83.46]:59898 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab2ABRW7 (ORCPT
+	with ESMTP id S1753052Ab2ABRXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 12:22:59 -0500
-Subject: [PATCH 1/2] tty: move pty count limiting into devpts
+	Mon, 2 Jan 2012 12:23:05 -0500
+Subject: [PATCH 2/2] tty: rework pty count limiting
 To: Greg Kroah-Hartman <gregkh@suse.de>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
 Cc: linux-kernel@vger.kernel.org
-Date: Mon, 02 Jan 2012 21:22:54 +0400
-Message-ID: <20120102172254.11535.2653.stgit@zurg>
+Date: Mon, 02 Jan 2012 21:23:01 +0400
+Message-ID: <20120102172301.11535.10338.stgit@zurg>
+In-Reply-To: <20120102172254.11535.2653.stgit@zurg>
+References: <20120102172254.11535.2653.stgit@zurg>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,208 +23,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let's move this stuff to the better place, where we can account pty right in
-tty-indexes managing code.
+After adding devpts multiple-insrances sysctl kernel.pty.max limit pty count for
+each devpts instance independently, while kernel.pty.nr shows total pty count.
+
+This patch restores sysctl kernel.pty.max as global limit (4096 by default),
+adds pty reseve for main devpts (mounted without "newinstance" argument),
+and new sysctl to tune it: kernel.pty.reserve (1024 by default)
+
+Also it adds devpts mount option "max=%d" to limit pty count for each devpts
+instance independently. (by default NR_UNIX98_PTY_MAX == 2^20)
+
+Thus devpts instances in containers cannot eat up all available pty even if we didn't
+set any limits, while with "max" argument we can adjust limits more precisely.
+
+Plus, now open("/dev/ptmx") return -ENOSPC in case lack of pty indexes,
+this is more informative than -EIO.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- drivers/tty/pty.c |   63 -----------------------------------------------------
- fs/devpts/inode.c |   53 ++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 52 insertions(+), 64 deletions(-)
+ fs/devpts/inode.c   |   34 ++++++++++++++++++++++++++++++----
+ include/linux/tty.h |    1 +
+ 2 files changed, 31 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index d2bf3c1..33f7e18 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -21,7 +21,6 @@
- #include <linux/major.h>
- #include <linux/mm.h>
- #include <linux/init.h>
--#include <linux/sysctl.h>
- #include <linux/device.h>
- #include <linux/uaccess.h>
- #include <linux/bitops.h>
-@@ -439,66 +438,9 @@ static inline void legacy_pty_init(void) { }
- 
- /* Unix98 devices */
- #ifdef CONFIG_UNIX98_PTYS
--/*
-- * sysctl support for setting limits on the number of Unix98 ptys allocated.
-- * Otherwise one can eat up all kernel memory by opening /dev/ptmx repeatedly.
-- */
--int pty_limit = NR_UNIX98_PTY_DEFAULT;
--static int pty_limit_min;
--static int pty_limit_max = NR_UNIX98_PTY_MAX;
--static int tty_count;
--static int pty_count;
--
--static inline void pty_inc_count(void)
--{
--	pty_count = (++tty_count) / 2;
--}
--
--static inline void pty_dec_count(void)
--{
--	pty_count = (--tty_count) / 2;
--}
- 
- static struct cdev ptmx_cdev;
- 
--static struct ctl_table pty_table[] = {
--	{
--		.procname	= "max",
--		.maxlen		= sizeof(int),
--		.mode		= 0644,
--		.data		= &pty_limit,
--		.proc_handler	= proc_dointvec_minmax,
--		.extra1		= &pty_limit_min,
--		.extra2		= &pty_limit_max,
--	}, {
--		.procname	= "nr",
--		.maxlen		= sizeof(int),
--		.mode		= 0444,
--		.data		= &pty_count,
--		.proc_handler	= proc_dointvec,
--	}, 
--	{}
--};
--
--static struct ctl_table pty_kern_table[] = {
--	{
--		.procname	= "pty",
--		.mode		= 0555,
--		.child		= pty_table,
--	},
--	{}
--};
--
--static struct ctl_table pty_root_table[] = {
--	{
--		.procname	= "kernel",
--		.mode		= 0555,
--		.child		= pty_kern_table,
--	},
--	{}
--};
--
--
- static int pty_unix98_ioctl(struct tty_struct *tty,
- 			    unsigned int cmd, unsigned long arg)
- {
-@@ -598,8 +540,6 @@ static int pty_unix98_install(struct tty_driver *driver, struct tty_struct *tty)
- 	 */
- 	tty_driver_kref_get(driver);
- 	tty->count++;
--	pty_inc_count(); /* tty */
--	pty_inc_count(); /* tty->link */
- 	return 0;
- err_free_mem:
- 	deinitialize_tty_struct(o_tty);
-@@ -613,7 +553,6 @@ err_free_tty:
- 
- static void pty_unix98_remove(struct tty_driver *driver, struct tty_struct *tty)
- {
--	pty_dec_count();
- }
- 
- static const struct tty_operations ptm_unix98_ops = {
-@@ -768,8 +707,6 @@ static void __init unix98_pty_init(void)
- 	if (tty_register_driver(pts_driver))
- 		panic("Couldn't register Unix98 pts driver");
- 
--	register_sysctl_table(pty_root_table);
--
- 	/* Now create the /dev/ptmx special device */
- 	tty_default_fops(&ptmx_fops);
- 	ptmx_fops.open = ptmx_open;
 diff --git a/fs/devpts/inode.c b/fs/devpts/inode.c
-index d5d5297..dd37e85 100644
+index dd37e85..ff84832 100644
 --- a/fs/devpts/inode.c
 +++ b/fs/devpts/inode.c
-@@ -36,7 +36,52 @@
- #define DEVPTS_DEFAULT_PTMX_MODE 0000
- #define PTMX_MINOR	2
+@@ -41,8 +41,9 @@
+  * Otherwise one can eat up all kernel memory by opening /dev/ptmx repeatedly.
+  */
+ static int pty_limit = NR_UNIX98_PTY_DEFAULT;
++static int pty_reserve = NR_UNIX98_PTY_RESERVE;
+ static int pty_limit_min;
+-static int pty_limit_max = NR_UNIX98_PTY_MAX;
++static int pty_limit_max = INT_MAX;
+ static int pty_count;
  
--extern int pty_limit;			/* Config limit on Unix98 ptys */
-+/*
-+ * sysctl support for setting limits on the number of Unix98 ptys allocated.
-+ * Otherwise one can eat up all kernel memory by opening /dev/ptmx repeatedly.
-+ */
-+static int pty_limit = NR_UNIX98_PTY_DEFAULT;
-+static int pty_limit_min;
-+static int pty_limit_max = NR_UNIX98_PTY_MAX;
-+static int pty_count;
-+
-+static struct ctl_table pty_table[] = {
-+	{
-+		.procname	= "max",
+ static struct ctl_table pty_table[] = {
+@@ -55,6 +56,14 @@ static struct ctl_table pty_table[] = {
+ 		.extra1		= &pty_limit_min,
+ 		.extra2		= &pty_limit_max,
+ 	}, {
++		.procname	= "reserve",
 +		.maxlen		= sizeof(int),
 +		.mode		= 0644,
-+		.data		= &pty_limit,
++		.data		= &pty_reserve,
 +		.proc_handler	= proc_dointvec_minmax,
 +		.extra1		= &pty_limit_min,
 +		.extra2		= &pty_limit_max,
 +	}, {
-+		.procname	= "nr",
-+		.maxlen		= sizeof(int),
-+		.mode		= 0444,
-+		.data		= &pty_count,
-+		.proc_handler	= proc_dointvec,
-+	},
-+	{}
-+};
-+
-+static struct ctl_table pty_kern_table[] = {
-+	{
-+		.procname	= "pty",
-+		.mode		= 0555,
-+		.child		= pty_table,
-+	},
-+	{}
-+};
-+
-+static struct ctl_table pty_root_table[] = {
-+	{
-+		.procname	= "kernel",
-+		.mode		= 0555,
-+		.child		= pty_kern_table,
-+	},
-+	{}
-+};
-+
- static DEFINE_MUTEX(allocated_ptys_lock);
+ 		.procname	= "nr",
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0444,
+@@ -94,10 +103,11 @@ struct pts_mount_opts {
+ 	umode_t mode;
+ 	umode_t ptmxmode;
+ 	int newinstance;
++	int max;
+ };
  
- static struct vfsmount *devpts_mnt;
-@@ -453,6 +498,7 @@ retry:
- 		mutex_unlock(&allocated_ptys_lock);
- 		return -EIO;
- 	}
-+	pty_count++;
- 	mutex_unlock(&allocated_ptys_lock);
- 	return index;
- }
-@@ -464,6 +510,7 @@ void devpts_kill_index(struct inode *ptmx_inode, int idx)
+ enum {
+-	Opt_uid, Opt_gid, Opt_mode, Opt_ptmxmode, Opt_newinstance,
++	Opt_uid, Opt_gid, Opt_mode, Opt_ptmxmode, Opt_newinstance,  Opt_max,
+ 	Opt_err
+ };
+ 
+@@ -108,6 +118,7 @@ static const match_table_t tokens = {
+ #ifdef CONFIG_DEVPTS_MULTIPLE_INSTANCES
+ 	{Opt_ptmxmode, "ptmxmode=%o"},
+ 	{Opt_newinstance, "newinstance"},
++	{Opt_max, "max=%d"},
+ #endif
+ 	{Opt_err, NULL}
+ };
+@@ -154,6 +165,7 @@ static int parse_mount_options(char *data, int op, struct pts_mount_opts *opts)
+ 	opts->gid     = 0;
+ 	opts->mode    = DEVPTS_DEFAULT_MODE;
+ 	opts->ptmxmode = DEVPTS_DEFAULT_PTMX_MODE;
++	opts->max     = NR_UNIX98_PTY_MAX;
+ 
+ 	/* newinstance makes sense only on initial mount */
+ 	if (op == PARSE_MOUNT)
+@@ -197,6 +209,12 @@ static int parse_mount_options(char *data, int op, struct pts_mount_opts *opts)
+ 			if (op == PARSE_MOUNT)
+ 				opts->newinstance = 1;
+ 			break;
++		case Opt_max:
++			if (match_int(&args[0], &option) ||
++			    option < 0 || option > NR_UNIX98_PTY_MAX)
++				return -EINVAL;
++			opts->max = option;
++			break;
+ #endif
+ 		default:
+ 			printk(KERN_ERR "devpts: called with bogus options\n");
+@@ -303,6 +321,8 @@ static int devpts_show_options(struct seq_file *seq, struct vfsmount *vfs)
+ 	seq_printf(seq, ",mode=%03o", opts->mode);
+ #ifdef CONFIG_DEVPTS_MULTIPLE_INSTANCES
+ 	seq_printf(seq, ",ptmxmode=%03o", opts->ptmxmode);
++	if (opts->max < NR_UNIX98_PTY_MAX)
++		seq_printf(seq, ",max=%d", opts->max);
+ #endif
+ 
+ 	return 0;
+@@ -485,6 +505,12 @@ retry:
+ 		return -ENOMEM;
  
  	mutex_lock(&allocated_ptys_lock);
- 	ida_remove(&fsi->allocated_ptys, idx);
-+	pty_count--;
- 	mutex_unlock(&allocated_ptys_lock);
- }
- 
-@@ -560,11 +607,15 @@ void devpts_pty_kill(struct tty_struct *tty)
- static int __init init_devpts_fs(void)
- {
- 	int err = register_filesystem(&devpts_fs_type);
-+	struct ctl_table_header *table;
++	if (pty_count >= pty_limit -
++			(fsi->mount_opts.newinstance ? pty_reserve : 0)) {
++		mutex_unlock(&allocated_ptys_lock);
++		return -ENOSPC;
++	}
 +
- 	if (!err) {
-+		table = register_sysctl_table(pty_root_table);
- 		devpts_mnt = kern_mount(&devpts_fs_type);
- 		if (IS_ERR(devpts_mnt)) {
- 			err = PTR_ERR(devpts_mnt);
- 			unregister_filesystem(&devpts_fs_type);
-+			unregister_sysctl_table(table);
- 		}
+ 	ida_ret = ida_get_new(&fsi->allocated_ptys, &index);
+ 	if (ida_ret < 0) {
+ 		mutex_unlock(&allocated_ptys_lock);
+@@ -493,10 +519,10 @@ retry:
+ 		return -EIO;
  	}
- 	return err;
+ 
+-	if (index >= pty_limit) {
++	if (index >= fsi->mount_opts.max) {
+ 		ida_remove(&fsi->allocated_ptys, index);
+ 		mutex_unlock(&allocated_ptys_lock);
+-		return -EIO;
++		return -ENOSPC;
+ 	}
+ 	pty_count++;
+ 	mutex_unlock(&allocated_ptys_lock);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index d3ebd76..d407741 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -52,6 +52,7 @@
+  * hardcoded at present.)
+  */
+ #define NR_UNIX98_PTY_DEFAULT	4096      /* Default maximum for Unix98 ptys */
++#define NR_UNIX98_PTY_RESERVE	1024	  /* Default reserve for main devpts */
+ #define NR_UNIX98_PTY_MAX	(1 << MINORBITS) /* Absolute limit */
+ 
+ /*
 
