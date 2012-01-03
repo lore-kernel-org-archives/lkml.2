@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab2ACXJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:09:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39279 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753900Ab2ACWep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:34:45 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:31 2012
-Message-Id: <20120103223031.709855638@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:23 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Keith Packard <keithp@keithp.com>,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>
-Subject: [05/67] drm/i915: prevent division by zero when asking for chipset power
-In-Reply-To: <20120103223043.GA26738@kroah.com>
+	id S1753880Ab2ACXLW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:11:22 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:38468 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab2ACXLT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 18:11:19 -0500
+Message-ID: <1325632265.3037.60.camel@work-vm>
+Subject: Re: [03/67] rtc: Expire alarms after the time is set.
+From: John Stultz <john.stultz@linaro.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Date: Tue, 03 Jan 2012 15:11:05 -0800
+In-Reply-To: <20120103224741.GA7373@suse.de>
+References: <20120103223031.542760681@clark.kroah.org>
+	 <1325630765.3037.43.camel@work-vm> <20120103224741.GA7373@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12010323-2398-0000-0000-00000325E214
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2012-01-03 at 14:47 -0800, Greg KH wrote:
+> On Tue, Jan 03, 2012 at 02:46:05PM -0800, John Stultz wrote:
+> > On Tue, 2012-01-03 at 14:29 -0800, Greg KH wrote:
+> > > 3.0-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > This one is having problems upstream. Please hold off on it.
+> 
+> Hold off until when?  I'll just drop it for now.  If it ever gets worked
+> out, please let stable@vger.kernel.org know about it and I'll handle it
+> then.
 
-------------------
+Yea. I'm working on it now. As soon as we have a fix upstream I'll ping
+you and you can grab both this and the fix together.
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
-
-commit 4ed0b577457eb6aeb7cdc7e7316576e63d15abb2 upstream.
-
-This prevents an in-kernel division by zero which happens when we are
-asking for i915_chipset_val too quickly, or within a race condition
-between the power monitoring thread and userspace accesses via debugfs.
-
-The issue can be reproduced easily via the following command:
-while ``; do cat /sys/kernel/debug/dri/0/i915_emon_status; done
-
-This is particularly dangerous because it can be triggered by
-a non-privileged user by just reading the debugfs entry.
-
-This issue was also found independently by Konstantin Belousov
-<kostikbel@gmail.com>, who proposed a similar patch.
-
-Reported-by: Konstantin Belousov <kostikbel@gmail.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Acked-by: Keith Packard <keithp@keithp.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/gpu/drm/i915/i915_dma.c |   10 ++++++++++
- drivers/gpu/drm/i915/i915_drv.h |    1 +
- 2 files changed, 11 insertions(+)
-
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1451,6 +1451,14 @@ unsigned long i915_chipset_val(struct dr
- 
- 	diff1 = now - dev_priv->last_time1;
- 
-+	/* Prevent division-by-zero if we are asking too fast.
-+	 * Also, we don't get interesting results if we are polling
-+	 * faster than once in 10ms, so just return the saved value
-+	 * in such cases.
-+	 */
-+	if (diff1 <= 10)
-+		return dev_priv->chipset_power;
-+
- 	count1 = I915_READ(DMIEC);
- 	count2 = I915_READ(DDREC);
- 	count3 = I915_READ(CSIEC);
-@@ -1481,6 +1489,8 @@ unsigned long i915_chipset_val(struct dr
- 	dev_priv->last_count1 = total_count;
- 	dev_priv->last_time1 = now;
- 
-+	dev_priv->chipset_power = ret;
-+
- 	return ret;
- }
- 
---- a/drivers/gpu/drm/i915/i915_drv.h
-+++ b/drivers/gpu/drm/i915/i915_drv.h
-@@ -702,6 +702,7 @@ typedef struct drm_i915_private {
- 
- 	u64 last_count1;
- 	unsigned long last_time1;
-+	unsigned long chipset_power;
- 	u64 last_count2;
- 	struct timespec last_time2;
- 	unsigned long gfx_power;
+thanks
+-john
 
 
