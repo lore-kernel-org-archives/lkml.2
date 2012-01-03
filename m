@@ -1,50 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753861Ab2ACPJY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 10:09:24 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:45444 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753694Ab2ACPJW (ORCPT
+	id S1753900Ab2ACPPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 10:15:23 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46757 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753418Ab2ACPPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 10:09:22 -0500
-Date: Tue, 3 Jan 2012 10:09:21 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Matthew Garrett <mjg@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jack Stone <jwjstone@fastmail.fm>, Oliver Neukum <oliver@neukum.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-In-Reply-To: <20120103032505.GA19702@srcf.ucam.org>
-Message-ID: <Pine.LNX.4.44L0.1201031007500.1452-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 Jan 2012 10:15:20 -0500
+Message-ID: <1325603714.2320.73.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] x86: fix and improve cmpxchg_double{,_local}()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Date: Tue, 03 Jan 2012 16:15:14 +0100
+In-Reply-To: <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <4F01F12A020000780006A19B@nat28.tlf.novell.com>
+	 <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jan 2012, Matthew Garrett wrote:
+Le mardi 03 janvier 2012 à 16:00 +0100, Eric Dumazet a écrit :
 
-> On Mon, Jan 02, 2012 at 09:45:58PM -0500, Alan Stern wrote:
+> While looking at your patch, I discovered that atomic64_add() /
+> atomic64_inc() on 32bit are completely buggy. Oh well...
 > 
-> > Wait a second.  Why does isight_firmware bind at this time?  Binding to
-> > new devices is handled by khubd, which doesn't start running again
-> > until after the resume is finished (the device appears to be new
-> > because its descriptors have changed).  At that point there should be
-> > no trouble reloading the firmware.
+> Generated code :
 > 
-> Then why are we getting this warning? The firmware is only loaded in the 
-> probe function.
+> c03bc00c <atomic64_add_return_cx8>:
+> c03bc00c:       55                      push   %ebp
+> c03bc00d:       53                      push   %ebx
+> c03bc00e:       56                      push   %esi
+> c03bc00f:       57                      push   %edi
+> c03bc010:       89 c6                   mov    %eax,%esi
+> c03bc012:       89 d7                   mov    %edx,%edi
+> c03bc014:       89 cd                   mov    %ecx,%ebp
+> c03bc016:       89 d8                   mov    %ebx,%eax
+> c03bc018:       89 ca                   mov    %ecx,%edx
+> c03bc01a:       f0 0f c7 4d 00          lock cmpxchg8b 0x0(%ebp)
+> c03bc01f:       89 c3                   mov    %eax,%ebx
+> c03bc021:       89 d1                   mov    %edx,%ecx
+> c03bc023:       01 f3                   add    %esi,%ebx
+> c03bc025:       11 f9                   adc    %edi,%ecx
+> c03bc027:       f0 0f c7 4d 00          lock cmpxchg8b 0x0(%ebp)
+> c03bc02c:       75 f9                   jne    c03bc027 <atomic64_add_return_cx8+0x1b>
+> c03bc02e:       89 d8                   mov    %ebx,%eax
+> c03bc030:       89 ca                   mov    %ecx,%edx
+> c03bc032:       5f                      pop    %edi
+> c03bc033:       5e                      pop    %esi
+> c03bc034:       5b                      pop    %ebx
+> c03bc035:       5d                      pop    %ebp
+> c03bc036:       c3                      ret
+> 
+> The ' jne c03bc027' should really be 'jne c03bc01f'
+> 
+> No idea how old is this bug.
+> 
 
-I don't know.  Do you have a kernel log (with CONFIG_USB_DEBUG enabled) 
-posted somewhere?
+Very old it seems...
 
-Alan Stern
+arch/x86/lib/atomic64_cx8_32.S
+
+all "jxx 1b" are wrong if a LOCK_PREFIX is included after the 1: label
+
+1:
+	inst1
+	LOCK_PREFIX
+	cmpxchg8b (%ebp)
+	jne 1b  / jumps to beginning of LOCK_PREFIX, inst1 is not replayed
+
+
+
+
 
