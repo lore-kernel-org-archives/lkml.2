@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab2ACUaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:30:35 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:46020 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab2ACUad (ORCPT
+	id S1755068Ab2ACUdq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:33:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41886 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab2ACUdo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:30:33 -0500
-Message-ID: <1325622628.2611.8.camel@edumazet-laptop>
-Subject: Re: APIC seems not working under high network load
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jia Rao <rickenrao@gmail.com>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Date: Tue, 03 Jan 2012 21:30:28 +0100
-In-Reply-To: <CAA8E7hFwvhATa+LAsW4csnUh1gL-tFZVQMO7LN0iQBa6NFj3KQ@mail.gmail.com>
-References: <CAA8E7hFwvhATa+LAsW4csnUh1gL-tFZVQMO7LN0iQBa6NFj3KQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 3 Jan 2012 15:33:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120103183741.GE31746@google.com>
+References: <CAO+b5-pig48acSXAYKH09QHCL9EtzTis=mpn=OnE=cvCv+0EzA@mail.gmail.com>
+	<20120103183741.GE31746@google.com>
+Date: Tue, 3 Jan 2012 20:33:42 +0000
+X-Google-Sender-Auth: Ht4Q6XbhhNwTqdmd9yVxmEKI6gY
+Message-ID: <CAO+b5-rLSRXXSZ-puf926TFi1bWdGs4gBFNFziiVoT-7RKNEvA@mail.gmail.com>
+Subject: Re: block: WARN_ON_ONCE(ev->block <= 0) triggered in __disk_unblock_events()
+From: Bart Van Assche <bvanassche@acm.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 03 janvier 2012 Ã  14:28 -0500, Jia Rao a Ã©crit :
-> Hi all,
-> 
-> I had scalability issues when running memcached-like workloads in a
-> Intel 8-core system. It turned out that under high network load only
-> one core handled the interrupts from NIC. In the output of mpstat, one
-> of the core was overloaded with 100% %soft time. I tried to echo
-> different core ids to /proc/irq/irq#/smp_affinity, it did not take
-> effect until I stopped the incoming network traffic. It seems that
-> APIC is not distributing interrupts to different cores.
-> 
-> The below are the details of the testing system:
-> OS: Linux 3.1.4 X86_64
-> CPU: Intel L5450, quad-core
-> NIC: Intel e1000e
+On Tue, Jan 3, 2012 at 6:37 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Sun, Jan 01, 2012 at 05:22:58PM +0000, Bart Van Assche wrote:
+>> In a workload that involves a lot of scsi_remove_hosts() calls (srp-ha
+>> patch set stress test) I get the call stack below after about 30 to 50
+>> iterations. Is this a known issue ? Does this indicate a race
+>> condition in the block layer ? I can trigger this issue not only with
+>> 3.2-rc7 but also with 3.1.6. I haven't tried any other kernel versions
+>> yet.
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at block/genhd.c:1466 __disk_unblock_events+0xf5/0x110()
+>
+> It's indicating that there were more disk_unblock_events() than
+> disk_block_events().  Hmmm... weird.  I'll prep a debug patch.
 
-If network load is high enough, cpu handling network IRQ stay in softirq
-mode (NAPI) and never re-arms interrupt, so no other cpu can handle the
-load.
+After having found and fixed a race condition in the (not yet
+published) patch set I'm preparing that stress test ran fine for 1000
+iterations. The block warning mentioned above didn't reappear and the
+"blocked for more than 120 seconds" warning was gone too. Sorry for
+the noise.
 
-This is why its better to change /proc/irq/irq#/smp_affinity _before_
-load starts.
-
-With your kernel, one way to help this cpu exit from softirq is using
-RPS (Receive Packet Steering), since packets will be spreaded on several
-cpus. Then, later hardware IRQ might be spreaded on other cpus as well.
-
-for n in `seq 0 7`
-do
- echo ff >/sys/class/net/eth0/queues/rx-$n/rps_cpus
-done
-
-[ If your eth0 has 8 queues ]
-
-
-
+Bart.
