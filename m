@@ -1,111 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab2ACPaR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 10:30:17 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41313 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab2ACPaO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 10:30:14 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: linux-kernel@vger.kernel.org
-Cc: Neil Horman <nhorman@tuxdriver.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-pci@vger.kernel.org
-Subject: [PATCH] msi: fix imbalanced refcount of msi irq sysfs objects
-Date: Tue,  3 Jan 2012 10:29:54 -0500
-Message-Id: <1325604594-7184-1-git-send-email-nhorman@tuxdriver.com>
-X-Mailer: git-send-email 1.7.7.5
-X-Spam-Score: -2.9 (--)
+	id S1753935Ab2ACPex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 10:34:53 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:27039 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab2ACPeu (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
+	Tue, 3 Jan 2012 10:34:50 -0500
+Message-Id: <4F032E5E020000780006A36C@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Tue, 03 Jan 2012 15:35:42 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, "Christoph Lameter" <cl@linux.com>,
+        <linux-kernel@vger.kernel.org>, "netdev" <netdev@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH] x86: fix and improve cmpxchg_double{,_local}()
+References: <4F01F12A020000780006A19B@nat28.tlf.novell.com>
+ <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+In-Reply-To: <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This warning was recently reported to me:
+>>> On 03.01.12 at 16:00, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le lundi 02 janvier 2012 à 17:02 +0000, Jan Beulich a écrit :
+>> Just like the per-CPU ones they had several problems/shortcomings:
+>> 
+>> Only the first memory operand was mentioned in the asm() operands, and
+>> the 2x64-bit version didn't have a memory clobber while the 2x32-bit
+>> one did. The former allowed the compiler to not recognize the need to
+>> re-load the data in case it had it cached in some register, while the
+>> latter was overly destructive.
+>> 
+>> The types of the local copies of the old and new values were incorrect
+>> (the types of the pointed-to variables should be used here, to make
+>> sure the respective old/new variable types are compatible).
+>> 
+>> The __dummy/__junk variables were pointless, given that local copies
+>> of the inputs already existed (and can hence be used for discarded
+>> outputs).
+>> 
+>> The 32-bit variant of cmpxchg_double_local() referenced
+>> cmpxchg16b_local().
+>> 
+>> At once also
+>> - change the return value type to what it really is: 'bool'
+>> - unify 32- and 64-bit variants
+>> - abstract out the common part of the 'normal' and 'local' variants
+>> 
+>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 
+> While looking at your patch, I discovered that atomic64_add() /
+> atomic64_inc() on 32bit are completely buggy. Oh well...
+> 
+> Generated code :
+> 
+> c03bc00c <atomic64_add_return_cx8>:
+> c03bc00c:       55                      push   %ebp
+> c03bc00d:       53                      push   %ebx
+> c03bc00e:       56                      push   %esi
+> c03bc00f:       57                      push   %edi
+> c03bc010:       89 c6                   mov    %eax,%esi
+> c03bc012:       89 d7                   mov    %edx,%edi
+> c03bc014:       89 cd                   mov    %ecx,%ebp
+> c03bc016:       89 d8                   mov    %ebx,%eax
+> c03bc018:       89 ca                   mov    %ecx,%edx
+> c03bc01a:       f0 0f c7 4d 00          lock cmpxchg8b 0x0(%ebp)
+> c03bc01f:       89 c3                   mov    %eax,%ebx
+> c03bc021:       89 d1                   mov    %edx,%ecx
+> c03bc023:       01 f3                   add    %esi,%ebx
+> c03bc025:       11 f9                   adc    %edi,%ecx
+> c03bc027:       f0 0f c7 4d 00          lock cmpxchg8b 0x0(%ebp)
+> c03bc02c:       75 f9                   jne    c03bc027 
+> <atomic64_add_return_cx8+0x1b>
+> c03bc02e:       89 d8                   mov    %ebx,%eax
+> c03bc030:       89 ca                   mov    %ecx,%edx
+> c03bc032:       5f                      pop    %edi
+> c03bc033:       5e                      pop    %esi
+> c03bc034:       5b                      pop    %ebx
+> c03bc035:       5d                      pop    %ebp
+> c03bc036:       c3                      ret
+> 
+> The ' jne c03bc027' should really be 'jne c03bc01f'
 
-------------[ cut here ]------------
-WARNING: at lib/kobject.c:595 kobject_put+0x50/0x60()
-Hardware name: VMware Virtual Platform
-kobject: '(null)' (ffff880027b0df40): is not initialized, yet kobject_put() is
-being called.
-Modules linked in: vmxnet3(+) vmw_balloon i2c_piix4 i2c_core shpchp raid10
-vmw_pvscsi
-Pid: 630, comm: modprobe Tainted: G        W   3.1.6-1.fc16.x86_64 #1
-Call Trace:
- [<ffffffff8106b73f>] warn_slowpath_common+0x7f/0xc0
- [<ffffffff8106b836>] warn_slowpath_fmt+0x46/0x50
- [<ffffffff810da293>] ? free_desc+0x63/0x70
- [<ffffffff812a9aa0>] kobject_put+0x50/0x60
- [<ffffffff812e4c25>] free_msi_irqs+0xd5/0x120
- [<ffffffff812e524c>] pci_enable_msi_block+0x24c/0x2c0
- [<ffffffffa017c273>] vmxnet3_alloc_intr_resources+0x173/0x240 [vmxnet3]
- [<ffffffffa0182e94>] vmxnet3_probe_device+0x615/0x834 [vmxnet3]
- [<ffffffff812d141c>] local_pci_probe+0x5c/0xd0
- [<ffffffff812d2cb9>] pci_device_probe+0x109/0x130
- [<ffffffff8138ba2c>] driver_probe_device+0x9c/0x2b0
- [<ffffffff8138bceb>] __driver_attach+0xab/0xb0
- [<ffffffff8138bc40>] ? driver_probe_device+0x2b0/0x2b0
- [<ffffffff8138bc40>] ? driver_probe_device+0x2b0/0x2b0
- [<ffffffff8138a8ac>] bus_for_each_dev+0x5c/0x90
- [<ffffffff8138b63e>] driver_attach+0x1e/0x20
- [<ffffffff8138b240>] bus_add_driver+0x1b0/0x2a0
- [<ffffffffa0188000>] ? 0xffffffffa0187fff
- [<ffffffff8138c246>] driver_register+0x76/0x140
- [<ffffffff815ca414>] ? printk+0x51/0x53
- [<ffffffffa0188000>] ? 0xffffffffa0187fff
- [<ffffffff812d2996>] __pci_register_driver+0x56/0xd0
- [<ffffffffa018803a>] vmxnet3_init_module+0x3a/0x3c [vmxnet3]
- [<ffffffff81002042>] do_one_initcall+0x42/0x180
- [<ffffffff810aad71>] sys_init_module+0x91/0x200
- [<ffffffff815dccc2>] system_call_fastpath+0x16/0x1b
----[ end trace 44593438a59a9558 ]---
-Using INTx interrupt, #Rx queues: 1.
+Indeed, and that's the same for all other routines in this file that
+incorrectly use 1: together with LOCK_PREFIX between the label and
+an intended jump to that label.
 
-It occurs when populate_msi_sysfs fails, which in turn causes free_msi_irqs to
-be called.  Because populate_msi_sysfs fails, we never registered any of the
-msi irq sysfs objects, but free_msi_irqs still calls kobject_del and kobject_put
-on each of them, which gets flagged in the above stack trace.
+> No idea how old is this bug.
 
-The fix is pretty straightforward.  We can key of the parent pointer in the
-kobject.  It is only set if the kobject_init_and_add succededs in
-populate_msi_sysfs.  If anything fails there, each kobject has its parent reset
-to NULL
+The file (and with it the bug) was introduced in 2.6.35.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-pci@vger.kernel.org
----
- drivers/pci/msi.c |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+While looking at this I also noticed this comment in read64: "we need
+LOCK_PREFIX since otherwise cmpxchg8b always does the write",
+which is saying quite the opposite of the Intel manual: "This instruction
+can be used with a LOCK prefix to allow the instruction to be executed
+atomically. To simplify the interface to the processor’s bus, the
+destination operand receives a write cycle without regard to the result
+of the comparison. The destination operand is written back if the
+comparison fails; otherwise, the source operand is written into the
+destination. (The processor never produces a locked read without
+also producing a locked write.)" - I would conclude the LOCK prefix
+actually hurts there.
 
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 337e16a..82de95e 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -323,8 +323,18 @@ static void free_msi_irqs(struct pci_dev *dev)
- 			if (list_is_last(&entry->list, &dev->msi_list))
- 				iounmap(entry->mask_base);
- 		}
--		kobject_del(&entry->kobj);
--		kobject_put(&entry->kobj);
-+
-+		/*
-+		 * Its possible that we get into this path
-+		 * When populate_msi_sysfs fails, which means the entries
-+		 * were not registered with sysfs.  In that case don't
-+		 * unregister them.
-+		 */
-+		if (entry->kobj.parent) {
-+			kobject_del(&entry->kobj);
-+			kobject_put(&entry->kobj);
-+		}
-+
- 		list_del(&entry->list);
- 		kfree(entry);
- 	}
--- 
-1.7.7.5
+And in atomic64_set_cx8 it's the other way around: The comment
+explains why supposedly no LOCK prefix is needed, but that's again
+in conflict with above quoted paragraph from the manual.
 
+Jan
