@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab2ACWlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:41:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40355 "EHLO mx2.suse.de"
+	id S932099Ab2ACWll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:41:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40393 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756273Ab2ACWlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:22 2012
-Message-Id: <20120103223322.926106871@clark.kroah.org>
+	id S932085Ab2ACWli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:38 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
+Message-Id: <20120103223323.437876252@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:32:56 -0800
+Date: Tue, 03 Jan 2012 14:33:02 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Frantisek Hrbata <fhrbata@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>
-Subject: [23/75] oom: fix integer overflow of points in oom_badness
+        alan@lxorguk.ukuu.org.uk,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Gary Thomas <gary@mlbassoc.com>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [29/75] media: omap_vout: Fix compile error in 3.1
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,64 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Frantisek Hrbata <fhrbata@redhat.com>
+From: Gary Thomas <gary@mlbassoc.com>
 
-commit ff05b6f7ae762b6eb464183eec994b28ea09f6dd upstream.
+commit d1ee8878a142f81ea1b40d602c6360b752829437 upstream.
 
-An integer overflow will happen on 64bit archs if task's sum of rss,
-swapents and nr_ptes exceeds (2^31)/1000 value.  This was introduced by
-commit
+This patch is against the mainline v3.1 release (c3b92c8) and
+fixes a compile error when building for OMAP3+DSS+VOUT
 
-f755a04 oom: use pte pages in OOM score
-
-where the oom score computation was divided into several steps and it's no
-longer computed as one expression in unsigned long(rss, swapents, nr_pte
-are unsigned long), where the result value assigned to points(int) is in
-range(1..1000).  So there could be an int overflow while computing
-
-176          points *= 1000;
-
-and points may have negative value. Meaning the oom score for a mem hog task
-will be one.
-
-196          if (points <= 0)
-197                  return 1;
-
-For example:
-[ 3366]     0  3366 35390480 24303939   5       0             0 oom01
-Out of memory: Kill process 3366 (oom01) score 1 or sacrifice child
-
-Here the oom1 process consumes more than 24303939(rss)*4096~=92GB physical
-memory, but it's oom score is one.
-
-In this situation the mem hog task is skipped and oom killer kills another and
-most probably innocent task with oom score greater than one.
-
-The points variable should be of type long instead of int to prevent the
-int overflow.
-
-Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Gary Thomas <gary@mlbassoc.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/oom_kill.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/video/omap/omap_vout.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -162,7 +162,7 @@ static bool oom_unkillable_task(struct t
- unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
- 		      const nodemask_t *nodemask, unsigned long totalpages)
- {
--	int points;
-+	long points;
+--- a/drivers/media/video/omap/omap_vout.c
++++ b/drivers/media/video/omap/omap_vout.c
+@@ -38,6 +38,7 @@
+ #include <linux/irq.h>
+ #include <linux/videodev2.h>
+ #include <linux/dma-mapping.h>
++#include <linux/slab.h>
  
- 	if (oom_unkillable_task(p, mem, nodemask))
- 		return 0;
+ #include <media/videobuf-dma-contig.h>
+ #include <media/v4l2-device.h>
 
 
