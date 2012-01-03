@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755691Ab2ACWhn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:37:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39710 "EHLO mx2.suse.de"
+	id S1755826Ab2ACWiP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:38:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39785 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755666Ab2ACWhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:37:37 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:36 2012
-Message-Id: <20120103223036.382195374@clark.kroah.org>
+	id S1755720Ab2ACWiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:38:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:34 2012
+Message-Id: <20120103223034.858164210@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:18 -0800
+Date: Tue, 03 Jan 2012 14:30:00 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [60/67] ipv4: reintroduce route cache garbage collector
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
+Subject: [42/67] sparc64: Fix MSIQ HV call ordering in pci_sun4v_msiq_build_irq().
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,164 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 9f28a2fc0bd77511f649c0a788c7bf9a5fd04edb ]
+[ Upstream commit 7cc8583372a21d98a23b703ad96cab03180b5030 ]
 
-Commit 2c8cec5c10b (ipv4: Cache learned PMTU information in inetpeer)
-removed IP route cache garbage collector a bit too soon, as this gc was
-responsible for expired routes cleanup, releasing their neighbour
-reference.
+This silently was working for many years and stopped working on
+Niagara-T3 machines.
 
-As pointed out by Robert Gladewitz, recent kernels can fill and exhaust
-their neighbour cache.
+We need to set the MSIQ to VALID before we can set it's state to IDLE.
 
-Reintroduce the garbage collection, since we'll have to wait our
-neighbour lookups become refcount-less to not depend on this stuff.
+On Niagara-T3, setting the state to IDLE first was causing HV_EINVAL
+errors.  The hypervisor documentation says, rather ambiguously, that
+the MSIQ must be "initialized" before one can set the state.
 
-Reported-by: Robert Gladewitz <gladewitz@gmx.de>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+I previously understood this to mean merely that a successful setconf()
+operation has been performed on the MSIQ, which we have done at this
+point.  But it seems to also mean that it has been set VALID too.
+
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/ipv4/route.c |  106 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 106 insertions(+)
+ arch/sparc/kernel/pci_sun4v.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -132,6 +132,9 @@ static int ip_rt_min_pmtu __read_mostly
- static int ip_rt_min_advmss __read_mostly	= 256;
- static int rt_chain_length_max __read_mostly	= 20;
+--- a/arch/sparc/kernel/pci_sun4v.c
++++ b/arch/sparc/kernel/pci_sun4v.c
+@@ -848,10 +848,10 @@ static int pci_sun4v_msiq_build_irq(stru
+ 	if (!irq)
+ 		return -ENOMEM;
  
-+static struct delayed_work expires_work;
-+static unsigned long expires_ljiffies;
-+
- /*
-  *	Interface to generic destination cache.
-  */
-@@ -821,6 +824,97 @@ static int has_noalias(const struct rtab
- 	return ONE;
+-	if (pci_sun4v_msiq_setstate(pbm->devhandle, msiqid, HV_MSIQSTATE_IDLE))
+-		return -EINVAL;
+ 	if (pci_sun4v_msiq_setvalid(pbm->devhandle, msiqid, HV_MSIQ_VALID))
+ 		return -EINVAL;
++	if (pci_sun4v_msiq_setstate(pbm->devhandle, msiqid, HV_MSIQSTATE_IDLE))
++		return -EINVAL;
+ 
+ 	return irq;
  }
- 
-+static void rt_check_expire(void)
-+{
-+	static unsigned int rover;
-+	unsigned int i = rover, goal;
-+	struct rtable *rth;
-+	struct rtable __rcu **rthp;
-+	unsigned long samples = 0;
-+	unsigned long sum = 0, sum2 = 0;
-+	unsigned long delta;
-+	u64 mult;
-+
-+	delta = jiffies - expires_ljiffies;
-+	expires_ljiffies = jiffies;
-+	mult = ((u64)delta) << rt_hash_log;
-+	if (ip_rt_gc_timeout > 1)
-+		do_div(mult, ip_rt_gc_timeout);
-+	goal = (unsigned int)mult;
-+	if (goal > rt_hash_mask)
-+		goal = rt_hash_mask + 1;
-+	for (; goal > 0; goal--) {
-+		unsigned long tmo = ip_rt_gc_timeout;
-+		unsigned long length;
-+
-+		i = (i + 1) & rt_hash_mask;
-+		rthp = &rt_hash_table[i].chain;
-+
-+		if (need_resched())
-+			cond_resched();
-+
-+		samples++;
-+
-+		if (rcu_dereference_raw(*rthp) == NULL)
-+			continue;
-+		length = 0;
-+		spin_lock_bh(rt_hash_lock_addr(i));
-+		while ((rth = rcu_dereference_protected(*rthp,
-+					lockdep_is_held(rt_hash_lock_addr(i)))) != NULL) {
-+			prefetch(rth->dst.rt_next);
-+			if (rt_is_expired(rth)) {
-+				*rthp = rth->dst.rt_next;
-+				rt_free(rth);
-+				continue;
-+			}
-+			if (rth->dst.expires) {
-+				/* Entry is expired even if it is in use */
-+				if (time_before_eq(jiffies, rth->dst.expires)) {
-+nofree:
-+					tmo >>= 1;
-+					rthp = &rth->dst.rt_next;
-+					/*
-+					 * We only count entries on
-+					 * a chain with equal hash inputs once
-+					 * so that entries for different QOS
-+					 * levels, and other non-hash input
-+					 * attributes don't unfairly skew
-+					 * the length computation
-+					 */
-+					length += has_noalias(rt_hash_table[i].chain, rth);
-+					continue;
-+				}
-+			} else if (!rt_may_expire(rth, tmo, ip_rt_gc_timeout))
-+				goto nofree;
-+
-+			/* Cleanup aged off entries. */
-+			*rthp = rth->dst.rt_next;
-+			rt_free(rth);
-+		}
-+		spin_unlock_bh(rt_hash_lock_addr(i));
-+		sum += length;
-+		sum2 += length*length;
-+	}
-+	if (samples) {
-+		unsigned long avg = sum / samples;
-+		unsigned long sd = int_sqrt(sum2 / samples - avg*avg);
-+		rt_chain_length_max = max_t(unsigned long,
-+					ip_rt_gc_elasticity,
-+					(avg + 4*sd) >> FRACT_BITS);
-+	}
-+	rover = i;
-+}
-+
-+/*
-+ * rt_worker_func() is run in process context.
-+ * we call rt_check_expire() to scan part of the hash table
-+ */
-+static void rt_worker_func(struct work_struct *work)
-+{
-+	rt_check_expire();
-+	schedule_delayed_work(&expires_work, ip_rt_gc_interval);
-+}
-+
- /*
-  * Perturbation of rt_genid by a small quantity [1..256]
-  * Using 8 bits of shuffling ensure we can call rt_cache_invalidate()
-@@ -3088,6 +3182,13 @@ static ctl_table ipv4_route_table[] = {
- 		.proc_handler	= proc_dointvec_jiffies,
- 	},
- 	{
-+		.procname	= "gc_interval",
-+		.data		= &ip_rt_gc_interval,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_jiffies,
-+	},
-+	{
- 		.procname	= "redirect_load",
- 		.data		= &ip_rt_redirect_load,
- 		.maxlen		= sizeof(int),
-@@ -3297,6 +3398,11 @@ int __init ip_rt_init(void)
- 	devinet_init();
- 	ip_fib_init();
- 
-+	INIT_DELAYED_WORK_DEFERRABLE(&expires_work, rt_worker_func);
-+	expires_ljiffies = jiffies;
-+	schedule_delayed_work(&expires_work,
-+		net_random() % ip_rt_gc_interval + ip_rt_gc_interval);
-+
- 	if (ip_rt_proc_init())
- 		printk(KERN_ERR "Unable to create route proc files\n");
- #ifdef CONFIG_XFRM
 
 
