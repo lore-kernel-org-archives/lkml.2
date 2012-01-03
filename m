@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab2ACBGs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 20:06:48 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:50596 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab2ACBGr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 20:06:47 -0500
-Date: Tue, 3 Jan 2012 12:06:32 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Chinner <david@fromorbit.com>, xfs-masters@oss.sgi.com
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@infradead.org>, Ben Myers <bpm@sgi.com>
-Subject: linux-next: manual merge of the xfs tree with Linus' tree
-Message-Id: <20120103120632.a43a2ab50ac747093bbb2f5f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Jan_2012_12_06_32_+1100_BlmFV3uEqccojw3+"
+	id S1751551Ab2ACBIc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 20:08:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43966 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750966Ab2ACBIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 2 Jan 2012 20:08:30 -0500
+Date: Tue, 3 Jan 2012 02:08:26 +0100
+From: Jan Kara <jack@suse.cz>
+To: Jorge Bastos <mysql.jorge@decimal.pt>
+Cc: "'Jan Kara'" <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org, haiyangz@microsoft.com,
+        hjanssen@microsoft.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Reiserfs.c bug in 3.2-rc5
+Message-ID: <20120103010826.GF3626@quack.suse.cz>
+References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>
+ <20111213180707.GI11747@quack.suse.cz>
+ <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
+ <20120102115222.GA3626@quack.suse.cz>
+ <005301ccc998$201c9da0$6055d8e0$@jorge@decimal.pt>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <005301ccc998$201c9da0$6055d8e0$@jorge@decimal.pt>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Jan_2012_12_06_32_+1100_BlmFV3uEqccojw3+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  Hello,
 
-Hi all,
+On Mon 02-01-12 21:47:29, Jorge Bastos wrote:
+> > > No SELinux, the only change is from 3.1.1 to 3.2-rc5.
+> > > Tried the new 3.2-rc7 and the problem persists.
+> >   OK, so do I understand right that 3.1.1 is OK but 3.2-rc5/rc7 have
+> > the problem?
+> > 
+> > > Is there a way that the ReiserFS people can commit the fix?
+> >   Sure, we just have to find where the problem is. Can you please run
+> > with the attached debugging patch applied and send me kernel output
+> > when the system crashes? Thanks.
+> 
+> Yes, till 3.1.6 everything works, with 3.2-rc7 (or rc5) it doesn't.
+> 
+> Here are the images with the output, I can't copy the text since this is a
+> VM.
+> 
+> http://neotrix.decimal.pt/bugs/reiserfs_1.jpg
+> http://neotrix.decimal.pt/bugs/reiserfs_2.jpg
+> http://neotrix.decimal.pt/bugs/reiserfs_3.jpg
+> http://neotrix.decimal.pt/bugs/reiserfs_4.jpg 
+> 
+> Does this help? If not let me know further instructions.
+  Yes, thanks! So we see that reiserfs_security_init() returned bogus
+number 790797. This is caused by security_old_inode_init_security() either
+returning some bogus number or setting sec->length to something bogus. In
+any case it's some security module problem so I'm adding Mimi Zohar who did
+the changes in this code recently to CC. I'm also adding Rafael since this
+is a regression.
 
-Today's linux-next merge of the xfs tree got a conflict in
-fs/xfs/xfs_sync.c between commit be4f1ac82877 ("xfs: log all dirty inodes
-in xfs_fs_sync_fs") from the  tree and commit 34625c661b01 ("xfs: remove
-xfs_qm_sync") from the xfs tree.
+  Also I think he might use your kernel config so can you please send it?
+Thanks.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/xfs/xfs_sync.c
-index f0994aedc,5b9ec37..0000000
---- a/fs/xfs/xfs_sync.c
-+++ b/fs/xfs/xfs_sync.c
-@@@ -385,20 -359,7 +385,17 @@@ xfs_quiesce_data
-  {
-  	int			error, error2 =3D 0;
- =20
- +	/*
- +	 * Log all pending size and timestamp updates.  The vfs writeback
- +	 * code is supposed to do this, but due to its overagressive
- +	 * livelock detection it will skip inodes where appending writes
- +	 * were written out in the first non-blocking sync phase if their
- +	 * completion took long enough that it happened after taking the
- +	 * timestamp for the cut-off in the blocking phase.
- +	 */
- +	xfs_inode_ag_iterator(mp, xfs_log_dirty_inode, 0);
- +
-- 	xfs_qm_sync(mp, SYNC_TRYLOCK);
-- 	xfs_qm_sync(mp, SYNC_WAIT);
--=20
-- 	/* force out the newly dirtied log buffers */
-+ 	/* force out the log */
-  	xfs_log_force(mp, XFS_LOG_SYNC);
- =20
-  	/* write superblock and hoover up shutdown errors */
-
---Signature=_Tue__3_Jan_2012_12_06_32_+1100_BlmFV3uEqccojw3+
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPAlSYAAoJEECxmPOUX5FE2egP/jtqzuG4BanEyUnHkr007tc6
-AdsCF532Pmoi4uvbhySEvJf1boXvBbmIMpqgsYoYzp7F99IsyktW6LXp/1jhkmy0
-dbi/i/f3an0iLgANQNqnGXqiIomBNLkX4N7WZBjkcrP4mdLssYeQ9Lp+c1U/w2ZZ
-YnBIcQNv6scuDcQYzljuc1hYa2TPwg1nEX0yvDnYGd1QUg6R0ZpyMNKD0skW5wld
-wc0iczjRc9AVu+exT+6kuRGgreq1pERBGyWs+NaNESd3e9WzHjv/yqghSjGDyRYl
-7fL9XqK38MSpbl8gDYY1sHgqok9N1m0CpemKgWW1yTboJE/3NKg8+mDyo1vFmjc7
-ex7VEoD2Xw85kpS/HyTu00RtQ5hS+WFSsJoOQfxLQT90ckWl17PLeTvr3eUtSXzn
-cQ13NwjTQIVR4Z+ldK4aLzpO5NVQA8I4EhTVotCz8CAl9IyDsA66M1D5t/BggilR
-5qIqHgpBJ+fmDnAq5260rMEsMyt3m9hzVuzZR9CzsNuuNVhb72HXh7ovQkbMLXDG
-UF9LzXGrPpgJCRGMuZIx+78d/nuavezuabTLaYWPxF1nREz2e+WMC/8I5Xvawfa/
-m1KIjKw6uIADAbjL1miemvn/6iUwV3QZ1MXS4Vr9y8wZyVSduFvn8As9C+o5ZE3m
-H50ws7cA5FNGHNQAQCap
-=xnju
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Jan_2012_12_06_32_+1100_BlmFV3uEqccojw3+--
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
