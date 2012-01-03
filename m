@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab2ACWEf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:04:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36101 "EHLO mx2.suse.de"
+	id S1755418Ab2ACWFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:05:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36084 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755378Ab2ACWEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:04:30 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:02:44 2012
-Message-Id: <20120103220243.795329192@clark.kroah.org>
+	id S1754983Ab2ACWEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:04:23 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:02:40 2012
+Message-Id: <20120103220239.866326451@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:01:37 -0800
+Date: Tue, 03 Jan 2012 14:01:31 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [7/7] watchdog: hpwdt: Changes to handle NX secure bit in 32bit path
+        alan@lxorguk.ukuu.org.uk,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: [1/7] cfq-iosched: fix cfq_cic_link() race confition
 In-Reply-To: <20120103220302.GA28338@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,45 +26,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-commit e67d668e147c3b4fec638c9e0ace04319f5ceccd upstream.
+commit 5eb46851de3904cd1be9192fdacb8d34deadc1fc upstream.
 
-This patch makes use of the set_memory_x() kernel API in order
-to make necessary BIOS calls to source NMIs.
+cfq_cic_link() has race condition. When some processes which shared ioc
+issue I/O to same block device simultaneously, cfq_cic_link() returns -EEXIST
+sometimes. The race condition might stop I/O by following steps:
 
-This is needed for SLES11 SP2 and the latest upstream kernel as it appears
-the NX Execute Disable has grown in its control.
+step  1: Process A: Issue an I/O to /dev/sda
+step  2: Process A: Get an ioc (iocA here) in get_io_context() which does not
+		    linked with a cic for the device
+step  3: Process A: Get a new cic for the device (cicA here) in
+		    cfq_alloc_io_context()
 
-Signed-off by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-Signed-off by: Wim Van Sebroeck <wim@iguana.be>
+step  4: Process B: Issue an I/O to /dev/sda
+step  5: Process B: Get iocA in get_io_context() since process A and B share the
+		    same ioc
+step  6: Process B: Get a new cic for the device (cicB here) in
+		    cfq_alloc_io_context() since iocA has not been linked with a
+		    cic for the device yet
+
+step  7: Process A: Link cicA to iocA in cfq_cic_link()
+step  8: Process A: Dispatch I/O to driver and finish it
+
+step  9: Process B: Try to link cicB to iocA in cfq_cic_link()
+		    But it fails with showing "cfq: cic link failed!" kernel
+		    message, since iocA has already linked with cicA at step 7.
+step 10: Process B: Wait for finishig I/O in get_request_wait()
+		    The function does not wake up, when there is no I/O to the
+		    device.
+
+When cfq_cic_link() returns -EEXIST, it means ioc has already linked with cic.
+So when cfq_cic_link() return -EEXIST, retry cfq_cic_lookup().
+
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/watchdog/hpwdt.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ block/cfq-iosched.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -220,6 +220,7 @@ static int __devinit cru_detect(unsigned
- 
- 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
- 
-+	set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
- 	asminline_call(&cmn_regs, bios32_entrypoint);
- 
- 	if (cmn_regs.u1.ral != 0) {
-@@ -237,8 +238,10 @@ static int __devinit cru_detect(unsigned
- 		if ((physical_bios_base + physical_bios_offset)) {
- 			cru_rom_addr =
- 				ioremap(cru_physical_address, cru_length);
--			if (cru_rom_addr)
-+			if (cru_rom_addr) {
-+				set_memory_x((unsigned long)cru_rom_addr, cru_length);
- 				retval = 0;
-+			}
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1981,7 +1981,7 @@ static int cfq_cic_link(struct cfq_data
  		}
+ 	}
  
- 		printk(KERN_DEBUG "hpwdt: CRU Base Address:   0x%lx\n",
+-	if (ret)
++	if (ret && ret != -EEXIST)
+ 		printk(KERN_ERR "cfq: cic link failed!\n");
+ 
+ 	return ret;
+@@ -1997,6 +1997,7 @@ cfq_get_io_context(struct cfq_data *cfqd
+ {
+ 	struct io_context *ioc = NULL;
+ 	struct cfq_io_context *cic;
++	int ret;
+ 
+ 	might_sleep_if(gfp_mask & __GFP_WAIT);
+ 
+@@ -2004,6 +2005,7 @@ cfq_get_io_context(struct cfq_data *cfqd
+ 	if (!ioc)
+ 		return NULL;
+ 
++retry:
+ 	cic = cfq_cic_lookup(cfqd, ioc);
+ 	if (cic)
+ 		goto out;
+@@ -2012,7 +2014,12 @@ cfq_get_io_context(struct cfq_data *cfqd
+ 	if (cic == NULL)
+ 		goto err;
+ 
+-	if (cfq_cic_link(cfqd, ioc, cic, gfp_mask))
++	ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
++	if (ret == -EEXIST) {
++		/* someone has linked cic to ioc already */
++		cfq_cic_free(cic);
++		goto retry;
++	} else if (ret)
+ 		goto err_free;
+ 
+ out:
 
 
