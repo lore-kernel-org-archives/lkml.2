@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab2ACXte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:49:34 -0500
-Received: from tundra.namei.org ([65.99.196.166]:46218 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754643Ab2ACXtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 18:49:31 -0500
-Date: Wed, 4 Jan 2012 10:47:00 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        haiyangz@microsoft.com, hjanssen@microsoft.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>
-Subject: Re: Reiserfs.c bug in 3.2-rc5
-In-Reply-To: <1325616312.2095.26.camel@falcor>
-Message-ID: <alpine.LRH.2.00.1201041046330.18098@tundra.namei.org>
-References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>  <20111213180707.GI11747@quack.suse.cz>  <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>  <20120102115222.GA3626@quack.suse.cz>
- <20120103010826.GF3626@quack.suse.cz>  <20120103123841.GA31457@quack.suse.cz> <1325604356.2095.23.camel@falcor>  <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com> <1325616312.2095.26.camel@falcor>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755224Ab2ACX61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:58:27 -0500
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51999 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755136Ab2ACX6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 18:58:24 -0500
+From: Kevin Hilman <khilman@ti.com>
+To: Dmitry Antipov <dmitry.antipov@linaro.org>
+Cc: linaro-dev@lists.linaro.org, patches@linaro.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] omap: use usleep_range() instead of mdelay()/udelay()
+Organization: Texas Instruments, Inc.
+References: <4EF18426.3040805@linaro.org>
+Date: Tue, 03 Jan 2012 15:58:16 -0800
+In-Reply-To: <4EF18426.3040805@linaro.org> (Dmitry Antipov's message of "Wed,
+	21 Dec 2011 11:00:54 +0400")
+Message-ID: <87fwfw8hk7.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jan 2012, Mimi Zohar wrote:
+Dmitry Antipov <dmitry.antipov@linaro.org> writes:
 
-> > EOPNOTSUPP return case match what we used to do?
-> > 
-> >                           Linus
-> > 
-> 
-> Just clarifying not all of commit fb88c2b, but only the
-> security_old_inode_init_security() hunk.
+> From e4db974edb5c46360465462518a88b83f1bdedf6 Mon Sep 17 00:00:00 2001
+> From: Dmitry Antipov <dmitry.antipov@linaro.org>
+> Date: Wed, 21 Dec 2011 10:57:08 +0400
+> Subject: [PATCH] omap: use usleep_range() instead of mdelay()/udelay()
 
-Agreed.
+Please include a signoff and a descriptive changelog (describing why.)
 
-And yep, it's ugly :-\
+Thanks,
 
+Kevin
 
-- James
--- 
-James Morris
-<jmorris@namei.org>
+> ---
+>  arch/arm/mach-omap2/omap_phy_internal.c |    2 +-
+>  arch/arm/mach-omap2/vc.c                |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
+> index 58775e3..e5dff64 100644
+> --- a/arch/arm/mach-omap2/omap_phy_internal.c
+> +++ b/arch/arm/mach-omap2/omap_phy_internal.c
+> @@ -145,7 +145,7 @@ int omap4430_phy_suspend(struct device *dev, int suspend)
+>  		/* power on the phy */
+>  		if (__raw_readl(ctrl_base + CONTROL_DEV_CONF) & PHY_PD) {
+>  			__raw_writel(~PHY_PD, ctrl_base + CONTROL_DEV_CONF);
+> -			mdelay(200);
+> +			usleep_range(200000, 201000);
+>  		}
+>
+>  		/* restore the context */
+> diff --git a/arch/arm/mach-omap2/vc.c b/arch/arm/mach-omap2/vc.c
+> index 031d116..57f44d5 100644
+> --- a/arch/arm/mach-omap2/vc.c
+> +++ b/arch/arm/mach-omap2/vc.c
+> @@ -151,7 +151,7 @@ void omap_vc_post_scale(struct voltagedomain *voltdm,
+>  	/* SMPS slew rate / step size. 2us added as buffer. */
+>  	smps_delay = ((smps_steps * voltdm->pmic->step_size) /
+>  			voltdm->pmic->slew_rate) + 2;
+> -	udelay(smps_delay);
+> +	usleep_range(smps_delay, smps_delay + 10);
+>  }
+>
+>  /* vc_bypass_scale - VC bypass method of voltage scaling */
