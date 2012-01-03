@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172Ab2ACNSD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 08:18:03 -0500
-Received: from [89.21.227.130] ([89.21.227.130]:36277 "EHLO
-	mail.epsilon.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752181Ab2ACNSC (ORCPT
+	id S1753267Ab2ACNSZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 08:18:25 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:63175 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab2ACNSV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 08:18:02 -0500
-X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jan 2012 08:18:01 EST
-Message-ID: <4F02FE17.2000800@itdev.co.uk>
-Date: Tue, 03 Jan 2012 13:09:43 +0000
-From: Nick Dyer <nick.dyer@itdev.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
+	Tue, 3 Jan 2012 08:18:21 -0500
+Date: Tue, 3 Jan 2012 16:17:48 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Debora Velarde <debora@linux.vnet.ibm.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        Marcel Selhorst <m.selhorst@sirrix.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] TPM: handle errors from probe_itpm()
+Message-ID: <20120103131748.GA11575@elgon.mountain>
 MIME-Version: 1.0
-To: Chase Douglas <chasedouglas@gmail.com>
-CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
-        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] HID: multitouch: add support of Atmel multitouch
- panels
-References: <1324651260-4067-1-git-send-email-benjamin.tissoires@gmail.com> <1324651260-4067-2-git-send-email-benjamin.tissoires@gmail.com> <4EF4CE4A.1020907@gmail.com>
-In-Reply-To: <4EF4CE4A.1020907@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ehw6sesk.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090207.4F030007.00A6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chase Douglas wrote:
-> On 12/23/2011 06:40 AM, Benjamin Tissoires wrote:
->> Signed-off-by: Benjamin Tissoires<benjamin.tissoires@gmail.com>
->> ---
->>   drivers/hid/Kconfig          |    1 +
->>   drivers/hid/hid-ids.h        |    3 +++
->>   drivers/hid/hid-multitouch.c |    5 +++++
->>   3 files changed, 9 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
->> index 5d6eb4e..e95b07c 100644
->> --- a/drivers/hid/Kconfig
->> +++ b/drivers/hid/Kconfig
->> @@ -335,6 +335,7 @@ config HID_MULTITOUCH
->>   	  Say Y here if you have one of the following devices:
->>   	  - 3M PCT touch screens
->>   	  - ActionStar dual touch panels
->> +	  - Atmel panels
->>   	  - Cando dual touch panels
->>   	  - Chunghwa panels
->>   	  - CVTouch panels
->
-> I'm guessing this is different than the Atmel maXTouch chips. If so, can
-> you figure out a model name so people aren't confused on which driver to
-> use?
+We recently made itpm a bool in linux-next and it broke the error
+handling here.  This patch also preserves the return codes from
+probe_itpm() instead of always returning -ENODEV.
 
-It is in fact a maXTouch chip - there are several different chips which 
-are able to register as a USB digitizer device using that VID/PID.
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
--- 
-Nick Dyer
-Software Engineer, ITDev Ltd
-Hardware and Software Development Consultancy
-Website: http://www.itdev.co.uk
+diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
+index a174862..08c6a07 100644
+--- a/drivers/char/tpm/tpm_tis.c
++++ b/drivers/char/tpm/tpm_tis.c
+@@ -538,11 +538,11 @@ static int tpm_tis_init(struct device *dev, resource_size_t start,
+ 		 vendor >> 16, ioread8(chip->vendor.iobase + TPM_RID(0)));
+ 
+ 	if (!itpm) {
+-		itpm = probe_itpm(chip);
+-		if (itpm < 0) {
+-			rc = -ENODEV;
++		rc = probe_itpm(chip);
++		if (rc < 0)
+ 			goto out_err;
+-		}
++		itpm = rc;
++		rc = 0;
+ 	}
+ 
+ 	if (itpm)
