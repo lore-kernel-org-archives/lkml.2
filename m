@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2ACW6V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:58:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39805 "EHLO mx2.suse.de"
+	id S1755812Ab2ACWiN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:38:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39773 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755779Ab2ACWiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:38:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
-Message-Id: <20120103223035.198942098@clark.kroah.org>
+	id S1755779Ab2ACWiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:38:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:34 2012
+Message-Id: <20120103223034.779901025@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:04 -0800
+Date: Tue, 03 Jan 2012 14:29:59 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [46/67] sparc32: Remove non-kernel code from memcpy implementation.
+        alan@lxorguk.ukuu.org.uk, linux-scsi@vger.kernel.org,
+        nagalakshmi.nandigama@lsi.com, "David S. Miller" <davem@davemloft.net>,
+        Eric Moore <Eric.Moore@lsi.com>
+Subject: [41/67] mpt2sas crashes on shutdown
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,689 +26,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: David Miller <davem@davemloft.net>
 
-From: "David S. Miller" <davem@davemloft.net>
+[Fixed differently in 3.2]
 
-[ Upstream commit 045b7de9ca0cf09f1adc3efa467f668b89238390 ]
+The mpt2sas driver accesses I/O space as virtual addresses when
+saving and restoring the MSIX table, this only works by luck on x86.
+
+One needs to use the appropriate {read,write}{b,w,l}() APIs.
+
+This is fixed in v3.2.x because all of this code got rewritten for
+NUMA I/O support.
+
+But both 3.0.x and 3.1.x still have this bug, and my Niagara sparc
+machines crash on shutdown every single time due to this bug making my
+-stable work more difficult than it needs to be.
+
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Tested-by: Kjetil Oftedal <oftedal@gmail.com>
+Cc: Eric Moore <Eric.Moore@lsi.com>
+Cc: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/lib/memcpy.S |  607 ------------------------------------------------
- 1 file changed, 2 insertions(+), 605 deletions(-)
 
---- a/arch/sparc/lib/memcpy.S
-+++ b/arch/sparc/lib/memcpy.S
-@@ -7,17 +7,12 @@
-  * Copyright (C) 1996 Jakub Jelinek (jj@sunsite.mff.cuni.cz)
-  */
+---
+ drivers/scsi/mpt2sas/mpt2sas_base.c |    6 +++---
+ drivers/scsi/mpt2sas/mpt2sas_base.h |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -1096,7 +1096,7 @@ _base_save_msix_table(struct MPT2SAS_ADA
+ 		return;
  
--#ifdef __KERNEL__
--
--#define FUNC(x) 											\
-+#define FUNC(x) 		\
- 	.globl	x;		\
- 	.type	x,@function;	\
--	.align	4;											\
-+	.align	4;		\
- x:
+ 	for (i = 0; i < ioc->msix_vector_count; i++)
+-		ioc->msix_table_backup[i] = ioc->msix_table[i];
++		ioc->msix_table_backup[i] = readl(&ioc->msix_table[i]);
+ }
  
--#undef FASTER_REVERSE
--#undef FASTER_NONALIGNED
--#define FASTER_ALIGNED
+ /**
+@@ -1113,7 +1113,7 @@ _base_restore_msix_table(struct MPT2SAS_
+ 		return;
  
- /* In kernel these functions don't return a value.
-  * One should use macros in asm/string.h for that purpose.
-@@ -26,21 +21,6 @@ x:
- #define SETUP_RETL
- #define RETL_INSN	clr	%o0
+ 	for (i = 0; i < ioc->msix_vector_count; i++)
+-		ioc->msix_table[i] = ioc->msix_table_backup[i];
++		writel(ioc->msix_table_backup[i], &ioc->msix_table[i]);
+ }
  
--#else
--
--/* libc */
--
--#include "DEFS.h"
--
--#define FASTER_REVERSE
--#define FASTER_NONALIGNED
--#define FASTER_ALIGNED
--
--#define SETUP_RETL	mov	%o0, %g6
--#define RETL_INSN	mov	%g6, %o0
--
--#endif
--
- /* Both these macros have to start with exactly the same insn */
- #define MOVE_BIGCHUNK(src, dst, offset, t0, t1, t2, t3, t4, t5, t6, t7) \
- 	ldd	[%src + (offset) + 0x00], %t0; \
-@@ -164,30 +144,6 @@ x:
- 	.text
- 	.align	4
+ /**
+@@ -1144,7 +1144,7 @@ _base_check_enable_msix(struct MPT2SAS_A
+ 	/* get msix table  */
+ 	pci_read_config_dword(ioc->pdev, base + 4, &msix_table_offset);
+ 	msix_table_offset &= 0xFFFFFFF8;
+-	ioc->msix_table = (u32 *)((void *)ioc->chip + msix_table_offset);
++	ioc->msix_table = ((void __iomem *)ioc->chip + msix_table_offset);
  
--#ifdef FASTER_REVERSE
--
--70:	/* rdword_align */
--
--	andcc		%o1, 1, %g0
--	be		4f
--	 andcc		%o1, 2, %g0
--
--	ldub		[%o1 - 1], %g2
--	sub		%o1, 1, %o1
--	stb		%g2, [%o0 - 1]
--	sub		%o2, 1, %o2
--	be		3f
--	 sub		%o0, 1, %o0
--4:
--	lduh		[%o1 - 2], %g2
--	sub		%o1, 2, %o1
--	sth		%g2, [%o0 - 2]
--	sub		%o2, 2, %o2
--	b		3f
--	 sub		%o0, 2, %o0
--
--#endif /* FASTER_REVERSE */
--
- 0:
- 	retl
- 	 nop		! Only bcopy returns here and it retuns void...
-@@ -207,8 +163,6 @@ FUNC(memmove)
- 	bleu		0f
- 	 andcc		%o4, 3, %o5
+ 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "msix is supported, "
+ 	    "vector_count(%d), table_offset(0x%08x), table(%p)\n", ioc->name,
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
+@@ -768,7 +768,7 @@ struct MPT2SAS_ADAPTER {
  
--#ifndef FASTER_REVERSE
--
- 	add		%o1, %o2, %o1
- 	add		%o0, %o2, %o0
- 	sub		%o1, 1, %o1
-@@ -226,294 +180,6 @@ FUNC(memmove)
- 	retl
- 	 RETL_INSN
+ 	u8		msix_enable;
+ 	u16		msix_vector_count;
+-	u32		*msix_table;
++	u32 __iomem	*msix_table;
+ 	u32		*msix_table_backup;
+ 	u32		ioc_reset_count;
  
--#else /* FASTER_REVERSE */
--
--	add		%o1, %o2, %o1
--	add		%o0, %o2, %o0
--	bne		77f
--	 cmp		%o2, 15
--	bleu		91f
--	 andcc		%o1, 3, %g0
--	bne		70b
--3:
--	 andcc		%o1, 4, %g0
--
--	be		2f
--	 mov		%o2, %g1
--
--	ld		[%o1 - 4], %o4
--	sub		%g1, 4, %g1
--	st		%o4, [%o0 - 4]
--	sub		%o1, 4, %o1
--	sub		%o0, 4, %o0
--2:
--	andcc		%g1, 0xffffff80, %g7
--	be		3f
--	 andcc		%o0, 4, %g0
--
--	be		74f + 4
--5:
--	RMOVE_BIGCHUNK(o1, o0, 0x00, o2, o3, o4, o5, g2, g3, g4, g5)
--	RMOVE_BIGCHUNK(o1, o0, 0x20, o2, o3, o4, o5, g2, g3, g4, g5)
--	RMOVE_BIGCHUNK(o1, o0, 0x40, o2, o3, o4, o5, g2, g3, g4, g5)
--	RMOVE_BIGCHUNK(o1, o0, 0x60, o2, o3, o4, o5, g2, g3, g4, g5)
--	subcc		%g7, 128, %g7
--	sub		%o1, 128, %o1
--	bne		5b
--	 sub		%o0, 128, %o0
--3:
--	andcc		%g1, 0x70, %g7
--	be		72f
--	 andcc		%g1, 8, %g0
--
--	sethi		%hi(72f), %o5
--	srl		%g7, 1, %o4
--	add		%g7, %o4, %o4
--	sub		%o1, %g7, %o1
--	sub		%o5, %o4, %o5
--	jmpl		%o5 + %lo(72f), %g0
--	 sub		%o0, %g7, %o0
--
--71:	/* rmemcpy_table */
--	RMOVE_LASTCHUNK(o1, o0, 0x60, g2, g3, g4, g5)
--	RMOVE_LASTCHUNK(o1, o0, 0x50, g2, g3, g4, g5)
--	RMOVE_LASTCHUNK(o1, o0, 0x40, g2, g3, g4, g5)
--	RMOVE_LASTCHUNK(o1, o0, 0x30, g2, g3, g4, g5)
--	RMOVE_LASTCHUNK(o1, o0, 0x20, g2, g3, g4, g5)
--	RMOVE_LASTCHUNK(o1, o0, 0x10, g2, g3, g4, g5)
--	RMOVE_LASTCHUNK(o1, o0, 0x00, g2, g3, g4, g5)
--
--72:	/* rmemcpy_table_end */
--
--	be		73f
--	 andcc		%g1, 4, %g0
--
--	ldd		[%o1 - 0x08], %g2
--	sub		%o0, 8, %o0
--	sub		%o1, 8, %o1
--	st		%g2, [%o0]
--	st		%g3, [%o0 + 0x04]
--
--73:	/* rmemcpy_last7 */
--
--	be		1f
--	 andcc		%g1, 2, %g0
--
--	ld		[%o1 - 4], %g2
--	sub		%o1, 4, %o1
--	st		%g2, [%o0 - 4]
--	sub		%o0, 4, %o0
--1:
--	be		1f
--	 andcc		%g1, 1, %g0
--
--	lduh		[%o1 - 2], %g2
--	sub		%o1, 2, %o1
--	sth		%g2, [%o0 - 2]
--	sub		%o0, 2, %o0
--1:
--	be		1f
--	 nop
--
--	ldub		[%o1 - 1], %g2
--	stb		%g2, [%o0 - 1]
--1:
--	retl
-- 	 RETL_INSN
--
--74:	/* rldd_std */
--	RMOVE_BIGALIGNCHUNK(o1, o0, 0x00, o2, o3, o4, o5, g2, g3, g4, g5)
--	RMOVE_BIGALIGNCHUNK(o1, o0, 0x20, o2, o3, o4, o5, g2, g3, g4, g5)
--	RMOVE_BIGALIGNCHUNK(o1, o0, 0x40, o2, o3, o4, o5, g2, g3, g4, g5)
--	RMOVE_BIGALIGNCHUNK(o1, o0, 0x60, o2, o3, o4, o5, g2, g3, g4, g5)
--	subcc		%g7, 128, %g7
--	sub		%o1, 128, %o1
--	bne		74b
--	 sub		%o0, 128, %o0
--
--	andcc		%g1, 0x70, %g7
--	be		72b
--	 andcc		%g1, 8, %g0
--
--	sethi		%hi(72b), %o5
--	srl		%g7, 1, %o4
--	add		%g7, %o4, %o4
--	sub		%o1, %g7, %o1
--	sub		%o5, %o4, %o5
--	jmpl		%o5 + %lo(72b), %g0
--	 sub		%o0, %g7, %o0
--
--75:	/* rshort_end */
--
--	and		%o2, 0xe, %o3
--2:
--	sethi		%hi(76f), %o5
--	sll		%o3, 3, %o4
--	sub		%o0, %o3, %o0
--	sub		%o5, %o4, %o5
--	sub		%o1, %o3, %o1
--	jmpl		%o5 + %lo(76f), %g0
--	 andcc		%o2, 1, %g0
--
--	RMOVE_SHORTCHUNK(o1, o0, 0x0c, g2, g3)
--	RMOVE_SHORTCHUNK(o1, o0, 0x0a, g2, g3)
--	RMOVE_SHORTCHUNK(o1, o0, 0x08, g2, g3)
--	RMOVE_SHORTCHUNK(o1, o0, 0x06, g2, g3)
--	RMOVE_SHORTCHUNK(o1, o0, 0x04, g2, g3)
--	RMOVE_SHORTCHUNK(o1, o0, 0x02, g2, g3)
--	RMOVE_SHORTCHUNK(o1, o0, 0x00, g2, g3)
--
--76:	/* rshort_table_end */
--
--	be		1f
--	 nop
--	ldub		[%o1 - 1], %g2
--	stb		%g2, [%o0 - 1]
--1:
--	retl
-- 	 RETL_INSN
--
--91:	/* rshort_aligned_end */
--
--	bne		75b
--	 andcc		%o2, 8, %g0
--
--	be		1f
--	 andcc		%o2, 4, %g0
--
--	ld		[%o1 - 0x08], %g2
--	ld		[%o1 - 0x04], %g3
--	sub		%o1, 8, %o1
--	st		%g2, [%o0 - 0x08]
--	st		%g3, [%o0 - 0x04]
--	sub		%o0, 8, %o0
--1:
--	b		73b
--	 mov		%o2, %g1
--
--77:	/* rnon_aligned */
--	cmp		%o2, 15
--	bleu		75b
--	 andcc		%o0, 3, %g0
--	be		64f
--	 andcc		%o0, 1, %g0
--	be		63f
--	 andcc		%o0, 2, %g0
--	ldub		[%o1 - 1], %g5
--	sub		%o1, 1, %o1
--	stb		%g5, [%o0 - 1]
--	sub		%o0, 1, %o0
--	be		64f
--	 sub		%o2, 1, %o2
--63:
--	ldub		[%o1 - 1], %g5
--	sub		%o1, 2, %o1
--	stb		%g5, [%o0 - 1]
--	sub		%o0, 2, %o0
--	ldub		[%o1], %g5
--	sub		%o2, 2, %o2
--	stb		%g5, [%o0]
--64:	
--	and		%o1, 3, %g2
--	and		%o1, -4, %o1
--	and		%o2, 0xc, %g3
--	add		%o1, 4, %o1
--	cmp		%g3, 4
--	sll		%g2, 3, %g4
--	mov		32, %g2
--	be		4f
--	 sub		%g2, %g4, %g7
--
--	blu		3f
--	 cmp		%g3, 8
--
--	be		2f
--	 srl		%o2, 2, %g3
--
--	ld		[%o1 - 4], %o3
--	add		%o0, -8, %o0
--	ld		[%o1 - 8], %o4
--	add		%o1, -16, %o1
--	b		7f
--	 add		%g3, 1, %g3
--2:
--	ld		[%o1 - 4], %o4
--	add		%o0, -4, %o0
--	ld		[%o1 - 8], %g1
--	add		%o1, -12, %o1
--	b		8f
--	 add		%g3, 2, %g3
--3:
--	ld		[%o1 - 4], %o5
--	add		%o0, -12, %o0
--	ld		[%o1 - 8], %o3
--	add		%o1, -20, %o1
--	b		6f
--	 srl		%o2, 2, %g3
--4:
--	ld		[%o1 - 4], %g1
--	srl		%o2, 2, %g3
--	ld		[%o1 - 8], %o5
--	add		%o1, -24, %o1
--	add		%o0, -16, %o0
--	add		%g3, -1, %g3
--
--	ld		[%o1 + 12], %o3
--5:
--	sll		%o5, %g4, %g2
--	srl		%g1, %g7, %g5
--	or		%g2, %g5, %g2
--	st		%g2, [%o0 + 12]
--6:
--	ld		[%o1 + 8], %o4
--	sll		%o3, %g4, %g2
--	srl		%o5, %g7, %g5
--	or		%g2, %g5, %g2
--	st		%g2, [%o0 + 8]
--7:
--	ld		[%o1 + 4], %g1
--	sll		%o4, %g4, %g2
--	srl		%o3, %g7, %g5
--	or		%g2, %g5, %g2
--	st		%g2, [%o0 + 4]
--8:
--	ld		[%o1], %o5
--	sll		%g1, %g4, %g2
--	srl		%o4, %g7, %g5
--	addcc		%g3, -4, %g3
--	or		%g2, %g5, %g2
--	add		%o1, -16, %o1
--	st		%g2, [%o0]
--	add		%o0, -16, %o0
--	bne,a		5b	
--	 ld		[%o1 + 12], %o3
--	sll		%o5, %g4, %g2
--	srl		%g1, %g7, %g5
--	srl		%g4, 3, %g3
--	or		%g2, %g5, %g2
--	add		%o1, %g3, %o1
--	andcc		%o2, 2, %g0
--	st		%g2, [%o0 + 12]
--	be		1f
--	 andcc		%o2, 1, %g0
--	
--	ldub		[%o1 + 15], %g5
--	add		%o1, -2, %o1
--	stb		%g5, [%o0 + 11]
--	add		%o0, -2, %o0
--	ldub		[%o1 + 16], %g5
--	stb		%g5, [%o0 + 12]
--1:
--	be		1f
--	 nop
--	ldub		[%o1 + 15], %g5
--	stb		%g5, [%o0 + 11]
--1:
--	retl
--	 RETL_INSN
--
--#endif /* FASTER_REVERSE */
--
- /* NOTE: This code is executed just for the cases,
-          where %src (=%o1) & 3 is != 0.
- 	 We need to align it to 4. So, for (%src & 3)
-@@ -653,22 +319,6 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	bne		82b
- 	 add		%o0, 128, %o0
- 
--#ifndef FASTER_ALIGNED
--
--	andcc		%g1, 0x70, %g7
--	be		80b
--	 andcc		%g1, 8, %g0
--
--	sethi		%hi(80b), %o5
--	srl		%g7, 1, %o4
--	add		%g7, %o4, %o4
--	add		%o1, %g7, %o1
--	sub		%o5, %o4, %o5
--	jmpl		%o5 + %lo(80b), %g0
--	 add		%o0, %g7, %o0
--
--#else /* FASTER_ALIGNED */
--
- 	andcc		%g1, 0x70, %g7
- 	be		84f
- 	 andcc		%g1, 8, %g0
-@@ -723,19 +373,9 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	retl
-  	 RETL_INSN
- 
--#endif /* FASTER_ALIGNED */
--
- 86:	/* non_aligned */
- 	cmp		%o2, 6
- 	bleu		88f
--
--#ifdef FASTER_NONALIGNED
--
--	 cmp		%o2, 256
--	bcc		87f
--
--#endif /* FASTER_NONALIGNED */
--
- 	 andcc		%o0, 3, %g0
- 	be		61f
- 	 andcc		%o0, 1, %g0
-@@ -855,249 +495,6 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	retl
- 	 RETL_INSN
- 
--#ifdef FASTER_NONALIGNED
--
--87:	/* faster_nonaligned */
--
--	andcc		%o1, 3, %g0
--	be		3f
--	 andcc		%o1, 1, %g0
--
--	be		4f
--	 andcc		%o1, 2, %g0
--
--	ldub		[%o1], %g2
--	add		%o1, 1, %o1
--	stb		%g2, [%o0]
--	sub		%o2, 1, %o2
--	bne		3f
--	 add		%o0, 1, %o0
--4:
--	lduh		[%o1], %g2
--	add		%o1, 2, %o1
--	srl		%g2, 8, %g3
--	sub		%o2, 2, %o2
--	stb		%g3, [%o0]
--	add		%o0, 2, %o0
--	stb		%g2, [%o0 - 1]
--3:
--	 andcc		%o1, 4, %g0
--
--	bne		2f
--	 cmp		%o5, 1
--
--	ld		[%o1], %o4
--	srl		%o4, 24, %g2
--	stb		%g2, [%o0]
--	srl		%o4, 16, %g3
--	stb		%g3, [%o0 + 1]
--	srl		%o4, 8, %g2
--	stb		%g2, [%o0 + 2]
--	sub		%o2, 4, %o2
--	stb		%o4, [%o0 + 3]
--	add		%o1, 4, %o1
--	add		%o0, 4, %o0
--2:
--	be		33f
--	 cmp		%o5, 2
--	be		32f
--	 sub		%o2, 4, %o2
--31:
--	ld		[%o1], %g2
--	add		%o1, 4, %o1
--	srl		%g2, 24, %g3
--	and		%o0, 7, %g5
--	stb		%g3, [%o0]
--	cmp		%g5, 7
--	sll		%g2, 8, %g1
--	add		%o0, 4, %o0
--	be		41f
--	 and		%o2, 0xffffffc0, %o3
--	ld		[%o0 - 7], %o4
--4:
--	SMOVE_CHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	SMOVE_CHUNK(o1, o0, 0x10, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	SMOVE_CHUNK(o1, o0, 0x20, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	SMOVE_CHUNK(o1, o0, 0x30, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	subcc		%o3, 64, %o3
--	add		%o1, 64, %o1
--	bne		4b
--	 add		%o0, 64, %o0
--
--	andcc		%o2, 0x30, %o3
--	be,a		1f
--	 srl		%g1, 16, %g2
--4:
--	SMOVE_CHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	subcc		%o3, 16, %o3
--	add		%o1, 16, %o1
--	bne		4b
--	 add		%o0, 16, %o0
--
--	srl		%g1, 16, %g2
--1:
--	st		%o4, [%o0 - 7]
--	sth		%g2, [%o0 - 3]
--	srl		%g1, 8, %g4
--	b		88f
--	 stb		%g4, [%o0 - 1]
--32:
--	ld		[%o1], %g2
--	add		%o1, 4, %o1
--	srl		%g2, 16, %g3
--	and		%o0, 7, %g5
--	sth		%g3, [%o0]
--	cmp		%g5, 6
--	sll		%g2, 16, %g1
--	add		%o0, 4, %o0
--	be		42f
--	 and		%o2, 0xffffffc0, %o3
--	ld		[%o0 - 6], %o4
--4:
--	SMOVE_CHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	SMOVE_CHUNK(o1, o0, 0x10, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	SMOVE_CHUNK(o1, o0, 0x20, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	SMOVE_CHUNK(o1, o0, 0x30, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	subcc		%o3, 64, %o3
--	add		%o1, 64, %o1
--	bne		4b
--	 add		%o0, 64, %o0
--
--	andcc		%o2, 0x30, %o3
--	be,a		1f
--	 srl		%g1, 16, %g2
--4:
--	SMOVE_CHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	subcc		%o3, 16, %o3
--	add		%o1, 16, %o1
--	bne		4b
--	 add		%o0, 16, %o0
--
--	srl		%g1, 16, %g2
--1:
--	st		%o4, [%o0 - 6]
--	b		88f
--	 sth		%g2, [%o0 - 2]
--33:
--	ld		[%o1], %g2
--	sub		%o2, 4, %o2
--	srl		%g2, 24, %g3
--	and		%o0, 7, %g5
--	stb		%g3, [%o0]
--	cmp		%g5, 5
--	srl		%g2, 8, %g4
--	sll		%g2, 24, %g1
--	sth		%g4, [%o0 + 1]
--	add		%o1, 4, %o1
--	be		43f
--	 and		%o2, 0xffffffc0, %o3
--
--	ld		[%o0 - 1], %o4
--	add		%o0, 4, %o0
--4:
--	SMOVE_CHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, -1)
--	SMOVE_CHUNK(o1, o0, 0x10, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, -1)
--	SMOVE_CHUNK(o1, o0, 0x20, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, -1)
--	SMOVE_CHUNK(o1, o0, 0x30, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, -1)
--	subcc		%o3, 64, %o3
--	add		%o1, 64, %o1
--	bne		4b
--	 add		%o0, 64, %o0
--
--	andcc		%o2, 0x30, %o3
--	be,a		1f
--	 srl		%g1, 24, %g2
--4:
--	SMOVE_CHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, -1)
--	subcc		%o3, 16, %o3
--	add		%o1, 16, %o1
--	bne		4b
--	 add		%o0, 16, %o0
--
--	srl		%g1, 24, %g2
--1:
--	st		%o4, [%o0 - 5]
--	b		88f
--	 stb		%g2, [%o0 - 1]
--41:
--	SMOVE_ALIGNCHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x10, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x20, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x30, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	subcc		%o3, 64, %o3
--	add		%o1, 64, %o1
--	bne		41b
--	 add		%o0, 64, %o0
--	 
--	andcc		%o2, 0x30, %o3
--	be,a		1f
--	 srl		%g1, 16, %g2
--4:
--	SMOVE_ALIGNCHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 8, 24, -3)
--	subcc		%o3, 16, %o3
--	add		%o1, 16, %o1
--	bne		4b
--	 add		%o0, 16, %o0
--
--	srl		%g1, 16, %g2
--1:
--	sth		%g2, [%o0 - 3]
--	srl		%g1, 8, %g4
--	b		88f
--	 stb		%g4, [%o0 - 1]
--43:
--	SMOVE_ALIGNCHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, 3)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x10, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, 3)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x20, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, 3)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x30, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, 3)
--	subcc		%o3, 64, %o3
--	add		%o1, 64, %o1
--	bne		43b
--	 add		%o0, 64, %o0
--
--	andcc		%o2, 0x30, %o3
--	be,a		1f
--	 srl		%g1, 24, %g2
--4:
--	SMOVE_ALIGNCHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 24, 8, 3)
--	subcc		%o3, 16, %o3
--	add		%o1, 16, %o1
--	bne		4b
--	 add		%o0, 16, %o0
--
--	srl		%g1, 24, %g2
--1:
--	stb		%g2, [%o0 + 3]
--	b		88f
--	 add		%o0, 4, %o0
--42:
--	SMOVE_ALIGNCHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x10, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x20, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	SMOVE_ALIGNCHUNK(o1, o0, 0x30, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	subcc		%o3, 64, %o3
--	add		%o1, 64, %o1
--	bne		42b
--	 add		%o0, 64, %o0
--	 
--	andcc		%o2, 0x30, %o3
--	be,a		1f
--	 srl		%g1, 16, %g2
--4:
--	SMOVE_ALIGNCHUNK(o1, o0, 0x00, g2, g3, g4, g5, o4, o5, g7, g1, 16, 16, -2)
--	subcc		%o3, 16, %o3
--	add		%o1, 16, %o1
--	bne		4b
--	 add		%o0, 16, %o0
--
--	srl		%g1, 16, %g2
--1:
--	sth		%g2, [%o0 - 2]
--
--	/* Fall through */
--	 
--#endif /* FASTER_NONALIGNED */
--
- 88:	/* short_end */
- 
- 	and		%o2, 0xe, %o3
 
 
