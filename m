@@ -1,97 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328Ab2ACB2u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 20:28:50 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:56276 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750778Ab2ACB2r (ORCPT
+	id S1751355Ab2ACBeq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 20:34:46 -0500
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:51143 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750860Ab2ACBem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 20:28:47 -0500
-Date: Tue, 3 Jan 2012 02:31:52 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl
- updates inode
-Message-ID: <20120103013152.GA26455@dztty>
+	Mon, 2 Jan 2012 20:34:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AuQXAFFYAk95LLu4/2dsb2JhbABCggWqVoEGgXIBAQU6HCMQCAMOCi4UJQMhE7wsE4t8BJUBkkk
+Date: Tue, 3 Jan 2012 12:34:38 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: xfs-masters@oss.sgi.com, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Ben Myers <bpm@sgi.com>
+Subject: Re: linux-next: manual merge of the xfs tree with Linus' tree
+Message-ID: <20120103013438.GR23662@dastard>
+References: <20120103120632.a43a2ab50ac747093bbb2f5f@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120103120632.a43a2ab50ac747093bbb2f5f@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 03, 2012 at 12:06:32PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the xfs tree got a conflict in
+> fs/xfs/xfs_sync.c between commit be4f1ac82877 ("xfs: log all dirty inodes
+> in xfs_fs_sync_fs") from the  tree and commit 34625c661b01 ("xfs: remove
+> xfs_qm_sync") from the xfs tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
 
-The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
-this can lead to a race with the other operations that update the same
-inode.
+Looks correct. Thanks Stephen.
 
-Patch tested.
+Cheers,
 
-Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
----
- fs/ext3/ioctl.c |    6 +++++-
- fs/ext4/ioctl.c |    6 +++++-
- 2 files changed, 10 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ext3/ioctl.c b/fs/ext3/ioctl.c
-index ba1b54e..e7b2ed9 100644
---- a/fs/ext3/ioctl.c
-+++ b/fs/ext3/ioctl.c
-@@ -134,10 +134,11 @@ flags_out:
- 			goto setversion_out;
- 		}
- 
-+		mutex_lock(&inode->i_mutex);
- 		handle = ext3_journal_start(inode, 1);
- 		if (IS_ERR(handle)) {
- 			err = PTR_ERR(handle);
--			goto setversion_out;
-+			goto unlock_out;
- 		}
- 		err = ext3_reserve_inode_write(handle, inode, &iloc);
- 		if (err == 0) {
-@@ -146,6 +147,9 @@ flags_out:
- 			err = ext3_mark_iloc_dirty(handle, inode, &iloc);
- 		}
- 		ext3_journal_stop(handle);
-+
-+unlock_out:
-+		mutex_unlock(&inode->i_mutex);
- setversion_out:
- 		mnt_drop_write(filp->f_path.mnt);
- 		return err;
-diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
-index a567968..46a8de6 100644
---- a/fs/ext4/ioctl.c
-+++ b/fs/ext4/ioctl.c
-@@ -158,10 +158,11 @@ flags_out:
- 			goto setversion_out;
- 		}
- 
-+		mutex_lock(&inode->i_mutex);
- 		handle = ext4_journal_start(inode, 1);
- 		if (IS_ERR(handle)) {
- 			err = PTR_ERR(handle);
--			goto setversion_out;
-+			goto unlock_out;
- 		}
- 		err = ext4_reserve_inode_write(handle, inode, &iloc);
- 		if (err == 0) {
-@@ -170,6 +171,9 @@ flags_out:
- 			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
- 		}
- 		ext4_journal_stop(handle);
-+
-+unlock_out:
-+		mutex_unlock(&inode->i_mutex);
- setversion_out:
- 		mnt_drop_write(filp->f_path.mnt);
- 		return err;
+Dave.
 -- 
-1.7.1
+Dave Chinner
+david@fromorbit.com
