@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab2ACUhm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:37:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59455 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754410Ab2ACUhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:37:40 -0500
-Date: Tue, 3 Jan 2012 12:37:17 -0800
-From: Greg KH <gregkh@suse.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
-Message-ID: <20120103203717.GA6701@suse.de>
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <1324977203.28904.1.camel@lappy>
- <20111228042959.GA2477@linux.vnet.ibm.com>
- <20120103202716.GA8384@linux.vnet.ibm.com>
+	id S1755128Ab2ACUja (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:39:30 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:58756 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754808Ab2ACUj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:39:28 -0500
+Date: Tue, 3 Jan 2012 15:36:38 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>, Jan Beulich <JBeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Jens Axboe <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH, v2] Xen: consolidate and simplify struct xenbus_driver
+ instantiation
+Message-ID: <20120103203637.GF17472@phenom.dumpdata.com>
+References: <4EF3018D020000780006986E@nat28.tlf.novell.com>
+ <1324547820.7877.71.camel@zakaz.uk.xensource.com>
+ <4EF327E2020000780006993E@nat28.tlf.novell.com>
+ <1324555060.7877.84.camel@zakaz.uk.xensource.com>
+ <1324565067.2897.2.camel@bwh-desktop>
+ <1324586301.13113.3.camel@dagon.hellion.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120103202716.GA8384@linux.vnet.ibm.com>
+In-Reply-To: <1324586301.13113.3.camel@dagon.hellion.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090203.4F03673B.006D,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 12:27:16PM -0800, Paul E. McKenney wrote:
-> On Tue, Dec 27, 2011 at 08:29:59PM -0800, Paul E. McKenney wrote:
-> > On Tue, Dec 27, 2011 at 11:13:23AM +0200, Sasha Levin wrote:
-> > > On Mon, 2011-12-26 at 08:31 -0800, Paul E. McKenney wrote:
-> > > > Except that when I try looking for task_notify_func() in current mainline,
-> > > > I get nothing.
+On Thu, Dec 22, 2011 at 08:38:21PM +0000, Ian Campbell wrote:
+> On Thu, 2011-12-22 at 14:44 +0000, Ben Hutchings wrote:
+> > On Thu, 2011-12-22 at 11:57 +0000, Ian Campbell wrote:
+> > > On Thu, 2011-12-22 at 11:51 +0000, Jan Beulich wrote:
+> > > > >>> On 22.12.11 at 10:57, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > > > > On Thu, 2011-12-22 at 09:08 +0000, Jan Beulich wrote:
+> > > > >> The 'name', 'owner', and 'mod_name' members are redundant with the
+> > > > >> identically named fields in the 'driver' sub-structure. Rather than
+> > > > >> switching each instance to specify these fields explicitly, introduce
+> > > > >> a macro to simplify this.
+> > > > >> 
+> > > > >> Eliminate further redundancy by allowing the drvname argument to
+> > > > >> DEFINE_XENBUS_DRIVER() to be blank (in which case the first entry from
+> > > > >> the ID table will be used for .driver.name).
+> > > > > 
+> > > > > Any reason not to always use DRV_NAME here (which is generally a bit
+> > > > > more specific e.g. "xen-foofront" rather than "foo") and rely on the id
+> > > > > table for the shorter names used in xenstore?
 > > > > 
-> > > > Where is task_notify_func() coming from? 
+> > > > That would imply that DRV_NAME is always defined, but I don't
+> > > > see this being the case.
 > > > 
-> > > I was testing linux-next, it actually comes from the android tree:
-> > > drivers/staging/android/lowmemorykiller.c
+> > > My mistake, I thought it was a Kbuild thing.
 > > 
-> > That does sound familiar...  I wonder if the stuff in staging is current
-> > Android or historical stuff.
+> > You're maybe thinking of KBUILD_MODNAME.
 > 
-> And memory did serve for once.  ;-)
-> 
-> Current Android has the following for task_notify_func():
-> 
-> static int
-> task_notify_func(struct notifier_block *self, unsigned long val, void *data)
-> {
-> 	struct task_struct *task = data;
-> 
-> 	if (task == lowmem_deathpending)
-> 		lowmem_deathpending = NULL;
-> 
-> 	return NOTIFY_OK;
-> }
-> 
-> This is from https://android.googlesource.com/kernel/common.git.
-> 
-> Commit 5545554aac04918ece318270d63cbfcb015577a9 fixed this problem.
-> The commit is shown below, FYI.
-> 
-> Greg, would it be possible to pull in the current Android code?  There
-> have been a few fixes.  ;-)
+> Yes, I think I was.
 
-I did base the stuff in staging on the common.git tree, but for some
-reason this patch wasn't applied, odd, I'll go apply it now...
+Ian, are you OK with this patch? I think Jan needs to repost once more with the
+"pciback" -> DRV_NAME change and then it is OK?
 
-Ah, I see, it didn't apply for various reasons:
-
-patching file drivers/staging/android/lowmemorykiller.c
-Hunk #1 FAILED at 71.
-Hunk #2 FAILED at 168.
-Hunk #3 succeeded at 196 (offset 11 lines).
-Hunk #4 succeeded at 204 (offset 11 lines).
-
-Care to rebase this patch and send it to me so that I can apply it?  I
-don't have the time to do it myself at the moment, sorry, lots of higher
-priority items to get done this week, sorry.
-
-greg k-h
+I've tested it with all backends, except the pciback one, and I see no regressions
+with 'xl' or 'xm' toolstack.
