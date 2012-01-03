@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2ACXLd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:11:33 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:56679 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab2ACXL2 (ORCPT
+	id S1755049Ab2ACXLk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:11:40 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:42989 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793Ab2ACXLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 18:11:28 -0500
-Date: Wed, 4 Jan 2012 00:14:32 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl
- updates inode
-Message-ID: <20120103231432.GA23522@dztty>
-References: <20120103013152.GA26455@dztty>
- <20120103124624.GB31457@quack.suse.cz>
+	Tue, 3 Jan 2012 18:11:31 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Colin Walters <walters@verbum.org>, "Serge E. Hallyn" <serge@hallyn.com>,
+        LKML <linux-kernel@vger.kernel.org>, alan@lxorguk.ukuu.org.uk,
+        morgan@kernel.org, luto@mit.edu, kzak@redhat.com
+Subject: Re: chroot(2) and bind mounts as non-root
+References: <1323280461.10724.13.camel@lenny>
+	<1323982580.31563.15.camel@lenny> <m1k45xyreb.fsf@fess.ebiederm.org>
+	<201112211315.44175.sgrubb@redhat.com>
+Date: Tue, 03 Jan 2012 15:13:40 -0800
+In-Reply-To: <201112211315.44175.sgrubb@redhat.com> (Steve Grubb's message of
+	"Wed, 21 Dec 2011 13:15:43 -0500")
+Message-ID: <m11urgidln.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103124624.GB31457@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18Yaj84/J0eumLJJugRxAyUTlkwcmQtUQY=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 01:46:24PM +0100, Jan Kara wrote:
->   Hello,
-> 
-> On Tue 03-01-12 02:31:52, Djalal Harouni wrote:
-> > 
-> > The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
-> > this can lead to a race with the other operations that update the same
-> > inode.
-> > 
-> > Patch tested.
->   Thanks for the patch but I don't quite understand the problem.
-> i_generation is set when:
->   a) inode is loaded from disk
->   b) inode is allocated
->   c) in SETVERSION ioctl
-> 
->   The only thing that can race here seems to be c) against c) and that is
-> racy with i_mutex as well. So what problems do you exactly observe without
-> the patch?
-Right, but what about the related i_ctime change ? (i_ctime is updated in
-other places...)
+Steve Grubb <sgrubb@redhat.com> writes:
 
-The i_ctime update must reflect the _appropriate_ inode modification
-operation. This is why IMHO we should protect them to avoid a lost update.
+> On Friday, December 16, 2011 01:14:36 AM Eric W. Biederman wrote:
+>> Since except at the edges of userspace we use uids and gids in the
+>> initial user namespace, the implications for confusing other security
+>> mechanisms is minimized.
+>
+> Is anyone thinking about how this affects the audit system?
 
-BTW the i_generation which is used by NFS and fuse filesystems is updated
-even if the inode is marked immutable, is this the intended behaviour?
+A little.
 
+Today the audit system can only be used from the initial namespaces and
+the pids that we use are from the initial pid namespace.
 
-> 								Honza
-Thanks for your response.
+It is my expectation that we can continue the same pattern for uids as
+well.
 
--- 
-tixxdz
-http://opendz.org
+Eric
