@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664Ab2ACI6A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 03:58:00 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38263 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2ACI55 convert rfc822-to-8bit (ORCPT
+	id S1752624Ab2ACJFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 04:05:51 -0500
+Received: from smtp-out-229.synserver.de ([212.40.185.229]:1059 "HELO
+	smtp-out-228.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1751942Ab2ACJFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 03:57:57 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: "Gilad Ben-Yossef" <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, "Chris Metcalf" <cmetcalf@tilera.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Russell King" <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        "Pekka Enberg" <penberg@kernel.org>, "Matt Mackall" <mpm@selenic.com>,
-        "Rik van Riel" <riel@redhat.com>, "Andi Kleen" <andi@firstfloor.org>,
-        "Sasha Levin" <levinsasha928@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Alexander Viro" <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, "Avi Kivity" <avi@redhat.com>
-Subject: Re: [PATCH v5 1/8] smp: Introduce a generic on_each_cpu_mask function
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
- <1325499859-2262-2-git-send-email-gilad@benyossef.com>
- <op.v7hz3pbc3l0zgt@mpn-glaptop>
- <CAOtvUMdk6DdcHK3Rp8ctwa8BqkF9YLwa09PHTUFCE53VdAY_6A@mail.gmail.com>
-Date: Tue, 03 Jan 2012 09:57:35 +0100
+	Tue, 3 Jan 2012 04:05:48 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 22469
+Message-ID: <4F02C50E.9030904@metafoo.de>
+Date: Tue, 03 Jan 2012 10:06:22 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v7h259ad3l0zgt@mpn-glaptop>
-In-Reply-To: <CAOtvUMdk6DdcHK3Rp8ctwa8BqkF9YLwa09PHTUFCE53VdAY_6A@mail.gmail.com>
-User-Agent: Opera Mail/11.60 (Linux)
+To: Thomas Abraham <thomas.abraham@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, jg1.han@samsung.com,
+        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
+        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
+        ben-linux@fluff.org, patches@linaro.org
+Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device
+ tree support
+References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+In-Reply-To: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2012/1/3 Michal Nazarewicz <mina86@mina86.com>:
->> on_each_cpu() returns an int.  For consistency reasons, would it make sense
->> to make on_each_cpu_maks() to return and int?  I know that the difference
->> is that smp_call_function() returns and int and smp_call_function_many()
->> returns void, but to me it actually seems strange and either I'm missing
->> something important (which is likely) or this needs to get cleaned up at
->> one point as well.
+On 01/02/2012 06:54 AM, Thomas Abraham wrote:
+> The platform-lcd driver depends on platform-specific callbacks to setup the
+> lcd panel. These callbacks are supplied using driver's platform data. But
+> for adding device tree support for platform-lcd driver, providing such
+> callbacks is not possible (without using auxdata).
+> 
+> Since the callbacks are usually lcd panel specific, it is possible to include
+> the lcd panel specific setup and control functionality in the platform-lcd
+> driver itself, thereby eliminating the need for supplying platform specific
+> callbacks to the driver. The platform-lcd driver can include support for
+> multiple lcd panels.
+> 
+> This patchset removes the need for platform data for platform-lcd driver and
+> adds support which can be used to implement lcd panel specific functionality
+> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
+> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
+> This currently breaks build for other users of platform-lcd driver. Those can be
+> fixed if this approach is acceptable.
 
-On Tue, 03 Jan 2012 09:12:21 +0100, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> I'd say we should go the other way around - kill the return value on
-> on_each_cpu()
->
-> The return value is always a hard coded zero and we have some code that tests
-> for that return value. Silly...
->
-> It looks like it's there for hysterical reasons to me :-)
+The whole approach looks rather backwards to me. The exact purpose of the
+platform_lcd driver is to redirect the lcd driver callbacks to board code.
+So by removing this support you not only break all the existing driver but
+also create a driver which does nothing. Then you add another layer of
+abstraction to implement custom drivers in this driver. A better approach in
+my opinion is to simply implement these drivers as first level LCD drivers.
+So leave the platform-lcd driver as it is and just add a gpio (or maybe
+regulator) lcd driver instead.
 
-That might be right.  Of course, this goes deeper then on_each_cpu() since
-some of the smp_call_function functions have an int return value, but I
-couldn't find an instance when they return non-zero.
-
-I'd offer to volunteer to do the clean-up but I have too little experience
-in IPI to say with confidence that we in fact can and want to drop the “int”
-return value from all of those functions.
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+- Lars
