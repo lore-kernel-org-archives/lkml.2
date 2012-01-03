@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098Ab2ACU3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:29:09 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab2ACU3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:29:05 -0500
-Message-ID: <4F03650D.8050200@nod.at>
-Date: Tue, 03 Jan 2012 21:29:01 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Bart De Schuymer <bdschuym@pandora.be>
-CC: Stephen Hemminger <shemminger@vyatta.com>, davem@davemloft.net,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with
- bridge-nf-call-ip(6)tables=0
-References: <4F025A07.2000304@nod.at> <1325597164-13459-1-git-send-email-richard@nod.at> <1325597164-13459-2-git-send-email-richard@nod.at> <20120103081521.2fec3a29@nehalam.linuxnetplumber.net> <4F033E11.5060707@nod.at> <4F0361D7.3000602@pandora.be>
-In-Reply-To: <4F0361D7.3000602@pandora.be>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig6E73FD4239D9CA1170A15979"
+	id S1755079Ab2ACUaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:30:35 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46020 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab2ACUad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:30:33 -0500
+Message-ID: <1325622628.2611.8.camel@edumazet-laptop>
+Subject: Re: APIC seems not working under high network load
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jia Rao <rickenrao@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Date: Tue, 03 Jan 2012 21:30:28 +0100
+In-Reply-To: <CAA8E7hFwvhATa+LAsW4csnUh1gL-tFZVQMO7LN0iQBa6NFj3KQ@mail.gmail.com>
+References: <CAA8E7hFwvhATa+LAsW4csnUh1gL-tFZVQMO7LN0iQBa6NFj3KQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig6E73FD4239D9CA1170A15979
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Le mardi 03 janvier 2012 à 14:28 -0500, Jia Rao a écrit :
+> Hi all,
+> 
+> I had scalability issues when running memcached-like workloads in a
+> Intel 8-core system. It turned out that under high network load only
+> one core handled the interrupts from NIC. In the output of mpstat, one
+> of the core was overloaded with 100% %soft time. I tried to echo
+> different core ids to /proc/irq/irq#/smp_affinity, it did not take
+> effect until I stopped the incoming network traffic. It seems that
+> APIC is not distributing interrupts to different cores.
+> 
+> The below are the details of the testing system:
+> OS: Linux 3.1.4 X86_64
+> CPU: Intel L5450, quad-core
+> NIC: Intel e1000e
 
-Am 03.01.2012 21:15, schrieb Bart De Schuymer:
-> The documentation is probably not explicit enough, but I would keep the=
+If network load is high enough, cpu handling network IRQ stay in softirq
+mode (NAPI) and never re-arms interrupt, so no other cpu can handle the
+load.
 
-> behavior as it is now. Setting bridge-nf-call-iptables to 0 makes
-> iptables behave as if bridge-netfilter was not enabled at compilation.
-> Anyway, your patch is almost certainly flawed since the fact that
-> skb->nf_bridge can be NULL is used as part of the logic in
-> br_netfilter.c: it indicates that bridge-nf-call-iptables was 0 when th=
-e
-> packet was first processed by bridge-netfilter and should therefore not=
+This is why its better to change /proc/irq/irq#/smp_affinity _before_
+load starts.
 
-> be given to iptables in any other netfilter hook.
+With your kernel, one way to help this cpu exit from softirq is using
+RPS (Receive Packet Steering), since packets will be spreaded on several
+cpus. Then, later hardware IRQ might be spreaded on other cpus as well.
 
-Thanks for the explanation!
+for n in `seq 0 7`
+do
+ echo ff >/sys/class/net/eth0/queues/rx-$n/rps_cpus
+done
 
-Wouldn't it make sense to check for bridge-nf-call-iptables in xt_physdev=
-?
-So that the user gets warned that his iptables rule will never match...
-
-Thanks,
-//richard
+[ If your eth0 has 8 queues ]
 
 
 
---------------enig6E73FD4239D9CA1170A15979
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPA2UNAAoJEN9758yqZn9esRYIAIk5GxS5s1dkDZwOKdvuUUCZ
-3AQddHjP1yAMsluheZCXjgZNJ6cItl0T+y+0iwKZow0oNHkjp8czgCfyF6W97xSm
-4fAKYDwAMfwiJsqunvOowVBo1+xFTVLBsOo9fAf/6zsRbKJrth2oNG3ijRa5iZuf
-mwbs1j3AdCWGUksF7vKVDemkO3eXFX8tdDbqfFKGfjdjPXRMo0AGzMkkNKZFfhJ8
-v1llsdO1y5+Z+G8fK3BOyHdUzaCUHqYtLJ4GEznF3IqyFXcSir51dhwkfnidAnUP
-rtKYds5Rd7WsbAnSseb0eJWMLHz4/XwqEdOJBpAG+TzLIZA48B8kST6DZdFoQCc=
-=LJRl
------END PGP SIGNATURE-----
-
---------------enig6E73FD4239D9CA1170A15979--
