@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab2ACWwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:52:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40269 "EHLO mx2.suse.de"
+	id S1756223Ab2ACWwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:52:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40263 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756192Ab2ACWkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:40:42 -0500
+	id S1756180Ab2ACWkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:40:39 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:24 2012
-Message-Id: <20120103223324.546337531@clark.kroah.org>
+Message-Id: <20120103223324.463302611@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:15 -0800
+Date: Tue, 03 Jan 2012 14:33:14 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ulf Hansson <ulf.hansson@stericsson.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [42/75] ARM: 7214/1: mmc: mmci: Fixup handling of MCI_STARTBITERR
+        alan@lxorguk.ukuu.org.uk, Jason Chen <jason.chen@linaro.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [41/75] ARM:imx:fix pwm period value
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,45 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulf Hansson <ulf.hansson@stericsson.com>
+From: Jason Chen <jason.chen@linaro.org>
 
-commit b63038d6f4ca5d1849ce01d9fc5bb9cb426dec73 upstream.
+commit 5776ac2eb33164c77cdb4d2b48feee15616eaba3 upstream.
 
-The interrupt was previously enabled and then correctly cleared.
-Now we also handle it correctly.
+According to imx pwm RM, the real period value should be
+PERIOD value in PWMPR plus 2.
 
-Tested-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Ulf Hansson <ulf.hansson@stericsson.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+PWMO (Hz) = PCLK(Hz) / (period +2)
+
+Signed-off-by: Jason Chen <jason.chen@linaro.org>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/host/mmci.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ arch/arm/plat-mxc/pwm.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -673,7 +673,8 @@ mmci_data_irq(struct mmci_host *host, st
- 	      unsigned int status)
- {
- 	/* First check for errors */
--	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
-+	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
-+		      MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
- 		u32 remain, success;
+--- a/arch/arm/plat-mxc/pwm.c
++++ b/arch/arm/plat-mxc/pwm.c
+@@ -77,6 +77,15 @@ int pwm_config(struct pwm_device *pwm, i
+ 		do_div(c, period_ns);
+ 		duty_cycles = c;
  
- 		/* Terminate the DMA transfer */
-@@ -953,8 +954,9 @@ static irqreturn_t mmci_irq(int irq, voi
- 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
++		/*
++		 * according to imx pwm RM, the real period value should be
++		 * PERIOD value in PWMPR plus 2.
++		 */
++		if (period_cycles > 2)
++			period_cycles -= 2;
++		else
++			period_cycles = 0;
++
+ 		writel(duty_cycles, pwm->mmio_base + MX3_PWMSAR);
+ 		writel(period_cycles, pwm->mmio_base + MX3_PWMPR);
  
- 		data = host->data;
--		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|
--			      MCI_RXOVERRUN|MCI_DATAEND|MCI_DATABLOCKEND) && data)
-+		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
-+			      MCI_TXUNDERRUN|MCI_RXOVERRUN|MCI_DATAEND|
-+			      MCI_DATABLOCKEND) && data)
- 			mmci_data_irq(host, data, status);
- 
- 		cmd = host->cmd;
 
 
