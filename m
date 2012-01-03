@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab2ACWsU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:48:20 -0500
-Received: from violet.fr.zoreil.com ([92.243.8.30]:32930 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756365Ab2ACWlw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:52 -0500
-Date: Tue, 3 Jan 2012 23:32:43 +0100
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rl@hellgate.ch
-Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
-Message-ID: <20120103223243.GB8563@electric-eye.fr.zoreil.com>
-References: <CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com> <20111230180347.GA3647@electric-eye.fr.zoreil.com> <CACPM=kXWXUE+JcVhkz-6tGZ2YyteN9sGA80+Pnw6+LaJ-eNWBA@mail.gmail.com> <20111230215024.GA5513@electric-eye.fr.zoreil.com> <CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com> <20111230221938.GA6197@electric-eye.fr.zoreil.com> <CACPM=kXAr46BXAc3t8puRB37NeFy_ZEOWZa0H=DnSioagSLpxA@mail.gmail.com> <CACPM=kWn41S85eLgj4G+c6cN0WBgqF=6MigSwa9QBOxD1Uh64A@mail.gmail.com> <20111231121710.GB9842@electric-eye.fr.zoreil.com> <CACPM=kX2B6p6CSs+s-5WUbQCLa0WZW5K9Rr+hnB5VCxkEmh=8w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACPM=kX2B6p6CSs+s-5WUbQCLa0WZW5K9Rr+hnB5VCxkEmh=8w@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+	id S932086Ab2ACWli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:41:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40378 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756324Ab2ACWla (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:30 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
+Message-Id: <20120103223323.266478970@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Tue, 03 Jan 2012 14:33:00 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [27/75] NFSv4.1: Ensure that we handle _all_ SEQUENCE status bits.
+In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
-[...]
-> Is there anything else I should try out?
+3.1-stable review patch.  If anyone has any objections, please let me know.
 
-Your computer is supposed to be moderately underpowered. Find someone
-with an heavily overpowered one.
+------------------
 
-> Also, would it be possible to push these changes to mainline as
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-Probably. There has not been much objection nor comments so far.
+commit 111d489f0fb431f4ae85d96851fbf8d3248c09d8 upstream.
 
-> another CONFIG option (not sure if thats possible), so more people can
-> enable it and test it? :)
+Currently, the code assumes that the SEQUENCE status bits are mutually
+exclusive. They are not...
 
-I'd rather not. It would not be terribly elegant and more CONFIG options
-would not imply more testing.
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
--- 
-Ueimor
+---
+ fs/nfs/nfs4state.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/fs/nfs/nfs4state.c
++++ b/fs/nfs/nfs4state.c
+@@ -1525,16 +1525,16 @@ void nfs41_handle_sequence_flag_errors(s
+ {
+ 	if (!flags)
+ 		return;
+-	else if (flags & SEQ4_STATUS_RESTART_RECLAIM_NEEDED)
++	if (flags & SEQ4_STATUS_RESTART_RECLAIM_NEEDED)
+ 		nfs41_handle_server_reboot(clp);
+-	else if (flags & (SEQ4_STATUS_EXPIRED_ALL_STATE_REVOKED |
++	if (flags & (SEQ4_STATUS_EXPIRED_ALL_STATE_REVOKED |
+ 			    SEQ4_STATUS_EXPIRED_SOME_STATE_REVOKED |
+ 			    SEQ4_STATUS_ADMIN_STATE_REVOKED |
+ 			    SEQ4_STATUS_LEASE_MOVED))
+ 		nfs41_handle_state_revoked(clp);
+-	else if (flags & SEQ4_STATUS_RECALLABLE_STATE_REVOKED)
++	if (flags & SEQ4_STATUS_RECALLABLE_STATE_REVOKED)
+ 		nfs41_handle_recallable_state_revoked(clp);
+-	else if (flags & (SEQ4_STATUS_CB_PATH_DOWN |
++	if (flags & (SEQ4_STATUS_CB_PATH_DOWN |
+ 			    SEQ4_STATUS_BACKCHANNEL_FAULT |
+ 			    SEQ4_STATUS_CB_PATH_DOWN_SESSION))
+ 		nfs41_handle_cb_path_down(clp);
+
+
