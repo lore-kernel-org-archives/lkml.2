@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab2ACXsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:48:12 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:57714 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab2ACXsI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 18:48:08 -0500
-Date: Wed, 4 Jan 2012 10:47:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: interesting merges in the arm-soc tree
-Message-Id: <20120104104758.26b0ca5268d10fbf7b95903a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__4_Jan_2012_10_47_58_+1100_jktLaPMR=U3BCjtO"
+	id S1755205Ab2ACXte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:49:34 -0500
+Received: from tundra.namei.org ([65.99.196.166]:46218 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754643Ab2ACXtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 18:49:31 -0500
+Date: Wed, 4 Jan 2012 10:47:00 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+        haiyangz@microsoft.com, hjanssen@microsoft.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>
+Subject: Re: Reiserfs.c bug in 3.2-rc5
+In-Reply-To: <1325616312.2095.26.camel@falcor>
+Message-ID: <alpine.LRH.2.00.1201041046330.18098@tundra.namei.org>
+References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>  <20111213180707.GI11747@quack.suse.cz>  <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>  <20120102115222.GA3626@quack.suse.cz>
+ <20120103010826.GF3626@quack.suse.cz>  <20120103123841.GA31457@quack.suse.cz> <1325604356.2095.23.camel@falcor>  <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com> <1325616312.2095.26.camel@falcor>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Jan_2012_10_47_58_+1100_jktLaPMR=U3BCjtO
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 3 Jan 2012, Mimi Zohar wrote:
 
-Hi all,
+> > EOPNOTSUPP return case match what we used to do?
+> > 
+> >                           Linus
+> > 
+> 
+> Just clarifying not all of commit fb88c2b, but only the
+> security_old_inode_init_security() hunk.
 
-I noticed that the arm-soc tree has merged in the v4l-dvb and the
-slave-dma trees today.   Is there some good reason for this?  It fixes a
-few conflicts (but that is not excuse) and there may be dependencies in a
-driver on the v4l-dvb tree (but maybe that means that that driver should
-be merged via the v4l-dvb tree - it looks like the "at91/drivers" is
-based on the v4l-dvb tree, so probably doesn't depend on anything else on
-the arm-soc tree).
+Agreed.
 
-If nothing else, are you sure that neither of those merged trees will
-rebase?  You have also just inherited any bugs in those two trees.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+And yep, it's ugly :-\
 
---Signature=_Wed__4_Jan_2012_10_47_58_+1100_jktLaPMR=U3BCjtO
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPA5OuAAoJEECxmPOUX5FEjAsP/0dB+ttTN81m/mlPYltcB0jr
-z5peh+rtbi7UugLmbOdFBXF2r2Kl5YJaF3j6MjYZH5CJKriobyNZy4V2CVFZVXLQ
-fhfiw6wrtNGz4onNMYVLaYZdlA++jAsLPChoh8kuspUBu0FK8qDE/3jxnKC8w4ob
-Kzab49QBlj9mGiEwJAbEHf5DNhWOkFASg4ycvnd3iT+ZJSaZ8mUnZnKExeyhRwB+
-JZJPkevtnVKlfbQhzKXp/JlzVNRe2qKX7LOFEHxjFjLHy3aZ99qjh21USCvV9pXJ
-ms9B56+QgRkk8oNoaQHyRCDUu9J7kfowQQgTht38t7DK+gdjfmwITGVogxzxPdYa
-6R/b9fEvdtAhqc+BMJedavJwFJZQGAO3CW81COkP80H+qtRKKOu+TN716KQFUtbT
-ArcyMAx0kdYtunjeqi8hQUnV8pw5GwxrOMLxsErrG2JW9wyUJfuRuKdbIr3HagLP
-1AEdnfNkAeBptWx8VbARYPmZNDOF8uz/0lN0G4tmRXzgJ+9PySVZrDpnw8dhUYAQ
-yp6MHkz8PhbjDaZT3nL24D58Wq0VPd7HxDlz/MjQHVkjg320WwVseG2/kuemCP0Q
-1XHbLpMout74+ru2rbP9QvRlX2FB0ezMvXG80Yv3AW5IZgj7JL4V+rxnD0tsjl2t
-hsgbyGKNrnEzp6gH7tik
-=oz5o
------END PGP SIGNATURE-----
-
---Signature=_Wed__4_Jan_2012_10_47_58_+1100_jktLaPMR=U3BCjtO--
+- James
+-- 
+James Morris
+<jmorris@namei.org>
