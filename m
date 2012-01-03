@@ -1,175 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab2ACW26 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:28:58 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:55789 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751618Ab2ACW2z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:28:55 -0500
-Message-ID: <1325629553.26706.11.camel@groeck-laptop>
-Subject: Re: [lm-sensors] [RFC PATCH 2/3] thermal: exynos4: Register the tmu
- sensor with the thermal interface layer
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-CC: "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Date: Tue, 3 Jan 2012 14:25:53 -0800
-In-Reply-To: <1324468798-20423-3-git-send-email-amit.kachhap@linaro.org>
-References: <1324468798-20423-1-git-send-email-amit.kachhap@linaro.org>
-	 <1324468798-20423-3-git-send-email-amit.kachhap@linaro.org>
-Organization: Ericsson
+	id S1752743Ab2ACWbl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:31:41 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:38654 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab2ACWbi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:31:38 -0500
+Subject: Re: Reiserfs.c bug in 3.2-rc5
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org, haiyangz@microsoft.com,
+        hjanssen@microsoft.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Morris <jmorris@namei.org>,
+        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>
+Date: Tue, 03 Jan 2012 17:28:36 -0500
+In-Reply-To: <CA+55aFwhrk_qYd6Fff8Ezhotta5dxcVYy8g9573uML8V1-=1Sg@mail.gmail.com>
+References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>
+	 <20111213180707.GI11747@quack.suse.cz>
+	 <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
+	 <20120102115222.GA3626@quack.suse.cz> <20120103010826.GF3626@quack.suse.cz>
+	 <20120103123841.GA31457@quack.suse.cz> <1325604356.2095.23.camel@falcor>
+	 <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com>
+	 <1325616312.2095.26.camel@falcor>
+	 <CA+55aFwhrk_qYd6Fff8Ezhotta5dxcVYy8g9573uML8V1-=1Sg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
 Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
+Message-ID: <1325629717.2095.81.camel@falcor>
+Mime-Version: 1.0
+x-cbid: 12010322-3270-0000-0000-000002F811C5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-12-21 at 06:59 -0500, Amit Daniel Kachhap wrote:
-> Export and register information from the hwmon tmu sensor to the samsung
-> exynos kernel thermal framework where different cooling devices and thermal
-> zone are binded. The exported information is based according to the data
-> structure thermal_sensor_conf present in exynos_thermal.h. HWMON sysfs
-> functions are currently left although all of them are present in generic
-> linux thermal layer.
-> Also the platform data structure is modified to pass frequency cooling
-> in percentages for each thermal level.
+On Tue, 2012-01-03 at 11:17 -0800, Linus Torvalds wrote:
+> On Tue, Jan 3, 2012 at 10:45 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >
+> > Just clarifying not all of commit fb88c2b, but only the
+> > security_old_inode_init_security() hunk.
 > 
-Hi Amit,
+> Is it really sane to have different semantics like that for the
+> security[_old]_inode_init_security functions?
 
-wouldn't it make more sense to merge the code as necessary from
-hwmon/exynos4_tmu.c into the new thermal/exynos_thermal.c, and drop
-hwmon/exynos4_tmu.c entirely ?
+No, but unfortunately it seems necessary.
 
-With that, you should get the hwmon entries for free, and we would not
-have to maintain two drivers with overlapping functionality.
+> Look at ocfs2, for example: it does nothing if
+> ocfs2_init_security_get() returns 0. That does not sound like the
+> correct thing to do, when the fallback is to do ocfs2_init_acl() under
+> the lock.
 
-Thanks,
-Guenter
+The original code did the same for -EOPNOTSUPP.
 
-> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
-> ---
->  drivers/hwmon/exynos4_tmu.c               |   34 ++++++++++++++++++++++++++--
->  include/linux/platform_data/exynos4_tmu.h |    7 ++++++
->  2 files changed, 38 insertions(+), 3 deletions(-)
+7192        ret = ocfs2_init_security_get(inode, dir, qstr, &si);
+7193        if (!ret) {
+7194                ret = ocfs2_xattr_set(inode, OCFS2_XATTR_INDEX_SECURITY,
+7195                                      si.name, si.value, si.value_len,
+7196                                      XATTR_CREATE);
+7197                if (ret) {
+7198                        mlog_errno(ret);
+7199                        goto leave;
+7200                }
+7201        } else if (ret != -EOPNOTSUPP) {
+7202                mlog_errno(ret);
+7203                goto leave;
+7204        }
+7205
+7206        ret = ocfs2_inode_lock(dir, &dir_bh, 0);
+7207        if (ret) {
+7208                mlog_errno(ret);
+7209                goto leave;
+7210        }
+7211
+7212        ret = ocfs2_init_acl(NULL, inode, dir, NULL, dir_bh, NULL, NULL);
+7213        if (ret)
+7214                mlog_errno(ret);
+7215
+
+> And ocfs2_init_security_get() just calls either
+> security_inode_init_security() or security_old_inode_init_security()
+> depending on whether ocfs2_security_xattr_info is NULL or not. So I
+> really think callers expect the same kind of semantics regardless of
+> whether it's the "old" or not version. Which would make sense anyway.
 > 
-> diff --git a/drivers/hwmon/exynos4_tmu.c b/drivers/hwmon/exynos4_tmu.c
-> index f2359a0..6912a7f 100644
-> --- a/drivers/hwmon/exynos4_tmu.c
-> +++ b/drivers/hwmon/exynos4_tmu.c
-> @@ -37,6 +37,9 @@
->  #include <linux/hwmon-sysfs.h>
->  
->  #include <linux/platform_data/exynos4_tmu.h>
-> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
-> +#include <linux/exynos_thermal.h>
-> +#endif
->  
->  #define EXYNOS4_TMU_REG_TRIMINFO	0x0
->  #define EXYNOS4_TMU_REG_CONTROL		0x20
-> @@ -248,10 +251,13 @@ static void exynos4_tmu_work(struct work_struct *work)
->  
->  	kobject_uevent(&data->hwmon_dev->kobj, KOBJ_CHANGE);
->  
-> -	enable_irq(data->irq);
->  
->  	clk_disable(data->clk);
->  	mutex_unlock(&data->lock);
-> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
-> +	exynos4_report_trigger();
-> +#endif
-> +	enable_irq(data->irq);
->  }
->  
->  static irqreturn_t exynos4_tmu_irq(int irq, void *id)
-> @@ -345,6 +351,14 @@ static const struct attribute_group exynos4_tmu_attr_group = {
->  	.attrs = exynos4_tmu_attributes,
->  };
->  
-> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
-> +static struct thermal_sensor_conf exynos4_sensor_conf = {
-> +	.name			= "exynos4-therm",
-> +	.read_temperature	= (int (*)(void *))exynos4_tmu_read,
-> +};
-> +#endif
-> +/*CONFIG_SAMSUNG_THERMAL_INTERFACE*/
-> +
->  static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
->  {
->  	struct exynos4_tmu_data *data;
-> @@ -432,9 +446,20 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
->  	}
->  
->  	exynos4_tmu_control(pdev, true);
-> -
-> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
-> +	(&exynos4_sensor_conf)->private_data = data;
-> +	(&exynos4_sensor_conf)->sensor_data = pdata;
-> +	ret = exynos4_register_thermal(&exynos4_sensor_conf);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to register thermal interface\n");
-> +		goto err_hwmon_device;
-> +	}
-> +#endif
->  	return 0;
-> -
-> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
-> +err_hwmon_device:
-> +	hwmon_device_unregister(data->hwmon_dev);
-> +#endif
->  err_create_group:
->  	sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
->  err_clk:
-> @@ -458,6 +483,9 @@ static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
->  
->  	exynos4_tmu_control(pdev, false);
->  
-> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
-> +	exynos4_unregister_thermal();
-> +#endif
->  	hwmon_device_unregister(data->hwmon_dev);
->  	sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
->  
-> diff --git a/include/linux/platform_data/exynos4_tmu.h b/include/linux/platform_data/exynos4_tmu.h
-> index 39e038c..642c508 100644
-> --- a/include/linux/platform_data/exynos4_tmu.h
-> +++ b/include/linux/platform_data/exynos4_tmu.h
-> @@ -21,6 +21,7 @@
->  
->  #ifndef _LINUX_EXYNOS4_TMU_H
->  #define _LINUX_EXYNOS4_TMU_H
-> +#include <linux/cpu_cooling.h>
->  
->  enum calibration_type {
->  	TYPE_ONE_POINT_TRIMMING,
-> @@ -64,6 +65,9 @@ enum calibration_type {
->   *	in the positive-TC generator block
->   *	0 <= reference_voltage <= 31
->   * @cal_type: calibration type for temperature
-> + * @freq_pctg_table: Table representing frequency reduction percentage.
-> + * @freq_tab_count: Count of the above table as frequency reduction may
-> + *	applicable to only some of the trigger levels.
->   *
->   * This structure is required for configuration of exynos4_tmu driver.
->   */
-> @@ -79,5 +83,8 @@ struct exynos4_tmu_platform_data {
->  	u8 reference_voltage;
->  
->  	enum calibration_type cal_type;
-> +
-> +	struct freq_pctg_table freq_tab[4];
-> +	unsigned int freq_tab_count;
->  };
->  #endif /* _LINUX_EXYNOS4_TMU_H */
+> Also, the *documentation* in include/linux/security.h very much says
+> that it returns 0 only if @name and @value have been successfully set.
+> So my gut feel says that both security_inode_init_security and
+> security_old_inode_init_security should return -EOPNOTSUPP (although
+> the "new" version doesn't really have "name/value", so maybe returning
+> 0 is ok)
+
+The original security_inode_init_security() version queried the LSM for
+the security xattr, leaving writing the xattr up to the caller.  The
+caller changed -EOPNPTSUPP to 0, before returning.  The new version
+combines the querying and writing the xattr.  Like the previous version
+it converts the -EOPNOTSUPP to 0, before returning.
+
+reiserfs_security_init() is dependent on
+security_old_inode_init_security() to return -EOPNOTSUPP to initialize
+some variables and return, but before returning it changes -EOPNOTSUPP
+to 0.
+
+Unfortunately this leaves security_old/security_inode_init_security()
+needing to return different things.
+
+Mimi
+
+> Anyway, I'd love for (multiple) people who really know the code to
+> give me a clean agreement on exactly what the correct patch is.
+> Please?
+> 
+>                                  Linus
+> 
 
 
