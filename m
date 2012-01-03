@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab2ACWj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:39:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40159 "EHLO mx2.suse.de"
+	id S1756127Ab2ACWkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:40:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40187 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756082Ab2ACWjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:39:55 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:21 2012
-Message-Id: <20120103223321.074555134@clark.kroah.org>
+	id S1756100Ab2ACWkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:40:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
+Message-Id: <20120103223323.777948535@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:32:34 -0800
+Date: Tue, 03 Jan 2012 14:33:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [01/75] ARM: OMAP: rx51: fix USB
+        alan@lxorguk.ukuu.org.uk, Ilya Yanok <yanok@emcraft.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [33/75] mfd: Fix twl-core oops while calling twl_i2c_* for unbound driver
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Contreras <felipe.contreras@gmail.com>
+From: Ilya Yanok <yanok@emcraft.com>
 
-commit e5fe29c7198a1f6616286dfc8602a69da165cb3f upstream.
+commit 8653be1afd60d6e8c36139b487e375b70357d9ef upstream.
 
-Commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2 (ARM: RX-51:
-Enable isp1704 power on/off) added power management for isp1704.
+Check inuse variable before trying to access twl_map to prevent
+dereferencing of uninitialized variable.
 
-However, the transceiver should be powered on by default,
-otherwise USB doesn't work at all for networking during
-boot.
-
-All kernels after v3.0 are affected.
-
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-Reviewed-by: Sebastian Reichel <sre@debian.org>
-[tony@atomide.com: updated comments]
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Ilya Yanok <yanok@emcraft.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/twl-core.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- a/arch/arm/mach-omap2/board-rx51-peripherals.c
-+++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
-@@ -193,7 +193,7 @@ static struct platform_device rx51_charg
- static void __init rx51_charger_init(void)
- {
- 	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
--		GPIOF_OUT_INIT_LOW, "isp1704_reset"));
-+		GPIOF_OUT_INIT_HIGH, "isp1704_reset"));
- 
- 	platform_device_register(&rx51_charger_device);
- }
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -362,13 +362,13 @@ int twl_i2c_write(u8 mod_no, u8 *value,
+ 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+ 		return -EPERM;
+ 	}
+-	sid = twl_map[mod_no].sid;
+-	twl = &twl_modules[sid];
+-
+ 	if (unlikely(!inuse)) {
+-		pr_err("%s: client %d is not initialized\n", DRIVER_NAME, sid);
++		pr_err("%s: not initialized\n", DRIVER_NAME);
+ 		return -EPERM;
+ 	}
++	sid = twl_map[mod_no].sid;
++	twl = &twl_modules[sid];
++
+ 	mutex_lock(&twl->xfer_lock);
+ 	/*
+ 	 * [MSG1]: fill the register address data
+@@ -419,13 +419,13 @@ int twl_i2c_read(u8 mod_no, u8 *value, u
+ 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
+ 		return -EPERM;
+ 	}
+-	sid = twl_map[mod_no].sid;
+-	twl = &twl_modules[sid];
+-
+ 	if (unlikely(!inuse)) {
+-		pr_err("%s: client %d is not initialized\n", DRIVER_NAME, sid);
++		pr_err("%s: not initialized\n", DRIVER_NAME);
+ 		return -EPERM;
+ 	}
++	sid = twl_map[mod_no].sid;
++	twl = &twl_modules[sid];
++
+ 	mutex_lock(&twl->xfer_lock);
+ 	/* [MSG1] fill the register address data */
+ 	msg = &twl->xfer_msg[0];
 
 
