@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab2ACWgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:36:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39624 "EHLO mx2.suse.de"
+	id S1755431Ab2ACWgP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:36:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39504 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755524Ab2ACWgu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:36:50 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:32 2012
-Message-Id: <20120103223031.984230471@clark.kroah.org>
+	id S1751857Ab2ACWgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:36:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:34 2012
+Message-Id: <20120103223034.385210208@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:26 -0800
+Date: Tue, 03 Jan 2012 14:29:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Steffen Maier <maier@linux.vnet.ibm.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [08/67] SCSI: zfcp: return early from slave_destroy if slave_alloc returned early
+        alan@lxorguk.ukuu.org.uk,
+        Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Will Deacon <will.deacon@arm.com>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [36/67] oprofile, arm/sh: Fix oprofile_arch_exit() linkage issue
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steffen Maier <maier@linux.vnet.ibm.com>
+From: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
 
-commit 44f747fff6e9f027a4866c1a6864e26ae7c510c8 upstream.
+commit 55205c916e179e09773d98d290334d319f45ac6b upstream.
 
-zfcp_scsi_slave_destroy erroneously always tried to finish its task
-even if the corresponding previous zfcp_scsi_slave_alloc returned
-early. This can lead to kernel page faults on accessing uninitialized
-fields of struct zfcp_scsi_dev in zfcp_erp_lun_shutdown_wait. Take the
-port field of the struct to determine if slave_alloc returned early.
+This change fixes a linking problem, which happens if oprofile
+is selected to be compiled as built-in:
 
-This zfcp bug is exposed by 4e6c82b (in turn fixing f7c9c6b to be
-compatible with 21208ae) which can call slave_destroy for a
-corresponding previous slave_alloc that did not finish.
+  `oprofile_arch_exit' referenced in section `.init.text' of
+  arch/arm/oprofile/built-in.o: defined in discarded section
+  `.exit.text' of arch/arm/oprofile/built-in.o
 
-This patch is based on James Bottomley's fix suggestion in
-http://www.spinics.net/lists/linux-scsi/msg55449.html.
+The problem is appeared after commit 87121ca504, which
+introduced oprofile_arch_exit() calls from __init function. Note
+that the aforementioned commit has been backported to stable
+branches, and the problem is known to be reproduced at least
+with 3.0.13 and 3.1.5 kernels.
 
-Signed-off-by: Steffen Maier <maier@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: oprofile-list <oprofile-list@lists.sourceforge.net>
+Link: http://lkml.kernel.org/r/20111222151540.GB16765@erda.amd.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/s390/scsi/zfcp_scsi.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/arm/oprofile/common.c |    2 +-
+ arch/sh/oprofile/common.c  |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/s390/scsi/zfcp_scsi.c
-+++ b/drivers/s390/scsi/zfcp_scsi.c
-@@ -57,6 +57,10 @@ static void zfcp_scsi_slave_destroy(stru
- {
- 	struct zfcp_scsi_dev *zfcp_sdev = sdev_to_zfcp(sdev);
- 
-+	/* if previous slave_alloc returned early, there is nothing to do */
-+	if (!zfcp_sdev->port)
-+		return;
-+
- 	zfcp_erp_lun_shutdown_wait(sdev, "scssd_1");
- 	put_device(&zfcp_sdev->port->dev);
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@ -116,7 +116,7 @@ int __init oprofile_arch_init(struct opr
+ 	return oprofile_perf_init(ops);
  }
+ 
+-void __exit oprofile_arch_exit(void)
++void oprofile_arch_exit(void)
+ {
+ 	oprofile_perf_exit();
+ }
+--- a/arch/sh/oprofile/common.c
++++ b/arch/sh/oprofile/common.c
+@@ -49,7 +49,7 @@ int __init oprofile_arch_init(struct opr
+ 	return oprofile_perf_init(ops);
+ }
+ 
+-void __exit oprofile_arch_exit(void)
++void oprofile_arch_exit(void)
+ {
+ 	oprofile_perf_exit();
+ 	kfree(sh_pmu_op_name);
+@@ -60,5 +60,5 @@ int __init oprofile_arch_init(struct opr
+ 	ops->backtrace = sh_backtrace;
+ 	return -ENODEV;
+ }
+-void __exit oprofile_arch_exit(void) {}
++void oprofile_arch_exit(void) {}
+ #endif /* CONFIG_HW_PERF_EVENTS */
 
 
