@@ -1,140 +1,379 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab2ACQRK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 11:17:10 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35194 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab2ACQRG convert rfc822-to-8bit (ORCPT
+	id S1754087Ab2ACQSG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 11:18:06 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51812 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753716Ab2ACQSE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 11:17:06 -0500
+	Tue, 3 Jan 2012 11:18:04 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120103085110.17283.60539.stgit@zurg>
-References: <20120102172231.11476.57711.stgit@zurg> <20120103085110.17283.60539.stgit@zurg>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 3 Jan 2012 08:16:44 -0800
-X-Google-Sender-Auth: dyi4ZQpE-4rt5O3Jzc-rkOIDPLE
-Message-ID: <CA+55aFyG476bzW1kBeF0MFRkXZkumaG-SzMexoPLdPFAzDUG6A@mail.gmail.com>
-Subject: Re: [PATCH] tty: cleanup prohibition of direct opening for unix98 pty master
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@redhat.com>,
-        linux-kernel@vger.kernel.org
+X-Originating-IP: [72.21.198.64]
+In-Reply-To: <201201031605.31117.laurent.pinchart@ideasonboard.com>
+References: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com>
+	<201201031605.31117.laurent.pinchart@ideasonboard.com>
+Date: Tue, 3 Jan 2012 11:18:03 -0500
+Message-ID: <CAO9zADzfwLsqXnWQXD9hJXXBtQ+32RZGJcuaaDTbzdbZ1c2G2g@mail.gmail.com>
+Subject: Re: [Linux-uvc-devel] 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-uvc-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks ok as far as I can tell, and does indeed clean things up. I
-assume somebody tested the case that we used to have issues with?
+> (The linux-uvc-devel mailing list has been moved to SourceForge, I've CC'ed
+> the new list)
+Thanks.
 
-                    Linus
+> Which kernel version are you using ?
+Using 3.1.5 currently.
 
-On Tue, Jan 3, 2012 at 12:51 AM, Konstantin Khlebnikov
-<khlebnikov@openvz.org> wrote:
-> cleanup hack added in v2.6.27-3203-g15582d3
+> An isochronous scheduling regression has
+> been fixed recently between v3.2-rc3 and v3.2-rc5. You might want to try v3.2
+> when it will be released.
+Will try v3.2 when it is released.
+
 >
-> comment from that patch:
+>> The camera is built-into the laptop screen at the top in the middle.
+>>
+>> lsusb verbose:
+>>
+>> Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
+>> Device Descriptor:
+>>   bLength                18
+>>   bDescriptorType         1
+>>   bcdUSB               2.00
+>>   bDeviceClass          239 Miscellaneous Device
+>>   bDeviceSubClass         2 ?
+>>   bDeviceProtocol         1 Interface Association
+>>   bMaxPacketSize0        64
+>>   idVendor           0x0402 ALi Corp.
+>>   idProduct          0x9665 Gateway Webcam
+>>   bcdDevice            0.09
+>>   iManufacturer           3 XPB3L1K44
+>>   iProduct                1 1.3M WebCam
+>>   iSerial                 0
+>>   bNumConfigurations      1
 >
-> : pty: If the administrator creates a device for a ptmx slave we should not error
-> :
-> : The open path for ptmx slaves is via the ptmx device. Opening them any
-> : other way is not allowed. Vegard Nossum found that previously this was not
-> : the case and mknod foo c 128 42; cat foo would produce nasty diagnostics
-> :
-> : Signed-off-by: Alan Cox <alan@redhat.com>
-> : Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
-> devpts_get_tty() returns non-null only for inodes on devpts, but there is no
-> inodes for master-devices, /dev/ptmx (/dev/pts/ptmx) is the only way to open them.
-> Thus we can completely forbid lookup for master-devices and eliminate that hack in
-> tty_init_dev() because tty_open() will get EIO from tty_driver_lookup_tty().
->
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  drivers/tty/pty.c    |    8 +++-----
->  drivers/tty/tty_io.c |   12 ++----------
->  include/linux/tty.h  |    3 +--
->  3 files changed, 6 insertions(+), 17 deletions(-)
->
-> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-> index e18604b..d2bf3c1 100644
-> --- a/drivers/tty/pty.c
-> +++ b/drivers/tty/pty.c
-> @@ -526,10 +526,8 @@ static int pty_unix98_ioctl(struct tty_struct *tty,
->  static struct tty_struct *ptm_unix98_lookup(struct tty_driver *driver,
->                struct inode *ptm_inode, int idx)
->  {
-> -       struct tty_struct *tty = devpts_get_tty(ptm_inode, idx);
-> -       if (tty)
-> -               tty = tty->link;
-> -       return tty;
-> +       /* Master must be open via /dev/ptmx */
-> +       return ERR_PTR(-EIO);
->  }
->
->  /**
-> @@ -685,7 +683,7 @@ static int ptmx_open(struct inode *inode, struct file *filp)
->
->        mutex_lock(&tty_mutex);
->        tty_lock();
-> -       tty = tty_init_dev(ptm_driver, index, 1);
-> +       tty = tty_init_dev(ptm_driver, index);
->        mutex_unlock(&tty_mutex);
->
->        if (IS_ERR(tty)) {
-> diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-> index 05085be..7cddf91 100644
-> --- a/drivers/tty/tty_io.c
-> +++ b/drivers/tty/tty_io.c
-> @@ -1366,7 +1366,6 @@ static int tty_reopen(struct tty_struct *tty)
->  *     @driver: tty driver we are opening a device on
->  *     @idx: device index
->  *     @ret_tty: returned tty structure
-> - *     @first_ok: ok to open a new device (used by ptmx)
->  *
->  *     Prepare a tty device. This may not be a "new" clean device but
->  *     could also be an active device. The pty drivers require special
-> @@ -1386,18 +1385,11 @@ static int tty_reopen(struct tty_struct *tty)
->  * relaxed for the (most common) case of reopening a tty.
->  */
->
-> -struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
-> -                                                               int first_ok)
-> +struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
->  {
->        struct tty_struct *tty;
->        int retval;
->
-> -       /* Check if pty master is being opened multiple times */
-> -       if (driver->subtype == PTY_TYPE_MASTER &&
-> -               (driver->flags & TTY_DRIVER_DEVPTS_MEM) && !first_ok) {
-> -               return ERR_PTR(-EIO);
-> -       }
-> -
->        /*
->         * First time open is complex, especially for PTY devices.
->         * This code guarantees that either everything succeeds and the
-> @@ -1909,7 +1901,7 @@ got_driver:
->                if (retval)
->                        tty = ERR_PTR(retval);
->        } else
-> -               tty = tty_init_dev(driver, index, 0);
-> +               tty = tty_init_dev(driver, index);
->
->        mutex_unlock(&tty_mutex);
->        tty_driver_kref_put(driver);
-> diff --git a/include/linux/tty.h b/include/linux/tty.h
-> index 5dbb3cb..d3ebd76 100644
-> --- a/include/linux/tty.h
-> +++ b/include/linux/tty.h
-> @@ -480,8 +480,7 @@ extern void free_tty_struct(struct tty_struct *tty);
->  extern void initialize_tty_struct(struct tty_struct *tty,
->                struct tty_driver *driver, int idx);
->  extern void deinitialize_tty_struct(struct tty_struct *tty);
-> -extern struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
-> -                                                               int first_ok);
-> +extern struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx);
->  extern int tty_release(struct inode *inode, struct file *filp);
->  extern int tty_init_termios(struct tty_struct *tty);
->
->
+> Could you please send me the complete lsusb -v output for the device ? I'll
+> then add it to the supported devices list.
+Certainly, see below:
+
+Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+  bcdUSB               2.00
+  bDeviceClass          239 Miscellaneous Device
+  bDeviceSubClass         2 ?
+  bDeviceProtocol         1 Interface Association
+  bMaxPacketSize0        64
+  idVendor           0x0402 ALi Corp.
+  idProduct          0x9665 Gateway Webcam
+  bcdDevice            0.09
+  iManufacturer           3 XPB3L1K44
+  iProduct                1 1.3M WebCam
+  iSerial                 0
+  bNumConfigurations      1
+  Configuration Descriptor:
+    bLength                 9
+    bDescriptorType         2
+    wTotalLength          349
+    bNumInterfaces          2
+    bConfigurationValue     1
+    iConfiguration          0
+    bmAttributes         0x80
+      (Bus Powered)
+    MaxPower              500mA
+    Interface Association:
+      bLength                 8
+      bDescriptorType        11
+      bFirstInterface         0
+      bInterfaceCount         2
+      bFunctionClass         14 Video
+      bFunctionSubClass       3 Video Interface Collection
+      bFunctionProtocol       0
+      iFunction               1 1.3M WebCam
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        0
+      bAlternateSetting       0
+      bNumEndpoints           1
+      bInterfaceClass        14 Video
+      bInterfaceSubClass      1 Video Control
+      bInterfaceProtocol      0
+      iInterface              1 1.3M WebCam
+      VideoControl Interface Descriptor:
+        bLength                13
+        bDescriptorType        36
+        bDescriptorSubtype      1 (HEADER)
+        bcdUVC               1.00
+        wTotalLength           85
+        dwClockFrequency       30.000000MHz
+        bInCollection           1
+        baInterfaceNr( 0)       1
+      VideoControl Interface Descriptor:
+        bLength                18
+        bDescriptorType        36
+        bDescriptorSubtype      2 (INPUT_TERMINAL)
+        bTerminalID             1
+        wTerminalType      0x0201 Camera Sensor
+        bAssocTerminal          0
+        iTerminal               0
+        wObjectiveFocalLengthMin      0
+        wObjectiveFocalLengthMax      0
+        wOcularFocalLength            0
+        bControlSize                  3
+        bmControls           0x00000000
+      VideoControl Interface Descriptor:
+        bLength                 9
+        bDescriptorType        36
+        bDescriptorSubtype      3 (OUTPUT_TERMINAL)
+        bTerminalID             3
+        wTerminalType      0x0101 USB Streaming
+        bAssocTerminal          0
+        bSourceID               6
+        iTerminal               0
+      VideoControl Interface Descriptor:
+        bLength                 7
+        bDescriptorType        36
+        bDescriptorSubtype      4 (SELECTOR_UNIT)
+        bUnitID                 4
+        bNrInPins               1
+        baSource( 0)            1
+        iSelector               0
+      VideoControl Interface Descriptor:
+        bLength                11
+        bDescriptorType        36
+        bDescriptorSubtype      5 (PROCESSING_UNIT)
+      Warning: Descriptor too short
+        bUnitID                 5
+        bSourceID               4
+        wMaxMultiplier          0
+        bControlSize            2
+        bmControls     0x0000053f
+          Brightness
+          Contrast
+          Hue
+          Saturation
+          Sharpness
+          Gamma
+          Backlight Compensation
+          Power Line Frequency
+        iProcessing             0
+        bmVideoStandards     0x1b
+          None
+          NTSC - 525/60
+          SECAM - 625/50
+          NTSC - 625/50
+      VideoControl Interface Descriptor:
+        bLength                27
+        bDescriptorType        36
+        bDescriptorSubtype      6 (EXTENSION_UNIT)
+        bUnitID                 6
+        guidExtensionCode         {564c97a7-7ea7-904b-8cbf-1c71ec303000}
+        bNumControl            16
+        bNrPins                 1
+        baSourceID( 0)          5
+        bControlSize            2
+        bmControls( 0)       0xff
+        bmControls( 1)       0xff
+        iExtension              0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x82  EP 2 IN
+        bmAttributes            3
+          Transfer Type            Interrupt
+          Synch Type               None
+          Usage Type               Data
+        wMaxPacketSize     0x0008  1x 8 bytes
+        bInterval              15
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       0
+      bNumEndpoints           0
+      bInterfaceClass        14 Video
+      bInterfaceSubClass      2 Video Streaming
+      bInterfaceProtocol      0
+      iInterface              0
+      VideoStreaming Interface Descriptor:
+        bLength                            14
+        bDescriptorType                    36
+        bDescriptorSubtype                  1 (INPUT_HEADER)
+        bNumFormats                         1
+        wTotalLength                      169
+        bEndPointAddress                  129
+        bmInfo                              0
+        bTerminalLink                       3
+        bStillCaptureMethod                 0
+        bTriggerSupport                     0
+        bTriggerUsage                       0
+        bControlSize                        1
+        bmaControls( 0)                    27
+      VideoStreaming Interface Descriptor:
+        bLength                            27
+        bDescriptorType                    36
+        bDescriptorSubtype                  4 (FORMAT_UNCOMPRESSED)
+        bFormatIndex                        1
+        bNumFrameDescriptors                4
+        guidFormat
+{59555932-0000-1000-8000-00aa00389b71}
+        bBitsPerPixel                      16
+        bDefaultFrameIndex                  1
+        bAspectRatioX                       0
+        bAspectRatioY                       0
+        bmInterlaceFlags                 0x00
+          Interlaced stream or variable: No
+          Fields per frame: 2 fields
+          Field 1 first: No
+          Field pattern: Field 1 only
+          bCopyProtect                      0
+      VideoStreaming Interface Descriptor:
+        bLength                            34
+        bDescriptorType                    36
+        bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+        bFrameIndex                         1
+        bmCapabilities                   0x00
+          Still image unsupported
+        wWidth                            640
+        wHeight                           480
+        dwMinBitRate                 73728000
+        dwMaxBitRate                147456000
+        dwMaxVideoFrameBufferSize      614400
+        dwDefaultFrameInterval         333333
+        bFrameIntervalType                  2
+        dwFrameInterval( 0)            333333
+        dwFrameInterval( 1)            666666
+      VideoStreaming Interface Descriptor:
+        bLength                            34
+        bDescriptorType                    36
+        bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+        bFrameIndex                         2
+        bmCapabilities                   0x00
+          Still image unsupported
+        wWidth                            320
+        wHeight                           240
+        dwMinBitRate                 18432000
+        dwMaxBitRate                 36864000
+        dwMaxVideoFrameBufferSize      153600
+        dwDefaultFrameInterval         333333
+        bFrameIntervalType                  2
+        dwFrameInterval( 0)            333333
+        dwFrameInterval( 1)            666666
+      VideoStreaming Interface Descriptor:
+        bLength                            30
+        bDescriptorType                    36
+        bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+        bFrameIndex                         3
+        bmCapabilities                   0x00
+          Still image unsupported
+        wWidth                           1280
+        wHeight                           800
+        dwMinBitRate                122880000
+        dwMaxBitRate                122880000
+        dwMaxVideoFrameBufferSize     2048000
+        dwDefaultFrameInterval        1333333
+        bFrameIntervalType                  1
+        dwFrameInterval( 0)           1333333
+      VideoStreaming Interface Descriptor:
+        bLength                            30
+        bDescriptorType                    36
+        bDescriptorSubtype                  5 (FRAME_UNCOMPRESSED)
+        bFrameIndex                         4
+        bmCapabilities                   0x00
+          Still image unsupported
+        wWidth                           1280
+        wHeight                          1024
+        dwMinBitRate                157286400
+        dwMaxBitRate                157286400
+        dwMaxVideoFrameBufferSize     2621440
+        dwDefaultFrameInterval        1333333
+        bFrameIntervalType                  1
+        dwFrameInterval( 0)           1333333
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       1
+      bNumEndpoints           1
+      bInterfaceClass        14 Video
+      bInterfaceSubClass      2 Video Streaming
+      bInterfaceProtocol      0
+      iInterface              0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            5
+          Transfer Type            Isochronous
+          Synch Type               Asynchronous
+          Usage Type               Data
+        wMaxPacketSize     0x1400  3x 1024 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       2
+      bNumEndpoints           1
+      bInterfaceClass        14 Video
+      bInterfaceSubClass      2 Video Streaming
+      bInterfaceProtocol      0
+      iInterface              0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            5
+          Transfer Type            Isochronous
+          Synch Type               Asynchronous
+          Usage Type               Data
+        wMaxPacketSize     0x1400  3x 1024 bytes
+        bInterval               1
+    Interface Descriptor:
+      bLength                 9
+      bDescriptorType         4
+      bInterfaceNumber        1
+      bAlternateSetting       3
+      bNumEndpoints           1
+      bInterfaceClass        14 Video
+      bInterfaceSubClass      2 Video Streaming
+      bInterfaceProtocol      0
+      iInterface              0
+      Endpoint Descriptor:
+        bLength                 7
+        bDescriptorType         5
+        bEndpointAddress     0x81  EP 1 IN
+        bmAttributes            5
+          Transfer Type            Isochronous
+          Synch Type               Asynchronous
+          Usage Type               Data
+        wMaxPacketSize     0x1400  3x 1024 bytes
+        bInterval               1
+Device Qualifier (for other device speed):
+  bLength                10
+  bDescriptorType         6
+  bcdUSB               2.00
+  bDeviceClass          239 Miscellaneous Device
+  bDeviceSubClass         2 ?
+  bDeviceProtocol         1 Interface Association
+  bMaxPacketSize0        64
+  bNumConfigurations      1
+Device Status:     0x0000
+  (Bus Powered)
+
+.. next device to signify end of lsusb -v for this device ..
+
+Bus 002 Device 005: ID 0d8c:0008 C-Media Electronics, Inc.
+Device Descriptor:
+  bLength                18
+  bDescriptorType         1
+
+Justin.
