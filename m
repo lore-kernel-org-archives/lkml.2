@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab2ACSpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 13:45:10 -0500
-Received: from mail-gx0-f202.google.com ([209.85.161.202]:52218 "EHLO
-	mail-gx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab2ACSpI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 13:45:08 -0500
-From: Simon Glass <sjg@chromium.org>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Olof Johansson <olofj@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, Simon Glass <sjg@chromium.org>
-Subject: [PATCH] ARM: Remove BUILD_BUG_ON from asm/bug.h
-Date: Tue,  3 Jan 2012 10:44:36 -0800
-Message-Id: <1325616276-10304-1-git-send-email-sjg@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	id S1754690Ab2ACSsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 13:48:09 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45468 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754589Ab2ACSsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 13:48:07 -0500
+Subject: Re: Reiserfs.c bug in 3.2-rc5
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org, haiyangz@microsoft.com,
+        hjanssen@microsoft.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Morris <jmorris@namei.org>,
+        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>
+Date: Tue, 03 Jan 2012 13:45:11 -0500
+In-Reply-To: <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com>
+References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>
+	 <20111213180707.GI11747@quack.suse.cz>
+	 <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
+	 <20120102115222.GA3626@quack.suse.cz> <20120103010826.GF3626@quack.suse.cz>
+	 <20120103123841.GA31457@quack.suse.cz> <1325604356.2095.23.camel@falcor>
+	 <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1325616312.2095.26.camel@falcor>
+Mime-Version: 1.0
+x-cbid: 12010318-7182-0000-0000-0000007BE2B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUILD_BUG_ON is defined in linux/kernel.h but that is not included by the
-asm/bug.h header which uses it. This causes a build error:
+On Tue, 2012-01-03 at 08:48 -0800, Linus Torvalds wrote:
+> On Tue, Jan 3, 2012 at 7:25 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> >
+> > Commit fb88c2b changed the security_old_inode_init_security() return
+> > code for S_PRIVATE inodes. As long as -EOPNOTSUPP is expected, probably
+> > should revert that as well.
+> >
+> > (I'm cc'ing the ocfs2 maintainers.)
+> 
+> Jan, Joel? Can you confirm? I was planning on doing 3.2 today, but
+> maybe I can't, or maybe we need to punt this to be a stable patch.
+> 
+> But maybe we can have quick testing and agreement? Does everybody
+> agree on both Honza's patch *and* revert of fb88c2b? Does the
+> EOPNOTSUPP return case match what we used to do?
+> 
+>                           Linus
+> 
 
-...include/linux/mtd/map.h: In function 'inline_map_read':
-...include/linux/mtd/map.h:408:3: error: implicit declaration of function
-'BUILD_BUG_ON' [-Werror=implicit-function-declaration]
+Just clarifying not all of commit fb88c2b, but only the
+security_old_inode_init_security() hunk.
 
-The check is not essential and is not present for other architectures, so
-just remove it.
-
-Signed-off-by: Simon Glass <sjg@chromium.org>
----
- arch/arm/include/asm/bug.h |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/include/asm/bug.h b/arch/arm/include/asm/bug.h
-index 9abe7a0..fac79dc 100644
---- a/arch/arm/include/asm/bug.h
-+++ b/arch/arm/include/asm/bug.h
-@@ -32,7 +32,6 @@
- 
- #define __BUG(__file, __line, __value)				\
- do {								\
--	BUILD_BUG_ON(sizeof(struct bug_entry) != 12);		\
- 	asm volatile("1:\t" BUG_INSTR_TYPE #__value "\n"	\
- 		".pushsection .rodata.str, \"aMS\", %progbits, 1\n" \
- 		"2:\t.asciz " #__file "\n" 			\
--- 
-1.7.3.1
+Mimi
 
