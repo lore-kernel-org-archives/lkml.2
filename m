@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab2ACJFv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 04:05:51 -0500
-Received: from smtp-out-229.synserver.de ([212.40.185.229]:1059 "HELO
-	smtp-out-228.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1751942Ab2ACJFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 04:05:48 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 22469
-Message-ID: <4F02C50E.9030904@metafoo.de>
-Date: Tue, 03 Jan 2012 10:06:22 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
-MIME-Version: 1.0
-To: Thomas Abraham <thomas.abraham@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, jg1.han@samsung.com,
-        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
-        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
-        ben-linux@fluff.org, patches@linaro.org
-Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device
- tree support
-References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-In-Reply-To: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751920Ab2ACJRA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 04:17:00 -0500
+Received: from lo.gmane.org ([80.91.229.12]:55638 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751185Ab2ACJQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 04:16:57 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+Subject: Re: loading firmware while usermodehelper disabled.
+Date: Tue, 3 Jan 2012 15:16:37 +0600
+Message-ID: <20120103151637.1388e204@home>
+References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
+	<4F02165C.1060400@fastmail.fm>
+	<CA+55aFwf06vRraVqtz8_2qWjxH0V=Yj5m7mEy3XVbA7+qj5k5A@mail.gmail.com>
+	<20120102211904.GA15316@srcf.ucam.org>
+	<CA+55aFwJuuvqcsgHnZ4-VhUhbVvL6beKogo1adgYyZt_ZM=H7A@mail.gmail.com>
+	<20120102215028.GA15701@srcf.ucam.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 188.16.200.234
+In-Reply-To: <20120102215028.GA15701@srcf.ucam.org>
+X-Newsreader: Claws Mail 3.7.10 (GTK+ 2.24.5; i686-pc-linux-gnu)
+Cc: linux-usb@vger.kernel.org, linux-wireless@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2012 06:54 AM, Thomas Abraham wrote:
-> The platform-lcd driver depends on platform-specific callbacks to setup the
-> lcd panel. These callbacks are supplied using driver's platform data. But
-> for adding device tree support for platform-lcd driver, providing such
-> callbacks is not possible (without using auxdata).
-> 
-> Since the callbacks are usually lcd panel specific, it is possible to include
-> the lcd panel specific setup and control functionality in the platform-lcd
-> driver itself, thereby eliminating the need for supplying platform specific
-> callbacks to the driver. The platform-lcd driver can include support for
-> multiple lcd panels.
-> 
-> This patchset removes the need for platform data for platform-lcd driver and
-> adds support which can be used to implement lcd panel specific functionality
-> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
-> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
-> This currently breaks build for other users of platform-lcd driver. Those can be
-> fixed if this approach is acceptable.
+Matthew Garrett <mjg@redhat.com> wrote:
 
-The whole approach looks rather backwards to me. The exact purpose of the
-platform_lcd driver is to redirect the lcd driver callbacks to board code.
-So by removing this support you not only break all the existing driver but
-also create a driver which does nothing. Then you add another layer of
-abstraction to implement custom drivers in this driver. A better approach in
-my opinion is to simply implement these drivers as first level LCD drivers.
-So leave the platform-lcd driver as it is and just add a gpio (or maybe
-regulator) lcd driver instead.
+> On Mon, Jan 02, 2012 at 01:27:03PM -0800, Linus Torvalds wrote:
+> 
+> > If we didn't load the firmware before the suspend, then the resume
+> > function of a device sure as hell had better not load it at resume
+> > time either.
+> 
+> If the hardware has lost its state then refusing to load the firmware
+> at resume time isn't going to leave you with a working device.
+> 
+> > And for chrissake, don't bother making it more complicated than it
+> > is, just for some theoretical hardware or situation that nobody
+> > cares about.
+> 
+> It's not theoretical hardware. This appears to be the current
+> behaviour of the isight devices. If you reboot they retain their
+> firmware. If you suspend, they don't. So if we have a flow like this:
+> 
+> 1) user boots from cold. Device comes up with generic USB ID.
+> 2) isight_firmware loads and binds. Firmware is loaded. Device 
+> disconnects and reconnects with an ID that's bound by the UVC driver.
+> 3) user reboots. Device comes up with UVC ID. isight_firmware doesn't 
+> bind.
+> 4) user suspends.
+> 5) user resumes. isight_firmware binds and attempts to load firmware.
+> 
+> then just caching the firmware is inadequate - we had never
+> previously seen the device on this boot, so we've never loaded it in
+> order to cache it. isight_firmware could unconditionally load the
+> firmware on module load just in case a device is plugged in, but that
+> seems even less elegant than caching it.
 
-- Lars
+What a heated discussion due to, essentially, a non-technical, legal
+issue! Remember that the whole "userspace firmware loader" saga
+together with the asynchronous firmware interface started when Debian
+started complaining over the non-freeness of the firmware being bundled
+as a part of the kernel module as an array of bytes. That design,
+however, never had such dependency issues. So maybe revert to it, with
+the following changes, and solve the legal issue seen by Debian by
+hiring a lawyer?
+
+1. Make firmware a special case of a data-only non-GPL kernel module.
+Change the tainter so that it doesn't taint the kernel for data-only
+modules.
+2. Make the actual driver depend on the relevant firmware modules for
+all devices supported by it, even if the devices don't always need the
+said firmware.
+3. Disallow building drivers that need firmware as non-modules.
+4. Do something (e.g. split the driver into a core and a shim, or make
+a fake firmware module) to allow the user to install without firmware
+if he knows that it works with his hardware.
+5. Profit!
+
+This way, as long as the driver is loaded, the necessary firmware is
+also there, as a dependency.
+
+-- 
+Alexander E. Patrakov
+
