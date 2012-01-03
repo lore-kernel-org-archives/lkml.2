@@ -1,108 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab2ACEtj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 23:49:39 -0500
-Received: from mga03.intel.com ([143.182.124.21]:57545 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751091Ab2ACEti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 23:49:38 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="91735927"
-Date: Tue, 3 Jan 2012 12:49:33 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Chanho Min <chanho.min@lge.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        "'Jens Axboe'" <axboe@kernel.dk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is
- detached
-Message-ID: <20120103044933.GA31778@localhost>
-References: <004401ccc932$444a0070$ccde0150$@min@lge.com>
- <20120102095711.GA16570@localhost>
- <002e01ccc9c7$1928c940$4b7a5bc0$@min@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <002e01ccc9c7$1928c940$4b7a5bc0$@min@lge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750961Ab2ACFId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 00:08:33 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:48899 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2ACFIc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 00:08:32 -0500
+Date: Tue, 3 Jan 2012 16:08:13 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: linux-next: manual merge of the tip tree with Linus' tree
+Message-Id: <20120103160813.d2a8575c1de3bad0acd42280@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__3_Jan_2012_16_08_13_+1100_qY/sm+ajoi_8FaXt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 12:23:44PM +0900, Chanho Min wrote:
-> >On Mon, Jan 02, 2012 at 06:38:21PM +0900, ����ȣ wrote:
-> >> from Chanho Min <chanho.min@lge.com>
-> >>
-> >> System may crash in backing-dev.c when removal SCSI device is detached.
-> >> bdi task is killed by bdi_unregister()/'khubd', but task's point remains.
-> >> Shortly afterward, If 'wb->wakeup_timer' is expired before
-> >> del_timer()/bdi_forker_thread,
-> >> wakeup_timer_fn() may wake up the dead thread which cause the crash.
-> >> 'bdi->wb.task' should be NULL as this patch.
-> >
-> >Is it some race condition between del_timer() and del_timer_sync()?
-> >
-> >bdi_unregister() calls
-> >
-> >        del_timer_sync
-> >        bdi_wb_shutdown
-> >            kthread_stop
-> >
-> >in turn, and del_timer_sync() should guarantee wakeup_timer_fn() is
-> >no longer called to access the stopped task.
-> >
-> 
-> It is not race condition. This happens when USB is removed during write-access.
-> bdi_wakeup_thread_delayed is called after kthread_stop, and timer is activated again.
-> 
-> 	bdi_unregister
-> 		kthread_stop
-> 	bdi_wakeup_thread_delayed (sys_write mostly calls this)
-> 	timer fires
+--Signature=_Tue__3_Jan_2012_16_08_13_+1100_qY/sm+ajoi_8FaXt
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ah OK, the timer could be restarted in the mean while, which breaks
-the synchronization rule in del_timer_sync().
+Hi all,
 
-I noticed a related fix is merged recently, does your test kernel
-contain this commit?
+Today's linux-next merge of the tip tree got a conflict in kernel/futex.c
+between commit e6780f7243ed ("futex: Fix uninterruptible loop due to
+gate_area") from the  tree and commit ab69f41ef93d ("futex: Fix
+uninterruptible loop due to gate_area") from the tip tree.
 
-commit 7a401a972df8e184b3d1a3fc958c0a4ddee8d312
-Author: Rabin Vincent <rabin.vincent@stericsson.com>
-Date:   Fri Nov 11 13:29:04 2011 +0100
+OK, so these appear to be 2 different versions of the same fix.  I cannot
+figure out which to use, so I just used the version from the tip
+tree ...
 
-    backing-dev: ensure wakeup_timer is deleted
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> Anyway,Is this safeguard to prevent from waking up killed thread?
+--Signature=_Tue__3_Jan_2012_16_08_13_+1100_qY/sm+ajoi_8FaXt
+Content-Type: application/pgp-signature
 
-This patch makes no guarantee wakeup_timer_fn() will see NULL
-bdi->wb.task before the task is stopped, so there is still race
-conditions. And still, the complete fix would be to prevent
-wakeup_timer_fn() from being called at all.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Thanks,
-Fengguang
+iQIcBAEBCAAGBQJPAo09AAoJEECxmPOUX5FEBAAP/0hlN7aW5Iz489LTKNAhfZhm
+DcIe3/QFBrNEXYjLRPA/mgQL11CLQ75+lk4xywbR54pXMuDwQuVDmwowbTsmtKQ4
+isumLVYxW4S109oLUpe6XG0uKJE+oCO1BvPOVAnWZn9nIW1wR/U8xkbil56tJZRk
+e13eIDYAoDbar1S9wc48jqtGzPu5GfiaCE+KeX/S08qcZmYek/RsCdEnN3gyyHFZ
+IwDZgUyOR4hpr/66+rfsz0Z6fUPnesvft4wbzcM/6xwG3KAtnJ9HddWrX1MIRGrv
+ThWEz9jbv77tztbe9zaKcj3AiuClPwAOsh5OI+CAdU/zKKeqA5Pv3TjIMjML4/51
+UqdNB1wilHSi/CVpzczc5peUHbX96ebw3ylSA4UCOQYqXBjqSBnLQvmZWTyr+TFN
+JRxEBdsMBaWH6yCuMdLVkA7nIl5+KWBfnFP/8u1e7siFwNPoWx/3/kOhtr8L21iF
+/cecQyhtWN2PfvTrhJjIfsq9rRzuAOfIwpITAcnoDKnU2dMrsbgOYEvOqjAQtmPa
++d0nocrSapWm9snZ/rjKGrpeoUlLffFAzyQPOGVJ2jXxzg9CpwEzmQC6Qev+1IGp
+YSWrchVzbOTAOyzYK6ne76QsSWrS7wOteJTFVpGkwMG2ZzLEkJLiBjF3LhJEQJmh
+WESdSFifHvrw2nqG80yq
+=qqu6
+-----END PGP SIGNATURE-----
 
-> >> Signed-off-by: Chanho Min <chanho.min@lge.com>
-> >> ---
-> >>  mm/backing-dev.c |    1 +
-> >>  1 files changed, 1 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> >> index 71034f4..4378a5e 100644
-> >> --- a/mm/backing-dev.c
-> >> +++ b/mm/backing-dev.c
-> >> @@ -607,6 +607,7 @@ static void bdi_wb_shutdown(struct backing_dev_info
-> >> *bdi)
-> >>         if (bdi->wb.task) {
-> >>                 thaw_process(bdi->wb.task);
-> >>                 kthread_stop(bdi->wb.task);
-> >> +               bdi->wb.task = NULL;
-> >>         }
-> >>  }
-> >>
-> >> --
-> >> 1.7.0.4
+--Signature=_Tue__3_Jan_2012_16_08_13_+1100_qY/sm+ajoi_8FaXt--
