@@ -1,27 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab2ACWlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:41:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40343 "EHLO mx2.suse.de"
+	id S932113Ab2ACWvQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:51:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40313 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756257Ab2ACWlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:09 -0500
+	id S1756231Ab2ACWlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:25 2012
-Message-Id: <20120103223325.131677536@clark.kroah.org>
+Message-Id: <20120103223324.966632976@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:22 -0800
+Date: Tue, 03 Jan 2012 14:33:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Caspar Zhang <caspar@casparzhang.com>,
-        Christoph Lameter <cl@linux.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: [49/75] mm/mempolicy.c: refix mbind_range() vma issue
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Jean Delvare <khali@linux-fr.org>, Dave Airlie <airlied@redhat.com>
+Subject: [47/75] drm/radeon/kms: bail on BTC parts if MC ucode is missing
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,379 +25,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit e26a51148f3ebd859bca8bf2e0f212839b447f62 upstream.
+commit 77e00f2ea94abee1ad13bdfde19cf7aa25992b0e upstream.
 
-commit 8aacc9f550 ("mm/mempolicy.c: fix pgoff in mbind vma merge") is the
-slightly incorrect fix.
+We already do this for cayman, need to also do it for
+BTC parts.  The default memory and voltage setup is not
+adequate for advanced operation.  Continuing will
+result in an unusable display.
 
-Why? Think following case.
-
-1. map 4 pages of a file at offset 0
-
-   [0123]
-
-2. map 2 pages just after the first mapping of the same file but with
-   page offset 2
-
-   [0123][23]
-
-3. mbind() 2 pages from the first mapping at offset 2.
-   mbind_range() should treat new vma is,
-
-   [0123][23]
-     |23|
-     mbind vma
-
-   but it does
-
-   [0123][23]
-     |01|
-     mbind vma
-
-   Oops. then, it makes wrong vma merge and splitting ([01][0123] or similar).
-
-This patch fixes it.
-
-[testcase]
-  test result - before the patch
-
-	case4: 126: test failed. expect '2,4', actual '2,2,2'
-       	case5: passed
-	case6: passed
-	case7: passed
-	case8: passed
-	case_n: 246: test failed. expect '4,2', actual '1,4'
-
-	------------[ cut here ]------------
-	kernel BUG at mm/filemap.c:135!
-	invalid opcode: 0000 [#4] SMP DEBUG_PAGEALLOC
-
-	(snip long bug on messages)
-
-  test result - after the patch
-
-	case4: passed
-       	case5: passed
-	case6: passed
-	case7: passed
-	case8: passed
-	case_n: passed
-
-  source:  mbind_vma_test.c
-============================================================
- #include <numaif.h>
- #include <numa.h>
- #include <sys/mman.h>
- #include <stdio.h>
- #include <unistd.h>
- #include <stdlib.h>
- #include <string.h>
-
-static unsigned long pagesize;
-void* mmap_addr;
-struct bitmask *nmask;
-char buf[1024];
-FILE *file;
-char retbuf[10240] = "";
-int mapped_fd;
-
-char *rubysrc = "ruby -e '\
-  pid = %d; \
-  vstart = 0x%llx; \
-  vend = 0x%llx; \
-  s = `pmap -q #{pid}`; \
-  rary = []; \
-  s.each_line {|line|; \
-    ary=line.split(\" \"); \
-    addr = ary[0].to_i(16); \
-    if(vstart <= addr && addr < vend) then \
-      rary.push(ary[1].to_i()/4); \
-    end; \
-  }; \
-  print rary.join(\",\"); \
-'";
-
-void init(void)
-{
-	void* addr;
-	char buf[128];
-
-	nmask = numa_allocate_nodemask();
-	numa_bitmask_setbit(nmask, 0);
-
-	pagesize = getpagesize();
-
-	sprintf(buf, "%s", "mbind_vma_XXXXXX");
-	mapped_fd = mkstemp(buf);
-	if (mapped_fd == -1)
-		perror("mkstemp "), exit(1);
-	unlink(buf);
-
-	if (lseek(mapped_fd, pagesize*8, SEEK_SET) < 0)
-		perror("lseek "), exit(1);
-	if (write(mapped_fd, "\0", 1) < 0)
-		perror("write "), exit(1);
-
-	addr = mmap(NULL, pagesize*8, PROT_NONE,
-		    MAP_SHARED, mapped_fd, 0);
-	if (addr == MAP_FAILED)
-		perror("mmap "), exit(1);
-
-	if (mprotect(addr+pagesize, pagesize*6, PROT_READ|PROT_WRITE) < 0)
-		perror("mprotect "), exit(1);
-
-	mmap_addr = addr + pagesize;
-
-	/* make page populate */
-	memset(mmap_addr, 0, pagesize*6);
-}
-
-void fin(void)
-{
-	void* addr = mmap_addr - pagesize;
-	munmap(addr, pagesize*8);
-
-	memset(buf, 0, sizeof(buf));
-	memset(retbuf, 0, sizeof(retbuf));
-}
-
-void mem_bind(int index, int len)
-{
-	int err;
-
-	err = mbind(mmap_addr+pagesize*index, pagesize*len,
-		    MPOL_BIND, nmask->maskp, nmask->size, 0);
-	if (err)
-		perror("mbind "), exit(err);
-}
-
-void mem_interleave(int index, int len)
-{
-	int err;
-
-	err = mbind(mmap_addr+pagesize*index, pagesize*len,
-		    MPOL_INTERLEAVE, nmask->maskp, nmask->size, 0);
-	if (err)
-		perror("mbind "), exit(err);
-}
-
-void mem_unbind(int index, int len)
-{
-	int err;
-
-	err = mbind(mmap_addr+pagesize*index, pagesize*len,
-		    MPOL_DEFAULT, NULL, 0, 0);
-	if (err)
-		perror("mbind "), exit(err);
-}
-
-void Assert(char *expected, char *value, char *name, int line)
-{
-	if (strcmp(expected, value) == 0) {
-		fprintf(stderr, "%s: passed\n", name);
-		return;
-	}
-	else {
-		fprintf(stderr, "%s: %d: test failed. expect '%s', actual '%s'\n",
-			name, line,
-			expected, value);
-//		exit(1);
-	}
-}
-
-/*
-      AAAA
-    PPPPPPNNNNNN
-    might become
-    PPNNNNNNNNNN
-    case 4 below
-*/
-void case4(void)
-{
-	init();
-	sprintf(buf, rubysrc, getpid(), mmap_addr, mmap_addr+pagesize*6);
-
-	mem_bind(0, 4);
-	mem_unbind(2, 2);
-
-	file = popen(buf, "r");
-	fread(retbuf, sizeof(retbuf), 1, file);
-	Assert("2,4", retbuf, "case4", __LINE__);
-
-	fin();
-}
-
-/*
-       AAAA
- PPPPPPNNNNNN
- might become
- PPPPPPPPPPNN
- case 5 below
-*/
-void case5(void)
-{
-	init();
-	sprintf(buf, rubysrc, getpid(), mmap_addr, mmap_addr+pagesize*6);
-
-	mem_bind(0, 2);
-	mem_bind(2, 2);
-
-	file = popen(buf, "r");
-	fread(retbuf, sizeof(retbuf), 1, file);
-	Assert("4,2", retbuf, "case5", __LINE__);
-
-	fin();
-}
-
-/*
-	    AAAA
-	PPPPNNNNXXXX
-	might become
-	PPPPPPPPPPPP 6
-*/
-void case6(void)
-{
-	init();
-	sprintf(buf, rubysrc, getpid(), mmap_addr, mmap_addr+pagesize*6);
-
-	mem_bind(0, 2);
-	mem_bind(4, 2);
-	mem_bind(2, 2);
-
-	file = popen(buf, "r");
-	fread(retbuf, sizeof(retbuf), 1, file);
-	Assert("6", retbuf, "case6", __LINE__);
-
-	fin();
-}
-
-/*
-    AAAA
-PPPPNNNNXXXX
-might become
-PPPPPPPPXXXX 7
-*/
-void case7(void)
-{
-	init();
-	sprintf(buf, rubysrc, getpid(), mmap_addr, mmap_addr+pagesize*6);
-
-	mem_bind(0, 2);
-	mem_interleave(4, 2);
-	mem_bind(2, 2);
-
-	file = popen(buf, "r");
-	fread(retbuf, sizeof(retbuf), 1, file);
-	Assert("4,2", retbuf, "case7", __LINE__);
-
-	fin();
-}
-
-/*
-    AAAA
-PPPPNNNNXXXX
-might become
-PPPPNNNNNNNN 8
-*/
-void case8(void)
-{
-	init();
-	sprintf(buf, rubysrc, getpid(), mmap_addr, mmap_addr+pagesize*6);
-
-	mem_bind(0, 2);
-	mem_interleave(4, 2);
-	mem_interleave(2, 2);
-
-	file = popen(buf, "r");
-	fread(retbuf, sizeof(retbuf), 1, file);
-	Assert("2,4", retbuf, "case8", __LINE__);
-
-	fin();
-}
-
-void case_n(void)
-{
-	init();
-	sprintf(buf, rubysrc, getpid(), mmap_addr, mmap_addr+pagesize*6);
-
-	/* make redundunt mappings [0][1234][34][7] */
-	mmap(mmap_addr + pagesize*4, pagesize*2, PROT_READ|PROT_WRITE,
-	     MAP_FIXED|MAP_SHARED, mapped_fd, pagesize*3);
-
-	/* Expect to do nothing. */
-	mem_unbind(2, 2);
-
-	file = popen(buf, "r");
-	fread(retbuf, sizeof(retbuf), 1, file);
-	Assert("4,2", retbuf, "case_n", __LINE__);
-
-	fin();
-}
-
-int main(int argc, char** argv)
-{
-	case4();
-	case5();
-	case6();
-	case7();
-	case8();
-	case_n();
-
-	return 0;
-}
-=============================================================
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Caspar Zhang <caspar@casparzhang.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/mempolicy.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/evergreen.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -636,6 +636,7 @@ static int mbind_range(struct mm_struct
- 	struct vm_area_struct *prev;
- 	struct vm_area_struct *vma;
- 	int err = 0;
-+	pgoff_t pgoff;
- 	unsigned long vmstart;
- 	unsigned long vmend;
- 
-@@ -643,13 +644,21 @@ static int mbind_range(struct mm_struct
- 	if (!vma || vma->vm_start > start)
- 		return -EFAULT;
- 
-+	if (start > vma->vm_start)
-+		prev = vma;
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -3258,6 +3258,18 @@ int evergreen_init(struct radeon_device
+ 			rdev->accel_working = false;
+ 		}
+ 	}
 +
- 	for (; vma && vma->vm_start < end; prev = vma, vma = next) {
- 		next = vma->vm_next;
- 		vmstart = max(start, vma->vm_start);
- 		vmend   = min(end, vma->vm_end);
- 
-+		if (mpol_equal(vma_policy(vma), new_pol))
-+			continue;
++	/* Don't start up if the MC ucode is missing on BTC parts.
++	 * The default clocks and voltages before the MC ucode
++	 * is loaded are not suffient for advanced operations.
++	 */
++	if (ASIC_IS_DCE5(rdev)) {
++		if (!rdev->mc_fw && !(rdev->flags & RADEON_IS_IGP)) {
++			DRM_ERROR("radeon: MC ucode required for NI+.\n");
++			return -EINVAL;
++		}
++	}
 +
-+		pgoff = vma->vm_pgoff +
-+			((vmstart - vma->vm_start) >> PAGE_SHIFT);
- 		prev = vma_merge(mm, prev, vmstart, vmend, vma->vm_flags,
--				  vma->anon_vma, vma->vm_file, vma->vm_pgoff,
-+				  vma->anon_vma, vma->vm_file, pgoff,
- 				  new_pol);
- 		if (prev) {
- 			vma = prev;
+ 	return 0;
+ }
+ 
 
 
