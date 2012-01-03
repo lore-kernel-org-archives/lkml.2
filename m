@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab2ACOUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 09:20:34 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:52431 "EHLO
+	id S1753782Ab2ACOU3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 09:20:29 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47511 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753772Ab2ACOU1 (ORCPT
+	with ESMTP id S1753653Ab2ACOUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 09:20:27 -0500
+	Tue, 3 Jan 2012 09:20:14 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
 Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Michal Nazarewicz <mina86@mina86.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [RFC PATCH 9/9] x86: refactor wbinvd_on_all_cpus to void function
-Date: Tue,  3 Jan 2012 16:19:13 +0200
-Message-Id: <1325600353-10895-10-git-send-email-gilad@benyossef.com>
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org
+Subject: [RFC PATCH 4/9] alpha: avoid using on_each_cpu hard coded ret value
+Date: Tue,  3 Jan 2012 16:19:08 +0200
+Message-Id: <1325600353-10895-5-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
 References: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
@@ -23,63 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-wbvind_on_all_cpus returns the value from on_each_cpu as return
-value.
+on_each_cpu always returns a hard coded return code of zero.
 
-on_each_cpu always returns a hard coded zero value and none of
-the callers to wbinvd_on_all_cpu check for its return value
-so we might as well just drop it.
+Removing all tests based on this return value saves run time
+cycles for compares and code bloat for branches.
 
 CC: Michal Nazarewicz <mina86@mina86.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org
+CC: Richard Henderson <rth@twiddle.net>
+CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+CC: Matt Turner <mattst88@gmail.com>
+CC: linux-alpha@vger.kernel.org
 ---
- arch/x86/include/asm/smp.h |    5 ++---
- arch/x86/lib/cache-smp.c   |    3 +--
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ arch/alpha/kernel/smp.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 73b11bc..989e4a8 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -158,7 +158,7 @@ void native_cpu_die(unsigned int cpu);
- void native_play_dead(void);
- void play_dead_common(void);
- void wbinvd_on_cpu(int cpu);
--int wbinvd_on_all_cpus(void);
-+void wbinvd_on_all_cpus(void);
- 
- void native_send_call_func_ipi(const struct cpumask *mask);
- void native_send_call_func_single_ipi(int cpu);
-@@ -173,10 +173,9 @@ static inline int num_booting_cpus(void)
- }
- #else /* !CONFIG_SMP */
- #define wbinvd_on_cpu(cpu)     wbinvd()
--static inline int wbinvd_on_all_cpus(void)
-+static inline void wbinvd_on_all_cpus(void)
+diff --git a/arch/alpha/kernel/smp.c b/arch/alpha/kernel/smp.c
+index 4087a56..97707e9 100644
+--- a/arch/alpha/kernel/smp.c
++++ b/arch/alpha/kernel/smp.c
+@@ -659,8 +659,7 @@ void
+ smp_imb(void)
  {
- 	wbinvd();
--	return 0;
+ 	/* Must wait other processors to flush their icache before continue. */
+-	if (on_each_cpu(ipi_imb, NULL, 1))
+-		printk(KERN_CRIT "smp_imb: timed out\n");
++	on_each_cpu(ipi_imb, NULL, 1);
  }
- #endif /* CONFIG_SMP */
+ EXPORT_SYMBOL(smp_imb);
  
-diff --git a/arch/x86/lib/cache-smp.c b/arch/x86/lib/cache-smp.c
-index 760f7e1..db2eee1 100644
---- a/arch/x86/lib/cache-smp.c
-+++ b/arch/x86/lib/cache-smp.c
-@@ -12,9 +12,8 @@ void wbinvd_on_cpu(int cpu)
- }
- EXPORT_SYMBOL(wbinvd_on_cpu);
- 
--int wbinvd_on_all_cpus(void)
-+void wbinvd_on_all_cpus(void)
+@@ -675,9 +674,7 @@ flush_tlb_all(void)
  {
- 	on_each_cpu(__wbinvd, NULL, 1);
--	return 0;
+ 	/* Although we don't have any data to pass, we do want to
+ 	   synchronize with the other processors.  */
+-	if (on_each_cpu(ipi_flush_tlb_all, NULL, 1)) {
+-		printk(KERN_CRIT "flush_tlb_all: timed out\n");
+-	}
++	on_each_cpu(ipi_flush_tlb_all, NULL, 1);
  }
- EXPORT_SYMBOL(wbinvd_on_all_cpus);
+ 
+ #define asn_locked() (cpu_data[smp_processor_id()].asn_lock)
 -- 
 1.7.0.4
 
