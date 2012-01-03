@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab2ACWHE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:07:04 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:47742 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754953Ab2ACWHB convert rfc822-to-8bit (ORCPT
+	id S1755433Ab2ACWNM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:13:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33466 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755374Ab2ACWNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:07:01 -0500
+	Tue, 3 Jan 2012 17:13:08 -0500
+Date: Tue, 3 Jan 2012 14:13:01 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Hugh Dickins <hughd@google.com>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
+ allowed to create io_context
+Message-ID: <20120103221301.GH31746@google.com>
+References: <20111225010238.GA6013@htj.dyndns.org>
+ <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
+ <20111228164836.GP17712@google.com>
+ <alpine.LSU.2.00.1112280939390.3320@eggly.anvils>
+ <CAOS58YOzUcZz41+H+7dk5FteHy+Ufrtpk9dvdPqX6eie-GHi0Q@mail.gmail.com>
+ <20111228211918.GA3516@google.com>
+ <20120103173500.GB31746@google.com>
+ <20120103175922.GC31746@google.com>
+ <20120103200906.GG31746@google.com>
+ <4F03631C.8080501@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <20120103205226.GA17131@kroah.com>
-References: <20111215191523.GA2561@tuxdriver.com>
-	<CACna6rw736JdkoM8zKxorCFd5oy08QTwWZ6PutoJPSr3ZN8hTg@mail.gmail.com>
-	<20111215213822.GB2561@tuxdriver.com>
-	<CACna6rz3qDpw4eJOoCXx7=z1719v7kS-Ou-WUseR9_vB-O2dag@mail.gmail.com>
-	<CACna6rxO2dC=Y3nv-d-w89MqyM0j0aumk=r5Yh_KEg=MwOcvEQ@mail.gmail.com>
-	<20120103205226.GA17131@kroah.com>
-Date: Tue, 3 Jan 2012 23:06:59 +0100
-Message-ID: <CACna6rwjrg6m3SEBxfYWgRSTN5_4-TuA0tdG6P2pFuUvwvvjZA@mail.gmail.com>
-Subject: Re: pull request: wireless 2011-12-15
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F03631C.8080501@kernel.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-W dniu 3 stycznia 2012 21:52 użytkownik Greg KH <greg@kroah.com> napisał:
-> On Mon, Dec 26, 2011 at 12:36:59AM +0100, Rafał Miłecki wrote:
->> W dniu 16 grudnia 2011 07:40 użytkownik Rafał Miłecki
->> <zajec5@gmail.com> napisał:
->> > W dniu 15 grudnia 2011 22:38 użytkownik John W. Linville
->> > <linville@tuxdriver.com> napisał:
->> >> On Thu, Dec 15, 2011 at 09:04:29PM +0100, Rafał Miłecki wrote:
->> >>> 2011/12/15 John W. Linville <linville@tuxdriver.com>:
->> >>> > commit 42a3b63bb2ca4996a3d1210a004eae2333f1119e
->> >>> >
->> >>> > Dave,
->> >>> >
->> >>> > Here are a few more fixes intended for the 3.2 release.  They are
->> >>> > all small and narrowly focused.
->> >>>
->> >>> John, I've made a mistake and didn't use [PATCH 3.2] header to make it
->> >>> clean my patch is fix. Could you take a look at
->> >>> [PATCH] bcma: support for suspend and resume
->> >>> please?
->> >>>
->> >>> It's not one-liner, but fixes lock ups, which I believe - we really
->> >>> want to avoid.
->> >>
->> >> It's late in the release cycle, and Dave specifically asked me to slow down.
->> >>
->> >> Are these suspend/resume lockups a regression?  Or have they always
->> >> been there?  Do they happen to everyone?
->> >
->> > The bug is present since first days of bcma. That's why I even decided
->> > to add stable to CC.
->> >
->> > Personally I've tested that only on 1 machine (I don't have more
->> > suspendable machines with mini PCIe slot). However all Macbook 8.1/8.2
->> > users have to remove b43 & bcma before suspending [0], they complain
->> > about that since ever.
->> >
->> > Arend: I know you're also complaining for suspend in bcma. Can you
->> > comment on this?
->> >
->> > [0] http://ubuntuforums.org/showthread.php?t=1695746
->>
->> User nephyrin on #bcm-users has confirmed this patch fixes
->> suspend&resume for him. Without this patch he got deadlock without
->> seeing any kernel panic logs - quite an ugly case.
->>
->> I still think this patch may be worth taking as fix and backporting too.
->
-> What patch specifically?  What is the git commit id of it in Linus's
-> tree?  Without that information, telling stable@ about it is
-> pointless...
+On Tue, Jan 03, 2012 at 09:20:44PM +0100, Jens Axboe wrote:
+> On 2012-01-03 21:09, Tejun Heo wrote:
+> > On Tue, Jan 03, 2012 at 09:59:22AM -0800, Tejun Heo wrote:
+> >> That should have been service tree.  I couldn't find more missing
+> >> removals other than the one Shaohua's patch already fixed.  Close
+> >> cooperator selection in cfq_select_queue() seems suspicious tho.  I
+> >> can't see what prevents it from returning an empty coopeator cfqq.
+> >> I'm trying to verify whether that's the case.  Will update when I know
+> >> more.
+> > 
+> > While testing, found another bug.
+> > 
+> >  Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> >  Last user: [<ffffffff813a82ee>](cfq_put_queue+0x7e/0xd0)
+> >  070: e8 32 ab 1d 00 88 ff ff e8 32 ab 1d 00 88 ff ff  .2.......2......
+> >  Prev obj: start=ffff88001dab3178, len=232
+> >  Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+> >  Last user: [<ffffffff813a82ee>](cfq_put_queue+0x7e/0xd0)
+> >  000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> >  010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+> >  Next obj: start=ffff88001dab3378, len=232
+> >  Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+> >  Last user: [<ffffffff813a8e53>](cfq_get_queue+0x153/0x670)
+> >  000: 02 00 00 00 21 01 00 00 e0 c9 b1 1d 00 88 ff ff  ....!...........
+> >  010: 89 96 ae 18 00 88 ff ff 00 00 00 00 00 00 00 00  ................
+> > 
+> > The field at 0x70 which is being updated after being freed is
+> > cfqq->fifo.  Interestingly, it didn't lead to any visible failure.
+> 
+> That's pretty odd. Given Hughs report as well, it sure does sound like
+> we now have some life time issues with cfqq's.
 
-Sorry Greg, it's about
+Hmmm... I disabled cfqq merge logic (commented out
+cfq_close_cooperator() and the following cfq_setup_merge() calls) in
+cfq_select_queue() and neither is triggering for quite a while now.
+Maybe cfqq refcnt is getting borked over cfqq merging / splitting?  It
+would also explain the low frequency of the issue too.  I'll try to
+further isolate it but It would be awesome if someone more familiar
+with the logic can go over that part.
 
-commit 775ab52142b02237a54184238e922251c59a2b5c
-Author: Rafał Miłecki <zajec5@gmail.com>
-Date:   Fri Dec 9 22:16:07 2011 +0100
-
-    bcma: support for suspend and resume
-
-    bcma used to lock up machine without enabling PCI or initializing CC.
-
-    Cc: stable@vger.kernel.org
-    Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-    Signed-off-by: John W. Linville <linville@tuxdriver.com>
-
-it's located in wireless-testing:
-git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-testing.git
-
-John didn't pass this to Linus yet.
+Thanks.
 
 -- 
-Rafał
+tejun
