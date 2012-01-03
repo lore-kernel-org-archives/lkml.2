@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab2ACHJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 02:09:07 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:35966 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab2ACHJF (ORCPT
+	id S1751599Ab2ACHNc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 02:13:32 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:16896 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab2ACHNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 02:09:05 -0500
-Date: Tue, 3 Jan 2012 18:08:54 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>, Linus <torvalds@linux-foundation.org>
-Subject: linux-next: build failure after merge of the s5p tree
-Message-Id: <20120103180854.e9bff732db50c0fa9afd2967@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Jan_2012_18_08_54_+1100_dBBZIUY0H9Ll6HtI"
+	Tue, 3 Jan 2012 02:13:31 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 02 Jan 2012 23:13:30 -0800
+From: Laxman Dewangan <ldewangan.com@nvidia.com>
+To: broonie@opensource.wolfsonmicro.com, lrg@ti.com
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-tegra@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V2] regulator: Add check for supply rail
+Date: Tue,  3 Jan 2012 12:41:40 +0530
+Message-Id: <1325574700-3798-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Jan_2012_18_08_54_+1100_dBBZIUY0H9Ll6HtI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Laxman Dewangan <ldewangan@nvidia.com>
 
-Hi Kukjin,
+When consumer of any rails query about whether rail is enabled
+or not, the function regulator_is_enabled() should return enabled
+only if requested rail and supply rail (both) are enabled.
+If any one of these rails is enabled then function should return as
+not enabled.
 
-After merging the s5p tree, today's linux-next build (powerpc
-ppc64_defconfig) failed badly.   The problem is that you have merged into
-your tree a version of the driver-core tree that I reported broken on Dec
-28.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+The commit message and synopsis is changed in this patch.
 
-Presumably you merged the driver-core tree to fix up some conflicts I
-have reported.  Don't do that, please.  Either leave them for Linus to
-fix up, or do a merge of Linus' tree after he has merged the (hopefully
-fixed) driver-core tree during the merge window. Or send him your tree
-unmerged with the merged version available for him to use if he wants to.
+ drivers/regulator/core.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-I have used the s5p tree from next-20111228 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index dbdebed..d914435 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1701,6 +1701,12 @@ int regulator_is_enabled(struct regulator *regulator)
+ {
+ 	int ret;
+ 
++	if (regulator->rdev->supply) {
++		ret = regulator_is_enabled(regulator->rdev->supply);
++		if (ret <= 0)
++			return ret;
++	}
++
+ 	mutex_lock(&regulator->rdev->mutex);
+ 	ret = _regulator_is_enabled(regulator->rdev);
+ 	mutex_unlock(&regulator->rdev->mutex);
+-- 
+1.7.1.1
 
---Signature=_Tue__3_Jan_2012_18_08_54_+1100_dBBZIUY0H9Ll6HtI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPAqmGAAoJEECxmPOUX5FEYVMQAI+uPy7yED9DKQISd9O66WOg
-OSI8iDonqS234UFRaLqNVq/G9Qb2qdVWW/7AE+EmuyW7MEFw249mC+x0kTlPDATY
-AcfVQ/M5YvQW5z+8sTNAEihiVr808SsJ6HRKVgjAMXCHmN8Vx0hInR42JpvLc8Nu
-JGTB08juPuhKo2XdgyjN9bkP1v/4DlLXIikp6wK7/zubshGpY+T0Z9FL58EOufyq
-uShFRmLxaIF04M0SfJVAuXdpBV/C7URriVXw72j0OXbKhOr5qsy2Hm/1HidWx3Am
-0btMKIRDnk6HvXv+EyaafZP23stkawYSxvDClUllL1C0VlJtBPG4g9323GRqnwsd
-OxtRDDUwU4zJpj1BlOTD3apceVYWfWidwL3NuPY/tclOXyD37GWyahyQKeWxEoCd
-pEBNeDUEU1L7ZES/HFsvaOdn9M25+wmRLgaJq+j4gi2IPUif01q3ZvIcOowxos5u
-5iQUdc8xZkBW6kY6iMHtnE9mgwh39/aJkECu3l8j88cuVj1BeEWyx8BBgkDP4hOJ
-n5WDpwjkBNDK68dJKdG4+J9qcqMYUj4L6t/3CtYBBK239ojdjuL/3IAjZs8rBV+S
-+7lYBek6XT56/oENHDhL39P76tg8I1ua1YbxXZUsVqjknh3cdVCqq/UglZBSsRGo
-88XatwlVrMgQZUdbetGF
-=hfDj
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Jan_2012_18_08_54_+1100_dBBZIUY0H9Ll6HtI--
