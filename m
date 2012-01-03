@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755481Ab2ACWg3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:36:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39545 "EHLO mx2.suse.de"
+	id S1755505Ab2ACWhG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:37:06 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39635 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755442Ab2ACWgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:36:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:32 2012
-Message-Id: <20120103223032.235859136@clark.kroah.org>
+	id S1755548Ab2ACWg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:36:57 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
+Message-Id: <20120103223035.538606821@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:29 -0800
+Date: Tue, 03 Jan 2012 14:30:08 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [11/67] mac80211: fix another race in aggregation start
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
+Subject: [50/67] sparc: Fix handling of orig_i0 wrt. debugging when restarting syscalls.
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,166 +24,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
 
-commit 15062e6a8524f5977f2cbdf6e3eb2f144262f74e upstream.
+From: "David S. Miller" <davem@davemloft.net>
 
-Emmanuel noticed that when mac80211 stops the queues
-for aggregation that can leave a packet pending. This
-packet will be given to the driver after the AMPDU
-callback, but as a non-aggregated packet which messes
-up the sequence number etc.
+[ A combination of upstream commits 1d299bc7732c34d85bd43ac1a8745f5a2fed2078 and
+  e88d2468718b0789b4c33da2f7e1cef2a1eee279 ]
 
-I also noticed by looking at the code that if packets
-are being processed while we clear the WANT_START bit,
-they might see it cleared already and queue up on
-tid_tx->pending. If the driver then rejects the new
-aggregation session we leak the packet.
+Although we provide a proper way for a debugger to control whether
+syscall restart occurs, we run into problems because orig_i0 is not
+saved and restored properly.
 
-Fix both of these issues by changing this code to not
-stop the queues at all. Instead, let packets queue up
-on the tid_tx->pending queue instead of letting them
-get to the driver, and add code to recover properly
-in case the driver rejects the session.
+Luckily we can solve this problem without having to make debuggers
+aware of the issue.  Across system calls, several registers are
+considered volatile and can be safely clobbered.
 
-(The patch looks large because it has to move two
-functions to before their new use.)
+Therefore we use the pt_regs save area of one of those registers, %g6,
+as a place to save and restore orig_i0.
 
-Reported-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Debuggers transparently will do the right thing because they save and
+restore this register already.
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- net/mac80211/agg-tx.c |   86 +++++++++++++++++++++++---------------------------
- 1 file changed, 41 insertions(+), 45 deletions(-)
+ arch/sparc/kernel/signal32.c  |   18 ++++++++++--------
+ arch/sparc/kernel/signal_32.c |   30 +++++++++++++++++++++++++-----
+ arch/sparc/kernel/signal_64.c |   42 ++++++++++++++++++++++++++++--------------
+ 3 files changed, 63 insertions(+), 27 deletions(-)
 
---- a/net/mac80211/agg-tx.c
-+++ b/net/mac80211/agg-tx.c
-@@ -304,6 +304,38 @@ ieee80211_wake_queue_agg(struct ieee8021
- 	__release(agg_queue);
- }
- 
-+/*
-+ * splice packets from the STA's pending to the local pending,
-+ * requires a call to ieee80211_agg_splice_finish later
-+ */
-+static void __acquires(agg_queue)
-+ieee80211_agg_splice_packets(struct ieee80211_local *local,
-+			     struct tid_ampdu_tx *tid_tx, u16 tid)
-+{
-+	int queue = ieee80211_ac_from_tid(tid);
-+	unsigned long flags;
-+
-+	ieee80211_stop_queue_agg(local, tid);
-+
-+	if (WARN(!tid_tx, "TID %d gone but expected when splicing aggregates"
-+			  " from the pending queue\n", tid))
-+		return;
-+
-+	if (!skb_queue_empty(&tid_tx->pending)) {
-+		spin_lock_irqsave(&local->queue_stop_reason_lock, flags);
-+		/* copy over remaining packets */
-+		skb_queue_splice_tail_init(&tid_tx->pending,
-+					   &local->pending[queue]);
-+		spin_unlock_irqrestore(&local->queue_stop_reason_lock, flags);
-+	}
-+}
-+
-+static void __releases(agg_queue)
-+ieee80211_agg_splice_finish(struct ieee80211_local *local, u16 tid)
-+{
-+	ieee80211_wake_queue_agg(local, tid);
-+}
-+
- void ieee80211_tx_ba_session_handle_start(struct sta_info *sta, int tid)
+--- a/arch/sparc/kernel/signal32.c
++++ b/arch/sparc/kernel/signal32.c
+@@ -829,21 +829,23 @@ static inline void syscall_restart32(uns
+  * want to handle. Thus you cannot kill init even with a SIGKILL even by
+  * mistake.
+  */
+-void do_signal32(sigset_t *oldset, struct pt_regs * regs,
+-		 int restart_syscall, unsigned long orig_i0)
++void do_signal32(sigset_t *oldset, struct pt_regs * regs)
  {
- 	struct tid_ampdu_tx *tid_tx;
-@@ -315,19 +347,17 @@ void ieee80211_tx_ba_session_handle_star
- 	tid_tx = rcu_dereference_protected_tid_tx(sta, tid);
+ 	struct k_sigaction ka;
++	unsigned long orig_i0;
++	int restart_syscall;
+ 	siginfo_t info;
+ 	int signr;
+ 	
+ 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
  
- 	/*
--	 * While we're asking the driver about the aggregation,
--	 * stop the AC queue so that we don't have to worry
--	 * about frames that came in while we were doing that,
--	 * which would require us to put them to the AC pending
--	 * afterwards which just makes the code more complex.
-+	 * Start queuing up packets for this aggregation session.
-+	 * We're going to release them once the driver is OK with
-+	 * that.
+-	/* If the debugger messes with the program counter, it clears
+-	 * the "in syscall" bit, directing us to not perform a syscall
+-	 * restart.
+-	 */
+-	if (restart_syscall && !pt_regs_is_syscall(regs))
+-		restart_syscall = 0;
++	restart_syscall = 0;
++	orig_i0 = 0;
++	if (pt_regs_is_syscall(regs) &&
++	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY))) {
++		restart_syscall = 1;
++		orig_i0 = regs->u_regs[UREG_G6];
++	}
+ 
+ 	if (signr > 0) {
+ 		if (restart_syscall)
+--- a/arch/sparc/kernel/signal_32.c
++++ b/arch/sparc/kernel/signal_32.c
+@@ -525,10 +525,26 @@ static void do_signal(struct pt_regs *re
+ 	siginfo_t info;
+ 	int signr;
+ 
++	/* It's a lot of work and synchronization to add a new ptrace
++	 * register for GDB to save and restore in order to get
++	 * orig_i0 correct for syscall restarts when debugging.
++	 *
++	 * Although it should be the case that most of the global
++	 * registers are volatile across a system call, glibc already
++	 * depends upon that fact that we preserve them.  So we can't
++	 * just use any global register to save away the orig_i0 value.
++	 *
++	 * In particular %g2, %g3, %g4, and %g5 are all assumed to be
++	 * preserved across a system call trap by various pieces of
++	 * code in glibc.
++	 *
++	 * %g7 is used as the "thread register".   %g6 is not used in
++	 * any fixed manner.  %g6 is used as a scratch register and
++	 * a compiler temporary, but it's value is never used across
++	 * a system call.  Therefore %g6 is usable for orig_i0 storage.
++	 */
+ 	if (pt_regs_is_syscall(regs) && (regs->psr & PSR_C))
+-		restart_syscall = 1;
+-	else
+-		restart_syscall = 0;
++		regs->u_regs[UREG_G6] = orig_i0;
+ 
+ 	if (test_thread_flag(TIF_RESTORE_SIGMASK))
+ 		oldset = &current->saved_sigmask;
+@@ -541,8 +557,12 @@ static void do_signal(struct pt_regs *re
+ 	 * the software "in syscall" bit, directing us to not perform
+ 	 * a syscall restart.
  	 */
--	ieee80211_stop_queue_agg(local, tid);
--
- 	clear_bit(HT_AGG_STATE_WANT_START, &tid_tx->state);
+-	if (restart_syscall && !pt_regs_is_syscall(regs))
+-		restart_syscall = 0;
++	restart_syscall = 0;
++	if (pt_regs_is_syscall(regs) && (regs->psr & PSR_C)) {
++		restart_syscall = 1;
++		orig_i0 = regs->u_regs[UREG_G6];
++	}
++
  
- 	/*
--	 * make sure no packets are being processed to get
--	 * valid starting sequence number
-+	 * Make sure no packets are being processed. This ensures that
-+	 * we have a valid starting sequence number and that in-flight
-+	 * packets have been flushed out and no packets for this TID
-+	 * will go into the driver during the ampdu_action call.
- 	 */
- 	synchronize_net();
+ 	if (signr > 0) {
+ 		if (restart_syscall)
+--- a/arch/sparc/kernel/signal_64.c
++++ b/arch/sparc/kernel/signal_64.c
+@@ -535,11 +535,27 @@ static void do_signal(struct pt_regs *re
+ 	siginfo_t info;
+ 	int signr;
+ 	
++	/* It's a lot of work and synchronization to add a new ptrace
++	 * register for GDB to save and restore in order to get
++	 * orig_i0 correct for syscall restarts when debugging.
++	 *
++	 * Although it should be the case that most of the global
++	 * registers are volatile across a system call, glibc already
++	 * depends upon that fact that we preserve them.  So we can't
++	 * just use any global register to save away the orig_i0 value.
++	 *
++	 * In particular %g2, %g3, %g4, and %g5 are all assumed to be
++	 * preserved across a system call trap by various pieces of
++	 * code in glibc.
++	 *
++	 * %g7 is used as the "thread register".   %g6 is not used in
++	 * any fixed manner.  %g6 is used as a scratch register and
++	 * a compiler temporary, but it's value is never used across
++	 * a system call.  Therefore %g6 is usable for orig_i0 storage.
++	 */
+ 	if (pt_regs_is_syscall(regs) &&
+-	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY))) {
+-		restart_syscall = 1;
+-	} else
+-		restart_syscall = 0;
++	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY)))
++		regs->u_regs[UREG_G6] = orig_i0;
  
-@@ -341,17 +371,15 @@ void ieee80211_tx_ba_session_handle_star
- 					" tid %d\n", tid);
- #endif
- 		spin_lock_bh(&sta->lock);
-+		ieee80211_agg_splice_packets(local, tid_tx, tid);
- 		ieee80211_assign_tid_tx(sta, tid, NULL);
-+		ieee80211_agg_splice_finish(local, tid);
- 		spin_unlock_bh(&sta->lock);
+ 	if (current_thread_info()->status & TS_RESTORE_SIGMASK)
+ 		oldset = &current->saved_sigmask;
+@@ -548,22 +564,20 @@ static void do_signal(struct pt_regs *re
  
--		ieee80211_wake_queue_agg(local, tid);
- 		kfree_rcu(tid_tx, rcu_head);
+ #ifdef CONFIG_COMPAT
+ 	if (test_thread_flag(TIF_32BIT)) {
+-		extern void do_signal32(sigset_t *, struct pt_regs *,
+-					int restart_syscall,
+-					unsigned long orig_i0);
+-		do_signal32(oldset, regs, restart_syscall, orig_i0);
++		extern void do_signal32(sigset_t *, struct pt_regs *);
++		do_signal32(oldset, regs);
  		return;
  	}
+ #endif	
  
--	/* we can take packets again now */
--	ieee80211_wake_queue_agg(local, tid);
--
- 	/* activate the timer for the recipient's addBA response */
- 	mod_timer(&tid_tx->addba_resp_timer, jiffies + ADDBA_RESP_INTERVAL);
- #ifdef CONFIG_MAC80211_HT_DEBUG
-@@ -471,38 +499,6 @@ int ieee80211_start_tx_ba_session(struct
- }
- EXPORT_SYMBOL(ieee80211_start_tx_ba_session);
+ 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
  
--/*
-- * splice packets from the STA's pending to the local pending,
-- * requires a call to ieee80211_agg_splice_finish later
-- */
--static void __acquires(agg_queue)
--ieee80211_agg_splice_packets(struct ieee80211_local *local,
--			     struct tid_ampdu_tx *tid_tx, u16 tid)
--{
--	int queue = ieee80211_ac_from_tid(tid);
--	unsigned long flags;
--
--	ieee80211_stop_queue_agg(local, tid);
--
--	if (WARN(!tid_tx, "TID %d gone but expected when splicing aggregates"
--			  " from the pending queue\n", tid))
--		return;
--
--	if (!skb_queue_empty(&tid_tx->pending)) {
--		spin_lock_irqsave(&local->queue_stop_reason_lock, flags);
--		/* copy over remaining packets */
--		skb_queue_splice_tail_init(&tid_tx->pending,
--					   &local->pending[queue]);
--		spin_unlock_irqrestore(&local->queue_stop_reason_lock, flags);
--	}
--}
--
--static void __releases(agg_queue)
--ieee80211_agg_splice_finish(struct ieee80211_local *local, u16 tid)
--{
--	ieee80211_wake_queue_agg(local, tid);
--}
--
- static void ieee80211_agg_tx_operational(struct ieee80211_local *local,
- 					 struct sta_info *sta, u16 tid)
- {
+-	/* If the debugger messes with the program counter, it clears
+-	 * the software "in syscall" bit, directing us to not perform
+-	 * a syscall restart.
+-	 */
+-	if (restart_syscall && !pt_regs_is_syscall(regs))
+-		restart_syscall = 0;
++	restart_syscall = 0;
++	if (pt_regs_is_syscall(regs) &&
++	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY))) {
++		restart_syscall = 1;
++		orig_i0 = regs->u_regs[UREG_G6];
++	}
+ 
+ 	if (signr > 0) {
+ 		if (restart_syscall)
 
 
