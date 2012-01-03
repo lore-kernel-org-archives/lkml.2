@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab2ACWlB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:41:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40304 "EHLO mx2.suse.de"
+	id S932076Ab2ACWlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:41:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40355 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755934Ab2ACWk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:40:56 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:24 2012
-Message-Id: <20120103223324.882635550@clark.kroah.org>
+	id S1756273Ab2ACWlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:15 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:22 2012
+Message-Id: <20120103223322.926106871@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:19 -0800
+Date: Tue, 03 Jan 2012 14:32:56 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [46/75] watchdog: hpwdt: Changes to handle NX secure bit in 32bit path
+        alan@lxorguk.ukuu.org.uk, Frantisek Hrbata <fhrbata@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>
+Subject: [23/75] oom: fix integer overflow of points in oom_badness
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,45 +26,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
+From: Frantisek Hrbata <fhrbata@redhat.com>
 
-commit e67d668e147c3b4fec638c9e0ace04319f5ceccd upstream.
+commit ff05b6f7ae762b6eb464183eec994b28ea09f6dd upstream.
 
-This patch makes use of the set_memory_x() kernel API in order
-to make necessary BIOS calls to source NMIs.
+An integer overflow will happen on 64bit archs if task's sum of rss,
+swapents and nr_ptes exceeds (2^31)/1000 value.  This was introduced by
+commit
 
-This is needed for SLES11 SP2 and the latest upstream kernel as it appears
-the NX Execute Disable has grown in its control.
+f755a04 oom: use pte pages in OOM score
 
-Signed-off by: Thomas Mingarelli <thomas.mingarelli@hp.com>
-Signed-off by: Wim Van Sebroeck <wim@iguana.be>
+where the oom score computation was divided into several steps and it's no
+longer computed as one expression in unsigned long(rss, swapents, nr_pte
+are unsigned long), where the result value assigned to points(int) is in
+range(1..1000).  So there could be an int overflow while computing
+
+176          points *= 1000;
+
+and points may have negative value. Meaning the oom score for a mem hog task
+will be one.
+
+196          if (points <= 0)
+197                  return 1;
+
+For example:
+[ 3366]     0  3366 35390480 24303939   5       0             0 oom01
+Out of memory: Kill process 3366 (oom01) score 1 or sacrifice child
+
+Here the oom1 process consumes more than 24303939(rss)*4096~=92GB physical
+memory, but it's oom score is one.
+
+In this situation the mem hog task is skipped and oom killer kills another and
+most probably innocent task with oom score greater than one.
+
+The points variable should be of type long instead of int to prevent the
+int overflow.
+
+Signed-off-by: Frantisek Hrbata <fhrbata@redhat.com>
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/watchdog/hpwdt.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ mm/oom_kill.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/watchdog/hpwdt.c
-+++ b/drivers/watchdog/hpwdt.c
-@@ -230,6 +230,7 @@ static int __devinit cru_detect(unsigned
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -162,7 +162,7 @@ static bool oom_unkillable_task(struct t
+ unsigned int oom_badness(struct task_struct *p, struct mem_cgroup *mem,
+ 		      const nodemask_t *nodemask, unsigned long totalpages)
+ {
+-	int points;
++	long points;
  
- 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
- 
-+	set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
- 	asminline_call(&cmn_regs, bios32_entrypoint);
- 
- 	if (cmn_regs.u1.ral != 0) {
-@@ -247,8 +248,10 @@ static int __devinit cru_detect(unsigned
- 		if ((physical_bios_base + physical_bios_offset)) {
- 			cru_rom_addr =
- 				ioremap(cru_physical_address, cru_length);
--			if (cru_rom_addr)
-+			if (cru_rom_addr) {
-+				set_memory_x((unsigned long)cru_rom_addr, cru_length);
- 				retval = 0;
-+			}
- 		}
- 
- 		printk(KERN_DEBUG "hpwdt: CRU Base Address:   0x%lx\n",
+ 	if (oom_unkillable_task(p, mem, nodemask))
+ 		return 0;
 
 
