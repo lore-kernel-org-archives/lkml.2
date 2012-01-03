@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab2ACXIu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:08:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39297 "EHLO mx2.suse.de"
+	id S1753935Ab2ACWeq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:34:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39268 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754098Ab2ACWew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:34:52 -0500
+	id S1753426Ab2ACWel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:34:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:31 2012
-Message-Id: <20120103223031.893661534@clark.kroah.org>
+Message-Id: <20120103223031.626189783@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:25 -0800
+Date: Tue, 03 Jan 2012 14:29:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [07/67] cfq-iosched: fix cfq_cic_link() race confition
+        alan@lxorguk.ukuu.org.uk, Matt Turner <mattst88@gmail.com>,
+        Nico Macrionitis <acrux@cruxppc.org>,
+        Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
+        John Stultz <john.stultz@linaro.org>
+Subject: [04/67] rtc: m41t80: Workaround broken alarm functionality
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +27,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: John Stultz <john.stultz@linaro.org>
 
-commit 5eb46851de3904cd1be9192fdacb8d34deadc1fc upstream.
+commit c3b79770e51ab1fd4201f3b54edf30113b9ce74f upstream.
 
-cfq_cic_link() has race condition. When some processes which shared ioc
-issue I/O to same block device simultaneously, cfq_cic_link() returns -EEXIST
-sometimes. The race condition might stop I/O by following steps:
+The m41t80 driver can read and set the alarm, but it doesn't
+seem to have a functional alarm irq.
 
-step  1: Process A: Issue an I/O to /dev/sda
-step  2: Process A: Get an ioc (iocA here) in get_io_context() which does not
-		    linked with a cic for the device
-step  3: Process A: Get a new cic for the device (cicA here) in
-		    cfq_alloc_io_context()
+This causes failures when the generic core sees alarm functions,
+but then cannot use them properly for things like UIE mode.
 
-step  4: Process B: Issue an I/O to /dev/sda
-step  5: Process B: Get iocA in get_io_context() since process A and B share the
-		    same ioc
-step  6: Process B: Get a new cic for the device (cicB here) in
-		    cfq_alloc_io_context() since iocA has not been linked with a
-		    cic for the device yet
+Disabling the alarm functions allows proper error reporting,
+and possible fallback to emulated modes. Once someone fixes
+the alarm irq functionality, this can be restored.
 
-step  7: Process A: Link cicA to iocA in cfq_cic_link()
-step  8: Process A: Dispatch I/O to driver and finish it
-
-step  9: Process B: Try to link cicB to iocA in cfq_cic_link()
-		    But it fails with showing "cfq: cic link failed!" kernel
-		    message, since iocA has already linked with cicA at step 7.
-step 10: Process B: Wait for finishig I/O in get_request_wait()
-		    The function does not wake up, when there is no I/O to the
-		    device.
-
-When cfq_cic_link() returns -EEXIST, it means ioc has already linked with cic.
-So when cfq_cic_link() return -EEXIST, retry cfq_cic_lookup().
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+CC: Matt Turner <mattst88@gmail.com>
+CC: Nico Macrionitis <acrux@cruxppc.org>
+CC: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Reported-by: Matt Turner <mattst88@gmail.com>
+Reported-by: Nico Macrionitis <acrux@cruxppc.org>
+Tested-by: Nico Macrionitis <acrux@cruxppc.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/cfq-iosched.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-m41t80.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3169,7 +3169,7 @@ static int cfq_cic_link(struct cfq_data
- 		}
- 	}
+--- a/drivers/rtc/rtc-m41t80.c
++++ b/drivers/rtc/rtc-m41t80.c
+@@ -357,10 +357,19 @@ static int m41t80_rtc_read_alarm(struct
+ static struct rtc_class_ops m41t80_rtc_ops = {
+ 	.read_time = m41t80_rtc_read_time,
+ 	.set_time = m41t80_rtc_set_time,
++	/*
++	 * XXX - m41t80 alarm functionality is reported broken.
++	 * until it is fixed, don't register alarm functions.
++	 *
+ 	.read_alarm = m41t80_rtc_read_alarm,
+ 	.set_alarm = m41t80_rtc_set_alarm,
++	*/
+ 	.proc = m41t80_rtc_proc,
++	/*
++	 * See above comment on broken alarm
++	 *
+ 	.alarm_irq_enable = m41t80_rtc_alarm_irq_enable,
++	*/
+ };
  
--	if (ret)
-+	if (ret && ret != -EEXIST)
- 		printk(KERN_ERR "cfq: cic link failed!\n");
- 
- 	return ret;
-@@ -3185,6 +3185,7 @@ cfq_get_io_context(struct cfq_data *cfqd
- {
- 	struct io_context *ioc = NULL;
- 	struct cfq_io_context *cic;
-+	int ret;
- 
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
- 
-@@ -3192,6 +3193,7 @@ cfq_get_io_context(struct cfq_data *cfqd
- 	if (!ioc)
- 		return NULL;
- 
-+retry:
- 	cic = cfq_cic_lookup(cfqd, ioc);
- 	if (cic)
- 		goto out;
-@@ -3200,7 +3202,12 @@ cfq_get_io_context(struct cfq_data *cfqd
- 	if (cic == NULL)
- 		goto err;
- 
--	if (cfq_cic_link(cfqd, ioc, cic, gfp_mask))
-+	ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
-+	if (ret == -EEXIST) {
-+		/* someone has linked cic to ioc already */
-+		cfq_cic_free(cic);
-+		goto retry;
-+	} else if (ret)
- 		goto err_free;
- 
- out:
+ #if defined(CONFIG_RTC_INTF_SYSFS) || defined(CONFIG_RTC_INTF_SYSFS_MODULE)
 
 
