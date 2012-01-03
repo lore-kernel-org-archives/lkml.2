@@ -1,50 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2ACTct (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 14:32:49 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34823 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751796Ab2ACTbz (ORCPT
+	id S1754460Ab2ACTje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 14:39:34 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46503 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189Ab2ACTjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 14:31:55 -0500
-X-Sasl-enc: 8h8sHtGBVqjLfrN6v9qUl0WT4rATGFyc3It6uEob6c2b 1325619114
-Date: Tue, 3 Jan 2012 11:29:51 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
-Subject: Re: Linux 3.0.15
-Message-ID: <20120103192951.GB1724@kroah.com>
-References: <20120103192936.GA1724@kroah.com>
+	Tue, 3 Jan 2012 14:39:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103192936.GA1724@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <1325616276-10304-1-git-send-email-sjg@chromium.org>
+References: <1325616276-10304-1-git-send-email-sjg@chromium.org>
+Date: Tue, 3 Jan 2012 11:39:31 -0800
+Message-ID: <CAOesGMiN_yOxDT1Xrn3LOU+D027+oC3fxTPkph-WzpVPE-86Mg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: Remove BUILD_BUG_ON from asm/bug.h
+From: Olof Johansson <olof@lixom.net>
+To: Simon Glass <sjg@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org, Olof Johansson <olofj@chromium.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index f4f577b..5b8c185 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 0
--SUBLEVEL = 14
-+SUBLEVEL = 15
- EXTRAVERSION =
- NAME = Sneaky Weasel
- 
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 13dfaab..e4c699d 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -286,7 +286,6 @@ void clockevents_exchange_device(struct clock_event_device *old,
- 	 * released list and do a notify add later.
- 	 */
- 	if (old) {
--		old->event_handler = clockevents_handle_noop;
- 		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
- 		list_del(&old->list);
- 		list_add(&old->list, &clockevents_released);
+On Tue, Jan 3, 2012 at 10:44 AM, Simon Glass <sjg@chromium.org> wrote:
+> BUILD_BUG_ON is defined in linux/kernel.h but that is not included by the
+> asm/bug.h header which uses it. This causes a build error:
+>
+> ...include/linux/mtd/map.h: In function 'inline_map_read':
+> ...include/linux/mtd/map.h:408:3: error: implicit declaration of function
+> 'BUILD_BUG_ON' [-Werror=implicit-function-declaration]
+>
+> The check is not essential and is not present for other architectures, so
+> just remove it.
+>
+> Signed-off-by: Simon Glass <sjg@chromium.org>
+
+Acked-by: Olof Johansson <olof@lixom.net>
+
+Simon, have you sent it to Russell's patch tracker? If not, please do.
+
+
+-Olof
