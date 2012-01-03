@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099Ab2ACWll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:41:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40393 "EHLO mx2.suse.de"
+	id S1756400Ab2ACWl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:41:56 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40436 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932085Ab2ACWli (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:38 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
-Message-Id: <20120103223323.437876252@clark.kroah.org>
+	id S1752952Ab2ACWlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:51 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:26 2012
+Message-Id: <20120103223326.273232554@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:02 -0800
+Date: Tue, 03 Jan 2012 14:33:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Gary Thomas <gary@mlbassoc.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [29/75] media: omap_vout: Fix compile error in 3.1
+        alan@lxorguk.ukuu.org.uk, Alexandru Juncu <ajuncu@ixiacom.com>,
+        Kunjan Naik <knaik@ixiacom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [62/75] llc: llc_cmsg_rcv was getting called after sk_eat_skb.
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,31 +26,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gary Thomas <gary@mlbassoc.com>
 
-commit d1ee8878a142f81ea1b40d602c6360b752829437 upstream.
+From: Alex Juncu <ajuncu@ixiacom.com>
 
-This patch is against the mainline v3.1 release (c3b92c8) and
-fixes a compile error when building for OMAP3+DSS+VOUT
+[ Upstream commit 9cef310fcdee12b49b8b4c96fd8f611c8873d284 ]
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Gary Thomas <gary@mlbassoc.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Received non stream protocol packets were calling llc_cmsg_rcv that used a
+skb after that skb was released by sk_eat_skb. This caused received STP
+packets to generate kernel panics.
+
+Signed-off-by: Alexandru Juncu <ajuncu@ixiacom.com>
+Signed-off-by: Kunjan Naik <knaik@ixiacom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
 ---
- drivers/media/video/omap/omap_vout.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/llc/af_llc.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/media/video/omap/omap_vout.c
-+++ b/drivers/media/video/omap/omap_vout.c
-@@ -38,6 +38,7 @@
- #include <linux/irq.h>
- #include <linux/videodev2.h>
- #include <linux/dma-mapping.h>
-+#include <linux/slab.h>
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -833,15 +833,15 @@ static int llc_ui_recvmsg(struct kiocb *
+ 		copied += used;
+ 		len -= used;
  
- #include <media/videobuf-dma-contig.h>
- #include <media/v4l2-device.h>
++		/* For non stream protcols we get one packet per recvmsg call */
++		if (sk->sk_type != SOCK_STREAM)
++			goto copy_uaddr;
++
+ 		if (!(flags & MSG_PEEK)) {
+ 			sk_eat_skb(sk, skb, 0);
+ 			*seq = 0;
+ 		}
+ 
+-		/* For non stream protcols we get one packet per recvmsg call */
+-		if (sk->sk_type != SOCK_STREAM)
+-			goto copy_uaddr;
+-
+ 		/* Partial read */
+ 		if (used + offset < skb->len)
+ 			continue;
+@@ -857,6 +857,12 @@ copy_uaddr:
+ 	}
+ 	if (llc_sk(sk)->cmsg_flags)
+ 		llc_cmsg_rcv(msg, skb);
++
++	if (!(flags & MSG_PEEK)) {
++			sk_eat_skb(sk, skb, 0);
++			*seq = 0;
++	}
++
+ 	goto out;
+ }
+ 
 
 
