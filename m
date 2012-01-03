@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755662Ab2ACWht (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:37:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39723 "EHLO mx2.suse.de"
+	id S1755762Ab2ACWiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:38:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39731 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755666Ab2ACWhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:37:45 -0500
+	id S1755707Ab2ACWhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:37:48 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:36 2012
-Message-Id: <20120103223036.543211022@clark.kroah.org>
+Message-Id: <20120103223036.627031682@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:20 -0800
+Date: Tue, 03 Jan 2012 14:30:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [62/67] iwlwifi: update SCD BC table for all SCD queues
+        alan@lxorguk.ukuu.org.uk, Sanjeev Premi <premi@ti.com>,
+        Keerthy <j-keerthy@ti.com>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: [63/67] mfd: Fix mismatch in twl4030 mutex lock-unlock
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,36 +25,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Sanjeev Premi <premi@ti.com>
 
-commit 96f1f05af76b601ab21a7dc603ae0a1cea4efc3d upstream.
+commit e178ccb33569da17dc897a08a3865441b813bdfb upstream.
 
-Since we configure all the queues as CHAINABLE, we need to update the
-byte count for all the queues, not only the AGGREGATABLE ones.
+A mutex is locked on entry into twl4030_madc_conversion().
+Immediate return on some error conditions leaves the
+mutex locked.
 
-Not doing so can confuse the SCD and make the fw assert.
+This patch ensures that mutex is always unlocked before
+leaving the function.
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Sanjeev Premi <premi@ti.com>
+Cc: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-tx.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ drivers/mfd/twl4030-madc.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
-@@ -778,10 +778,7 @@ int iwlagn_tx_skb(struct iwl_priv *priv,
- 	iwl_print_hex_dump(priv, IWL_DL_TX, (u8 *)tx_cmd, sizeof(*tx_cmd));
- 	iwl_print_hex_dump(priv, IWL_DL_TX, (u8 *)tx_cmd->hdr, hdr_len);
- 
--	/* Set up entry for this TFD in Tx byte-count array */
--	if (info->flags & IEEE80211_TX_CTL_AMPDU)
--		iwlagn_txq_update_byte_cnt_tbl(priv, txq,
--					       le16_to_cpu(tx_cmd->len));
-+	iwlagn_txq_update_byte_cnt_tbl(priv, txq, le16_to_cpu(tx_cmd->len));
- 
- 	pci_dma_sync_single_for_device(priv->pci_dev, txcmd_phys,
- 				       firstlen, PCI_DMA_BIDIRECTIONAL);
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -530,13 +530,13 @@ int twl4030_madc_conversion(struct twl40
+ 	if (ret) {
+ 		dev_err(twl4030_madc->dev,
+ 			"unable to write sel register 0x%X\n", method->sel + 1);
+-		return ret;
++		goto out;
+ 	}
+ 	ret = twl_i2c_write_u8(TWL4030_MODULE_MADC, ch_lsb, method->sel);
+ 	if (ret) {
+ 		dev_err(twl4030_madc->dev,
+ 			"unable to write sel register 0x%X\n", method->sel + 1);
+-		return ret;
++		goto out;
+ 	}
+ 	/* Select averaging for all channels if do_avg is set */
+ 	if (req->do_avg) {
+@@ -546,7 +546,7 @@ int twl4030_madc_conversion(struct twl40
+ 			dev_err(twl4030_madc->dev,
+ 				"unable to write avg register 0x%X\n",
+ 				method->avg + 1);
+-			return ret;
++			goto out;
+ 		}
+ 		ret = twl_i2c_write_u8(TWL4030_MODULE_MADC,
+ 				       ch_lsb, method->avg);
+@@ -554,7 +554,7 @@ int twl4030_madc_conversion(struct twl40
+ 			dev_err(twl4030_madc->dev,
+ 				"unable to write sel reg 0x%X\n",
+ 				method->sel + 1);
+-			return ret;
++			goto out;
+ 		}
+ 	}
+ 	if (req->type == TWL4030_MADC_IRQ_ONESHOT && req->func_cb != NULL) {
 
 
