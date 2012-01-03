@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab2ACUP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:15:28 -0500
-Received: from gerard.telenet-ops.be ([195.130.132.48]:52689 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754869Ab2ACUPY (ORCPT
+	id S1755064Ab2ACUQf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:16:35 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:60729 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755016Ab2ACUQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:15:24 -0500
-Message-ID: <4F0361D7.3000602@pandora.be>
-Date: Tue, 03 Jan 2012 21:15:19 +0100
-From: Bart De Schuymer <bdschuym@pandora.be>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: Stephen Hemminger <shemminger@vyatta.com>, davem@davemloft.net,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with
- bridge-nf-call-ip(6)tables=0
-References: <4F025A07.2000304@nod.at> <1325597164-13459-1-git-send-email-richard@nod.at> <1325597164-13459-2-git-send-email-richard@nod.at> <20120103081521.2fec3a29@nehalam.linuxnetplumber.net> <4F033E11.5060707@nod.at>
-In-Reply-To: <4F033E11.5060707@nod.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Antivirus: avast! (VPS 120103-0, 03/01/2012), Outbound message
-X-Antivirus-Status: Clean
+	Tue, 3 Jan 2012 15:16:33 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Joerg Roedel <joerg.roedel@amd.com>, kvm@vger.kernel.org,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, arnaldo.melo@gmail.com
+Subject: [GIT PULL 0/5] perf/core fixes and improvements
+Date: Tue,  3 Jan 2012 18:16:19 -0200
+Message-Id: <1325621784-10683-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 3/01/2012 18:42, Richard Weinberger schreef:
-> Am 03.01.2012 17:15, schrieb Stephen Hemminger:
->> On Tue,  3 Jan 2012 14:26:04 +0100
->> Richard Weinberger<richard@nod.at>  wrote:
->>
->>> If net.bridge.bridge-nf-call-iptables or net.bridge.bridge-nf-call-ip6tables
->>> are set to zero xt_physdev has no effect because skb->nf_bridge has not been set up.
->>>
->>> Signed-off-by: Richard Weinberger<richard@nod.at>
->> I am not sure if this is a valid configuration. The setting of sysctl is saying
->> "don't do iptables on bridge (since I won't be using it)" and then you are later
->> doing iptables and expecting the settings as if the iptables setup was being
->> done.
-> I don't think so.
->
-> Also rules like this one are broken:
-> iptables -A INPUT -i bridge0 -m physdev --physdev-in eth0 -j ...
->
-> No firewalling is done on the bridge, xt_physdev is only using some meta
-> information.
->
-> At least a big fat warning would be nice that xt_physdev does not work
-> if bridge-nf-call-iptables=0.
-> It took me some time to figure out why my firewall rule set gone nuts on
-> RHEL6...
+Hi Ingo,
 
-The documentation is probably not explicit enough, but I would keep the 
-behavior as it is now. Setting bridge-nf-call-iptables to 0 makes 
-iptables behave as if bridge-netfilter was not enabled at compilation.
-Anyway, your patch is almost certainly flawed since the fact that 
-skb->nf_bridge can be NULL is used as part of the logic in 
-br_netfilter.c: it indicates that bridge-nf-call-iptables was 0 when the 
-packet was first processed by bridge-netfilter and should therefore not 
-be given to iptables in any other netfilter hook.
+        Please consider pulling from:
 
-cheers,
-Bart
+git://github.com/acmel/linux.git perf/core
 
+Regards,
+
+- Arnaldo
+
+Joerg Roedel (1):
+  perf kvm: Fix copy & paste error in description
+
+Namhyung Kim (4):
+  perf session: Remove impossible condition check
+  perf stat: Introduce get_ratio_color() helper
+  perf top: Fix a memory leak
+  perf script: Kill script_spec__delete
+
+ tools/perf/builtin-kvm.c    |    2 +-
+ tools/perf/builtin-script.c |   13 +------
+ tools/perf/builtin-stat.c   |   91 ++++++++++++++++--------------------------
+ tools/perf/builtin-top.c    |    1 -
+ tools/perf/util/session.c   |    3 +-
+ 5 files changed, 38 insertions(+), 72 deletions(-)
 
 -- 
-Bart De Schuymer
-www.artinalgorithms.be
+1.7.8.rc0.35.gee6df
 
