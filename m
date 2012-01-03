@@ -1,133 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab2ACU1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:27:54 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40247 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2ACU1w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:27:52 -0500
-Date: Tue, 3 Jan 2012 12:27:16 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, gregkh@suse.de
-Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
-Message-ID: <20120103202716.GA8384@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <1324977203.28904.1.camel@lappy>
- <20111228042959.GA2477@linux.vnet.ibm.com>
+	id S1755098Ab2ACU3J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:29:09 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753406Ab2ACU3F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:29:05 -0500
+Message-ID: <4F03650D.8050200@nod.at>
+Date: Tue, 03 Jan 2012 21:29:01 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111228042959.GA2477@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010320-6148-0000-0000-000002602EA4
+To: Bart De Schuymer <bdschuym@pandora.be>
+CC: Stephen Hemminger <shemminger@vyatta.com>, davem@davemloft.net,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with
+ bridge-nf-call-ip(6)tables=0
+References: <4F025A07.2000304@nod.at> <1325597164-13459-1-git-send-email-richard@nod.at> <1325597164-13459-2-git-send-email-richard@nod.at> <20120103081521.2fec3a29@nehalam.linuxnetplumber.net> <4F033E11.5060707@nod.at> <4F0361D7.3000602@pandora.be>
+In-Reply-To: <4F0361D7.3000602@pandora.be>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig6E73FD4239D9CA1170A15979"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 08:29:59PM -0800, Paul E. McKenney wrote:
-> On Tue, Dec 27, 2011 at 11:13:23AM +0200, Sasha Levin wrote:
-> > On Mon, 2011-12-26 at 08:31 -0800, Paul E. McKenney wrote:
-> > > Except that when I try looking for task_notify_func() in current mainline,
-> > > I get nothing.
-> > > 
-> > > Where is task_notify_func() coming from? 
-> > 
-> > I was testing linux-next, it actually comes from the android tree:
-> > drivers/staging/android/lowmemorykiller.c
-> 
-> That does sound familiar...  I wonder if the stuff in staging is current
-> Android or historical stuff.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig6E73FD4239D9CA1170A15979
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-And memory did serve for once.  ;-)
+Am 03.01.2012 21:15, schrieb Bart De Schuymer:
+> The documentation is probably not explicit enough, but I would keep the=
 
-Current Android has the following for task_notify_func():
+> behavior as it is now. Setting bridge-nf-call-iptables to 0 makes
+> iptables behave as if bridge-netfilter was not enabled at compilation.
+> Anyway, your patch is almost certainly flawed since the fact that
+> skb->nf_bridge can be NULL is used as part of the logic in
+> br_netfilter.c: it indicates that bridge-nf-call-iptables was 0 when th=
+e
+> packet was first processed by bridge-netfilter and should therefore not=
 
-static int
-task_notify_func(struct notifier_block *self, unsigned long val, void *data)
-{
-	struct task_struct *task = data;
+> be given to iptables in any other netfilter hook.
 
-	if (task == lowmem_deathpending)
-		lowmem_deathpending = NULL;
+Thanks for the explanation!
 
-	return NOTIFY_OK;
-}
+Wouldn't it make sense to check for bridge-nf-call-iptables in xt_physdev=
+?
+So that the user gets warned that his iptables rule will never match...
 
-This is from https://android.googlesource.com/kernel/common.git.
+Thanks,
+//richard
 
-Commit 5545554aac04918ece318270d63cbfcb015577a9 fixed this problem.
-The commit is shown below, FYI.
 
-Greg, would it be possible to pull in the current Android code?  There
-have been a few fixes.  ;-)
 
-							Thanx, Paul
+--------------enig6E73FD4239D9CA1170A15979
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-------------------------------------------------------------------------
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
 
-commit 5545554aac04918ece318270d63cbfcb015577a9
-Author: Rabin Vincent <rabin.vincent@stericsson.com>
-Date:   Thu Sep 9 10:48:21 2010 +0530
+iQEcBAEBAgAGBQJPA2UNAAoJEN9758yqZn9esRYIAIk5GxS5s1dkDZwOKdvuUUCZ
+3AQddHjP1yAMsluheZCXjgZNJ6cItl0T+y+0iwKZow0oNHkjp8czgCfyF6W97xSm
+4fAKYDwAMfwiJsqunvOowVBo1+xFTVLBsOo9fAf/6zsRbKJrth2oNG3ijRa5iZuf
+mwbs1j3AdCWGUksF7vKVDemkO3eXFX8tdDbqfFKGfjdjPXRMo0AGzMkkNKZFfhJ8
+v1llsdO1y5+Z+G8fK3BOyHdUzaCUHqYtLJ4GEznF3IqyFXcSir51dhwkfnidAnUP
+rtKYds5Rd7WsbAnSseb0eJWMLHz4/XwqEdOJBpAG+TzLIZA48B8kST6DZdFoQCc=
+=LJRl
+-----END PGP SIGNATURE-----
 
-    lowmemorykiller: don't unregister notifier from atomic context
-    
-    The lowmemorykiller registers an atomic notifier for notfication of when
-    the task is freed.  From this atomic notifier callback, it removes the
-    atomic notifier via task_free_unregister().  This is incorrect because
-    atomic_notifier_chain_unregister() calls syncronize_rcu(), which can
-    sleep, which shouldn't be done from an atomic notifier.
-    
-    Fix this by registering the notifier during init, and only unregister it
-    if the lowmemorykiller is unloaded.
-    
-    Change-Id: I1577b04e617bc2b2e39dcb490fcfc9ce660eb7ec
-    Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-    Signed-off-by: Christian Bejram <christian.bejram@stericsson.com>
-
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index 8b67ac0..efbe556 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -71,10 +71,10 @@ static int
- task_notify_func(struct notifier_block *self, unsigned long val, void *data)
- {
- 	struct task_struct *task = data;
--	if (task == lowmem_deathpending) {
-+
-+	if (task == lowmem_deathpending)
- 		lowmem_deathpending = NULL;
--		task_free_unregister(&task_nb);
--	}
-+
- 	return NOTIFY_OK;
- }
- 
-@@ -168,7 +168,6 @@ static int lowmem_shrink(struct shrinker *s, int nr_to_scan, gfp_t gfp_mask)
- 			     selected->pid, selected->comm,
- 			     selected_oom_adj, selected_tasksize);
- 		lowmem_deathpending = selected;
--		task_free_register(&task_nb);
- 		force_sig(SIGKILL, selected);
- 		rem -= selected_tasksize;
- 	}
-@@ -185,6 +184,7 @@ static struct shrinker lowmem_shrinker = {
- 
- static int __init lowmem_init(void)
- {
-+	task_free_register(&task_nb);
- 	register_shrinker(&lowmem_shrinker);
- 	return 0;
- }
-@@ -192,6 +192,7 @@ static int __init lowmem_init(void)
- static void __exit lowmem_exit(void)
- {
- 	unregister_shrinker(&lowmem_shrinker);
-+	task_free_unregister(&task_nb);
- }
- 
- module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
-
+--------------enig6E73FD4239D9CA1170A15979--
