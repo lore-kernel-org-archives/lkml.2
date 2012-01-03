@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab2ACLyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 06:54:11 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40033 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752286Ab2ACLyI (ORCPT
+	id S1752801Ab2ACL4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 06:56:07 -0500
+Received: from smtp-out003.kontent.com ([81.88.40.217]:59087 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752286Ab2ACL4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 06:54:08 -0500
+	Tue, 3 Jan 2012 06:56:05 -0500
+From: Oliver Neukum <oliver@neukum.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: loading firmware while usermodehelper disabled.
+Date: Tue, 3 Jan 2012 12:57:47 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Jack Stone <jwjstone@fastmail.fm>, Matthew Garrett <mjg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org> <4F0220F5.30309@fastmail.fm> <20120103004220.084d61f3@pyramind.ukuu.org.uk>
+In-Reply-To: <20120103004220.084d61f3@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <4F02C50E.9030904@metafoo.de>
-References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-	<4F02C50E.9030904@metafoo.de>
-Date: Tue, 3 Jan 2012 17:24:07 +0530
-Message-ID: <CAJuYYwR8hnxJSfaXo4=RWCZ1HQZ1PHci+jY3K5b9ktWXryN0vA@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device tree support
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, jg1.han@samsung.com,
-        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
-        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
-        ben-linux@fluff.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201031257.47265.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars,
+Am Dienstag, 3. Januar 2012, 01:42:20 schrieb Alan Cox:
+> In that case however you don't want some generic firmware module knowing
+> all this crap, your driver can just request_firmware() the stuff as
+> modprobe and free it up on the module unload. For a typical 8bit firmware
+> of a few K you'll free a ton more memory unloading the module than the
+> firmware ! That I think actually covers the majority of devices under
+> discussion.
 
-On 3 January 2012 14:36, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 01/02/2012 06:54 AM, Thomas Abraham wrote:
->> The platform-lcd driver depends on platform-specific callbacks to setup the
->> lcd panel. These callbacks are supplied using driver's platform data. But
->> for adding device tree support for platform-lcd driver, providing such
->> callbacks is not possible (without using auxdata).
->>
->> Since the callbacks are usually lcd panel specific, it is possible to include
->> the lcd panel specific setup and control functionality in the platform-lcd
->> driver itself, thereby eliminating the need for supplying platform specific
->> callbacks to the driver. The platform-lcd driver can include support for
->> multiple lcd panels.
->>
->> This patchset removes the need for platform data for platform-lcd driver and
->> adds support which can be used to implement lcd panel specific functionality
->> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
->> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
->> This currently breaks build for other users of platform-lcd driver. Those can be
->> fixed if this approach is acceptable.
->
-> The whole approach looks rather backwards to me. The exact purpose of the
-> platform_lcd driver is to redirect the lcd driver callbacks to board code.
-> So by removing this support you not only break all the existing driver but
-> also create a driver which does nothing. Then you add another layer of
-> abstraction to implement custom drivers in this driver. A better approach in
-> my opinion is to simply implement these drivers as first level LCD drivers.
-> So leave the platform-lcd driver as it is and just add a gpio (or maybe
-> regulator) lcd driver instead.
+I am afraid it doesn't, at least not fully.
+We have many devices whose primary (operational) driver does not load
+the firmware. That job is left to a secondary driver or user space.
 
-The existing platform-lcd driver mostly depends on the platform
-callbacks for lcd panel power controls. Looking at the current users
-of platform-lcd driver, a majority of the users of platform-lcd driver
-use a gpio to enable/disable the display/power. The gpio is controlled
-by the platform callbacks which the platform-lcd driver calls.
+We could leave those secondary drivers and their firmware in RAM after
+their primary usage and except for a few pathological cases (which
+can be solved with a few udev rules preventively loading drivers) we'd
+be good, but we lack a mechanism for switching to a seconary driver
+and back during resumption.
 
-Hence, it is possible to extend the platform-lcd driver to include the
-functionality of managing the gpio for lcd control. The platform code
-is only expected to provide a gpio number to the platform-lcd driver.
-This allows consolidation of the all the different platform callbacks
-that use a gpio for simple enable/disable of the lcd display.
-
-But there are other users of platform-lcd that do lot more than just
-control a single gpio. For such cases, it is possible to reuse the
-existing infrastructure of platform-lcd driver and extend it to handle
-such lcd panel specific functionality.
-
-The main advantages that I see here is the consolidation of platform
-specific callbacks into the driver which inturn allows adding device
-tree support without depending on platform data which have pointers to
-platform specific functions. In the next version of this patchset, it
-will be ensured that no platform breaks due to this change.
-
-Would such a approach be useful and acceptable? Thanks for your
-feedback and comments.
-
-Regards,
-Thomas.
-
->
-> - Lars
+	Regards
+		Oliver
