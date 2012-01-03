@@ -1,314 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab2ACWig (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:38:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39810 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755837Ab2ACWi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:38:29 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
-Message-Id: <20120103223035.283761837@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:05 -0800
+	id S1755906Ab2ACWip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:38:45 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:36069 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755804Ab2ACWii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:38:38 -0500
+X-Sasl-enc: e+rQEkilgQg0pJSfHmvXZVQKYHi06Qfxc+gK3cP/wm0O 1325630317
+Date: Tue, 3 Jan 2012 14:33:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [47/67] sparc32: Remove uses of %g7 in memcpy implementation.
-In-Reply-To: <20120103223043.GA26738@kroah.com>
+        alan@lxorguk.ukuu.org.uk
+Subject: [00/75] 3.1.8-stable review
+Message-ID: <20120103223332.GA4112@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.1.8 release.
+There are 75 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Friday, January 6, 2012, 20:00:00 UTC.
+Anything received after that time might be too late.
 
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.1.8-rc1.gz
+and the diffstat can be found below.
 
-From: "David S. Miller" <davem@davemloft.net>
+thanks,
 
-[ Upstream commit 21f74d361dfd6a7d0e47574e315f780d8172084a ]
+greg k-h
 
-This is setting things up so that we can correct the return
-value, so that it properly returns the original destination
-buffer pointer.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Tested-by: Kjetil Oftedal <oftedal@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- arch/sparc/lib/memcpy.S |  177 ++++++++++++++++++++++++------------------------
- 1 file changed, 91 insertions(+), 86 deletions(-)
-
---- a/arch/sparc/lib/memcpy.S
-+++ b/arch/sparc/lib/memcpy.S
-@@ -235,7 +235,7 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	add		%o1, 4, %o1
- 	add		%o0, 4, %o0
- 2:
--	andcc		%g1, 0xffffff80, %g7
-+	andcc		%g1, 0xffffff80, %g0
- 	be		3f
- 	 andcc		%o0, 4, %g0
- 
-@@ -245,22 +245,23 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	MOVE_BIGCHUNK(o1, o0, 0x20, o2, o3, o4, o5, g2, g3, g4, g5)
- 	MOVE_BIGCHUNK(o1, o0, 0x40, o2, o3, o4, o5, g2, g3, g4, g5)
- 	MOVE_BIGCHUNK(o1, o0, 0x60, o2, o3, o4, o5, g2, g3, g4, g5)
--	subcc		%g7, 128, %g7
-+	sub		%g1, 128, %g1
- 	add		%o1, 128, %o1
--	bne		5b
-+	cmp		%g1, 128
-+	bge		5b
- 	 add		%o0, 128, %o0
- 3:
--	andcc		%g1, 0x70, %g7
-+	andcc		%g1, 0x70, %g4
- 	be		80f
- 	 andcc		%g1, 8, %g0
- 
- 	sethi		%hi(80f), %o5
--	srl		%g7, 1, %o4
--	add		%g7, %o4, %o4
--	add		%o1, %g7, %o1
-+	srl		%g4, 1, %o4
-+	add		%g4, %o4, %o4
-+	add		%o1, %g4, %o1
- 	sub		%o5, %o4, %o5
- 	jmpl		%o5 + %lo(80f), %g0
--	 add		%o0, %g7, %o0
-+	 add		%o0, %g4, %o0
- 
- 79:	/* memcpy_table */
- 
-@@ -314,20 +315,21 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	MOVE_BIGALIGNCHUNK(o1, o0, 0x20, o2, o3, o4, o5, g2, g3, g4, g5)
- 	MOVE_BIGALIGNCHUNK(o1, o0, 0x40, o2, o3, o4, o5, g2, g3, g4, g5)
- 	MOVE_BIGALIGNCHUNK(o1, o0, 0x60, o2, o3, o4, o5, g2, g3, g4, g5)
--	subcc		%g7, 128, %g7
-+	subcc		%g1, 128, %g1
- 	add		%o1, 128, %o1
--	bne		82b
-+	cmp		%g1, 128
-+	bge		82b
- 	 add		%o0, 128, %o0
- 
--	andcc		%g1, 0x70, %g7
-+	andcc		%g1, 0x70, %g4
- 	be		84f
- 	 andcc		%g1, 8, %g0
- 
- 	sethi		%hi(84f), %o5
--	add		%o1, %g7, %o1
--	sub		%o5, %g7, %o5
-+	add		%o1, %g4, %o1
-+	sub		%o5, %g4, %o5
- 	jmpl		%o5 + %lo(84f), %g0
--	 add		%o0, %g7, %o0
-+	 add		%o0, %g4, %o0
- 
- 83:	/* amemcpy_table */
- 
-@@ -376,124 +378,127 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 86:	/* non_aligned */
- 	cmp		%o2, 6
- 	bleu		88f
--	 andcc		%o0, 3, %g0
-+	 nop
-+
-+	save		%sp, -96, %sp
-+	andcc		%i0, 3, %g0
- 	be		61f
--	 andcc		%o0, 1, %g0
-+	 andcc		%i0, 1, %g0
- 	be		60f
--	 andcc		%o0, 2, %g0
-+	 andcc		%i0, 2, %g0
- 
--	ldub		[%o1], %g5
--	add		%o1, 1, %o1
--	stb		%g5, [%o0]
--	sub		%o2, 1, %o2
-+	ldub		[%i1], %g5
-+	add		%i1, 1, %i1
-+	stb		%g5, [%i0]
-+	sub		%i2, 1, %i2
- 	bne		61f
--	 add		%o0, 1, %o0
-+	 add		%i0, 1, %i0
- 60:
--	ldub		[%o1], %g3
--	add		%o1, 2, %o1
--	stb		%g3, [%o0]
--	sub		%o2, 2, %o2
--	ldub		[%o1 - 1], %g3
--	add		%o0, 2, %o0
--	stb		%g3, [%o0 - 1]
-+	ldub		[%i1], %g3
-+	add		%i1, 2, %i1
-+	stb		%g3, [%i0]
-+	sub		%i2, 2, %i2
-+	ldub		[%i1 - 1], %g3
-+	add		%i0, 2, %i0
-+	stb		%g3, [%i0 - 1]
- 61:
--	and		%o1, 3, %g2
--	and		%o2, 0xc, %g3
--	and		%o1, -4, %o1
-+	and		%i1, 3, %g2
-+	and		%i2, 0xc, %g3
-+	and		%i1, -4, %i1
- 	cmp		%g3, 4
- 	sll		%g2, 3, %g4
- 	mov		32, %g2
- 	be		4f
--	 sub		%g2, %g4, %g7
-+	 sub		%g2, %g4, %l0
- 	
- 	blu		3f
- 	 cmp		%g3, 0x8
- 
- 	be		2f
--	 srl		%o2, 2, %g3
-+	 srl		%i2, 2, %g3
- 
--	ld		[%o1], %o3
--	add		%o0, -8, %o0
--	ld		[%o1 + 4], %o4
-+	ld		[%i1], %i3
-+	add		%i0, -8, %i0
-+	ld		[%i1 + 4], %i4
- 	b		8f
- 	 add		%g3, 1, %g3
- 2:
--	ld		[%o1], %o4
--	add		%o0, -12, %o0
--	ld		[%o1 + 4], %o5
-+	ld		[%i1], %i4
-+	add		%i0, -12, %i0
-+	ld		[%i1 + 4], %i5
- 	add		%g3, 2, %g3
- 	b		9f
--	 add		%o1, -4, %o1
-+	 add		%i1, -4, %i1
- 3:
--	ld		[%o1], %g1
--	add		%o0, -4, %o0
--	ld		[%o1 + 4], %o3
--	srl		%o2, 2, %g3
-+	ld		[%i1], %g1
-+	add		%i0, -4, %i0
-+	ld		[%i1 + 4], %i3
-+	srl		%i2, 2, %g3
- 	b		7f
--	 add		%o1, 4, %o1
-+	 add		%i1, 4, %i1
- 4:
--	ld		[%o1], %o5
--	cmp		%o2, 7
--	ld		[%o1 + 4], %g1
--	srl		%o2, 2, %g3
-+	ld		[%i1], %i5
-+	cmp		%i2, 7
-+	ld		[%i1 + 4], %g1
-+	srl		%i2, 2, %g3
- 	bleu		10f
--	 add		%o1, 8, %o1
-+	 add		%i1, 8, %i1
- 
--	ld		[%o1], %o3
-+	ld		[%i1], %i3
- 	add		%g3, -1, %g3
- 5:
--	sll		%o5, %g4, %g2
--	srl		%g1, %g7, %g5
-+	sll		%i5, %g4, %g2
-+	srl		%g1, %l0, %g5
- 	or		%g2, %g5, %g2
--	st		%g2, [%o0]
-+	st		%g2, [%i0]
- 7:
--	ld		[%o1 + 4], %o4
-+	ld		[%i1 + 4], %i4
- 	sll		%g1, %g4, %g2
--	srl		%o3, %g7, %g5
-+	srl		%i3, %l0, %g5
- 	or		%g2, %g5, %g2
--	st		%g2, [%o0 + 4]
-+	st		%g2, [%i0 + 4]
- 8:
--	ld		[%o1 + 8], %o5
--	sll		%o3, %g4, %g2
--	srl		%o4, %g7, %g5
-+	ld		[%i1 + 8], %i5
-+	sll		%i3, %g4, %g2
-+	srl		%i4, %l0, %g5
- 	or		%g2, %g5, %g2
--	st		%g2, [%o0 + 8]
-+	st		%g2, [%i0 + 8]
- 9:
--	ld		[%o1 + 12], %g1
--	sll		%o4, %g4, %g2
--	srl		%o5, %g7, %g5
-+	ld		[%i1 + 12], %g1
-+	sll		%i4, %g4, %g2
-+	srl		%i5, %l0, %g5
- 	addcc		%g3, -4, %g3
- 	or		%g2, %g5, %g2
--	add		%o1, 16, %o1
--	st		%g2, [%o0 + 12]
--	add		%o0, 16, %o0
-+	add		%i1, 16, %i1
-+	st		%g2, [%i0 + 12]
-+	add		%i0, 16, %i0
- 	bne,a		5b
--	 ld		[%o1], %o3
-+	 ld		[%i1], %i3
- 10:
--	sll		%o5, %g4, %g2
--	srl		%g1, %g7, %g5
--	srl		%g7, 3, %g3
-+	sll		%i5, %g4, %g2
-+	srl		%g1, %l0, %g5
-+	srl		%l0, 3, %g3
- 	or		%g2, %g5, %g2
--	sub		%o1, %g3, %o1
--	andcc		%o2, 2, %g0
--	st		%g2, [%o0]
-+	sub		%i1, %g3, %i1
-+	andcc		%i2, 2, %g0
-+	st		%g2, [%i0]
- 	be		1f
--	 andcc		%o2, 1, %g0
-+	 andcc		%i2, 1, %g0
- 
--	ldub		[%o1], %g2
--	add		%o1, 2, %o1
--	stb		%g2, [%o0 + 4]
--	add		%o0, 2, %o0
--	ldub		[%o1 - 1], %g2
--	stb		%g2, [%o0 + 3]
-+	ldub		[%i1], %g2
-+	add		%i1, 2, %i1
-+	stb		%g2, [%i0 + 4]
-+	add		%i0, 2, %i0
-+	ldub		[%i1 - 1], %g2
-+	stb		%g2, [%i0 + 3]
- 1:
- 	be		1f
- 	 nop
--	ldub		[%o1], %g2
--	stb		%g2, [%o0 + 4]
-+	ldub		[%i1], %g2
-+	stb		%g2, [%i0 + 4]
- 1:
--	retl
--	 RETL_INSN
-+	ret
-+	 restore	%g0, %g0, %o0
- 
- 88:	/* short_end */
- 
-
-
+ Makefile                                     |    4 +-
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
+ arch/arm/oprofile/common.c                   |    2 +-
+ arch/arm/plat-mxc/pwm.c                      |   16 +-
+ arch/s390/oprofile/init.c                    |    2 +-
+ arch/sh/oprofile/common.c                    |    4 +-
+ arch/sparc/include/asm/pgtable_32.h          |   20 +-
+ arch/sparc/include/asm/pgtable_64.h          |   20 +-
+ arch/sparc/kernel/entry.h                    |    7 +
+ arch/sparc/kernel/module.c                   |   27 +
+ arch/sparc/kernel/pci_sun4v.c                |    4 +-
+ arch/sparc/kernel/setup_64.c                 |   48 +-
+ arch/sparc/kernel/signal32.c                 |   18 +-
+ arch/sparc/kernel/signal_32.c                |   30 +-
+ arch/sparc/kernel/signal_64.c                |   42 +-
+ arch/sparc/kernel/visemul.c                  |   32 +-
+ arch/sparc/lib/memcpy.S                      |  804 ++++----------------------
+ arch/sparc/mm/Makefile                       |    1 -
+ arch/sparc/mm/btfixup.c                      |    3 +-
+ arch/sparc/mm/generic_32.c                   |   98 ----
+ arch/sparc/mm/generic_64.c                   |  164 ------
+ arch/x86/net/bpf_jit_comp.c                  |    4 +-
+ block/blk-core.c                             |   14 +-
+ block/cfq-iosched.c                          |   16 +-
+ drivers/gpu/drm/i915/i915_dma.c              |   10 +
+ drivers/gpu/drm/i915/i915_drv.h              |    1 +
+ drivers/gpu/drm/i915/i915_reg.h              |    8 +-
+ drivers/gpu/drm/i915/intel_sdvo.c            |    8 +-
+ drivers/gpu/drm/radeon/evergreen.c           |   12 +
+ drivers/infiniband/hw/mlx4/main.c            |    6 +-
+ drivers/input/mouse/synaptics.c              |   11 +
+ drivers/media/video/omap/omap_vout.c         |    1 +
+ drivers/media/video/s5p-fimc/fimc-core.c     |    2 +-
+ drivers/mfd/twl-core.c                       |   16 +-
+ drivers/mfd/twl4030-madc.c                   |   22 +
+ drivers/mmc/host/mmci.c                      |   14 +-
+ drivers/mmc/host/vub300.c                    |    2 +-
+ drivers/net/pptp.c                           |    4 +-
+ drivers/net/wireless/ath/ath9k/rc.c          |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c  |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-tx.c    |    5 +-
+ drivers/net/wireless/iwlwifi/iwl-trans.c     |    4 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/phy.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/phy.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c |    2 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/phy.c |    2 +-
+ drivers/oprofile/oprofile_files.c            |    7 +-
+ drivers/oprofile/oprofilefs.c                |   11 +-
+ drivers/rtc/interface.c                      |    6 +
+ drivers/rtc/rtc-m41t80.c                     |    9 +
+ drivers/s390/scsi/zfcp_scsi.c                |    4 +
+ drivers/scsi/fcoe/fcoe.c                     |    1 +
+ drivers/scsi/mpt2sas/mpt2sas_base.c          |    6 +-
+ drivers/scsi/mpt2sas/mpt2sas_base.h          |    2 +-
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c         |    2 +-
+ drivers/ssb/driver_pcicore.c                 |    8 +-
+ drivers/watchdog/hpwdt.c                     |    5 +-
+ fs/nfs/file.c                                |    2 +-
+ fs/nfs/nfs4state.c                           |    8 +-
+ fs/nilfs2/ioctl.c                            |   13 +
+ include/linux/blkdev.h                       |    3 -
+ include/linux/i2c/twl4030-madc.h             |    4 +
+ include/linux/lglock.h                       |   36 +-
+ include/net/dst.h                            |    1 +
+ include/net/flow.h                           |    1 +
+ include/net/sctp/structs.h                   |    4 +
+ kernel/cgroup.c                              |    5 -
+ kernel/futex.c                               |   28 +-
+ kernel/sysctl_binary.c                       |    2 +-
+ mm/filemap.c                                 |    7 +-
+ mm/hugetlb.c                                 |    2 +-
+ mm/memcontrol.c                              |    3 +-
+ mm/mempolicy.c                               |   11 +-
+ mm/oom_kill.c                                |    2 +-
+ mm/percpu.c                                  |    6 +-
+ net/bridge/br_netfilter.c                    |    2 +-
+ net/core/flow.c                              |   12 +
+ net/ipv4/devinet.c                           |    5 +
+ net/ipv4/ipconfig.c                          |    4 +
+ net/ipv4/ipip.c                              |    7 +-
+ net/ipv4/route.c                             |  111 ++++-
+ net/ipv6/ip6_output.c                        |    2 +-
+ net/ipv6/route.c                             |    2 +-
+ net/ipv6/sit.c                               |    7 +-
+ net/llc/af_llc.c                             |   14 +-
+ net/mac80211/agg-tx.c                        |   86 ++--
+ net/sched/sch_gred.c                         |    2 +-
+ net/sched/sch_mqprio.c                       |    2 +-
+ net/sctp/associola.c                         |    2 +-
+ net/sctp/output.c                            |    8 +-
+ net/sctp/outqueue.c                          |    6 +-
+ net/sctp/protocol.c                          |    3 +
+ net/sctp/socket.c                            |    2 -
+ net/sctp/sysctl.c                            |   13 +
+ net/sunrpc/xprt.c                            |   10 +-
+ net/xfrm/xfrm_policy.c                       |   18 +-
+ security/selinux/netport.c                   |    4 +-
+ sound/pci/hda/hda_intel.c                    |    1 +
+ sound/soc/codecs/wm8996.c                    |    1 +
+ 99 files changed, 812 insertions(+), 1235 deletions(-)
