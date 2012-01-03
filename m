@@ -1,124 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228Ab2ACRPR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 12:15:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51024 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab2ACRPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 12:15:14 -0500
-Date: Tue, 3 Jan 2012 18:09:27 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
-        =?utf-8?Q?=C5=81ukasz?= Michalik <lmi@ift.uni.wroc.pl>,
-        "Dmitry V. Levin" <ldv@altlinux.org>
-Subject: Re: ptrace fixes for 3.2
-Message-ID: <20120103170927.GA31795@redhat.com>
-References: <201112281955.55200.vda.linux@googlemail.com> <20111229113245.GA18062@redhat.com> <20111229120506.GA23653@redhat.com> <20120103142941.GA25488@redhat.com> <20120103154404.GA28930@redhat.com> <20120103163023.GA31746@google.com>
+	id S1754295Ab2ACRP1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 12:15:27 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:44184 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754178Ab2ACRPX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 12:15:23 -0500
+Date: Tue, 3 Jan 2012 12:13:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, rjw@sisk.pl, x86@kernel.org,
+        len.brown@intel.com, joseph.cihula@intel.com,
+        linux-pm@lists.linux-foundation.org, tboot-devel@lists.sourceforge.net,
+        linux-acpi@vger.kernel.org, liang.tang@oracle.com
+Cc: hpa@zytor.com, Thomas Gleixner <tglx@linutronix.de>,
+        Shane Wang <shane.wang@intel.com>, xen-devel@lists.xensource.com
+Subject: Re: [PATCH 1/7] x86, acpi, tboot: Have a ACPI os prepare sleep
+ instead of calling tboot_sleep.
+Message-ID: <20120103171318.GA25341@phenom.dumpdata.com>
+References: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
+ <1324075099-11397-2-git-send-email-konrad.wilk@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120103163023.GA31746@google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1324075099-11397-2-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090206.4F03378F.0065,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Fri, Dec 16, 2011 at 05:38:13PM -0500, Konrad Rzeszutek Wilk wrote:
+> From: Tang Liang <liang.tang@oracle.com>
 
-On 01/03, Tejun Heo wrote:
->
-> On Tue, Jan 03, 2012 at 04:44:04PM +0100, Oleg Nesterov wrote:
-> > It fails because ->real_parent sees its child in EXIT_DEAD state
-> > while the tracer is going to change the state back to EXIT_ZOMBIE
-> > in wait_task_zombie().
->
-> Argh.... EXIT_ZOMBIE -> DEAD -> ZOMBIE dancing in wait_task_zombie()
-> is just nasty.  Didn't realize it was doing that.  :(
+Hey Joseph,
 
-We both missed this ;)
+I remember you acked the initial rfc patches I had posted.
+But I was wondering if these ones are to your liking (I think they are -
+they aren't that much different, but I didn't want to blindly sticking
+'Acked-by' as they did change a bit).
 
-> > The offending commit is 823b018e which moved the EXIT_DEAD check,
-> > but in fact we should not blame it. The original code was not
-> > correct as well because it didn't take ptrace_reparented() into
-> > account and because we can't really trust ->ptrace.
-> >
-> > This patch adds the additional check to close this particular
-> > race but it doesn't solve the whole problem. We simply can't
-> > rely on ->ptrace in this case, it can be cleared if the tracer
-> > is multithreaded by the exiting ->parent.
->
-> I'm not following this part.  Can you please explain it in a bit more
-> detail?
-
-Before 823b018e the code was:
-
-	if (!ptrace && p->ptrace) {
-		wo->notask_error = 0;
-		return 0;
-	}
-
-	if (p->exit_state == EXIT_DEAD)
-		return 0;
-
-There are 2 problems:
-
-	1. it is not correct to clear ->notask_error unless
-	   this child is ptrace_reparented(). Nobody will
-	   wakeup us if EXIT_DEAD was set by our sub-thread.
-
-	2. We can not rely on ->ptrace to detect this case.
-
-	   Suppose that the tracer is multithreaded, it has
-	   two threads T1 and T2, T1 traces our child.
-
-	   - T2 does do_wait(WEXITED), sets EXIT_DEAD, drops
-	     tasklist_lock.
-
-	   - T1 exits and does __ptrace_detach(), this means
-	     __ptrace_unlink() and nothing more.
-
-	   - Now, real_parent does do_wait() and sees the
-	     EXIT_DEAD child but ->ptrace = 0.
-
-	   - finally T2 sets EXIT_DEAD but it is too late,
-
-The patch doesn't solve the 2nd (btw very old) problem. Fortunately
-this race is very unlikely.
-
-> > I think we should kill EXIT_DEAD altogether, we should always
-> > remove the soon-to-be-reaped child from ->children or at least
-> > we should never do the DEAD->ZOMBIE transition. But this is too
-> > complex for 3.2.
->
-> Agreed.  Removing the reverse transition shouldn't be too difficult
-> and can be done without affecting fast non-ptrace path.  ie. if the
-> child is ptraced, drop readlock, grab writelock, recheck, buffer
-> states to copy out to userland, detach and transit to DEAD if
-> necessary.
-
-Yes.
-
-> > Also, I think wait_consider_task() needs more fixes. I do not
-> > think we should clear ->notask_error without WEXITED in this
-> > case, but this is what we do in the EXIT_ZOMBIE case.
->
-> Hmmm... I'm not sure about that.  Why do you think so?
-
-I am not sure too. But why do_wait() should sleep if it is called
-without WEXITED (lets ignore WCONTINUED) and the child is ZOMBIE?
-I think it should return -ECHILD, like it does if the child is not
-traced.
-
-IOW. Suppose we have a single EXIT_ZOMBIE child. If it is not traced,
-do_wait(WSTOPPED) returns -ECHILD. If the child is traced (by another
-process) do_wait() sleeps until detach just to return the same error.
-This looks a bit strange.
-
->  Acked-by: Tejun Heo <tj@kernel.org>
-
-Great, thanks.
-
-Oleg.
-
+Thanks!
+> 
+> The ACPI suspend path makes a call to tboot_sleep right before
+> it writes the PM1A, PM1B values. We replace the direct call to
+> tboot via an registration callback similar to __acpi_register_gsi.
+> 
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: "H. Peter Anvin" <hpa@zytor.com>
+> CC: x86@kernel.org
+> CC: Len Brown <len.brown@intel.com>
+> CC: Joseph Cihula <joseph.cihula@intel.com>
+> CC: Shane Wang <shane.wang@intel.com>
+> CC: xen-devel@lists.xensource.com
+> CC: linux-pm@lists.linux-foundation.org
+> CC: tboot-devel@lists.sourceforge.net
+> CC: linux-acpi@vger.kernel.org
+> [v1: Added __attribute__ ((unused))]
+> [v2: Introduced a wrapper instead of changing tboot_sleep return values]
+> [v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
+> Signed-off-by: Tang Liang <liang.tang@oracle.com>
+> [v1: Fix compile issues on IA64 and PPC64]
+> [v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep properly]
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/kernel/tboot.c       |    8 ++++++++
+>  drivers/acpi/acpica/hwsleep.c |   10 +++++++---
+>  drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
+>  include/acpi/acexcep.h        |    1 +
+>  include/linux/acpi.h          |   10 ++++++++++
+>  include/linux/tboot.h         |    1 -
+>  6 files changed, 50 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+> index e2410e2..1a4ab7d 100644
+> --- a/arch/x86/kernel/tboot.c
+> +++ b/arch/x86/kernel/tboot.c
+> @@ -297,6 +297,12 @@ void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control)
+>  
+>  	tboot_shutdown(acpi_shutdown_map[sleep_state]);
+>  }
+> +static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
+> +			       u32 pm1b_control)
+> +{
+> +	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+> +	return 0;
+> +}
+>  
+>  static atomic_t ap_wfs_count;
+>  
+> @@ -345,6 +351,8 @@ static __init int tboot_late_init(void)
+>  
+>  	atomic_set(&ap_wfs_count, 0);
+>  	register_hotcpu_notifier(&tboot_cpu_notifier);
+> +
+> +	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
+>  	return 0;
+>  }
+>  
+> diff --git a/drivers/acpi/acpica/hwsleep.c b/drivers/acpi/acpica/hwsleep.c
+> index d52da30..992359a 100644
+> --- a/drivers/acpi/acpica/hwsleep.c
+> +++ b/drivers/acpi/acpica/hwsleep.c
+> @@ -43,9 +43,9 @@
+>   */
+>  
+>  #include <acpi/acpi.h>
+> +#include <linux/acpi.h>
+>  #include "accommon.h"
+>  #include "actables.h"
+> -#include <linux/tboot.h>
+>  #include <linux/module.h>
+>  
+>  #define _COMPONENT          ACPI_HARDWARE
+> @@ -344,8 +344,12 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
+>  
+>  	ACPI_FLUSH_CPU_CACHE();
+>  
+> -	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+> -
+> +	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+> +				       pm1b_control);
+> +	if (ACPI_SKIP(status))
+> +		return_ACPI_STATUS(AE_OK);
+> +	if (ACPI_FAILURE(status))
+> +		return_ACPI_STATUS(status);
+>  	/* Write #2: Write both SLP_TYP + SLP_EN */
+>  
+>  	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control);
+> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
+> index f31c5c5..f3aae4b 100644
+> --- a/drivers/acpi/osl.c
+> +++ b/drivers/acpi/osl.c
+> @@ -76,6 +76,9 @@ EXPORT_SYMBOL(acpi_in_debugger);
+>  extern char line_buf[80];
+>  #endif				/*ENABLE_DEBUGGER */
+>  
+> +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+> +				      u32 pm1b_ctrl);
+> +
+>  static acpi_osd_handler acpi_irq_handler;
+>  static void *acpi_irq_context;
+>  static struct workqueue_struct *kacpid_wq;
+> @@ -1659,3 +1662,24 @@ acpi_status acpi_os_terminate(void)
+>  
+>  	return AE_OK;
+>  }
+> +
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+> +				  u32 pm1b_control)
+> +{
+> +	int rc = 0;
+> +	if (__acpi_os_prepare_sleep)
+> +		rc = __acpi_os_prepare_sleep(sleep_state,
+> +					     pm1a_control, pm1b_control);
+> +	if (rc < 0)
+> +		return AE_ERROR;
+> +	else if (rc > 0)
+> +		return AE_CTRL_SKIP;
+> +
+> +	return AE_OK;
+> +}
+> +
+> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> +			       u32 pm1a_ctrl, u32 pm1b_ctrl))
+> +{
+> +	__acpi_os_prepare_sleep = func;
+> +}
+> diff --git a/include/acpi/acexcep.h b/include/acpi/acexcep.h
+> index 5b6c391..fa0d22c 100644
+> --- a/include/acpi/acexcep.h
+> +++ b/include/acpi/acexcep.h
+> @@ -57,6 +57,7 @@
+>  #define ACPI_SUCCESS(a)                 (!(a))
+>  #define ACPI_FAILURE(a)                 (a)
+>  
+> +#define ACPI_SKIP(a)                    (a == AE_CTRL_SKIP)
+>  #define AE_OK                           (acpi_status) 0x0000
+>  
+>  /*
+> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+> index 6001b4da..fccd017 100644
+> --- a/include/linux/acpi.h
+> +++ b/include/linux/acpi.h
+> @@ -359,4 +359,14 @@ static inline int suspend_nvs_register(unsigned long a, unsigned long b)
+>  }
+>  #endif
+>  
+> +#ifdef CONFIG_ACPI
+> +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> +			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> +
+> +acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> +				  u32 pm1a_control, u32 pm1b_control);
+> +#else
+> +#define acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while (0)
+> +#endif
+> +
+>  #endif	/*_LINUX_ACPI_H*/
+> diff --git a/include/linux/tboot.h b/include/linux/tboot.h
+> index 1dba6ee..c75128b 100644
+> --- a/include/linux/tboot.h
+> +++ b/include/linux/tboot.h
+> @@ -143,7 +143,6 @@ static inline int tboot_enabled(void)
+>  
+>  extern void tboot_probe(void);
+>  extern void tboot_shutdown(u32 shutdown_type);
+> -extern void tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control);
+>  extern struct acpi_table_header *tboot_get_dmar_table(
+>  				      struct acpi_table_header *dmar_tbl);
+>  extern int tboot_force_iommu(void);
+> -- 
+> 1.7.7.4
