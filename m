@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab2ACWkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:40:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40250 "EHLO mx2.suse.de"
+	id S1756243Ab2ACWlB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:41:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40304 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756166Ab2ACWkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:40:31 -0500
+	id S1755934Ab2ACWk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:40:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:24 2012
-Message-Id: <20120103223324.383992047@clark.kroah.org>
+Message-Id: <20120103223324.882635550@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:13 -0800
+Date: Tue, 03 Jan 2012 14:33:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [40/75] VFS: Fix race between CPU hotplug and lglocks
+        alan@lxorguk.ukuu.org.uk
+Subject: [46/75] watchdog: hpwdt: Changes to handle NX secure bit in 32bit path
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,153 +24,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: "Mingarelli, Thomas" <Thomas.Mingarelli@hp.com>
 
-commit e30e2fdfe56288576ee9e04dbb06b4bd5f282203 upstream.
+commit e67d668e147c3b4fec638c9e0ace04319f5ceccd upstream.
 
-Currently, the *_global_[un]lock_online() routines are not at all synchronized
-with CPU hotplug. Soft-lockups detected as a consequence of this race was
-reported earlier at https://lkml.org/lkml/2011/8/24/185. (Thanks to Cong Meng
-for finding out that the root-cause of this issue is the race condition
-between br_write_[un]lock() and CPU hotplug, which results in the lock states
-getting messed up).
+This patch makes use of the set_memory_x() kernel API in order
+to make necessary BIOS calls to source NMIs.
 
-Fixing this race by just adding {get,put}_online_cpus() at appropriate places
-in *_global_[un]lock_online() is not a good option, because, then suddenly
-br_write_[un]lock() would become blocking, whereas they have been kept as
-non-blocking all this time, and we would want to keep them that way.
+This is needed for SLES11 SP2 and the latest upstream kernel as it appears
+the NX Execute Disable has grown in its control.
 
-So, overall, we want to ensure 3 things:
-1. br_write_lock() and br_write_unlock() must remain as non-blocking.
-2. The corresponding lock and unlock of the per-cpu spinlocks must not happen
-   for different sets of CPUs.
-3. Either prevent any new CPU online operation in between this lock-unlock, or
-   ensure that the newly onlined CPU does not proceed with its corresponding
-   per-cpu spinlock unlocked.
-
-To achieve all this:
-(a) We introduce a new spinlock that is taken by the *_global_lock_online()
-    routine and released by the *_global_unlock_online() routine.
-(b) We register a callback for CPU hotplug notifications, and this callback
-    takes the same spinlock as above.
-(c) We maintain a bitmap which is close to the cpu_online_mask, and once it is
-    initialized in the lock_init() code, all future updates to it are done in
-    the callback, under the above spinlock.
-(d) The above bitmap is used (instead of cpu_online_mask) while locking and
-    unlocking the per-cpu locks.
-
-The callback takes the spinlock upon the CPU_UP_PREPARE event. So, if the
-br_write_lock-unlock sequence is in progress, the callback keeps spinning,
-thus preventing the CPU online operation till the lock-unlock sequence is
-complete. This takes care of requirement (3).
-
-The bitmap that we maintain remains unmodified throughout the lock-unlock
-sequence, since all updates to it are managed by the callback, which takes
-the same spinlock as the one taken by the lock code and released only by the
-unlock routine. Combining this with (d) above, satisfies requirement (2).
-
-Overall, since we use a spinlock (mentioned in (a)) to prevent CPU hotplug
-operations from racing with br_write_lock-unlock, requirement (1) is also
-taken care of.
-
-By the way, it is to be noted that a CPU offline operation can actually run
-in parallel with our lock-unlock sequence, because our callback doesn't react
-to notifications earlier than CPU_DEAD (in order to maintain our bitmap
-properly). And this means, since we use our own bitmap (which is stale, on
-purpose) during the lock-unlock sequence, we could end up unlocking the
-per-cpu lock of an offline CPU (because we had locked it earlier, when the
-CPU was online), in order to satisfy requirement (2). But this is harmless,
-though it looks a bit awkward.
-
-Debugged-by: Cong Meng <mc@linux.vnet.ibm.com>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off by: Thomas Mingarelli <thomas.mingarelli@hp.com>
+Signed-off by: Wim Van Sebroeck <wim@iguana.be>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/lglock.h |   36 ++++++++++++++++++++++++++++++++----
- 1 file changed, 32 insertions(+), 4 deletions(-)
+ drivers/watchdog/hpwdt.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/include/linux/lglock.h
-+++ b/include/linux/lglock.h
-@@ -22,6 +22,7 @@
- #include <linux/spinlock.h>
- #include <linux/lockdep.h>
- #include <linux/percpu.h>
-+#include <linux/cpu.h>
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -230,6 +230,7 @@ static int __devinit cru_detect(unsigned
  
- /* can make br locks by using local lock for read side, global lock for write */
- #define br_lock_init(name)	name##_lock_init()
-@@ -72,9 +73,31 @@
+ 	cmn_regs.u1.reax = CRU_BIOS_SIGNATURE_VALUE;
  
- #define DEFINE_LGLOCK(name)						\
- 									\
-+ DEFINE_SPINLOCK(name##_cpu_lock);					\
-+ cpumask_t name##_cpus __read_mostly;					\
-  DEFINE_PER_CPU(arch_spinlock_t, name##_lock);				\
-  DEFINE_LGLOCK_LOCKDEP(name);						\
- 									\
-+ static int								\
-+ name##_lg_cpu_callback(struct notifier_block *nb,			\
-+				unsigned long action, void *hcpu)	\
-+ {									\
-+	switch (action & ~CPU_TASKS_FROZEN) {				\
-+	case CPU_UP_PREPARE:						\
-+		spin_lock(&name##_cpu_lock);				\
-+		cpu_set((unsigned long)hcpu, name##_cpus);		\
-+		spin_unlock(&name##_cpu_lock);				\
-+		break;							\
-+	case CPU_UP_CANCELED: case CPU_DEAD:				\
-+		spin_lock(&name##_cpu_lock);				\
-+		cpu_clear((unsigned long)hcpu, name##_cpus);		\
-+		spin_unlock(&name##_cpu_lock);				\
-+	}								\
-+	return NOTIFY_OK;						\
-+ }									\
-+ static struct notifier_block name##_lg_cpu_notifier = {		\
-+	.notifier_call = name##_lg_cpu_callback,			\
-+ };									\
-  void name##_lock_init(void) {						\
- 	int i;								\
- 	LOCKDEP_INIT_MAP(&name##_lock_dep_map, #name, &name##_lock_key, 0); \
-@@ -83,6 +106,11 @@
- 		lock = &per_cpu(name##_lock, i);			\
- 		*lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;	\
- 	}								\
-+	register_hotcpu_notifier(&name##_lg_cpu_notifier);		\
-+	get_online_cpus();						\
-+	for_each_online_cpu(i)						\
-+		cpu_set(i, name##_cpus);				\
-+	put_online_cpus();						\
-  }									\
-  EXPORT_SYMBOL(name##_lock_init);					\
- 									\
-@@ -124,9 +152,9 @@
- 									\
-  void name##_global_lock_online(void) {					\
- 	int i;								\
--	preempt_disable();						\
-+	spin_lock(&name##_cpu_lock);					\
- 	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
--	for_each_online_cpu(i) {					\
-+	for_each_cpu(i, &name##_cpus) {					\
- 		arch_spinlock_t *lock;					\
- 		lock = &per_cpu(name##_lock, i);			\
- 		arch_spin_lock(lock);					\
-@@ -137,12 +165,12 @@
-  void name##_global_unlock_online(void) {				\
- 	int i;								\
- 	rwlock_release(&name##_lock_dep_map, 1, _RET_IP_);		\
--	for_each_online_cpu(i) {					\
-+	for_each_cpu(i, &name##_cpus) {					\
- 		arch_spinlock_t *lock;					\
- 		lock = &per_cpu(name##_lock, i);			\
- 		arch_spin_unlock(lock);					\
- 	}								\
--	preempt_enable();						\
-+	spin_unlock(&name##_cpu_lock);					\
-  }									\
-  EXPORT_SYMBOL(name##_global_unlock_online);				\
- 									\
++	set_memory_x((unsigned long)bios32_entrypoint, (2 * PAGE_SIZE));
+ 	asminline_call(&cmn_regs, bios32_entrypoint);
+ 
+ 	if (cmn_regs.u1.ral != 0) {
+@@ -247,8 +248,10 @@ static int __devinit cru_detect(unsigned
+ 		if ((physical_bios_base + physical_bios_offset)) {
+ 			cru_rom_addr =
+ 				ioremap(cru_physical_address, cru_length);
+-			if (cru_rom_addr)
++			if (cru_rom_addr) {
++				set_memory_x((unsigned long)cru_rom_addr, cru_length);
+ 				retval = 0;
++			}
+ 		}
+ 
+ 		printk(KERN_DEBUG "hpwdt: CRU Base Address:   0x%lx\n",
 
 
