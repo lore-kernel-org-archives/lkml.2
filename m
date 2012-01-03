@@ -1,137 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754651Ab2ACSiC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 13:38:02 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:47833 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754474Ab2ACSiA (ORCPT
+	id S1754648Ab2ACSjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 13:39:47 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:40289 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754582Ab2ACSjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 13:38:00 -0500
-Message-ID: <4F034AC0.5080900@metafoo.de>
-Date: Tue, 03 Jan 2012 19:36:48 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
+	Tue, 3 Jan 2012 13:39:44 -0500
+X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=TRgVYD6ZyiEA:10 a=C7s-xEWy3xMA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=VPW9pYw8AAAA:8 a=20KFwNOVAAAA:8 a=T5Ni6VkXAAAA:8 a=yQdBAQUQAAAA:8 a=Z4Rwk6OoAAAA:8 a=VwQbUJbxAAAA:8 a=n9Sqmae0AAAA:8 a=dFf6d0EZe61Hz7HnJQAA:9 a=jeYBqG3udeo-RhlbspsA:7 a=CjuIK1q_8ugA:10 a=y2xWDDzaQp4A:10 a=1vY5q33nLKwA:10 a=jEp0ucaQiEUA:10 a=IcxpeKGZWnEA:10 a=jbrJJM5MRmoA:10 a=z0jh1eRXt18A:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 65.28.92.85
+Date: Tue, 03 Jan 2012 12:39:40 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: John W Linville <linville@tuxdriver.com>, torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, chaoming_li@realsil.com.cn,
+        linux-wireless@vger.kernel.org
+Subject: [PATCH] rtl8192cu: Fix WARNING on suspend/resume
+Message-ID: <4f034b6c.ypfAbSdXSgMHtfqa%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-To: Thomas Abraham <thomas.abraham@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, jg1.han@samsung.com,
-        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
-        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
-        ben-linux@fluff.org, patches@linaro.org
-Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device
- tree support
-References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>	<4F02C50E.9030904@metafoo.de>	<CAJuYYwR8hnxJSfaXo4=RWCZ1HQZ1PHci+jY3K5b9ktWXryN0vA@mail.gmail.com>	<4F02F3FD.4010306@metafoo.de> <CAJuYYwQJcW83EznpWmmZTCjSL9Ka1nztHx=4cpz2yzuhEyPtjQ@mail.gmail.com>
-In-Reply-To: <CAJuYYwQJcW83EznpWmmZTCjSL9Ka1nztHx=4cpz2yzuhEyPtjQ@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2012 06:07 PM, Thomas Abraham wrote:
-> On 3 January 2012 17:56, Lars-Peter Clausen <lars@metafoo.de> wrote:
->> On 01/03/2012 12:54 PM, Thomas Abraham wrote:
->>> Hi Lars,
->>>
->>> On 3 January 2012 14:36, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>>> On 01/02/2012 06:54 AM, Thomas Abraham wrote:
->>>>> The platform-lcd driver depends on platform-specific callbacks to setup the
->>>>> lcd panel. These callbacks are supplied using driver's platform data. But
->>>>> for adding device tree support for platform-lcd driver, providing such
->>>>> callbacks is not possible (without using auxdata).
->>>>>
->>>>> Since the callbacks are usually lcd panel specific, it is possible to include
->>>>> the lcd panel specific setup and control functionality in the platform-lcd
->>>>> driver itself, thereby eliminating the need for supplying platform specific
->>>>> callbacks to the driver. The platform-lcd driver can include support for
->>>>> multiple lcd panels.
->>>>>
->>>>> This patchset removes the need for platform data for platform-lcd driver and
->>>>> adds support which can be used to implement lcd panel specific functionality
->>>>> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
->>>>> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
->>>>> This currently breaks build for other users of platform-lcd driver. Those can be
->>>>> fixed if this approach is acceptable.
->>>>
->>>> The whole approach looks rather backwards to me. The exact purpose of the
->>>> platform_lcd driver is to redirect the lcd driver callbacks to board code.
->>>> So by removing this support you not only break all the existing driver but
->>>> also create a driver which does nothing. Then you add another layer of
->>>> abstraction to implement custom drivers in this driver. A better approach in
->>>> my opinion is to simply implement these drivers as first level LCD drivers.
->>>> So leave the platform-lcd driver as it is and just add a gpio (or maybe
->>>> regulator) lcd driver instead.
->>>
->>> The existing platform-lcd driver mostly depends on the platform
->>> callbacks for lcd panel power controls. Looking at the current users
->>> of platform-lcd driver, a majority of the users of platform-lcd driver
->>> use a gpio to enable/disable the display/power. The gpio is controlled
->>> by the platform callbacks which the platform-lcd driver calls.
->>>
->>> Hence, it is possible to extend the platform-lcd driver to include the
->>> functionality of managing the gpio for lcd control. The platform code
->>> is only expected to provide a gpio number to the platform-lcd driver.
->>> This allows consolidation of the all the different platform callbacks
->>> that use a gpio for simple enable/disable of the lcd display.
->>>
->>> But there are other users of platform-lcd that do lot more than just
->>> control a single gpio. For such cases, it is possible to reuse the
->>> existing infrastructure of platform-lcd driver and extend it to handle
->>> such lcd panel specific functionality.
->>>
->>> The main advantages that I see here is the consolidation of platform
->>> specific callbacks into the driver which inturn allows adding device
->>> tree support without depending on platform data which have pointers to
->>> platform specific functions. In the next version of this patchset, it
->>> will be ensured that no platform breaks due to this change.
->>
->> Consolidation of the different implementations which use a GPIO to control
->> the LCD state is a good idea. But as I wrote above in this series you added
->> more or less another layer of abstraction. Namely introducing the
->> platform-lcd driver as a intermediate layer between the actual driver and
->> the LCD framework. But the layer is so thin that all it does is to call the
->> plat_lcd_driver_data callback from the lcd_ops callback. There is really no
->> point in doing this since you can setup the lcd_ops callbacks directly. Also
->> following your approach we would end up with a bunch of unrelated LCD
->> drivers in the platform-lcd driver module. The platform-lcd driver is so
->> generic that basically any LCD driver could be implemented on-top of it, but
->> this does not mean it has to.
-> 
-> Yes, this will lead to including support for multiple lcd panels in
-> the platform-lcd driver. But, we get to reuse most of the
-> infrastruture in the platform-lcd driver such as module init/cleanup,
-> suspend/resume, probe and lcd driver registration. There is a plan to
-> include regulator support in the platform-lcd driver as well. If we go
-> for independent drivers for all existing users of platform-lcd driver,
-> then this common code in platform-lcd driver will have to be
-> duplicated in multiple new drivers.
+A recent LKML thread (http://lkml.indiana.edu/hypermail/linux/kernel/1112.3/00965.html)
+discusses warnings that occur during a suspend/resume cycle. The driver
+attempts to read the firmware file before userspace is ready, leading to the
+following warning:
 
-Most of the infrastructure code is driver boiler-plate code. And you'll add
-about the same amount of code due to your additional layer redirection. You'll
-still have a probe and remove function per driver. You'll have to define a set
-of plat_lcd_driver_data per driver. You'll have all these ugly ifdefs.
+WARNING: at drivers/base/firmware_class.c:537 _request_firmware+0x3f6/0x420()
 
-An exception is the suspend/resume handling. But this does not look like it is
-something which is specific to simple displays, more "complex" ones or
-non-platform driver lcd drivers might want to use a similar scheme. A good idea
-would be to add support for this to the LCD framework. Similar to the backlight
-frameworks BL_CORE_SUSPENDRESUME.
+For rtl8192cu, the problem is fixed by storing the firmware in a global buffer
+rather than one allocated per device. The usage count is increased when
+suspending and decreased when resuming. This way, the firmware is retained
+through a suspend/resume cycle, and does not have to be reread.
 
-> 
-> What would be your suggestion considering this. Actually, I don't
-> clearly understand the technical/maintainability reasons which do not
-> favour including support for multiple types of simple lcd panels in
-> the platform-lcd driver.
+This patch should fix the bug reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=771002.
 
-To me it seems very unidiomatic to put multiple drivers into the same driver.
-E.g. where will we draw the line, which kind of device is simple enough so
-support for this device should be embedded in the plaform-lcd driver. Once you
-have support for multiple types of simple lcd panels in one driver things will
-start to get messy. Image how the driver will look like if it has support for
-say 5 or 10 different types of simple lcd panels.
+Note: This patch also touches rtl8192ce as the "firmware" loaded message
+is now printed in the wrong place.
 
-- Lars
+Reported-by: Mohammed Arafa <bugzilla@in-egypt.net>
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stable <stable@vger.kernel.org>
+---
 
+John/Linus,
+
+This patch should be pushed in V3.2 (if possible).
+
+There will be similar patches for rtl8192{ce,se,de}, but as they do not
+trigger a warning, I'll save them for later.
+
+Larry
+---
+
+Index: wireless-testing-new/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
+===================================================================
+--- wireless-testing-new.orig/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
++++ wireless-testing-new/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c
+@@ -265,7 +265,6 @@ int rtl92c_download_fw(struct ieee80211_
+ 	if (!rtlhal->pfirmware)
+ 		return 1;
+ 
+-	pr_info("Loading firmware file %s\n", rtlpriv->cfg->fw_name);
+ 	pfwheader = (struct rtl92c_firmware_header *)rtlhal->pfirmware;
+ 	pfwdata = (u8 *) rtlhal->pfirmware;
+ 	fwsize = rtlhal->fwsize;
+Index: wireless-testing-new/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+===================================================================
+--- wireless-testing-new.orig/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
++++ wireless-testing-new/drivers/net/wireless/rtlwifi/rtl8192ce/sw.c
+@@ -186,6 +186,7 @@ int rtl92c_init_sw_vars(struct ieee80211
+ 	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
+ 	rtlpriv->rtlhal.fwsize = firmware->size;
+ 	release_firmware(firmware);
++	pr_info("rtl8192ce: Loaded firmware file %s\n", rtlpriv->cfg->fw_name);
+ 
+ 	return 0;
+ }
+Index: wireless-testing-new/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+===================================================================
+--- wireless-testing-new.orig/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ wireless-testing-new/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -43,6 +43,8 @@
+ #include "hw.h"
+ #include <linux/vmalloc.h>
+ #include <linux/module.h>
++#include <linux/atomic.h>
++#include <linux/types.h>
+ 
+ MODULE_AUTHOR("Georgia		<georgia@realtek.com>");
+ MODULE_AUTHOR("Ziv Huang	<ziv_huang@realtek.com>");
+@@ -51,6 +53,10 @@ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Realtek 8192C/8188C 802.11n USB wireless");
+ MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin");
+ 
++static char *rtl8192cu_firmware;		/* pointer to firmware */
++static int firmware_size;
++static atomic_t usage_count;
++
+ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+@@ -62,12 +68,21 @@ static int rtl92cu_init_sw_vars(struct i
+ 	rtlpriv->dm.disable_framebursting = 0;
+ 	rtlpriv->dm.thermalvalue = 0;
+ 	rtlpriv->dbg.global_debuglevel = rtlpriv->cfg->mod_params->debug;
+-	rtlpriv->rtlhal.pfirmware = vmalloc(0x4000);
+-	if (!rtlpriv->rtlhal.pfirmware) {
++
++	if (rtl8192cu_firmware) {
++		/* firmware already loaded - true for suspend/resume
++		 * and multiple instances of the device */
++		rtlpriv->rtlhal.pfirmware = rtl8192cu_firmware;
++		rtlpriv->rtlhal.fwsize = firmware_size;
++		return 0;
++	}
++	rtl8192cu_firmware = vzalloc(0x4000);
++	if (!rtl8192cu_firmware) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
+ 			 ("Can't alloc buffer for fw.\n"));
+ 		return 1;
+ 	}
++
+ 	/* request fw */
+ 	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
+ 			rtlpriv->io.dev);
+@@ -82,9 +97,14 @@ static int rtl92cu_init_sw_vars(struct i
+ 		release_firmware(firmware);
+ 		return 1;
+ 	}
+-	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
++	pr_info("rtl8192cu: Loaded firmware from file %s\n",
++		rtlpriv->cfg->fw_name);
++	memcpy(rtl8192cu_firmware, firmware->data, firmware->size);
++	firmware_size = firmware->size;
+ 	rtlpriv->rtlhal.fwsize = firmware->size;
++	rtlpriv->rtlhal.pfirmware = rtl8192cu_firmware;
+ 	release_firmware(firmware);
++	atomic_inc(&usage_count);
+ 
+ 	return 0;
+ }
+@@ -93,12 +113,30 @@ static void rtl92cu_deinit_sw_vars(struc
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 
+-	if (rtlpriv->rtlhal.pfirmware) {
+-		vfree(rtlpriv->rtlhal.pfirmware);
++	atomic_dec(&usage_count);
++	if (!atomic_read(&usage_count) && rtlpriv->rtlhal.pfirmware) {
++		vfree(rtl8192cu_firmware);
++		rtl8192cu_firmware = NULL;
+ 		rtlpriv->rtlhal.pfirmware = NULL;
+ 	}
+ }
+ 
++#ifdef CONFIG_PM
++static int rtl8192cu_usb_suspend(struct usb_interface *pusb_intf,
++				 pm_message_t message)
++{
++	/* Increase usage_count to Save loaded fw across suspend/resume */
++	atomic_inc(&usage_count);
++	return 0;
++}
++
++static int rtl8192cu_usb_resume(struct usb_interface *pusb_intf)
++{
++	atomic_dec(&usage_count);	/* after resume, decrease usage count */
++	return 0;
++}
++#endif
++
+ static struct rtl_hal_ops rtl8192cu_hal_ops = {
+ 	.init_sw_vars = rtl92cu_init_sw_vars,
+ 	.deinit_sw_vars = rtl92cu_deinit_sw_vars,
+@@ -375,9 +413,9 @@ static struct usb_driver rtl8192cu_drive
+ 	.id_table = rtl8192c_usb_ids,
+ 
+ #ifdef CONFIG_PM
+-	/* .suspend = rtl_usb_suspend, */
+-	/* .resume = rtl_usb_resume, */
+-	/* .reset_resume = rtl8192c_resume, */
++	.suspend = rtl8192cu_usb_suspend,
++	.resume = rtl8192cu_usb_resume,
++	.reset_resume = rtl8192cu_usb_resume,
+ #endif /* CONFIG_PM */
+ #ifdef CONFIG_AUTOSUSPEND
+ 	.supports_autosuspend = 1,
