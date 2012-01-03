@@ -1,51 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab2ACHGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 02:06:54 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:45259 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751051Ab2ACHGw (ORCPT
+	id S1751588Ab2ACHHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 02:07:49 -0500
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:53241 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051Ab2ACHHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 02:06:52 -0500
-X-Greylist: delayed 588 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jan 2012 02:06:51 EST
-Date: Tue, 3 Jan 2012 07:56:59 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jonathan Nieder <jrnieder@gmail.com>
-Cc: Guillem Jover <guillem@hadrons.org>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] Use __unused0 instead of __unused for user visible
-	struct member names
-Message-ID: <20120103065659.GA32216@merkur.ravnborg.org>
-References: <20120102024418.GA10483@gaara.hadrons.org> <20120102202243.GA31103@elie.hsd1.il.comcast.net>
+	Tue, 3 Jan 2012 02:07:47 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:59.163.77.45;KIP:(null);UIP:(null);IPV:NLI;H:Outbound.kpitcummins.com;RD:59.163.77.45.static.vsnl.net.in;EFVD:NLI
+Subject: [PATCH] MFD: Clearing events requires event registers to be
+ writable for da9052-core
+From: Ashish Jangam <ashish.jangam@kpitcummins.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: <linux-kernel@vger.kernel.org>, Dajun <dajun.chen@diasemi.com>,
+        <arnd@arndb.de>, <sameo@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 3 Jan 2012 12:33:26 +0530
+Message-ID: <1325574206.4643.8.camel@dhruva>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120102202243.GA31103@elie.hsd1.il.comcast.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.10.38.47]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 02:22:43PM -0600, Jonathan Nieder wrote:
-> (+cc: some possible relevant people)
-> Hi,
-> 
-> Guillem Jover wrote:
-> 
-> > On BSD systems __unused has traditionally been defined to mean the
-> > equivalent of gcc's __attribute__((__unused__)), some parts of the
-> > Linux tree use that convention too (e.g. perf). The problem comes when
-> > defining such macro while trying to build unmodified source code with
-> > BSD origins on systems with Linux headers.
-> >
-> > Rename the user visible struct members from __unused to __unused0 to
-> > not cause compilation failures due to that macro, which should not be
-> > a problem as those members are supposed to be private anyway.
+Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+---
+ drivers/mfd/da9052-core.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+diff --git a/drivers/mfd/da9052-core.c b/drivers/mfd/da9052-core.c
+index a7c115c..1876aa9 100644
+--- a/drivers/mfd/da9052-core.c
++++ b/drivers/mfd/da9052-core.c
+@@ -172,6 +172,10 @@ static bool da9052_reg_writeable(struct device *dev, unsigned int reg)
+ {
+ 	switch (reg) {
+ 	case DA9052_PAGE0_CON_REG:
++	case DA9052_EVENT_A_REG:
++	case DA9052_EVENT_B_REG:
++	case DA9052_EVENT_C_REG:
++	case DA9052_EVENT_D_REG:
+ 	case DA9052_IRQ_MASK_A_REG:
+ 	case DA9052_IRQ_MASK_B_REG:
+ 	case DA9052_IRQ_MASK_C_REG:
 
-^__ is reserved for libc internal stuff and there is no reason to
-name the unused/padding members "__unused".
-So one or a set of patches that rename them all to something more
-sensible would be fine.
 
-	Sam
