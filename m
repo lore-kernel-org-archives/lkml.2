@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab2ACWkE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:40:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40169 "EHLO mx2.suse.de"
+	id S1756139Ab2ACWkP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:40:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40195 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756100Ab2ACWj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:39:59 -0500
+	id S1756124Ab2ACWkK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:40:10 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
-Message-Id: <20120103223323.610887686@clark.kroah.org>
+Message-Id: <20120103223323.860645877@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:04 -0800
+Date: Tue, 03 Jan 2012 14:33:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Rusty Russell <rusty@rustcorp.com.au>,
-        Tony Olech <tony.olech@elandigitalsystems.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [31/75] mmc: vub300: fix type of firmware_rom_wait_states module parameter
+        alan@lxorguk.ukuu.org.uk, Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: [34/75] vfs: __read_cache_page should use gfp argument rather than GFP_KERNEL
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-commit 61074287c2965edf0fc75b54ae8f4ce99f182669 upstream.
+commit e6f67b8c05f5e129e126f4409ddac6f25f58ffcb upstream.
 
-You didn't mean this to be a bool.
+lockdep reports a deadlock in jfs because a special inode's rw semaphore
+is taken recursively.  The mapping's gfp mask is GFP_NOFS, but is not
+used when __read_cache_page() calls add_to_page_cache_lru().
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Acked-by: Tony Olech <tony.olech@elandigitalsystems.com>
-Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Acked-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mmc/host/vub300.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/filemap.c |    7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
 
---- a/drivers/mmc/host/vub300.c
-+++ b/drivers/mmc/host/vub300.c
-@@ -259,7 +259,7 @@ static int firmware_rom_wait_states = 0x
- static int firmware_rom_wait_states = 0x1C;
- #endif
- 
--module_param(firmware_rom_wait_states, bool, 0644);
-+module_param(firmware_rom_wait_states, int, 0644);
- MODULE_PARM_DESC(firmware_rom_wait_states,
- 		 "ROM wait states byte=RRRIIEEE (Reserved Internal External)");
- 
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1828,7 +1828,7 @@ repeat:
+ 		page = __page_cache_alloc(gfp | __GFP_COLD);
+ 		if (!page)
+ 			return ERR_PTR(-ENOMEM);
+-		err = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
++		err = add_to_page_cache_lru(page, mapping, index, gfp);
+ 		if (unlikely(err)) {
+ 			page_cache_release(page);
+ 			if (err == -EEXIST)
+@@ -1925,10 +1925,7 @@ static struct page *wait_on_page_read(st
+  * @gfp:	the page allocator flags to use if allocating
+  *
+  * This is the same as "read_mapping_page(mapping, index, NULL)", but with
+- * any new page allocations done using the specified allocation flags. Note
+- * that the Radix tree operations will still use GFP_KERNEL, so you can't
+- * expect to do this atomically or anything like that - but you can pass in
+- * other page requirements.
++ * any new page allocations done using the specified allocation flags.
+  *
+  * If the page does not get brought uptodate, return -EIO.
+  */
 
 
