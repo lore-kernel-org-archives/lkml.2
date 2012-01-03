@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab2ACIvY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 03:51:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:32971 "EHLO
+	id S1752664Ab2ACI6A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 03:58:00 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38263 "EHLO
 	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2ACIvV (ORCPT
+	with ESMTP id S1751263Ab2ACI55 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 03:51:21 -0500
-Subject: [PATCH] tty: cleanup prohibition of direct opening for unix98 pty
- master
-To: Greg Kroah-Hartman <gregkh@suse.de>
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Alan Cox <alan@redhat.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 03 Jan 2012 12:51:11 +0400
-Message-ID: <20120103085110.17283.60539.stgit@zurg>
-In-Reply-To: <20120102172231.11476.57711.stgit@zurg>
-References: <20120102172231.11476.57711.stgit@zurg>
-User-Agent: StGit/0.15
+	Tue, 3 Jan 2012 03:57:57 -0500
+Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
+To: "Gilad Ben-Yossef" <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, "Chris Metcalf" <cmetcalf@tilera.com>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
+        "Frederic Weisbecker" <fweisbec@gmail.com>,
+        "Russell King" <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        "Pekka Enberg" <penberg@kernel.org>, "Matt Mackall" <mpm@selenic.com>,
+        "Rik van Riel" <riel@redhat.com>, "Andi Kleen" <andi@firstfloor.org>,
+        "Sasha Levin" <levinsasha928@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Alexander Viro" <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, "Avi Kivity" <avi@redhat.com>
+Subject: Re: [PATCH v5 1/8] smp: Introduce a generic on_each_cpu_mask function
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+ <1325499859-2262-2-git-send-email-gilad@benyossef.com>
+ <op.v7hz3pbc3l0zgt@mpn-glaptop>
+ <CAOtvUMdk6DdcHK3Rp8ctwa8BqkF9YLwa09PHTUFCE53VdAY_6A@mail.gmail.com>
+Date: Tue, 03 Jan 2012 09:57:35 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+From: "Michal Nazarewicz" <mina86@mina86.com>
+Message-ID: <op.v7h259ad3l0zgt@mpn-glaptop>
+In-Reply-To: <CAOtvUMdk6DdcHK3Rp8ctwa8BqkF9YLwa09PHTUFCE53VdAY_6A@mail.gmail.com>
+User-Agent: Opera Mail/11.60 (Linux)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cleanup hack added in v2.6.27-3203-g15582d3
+> 2012/1/3 Michal Nazarewicz <mina86@mina86.com>:
+>> on_each_cpu() returns an int.  For consistency reasons, would it make sense
+>> to make on_each_cpu_maks() to return and int?  I know that the difference
+>> is that smp_call_function() returns and int and smp_call_function_many()
+>> returns void, but to me it actually seems strange and either I'm missing
+>> something important (which is likely) or this needs to get cleaned up at
+>> one point as well.
 
-comment from that patch:
+On Tue, 03 Jan 2012 09:12:21 +0100, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+> I'd say we should go the other way around - kill the return value on
+> on_each_cpu()
+>
+> The return value is always a hard coded zero and we have some code that tests
+> for that return value. Silly...
+>
+> It looks like it's there for hysterical reasons to me :-)
 
-: pty: If the administrator creates a device for a ptmx slave we should not error
-:
-: The open path for ptmx slaves is via the ptmx device. Opening them any
-: other way is not allowed. Vegard Nossum found that previously this was not
-: the case and mknod foo c 128 42; cat foo would produce nasty diagnostics
-:
-: Signed-off-by: Alan Cox <alan@redhat.com>
-: Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+That might be right.  Of course, this goes deeper then on_each_cpu() since
+some of the smp_call_function functions have an int return value, but I
+couldn't find an instance when they return non-zero.
 
-devpts_get_tty() returns non-null only for inodes on devpts, but there is no
-inodes for master-devices, /dev/ptmx (/dev/pts/ptmx) is the only way to open them.
-Thus we can completely forbid lookup for master-devices and eliminate that hack in
-tty_init_dev() because tty_open() will get EIO from tty_driver_lookup_tty().
+I'd offer to volunteer to do the clean-up but I have too little experience
+in IPI to say with confidence that we in fact can and want to drop the “int”
+return value from all of those functions.
 
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
----
- drivers/tty/pty.c    |    8 +++-----
- drivers/tty/tty_io.c |   12 ++----------
- include/linux/tty.h  |    3 +--
- 3 files changed, 6 insertions(+), 17 deletions(-)
-
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index e18604b..d2bf3c1 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -526,10 +526,8 @@ static int pty_unix98_ioctl(struct tty_struct *tty,
- static struct tty_struct *ptm_unix98_lookup(struct tty_driver *driver,
- 		struct inode *ptm_inode, int idx)
- {
--	struct tty_struct *tty = devpts_get_tty(ptm_inode, idx);
--	if (tty)
--		tty = tty->link;
--	return tty;
-+	/* Master must be open via /dev/ptmx */
-+	return ERR_PTR(-EIO);
- }
- 
- /**
-@@ -685,7 +683,7 @@ static int ptmx_open(struct inode *inode, struct file *filp)
- 
- 	mutex_lock(&tty_mutex);
- 	tty_lock();
--	tty = tty_init_dev(ptm_driver, index, 1);
-+	tty = tty_init_dev(ptm_driver, index);
- 	mutex_unlock(&tty_mutex);
- 
- 	if (IS_ERR(tty)) {
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index 05085be..7cddf91 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1366,7 +1366,6 @@ static int tty_reopen(struct tty_struct *tty)
-  *	@driver: tty driver we are opening a device on
-  *	@idx: device index
-  *	@ret_tty: returned tty structure
-- *	@first_ok: ok to open a new device (used by ptmx)
-  *
-  *	Prepare a tty device. This may not be a "new" clean device but
-  *	could also be an active device. The pty drivers require special
-@@ -1386,18 +1385,11 @@ static int tty_reopen(struct tty_struct *tty)
-  * relaxed for the (most common) case of reopening a tty.
-  */
- 
--struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
--								int first_ok)
-+struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx)
- {
- 	struct tty_struct *tty;
- 	int retval;
- 
--	/* Check if pty master is being opened multiple times */
--	if (driver->subtype == PTY_TYPE_MASTER &&
--		(driver->flags & TTY_DRIVER_DEVPTS_MEM) && !first_ok) {
--		return ERR_PTR(-EIO);
--	}
--
- 	/*
- 	 * First time open is complex, especially for PTY devices.
- 	 * This code guarantees that either everything succeeds and the
-@@ -1909,7 +1901,7 @@ got_driver:
- 		if (retval)
- 			tty = ERR_PTR(retval);
- 	} else
--		tty = tty_init_dev(driver, index, 0);
-+		tty = tty_init_dev(driver, index);
- 
- 	mutex_unlock(&tty_mutex);
- 	tty_driver_kref_put(driver);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 5dbb3cb..d3ebd76 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -480,8 +480,7 @@ extern void free_tty_struct(struct tty_struct *tty);
- extern void initialize_tty_struct(struct tty_struct *tty,
- 		struct tty_driver *driver, int idx);
- extern void deinitialize_tty_struct(struct tty_struct *tty);
--extern struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
--								int first_ok);
-+extern struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx);
- extern int tty_release(struct inode *inode, struct file *filp);
- extern int tty_init_termios(struct tty_struct *tty);
- 
-
+-- 
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
