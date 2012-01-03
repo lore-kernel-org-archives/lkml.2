@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab2ACWes (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:34:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39264 "EHLO mx2.suse.de"
+	id S1754191Ab2ACWe7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:34:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39309 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753739Ab2ACWeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:34:37 -0500
+	id S1752886Ab2ACWe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:34:56 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:31 2012
-Message-Id: <20120103223031.542760681@clark.kroah.org>
+Message-Id: <20120103223031.354743448@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:21 -0800
+Date: Tue, 03 Jan 2012 14:29:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [03/67] rtc: Expire alarms after the time is set.
+        alan@lxorguk.ukuu.org.uk,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [01/67] ARM: OMAP: rx51: fix USB
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Felipe Contreras <felipe.contreras@gmail.com>
 
-commit 93b2ec0128c431148b216b8f7337c1a52131ef03 upstream.
+commit e5fe29c7198a1f6616286dfc8602a69da165cb3f upstream.
 
-If the alarm time programming in the rtc is ever in the past, it won't fire,
-and any other alarm will be queued after it so they won't fire either.
+Commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2 (ARM: RX-51:
+Enable isp1704 power on/off) added power management for isp1704.
 
-So any time that the alarm might be in the past, we need to trigger
-the irq handler to ensure the old alarm is cleared and the timer queue
-is fully in the future.
+However, the transceiver should be powered on by default,
+otherwise USB doesn't work at all for networking during
+boot.
 
-This can happen:
- - when we first initialise the alarm
- - when we set the time in the rtc.
+All kernels after v3.0 are affected.
 
-so follow both of these by scheduling the timer work function.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-[Also catch set_mmss case -jstultz]
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+Reviewed-by: Sebastian Reichel <sre@debian.org>
+[tony@atomide.com: updated comments]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/interface.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/rtc/interface.c
-+++ b/drivers/rtc/interface.c
-@@ -72,6 +72,8 @@ int rtc_set_time(struct rtc_device *rtc,
- 		err = -EINVAL;
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@ -133,7 +133,7 @@ static struct platform_device rx51_charg
+ static void __init rx51_charger_init(void)
+ {
+ 	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
+-		GPIOF_OUT_INIT_LOW, "isp1704_reset"));
++		GPIOF_OUT_INIT_HIGH, "isp1704_reset"));
  
- 	mutex_unlock(&rtc->ops_lock);
-+	/* A timer might have just expired */
-+	schedule_work(&rtc->irqwork);
- 	return err;
+ 	platform_device_register(&rx51_charger_device);
  }
- EXPORT_SYMBOL_GPL(rtc_set_time);
-@@ -111,6 +113,8 @@ int rtc_set_mmss(struct rtc_device *rtc,
- 		err = -EINVAL;
- 
- 	mutex_unlock(&rtc->ops_lock);
-+	/* A timer might have just expired */
-+	schedule_work(&rtc->irqwork);
- 
- 	return err;
- }
-@@ -402,6 +406,8 @@ int rtc_initialize_alarm(struct rtc_devi
- 		timerqueue_add(&rtc->timerqueue, &rtc->aie_timer.node);
- 	}
- 	mutex_unlock(&rtc->ops_lock);
-+	/* maybe that was in the past.*/
-+	schedule_work(&rtc->irqwork);
- 	return err;
- }
- EXPORT_SYMBOL_GPL(rtc_initialize_alarm);
 
 
