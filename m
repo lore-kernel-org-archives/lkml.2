@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab2ACAhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 19:37:15 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:53979 "EHLO
+	id S1753624Ab2ACAii (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 19:38:38 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:54009 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab2ACAhN (ORCPT
+	with ESMTP id S1753461Ab2ACAig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 19:37:13 -0500
-Date: Tue, 3 Jan 2012 00:37:02 +0000
+	Mon, 2 Jan 2012 19:38:36 -0500
+Date: Tue, 3 Jan 2012 00:38:31 +0000
 From: Matthew Garrett <mjg@redhat.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Jack Stone <jwjstone@fastmail.fm>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+To: Jack Stone <jwjstone@fastmail.fm>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Alan Stern <stern@rowland.harvard.edu>,
         Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
@@ -22,7 +21,7 @@ Cc: Jack Stone <jwjstone@fastmail.fm>,
         USB list <linux-usb@vger.kernel.org>,
         Linux Wireless List <linux-wireless@vger.kernel.org>
 Subject: Re: loading firmware while usermodehelper disabled.
-Message-ID: <20120103003701.GA17606@srcf.ucam.org>
+Message-ID: <20120103003831.GB17606@srcf.ucam.org>
 References: <20120102215028.GA15701@srcf.ucam.org>
  <CA+55aFz73GuHiOW1NoAuJLea_GKLepiZjrnrgpOKdQizPgnhoA@mail.gmail.com>
  <20120102221235.GA16012@srcf.ucam.org>
@@ -32,11 +31,11 @@ References: <20120102215028.GA15701@srcf.ucam.org>
  <20120102230037.GA16458@srcf.ucam.org>
  <4F023E6B.2020307@fastmail.fm>
  <20120103001356.GA17183@srcf.ucam.org>
- <20120103002048.75c0104b@pyramind.ukuu.org.uk>
+ <8e95c7e3-e9d5-43c4-8e6a-b8d40584cbd6@email.android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120103002048.75c0104b@pyramind.ukuu.org.uk>
+In-Reply-To: <8e95c7e3-e9d5-43c4-8e6a-b8d40584cbd6@email.android.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-SA-Exim-Connect-IP: <locally generated>
 X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
@@ -45,16 +44,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 12:20:48AM +0000, Alan Cox wrote:
-> > No, the uvcvideo driver would need to call out to load the firmware 
-> > loader driver, otherwise you'll never know to load the firmware loader 
-> > driver.
-> 
-> Does that not simply depend which driver has the relevant USB
-> identifiers ?
+On Tue, Jan 03, 2012 at 12:22:58AM +0000, Jack Stone wrote:
 
-If something presents as a class device then it's going to be picked up 
-by the class driver.
+> So we have a table of USB ids that list the devices that need firmware drivers. When the uvcvideo driver registers the firmware interface with a USB id that matches the list we load the firmware driver and pass it a "warm start" event so it can cache the firmware.
+> 
+> As long as we can identify the devices that *might* need firmware then we are ok.
+
+We could do all of this. Or we could just push the responsibility for 
+this specific case back to userspace, and maybe that's what I should 
+have done in the first place.
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
