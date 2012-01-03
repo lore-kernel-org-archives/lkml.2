@@ -1,53 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753206Ab2ACNUm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 08:20:42 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54518 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752181Ab2ACNUl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 08:20:41 -0500
-Date: Tue, 3 Jan 2012 13:20:53 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jack Stone <jwjstone@fastmail.fm>
-Cc: Oliver Neukum <oliver@neukum.org>, Matthew Garrett <mjg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Message-ID: <20120103132053.44ade1e3@pyramind.ukuu.org.uk>
-In-Reply-To: <4F02F244.6040902@fastmail.fm>
-References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
-	<4F0220F5.30309@fastmail.fm>
-	<20120103004220.084d61f3@pyramind.ukuu.org.uk>
-	<201201031257.47265.oliver@neukum.org>
-	<4F02F244.6040902@fastmail.fm>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753438Ab2ACN0b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 08:26:31 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47838 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753184Ab2ACN0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 08:26:19 -0500
+From: Richard Weinberger <richard@nod.at>
+To: shemminger@vyatta.com
+Cc: davem@davemloft.net, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with bridge-nf-call-ip(6)tables=0
+Date: Tue,  3 Jan 2012 14:26:04 +0100
+Message-Id: <1325597164-13459-2-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1325597164-13459-1-git-send-email-richard@nod.at>
+References: <4F025A07.2000304@nod.at>
+ <1325597164-13459-1-git-send-email-richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That said, I guess there are more complicated / difficult pieces of
-> hardware that might not do that. Is that the case here? Can we detect
-> that the firmware needs reloading and have the primary driver "yield" to
-> the firmware driver?
+If net.bridge.bridge-nf-call-iptables or net.bridge.bridge-nf-call-ip6tables
+are set to zero xt_physdev has no effect because skb->nf_bridge has not been set up.
 
-That doesn't really make any sense in the way USB works.
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ net/bridge/br_netfilter.c |   31 +++++++++++++++++++++++--------
+ 1 files changed, 23 insertions(+), 8 deletions(-)
 
-However if you've got a system to load and pin firmware *on suspend* and
-flush it post resume then you don't actually need special 'firmware'
-drivers just a slightly fancier lib/firmware that refcounts and handles
-load on suspend/delayed flush.
+diff --git a/net/bridge/br_netfilter.c b/net/bridge/br_netfilter.c
+index fa8b8f7..f38a8e4 100644
+--- a/net/bridge/br_netfilter.c
++++ b/net/bridge/br_netfilter.c
+@@ -576,10 +576,12 @@ static unsigned int br_nf_pre_routing_ipv6(unsigned int hook,
+ 					   struct sk_buff *skb,
+ 					   const struct net_device *in,
+ 					   const struct net_device *out,
+-					   int (*okfn)(struct sk_buff *))
++					   int (*okfn)(struct sk_buff *),
++					   struct net_bridge *br)
+ {
+ 	const struct ipv6hdr *hdr;
+ 	u32 pkt_len;
++	struct nf_bridge_info *nf_bridge;
+ 
+ 	if (skb->len < sizeof(struct ipv6hdr))
+ 		return NF_DROP;
+@@ -606,6 +608,15 @@ static unsigned int br_nf_pre_routing_ipv6(unsigned int hook,
+ 	nf_bridge_put(skb->nf_bridge);
+ 	if (!nf_bridge_alloc(skb))
+ 		return NF_DROP;
++
++	if (!brnf_call_ip6tables && !br->nf_call_ip6tables) {
++		nf_bridge = skb->nf_bridge;
++		nf_bridge->mask |= BRNF_NF_BRIDGE_PREROUTING;
++		nf_bridge->physindev = skb->dev;
++
++		return NF_ACCEPT;
++	}
++
+ 	if (!setup_pre_routing(skb))
+ 		return NF_DROP;
+ 
+@@ -629,6 +640,7 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+ {
+ 	struct net_bridge_port *p;
+ 	struct net_bridge *br;
++	struct nf_bridge_info *nf_bridge;
+ 	__u32 len = nf_bridge_encap_header_len(skb);
+ 
+ 	if (unlikely(!pskb_may_pull(skb, len)))
+@@ -641,16 +653,10 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+ 
+ 	if (skb->protocol == htons(ETH_P_IPV6) || IS_VLAN_IPV6(skb) ||
+ 	    IS_PPPOE_IPV6(skb)) {
+-		if (!brnf_call_ip6tables && !br->nf_call_ip6tables)
+-			return NF_ACCEPT;
+-
+ 		nf_bridge_pull_encap_header_rcsum(skb);
+-		return br_nf_pre_routing_ipv6(hook, skb, in, out, okfn);
++		return br_nf_pre_routing_ipv6(hook, skb, in, out, okfn, br);
+ 	}
+ 
+-	if (!brnf_call_iptables && !br->nf_call_iptables)
+-		return NF_ACCEPT;
+-
+ 	if (skb->protocol != htons(ETH_P_IP) && !IS_VLAN_IP(skb) &&
+ 	    !IS_PPPOE_IP(skb))
+ 		return NF_ACCEPT;
+@@ -663,6 +669,15 @@ static unsigned int br_nf_pre_routing(unsigned int hook, struct sk_buff *skb,
+ 	nf_bridge_put(skb->nf_bridge);
+ 	if (!nf_bridge_alloc(skb))
+ 		return NF_DROP;
++
++	if (!brnf_call_iptables && !br->nf_call_iptables) {
++		nf_bridge = skb->nf_bridge;
++		nf_bridge->mask |= BRNF_NF_BRIDGE_PREROUTING;
++		nf_bridge->physindev = skb->dev;
++
++		return NF_ACCEPT;
++	}
++
+ 	if (!setup_pre_routing(skb))
+ 		return NF_DROP;
+ 	store_orig_dstaddr(skb);
+-- 
+1.7.7.3
 
-(and probably a sysctl for cache tuning so that typical small firmwares
-get cached on bigger boxes anyway for speed)
