@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab2ACQuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 11:50:02 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37051 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753789Ab2ACQuA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 11:50:00 -0500
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-acpi@vger.kernel.org, lenb@kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]Kconfig:acpi Fix typo in comment.
-Date: Tue,  3 Jan 2012 08:49:48 -0800
-Message-Id: <1325609388-3058-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1754184Ab2ACQwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 11:52:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35737 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754039Ab2ACQwC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 11:52:02 -0500
+Message-ID: <4F033227.3020404@redhat.com>
+Date: Tue, 03 Jan 2012 17:51:51 +0100
+From: Denys Vlasenko <dvlasenk@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Denys Vlasenko <vda.linux@googlemail.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?B?xYF1a2FzeiBNaWNoYWxpaw==?= <lmi@ift.uni.wroc.pl>,
+        "Dmitry V. Levin" <ldv@altlinux.org>
+Subject: Re: ptrace fixes for 3.2
+References: <201112281955.55200.vda.linux@googlemail.com> <20111229113245.GA18062@redhat.com> <20111229120506.GA23653@redhat.com> <20120103142941.GA25488@redhat.com> <20120103154404.GA28930@redhat.com>
+In-Reply-To: <20120103154404.GA28930@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Justin P. Mattock" <justinmattock@gmail.com>
+On 01/03/2012 04:44 PM, Oleg Nesterov wrote:
+> On 01/03, Oleg Nesterov wrote:
+>>
+>> I am going to send the hack^Wpatch below to Linus as a temporary
+>> workaround for 3.2.
+>
+> The same patch with the changelog.
+>
+> Denys, Tejun, any chance you can review it before I send it to Linus ?
 
-The below fixes a typo I found in a comment.
+Testing it on top of Fedora 16's kernel-3.1.6-1.fc16:
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Confirmed that before patch both tests fail (in about a minute of run time
+at worst), and with patch they do not fail.
 
----
- drivers/acpi/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/acpi/Kconfig b/drivers/acpi/Kconfig
-index de0e3df..7556913 100644
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -374,7 +374,7 @@ config ACPI_CUSTOM_METHOD
- 	depends on DEBUG_FS
- 	default n
- 	help
--	  This debug facility allows ACPI AML methods to me inserted and/or
-+	  This debug facility allows ACPI AML methods to be inserted and/or
- 	  replaced without rebooting the system. For details refer to:
- 	  Documentation/acpi/method-customizing.txt.
- 
 -- 
-1.7.5.4
-
+vda
