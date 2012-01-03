@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab2ACXBr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:01:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39679 "EHLO mx2.suse.de"
+	id S1755784Ab2ACXCQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:02:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39652 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755520Ab2ACWhS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:37:18 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:36 2012
-Message-Id: <20120103223036.053781678@clark.kroah.org>
+	id S1755574Ab2ACWhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:37:08 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
+Message-Id: <20120103223035.796372807@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:14 -0800
+Date: Tue, 03 Jan 2012 14:30:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Alexandru Juncu <ajuncu@ixiacom.com>,
+        Kunjan Naik <knaik@ixiacom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [56/67] sch_gred: should not use GFP_KERNEL while holding a spinlock
+Subject: [53/67] llc: llc_cmsg_rcv was getting called after sk_eat_skb.
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +27,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Alex Juncu <ajuncu@ixiacom.com>
 
-[ Upstream commit 3f1e6d3fd37bd4f25e5b19f1c7ca21850426c33f ]
+[ Upstream commit 9cef310fcdee12b49b8b4c96fd8f611c8873d284 ]
 
-gred_change_vq() is called under sch_tree_lock(sch).
+Received non stream protocol packets were calling llc_cmsg_rcv that used a
+skb after that skb was released by sk_eat_skb. This caused received STP
+packets to generate kernel panics.
 
-This means a spinlock is held, and we are not allowed to sleep in this
-context.
-
-We might pre-allocate memory using GFP_KERNEL before taking spinlock,
-but this is not suitable for stable material.
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Alexandru Juncu <ajuncu@ixiacom.com>
+Signed-off-by: Kunjan Naik <knaik@ixiacom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/sched/sch_gred.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/llc/af_llc.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/net/sched/sch_gred.c
-+++ b/net/sched/sch_gred.c
-@@ -385,7 +385,7 @@ static inline int gred_change_vq(struct
- 	struct gred_sched_data *q;
+--- a/net/llc/af_llc.c
++++ b/net/llc/af_llc.c
+@@ -833,15 +833,15 @@ static int llc_ui_recvmsg(struct kiocb *
+ 		copied += used;
+ 		len -= used;
  
- 	if (table->tab[dp] == NULL) {
--		table->tab[dp] = kzalloc(sizeof(*q), GFP_KERNEL);
-+		table->tab[dp] = kzalloc(sizeof(*q), GFP_ATOMIC);
- 		if (table->tab[dp] == NULL)
- 			return -ENOMEM;
++		/* For non stream protcols we get one packet per recvmsg call */
++		if (sk->sk_type != SOCK_STREAM)
++			goto copy_uaddr;
++
+ 		if (!(flags & MSG_PEEK)) {
+ 			sk_eat_skb(sk, skb, 0);
+ 			*seq = 0;
+ 		}
+ 
+-		/* For non stream protcols we get one packet per recvmsg call */
+-		if (sk->sk_type != SOCK_STREAM)
+-			goto copy_uaddr;
+-
+ 		/* Partial read */
+ 		if (used + offset < skb->len)
+ 			continue;
+@@ -857,6 +857,12 @@ copy_uaddr:
  	}
+ 	if (llc_sk(sk)->cmsg_flags)
+ 		llc_cmsg_rcv(msg, skb);
++
++	if (!(flags & MSG_PEEK)) {
++			sk_eat_skb(sk, skb, 0);
++			*seq = 0;
++	}
++
+ 	goto out;
+ }
+ 
 
 
