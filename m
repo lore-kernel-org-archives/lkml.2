@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab2ACDq6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 22:46:58 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:47392 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab2ACDqz convert rfc822-to-8bit (ORCPT
+	id S1751784Ab2ACEOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 23:14:05 -0500
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:49582 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751583Ab2ACEOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 22:46:55 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust\@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "neilb\@suse.de" <neilb@suse.de>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields\@fieldses.org" <bfields@fieldses.org>,
-        "davem\@davemloft.net" <davem@davemloft.net>,
-        "devel\@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
-References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
-	<20111214104449.3991.61989.stgit@localhost6.localdomain6>
-	<m1bor6rg39.fsf@fess.ebiederm.org> <4EEEFC54.10700@parallels.com>
-	<m18vm8g951.fsf@fess.ebiederm.org> <4EEF2C9A.8000403@parallels.com>
-	<m1pqfkecw0.fsf@fess.ebiederm.org> <4EEF7364.8000407@parallels.com>
-Date: Mon, 02 Jan 2012 19:49:00 -0800
-In-Reply-To: <4EEF7364.8000407@parallels.com> (Stanislav Kinsbursky's message
-	of "Mon, 19 Dec 2011 21:24:52 +0400")
-Message-ID: <m1vcotigyb.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Mon, 2 Jan 2012 23:14:03 -0500
+Date: Tue, 03 Jan 2012 04:14:00 +0000
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+Subject: [PATCH] Squashfs: fix i_blocks calculation with extended regular
+ files
+Message-ID: <4f028088.10/1QgccWuFwnQkk%phillip@lougher.demon.co.uk>
+User-Agent: Heirloom mailx 12.5 6/20/10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+yCFygCVLej5Hq6ae0Wbd4D/FbGfEHHik=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
 
-> 19.12.2011 20:37, Eric W. Biederman пишет:
->> Stanislav Kinsbursky<skinsbursky@parallels.com>  writes:
->>
->> Doing that independently of the rest of the sysctls is pretty horrible
->> and confusing to users.   What I am planning might suit your needs and
->> if not we need to talk some more about how to get the vfs to do
->> something reasonable.
->>
->
-> Ok, Eric. Would be glad to discuss your sysctls plans.
-> But actually you already know my needs: I would like to make sysctls work in the
-> way like sysfs does: i.e. content of files depends on mount maker -
-> not viewer.
+The le64_to_cpu() forces the calculation to be unsigned, with
+the effect that it can underflow leading to an incorrect large
+value.
 
-What drives the desire to have sysctls depend on the mount maker?
-Especially what drives that desire not to have it have a /proc/<pid>/sys
-directory that reflects the sysctls for a given process.
+This bug only triggers in rare(ish) circumstances, an empty file
+encoded as an extended regular file or a completely sparse file.
+Normally empty files are encoded as a regular file rather than as
+an extended regular file (and the regular file i_blocks calculation
+doesn't have this bug).  To save space regular file inodes are
+optimised to encode the most commonly occurring files.  Less
+common regular files are encoded using extended regular file inodes
+which contain extra information.
 
-Eric
+Empty files with nlinks greater than 1, and or empty files
+with extended attributes are encoded using extended regular file
+inodes and they will hit this bug.
+
+Signed-off-by: Phillip Lougher <phillip@squashfs.org.uk>
+---
+ fs/squashfs/inode.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/squashfs/inode.c b/fs/squashfs/inode.c
+index fd7b3b3..81afbcc 100644
+--- a/fs/squashfs/inode.c
++++ b/fs/squashfs/inode.c
+@@ -208,8 +208,8 @@ int squashfs_read_inode(struct inode *inode, long long ino)
+ 		inode->i_op = &squashfs_inode_ops;
+ 		inode->i_fop = &generic_ro_fops;
+ 		inode->i_mode |= S_IFREG;
+-		inode->i_blocks = ((inode->i_size -
+-				le64_to_cpu(sqsh_ino->sparse) - 1) >> 9) + 1;
++		inode->i_blocks = (inode->i_size -
++				le64_to_cpu(sqsh_ino->sparse) + 511) >> 9;
+ 
+ 		squashfs_i(inode)->fragment_block = frag_blk;
+ 		squashfs_i(inode)->fragment_size = frag_size;
+-- 
+1.7.5.4
 
