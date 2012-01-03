@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab2ACURM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:17:12 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60731 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041Ab2ACUQe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:16:34 -0500
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        kvm@vger.kernel.org, Gleb Natapov <gleb@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/5] perf kvm: Fix copy & paste error in description
-Date: Tue,  3 Jan 2012 18:16:24 -0200
-Message-Id: <1325621784-10683-6-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
-In-Reply-To: <1325621784-10683-1-git-send-email-acme@infradead.org>
-References: <1325621784-10683-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755162Ab2ACURa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:17:30 -0500
+Received: from mga14.intel.com ([143.182.124.37]:34957 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755051Ab2ACUR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:17:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="91991268"
+Message-Id: <cover.1325620195.git.tony.luck@intel.com>
+From: Tony Luck <tony.luck@intel.com>
+Date: Tue, 3 Jan 2012 11:49:55 -0800
+Subject: [PATCH 0/6] x86, mce: machine check recovery for applications
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joerg Roedel <joerg.roedel@amd.com>
+This series adds code to recognise the machine check signature for
+a recoverable error in the data path (Advanced SKUs of "Sandy Bridge"
+server processors are the first to be able to allow s/w recovery for
+this case), save the required information in the machine check handler
+and then call to the generic memory_failure() code to try for
+graceful error recovery (sending SIGBUS to affected process(es)).
 
-The --host option certainly enables host-data collection.
+Updates since last version (December 15th)
 
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: kvm@vger.kernel.org
-Link: http://lkml.kernel.org/r/1317816084-18026-5-git-send-email-gleb@redhat.com
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-kvm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Part1-4: unchanged
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 34d1e85..032324a 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -38,7 +38,7 @@ static const struct option kvm_options[] = {
- 	OPT_BOOLEAN(0, "guest", &perf_guest,
- 		    "Collect guest os data"),
- 	OPT_BOOLEAN(0, "host", &perf_host,
--		    "Collect guest os data"),
-+		    "Collect host os data"),
- 	OPT_STRING(0, "guestmount", &symbol_conf.guestmount, "directory",
- 		   "guest mount directory under which every guest os"
- 		   " instance has a subdir"),
+Part5: Changed stub function for CONFIG_MEMORY_FAILURE=n case to BUG_ON
+if it is handed an MF_ACTION_REQUIRED case (this indicates an error in
+severity calculation). Drop "Memory error recovered" message (enough
+chatter already).
+
+Part6: Only pass back an ACTION_REQUIRED severity to a kernel if it is built
+with CONFIG_MEMORY_FAILURE=y (i.e. has the code to take the action).
+
+Whole series is available in:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git mce-recovery
+
+Tony Luck (6):
+  HWPOISON: clean up memory_failure() vs. __memory_failure()
+  HWPOISON: Add code to handle "action required" errors.
+  x86, mce: create helper function to save addr/misc when needed
+  x86, mce: Add mechanism to safely save information in MCE handler
+  x86, mce: handle "action required" errors
+  x86, mce: Recognise machine check bank signature for data path error
+
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   16 +++-
+ arch/x86/kernel/cpu/mcheck/mce.c          |  179 ++++++++++++++++++++---------
+ drivers/base/memory.c                     |    2 +-
+ include/linux/mm.h                        |    4 +-
+ mm/hwpoison-inject.c                      |    4 +-
+ mm/madvise.c                              |    2 +-
+ mm/memory-failure.c                       |   96 ++++++++--------
+ 7 files changed, 197 insertions(+), 106 deletions(-)
+
 -- 
-1.7.8.rc0.35.gee6df
+1.7.3.1
 
