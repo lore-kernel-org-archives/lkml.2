@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754522Ab2ACR62 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 12:58:28 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:35269 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754494Ab2ACR6Q (ORCPT
+	id S1754528Ab2ACR7b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 12:59:31 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:52848 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754283Ab2ACR71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 12:58:16 -0500
-X-Sasl-enc: 4OE8+aPOOykLq8ZVm6vrhLx6OM/1fMkTr00LIEOe02Hm 1325613495
-Date: Tue, 3 Jan 2012 09:57:44 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.32.52
-Message-ID: <20120103175744.GB16335@kroah.com>
-References: <20120103175717.GA16335@kroah.com>
+	Tue, 3 Jan 2012 12:59:27 -0500
+Date: Tue, 3 Jan 2012 09:59:22 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
+ allowed to create io_context
+Message-ID: <20120103175922.GC31746@google.com>
+References: <20111222234639.GS17084@google.com>
+ <20111223004244.GU17084@google.com>
+ <alpine.LSU.2.00.1112232058550.3225@eggly.anvils>
+ <20111225010238.GA6013@htj.dyndns.org>
+ <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
+ <20111228164836.GP17712@google.com>
+ <alpine.LSU.2.00.1112280939390.3320@eggly.anvils>
+ <CAOS58YOzUcZz41+H+7dk5FteHy+Ufrtpk9dvdPqX6eie-GHi0Q@mail.gmail.com>
+ <20111228211918.GA3516@google.com>
+ <20120103173500.GB31746@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120103175717.GA16335@kroah.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120103173500.GB31746@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 1c640ea..8f775f5 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .51
-+EXTRAVERSION = .52
- NAME = Man-Eating Seals of Antiquity
- 
- # *DOCUMENTATION*
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index b38baff..0d809ae 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -221,7 +221,6 @@ void clockevents_exchange_device(struct clock_event_device *old,
- 	 * released list and do a notify add later.
- 	 */
- 	if (old) {
--		old->event_handler = clockevents_handle_noop;
- 		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
- 		list_del(&old->list);
- 		list_add(&old->list, &clockevents_released);
+Hello, again.
+
+Adding Shaohua Li as he fixed a similar issue in 4a0b75c7d0 "block,
+cfq: fix empty queue crash caused by request merge".  The original
+thread can be read from
+
+  http://thread.gmane.org/gmane.linux.kernel.next/20064/focus=20159
+
+On Tue, Jan 03, 2012 at 09:35:00AM -0800, Tejun Heo wrote:
+> Happy new year, guys.
+> 
+> On Wed, Dec 28, 2011 at 01:19:18PM -0800, Tejun Heo wrote:
+> > > On Wed, Dec 28, 2011 at 9:50 AM, Hugh Dickins <hughd@google.com> wrote:
+> > > > "It's the tmpfs swapping test that I've been running, with variations,
+> > > > for years.  System booted with mem=700M and 1.5G swap, two repetitious
+> > > > make -j20 kernel builds (of a 2.6.24 kernel: I stuck with that because
+> > > > the balance of built to unbuilt source grows smaller with later kernels),
+> > > > one directly in a tmpfs, the other in a 1k-block ext2 (that I drive with
+> > > > ext4's CONFIG_EXT4_USE_FOR_EXT23) on /dev/loop0 on a 450MB tmpfs file."
+> > > >
+> > > > I doubt much of that (quoted from an older mail to someone else about
+> > > > one of the many other bugs it's found) is relevant: maybe just plenty
+> > > > of file I/O and swapping.
+> > > 
+> > > Plain -j4 build isn't triggering anything.  I'll try to replicate the condition.
+> > 
+> > It's not too reliable but I can reproduce it with -j 22 allmodconfig
+> > build inside qemu w/ 512M of memory.  I'll try to find out what's
+> > going on.
+> 
+> I misread the code, the problem is empty cfqq on the cfq prio tree.  I
+> don't think this is caused by recent io_context changes.  It looks
+> like somebody is forgetting to remove cfqq from the dispatch prio tree
+> after emptying a cfqq by removing a request from it.  Jens, any ideas?
+
+That should have been service tree.  I couldn't find more missing
+removals other than the one Shaohua's patch already fixed.  Close
+cooperator selection in cfq_select_queue() seems suspicious tho.  I
+can't see what prevents it from returning an empty coopeator cfqq.
+I'm trying to verify whether that's the case.  Will update when I know
+more.
+
+Thanks.
+
+-- 
+tejun
