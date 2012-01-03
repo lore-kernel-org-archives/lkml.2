@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753139Ab2ACNHh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 08:07:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35863 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab2ACNHf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 08:07:35 -0500
-Date: Tue, 3 Jan 2012 14:07:33 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
-Subject: Re: iwl3945 didn't survive after s2ram failure
-Message-ID: <20120103130733.GB3891@tiehlicka.suse.cz>
-References: <20111227105340.GD5344@tiehlicka.suse.cz>
- <20120103103457.GA3391@redhat.com>
- <20120103122311.GC3391@redhat.com>
+	id S1753160Ab2ACNLR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 08:11:17 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:30020
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752181Ab2ACNLP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 08:11:15 -0500
+X-SpamScore: -13
+X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LX84MG-02-DTU-02
+X-M-MSG: 
+Date: Tue, 3 Jan 2012 14:10:48 +0100
+From: "'Joerg Roedel'" <joerg.roedel@amd.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+CC: "'KyongHo Cho'" <pullip.cho@samsung.com>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        <linux-kernel@vger.kernel.org>,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        <iommu@lists.linux-foundation.org>,
+        <linux-samsung-soc@vger.kernel.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 0/2] ommu/exynos: Add IOMMU/System MMU driver for
+ Samsung Exynos
+Message-ID: <20120103131048.GD29877@amd.com>
+References: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com>
+ <20120102134229.GZ29877@amd.com>
+ <00dc01ccc9fb$4fcb7590$ef6260b0$%szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120103122311.GC3391@redhat.com>
+In-Reply-To: <00dc01ccc9fb$4fcb7590$ef6260b0$%szyprowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 03-01-12 13:23:12, Stanislaw Gruszka wrote:
-> On Tue, Jan 03, 2012 at 11:34:58AM +0100, Stanislaw Gruszka wrote:
-[...]
-> > If anything other will not help, is possible to rewrite eeprom, I don't
-> > know how to do this, but I know that tool for that exist:
-> > http://code.google.com/p/iwleeprom/
-> Actually I do not think we overwrite eeprom, seems problem is at pci-e
-> bus level. Simply we can not communicate with device through pci-e bus.
-> That is kind a silly, but you can check if removing cart from slot
-> and put it back again (assuring it correctly connected) helps.
+Hi Marek,
 
-I am not sure whether the wireless is integrated (this is a laptop) and
-I am little bit reluctant to open it as the warranty seems to be still
-valid and I would break it if I get inside.
+On Tue, Jan 03, 2012 at 10:37:29AM +0100, Marek Szyprowski wrote:
+> Yes, there is something a bit wrong with your kernel configuration. You get this error if 
+> there is no board selected to be compiled-in. Please go to kernel configuration and select
+> "System Type -> SAMSUNG EXYNOS SoCs Suppport". Then select some hardware board to be 
+> compiled in, for example SMDKV310, SMDKC210 and "Mobile NURI board".
 
-I have just realized that I haven't provided lspci output so just in
-case it is helpful:
-05:00.0 Network controller: Intel Corporation PRO/Wireless 3945ABG [Golan] Network Connection (rev 02)
-        Subsystem: Intel Corporation PRO/Wireless 3945ABG Network Connection
-        Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-        Interrupt: pin A routed to IRQ 18
-        Region 0: Memory at 80100000 (32-bit, non-prefetchable) [size=4K]
-        Capabilities: [c8] Power Management version 2
-                Flags: PMEClk- DSI+ D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
-                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-        Capabilities: [d0] MSI: Enable- Count=1/1 Maskable- 64bit+
-                Address: 0000000000000000  Data: 0000
-        Capabilities: [e0] Express (v1) Legacy Endpoint, MSI 00
-                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <512ns, L1 unlimited
-                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE- FLReset-
-                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
-                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
-                        MaxPayload 128 bytes, MaxReadReq 128 bytes
-                DevSta: CorrErr+ UncorrErr+ FatalErr- UnsuppReq+ AuxPwr+ TransPend-
-                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 <128ns, L1 <64us
-                        ClockPM+ Surprise- LLActRep- BwNot-
-                LnkCtl: ASPM L0s L1 Enabled; RCB 64 bytes Disabled- Retrain- CommClk+
-                        ExtSynch- ClockPM+ AutWidDis- BWInt- AutBWInt-
-                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
-        Capabilities: [100 v1] Advanced Error Reporting
-                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
-                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
-                UESvrt: DLP+ SDES- TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt- RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
-                CESta:  RxErr- BadTLP+ BadDLLP+ Rollover- Timeout- NonFatalErr-
-                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
-                AERCap: First Error Pointer: 14, GenCap- CGenEn- ChkCap- ChkEn-
-        Capabilities: [140 v1] Device Serial Number 00-1c-bf-ff-ff-50-22-54
+thanks for this info. I selected a board and compile of linux-next now
+fails with:
 
-Thanks
+  LD      .tmp_vmlinux1
+arch/arm/mach-exynos/built-in.o: In function `exynos4_pm_resume':
+/data/lemmy/linux.trees.git/arch/arm/mach-exynos/pm.c:385: undefined reference to `scu_enable'
+make[1]: *** [.tmp_vmlinux1] Error 1
+
+This is because scu_enable() is only available with CONFIG_SMP=y which
+is not set for Exynos.
+
+
+	Joerg
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
