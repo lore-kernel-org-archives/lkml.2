@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab2ACWFR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:05:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36084 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754983Ab2ACWEX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:04:23 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:02:40 2012
-Message-Id: <20120103220239.866326451@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:01:31 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [1/7] cfq-iosched: fix cfq_cic_link() race confition
-In-Reply-To: <20120103220302.GA28338@kroah.com>
+	id S1755391Ab2ACWHE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:07:04 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47742 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754953Ab2ACWHB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:07:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120103205226.GA17131@kroah.com>
+References: <20111215191523.GA2561@tuxdriver.com>
+	<CACna6rw736JdkoM8zKxorCFd5oy08QTwWZ6PutoJPSr3ZN8hTg@mail.gmail.com>
+	<20111215213822.GB2561@tuxdriver.com>
+	<CACna6rz3qDpw4eJOoCXx7=z1719v7kS-Ou-WUseR9_vB-O2dag@mail.gmail.com>
+	<CACna6rxO2dC=Y3nv-d-w89MqyM0j0aumk=r5Yh_KEg=MwOcvEQ@mail.gmail.com>
+	<20120103205226.GA17131@kroah.com>
+Date: Tue, 3 Jan 2012 23:06:59 +0100
+Message-ID: <CACna6rwjrg6m3SEBxfYWgRSTN5_4-TuA0tdG6P2pFuUvwvvjZA@mail.gmail.com>
+Subject: Re: pull request: wireless 2011-12-15
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-longterm review patch.  If anyone has any objections, please let me know.
+W dniu 3 stycznia 2012 21:52 użytkownik Greg KH <greg@kroah.com> napisał:
+> On Mon, Dec 26, 2011 at 12:36:59AM +0100, Rafał Miłecki wrote:
+>> W dniu 16 grudnia 2011 07:40 użytkownik Rafał Miłecki
+>> <zajec5@gmail.com> napisał:
+>> > W dniu 15 grudnia 2011 22:38 użytkownik John W. Linville
+>> > <linville@tuxdriver.com> napisał:
+>> >> On Thu, Dec 15, 2011 at 09:04:29PM +0100, Rafał Miłecki wrote:
+>> >>> 2011/12/15 John W. Linville <linville@tuxdriver.com>:
+>> >>> > commit 42a3b63bb2ca4996a3d1210a004eae2333f1119e
+>> >>> >
+>> >>> > Dave,
+>> >>> >
+>> >>> > Here are a few more fixes intended for the 3.2 release.  They are
+>> >>> > all small and narrowly focused.
+>> >>>
+>> >>> John, I've made a mistake and didn't use [PATCH 3.2] header to make it
+>> >>> clean my patch is fix. Could you take a look at
+>> >>> [PATCH] bcma: support for suspend and resume
+>> >>> please?
+>> >>>
+>> >>> It's not one-liner, but fixes lock ups, which I believe - we really
+>> >>> want to avoid.
+>> >>
+>> >> It's late in the release cycle, and Dave specifically asked me to slow down.
+>> >>
+>> >> Are these suspend/resume lockups a regression?  Or have they always
+>> >> been there?  Do they happen to everyone?
+>> >
+>> > The bug is present since first days of bcma. That's why I even decided
+>> > to add stable to CC.
+>> >
+>> > Personally I've tested that only on 1 machine (I don't have more
+>> > suspendable machines with mini PCIe slot). However all Macbook 8.1/8.2
+>> > users have to remove b43 & bcma before suspending [0], they complain
+>> > about that since ever.
+>> >
+>> > Arend: I know you're also complaining for suspend in bcma. Can you
+>> > comment on this?
+>> >
+>> > [0] http://ubuntuforums.org/showthread.php?t=1695746
+>>
+>> User nephyrin on #bcm-users has confirmed this patch fixes
+>> suspend&resume for him. Without this patch he got deadlock without
+>> seeing any kernel panic logs - quite an ugly case.
+>>
+>> I still think this patch may be worth taking as fix and backporting too.
+>
+> What patch specifically?  What is the git commit id of it in Linus's
+> tree?  Without that information, telling stable@ about it is
+> pointless...
 
-------------------
+Sorry Greg, it's about
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+commit 775ab52142b02237a54184238e922251c59a2b5c
+Author: Rafał Miłecki <zajec5@gmail.com>
+Date:   Fri Dec 9 22:16:07 2011 +0100
 
-commit 5eb46851de3904cd1be9192fdacb8d34deadc1fc upstream.
+    bcma: support for suspend and resume
 
-cfq_cic_link() has race condition. When some processes which shared ioc
-issue I/O to same block device simultaneously, cfq_cic_link() returns -EEXIST
-sometimes. The race condition might stop I/O by following steps:
+    bcma used to lock up machine without enabling PCI or initializing CC.
 
-step  1: Process A: Issue an I/O to /dev/sda
-step  2: Process A: Get an ioc (iocA here) in get_io_context() which does not
-		    linked with a cic for the device
-step  3: Process A: Get a new cic for the device (cicA here) in
-		    cfq_alloc_io_context()
+    Cc: stable@vger.kernel.org
+    Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-step  4: Process B: Issue an I/O to /dev/sda
-step  5: Process B: Get iocA in get_io_context() since process A and B share the
-		    same ioc
-step  6: Process B: Get a new cic for the device (cicB here) in
-		    cfq_alloc_io_context() since iocA has not been linked with a
-		    cic for the device yet
+it's located in wireless-testing:
+git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-testing.git
 
-step  7: Process A: Link cicA to iocA in cfq_cic_link()
-step  8: Process A: Dispatch I/O to driver and finish it
+John didn't pass this to Linus yet.
 
-step  9: Process B: Try to link cicB to iocA in cfq_cic_link()
-		    But it fails with showing "cfq: cic link failed!" kernel
-		    message, since iocA has already linked with cicA at step 7.
-step 10: Process B: Wait for finishig I/O in get_request_wait()
-		    The function does not wake up, when there is no I/O to the
-		    device.
-
-When cfq_cic_link() returns -EEXIST, it means ioc has already linked with cic.
-So when cfq_cic_link() return -EEXIST, retry cfq_cic_lookup().
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- block/cfq-iosched.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1981,7 +1981,7 @@ static int cfq_cic_link(struct cfq_data
- 		}
- 	}
- 
--	if (ret)
-+	if (ret && ret != -EEXIST)
- 		printk(KERN_ERR "cfq: cic link failed!\n");
- 
- 	return ret;
-@@ -1997,6 +1997,7 @@ cfq_get_io_context(struct cfq_data *cfqd
- {
- 	struct io_context *ioc = NULL;
- 	struct cfq_io_context *cic;
-+	int ret;
- 
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
- 
-@@ -2004,6 +2005,7 @@ cfq_get_io_context(struct cfq_data *cfqd
- 	if (!ioc)
- 		return NULL;
- 
-+retry:
- 	cic = cfq_cic_lookup(cfqd, ioc);
- 	if (cic)
- 		goto out;
-@@ -2012,7 +2014,12 @@ cfq_get_io_context(struct cfq_data *cfqd
- 	if (cic == NULL)
- 		goto err;
- 
--	if (cfq_cic_link(cfqd, ioc, cic, gfp_mask))
-+	ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
-+	if (ret == -EEXIST) {
-+		/* someone has linked cic to ioc already */
-+		cfq_cic_free(cic);
-+		goto retry;
-+	} else if (ret)
- 		goto err_free;
- 
- out:
-
-
+-- 
+Rafał
