@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab2ACUBe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:01:34 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:41675 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752640Ab2ACUBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:01:32 -0500
-Message-ID: <1325620837.3037.8.camel@work-vm>
-Subject: Re: REGRESSION 3.2-rcX: RTC auto poweron after 5 minutes
-From: John Stultz <john.stultz@linaro.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: Andreas Friedrich <afrie@gmx.net>, gregkh@suse.de, torvalds@osdl.org,
-        Wolfgang Erig <Wolfgang.Erig@ts.fujitsu.com>,
-        linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 03 Jan 2012 12:00:37 -0800
-In-Reply-To: <CAH+eYFBuK+-md-9QPQ8Z4DSNvKbyOEHg0EyRa2-DaVOZFi=hYQ@mail.gmail.com>
-References: <20111226145841.GA26578@upset.ux.pdb.fsc.net>
-	 <20111227105708.GA29960@upset.ux.pdb.fsc.net>
-	 <CAH+eYFBuK+-md-9QPQ8Z4DSNvKbyOEHg0EyRa2-DaVOZFi=hYQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12010320-1976-0000-0000-000009206462
+	id S1754893Ab2ACUJP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:09:15 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:63124 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab2ACUJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:09:12 -0500
+Date: Tue, 3 Jan 2012 12:09:06 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>, Jens Axboe <axboe@kernel.dk>,
+        Shaohua Li <shaohua.li@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
+ allowed to create io_context
+Message-ID: <20120103200906.GG31746@google.com>
+References: <20111223004244.GU17084@google.com>
+ <alpine.LSU.2.00.1112232058550.3225@eggly.anvils>
+ <20111225010238.GA6013@htj.dyndns.org>
+ <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
+ <20111228164836.GP17712@google.com>
+ <alpine.LSU.2.00.1112280939390.3320@eggly.anvils>
+ <CAOS58YOzUcZz41+H+7dk5FteHy+Ufrtpk9dvdPqX6eie-GHi0Q@mail.gmail.com>
+ <20111228211918.GA3516@google.com>
+ <20120103173500.GB31746@google.com>
+ <20120103175922.GC31746@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120103175922.GC31746@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-12-27 at 20:07 +0530, Rabin Vincent wrote:
-> On Tue, Dec 27, 2011 at 16:27, Andreas Friedrich <afrie@gmx.net> wrote:
-> > On Mo, Dez 26, 2011 at 03:58:41 +0100, Andreas Friedrich wrote:
-> > the 5 minutes auto-poweron problem was caused by the new function
-> > drivers/rtc/interface.c -> rtc_alarm_disable():
-> >   ...
-> >   alarm.time = rtc_ktime_to_tm(ktime_add(rtc_tm_to_ktime(tm),
-> >                                        ktime_set(300, 0)));
-> >   alarm.enabled = 0;
-> >   ...
-> >
-> > In this function the RTC alarm shall be disabled. Why do you set up a
-> > 5 minutes interval just before disabling the alarm?
-> 
-> The 5 minutes is taken from rtc-sysfs.c ("Provide a valid future alarm
-> time" etc.).  Although perhaps the "future" part is just to get past the
-> check in __rtc_set_alarm(), which we anyway don't use in
-> rtc_alarm_disable().
-> 
-> >
-> > I have changed
-> >   ktime_set(300, 0)));
-> > to
-> >   ktime_set(0, 0)));
-> > and all worked fine with my notebook.
-> >
-> > Please check if this could be a common solution of the problem.
-> 
-> Probably not, because if your hardware really doesn't disable the alarm
-> then you could get the same problem if someone say changes the RTC time
-> to a few minutes earlier after a call to rtc_alarm_disable().
-> 
-> Perhaps we can avoid your five-minute problem by just attempting
-> to disable the irq without setting a new alarm time (not yet tested):
-> 
-> diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
-> index 3bcc7cf..54a3b5e 100644
-> --- a/drivers/rtc/interface.c
-> +++ b/drivers/rtc/interface.c
-> @@ -778,16 +778,10 @@ static int rtc_timer_enqueue(struct rtc_device
-> *rtc, struct rtc_timer *timer)
-> 
->  static void rtc_alarm_disable(struct rtc_device *rtc)
->  {
-> -	struct rtc_wkalrm alarm;
-> -	struct rtc_time tm;
-> -
-> -	__rtc_read_time(rtc, &tm);
-> -
-> -	alarm.time = rtc_ktime_to_tm(ktime_add(rtc_tm_to_ktime(tm),
-> -				     ktime_set(300, 0)));
-> -	alarm.enabled = 0;
-> +	if (!rtc->ops || !rtc->ops->alarm_irq_enable)
-> +		return;
-> 
-> -	___rtc_set_alarm(rtc, &alarm);
-> +	rtc->ops->alarm_irq_enable(rtc->dev.parent, false);
->  }
-> 
-> btw, if you haven't done so yet, could you please confirm that it's not
-> something in your userspace which is _asking_ for the alarm to be
-> enabled?  You could add a printk() of the 'enabled' argument into
-> cmos_alarm_irq_enable() to do this (and one in cmos_set_alarm()
-> wouldn't hurt too).
+On Tue, Jan 03, 2012 at 09:59:22AM -0800, Tejun Heo wrote:
+> That should have been service tree.  I couldn't find more missing
+> removals other than the one Shaohua's patch already fixed.  Close
+> cooperator selection in cfq_select_queue() seems suspicious tho.  I
+> can't see what prevents it from returning an empty coopeator cfqq.
+> I'm trying to verify whether that's the case.  Will update when I know
+> more.
 
+While testing, found another bug.
 
-Hey Rabin,
-	Sorry to chime in late, just getting back from the holidays. Since it
-sounds like the above patch would need more testing and we're way too
-late in the -rc cycle, I'm suggesting we revert your original patch
-c0afabd3d553c521e003779c127143ffde55a16f and we can try to get this
-solved and tested properly for 3.3.
+ Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+ Last user: [<ffffffff813a82ee>](cfq_put_queue+0x7e/0xd0)
+ 070: e8 32 ab 1d 00 88 ff ff e8 32 ab 1d 00 88 ff ff  .2.......2......
+ Prev obj: start=ffff88001dab3178, len=232
+ Redzone: 0x9f911029d74e35b/0x9f911029d74e35b.
+ Last user: [<ffffffff813a82ee>](cfq_put_queue+0x7e/0xd0)
+ 000: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+ 010: 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b 6b  kkkkkkkkkkkkkkkk
+ Next obj: start=ffff88001dab3378, len=232
+ Redzone: 0xd84156c5635688c0/0xd84156c5635688c0.
+ Last user: [<ffffffff813a8e53>](cfq_get_queue+0x153/0x670)
+ 000: 02 00 00 00 21 01 00 00 e0 c9 b1 1d 00 88 ff ff  ....!...........
+ 010: 89 96 ae 18 00 88 ff ff 00 00 00 00 00 00 00 00  ................
 
-Linus: Could you revert c0afabd3d553c521e003779c127143ffde55a16f ? 
+The field at 0x70 which is being updated after being freed is
+cfqq->fifo.  Interestingly, it didn't lead to any visible failure.
 
-thanks
--john
+Thanks.
 
-
-
-
+-- 
+tejun
