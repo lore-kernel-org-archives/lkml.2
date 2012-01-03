@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab2ACWmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:42:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40508 "EHLO mx2.suse.de"
+	id S932184Ab2ACWmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:42:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40526 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932067Ab2ACWm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:42:29 -0500
+	id S1756459Ab2ACWmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:42:39 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:27 2012
-Message-Id: <20120103223327.149594698@clark.kroah.org>
+Message-Id: <20120103223327.417440204@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:45 -0800
+Date: Tue, 03 Jan 2012 14:33:48 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [72/75] ipv4: reintroduce route cache garbage collector
+        alan@lxorguk.ukuu.org.uk, Kyle Manna <kyle@kylemanna.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [75/75] mfd: Turn on the twl4030-madc MADC clock
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,165 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Kyle Manna <kyle@kylemanna.com>
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+commit 3d6271f92e98094584fd1e609a9969cd33e61122 upstream.
 
-[ Upstream commit 9f28a2fc0bd77511f649c0a788c7bf9a5fd04edb ]
+Without turning the MADC clock on, no MADC conversions occur.
 
-Commit 2c8cec5c10b (ipv4: Cache learned PMTU information in inetpeer)
-removed IP route cache garbage collector a bit too soon, as this gc was
-responsible for expired routes cleanup, releasing their neighbour
-reference.
+$ cat /sys/class/hwmon/hwmon0/device/in8_input
+[   53.428436] twl4030_madc twl4030_madc: conversion timeout!
+cat: read error: Resource temporarily unavailable
 
-As pointed out by Robert Gladewitz, recent kernels can fill and exhaust
-their neighbour cache.
-
-Reintroduce the garbage collection, since we'll have to wait our
-neighbour lookups become refcount-less to not depend on this stuff.
-
-Reported-by: Robert Gladewitz <gladewitz@gmx.de>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kyle Manna <kyle@kylemanna.com>
+Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/ipv4/route.c |  106 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 106 insertions(+)
 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -134,6 +134,9 @@ static int ip_rt_min_advmss __read_mostl
- static int rt_chain_length_max __read_mostly	= 20;
- static int redirect_genid;
- 
-+static struct delayed_work expires_work;
-+static unsigned long expires_ljiffies;
+---
+ drivers/mfd/twl4030-madc.c       |   22 ++++++++++++++++++++++
+ include/linux/i2c/twl4030-madc.h |    4 ++++
+ 2 files changed, 26 insertions(+)
+
+--- a/drivers/mfd/twl4030-madc.c
++++ b/drivers/mfd/twl4030-madc.c
+@@ -740,6 +740,28 @@ static int __devinit twl4030_madc_probe(
+ 			TWL4030_BCI_BCICTL1);
+ 		goto err_i2c;
+ 	}
 +
- /*
-  *	Interface to generic destination cache.
-  */
-@@ -831,6 +834,97 @@ static int has_noalias(const struct rtab
- 	return ONE;
- }
- 
-+static void rt_check_expire(void)
-+{
-+	static unsigned int rover;
-+	unsigned int i = rover, goal;
-+	struct rtable *rth;
-+	struct rtable __rcu **rthp;
-+	unsigned long samples = 0;
-+	unsigned long sum = 0, sum2 = 0;
-+	unsigned long delta;
-+	u64 mult;
++	/* Check that MADC clock is on */
++	ret = twl_i2c_read_u8(TWL4030_MODULE_INTBR, &regval, TWL4030_REG_GPBR1);
++	if (ret) {
++		dev_err(&pdev->dev, "unable to read reg GPBR1 0x%X\n",
++				TWL4030_REG_GPBR1);
++		goto err_i2c;
++	}
 +
-+	delta = jiffies - expires_ljiffies;
-+	expires_ljiffies = jiffies;
-+	mult = ((u64)delta) << rt_hash_log;
-+	if (ip_rt_gc_timeout > 1)
-+		do_div(mult, ip_rt_gc_timeout);
-+	goal = (unsigned int)mult;
-+	if (goal > rt_hash_mask)
-+		goal = rt_hash_mask + 1;
-+	for (; goal > 0; goal--) {
-+		unsigned long tmo = ip_rt_gc_timeout;
-+		unsigned long length;
-+
-+		i = (i + 1) & rt_hash_mask;
-+		rthp = &rt_hash_table[i].chain;
-+
-+		if (need_resched())
-+			cond_resched();
-+
-+		samples++;
-+
-+		if (rcu_dereference_raw(*rthp) == NULL)
-+			continue;
-+		length = 0;
-+		spin_lock_bh(rt_hash_lock_addr(i));
-+		while ((rth = rcu_dereference_protected(*rthp,
-+					lockdep_is_held(rt_hash_lock_addr(i)))) != NULL) {
-+			prefetch(rth->dst.rt_next);
-+			if (rt_is_expired(rth)) {
-+				*rthp = rth->dst.rt_next;
-+				rt_free(rth);
-+				continue;
-+			}
-+			if (rth->dst.expires) {
-+				/* Entry is expired even if it is in use */
-+				if (time_before_eq(jiffies, rth->dst.expires)) {
-+nofree:
-+					tmo >>= 1;
-+					rthp = &rth->dst.rt_next;
-+					/*
-+					 * We only count entries on
-+					 * a chain with equal hash inputs once
-+					 * so that entries for different QOS
-+					 * levels, and other non-hash input
-+					 * attributes don't unfairly skew
-+					 * the length computation
-+					 */
-+					length += has_noalias(rt_hash_table[i].chain, rth);
-+					continue;
-+				}
-+			} else if (!rt_may_expire(rth, tmo, ip_rt_gc_timeout))
-+				goto nofree;
-+
-+			/* Cleanup aged off entries. */
-+			*rthp = rth->dst.rt_next;
-+			rt_free(rth);
++	/* If MADC clk is not on, turn it on */
++	if (!(regval & TWL4030_GPBR1_MADC_HFCLK_EN)) {
++		dev_info(&pdev->dev, "clk disabled, enabling\n");
++		regval |= TWL4030_GPBR1_MADC_HFCLK_EN;
++		ret = twl_i2c_write_u8(TWL4030_MODULE_INTBR, regval,
++				       TWL4030_REG_GPBR1);
++		if (ret) {
++			dev_err(&pdev->dev, "unable to write reg GPBR1 0x%X\n",
++					TWL4030_REG_GPBR1);
++			goto err_i2c;
 +		}
-+		spin_unlock_bh(rt_hash_lock_addr(i));
-+		sum += length;
-+		sum2 += length*length;
 +	}
-+	if (samples) {
-+		unsigned long avg = sum / samples;
-+		unsigned long sd = int_sqrt(sum2 / samples - avg*avg);
-+		rt_chain_length_max = max_t(unsigned long,
-+					ip_rt_gc_elasticity,
-+					(avg + 4*sd) >> FRACT_BITS);
-+	}
-+	rover = i;
-+}
 +
-+/*
-+ * rt_worker_func() is run in process context.
-+ * we call rt_check_expire() to scan part of the hash table
-+ */
-+static void rt_worker_func(struct work_struct *work)
-+{
-+	rt_check_expire();
-+	schedule_delayed_work(&expires_work, ip_rt_gc_interval);
-+}
-+
- /*
-  * Perturbation of rt_genid by a small quantity [1..256]
-  * Using 8 bits of shuffling ensure we can call rt_cache_invalidate()
-@@ -3176,6 +3270,13 @@ static ctl_table ipv4_route_table[] = {
- 		.proc_handler	= proc_dointvec_jiffies,
- 	},
- 	{
-+		.procname	= "gc_interval",
-+		.data		= &ip_rt_gc_interval,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_jiffies,
-+	},
-+	{
- 		.procname	= "redirect_load",
- 		.data		= &ip_rt_redirect_load,
- 		.maxlen		= sizeof(int),
-@@ -3385,6 +3486,11 @@ int __init ip_rt_init(void)
- 	devinet_init();
- 	ip_fib_init();
+ 	platform_set_drvdata(pdev, madc);
+ 	mutex_init(&madc->lock);
+ 	ret = request_threaded_irq(platform_get_irq(pdev, 0), NULL,
+--- a/include/linux/i2c/twl4030-madc.h
++++ b/include/linux/i2c/twl4030-madc.h
+@@ -129,6 +129,10 @@ enum sample_type {
+ #define REG_BCICTL2             0x024
+ #define TWL4030_BCI_ITHSENS	0x007
  
-+	INIT_DELAYED_WORK_DEFERRABLE(&expires_work, rt_worker_func);
-+	expires_ljiffies = jiffies;
-+	schedule_delayed_work(&expires_work,
-+		net_random() % ip_rt_gc_interval + ip_rt_gc_interval);
++/* Register and bits for GPBR1 register */
++#define TWL4030_REG_GPBR1		0x0c
++#define TWL4030_GPBR1_MADC_HFCLK_EN	(1 << 7)
 +
- 	if (ip_rt_proc_init())
- 		printk(KERN_ERR "Unable to create route proc files\n");
- #ifdef CONFIG_XFRM
+ struct twl4030_madc_user_parms {
+ 	int channel;
+ 	int average;
 
 
