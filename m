@@ -1,64 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab2ACUfr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:35:47 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:47356 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab2ACUfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:35:45 -0500
-Date: Tue, 3 Jan 2012 15:33:57 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "ustc.mail" <backyes@mail.ustc.edu.cn>
-Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: =?utf-8?B?44CQUXVlc3Rpb27jgJFXaGV0aGVy?=
- =?utf-8?Q?_it's_legal_to_enabl?= =?utf-8?Q?e?= same physical DMA memory
- mapped for different NIC device?
-Message-ID: <20120103203357.GD17472@phenom.dumpdata.com>
-References: <CAJULonj9rFDKNCzpEXj2r3XjkYojy-CGYpVQ1RF8SxwLVrXqAA@mail.gmail.com>
+	id S1755087Ab2ACUhm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:37:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59455 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754410Ab2ACUhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:37:40 -0500
+Date: Tue, 3 Jan 2012 12:37:17 -0800
+From: Greg KH <gregkh@suse.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
+Message-ID: <20120103203717.GA6701@suse.de>
+References: <1324901803.31721.4.camel@lappy>
+ <20111226163148.GC2435@linux.vnet.ibm.com>
+ <1324977203.28904.1.camel@lappy>
+ <20111228042959.GA2477@linux.vnet.ibm.com>
+ <20120103202716.GA8384@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJULonj9rFDKNCzpEXj2r3XjkYojy-CGYpVQ1RF8SxwLVrXqAA@mail.gmail.com>
+In-Reply-To: <20120103202716.GA8384@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090203.4F036694.00CA,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 10:16:40PM +0800, ustc.mail wrote:
-> Dear all,
+On Tue, Jan 03, 2012 at 12:27:16PM -0800, Paul E. McKenney wrote:
+> On Tue, Dec 27, 2011 at 08:29:59PM -0800, Paul E. McKenney wrote:
+> > On Tue, Dec 27, 2011 at 11:13:23AM +0200, Sasha Levin wrote:
+> > > On Mon, 2011-12-26 at 08:31 -0800, Paul E. McKenney wrote:
+> > > > Except that when I try looking for task_notify_func() in current mainline,
+> > > > I get nothing.
+> > > > 
+> > > > Where is task_notify_func() coming from? 
+> > > 
+> > > I was testing linux-next, it actually comes from the android tree:
+> > > drivers/staging/android/lowmemorykiller.c
+> > 
+> > That does sound familiar...  I wonder if the stuff in staging is current
+> > Android or historical stuff.
 > 
-> In NIC driver, to eliminate the  overhead of dma_map_single() for DMA
-> packet data,  we have statically allocated huge DMA memory buffer ring
-> at once instead of calling dma_map_single() per packet.  Considering
-> to further reduce the copy overhead between different NIC(port) ring
-> while forwarding, one packet from a input NIC(port) will be
-> transferred to output NIC(port) with no any copy action.
+> And memory did serve for once.  ;-)
 > 
-> To satisfy this requirement, the packet memory should be mapped into
-> input port and unmapped when leaving input port, then mapped into
-> output port and unmapped later.
+> Current Android has the following for task_notify_func():
 > 
-> Whether it's legal to map the same DMA memory into input and output
-> port simultaneously? If it's not, then the zero-copy for packet
-> forwarding is not feasible?
+> static int
+> task_notify_func(struct notifier_block *self, unsigned long val, void *data)
+> {
+> 	struct task_struct *task = data;
 > 
+> 	if (task == lowmem_deathpending)
+> 		lowmem_deathpending = NULL;
+> 
+> 	return NOTIFY_OK;
+> }
+> 
+> This is from https://android.googlesource.com/kernel/common.git.
+> 
+> Commit 5545554aac04918ece318270d63cbfcb015577a9 fixed this problem.
+> The commit is shown below, FYI.
+> 
+> Greg, would it be possible to pull in the current Android code?  There
+> have been a few fixes.  ;-)
 
-Did you ever a get a response about this?
+I did base the stuff in staging on the common.git tree, but for some
+reason this patch wasn't applied, odd, I'll go apply it now...
 
-Is the output/input port on a seperate device function? Or is it
-just a specific MMIO BAR in your PCI device?
+Ah, I see, it didn't apply for various reasons:
 
-> Hope PCI expert to post your suggestion.
-> 
-> Thanks!
-> 
-> --Yanfei
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+patching file drivers/staging/android/lowmemorykiller.c
+Hunk #1 FAILED at 71.
+Hunk #2 FAILED at 168.
+Hunk #3 succeeded at 196 (offset 11 lines).
+Hunk #4 succeeded at 204 (offset 11 lines).
+
+Care to rebase this patch and send it to me so that I can apply it?  I
+don't have the time to do it myself at the moment, sorry, lots of higher
+priority items to get done this week, sorry.
+
+greg k-h
