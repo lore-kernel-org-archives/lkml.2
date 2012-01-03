@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab2ACWld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:41:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40374 "EHLO mx2.suse.de"
+	id S932188Ab2ACWuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:50:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40369 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756319Ab2ACWl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:26 -0500
+	id S932071Ab2ACWlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
-Message-Id: <20120103223323.181525056@clark.kroah.org>
+Message-Id: <20120103223323.101522455@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:32:59 -0800
+Date: Tue, 03 Jan 2012 14:32:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [26/75] NFS: Fix a regression in nfs_file_llseek()
+Subject: [25/75] SUNRPC: Ensure we always bump the backlog queue in xprt_free_slot
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 6c52961743f38747401b47127b82159ab6d8a7a4 upstream.
+commit c25573b5134294c0be82bfaecc6d08136835b271 upstream.
 
-After commit 06222e491e663dac939f04b125c9dc52126a75c4 (fs: handle
-SEEK_HOLE/SEEK_DATA properly in all fs's that define their own llseek)
-the behaviour of llseek() was changed so that it always revalidates
-the file size. The bug appears to be due to a logic error in the
-afore-mentioned commit, which always evaluates to 'true'.
+Whenever we free a slot, we know that the resulting xprt->num_reqs will
+be less than xprt->max_reqs, so we know that we can release at least one
+backlogged rpc_task.
 
-Reported-by: Roel Kluin <roel.kluin@gmail.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/file.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ net/sunrpc/xprt.c |   10 ++++------
+ 1 file changed, 4 insertions(+), 6 deletions(-)
 
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -191,7 +191,7 @@ static loff_t nfs_file_llseek(struct fil
- 	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
- 	 * the cached file length
- 	 */
--	if (origin != SEEK_SET || origin != SEEK_CUR) {
-+	if (origin != SEEK_SET && origin != SEEK_CUR) {
- 		struct inode *inode = filp->f_mapping->host;
+--- a/net/sunrpc/xprt.c
++++ b/net/sunrpc/xprt.c
+@@ -995,13 +995,11 @@ out_init_req:
  
- 		int retval = nfs_revalidate_file_size(inode, filp);
+ static void xprt_free_slot(struct rpc_xprt *xprt, struct rpc_rqst *req)
+ {
+-	if (xprt_dynamic_free_slot(xprt, req))
+-		return;
+-
+-	memset(req, 0, sizeof(*req));	/* mark unused */
+-
+ 	spin_lock(&xprt->reserve_lock);
+-	list_add(&req->rq_list, &xprt->free);
++	if (!xprt_dynamic_free_slot(xprt, req)) {
++		memset(req, 0, sizeof(*req));	/* mark unused */
++		list_add(&req->rq_list, &xprt->free);
++	}
+ 	rpc_wake_up_next(&xprt->backlog);
+ 	spin_unlock(&xprt->reserve_lock);
+ }
 
 
