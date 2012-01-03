@@ -1,163 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab2ACRpy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 12:45:54 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40276 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab2ACRpt (ORCPT
+	id S1754399Ab2ACRqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 12:46:51 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55829 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab2ACRqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 12:45:49 -0500
-Message-ID: <4F033EC9.4050909@gmail.com>
-Date: Tue, 03 Jan 2012 12:45:45 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Tue, 3 Jan 2012 12:46:49 -0500
+Date: Tue, 3 Jan 2012 17:46:39 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Richard Zhao <richard.zhao@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, vinod.koul@intel.com, eric.miao@linaro.org,
+        kernel@pengutronix.de, dan.j.williams@intel.com, shawn.guo@linaro.org
+Subject: Re: [PATCH v2 2/2] dma/imx-sdma: add wmb before enable a channel
+Message-ID: <20120103174639.GF2914@n2100.arm.linux.org.uk>
+References: <1325428692-11473-1-git-send-email-richard.zhao@linaro.org> <1325428692-11473-3-git-send-email-richard.zhao@linaro.org>
 MIME-Version: 1.0
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-CC: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
- exist
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com> <1325499859-2262-8-git-send-email-gilad@benyossef.com>
-In-Reply-To: <1325499859-2262-8-git-send-email-gilad@benyossef.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325428692-11473-3-git-send-email-richard.zhao@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1/2/12 5:24 AM), Gilad Ben-Yossef wrote:
-> Calculate a cpumask of CPUs with per-cpu pages in any zone
-> and only send an IPI requesting CPUs to drain these pages
-> to the buddy allocator if they actually have pages when
-> asked to flush.
+On Sun, Jan 01, 2012 at 10:38:12PM +0800, Richard Zhao wrote:
+> dma_alloc_coherent memory may be bufferable. We need to add
+> nececcary memory barrier.
 > 
-> This patch saves 99% of IPIs asking to drain per-cpu
-> pages in case of severe memory preassure that leads
-> to OOM since in these cases multiple, possibly concurrent,
-> allocation requests end up in the direct reclaim code
-> path so when the per-cpu pages end up reclaimed on first
-> allocation failure for most of the proceeding allocation
-> attempts until the memory pressure is off (possibly via
-> the OOM killer) there are no per-cpu pages on most CPUs
-> (and there can easily be hundreds of them).
-> 
-> This also has the side effect of shortening the average
-> latency of direct reclaim by 1 or more order of magnitude
-> since waiting for all the CPUs to ACK the IPI takes a
-> long time.
-> 
-> Tested by running "hackbench 400" on a 4 CPU x86 otherwise
-> idle VM and observing the difference between the number
-> of direct reclaim attempts that end up in drain_all_pages()
-> and those were more then 1/2 of the online CPU had any
-> per-cpu page in them, using the vmstat counters introduced
-> in the next patch in the series and using proc/interrupts.
-> 
-> In the test sceanrio, this saved around 500 global IPIs.
-> After trigerring an OOM:
-> 
-> $ cat /proc/vmstat
-> ...
-> pcp_global_drain 627
-> pcp_global_ipi_saved 578
-> 
-> I've also seen the number of drains reach 15k calls
-> with the saved percentage reaching 99% when there
-> are more tasks running during an OOM kill.
-> 
-> Signed-off-by: Gilad Ben-Yossef<gilad@benyossef.com>
-> Acked-by: Christoph Lameter<cl@linux.com>
-> CC: Chris Metcalf<cmetcalf@tilera.com>
-> CC: Peter Zijlstra<a.p.zijlstra@chello.nl>
-> CC: Frederic Weisbecker<fweisbec@gmail.com>
-> CC: Russell King<linux@arm.linux.org.uk>
-> CC: linux-mm@kvack.org
-> CC: Pekka Enberg<penberg@kernel.org>
-> CC: Matt Mackall<mpm@selenic.com>
-> CC: Sasha Levin<levinsasha928@gmail.com>
-> CC: Rik van Riel<riel@redhat.com>
-> CC: Andi Kleen<andi@firstfloor.org>
-> CC: Mel Gorman<mel@csn.ul.ie>
-> CC: Andrew Morton<akpm@linux-foundation.org>
-> CC: Alexander Viro<viro@zeniv.linux.org.uk>
-> CC: linux-fsdevel@vger.kernel.org
-> CC: Avi Kivity<avi@redhat.com>
+> Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
 > ---
->   Christopth Ack was for a previous version that allocated
->   the cpumask in drain_all_pages().
-
-When you changed a patch design and implementation, ACKs are
-should be dropped. otherwise you miss to chance to get a good
-review.
-
-
-
->   mm/page_alloc.c |   26 +++++++++++++++++++++++++-
->   1 files changed, 25 insertions(+), 1 deletions(-)
+>  drivers/dma/imx-sdma.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 2b8ba3a..092c331 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -67,6 +67,14 @@ DEFINE_PER_CPU(int, numa_node);
->   EXPORT_PER_CPU_SYMBOL(numa_node);
->   #endif
-> 
-> +/*
-> + * A global cpumask of CPUs with per-cpu pages that gets
-> + * recomputed on each drain. We use a global cpumask
-> + * for to avoid allocation on direct reclaim code path
-> + * for CONFIG_CPUMASK_OFFSTACK=y
-> + */
-> +static cpumask_var_t cpus_with_pcps;
-> +
->   #ifdef CONFIG_HAVE_MEMORYLESS_NODES
->   /*
->    * N.B., Do NOT reference the '_numa_mem_' per cpu variable directly.
-> @@ -1119,7 +1127,19 @@ void drain_local_pages(void *arg)
->    */
->   void drain_all_pages(void)
->   {
-> -	on_each_cpu(drain_local_pages, NULL, 1);
-> +	int cpu;
-> +	struct per_cpu_pageset *pcp;
-> +	struct zone *zone;
-> +
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index f8e87b5..9301bff 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -394,6 +394,7 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+>  
+>  static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
+>  {
+> +	wmb();
+>  	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
 
-get_online_cpu() ?
+Use writel().  That's what it's there for:
 
-> +	for_each_online_cpu(cpu)
-> +		for_each_populated_zone(zone) {
-> +			pcp = per_cpu_ptr(zone->pageset, cpu);
-> +			if (pcp->pcp.count)
-> +				cpumask_set_cpu(cpu, cpus_with_pcps);
-> +			else
-> +				cpumask_clear_cpu(cpu, cpus_with_pcps);
-
-cpumask* functions can't be used locklessly?
-
-> +		}
-> +	on_each_cpu_mask(cpus_with_pcps, drain_local_pages, NULL, 1);
->   }
-> 
->   #ifdef CONFIG_HIBERNATION
-> @@ -3623,6 +3643,10 @@ static void setup_zone_pageset(struct zone *zone)
->   void __init setup_per_cpu_pageset(void)
->   {
->   	struct zone *zone;
-> +	int ret;
-> +
-> +	ret = zalloc_cpumask_var(&cpus_with_pcps, GFP_KERNEL);
-> +	BUG_ON(!ret);
-> 
->   	for_each_populated_zone(zone)
->   		setup_zone_pageset(zone);
-
+#ifdef CONFIG_ARM_DMA_MEM_BUFFERABLE
+#define __iowmb()               wmb()
+#endif
+#define writel_relaxed(v,c)     ((void)__raw_writel((__force u32) \
+                                        cpu_to_le32(v),__mem_pci(c)))
+#define writel(v,c)             ({ __iowmb(); writel_relaxed(v,c); })
