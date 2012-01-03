@@ -1,97 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab2ACI1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 03:27:24 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:60922 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751992Ab2ACI1X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 03:27:23 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-d8-4f02bbe17e52
-From: Chanho Park <chanho61.park@samsung.com>
-To: "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: swarren@nvidia.com, Baohua.Song@csr.com, linux-kernel@vger.kernel.org
-References: <1325576871-9397-1-git-send-email-chanho61.park@samsung.com>
- <CACRpkdaS7843scS5jwVajMzrUy3c7bSUHMW7n+=fkk6XTEKfDA@mail.gmail.com>
-In-reply-to: <CACRpkdaS7843scS5jwVajMzrUy3c7bSUHMW7n+=fkk6XTEKfDA@mail.gmail.com>
-Subject: RE: [PATCH 0/2] add support for partial pin space
-Date: Tue, 03 Jan 2012 17:27:13 +0900
-Message-id: <007f01ccc9f1$7ebc4230$7c34c690$%park@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczJ7VZYdLm6rQR7QlWtDX+JRSLeEgAAWBgw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1752542Ab2ACI25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 03:28:57 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36584 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992Ab2ACI2x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 03:28:53 -0500
+Date: Tue, 3 Jan 2012 09:26:27 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Jack Stone <jwjstone@fastmail.fm>, Matthew Garrett <mjg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+Message-ID: <20120103082627.GA13214@elte.hu>
+References: <CA+55aFwJuuvqcsgHnZ4-VhUhbVvL6beKogo1adgYyZt_ZM=H7A@mail.gmail.com>
+ <20120102215028.GA15701@srcf.ucam.org>
+ <CA+55aFz73GuHiOW1NoAuJLea_GKLepiZjrnrgpOKdQizPgnhoA@mail.gmail.com>
+ <20120102221235.GA16012@srcf.ucam.org>
+ <CA+55aFyHvmvast_kuNddU3iotReR1mOpKM4HGAw80ma8kn+2-g@mail.gmail.com>
+ <20120102222920.GA16160@srcf.ucam.org>
+ <CA+55aFyUK6X7ip2UXV9iT07=qezXfbw82wn6UKAN8JFQtYNs5Q@mail.gmail.com>
+ <20120102230037.GA16458@srcf.ucam.org>
+ <4F023E6B.2020307@fastmail.fm>
+ <20120103001851.3530f99d@pyramind.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120103001851.3530f99d@pyramind.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus W.,
-Original code always enumerate from 0 to maxpin because you wrote
-as an offset equals to a pin number. It's inefficient because we always
-define and enumerate whole pins in the system even though we do not use
-the pin.
-The pin space was already stored as array in the pin controller descriptor.
-And we also have a number of pins.
 
-Please see below example,
+* Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-static const struct pinctrl_pin_desc pads[] = {
-	PINCTRL_PIN(100, "PIN100"),
-	PINCTRL_PIN(9999, "PIN9999"),
-};
-In this extreme system, the system has two pins.
-We do not support non-zero based pin starting number.
-And we always do silly loop until 0 to 9999. :)
+> > You mensioned earlier about not being able to tell the 
+> > difference between a device that needs firmware and one that 
+> > needs flash (e.g. they use exactly the same ids). It doesn't 
+> > really matter - we just assume that it might need firmware 
+> > and load it anyway. It uses more memory but is robust.
+> 
+> We only need to do that for the devices where order and not 
+> blocking matters. There are a few (and some are video) where 
+> the firmware sizes is megabytes, which on an embedded 
+> controlling device is not acceptable. I don't believe any of 
+> them are things where simply delaying the restoration will 
+> cause problems however - its video, and DVB and the like not 
+> wireless or serial.
 
-This patch enables to enumerate the pin space by using the offset of array.
-Thus, we don't need maxpin to enumerate the pin space because it is
-sufficient
-to use npins.
+Here's the size histogram/analysis of all *.fw, *.bin, *.dat, 
+*.ucode, etc. files in /lib/firmware on a fully populated 
+distro:
 
-Best Regards,
-Chanho Park
+ 476 firmware blobs total
 
+The toplist:
 
-> -----Original Message-----
-> From: Linus Walleij [mailto:linus.walleij@linaro.org]
-> Sent: Tuesday, January 03, 2012 4:57 PM
-> To: Chanho Park
-> Cc: swarren@nvidia.com; Baohua.Song@csr.com; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 0/2] add support for partial pin space
-> 
-> On Tue, Jan 3, 2012 at 8:47 AM, Chanho Park <chanho61.park@samsung.com>
-> wrote:
-> 
-> > A pin space of current pinctrl driver always start with zero-based
-> pin
-> > number. And pins are enumerated from 0 to a max pin number. If there
-> are
-> > two pins (one is 0, another is 1000), we always enumerate from 0 to
-> 1000
-> > for just only two pins. This patch enables to start non-zero based
-> pin
-> > number and to enumerate actually owned pins.
-> >
-> > For example, there is a system which has huge(500 or 1000) pins. If
-> muxing
-> > or controlling pins are small, we just define such small pins instead
-> of
-> > whole pins.
-> 
-> Seems like you're fixing my code to do what was originally intended :-)
-> 
-> The maxpin member was something I introduced for sparse ranges
-> which would auto-register "dummy pins" for those not included in the
-> enumeration.
-> 
-> That doesn't quite work, so was left behind.
-> 
-> I'll try applying the patches and see what happens.
-> 
-> Yours,
-> Linus Walleij
+ -rw-r--r--. 1 root root 2786404 Jul 24  2010 ./bcm70012fw.bin
+ -rw-r--r--. 1 root root 1781048 Feb  9  2011 ./phanfw.bin
+ -rw-r--r--. 1 root root  864276 Jul 24  2010 ./bcm70015fw.bin
+ -rw-r--r--. 1 root root  844980 Feb  8  2011 ./asihpi/dsp6200.bin
+ -rw-r--r--. 1 root root  636980 Feb  8  2011 ./asihpi/dsp6600.bin
+ -rw-r--r--. 1 root root  627696 Feb  8  2011 ./asihpi/dsp6400.bin
+ -rw-r--r--. 1 root root  563592 Aug  4 22:04 ./myri10ge_rss_ethp_z8e.dat
+ -rw-r--r--. 1 root root  553192 Aug  4 22:04 ./myri10ge_rss_eth_z8e.dat
+ -rw-r--r--. 1 root root  504916 Feb  8  2011 ./asihpi/dsp8900.bin
+ -rw-r--r--. 1 root root  498128 Sep  7 20:14 ./ct2fw.bin
 
+ - 2% of them, i.e. just a tiny fraction is over 512 KB.
+ - 80% of the firmware blobs are below 100K.
+ - 50% of them are below 16K.
+
+So loading them into RAM is the obviously right solution.
+
+Those few devices that absolutely want to load the firmware blob 
+dynamically on some weird low-RAM system can do so *BEFORE* 
+suspending.
+
+There is nothing that prevents a low-RAM system from loading the 
+firmware blob in an early suspend callback and making sure it's 
+there at resume time - and then unloading it from RAM after 
+resume.
+
+I.e. large blobs can manage their RAM usage just fine - but the 
+obscenity of the 1% should not control the design and sanity of 
+the 99% case ...
+
+> [...]
+> 
+> The world is heading this way more and more. It's moving from 
+> the old PC model of 'user closes lid, clunk for 15 seconds, 
+> enter suspend, user opens lid, churn churn, video, churn 
+> clunk. resume' to suspend/resume being so fast it happens 
+> between keystrokes.
+
+Exactly!
+
+Thanks,
+
+	Ingo
