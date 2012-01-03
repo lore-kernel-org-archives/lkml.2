@@ -1,100 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab2ACNDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 08:03:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35636 "EHLO mx2.suse.de"
+	id S1753238Ab2ACND3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 08:03:29 -0500
+Received: from mga01.intel.com ([192.55.52.88]:26734 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534Ab2ACNDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 08:03:10 -0500
-Date: Tue, 3 Jan 2012 14:03:06 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
-Subject: Re: iwl3945 didn't survive after s2ram failure
-Message-ID: <20120103130306.GA3891@tiehlicka.suse.cz>
-References: <20111227105340.GD5344@tiehlicka.suse.cz>
- <20120103103457.GA3391@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103103457.GA3391@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753108Ab2ACND1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 08:03:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102670318"
+Subject: Re: [PATCH] dmaengine/dw_dmac: Add support for device_prep_dma_sg
+From: Vinod Koul <vinod.koul@intel.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Pratyush Anand <pratyush.anand@st.com>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
+        Bhavna YADAV <bhavna.yadav@st.com>,
+        Bhupesh SHARMA <bhupesh.sharma@st.com>,
+        Armando VISCONTI <armando.visconti@st.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+        Amit VIRDI <Amit.VIRDI@st.com>, Mirko GARDI <mirko.gardi@st.com>,
+        Deepak SIKRI <deepak.sikri@st.com>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Vincenzo FRASCINO <Vincenzo.FRASCINO@st.com>,
+        Viresh KUMAR <viresh.kumar@st.com>
+In-Reply-To: <20120103094048.GF2914@n2100.arm.linux.org.uk>
+References: <1323766064-13425-1-git-send-email-pratyush.anand@st.com>
+	 <1324655898.1633.11.camel@vkoul-udesk3> <4F0192F2.3010506@st.com>
+	 <1325503535.1540.17.camel@vkoul-udesk3>
+	 <20120103094048.GF2914@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 03 Jan 2012 18:33:36 +0530
+Message-ID: <1325595816.1540.65.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 03-01-12 11:34:58, Stanislaw Gruszka wrote:
-> On Tue, Dec 27, 2011 at 11:53:40AM +0100, Michal Hocko wrote:
-> > my laptop died (due to drained batteries) while it was suspended to
-> > RAM and the wireless didn't get back to life after I booted again.
+On Tue, 2012-01-03 at 09:40 +0000, Russell King - ARM Linux wrote:
+> On Mon, Jan 02, 2012 at 04:55:35PM +0530, Vinod Koul wrote:
+> > On Mon, 2012-01-02 at 16:50 +0530, Pratyush Anand wrote:
+> > > On 12/23/2011 9:28 PM, Vinod Koul wrote:
+> > > > On Tue, 2011-12-13 at 14:17 +0530, Pratyush Anand wrote:
+> > > >> Memory to memory copy with scatter gather option has been implemented in
+> > > >> this patch. Driver can manage even if number of nodes in src and dst
+> > > >> list is different.
+> > > > The logic looks okay, but it would be great if we could split this
+> > > > prepare here.
+> > > > Possibly later when we have multiple such cases we can create templates
+> > > > for parsing the non linear sg list and create linear lists from it.
+> > > >
+> > > 
+> > > Ok. So you suggest to have one patch with a function to align sglist
+> > > w.r.t length, and to implement this dwc_prep_dma_sg with aligned list only.
+> > IMO that would be a much better approach
+> > > 
+> > > Caller of dwc_prep_dma_sg function will also call something like
+> > > align_sg_list(unaligned_dsgl, unaligned ssgl, aligned dsgl,aligned ssgl);
+> > and this one can be common code in dmaengine
 > 
-> I wonder how we could kill hardware that way ...
+> Wait a moment.  This looks like a disaster waiting to happen.  The DMA
+> engine code doesn't really handle the DMA API properly as it is - and
+> that has lead to at least one recent oops report (and it still remains
+> unresolved.)
 > 
-> > Dmesg says:
-> > cfg80211: Calling CRDA to update world regulatory domain
-> > iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, in-tree:s
-> > iwl3945: Copyright(c) 2003-2011 Intel Corporation
-> > iwl3945 0000:05:00.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
-> > iwl3945 0000:05:00.0: setting latency timer to 64
-> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-> > iwl3945 0000:05:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
-> > iwl3945 0000:05:00.0: EEPROM not found, EEPROM_GP=0xffffffff
-> > iwl3945 0000:05:00.0: Unable to init EEPROM
-> > iwl3945 0000:05:00.0: PCI INT A disabled
-> > iwl3945: probe of 0000:05:00.0 failed with error -2
-> > 
-> > Is there anything I can do to resurrect it?
+> The DMA API has the idea of buffer ownership: a buffer is either owned by
+> the CPU, or the DMA device.  Only its owner may explicitly access the
+> buffer.
 > 
-> No idea. Please provide logs with debug=0x47ffffff option.
+> Before a buffer can be used for DMA, it must be mapped to the DMA device
+> (using dma_map_sg() or dma_map_single().)  Once this call returns, the
+> mapping is setup and the CPU must not explicitly access the buffer until
+> the buffer is unmapped via dma_unmap_sg() or dma_unmap_single().
+> 
+> With the DMA engine API, the caller is responsible for mapping the buffer.
+> 
+> This means that if you want to ensure that the buffer is correctly aligned,
+> you must check the alignments _before_ mapping the buffer, and do any
+> appropriate copies at this stage.
+> 
+> So, it must be:
+> 	- align_sg_list
+> 	- map aligned lists
+> 	- prep_dma_sg
+Yes, that is something I had in mind as well.
+For slave-dma as we documented, the peripheral driver needs to take care
+of mapping hence it should do above as you suggested and not the one
+below.
+My suggestion was to have a generic alignment routine for sg list (which
+may be used by other drivers as well) in some common place.
+> and not
+> 	- map aligned lists
+> 	- align_sg_list
+> 	- prep_dma_sg
+> because then you're violating the DMA API by having the CPU access an
+> already mapped buffer - and that will lead to data corruption.
+> 
+> Finally, consider this: you have two scatterlists which ask you to copy
+> between two buffers.  The first is offset by one byte from a 32-bit word
+> boundary.  The second is offset by two bytes from a 32-bit word
+> boundary.  Your DMA engine can only perform naturally aligned 32-bit
+> transfers for both the source and destination.  How do you see this
+> situation being dealt with?
+in this case, i don't think dmaengine can perform the task.
+it should check for required alignments in the respective prepare
+function, and return error if it cant support it.
+Nevertheless, all prepare functions should be checking for word
+alignment of source and destination...
 
-[ 5622.729333] cfg80211: Calling CRDA to update world regulatory domain
-[ 5622.739262] iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, in-tree:ds
-[ 5622.739270] iwl3945: Copyright(c) 2003-2011 Intel Corporation
-[ 5622.739324] ieee80211 phy0: U iwl3945_pci_probe Disabling hw_scan
-[ 5622.739328] ieee80211 phy0: U iwl3945_pci_probe *** LOAD DRIVER ***
-[ 5622.739396] iwl3945 0000:05:00.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
-[ 5622.739419] iwl3945 0000:05:00.0: setting latency timer to 64
-[ 5622.739446] ieee80211 phy0: U iwl3945_pci_probe pci_resource_len = 0x00001000
-[ 5622.739451] ieee80211 phy0: U iwl3945_pci_probe pci_resource_base = f801e000
-[ 5622.739462] ieee80211 phy0: U iwl_legacy_eeprom_init NVM size = 1024
-[ 5622.739466] ieee80211 phy0: U iwl_legacy_apm_init Init card's basic functions
-[ 5622.740021] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-[ 5622.760206] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-[ 5622.777028] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-[ 5622.793768] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-[ 5622.810526] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-[ 5622.827279] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
-[ 5622.840727] ieee80211 phy0: U iwl_legacy_eeprom_verify_signature EEPROM signature=0x00000007
-[ 5622.840731] iwl3945 0000:05:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
-[ 5622.840735] iwl3945 0000:05:00.0: EEPROM not found, EEPROM_GP=0xffffffff
-[ 5622.840740] ieee80211 phy0: U iwl_legacy_apm_stop Stop card, put in low power state
-[ 5622.840746] ieee80211 phy0: U iwl_legacy_apm_stop_master stop master
-[ 5622.840762] iwl3945 0000:05:00.0: Unable to init EEPROM
-[ 5622.840836] iwl3945 0000:05:00.0: PCI INT A disabled
-[ 5622.840851] iwl3945: probe of 0000:05:00.0 failed with error -2
-
-> Did you try to totally power-off the laptop by removing
-> battery (and power cable of course) ?
-
-Yes and no change. I even tried to disable wireless in BIOS boot and
-then enable it again. No change...
-It seems somebody already had the same problem
-https://bugzilla.redhat.com/show_bug.cgi?id=639184. My BIOS doesn't
-provide any locator setting, unfortunatelly.
-
-The message above says that the HW is still in a deep sleep state. Can
-we somehow force waking it up?
-Or, can we just ignore the signature check and (maybe) fix it by another
-suspend/resume cycle?
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+~Vinod
+
