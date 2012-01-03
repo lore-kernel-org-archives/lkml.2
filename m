@@ -1,92 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000Ab2ACQAw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 11:00:52 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64705 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab2ACQAt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 11:00:49 -0500
-Message-ID: <4F03262D.8090506@suse.cz>
-Date: Tue, 03 Jan 2012 17:00:45 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20111223 Thunderbird/10.0
+	id S1753988Ab2ACQEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 11:04:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44898 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753930Ab2ACQEO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 11:04:14 -0500
+Date: Tue, 3 Jan 2012 17:04:11 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Peng Haitao <penght@cn.fujitsu.com>
+Cc: cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: how to make memory.memsw.failcnt is nonzero
+Message-ID: <20120103160411.GD3891@tiehlicka.suse.cz>
+References: <4EFADFF8.5020703@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: serial ports now asserting DTR and RTS during boot; breaks connected
- hardware
-References: <20120103153707.GA12771@redhat.com>
-In-Reply-To: <20120103153707.GA12771@redhat.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EFADFF8.5020703@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2012 04:37 PM, Dave Jones wrote:
-> Jiri,
-> We got this report from a user who notes a change in behaviour for
-> his serial hardware over the last few kernel versions.
+[Let's add some people to the CC list]
 
-Hi!
+Hi,
+sorry for the late reply (some vacation and holiday)
 
-I'm busy right now, however just after a quick look, it may be related to:
-https://lkml.org/lkml/2011/12/6/573
-
-I'll take a look later.
-
-> https://bugzilla.redhat.com/show_bug.cgi?id=771010
+On Wed 28-12-11 17:23:04, Peng Haitao wrote:
 > 
-> This sounds like it might be related to your DTR/RTS changes back in March 2011 maybe ? 
-
-What changes do you mean? In serial-core.c? That one is not used by USB
-serials. Hence this wouldn't occur with FTDI.
-
->  > Description of problem:
->  > 
->  > After upgrade from FC14 to FC16, it was discovered that during kernel boot, the
->  > DTR and RTS signals of serial devices (both real UART and FTDI USB devices) are
->  > being asserted from driver load to approx 20 seconds afterward.  This causes
->  > some types of hardware connected to these ports to fail as they expect a
->  > different sequence or controlled activation of these signals.  In particular,
->  > ham radio equipment that uses these signals to key transmitters is now going
->  > into uncontrolled transmit for nearly the duration of kernel boot.
->  > 
->  > 
->  > Steps to Reproduce:
->  > 1. connect RS232 breakout box to serial port
->  > 2. boot system
->  > 3. watch DTR and RTS LEDs light as kernel is booting
->  > 
->  > Actual results:
->  > 
->  > LEDs light and stay light for almost entire boot duration indicating that DTR
->  > and RTS are asserting as the kernel boots.
->  > 
->  > Expected results:
->  > 
->  > DTR and RTS should not activate while kernel is booting.  They should only
->  > activate when the port is opened by an application and it has performed a
->  > termios function to enable these signals.
->  > 
->  > 
->  > Additional info:
->  > 
->  > The following code in the ftdi_sio driver is one suspect but this behavior
->  > happens on 8250 UARTs also so it is systemic now,
->  > 
->  > ftdi_sio.c, line 2161,
->  > 
->  >                 /* Ensure RTS and DTR are raised when baudrate changed from 0
->  > */
->  >                 if (!old_termios || (old_termios->c_cflag & CBAUD) == B0)
->  >                         set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
->  > 
+> memory.memsw.failcnt shows the number of memory+Swap hits limits.
+> So I think when memory+swap usage is equal to limit, memsw.failcnt should be nonzero.
 > 
+> I test as follows:
 > 
+> # uname -a
+> Linux K-test 3.2.0-rc7-17-g371de6e #2 SMP Wed Dec 28 12:02:52 CST 2011 x86_64 x86_64 x86_64 GNU/Linux
+> # mkdir /cgroup/memory/group
+> # cd /cgroup/memory/group/
+> # echo 10M > memory.limit_in_bytes
+> # echo 10M > memory.memsw.limit_in_bytes
+> # echo $$ > tasks
+> # dd if=/dev/zero of=/tmp/temp_file count=20 bs=1M
+> Killed
+> # cat memory.memsw.failcnt
+> 0
+> # grep "failcnt" /var/log/messages | tail -2
+> Dec 28 17:05:52 K-test kernel: memory: usage 10240kB, limit 10240kB, failcnt 21
+> Dec 28 17:05:52 K-test kernel: memory+swap: usage 10240kB, limit 10240kB, failcnt 0
+> 
+> memory+swap usage is equal to limit, but memsw.failcnt is zero.
+> 
+> I change memory.memsw.limit_in_bytes to 15M.
+> 
+> # echo 15M > memory.memsw.limit_in_bytes
+> # dd if=/dev/zero of=/tmp/temp_file count=20 bs=1M
+> Killed
+> # grep "failcnt" /var/log/messages | tail -2
+> Dec 28 17:08:45 K-test kernel: memory: usage 10240kB, limit 10240kB, failcnt 86
+> Dec 28 17:08:45 K-test kernel: memory+swap: usage 10240kB, limit 15360kB, failcnt 0
+> # cat memory.memsw.failcnt
+> 0
+> 
+> The limit is 15M, but memory+swap usage also is 10M.
+> I think memory+swap usage should be 15M and memsw.failcnt should be nonzero.
+> 
+> This is a kernel bug or I misunderstand memory+swap?
 
-regards,
+Well, we might end up with memory.failcnt > 0 while memory.memsw.failcnt == 0
+quite easily and that would happen in the cases like you describe above
+when there is a big pagecache pressure on the hardlimit without much
+anonymous memory so there is not much that could be swapped out.
+
+Please note that memsw.limit_in_bytes is triggered only if we have
+consumed some swap space already (and the feature is primarily intended
+to stop extensive swap usage in fact).
+It goes like this: If we trigger hard limit (memory.limit_in_bytes) then
+we start the direct reclaim (with swap available). If we trigger memsw
+limit then we try to reclaim without swap available. We will OOM if we
+cannot reclaim enough to satisfy the respective limit.
+
+The other part of the answer is, yes there is something wrong going
+on her because we definitely shouldn't OOM. The workload is a single
+threaded and we have a plenty of page cache that could be reclaimed
+easily. On the other hand we end up with:
+# echo $$ > tasks 
+/dev/memctl/a# echo 10M > memory.limit_in_bytes 
+/dev/memctl/a# echo 10M > memory.memsw.limit_in_bytes 
+/dev/memctl/a# dd if=/dev/zero of=/tmp/temp_file count=20 bs=1M
+Killed
+/dev/memctl/a# cat memory.stat 
+cache 9265152
+rss 143360
+mapped_file 0
+pgpgin 3352
+pgpgout 1055
+swap 0
+pgfault 798
+pgmajfault 1
+inactive_anon 12288
+active_anon 114688
+inactive_file 9261056
+active_file 4096
+unevictable 0
+[...]
+
+So there is almost 10M of page cache that we can simply reclaim. If we
+use 40M limit then we are OK. So this looks like the small limit somehow
+tricks our math in the reclaim path and we think there is nothing to
+reclaim.
+I will look into this.
 -- 
-js
-suse labs
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
