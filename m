@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752109Ab2ACHvn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 02:51:43 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:43210 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962Ab2ACHvk convert rfc822-to-8bit (ORCPT
+	id S1752122Ab2ACH52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 02:57:28 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42048 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985Ab2ACH50 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 02:51:40 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org, "Gilad Ben-Yossef" <gilad@benyossef.com>
-Cc: "Chris Metcalf" <cmetcalf@tilera.com>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Russell King" <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        "Pekka Enberg" <penberg@kernel.org>, "Matt Mackall" <mpm@selenic.com>,
-        "Rik van Riel" <riel@redhat.com>, "Andi Kleen" <andi@firstfloor.org>,
-        "Sasha Levin" <levinsasha928@gmail.com>, "Mel Gorman" <mel@csn.ul.ie>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "Alexander Viro" <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, "Avi Kivity" <avi@redhat.com>
-Subject: Re: [PATCH v5 1/8] smp: Introduce a generic on_each_cpu_mask function
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
- <1325499859-2262-2-git-send-email-gilad@benyossef.com>
-Date: Tue, 03 Jan 2012 08:51:15 +0100
+	Tue, 3 Jan 2012 02:57:26 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v7hz3pbc3l0zgt@mpn-glaptop>
-In-Reply-To: <1325499859-2262-2-git-send-email-gilad@benyossef.com>
-User-Agent: Opera Mail/11.60 (Linux)
+In-Reply-To: <1325576871-9397-1-git-send-email-chanho61.park@samsung.com>
+References: <1325576871-9397-1-git-send-email-chanho61.park@samsung.com>
+Date: Tue, 3 Jan 2012 08:57:26 +0100
+Message-ID: <CACRpkdaS7843scS5jwVajMzrUy3c7bSUHMW7n+=fkk6XTEKfDA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] add support for partial pin space
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chanho Park <chanho61.park@samsung.com>
+Cc: swarren@nvidia.com, Baohua.Song@csr.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 02 Jan 2012 11:24:12 +0100, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
-> @@ -102,6 +102,13 @@ static inline void call_function_init(void) { }
->  int on_each_cpu(smp_call_func_t func, void *info, int wait);
-> /*
-> + * Call a function on processors specified by mask, which might include
-> + * the local one.
-> + */
-> +void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
-> +		void *info, bool wait);
-> +
+On Tue, Jan 3, 2012 at 8:47 AM, Chanho Park <chanho61.park@samsung.com> wrote:
 
-on_each_cpu() returns an int.  For consistency reasons, would it make sense to
-make on_each_cpu_maks() to return and int?  I know that the difference is that
-smp_call_function() returns and int and smp_call_function_many() returns void,
-but to me it actually seems strange and either I'm missing something important
-(which is likely) or this needs to get cleaned up at one point as well.
+> A pin space of current pinctrl driver always start with zero-based pin
+> number. And pins are enumerated from 0 to a max pin number. If there are
+> two pins (one is 0, another is 1000), we always enumerate from 0 to 1000
+> for just only two pins. This patch enables to start non-zero based pin
+> number and to enumerate actually owned pins.
+>
+> For example, there is a system which has huge(500 or 1000) pins. If muxing
+> or controlling pins are small, we just define such small pins instead of
+> whole pins.
 
-> +/*
->   * Mark the boot cpu "online" so that it can call console drivers in
->   * printk() and can access its per-cpu storage.
->   */
+Seems like you're fixing my code to do what was originally intended :-)
 
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+The maxpin member was something I introduced for sparse ranges
+which would auto-register "dummy pins" for those not included in the
+enumeration.
+
+That doesn't quite work, so was left behind.
+
+I'll try applying the patches and see what happens.
+
+Yours,
+Linus Walleij
