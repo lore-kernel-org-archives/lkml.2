@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab2ACXAJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:00:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46389 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755724Ab2ACWh4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:37:56 -0500
-Date: Tue, 3 Jan 2012 14:37:54 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-kernel@vger.kernel.org,
-        Christoph Lameter <cl@linux.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH v5 8/8] mm: add vmstat counters for tracking PCP drains
-Message-Id: <20120103143754.f2640d24.akpm@linux-foundation.org>
-In-Reply-To: <CAOtvUMc259XZ5BdOqys3Kbv_u=Qa0matnuFyGrJhMPLtRKKkUA@mail.gmail.com>
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
-	<1325499859-2262-9-git-send-email-gilad@benyossef.com>
-	<4F033F44.6020403@gmail.com>
-	<CAOtvUMc259XZ5BdOqys3Kbv_u=Qa0matnuFyGrJhMPLtRKKkUA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755808Ab2ACXAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:00:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39714 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755635Ab2ACWhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:37:41 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:36 2012
+Message-Id: <20120103223036.469257234@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Tue, 03 Jan 2012 14:30:19 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>
+Subject: [61/67] ipv4: using prefetch requires including prefetch.h
+In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jan 2012 21:00:17 +0200
-Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-> > NAK.
-> >
-> > PCP_GLOBAL_IPI_SAVED is only useful at development phase. I can't
-> > imagine normal admins use it.
-> 
-> As the description explains, the purpose of the patch is to show why i
-> claim the previous
-> patch is useful. I did not meant it to be applied to mainline.
+------------------
 
-Right.
 
-The thing to do is to use this patch to determine the effectiveness of
-the preceding patchset and then present a summary of the results in the
-other patch's changelog.  This is precisely what you did and the
-results look pretty good.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+
+[ Upstream commit b9eda06f80b0db61a73bd87c6b0eb67d8aca55ad ]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David Miller <davem@davemloft.net>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ net/ipv4/route.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -91,6 +91,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/times.h>
+ #include <linux/slab.h>
++#include <linux/prefetch.h>
+ #include <net/dst.h>
+ #include <net/net_namespace.h>
+ #include <net/protocol.h>
 
 
