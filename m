@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab2ACRfK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 12:35:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35161 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754250Ab2ACRfG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 12:35:06 -0500
-Date: Tue, 3 Jan 2012 09:35:00 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Hugh Dickins <hughd@google.com>, Jens Axboe <axboe@kernel.dk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
- allowed to create io_context
-Message-ID: <20120103173500.GB31746@google.com>
-References: <20111222154427.89b245c7.akpm@linux-foundation.org>
- <20111222234639.GS17084@google.com>
- <20111223004244.GU17084@google.com>
- <alpine.LSU.2.00.1112232058550.3225@eggly.anvils>
- <20111225010238.GA6013@htj.dyndns.org>
- <alpine.LSU.2.00.1112280010550.1398@eggly.anvils>
- <20111228164836.GP17712@google.com>
- <alpine.LSU.2.00.1112280939390.3320@eggly.anvils>
- <CAOS58YOzUcZz41+H+7dk5FteHy+Ufrtpk9dvdPqX6eie-GHi0Q@mail.gmail.com>
- <20111228211918.GA3516@google.com>
+	id S1754342Ab2ACRmv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 12:42:51 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754097Ab2ACRmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 12:42:49 -0500
+Message-ID: <4F033E11.5060707@nod.at>
+Date: Tue, 03 Jan 2012 18:42:41 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20111228211918.GA3516@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: davem@davemloft.net, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with
+ bridge-nf-call-ip(6)tables=0
+References: <4F025A07.2000304@nod.at> <1325597164-13459-1-git-send-email-richard@nod.at> <1325597164-13459-2-git-send-email-richard@nod.at> <20120103081521.2fec3a29@nehalam.linuxnetplumber.net>
+In-Reply-To: <20120103081521.2fec3a29@nehalam.linuxnetplumber.net>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigBDF9393B90E3ECC436D4C566"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Happy new year, guys.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigBDF9393B90E3ECC436D4C566
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 28, 2011 at 01:19:18PM -0800, Tejun Heo wrote:
-> > On Wed, Dec 28, 2011 at 9:50 AM, Hugh Dickins <hughd@google.com> wrote:
-> > > "It's the tmpfs swapping test that I've been running, with variations,
-> > > for years.  System booted with mem=700M and 1.5G swap, two repetitious
-> > > make -j20 kernel builds (of a 2.6.24 kernel: I stuck with that because
-> > > the balance of built to unbuilt source grows smaller with later kernels),
-> > > one directly in a tmpfs, the other in a 1k-block ext2 (that I drive with
-> > > ext4's CONFIG_EXT4_USE_FOR_EXT23) on /dev/loop0 on a 450MB tmpfs file."
-> > >
-> > > I doubt much of that (quoted from an older mail to someone else about
-> > > one of the many other bugs it's found) is relevant: maybe just plenty
-> > > of file I/O and swapping.
-> > 
-> > Plain -j4 build isn't triggering anything.  I'll try to replicate the condition.
-> 
-> It's not too reliable but I can reproduce it with -j 22 allmodconfig
-> build inside qemu w/ 512M of memory.  I'll try to find out what's
-> going on.
+Am 03.01.2012 17:15, schrieb Stephen Hemminger:
+> On Tue,  3 Jan 2012 14:26:04 +0100
+> Richard Weinberger <richard@nod.at> wrote:
+>=20
+>> If net.bridge.bridge-nf-call-iptables or net.bridge.bridge-nf-call-ip6=
+tables
+>> are set to zero xt_physdev has no effect because skb->nf_bridge has no=
+t been set up.
+>>
+>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>=20
+> I am not sure if this is a valid configuration. The setting of sysctl i=
+s saying
+> "don't do iptables on bridge (since I won't be using it)" and then you =
+are later
+> doing iptables and expecting the settings as if the iptables setup was =
+being
+> done.
 
-I misread the code, the problem is empty cfqq on the cfq prio tree.  I
-don't think this is caused by recent io_context changes.  It looks
-like somebody is forgetting to remove cfqq from the dispatch prio tree
-after emptying a cfqq by removing a request from it.  Jens, any ideas?
+I don't think so.
 
-Thanks.
+Also rules like this one are broken:
+iptables -A INPUT -i bridge0 -m physdev --physdev-in eth0 -j ...
 
--- 
-tejun
+No firewalling is done on the bridge, xt_physdev is only using some meta
+information.
+
+At least a big fat warning would be nice that xt_physdev does not work
+if bridge-nf-call-iptables=3D0.
+It took me some time to figure out why my firewall rule set gone nuts on
+RHEL6...
+
+> Instead, you should just enable the net.bridge.bridge-nf-call-iptables =
+sysctl.
+> If a distro chooses to disable it then you may have to do it explicitly=
+=2E
+
+Fedora and RHEL have net.bridge.bridge-nf-call-iptables=3D0 per default
+due to KVM network performance issues.
+I'm sure I'm not the only user of xt_physdev on RHEL and friends.
+
+Thanks,
+//richard
+
+
+--------------enigBDF9393B90E3ECC436D4C566
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPAz4WAAoJEN9758yqZn9eXDgH/RmvXgoPKEQMuYnqs5w8wS11
+ZSqJ3y36HGRvNuanMHj9Gqt1mGDhIS0SYSD0qIpX1ulDKeEg+WepphTDkxAqn//3
+3WpSEVFPkDRccSy9Qm9/FZpkqNmjEsB0271iOcdb3XB16fkiO3DE3fA81mIQ9zSL
+pyISulmVm43sGKsFFFrAi1VwezKEeUbDT7nwSUzcjhffpahYX7fPVv8uHYGh1mB2
+79nfGNIxgQFXpbMUzr8Y1V3V2aNtzEa/GAwDHkPlHj29dVwzCVZjFZ6uRzqeXlzk
+0o9cfMx0RNWwJ90KhmraDLbD4hDy5de6E0/z4Ms3H+jrtkXmstX54tHvwLa98bo=
+=7mt9
+-----END PGP SIGNATURE-----
+
+--------------enigBDF9393B90E3ECC436D4C566--
