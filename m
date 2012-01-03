@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932138Ab2ACWmN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:42:13 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40472 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932117Ab2ACWmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:42:09 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:26 2012
-Message-Id: <20120103223326.706354946@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:40 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Thomas Graf <tgraf@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [67/75] sctp: Do not account for sizeof(struct sk_buff) in estimated rwnd
-In-Reply-To: <20120103223332.GA4112@kroah.com>
+	id S932145Ab2ACWrD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:47:03 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:45249 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755088Ab2ACWq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:46:56 -0500
+Message-ID: <1325630808.3037.44.camel@work-vm>
+Subject: Re: [03/75] rtc: Expire alarms after the time is set.
+From: John Stultz <john.stultz@linaro.org>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, NeilBrown <neilb@suse.de>
+Date: Tue, 03 Jan 2012 14:46:48 -0800
+In-Reply-To: <20120103223321.257216175@clark.kroah.org>
+References: <20120103223321.257216175@clark.kroah.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12010322-1780-0000-0000-0000020E6580
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000243; HX=3.00000180; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00101841; UDB=6.00026006; UTC=2012-01-03
+ 22:46:55
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+On Tue, 2012-01-03 at 14:32 -0800, Greg KH wrote:
+> 3.1-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+Again, this one is having problems upstream. Please hold off.
+
+thanks
+-john
 
 
-From: Thomas Graf <tgraf@redhat.com>
-
-[ Upstream commit a76c0adf60f6ca5ff3481992e4ea0383776b24d2 ]
-
-When checking whether a DATA chunk fits into the estimated rwnd a
-full sizeof(struct sk_buff) is added to the needed chunk size. This
-quickly exhausts the available rwnd space and leads to packets being
-sent which are much below the PMTU limit. This can lead to much worse
-performance.
-
-The reason for this behaviour was to avoid putting too much memory
-pressure on the receiver. The concept is not completely irational
-because a Linux receiver does in fact clone an skb for each DATA chunk
-delivered. However, Linux also reserves half the available socket
-buffer space for data structures therefore usage of it is already
-accounted for.
-
-When proposing to change this the last time it was noted that this
-behaviour was introduced to solve a performance issue caused by rwnd
-overusage in combination with small DATA chunks.
-
-Trying to reproduce this I found that with the sk_buff overhead removed,
-the performance would improve significantly unless socket buffer limits
-are increased.
-
-The following numbers have been gathered using a patched iperf
-supporting SCTP over a live 1 Gbit ethernet network. The -l option
-was used to limit DATA chunk sizes. The numbers listed are based on
-the average of 3 test runs each. Default values have been used for
-sk_(r|w)mem.
-
-Chunk
-Size    Unpatched     No Overhead
--------------------------------------
-   4    15.2 Kbit [!]   12.2 Mbit [!]
-   8    35.8 Kbit [!]   26.0 Mbit [!]
-  16    95.5 Kbit [!]   54.4 Mbit [!]
-  32   106.7 Mbit      102.3 Mbit
-  64   189.2 Mbit      188.3 Mbit
- 128   331.2 Mbit      334.8 Mbit
- 256   537.7 Mbit      536.0 Mbit
- 512   766.9 Mbit      766.6 Mbit
-1024   810.1 Mbit      808.6 Mbit
-
-Signed-off-by: Thomas Graf <tgraf@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- net/sctp/output.c   |    8 +-------
- net/sctp/outqueue.c |    6 ++----
- 2 files changed, 3 insertions(+), 11 deletions(-)
-
---- a/net/sctp/output.c
-+++ b/net/sctp/output.c
-@@ -697,13 +697,7 @@ static void sctp_packet_append_data(stru
- 	/* Keep track of how many bytes are in flight to the receiver. */
- 	asoc->outqueue.outstanding_bytes += datasize;
- 
--	/* Update our view of the receiver's rwnd. Include sk_buff overhead
--	 * while updating peer.rwnd so that it reduces the chances of a
--	 * receiver running out of receive buffer space even when receive
--	 * window is still open. This can happen when a sender is sending
--	 * sending small messages.
--	 */
--	datasize += sizeof(struct sk_buff);
-+	/* Update our view of the receiver's rwnd. */
- 	if (datasize < rwnd)
- 		rwnd -= datasize;
- 	else
---- a/net/sctp/outqueue.c
-+++ b/net/sctp/outqueue.c
-@@ -411,8 +411,7 @@ void sctp_retransmit_mark(struct sctp_ou
- 					chunk->transport->flight_size -=
- 							sctp_data_size(chunk);
- 				q->outstanding_bytes -= sctp_data_size(chunk);
--				q->asoc->peer.rwnd += (sctp_data_size(chunk) +
--							sizeof(struct sk_buff));
-+				q->asoc->peer.rwnd += sctp_data_size(chunk);
- 			}
- 			continue;
- 		}
-@@ -432,8 +431,7 @@ void sctp_retransmit_mark(struct sctp_ou
- 			 * (Section 7.2.4)), add the data size of those
- 			 * chunks to the rwnd.
- 			 */
--			q->asoc->peer.rwnd += (sctp_data_size(chunk) +
--						sizeof(struct sk_buff));
-+			q->asoc->peer.rwnd += sctp_data_size(chunk);
- 			q->outstanding_bytes -= sctp_data_size(chunk);
- 			if (chunk->transport)
- 				transport->flight_size -= sctp_data_size(chunk);
+> ------------------
+> 
+> From: NeilBrown <neilb@suse.de>
+> 
+> commit 93b2ec0128c431148b216b8f7337c1a52131ef03 upstream.
+> 
+> If the alarm time programming in the rtc is ever in the past, it won't fire,
+> and any other alarm will be queued after it so they won't fire either.
+> 
+> So any time that the alarm might be in the past, we need to trigger
+> the irq handler to ensure the old alarm is cleared and the timer queue
+> is fully in the future.
+> 
+> This can happen:
+>  - when we first initialise the alarm
+>  - when we set the time in the rtc.
+> 
+> so follow both of these by scheduling the timer work function.
+> 
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> [Also catch set_mmss case -jstultz]
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> ---
+>  drivers/rtc/interface.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> --- a/drivers/rtc/interface.c
+> +++ b/drivers/rtc/interface.c
+> @@ -72,6 +72,8 @@ int rtc_set_time(struct rtc_device *rtc,
+>  		err = -EINVAL;
+> 
+>  	mutex_unlock(&rtc->ops_lock);
+> +	/* A timer might have just expired */
+> +	schedule_work(&rtc->irqwork);
+>  	return err;
+>  }
+>  EXPORT_SYMBOL_GPL(rtc_set_time);
+> @@ -111,6 +113,8 @@ int rtc_set_mmss(struct rtc_device *rtc,
+>  		err = -EINVAL;
+> 
+>  	mutex_unlock(&rtc->ops_lock);
+> +	/* A timer might have just expired */
+> +	schedule_work(&rtc->irqwork);
+> 
+>  	return err;
+>  }
+> @@ -402,6 +406,8 @@ int rtc_initialize_alarm(struct rtc_devi
+>  		timerqueue_add(&rtc->timerqueue, &rtc->aie_timer.node);
+>  	}
+>  	mutex_unlock(&rtc->ops_lock);
+> +	/* maybe that was in the past.*/
+> +	schedule_work(&rtc->irqwork);
+>  	return err;
+>  }
+>  EXPORT_SYMBOL_GPL(rtc_initialize_alarm);
+> 
+> 
 
 
