@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab2ACWwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:52:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40263 "EHLO mx2.suse.de"
+	id S1756197Ab2ACWxI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:53:08 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40228 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756180Ab2ACWkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:40:39 -0500
+	id S1754199Ab2ACWkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:40:24 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:24 2012
-Message-Id: <20120103223324.463302611@clark.kroah.org>
+Message-Id: <20120103223324.223371344@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:14 -0800
+Date: Tue, 03 Jan 2012 14:33:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jason Chen <jason.chen@linaro.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [41/75] ARM:imx:fix pwm period value
+        alan@lxorguk.ukuu.org.uk, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [38/75] iwlwifi: allow to switch to HT40 if not associated
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,40 +25,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Chen <jason.chen@linaro.org>
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-commit 5776ac2eb33164c77cdb4d2b48feee15616eaba3 upstream.
+commit 78feb35b8161acd95c33a703ed6ab6f554d29387 upstream.
 
-According to imx pwm RM, the real period value should be
-PERIOD value in PWMPR plus 2.
+My previous patch
+34a5b4b6af104cf18eb50748509528b9bdbc4036 iwlwifi: do not re-configure
+HT40 after associated
 
-PWMO (Hz) = PCLK(Hz) / (period +2)
+Fix the case of HT40 after association on specified AP, but it break the
+association for some APs and cause not able to establish connection.
+We need to address HT40 before and after addociation.
 
-Signed-off-by: Jason Chen <jason.chen@linaro.org>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Reported-by: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Tested-by: Andrej Gelenberg <andrej.gelenberg@udo.edu>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/plat-mxc/pwm.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/plat-mxc/pwm.c
-+++ b/arch/arm/plat-mxc/pwm.c
-@@ -77,6 +77,15 @@ int pwm_config(struct pwm_device *pwm, i
- 		do_div(c, period_ns);
- 		duty_cycles = c;
- 
-+		/*
-+		 * according to imx pwm RM, the real period value should be
-+		 * PERIOD value in PWMPR plus 2.
-+		 */
-+		if (period_cycles > 2)
-+			period_cycles -= 2;
-+		else
-+			period_cycles = 0;
-+
- 		writel(duty_cycles, pwm->mmio_base + MX3_PWMSAR);
- 		writel(period_cycles, pwm->mmio_base + MX3_PWMPR);
- 
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-rxon.c
+@@ -620,8 +620,8 @@ int iwlagn_mac_config(struct ieee80211_h
+ 			if (ctx->ht.enabled) {
+ 				/* if HT40 is used, it should not change
+ 				 * after associated except channel switch */
+-				if (iwl_is_associated_ctx(ctx) &&
+-				     !ctx->ht.is_40mhz)
++				if (!ctx->ht.is_40mhz ||
++						!iwl_is_associated_ctx(ctx))
+ 					iwlagn_config_ht40(conf, ctx);
+ 			} else
+ 				ctx->ht.is_40mhz = false;
 
 
