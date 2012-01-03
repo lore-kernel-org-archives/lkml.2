@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2ACWnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:43:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40590 "EHLO mx2.suse.de"
+	id S1756448Ab2ACWmU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:42:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40483 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932234Ab2ACWnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:43:13 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:25 2012
-Message-Id: <20120103223325.275519185@clark.kroah.org>
+	id S932145Ab2ACWmP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:42:15 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:26 2012
+Message-Id: <20120103223326.869171224@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:24 -0800
+Date: Tue, 03 Jan 2012 14:33:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [51/75] sparc64: Fix MSIQ HV call ordering in pci_sun4v_msiq_build_irq().
+        alan@lxorguk.ukuu.org.uk, Weiping Pan <panweiping3@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [69/75] ipv4: flush route cache after change accept_local
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Weiping Pan <panweiping3@gmail.com>
 
-[ Upstream commit 7cc8583372a21d98a23b703ad96cab03180b5030 ]
+[ Upstream commit d01ff0a049f749e0bf10a35bb23edd012718c8c2 ]
 
-This silently was working for many years and stopped working on
-Niagara-T3 machines.
+After reset ipv4_devconf->data[IPV4_DEVCONF_ACCEPT_LOCAL] to 0,
+we should flush route cache, or it will continue receive packets with local
+source address, which should be dropped.
 
-We need to set the MSIQ to VALID before we can set it's state to IDLE.
-
-On Niagara-T3, setting the state to IDLE first was causing HV_EINVAL
-errors.  The hypervisor documentation says, rather ambiguously, that
-the MSIQ must be "initialized" before one can set the state.
-
-I previously understood this to mean merely that a successful setconf()
-operation has been performed on the MSIQ, which we have done at this
-point.  But it seems to also mean that it has been set VALID too.
-
+Signed-off-by: Weiping Pan <panweiping3@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/kernel/pci_sun4v.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv4/devinet.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/sparc/kernel/pci_sun4v.c
-+++ b/arch/sparc/kernel/pci_sun4v.c
-@@ -848,10 +848,10 @@ static int pci_sun4v_msiq_build_irq(stru
- 	if (!irq)
- 		return -ENOMEM;
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1490,7 +1490,9 @@ static int devinet_conf_proc(ctl_table *
+ 			     void __user *buffer,
+ 			     size_t *lenp, loff_t *ppos)
+ {
++	int old_value = *(int *)ctl->data;
+ 	int ret = proc_dointvec(ctl, write, buffer, lenp, ppos);
++	int new_value = *(int *)ctl->data;
  
--	if (pci_sun4v_msiq_setstate(pbm->devhandle, msiqid, HV_MSIQSTATE_IDLE))
--		return -EINVAL;
- 	if (pci_sun4v_msiq_setvalid(pbm->devhandle, msiqid, HV_MSIQ_VALID))
- 		return -EINVAL;
-+	if (pci_sun4v_msiq_setstate(pbm->devhandle, msiqid, HV_MSIQSTATE_IDLE))
-+		return -EINVAL;
+ 	if (write) {
+ 		struct ipv4_devconf *cnf = ctl->extra1;
+@@ -1501,6 +1503,9 @@ static int devinet_conf_proc(ctl_table *
  
- 	return irq;
- }
+ 		if (cnf == net->ipv4.devconf_dflt)
+ 			devinet_copy_dflt_conf(net, i);
++		if (i == IPV4_DEVCONF_ACCEPT_LOCAL - 1)
++			if ((new_value == 0) && (old_value != 0))
++				rt_cache_flush(net, 0);
+ 	}
+ 
+ 	return ret;
 
 
