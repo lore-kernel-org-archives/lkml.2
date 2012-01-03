@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab2ACWjG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:39:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39927 "EHLO mx2.suse.de"
+	id S1755981Ab2ACWjR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:39:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39995 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755539Ab2ACWjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:39:00 -0500
+	id S1755539Ab2ACWjO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:39:14 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:22 2012
-Message-Id: <20120103223322.352011603@clark.kroah.org>
+Message-Id: <20120103223322.608309793@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:32:49 -0800
+Date: Tue, 03 Jan 2012 14:32:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Buesch <m@bues.ch>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [16/75] ssb: fix init regression with SoCs
+        alan@lxorguk.ukuu.org.uk, Dmitry Torokhov <dtor@mail.ru>
+Subject: [19/75] Input: synaptics - fix touchpad not working after S2R on Vostro V13
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +24,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hauke Mehrtens <hauke@hauke-m.de>
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-commit 329456d1ffb416c220813725b7363cda9975c9aa upstream.
+commit 8521478f67e95ada4e87970c7b41e504c724b2cf upstream.
 
-This fixes a Data bus error on some SoCs. The first fix for this
-problem did not solve it on all devices.
-    commit 6ae8ec27868bfdbb815287bee8146acbefaee867
-    Author: Rafał Miłecki <zajec5@gmail.com>
-    Date:   Tue Jul 5 17:25:32 2011 +0200
-        ssb: fix init regression of hostmode PCI core
+Synaptics touchpads on several Dell laptops, particularly Vostro V13
+systems, may not respond properly to PS/2 commands and queries immediately
+after resuming from suspend to RAM. This leads to unresponsive touchpad
+after suspend/resume cycle.
 
-In ssb_pcicore_fix_sprom_core_index() the sprom on the PCI core is
-accessed, but the sprom only exists when the ssb bus is connected over
-a PCI bus to the rest of the system and not when the SSB Bus is the
-main system bus. SoCs sometimes have a PCI host controller and there
-this code will not be executed, but there are some old SoCs with an PCI
-controller in client mode around and ssb_pcicore_fix_sprom_core_index()
-should not be called on these devices too. The PCI controller on these
-devices are unused, but without this fix it results in an Data bus
-error when it gets initialized.
+Adding a 1-second delay after resetting the device allows touchpad to
+finish initializing (calibrating?) and start reacting properly.
 
-Cc: Michael Buesch <m@bues.ch>
-Cc: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Daniel Manrique <daniel.manrique@canonical.com>
+Tested-by: Daniel Manrique <daniel.manrique@canonical.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ssb/driver_pcicore.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ drivers/input/mouse/synaptics.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/ssb/driver_pcicore.c
-+++ b/drivers/ssb/driver_pcicore.c
-@@ -516,10 +516,14 @@ static void ssb_pcicore_pcie_setup_worka
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -24,6 +24,7 @@
+  */
  
- static void __devinit ssb_pcicore_init_clientmode(struct ssb_pcicore *pc)
- {
--	ssb_pcicore_fix_sprom_core_index(pc);
-+	struct ssb_device *pdev = pc->dev;
-+	struct ssb_bus *bus = pdev->bus;
-+
-+	if (bus->bustype == SSB_BUSTYPE_PCI)
-+		ssb_pcicore_fix_sprom_core_index(pc);
+ #include <linux/module.h>
++#include <linux/delay.h>
+ #include <linux/dmi.h>
+ #include <linux/input/mt.h>
+ #include <linux/serio.h>
+@@ -786,6 +787,16 @@ static int synaptics_reconnect(struct ps
  
- 	/* Disable PCI interrupts. */
--	ssb_write32(pc->dev, SSB_INTVEC, 0);
-+	ssb_write32(pdev, SSB_INTVEC, 0);
+ 	do {
+ 		psmouse_reset(psmouse);
++		if (retry) {
++			/*
++			 * On some boxes, right after resuming, the touchpad
++			 * needs some time to finish initializing (I assume
++			 * it needs time to calibrate) and start responding
++			 * to Synaptics-specific queries, so let's wait a
++			 * bit.
++			 */
++			ssleep(1);
++		}
+ 		error = synaptics_detect(psmouse, 0);
+ 	} while (error && ++retry < 3);
  
- 	/* Additional PCIe always once-executed workarounds */
- 	if (pc->dev->id.coreid == SSB_DEV_PCIE) {
 
 
