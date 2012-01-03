@@ -1,95 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab2ACVCD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 16:02:03 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:59104 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab2ACVB7 (ORCPT
+	id S1755312Ab2ACVDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 16:03:46 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:51929 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752755Ab2ACVDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 16:01:59 -0500
-Date: Tue, 3 Jan 2012 15:59:25 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Tian, Kevin" <kevin.tian@intel.com>
-Cc: Konrad Rzeszutek Wilk <konrad@darnok.org>,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "Ian.Campbell@citrix.com" <Ian.Campbell@citrix.com>,
-        "mike.mcclurg@citrix.com" <mike.mcclurg@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stefan.bader@canonical.com" <stefan.bader@canonical.com>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "liang.tang@oracle.com" <liang.tang@oracle.com>,
-        "Yu, Ke" <ke.yu@intel.com>, "konrad@kernel.org" <konrad@kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: [Xen-devel] [PATCH 3/8] ACPI: processor: add
- __acpi_processor_[un]register_driver helpers.
-Message-ID: <20120103205925.GI17472@phenom.dumpdata.com>
-References: <1322673664-14642-1-git-send-email-konrad.wilk@oracle.com>
- <1322673664-14642-4-git-send-email-konrad.wilk@oracle.com>
- <20111216220342.GC9832@phenom.dumpdata.com>
- <625BA99ED14B2D499DC4E29D8138F1506E01AABC7A@shsmsx502.ccr.corp.intel.com>
- <20111219142626.GB27772@andromeda.dapyr.net>
- <625BA99ED14B2D499DC4E29D8138F1506E01AAC03A@shsmsx502.ccr.corp.intel.com>
- <20111220153145.GB13253@andromeda.dapyr.net>
- <625BA99ED14B2D499DC4E29D8138F1506E01AAC469@shsmsx502.ccr.corp.intel.com>
- <20111223030103.GA7218@andromeda.dapyr.net>
- <AADFC41AFE54684AB9EE6CBC0274A5D10145B9@SHSMSX102.ccr.corp.intel.com>
+	Tue, 3 Jan 2012 16:03:43 -0500
+X-Sasl-enc: hMlzio7tHvkGVU7yEacaEsGXHvKlDnRMIHUpJrpsTyHb 1325624623
+Date: Tue, 3 Jan 2012 12:52:26 -0800
+From: Greg KH <greg@kroah.com>
+To: =?utf-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2011-12-15
+Message-ID: <20120103205226.GA17131@kroah.com>
+References: <20111215191523.GA2561@tuxdriver.com>
+ <CACna6rw736JdkoM8zKxorCFd5oy08QTwWZ6PutoJPSr3ZN8hTg@mail.gmail.com>
+ <20111215213822.GB2561@tuxdriver.com>
+ <CACna6rz3qDpw4eJOoCXx7=z1719v7kS-Ou-WUseR9_vB-O2dag@mail.gmail.com>
+ <CACna6rxO2dC=Y3nv-d-w89MqyM0j0aumk=r5Yh_KEg=MwOcvEQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AADFC41AFE54684AB9EE6CBC0274A5D10145B9@SHSMSX102.ccr.corp.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACna6rxO2dC=Y3nv-d-w89MqyM0j0aumk=r5Yh_KEg=MwOcvEQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4F036C91.005E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 26, 2011 at 01:31:45AM +0000, Tian, Kevin wrote:
-> > From: Konrad Rzeszutek Wilk [mailto:konrad@darnok.org]
-> > Sent: Friday, December 23, 2011 11:01 AM
-> > 
-> > > > OK. Lets put the # VCPU != PCPU aside. Say dom0 will boot with all
-> > > > CPUs and then later on the admin starts unplugging them.
-> > >
-> > > This should be communicated to major Xen based distributions, so that it's
-> > > an agreed approach since in majority case dom0 is configured as UP or
-> > > a few VCPUs.
-> > 
-> > I am not saying that is it the agreed approach. There has to be
-> > flexibility in supporting both. But what I want to understand whether
-> > the requirement for VCPU != PCPU can be put aside and put in the drivers
-> > later on.
+On Mon, Dec 26, 2011 at 12:36:59AM +0100, Rafał Miłecki wrote:
+> W dniu 16 grudnia 2011 07:40 użytkownik Rafał Miłecki
+> <zajec5@gmail.com> napisał:
+> > W dniu 15 grudnia 2011 22:38 użytkownik John W. Linville
+> > <linville@tuxdriver.com> napisał:
+> >> On Thu, Dec 15, 2011 at 09:04:29PM +0100, Rafał Miłecki wrote:
+> >>> 2011/12/15 John W. Linville <linville@tuxdriver.com>:
+> >>> > commit 42a3b63bb2ca4996a3d1210a004eae2333f1119e
+> >>> >
+> >>> > Dave,
+> >>> >
+> >>> > Here are a few more fixes intended for the 3.2 release.  They are
+> >>> > all small and narrowly focused.
+> >>>
+> >>> John, I've made a mistake and didn't use [PATCH 3.2] header to make it
+> >>> clean my patch is fix. Could you take a look at
+> >>> [PATCH] bcma: support for suspend and resume
+> >>> please?
+> >>>
+> >>> It's not one-liner, but fixes lock ups, which I believe - we really
+> >>> want to avoid.
+> >>
+> >> It's late in the release cycle, and Dave specifically asked me to slow down.
+> >>
+> >> Are these suspend/resume lockups a regression?  Or have they always
+> >> been there?  Do they happen to everyone?
+> >
+> > The bug is present since first days of bcma. That's why I even decided
+> > to add stable to CC.
+> >
+> > Personally I've tested that only on 1 machine (I don't have more
+> > suspendable machines with mini PCIe slot). However all Macbook 8.1/8.2
+> > users have to remove b43 & bcma before suspending [0], they complain
+> > about that since ever.
+> >
+> > Arend: I know you're also complaining for suspend in bcma. Can you
+> > comment on this?
+> >
+> > [0] http://ubuntuforums.org/showthread.php?t=1695746
 > 
-> sure. VCPU!=PCPU requirement is orthogonal to the basic part for gearing
-> ACPI information to Xen.
+> User nephyrin on #bcm-users has confirmed this patch fixes
+> suspend&resume for him. Without this patch he got deadlock without
+> seeing any kernel panic logs - quite an ugly case.
 > 
-> > 
-> > So that the first approach is not changing the generic drivers (much).
-> > The reason I am asking about this is two-fold:
-> >  1). For new distros (Ubuntu, Fedora), the default is all VCPUs.
-> 
-> good to know that.
-> 
-> >      Enterprising users might use dom0_max_vcpus to limit the VCPU count,
-> >      but most won't.
-> >      Which mean we can concentrate on bringing the _Pxx/_Cxx parsing
-> >      up to the hypervisor. Which is really neccessary on any chipset
-> >      which has the notion of TurboBoost (otherwise the Xen scheduler
-> >      won't pick this up and won't engage this mode in certain
-> >      workloads).
-> >  2). The ACPI maintainers are busy with ACPI 5.0. I don't know how
-> >      much work this is, but it probably means tons of stuff with
-> >      embedded platforms and tons of regression testing. So if there
-> >      is a patch that does not impact the generic code much (or any)
-> >      it will make their life easier. Which also means we can built
-> >      on top that for the VCPU != PCPU case.
-> > 
-> > That is what I am trying to understand.
-> 
-> no problem. this incremental approach should work.
+> I still think this patch may be worth taking as fix and backporting too.
 
-Excellent. So now the big question  - is this something you would have the
-time to do?
+What patch specifically?  What is the git commit id of it in Linus's
+tree?  Without that information, telling stable@ about it is
+pointless...
+
+greg k-h
