@@ -1,55 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab2ACRqv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 12:46:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55829 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753420Ab2ACRqt (ORCPT
+	id S1754466Ab2ACRrx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 12:47:53 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43193 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754382Ab2ACRru (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 12:46:49 -0500
-Date: Tue, 3 Jan 2012 17:46:39 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Richard Zhao <richard.zhao@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        patches@linaro.org, vinod.koul@intel.com, eric.miao@linaro.org,
-        kernel@pengutronix.de, dan.j.williams@intel.com, shawn.guo@linaro.org
-Subject: Re: [PATCH v2 2/2] dma/imx-sdma: add wmb before enable a channel
-Message-ID: <20120103174639.GF2914@n2100.arm.linux.org.uk>
-References: <1325428692-11473-1-git-send-email-richard.zhao@linaro.org> <1325428692-11473-3-git-send-email-richard.zhao@linaro.org>
+	Tue, 3 Jan 2012 12:47:50 -0500
+Message-ID: <4F033F44.6020403@gmail.com>
+Date: Tue, 03 Jan 2012 12:47:48 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325428692-11473-3-git-send-email-richard.zhao@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 8/8] mm: add vmstat counters for tracking PCP drains
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com> <1325499859-2262-9-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1325499859-2262-9-git-send-email-gilad@benyossef.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 01, 2012 at 10:38:12PM +0800, Richard Zhao wrote:
-> dma_alloc_coherent memory may be bufferable. We need to add
-> nececcary memory barrier.
+(1/2/12 5:24 AM), Gilad Ben-Yossef wrote:
+> This patch introduces two new vmstat counters: pcp_global_drain
+> that counts the number of times a per-cpu pages global drain was
+> requested and pcp_global_ipi_saved that counts the number of times
+> the number of CPUs with per-cpu pages in any zone were less then
+> 1/2 of the number of online CPUs.
 > 
-> Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+> The patch purpose is to show the usefulness of only sending an IPI
+> asking to drain per-cpu pages to CPUs that actually have them
+> instead of a blind global IPI. It is probably not useful by itself.
+> 
+> Signed-off-by: Gilad Ben-Yossef<gilad@benyossef.com>
+> CC: Christoph Lameter<cl@linux.com>
+> CC: Chris Metcalf<cmetcalf@tilera.com>
+> CC: Peter Zijlstra<a.p.zijlstra@chello.nl>
+> CC: Frederic Weisbecker<fweisbec@gmail.com>
+> CC: linux-mm@kvack.org
+> CC: Pekka Enberg<penberg@kernel.org>
+> CC: Matt Mackall<mpm@selenic.com>
+> CC: Sasha Levin<levinsasha928@gmail.com>
+> CC: Rik van Riel<riel@redhat.com>
+> CC: Andi Kleen<andi@firstfloor.org>
+> CC: Mel Gorman<mel@csn.ul.ie>
+> CC: Andrew Morton<akpm@linux-foundation.org>
+> CC: Alexander Viro<viro@zeniv.linux.org.uk>
+> CC: Avi Kivity<avi@redhat.com>
 > ---
->  drivers/dma/imx-sdma.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>   include/linux/vm_event_item.h |    1 +
+>   mm/page_alloc.c               |    4 ++++
+>   mm/vmstat.c                   |    2 ++
+>   3 files changed, 7 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index f8e87b5..9301bff 100644
-> --- a/drivers/dma/imx-sdma.c
-> +++ b/drivers/dma/imx-sdma.c
-> @@ -394,6 +394,7 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
->  
->  static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
->  {
-> +	wmb();
->  	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
+> diff --git a/include/linux/vm_event_item.h b/include/linux/vm_event_item.h
+> index 03b90cd..3657f6f 100644
+> --- a/include/linux/vm_event_item.h
+> +++ b/include/linux/vm_event_item.h
+> @@ -58,6 +58,7 @@ enum vm_event_item { PGPGIN, PGPGOUT, PSWPIN, PSWPOUT,
+>   		THP_COLLAPSE_ALLOC_FAILED,
+>   		THP_SPLIT,
+>   #endif
+> +		PCP_GLOBAL_DRAIN, PCP_GLOBAL_IPI_SAVED,
+>   		NR_VM_EVENT_ITEMS
+>   };
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 092c331..4ca6bfa 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1140,6 +1140,10 @@ void drain_all_pages(void)
+>   				cpumask_clear_cpu(cpu, cpus_with_pcps);
+>   		}
+>   	on_each_cpu_mask(cpus_with_pcps, drain_local_pages, NULL, 1);
+> +
+> +	count_vm_event(PCP_GLOBAL_DRAIN);
+> +	if (cpumask_weight(cpus_with_pcps)<  (cpumask_weight(cpu_online_mask) / 2))
+> +		count_vm_event(PCP_GLOBAL_IPI_SAVED);
 
-Use writel().  That's what it's there for:
+NAK.
 
-#ifdef CONFIG_ARM_DMA_MEM_BUFFERABLE
-#define __iowmb()               wmb()
-#endif
-#define writel_relaxed(v,c)     ((void)__raw_writel((__force u32) \
-                                        cpu_to_le32(v),__mem_pci(c)))
-#define writel(v,c)             ({ __iowmb(); writel_relaxed(v,c); })
+PCP_GLOBAL_IPI_SAVED is only useful at development phase. I can't
+imagine normal admins use it.
+
+
+
