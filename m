@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551Ab2ACSJr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 13:09:47 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53495 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754457Ab2ACSJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 13:09:46 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.52+drm33.21
-Date: Tue,  3 Jan 2012 19:09:43 +0100
-Message-Id: <1325614183-7785-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1754563Ab2ACSW6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 13:22:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58216 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab2ACSWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 13:22:55 -0500
+Date: Tue, 3 Jan 2012 13:22:22 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Al Viro <viro@ZenIV.linux.org.uk>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, dm-devel@redhat.com
+Subject: Re: [PATCH] deadlock with suspend and quotas
+In-Reply-To: <20120103033005.GZ23916@ZenIV.linux.org.uk>
+Message-ID: <Pine.LNX.4.64.1201031318590.10105@hs20-bc2-1.build.redhat.com>
+References: <Pine.LNX.4.64.1111251522230.4118@hs20-bc2-1.build.redhat.com>
+ <20120103033005.GZ23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.52+drm33.21 longterm tree.
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
-This release contains patches from upstream 2.6.32.52, but dropped any patches
-to the DRM subsystem.
+On Tue, 3 Jan 2012, Al Viro wrote:
 
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-or
-  git://kernel.ubuntu.com/smb/linux-2.6.32.y-drm33.z.git
+> On Fri, Nov 25, 2011 at 03:25:16PM -0500, Mikulas Patocka wrote:
+> 
+> > The following patch fixes the deadlock. When the quota subsystem takes s_umount,
+> > it checks if the filesystem is frozen. If it is, we drop s_umount, wait for
+> > the filesystem to resume and retry.
+> > 
+> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> > CC: stable@kernel.org
+> 
+> So basically you want a variant of get_super() that would get you a
+> superblock for this bdev, locked and unfrozen?  Fair enough, but
+> 	* that should be a proper helper in super.c, rather than
+> open-coded in fs/quota/quota.c, of all places
+> 	* what about other existing callers get_super() and its friends?
 
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-or
-  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=summary
+Hi
 
--Stefan
+You can look at that functionality here: I've already made a patch that 
+has it: 
+https://www.redhat.com/archives/dm-devel/2011-November/msg00151.html
 
-------
+Basically, the patch introduces a function down_read_s_umount, which takes 
+s_umount for read, but makes sure that the filesystem is not frozen. Then, 
+it adds a boolean parameter to get_super() which tells get_super() that it 
+should wait for unfreeze (i.e. call "down_read_s_umount" isntead of 
+"down_read(&sb->s_umount)").
 
-* Revert "clockevents: Set noop handler in clockevents_exchange_device()"
-* Linux 2.6.32.52
+Mikulas
 
- Makefile                  |    2 +-
- kernel/time/clockevents.c |    1 -
- 2 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 32dbdd6..8c56b60 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .51+drm33.21
-+EXTRAVERSION = .52+drm33.21
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index b38baff..0d809ae 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -221,7 +221,6 @@ void clockevents_exchange_device(struct clock_event_device *old,
- 	 * released list and do a notify add later.
- 	 */
- 	if (old) {
--		old->event_handler = clockevents_handle_noop;
- 		clockevents_set_mode(old, CLOCK_EVT_MODE_UNUSED);
- 		list_del(&old->list);
- 		list_add(&old->list, &clockevents_released);
+> and while we are at it, why in damnation name is it exported?  The only
+> caller outside of core VFS is under #if 0...
+> 
