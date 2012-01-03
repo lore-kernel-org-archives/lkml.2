@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab2ACUUO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 15:20:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:11806 "EHLO mga02.intel.com"
+	id S1755143Ab2ACUUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 15:20:20 -0500
+Received: from mga11.intel.com ([192.55.52.93]:47369 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755021Ab2ACUUK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 15:20:10 -0500
+	id S1755115Ab2ACUUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 15:20:14 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="94077418"
-Message-Id: <00246c8fc8c8363d2b23695dd2156806f9ee4001.1325620195.git.tony.luck@intel.com>
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="102811118"
+Message-Id: <67cd488cb9841efb1cdd963f078448aadfea2ffc.1325620195.git.tony.luck@intel.com>
 In-Reply-To: <cover.1325620195.git.tony.luck@intel.com>
 References: <cover.1325620195.git.tony.luck@intel.com>
 From: Tony Luck <tony.luck@intel.com>
-Date: Tue, 3 Jan 2012 11:45:45 -0800
-Subject: [PATCH 5/6] x86/mce: Handle "action required" errors
+Date: Tue, 3 Jan 2012 11:48:04 -0800
+Subject: [PATCH 6/6] x86/mce: Recognise machine check bank signature for data path error
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@amd64.org>,
         Chen Gong <gong.chen@linux.intel.com>,
@@ -24,182 +24,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All non-urgent actions (reporting low severity errors and handling
-"action-optional" errors) are now handled by a work queue. This
-means that TIF_MCE_NOTIFY can be used to block execution for a
-thread experiencing an "action-required" fault until we get all
-cpus out of the machine check handler (and the thread that hit
-the fault into mce_notify_process().
+Action required data path signature is defined in table 15-19 of SDM:
 
-We use the new mce_{save,find,clear}_info() API to get information
-from do_machine_check() to mce_notify_process(), and then use the
-newly improved memory_failure(..., MF_ACTION_REQUIRED) to handle
-the error (possibly signalling the process).
++-----------------------------------------------------------------------------+
+| SRAR Error | Valid | OVER | UC | EN | MISCV | ADDRV | PCC | S | AR | MCACOD |
+| Data Load  |     1 |    0 |  1 |  1 |     1 |     1 |   0 | 1 |  1 |  0x134 |
++-----------------------------------------------------------------------------+
 
-Update some comments to make the new code flows clearer.
+Recognise this, and pass MCE_AR_SEVERITY code back to do_machine_check() if
+we have the action handler configured (CONFIG_MEMORY_FAILURE=y)
 
+Acked-by: Borislav Petkov <bp@amd64.org>
 Signed-off-by: Tony Luck <tony.luck@intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |   95 +++++++++++++++++++++-----------------
- 1 files changed, 53 insertions(+), 42 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce-severity.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index e1579c5..56e4e79 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -982,7 +982,9 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 	barrier();
+diff --git a/arch/x86/kernel/cpu/mcheck/mce-severity.c b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+index 7395d5f..f6c92f9 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce-severity.c
++++ b/arch/x86/kernel/cpu/mcheck/mce-severity.c
+@@ -54,6 +54,7 @@ static struct severity {
+ #define  MASK(x, y)	.mask = x, .result = y
+ #define MCI_UC_S (MCI_STATUS_UC|MCI_STATUS_S)
+ #define MCI_UC_SAR (MCI_STATUS_UC|MCI_STATUS_S|MCI_STATUS_AR)
++#define	MCI_ADDR (MCI_STATUS_ADDRV|MCI_STATUS_MISCV)
+ #define MCACOD 0xffff
  
- 	/*
--	 * When no restart IP must always kill or panic.
-+	 * When no restart IP might need to kill or panic.
-+	 * Assume the worst for now, but if we find the
-+	 * severity is MCE_AR_SEVERITY we have other options.
- 	 */
- 	if (!(m.mcgstatus & MCG_STATUS_RIPV))
- 		kill_it = 1;
-@@ -1036,12 +1038,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 			continue;
- 		}
+ 	MCESEV(
+@@ -102,11 +103,24 @@ static struct severity {
+ 		SER, BITCLR(MCI_STATUS_S)
+ 		),
  
--		/*
--		 * Kill on action required.
--		 */
--		if (severity == MCE_AR_SEVERITY)
--			kill_it = 1;
--
- 		mce_read_aux(&m, i);
- 
- 		/*
-@@ -1062,6 +1058,9 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		}
- 	}
- 
-+	/* mce_clear_state will clear *final, save locally for use later */
-+	m = *final;
+-	/* AR add known MCACODs here */
+ 	MCESEV(
+ 		PANIC, "Action required with lost events",
+ 		SER, BITSET(MCI_STATUS_OVER|MCI_UC_SAR)
+ 		),
 +
- 	if (!no_way_out)
- 		mce_clear_state(toclear);
- 
-@@ -1073,27 +1072,22 @@ void do_machine_check(struct pt_regs *regs, long error_code)
- 		no_way_out = worst >= MCE_PANIC_SEVERITY;
- 
- 	/*
--	 * If we have decided that we just CAN'T continue, and the user
--	 * has not set tolerant to an insane level, give up and die.
--	 *
--	 * This is mainly used in the case when the system doesn't
--	 * support MCE broadcasting or it has been disabled.
-+	 * At insane "tolerant" levels we take no action. Otherwise
-+	 * we only die if we have no other choice. For less serious
-+	 * issues we try to recover, or limit damage to the current
-+	 * process.
- 	 */
--	if (no_way_out && tolerant < 3)
--		mce_panic("Fatal machine check on current CPU", final, msg);
--
--	/*
--	 * If the error seems to be unrecoverable, something should be
--	 * done.  Try to kill as little as possible.  If we can kill just
--	 * one task, do that.  If the user has set the tolerance very
--	 * high, don't try to do anything at all.
--	 */
--
--	if (kill_it && tolerant < 3)
--		force_sig(SIGBUS, current);
--
--	/* notify userspace ASAP */
--	set_thread_flag(TIF_MCE_NOTIFY);
-+	if (tolerant < 3) {
-+		if (no_way_out)
-+			mce_panic("Fatal machine check on current CPU", &m, msg);
-+		if (worst == MCE_AR_SEVERITY) {
-+			/* schedule action before return to userland */
-+			mce_save_info(m.addr);
-+			set_thread_flag(TIF_MCE_NOTIFY);
-+		} else if (kill_it) {
-+			force_sig(SIGBUS, current);
-+		}
-+	}
- 
- 	if (worst > 0)
- 		mce_report_event(regs);
-@@ -1107,6 +1101,8 @@ EXPORT_SYMBOL_GPL(do_machine_check);
- #ifndef CONFIG_MEMORY_FAILURE
- int memory_failure(unsigned long pfn, int vector, int flags)
- {
-+	/* mce_severity() should not hand us an ACTION_REQUIRED error */
-+	BUG_ON(flags & MF_ACTION_REQUIRED);
- 	printk(KERN_ERR "Uncorrected memory error in page 0x%lx ignored\n"
- 		"Rebuild kernel with CONFIG_MEMORY_FAILURE=y for smarter handling\n", pfn);
- 
-@@ -1115,27 +1111,44 @@ int memory_failure(unsigned long pfn, int vector, int flags)
- #endif
- 
- /*
-- * Called after mce notification in process context. This code
-- * is allowed to sleep. Call the high level VM handler to process
-- * any corrupted pages.
-- * Assume that the work queue code only calls this one at a time
-- * per CPU.
-- * Note we don't disable preemption, so this code might run on the wrong
-- * CPU. In this case the event is picked up by the scheduled work queue.
-- * This is merely a fast path to expedite processing in some common
-- * cases.
-+ * Called in process context that interrupted by MCE and marked with
-+ * TIF_MCE_NOTIFY, just before returning to erroneous userland.
-+ * This code is allowed to sleep.
-+ * Attempt possible recovery such as calling the high level VM handler to
-+ * process any corrupted pages, and kill/signal current process if required.
-+ * Action required errors are handled here.
-  */
- void mce_notify_process(void)
- {
- 	unsigned long pfn;
--	mce_notify_irq();
--	while (mce_ring_get(&pfn))
--		memory_failure(pfn, MCE_VECTOR, 0);
-+	struct mce_info *mi = mce_find_info();
-+
-+	if (!mi)
-+		mce_panic("Lost physical address for unconsumed uncorrectable error", NULL, NULL);
-+	pfn = mi->paddr >> PAGE_SHIFT;
-+
-+	clear_thread_flag(TIF_MCE_NOTIFY);
-+
-+	pr_err("Uncorrected hardware memory error in user-access at %llx",
-+		 mi->paddr);
-+	if (memory_failure(pfn, MCE_VECTOR, MF_ACTION_REQUIRED) < 0) {
-+		pr_err("Memory error not recovered");
-+		force_sig(SIGBUS, current);
-+	}
-+	mce_clear_info(mi);
- }
- 
-+/*
-+ * Action optional processing happens here (picking up
-+ * from the list of faulting pages that do_machine_check()
-+ * placed into the "ring").
-+ */
- static void mce_process_work(struct work_struct *dummy)
- {
--	mce_notify_process();
-+	unsigned long pfn;
-+
-+	while (mce_ring_get(&pfn))
-+		memory_failure(pfn, MCE_VECTOR, 0);
- }
- 
- #ifdef CONFIG_X86_MCE_INTEL
-@@ -1225,8 +1238,6 @@ int mce_notify_irq(void)
- 	/* Not more than two messages every minute */
- 	static DEFINE_RATELIMIT_STATE(ratelimit, 60*HZ, 2);
- 
--	clear_thread_flag(TIF_MCE_NOTIFY);
--
- 	if (test_and_clear_bit(0, &mce_need_notify)) {
- 		/* wake processes polling /dev/mcelog */
- 		wake_up_interruptible(&mce_chrdev_wait);
++	/* known AR MCACODs: */
++#ifdef	CONFIG_MEMORY_FAILURE
++	MCESEV(
++		KEEP, "HT thread notices Action required: data load error",
++		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
++		MCGMASK(MCG_STATUS_EIPV, 0)
++		),
++	MCESEV(
++		AR, "Action required: data load error",
++		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR|MCI_ADDR|MCACOD, MCI_UC_SAR|MCI_ADDR|0x0134),
++		USER
++		),
++#endif
+ 	MCESEV(
+ 		PANIC, "Action required: unknown MCACOD",
+ 		SER, MASK(MCI_STATUS_OVER|MCI_UC_SAR, MCI_UC_SAR)
 -- 
 1.7.3.1
 
