@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab2ACRZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 12:25:06 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:47445 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab2ACRZE (ORCPT
+	id S1754328Ab2ACRaa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 12:30:30 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:45854 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754136Ab2ACRa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 12:25:04 -0500
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH][linux-next] procfs: fix proc_show_option after dentry switch
-Date: Tue,  3 Jan 2012 17:25:03 +0000
-Message-Id: <1325611503-31485-1-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 1.7.7.1
-X-OriginalArrivalTime: 03 Jan 2012 17:24:59.0745 (UTC) FILETIME=[9EC4D510:01CCCA3C]
-X-MC-Unique: 112010317250104901
-Content-Type: text/plain; charset=WINDOWS-1252
+	Tue, 3 Jan 2012 12:30:26 -0500
+Date: Tue, 3 Jan 2012 09:30:20 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        x86@kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: Dell Studio 1536 needs pci=nocrs to boot.
+Message-ID: <20120103093020.0cbcd735@jbarnes-desktop>
+In-Reply-To: <20120101145354.GA1791@elte.hu>
+References: <20111230193704.GA2874@redhat.com>
+	<20120101145354.GA1791@elte.hu>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/jA4ezylLp8Ulm7JM7ek.Yj="; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id q03HPNWX008093
 
-Commit 79744e6 (vfs: switch ->show_options() to struct dentry *)
-has changed the show_options prototype.
+--Sig_/jA4ezylLp8Ulm7JM7ek.Yj=
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Fix the proc_show_option to use struct dentry instead of
-struct vfs.
+On Sun, 1 Jan 2012 15:53:54 +0100
+Ingo Molnar <mingo@elte.hu> wrote:
 
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
-This appears at least in next-20120103.
+>=20
+> * Dave Jones <davej@redhat.com> wrote:
+>=20
+> > Some machines don't boot unless passed pci=3Dnocrs.
+> > (See https://bugzilla.redhat.com/show_bug.cgi?id=3D770308 for details of
+> >   one report. Waiting on dmidecode output for others).
+> >=20
+> > Currently there is a DMI whitelist, even though the default is on.
+> >=20
+> > This patch extends that dmi list to add a blacklist to automatically
+> > apply disable it when necessary.
+> >=20
+> > Signed-off-by: Dave Jones <davej@redhat.com>
+>=20
+> Acked-by: Ingo Molnar <mingo@elte.hu>
+>=20
+> Jesse, will you take this one?
 
- fs/proc/inode.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Yeah, I can take it.  Bjorn, any comment (I'll bounce over the
+original)?
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index e80cb5a..d839bfd 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -106,9 +106,9 @@ void __init proc_init_inodecache(void)
- 					     init_once);
- }
- 
--static int proc_show_options(struct seq_file *seq, struct vfsmount *vfs)
-+static int proc_show_options(struct seq_file *seq, struct dentry *root)
- {
--	struct super_block *sb = vfs->mnt_sb;
-+	struct super_block *sb = root->d_sb;
- 	struct pid_namespace *pid = sb->s_fs_info;
- 
- 	if (pid->pid_gid)
--- 
-1.7.7.1
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
+--Sig_/jA4ezylLp8Ulm7JM7ek.Yj=
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPAzssAAoJEIEoDkX4Qk9hVNIP/0Ck2o8gRDVR0zZ0AngayE62
+rhTug6I11oc+1iLcs8saN2WJab9mFlJNdUU59t8yE1Mi2vH+KBLAykXW/MO6Ofdw
+uLWwik/EzB+fiZCL/wpKH18CuSUrXGiLEDadl0hg4oWJBqzWXH+iqg0ttVwX9246
+Kytrbbf2SWUykgMOkMbVAMyhFiu/0shIUsgi3eeA4GusNPsnPqI6wcIoMLW1LzXO
+i/Zoac003iDR0Lh5AEd3y9YWXUnKYDSfp8gvAjnLq2JwlC/bZOWiayT5AO2Cno1F
+KyiuOmtAl7yTkVX+z3r83lfOwi2a0bjGoPTZOiGPmvQ2hfBn5NbrlhZEpQ8EmZ2h
+R/08QereDieEzTpMpcD0zkcZaHiumfuv7sYecCXH7TQ4uP3IzVWJWDNdZhf7pwUc
+aiBaG0Fd8WoxhJHGje5d8KU+ozl4ljh1HTU6qSb15lcnSCfZLj4ukS2tHtvDFWnM
+e2d8TGziZB0LoRVw3zPyowxnOdXThie9FBanL+rPdSmS3ve7e4HWT6V96vz4ouXL
+C4ttNGlgyb9i+qKS0h1XCNtycd/mUB93JXZPmhjyyOOvlYfu/s/avfdVpnhtpCGc
+udst7fja4azt1V7pThR8e8J82opv7o0wncQXUqv8VVmSNch3b7PWrqfULYOFPmOF
+JpCamaQguK+axNVoYq3c
+=vExQ
+-----END PGP SIGNATURE-----
+
+--Sig_/jA4ezylLp8Ulm7JM7ek.Yj=--
