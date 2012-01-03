@@ -1,86 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab2ACM5d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 07:57:33 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:41617 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab2ACM53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 07:57:29 -0500
-Date: Tue, 3 Jan 2012 15:58:13 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: Re: [PATCH 12/15] module_param: make bool parameters really bool
- (drivers & misc)
-Message-ID: <20120103125813.GB3626@mwanda>
-References: <87ehw6sesk.fsf@rustcorp.com.au>
+	id S1753092Ab2ACNDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 08:03:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35636 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752534Ab2ACNDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 08:03:10 -0500
+Date: Tue, 3 Jan 2012 14:03:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
+Subject: Re: iwl3945 didn't survive after s2ram failure
+Message-ID: <20120103130306.GA3891@tiehlicka.suse.cz>
+References: <20111227105340.GD5344@tiehlicka.suse.cz>
+ <20120103103457.GA3391@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9zSXsLTf0vkW971A"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87ehw6sesk.fsf@rustcorp.com.au>
+In-Reply-To: <20120103103457.GA3391@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090202.4F02FB2F.0051,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue 03-01-12 11:34:58, Stanislaw Gruszka wrote:
+> On Tue, Dec 27, 2011 at 11:53:40AM +0100, Michal Hocko wrote:
+> > my laptop died (due to drained batteries) while it was suspended to
+> > RAM and the wireless didn't get back to life after I booted again.
+> 
+> I wonder how we could kill hardware that way ...
+> 
+> > Dmesg says:
+> > cfg80211: Calling CRDA to update world regulatory domain
+> > iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, in-tree:s
+> > iwl3945: Copyright(c) 2003-2011 Intel Corporation
+> > iwl3945 0000:05:00.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+> > iwl3945 0000:05:00.0: setting latency timer to 64
+> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+> > iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+> > iwl3945 0000:05:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
+> > iwl3945 0000:05:00.0: EEPROM not found, EEPROM_GP=0xffffffff
+> > iwl3945 0000:05:00.0: Unable to init EEPROM
+> > iwl3945 0000:05:00.0: PCI INT A disabled
+> > iwl3945: probe of 0000:05:00.0 failed with error -2
+> > 
+> > Is there anything I can do to resurrect it?
+> 
+> No idea. Please provide logs with debug=0x47ffffff option.
 
---9zSXsLTf0vkW971A
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[ 5622.729333] cfg80211: Calling CRDA to update world regulatory domain
+[ 5622.739262] iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, in-tree:ds
+[ 5622.739270] iwl3945: Copyright(c) 2003-2011 Intel Corporation
+[ 5622.739324] ieee80211 phy0: U iwl3945_pci_probe Disabling hw_scan
+[ 5622.739328] ieee80211 phy0: U iwl3945_pci_probe *** LOAD DRIVER ***
+[ 5622.739396] iwl3945 0000:05:00.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+[ 5622.739419] iwl3945 0000:05:00.0: setting latency timer to 64
+[ 5622.739446] ieee80211 phy0: U iwl3945_pci_probe pci_resource_len = 0x00001000
+[ 5622.739451] ieee80211 phy0: U iwl3945_pci_probe pci_resource_base = f801e000
+[ 5622.739462] ieee80211 phy0: U iwl_legacy_eeprom_init NVM size = 1024
+[ 5622.739466] ieee80211 phy0: U iwl_legacy_apm_init Init card's basic functions
+[ 5622.740021] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+[ 5622.760206] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+[ 5622.777028] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+[ 5622.793768] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+[ 5622.810526] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+[ 5622.827279] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+[ 5622.840727] ieee80211 phy0: U iwl_legacy_eeprom_verify_signature EEPROM signature=0x00000007
+[ 5622.840731] iwl3945 0000:05:00.0: bad EEPROM signature,EEPROM_GP=0x00000007
+[ 5622.840735] iwl3945 0000:05:00.0: EEPROM not found, EEPROM_GP=0xffffffff
+[ 5622.840740] ieee80211 phy0: U iwl_legacy_apm_stop Stop card, put in low power state
+[ 5622.840746] ieee80211 phy0: U iwl_legacy_apm_stop_master stop master
+[ 5622.840762] iwl3945 0000:05:00.0: Unable to init EEPROM
+[ 5622.840836] iwl3945 0000:05:00.0: PCI INT A disabled
+[ 5622.840851] iwl3945: probe of 0000:05:00.0 failed with error -2
 
-On Thu, Dec 15, 2011 at 01:48:51PM +1030, Rusty Russell wrote:
-> diff --git a/drivers/block/paride/pcd.c b/drivers/block/paride/pcd.c
-> --- a/drivers/block/paride/pcd.c
-> +++ b/drivers/block/paride/pcd.c
-> @@ -105,13 +105,14 @@
->  #define PCD_NAME	"pcd"
->  #define PCD_UNITS	4
-> =20
-> +#include <linux/types.h>
->  /* Here are things one can override from the insmod command.
->     Most are autoprobed by paride unless set here.  Verbose is off
->     by default.
-> =20
->  */
-> =20
-> -static int verbose =3D 0;
-> +static bool verbose =3D 0;
+> Did you try to totally power-off the laptop by removing
+> battery (and power cable of course) ?
 
-This should be int.  Verbose can be set to 2 for extra verbosity.
+Yes and no change. I even tried to disable wireless in BIOS boot and
+then enable it again. No change...
+It seems somebody already had the same problem
+https://bugzilla.redhat.com/show_bug.cgi?id=639184. My BIOS doesn't
+provide any locator setting, unfortunatelly.
 
-Btw, these patches that touch a ton of drivers are the wrong idea.
-If you ack any part of it, then get_maintainer.pl CCs you on every
-single kernel patch until eventually you get old and die.
-
-regards,
-dan carpenter
-
---9zSXsLTf0vkW971A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPAvtkAAoJEOnZkXI/YHqRyRUP/1B1tervvO3XnBsyKo41+z/e
-aCBTfJxgWWaapfgG/L2EZG9HFTOS0TRBkb/Uk30EipVDkQKTBfVcNmoWHJ39KJt8
-nb3fqeHJsT40dVoDLzGr/044eQjwO5ZBWgMmtsx70IBjw192Q6CK9xkrb1PCpbg6
-QMgWQm673jsPrjOE0wXTc1G0y3376A2TOvnx02tzP4IooW66VB1jIgxUAIQK47Iu
-PXkGb/GZaA0RNxIdAlj5bgu+Gy1St4iUwrfHInArr4zU+ZaS2MZbw1GZZ5SyhBU3
-mECG9gMT0AyofbEd+sLHyaGIx1j7LPcybZU30+vQ6zgoFAFqKPQhxI2Ys77/A1Zl
-ASFD7r/+re+A7aYBPnbuKoz0nRGveMiR1nh2oZ384oV9olyNy2FoaTF7HkUjbaGg
-kFxfi7s4NZu9TwY1/+wITFzZTneEsh1FhtvbOw30mn2LKZY/jRD8V0RPeqtlDIx3
-1uY8ETo3XA0LJrtu3jhw34aqJdaWU9k0+WY8jwLMyeB6r/45brAMorkUF8j/JQKy
-KzvBDcdLcKbFrvYnvSlFulIJm2+4dEGx1gCQ8bhmWJy2VvjjLndo/zT1HCrrwXiB
-6e1xBP88aEqWEJe80u7BDO4ZKOGqjHFMi6RZkK3rsEjvZXzgH2InCA5CyUW3HYxX
-tes6gOTFoRc96QBjRCCS
-=Gz+E
------END PGP SIGNATURE-----
-
---9zSXsLTf0vkW971A--
+The message above says that the HW is still in a deep sleep state. Can
+we somehow force waking it up?
+Or, can we just ignore the signature check and (maybe) fix it by another
+suspend/resume cycle?
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
