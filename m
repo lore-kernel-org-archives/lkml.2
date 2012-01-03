@@ -1,123 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab2ACP3T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 10:29:19 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41105 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab2ACP3S (ORCPT
+	id S1753925Ab2ACPaR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 10:30:17 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:41313 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752570Ab2ACPaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 10:29:18 -0500
-Subject: Re: Reiserfs.c bug in 3.2-rc5
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        haiyangz@microsoft.com, hjanssen@microsoft.com,
-        "'Rafael J. Wysocki'" <rjw@sisk.pl>, James Morris <jmorris@namei.org>,
-        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>
-Date: Tue, 03 Jan 2012 10:25:55 -0500
-In-Reply-To: <20120103123841.GA31457@quack.suse.cz>
-References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>
-	 <20111213180707.GI11747@quack.suse.cz>
-	 <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
-	 <20120102115222.GA3626@quack.suse.cz>
-	 <005301ccc998$201c9da0$6055d8e0$@jorge@decimal.pt>
-	 <20120103010826.GF3626@quack.suse.cz>
-	 <000701ccc9fa$74df73f0$5e9e5bd0$@jorge@decimal.pt>
-	 <20120103123841.GA31457@quack.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325604356.2095.23.camel@falcor>
-Mime-Version: 1.0
-x-cbid: 12010315-6148-0000-0000-0000025E300F
+	Tue, 3 Jan 2012 10:30:14 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org
+Cc: Neil Horman <nhorman@tuxdriver.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-pci@vger.kernel.org
+Subject: [PATCH] msi: fix imbalanced refcount of msi irq sysfs objects
+Date: Tue,  3 Jan 2012 10:29:54 -0500
+Message-Id: <1325604594-7184-1-git-send-email-nhorman@tuxdriver.com>
+X-Mailer: git-send-email 1.7.7.5
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 13:38 +0100, Jan Kara wrote:
-> Hell,
-> 
-> On Tue 03-01-12 09:31:22, Jorge Bastos wrote:
-> > >   Yes, thanks! So we see that reiserfs_security_init() returned bogus
-> > >   number 790797. This is caused by security_old_inode_init_security()
-> > >   either returning some bogus number or setting sec->length to
-> > >   something bogus.  In any case it's some security module problem so
-> > >   I'm adding Mimi Zohar who did the changes in this code recently to
-> > >   CC. I'm also adding Rafael since this is a regression.
-> > > 
-> > >   Also I think he might use your kernel config so can you please send
-> > > it?
-> > > Thanks.
-> > 
-> > Sure,
-> > Please grab it here:
-> > 
-> > http://neotrix.decimal.pt/bugs/config-3.2-rc7.txt 
-> > 
-> > Let me know when the fix gets commited git master.
->   Thanks! So I've managed to reproduce the problem and I now understand
-> what is the problem. Commit 1e39f384bb01b0395b69cb70c2cacae65012f203 makes
-> security_old_inode_init_security() return 0 when CONFIG_SECURITY is not
-> set. But that makes caller such as reiserfs_security_init() assume that
-> security_old_inode_init_security() has set name, value, and len arguments
-> properly (which is IMO correct assumption). But they were left
-> uninitialized which makes things break in an interesting ways... The fix is
-> below.
-> 
-> Mimi, James, Linus, this patch fixes a regression from 3.1 and should make
-> it to 3.2 if possible.
-> 
-> 								Honza
+This warning was recently reported to me:
 
-Commit fb88c2b changed the security_old_inode_init_security() return
-code for S_PRIVATE inodes. As long as -EOPNOTSUPP is expected, probably
-should revert that as well.
+------------[ cut here ]------------
+WARNING: at lib/kobject.c:595 kobject_put+0x50/0x60()
+Hardware name: VMware Virtual Platform
+kobject: '(null)' (ffff880027b0df40): is not initialized, yet kobject_put() is
+being called.
+Modules linked in: vmxnet3(+) vmw_balloon i2c_piix4 i2c_core shpchp raid10
+vmw_pvscsi
+Pid: 630, comm: modprobe Tainted: G        W   3.1.6-1.fc16.x86_64 #1
+Call Trace:
+ [<ffffffff8106b73f>] warn_slowpath_common+0x7f/0xc0
+ [<ffffffff8106b836>] warn_slowpath_fmt+0x46/0x50
+ [<ffffffff810da293>] ? free_desc+0x63/0x70
+ [<ffffffff812a9aa0>] kobject_put+0x50/0x60
+ [<ffffffff812e4c25>] free_msi_irqs+0xd5/0x120
+ [<ffffffff812e524c>] pci_enable_msi_block+0x24c/0x2c0
+ [<ffffffffa017c273>] vmxnet3_alloc_intr_resources+0x173/0x240 [vmxnet3]
+ [<ffffffffa0182e94>] vmxnet3_probe_device+0x615/0x834 [vmxnet3]
+ [<ffffffff812d141c>] local_pci_probe+0x5c/0xd0
+ [<ffffffff812d2cb9>] pci_device_probe+0x109/0x130
+ [<ffffffff8138ba2c>] driver_probe_device+0x9c/0x2b0
+ [<ffffffff8138bceb>] __driver_attach+0xab/0xb0
+ [<ffffffff8138bc40>] ? driver_probe_device+0x2b0/0x2b0
+ [<ffffffff8138bc40>] ? driver_probe_device+0x2b0/0x2b0
+ [<ffffffff8138a8ac>] bus_for_each_dev+0x5c/0x90
+ [<ffffffff8138b63e>] driver_attach+0x1e/0x20
+ [<ffffffff8138b240>] bus_add_driver+0x1b0/0x2a0
+ [<ffffffffa0188000>] ? 0xffffffffa0187fff
+ [<ffffffff8138c246>] driver_register+0x76/0x140
+ [<ffffffff815ca414>] ? printk+0x51/0x53
+ [<ffffffffa0188000>] ? 0xffffffffa0187fff
+ [<ffffffff812d2996>] __pci_register_driver+0x56/0xd0
+ [<ffffffffa018803a>] vmxnet3_init_module+0x3a/0x3c [vmxnet3]
+ [<ffffffff81002042>] do_one_initcall+0x42/0x180
+ [<ffffffff810aad71>] sys_init_module+0x91/0x200
+ [<ffffffff815dccc2>] system_call_fastpath+0x16/0x1b
+---[ end trace 44593438a59a9558 ]---
+Using INTx interrupt, #Rx queues: 1.
 
-(I'm cc'ing the ocfs2 maintainers.)
+It occurs when populate_msi_sysfs fails, which in turn causes free_msi_irqs to
+be called.  Because populate_msi_sysfs fails, we never registered any of the
+msi irq sysfs objects, but free_msi_irqs still calls kobject_del and kobject_put
+on each of them, which gets flagged in the above stack trace.
 
-thanks,
+The fix is pretty straightforward.  We can key of the parent pointer in the
+kobject.  It is only set if the kobject_init_and_add succededs in
+populate_msi_sysfs.  If anything fails there, each kobject has its parent reset
+to NULL
 
-Mimi
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: linux-pci@vger.kernel.org
+---
+ drivers/pci/msi.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
 
-> ----
-> 
-> From 5bcd17065fa27d5f27756e24a98331f796ff2481 Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Tue, 3 Jan 2012 13:14:29 +0100
-> Subject: [PATCH] security: Fix security_old_inode_init_security() when CONFIG_SECURITY is not set
-> 
-> Commit 1e39f384bb01b0395b69cb70c2cacae65012f203 makes
-> security_old_inode_init_security() return 0 when CONFIG_SECURITY is not set.
-> But that makes callers such as reiserfs_security_init() assume that
-> security_old_inode_init_security() has set name, value, and len arguments
-> properly. But security_old_inode_init_security() left them uninitialized
-> which then results in interesting failures.
-> 
-> Revert security_old_inode_init_security() to the old behavior of returning
-> EOPNOTSUPP since both callers (reiserfs and ocfs2) handle this just fine.
-> 
-> Reported-by: Jorge Bastos <mysql.jorge@decimal.pt>
-> CC: James Morris <jmorris@namei.org>
-> CC: Mimi Zohar <zohar@us.ibm.com>
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  include/linux/security.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index 19d8e04..e8c619d 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -2056,7 +2056,7 @@ static inline int security_old_inode_init_security(struct inode *inode,
->  						   char **name, void **value,
->  						   size_t *len)
->  {
-> -	return 0;
-> +	return -EOPNOTSUPP;
->  }
-> 
->  static inline int security_inode_create(struct inode *dir,
-
+diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
+index 337e16a..82de95e 100644
+--- a/drivers/pci/msi.c
++++ b/drivers/pci/msi.c
+@@ -323,8 +323,18 @@ static void free_msi_irqs(struct pci_dev *dev)
+ 			if (list_is_last(&entry->list, &dev->msi_list))
+ 				iounmap(entry->mask_base);
+ 		}
+-		kobject_del(&entry->kobj);
+-		kobject_put(&entry->kobj);
++
++		/*
++		 * Its possible that we get into this path
++		 * When populate_msi_sysfs fails, which means the entries
++		 * were not registered with sysfs.  In that case don't
++		 * unregister them.
++		 */
++		if (entry->kobj.parent) {
++			kobject_del(&entry->kobj);
++			kobject_put(&entry->kobj);
++		}
++
+ 		list_del(&entry->list);
+ 		kfree(entry);
+ 	}
+-- 
+1.7.7.5
 
