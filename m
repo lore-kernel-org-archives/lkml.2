@@ -1,97 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381Ab2ACBnp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 20:43:45 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:45393 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860Ab2ACBnm (ORCPT
+	id S1751473Ab2ACCqD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 21:46:03 -0500
+Received: from netrider.rowland.org ([192.131.102.5]:36667 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751019Ab2ACCp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 20:43:42 -0500
-Date: Tue, 3 Jan 2012 12:43:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: linux-next: build failure after merge of the vfs tree
-Message-Id: <20120103124331.f0f0043f8ca464c9ff13f4d3@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__3_Jan_2012_12_43_31_+1100_FhJo32_+dnbpO/BL"
+	Mon, 2 Jan 2012 21:45:59 -0500
+Date: Mon, 2 Jan 2012 21:45:58 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Matthew Garrett <mjg@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jack Stone <jwjstone@fastmail.fm>, Oliver Neukum <oliver@neukum.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+In-Reply-To: <20120102215028.GA15701@srcf.ucam.org>
+Message-ID: <Pine.LNX.4.44L0.1201022136190.20386-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__3_Jan_2012_12_43_31_+1100_FhJo32_+dnbpO/BL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 2 Jan 2012, Matthew Garrett wrote:
 
-Hi Al,
+> It's not theoretical hardware. This appears to be the current behaviour 
+> of the isight devices. If you reboot they retain their firmware. If you 
+> suspend, they don't. So if we have a flow like this:
+> 
+> 1) user boots from cold. Device comes up with generic USB ID.
+> 2) isight_firmware loads and binds. Firmware is loaded. Device 
+> disconnects and reconnects with an ID that's bound by the UVC driver.
+> 3) user reboots. Device comes up with UVC ID. isight_firmware doesn't 
+> bind.
+> 4) user suspends.
+> 5) user resumes. isight_firmware binds and attempts to load firmware.
 
-After merging the vfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Wait a second.  Why does isight_firmware bind at this time?  Binding to
+new devices is handled by khubd, which doesn't start running again
+until after the resume is finished (the device appears to be new
+because its descriptors have changed).  At that point there should be
+no trouble reloading the firmware.
 
-fs/super.c:230:13: error: static declaration of 'put_super' follows non-sta=
-tic declaration
-include/linux/fs.h:2493:13: note: previous declaration of 'put_super' was h=
-ere
+> then just caching the firmware is inadequate - we had never previously 
+> seen the device on this boot, so we've never loaded it in order to cache 
+> it. isight_firmware could unconditionally load the firmware on module 
+> load just in case a device is plugged in, but that seems even less 
+> elegant than caching it.
+> 
+> Now this is obviously somewhat mitigated because isight_firmware won't 
+> have been autoloaded at (3), so won't be there at (5) unless the user's 
+> manually loaded it. But insmodding a driver shouldn't result in stuff 
+> breaking later.
 
-Caused by commit eab99e355c00 ("trim fs/internal.h") interacting with
-commit 4789fd4495a4 ("quota: Fix deadlock with suspend and quotas") from
-the ext3 tree.
+I don't see how this matters very much.  Certainly not enough to
+justify all the effort put into this email thread already.
 
-I applied the following (probably not the best) merge fix patch for today:
+Regardless of what isight_firmware does, the original UVC device 
+instance is gone.  The new device instance won't appear until the khubd 
+thread starts running again, after the resume is finished.  As far as 
+userspace is concerned, that's all that matters.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 3 Jan 2012 12:38:21 +1100
-Subject: [PATCH] fs: make put_super global again
+Even in situations where isight_firmware does somehow manage to bind
+during resume, the only question is how it can avoid hanging or
+delaying the resume procedure.  Doing an async firmware load will solve
+that.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/super.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Alan Stern
 
-diff --git a/fs/super.c b/fs/super.c
-index 3682e6c..cb6d718 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -227,7 +227,7 @@ static void __put_super(struct super_block *sb)
-  *	Drops a temporary reference, frees superblock if there's no
-  *	references left.
-  */
--static void put_super(struct super_block *sb)
-+void put_super(struct super_block *sb)
- {
- 	spin_lock(&sb_lock);
- 	__put_super(sb);
---=20
-1.7.8.197.g73c6b
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__3_Jan_2012_12_43_31_+1100_FhJo32_+dnbpO/BL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPAl1DAAoJEECxmPOUX5FEe6YQAKYaQcZCC2ID8AfQyylKuRmv
-JlDz3n9ciosAue5pxwCeOuF8ToPvVTAAj6BBC0kv9gvjWeebwJvtUoB+KPym9f/U
-54BcWuBNo8/H9BXBjJdJu7HnxwB6JvgzKyIAb3I4l0JiAEhkFOIN+8LR/PByVFI7
-JA8lYUStTqm/FBf2z5RKdHTCOIncHguYl0n3VfSkxb8ozZOQeHV9gLVCQyWiqcVc
-q8MbGVD1ZlvfEe2qVJsRpuLT/fNQO6O4xhdWHXokhJKqRTAMjxf94FjSsRSJFLsV
-WLS6XKZmHgfP7dXezD1fF/pHJDYJJhmWrvTYtpX1ORMPqmjCnp63Sa42UvfPDUQ4
-fTBwUS9pdmy8WrhD7+vgX9p36D8NtRV0NwA0hbWV128S7EpPEDMRe1RVpeMthDIN
-5/cYMSvYnVmSn1tEA8Tvvim/eKHzl+EJUKOnGkQxpw4T+h4VFO9JKycck9JO0X6i
-bjDUvo78V8E9cgx7aAQ+c+8mBUiD2haNI6c8FteGLMfr0pi7gYCotHhcIsUYTlad
-gZKwYsOPFIC4lPGiOVmOjEag1FFIEmblS/VL89/EJsLUMmyThDPJwLZoQMFmwXhC
-5pcUmxFcFi0Zfp18WhXinjAZZQim3URKgp+gxt955eX/eRfu+WzN/Nnxc9sjj4X+
-fHsurckiPGbr4JwY3wvr
-=CGj9
------END PGP SIGNATURE-----
-
---Signature=_Tue__3_Jan_2012_12_43_31_+1100_FhJo32_+dnbpO/BL--
