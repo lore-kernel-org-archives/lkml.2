@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755442Ab2ACXDv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:03:51 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2152 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755503Ab2ACXDq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 18:03:46 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 03 Jan 2012 15:03:38 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 3 Jan 2012 15:03:30 -0800
-Subject: RE: [PATCH v1 0/3] Tegra30 clockframework
-Thread-Topic: [PATCH v1 0/3] Tegra30 clockframework
-Thread-Index: AczJYcefELP5YqAwS0ipClByKP0MIABCY9Xw
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17761F1220@HQMAIL01.nvidia.com>
-References: <1325517486-22458-1-git-send-email-pdeschrijver@nvidia.com>
-In-Reply-To: <1325517486-22458-1-git-send-email-pdeschrijver@nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1755451Ab2ACWgV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:36:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39531 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751857Ab2ACWgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:36:17 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:32 2012
+Message-Id: <20120103223032.152265897@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Tue, 03 Jan 2012 14:29:28 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Thomas Gleixner <tglx@linutronix.de>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [10/67] SCSI: fcoe: Fix preempt count leak in fcoe_filter_frames()
+In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter De Schrijver wrote at Monday, January 02, 2012 8:18 AM:
-> This patchset introduces the tegra30 clockframework. Clocks which require
-> voltage scaling are not included in this version. The implementation doesn't
-> use the generic clock code yet. It's the intention to move to it, once the
-> semantics are fully clarified.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-I'm not particularly familiar with Tegra's clocks, but nothing really
-stood out as wrong with this patch on a quick look-through. It'd be great
-if someone like Colin could look this over.
+------------------
 
-A couple thoughts below. You've probably thought about some of these
-already, but I just wanted to make sure:-)
+From: Thomas Gleixner <tglx@linutronix.de>
 
-* Are we following the common clock stuff so we can move over once it's
-ready?
+commit 7e1e7ead88dff75b11b86ee0d5232c4591be1326 upstream.
 
-* Are Tegra20 and Tegra30 so different we can't re-use any of the code
-in tegra2_clocks.c for Tegra30?
+The error exit path leaks preempt count. Add the missing put_cpu().
 
-* The device names in the peripheral clock table might benefit from a
-review to make sure they match tegra2_clocks.c for the drivers we've
-actually upstreamed at least.
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Reviewed-by: Yi Zou <yi.zou@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
--- 
-nvpublic
+---
+ drivers/scsi/fcoe/fcoe.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/scsi/fcoe/fcoe.c
++++ b/drivers/scsi/fcoe/fcoe.c
+@@ -1561,6 +1561,7 @@ static inline int fcoe_filter_frames(str
+ 	stats->InvalidCRCCount++;
+ 	if (stats->InvalidCRCCount < 5)
+ 		printk(KERN_WARNING "fcoe: dropping frame with CRC error\n");
++	put_cpu();
+ 	return -EINVAL;
+ }
+ 
+
 
