@@ -1,46 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751303Ab2ACBNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 20:13:33 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:49722 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750990Ab2ACBNb (ORCPT
+	id S1751328Ab2ACB2u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 20:28:50 -0500
+Received: from numidia.opendz.org ([98.142.220.152]:56276 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750778Ab2ACB2r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 20:13:31 -0500
-X-Sasl-enc: LF846h9RPBir3rfBFYnDsrunPFm4elzsptWVSVLgiRTL 1325553210
-Date: Mon, 2 Jan 2012 17:12:13 -0800
-From: Greg KH <greg@kroah.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH] firmware: Fix an oops on reading fw_priv->fw in sysfs
- loading file
-Message-ID: <20120103011213.GA21956@kroah.com>
-References: <1325536283-21159-1-git-send-email-nhorman@tuxdriver.com>
+	Mon, 2 Jan 2012 20:28:47 -0500
+Date: Tue, 3 Jan 2012 02:31:52 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl
+ updates inode
+Message-ID: <20120103013152.GA26455@dztty>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325536283-21159-1-git-send-email-nhorman@tuxdriver.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 03:31:23PM -0500, Neil Horman wrote:
-> This oops was reported recently:
-> firmware_loading_store+0xf9/0x17b
-> dev_attr_store+0x20/0x22
-> sysfs_write_file+0x101/0x134
-> vfs_write+0xac/0xf3
-> sys_write+0x4a/0x6e
-> system_call_fastpath+0x16/0x1b
-> 
-> The complete backtrace was unfortunately not captured, but details can be found
-> here:
-> https://bugzilla.redhat.com/show_bug.cgi?id=769920
-> 
-> The cause is fairly clear.
 
-Thanks, this patch should also fix the same problem that the Motorola
-developers were seeing, yet failed to create a useful patch for :)
+The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
+this can lead to a race with the other operations that update the same
+inode.
 
-greg k-h
+Patch tested.
+
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+---
+ fs/ext3/ioctl.c |    6 +++++-
+ fs/ext4/ioctl.c |    6 +++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext3/ioctl.c b/fs/ext3/ioctl.c
+index ba1b54e..e7b2ed9 100644
+--- a/fs/ext3/ioctl.c
++++ b/fs/ext3/ioctl.c
+@@ -134,10 +134,11 @@ flags_out:
+ 			goto setversion_out;
+ 		}
+ 
++		mutex_lock(&inode->i_mutex);
+ 		handle = ext3_journal_start(inode, 1);
+ 		if (IS_ERR(handle)) {
+ 			err = PTR_ERR(handle);
+-			goto setversion_out;
++			goto unlock_out;
+ 		}
+ 		err = ext3_reserve_inode_write(handle, inode, &iloc);
+ 		if (err == 0) {
+@@ -146,6 +147,9 @@ flags_out:
+ 			err = ext3_mark_iloc_dirty(handle, inode, &iloc);
+ 		}
+ 		ext3_journal_stop(handle);
++
++unlock_out:
++		mutex_unlock(&inode->i_mutex);
+ setversion_out:
+ 		mnt_drop_write(filp->f_path.mnt);
+ 		return err;
+diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+index a567968..46a8de6 100644
+--- a/fs/ext4/ioctl.c
++++ b/fs/ext4/ioctl.c
+@@ -158,10 +158,11 @@ flags_out:
+ 			goto setversion_out;
+ 		}
+ 
++		mutex_lock(&inode->i_mutex);
+ 		handle = ext4_journal_start(inode, 1);
+ 		if (IS_ERR(handle)) {
+ 			err = PTR_ERR(handle);
+-			goto setversion_out;
++			goto unlock_out;
+ 		}
+ 		err = ext4_reserve_inode_write(handle, inode, &iloc);
+ 		if (err == 0) {
+@@ -170,6 +171,9 @@ flags_out:
+ 			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
+ 		}
+ 		ext4_journal_stop(handle);
++
++unlock_out:
++		mutex_unlock(&inode->i_mutex);
+ setversion_out:
+ 		mnt_drop_write(filp->f_path.mnt);
+ 		return err;
+-- 
+1.7.1
