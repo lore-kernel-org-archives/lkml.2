@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2ACQaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 11:30:30 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62986 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753970Ab2ACQa2 (ORCPT
+	id S1754158Ab2ACQfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 11:35:46 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52115 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab2ACQfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 11:30:28 -0500
-Date: Tue, 3 Jan 2012 08:30:23 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
-        =?utf-8?Q?=C5=81ukasz?= Michalik <lmi@ift.uni.wroc.pl>,
-        "Dmitry V. Levin" <ldv@altlinux.org>
-Subject: Re: ptrace fixes for 3.2
-Message-ID: <20120103163023.GA31746@google.com>
-References: <201112281955.55200.vda.linux@googlemail.com>
- <20111229113245.GA18062@redhat.com>
- <20111229120506.GA23653@redhat.com>
- <20120103142941.GA25488@redhat.com>
- <20120103154404.GA28930@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103154404.GA28930@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 3 Jan 2012 11:35:44 -0500
+Message-ID: <1325608540.2320.103.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: [PATCH] x86: fix atomic64_xxx_cx8() functions
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        hpa@zytor.com
+Date: Tue, 03 Jan 2012 17:35:40 +0100
+In-Reply-To: <1325607218.2320.89.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <4F01F12A020000780006A19B@nat28.tlf.novell.com>
+	 <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1325603714.2320.73.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1325605290.2320.76.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4F03361C020000780006A3A5@nat28.tlf.novell.com>
+	 <1325607218.2320.89.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Oleg.
+It appears about all functions in arch/x86/lib/atomic64_cx8_32.S are
+wrong in case cmpxchg8b must be restarted, because LOCK_PREFIX macro
+defines a label "1" clashing with other local labels :
 
-On Tue, Jan 03, 2012 at 04:44:04PM +0100, Oleg Nesterov wrote:
-> It fails because ->real_parent sees its child in EXIT_DEAD state
-> while the tracer is going to change the state back to EXIT_ZOMBIE
-> in wait_task_zombie().
+1:
+	some_instructions
+	LOCK_PREFIX
+	cmpxchg8b (%ebp)
+	jne 1b  / jumps to beginning of LOCK_PREFIX !
 
-Argh.... EXIT_ZOMBIE -> DEAD -> ZOMBIE dancing in wait_task_zombie()
-is just nasty.  Didn't realize it was doing that.  :(
+A possible fix is to use a magic label "672" in LOCK_PREFIX asm
+definition, similar to the "671" one we defined in LOCK_PREFIX_HERE. 
 
-> The offending commit is 823b018e which moved the EXIT_DEAD check,
-> but in fact we should not blame it. The original code was not
-> correct as well because it didn't take ptrace_reparented() into
-> account and because we can't really trust ->ptrace.
-> 
-> This patch adds the additional check to close this particular
-> race but it doesn't solve the whole problem. We simply can't
-> rely on ->ptrace in this case, it can be cleared if the tracer
-> is multithreaded by the exiting ->parent.
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: Jan Beulich <JBeulich@suse.com>
+CC: Christoph Lameter <cl@linux.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: H. Peter Anvin <hpa@zytor.com>
+Cc: stable@vger.kernel.org  [2.6.35+]
+---
+ arch/x86/include/asm/alternative-asm.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I'm not following this part.  Can you please explain it in a bit more
-detail?
+diff --git a/arch/x86/include/asm/alternative-asm.h b/arch/x86/include/asm/alternative-asm.h
+index 091508b..952bd01 100644
+--- a/arch/x86/include/asm/alternative-asm.h
++++ b/arch/x86/include/asm/alternative-asm.h
+@@ -4,10 +4,10 @@
+ 
+ #ifdef CONFIG_SMP
+ 	.macro LOCK_PREFIX
+-1:	lock
++672:	lock
+ 	.section .smp_locks,"a"
+ 	.balign 4
+-	.long 1b - .
++	.long 672b - .
+ 	.previous
+ 	.endm
+ #else
 
-> I think we should kill EXIT_DEAD altogether, we should always
-> remove the soon-to-be-reaped child from ->children or at least
-> we should never do the DEAD->ZOMBIE transition. But this is too
-> complex for 3.2.
 
-Agreed.  Removing the reverse transition shouldn't be too difficult
-and can be done without affecting fast non-ptrace path.  ie. if the
-child is ptraced, drop readlock, grab writelock, recheck, buffer
-states to copy out to userland, detach and transit to DEAD if
-necessary.
-
-> Also, I think wait_consider_task() needs more fixes. I do not
-> think we should clear ->notask_error without WEXITED in this
-> case, but this is what we do in the EXIT_ZOMBIE case.
-
-Hmmm... I'm not sure about that.  Why do you think so?
-
-> Reported-by: Denys Vlasenko <vda.linux@googlemail.com>
-> Cc: v3.0.. <stable@kernel.org>
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-
-Anyways, the fix looks good to me.
-
- Acked-by: Tejun Heo <tj@kernel.org>
-
-Thank you.
-
--- 
-tejun
