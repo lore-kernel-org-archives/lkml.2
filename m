@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab2ACWfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:35:34 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39408 "EHLO mx2.suse.de"
+	id S1755406Ab2ACWgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:36:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39458 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857Ab2ACWfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:35:30 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:33 2012
-Message-Id: <20120103223033.542950112@clark.kroah.org>
+	id S1755284Ab2ACWf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:35:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:34 2012
+Message-Id: <20120103223034.049889098@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:44 -0800
+Date: Tue, 03 Jan 2012 14:29:50 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Hugh Dickins <hughd@google.com>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: [26/67] vfs: __read_cache_page should use gfp argument rather than GFP_KERNEL
+        alan@lxorguk.ukuu.org.uk,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [32/67] VFS: Fix race between CPU hotplug and lglocks
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,46 +26,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit e6f67b8c05f5e129e126f4409ddac6f25f58ffcb upstream.
+commit e30e2fdfe56288576ee9e04dbb06b4bd5f282203 upstream.
 
-lockdep reports a deadlock in jfs because a special inode's rw semaphore
-is taken recursively.  The mapping's gfp mask is GFP_NOFS, but is not
-used when __read_cache_page() calls add_to_page_cache_lru().
+Currently, the *_global_[un]lock_online() routines are not at all synchronized
+with CPU hotplug. Soft-lockups detected as a consequence of this race was
+reported earlier at https://lkml.org/lkml/2011/8/24/185. (Thanks to Cong Meng
+for finding out that the root-cause of this issue is the race condition
+between br_write_[un]lock() and CPU hotplug, which results in the lock states
+getting messed up).
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Acked-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixing this race by just adding {get,put}_online_cpus() at appropriate places
+in *_global_[un]lock_online() is not a good option, because, then suddenly
+br_write_[un]lock() would become blocking, whereas they have been kept as
+non-blocking all this time, and we would want to keep them that way.
+
+So, overall, we want to ensure 3 things:
+1. br_write_lock() and br_write_unlock() must remain as non-blocking.
+2. The corresponding lock and unlock of the per-cpu spinlocks must not happen
+   for different sets of CPUs.
+3. Either prevent any new CPU online operation in between this lock-unlock, or
+   ensure that the newly onlined CPU does not proceed with its corresponding
+   per-cpu spinlock unlocked.
+
+To achieve all this:
+(a) We introduce a new spinlock that is taken by the *_global_lock_online()
+    routine and released by the *_global_unlock_online() routine.
+(b) We register a callback for CPU hotplug notifications, and this callback
+    takes the same spinlock as above.
+(c) We maintain a bitmap which is close to the cpu_online_mask, and once it is
+    initialized in the lock_init() code, all future updates to it are done in
+    the callback, under the above spinlock.
+(d) The above bitmap is used (instead of cpu_online_mask) while locking and
+    unlocking the per-cpu locks.
+
+The callback takes the spinlock upon the CPU_UP_PREPARE event. So, if the
+br_write_lock-unlock sequence is in progress, the callback keeps spinning,
+thus preventing the CPU online operation till the lock-unlock sequence is
+complete. This takes care of requirement (3).
+
+The bitmap that we maintain remains unmodified throughout the lock-unlock
+sequence, since all updates to it are managed by the callback, which takes
+the same spinlock as the one taken by the lock code and released only by the
+unlock routine. Combining this with (d) above, satisfies requirement (2).
+
+Overall, since we use a spinlock (mentioned in (a)) to prevent CPU hotplug
+operations from racing with br_write_lock-unlock, requirement (1) is also
+taken care of.
+
+By the way, it is to be noted that a CPU offline operation can actually run
+in parallel with our lock-unlock sequence, because our callback doesn't react
+to notifications earlier than CPU_DEAD (in order to maintain our bitmap
+properly). And this means, since we use our own bitmap (which is stale, on
+purpose) during the lock-unlock sequence, we could end up unlocking the
+per-cpu lock of an offline CPU (because we had locked it earlier, when the
+CPU was online), in order to satisfy requirement (2). But this is harmless,
+though it looks a bit awkward.
+
+Debugged-by: Cong Meng <mc@linux.vnet.ibm.com>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/filemap.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ include/linux/lglock.h |   36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
 
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1807,7 +1807,7 @@ repeat:
- 		page = __page_cache_alloc(gfp | __GFP_COLD);
- 		if (!page)
- 			return ERR_PTR(-ENOMEM);
--		err = add_to_page_cache_lru(page, mapping, index, GFP_KERNEL);
-+		err = add_to_page_cache_lru(page, mapping, index, gfp);
- 		if (unlikely(err)) {
- 			page_cache_release(page);
- 			if (err == -EEXIST)
-@@ -1904,10 +1904,7 @@ static struct page *wait_on_page_read(st
-  * @gfp:	the page allocator flags to use if allocating
-  *
-  * This is the same as "read_mapping_page(mapping, index, NULL)", but with
-- * any new page allocations done using the specified allocation flags. Note
-- * that the Radix tree operations will still use GFP_KERNEL, so you can't
-- * expect to do this atomically or anything like that - but you can pass in
-- * other page requirements.
-+ * any new page allocations done using the specified allocation flags.
-  *
-  * If the page does not get brought uptodate, return -EIO.
-  */
+--- a/include/linux/lglock.h
++++ b/include/linux/lglock.h
+@@ -22,6 +22,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/lockdep.h>
+ #include <linux/percpu.h>
++#include <linux/cpu.h>
+ 
+ /* can make br locks by using local lock for read side, global lock for write */
+ #define br_lock_init(name)	name##_lock_init()
+@@ -72,9 +73,31 @@
+ 
+ #define DEFINE_LGLOCK(name)						\
+ 									\
++ DEFINE_SPINLOCK(name##_cpu_lock);					\
++ cpumask_t name##_cpus __read_mostly;					\
+  DEFINE_PER_CPU(arch_spinlock_t, name##_lock);				\
+  DEFINE_LGLOCK_LOCKDEP(name);						\
+ 									\
++ static int								\
++ name##_lg_cpu_callback(struct notifier_block *nb,			\
++				unsigned long action, void *hcpu)	\
++ {									\
++	switch (action & ~CPU_TASKS_FROZEN) {				\
++	case CPU_UP_PREPARE:						\
++		spin_lock(&name##_cpu_lock);				\
++		cpu_set((unsigned long)hcpu, name##_cpus);		\
++		spin_unlock(&name##_cpu_lock);				\
++		break;							\
++	case CPU_UP_CANCELED: case CPU_DEAD:				\
++		spin_lock(&name##_cpu_lock);				\
++		cpu_clear((unsigned long)hcpu, name##_cpus);		\
++		spin_unlock(&name##_cpu_lock);				\
++	}								\
++	return NOTIFY_OK;						\
++ }									\
++ static struct notifier_block name##_lg_cpu_notifier = {		\
++	.notifier_call = name##_lg_cpu_callback,			\
++ };									\
+  void name##_lock_init(void) {						\
+ 	int i;								\
+ 	LOCKDEP_INIT_MAP(&name##_lock_dep_map, #name, &name##_lock_key, 0); \
+@@ -83,6 +106,11 @@
+ 		lock = &per_cpu(name##_lock, i);			\
+ 		*lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;	\
+ 	}								\
++	register_hotcpu_notifier(&name##_lg_cpu_notifier);		\
++	get_online_cpus();						\
++	for_each_online_cpu(i)						\
++		cpu_set(i, name##_cpus);				\
++	put_online_cpus();						\
+  }									\
+  EXPORT_SYMBOL(name##_lock_init);					\
+ 									\
+@@ -124,9 +152,9 @@
+ 									\
+  void name##_global_lock_online(void) {					\
+ 	int i;								\
+-	preempt_disable();						\
++	spin_lock(&name##_cpu_lock);					\
+ 	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
+-	for_each_online_cpu(i) {					\
++	for_each_cpu(i, &name##_cpus) {					\
+ 		arch_spinlock_t *lock;					\
+ 		lock = &per_cpu(name##_lock, i);			\
+ 		arch_spin_lock(lock);					\
+@@ -137,12 +165,12 @@
+  void name##_global_unlock_online(void) {				\
+ 	int i;								\
+ 	rwlock_release(&name##_lock_dep_map, 1, _RET_IP_);		\
+-	for_each_online_cpu(i) {					\
++	for_each_cpu(i, &name##_cpus) {					\
+ 		arch_spinlock_t *lock;					\
+ 		lock = &per_cpu(name##_lock, i);			\
+ 		arch_spin_unlock(lock);					\
+ 	}								\
+-	preempt_enable();						\
++	spin_unlock(&name##_cpu_lock);					\
+  }									\
+  EXPORT_SYMBOL(name##_global_unlock_online);				\
+ 									\
 
 
