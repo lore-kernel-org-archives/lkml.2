@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2ACWhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:37:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39639 "EHLO mx2.suse.de"
+	id S1755650Ab2ACWhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:37:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39685 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755539Ab2ACWhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:37:01 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
-Message-Id: <20120103223035.624344514@clark.kroah.org>
+	id S1755618Ab2ACWhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:37:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:36 2012
+Message-Id: <20120103223036.137279785@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:09 -0800
+Date: Tue, 03 Jan 2012 14:30:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Markus=20K=F6tter?= <nepenthesdev@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [51/67] net: bpf_jit: fix an off-one bug in x86_64 cond jump target
+Subject: [57/67] sctp: fix incorrect overflow check on autoclose
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,36 +26,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Markus Kötter <nepenthesdev@gmail.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-[ Upstream commit a03ffcf873fe0f2565386ca8ef832144c42e67fa ]
+[ Upstream commit 2692ba61a82203404abd7dd2a027bda962861f74 ]
 
-x86 jump instruction size is 2 or 5 bytes (near/long jump), not 2 or 6
-bytes.
+Commit 8ffd3208 voids the previous patches f6778aab and 810c0719 for
+limiting the autoclose value.  If userspace passes in -1 on 32-bit
+platform, the overflow check didn't work and autoclose would be set
+to 0xffffffff.
 
-In case a conditional jump is followed by a long jump, conditional jump
-target is one byte past the start of target instruction.
+This patch defines a max_autoclose (in seconds) for limiting the value
+and exposes it through sysctl, with the following intentions.
 
-Signed-off-by: Markus Kötter <nepenthesdev@gmail.com>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+1) Avoid overflowing autoclose * HZ.
+
+2) Keep the default autoclose bound consistent across 32- and 64-bit
+   platforms (INT_MAX / HZ in this patch).
+
+3) Keep the autoclose value consistent between setsockopt() and
+   getsockopt() calls.
+
+Suggested-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/x86/net/bpf_jit_comp.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/sctp/structs.h |    4 ++++
+ net/sctp/associola.c       |    2 +-
+ net/sctp/protocol.c        |    3 +++
+ net/sctp/socket.c          |    2 --
+ net/sctp/sysctl.c          |   13 +++++++++++++
+ 5 files changed, 21 insertions(+), 3 deletions(-)
 
---- a/arch/x86/net/bpf_jit_comp.c
-+++ b/arch/x86/net/bpf_jit_comp.c
-@@ -568,8 +568,8 @@ cond_branch:			f_offset = addrs[i + filt
- 					break;
- 				}
- 				if (filter[i].jt != 0) {
--					if (filter[i].jf)
--						t_offset += is_near(f_offset) ? 2 : 6;
-+					if (filter[i].jf && f_offset)
-+						t_offset += is_near(f_offset) ? 2 : 5;
- 					EMIT_COND_JMP(t_op, t_offset);
- 					if (filter[i].jf)
- 						EMIT_JMP(f_offset);
+--- a/include/net/sctp/structs.h
++++ b/include/net/sctp/structs.h
+@@ -236,6 +236,9 @@ extern struct sctp_globals {
+ 	 * bits is an indicator of when to send and window update SACK.
+ 	 */
+ 	int rwnd_update_shift;
++
++	/* Threshold for autoclose timeout, in seconds. */
++	unsigned long max_autoclose;
+ } sctp_globals;
+ 
+ #define sctp_rto_initial		(sctp_globals.rto_initial)
+@@ -271,6 +274,7 @@ extern struct sctp_globals {
+ #define sctp_auth_enable		(sctp_globals.auth_enable)
+ #define sctp_checksum_disable		(sctp_globals.checksum_disable)
+ #define sctp_rwnd_upd_shift		(sctp_globals.rwnd_update_shift)
++#define sctp_max_autoclose		(sctp_globals.max_autoclose)
+ 
+ /* SCTP Socket type: UDP or TCP style. */
+ typedef enum {
+--- a/net/sctp/associola.c
++++ b/net/sctp/associola.c
+@@ -173,7 +173,7 @@ static struct sctp_association *sctp_ass
+ 	asoc->timeouts[SCTP_EVENT_TIMEOUT_HEARTBEAT] = 0;
+ 	asoc->timeouts[SCTP_EVENT_TIMEOUT_SACK] = asoc->sackdelay;
+ 	asoc->timeouts[SCTP_EVENT_TIMEOUT_AUTOCLOSE] =
+-		(unsigned long)sp->autoclose * HZ;
++		min_t(unsigned long, sp->autoclose, sctp_max_autoclose) * HZ;
+ 
+ 	/* Initializes the timers */
+ 	for (i = SCTP_EVENT_TIMEOUT_NONE; i < SCTP_NUM_TIMEOUT_TYPES; ++i)
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1144,6 +1144,9 @@ SCTP_STATIC __init int sctp_init(void)
+ 	sctp_max_instreams    		= SCTP_DEFAULT_INSTREAMS;
+ 	sctp_max_outstreams   		= SCTP_DEFAULT_OUTSTREAMS;
+ 
++	/* Initialize maximum autoclose timeout. */
++	sctp_max_autoclose		= INT_MAX / HZ;
++
+ 	/* Initialize handle used for association ids. */
+ 	idr_init(&sctp_assocs_id);
+ 
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -2129,8 +2129,6 @@ static int sctp_setsockopt_autoclose(str
+ 		return -EINVAL;
+ 	if (copy_from_user(&sp->autoclose, optval, optlen))
+ 		return -EFAULT;
+-	/* make sure it won't exceed MAX_SCHEDULE_TIMEOUT */
+-	sp->autoclose = min_t(long, sp->autoclose, MAX_SCHEDULE_TIMEOUT / HZ);
+ 
+ 	return 0;
+ }
+--- a/net/sctp/sysctl.c
++++ b/net/sctp/sysctl.c
+@@ -53,6 +53,10 @@ static int sack_timer_min = 1;
+ static int sack_timer_max = 500;
+ static int addr_scope_max = 3; /* check sctp_scope_policy_t in include/net/sctp/constants.h for max entries */
+ static int rwnd_scale_max = 16;
++static unsigned long max_autoclose_min = 0;
++static unsigned long max_autoclose_max =
++	(MAX_SCHEDULE_TIMEOUT / HZ > UINT_MAX)
++	? UINT_MAX : MAX_SCHEDULE_TIMEOUT / HZ;
+ 
+ extern long sysctl_sctp_mem[3];
+ extern int sysctl_sctp_rmem[3];
+@@ -251,6 +255,15 @@ static ctl_table sctp_table[] = {
+ 		.extra1		= &one,
+ 		.extra2		= &rwnd_scale_max,
+ 	},
++	{
++		.procname	= "max_autoclose",
++		.data		= &sctp_max_autoclose,
++		.maxlen		= sizeof(unsigned long),
++		.mode		= 0644,
++		.proc_handler	= &proc_doulongvec_minmax,
++		.extra1		= &max_autoclose_min,
++		.extra2		= &max_autoclose_max,
++	},
+ 
+ 	{ /* sentinel */ }
+ };
 
 
