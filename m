@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab2ADCi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 21:38:28 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41907 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742Ab2ADCiZ (ORCPT
+	id S1755402Ab2ADCoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 21:44:22 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:56487 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab2ADCoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 21:38:25 -0500
-Message-ID: <4F03BBA1.7090606@gmail.com>
-Date: Tue, 03 Jan 2012 21:38:25 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Tue, 3 Jan 2012 21:44:21 -0500
+Date: Tue, 3 Jan 2012 16:36:44 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, Greg KH <greg@kroah.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [PATCH 2/7] amp/remoteproc: add debugfs entries
+Message-ID: <20120103233644.GD2492@ponder.secretlab.ca>
+References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
+ <1319536106-25802-3-git-send-email-ohad@wizery.com>
 MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/2] mm,mlock: drain pagevecs asynchronously
-References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <1325403025-22688-1-git-send-email-kosaki.motohiro@gmail.com> <20120104011715.GA18399@barrios-laptop.redhat.com>
-In-Reply-To: <20120104011715.GA18399@barrios-laptop.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1319536106-25802-3-git-send-email-ohad@wizery.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 25, 2011 at 11:48:21AM +0200, Ohad Ben-Cohen wrote:
+> Expose several remote processor properties (name, state, trace buffer)
+> that are helpful for debugging.
+> 
+> This part is extracted to a separate patch just to keep the review load
+> down.
+> 
+> Designed with Brian Swetland <swetland@google.com>.
+> 
+> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
 
->> @@ -704,10 +747,23 @@ static void ____pagevec_lru_add_fn(struct page *page, void *arg)
->>   	VM_BUG_ON(PageLRU(page));
->>
->>   	SetPageLRU(page);
->> -	if (active)
->> -		SetPageActive(page);
->> -	update_page_reclaim_stat(zone, page, file, active);
->> -	add_page_to_lru_list(zone, page, lru);
->> + redo:
->> +	if (page_evictable(page, NULL)) {
->> +		if (active)
->> +			SetPageActive(page);
->> +		update_page_reclaim_stat(zone, page, file, active);
->> +		add_page_to_lru_list(zone, page, lru);
->> +	} else {
->> +		SetPageUnevictable(page);
->> +		add_page_to_lru_list(zone, page, LRU_UNEVICTABLE);
->> +		smp_mb();
->
-> Why do we need barrier in here? Please comment it.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-To cut-n-paste a comment from putback_lru_page() is good idea? :)
-
-+               /*
-+                * When racing with an mlock clearing (page is
-+                * unlocked), make sure that if the other thread does
-+                * not observe our setting of PG_lru and fails
-+                * isolation, we see PG_mlocked cleared below and move
-+                * the page back to the evictable list.
-+                *
-+                * The other side is TestClearPageMlocked().
-+                */
-+               smp_mb();
-
-
-
->> +		if (page_evictable(page, NULL)) {
->> +			del_page_from_lru_list(zone, page, LRU_UNEVICTABLE);
->> +			ClearPageUnevictable(page);
->> +			goto redo;
->> +		}
->> +	}
->
-> I am not sure it's a good idea.
-> mlock is very rare event but ____pagevec_lru_add_fn is called frequently.
-> We are adding more overhead in ____pagevec_lru_add_fn.
-> Is it valuable?
-
-dunno.
-
-Personally, I think tao's case is too artificial and I haven't observed
-any real world application do such crazy mlock/munlock repeatness. But
-he said he has a such application.
-
-If my remember is correct, ltp or some test suite depend on current 
-meminfo synching behavior. then I'm afraid simple removing bring us
-new annoying bug report.
-
+> ---
+>  drivers/amp/remoteproc/Makefile             |    1 +
+>  drivers/amp/remoteproc/remoteproc_debugfs.c |  182 +++++++++++++++++++++++++++
+>  2 files changed, 183 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/amp/remoteproc/remoteproc_debugfs.c
