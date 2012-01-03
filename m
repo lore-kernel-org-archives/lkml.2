@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab2ACNLR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 08:11:17 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:30020
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752181Ab2ACNLP (ORCPT
+	id S1753172Ab2ACNSD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 08:18:03 -0500
+Received: from [89.21.227.130] ([89.21.227.130]:36277 "EHLO
+	mail.epsilon.itdev.co.uk" rhost-flags-FAIL-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752181Ab2ACNSC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 08:11:15 -0500
-X-SpamScore: -13
-X-BigFish: VPS-13(zz98dKzz1202hzz15d4Rz2dh668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-WSS-ID: 0LX84MG-02-DTU-02
-X-M-MSG: 
-Date: Tue, 3 Jan 2012 14:10:48 +0100
-From: "'Joerg Roedel'" <joerg.roedel@amd.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-CC: "'KyongHo Cho'" <pullip.cho@samsung.com>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
-        <linux-kernel@vger.kernel.org>,
-        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
-        <iommu@lists.linux-foundation.org>,
-        <linux-samsung-soc@vger.kernel.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 0/2] ommu/exynos: Add IOMMU/System MMU driver for
- Samsung Exynos
-Message-ID: <20120103131048.GD29877@amd.com>
-References: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com>
- <20120102134229.GZ29877@amd.com>
- <00dc01ccc9fb$4fcb7590$ef6260b0$%szyprowski@samsung.com>
+	Tue, 3 Jan 2012 08:18:02 -0500
+X-Greylist: delayed 500 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jan 2012 08:18:01 EST
+Message-ID: <4F02FE17.2000800@itdev.co.uk>
+Date: Tue, 03 Jan 2012 13:09:43 +0000
+From: Nick Dyer <nick.dyer@itdev.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <00dc01ccc9fb$4fcb7590$ef6260b0$%szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+To: Chase Douglas <chasedouglas@gmail.com>
+CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Benjamin Tissoires <benjamin.tissoires@enac.fr>,
+        Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] HID: multitouch: add support of Atmel multitouch
+ panels
+References: <1324651260-4067-1-git-send-email-benjamin.tissoires@gmail.com> <1324651260-4067-2-git-send-email-benjamin.tissoires@gmail.com> <4EF4CE4A.1020907@gmail.com>
+In-Reply-To: <4EF4CE4A.1020907@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marek,
+Chase Douglas wrote:
+> On 12/23/2011 06:40 AM, Benjamin Tissoires wrote:
+>> Signed-off-by: Benjamin Tissoires<benjamin.tissoires@gmail.com>
+>> ---
+>>   drivers/hid/Kconfig          |    1 +
+>>   drivers/hid/hid-ids.h        |    3 +++
+>>   drivers/hid/hid-multitouch.c |    5 +++++
+>>   3 files changed, 9 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+>> index 5d6eb4e..e95b07c 100644
+>> --- a/drivers/hid/Kconfig
+>> +++ b/drivers/hid/Kconfig
+>> @@ -335,6 +335,7 @@ config HID_MULTITOUCH
+>>   	  Say Y here if you have one of the following devices:
+>>   	  - 3M PCT touch screens
+>>   	  - ActionStar dual touch panels
+>> +	  - Atmel panels
+>>   	  - Cando dual touch panels
+>>   	  - Chunghwa panels
+>>   	  - CVTouch panels
+>
+> I'm guessing this is different than the Atmel maXTouch chips. If so, can
+> you figure out a model name so people aren't confused on which driver to
+> use?
 
-On Tue, Jan 03, 2012 at 10:37:29AM +0100, Marek Szyprowski wrote:
-> Yes, there is something a bit wrong with your kernel configuration. You get this error if 
-> there is no board selected to be compiled-in. Please go to kernel configuration and select
-> "System Type -> SAMSUNG EXYNOS SoCs Suppport". Then select some hardware board to be 
-> compiled in, for example SMDKV310, SMDKC210 and "Mobile NURI board".
-
-thanks for this info. I selected a board and compile of linux-next now
-fails with:
-
-  LD      .tmp_vmlinux1
-arch/arm/mach-exynos/built-in.o: In function `exynos4_pm_resume':
-/data/lemmy/linux.trees.git/arch/arm/mach-exynos/pm.c:385: undefined reference to `scu_enable'
-make[1]: *** [.tmp_vmlinux1] Error 1
-
-This is because scu_enable() is only available with CONFIG_SMP=y which
-is not set for Exynos.
-
-
-	Joerg
+It is in fact a maXTouch chip - there are several different chips which 
+are able to register as a USB digitizer device using that VID/PID.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Nick Dyer
+Software Engineer, ITDev Ltd
+Hardware and Software Development Consultancy
+Website: http://www.itdev.co.uk
