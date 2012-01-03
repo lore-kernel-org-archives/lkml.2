@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753880Ab2ACPFW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 10:05:22 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:34376 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753650Ab2ACPFT (ORCPT
+	id S1753861Ab2ACPJY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 10:09:24 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:45444 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753694Ab2ACPJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 10:05:19 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: linux-uvc-devel@lists.sourceforge.net
-Subject: Re: [Linux-uvc-devel] 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
-Date: Tue, 3 Jan 2012 16:05:27 +0100
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.4; x86_64; ; )
-Cc: Justin Piszcz <jpiszcz@lucidpixels.com>, linux-kernel@vger.kernel.org
-References: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com>
-In-Reply-To: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com>
+	Tue, 3 Jan 2012 10:09:22 -0500
+Date: Tue, 3 Jan 2012 10:09:21 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Matthew Garrett <mjg@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jack Stone <jwjstone@fastmail.fm>, Oliver Neukum <oliver@neukum.org>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+In-Reply-To: <20120103032505.GA19702@srcf.ucam.org>
+Message-ID: <Pine.LNX.4.44L0.1201031007500.1452-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201031605.31117.laurent.pinchart@ideasonboard.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Justin,
+On Tue, 3 Jan 2012, Matthew Garrett wrote:
 
-(The linux-uvc-devel mailing list has been moved to SourceForge, I've CC'ed 
-the new list)
-
-On Tuesday 03 January 2012 15:21:02 Justin Piszcz wrote:
-> Hello,
+> On Mon, Jan 02, 2012 at 09:45:58PM -0500, Alan Stern wrote:
 > 
-> Using an Acer 7551-7442 here with the following built-in webcam:
-> Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
+> > Wait a second.  Why does isight_firmware bind at this time?  Binding to
+> > new devices is handled by khubd, which doesn't start running again
+> > until after the resume is finished (the device appears to be new
+> > because its descriptors have changed).  At that point there should be
+> > no trouble reloading the firmware.
 > 
-> It seems motion locks up every day or so and I see this in the kernel logs:
-> [378982.724053] uvcvideo: Failed to resubmit video URB (-27).
-> [378982.724066] uvcvideo: Failed to resubmit video URB (-27).
-> [378982.724079] uvcvideo: Failed to resubmit video URB (-27).
-> [378982.724090] uvcvideo: Failed to resubmit video URB (-27).
-> [378982.724101] uvcvideo: Failed to resubmit video URB (-27).
-> [489148.723367] uvcvideo: Failed to resubmit video URB (-27).
-> [489148.723379] uvcvideo: Failed to resubmit video URB (-27).
-> [489148.723391] uvcvideo: Failed to resubmit video URB (-27).
-> [489148.723403] uvcvideo: Failed to resubmit video URB (-27).
-> [489148.723414] uvcvideo: Failed to resubmit video URB (-27).
->
-> If I restart motion, it will usually start working again, I do not
-> have this problem on other (retail) Logitech webcams, was curious if
-> this a bug with the webcam (quirk?) or a problem in uvcvideo?
+> Then why are we getting this warning? The firmware is only loaded in the 
+> probe function.
 
--27 is -EFBIG. As the uvcvideo driver set the ASAP isochronous scheduling flag 
-when submitting URBs, this most probably results from a bug in the USB host 
-controller hardware, from a bug in the USB host controller driver, or from a 
-driver that blocks interrupts for several tens of milliseconds.
+I don't know.  Do you have a kernel log (with CONFIG_USB_DEBUG enabled) 
+posted somewhere?
 
-Which kernel version are you using ? An isochronous scheduling regression has 
-been fixed recently between v3.2-rc3 and v3.2-rc5. You might want to try v3.2 
-when it will be released.
+Alan Stern
 
-> The camera is built-into the laptop screen at the top in the middle.
-> 
-> lsusb verbose:
-> 
-> Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
-> Device Descriptor:
->   bLength                18
->   bDescriptorType         1
->   bcdUSB               2.00
->   bDeviceClass          239 Miscellaneous Device
->   bDeviceSubClass         2 ?
->   bDeviceProtocol         1 Interface Association
->   bMaxPacketSize0        64
->   idVendor           0x0402 ALi Corp.
->   idProduct          0x9665 Gateway Webcam
->   bcdDevice            0.09
->   iManufacturer           3 XPB3L1K44
->   iProduct                1 1.3M WebCam
->   iSerial                 0
->   bNumConfigurations      1
-
-Could you please send me the complete lsusb -v output for the device ? I'll 
-then add it to the supported devices list.
-
--- 
-Regards,
-
-Laurent Pinchart
