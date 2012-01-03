@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755505Ab2ACWhG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:37:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39635 "EHLO mx2.suse.de"
+	id S1755603Ab2ACWhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:37:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39660 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755548Ab2ACWg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:36:57 -0500
+	id S1755589Ab2ACWhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:37:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
-Message-Id: <20120103223035.538606821@clark.kroah.org>
+Message-Id: <20120103223035.877295883@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:08 -0800
+Date: Tue, 03 Jan 2012 14:30:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [50/67] sparc: Fix handling of orig_i0 wrt. debugging when restarting syscalls.
+        alan@lxorguk.ukuu.org.uk, Thomas Graf <tgraf@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [54/67] mqprio: Avoid panic if no options are provided
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,178 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Thomas Graf <tgraf@redhat.com>
 
-[ A combination of upstream commits 1d299bc7732c34d85bd43ac1a8745f5a2fed2078 and
-  e88d2468718b0789b4c33da2f7e1cef2a1eee279 ]
+[ Upstream commit 7838f2ce36b6ab5c13ef20b1857e3bbd567f1759 ]
 
-Although we provide a proper way for a debugger to control whether
-syscall restart occurs, we run into problems because orig_i0 is not
-saved and restored properly.
+Userspace may not provide TCA_OPTIONS, in fact tc currently does
+so not do so if no arguments are specified on the command line.
+Return EINVAL instead of panicing.
 
-Luckily we can solve this problem without having to make debuggers
-aware of the issue.  Across system calls, several registers are
-considered volatile and can be safely clobbered.
-
-Therefore we use the pt_regs save area of one of those registers, %g6,
-as a place to save and restore orig_i0.
-
-Debuggers transparently will do the right thing because they save and
-restore this register already.
-
+Signed-off-by: Thomas Graf <tgraf@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/kernel/signal32.c  |   18 ++++++++++--------
- arch/sparc/kernel/signal_32.c |   30 +++++++++++++++++++++++++-----
- arch/sparc/kernel/signal_64.c |   42 ++++++++++++++++++++++++++++--------------
- 3 files changed, 63 insertions(+), 27 deletions(-)
+ net/sched/sch_mqprio.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/sparc/kernel/signal32.c
-+++ b/arch/sparc/kernel/signal32.c
-@@ -829,21 +829,23 @@ static inline void syscall_restart32(uns
-  * want to handle. Thus you cannot kill init even with a SIGKILL even by
-  * mistake.
-  */
--void do_signal32(sigset_t *oldset, struct pt_regs * regs,
--		 int restart_syscall, unsigned long orig_i0)
-+void do_signal32(sigset_t *oldset, struct pt_regs * regs)
- {
- 	struct k_sigaction ka;
-+	unsigned long orig_i0;
-+	int restart_syscall;
- 	siginfo_t info;
- 	int signr;
- 	
- 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
+--- a/net/sched/sch_mqprio.c
++++ b/net/sched/sch_mqprio.c
+@@ -106,7 +106,7 @@ static int mqprio_init(struct Qdisc *sch
+ 	if (!netif_is_multiqueue(dev))
+ 		return -EOPNOTSUPP;
  
--	/* If the debugger messes with the program counter, it clears
--	 * the "in syscall" bit, directing us to not perform a syscall
--	 * restart.
--	 */
--	if (restart_syscall && !pt_regs_is_syscall(regs))
--		restart_syscall = 0;
-+	restart_syscall = 0;
-+	orig_i0 = 0;
-+	if (pt_regs_is_syscall(regs) &&
-+	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY))) {
-+		restart_syscall = 1;
-+		orig_i0 = regs->u_regs[UREG_G6];
-+	}
+-	if (nla_len(opt) < sizeof(*qopt))
++	if (!opt || nla_len(opt) < sizeof(*qopt))
+ 		return -EINVAL;
  
- 	if (signr > 0) {
- 		if (restart_syscall)
---- a/arch/sparc/kernel/signal_32.c
-+++ b/arch/sparc/kernel/signal_32.c
-@@ -525,10 +525,26 @@ static void do_signal(struct pt_regs *re
- 	siginfo_t info;
- 	int signr;
- 
-+	/* It's a lot of work and synchronization to add a new ptrace
-+	 * register for GDB to save and restore in order to get
-+	 * orig_i0 correct for syscall restarts when debugging.
-+	 *
-+	 * Although it should be the case that most of the global
-+	 * registers are volatile across a system call, glibc already
-+	 * depends upon that fact that we preserve them.  So we can't
-+	 * just use any global register to save away the orig_i0 value.
-+	 *
-+	 * In particular %g2, %g3, %g4, and %g5 are all assumed to be
-+	 * preserved across a system call trap by various pieces of
-+	 * code in glibc.
-+	 *
-+	 * %g7 is used as the "thread register".   %g6 is not used in
-+	 * any fixed manner.  %g6 is used as a scratch register and
-+	 * a compiler temporary, but it's value is never used across
-+	 * a system call.  Therefore %g6 is usable for orig_i0 storage.
-+	 */
- 	if (pt_regs_is_syscall(regs) && (regs->psr & PSR_C))
--		restart_syscall = 1;
--	else
--		restart_syscall = 0;
-+		regs->u_regs[UREG_G6] = orig_i0;
- 
- 	if (test_thread_flag(TIF_RESTORE_SIGMASK))
- 		oldset = &current->saved_sigmask;
-@@ -541,8 +557,12 @@ static void do_signal(struct pt_regs *re
- 	 * the software "in syscall" bit, directing us to not perform
- 	 * a syscall restart.
- 	 */
--	if (restart_syscall && !pt_regs_is_syscall(regs))
--		restart_syscall = 0;
-+	restart_syscall = 0;
-+	if (pt_regs_is_syscall(regs) && (regs->psr & PSR_C)) {
-+		restart_syscall = 1;
-+		orig_i0 = regs->u_regs[UREG_G6];
-+	}
-+
- 
- 	if (signr > 0) {
- 		if (restart_syscall)
---- a/arch/sparc/kernel/signal_64.c
-+++ b/arch/sparc/kernel/signal_64.c
-@@ -535,11 +535,27 @@ static void do_signal(struct pt_regs *re
- 	siginfo_t info;
- 	int signr;
- 	
-+	/* It's a lot of work and synchronization to add a new ptrace
-+	 * register for GDB to save and restore in order to get
-+	 * orig_i0 correct for syscall restarts when debugging.
-+	 *
-+	 * Although it should be the case that most of the global
-+	 * registers are volatile across a system call, glibc already
-+	 * depends upon that fact that we preserve them.  So we can't
-+	 * just use any global register to save away the orig_i0 value.
-+	 *
-+	 * In particular %g2, %g3, %g4, and %g5 are all assumed to be
-+	 * preserved across a system call trap by various pieces of
-+	 * code in glibc.
-+	 *
-+	 * %g7 is used as the "thread register".   %g6 is not used in
-+	 * any fixed manner.  %g6 is used as a scratch register and
-+	 * a compiler temporary, but it's value is never used across
-+	 * a system call.  Therefore %g6 is usable for orig_i0 storage.
-+	 */
- 	if (pt_regs_is_syscall(regs) &&
--	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY))) {
--		restart_syscall = 1;
--	} else
--		restart_syscall = 0;
-+	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY)))
-+		regs->u_regs[UREG_G6] = orig_i0;
- 
- 	if (current_thread_info()->status & TS_RESTORE_SIGMASK)
- 		oldset = &current->saved_sigmask;
-@@ -548,22 +564,20 @@ static void do_signal(struct pt_regs *re
- 
- #ifdef CONFIG_COMPAT
- 	if (test_thread_flag(TIF_32BIT)) {
--		extern void do_signal32(sigset_t *, struct pt_regs *,
--					int restart_syscall,
--					unsigned long orig_i0);
--		do_signal32(oldset, regs, restart_syscall, orig_i0);
-+		extern void do_signal32(sigset_t *, struct pt_regs *);
-+		do_signal32(oldset, regs);
- 		return;
- 	}
- #endif	
- 
- 	signr = get_signal_to_deliver(&info, &ka, regs, NULL);
- 
--	/* If the debugger messes with the program counter, it clears
--	 * the software "in syscall" bit, directing us to not perform
--	 * a syscall restart.
--	 */
--	if (restart_syscall && !pt_regs_is_syscall(regs))
--		restart_syscall = 0;
-+	restart_syscall = 0;
-+	if (pt_regs_is_syscall(regs) &&
-+	    (regs->tstate & (TSTATE_XCARRY | TSTATE_ICARRY))) {
-+		restart_syscall = 1;
-+		orig_i0 = regs->u_regs[UREG_G6];
-+	}
- 
- 	if (signr > 0) {
- 		if (restart_syscall)
+ 	qopt = nla_data(opt);
 
 
