@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2ACJb2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 04:31:28 -0500
-Received: from 8bytes.org ([88.198.83.132]:53633 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751185Ab2ACJbZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 04:31:25 -0500
-Date: Tue, 3 Jan 2012 10:31:23 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Yang Bai <hamo.by@gmail.com>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Russell King <linux@arm.linux.org.uk>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arm: Fix linux-next compile error in
-	arch/arm/common/gic.c
-Message-ID: <20120103093123.GA7620@8bytes.org>
-References: <1325521990-4445-1-git-send-email-joerg.roedel@amd.com> <CAO_0yfOzVCK8OGL5G9Aej+V4AZ12EMFKi3HafAX0JzeW9C3FtQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAO_0yfOzVCK8OGL5G9Aej+V4AZ12EMFKi3HafAX0JzeW9C3FtQ@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752256Ab2ACJhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 04:37:37 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:19722 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751627Ab2ACJhf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 04:37:35 -0500
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Tue, 03 Jan 2012 10:37:29 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH v8 0/2] ommu/exynos: Add IOMMU/System MMU driver for
+ Samsung Exynos
+In-reply-to: <20120102134229.GZ29877@amd.com>
+To: "'Joerg Roedel'" <joerg.roedel@amd.com>,
+        "'KyongHo Cho'" <pullip.cho@samsung.com>
+Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'Subash Patel'" <subash.ramaswamy@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        "'Younglak Kim'" <younglak1004.kim@samsung.com>,
+        iommu@lists.linux-foundation.org, linux-samsung-soc@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Sanghyun Lee'" <sanghyun75.lee@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Message-id: <00dc01ccc9fb$4fcb7590$ef6260b0$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: AczJVPtzFl+r3KYxSrSvBlXHG3+C+QApQGMw
+References: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com>
+ <20120102134229.GZ29877@amd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 08:44:01AM +0800, Yang Bai wrote:
-> On Tue, Jan 3, 2012 at 12:33 AM, Joerg Roedel <joerg.roedel@amd.com> wrote:
+Hello,
 
-> >                for_each_possible_cpu(cpu) {
-> > -                       unsigned long offset = percpu_offset * cpu_logical_map(cpu);
-> > +                       unsigned long offset = percpu_offset;
-> > +#ifdef CONFIG_SMP
-> > +                       offset *= cpu_logical_map(cpu);
-> > +#endif
-> >                        *per_cpu_ptr(gic->dist_base.percpu_base, cpu) = dist_base + offset;
-> >                        *per_cpu_ptr(gic->cpu_base.percpu_base, cpu) = cpu_base + offset;
-> >                }
-> > --
-> > 1.7.5.4
-> >
-> >
+On Monday, January 02, 2012 2:42 PM Joerg Roedel wrote:
+
+> On Thu, Dec 29, 2011 at 09:24:18PM +0900, KyongHo Cho wrote:
+> > Changes since v7:
+> > - Rebased with the recent commits of the following git branches
+> >   * git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git/next
+> >   * git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git/for-next
+> > - Changed magic numbers into macros
+> > - Setting owner of a System MMU in 'iommu' field of dev_archdata
+> > - Verbose message in the default fault handler
+> > - Some bug fixes.
 > 
-> Is this the right way to fix it? Or shall we do like this:
+> I still get
 > 
-> #ifdef CONFIG_SMP
-> ...
-> #else
-> #define cpu_logical_map() 1
-> #endif
+>   LD      .tmp_vmlinux1
+> /data/cross/gcc-4.6.0-nolibc/arm-unknown-linux-gnueabi/bin/arm-unknown-linux-gnueabi-ld: no
+> machine record defined
+> /data/cross/gcc-4.6.0-nolibc/arm-unknown-linux-gnueabi/bin/arm-unknown-linux-gnueabi-ld: no
+> machine record defined
+> /data/cross/gcc-4.6.0-nolibc/arm-unknown-linux-gnueabi/bin/arm-unknown-linux-gnueabi-ld: no
+> machine record defined
+> make[1]: *** [.tmp_vmlinux1] Error 1
 > 
-> and leave the gic.c code unchanged.
+> when trying to compile ARM/Exynos with 3.2-rc7. Am I doing something
+> wrong or is this not expected to work?
 
-Well, I don't care ;) But everywhere else in this file the use of
-cpu_logical_map() is #ifdef'ed with CONFIG_SMP. So for consistency my
-proposed variant is better, no?
+Yes, there is something a bit wrong with your kernel configuration. You get this error if 
+there is no board selected to be compiled-in. Please go to kernel configuration and select
+"System Type -> SAMSUNG EXYNOS SoCs Suppport". Then select some hardware board to be 
+compiled in, for example SMDKV310, SMDKC210 and "Mobile NURI board".
 
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
 
-	Joerg
 
