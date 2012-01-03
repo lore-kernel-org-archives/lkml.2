@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab2ACWlI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:41:08 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40331 "EHLO mx2.suse.de"
+	id S1756315Ab2ACWlZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:41:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40364 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755934Ab2ACWlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:04 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:25 2012
-Message-Id: <20120103223325.048201613@clark.kroah.org>
+	id S1756261Ab2ACWlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
+Message-Id: <20120103223323.009595271@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:21 -0800
+Date: Tue, 03 Jan 2012 14:32:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hillf Danton <dhillf@gmail.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [48/75] mm: hugetlb: fix non-atomic enqueue of huge page
+        alan@lxorguk.ukuu.org.uk, Robert Richter <robert.richter@amd.com>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [24/75] oprofile: Fix uninitialized memory access when writing to writing to oprofilefs
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,41 +26,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hillf Danton <dhillf@gmail.com>
+From: Robert Richter <robert.richter@amd.com>
 
-commit b0365c8d0cb6e79eb5f21418ae61ab511f31b575 upstream.
+commit 913050b91eb94f194392dd797b1ff3779f606ac0 upstream.
 
-If a huge page is enqueued under the protection of hugetlb_lock, then the
-operation is atomic and safe.
+If oprofilefs_ulong_from_user() is called with count equals
+zero, *val remains unchanged. Depending on the implementation it
+might be uninitialized.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Change oprofilefs_ulong_from_user()'s interface to return count
+on success. Thus, we are able to return early if count equals
+zero which avoids using *val uninitialized. Fixing all users of
+oprofilefs_ulong_ from_user().
+
+This follows write syscall implementation when count is zero:
+"If count is zero ... [and if] no errors are detected, 0 will be
+returned without causing any other effect." (man 2 write)
+
+Reported-By: Mike Waychison <mikew@google.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: oprofile-list <oprofile-list@lists.sourceforge.net>
+Link: http://lkml.kernel.org/r/20111219153830.GH16765@erda.amd.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/hugetlb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/s390/oprofile/init.c         |    2 +-
+ drivers/oprofile/oprofile_files.c |    7 ++++---
+ drivers/oprofile/oprofilefs.c     |   11 +++++++++--
+ 3 files changed, 14 insertions(+), 6 deletions(-)
 
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -901,7 +901,6 @@ retry:
- 	h->resv_huge_pages += delta;
- 	ret = 0;
+--- a/arch/s390/oprofile/init.c
++++ b/arch/s390/oprofile/init.c
+@@ -88,7 +88,7 @@ static ssize_t hwsampler_write(struct fi
+ 		return -EINVAL;
  
--	spin_unlock(&hugetlb_lock);
- 	/* Free the needed pages to the hugetlb pool */
- 	list_for_each_entry_safe(page, tmp, &surplus_list, lru) {
- 		if ((--needed) < 0)
-@@ -915,6 +914,7 @@ retry:
- 		VM_BUG_ON(page_count(page));
- 		enqueue_huge_page(h, page);
- 	}
-+	spin_unlock(&hugetlb_lock);
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
  
- 	/* Free unnecessary surplus pages to the buddy allocator */
- free:
+ 	if (oprofile_started)
+--- a/drivers/oprofile/oprofile_files.c
++++ b/drivers/oprofile/oprofile_files.c
+@@ -45,7 +45,7 @@ static ssize_t timeout_write(struct file
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
+ 	retval = oprofile_set_timeout(val);
+@@ -84,7 +84,7 @@ static ssize_t depth_write(struct file *
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
+ 	retval = oprofile_set_ulong(&oprofile_backtrace_depth, val);
+@@ -141,9 +141,10 @@ static ssize_t enable_write(struct file
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&val, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
++	retval = 0;
+ 	if (val)
+ 		retval = oprofile_start();
+ 	else
+--- a/drivers/oprofile/oprofilefs.c
++++ b/drivers/oprofile/oprofilefs.c
+@@ -60,6 +60,13 @@ ssize_t oprofilefs_ulong_to_user(unsigne
+ }
+ 
+ 
++/*
++ * Note: If oprofilefs_ulong_from_user() returns 0, then *val remains
++ * unchanged and might be uninitialized. This follows write syscall
++ * implementation when count is zero: "If count is zero ... [and if]
++ * no errors are detected, 0 will be returned without causing any
++ * other effect." (man 2 write)
++ */
+ int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_t count)
+ {
+ 	char tmpbuf[TMPBUFSIZE];
+@@ -79,7 +86,7 @@ int oprofilefs_ulong_from_user(unsigned
+ 	spin_lock_irqsave(&oprofilefs_lock, flags);
+ 	*val = simple_strtoul(tmpbuf, NULL, 0);
+ 	spin_unlock_irqrestore(&oprofilefs_lock, flags);
+-	return 0;
++	return count;
+ }
+ 
+ 
+@@ -99,7 +106,7 @@ static ssize_t ulong_write_file(struct f
+ 		return -EINVAL;
+ 
+ 	retval = oprofilefs_ulong_from_user(&value, buf, count);
+-	if (retval)
++	if (retval <= 0)
+ 		return retval;
+ 
+ 	retval = oprofile_set_ulong(file->private_data, value);
 
 
