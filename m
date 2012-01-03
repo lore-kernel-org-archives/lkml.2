@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab2ACSW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 13:22:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab2ACSWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 13:22:55 -0500
-Date: Tue, 3 Jan 2012 13:22:22 -0500 (EST)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Al Viro <viro@ZenIV.linux.org.uk>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, dm-devel@redhat.com
-Subject: Re: [PATCH] deadlock with suspend and quotas
-In-Reply-To: <20120103033005.GZ23916@ZenIV.linux.org.uk>
-Message-ID: <Pine.LNX.4.64.1201031318590.10105@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1111251522230.4118@hs20-bc2-1.build.redhat.com>
- <20120103033005.GZ23916@ZenIV.linux.org.uk>
+	id S1754585Ab2ACSXD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 13:23:03 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:57511 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754566Ab2ACSW7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 13:22:59 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Tue, 3 Jan 2012 13:22:14 -0500
+Subject: RE: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
+ WARN_ON()
+Thread-Topic: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
+ WARN_ON()
+Thread-Index: Acy+kVWuU2fL5F7bQFi25L8QZU5ixwABq3bgArtLvDAAKwIQ8AADfZXwAADJYAA=
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C581E22C5@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C57DC0D10@USINDEVS01.corp.hds.com>
+ <20111212155827.GR1669@redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C57EE46F2@USINDEVS01.corp.hds.com>
+ <0207C53569FE594381A4F2EB66570B2A018EFB83C4@orsmsx508.amr.corp.intel.com>
+ <20111219210046.GG5650@redhat.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C57FFA38E@USINDEVS01.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28FA7D6@ORSMSX104.amr.corp.intel.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C581E2236@USINDEVS01.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28FACE8@ORSMSX104.amr.corp.intel.com>
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28FACE8@ORSMSX104.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1201030168
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+>But this seems pretty clear that we don't need to self-NMI.
 
-On Tue, 3 Jan 2012, Al Viro wrote:
+Thank you for your explanation.
+Now I understand that we don't need self-NMI and efi_pstore can blindly continue in panic path
+because setvariable() will succeed even if the previous call that took the exception didn't succeed.
 
-> On Fri, Nov 25, 2011 at 03:25:16PM -0500, Mikulas Patocka wrote:
-> 
-> > The following patch fixes the deadlock. When the quota subsystem takes s_umount,
-> > it checks if the filesystem is frozen. If it is, we drop s_umount, wait for
-> > the filesystem to resume and retry.
-> > 
-> > Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-> > CC: stable@kernel.org
-> 
-> So basically you want a variant of get_super() that would get you a
-> superblock for this bdev, locked and unfrozen?  Fair enough, but
-> 	* that should be a proper helper in super.c, rather than
-> open-coded in fs/quota/quota.c, of all places
-> 	* what about other existing callers get_super() and its friends?
+I will submit an updated patch by removing spin_lock of efi_pstore_write() in panic path.
 
-Hi
-
-You can look at that functionality here: I've already made a patch that 
-has it: 
-https://www.redhat.com/archives/dm-devel/2011-November/msg00151.html
-
-Basically, the patch introduces a function down_read_s_umount, which takes 
-s_umount for read, but makes sure that the filesystem is not frozen. Then, 
-it adds a boolean parameter to get_super() which tells get_super() that it 
-should wait for unfreeze (i.e. call "down_read_s_umount" isntead of 
-"down_read(&sb->s_umount)").
-
-Mikulas
-
-> and while we are at it, why in damnation name is it exported?  The only
-> caller outside of core VFS is under #if 0...
-> 
+Seiji
