@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab2ACWiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:38:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39795 "EHLO mx2.suse.de"
+	id S1755805Ab2ACWig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:38:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39810 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755798Ab2ACWiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:38:17 -0500
+	id S1755837Ab2ACWi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:38:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
-Message-Id: <20120103223035.028831573@clark.kroah.org>
+Message-Id: <20120103223035.283761837@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:02 -0800
+Date: Tue, 03 Jan 2012 14:30:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [44/67] sparc64: Patch sun4v code sequences properly on module load.
+Subject: [47/67] sparc32: Remove uses of %g7 in memcpy implementation.
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,165 +27,288 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit 0b64120cceb86e93cb1bda0dc055f13016646907 ]
+[ Upstream commit 21f74d361dfd6a7d0e47574e315f780d8172084a ]
 
-Some of the sun4v code patching occurs in inline functions visible
-to, and usable by, modules.
-
-Therefore we have to patch them up during module load.
+This is setting things up so that we can correct the return
+value, so that it properly returns the original destination
+buffer pointer.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested-by: Kjetil Oftedal <oftedal@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/kernel/entry.h    |    7 ++++++
- arch/sparc/kernel/module.c   |   27 ++++++++++++++++++++++++
- arch/sparc/kernel/setup_64.c |   48 +++++++++++++++++++++++++------------------
- 3 files changed, 63 insertions(+), 19 deletions(-)
+ arch/sparc/lib/memcpy.S |  177 ++++++++++++++++++++++++------------------------
+ 1 file changed, 91 insertions(+), 86 deletions(-)
 
---- a/arch/sparc/kernel/entry.h
-+++ b/arch/sparc/kernel/entry.h
-@@ -42,6 +42,9 @@ extern void fpsave(unsigned long *fpregs
- extern void fpload(unsigned long *fpregs, unsigned long *fsr);
+--- a/arch/sparc/lib/memcpy.S
++++ b/arch/sparc/lib/memcpy.S
+@@ -235,7 +235,7 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
+ 	add		%o1, 4, %o1
+ 	add		%o0, 4, %o0
+ 2:
+-	andcc		%g1, 0xffffff80, %g7
++	andcc		%g1, 0xffffff80, %g0
+ 	be		3f
+ 	 andcc		%o0, 4, %g0
  
- #else /* CONFIG_SPARC32 */
+@@ -245,22 +245,23 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
+ 	MOVE_BIGCHUNK(o1, o0, 0x20, o2, o3, o4, o5, g2, g3, g4, g5)
+ 	MOVE_BIGCHUNK(o1, o0, 0x40, o2, o3, o4, o5, g2, g3, g4, g5)
+ 	MOVE_BIGCHUNK(o1, o0, 0x60, o2, o3, o4, o5, g2, g3, g4, g5)
+-	subcc		%g7, 128, %g7
++	sub		%g1, 128, %g1
+ 	add		%o1, 128, %o1
+-	bne		5b
++	cmp		%g1, 128
++	bge		5b
+ 	 add		%o0, 128, %o0
+ 3:
+-	andcc		%g1, 0x70, %g7
++	andcc		%g1, 0x70, %g4
+ 	be		80f
+ 	 andcc		%g1, 8, %g0
+ 
+ 	sethi		%hi(80f), %o5
+-	srl		%g7, 1, %o4
+-	add		%g7, %o4, %o4
+-	add		%o1, %g7, %o1
++	srl		%g4, 1, %o4
++	add		%g4, %o4, %o4
++	add		%o1, %g4, %o1
+ 	sub		%o5, %o4, %o5
+ 	jmpl		%o5 + %lo(80f), %g0
+-	 add		%o0, %g7, %o0
++	 add		%o0, %g4, %o0
+ 
+ 79:	/* memcpy_table */
+ 
+@@ -314,20 +315,21 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
+ 	MOVE_BIGALIGNCHUNK(o1, o0, 0x20, o2, o3, o4, o5, g2, g3, g4, g5)
+ 	MOVE_BIGALIGNCHUNK(o1, o0, 0x40, o2, o3, o4, o5, g2, g3, g4, g5)
+ 	MOVE_BIGALIGNCHUNK(o1, o0, 0x60, o2, o3, o4, o5, g2, g3, g4, g5)
+-	subcc		%g7, 128, %g7
++	subcc		%g1, 128, %g1
+ 	add		%o1, 128, %o1
+-	bne		82b
++	cmp		%g1, 128
++	bge		82b
+ 	 add		%o0, 128, %o0
+ 
+-	andcc		%g1, 0x70, %g7
++	andcc		%g1, 0x70, %g4
+ 	be		84f
+ 	 andcc		%g1, 8, %g0
+ 
+ 	sethi		%hi(84f), %o5
+-	add		%o1, %g7, %o1
+-	sub		%o5, %g7, %o5
++	add		%o1, %g4, %o1
++	sub		%o5, %g4, %o5
+ 	jmpl		%o5 + %lo(84f), %g0
+-	 add		%o0, %g7, %o0
++	 add		%o0, %g4, %o0
+ 
+ 83:	/* amemcpy_table */
+ 
+@@ -376,124 +378,127 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
+ 86:	/* non_aligned */
+ 	cmp		%o2, 6
+ 	bleu		88f
+-	 andcc		%o0, 3, %g0
++	 nop
 +
-+#include <asm/trap_block.h>
-+
- struct popc_3insn_patch_entry {
- 	unsigned int	addr;
- 	unsigned int	insns[3];
-@@ -57,6 +60,10 @@ extern struct popc_6insn_patch_entry __p
- 	__popc_6insn_patch_end;
++	save		%sp, -96, %sp
++	andcc		%i0, 3, %g0
+ 	be		61f
+-	 andcc		%o0, 1, %g0
++	 andcc		%i0, 1, %g0
+ 	be		60f
+-	 andcc		%o0, 2, %g0
++	 andcc		%i0, 2, %g0
  
- extern void __init per_cpu_patch(void);
-+extern void sun4v_patch_1insn_range(struct sun4v_1insn_patch_entry *,
-+				    struct sun4v_1insn_patch_entry *);
-+extern void sun4v_patch_2insn_range(struct sun4v_2insn_patch_entry *,
-+				    struct sun4v_2insn_patch_entry *);
- extern void __init sun4v_patch(void);
- extern void __init boot_cpu_id_too_large(int cpu);
- extern unsigned int dcache_parity_tl1_occurred;
---- a/arch/sparc/kernel/module.c
-+++ b/arch/sparc/kernel/module.c
-@@ -17,6 +17,8 @@
- #include <asm/processor.h>
- #include <asm/spitfire.h>
+-	ldub		[%o1], %g5
+-	add		%o1, 1, %o1
+-	stb		%g5, [%o0]
+-	sub		%o2, 1, %o2
++	ldub		[%i1], %g5
++	add		%i1, 1, %i1
++	stb		%g5, [%i0]
++	sub		%i2, 1, %i2
+ 	bne		61f
+-	 add		%o0, 1, %o0
++	 add		%i0, 1, %i0
+ 60:
+-	ldub		[%o1], %g3
+-	add		%o1, 2, %o1
+-	stb		%g3, [%o0]
+-	sub		%o2, 2, %o2
+-	ldub		[%o1 - 1], %g3
+-	add		%o0, 2, %o0
+-	stb		%g3, [%o0 - 1]
++	ldub		[%i1], %g3
++	add		%i1, 2, %i1
++	stb		%g3, [%i0]
++	sub		%i2, 2, %i2
++	ldub		[%i1 - 1], %g3
++	add		%i0, 2, %i0
++	stb		%g3, [%i0 - 1]
+ 61:
+-	and		%o1, 3, %g2
+-	and		%o2, 0xc, %g3
+-	and		%o1, -4, %o1
++	and		%i1, 3, %g2
++	and		%i2, 0xc, %g3
++	and		%i1, -4, %i1
+ 	cmp		%g3, 4
+ 	sll		%g2, 3, %g4
+ 	mov		32, %g2
+ 	be		4f
+-	 sub		%g2, %g4, %g7
++	 sub		%g2, %g4, %l0
+ 	
+ 	blu		3f
+ 	 cmp		%g3, 0x8
  
-+#include "entry.h"
-+
- #ifdef CONFIG_SPARC64
+ 	be		2f
+-	 srl		%o2, 2, %g3
++	 srl		%i2, 2, %g3
  
- #include <linux/jump_label.h>
-@@ -220,6 +222,29 @@ int apply_relocate_add(Elf_Shdr *sechdrs
- }
+-	ld		[%o1], %o3
+-	add		%o0, -8, %o0
+-	ld		[%o1 + 4], %o4
++	ld		[%i1], %i3
++	add		%i0, -8, %i0
++	ld		[%i1 + 4], %i4
+ 	b		8f
+ 	 add		%g3, 1, %g3
+ 2:
+-	ld		[%o1], %o4
+-	add		%o0, -12, %o0
+-	ld		[%o1 + 4], %o5
++	ld		[%i1], %i4
++	add		%i0, -12, %i0
++	ld		[%i1 + 4], %i5
+ 	add		%g3, 2, %g3
+ 	b		9f
+-	 add		%o1, -4, %o1
++	 add		%i1, -4, %i1
+ 3:
+-	ld		[%o1], %g1
+-	add		%o0, -4, %o0
+-	ld		[%o1 + 4], %o3
+-	srl		%o2, 2, %g3
++	ld		[%i1], %g1
++	add		%i0, -4, %i0
++	ld		[%i1 + 4], %i3
++	srl		%i2, 2, %g3
+ 	b		7f
+-	 add		%o1, 4, %o1
++	 add		%i1, 4, %i1
+ 4:
+-	ld		[%o1], %o5
+-	cmp		%o2, 7
+-	ld		[%o1 + 4], %g1
+-	srl		%o2, 2, %g3
++	ld		[%i1], %i5
++	cmp		%i2, 7
++	ld		[%i1 + 4], %g1
++	srl		%i2, 2, %g3
+ 	bleu		10f
+-	 add		%o1, 8, %o1
++	 add		%i1, 8, %i1
  
- #ifdef CONFIG_SPARC64
-+static void do_patch_sections(const Elf_Ehdr *hdr,
-+			      const Elf_Shdr *sechdrs)
-+{
-+	const Elf_Shdr *s, *sun4v_1insn = NULL, *sun4v_2insn = NULL;
-+	char *secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
-+
-+	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
-+		if (!strcmp(".sun4v_1insn_patch", secstrings + s->sh_name))
-+			sun4v_1insn = s;
-+		if (!strcmp(".sun4v_2insn_patch", secstrings + s->sh_name))
-+			sun4v_2insn = s;
-+	}
-+
-+	if (sun4v_1insn && tlb_type == hypervisor) {
-+		void *p = (void *) sun4v_1insn->sh_addr;
-+		sun4v_patch_1insn_range(p, p + sun4v_1insn->sh_size);
-+	}
-+	if (sun4v_2insn && tlb_type == hypervisor) {
-+		void *p = (void *) sun4v_2insn->sh_addr;
-+		sun4v_patch_2insn_range(p, p + sun4v_2insn->sh_size);
-+	}
-+}
-+
- int module_finalize(const Elf_Ehdr *hdr,
- 		    const Elf_Shdr *sechdrs,
- 		    struct module *me)
-@@ -227,6 +252,8 @@ int module_finalize(const Elf_Ehdr *hdr,
- 	/* make jump label nops */
- 	jump_label_apply_nops(me);
+-	ld		[%o1], %o3
++	ld		[%i1], %i3
+ 	add		%g3, -1, %g3
+ 5:
+-	sll		%o5, %g4, %g2
+-	srl		%g1, %g7, %g5
++	sll		%i5, %g4, %g2
++	srl		%g1, %l0, %g5
+ 	or		%g2, %g5, %g2
+-	st		%g2, [%o0]
++	st		%g2, [%i0]
+ 7:
+-	ld		[%o1 + 4], %o4
++	ld		[%i1 + 4], %i4
+ 	sll		%g1, %g4, %g2
+-	srl		%o3, %g7, %g5
++	srl		%i3, %l0, %g5
+ 	or		%g2, %g5, %g2
+-	st		%g2, [%o0 + 4]
++	st		%g2, [%i0 + 4]
+ 8:
+-	ld		[%o1 + 8], %o5
+-	sll		%o3, %g4, %g2
+-	srl		%o4, %g7, %g5
++	ld		[%i1 + 8], %i5
++	sll		%i3, %g4, %g2
++	srl		%i4, %l0, %g5
+ 	or		%g2, %g5, %g2
+-	st		%g2, [%o0 + 8]
++	st		%g2, [%i0 + 8]
+ 9:
+-	ld		[%o1 + 12], %g1
+-	sll		%o4, %g4, %g2
+-	srl		%o5, %g7, %g5
++	ld		[%i1 + 12], %g1
++	sll		%i4, %g4, %g2
++	srl		%i5, %l0, %g5
+ 	addcc		%g3, -4, %g3
+ 	or		%g2, %g5, %g2
+-	add		%o1, 16, %o1
+-	st		%g2, [%o0 + 12]
+-	add		%o0, 16, %o0
++	add		%i1, 16, %i1
++	st		%g2, [%i0 + 12]
++	add		%i0, 16, %i0
+ 	bne,a		5b
+-	 ld		[%o1], %o3
++	 ld		[%i1], %i3
+ 10:
+-	sll		%o5, %g4, %g2
+-	srl		%g1, %g7, %g5
+-	srl		%g7, 3, %g3
++	sll		%i5, %g4, %g2
++	srl		%g1, %l0, %g5
++	srl		%l0, 3, %g3
+ 	or		%g2, %g5, %g2
+-	sub		%o1, %g3, %o1
+-	andcc		%o2, 2, %g0
+-	st		%g2, [%o0]
++	sub		%i1, %g3, %i1
++	andcc		%i2, 2, %g0
++	st		%g2, [%i0]
+ 	be		1f
+-	 andcc		%o2, 1, %g0
++	 andcc		%i2, 1, %g0
  
-+	do_patch_sections(hdr, sechdrs);
-+
- 	/* Cheetah's I-cache is fully coherent.  */
- 	if (tlb_type == spitfire) {
- 		unsigned long va;
---- a/arch/sparc/kernel/setup_64.c
-+++ b/arch/sparc/kernel/setup_64.c
-@@ -234,40 +234,50 @@ void __init per_cpu_patch(void)
- 	}
- }
+-	ldub		[%o1], %g2
+-	add		%o1, 2, %o1
+-	stb		%g2, [%o0 + 4]
+-	add		%o0, 2, %o0
+-	ldub		[%o1 - 1], %g2
+-	stb		%g2, [%o0 + 3]
++	ldub		[%i1], %g2
++	add		%i1, 2, %i1
++	stb		%g2, [%i0 + 4]
++	add		%i0, 2, %i0
++	ldub		[%i1 - 1], %g2
++	stb		%g2, [%i0 + 3]
+ 1:
+ 	be		1f
+ 	 nop
+-	ldub		[%o1], %g2
+-	stb		%g2, [%o0 + 4]
++	ldub		[%i1], %g2
++	stb		%g2, [%i0 + 4]
+ 1:
+-	retl
+-	 RETL_INSN
++	ret
++	 restore	%g0, %g0, %o0
  
--void __init sun4v_patch(void)
-+void sun4v_patch_1insn_range(struct sun4v_1insn_patch_entry *start,
-+			     struct sun4v_1insn_patch_entry *end)
- {
--	extern void sun4v_hvapi_init(void);
--	struct sun4v_1insn_patch_entry *p1;
--	struct sun4v_2insn_patch_entry *p2;
--
--	if (tlb_type != hypervisor)
--		return;
-+	while (start < end) {
-+		unsigned long addr = start->addr;
+ 88:	/* short_end */
  
--	p1 = &__sun4v_1insn_patch;
--	while (p1 < &__sun4v_1insn_patch_end) {
--		unsigned long addr = p1->addr;
--
--		*(unsigned int *) (addr +  0) = p1->insn;
-+		*(unsigned int *) (addr +  0) = start->insn;
- 		wmb();
- 		__asm__ __volatile__("flush	%0" : : "r" (addr +  0));
- 
--		p1++;
-+		start++;
- 	}
-+}
- 
--	p2 = &__sun4v_2insn_patch;
--	while (p2 < &__sun4v_2insn_patch_end) {
--		unsigned long addr = p2->addr;
-+void sun4v_patch_2insn_range(struct sun4v_2insn_patch_entry *start,
-+			     struct sun4v_2insn_patch_entry *end)
-+{
-+	while (start < end) {
-+		unsigned long addr = start->addr;
- 
--		*(unsigned int *) (addr +  0) = p2->insns[0];
-+		*(unsigned int *) (addr +  0) = start->insns[0];
- 		wmb();
- 		__asm__ __volatile__("flush	%0" : : "r" (addr +  0));
- 
--		*(unsigned int *) (addr +  4) = p2->insns[1];
-+		*(unsigned int *) (addr +  4) = start->insns[1];
- 		wmb();
- 		__asm__ __volatile__("flush	%0" : : "r" (addr +  4));
- 
--		p2++;
-+		start++;
- 	}
-+}
-+
-+void __init sun4v_patch(void)
-+{
-+	extern void sun4v_hvapi_init(void);
-+
-+	if (tlb_type != hypervisor)
-+		return;
-+
-+	sun4v_patch_1insn_range(&__sun4v_1insn_patch,
-+				&__sun4v_1insn_patch_end);
-+
-+	sun4v_patch_2insn_range(&__sun4v_2insn_patch,
-+				&__sun4v_2insn_patch_end);
- 
- 	sun4v_hvapi_init();
- }
 
 
