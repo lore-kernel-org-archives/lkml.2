@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab2ACWEM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:04:12 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:44852 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754125Ab2ACWEJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:04:09 -0500
-X-Sasl-enc: I6s8+/gvo9PB33pgYZYNFTinTw8ygD+VPtYSBkcz1ed5 1325628248
-Date: Tue, 3 Jan 2012 14:03:02 -0800
+	id S1755357Ab2ACWEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:04:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36058 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754125Ab2ACWEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:04:13 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:02:40 2012
+Message-Id: <20120103220240.515435411@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Tue, 03 Jan 2012 14:01:32 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [0/7] 2.6.32.53-longterm review
-Message-ID: <20120103220302.GA28338@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [2/7] SCSI: mpt2sas: _scsih_smart_predicted_fault uses GFP_KERNEL in interrupt context
+In-Reply-To: <20120103220302.GA28338@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.@rel@ release.
-There are 7 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+2.6.32-longterm review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Friday, January 6, 2012, 20:00:00 UTC.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.53-rc1.gz
-and the diffstat can be found below.
+From: Anton Blanchard <anton@samba.org>
 
-thanks,
+commit f6a290b419a2675c4b77a6b0731cd2a64332365e upstream.
 
-greg k-h
+_scsih_smart_predicted_fault is called in an interrupt and therefore
+must allocate memory using GFP_ATOMIC.
 
- Makefile                             |    2 +-
- arch/arm/plat-mxc/pwm.c              |   16 +++++++++++++++-
- block/cfq-iosched.c                  |   11 +++++++++--
- drivers/mmc/host/mmci.c              |    6 +++++-
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
  drivers/scsi/mpt2sas/mpt2sas_scsih.c |    2 +-
- drivers/watchdog/hpwdt.c             |    5 ++++-
- mm/filemap.c                         |    7 ++-----
- 7 files changed, 37 insertions(+), 12 deletions(-)
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -3145,7 +3145,7 @@ _scsih_smart_predicted_fault(struct MPT2
+ 	/* insert into event log */
+ 	sz = offsetof(Mpi2EventNotificationReply_t, EventData) +
+ 	     sizeof(Mpi2EventDataSasDeviceStatusChange_t);
+-	event_reply = kzalloc(sz, GFP_KERNEL);
++	event_reply = kzalloc(sz, GFP_ATOMIC);
+ 	if (!event_reply) {
+ 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
+ 		    ioc->name, __FILE__, __LINE__, __func__);
+
+
