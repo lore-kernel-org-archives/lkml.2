@@ -1,89 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab2ACSZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 13:25:13 -0500
-Received: from RATBERT.FHCRC.ORG ([140.107.152.19]:40602 "EHLO
-	ratbert.fhcrc.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754538Ab2ACSZL (ORCPT
+	id S1754591Ab2ACS1K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 13:27:10 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50156 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754538Ab2ACS1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 13:25:11 -0500
-X-Greylist: delayed 489 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jan 2012 13:25:11 EST
-Date: Tue, 3 Jan 2012 10:16:21 -0800 (PST)
-From: "Pitt, Jason N" <jpitt@fhcrc.org>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Cc: linux-kernel@vger.kernel.org, linux-uvc-devel@lists.berlios.de
-Message-ID: <1788809778.116537.1325614581565.JavaMail.root@zimbra2.fhcrc.org>
-In-Reply-To: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com>
-Subject: Re: [Linux-uvc-devel] 3.1.5: uvcvideo: Failed to resubmit video URB
- (-27).
+	Tue, 3 Jan 2012 13:27:07 -0500
+Date: Tue, 3 Jan 2012 12:27:00 -0600
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: Rabin Vincent <rabin.vincent@stericsson.com>, Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        rtc-linux@googlegroups.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        John Stultz <john.stultz@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        "Antonio-M. Corbi Bellot" <antonio.corbi@ua.es>,
+        Marco Santos <marco.santos@waynext.com>,
+        Christophe Vu-Brugier <cvubrugier@yahoo.fr>
+Subject: Re: [096/104] rtc: Disable the alarm in the hardware
+Message-ID: <20120103182659.GI21256@elie.hsd1.il.comcast.net>
+References: <20111207161246.GA10995@kroah.com>
+ <20111207161222.676101253@clark.kroah.org>
+ <20120103162720.GA22050@elie.hsd1.il.comcast.net>
+ <20120103164258.GA26638@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [140.107.89.37]
-X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.1.3.180618
-X-FHCRC-SCANNED: Tue Jan  3 10:16:21 2012
-X-PMX-Version: 5.6.1.2065439, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2012.1.3.180618
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120103164258.GA26638@suse.de>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is the output of lsusb?
+Greg KH wrote:
+>> Greg KH wrote:
 
+>>> From: Rabin Vincent <rabin.vincent@stericsson.com>
+>>>
+>>> commit c0afabd3d553c521e003779c127143ffde55a16f upstream.
+[...]
+> Is it also reverted (or fixed), in Linus's tree as well?
 
+I don't see any relevant commits, no.  Here's another relevant thread:
 
---- Original Message -----
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-uvc-devel@lists.berlios.de
-Sent: Tue, 03 Jan 2012 06:21:02 -0800 (PST)
-Subject: [Linux-uvc-devel] 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
-Hello,
-Using an Acer 7551-7442 here with the following built-in webcam:
-Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
-It seems motion locks up every day or so and I see this in the kernel logs:
-[378982.724053] uvcvideo: Failed to resubmit video URB (-27).
-[378982.724066] uvcvideo: Failed to resubmit video URB (-27).
-[378982.724079] uvcvideo: Failed to resubmit video URB (-27).
-[378982.724090] uvcvideo: Failed to resubmit video URB (-27).
-[378982.724101] uvcvideo: Failed to resubmit video URB (-27).
-[489148.723367] uvcvideo: Failed to resubmit video URB (-27).
-[489148.723379] uvcvideo: Failed to resubmit video URB (-27).
-[489148.723391] uvcvideo: Failed to resubmit video URB (-27).
-[489148.723403] uvcvideo: Failed to resubmit video URB (-27).
-[489148.723414] uvcvideo: Failed to resubmit video URB (-27).
-If I restart motion, it will usually start working again, I do not
-have this problem on other (retail) Logitech webcams, was curious if
-this a bug with the webcam (quirk?) or a problem in uvcvideo?
-The camera is built-into the laptop screen at the top in the middle.
-lsusb verbose:
-Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
-Device Descriptor:
- bLength 18
- bDescriptorType 1
- bcdUSB 2.00
- bDeviceClass 239 Miscellaneous Device
- bDeviceSubClass 2 ?
- bDeviceProtocol 1 Interface Association
- bMaxPacketSize0 64
- idVendor 0x0402 ALi Corp.
- idProduct 0x9665 Gateway Webcam
- bcdDevice 0.09
- iManufacturer 3 XPB3L1K44
- iProduct 1 1.3M WebCam
- iSerial 0
- bNumConfigurations 1
-Justin.
-_______________________________________________
-Linux-uvc-devel mailing list
-Linux-uvc-devel@lists.berlios.de
-https://lists.berlios.de/mailman/listinfo/linux-uvc-devel
--- 
-/*
-Jason Pitt PhD 206.667.5603
-Roth Lab jpitt@fhcrc.org
-Basic Sciences Division 
-Fred Hutchinson Cancer Research Center
-1100 Fairview Ave N A3-135
-Seattle, WA 98109
-*/
+ http://thread.gmane.org/gmane.linux.kernel/1233322/focus=1234433
+
+Rabin, what do you think?  Should c0afabd3 be reverted from mainline,
+or is there another fix ready?
+
+Thanks,
+Jonathan
