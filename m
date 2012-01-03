@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756315Ab2ACWlZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:41:25 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40364 "EHLO mx2.suse.de"
+	id S1756367Ab2ACWlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:41:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40400 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756261Ab2ACWlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:19 -0500
+	id S932098Ab2ACWll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:23 2012
-Message-Id: <20120103223323.009595271@clark.kroah.org>
+Message-Id: <20120103223323.523042769@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:32:57 -0800
+Date: Tue, 03 Jan 2012 14:33:03 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Robert Richter <robert.richter@amd.com>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [24/75] oprofile: Fix uninitialized memory access when writing to writing to oprofilefs
+        alan@lxorguk.ukuu.org.uk, Thomas Meyer <thomas@m3y3r.de>,
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Subject: [30/75] nilfs2: unbreak compat ioctl
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,113 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Robert Richter <robert.richter@amd.com>
+From: Thomas Meyer <thomas@m3y3r.de>
 
-commit 913050b91eb94f194392dd797b1ff3779f606ac0 upstream.
+commit 695c60f21c69e525a89279a5f35bae4ff237afbc upstream.
 
-If oprofilefs_ulong_from_user() is called with count equals
-zero, *val remains unchanged. Depending on the implementation it
-might be uninitialized.
+commit 828b1c50ae ("nilfs2: add compat ioctl") incidentally broke all
+other NILFS compat ioctls.  Make them work again.
 
-Change oprofilefs_ulong_from_user()'s interface to return count
-on success. Thus, we are able to return early if count equals
-zero which avoids using *val uninitialized. Fixing all users of
-oprofilefs_ulong_ from_user().
-
-This follows write syscall implementation when count is zero:
-"If count is zero ... [and if] no errors are detected, 0 will be
-returned without causing any other effect." (man 2 write)
-
-Reported-By: Mike Waychison <mikew@google.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: oprofile-list <oprofile-list@lists.sourceforge.net>
-Link: http://lkml.kernel.org/r/20111219153830.GH16765@erda.amd.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Tested-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/oprofile/init.c         |    2 +-
- drivers/oprofile/oprofile_files.c |    7 ++++---
- drivers/oprofile/oprofilefs.c     |   11 +++++++++--
- 3 files changed, 14 insertions(+), 6 deletions(-)
+ fs/nilfs2/ioctl.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/s390/oprofile/init.c
-+++ b/arch/s390/oprofile/init.c
-@@ -88,7 +88,7 @@ static ssize_t hwsampler_write(struct fi
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	if (oprofile_started)
---- a/drivers/oprofile/oprofile_files.c
-+++ b/drivers/oprofile/oprofile_files.c
-@@ -45,7 +45,7 @@ static ssize_t timeout_write(struct file
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	retval = oprofile_set_timeout(val);
-@@ -84,7 +84,7 @@ static ssize_t depth_write(struct file *
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	retval = oprofile_set_ulong(&oprofile_backtrace_depth, val);
-@@ -141,9 +141,10 @@ static ssize_t enable_write(struct file
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&val, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
-+	retval = 0;
- 	if (val)
- 		retval = oprofile_start();
- 	else
---- a/drivers/oprofile/oprofilefs.c
-+++ b/drivers/oprofile/oprofilefs.c
-@@ -60,6 +60,13 @@ ssize_t oprofilefs_ulong_to_user(unsigne
- }
- 
- 
-+/*
-+ * Note: If oprofilefs_ulong_from_user() returns 0, then *val remains
-+ * unchanged and might be uninitialized. This follows write syscall
-+ * implementation when count is zero: "If count is zero ... [and if]
-+ * no errors are detected, 0 will be returned without causing any
-+ * other effect." (man 2 write)
-+ */
- int oprofilefs_ulong_from_user(unsigned long *val, char const __user *buf, size_t count)
- {
- 	char tmpbuf[TMPBUFSIZE];
-@@ -79,7 +86,7 @@ int oprofilefs_ulong_from_user(unsigned
- 	spin_lock_irqsave(&oprofilefs_lock, flags);
- 	*val = simple_strtoul(tmpbuf, NULL, 0);
- 	spin_unlock_irqrestore(&oprofilefs_lock, flags);
--	return 0;
-+	return count;
- }
- 
- 
-@@ -99,7 +106,7 @@ static ssize_t ulong_write_file(struct f
- 		return -EINVAL;
- 
- 	retval = oprofilefs_ulong_from_user(&value, buf, count);
--	if (retval)
-+	if (retval <= 0)
- 		return retval;
- 
- 	retval = oprofile_set_ulong(file->private_data, value);
+--- a/fs/nilfs2/ioctl.c
++++ b/fs/nilfs2/ioctl.c
+@@ -842,6 +842,19 @@ long nilfs_compat_ioctl(struct file *fil
+ 	case FS_IOC32_GETVERSION:
+ 		cmd = FS_IOC_GETVERSION;
+ 		break;
++	case NILFS_IOCTL_CHANGE_CPMODE:
++	case NILFS_IOCTL_DELETE_CHECKPOINT:
++	case NILFS_IOCTL_GET_CPINFO:
++	case NILFS_IOCTL_GET_CPSTAT:
++	case NILFS_IOCTL_GET_SUINFO:
++	case NILFS_IOCTL_GET_SUSTAT:
++	case NILFS_IOCTL_GET_VINFO:
++	case NILFS_IOCTL_GET_BDESCS:
++	case NILFS_IOCTL_CLEAN_SEGMENTS:
++	case NILFS_IOCTL_SYNC:
++	case NILFS_IOCTL_RESIZE:
++	case NILFS_IOCTL_SET_ALLOC_RANGE:
++		break;
+ 	default:
+ 		return -ENOIOCTLCMD;
+ 	}
 
 
