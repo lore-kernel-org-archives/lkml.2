@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab2ACOxK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 09:53:10 -0500
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2518 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753650Ab2ACOxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 09:53:08 -0500
-X-Greylist: delayed 2436 seconds by postgrey-1.27 at vger.kernel.org; Tue, 03 Jan 2012 09:53:08 EST
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host q03ECStp029788
-Subject: Re: loading firmware while usermodehelper disabled.
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: "Alexander E. Patrakov" <patrakov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Date: Tue, 03 Jan 2012 15:12:29 +0100
-In-Reply-To: <20120103151637.1388e204@home>
-References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
-	 <4F02165C.1060400@fastmail.fm>
-	 <CA+55aFwf06vRraVqtz8_2qWjxH0V=Yj5m7mEy3XVbA7+qj5k5A@mail.gmail.com>
-	 <20120102211904.GA15316@srcf.ucam.org>
-	 <CA+55aFwJuuvqcsgHnZ4-VhUhbVvL6beKogo1adgYyZt_ZM=H7A@mail.gmail.com>
-	 <20120102215028.GA15701@srcf.ucam.org> <20120103151637.1388e204@home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325599949.4806.22.camel@thorin>
-Mime-Version: 1.0
-X-DCC-STAT_FI_X86_64_VIRTUAL-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	id S1753821Ab2ACO5K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 09:57:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41041 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753442Ab2ACO5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 09:57:08 -0500
+Date: Tue, 3 Jan 2012 15:57:04 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Hughes <hughsient@gmail.com>,
+        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org
+Subject: Re: [PATCH RFC V2 0/4] Add "scope" to power supplies
+In-Reply-To: <alpine.LNX.2.00.1112191124190.8727@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1201031556460.24984@pobox.suse.cz>
+References: <cover.1323454016.git.jeremy@goop.org> <4EEED923.9000706@goop.org> <alpine.LNX.2.00.1112191124190.8727@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Die, 2012-01-03 at 15:16 +0600, Alexander E. Patrakov wrote:
-[...]
-> however, never had such dependency issues. So maybe revert to it, with
-> the following changes, and solve the legal issue seen by Debian by
-> hiring a lawyer?
+On Mon, 19 Dec 2011, Jiri Kosina wrote:
 
-You have to talk to the Debian people about this.
+> > Ping?
+> 
+> Anton, if you are not going to take this patchset for whatever reason, but 
+> are fine with the changes, feel free to just provide Ack for the patches 
+> touching drivers/power, and I'll take them through hid tree.
 
-Sorry for the semi-off-topic,
-	Bernd
+Anton, hello?
+
+> > On 12/09/2011 02:43 PM, Jeremy Fitzhardinge wrote:
+> > > This series adds a "scope" attribute to power supplies, to indicate
+> > > whether it powers the whole system ("System") or just some subset of
+> > > the devices ("Device").  This allows upowerd to distinguish between
+> > > system-wide power supplies and self-powered devices such as cordless
+> > > mice.
+> > >
+> > > This series also adds a "powers" link to power supplies, so that if
+> > > they're scope=Device, they can specifically indicate which device
+> > > tree they power.
+> > >
+> > > Updates since last post:
+> > >  - Add more complete documentation to scope and "powers" links
+> > >  - Remove unnecessary scopes on System power supplies
+> > >  - Make HID battery supplies Device, and add "powers" pointers
+> > >    for them.
+> > >
+> > > This can also be pulled from:
+> > > 	git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git power-supply-scope
+> > >
+> > > Jeremy Fitzhardinge (4):
+> > >   power_supply: add SCOPE attribute to power supplies
+> > >   power_supply: allow a power supply to explicitly point to powered
+> > >     device
+> > >   power_supply: add scope properties to some self-powered HID devices
+> > >   power_supply: add "powers" links to self-powered HID devices
+> > >
+> > >  drivers/hid/hid-wacom.c            |   16 ++++++++++++++--
+> > >  drivers/hid/hid-wiimote.c          |   10 +++++++++-
+> > >  drivers/power/power_supply_core.c  |    7 +++++++
+> > >  drivers/power/power_supply_sysfs.c |    6 ++++++
+> > >  include/linux/power_supply.h       |    8 ++++++++
+> > >  5 files changed, 44 insertions(+), 3 deletions(-)
+> > >
+
 -- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+Jiri Kosina
+SUSE Labs
