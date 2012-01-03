@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932112Ab2ACWrf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:47:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40466 "EHLO mx2.suse.de"
+	id S932180Ab2ACWsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:48:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40428 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756416Ab2ACWmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:42:05 -0500
+	id S1756380Ab2ACWls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:41:48 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:26 2012
-Message-Id: <20120103223326.624073171@clark.kroah.org>
+Message-Id: <20120103223326.183686887@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:39 -0800
+Date: Tue, 03 Jan 2012 14:33:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Djalal Harouni <tixxdz@opendz.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [66/75] sctp: fix incorrect overflow check on autoclose
+Subject: [61/75] ppp: fix pptp double release_sock in pptp_bind()
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,120 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Djalal Harouni <tixxdz@opendz.org>
 
-[ Upstream commit 2692ba61a82203404abd7dd2a027bda962861f74 ]
+[ Upstream commit a454daceb78844a09c08b6e2d8badcb76a5d73b9 ]
 
-Commit 8ffd3208 voids the previous patches f6778aab and 810c0719 for
-limiting the autoclose value.  If userspace passes in -1 on 32-bit
-platform, the overflow check didn't work and autoclose would be set
-to 0xffffffff.
-
-This patch defines a max_autoclose (in seconds) for limiting the value
-and exposes it through sysctl, with the following intentions.
-
-1) Avoid overflowing autoclose * HZ.
-
-2) Keep the default autoclose bound consistent across 32- and 64-bit
-   platforms (INT_MAX / HZ in this patch).
-
-3) Keep the autoclose value consistent between setsockopt() and
-   getsockopt() calls.
-
-Suggested-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/net/sctp/structs.h |    4 ++++
- net/sctp/associola.c       |    2 +-
- net/sctp/protocol.c        |    3 +++
- net/sctp/socket.c          |    2 --
- net/sctp/sysctl.c          |   13 +++++++++++++
- 5 files changed, 21 insertions(+), 3 deletions(-)
+ drivers/net/pptp.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -241,6 +241,9 @@ extern struct sctp_globals {
- 	 * bits is an indicator of when to send and window update SACK.
- 	 */
- 	int rwnd_update_shift;
-+
-+	/* Threshold for autoclose timeout, in seconds. */
-+	unsigned long max_autoclose;
- } sctp_globals;
+--- a/drivers/net/pptp.c
++++ b/drivers/net/pptp.c
+@@ -423,10 +423,8 @@ static int pptp_bind(struct socket *sock
+ 	lock_sock(sk);
  
- #define sctp_rto_initial		(sctp_globals.rto_initial)
-@@ -281,6 +284,7 @@ extern struct sctp_globals {
- #define sctp_auth_enable		(sctp_globals.auth_enable)
- #define sctp_checksum_disable		(sctp_globals.checksum_disable)
- #define sctp_rwnd_upd_shift		(sctp_globals.rwnd_update_shift)
-+#define sctp_max_autoclose		(sctp_globals.max_autoclose)
+ 	opt->src_addr = sp->sa_addr.pptp;
+-	if (add_chan(po)) {
+-		release_sock(sk);
++	if (add_chan(po))
+ 		error = -EBUSY;
+-	}
  
- /* SCTP Socket type: UDP or TCP style. */
- typedef enum {
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -173,7 +173,7 @@ static struct sctp_association *sctp_ass
- 	asoc->timeouts[SCTP_EVENT_TIMEOUT_HEARTBEAT] = 0;
- 	asoc->timeouts[SCTP_EVENT_TIMEOUT_SACK] = asoc->sackdelay;
- 	asoc->timeouts[SCTP_EVENT_TIMEOUT_AUTOCLOSE] =
--		(unsigned long)sp->autoclose * HZ;
-+		min_t(unsigned long, sp->autoclose, sctp_max_autoclose) * HZ;
- 
- 	/* Initializes the timers */
- 	for (i = SCTP_EVENT_TIMEOUT_NONE; i < SCTP_NUM_TIMEOUT_TYPES; ++i)
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -1285,6 +1285,9 @@ SCTP_STATIC __init int sctp_init(void)
- 	sctp_max_instreams    		= SCTP_DEFAULT_INSTREAMS;
- 	sctp_max_outstreams   		= SCTP_DEFAULT_OUTSTREAMS;
- 
-+	/* Initialize maximum autoclose timeout. */
-+	sctp_max_autoclose		= INT_MAX / HZ;
-+
- 	/* Initialize handle used for association ids. */
- 	idr_init(&sctp_assocs_id);
- 
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -2199,8 +2199,6 @@ static int sctp_setsockopt_autoclose(str
- 		return -EINVAL;
- 	if (copy_from_user(&sp->autoclose, optval, optlen))
- 		return -EFAULT;
--	/* make sure it won't exceed MAX_SCHEDULE_TIMEOUT */
--	sp->autoclose = min_t(long, sp->autoclose, MAX_SCHEDULE_TIMEOUT / HZ);
- 
- 	return 0;
- }
---- a/net/sctp/sysctl.c
-+++ b/net/sctp/sysctl.c
-@@ -53,6 +53,10 @@ static int sack_timer_min = 1;
- static int sack_timer_max = 500;
- static int addr_scope_max = 3; /* check sctp_scope_policy_t in include/net/sctp/constants.h for max entries */
- static int rwnd_scale_max = 16;
-+static unsigned long max_autoclose_min = 0;
-+static unsigned long max_autoclose_max =
-+	(MAX_SCHEDULE_TIMEOUT / HZ > UINT_MAX)
-+	? UINT_MAX : MAX_SCHEDULE_TIMEOUT / HZ;
- 
- extern long sysctl_sctp_mem[3];
- extern int sysctl_sctp_rmem[3];
-@@ -258,6 +262,15 @@ static ctl_table sctp_table[] = {
- 		.extra1		= &one,
- 		.extra2		= &rwnd_scale_max,
- 	},
-+	{
-+		.procname	= "max_autoclose",
-+		.data		= &sctp_max_autoclose,
-+		.maxlen		= sizeof(unsigned long),
-+		.mode		= 0644,
-+		.proc_handler	= &proc_doulongvec_minmax,
-+		.extra1		= &max_autoclose_min,
-+		.extra2		= &max_autoclose_max,
-+	},
- 
- 	{ /* sentinel */ }
- };
+ 	release_sock(sk);
+ 	return error;
 
 
