@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab2ACQFK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 11:05:10 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:57032 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab2ACQFI convert rfc822-to-8bit (ORCPT
+	id S1754032Ab2ACQGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 11:06:09 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:49545 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753930Ab2ACQGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 11:05:08 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Tue, 3 Jan 2012 11:04:11 -0500
-Subject: RE: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
- WARN_ON()
-Thread-Topic: [RFC][PATCH v3 2/3] Skip spin_locks in panic case and add
- WARN_ON()
-Thread-Index: Acy+kVWuU2fL5F7bQFi25L8QZU5ixwABq3bgArtLvDAAKwIQ8A==
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C581E2236@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C57DC0D10@USINDEVS01.corp.hds.com>
- <20111212155827.GR1669@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57EE46F2@USINDEVS01.corp.hds.com>
- <0207C53569FE594381A4F2EB66570B2A018EFB83C4@orsmsx508.amr.corp.intel.com>
- <20111219210046.GG5650@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C57FFA38E@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28FA7D6@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28FA7D6@ORSMSX104.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1201030125
+	Tue, 3 Jan 2012 11:06:07 -0500
+Date: Tue, 3 Jan 2012 16:06:55 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dave Jones <davej@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: serial ports now asserting DTR and RTS during boot; breaks
+ connected hardware
+Message-ID: <20120103160655.69107c93@pyramind.ukuu.org.uk>
+In-Reply-To: <20120103153707.GA12771@redhat.com>
+References: <20120103153707.GA12771@redhat.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->So I wonder whether there is any value in the cpu sending an NMI to itself to
->meet the exact wording of this section in the spec.
->
->I'll ask an Intel EFI guru whether I'm on target.
+On Tue, 3 Jan 2012 10:37:07 -0500
+Dave Jones <davej@redhat.com> wrote:
 
-Thanks, Tony. I wait for their reply.
+> Jiri,
+> We got this report from a user who notes a change in behaviour for
+> his serial hardware over the last few kernel versions.
+>  
+> https://bugzilla.redhat.com/show_bug.cgi?id=771010
+> 
+> This sounds like it might be related to your DTR/RTS changes back in March 2011 maybe ? 
 
-Seiji
+Looks like your userspace to me at first glance.
+
+ftdi_sio sets up the modem lines in set_termios. Set_termios is called
+from ftdi_open. ftdi_open is triggered by userspace.
+
+>  > The following code in the ftdi_sio driver is one suspect but this behavior
+>  > happens on 8250 UARTs also so it is systemic now,
+
+Likewise 8250 sets up the lines in serial8250_startup. This is called via
+uart_startup which is called via open.
+
+I think a necessary first step would be to test a current kernel on FC14,
+or boot a sane simple kernel and test image and see what that does so all
+the udev and system startup stuff can be eliminated. Wouldn't surprise me
+at all however if something like udev triggered poking around for UPS
+devices or 3G modems wasn't the trigger ?
+
+Alan
