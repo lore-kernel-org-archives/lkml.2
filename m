@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab2ACPPX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 10:15:23 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:46757 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753418Ab2ACPPU (ORCPT
+	id S1753895Ab2ACPQW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 10:16:22 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:45463 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752854Ab2ACPQT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 10:15:20 -0500
-Message-ID: <1325603714.2320.73.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [PATCH] x86: fix and improve cmpxchg_double{,_local}()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Date: Tue, 03 Jan 2012 16:15:14 +0100
-In-Reply-To: <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <4F01F12A020000780006A19B@nat28.tlf.novell.com>
-	 <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Tue, 3 Jan 2012 10:16:19 -0500
+Date: Tue, 3 Jan 2012 10:16:18 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Oliver Neukum <oliver@neukum.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Matthew Garrett <mjg@redhat.com>, Jack Stone <jwjstone@fastmail.fm>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>
+Subject: Re: loading firmware while usermodehelper disabled.
+In-Reply-To: <201201031250.52580.oliver@neukum.org>
+Message-ID: <Pine.LNX.4.44L0.1201031002050.1452-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 03 janvier 2012 à 16:00 +0100, Eric Dumazet a écrit :
+On Tue, 3 Jan 2012, Oliver Neukum wrote:
 
-> While looking at your patch, I discovered that atomic64_add() /
-> atomic64_inc() on 32bit are completely buggy. Oh well...
+> > The USB suspend/resume function does that "unbind/rebind" dance, and
+> > that causes a "device_attach()". Which causes a probe() to be called.
+> > 
+> > Should it do that? I think not, not if the ID's haven't changed. But I
+> > don't know the USB layer all that well.
 > 
-> Generated code :
+> The ID has changed. That is why we run into this problem.
+> And indeed the USB layer does the rebind only if either
 > 
-> c03bc00c <atomic64_add_return_cx8>:
-> c03bc00c:       55                      push   %ebp
-> c03bc00d:       53                      push   %ebx
-> c03bc00e:       56                      push   %esi
-> c03bc00f:       57                      push   %edi
-> c03bc010:       89 c6                   mov    %eax,%esi
-> c03bc012:       89 d7                   mov    %edx,%edi
-> c03bc014:       89 cd                   mov    %ecx,%ebp
-> c03bc016:       89 d8                   mov    %ebx,%eax
-> c03bc018:       89 ca                   mov    %ecx,%edx
-> c03bc01a:       f0 0f c7 4d 00          lock cmpxchg8b 0x0(%ebp)
-> c03bc01f:       89 c3                   mov    %eax,%ebx
-> c03bc021:       89 d1                   mov    %edx,%ecx
-> c03bc023:       01 f3                   add    %esi,%ebx
-> c03bc025:       11 f9                   adc    %edi,%ecx
-> c03bc027:       f0 0f c7 4d 00          lock cmpxchg8b 0x0(%ebp)
-> c03bc02c:       75 f9                   jne    c03bc027 <atomic64_add_return_cx8+0x1b>
-> c03bc02e:       89 d8                   mov    %ebx,%eax
-> c03bc030:       89 ca                   mov    %ecx,%edx
-> c03bc032:       5f                      pop    %edi
-> c03bc033:       5e                      pop    %esi
-> c03bc034:       5b                      pop    %ebx
-> c03bc035:       5d                      pop    %ebp
-> c03bc036:       c3                      ret
-> 
-> The ' jne c03bc027' should really be 'jne c03bc01f'
-> 
-> No idea how old is this bug.
-> 
+> a) ID has changed
 
-Very old it seems...
+That's not true, or at least, it shouldn't be true.
 
-arch/x86/lib/atomic64_cx8_32.S
+If the ID has changed then there's nothing to rebind.  The old device
+is gone; it cannot be resumed or rebound at all.  That's the theory,
+and indeed things really do work that way during reset-resume.
 
-all "jxx 1b" are wrong if a LOCK_PREFIX is included after the 1: label
+Now, during an ordinary resume, the USB core does not check IDs.  It
+assumes that if suspend power was provided to the bus and the device
+was connected to the bus the entire time, then the device remains
+unchanged.  Perhaps this assumption is a mistake, but so far I haven't
+seen any data to prove that it is.
 
-1:
-	inst1
-	LOCK_PREFIX
-	cmpxchg8b (%ebp)
-	jne 1b  / jumps to beginning of LOCK_PREFIX, inst1 is not replayed
+> b) the driver tells us that it cannot deal with a device that has lost its state
 
+This case applies only in situations where the driver doesn't have a 
+reset_resume method.  The uvc driver does have one.
 
+(You left out a third case: The driver doesn't have any suspend/resume
+methods.  But this case applies only when the device has not lost its
+state, and besides, the uvc driver does have these methods.)
 
-
+Alan Stern
 
