@@ -1,98 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab2ACQIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 11:08:38 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:35263 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753977Ab2ACQIf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 11:08:35 -0500
+	id S1754043Ab2ACQNl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 11:13:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8163 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753418Ab2ACQNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 11:13:38 -0500
+Date: Tue, 3 Jan 2012 11:13:10 -0500
+From: Dave Jones <davej@redhat.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: serial ports now asserting DTR and RTS during boot; breaks
+ connected hardware
+Message-ID: <20120103161310.GA8727@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Jiri Slaby <jslaby@suse.cz>,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+References: <20120103153707.GA12771@redhat.com>
+ <4F03262D.8090506@suse.cz>
 MIME-Version: 1.0
-X-Originating-IP: [79.183.37.179]
-In-Reply-To: <op.v7iidbwz3l0zgt@mpn-glaptop>
-References: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
-	<op.v7iidbwz3l0zgt@mpn-glaptop>
-Date: Tue, 3 Jan 2012 18:08:33 +0200
-Message-ID: <CAOtvUMfWRLbXRksacPbO7qWtufsdwh07cn9ko40_A_vxhcDTUw@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/9] Remove useless on_each_cpu return value
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F03262D.8090506@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/3 Michal Nazarewicz <mina86@mina86.com>:
-> On Tue, 03 Jan 2012 15:19:04 +0100, Gilad Ben-Yossef <gilad@benyossef.com>
-> wrote:
->>
->> on_each_cpu() returns as its own return value the return value of
->> smp_call_function(). smp_call_function() in turn returns a hard
->> coded value of zero.
->>
->> Some callers to on_each_cpu() waste cycles and bloat code space
->> by checking the return value to on_each_cpu(), probably for
->> historical reasons.
->>
->> This patch set refactors callers to not test on_each_cpu()
->> (fixed) return value and then refactors on_each_cpu to
->> return void to avoid confusing future users.
->>
->> In other words, this patch aims to delete 18 source code lines
->> while not changing any functionality :-)
->>
->> I tested as best as I could the x86 changes and compiled some
->> of the others, but I don't have access to all the needed hardware
->> for testing. Reviewers and testers welcome!
->
->
-> Other then the lack of Signed-off-by in the patches, looks good to me,
+On Tue, Jan 03, 2012 at 05:00:45PM +0100, Jiri Slaby wrote:
+ > On 01/03/2012 04:37 PM, Dave Jones wrote:
+ > > Jiri,
+ > > We got this report from a user who notes a change in behaviour for
+ > > his serial hardware over the last few kernel versions.
+ > 
+ > Hi!
+ > 
+ > I'm busy right now, however just after a quick look, it may be related to:
+ > https://lkml.org/lkml/2011/12/6/573
+ > 
+ > I'll take a look later.
 
-Blimey! I'll resend with a proper Signed-off-by after more people have
-a chance to
-comment. And thanks for the review.
+thanks. I'll dig a little deeper. 
 
-> even though personally I'd choose a bottom-up approach, ie. make
-> smp_call_function() return void and from that conclude that
-> on_each_cpu() can return void.  With those patches, we have a situation,
-> where smp_call_function() has a return value which is then lost for no
-> immediately apparent reason lost in on_each_cpu().
+ > > https://bugzilla.redhat.com/show_bug.cgi?id=771010
+ > > 
+ > > This sounds like it might be related to your DTR/RTS changes back in March 2011 maybe ? 
+ > 
+ > What changes do you mean? In serial-core.c? Thaat one is not used by USB
+ > serials. Hence this wouldn't occur with FTDI.
 
-There are so many call site of smp_call_function() that do not check the
-return value right now that I think we can tolerate it for just a
-little bit longer
-until that get fixed as well... :-)
+yeah, 303a7a1199c20f7c9452f024a6e17bf348b6b398 and c7d7abff40c27f82fe78b1091ab3fad69b2546f9
+jumped out at me, as they were they only things that changed DTR/RTS handling
+(at least mentioned in changelog) in recent times.
 
-Thanks,
-Gilad
+The user mentions that it also affects 8250, though your point may mean
+that this is caused by something further up in the serial/tty code.
 
+	Dave 
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
