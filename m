@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043Ab2ACQNl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 11:13:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753418Ab2ACQNi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 11:13:38 -0500
-Date: Tue, 3 Jan 2012 11:13:10 -0500
-From: Dave Jones <davej@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: serial ports now asserting DTR and RTS during boot; breaks
- connected hardware
-Message-ID: <20120103161310.GA8727@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Jiri Slaby <jslaby@suse.cz>,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20120103153707.GA12771@redhat.com>
- <4F03262D.8090506@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F03262D.8090506@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754079Ab2ACQNs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 11:13:48 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:48214 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753418Ab2ACQNm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 11:13:42 -0500
+Message-ID: <1325607218.2320.89.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] x86: fix and improve cmpxchg_double{,_local}()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, Christoph Lameter <cl@linux.com>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        hpa@zytor.com
+Date: Tue, 03 Jan 2012 17:13:38 +0100
+In-Reply-To: <4F03361C020000780006A3A5@nat28.tlf.novell.com>
+References: <4F01F12A020000780006A19B@nat28.tlf.novell.com>
+	 <1325602830.2320.69.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1325603714.2320.73.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <1325605290.2320.76.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <4F03361C020000780006A3A5@nat28.tlf.novell.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 05:00:45PM +0100, Jiri Slaby wrote:
- > On 01/03/2012 04:37 PM, Dave Jones wrote:
- > > Jiri,
- > > We got this report from a user who notes a change in behaviour for
- > > his serial hardware over the last few kernel versions.
- > 
- > Hi!
- > 
- > I'm busy right now, however just after a quick look, it may be related to:
- > https://lkml.org/lkml/2011/12/6/573
- > 
- > I'll take a look later.
+Le mardi 03 janvier 2012 à 16:08 +0000, Jan Beulich a écrit :
 
-thanks. I'll dig a little deeper. 
+> "1" and "672" are both local labels, so both are okay. As long as there's
+> no other (colliding) use of 672 anywhere, that would seem to be the
+> preferred fix (feel free to put my ack on the patch when you formally
+> submit it).
 
- > > https://bugzilla.redhat.com/show_bug.cgi?id=771010
- > > 
- > > This sounds like it might be related to your DTR/RTS changes back in March 2011 maybe ? 
- > 
- > What changes do you mean? In serial-core.c? Thaat one is not used by USB
- > serials. Hence this wouldn't occur with FTDI.
+I was referring the use of a label local to the macro itself, with
+restricted scope.
 
-yeah, 303a7a1199c20f7c9452f024a6e17bf348b6b398 and c7d7abff40c27f82fe78b1091ab3fad69b2546f9
-jumped out at me, as they were they only things that changed DTR/RTS handling
-(at least mentioned in changelog) in recent times.
+following psudi code would trigger an asm error :
 
-The user mentions that it also affects 8250, though your point may mean
-that this is caused by something further up in the serial/tty code.
+	.macro FOO
+	.local_label 1
+1:	lock
+        .section .smp_locks,"a"
+        .balign 4
+        .long 1b - .
+        .previous
+	.endm
 
-	Dave 
+
+	FOO
+	jne 1b
+
+
 
