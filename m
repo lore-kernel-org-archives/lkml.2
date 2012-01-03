@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab2ACWpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:45:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40501 "EHLO mx2.suse.de"
+	id S932152Ab2ACWqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:46:04 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40488 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932104Ab2ACWmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:42:25 -0500
+	id S1756240Ab2ACWmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:42:18 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:27 2012
-Message-Id: <20120103223327.055129288@clark.kroah.org>
+Message-Id: <20120103223326.959500062@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:44 -0800
+Date: Tue, 03 Jan 2012 14:33:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [71/75] net: introduce DST_NOPEER dst flag
+        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
+Subject: [70/75] ipv6: Check dest prefix length on original route not copied one in rt6_alloc_cow().
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,128 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-[ Upstream commit e688a604807647c9450f9c12a7cb6d027150a895 ]
+[ Upstream commit bb3c36863e8001fc21a88bebfdead4da4c23e848 ]
 
-Chris Boot reported crashes occurring in ipv6_select_ident().
+After commit 8e2ec639173f325977818c45011ee176ef2b11f6 ("ipv6: don't
+use inetpeer to store metrics for routes.") the test in rt6_alloc_cow()
+for setting the ANYCAST flag is now wrong.
 
-[  461.457562] RIP: 0010:[<ffffffff812dde61>]  [<ffffffff812dde61>]
-ipv6_select_ident+0x31/0xa7
+'rt' will always now have a plen of 128, because it is set explicitly
+to 128 by ip6_rt_copy.
 
-[  461.578229] Call Trace:
-[  461.580742] <IRQ>
-[  461.582870]  [<ffffffff812efa7f>] ? udp6_ufo_fragment+0x124/0x1a2
-[  461.589054]  [<ffffffff812dbfe0>] ? ipv6_gso_segment+0xc0/0x155
-[  461.595140]  [<ffffffff812700c6>] ? skb_gso_segment+0x208/0x28b
-[  461.601198]  [<ffffffffa03f236b>] ? ipv6_confirm+0x146/0x15e
-[nf_conntrack_ipv6]
-[  461.608786]  [<ffffffff81291c4d>] ? nf_iterate+0x41/0x77
-[  461.614227]  [<ffffffff81271d64>] ? dev_hard_start_xmit+0x357/0x543
-[  461.620659]  [<ffffffff81291cf6>] ? nf_hook_slow+0x73/0x111
-[  461.626440]  [<ffffffffa0379745>] ? br_parse_ip_options+0x19a/0x19a
-[bridge]
-[  461.633581]  [<ffffffff812722ff>] ? dev_queue_xmit+0x3af/0x459
-[  461.639577]  [<ffffffffa03747d2>] ? br_dev_queue_push_xmit+0x72/0x76
-[bridge]
-[  461.646887]  [<ffffffffa03791e3>] ? br_nf_post_routing+0x17d/0x18f
-[bridge]
-[  461.653997]  [<ffffffff81291c4d>] ? nf_iterate+0x41/0x77
-[  461.659473]  [<ffffffffa0374760>] ? br_flood+0xfa/0xfa [bridge]
-[  461.665485]  [<ffffffff81291cf6>] ? nf_hook_slow+0x73/0x111
-[  461.671234]  [<ffffffffa0374760>] ? br_flood+0xfa/0xfa [bridge]
-[  461.677299]  [<ffffffffa0379215>] ?
-nf_bridge_update_protocol+0x20/0x20 [bridge]
-[  461.684891]  [<ffffffffa03bb0e5>] ? nf_ct_zone+0xa/0x17 [nf_conntrack]
-[  461.691520]  [<ffffffffa0374760>] ? br_flood+0xfa/0xfa [bridge]
-[  461.697572]  [<ffffffffa0374812>] ? NF_HOOK.constprop.8+0x3c/0x56
-[bridge]
-[  461.704616]  [<ffffffffa0379031>] ?
-nf_bridge_push_encap_header+0x1c/0x26 [bridge]
-[  461.712329]  [<ffffffffa037929f>] ? br_nf_forward_finish+0x8a/0x95
-[bridge]
-[  461.719490]  [<ffffffffa037900a>] ?
-nf_bridge_pull_encap_header+0x1c/0x27 [bridge]
-[  461.727223]  [<ffffffffa0379974>] ? br_nf_forward_ip+0x1c0/0x1d4 [bridge]
-[  461.734292]  [<ffffffff81291c4d>] ? nf_iterate+0x41/0x77
-[  461.739758]  [<ffffffffa03748cc>] ? __br_deliver+0xa0/0xa0 [bridge]
-[  461.746203]  [<ffffffff81291cf6>] ? nf_hook_slow+0x73/0x111
-[  461.751950]  [<ffffffffa03748cc>] ? __br_deliver+0xa0/0xa0 [bridge]
-[  461.758378]  [<ffffffffa037533a>] ? NF_HOOK.constprop.4+0x56/0x56
-[bridge]
+So to restore the semantics of the test, check the destination prefix
+length of 'ort'.
 
-This is caused by bridge netfilter special dst_entry (fake_rtable), a
-special shared entry, where attaching an inetpeer makes no sense.
-
-Problem is present since commit 87c48fa3b46 (ipv6: make fragment
-identifications less predictable)
-
-Introduce DST_NOPEER dst flag and make sure ipv6_select_ident() and
-__ip_select_ident() fallback to the 'no peer attached' handling.
-
-Reported-by: Chris Boot <bootc@bootc.net>
-Tested-by: Chris Boot <bootc@bootc.net>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/net/dst.h         |    1 +
- net/bridge/br_netfilter.c |    2 +-
- net/ipv4/route.c          |    4 ++--
- net/ipv6/ip6_output.c     |    2 +-
- 4 files changed, 5 insertions(+), 4 deletions(-)
+ net/ipv6/route.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/net/dst.h
-+++ b/include/net/dst.h
-@@ -53,6 +53,7 @@ struct dst_entry {
- #define DST_NOHASH		0x0008
- #define DST_NOCACHE		0x0010
- #define DST_NOCOUNT		0x0020
-+#define DST_NOPEER		0x0040
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -725,7 +725,7 @@ static struct rt6_info *rt6_alloc_cow(co
+ 		int attempts = !in_softirq();
  
- 	short			error;
- 	short			obsolete;
---- a/net/bridge/br_netfilter.c
-+++ b/net/bridge/br_netfilter.c
-@@ -141,7 +141,7 @@ void br_netfilter_rtable_init(struct net
- 	rt->dst.dev = br->dev;
- 	rt->dst.path = &rt->dst;
- 	dst_init_metrics(&rt->dst, br_dst_default_metrics, true);
--	rt->dst.flags	= DST_NOXFRM;
-+	rt->dst.flags	= DST_NOXFRM | DST_NOPEER;
- 	rt->dst.ops = &fake_dst_ops;
- }
- 
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -1272,7 +1272,7 @@ void __ip_select_ident(struct iphdr *iph
- {
- 	struct rtable *rt = (struct rtable *) dst;
- 
--	if (rt) {
-+	if (rt && !(rt->dst.flags & DST_NOPEER)) {
- 		if (rt->peer == NULL)
- 			rt_bind_peer(rt, rt->rt_dst, 1);
- 
-@@ -1283,7 +1283,7 @@ void __ip_select_ident(struct iphdr *iph
- 			iph->id = htons(inet_getid(rt->peer, more));
- 			return;
- 		}
--	} else
-+	} else if (!rt)
- 		printk(KERN_DEBUG "rt_bind_peer(0) @%p\n",
- 		       __builtin_return_address(0));
- 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -606,7 +606,7 @@ void ipv6_select_ident(struct frag_hdr *
- 	static atomic_t ipv6_fragmentation_id;
- 	int old, new;
- 
--	if (rt) {
-+	if (rt && !(rt->dst.flags & DST_NOPEER)) {
- 		struct inet_peer *peer;
- 
- 		if (!rt->rt6i_peer)
+ 		if (!(rt->rt6i_flags&RTF_GATEWAY)) {
+-			if (rt->rt6i_dst.plen != 128 &&
++			if (ort->rt6i_dst.plen != 128 &&
+ 			    ipv6_addr_equal(&ort->rt6i_dst.addr, daddr))
+ 				rt->rt6i_flags |= RTF_ANYCAST;
+ 			ipv6_addr_copy(&rt->rt6i_gateway, daddr);
 
 
