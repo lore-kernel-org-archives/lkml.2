@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab2ACWeq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:34:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39268 "EHLO mx2.suse.de"
+	id S1754111Ab2ACXJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:09:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39279 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753426Ab2ACWel (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:34:41 -0500
+	id S1753900Ab2ACWep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:34:45 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:31 2012
-Message-Id: <20120103223031.626189783@clark.kroah.org>
+Message-Id: <20120103223031.709855638@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:22 -0800
+Date: Tue, 03 Jan 2012 14:29:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Matt Turner <mattst88@gmail.com>,
-        Nico Macrionitis <acrux@cruxppc.org>,
-        Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
-        John Stultz <john.stultz@linaro.org>
-Subject: [04/67] rtc: m41t80: Workaround broken alarm functionality
+        alan@lxorguk.ukuu.org.uk, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Keith Packard <keithp@keithp.com>,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>
+Subject: [05/67] drm/i915: prevent division by zero when asking for chipset power
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,54 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John Stultz <john.stultz@linaro.org>
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-commit c3b79770e51ab1fd4201f3b54edf30113b9ce74f upstream.
+commit 4ed0b577457eb6aeb7cdc7e7316576e63d15abb2 upstream.
 
-The m41t80 driver can read and set the alarm, but it doesn't
-seem to have a functional alarm irq.
+This prevents an in-kernel division by zero which happens when we are
+asking for i915_chipset_val too quickly, or within a race condition
+between the power monitoring thread and userspace accesses via debugfs.
 
-This causes failures when the generic core sees alarm functions,
-but then cannot use them properly for things like UIE mode.
+The issue can be reproduced easily via the following command:
+while ``; do cat /sys/kernel/debug/dri/0/i915_emon_status; done
 
-Disabling the alarm functions allows proper error reporting,
-and possible fallback to emulated modes. Once someone fixes
-the alarm irq functionality, this can be restored.
+This is particularly dangerous because it can be triggered by
+a non-privileged user by just reading the debugfs entry.
 
-CC: Matt Turner <mattst88@gmail.com>
-CC: Nico Macrionitis <acrux@cruxppc.org>
-CC: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Reported-by: Matt Turner <mattst88@gmail.com>
-Reported-by: Nico Macrionitis <acrux@cruxppc.org>
-Tested-by: Nico Macrionitis <acrux@cruxppc.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+This issue was also found independently by Konstantin Belousov
+<kostikbel@gmail.com>, who proposed a similar patch.
+
+Reported-by: Konstantin Belousov <kostikbel@gmail.com>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Acked-by: Keith Packard <keithp@keithp.com>
+Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/rtc/rtc-m41t80.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ drivers/gpu/drm/i915/i915_dma.c |   10 ++++++++++
+ drivers/gpu/drm/i915/i915_drv.h |    1 +
+ 2 files changed, 11 insertions(+)
 
---- a/drivers/rtc/rtc-m41t80.c
-+++ b/drivers/rtc/rtc-m41t80.c
-@@ -357,10 +357,19 @@ static int m41t80_rtc_read_alarm(struct
- static struct rtc_class_ops m41t80_rtc_ops = {
- 	.read_time = m41t80_rtc_read_time,
- 	.set_time = m41t80_rtc_set_time,
-+	/*
-+	 * XXX - m41t80 alarm functionality is reported broken.
-+	 * until it is fixed, don't register alarm functions.
-+	 *
- 	.read_alarm = m41t80_rtc_read_alarm,
- 	.set_alarm = m41t80_rtc_set_alarm,
-+	*/
- 	.proc = m41t80_rtc_proc,
-+	/*
-+	 * See above comment on broken alarm
-+	 *
- 	.alarm_irq_enable = m41t80_rtc_alarm_irq_enable,
-+	*/
- };
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1451,6 +1451,14 @@ unsigned long i915_chipset_val(struct dr
  
- #if defined(CONFIG_RTC_INTF_SYSFS) || defined(CONFIG_RTC_INTF_SYSFS_MODULE)
+ 	diff1 = now - dev_priv->last_time1;
+ 
++	/* Prevent division-by-zero if we are asking too fast.
++	 * Also, we don't get interesting results if we are polling
++	 * faster than once in 10ms, so just return the saved value
++	 * in such cases.
++	 */
++	if (diff1 <= 10)
++		return dev_priv->chipset_power;
++
+ 	count1 = I915_READ(DMIEC);
+ 	count2 = I915_READ(DDREC);
+ 	count3 = I915_READ(CSIEC);
+@@ -1481,6 +1489,8 @@ unsigned long i915_chipset_val(struct dr
+ 	dev_priv->last_count1 = total_count;
+ 	dev_priv->last_time1 = now;
+ 
++	dev_priv->chipset_power = ret;
++
+ 	return ret;
+ }
+ 
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -702,6 +702,7 @@ typedef struct drm_i915_private {
+ 
+ 	u64 last_count1;
+ 	unsigned long last_time1;
++	unsigned long chipset_power;
+ 	u64 last_count2;
+ 	struct timespec last_time2;
+ 	unsigned long gfx_power;
 
 
