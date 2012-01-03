@@ -1,63 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab2ACMYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 07:24:40 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:39782 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2ACMYi (ORCPT
+	id S1753052Ab2ACMZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 07:25:58 -0500
+Received: from smtp-out-229.synserver.de ([212.40.185.229]:1050 "EHLO
+	smtp-out-228.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752668Ab2ACMZ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 07:24:38 -0500
-Date: Tue, 3 Jan 2012 12:24:24 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Jack Stone <jwjstone@fastmail.fm>,
-        Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Message-ID: <20120103122424.GA24367@srcf.ucam.org>
-References: <20120102215028.GA15701@srcf.ucam.org>
- <Pine.LNX.4.44L0.1201022136190.20386-100000@netrider.rowland.org>
- <20120103032505.GA19702@srcf.ucam.org>
- <CA+55aFxnOBJZBb5KC7HC3z9Whk585SaHeCx9zyie3MMsfsvExw@mail.gmail.com>
+	Tue, 3 Jan 2012 07:25:56 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 32502
+Message-ID: <4F02F3FD.4010306@metafoo.de>
+Date: Tue, 03 Jan 2012 13:26:37 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFxnOBJZBb5KC7HC3z9Whk585SaHeCx9zyie3MMsfsvExw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Thomas Abraham <thomas.abraham@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, jg1.han@samsung.com,
+        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
+        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
+        ben-linux@fluff.org, patches@linaro.org
+Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device
+ tree support
+References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>	<4F02C50E.9030904@metafoo.de> <CAJuYYwR8hnxJSfaXo4=RWCZ1HQZ1PHci+jY3K5b9ktWXryN0vA@mail.gmail.com>
+In-Reply-To: <CAJuYYwR8hnxJSfaXo4=RWCZ1HQZ1PHci+jY3K5b9ktWXryN0vA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 09:53:46PM -0800, Linus Torvalds wrote:
-> On Mon, Jan 2, 2012 at 7:25 PM, Matthew Garrett <mjg@redhat.com> wrote:
-> > On Mon, Jan 02, 2012 at 09:45:58PM -0500, Alan Stern wrote:
-> >
-> >> Wait a second.  Why does isight_firmware bind at this time?  Binding to
-> >> new devices is handled by khubd, which doesn't start running again
-> >> until after the resume is finished (the device appears to be new
-> >> because its descriptors have changed).  At that point there should be
-> >> no trouble reloading the firmware.
-> >
-> > Then why are we getting this warning? The firmware is only loaded in the
-> > probe function.
+On 01/03/2012 12:54 PM, Thomas Abraham wrote:
+> Hi Lars,
 > 
-> The USB suspend/resume function does that "unbind/rebind" dance, and
-> that causes a "device_attach()". Which causes a probe() to be called.
+> On 3 January 2012 14:36, Lars-Peter Clausen <lars@metafoo.de> wrote:
+>> On 01/02/2012 06:54 AM, Thomas Abraham wrote:
+>>> The platform-lcd driver depends on platform-specific callbacks to setup the
+>>> lcd panel. These callbacks are supplied using driver's platform data. But
+>>> for adding device tree support for platform-lcd driver, providing such
+>>> callbacks is not possible (without using auxdata).
+>>>
+>>> Since the callbacks are usually lcd panel specific, it is possible to include
+>>> the lcd panel specific setup and control functionality in the platform-lcd
+>>> driver itself, thereby eliminating the need for supplying platform specific
+>>> callbacks to the driver. The platform-lcd driver can include support for
+>>> multiple lcd panels.
+>>>
+>>> This patchset removes the need for platform data for platform-lcd driver and
+>>> adds support which can be used to implement lcd panel specific functionality
+>>> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
+>>> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
+>>> This currently breaks build for other users of platform-lcd driver. Those can be
+>>> fixed if this approach is acceptable.
+>>
+>> The whole approach looks rather backwards to me. The exact purpose of the
+>> platform_lcd driver is to redirect the lcd driver callbacks to board code.
+>> So by removing this support you not only break all the existing driver but
+>> also create a driver which does nothing. Then you add another layer of
+>> abstraction to implement custom drivers in this driver. A better approach in
+>> my opinion is to simply implement these drivers as first level LCD drivers.
+>> So leave the platform-lcd driver as it is and just add a gpio (or maybe
+>> regulator) lcd driver instead.
 > 
-> Should it do that? I think not, not if the ID's haven't changed. But I
-> don't know the USB layer all that well.
+> The existing platform-lcd driver mostly depends on the platform
+> callbacks for lcd panel power controls. Looking at the current users
+> of platform-lcd driver, a majority of the users of platform-lcd driver
+> use a gpio to enable/disable the display/power. The gpio is controlled
+> by the platform callbacks which the platform-lcd driver calls.
+> 
+> Hence, it is possible to extend the platform-lcd driver to include the
+> functionality of managing the gpio for lcd control. The platform code
+> is only expected to provide a gpio number to the platform-lcd driver.
+> This allows consolidation of the all the different platform callbacks
+> that use a gpio for simple enable/disable of the lcd display.
+> 
+> But there are other users of platform-lcd that do lot more than just
+> control a single gpio. For such cases, it is possible to reuse the
+> existing infrastructure of platform-lcd driver and extend it to handle
+> such lcd panel specific functionality.
+> 
+> The main advantages that I see here is the consolidation of platform
+> specific callbacks into the driver which inturn allows adding device
+> tree support without depending on platform data which have pointers to
+> platform specific functions. In the next version of this patchset, it
+> will be ensured that no platform breaks due to this change.
 
-The IDs will have changed due to the firmware falling out.
+Consolidation of the different implementations which use a GPIO to control
+the LCD state is a good idea. But as I wrote above in this series you added
+more or less another layer of abstraction. Namely introducing the
+platform-lcd driver as a intermediate layer between the actual driver and
+the LCD framework. But the layer is so thin that all it does is to call the
+plat_lcd_driver_data callback from the lcd_ops callback. There is really no
+point in doing this since you can setup the lcd_ops callbacks directly. Also
+following your approach we would end up with a bunch of unrelated LCD
+drivers in the platform-lcd driver module. The platform-lcd driver is so
+generic that basically any LCD driver could be implemented on-top of it, but
+this does not mean it has to.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+As said before, writing a plain LCD driver which implements the GPIO
+handling and leaving the platform-lcd driver as it is, is in my opinion a
+better approach.
+
+
+
