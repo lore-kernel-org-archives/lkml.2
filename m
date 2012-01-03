@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab2ACAXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 19:23:17 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:55716 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753477Ab2ACAXO (ORCPT
+	id S1753558Ab2ACAZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 19:25:09 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:44159 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab2ACAZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 19:23:14 -0500
-X-Sasl-enc: +XnnFSe5DZZJCaUCG+urZgkJMcRHjKeAYskoiY1kdhQH 1325550193
-References: <20120102211904.GA15316@srcf.ucam.org> <CA+55aFwJuuvqcsgHnZ4-VhUhbVvL6beKogo1adgYyZt_ZM=H7A@mail.gmail.com> <20120102215028.GA15701@srcf.ucam.org> <CA+55aFz73GuHiOW1NoAuJLea_GKLepiZjrnrgpOKdQizPgnhoA@mail.gmail.com> <20120102221235.GA16012@srcf.ucam.org> <CA+55aFyHvmvast_kuNddU3iotReR1mOpKM4HGAw80ma8kn+2-g@mail.gmail.com> <20120102222920.GA16160@srcf.ucam.org> <CA+55aFyUK6X7ip2UXV9iT07=qezXfbw82wn6UKAN8JFQtYNs5Q@mail.gmail.com> <20120102230037.GA16458@srcf.ucam.org> <4F023E6B.2020307@fastmail.fm> <20120103001356.GA17183@srcf.ucam.org>
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20120103001356.GA17183@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: loading firmware while usermodehelper disabled.
-From: Jack Stone <jwjstone@fastmail.fm>
-Date: Tue, 03 Jan 2012 00:22:58 +0000
-To: Matthew Garrett <mjg@redhat.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Oliver Neukum <oliver@neukum.org>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Message-ID: <8e95c7e3-e9d5-43c4-8e6a-b8d40584cbd6@email.android.com>
+	Mon, 2 Jan 2012 19:25:08 -0500
+From: Paulo Alcantara <pcacjr@gmail.com>
+To: hpa@zytor.com
+Cc: linux-kernel@vger.kernel.org, Paulo Alcantara <pcacjr@gmail.com>
+Subject: [PATCH] x86: edd: fix wrong return type for read_mbr_sig() function
+Date: Mon,  2 Jan 2012 21:23:26 -0300
+Message-Id: <1325550206-29606-1-git-send-email-pcacjr@gmail.com>
+X-Mailer: git-send-email 1.7.7.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Paulo Alcantara <pcacjr@gmail.com>
+---
+ arch/x86/boot/edd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-
-Matthew Garrett <mjg@redhat.com> wrote:
-
->On Mon, Jan 02, 2012 at 11:31:55PM +0000, Jack Stone wrote:
->
->> Rather than merging the drivers we could make the uvcvideo (or any
->other
->> generic driver) driver expose a "subdriver" interface that allows
->> another module to bind to the specific ID and add extra handling to
->> certain events. We could then use that interface to provide a
->firmware
->> driver for each device that needs it. The firmware driver could bind
->to
->> the bootstrap device and to the uvcvideo subdriver interface and it
->> would then have all the lifetime info we need. [Credit to Linus for
->> suggesting this idea]
->
->No, the uvcvideo driver would need to call out to load the firmware 
->loader driver, otherwise you'll never know to load the firmware loader 
->driver.
-
-So we have a table of USB ids that list the devices that need firmware drivers. When the uvcvideo driver registers the firmware interface with a USB id that matches the list we load the firmware driver and pass it a "warm start" event so it can cache the firmware.
-
-As long as we can identify the devices that *might* need firmware then we are ok.
-
-Thanks,
-
-Jack
-
+diff --git a/arch/x86/boot/edd.c b/arch/x86/boot/edd.c
+index c501a5b..7209b2d 100644
+--- a/arch/x86/boot/edd.c
++++ b/arch/x86/boot/edd.c
+@@ -36,7 +36,7 @@ static int read_mbr(u8 devno, void *buf)
+ 	return -(oreg.eflags & X86_EFLAGS_CF); /* 0 or -1 */
+ }
+ 
+-static u32 read_mbr_sig(u8 devno, struct edd_info *ei, u32 *mbrsig)
++static int read_mbr_sig(u8 devno, struct edd_info *ei, u32 *mbrsig)
+ {
+ 	int sector_size;
+ 	char *mbrbuf_ptr, *mbrbuf_end;
 -- 
-Sent from my Android phone with K-9 Mail. Please excuse my brevity.
+1.7.7.4
+
