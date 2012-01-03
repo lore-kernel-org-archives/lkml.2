@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755784Ab2ACXCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:02:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39652 "EHLO mx2.suse.de"
+	id S1755594Ab2ACXCi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:02:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39645 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755574Ab2ACWhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:37:08 -0500
+	id S1755557Ab2ACWhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:37:04 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:35 2012
-Message-Id: <20120103223035.796372807@clark.kroah.org>
+Message-Id: <20120103223035.709270479@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:11 -0800
+Date: Tue, 03 Jan 2012 14:30:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alexandru Juncu <ajuncu@ixiacom.com>,
-        Kunjan Naik <knaik@ixiacom.com>,
+        alan@lxorguk.ukuu.org.uk, Djalal Harouni <tixxdz@opendz.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [53/67] llc: llc_cmsg_rcv was getting called after sk_eat_skb.
+Subject: [52/67] ppp: fix pptp double release_sock in pptp_bind()
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,56 +27,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alex Juncu <ajuncu@ixiacom.com>
+From: Djalal Harouni <tixxdz@opendz.org>
 
-[ Upstream commit 9cef310fcdee12b49b8b4c96fd8f611c8873d284 ]
+[ Upstream commit a454daceb78844a09c08b6e2d8badcb76a5d73b9 ]
 
-Received non stream protocol packets were calling llc_cmsg_rcv that used a
-skb after that skb was released by sk_eat_skb. This caused received STP
-packets to generate kernel panics.
-
-Signed-off-by: Alexandru Juncu <ajuncu@ixiacom.com>
-Signed-off-by: Kunjan Naik <knaik@ixiacom.com>
+Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/llc/af_llc.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/net/pptp.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -833,15 +833,15 @@ static int llc_ui_recvmsg(struct kiocb *
- 		copied += used;
- 		len -= used;
+--- a/drivers/net/pptp.c
++++ b/drivers/net/pptp.c
+@@ -418,10 +418,8 @@ static int pptp_bind(struct socket *sock
+ 	lock_sock(sk);
  
-+		/* For non stream protcols we get one packet per recvmsg call */
-+		if (sk->sk_type != SOCK_STREAM)
-+			goto copy_uaddr;
-+
- 		if (!(flags & MSG_PEEK)) {
- 			sk_eat_skb(sk, skb, 0);
- 			*seq = 0;
- 		}
+ 	opt->src_addr = sp->sa_addr.pptp;
+-	if (add_chan(po)) {
+-		release_sock(sk);
++	if (add_chan(po))
+ 		error = -EBUSY;
+-	}
  
--		/* For non stream protcols we get one packet per recvmsg call */
--		if (sk->sk_type != SOCK_STREAM)
--			goto copy_uaddr;
--
- 		/* Partial read */
- 		if (used + offset < skb->len)
- 			continue;
-@@ -857,6 +857,12 @@ copy_uaddr:
- 	}
- 	if (llc_sk(sk)->cmsg_flags)
- 		llc_cmsg_rcv(msg, skb);
-+
-+	if (!(flags & MSG_PEEK)) {
-+			sk_eat_skb(sk, skb, 0);
-+			*seq = 0;
-+	}
-+
- 	goto out;
- }
- 
+ 	release_sock(sk);
+ 	return error;
 
 
