@@ -1,121 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394Ab2ACW0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:26:22 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:43687 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751618Ab2ACW0U (ORCPT
+	id S1752816Ab2ACW0d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:26:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46057 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752496Ab2ACW00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:26:20 -0500
-Date: Tue, 3 Jan 2012 14:26:05 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
-Message-ID: <20120103222605.GH2376@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <1324977203.28904.1.camel@lappy>
- <20111228042959.GA2477@linux.vnet.ibm.com>
- <20120103202716.GA8384@linux.vnet.ibm.com>
- <20120103203717.GA6701@suse.de>
- <20120103213830.GG2376@linux.vnet.ibm.com>
- <20120103215036.GA1347@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103215036.GA1347@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010322-3352-0000-0000-000001B3EE9F
+	Tue, 3 Jan 2012 17:26:26 -0500
+Date: Tue, 3 Jan 2012 14:26:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 1/8] smp: Introduce a generic on_each_cpu_mask
+ function
+Message-Id: <20120103142624.faf46d77.akpm@linux-foundation.org>
+In-Reply-To: <1325499859-2262-2-git-send-email-gilad@benyossef.com>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+	<1325499859-2262-2-git-send-email-gilad@benyossef.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 01:50:36PM -0800, Greg KH wrote:
-> On Tue, Jan 03, 2012 at 01:38:30PM -0800, Paul E. McKenney wrote:
+On Mon,  2 Jan 2012 12:24:12 +0200
+Gilad Ben-Yossef <gilad@benyossef.com> wrote:
 
-[ . . . ]
-
-> > > > Greg, would it be possible to pull in the current Android code?  There
-> > > > have been a few fixes.  ;-)
-> > > 
-> > > I did base the stuff in staging on the common.git tree, but for some
-> > > reason this patch wasn't applied, odd, I'll go apply it now...
-> > > 
-> > > Ah, I see, it didn't apply for various reasons:
-> > > 
-> > > patching file drivers/staging/android/lowmemorykiller.c
-> > > Hunk #1 FAILED at 71.
-> > > Hunk #2 FAILED at 168.
-> > > Hunk #3 succeeded at 196 (offset 11 lines).
-> > > Hunk #4 succeeded at 204 (offset 11 lines).
-> > > 
-> > > Care to rebase this patch and send it to me so that I can apply it?  I
-> > > don't have the time to do it myself at the moment, sorry, lots of higher
-> > > priority items to get done this week, sorry.
-> > 
-> > I will give it a shot.  Working with linux-next -- if some other tree
-> > would be better for you, please let me know.
+> on_each_cpu_mask calls a function on processors specified my cpumask,
+> which may include the local processor.
 > 
-> linux-next is great, thanks.
+> All the limitation specified in smp_call_function_many apply.
+> 
+> ...
+>
+> --- a/include/linux/smp.h
+> +++ b/include/linux/smp.h
+> @@ -102,6 +102,13 @@ static inline void call_function_init(void) { }
+>  int on_each_cpu(smp_call_func_t func, void *info, int wait);
+>  
+>  /*
+> + * Call a function on processors specified by mask, which might include
+> + * the local one.
+> + */
+> +void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
+> +		void *info, bool wait);
+> +
+> +/*
+>   * Mark the boot cpu "online" so that it can call console drivers in
+>   * printk() and can access its per-cpu storage.
+>   */
+> @@ -132,6 +139,15 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+>  		local_irq_enable();		\
+>  		0;				\
+>  	})
+> +#define on_each_cpu_mask(mask, func, info, wait) \
+> +	do {						\
+> +		if (cpumask_test_cpu(0, (mask))) {	\
+> +			local_irq_disable();		\
+> +			(func)(info);			\
+> +			local_irq_enable();		\
+> +		}					\
+> +	} while (0)
 
-Sasha, does the following patch against -next fix this problem for you?
+Why is the cpumask_test_cpu() call there?  It's hard to think of a
+reason why "mask" would specify any CPU other than "0" in a
+uniprocessor kernel.
 
-							Thanx, Paul
+If this code remains as-is, please add a comment here explaining this,
+so others don't wonder the same thing.
 
-------------------------------------------------------------------------
-
-lowmemorykiller: don't unregister notifier from atomic context
-
-The lowmemorykiller registers an atomic notifier for notfication of when
-the task is freed.  From this atomic notifier callback, it removes the
-atomic notifier via task_free_unregister().  This is incorrect because
-atomic_notifier_chain_unregister() calls syncronize_rcu(), which can
-sleep, which shouldn't be done from an atomic notifier.
-
-Fix this by registering the notifier during init, and only unregister it
-if the lowmemorykiller is unloaded.
-
-Rebased to -next by Paul E. McKenney.
-
-Change-Id: I1577b04e617bc2b2e39dcb490fcfc9ce660eb7ec
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Christian Bejram <christian.bejram@stericsson.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index 2d8d2b7..30076f7 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -72,10 +72,9 @@ static int
- task_notify_func(struct notifier_block *self, unsigned long val, void *data)
- {
- 	struct task_struct *task = data;
--	if (task == lowmem_deathpending) {
-+	if (task == lowmem_deathpending)
- 		lowmem_deathpending = NULL;
--		task_handoff_unregister(&task_nb);
--	}
-+
- 	return NOTIFY_OK;
- }
- 
-@@ -172,13 +171,11 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 			     selected->pid, selected->comm,
- 			     selected_oom_adj, selected_tasksize);
- 		/*
--		 * If CONFIG_PROFILING is off, then task_handoff_register()
--		 * is a nop. In that case we don't want to stall the killer
--		 * by setting lowmem_deathpending.
-+		 * If CONFIG_PROFILING is off, then we don't want to stall
-+		 * the killer by setting lowmem_deathpending.
- 		 */
- #ifdef CONFIG_PROFILING
- 		lowmem_deathpending = selected;
--		task_handoff_register(&task_nb);
- #endif
- 		force_sig(SIGKILL, selected);
- 		rem -= selected_tasksize;
 
