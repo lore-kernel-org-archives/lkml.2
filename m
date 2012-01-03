@@ -1,92 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab2ACVvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 16:51:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34942 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754125Ab2ACVva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 16:51:30 -0500
-Date: Tue, 3 Jan 2012 13:50:36 -0800
-From: Greg KH <gregkh@suse.de>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
-Message-ID: <20120103215036.GA1347@suse.de>
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <1324977203.28904.1.camel@lappy>
- <20111228042959.GA2477@linux.vnet.ibm.com>
- <20120103202716.GA8384@linux.vnet.ibm.com>
- <20120103203717.GA6701@suse.de>
- <20120103213830.GG2376@linux.vnet.ibm.com>
+	id S1754977Ab2ACWCk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:02:40 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56955 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab2ACWCh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:02:37 -0500
+Message-ID: <4F037AFC.8030604@gmail.com>
+Date: Tue, 03 Jan 2012 17:02:36 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103213830.GG2376@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
+ exist
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com> <1325499859-2262-8-git-send-email-gilad@benyossef.com> <4F033EC9.4050909@gmail.com> <CAOtvUMfPFadHJx3SZ23ZAEFMeu8YET3PijXi8fUWra=psS-MRA@mail.gmail.com>
+In-Reply-To: <CAOtvUMfPFadHJx3SZ23ZAEFMeu8YET3PijXi8fUWra=psS-MRA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 01:38:30PM -0800, Paul E. McKenney wrote:
-> On Tue, Jan 03, 2012 at 12:37:17PM -0800, Greg KH wrote:
-> > On Tue, Jan 03, 2012 at 12:27:16PM -0800, Paul E. McKenney wrote:
-> > > On Tue, Dec 27, 2011 at 08:29:59PM -0800, Paul E. McKenney wrote:
-> > > > On Tue, Dec 27, 2011 at 11:13:23AM +0200, Sasha Levin wrote:
-> > > > > On Mon, 2011-12-26 at 08:31 -0800, Paul E. McKenney wrote:
-> > > > > > Except that when I try looking for task_notify_func() in current mainline,
-> > > > > > I get nothing.
-> > > > > > 
-> > > > > > Where is task_notify_func() coming from? 
-> > > > > 
-> > > > > I was testing linux-next, it actually comes from the android tree:
-> > > > > drivers/staging/android/lowmemorykiller.c
-> > > > 
-> > > > That does sound familiar...  I wonder if the stuff in staging is current
-> > > > Android or historical stuff.
-> > > 
-> > > And memory did serve for once.  ;-)
-> > > 
-> > > Current Android has the following for task_notify_func():
-> > > 
-> > > static int
-> > > task_notify_func(struct notifier_block *self, unsigned long val, void *data)
-> > > {
-> > > 	struct task_struct *task = data;
-> > > 
-> > > 	if (task == lowmem_deathpending)
-> > > 		lowmem_deathpending = NULL;
-> > > 
-> > > 	return NOTIFY_OK;
-> > > }
-> > > 
-> > > This is from https://android.googlesource.com/kernel/common.git.
-> > > 
-> > > Commit 5545554aac04918ece318270d63cbfcb015577a9 fixed this problem.
-> > > The commit is shown below, FYI.
-> > > 
-> > > Greg, would it be possible to pull in the current Android code?  There
-> > > have been a few fixes.  ;-)
-> > 
-> > I did base the stuff in staging on the common.git tree, but for some
-> > reason this patch wasn't applied, odd, I'll go apply it now...
-> > 
-> > Ah, I see, it didn't apply for various reasons:
-> > 
-> > patching file drivers/staging/android/lowmemorykiller.c
-> > Hunk #1 FAILED at 71.
-> > Hunk #2 FAILED at 168.
-> > Hunk #3 succeeded at 196 (offset 11 lines).
-> > Hunk #4 succeeded at 204 (offset 11 lines).
-> > 
-> > Care to rebase this patch and send it to me so that I can apply it?  I
-> > don't have the time to do it myself at the moment, sorry, lots of higher
-> > priority items to get done this week, sorry.
-> 
-> I will give it a shot.  Working with linux-next -- if some other tree
-> would be better for you, please let me know.
+(1/3/12 1:58 PM), Gilad Ben-Yossef wrote:
+> 2012/1/3 KOSAKI Motohiro<kosaki.motohiro@gmail.com>:
+>> (1/2/12 5:24 AM), Gilad Ben-Yossef wrote:
+>>> Calculate a cpumask of CPUs with per-cpu pages in any zone
+>>> and only send an IPI requesting CPUs to drain these pages
+>>> to the buddy allocator if they actually have pages when
+>>> asked to flush.
+>>>
+>>> This patch saves 99% of IPIs asking to drain per-cpu
+>>> pages in case of severe memory preassure that leads
+>>> to OOM since in these cases multiple, possibly concurrent,
+>>> allocation requests end up in the direct reclaim code
+>>> path so when the per-cpu pages end up reclaimed on first
+>>> allocation failure for most of the proceeding allocation
+>>> attempts until the memory pressure is off (possibly via
+>>> the OOM killer) there are no per-cpu pages on most CPUs
+>>> (and there can easily be hundreds of them).
+>>>
+>>> This also has the side effect of shortening the average
+>>> latency of direct reclaim by 1 or more order of magnitude
+>>> since waiting for all the CPUs to ACK the IPI takes a
+>>> long time.
+>>>
+>>> Tested by running "hackbench 400" on a 4 CPU x86 otherwise
+>>> idle VM and observing the difference between the number
+>>> of direct reclaim attempts that end up in drain_all_pages()
+>>> and those were more then 1/2 of the online CPU had any
+>>> per-cpu page in them, using the vmstat counters introduced
+>>> in the next patch in the series and using proc/interrupts.
+>>>
+>>> In the test sceanrio, this saved around 500 global IPIs.
+>>> After trigerring an OOM:
+>>>
+>>> $ cat /proc/vmstat
+>>> ...
+>>> pcp_global_drain 627
+>>> pcp_global_ipi_saved 578
+>>>
+>>> I've also seen the number of drains reach 15k calls
+>>> with the saved percentage reaching 99% when there
+>>> are more tasks running during an OOM kill.
+>>>
+>>> Signed-off-by: Gilad Ben-Yossef<gilad@benyossef.com>
+>>> Acked-by: Christoph Lameter<cl@linux.com>
+>>> CC: Chris Metcalf<cmetcalf@tilera.com>
+>>> CC: Peter Zijlstra<a.p.zijlstra@chello.nl>
+>>> CC: Frederic Weisbecker<fweisbec@gmail.com>
+>>> CC: Russell King<linux@arm.linux.org.uk>
+>>> CC: linux-mm@kvack.org
+>>> CC: Pekka Enberg<penberg@kernel.org>
+>>> CC: Matt Mackall<mpm@selenic.com>
+>>> CC: Sasha Levin<levinsasha928@gmail.com>
+>>> CC: Rik van Riel<riel@redhat.com>
+>>> CC: Andi Kleen<andi@firstfloor.org>
+>>> CC: Mel Gorman<mel@csn.ul.ie>
+>>> CC: Andrew Morton<akpm@linux-foundation.org>
+>>> CC: Alexander Viro<viro@zeniv.linux.org.uk>
+>>> CC: linux-fsdevel@vger.kernel.org
+>>> CC: Avi Kivity<avi@redhat.com>
+>>> ---
+>>>    Christopth Ack was for a previous version that allocated
+>>>    the cpumask in drain_all_pages().
+>>
+>> When you changed a patch design and implementation, ACKs are
+>> should be dropped. otherwise you miss to chance to get a good
+>> review.
+>>
+>
+> Got you. Thanks for the review :-)
+>>
+>>
+>>>    mm/page_alloc.c |   26 +++++++++++++++++++++++++-
+>>>    1 files changed, 25 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>>> index 2b8ba3a..092c331 100644
+>>> --- a/mm/page_alloc.c
+>>> +++ b/mm/page_alloc.c
+>>> @@ -67,6 +67,14 @@ DEFINE_PER_CPU(int, numa_node);
+>>>    EXPORT_PER_CPU_SYMBOL(numa_node);
+>>>    #endif
+>>>
+>>> +/*
+>>> + * A global cpumask of CPUs with per-cpu pages that gets
+>>> + * recomputed on each drain. We use a global cpumask
+>>> + * for to avoid allocation on direct reclaim code path
+>>> + * for CONFIG_CPUMASK_OFFSTACK=y
+>>> + */
+>>> +static cpumask_var_t cpus_with_pcps;
+>>> +
+>>>    #ifdef CONFIG_HAVE_MEMORYLESS_NODES
+>>>    /*
+>>>     * N.B., Do NOT reference the '_numa_mem_' per cpu variable directly.
+>>> @@ -1119,7 +1127,19 @@ void drain_local_pages(void *arg)
+>>>     */
+>>>    void drain_all_pages(void)
+>>>    {
+>>> -     on_each_cpu(drain_local_pages, NULL, 1);
+>>> +     int cpu;
+>>> +     struct per_cpu_pageset *pcp;
+>>> +     struct zone *zone;
+>>> +
+>>
+>> get_online_cpu() ?
+>
+> I believe this is not needed here as on_each_cpu_mask() (smp_call_function_many
+> really) later masks the cpumask with the online cpus, so at worst we
+> are turning on or off
+> a meaningless bit.
 
-linux-next is great, thanks.
+You are right. this function can't call get_online_cpus() and cpu unplug 
+event automatically drop pcps. so, no worry.
 
-greg k-h
+
+>
+> Anyway, If I'm wrong someone should fix show_free_areas() as well :-)
+ >
+>>> +     for_each_online_cpu(cpu)
+>>> +             for_each_populated_zone(zone) {
+>>> +                     pcp = per_cpu_ptr(zone->pageset, cpu);
+>>> +                     if (pcp->pcp.count)
+>>> +                             cpumask_set_cpu(cpu, cpus_with_pcps);
+>>> +                     else
+>>> +                             cpumask_clear_cpu(cpu, cpus_with_pcps);
+>>
+>> cpumask* functions can't be used locklessly?
+>
+> I'm not sure I understand your question ocrrectly. As far as I
+> understand cpumask_set_cpu and cpumask_set_cpu
+> are atomic operations that do not require a lock (they might be
+> implemented using one though).
+
+Ahh, yup. right you are.
+
+
+Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+
