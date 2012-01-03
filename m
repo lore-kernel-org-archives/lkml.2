@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab2ACWnB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:43:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40568 "EHLO mx2.suse.de"
+	id S932237Ab2ACWnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:43:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40586 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756471Ab2ACWm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:42:57 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:25 2012
-Message-Id: <20120103223325.816384078@clark.kroah.org>
+	id S1756175Ab2ACWnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:43:10 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:26 2012
+Message-Id: <20120103223326.081678950@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:30 -0800
+Date: Tue, 03 Jan 2012 14:33:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "David S. Miller" <davem@davemloft.net>
-Subject: [57/75] sparc32: Correct the return value of memcpy.
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Markus=20K=F6tter?= <nepenthesdev@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [60/75] net: bpf_jit: fix an off-one bug in x86_64 cond jump target
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,98 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Markus Kötter <nepenthesdev@gmail.com>
 
-[ Upstream commit a52312b88c8103e965979a79a07f6b34af82ca4b ]
+[ Upstream commit a03ffcf873fe0f2565386ca8ef832144c42e67fa ]
 
-Properly return the original destination buffer pointer.
+x86 jump instruction size is 2 or 5 bytes (near/long jump), not 2 or 6
+bytes.
 
+In case a conditional jump is followed by a long jump, conditional jump
+target is one byte past the start of target instruction.
+
+Signed-off-by: Markus Kötter <nepenthesdev@gmail.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-Tested-by: Kjetil Oftedal <oftedal@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/sparc/lib/memcpy.S |   22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+ arch/x86/net/bpf_jit_comp.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/lib/memcpy.S
-+++ b/arch/sparc/lib/memcpy.S
-@@ -13,14 +13,6 @@
- 	.align	4;		\
- x:
- 
--
--/* In kernel these functions don't return a value.
-- * One should use macros in asm/string.h for that purpose.
-- * We return 0, so that bugs are more apparent.
-- */
--#define SETUP_RETL
--#define RETL_INSN	clr	%o0
--
- /* Both these macros have to start with exactly the same insn */
- #define MOVE_BIGCHUNK(src, dst, offset, t0, t1, t2, t3, t4, t5, t6, t7) \
- 	ldd	[%src + (offset) + 0x00], %t0; \
-@@ -154,7 +146,7 @@ FUNC(__memmove)
- #endif
- FUNC(memmove)
- 	cmp		%o0, %o1
--	SETUP_RETL
-+	mov		%o0, %g7
- 	bleu		9f
- 	 sub		%o0, %o1, %o4
- 
-@@ -178,7 +170,7 @@ FUNC(memmove)
- 	 sub		%o0, 1, %o0
- 
- 	retl
--	 RETL_INSN
-+	 mov		%g7, %o0
- 
- /* NOTE: This code is executed just for the cases,
-          where %src (=%o1) & 3 is != 0.
-@@ -212,7 +204,7 @@ FUNC(memmove)
- FUNC(memcpy)	/* %o0=dst %o1=src %o2=len */
- 
- 	sub		%o0, %o1, %o4
--	SETUP_RETL
-+	mov		%o0, %g7
- 9:
- 	andcc		%o4, 3, %o5
- 0:
-@@ -308,7 +300,7 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	stb		%g2, [%o0]
- 1:
- 	retl
-- 	 RETL_INSN
-+	 mov		%g7, %o0
- 
- 82:	/* ldd_std */
- 	MOVE_BIGALIGNCHUNK(o1, o0, 0x00, o2, o3, o4, o5, g2, g3, g4, g5)
-@@ -373,7 +365,7 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	stb		%g2, [%o0]
- 1:
- 	retl
-- 	 RETL_INSN
-+	 mov		%g7, %o0
- 
- 86:	/* non_aligned */
- 	cmp		%o2, 6
-@@ -498,7 +490,7 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	stb		%g2, [%i0 + 4]
- 1:
- 	ret
--	 restore	%g0, %g0, %o0
-+	 restore	%g7, %g0, %o0
- 
- 88:	/* short_end */
- 
-@@ -529,7 +521,7 @@ FUNC(memcpy)	/* %o0=dst %o1=src %o2=len
- 	stb		%g2, [%o0]
- 1:
- 	retl
-- 	 RETL_INSN
-+	 mov		%g7, %o0
- 
- 90:	/* short_aligned_end */
- 	bne		88b
+--- a/arch/x86/net/bpf_jit_comp.c
++++ b/arch/x86/net/bpf_jit_comp.c
+@@ -568,8 +568,8 @@ cond_branch:			f_offset = addrs[i + filt
+ 					break;
+ 				}
+ 				if (filter[i].jt != 0) {
+-					if (filter[i].jf)
+-						t_offset += is_near(f_offset) ? 2 : 6;
++					if (filter[i].jf && f_offset)
++						t_offset += is_near(f_offset) ? 2 : 5;
+ 					EMIT_COND_JMP(t_op, t_offset);
+ 					if (filter[i].jf)
+ 						EMIT_JMP(f_offset);
 
 
