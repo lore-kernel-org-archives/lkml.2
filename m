@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab2ACWfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:35:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39398 "EHLO mx2.suse.de"
+	id S1755188Ab2ACWfu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:35:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39437 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754644Ab2ACWf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:35:26 -0500
+	id S1755094Ab2ACWfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:35:44 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:33 2012
-Message-Id: <20120103223033.441557351@clark.kroah.org>
+Message-Id: <20120103223033.798008382@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:43 -0800
+Date: Tue, 03 Jan 2012 14:29:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ilya Yanok <yanok@emcraft.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: [25/67] mfd: Fix twl-core oops while calling twl_i2c_* for unbound driver
+        alan@lxorguk.ukuu.org.uk, Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [29/67] iwlwifi: do not set the sequence control bit is not needed
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Yanok <yanok@emcraft.com>
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-commit 8653be1afd60d6e8c36139b487e375b70357d9ef upstream.
+commit 123877b80ed62c3b897c53357b622574c023b642 upstream.
 
-Check inuse variable before trying to access twl_map to prevent
-dereferencing of uninitialized variable.
+Check the IEEE80211_TX_CTL_ASSIGN_SEQ flag from mac80211, then decide how to
+set the TX_CMD_FLG_SEQ_CTL_MSK bit. Setting the wrong bit in BAR frame whill
+make the firmware to increment the sequence number which is incorrect and
+cause unknown behavior.
 
-Signed-off-by: Ilya Yanok <yanok@emcraft.com>
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mfd/twl-core.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-agn-tx.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -362,13 +362,13 @@ int twl_i2c_write(u8 mod_no, u8 *value,
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
- 		return -EPERM;
+--- a/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-agn-tx.c
+@@ -385,7 +385,10 @@ static void iwlagn_tx_cmd_build_basic(st
+ 		tx_cmd->tid_tspec = qc[0] & 0xf;
+ 		tx_flags &= ~TX_CMD_FLG_SEQ_CTL_MSK;
+ 	} else {
+-		tx_flags |= TX_CMD_FLG_SEQ_CTL_MSK;
++		if (info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ)
++			tx_flags |= TX_CMD_FLG_SEQ_CTL_MSK;
++		else
++			tx_flags &= ~TX_CMD_FLG_SEQ_CTL_MSK;
  	}
--	sid = twl_map[mod_no].sid;
--	twl = &twl_modules[sid];
--
- 	if (unlikely(!inuse)) {
--		pr_err("%s: client %d is not initialized\n", DRIVER_NAME, sid);
-+		pr_err("%s: not initialized\n", DRIVER_NAME);
- 		return -EPERM;
- 	}
-+	sid = twl_map[mod_no].sid;
-+	twl = &twl_modules[sid];
-+
- 	mutex_lock(&twl->xfer_lock);
- 	/*
- 	 * [MSG1]: fill the register address data
-@@ -419,13 +419,13 @@ int twl_i2c_read(u8 mod_no, u8 *value, u
- 		pr_err("%s: invalid module number %d\n", DRIVER_NAME, mod_no);
- 		return -EPERM;
- 	}
--	sid = twl_map[mod_no].sid;
--	twl = &twl_modules[sid];
--
- 	if (unlikely(!inuse)) {
--		pr_err("%s: client %d is not initialized\n", DRIVER_NAME, sid);
-+		pr_err("%s: not initialized\n", DRIVER_NAME);
- 		return -EPERM;
- 	}
-+	sid = twl_map[mod_no].sid;
-+	twl = &twl_modules[sid];
-+
- 	mutex_lock(&twl->xfer_lock);
- 	/* [MSG1] fill the register address data */
- 	msg = &twl->xfer_msg[0];
+ 
+ 	priv->cfg->ops->utils->tx_cmd_protection(priv, info, fc, &tx_flags);
 
 
