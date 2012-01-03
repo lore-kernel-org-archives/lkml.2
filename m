@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab2ACDZU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 22:25:20 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:43581 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041Ab2ACDZR (ORCPT
+	id S1751476Ab2ACDaI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 22:30:08 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:38004 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041Ab2ACDaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 22:25:17 -0500
-Date: Tue, 3 Jan 2012 03:25:05 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jack Stone <jwjstone@fastmail.fm>, Oliver Neukum <oliver@neukum.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Message-ID: <20120103032505.GA19702@srcf.ucam.org>
-References: <20120102215028.GA15701@srcf.ucam.org>
- <Pine.LNX.4.44L0.1201022136190.20386-100000@netrider.rowland.org>
+	Mon, 2 Jan 2012 22:30:07 -0500
+Date: Tue, 3 Jan 2012 03:30:05 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, dm-devel@redhat.com
+Subject: Re: [PATCH] deadlock with suspend and quotas
+Message-ID: <20120103033005.GZ23916@ZenIV.linux.org.uk>
+References: <Pine.LNX.4.64.1111251522230.4118@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201022136190.20386-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <Pine.LNX.4.64.1111251522230.4118@hs20-bc2-1.build.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 09:45:58PM -0500, Alan Stern wrote:
+On Fri, Nov 25, 2011 at 03:25:16PM -0500, Mikulas Patocka wrote:
 
-> Wait a second.  Why does isight_firmware bind at this time?  Binding to
-> new devices is handled by khubd, which doesn't start running again
-> until after the resume is finished (the device appears to be new
-> because its descriptors have changed).  At that point there should be
-> no trouble reloading the firmware.
+> The following patch fixes the deadlock. When the quota subsystem takes s_umount,
+> it checks if the filesystem is frozen. If it is, we drop s_umount, wait for
+> the filesystem to resume and retry.
+> 
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> CC: stable@kernel.org
 
-Then why are we getting this warning? The firmware is only loaded in the 
-probe function.
+So basically you want a variant of get_super() that would get you a
+superblock for this bdev, locked and unfrozen?  Fair enough, but
+	* that should be a proper helper in super.c, rather than
+open-coded in fs/quota/quota.c, of all places
+	* what about other existing callers get_super() and its friends?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+and while we are at it, why in damnation name is it exported?  The only
+caller outside of core VFS is under #if 0...
