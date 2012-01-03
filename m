@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab2ACWjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:39:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40148 "EHLO mx2.suse.de"
+	id S1756099Ab2ACWj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:39:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40159 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756059Ab2ACWjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:39:46 -0500
+	id S1756082Ab2ACWjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:39:55 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:21 2012
-Message-Id: <20120103223321.755184454@clark.kroah.org>
+Message-Id: <20120103223321.074555134@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:32:42 -0800
+Date: Tue, 03 Jan 2012 14:32:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [09/75] cfq-iosched: fix cfq_cic_link() race confition
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [01/75] ARM: OMAP: rx51: fix USB
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,88 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+From: Felipe Contreras <felipe.contreras@gmail.com>
 
-commit 5eb46851de3904cd1be9192fdacb8d34deadc1fc upstream.
+commit e5fe29c7198a1f6616286dfc8602a69da165cb3f upstream.
 
-cfq_cic_link() has race condition. When some processes which shared ioc
-issue I/O to same block device simultaneously, cfq_cic_link() returns -EEXIST
-sometimes. The race condition might stop I/O by following steps:
+Commit 10299e2e4e3ed3b16503d4e04edd48b33083f4e2 (ARM: RX-51:
+Enable isp1704 power on/off) added power management for isp1704.
 
-step  1: Process A: Issue an I/O to /dev/sda
-step  2: Process A: Get an ioc (iocA here) in get_io_context() which does not
-		    linked with a cic for the device
-step  3: Process A: Get a new cic for the device (cicA here) in
-		    cfq_alloc_io_context()
+However, the transceiver should be powered on by default,
+otherwise USB doesn't work at all for networking during
+boot.
 
-step  4: Process B: Issue an I/O to /dev/sda
-step  5: Process B: Get iocA in get_io_context() since process A and B share the
-		    same ioc
-step  6: Process B: Get a new cic for the device (cicB here) in
-		    cfq_alloc_io_context() since iocA has not been linked with a
-		    cic for the device yet
+All kernels after v3.0 are affected.
 
-step  7: Process A: Link cicA to iocA in cfq_cic_link()
-step  8: Process A: Dispatch I/O to driver and finish it
-
-step  9: Process B: Try to link cicB to iocA in cfq_cic_link()
-		    But it fails with showing "cfq: cic link failed!" kernel
-		    message, since iocA has already linked with cicA at step 7.
-step 10: Process B: Wait for finishig I/O in get_request_wait()
-		    The function does not wake up, when there is no I/O to the
-		    device.
-
-When cfq_cic_link() returns -EEXIST, it means ioc has already linked with cic.
-So when cfq_cic_link() return -EEXIST, retry cfq_cic_lookup().
-
-Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+Reviewed-by: Sebastian Reichel <sre@debian.org>
+[tony@atomide.com: updated comments]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- block/cfq-iosched.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3184,7 +3184,7 @@ static int cfq_cic_link(struct cfq_data
- 		}
- 	}
- 
--	if (ret)
-+	if (ret && ret != -EEXIST)
- 		printk(KERN_ERR "cfq: cic link failed!\n");
- 
- 	return ret;
-@@ -3200,6 +3200,7 @@ cfq_get_io_context(struct cfq_data *cfqd
+--- a/arch/arm/mach-omap2/board-rx51-peripherals.c
++++ b/arch/arm/mach-omap2/board-rx51-peripherals.c
+@@ -193,7 +193,7 @@ static struct platform_device rx51_charg
+ static void __init rx51_charger_init(void)
  {
- 	struct io_context *ioc = NULL;
- 	struct cfq_io_context *cic;
-+	int ret;
+ 	WARN_ON(gpio_request_one(RX51_USB_TRANSCEIVER_RST_GPIO,
+-		GPIOF_OUT_INIT_LOW, "isp1704_reset"));
++		GPIOF_OUT_INIT_HIGH, "isp1704_reset"));
  
- 	might_sleep_if(gfp_mask & __GFP_WAIT);
- 
-@@ -3207,6 +3208,7 @@ cfq_get_io_context(struct cfq_data *cfqd
- 	if (!ioc)
- 		return NULL;
- 
-+retry:
- 	cic = cfq_cic_lookup(cfqd, ioc);
- 	if (cic)
- 		goto out;
-@@ -3215,7 +3217,12 @@ cfq_get_io_context(struct cfq_data *cfqd
- 	if (cic == NULL)
- 		goto err;
- 
--	if (cfq_cic_link(cfqd, ioc, cic, gfp_mask))
-+	ret = cfq_cic_link(cfqd, ioc, cic, gfp_mask);
-+	if (ret == -EEXIST) {
-+		/* someone has linked cic to ioc already */
-+		cfq_cic_free(cic);
-+		goto retry;
-+	} else if (ret)
- 		goto err_free;
- 
- out:
+ 	platform_device_register(&rx51_charger_device);
+ }
 
 
