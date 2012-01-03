@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932113Ab2ACWvQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:51:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40313 "EHLO mx2.suse.de"
+	id S1756216Ab2ACWku (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:40:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40276 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756231Ab2ACWlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:41:00 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:25 2012
-Message-Id: <20120103223324.966632976@clark.kroah.org>
+	id S1755897Ab2ACWkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:40:46 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:24 2012
+Message-Id: <20120103223324.630311432@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:20 -0800
+Date: Tue, 03 Jan 2012 14:33:16 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Jean Delvare <khali@linux-fr.org>, Dave Airlie <airlied@redhat.com>
-Subject: [47/75] drm/radeon/kms: bail on BTC parts if MC ucode is missing
+        alan@lxorguk.ukuu.org.uk, Per Forlin <per.forlin@stericsson.com>,
+        Ulf Hansson <ulf.hansson@stericsson.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [43/75] ARM: 7220/1: mmc: mmci: Fixup error handling for dma
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,44 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Ulf Hansson <ulf.hansson@stericsson.com>
 
-commit 77e00f2ea94abee1ad13bdfde19cf7aa25992b0e upstream.
+commit 3b6e3c73851a9a4b0e6ed9d378206341dd65e8a5 upstream.
 
-We already do this for cayman, need to also do it for
-BTC parts.  The default memory and voltage setup is not
-adequate for advanced operation.  Continuing will
-result in an unusable display.
+When getting a cmd irq during an ongoing data transfer
+with dma, the dma job were never terminated. This is now
+corrected.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Cc: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Per Forlin <per.forlin@stericsson.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@stericsson.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/evergreen.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/mmc/host/mmci.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/evergreen.c
-+++ b/drivers/gpu/drm/radeon/evergreen.c
-@@ -3258,6 +3258,18 @@ int evergreen_init(struct radeon_device
- 			rdev->accel_working = false;
- 		}
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -753,8 +753,12 @@ mmci_cmd_irq(struct mmci_host *host, str
  	}
-+
-+	/* Don't start up if the MC ucode is missing on BTC parts.
-+	 * The default clocks and voltages before the MC ucode
-+	 * is loaded are not suffient for advanced operations.
-+	 */
-+	if (ASIC_IS_DCE5(rdev)) {
-+		if (!rdev->mc_fw && !(rdev->flags & RADEON_IS_IGP)) {
-+			DRM_ERROR("radeon: MC ucode required for NI+.\n");
-+			return -EINVAL;
-+		}
-+	}
-+
- 	return 0;
- }
  
+ 	if (!cmd->data || cmd->error) {
+-		if (host->data)
++		if (host->data) {
++			/* Terminate the DMA transfer */
++			if (dma_inprogress(host))
++				mmci_dma_data_error(host);
+ 			mmci_stop_data(host);
++		}
+ 		mmci_request_end(host, cmd->mrq);
+ 	} else if (!(cmd->data->flags & MMC_DATA_READ)) {
+ 		mmci_start_data(host, cmd->data);
 
 
