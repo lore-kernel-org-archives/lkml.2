@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab2ACOfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 09:35:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55768 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752854Ab2ACOff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 09:35:35 -0500
-Date: Tue, 3 Jan 2012 15:29:41 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Denys Vlasenko <dvlasenk@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        =?utf-8?Q?=C5=81ukasz?= Michalik <lmi@ift.uni.wroc.pl>,
-        "Dmitry V. Levin" <ldv@altlinux.org>
-Subject: Re: Possible bug introduced in commit 9b84cca
-Message-ID: <20120103142941.GA25488@redhat.com>
-References: <201112281955.55200.vda.linux@googlemail.com> <20111229113245.GA18062@redhat.com> <20111229120506.GA23653@redhat.com>
+	id S1753767Ab2ACOfv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 09:35:51 -0500
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:54318
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753726Ab2ACOfs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 09:35:48 -0500
+Message-ID: <4F031233.7040007@compulab.co.il>
+Date: Tue, 03 Jan 2012 16:35:31 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111229120506.GA23653@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg Kroah-Hartman <greg@kroah.com>, Chris Wright <chrisw@sous-sol.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Sanjeev Premi <premi@ti.com>,
+        Kyle Manna <kyle@kylemanna.com>, stable@vger.kernel.org
+Subject: Several MFD patches for stable
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29, Oleg Nesterov wrote:
->
-> On 12/29, Oleg Nesterov wrote:
-> >
-> > On 12/28, Denys Vlasenko wrote:
-> > >
-> > > 931   clone(child_stack=0, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, child_tidptr=0xf763dbd8) = 1048
-> > > 1048  exit_group(42)                    = ?
-> > > 931   waitpid(1048,  <unfinished ...>
-> > > 1048  +++ exited with 42 +++
-> > > 931   <... waitpid resumed> 0xf763d3a0, 0) = -1 ECHILD (No child processes)
-> >
-> I've made the simple test-case, it triggers the bug.
+Hi Greg, Chris,
 
-I am going to send the hack^Wpatch below to Linus as a temporary
-workaround for 3.2.
+I've found several MFD patches that I think should have been
+applied also to stable, but they hadn't been applied
+(probably because nobody cared to send them to stable@vger.kernel.org).
 
-Any chance you can test it?
+The patches are upstream:
+e178ccb33569da17dc897a08a3865441b813bdfb (mfd: Fix mismatch in twl4030 mutex lock-unlock)
+66cc5b8e50af87b0bbd0f179d76d2826f4549c13 (mfd: Copy the device pointer to the twl4030-madc structure)
+d0e84caeb4cd535923884735906e5730329505b4 (mfd: Check for twl4030-madc NULL pointer)
+3d6271f92e98094584fd1e609a9969cd33e61122 (mfd: Turn on the twl4030-madc MADC clock)
 
-I did the testing too with my test-case, but it would be nice to
-know if it works for you.
+I don't know what is right flow that I should follow
+to get those into the stable tree.
 
-Thanks,
+Thanks for any assistance.
 
-Oleg.
-
---- x/kernel/exit.c~	2011-11-22 18:46:22.000000000 +0100
-+++ x/kernel/exit.c	2012-01-03 14:37:17.000000000 +0100
-@@ -1540,8 +1540,11 @@ static int wait_consider_task(struct wai
- 	}
- 
- 	/* dead body doesn't have much to contribute */
--	if (p->exit_state == EXIT_DEAD)
-+	if (unlikely(p->exit_state == EXIT_DEAD)) {
-+		if (likely(!ptrace) && unlikely(ptrace_reparented(p)))
-+			wo->notask_error = 0;
- 		return 0;
-+	}
- 
- 	/* slay zombie? */
- 	if (p->exit_state == EXIT_ZOMBIE) {
-
+-- 
+Regards,
+Igor.
