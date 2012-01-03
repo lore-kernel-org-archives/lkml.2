@@ -1,78 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab2ACCqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 2 Jan 2012 21:46:03 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:36667 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751019Ab2ACCp7 (ORCPT
+	id S1751303Ab2ACDAk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 2 Jan 2012 22:00:40 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:56560 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750863Ab2ACDAj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 2 Jan 2012 21:45:59 -0500
-Date: Mon, 2 Jan 2012 21:45:58 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Matthew Garrett <mjg@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jack Stone <jwjstone@fastmail.fm>, Oliver Neukum <oliver@neukum.org>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-In-Reply-To: <20120102215028.GA15701@srcf.ucam.org>
-Message-ID: <Pine.LNX.4.44L0.1201022136190.20386-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 2 Jan 2012 22:00:39 -0500
+Date: Tue, 3 Jan 2012 14:00:29 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Prasad Joshi <prasadjoshi.linux@gmail.com>,
+        =?UTF-8?B?IkrDtnJuIEVuZ2VsIg==?= <joern@logfs.org>
+Subject: linux-next: manual merge of the l2-mtd tree with the logfs tree
+Message-Id: <20120103140029.2f996dab9bdfd3ec5c876045@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__3_Jan_2012_14_00_29_+1100_fu4v.CfGTceSpzzW"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Jan 2012, Matthew Garrett wrote:
+--Signature=_Tue__3_Jan_2012_14_00_29_+1100_fu4v.CfGTceSpzzW
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> It's not theoretical hardware. This appears to be the current behaviour 
-> of the isight devices. If you reboot they retain their firmware. If you 
-> suspend, they don't. So if we have a flow like this:
-> 
-> 1) user boots from cold. Device comes up with generic USB ID.
-> 2) isight_firmware loads and binds. Firmware is loaded. Device 
-> disconnects and reconnects with an ID that's bound by the UVC driver.
-> 3) user reboots. Device comes up with UVC ID. isight_firmware doesn't 
-> bind.
-> 4) user suspends.
-> 5) user resumes. isight_firmware binds and attempts to load firmware.
+Hi Artem,
 
-Wait a second.  Why does isight_firmware bind at this time?  Binding to
-new devices is handled by khubd, which doesn't start running again
-until after the resume is finished (the device appears to be new
-because its descriptors have changed).  At that point there should be
-no trouble reloading the firmware.
+Today's linux-next merge of the l2-mtd tree got a conflict in
+fs/logfs/dev_mtd.c between commit d1cc3ad397f2 ("Logfs: Allow NULL
+block_isbad() methods") from the logfs tree and commit 957afd905eda
+("logfs: do not use 'mtd->block_isbad' directly") from the l2-mtd tree.
 
-> then just caching the firmware is inadequate - we had never previously 
-> seen the device on this boot, so we've never loaded it in order to cache 
-> it. isight_firmware could unconditionally load the firmware on module 
-> load just in case a device is plugged in, but that seems even less 
-> elegant than caching it.
-> 
-> Now this is obviously somewhat mitigated because isight_firmware won't 
-> have been autoloaded at (3), so won't be there at (5) unless the user's 
-> manually loaded it. But insmodding a driver shouldn't result in stuff 
-> breaking later.
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I don't see how this matters very much.  Certainly not enough to
-justify all the effort put into this email thread already.
+diff --cc fs/logfs/dev_mtd.c
+index d054d7e,e97404d..0000000
+--- a/fs/logfs/dev_mtd.c
++++ b/fs/logfs/dev_mtd.c
+@@@ -147,16 -149,17 +149,16 @@@ static struct page *logfs_mtd_find_firs
+  {
+  	struct logfs_super *super =3D logfs_super(sb);
+  	struct address_space *mapping =3D super->s_mapping_inode->i_mapping;
+- 	filler_t *filler =3D mtd_readpage;
++ 	filler_t *filler =3D logfs_mtd_readpage;
+  	struct mtd_info *mtd =3D super->s_mtd;
+ =20
+ -	if (!mtd_can_have_bb(mtd))
+ -		return NULL;
+ -
+  	*ofs =3D 0;
+- 	if (mtd->block_isbad) {
+- 		while (mtd->block_isbad(mtd, *ofs)) {
+ -	while (mtd_block_isbad(mtd, *ofs)) {
+ -		*ofs +=3D mtd->erasesize;
+ -		if (*ofs >=3D mtd->size)
+ -			return NULL;
+++	if (mtd_can_have_bb(mtd)) {
+++		while (mtd_block_isbad(mtd, *ofs)) {
+ +			*ofs +=3D mtd->erasesize;
+ +			if (*ofs >=3D mtd->size)
+ +				return NULL;
+ +		}
+  	}
+  	BUG_ON(*ofs & ~PAGE_MASK);
+  	return read_cache_page(mapping, *ofs >> PAGE_SHIFT, filler, sb);
+@@@ -166,16 -169,17 +168,16 @@@ static struct page *logfs_mtd_find_last
+  {
+  	struct logfs_super *super =3D logfs_super(sb);
+  	struct address_space *mapping =3D super->s_mapping_inode->i_mapping;
+- 	filler_t *filler =3D mtd_readpage;
++ 	filler_t *filler =3D logfs_mtd_readpage;
+  	struct mtd_info *mtd =3D super->s_mtd;
+ =20
+ -	if (!mtd_can_have_bb(mtd))
+ -		return NULL;
+ -
+  	*ofs =3D mtd->size - mtd->erasesize;
+- 	if (mtd->block_isbad) {
+- 		while (mtd->block_isbad(mtd, *ofs)) {
+ -	while (mtd_block_isbad(mtd, *ofs)) {
+ -		*ofs -=3D mtd->erasesize;
+ -		if (*ofs <=3D 0)
+ -			return NULL;
+++	if (mtd_can_have_bb(mtd)) {
+++		while (mtd_block_isbad(mtd, *ofs)) {
+ +			*ofs -=3D mtd->erasesize;
+ +			if (*ofs <=3D 0)
+ +				return NULL;
+ +		}
+  	}
+  	*ofs =3D *ofs + mtd->erasesize - 0x1000;
+  	BUG_ON(*ofs & ~PAGE_MASK);
 
-Regardless of what isight_firmware does, the original UVC device 
-instance is gone.  The new device instance won't appear until the khubd 
-thread starts running again, after the resume is finished.  As far as 
-userspace is concerned, that's all that matters.
+--Signature=_Tue__3_Jan_2012_14_00_29_+1100_fu4v.CfGTceSpzzW
+Content-Type: application/pgp-signature
 
-Even in situations where isight_firmware does somehow manage to bind
-during resume, the only question is how it can avoid hanging or
-delaying the resume procedure.  Doing an async firmware load will solve
-that.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Alan Stern
+iQIcBAEBCAAGBQJPAm9NAAoJEECxmPOUX5FE9IgP/jIArZPmyPfD40ykeleFR9fS
+bP6CBSsD11H4N8HvsPi4rdcLEhLvh1d73NhnoaCw9mQcjuIOZ0yib2ltPMFN6PQ8
+Fb6t7mBV4zB8ijsiZo4kpC4ymCnjXL96YoryJULzx5KMbaNd1fskdiHHwexv1KAC
+ELHKb18ThbxElEo5OwXvBpneVx8MXaQenXFDYWwjiFKnqACUhp20ZtGU+9tsGUbj
+w2czgJLNMpPl0SuvF69VZfX7KEc7bgFNJADpKN0cUvnf5NcM0ZisMUk1nxQNhP1w
+eH7LOZInImrIZOOQPQpzb05DeiQEAY52IOS6G/g9JDUHopHdNzIvPvuyakt9CnGc
+wiahQwkGAlW2IsqJgzCv0OaE0vkjP/a2sk8TCq7Xhx88d7FXgorh3q96qfgWgDNz
+Vhg1do6hLlebp5rpMQJnT3xMR6YTNCxy2ssx0SbfMyyAGb/iSrniSgkhl2VyWRhk
+weRIvrSbagvK/PBskYJxmvNJgVkf7CoGUmc6jnOQlaQXULCLannVWuLe30vcgGWt
+n1E1L9OXpWadqHwAWtDp79wNgIwWdf37jydUMTCVOfawQjV0pRLHg8Vuizq3cJgx
+TbSw28GzqOY8AeyqhrL8FU8WkLchaSXIcfakwuA0qp8bJ/Jlzlur4d0XeBKmaAE0
+rewlKEVMPL+9CHW8KxKh
+=NIeU
+-----END PGP SIGNATURE-----
 
+--Signature=_Tue__3_Jan_2012_14_00_29_+1100_fu4v.CfGTceSpzzW--
