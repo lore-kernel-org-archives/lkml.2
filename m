@@ -1,118 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab2ACWbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:31:41 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:38654 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab2ACWbi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:31:38 -0500
-Subject: Re: Reiserfs.c bug in 3.2-rc5
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
-        reiserfs-devel@vger.kernel.org, haiyangz@microsoft.com,
-        hjanssen@microsoft.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Morris <jmorris@namei.org>,
-        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <jlbec@evilplan.org>
-Date: Tue, 03 Jan 2012 17:28:36 -0500
-In-Reply-To: <CA+55aFwhrk_qYd6Fff8Ezhotta5dxcVYy8g9573uML8V1-=1Sg@mail.gmail.com>
-References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>
-	 <20111213180707.GI11747@quack.suse.cz>
-	 <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
-	 <20120102115222.GA3626@quack.suse.cz> <20120103010826.GF3626@quack.suse.cz>
-	 <20120103123841.GA31457@quack.suse.cz> <1325604356.2095.23.camel@falcor>
-	 <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com>
-	 <1325616312.2095.26.camel@falcor>
-	 <CA+55aFwhrk_qYd6Fff8Ezhotta5dxcVYy8g9573uML8V1-=1Sg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325629717.2095.81.camel@falcor>
-Mime-Version: 1.0
-x-cbid: 12010322-3270-0000-0000-000002F811C5
+	id S1752915Ab2ACWcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:32:16 -0500
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:59945 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752026Ab2ACWcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:32:14 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Nitin Gupta <ngupta@vflare.org>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>
+Subject: [PATCHv2] staging: zcache: crypto API support
+Date: Tue,  3 Jan 2012 16:31:34 -0600
+Message-Id: <1325629894-10967-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.5.4
+x-cbid: 12010322-8974-0000-0000-000004D92CDA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 11:17 -0800, Linus Torvalds wrote:
-> On Tue, Jan 3, 2012 at 10:45 AM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> >
-> > Just clarifying not all of commit fb88c2b, but only the
-> > security_old_inode_init_security() hunk.
-> 
-> Is it really sane to have different semantics like that for the
-> security[_old]_inode_init_security functions?
+This patch allow zcache to use the crypto API for page compression.
+It replaces the direct LZO compress/decompress calls with calls
+into the crypto compression API. The compressor to be used is
+specified in the kernel boot line with the zcache parameter like:
+zcache=lzo or zcache=deflate.  If the specified compressor can't
+be loaded, zcache uses lzo as the default compressor.
 
-No, but unfortunately it seems necessary.
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/Kconfig       |    7 +-
+ drivers/staging/zcache/zcache-main.c |  150 ++++++++++++++++++++++++++++------
+ 2 files changed, 126 insertions(+), 31 deletions(-)
 
-> Look at ocfs2, for example: it does nothing if
-> ocfs2_init_security_get() returns 0. That does not sound like the
-> correct thing to do, when the fallback is to do ocfs2_init_acl() under
-> the lock.
-
-The original code did the same for -EOPNOTSUPP.
-
-7192        ret = ocfs2_init_security_get(inode, dir, qstr, &si);
-7193        if (!ret) {
-7194                ret = ocfs2_xattr_set(inode, OCFS2_XATTR_INDEX_SECURITY,
-7195                                      si.name, si.value, si.value_len,
-7196                                      XATTR_CREATE);
-7197                if (ret) {
-7198                        mlog_errno(ret);
-7199                        goto leave;
-7200                }
-7201        } else if (ret != -EOPNOTSUPP) {
-7202                mlog_errno(ret);
-7203                goto leave;
-7204        }
-7205
-7206        ret = ocfs2_inode_lock(dir, &dir_bh, 0);
-7207        if (ret) {
-7208                mlog_errno(ret);
-7209                goto leave;
-7210        }
-7211
-7212        ret = ocfs2_init_acl(NULL, inode, dir, NULL, dir_bh, NULL, NULL);
-7213        if (ret)
-7214                mlog_errno(ret);
-7215
-
-> And ocfs2_init_security_get() just calls either
-> security_inode_init_security() or security_old_inode_init_security()
-> depending on whether ocfs2_security_xattr_info is NULL or not. So I
-> really think callers expect the same kind of semantics regardless of
-> whether it's the "old" or not version. Which would make sense anyway.
-> 
-> Also, the *documentation* in include/linux/security.h very much says
-> that it returns 0 only if @name and @value have been successfully set.
-> So my gut feel says that both security_inode_init_security and
-> security_old_inode_init_security should return -EOPNOTSUPP (although
-> the "new" version doesn't really have "name/value", so maybe returning
-> 0 is ok)
-
-The original security_inode_init_security() version queried the LSM for
-the security xattr, leaving writing the xattr up to the caller.  The
-caller changed -EOPNPTSUPP to 0, before returning.  The new version
-combines the querying and writing the xattr.  Like the previous version
-it converts the -EOPNOTSUPP to 0, before returning.
-
-reiserfs_security_init() is dependent on
-security_old_inode_init_security() to return -EOPNOTSUPP to initialize
-some variables and return, but before returning it changes -EOPNOTSUPP
-to 0.
-
-Unfortunately this leaves security_old/security_inode_init_security()
-needing to return different things.
-
-Mimi
-
-> Anyway, I'd love for (multiple) people who really know the code to
-> give me a clean agreement on exactly what the correct patch is.
-> Please?
-> 
->                                  Linus
-> 
-
+diff --git a/drivers/staging/zcache/Kconfig b/drivers/staging/zcache/Kconfig
+index 7fabcb2..1b7bba7 100644
+--- a/drivers/staging/zcache/Kconfig
++++ b/drivers/staging/zcache/Kconfig
+@@ -1,13 +1,12 @@
+ config ZCACHE
+ 	tristate "Dynamic compression of swap pages and clean pagecache pages"
+-	depends on CLEANCACHE || FRONTSWAP
++	depends on (CLEANCACHE || FRONTSWAP) && CRYPTO
+ 	select XVMALLOC
+-	select LZO_COMPRESS
+-	select LZO_DECOMPRESS
++	select CRYPTO_LZO
+ 	default n
+ 	help
+ 	  Zcache doubles RAM efficiency while providing a significant
+-	  performance boosts on many workloads.  Zcache uses lzo1x
++	  performance boosts on many workloads.  Zcache uses
+ 	  compression and an in-kernel implementation of transcendent
+ 	  memory to store clean page cache pages and swap in RAM,
+ 	  providing a noticeable reduction in disk I/O.
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 56c1f9c..a4384eb 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -6,7 +6,8 @@
+  *
+  * Zcache provides an in-kernel "host implementation" for transcendent memory
+  * and, thus indirectly, for cleancache and frontswap.  Zcache includes two
+- * page-accessible memory [1] interfaces, both utilizing lzo1x compression:
++ * page-accessible memory [1] interfaces, both utilizing the crypto compression
++ * API:
+  * 1) "compression buddies" ("zbud") is used for ephemeral pages
+  * 2) xvmalloc is used for persistent pages.
+  * Xvmalloc (based on the TLSF allocator) has very low fragmentation
+@@ -23,12 +24,13 @@
+ #include <linux/cpu.h>
+ #include <linux/highmem.h>
+ #include <linux/list.h>
+-#include <linux/lzo.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+ #include <linux/atomic.h>
+ #include <linux/math64.h>
++#include <linux/crypto.h>
++#include <linux/string.h>
+ #include "tmem.h"
+ 
+ #include "../zram/xvmalloc.h" /* if built in drivers/staging */
+@@ -81,6 +83,38 @@ static inline bool is_local_client(struct zcache_client *cli)
+ 	return cli == &zcache_host;
+ }
+ 
++/* crypto API for zcache  */
++#define ZCACHE_COMP_NAME_SZ CRYPTO_MAX_ALG_NAME
++static char zcache_comp_name[ZCACHE_COMP_NAME_SZ];
++static struct crypto_comp * __percpu *zcache_comp_pcpu_tfms;
++
++enum comp_op {
++	ZCACHE_COMPOP_COMPRESS,
++	ZCACHE_COMPOP_DECOMPRESS
++};
++
++static inline int zcache_comp_op(enum comp_op op,
++				const u8 *src, unsigned int slen,
++				u8 *dst, unsigned int *dlen)
++{
++	struct crypto_comp *tfm;
++	int ret;
++
++	BUG_ON(!zcache_comp_pcpu_tfms);
++	tfm = *per_cpu_ptr(zcache_comp_pcpu_tfms, get_cpu());
++	BUG_ON(!tfm);
++	switch (op) {
++	case ZCACHE_COMPOP_COMPRESS:
++		ret = crypto_comp_compress(tfm, src, slen, dst, dlen);
++		break;
++	case ZCACHE_COMPOP_DECOMPRESS:
++		ret = crypto_comp_decompress(tfm, src, slen, dst, dlen);
++		break;
++	}
++	put_cpu();
++	return ret;
++}
++
+ /**********
+  * Compression buddies ("zbud") provides for packing two (or, possibly
+  * in the future, more) compressed ephemeral pages into a single "raw"
+@@ -408,7 +442,7 @@ static int zbud_decompress(struct page *page, struct zbud_hdr *zh)
+ {
+ 	struct zbud_page *zbpg;
+ 	unsigned budnum = zbud_budnum(zh);
+-	size_t out_len = PAGE_SIZE;
++	unsigned int out_len = PAGE_SIZE;
+ 	char *to_va, *from_va;
+ 	unsigned size;
+ 	int ret = 0;
+@@ -425,8 +459,9 @@ static int zbud_decompress(struct page *page, struct zbud_hdr *zh)
+ 	to_va = kmap_atomic(page, KM_USER0);
+ 	size = zh->size;
+ 	from_va = zbud_data(zh, size);
+-	ret = lzo1x_decompress_safe(from_va, size, to_va, &out_len);
+-	BUG_ON(ret != LZO_E_OK);
++	ret = zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, from_va, size,
++				to_va, &out_len);
++	BUG_ON(ret);
+ 	BUG_ON(out_len != PAGE_SIZE);
+ 	kunmap_atomic(to_va, KM_USER0);
+ out:
+@@ -624,7 +659,7 @@ static int zbud_show_cumul_chunk_counts(char *buf)
+ 
+ /**********
+  * This "zv" PAM implementation combines the TLSF-based xvMalloc
+- * with lzo1x compression to maximize the amount of data that can
++ * with the crypto compression API to maximize the amount of data that can
+  * be packed into a physical page.
+  *
+  * Zv represents a PAM page with the index and object (plus a "size" value
+@@ -711,7 +746,7 @@ static void zv_free(struct xv_pool *xvpool, struct zv_hdr *zv)
+ 
+ static void zv_decompress(struct page *page, struct zv_hdr *zv)
+ {
+-	size_t clen = PAGE_SIZE;
++	unsigned int clen = PAGE_SIZE;
+ 	char *to_va;
+ 	unsigned size;
+ 	int ret;
+@@ -720,10 +755,10 @@ static void zv_decompress(struct page *page, struct zv_hdr *zv)
+ 	size = xv_get_object_size(zv) - sizeof(*zv);
+ 	BUG_ON(size == 0);
+ 	to_va = kmap_atomic(page, KM_USER0);
+-	ret = lzo1x_decompress_safe((char *)zv + sizeof(*zv),
+-					size, to_va, &clen);
++	ret = zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, (char *)zv + sizeof(*zv),
++				size, to_va, &clen);
+ 	kunmap_atomic(to_va, KM_USER0);
+-	BUG_ON(ret != LZO_E_OK);
++	BUG_ON(ret);
+ 	BUG_ON(clen != PAGE_SIZE);
+ }
+ 
+@@ -1286,25 +1321,24 @@ static struct tmem_pamops zcache_pamops = {
+  * zcache compression/decompression and related per-cpu stuff
+  */
+ 
+-#define LZO_WORKMEM_BYTES LZO1X_1_MEM_COMPRESS
+-#define LZO_DSTMEM_PAGE_ORDER 1
+-static DEFINE_PER_CPU(unsigned char *, zcache_workmem);
+ static DEFINE_PER_CPU(unsigned char *, zcache_dstmem);
++#define ZCACHE_DSTMEM_ORDER 1
+ 
+ static int zcache_compress(struct page *from, void **out_va, size_t *out_len)
+ {
+ 	int ret = 0;
+ 	unsigned char *dmem = __get_cpu_var(zcache_dstmem);
+-	unsigned char *wmem = __get_cpu_var(zcache_workmem);
+ 	char *from_va;
+ 
+ 	BUG_ON(!irqs_disabled());
+-	if (unlikely(dmem == NULL || wmem == NULL))
+-		goto out;  /* no buffer, so can't compress */
++	if (unlikely(dmem == NULL))
++		goto out;  /* no buffer or no compressor so can't compress */
++	*out_len = PAGE_SIZE << ZCACHE_DSTMEM_ORDER;
+ 	from_va = kmap_atomic(from, KM_USER0);
+ 	mb();
+-	ret = lzo1x_1_compress(from_va, PAGE_SIZE, dmem, out_len, wmem);
+-	BUG_ON(ret != LZO_E_OK);
++	ret = zcache_comp_op(ZCACHE_COMPOP_COMPRESS, from_va, PAGE_SIZE, dmem,
++				(unsigned int *)out_len);
++	BUG_ON(ret);
+ 	*out_va = dmem;
+ 	kunmap_atomic(from_va, KM_USER0);
+ 	ret = 1;
+@@ -1312,29 +1346,48 @@ out:
+ 	return ret;
+ }
+ 
++static int zcache_comp_cpu_up(int cpu)
++{
++	struct crypto_comp *tfm;
++
++	tfm = crypto_alloc_comp(zcache_comp_name, 0, 0);
++	if (IS_ERR(tfm))
++		return NOTIFY_BAD;
++	*per_cpu_ptr(zcache_comp_pcpu_tfms, cpu) = tfm;
++	return NOTIFY_OK;
++}
++
++static void zcache_comp_cpu_down(int cpu)
++{
++	struct crypto_comp *tfm;
++
++	tfm = *per_cpu_ptr(zcache_comp_pcpu_tfms, cpu);
++	crypto_free_comp(tfm);
++	*per_cpu_ptr(zcache_comp_pcpu_tfms, cpu) = NULL;
++}
+ 
+ static int zcache_cpu_notifier(struct notifier_block *nb,
+ 				unsigned long action, void *pcpu)
+ {
+-	int cpu = (long)pcpu;
++	int ret, cpu = (long)pcpu;
+ 	struct zcache_preload *kp;
+ 
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
++		ret = zcache_comp_cpu_up(cpu);
++		if (ret != NOTIFY_OK) {
++			pr_err("zcache: can't allocate compressor transform\n");
++			return ret;
++		}
+ 		per_cpu(zcache_dstmem, cpu) = (void *)__get_free_pages(
+-			GFP_KERNEL | __GFP_REPEAT,
+-			LZO_DSTMEM_PAGE_ORDER),
+-		per_cpu(zcache_workmem, cpu) =
+-			kzalloc(LZO1X_MEM_COMPRESS,
+-				GFP_KERNEL | __GFP_REPEAT);
++			GFP_KERNEL | __GFP_REPEAT, ZCACHE_DSTMEM_ORDER);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_UP_CANCELED:
++		zcache_comp_cpu_down(cpu);
+ 		free_pages((unsigned long)per_cpu(zcache_dstmem, cpu),
+-				LZO_DSTMEM_PAGE_ORDER);
++			ZCACHE_DSTMEM_ORDER);
+ 		per_cpu(zcache_dstmem, cpu) = NULL;
+-		kfree(per_cpu(zcache_workmem, cpu));
+-		per_cpu(zcache_workmem, cpu) = NULL;
+ 		kp = &per_cpu(zcache_preloads, cpu);
+ 		while (kp->nr) {
+ 			kmem_cache_free(zcache_objnode_cache,
+@@ -1919,6 +1972,44 @@ static int __init no_frontswap(char *s)
+ 
+ __setup("nofrontswap", no_frontswap);
+ 
++static int __init enable_zcache_compressor(char *s)
++{
++	strncpy(zcache_comp_name, s, ZCACHE_COMP_NAME_SZ);
++	zcache_enabled = 1;
++	return 1;
++}
++__setup("zcache=", enable_zcache_compressor);
++
++
++static int zcache_comp_init(void)
++{
++	int ret = 0;
++
++	/* check crypto algorithm */
++	if (*zcache_comp_name != '\0') {
++		ret = crypto_has_comp(zcache_comp_name, 0, 0);
++		if (!ret)
++			pr_info("zcache: %s not supported\n",
++					zcache_comp_name);
++	}
++	if (!ret)
++		strcpy(zcache_comp_name, "lzo");
++	ret = crypto_has_comp(zcache_comp_name, 0, 0);
++	if (!ret) {
++		ret = 1;
++		goto out;
++	}
++	pr_info("zcache: using %s compressor\n", zcache_comp_name);
++
++	/* alloc percpu transforms */
++	ret = 0;
++	zcache_comp_pcpu_tfms = alloc_percpu(struct crypto_comp *);
++	if (!zcache_comp_pcpu_tfms)
++		ret = 1;
++out:
++	return ret;
++}
++
+ static int __init zcache_init(void)
+ {
+ 	int ret = 0;
+@@ -1941,6 +2032,11 @@ static int __init zcache_init(void)
+ 			pr_err("zcache: can't register cpu notifier\n");
+ 			goto out;
+ 		}
++		ret = zcache_comp_init();
++		if (ret) {
++			pr_err("zcache: compressor initialization failed\n");
++			goto out;
++		}
+ 		for_each_online_cpu(cpu) {
+ 			void *pcpu = (void *)(long)cpu;
+ 			zcache_cpu_notifier(&zcache_cpu_notifier_block,
+-- 
+1.7.5.4
 
