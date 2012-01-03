@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab2ACTje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 14:39:34 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46503 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751189Ab2ACTjc (ORCPT
+	id S1754646Ab2ACTpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 14:45:08 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:35944 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab2ACTpF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 14:39:32 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <1325616276-10304-1-git-send-email-sjg@chromium.org>
-References: <1325616276-10304-1-git-send-email-sjg@chromium.org>
-Date: Tue, 3 Jan 2012 11:39:31 -0800
-Message-ID: <CAOesGMiN_yOxDT1Xrn3LOU+D027+oC3fxTPkph-WzpVPE-86Mg@mail.gmail.com>
-Subject: Re: [PATCH] ARM: Remove BUILD_BUG_ON from asm/bug.h
-From: Olof Johansson <olof@lixom.net>
-To: Simon Glass <sjg@chromium.org>
-Cc: linux-arm-kernel@lists.infradead.org, Olof Johansson <olofj@chromium.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 3 Jan 2012 14:45:05 -0500
+From: Haogang Chen <haogangchen@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>
+Cc: xen-devel@lists.xensource.com, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Haogang Chen <haogangchen@gmail.com>
+Subject: [PATCH] XEN: xenbus: integer overflow in process_msg()
+Date: Tue,  3 Jan 2012 14:42:11 -0500
+Message-Id: <1325619731-13936-1-git-send-email-haogangchen@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 3, 2012 at 10:44 AM, Simon Glass <sjg@chromium.org> wrote:
-> BUILD_BUG_ON is defined in linux/kernel.h but that is not included by the
-> asm/bug.h header which uses it. This causes a build error:
->
-> ...include/linux/mtd/map.h: In function 'inline_map_read':
-> ...include/linux/mtd/map.h:408:3: error: implicit declaration of function
-> 'BUILD_BUG_ON' [-Werror=implicit-function-declaration]
->
-> The check is not essential and is not present for other architectures, so
-> just remove it.
->
-> Signed-off-by: Simon Glass <sjg@chromium.org>
+There is a potential integer overflow in process_msg() that could result
+in cross-domain attack.
 
-Acked-by: Olof Johansson <olof@lixom.net>
+	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
 
-Simon, have you sent it to Russell's patch tracker? If not, please do.
+When a malicious guest passes 0xffffffff in msg->hdr.len, the subsequent
+call to xb_read() would write to a zero-length buffer. This causes
+kernel oops in the receiving guest and hangs its xenbus kernel thread.
+The patch returns -EINVAL in that case.
 
+Signed-off-by: Haogang Chen <haogangchen@gmail.com>
+---
+ drivers/xen/xenbus/xenbus_xs.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
--Olof
+diff --git a/drivers/xen/xenbus/xenbus_xs.c b/drivers/xen/xenbus/xenbus_xs.c
+index ede860f..e32aefb 100644
+--- a/drivers/xen/xenbus/xenbus_xs.c
++++ b/drivers/xen/xenbus/xenbus_xs.c
+@@ -801,6 +801,12 @@ static int process_msg(void)
+ 		goto out;
+ 	}
+ 
++	if (msg->hdr.len == UINT_MAX) {
++		kfree(msg);
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	body = kmalloc(msg->hdr.len + 1, GFP_NOIO | __GFP_HIGH);
+ 	if (body == NULL) {
+ 		kfree(msg);
+-- 
+1.7.5.4
+
