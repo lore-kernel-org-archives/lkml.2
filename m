@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab2ACNgg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 08:36:36 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:41512 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752650Ab2ACNge (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 08:36:34 -0500
-Date: Tue, 3 Jan 2012 13:36:56 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: Jack Stone <jwjstone@fastmail.fm>, Matthew Garrett <mjg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>
-Subject: Re: loading firmware while usermodehelper disabled.
-Message-ID: <20120103133656.56646781@pyramind.ukuu.org.uk>
-In-Reply-To: <201201031430.26064.oliver@neukum.org>
-References: <Pine.LNX.4.44L0.1201021041550.10702-100000@netrider.rowland.org>
-	<4F02F244.6040902@fastmail.fm>
-	<20120103132053.44ade1e3@pyramind.ukuu.org.uk>
-	<201201031430.26064.oliver@neukum.org>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753397Ab2ACNjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 08:39:46 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36940 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752792Ab2ACNjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 08:39:44 -0500
+Date: Tue, 3 Jan 2012 14:39:42 +0100
+From: Jan Kara <jack@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-ID: <20120103133942.GC31457@quack.suse.cz>
+References: <20120103124331.f0f0043f8ca464c9ff13f4d3@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120103124331.f0f0043f8ca464c9ff13f4d3@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How so? You still need to get the firmware to the device before
-> you unfreeze user space to get a benefit from this. Having it in
-> RAM is only half the deal.
+  Hi,
 
-And this can be handled by the existing drivers happily as they do now
-rather than centralised in some kind of giant firmware turd that will be
-horrible to maintain.
+On Tue 03-01-12 12:43:31, Stephen Rothwell wrote:
+> After merging the vfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> fs/super.c:230:13: error: static declaration of 'put_super' follows non-static declaration
+> include/linux/fs.h:2493:13: note: previous declaration of 'put_super' was here
+> 
+> Caused by commit eab99e355c00 ("trim fs/internal.h") interacting with
+> commit 4789fd4495a4 ("quota: Fix deadlock with suspend and quotas") from
+> the ext3 tree.
+> 
+> I applied the following (probably not the best) merge fix patch for today:
+  Thanks Stephen! Al, how shall we resolve this? You wrote you can provide
+a VFS helper like get_super() which will also guarantee that the fs is
+unfrozen.  That could be used in quotactl_block() and fsync_bdev(). If you
+plan to do this for 3.3 then I can just remove the quota fix and let you
+do it.
 
-The driver visible differences will be
-
-- you can take a reference to a firmware to ensure it will be there at
-  resume
-- an actual grab and use of that firmware during resume will not block
-
-
-Alan
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
