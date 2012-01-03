@@ -1,141 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753358Ab2ACWdb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:33:31 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:49130 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752668Ab2ACWd1 (ORCPT
+	id S1753184Ab2ACWeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:34:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46173 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752549Ab2ACWeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:33:27 -0500
-Date: Tue, 3 Jan 2012 14:33:13 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
-Message-ID: <20120103223313.GA20137@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <1324977203.28904.1.camel@lappy>
- <20111228042959.GA2477@linux.vnet.ibm.com>
- <20120103202716.GA8384@linux.vnet.ibm.com>
- <20120103203717.GA6701@suse.de>
- <20120103213830.GG2376@linux.vnet.ibm.com>
- <20120103215036.GA1347@suse.de>
- <20120103222605.GH2376@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103222605.GH2376@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010322-2398-0000-0000-00000325B712
+	Tue, 3 Jan 2012 17:34:18 -0500
+Date: Tue, 3 Jan 2012 14:34:17 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 4/8] smp: Add func to IPI cpus based on parameter
+ func
+Message-Id: <20120103143417.7cbea589.akpm@linux-foundation.org>
+In-Reply-To: <1325499859-2262-5-git-send-email-gilad@benyossef.com>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+	<1325499859-2262-5-git-send-email-gilad@benyossef.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 02:26:05PM -0800, Paul E. McKenney wrote:
-> On Tue, Jan 03, 2012 at 01:50:36PM -0800, Greg KH wrote:
-> > On Tue, Jan 03, 2012 at 01:38:30PM -0800, Paul E. McKenney wrote:
+On Mon,  2 Jan 2012 12:24:15 +0200
+Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+
+> Add the on_each_cpu_required() function that wraps on_each_cpu_mask()
+> and calculates the cpumask of cpus to IPI by calling a function supplied
+> as a parameter in order to determine whether to IPI each specific cpu.
+
+The name is actually "on_each_cpu_cond".
+
+> The function deals with allocation failure of cpumask variable in
+> CONFIG_CPUMASK_OFFSTACK=y by sending IPI to all cpus via on_each_cpu()
+> instead.
+
+This seems rather dangerous.  Poeple will test and ship code which has
+always called only the targetted CPUs.  Later, real live users will get
+the occasional memory exhaustion and will end up calling the callback
+function on CPUs which aren't supposed to be used.  So users end up
+running untested code.  And it's code which could quite easily explode,
+because inattentive programmers could fall into assuming that the
+function is not called on incorrect CPUs.  I think this is easy to fix
+(see below).
+
+> The function is useful since it allows to seperate the specific
+> code that decided in each case whether to IPI a specific cpu for
+> a specific request from the common boilerplate code of handling
+> creating the mask, handling failures etc.
 > 
-> [ . . . ]
-> 
-> > > > > Greg, would it be possible to pull in the current Android code?  There
-> > > > > have been a few fixes.  ;-)
-> > > > 
-> > > > I did base the stuff in staging on the common.git tree, but for some
-> > > > reason this patch wasn't applied, odd, I'll go apply it now...
-> > > > 
-> > > > Ah, I see, it didn't apply for various reasons:
-> > > > 
-> > > > patching file drivers/staging/android/lowmemorykiller.c
-> > > > Hunk #1 FAILED at 71.
-> > > > Hunk #2 FAILED at 168.
-> > > > Hunk #3 succeeded at 196 (offset 11 lines).
-> > > > Hunk #4 succeeded at 204 (offset 11 lines).
-> > > > 
-> > > > Care to rebase this patch and send it to me so that I can apply it?  I
-> > > > don't have the time to do it myself at the moment, sorry, lots of higher
-> > > > priority items to get done this week, sorry.
-> > > 
-> > > I will give it a shot.  Working with linux-next -- if some other tree
-> > > would be better for you, please let me know.
-> > 
-> > linux-next is great, thanks.
-> 
-> Sasha, does the following patch against -next fix this problem for you?
+>
+> ...
+>
+> @@ -147,6 +155,14 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+>  			local_irq_enable();		\
+>  		}					\
+>  	} while (0)
+> +#define on_each_cpu_cond(cond_func, func, info, wait) \
+> +	do {						\
+> +		if (cond_func(0, info)) {		\
 
-Sigh!  This time with the full patch...  :-/
+I suppose this is reasonable.  It's likely that on UP, cond_func() will
+always return true but perhaps for some reason it won't.  hmmm...
 
-							Thanx, Paul
+> +			local_irq_disable();		\
+> +			(func)(info);			\
+> +			local_irq_enable();		\
+> +		}					\
+> +	} while (0)
+>  
+>  static inline void smp_send_reschedule(int cpu) { }
+>  #define num_booting_cpus()			1
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index 7c0cbd7..5f7b24e 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -721,3 +721,30 @@ void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
+>  	put_cpu();
+>  }
+>  EXPORT_SYMBOL(on_each_cpu_mask);
+> +
+> +/*
+> + * Call a function on each processor for which the supplied function
+> + * cond_func returns a positive value. This may include the local
+> + * processor, optionally waiting for all the required CPUs to finish.
+> + * The function may be called on all online CPUs without running the
+> + * cond_func function in extreme circumstance (memory allocation
+> + * failure condition when CONFIG_CPUMASK_OFFSTACK=y)
+> + * All the limitations specified in smp_call_function_many apply.
+> + */
+> +void on_each_cpu_cond(int (*cond_func) (int cpu, void *info),
+> +			void (*func)(void *), void *info, bool wait)
+> +{
+> +	cpumask_var_t cpus;
+> +	int cpu;
+> +
+> +	if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
+> +		for_each_online_cpu(cpu)
+> +			if (cond_func(cpu, info))
+> +				cpumask_set_cpu(cpu, cpus);
+> +		on_each_cpu_mask(cpus, func, info, wait);
+> +		free_cpumask_var(cpus);
+> +	} else
+> +		on_each_cpu(func, info, wait);
+> +}
+> +EXPORT_SYMBOL(on_each_cpu_cond);
 
-------------------------------------------------------------------------
+If zalloc_cpumask_var() fails, can we not fall back to
 
-lowmemorykiller: don't unregister notifier from atomic context
-
-The lowmemorykiller registers an atomic notifier for notfication of when
-the task is freed.  From this atomic notifier callback, it removes the
-atomic notifier via task_free_unregister().  This is incorrect because
-atomic_notifier_chain_unregister() calls syncronize_rcu(), which can
-sleep, which shouldn't be done from an atomic notifier.
-
-Fix this by registering the notifier during init, and only unregister it
-if the lowmemorykiller is unloaded.
-
-Rebased to -next by Paul E. McKenney.
-
-Change-Id: I1577b04e617bc2b2e39dcb490fcfc9ce660eb7ec
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Christian Bejram <christian.bejram@stericsson.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
-index 2d8d2b7..edb2d09 100644
---- a/drivers/staging/android/lowmemorykiller.c
-+++ b/drivers/staging/android/lowmemorykiller.c
-@@ -72,10 +72,9 @@ static int
- task_notify_func(struct notifier_block *self, unsigned long val, void *data)
- {
- 	struct task_struct *task = data;
--	if (task == lowmem_deathpending) {
-+	if (task == lowmem_deathpending)
- 		lowmem_deathpending = NULL;
--		task_handoff_unregister(&task_nb);
--	}
-+
- 	return NOTIFY_OK;
- }
- 
-@@ -172,13 +171,11 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
- 			     selected->pid, selected->comm,
- 			     selected_oom_adj, selected_tasksize);
- 		/*
--		 * If CONFIG_PROFILING is off, then task_handoff_register()
--		 * is a nop. In that case we don't want to stall the killer
--		 * by setting lowmem_deathpending.
-+		 * If CONFIG_PROFILING is off, then we don't want to stall
-+		 * the killer by setting lowmem_deathpending.
- 		 */
- #ifdef CONFIG_PROFILING
- 		lowmem_deathpending = selected;
--		task_handoff_register(&task_nb);
- #endif
- 		force_sig(SIGKILL, selected);
- 		rem -= selected_tasksize;
-@@ -196,6 +193,7 @@ static struct shrinker lowmem_shrinker = {
- 
- static int __init lowmem_init(void)
- {
-+	task_handoff_register(&task_nb);
- 	register_shrinker(&lowmem_shrinker);
- 	return 0;
- }
-@@ -203,6 +201,7 @@ static int __init lowmem_init(void)
- static void __exit lowmem_exit(void)
- {
- 	unregister_shrinker(&lowmem_shrinker);
-+	task_handoff_unregister(&task_nb);
- }
- 
- module_param_named(cost, lowmem_shrinker.seeks, int, S_IRUGO | S_IWUSR);
+		for_each_online_cpu(cpu)
+			if (cond_func(cpu, info))
+				smp_call_function_single(...);
 
