@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab2ACWhb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:37:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39685 "EHLO mx2.suse.de"
+	id S1755691Ab2ACWhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:37:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39710 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755618Ab2ACWhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:37:22 -0500
+	id S1755666Ab2ACWhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:37:37 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:36 2012
-Message-Id: <20120103223036.137279785@clark.kroah.org>
+Message-Id: <20120103223036.382195374@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:30:15 -0800
+Date: Tue, 03 Jan 2012 14:30:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [57/67] sctp: fix incorrect overflow check on autoclose
+Subject: [60/67] ipv4: reintroduce route cache garbage collector
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,120 +26,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit 2692ba61a82203404abd7dd2a027bda962861f74 ]
+[ Upstream commit 9f28a2fc0bd77511f649c0a788c7bf9a5fd04edb ]
 
-Commit 8ffd3208 voids the previous patches f6778aab and 810c0719 for
-limiting the autoclose value.  If userspace passes in -1 on 32-bit
-platform, the overflow check didn't work and autoclose would be set
-to 0xffffffff.
+Commit 2c8cec5c10b (ipv4: Cache learned PMTU information in inetpeer)
+removed IP route cache garbage collector a bit too soon, as this gc was
+responsible for expired routes cleanup, releasing their neighbour
+reference.
 
-This patch defines a max_autoclose (in seconds) for limiting the value
-and exposes it through sysctl, with the following intentions.
+As pointed out by Robert Gladewitz, recent kernels can fill and exhaust
+their neighbour cache.
 
-1) Avoid overflowing autoclose * HZ.
+Reintroduce the garbage collection, since we'll have to wait our
+neighbour lookups become refcount-less to not depend on this stuff.
 
-2) Keep the default autoclose bound consistent across 32- and 64-bit
-   platforms (INT_MAX / HZ in this patch).
-
-3) Keep the autoclose value consistent between setsockopt() and
-   getsockopt() calls.
-
-Suggested-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reported-by: Robert Gladewitz <gladewitz@gmx.de>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/net/sctp/structs.h |    4 ++++
- net/sctp/associola.c       |    2 +-
- net/sctp/protocol.c        |    3 +++
- net/sctp/socket.c          |    2 --
- net/sctp/sysctl.c          |   13 +++++++++++++
- 5 files changed, 21 insertions(+), 3 deletions(-)
+ net/ipv4/route.c |  106 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 106 insertions(+)
 
---- a/include/net/sctp/structs.h
-+++ b/include/net/sctp/structs.h
-@@ -236,6 +236,9 @@ extern struct sctp_globals {
- 	 * bits is an indicator of when to send and window update SACK.
- 	 */
- 	int rwnd_update_shift;
+--- a/net/ipv4/route.c
++++ b/net/ipv4/route.c
+@@ -132,6 +132,9 @@ static int ip_rt_min_pmtu __read_mostly
+ static int ip_rt_min_advmss __read_mostly	= 256;
+ static int rt_chain_length_max __read_mostly	= 20;
+ 
++static struct delayed_work expires_work;
++static unsigned long expires_ljiffies;
 +
-+	/* Threshold for autoclose timeout, in seconds. */
-+	unsigned long max_autoclose;
- } sctp_globals;
- 
- #define sctp_rto_initial		(sctp_globals.rto_initial)
-@@ -271,6 +274,7 @@ extern struct sctp_globals {
- #define sctp_auth_enable		(sctp_globals.auth_enable)
- #define sctp_checksum_disable		(sctp_globals.checksum_disable)
- #define sctp_rwnd_upd_shift		(sctp_globals.rwnd_update_shift)
-+#define sctp_max_autoclose		(sctp_globals.max_autoclose)
- 
- /* SCTP Socket type: UDP or TCP style. */
- typedef enum {
---- a/net/sctp/associola.c
-+++ b/net/sctp/associola.c
-@@ -173,7 +173,7 @@ static struct sctp_association *sctp_ass
- 	asoc->timeouts[SCTP_EVENT_TIMEOUT_HEARTBEAT] = 0;
- 	asoc->timeouts[SCTP_EVENT_TIMEOUT_SACK] = asoc->sackdelay;
- 	asoc->timeouts[SCTP_EVENT_TIMEOUT_AUTOCLOSE] =
--		(unsigned long)sp->autoclose * HZ;
-+		min_t(unsigned long, sp->autoclose, sctp_max_autoclose) * HZ;
- 
- 	/* Initializes the timers */
- 	for (i = SCTP_EVENT_TIMEOUT_NONE; i < SCTP_NUM_TIMEOUT_TYPES; ++i)
---- a/net/sctp/protocol.c
-+++ b/net/sctp/protocol.c
-@@ -1144,6 +1144,9 @@ SCTP_STATIC __init int sctp_init(void)
- 	sctp_max_instreams    		= SCTP_DEFAULT_INSTREAMS;
- 	sctp_max_outstreams   		= SCTP_DEFAULT_OUTSTREAMS;
- 
-+	/* Initialize maximum autoclose timeout. */
-+	sctp_max_autoclose		= INT_MAX / HZ;
-+
- 	/* Initialize handle used for association ids. */
- 	idr_init(&sctp_assocs_id);
- 
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -2129,8 +2129,6 @@ static int sctp_setsockopt_autoclose(str
- 		return -EINVAL;
- 	if (copy_from_user(&sp->autoclose, optval, optlen))
- 		return -EFAULT;
--	/* make sure it won't exceed MAX_SCHEDULE_TIMEOUT */
--	sp->autoclose = min_t(long, sp->autoclose, MAX_SCHEDULE_TIMEOUT / HZ);
- 
- 	return 0;
+ /*
+  *	Interface to generic destination cache.
+  */
+@@ -821,6 +824,97 @@ static int has_noalias(const struct rtab
+ 	return ONE;
  }
---- a/net/sctp/sysctl.c
-+++ b/net/sctp/sysctl.c
-@@ -53,6 +53,10 @@ static int sack_timer_min = 1;
- static int sack_timer_max = 500;
- static int addr_scope_max = 3; /* check sctp_scope_policy_t in include/net/sctp/constants.h for max entries */
- static int rwnd_scale_max = 16;
-+static unsigned long max_autoclose_min = 0;
-+static unsigned long max_autoclose_max =
-+	(MAX_SCHEDULE_TIMEOUT / HZ > UINT_MAX)
-+	? UINT_MAX : MAX_SCHEDULE_TIMEOUT / HZ;
  
- extern long sysctl_sctp_mem[3];
- extern int sysctl_sctp_rmem[3];
-@@ -251,6 +255,15 @@ static ctl_table sctp_table[] = {
- 		.extra1		= &one,
- 		.extra2		= &rwnd_scale_max,
++static void rt_check_expire(void)
++{
++	static unsigned int rover;
++	unsigned int i = rover, goal;
++	struct rtable *rth;
++	struct rtable __rcu **rthp;
++	unsigned long samples = 0;
++	unsigned long sum = 0, sum2 = 0;
++	unsigned long delta;
++	u64 mult;
++
++	delta = jiffies - expires_ljiffies;
++	expires_ljiffies = jiffies;
++	mult = ((u64)delta) << rt_hash_log;
++	if (ip_rt_gc_timeout > 1)
++		do_div(mult, ip_rt_gc_timeout);
++	goal = (unsigned int)mult;
++	if (goal > rt_hash_mask)
++		goal = rt_hash_mask + 1;
++	for (; goal > 0; goal--) {
++		unsigned long tmo = ip_rt_gc_timeout;
++		unsigned long length;
++
++		i = (i + 1) & rt_hash_mask;
++		rthp = &rt_hash_table[i].chain;
++
++		if (need_resched())
++			cond_resched();
++
++		samples++;
++
++		if (rcu_dereference_raw(*rthp) == NULL)
++			continue;
++		length = 0;
++		spin_lock_bh(rt_hash_lock_addr(i));
++		while ((rth = rcu_dereference_protected(*rthp,
++					lockdep_is_held(rt_hash_lock_addr(i)))) != NULL) {
++			prefetch(rth->dst.rt_next);
++			if (rt_is_expired(rth)) {
++				*rthp = rth->dst.rt_next;
++				rt_free(rth);
++				continue;
++			}
++			if (rth->dst.expires) {
++				/* Entry is expired even if it is in use */
++				if (time_before_eq(jiffies, rth->dst.expires)) {
++nofree:
++					tmo >>= 1;
++					rthp = &rth->dst.rt_next;
++					/*
++					 * We only count entries on
++					 * a chain with equal hash inputs once
++					 * so that entries for different QOS
++					 * levels, and other non-hash input
++					 * attributes don't unfairly skew
++					 * the length computation
++					 */
++					length += has_noalias(rt_hash_table[i].chain, rth);
++					continue;
++				}
++			} else if (!rt_may_expire(rth, tmo, ip_rt_gc_timeout))
++				goto nofree;
++
++			/* Cleanup aged off entries. */
++			*rthp = rth->dst.rt_next;
++			rt_free(rth);
++		}
++		spin_unlock_bh(rt_hash_lock_addr(i));
++		sum += length;
++		sum2 += length*length;
++	}
++	if (samples) {
++		unsigned long avg = sum / samples;
++		unsigned long sd = int_sqrt(sum2 / samples - avg*avg);
++		rt_chain_length_max = max_t(unsigned long,
++					ip_rt_gc_elasticity,
++					(avg + 4*sd) >> FRACT_BITS);
++	}
++	rover = i;
++}
++
++/*
++ * rt_worker_func() is run in process context.
++ * we call rt_check_expire() to scan part of the hash table
++ */
++static void rt_worker_func(struct work_struct *work)
++{
++	rt_check_expire();
++	schedule_delayed_work(&expires_work, ip_rt_gc_interval);
++}
++
+ /*
+  * Perturbation of rt_genid by a small quantity [1..256]
+  * Using 8 bits of shuffling ensure we can call rt_cache_invalidate()
+@@ -3088,6 +3182,13 @@ static ctl_table ipv4_route_table[] = {
+ 		.proc_handler	= proc_dointvec_jiffies,
  	},
-+	{
-+		.procname	= "max_autoclose",
-+		.data		= &sctp_max_autoclose,
-+		.maxlen		= sizeof(unsigned long),
+ 	{
++		.procname	= "gc_interval",
++		.data		= &ip_rt_gc_interval,
++		.maxlen		= sizeof(int),
 +		.mode		= 0644,
-+		.proc_handler	= &proc_doulongvec_minmax,
-+		.extra1		= &max_autoclose_min,
-+		.extra2		= &max_autoclose_max,
++		.proc_handler	= proc_dointvec_jiffies,
 +	},
++	{
+ 		.procname	= "redirect_load",
+ 		.data		= &ip_rt_redirect_load,
+ 		.maxlen		= sizeof(int),
+@@ -3297,6 +3398,11 @@ int __init ip_rt_init(void)
+ 	devinet_init();
+ 	ip_fib_init();
  
- 	{ /* sentinel */ }
- };
++	INIT_DELAYED_WORK_DEFERRABLE(&expires_work, rt_worker_func);
++	expires_ljiffies = jiffies;
++	schedule_delayed_work(&expires_work,
++		net_random() % ip_rt_gc_interval + ip_rt_gc_interval);
++
+ 	if (ip_rt_proc_init())
+ 		printk(KERN_ERR "Unable to create route proc files\n");
+ #ifdef CONFIG_XFRM
 
 
