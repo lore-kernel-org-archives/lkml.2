@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756238Ab2ACWvt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:51:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:40284 "EHLO mx2.suse.de"
+	id S1756233Ab2ACWwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:52:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:40269 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756212Ab2ACWku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:40:50 -0500
+	id S1756192Ab2ACWkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:40:42 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:33:24 2012
-Message-Id: <20120103223324.714665377@clark.kroah.org>
+Message-Id: <20120103223324.546337531@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:33:17 -0800
+Date: Tue, 03 Jan 2012 14:33:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Will Deacon <will.deacon@arm.com>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [44/75] oprofile, arm/sh: Fix oprofile_arch_exit() linkage issue
+        alan@lxorguk.ukuu.org.uk, Ulf Hansson <ulf.hansson@stericsson.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [42/75] ARM: 7214/1: mmc: mmci: Fixup handling of MCI_STARTBITERR
 In-Reply-To: <20120103223332.GA4112@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,64 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
+From: Ulf Hansson <ulf.hansson@stericsson.com>
 
-commit 55205c916e179e09773d98d290334d319f45ac6b upstream.
+commit b63038d6f4ca5d1849ce01d9fc5bb9cb426dec73 upstream.
 
-This change fixes a linking problem, which happens if oprofile
-is selected to be compiled as built-in:
+The interrupt was previously enabled and then correctly cleared.
+Now we also handle it correctly.
 
-  `oprofile_arch_exit' referenced in section `.init.text' of
-  arch/arm/oprofile/built-in.o: defined in discarded section
-  `.exit.text' of arch/arm/oprofile/built-in.o
-
-The problem is appeared after commit 87121ca504, which
-introduced oprofile_arch_exit() calls from __init function. Note
-that the aforementioned commit has been backported to stable
-branches, and the problem is known to be reproduced at least
-with 3.0.13 and 3.1.5 kernels.
-
-Signed-off-by: Vladimir Zapolskiy <vladimir.zapolskiy@nokia.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: oprofile-list <oprofile-list@lists.sourceforge.net>
-Link: http://lkml.kernel.org/r/20111222151540.GB16765@erda.amd.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Tested-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Ulf Hansson <ulf.hansson@stericsson.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/oprofile/common.c |    2 +-
- arch/sh/oprofile/common.c  |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/mmc/host/mmci.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -116,7 +116,7 @@ int __init oprofile_arch_init(struct opr
- 	return oprofile_perf_init(ops);
- }
- 
--void __exit oprofile_arch_exit(void)
-+void oprofile_arch_exit(void)
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -673,7 +673,8 @@ mmci_data_irq(struct mmci_host *host, st
+ 	      unsigned int status)
  {
- 	oprofile_perf_exit();
- }
---- a/arch/sh/oprofile/common.c
-+++ b/arch/sh/oprofile/common.c
-@@ -49,7 +49,7 @@ int __init oprofile_arch_init(struct opr
- 	return oprofile_perf_init(ops);
- }
+ 	/* First check for errors */
+-	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
++	if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
++		      MCI_TXUNDERRUN|MCI_RXOVERRUN)) {
+ 		u32 remain, success;
  
--void __exit oprofile_arch_exit(void)
-+void oprofile_arch_exit(void)
- {
- 	oprofile_perf_exit();
- 	kfree(sh_pmu_op_name);
-@@ -60,5 +60,5 @@ int __init oprofile_arch_init(struct opr
- 	ops->backtrace = sh_backtrace;
- 	return -ENODEV;
- }
--void __exit oprofile_arch_exit(void) {}
-+void oprofile_arch_exit(void) {}
- #endif /* CONFIG_HW_PERF_EVENTS */
+ 		/* Terminate the DMA transfer */
+@@ -953,8 +954,9 @@ static irqreturn_t mmci_irq(int irq, voi
+ 		dev_dbg(mmc_dev(host->mmc), "irq0 (data+cmd) %08x\n", status);
+ 
+ 		data = host->data;
+-		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_TXUNDERRUN|
+-			      MCI_RXOVERRUN|MCI_DATAEND|MCI_DATABLOCKEND) && data)
++		if (status & (MCI_DATACRCFAIL|MCI_DATATIMEOUT|MCI_STARTBITERR|
++			      MCI_TXUNDERRUN|MCI_RXOVERRUN|MCI_DATAEND|
++			      MCI_DATABLOCKEND) && data)
+ 			mmci_data_irq(host, data, status);
+ 
+ 		cmd = host->cmd;
 
 
