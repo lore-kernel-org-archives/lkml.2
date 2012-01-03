@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab2ACWgf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:36:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39561 "EHLO mx2.suse.de"
+	id S1755506Ab2ACXDr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:03:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39558 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755439Ab2ACWgc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:36:32 -0500
+	id S1755472Ab2ACWg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:36:28 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:32 2012
-Message-Id: <20120103223032.404102859@clark.kroah.org>
+Message-Id: <20120103223032.320031394@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:31 -0800
+Date: Tue, 03 Jan 2012 14:29:30 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Michael Buesch <m@bues.ch>,
-        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [13/67] ssb: fix init regression with SoCs
+        alan@lxorguk.ukuu.org.uk, Mike Snitzer <snitzer@redhat.com>,
+        David Rientjes <rientjes@google.com>, Jens Axboe <axboe@kernel.dk>
+Subject: [12/67] block: initialize request_queues numa node during
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,55 +25,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hauke Mehrtens <hauke@hauke-m.de>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 329456d1ffb416c220813725b7363cda9975c9aa upstream.
+commit 5151412dd4338b273afdb107c3772528e9e67d92 upstream.
 
-This fixes a Data bus error on some SoCs. The first fix for this
-problem did not solve it on all devices.
-    commit 6ae8ec27868bfdbb815287bee8146acbefaee867
-    Author: Rafał Miłecki <zajec5@gmail.com>
-    Date:   Tue Jul 5 17:25:32 2011 +0200
-        ssb: fix init regression of hostmode PCI core
+struct request_queue is allocated with __GFP_ZERO so its "node" field is
+zero before initialization.  This causes an oops if node 0 is offline in
+the page allocator because its zonelists are not initialized.  From Dave
+Young's dmesg:
 
-In ssb_pcicore_fix_sprom_core_index() the sprom on the PCI core is
-accessed, but the sprom only exists when the ssb bus is connected over
-a PCI bus to the rest of the system and not when the SSB Bus is the
-main system bus. SoCs sometimes have a PCI host controller and there
-this code will not be executed, but there are some old SoCs with an PCI
-controller in client mode around and ssb_pcicore_fix_sprom_core_index()
-should not be called on these devices too. The PCI controller on these
-devices are unused, but without this fix it results in an Data bus
-error when it gets initialized.
+	SRAT: Node 1 PXM 2 0-d0000000
+	SRAT: Node 1 PXM 2 100000000-330000000
+	SRAT: Node 0 PXM 1 330000000-630000000
+	Initmem setup node 1 0000000000000000-000000000affb000
+	...
+	Built 1 zonelists in Node order, mobility grouping on.
+	...
+	BUG: unable to handle kernel paging request at 0000000000001c08
+	IP: [<ffffffff8111c355>] __alloc_pages_nodemask+0xb5/0x870
 
-Cc: Michael Buesch <m@bues.ch>
-Cc: Rafał Miłecki <zajec5@gmail.com>
-Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+and __alloc_pages_nodemask+0xb5 translates to a NULL pointer on
+zonelist->_zonerefs.
+
+The fix is to initialize q->node at the time of allocation so the correct
+node is passed to the slab allocator later.
+
+Since blk_init_allocated_queue_node() is no longer needed, merge it with
+blk_init_allocated_queue().
+
+[rientjes@google.com: changelog, initializing q->node]
+Reported-by: Dave Young <dyoung@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Tested-by: Dave Young <dyoung@redhat.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ssb/driver_pcicore.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ block/blk-core.c       |   14 +++-----------
+ include/linux/blkdev.h |    3 ---
+ 2 files changed, 3 insertions(+), 14 deletions(-)
 
---- a/drivers/ssb/driver_pcicore.c
-+++ b/drivers/ssb/driver_pcicore.c
-@@ -516,10 +516,14 @@ static void ssb_pcicore_pcie_setup_worka
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -418,6 +418,7 @@ struct request_queue *blk_alloc_queue_no
+ 	q->backing_dev_info.state = 0;
+ 	q->backing_dev_info.capabilities = BDI_CAP_MAP_COPY;
+ 	q->backing_dev_info.name = "block";
++	q->node = node_id;
  
- static void ssb_pcicore_init_clientmode(struct ssb_pcicore *pc)
+ 	err = bdi_init(&q->backing_dev_info);
+ 	if (err) {
+@@ -502,7 +503,7 @@ blk_init_queue_node(request_fn_proc *rfn
+ 	if (!uninit_q)
+ 		return NULL;
+ 
+-	q = blk_init_allocated_queue_node(uninit_q, rfn, lock, node_id);
++	q = blk_init_allocated_queue(uninit_q, rfn, lock);
+ 	if (!q)
+ 		blk_cleanup_queue(uninit_q);
+ 
+@@ -514,18 +515,9 @@ struct request_queue *
+ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 			 spinlock_t *lock)
  {
--	ssb_pcicore_fix_sprom_core_index(pc);
-+	struct ssb_device *pdev = pc->dev;
-+	struct ssb_bus *bus = pdev->bus;
-+
-+	if (bus->bustype == SSB_BUSTYPE_PCI)
-+		ssb_pcicore_fix_sprom_core_index(pc);
+-	return blk_init_allocated_queue_node(q, rfn, lock, -1);
+-}
+-EXPORT_SYMBOL(blk_init_allocated_queue);
+-
+-struct request_queue *
+-blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+-			      spinlock_t *lock, int node_id)
+-{
+ 	if (!q)
+ 		return NULL;
  
- 	/* Disable PCI interrupts. */
--	ssb_write32(pc->dev, SSB_INTVEC, 0);
-+	ssb_write32(pdev, SSB_INTVEC, 0);
+-	q->node = node_id;
+ 	if (blk_init_free_list(q))
+ 		return NULL;
  
- 	/* Additional PCIe always once-executed workarounds */
- 	if (pc->dev->id.coreid == SSB_DEV_PCIE) {
+@@ -555,7 +547,7 @@ blk_init_allocated_queue_node(struct req
+ 
+ 	return NULL;
+ }
+-EXPORT_SYMBOL(blk_init_allocated_queue_node);
++EXPORT_SYMBOL(blk_init_allocated_queue);
+ 
+ int blk_get_queue(struct request_queue *q)
+ {
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -798,9 +798,6 @@ extern void blk_unprep_request(struct re
+  */
+ extern struct request_queue *blk_init_queue_node(request_fn_proc *rfn,
+ 					spinlock_t *lock, int node_id);
+-extern struct request_queue *blk_init_allocated_queue_node(struct request_queue *,
+-							   request_fn_proc *,
+-							   spinlock_t *, int node_id);
+ extern struct request_queue *blk_init_queue(request_fn_proc *, spinlock_t *);
+ extern struct request_queue *blk_init_allocated_queue(struct request_queue *,
+ 						      request_fn_proc *, spinlock_t *);
 
 
