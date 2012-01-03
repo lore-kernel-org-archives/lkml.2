@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755224Ab2ACX61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 18:58:27 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51999 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755136Ab2ACX6Y (ORCPT
+	id S1755253Ab2ACX76 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:59:58 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:36762 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab2ACX74 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 18:58:24 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-Cc: linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] omap: use usleep_range() instead of mdelay()/udelay()
-Organization: Texas Instruments, Inc.
-References: <4EF18426.3040805@linaro.org>
-Date: Tue, 03 Jan 2012 15:58:16 -0800
-In-Reply-To: <4EF18426.3040805@linaro.org> (Dmitry Antipov's message of "Wed,
-	21 Dec 2011 11:00:54 +0400")
-Message-ID: <87fwfw8hk7.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 3 Jan 2012 18:59:56 -0500
+Date: Wed, 4 Jan 2012 10:59:47 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kalle Valo <kvalo@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: linux-next: merge of the wireless-next tree into the net-next tree
+Message-Id: <20120104105947.8bac77d1d7198a49e6feeca8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__4_Jan_2012_10_59_47_+1100_pBA0mO36a3BOHXo3"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Antipov <dmitry.antipov@linaro.org> writes:
+--Signature=_Wed__4_Jan_2012_10_59_47_+1100_pBA0mO36a3BOHXo3
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> From e4db974edb5c46360465462518a88b83f1bdedf6 Mon Sep 17 00:00:00 2001
-> From: Dmitry Antipov <dmitry.antipov@linaro.org>
-> Date: Wed, 21 Dec 2011 10:57:08 +0400
-> Subject: [PATCH] omap: use usleep_range() instead of mdelay()/udelay()
+Hi all,
 
-Please include a signoff and a descriptive changelog (describing why.)
+I noticed that the wireless-next tree has been merged into the net-next
+tree today.  Has anything been done about the build failure I reported in
+the wireless-next a while ago:
 
-Thanks,
-
-Kevin
-
-> ---
->  arch/arm/mach-omap2/omap_phy_internal.c |    2 +-
->  arch/arm/mach-omap2/vc.c                |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+On 12/22/2011 16:58 +1100, Stephen Rothwell wrote:
 >
-> diff --git a/arch/arm/mach-omap2/omap_phy_internal.c b/arch/arm/mach-omap2/omap_phy_internal.c
-> index 58775e3..e5dff64 100644
-> --- a/arch/arm/mach-omap2/omap_phy_internal.c
-> +++ b/arch/arm/mach-omap2/omap_phy_internal.c
-> @@ -145,7 +145,7 @@ int omap4430_phy_suspend(struct device *dev, int suspend)
->  		/* power on the phy */
->  		if (__raw_readl(ctrl_base + CONTROL_DEV_CONF) & PHY_PD) {
->  			__raw_writel(~PHY_PD, ctrl_base + CONTROL_DEV_CONF);
-> -			mdelay(200);
-> +			usleep_range(200000, 201000);
->  		}
->
->  		/* restore the context */
-> diff --git a/arch/arm/mach-omap2/vc.c b/arch/arm/mach-omap2/vc.c
-> index 031d116..57f44d5 100644
-> --- a/arch/arm/mach-omap2/vc.c
-> +++ b/arch/arm/mach-omap2/vc.c
-> @@ -151,7 +151,7 @@ void omap_vc_post_scale(struct voltagedomain *voltdm,
->  	/* SMPS slew rate / step size. 2us added as buffer. */
->  	smps_delay = ((smps_steps * voltdm->pmic->step_size) /
->  			voltdm->pmic->slew_rate) + 2;
-> -	udelay(smps_delay);
-> +	usleep_range(smps_delay, smps_delay + 10);
->  }
->
->  /* vc_bypass_scale - VC bypass method of voltage scaling */
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>=20
+> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ')' befo=
+re 'KBUILD_MODNAME'
+> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: 'KBUILD_MODNAME' =
+undeclared here (not in a function)
+> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ',' or '=
+;' before string constant
+> drivers/net/wireless/ath/ath6kl/init.c:32:1: error: expected ')' before '=
+KBUILD_MODNAME'
+> drivers/net/wireless/ath/ath6kl/init.c:32:1: error: 'KBUILD_MODNAME' unde=
+clared here (not in a function)
+> drivers/net/wireless/ath/ath6kl/init.c:32:1: error: expected ',' or ';' b=
+efore string constant
+> drivers/net/wireless/ath/ath6kl/init.c:33:1: error: expected ')' before '=
+KBUILD_MODNAME'
+> drivers/net/wireless/ath/ath6kl/init.c:33:1: error: invalid initializer
+> drivers/net/wireless/ath/ath6kl/init.c:33:1: error: expected ',' or ';' b=
+efore string constant
+> drivers/net/wireless/ath/ath6kl/init.c:34:1: error: expected ')' before '=
+KBUILD_MODNAME'
+> drivers/net/wireless/ath/ath6kl/init.c:34:1: error: invalid initializer
+> drivers/net/wireless/ath/ath6kl/init.c:34:1: error: expected ',' or ';' b=
+efore string constant
+>=20
+> I can't figure out what goes wrong here.  On the compile command line,
+> KBUILD_MODNAME is not defined, but KBUILD_BASE_NAME is.
+>=20
+> However, reverting commit fde57764ef87 ("ath6kl: enable USB support")
+> made the problem go away.  That commit caused the above two files to be
+> built into two separate modules.
+
+
+There was some discussion, but I did not notice any fix (I may have
+missed it).  I have been reverting that above commit ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__4_Jan_2012_10_59_47_+1100_pBA0mO36a3BOHXo3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPA5ZzAAoJEECxmPOUX5FExPIP/32VmrVKxrn4h8MMIbZ/ouy2
+0jX/DGq0OHT6dDWNxIG65NU71GOlVJ8uOVLl6jKrl0ZZ5+CWTaly/fKj7ekkegjH
+wEmmbGrLUC7R+bOjXfX7jHkG0x35kivGihbM0K+I5QwkeHdOQiigOSG94iqDcBpt
+m1V/Xj9VANHn7+WqwaVX6aoODNYz9KiKju08KIldu2Wn2C4wQK4NjFQPLGLeHufu
+EeHRYy1tq6M+sIFKC+OffAdJQzCOTaPL34Ytrh6qgkSvmqPXz3pD/i+MBhPADBH6
+TnGi3XqYzzTKNKdlV5xrGlYMdEa4c326UE8terajOiFuODXZSmojyoqga18MzKS0
+aTVu9kbSZBqZRisvghoXR1G+/u3P2xbiqkbWJXKjAJ85Vl79GMgnGy5G57hegAsx
+SvG0LcZIwtlX4g0VSGUtoMIxtV32vi7cwmCOfE4ABI19NLqQ6v6QG9IbGdZPHduz
+k7xoddIjml7szbjGdFB+ouCB1QcOkFWSyDTK/5bV3UXBfjMe2dVvwf3KemGccTLg
+yCbBfK5ulB9iLOEc/jCcv8ZI5shmhPn2DigbK8UucrdztI8Np3/pmCGv/j35F3eA
+V1E82L1p/Sm2dfQi3WiGnhD+mOV31mEUEvXMuPoKW40YHkREI8FZ5M7MUuZIDd81
+Q9LYsTK5VGKJqyhdt+08
+=mCsb
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__4_Jan_2012_10_59_47_+1100_pBA0mO36a3BOHXo3--
