@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab2ACWfM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:35:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39332 "EHLO mx2.suse.de"
+	id S1754687Ab2ACXHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 18:07:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39343 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754287Ab2ACWfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:35:07 -0500
+	id S1754338Ab2ACWfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 17:35:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan  3 14:30:33 2012
-Message-Id: <20120103223033.015052373@clark.kroah.org>
+Message-Id: <20120103223033.087212856@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 03 Jan 2012 14:29:38 -0800
+Date: Tue, 03 Jan 2012 14:29:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [20/67] NFSv4.1: Ensure that we handle _all_ SEQUENCE status bits.
+        alan@lxorguk.ukuu.org.uk, David Howells <dhowells@redhat.com>,
+        Paul Moore <paul@paul-moore.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        James Morris <jmorris@namei.org>
+Subject: [21/67] SELinux: Fix RCU deref check warning in sel_netport_insert()
 In-Reply-To: <20120103223043.GA26738@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,42 +27,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 111d489f0fb431f4ae85d96851fbf8d3248c09d8 upstream.
+commit 50345f1ea9cda4618d9c26e590a97ecd4bc7ac75 upstream.
 
-Currently, the code assumes that the SEQUENCE status bits are mutually
-exclusive. They are not...
+Fix the following bug in sel_netport_insert() where rcu_dereference() should
+be rcu_dereference_protected() as sel_netport_lock is held.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+security/selinux/netport.c:127 invoked rcu_dereference_check() without protection!
+
+other info that might help us debug this:
+
+rcu_scheduler_active = 1, debug_locks = 0
+1 lock held by ossec-rootcheck/3323:
+ #0:  (sel_netport_lock){+.....}, at: [<ffffffff8117d775>] sel_netport_sid+0xbb/0x226
+
+stack backtrace:
+Pid: 3323, comm: ossec-rootcheck Not tainted 3.1.0-rc8-fsdevel+ #1095
+Call Trace:
+ [<ffffffff8105cfb7>] lockdep_rcu_dereference+0xa7/0xb0
+ [<ffffffff8117d871>] sel_netport_sid+0x1b7/0x226
+ [<ffffffff8117d6ba>] ? sel_netport_avc_callback+0xbc/0xbc
+ [<ffffffff8117556c>] selinux_socket_bind+0x115/0x230
+ [<ffffffff810a5388>] ? might_fault+0x4e/0x9e
+ [<ffffffff810a53d1>] ? might_fault+0x97/0x9e
+ [<ffffffff81171cf4>] security_socket_bind+0x11/0x13
+ [<ffffffff812ba967>] sys_bind+0x56/0x95
+ [<ffffffff81380dac>] ? sysret_check+0x27/0x62
+ [<ffffffff8105b767>] ? trace_hardirqs_on_caller+0x11e/0x155
+ [<ffffffff81076fcd>] ? audit_syscall_entry+0x17b/0x1ae
+ [<ffffffff811b5eae>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff81380d7b>] system_call_fastpath+0x16/0x1b
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: James Morris <jmorris@namei.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/nfs4state.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ security/selinux/netport.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4state.c
-+++ b/fs/nfs/nfs4state.c
-@@ -1519,16 +1519,16 @@ void nfs41_handle_sequence_flag_errors(s
- {
- 	if (!flags)
- 		return;
--	else if (flags & SEQ4_STATUS_RESTART_RECLAIM_NEEDED)
-+	if (flags & SEQ4_STATUS_RESTART_RECLAIM_NEEDED)
- 		nfs41_handle_server_reboot(clp);
--	else if (flags & (SEQ4_STATUS_EXPIRED_ALL_STATE_REVOKED |
-+	if (flags & (SEQ4_STATUS_EXPIRED_ALL_STATE_REVOKED |
- 			    SEQ4_STATUS_EXPIRED_SOME_STATE_REVOKED |
- 			    SEQ4_STATUS_ADMIN_STATE_REVOKED |
- 			    SEQ4_STATUS_LEASE_MOVED))
- 		nfs41_handle_state_revoked(clp);
--	else if (flags & SEQ4_STATUS_RECALLABLE_STATE_REVOKED)
-+	if (flags & SEQ4_STATUS_RECALLABLE_STATE_REVOKED)
- 		nfs41_handle_recallable_state_revoked(clp);
--	else if (flags & (SEQ4_STATUS_CB_PATH_DOWN |
-+	if (flags & (SEQ4_STATUS_CB_PATH_DOWN |
- 			    SEQ4_STATUS_BACKCHANNEL_FAULT |
- 			    SEQ4_STATUS_CB_PATH_DOWN_SESSION))
- 		nfs41_handle_cb_path_down(clp);
+--- a/security/selinux/netport.c
++++ b/security/selinux/netport.c
+@@ -139,7 +139,9 @@ static void sel_netport_insert(struct se
+ 	if (sel_netport_hash[idx].size == SEL_NETPORT_HASH_BKT_LIMIT) {
+ 		struct sel_netport *tail;
+ 		tail = list_entry(
+-			rcu_dereference(sel_netport_hash[idx].list.prev),
++			rcu_dereference_protected(
++				sel_netport_hash[idx].list.prev,
++				lockdep_is_held(&sel_netport_lock)),
+ 			struct sel_netport, list);
+ 		list_del_rcu(&tail->list);
+ 		call_rcu(&tail->rcu, sel_netport_free);
 
 
