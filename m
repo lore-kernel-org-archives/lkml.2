@@ -1,36 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875Ab2ACWUA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 17:20:00 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:35963 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303Ab2ACWT6 (ORCPT
+	id S1752394Ab2ACW0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 17:26:22 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:43687 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751618Ab2ACW0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 17:19:58 -0500
-Date: Tue, 3 Jan 2012 22:19:54 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Keith Packard <keithp@keithp.com>
-Cc: linux-kernel@vger.kernel.org, Bdale Garbee <bdale@gag.com>
-Subject: Re: [PATCH] acpi/video: Don't restore backlight to 0 at boot time
-Message-ID: <20120103221954.GA2313@srcf.ucam.org>
-References: <1325321547-20637-1-git-send-email-keithp@keithp.com>
+	Tue, 3 Jan 2012 17:26:20 -0500
+Date: Tue, 3 Jan 2012 14:26:05 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
+Message-ID: <20120103222605.GH2376@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1324901803.31721.4.camel@lappy>
+ <20111226163148.GC2435@linux.vnet.ibm.com>
+ <1324977203.28904.1.camel@lappy>
+ <20111228042959.GA2477@linux.vnet.ibm.com>
+ <20120103202716.GA8384@linux.vnet.ibm.com>
+ <20120103203717.GA6701@suse.de>
+ <20120103213830.GG2376@linux.vnet.ibm.com>
+ <20120103215036.GA1347@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325321547-20637-1-git-send-email-keithp@keithp.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20120103215036.GA1347@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12010322-3352-0000-0000-000001B3EE9F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI arguably does define 0 as being off (this is exceedingly poorly 
-defined), but I'm not entirely happy with this - the firmware makes its 
-behaviour conditional on the OS version. I'd really like to see an 
-updated version of the Intel opregion spec to get a better idea of what 
-we're meant to be doing here, but the last one made public was ancient.
+On Tue, Jan 03, 2012 at 01:50:36PM -0800, Greg KH wrote:
+> On Tue, Jan 03, 2012 at 01:38:30PM -0800, Paul E. McKenney wrote:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+[ . . . ]
+
+> > > > Greg, would it be possible to pull in the current Android code?  There
+> > > > have been a few fixes.  ;-)
+> > > 
+> > > I did base the stuff in staging on the common.git tree, but for some
+> > > reason this patch wasn't applied, odd, I'll go apply it now...
+> > > 
+> > > Ah, I see, it didn't apply for various reasons:
+> > > 
+> > > patching file drivers/staging/android/lowmemorykiller.c
+> > > Hunk #1 FAILED at 71.
+> > > Hunk #2 FAILED at 168.
+> > > Hunk #3 succeeded at 196 (offset 11 lines).
+> > > Hunk #4 succeeded at 204 (offset 11 lines).
+> > > 
+> > > Care to rebase this patch and send it to me so that I can apply it?  I
+> > > don't have the time to do it myself at the moment, sorry, lots of higher
+> > > priority items to get done this week, sorry.
+> > 
+> > I will give it a shot.  Working with linux-next -- if some other tree
+> > would be better for you, please let me know.
+> 
+> linux-next is great, thanks.
+
+Sasha, does the following patch against -next fix this problem for you?
+
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+lowmemorykiller: don't unregister notifier from atomic context
+
+The lowmemorykiller registers an atomic notifier for notfication of when
+the task is freed.  From this atomic notifier callback, it removes the
+atomic notifier via task_free_unregister().  This is incorrect because
+atomic_notifier_chain_unregister() calls syncronize_rcu(), which can
+sleep, which shouldn't be done from an atomic notifier.
+
+Fix this by registering the notifier during init, and only unregister it
+if the lowmemorykiller is unloaded.
+
+Rebased to -next by Paul E. McKenney.
+
+Change-Id: I1577b04e617bc2b2e39dcb490fcfc9ce660eb7ec
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Christian Bejram <christian.bejram@stericsson.com>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
+diff --git a/drivers/staging/android/lowmemorykiller.c b/drivers/staging/android/lowmemorykiller.c
+index 2d8d2b7..30076f7 100644
+--- a/drivers/staging/android/lowmemorykiller.c
++++ b/drivers/staging/android/lowmemorykiller.c
+@@ -72,10 +72,9 @@ static int
+ task_notify_func(struct notifier_block *self, unsigned long val, void *data)
+ {
+ 	struct task_struct *task = data;
+-	if (task == lowmem_deathpending) {
++	if (task == lowmem_deathpending)
+ 		lowmem_deathpending = NULL;
+-		task_handoff_unregister(&task_nb);
+-	}
++
+ 	return NOTIFY_OK;
+ }
+ 
+@@ -172,13 +171,11 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
+ 			     selected->pid, selected->comm,
+ 			     selected_oom_adj, selected_tasksize);
+ 		/*
+-		 * If CONFIG_PROFILING is off, then task_handoff_register()
+-		 * is a nop. In that case we don't want to stall the killer
+-		 * by setting lowmem_deathpending.
++		 * If CONFIG_PROFILING is off, then we don't want to stall
++		 * the killer by setting lowmem_deathpending.
+ 		 */
+ #ifdef CONFIG_PROFILING
+ 		lowmem_deathpending = selected;
+-		task_handoff_register(&task_nb);
+ #endif
+ 		force_sig(SIGKILL, selected);
+ 		rem -= selected_tasksize;
+
