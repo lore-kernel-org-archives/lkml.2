@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab2ACVj6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 16:39:58 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:37194 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab2ACVj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 16:39:56 -0500
-Date: Tue, 3 Jan 2012 16:38:12 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Brian King <brking@linux.vnet.ibm.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
-Subject: Re: [PATCH] staging: zcache: fix serialization bug in zv stats
-Message-ID: <20120103213812.GL17472@phenom.dumpdata.com>
-References: <1325263335-16254-1-git-send-email-sjenning@linux.vnet.ibm.com>
- <d9558871-53ec-4d49-8df4-c09bee100a49@default>
- <4EFDF671.7020101@linux.vnet.ibm.com>
+	id S1754926Ab2ACVvd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 16:51:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34942 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754125Ab2ACVva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 16:51:30 -0500
+Date: Tue, 3 Jan 2012 13:50:36 -0800
+From: Greg KH <gregkh@suse.de>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: task rcuc/0:7 blocked for more than 120 seconds.
+Message-ID: <20120103215036.GA1347@suse.de>
+References: <1324901803.31721.4.camel@lappy>
+ <20111226163148.GC2435@linux.vnet.ibm.com>
+ <1324977203.28904.1.camel@lappy>
+ <20111228042959.GA2477@linux.vnet.ibm.com>
+ <20120103202716.GA8384@linux.vnet.ibm.com>
+ <20120103203717.GA6701@suse.de>
+ <20120103213830.GG2376@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EFDF671.7020101@linux.vnet.ibm.com>
+In-Reply-To: <20120103213830.GG2376@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F0375A3.0080,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 30, 2011 at 11:35:45AM -0600, Seth Jennings wrote:
-> On 12/30/2011 11:02 AM, Dan Magenheimer wrote:
-> >> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> >> Sent: Friday, December 30, 2011 9:42 AM
-> >> To: Greg Kroah-Hartman
-> >> Cc: Seth Jennings; Dan Magenheimer; Brian King; devel@driverdev.osuosl.org; linux-
-> >> kernel@vger.kernel.org
-> >> Subject: [PATCH] staging: zcache: fix serialization bug in zv stats
-> >>
-> >> In a multithreaded workload, the zv_curr_dist_counts
-> >> and zv_cumul_dist_counts statistics are being corrupted
-> >> because the increments and decrements in zv_create
-> >> and zv_free are not atomic.
-> >>
-> >> This patch converts these statistics and their corresponding
-> >> increments/decrements/reads to atomic operations.
-> >>
-> >> Based on v3.2-rc7
-> >>
-> >> Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+On Tue, Jan 03, 2012 at 01:38:30PM -0800, Paul E. McKenney wrote:
+> On Tue, Jan 03, 2012 at 12:37:17PM -0800, Greg KH wrote:
+> > On Tue, Jan 03, 2012 at 12:27:16PM -0800, Paul E. McKenney wrote:
+> > > On Tue, Dec 27, 2011 at 08:29:59PM -0800, Paul E. McKenney wrote:
+> > > > On Tue, Dec 27, 2011 at 11:13:23AM +0200, Sasha Levin wrote:
+> > > > > On Mon, 2011-12-26 at 08:31 -0800, Paul E. McKenney wrote:
+> > > > > > Except that when I try looking for task_notify_func() in current mainline,
+> > > > > > I get nothing.
+> > > > > > 
+> > > > > > Where is task_notify_func() coming from? 
+> > > > > 
+> > > > > I was testing linux-next, it actually comes from the android tree:
+> > > > > drivers/staging/android/lowmemorykiller.c
+> > > > 
+> > > > That does sound familiar...  I wonder if the stuff in staging is current
+> > > > Android or historical stuff.
+> > > 
+> > > And memory did serve for once.  ;-)
+> > > 
+> > > Current Android has the following for task_notify_func():
+> > > 
+> > > static int
+> > > task_notify_func(struct notifier_block *self, unsigned long val, void *data)
+> > > {
+> > > 	struct task_struct *task = data;
+> > > 
+> > > 	if (task == lowmem_deathpending)
+> > > 		lowmem_deathpending = NULL;
+> > > 
+> > > 	return NOTIFY_OK;
+> > > }
+> > > 
+> > > This is from https://android.googlesource.com/kernel/common.git.
+> > > 
+> > > Commit 5545554aac04918ece318270d63cbfcb015577a9 fixed this problem.
+> > > The commit is shown below, FYI.
+> > > 
+> > > Greg, would it be possible to pull in the current Android code?  There
+> > > have been a few fixes.  ;-)
 > > 
-> > I'm inclined to nack this change, at least unless inside an #ifdef DEBUG,
+> > I did base the stuff in staging on the common.git tree, but for some
+> > reason this patch wasn't applied, odd, I'll go apply it now...
+> > 
+> > Ah, I see, it didn't apply for various reasons:
+> > 
+> > patching file drivers/staging/android/lowmemorykiller.c
+> > Hunk #1 FAILED at 71.
+> > Hunk #2 FAILED at 168.
+> > Hunk #3 succeeded at 196 (offset 11 lines).
+> > Hunk #4 succeeded at 204 (offset 11 lines).
+> > 
+> > Care to rebase this patch and send it to me so that I can apply it?  I
+> > don't have the time to do it myself at the moment, sorry, lots of higher
+> > priority items to get done this week, sorry.
 > 
-> I guess I didn't respond to this suggestion.  We could put #ifdef DEBUG
-> around the updates in zv_create and zv_free and around the two sysfs
-> *_show functions.  Kinda messy though.  I guess it might not matter
-> if we'll be re-evaluating this whole thing soon.
+> I will give it a shot.  Working with linux-next -- if some other tree
+> would be better for you, please let me know.
 
-Perhaps also add in the TODO file that we want to move the stats collection
-out of the code and only be enabled if CONFIG_DEBUGFS is set? (Which granted means
-we need to implement the stats output in debugfs instead of sysfs).
+linux-next is great, thanks.
+
+greg k-h
