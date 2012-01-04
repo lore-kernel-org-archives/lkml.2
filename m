@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757091Ab2ADWBL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 17:01:11 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37694 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757035Ab2ADWBK (ORCPT
+	id S1757103Ab2ADWDm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 17:03:42 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:33837 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757061Ab2ADWDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 17:01:10 -0500
-Date: Wed, 4 Jan 2012 22:01:58 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: alan@linux.intel.com, gregkh@suse.de, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: relocate remaining serial drivers from tty/ to
- tty/serial/
-Message-ID: <20120104220158.3300d65b@pyramind.ukuu.org.uk>
-In-Reply-To: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jan 2012 17:03:39 -0500
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: venkat.x.venkatsubra@oracle.com
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
+        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+Subject: [PATCH] rds_rdma: don't assume infiniband device is PCI
+Date: Wed,  4 Jan 2012 20:03:16 -0200
+Message-Id: <1325714596-4655-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.4
+x-cbid: 12010422-9254-0000-0000-000007BB9CA7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Jan 2012 15:01:27 -0500
-Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
+RDS code assumes that the struct ib_device dma_device member, which is a
+pointer, points to a struct device embedded in a struct pci_dev.
 
-> The commit ab4382d27412e7e3e7c936e8d50d8888dfac3df8,
-> 
->    "tty: move drivers/serial/ to drivers/tty/serial/"
-> 
-> put most of the serial drivers together in one place, but the ones
-> that were hiding in drivers/char didn't get picked up in that change.
-> 
-> They did get moved in commit a6afd9f3e819de4795fcd356e5bfad446e4323f2
-> 
->    "tty: move a number of tty drivers from drivers/char/ to drivers/tty/"
-> 
-> but there was no distinction of serial vs. non-serial in the above.
-> 
-> Here we take the remaining serial drivers (mostly legacy multiport
-> drivers) and put them alongside all the others in tty/serial/ dir.
-> 
-> We can drop SERIAL_NONSTANDARD's dependency on HAS_IOMEM, since the
-> encompassing menu block already has that dependency called out.
+This is not the case for ehca, for example, which is a OF driver, and
+makes dma_device point to a struct device embedded in a struct
+platform_device.
 
-NAK
+This will make the system crash when rds_rdma is loaded in a system
+with ehca, since it will try to access the bus member of a non-existent
+struct pci_dev.
 
-The tty/serial directory is the stuff using serial_core. I'm not averse
-to moving the others down a layer into more appropriate places but its
-already too crowded and in need of re-ordering (eg tty/serial/8250/...
-might be an improvement)
+The only reason rds_rdma uses the struct pci_dev is to get the NUMA node
+the device is attached to. Using dev_to_node for that is much better,
+since it won't assume which bus the infiniband is attached to.
+
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Cc: dledford@redhat.com
+Cc: Jes.Sorensen@redhat.com
+Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Cc: rds-devel@oss.oracle.com
+---
+ net/rds/ib.h |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/net/rds/ib.h b/net/rds/ib.h
+index edfaaaf..8d2b3d5 100644
+--- a/net/rds/ib.h
++++ b/net/rds/ib.h
+@@ -186,8 +186,7 @@ struct rds_ib_device {
+ 	struct work_struct	free_work;
+ };
+ 
+-#define pcidev_to_node(pcidev) pcibus_to_node(pcidev->bus)
+-#define ibdev_to_node(ibdev) pcidev_to_node(to_pci_dev(ibdev->dma_device))
++#define ibdev_to_node(ibdev) dev_to_node(ibdev->dma_device)
+ #define rdsibdev_to_node(rdsibdev) ibdev_to_node(rdsibdev->dev)
+ 
+ /* bits for i_ack_flags */
+-- 
+1.7.4.4
 
