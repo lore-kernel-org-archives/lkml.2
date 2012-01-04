@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757155Ab2ADWFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 17:05:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58309 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079Ab2ADWFs (ORCPT
+	id S1757167Ab2ADWNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 17:13:38 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57633 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757079Ab2ADWNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 17:05:48 -0500
-Date: Wed, 4 Jan 2012 14:05:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: kosaki.motohiro@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH 1/2] mm,mlock: drain pagevecs asynchronously
-Message-Id: <20120104140547.75d4dd55.akpm@linux-foundation.org>
-In-Reply-To: <1325403025-22688-1-git-send-email-kosaki.motohiro@gmail.com>
-References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com>
-	<1325403025-22688-1-git-send-email-kosaki.motohiro@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jan 2012 17:13:37 -0500
+Date: Wed, 4 Jan 2012 22:13:35 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: new_inode_smack() bogosities
+Message-ID: <20120104221335.GF23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  1 Jan 2012 02:30:24 -0500
-kosaki.motohiro@gmail.com wrote:
+1) in smack_sb_kern_mount()
+        isp = inode->i_security;
+        if (isp == NULL)
+                inode->i_security = new_inode_smack(sp->smk_root);
+        else   
+                isp->smk_inode = sp->smk_root;
+looks very fishy.  How in hell had that inode managed to get created
+in the first place without going through smack_inode_alloc_security()?
+Is that about mounting an fs instance with in-core superblock that
+is older than the call of smack_init()?  That shouldn't be possible due
+to initcall ordering, but if that's the case, just what would happen when
+we step on *other* inodes on the same fs?  There's a bunch of places where
+smack assumes that ->i_security is never NULL...  And if that's really
+impossible, WTF is that new_inode_smack() doing there?
 
-> Because lru_add_drain_all() spent much time.
+2) again in smack_sb_kern_mount()
+        spin_lock(&sp->smk_sblock);
+        if (sp->smk_initialized != 0) {
+                spin_unlock(&sp->smk_sblock);
+                return 0;
+        }
+        sp->smk_initialized = 1;
+        spin_unlock(&sp->smk_sblock);
+For one thing, security_sb_kern_mount() is serialized by sb->s_umount.
+For another, if it wouldn't be... this code wouldn't be able to prevent
+a race.  Sure, only one of them will proceed to initialize the sucker.
+And another may cheerfully return before the work is actually done...
+In any case, it *is* serialized on per-superblock basis.
 
-Those LRU pagevecs are horrid things.  They add high code and
-conceptual complexity, they add pointless uniprocessor overhead and the
-way in which they leave LRU pages floating around not on an LRU is
-rather maddening.
-
-So the best way to fix all of this as well as this problem we're
-observing is, I hope, to completely remove them.
-
-They've been in there for ~10 years and at the time they were quite
-beneficial in reducing lru_lock contention, hold times, acquisition
-frequency, etc.
-
-The approach to take here is to prepare the patches which eliminate
-lru_*_pvecs then identify the problems which occur as a result, via
-code inspection and runtime testing.  Then fix those up.
-
-Many sites which take lru_lock are already batching the operation. 
-It's a matter of hunting down those sites which take the lock
-once-per-page and, if they have high frequency, batch them up.
-
-Converting readahead to batch the locking will be pretty simple
-(read_pages(), mpage_readpages(), others).  That will fix pagefaults
-too.  
-
-rotate_reclaimable_page() can be batched by batching
-end_page_writeback(): a bio contains many pages already.
-
-deactivate_page() can be batched too - invalidate_mapping_pages() is
-already working on large chunks of pages.
-
-Those three cases are fairly simple - we just didn't try, because the
-lru_*_pvecs were there to do the work for us.
+3) in smk_fill_super(), we have
+        root_inode = sb->s_root->d_inode;
+        root_inode->i_security = new_inode_smack(smack_known_floor.smk_known);
+Again, huh?  This should be called after smack_init() had been done; hell, 
+you explicitly say so in the comments:
+ * Do not register smackfs if Smack wasn't enabled
+ * on boot. We can not put this method normally under the
+ * smack_init() code path since the security subsystem get
+ * initialized before the vfs caches.
+Sounds like a misspelled assignment to ->smk_inode to me (and a leak, while
+we are at it)...
