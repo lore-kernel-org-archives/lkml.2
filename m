@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab2ADMk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 07:40:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47296 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754770Ab2ADMke (ORCPT
+	id S1755529Ab2ADMlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 07:41:06 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:45813 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755425Ab2ADMky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 07:40:34 -0500
+	Wed, 4 Jan 2012 07:40:54 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
@@ -15,9 +15,9 @@ Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         valdis.kletnieks@vt.edu,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 02/11] Staging: comedi: fix line over 80 character issue in cb_pcidda.c
-Date: Wed,  4 Jan 2012 18:09:57 +0530
-Message-Id: <1325680806-10917-2-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 05/11] Staging: comedi: fix printk warning issue in ni_at_a2150.c
+Date: Wed,  4 Jan 2012 18:10:00 +0530
+Message-Id: <1325680806-10917-5-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1325680806-10917-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1325680806-10917-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -25,177 +25,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch to the cb_pcidda.c file that fixes up a line
-over 80 character warning found by the checkpatch.pl tool.
+This patch fixes a printk warning found by the checkpatch.pl tool.
+Convert printk messages to dev_<levels> and removes useless printk
+messages.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/cb_pcidda.c |   73 +++++++++++++++++++--------
- 1 files changed, 51 insertions(+), 22 deletions(-)
+ drivers/staging/comedi/drivers/ni_at_a2150.c |   51 ++++++--------------------
+ 1 files changed, 12 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/cb_pcidda.c b/drivers/staging/comedi/drivers/cb_pcidda.c
-index abba220..1b4d55f 100644
---- a/drivers/staging/comedi/drivers/cb_pcidda.c
-+++ b/drivers/staging/comedi/drivers/cb_pcidda.c
-@@ -51,9 +51,11 @@ Please report success/failure with other different cards to
- #include "comedi_pci.h"
- #include "8255.h"
+diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
+index c25e44c..f1a15ed 100644
+--- a/drivers/staging/comedi/drivers/ni_at_a2150.c
++++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
+@@ -215,9 +215,10 @@ module_exit(driver_a2150_cleanup_module);
  
--#define PCI_VENDOR_ID_CB	0x1307	/*  PCI vendor number of ComputerBoards */
-+/* PCI vendor number of ComputerBoards */
-+#define PCI_VENDOR_ID_CB        0x1307
- #define EEPROM_SIZE	128	/*  number of entries in eeprom */
--#define MAX_AO_CHANNELS 8	/*  maximum number of ao channels for supported boards */
-+/* maximum number of ao channels for supported boards */
-+#define MAX_AO_CHANNELS 8
+ static void ni_dump_regs(struct comedi_device *dev)
+ {
+-	printk("config bits 0x%x\n", devpriv->config_bits);
+-	printk("irq dma bits 0x%x\n", devpriv->irq_dma_bits);
+-	printk("status bits 0x%x\n", inw(dev->iobase + STATUS_REG));
++	dev_dbg(dev->hw_dev, "config bits 0x%x\n", devpriv->config_bits);
++	dev_dbg(dev->hw_dev, "irq dma bits 0x%x\n", devpriv->irq_dma_bits);
++	dev_dbg(dev->hw_dev, "status bits 0x%x\n",
++		inw(dev->iobase + STATUS_REG));
+ }
  
- /* PCI-DDA base addresses */
- #define DIGITALIO_BADRINDEX	2
-@@ -94,20 +96,28 @@ Please report success/failure with other different cards to
+ #endif
+@@ -347,61 +348,35 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	static const int timeout = 2000;
+ 	int i;
  
- #define DACALIBRATION1	4	/*  D/A CALIBRATION REGISTER 1 */
- /* write bits */
--#define	SERIAL_IN_BIT	0x1	/*  serial data input for eeprom, caldacs, reference dac */
-+#define	SERIAL_IN_BIT	0x1	/*
-+				 * serial data input for eeprom, caldacs,
-+				 * reference dac
-+				 */
- #define	CAL_CHANNEL_MASK	(0x7 << 1)
- #define	CAL_CHANNEL_BITS(channel)	(((channel) << 1) & CAL_CHANNEL_MASK)
- /* read bits */
- #define	CAL_COUNTER_MASK	0x1f
--#define	CAL_COUNTER_OVERFLOW_BIT	0x20	/*  calibration counter overflow status bit */
--#define	AO_BELOW_REF_BIT	0x40	/*  analog output is less than reference dac voltage */
-+/* calibration counter overflow status bit */
-+#define CAL_COUNTER_OVERFLOW_BIT        0x20
-+/* analog output is less than reference dac voltage */
-+#define AO_BELOW_REF_BIT        0x40
- #define	SERIAL_OUT_BIT	0x80	/*  serial data out, for reading from eeprom */
+-	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
+-	       iobase);
+-	if (irq) {
+-		printk(", irq %u", irq);
+-	} else {
+-		printk(", no irq");
+-	}
+-	if (dma) {
+-		printk(", dma %u", dma);
+-	} else {
+-		printk(", no dma");
+-	}
+-	printk("\n");
+-
+ 	/* allocate and initialize dev->private */
+ 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
+ 		return -ENOMEM;
  
- #define DACALIBRATION2	6	/*  D/A CALIBRATION REGISTER 2 */
- #define	SELECT_EEPROM_BIT	0x1	/*  send serial data in to eeprom */
--#define	DESELECT_REF_DAC_BIT	0x2	/*  don't send serial data to MAX542 reference dac */
--#define	DESELECT_CALDAC_BIT(n)	(0x4 << (n))	/*  don't send serial data to caldac n */
--#define	DUMMY_BIT	0x40	/*  manual says to set this bit with no explanation */
-+/* don't send serial data to MAX542 reference dac */
-+#define DESELECT_REF_DAC_BIT    0x2
-+/* don't send serial data to caldac n */
-+#define DESELECT_CALDAC_BIT(n)  (0x4 << (n))
-+/* manual says to set this bit with no explanation */
-+#define DUMMY_BIT       0x40
+-	if (iobase == 0) {
+-		printk(" io base address required\n");
++	if (iobase == 0)
+ 		return -EINVAL;
+-	}
  
- #define DADATA	8		/*  FIRST D/A DATA REGISTER (0) */
+ 	/* check if io addresses are available */
+-	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
+-		printk(" I/O port conflict\n");
++	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name))
+ 		return -EIO;
+-	}
+ 	dev->iobase = iobase;
  
-@@ -212,9 +222,12 @@ MODULE_DEVICE_TABLE(pci, cb_pcidda_pci_table);
-  */
- #define thisboard ((const struct cb_pcidda_board *)dev->board_ptr)
- 
--/* this structure is for data unique to this hardware driver.  If
--   several hardware drivers keep similar information in this structure,
--   feel free to suggest moving the variable to the struct comedi_device struct.  */
-+/*
-+ * this structure is for data unique to this hardware driver.  If
-+ * several hardware drivers keep similar information in this structure,
-+ * feel free to suggest moving the variable to the struct comedi_device
-+ * struct.
-+ */
- struct cb_pcidda_private {
- 	int data;
- 
-@@ -227,8 +240,10 @@ struct cb_pcidda_private {
- 	/* unsigned long control_status; */
- 	/* unsigned long adc_fifo; */
- 
--	unsigned int dac_cal1_bits;	/*  bits last written to da calibration register 1 */
--	unsigned int ao_range[MAX_AO_CHANNELS];	/*  current range settings for output channels */
-+	/* bits last written to da calibration register 1 */
-+	unsigned int dac_cal1_bits;
-+	/* current range settings for output channels */
-+	unsigned int ao_range[MAX_AO_CHANNELS];
- 	u16 eeprom_data[EEPROM_SIZE];	/*  software copy of board's eeprom */
- };
- 
-@@ -377,7 +392,8 @@ found:
- 	dev_dbg(dev->hw_dev, "eeprom:\n");
- 	for (index = 0; index < EEPROM_SIZE; index++) {
- 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
--		dev_dbg(dev->hw_dev, "%i:0x%x\n", index, devpriv->eeprom_data[index]);
-+		dev_dbg(dev->hw_dev, "%i:0x%x\n", index,
-+			devpriv->eeprom_data[index]);
+ 	/* grab our IRQ */
+ 	if (irq) {
+-		/*  check that irq is supported */
+-		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
+-			printk(" invalid irq line %u\n", irq);
++		/* check that irq is supported */
++		if (irq < 3 || irq == 8 || irq == 13 || irq > 15)
+ 			return -EINVAL;
+-		}
+ 		if (request_irq(irq, a2150_interrupt, 0,
+-				driver_a2150.driver_name, dev)) {
+-			printk("unable to allocate irq %u\n", irq);
++				driver_a2150.driver_name, dev))
+ 			return -EINVAL;
+-		}
+ 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
+ 		dev->irq = irq;
  	}
+ 	/*  initialize dma */
+ 	if (dma) {
+-		if (dma == 4 || dma > 7) {
+-			printk(" invalid dma channel %u\n", dma);
++		if (dma == 4 || dma > 7)
+ 			return -EINVAL;
+-		}
+-		if (request_dma(dma, driver_a2150.driver_name)) {
+-			printk(" failed to allocate dma channel %u\n", dma);
++		if (request_dma(dma, driver_a2150.driver_name))
+ 			return -EINVAL;
+-		}
+ 		devpriv->dma = dma;
+ 		devpriv->dma_buffer =
+ 		    kmalloc(A2150_DMA_BUFFER_SIZE, GFP_KERNEL | GFP_DMA);
+@@ -466,8 +441,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- 	/*  set calibrations dacs */
-@@ -484,7 +500,10 @@ static int cb_pcidda_ai_cmdtest(struct comedi_device *dev,
- 	if (err)
- 		return 1;
- 
--	/* step 2: make sure trigger sources are unique and mutually compatible */
-+	/*
-+	 * step 2: make sure trigger sources are unique and mutually
-+	 * compatible
-+	 */
- 
- 	/* note that mutual compatibility is not an issue here */
- 	if (cmd->scan_begin_src != TRIG_TIMER
-@@ -696,8 +715,10 @@ static unsigned int cb_pcidda_read_eeprom(struct comedi_device *dev,
- 	unsigned int i;
- 	unsigned int cal2_bits;
- 	unsigned int value;
--	const int max_num_caldacs = 4;	/*  one caldac for every two dac channels */
--	const int read_instruction = 0x6;	/*  bits to send to tell eeprom we want to read */
-+	/* one caldac for every two dac channels */
-+	const int max_num_caldacs = 4;
-+	/* bits to send to tell eeprom we want to read */
-+	const int read_instruction = 0x6;
- 	const int instruction_length = 3;
- 	const int address_length = 8;
- 
-@@ -729,9 +750,11 @@ static void cb_pcidda_write_caldac(struct comedi_device *dev,
+ static int a2150_detach(struct comedi_device *dev)
  {
- 	unsigned int cal2_bits;
- 	unsigned int i;
--	const int num_channel_bits = 3;	/*  caldacs use 3 bit channel specification */
-+	/* caldacs use 3 bit channel specification */
-+	const int num_channel_bits = 3;
- 	const int num_caldac_bits = 8;	/*  8 bit calibration dacs */
--	const int max_num_caldacs = 4;	/*  one caldac for every two dac channels */
-+	/* one caldac for every two dac channels */
-+	const int max_num_caldacs = 4;
- 
- 	/* write 3 bit channel */
- 	cb_pcidda_serial_out(dev, channel, num_channel_bits);
-@@ -790,14 +813,20 @@ static unsigned int offset_eeprom_address(unsigned int ao_channel,
- 	return 0x7 + 2 * range + 12 * ao_channel;
- }
- 
--/* returns eeprom address that provides gain calibration for given ao channel and range */
-+/*
-+ * returns eeprom address that provides gain calibration for given ao
-+ * channel and range
-+ */
- static unsigned int gain_eeprom_address(unsigned int ao_channel,
- 					unsigned int range)
- {
- 	return 0x8 + 2 * range + 12 * ao_channel;
- }
- 
--/* returns upper byte of eeprom entry, which gives the coarse adjustment values */
-+/*
-+ * returns upper byte of eeprom entry, which gives the coarse adjustment
-+ * values
-+ */
- static unsigned int eeprom_coarse_byte(unsigned int word)
- {
- 	return (word >> 8) & 0xff;
-@@ -815,7 +844,7 @@ static void cb_pcidda_calibrate(struct comedi_device *dev, unsigned int channel,
- {
- 	unsigned int coarse_offset, fine_offset, coarse_gain, fine_gain;
- 
--	/*  remember range so we can tell when we need to readjust calibration */
-+	/* remember range so we can tell when we need to readjust calibration */
- 	devpriv->ao_range[channel] = range;
- 
- 	/*  get values from eeprom data */
+-	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
+-
+ 	/* only free stuff if it has been allocated by _attach */
+ 	if (dev->iobase) {
+ 		/*  put board in power-down mode */
+@@ -801,7 +774,7 @@ static int a2150_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
+ #endif
+ 		data[n] = inw(dev->iobase + FIFO_DATA_REG);
+ #ifdef A2150_DEBUG
+-		printk(" data is %i\n", data[n]);
++		dev_dbg(dev->hw_dev "data is %i\n", data[n]);
+ #endif
+ 		data[n] ^= 0x8000;
+ 	}
 -- 
 1.7.0.4
 
