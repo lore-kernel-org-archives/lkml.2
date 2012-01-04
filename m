@@ -1,119 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755502Ab2ADNIR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 08:08:17 -0500
-Received: from www262.sakura.ne.jp ([202.181.97.72]:55776 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab2ADNIP (ORCPT
+	id S1755479Ab2ADNJr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 08:09:47 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49830 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754438Ab2ADNJn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 08:08:15 -0500
-X-Nat-Received: from [202.181.97.72]:65143 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1325682493.20154
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] kmod: Avoid deadlock by recursive kmod call.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <201112270701.pBR713wO005588@www262.sakura.ne.jp>
-	<201201040743.q047h9OD055670@www262.sakura.ne.jp>
-In-Reply-To: <201201040743.q047h9OD055670@www262.sakura.ne.jp>
-Message-Id: <201201042208.JHG52695.OLStHFQOFFMVJO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 4 Jan 2012 22:08:09 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04012012 #6389880, status: clean
+	Wed, 4 Jan 2012 08:09:43 -0500
+MIME-Version: 1.0
+From: =?UTF-8?B?TnVtYW4gREVNxLBSRMOWxJ5FTg==?= <numand46@gmail.com>
+Date: Wed, 4 Jan 2012 15:09:20 +0200
+Message-ID: <CAHa016cp4uNZqCvJW0RZgEXST-VqpVWjYSXGE+RhThXXo6nzCA@mail.gmail.com>
+Subject: WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x9b/0xd0()
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa wrote:
-> I noticed that the system deadlocks if do_execve() request by kmod() triggered
-> recursive do_execve() request.
-> 
-> An example operation for triggering this deadlock:
-> 
->   # : > /tmp/dummy
->   # chmod 755 /tmp/dummy
->   # echo /tmp/dummy > /proc/sys/kernel/hotplug
->   # modprobe whatever
-> 
-> Although this patch works for me, I'm not sure that this is a correct fix.
-> Also, my analysis in the patch description may be wrong. Please check.
-
-Well, we should not unconditionally prevent all vfork()ed threads from using
-request_module() at search_binary_handler(). We should prevent only kernel
-threads created by __call_usermodehelper(). Updated to filter only kmod threads.
---------------------
-[PATCH v2] kmod: Avoid deadlock by recursive kmod call.
-
-call_usermodehelper(UMH_WAIT_EXEC or UMH_WAIT_PROC) request depends on an
-assumption that do_execve() will not trigger recursive
-call_usermodehelper(UMH_WAIT_EXEC or UMH_WAIT_PROC) request, for
-"khelper cannot start processing recursive call_usermodehelper() request until
-do_execve() of original call_usermodehelper() request completes" but
-"do_execve() of original call_usermodehelper() cannot be completed until
-recursive call_usermodehelper() request completes".
-
-There are several callers that break this assumption and lead to deadlock.
-We need to make sure that do_execve() request by kmod thread does not trigger
-recursive call_usermodehelper(UMH_WAIT_PROC or UMH_WAIT_EXEC).
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+I have been getting this message since I started to use 3.0 series'
+kernels. I found this (https://lkml.org/lkml/2011/5/4/516) topic
+related to this warning.
+Best regards,
+  Numan.
 ---
- include/linux/sched.h |    3 +++
- kernel/kmod.c         |   18 +++++++++++++++++-
- 2 files changed, 20 insertions(+), 1 deletion(-)
+ver_linux output:
 
---- linux-3.1.7.orig/include/linux/sched.h
-+++ linux-3.1.7/include/linux/sched.h
-@@ -1305,6 +1305,9 @@ struct task_struct {
- 	unsigned sched_reset_on_fork:1;
- 	unsigned sched_contributes_to_load:1;
- 
-+	/* Prevent recursive kmod request. */
-+	unsigned kmod_thread:1;
-+
- 	pid_t pid;
- 	pid_t tgid;
- 
---- linux-3.1.7.orig/kernel/kmod.c
-+++ linux-3.1.7/kernel/kmod.c
-@@ -189,6 +189,13 @@ fail:
- 	do_exit(0);
- }
- 
-+static int call_helper(void *data)
-+{
-+	/* Do not trigger recursive kmod call. */
-+	current->kmod_thread = 1;
-+	return ____call_usermodehelper(data);
-+}
-+
- void call_usermodehelper_freeinfo(struct subprocess_info *info)
- {
- 	if (info->cleanup)
-@@ -252,7 +259,7 @@ static void __call_usermodehelper(struct
- 		pid = kernel_thread(wait_for_helper, sub_info,
- 				    CLONE_FS | CLONE_FILES | SIGCHLD);
- 	else
--		pid = kernel_thread(____call_usermodehelper, sub_info,
-+		pid = kernel_thread(call_helper, sub_info,
- 				    CLONE_VFORK | SIGCHLD);
- 
- 	switch (wait) {
-@@ -428,6 +435,15 @@ int call_usermodehelper_exec(struct subp
- 		retval = -EBUSY;
- 		goto out;
- 	}
-+	/*
-+	 * We can't call wait_for_completion() if current thread was created by
-+	 * call_helper(), or we will deadlock when current thread calls
-+	 * request_module() from search_binary_handler().
-+	 */
-+	if (wait != UMH_NO_WAIT && current->kmod_thread) {
-+		retval = -EBUSY;
-+		goto out;
-+	}
- 
- 	sub_info->complete = &done;
- 	sub_info->wait = wait;
+Linux arch 3.1.6-1-ARCH #1 SMP PREEMPT Thu Dec 22 08:52:33 UTC 2011
+i686 Intel(R) Pentium(R) M processor 1.73GHz GenuineIntel GNU/Linux
+Gnu C                  4.6.2
+Gnu make               3.82
+binutils               Binutils
+util-linux             fdformat
+mount                  support
+module-init-tools      3.16
+e2fsprogs              1.41.14
+xfsprogs               3.1.7
+Linux C Library        > libc.2.15
+Dynamic linker (ldd)   2.15
+Linux C++ Library      6.0.16
+Procps                 3.2.8
+Kbd                    1.15.3
+Sh-utils               8.14
+Modules Loaded         michael_mic arc4 ecb lib80211_crypt_tkip pcmcia
+radeon ttm sdhci_pci sdhci firewire_ohci firewire_core ipw2200 libipw
+yenta_socket cfg80211 iTCO_wdt r8169 intel_agp snd_hda_codec_si3054
+rfkill pcmcia_rsrc snd_hda_codec_analog psmouse pcmcia_core mmc_core
+intel_gtt i2c_i801 mii iTCO_vendor_support crc_itu_t drm_kms_helper
+evdev lib80211 battery ac video snd_hda_intel snd_hda_codec drm
+snd_hwdep snd_pcm agpgart tifm_7xx1 tifm_core i2c_algo_bit i2c_core
+snd_timer snd soundcore snd_page_alloc thermal button cpufreq_ondemand
+acpi_cpufreq freq_table processor mperf ext4 mbcache jbd2 crc16 usbhid
+hid sr_mod cdrom sd_mod pata_acpi uhci_hcd ahci libahci ata_piix
+libata ehci_hcd scsi_mod usbcore
+
+dmesg excerpt:
+
+sdhci-pci 0000:06:09.4: SDHCI controller found [104c:8034] (rev 0)
+sdhci-pci 0000:06:09.4: PCI INT A -> GSI 22 (level, low) -> IRQ 22
+ _regulator_get: 0000:06:09.4 supply vmmc not found, using dummy regulator
+Registered led device: mmc0::
+mmc0: SDHCI controller on PCI [0000:06:09.4] using PIO
+_regulator_get: 0000:06:09.4 supply vmmc not found, using dummy regulator
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x9b/0xd0()
+Hardware name: AMILO Pro V2045
+sysfs: cannot create duplicate filename
+'/devices/pci0000:00/0000:00:1e.0/0000:06:09.4/microamps_requested_0000:06:09.4-vmmc'
+Modules linked in: pcmcia radeon ttm sdhci_pci(+) sdhci firewire_ohci
+firewire_core ipw2200 libipw yenta_socket cfg80211 iTCO_wdt r8169
+intel_agp snd_hda_codec_si3054 rfkill pcmcia_rsrc snd_hda_codec_analog
+psmouse pcmcia_core mmc_core intel_gtt i2c_i801 mii
+iTCO_vendor_support crc_itu_t drm_kms_helper evdev lib80211 battery ac
+video snd_hda_intel snd_hda_codec drm snd_hwdep snd_pcm agpgart
+tifm_7xx1 tifm_core i2c_algo_bit i2c_core snd_timer snd soundcore
+snd_page_alloc thermal button cpufreq_ondemand acpi_cpufreq freq_table
+processor mperf ext4 mbcache jbd2 crc16 usbhid hid sr_mod cdrom sd_mod
+pata_acpi uhci_hcd ahci libahci ata_piix libata ehci_hcd scsi_mod
+usbcore
+Pid: 315, comm: modprobe Not tainted 3.1.6-1-ARCH #1
+Call Trace:
+[<c0147182>] warn_slowpath_common+0x72/0xa0
+[<c02780db>] ? sysfs_add_one+0x9b/0xd0
+[<c02780db>] ? sysfs_add_one+0x9b/0xd0
+[<c0147253>] warn_slowpath_fmt+0x33/0x40
+[<c02780db>] sysfs_add_one+0x9b/0xd0
+[<c02773c9>] sysfs_add_file_mode+0x49/0x90
+[<c0277428>] sysfs_add_file+0x18/0x20
+[<c02774e1>] sysfs_create_file+0x21/0x30
+[<c036ddc8>] device_create_file+0x18/0x20
+[<c0341f5f>] create_regulator+0xdf/0x320
+[<c0342384>] _regulator_get+0x1e4/0x2a0
+[<e26803d0>] ? sdhci_timeout_timer+0xd0/0xd0 [sdhci]
+[<c034246f>] regulator_get+0xf/0x20
+[<e267e64a>] sdhci_add_host+0x5ea/0xa80 [sdhci]
+[<e268ce47>] sdhci_pci_probe+0x31a/0x3d3 [sdhci_pci]
+[<c02e782d>] pci_device_probe+0x8d/0x120
+[<c0278a27>] ? sysfs_create_link+0x17/0x20
+[<c0370da8>] driver_probe_device+0x68/0x170
+[<c0370f41>] __driver_attach+0x91/0xa0
+[<c0370eb0>] ? driver_probe_device+0x170/0x170
+[<c0370009>] bus_for_each_dev+0x49/0x70
+[<c0370ac1>] driver_attach+0x21/0x30
+[<c0370eb0>] ? driver_probe_device+0x170/0x170
+[<c037079f>] bus_add_driver+0x17f/0x260
+[<c02e7690>] ? pci_dev_put+0x20/0x20
+[<c03713f6>] driver_register+0x66/0x110
+[<c02e85c3>] __pci_register_driver+0x43/0xc0
+[<e268f017>] sdhci_drv_init+0x17/0x19 [sdhci_pci]
+[<c0101125>] do_one_initcall+0x35/0x170
+[<e268f000>] ? 0xe268efff
+[<c0180ca5>] sys_init_module+0x905/0x1ac0
+[<c046325f>] sysenter_do_call+0x12/0x28
+---[ end trace 1b4ccae14fe3a3a3 ]---
+create_regulator: dummy: could not add regulator_dev requested
+microamps sysfs entry
+mmc1: no vmmc regulator found
+Registered led device: mmc1::
+mmc1: SDHCI controller on PCI [0000:06:09.4] using PIO
+_regulator_get: 0000:06:09.4 supply vmmc not found, using dummy regulator
