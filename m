@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756284Ab2ADA6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:58:50 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:47561 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab2ADA63 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:58:29 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-2a-4f03a43289f7
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Olof Johansson'" <olof@lixom.net>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Vinod Koul'" <vinod.koul@intel.com>,
-        "'Linus'" <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20120104104758.26b0ca5268d10fbf7b95903a@canb.auug.org.au>
-In-reply-to: <20120104104758.26b0ca5268d10fbf7b95903a@canb.auug.org.au>
-Subject: RE: linux-next: interesting merges in the arm-soc tree
-Date: Wed, 04 Jan 2012 09:58:24 +0900
-Message-id: <01bc01ccca7b$f6483fe0$e2d8bfa0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: AczKcic43SD1TB/OQ6+E7H0onEYJ8gACBMAQ
-X-Brightmail-Tracker: AAAAAA==
+	id S1755581Ab2ADBFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 20:05:11 -0500
+Received: from tundra.namei.org ([65.99.196.166]:59323 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754922Ab2ADBFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 20:05:07 -0500
+Date: Wed, 4 Jan 2012 12:02:36 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+        haiyangz@microsoft.com, hjanssen@microsoft.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>
+Subject: Re: Reiserfs.c bug in 3.2-rc5
+In-Reply-To: <CA+55aFxZ4_T8VRh6wAKC9-9PjsctrK1WnOmN-2EDNTeHA+OA4g@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1201041200450.18323@tundra.namei.org>
+References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt> <20111213180707.GI11747@quack.suse.cz> <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt> <20120102115222.GA3626@quack.suse.cz>
+ <20120103010826.GF3626@quack.suse.cz> <20120103123841.GA31457@quack.suse.cz> <1325604356.2095.23.camel@falcor> <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com> <1325616312.2095.26.camel@falcor> <alpine.LRH.2.00.1201041046330.18098@tundra.namei.org>
+ <CA+55aFxZ4_T8VRh6wAKC9-9PjsctrK1WnOmN-2EDNTeHA+OA4g@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> 
-> Hi all,
-> 
-Hi,
+On Tue, 3 Jan 2012, Linus Torvalds wrote:
 
-> I noticed that the arm-soc tree has merged in the v4l-dvb and the
-> slave-dma trees today.   Is there some good reason for this?  It fixes a
+> Can everybody please test and double-check that what I applied was
+> what everybody agrees is the RightThing(tm)? I really wanted to do 3.2
+> today, but both of those commits are of the "please double-check"
+> kind, so..
 
-I did slave-dma...
+Boots up ok for me, although I'm not using reiserfs or ocfs2.  The patch 
+looks correct.
 
-Yes, I have created branch for samsung dma on top of slave-dma tree. Because
-samsung tree touched drivers/dma/pl330.c for samsung device tree then the
-arch/arm/common/pl330.c file have been merged into drivers/dma/pl330.c with
-touching samsung stuff and of course there are changes of
-drivers/dma/pl330.c in slave-dma as well. So I did...
-
-> few conflicts (but that is not excuse) and there may be dependencies in a
-> driver on the v4l-dvb tree (but maybe that means that that driver should
-> be merged via the v4l-dvb tree - it looks like the "at91/drivers" is
-> based on the v4l-dvb tree, so probably doesn't depend on anything else on
-> the arm-soc tree).
-> 
-> If nothing else, are you sure that neither of those merged trees will
-> rebase?  You have also just inherited any bugs in those two trees.
-
-I know, Vinod knows I merged his tree for above situation so he will not
-rebase that and Arnd will send that after merging of slave-dma into mainline
-during merge window. So I think, we will not see any problem. :) But if
-wrong, please let me know.
 
 Thanks.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
 
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
