@@ -1,62 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab2ADIOZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 03:14:25 -0500
-Received: from smtp14.ono.com ([62.42.230.176]:17266 "EHLO resmaa14.ono.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754063Ab2ADIOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 03:14:21 -0500
-Date: Wed, 4 Jan 2012 09:14:14 +0100
-From: Guillem Jover <guillem@hadrons.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH] Use __unused0 instead of __unused for user visible
- struct member names
-Message-ID: <20120104081414.GA29745@gaara.hadrons.org>
-References: <20120102024418.GA10483@gaara.hadrons.org>
- <20120102202243.GA31103@elie.hsd1.il.comcast.net>
- <20120103065659.GA32216@merkur.ravnborg.org>
+	id S1754519Ab2ADIRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 03:17:51 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:55408 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425Ab2ADIRr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 03:17:47 -0500
+Message-ID: <4F040B25.1080405@canonical.com>
+Date: Wed, 04 Jan 2012 09:17:41 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120103065659.GA32216@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>
+CC: NeilBrown <neilb@suse.de>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>, rjw@sisk.pl,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
+ to handle kernel NULL pointer dereference at 0000000000000598  1.478005]
+ IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
+References: <1599287628.20120103171351@eikelenboom.it>  <20120103190754.GA27651@phenom.dumpdata.com>  <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown> <1325638380.3037.69.camel@work-vm>
+In-Reply-To: <1325638380.3037.69.camel@work-vm>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 07:56:59 +0100, Sam Ravnborg wrote:
-> On Mon, Jan 02, 2012 at 02:22:43PM -0600, Jonathan Nieder wrote:
-> > Guillem Jover wrote:
-> > > On BSD systems __unused has traditionally been defined to mean the
-> > > equivalent of gcc's __attribute__((__unused__)), some parts of the
-> > > Linux tree use that convention too (e.g. perf). The problem comes when
-> > > defining such macro while trying to build unmodified source code with
-> > > BSD origins on systems with Linux headers.
-> > >
-> > > Rename the user visible struct members from __unused to __unused0 to
-> > > not cause compilation failures due to that macro, which should not be
-> > > a problem as those members are supposed to be private anyway.
+On 04.01.2012 01:53, John Stultz wrote:
+> On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
+>> On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org> wrote:
+>>> >From the stack trace, we've kicked off a rtc_timer_do_work, probably
+>>> from the rtc_initialize_alarm() schedule_work call added in Neil's
+>>> patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm ->
+>>> cmos_rq_disable -> cmos_checkintr -> rtc_update_irq -> schedule_work.
+
+Sorry, I was off for the evening a while after sending this out. And I just
+started, so a few thing I will be doing later but have not yet had time.
+
+Over night I had still be thinking on this and maybe one important fact I had
+been ignoring. This really has only been observed on paravirt guests on Xen as
+far as I know. And one thing that I should have pointed out is that
+
+[    0.792634] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
+[    0.792725] rtc_cmos: probe of rtc_cmos failed with error -38
+
+So first the registration is done and the first line is the last thing printed
+in the registration function. Then, and that line always comes after, the probe,
+which looks like being done asynchronously, detects that the rtc is not
+implemented. I would assume that this causes the rtc to be unregistered again
+and that is probably the point where, under the right circumstances, the worker
+triggered by the initialize alarm is trying to set another alarm. Probably while
+some of the elements of the structure started to be torn down. I need to check
+on that code path, yet. So right now its more a guess.
+
+>>>
+>>> So, what it looks to me is that in cmos_checkintr, we grab the cmos->rtc
+>>> and pass that along. Unfortunately, since the cmos->rtc value isn't set
+>>> until after rtc_device_register() returns its null at that point. So
+>>> your patch isn't really fixing the issue, but just reducing the race
+>>> window for the second cpu to schedule the work.
+>>>
+>>> Sigh. I'd guess dropping the schedule_work call from
+>>> rtc_initialize_alarm() is the right approach (see below). When reviewing
+>>> Neil's patch it seemed like a good idea there, but it seems off to me
+>>> now.
+>>>
+>>> Neil, any thoughts on the following? Can you expand on the condition you
+>>> were worried about in around that call?
+>>
+>> If you set an alarm in the future, then shutdown and boot again after that
+>> time, then you will end up with a timer_queue node which is in the past.
 > 
-> ^__ is reserved for libc internal stuff and there is no reason to
-> name the unused/padding members "__unused".
-> So one or a set of patches that rename them all to something more
-> sensible would be fine.
+> Thanks for explaining this again.
+> 
+> Hrm. It seems the easy answer is to simply not add alarms that are in
+> the past.  Further, I'm a bit perplexed, as if they are in the past, the
+> enabled flag shouldn't be set.   __rtc_read_alarm() does check the
+> current time, so maybe we can make sure we don't return old values? I
+> guess I assumed __rtc_read_alarm() avoided returning stale values, but
+> apparently not.
+> 
+>> When this happens the queue gets stuck.  That entry-in-the-past won't get
+>> removed until and interrupt happens and an interrupt won't happen because the
+>> RTC only triggers an interrupt when the alarm is "now".
+>>
+>> So you'll find that e.g. "hwclock" will always tell you that 'select' timed
+>> out.
+>>
+>> So we force the interrupt work to happen at the start just in case.
+> 
+> Unfortunately its too early. 
+> 
+>> Did you see my proposed patch which converted those calls to do the work
+>> in-process rather than passing it to a worker-thread?  I think that is a
+>> clean fix.
+> 
+> I don't think I saw it today. Was it from before the holidays?
+> 
 
-On a quick glance, I've found other functionally similar struct
-member names present on the tree:
+I fear I caused a bit of confusion there. Neil responded to my initial mail
+which was done as a reply to the mail announcing this patch for stable (which
+just was the first thread I could get hold of).
+I will try Neil's patch as well. And in parallel try to see whether the theory I
+had this night makes sense. If it does, then it is only indirectly that the work
+is scheduled too early. In that case just the teardown needs to make sure that
+no work is being run while removal. Well, maybe the question is whether there
+should be a delay in running the irq work until the device really, really is
+completely set up... But that sounds a bit more complicated.
 
-  __unused __unusedN __reserved __reservedN __reserved_N __resN
-  __pad __padN __flr_pad __ifi_pad __tcpm_padN __tcpct_padN
+> Even so, at this point, I don't know if we have enough time for testing,
+> so I'm thinking we either just drop the problematic sched_work call or
+> revert the whole thing and try again for 3.3
 
-Do you mean you'd like to see patch(es) to rename all those? I'd not
-mind providing them, although my immediate concern right now is just
-regarding __unused.
+That was the reason I was in a bit of hurry to get this back to you. Especially
+since this patch had been marked as stable material and sooner or later will or
+would be added to all the stable releases it applies to.
 
-There's also __buf in linux/sem.h and __data in linux/socket.h, but
-I'd rather not thouch those, as I'd expect to be users for them?
+Thanks,
+Stefan
 
-thanks,
-guillem
+> thanks
+> -john
+> 
+> 
+
