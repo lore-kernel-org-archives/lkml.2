@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab2ADAuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:50:04 -0500
-Received: from lo.gmane.org ([80.91.229.12]:33361 "EHLO lo.gmane.org"
+	id S1755509Ab2ADAxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:53:33 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:57558 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754805Ab2ADAuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:50:01 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: =?ISO-8859-1?Q?Sven_K=F6hler?= <sven.koehler@gmail.com>
-Subject: Re: [PATCH 0/3] x86/microcode: support for microcode update in Xen
- dom0
-Date: Wed, 04 Jan 2012 01:49:49 +0100
-Message-ID: <je07nb$m1l$1@dough.gmane.org>
-References: <4E95E7FE.6050302@goop.org> <20111012194543.GD14966@aftab> <20111012204048.GA22260@phenom.oracle.com> <4E960746.90805@zytor.com> <20111012214013.GD28723@aftab> <4E96198F.4030906@zytor.com> <4E962581.2000605@goop.org> <4E9628D4.1000605@zytor.com> <4E962A27.4090509@goop.org> <4E962AE6.1060505@zytor.com> <20111013070050.GA501@aftab>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755063Ab2ADAxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 19:53:30 -0500
+Message-ID: <1325638380.3037.69.camel@work-vm>
+Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
+ to handle kernel NULL pointer dereference at 0000000000000598 [   
+ 1.478005] IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
+From: John Stultz <john.stultz@linaro.org>
+To: NeilBrown <neilb@suse.de>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>, stefan.bader@canonical.com,
+        rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
+        linux-kernel@vger.kernel.org
+Date: Tue, 03 Jan 2012 16:53:00 -0800
+In-Reply-To: <20120104113155.27bf6e46@notabene.brown>
+References: <1599287628.20120103171351@eikelenboom.it>
+	 <20120103190754.GA27651@phenom.dumpdata.com>
+	 <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 31-18-52-176-dynip.superkabel.de
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111116 Thunderbird/8.0
-In-Reply-To: <20111013070050.GA501@aftab>
-X-Enigmail-Version: 1.3.3
-Cc: xen-devel@lists.xensource.com
+Mime-Version: 1.0
+x-cbid: 12010400-3534-0000-0000-00000431E201
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 13.10.2011 09:00, schrieb Borislav Petkov:
-> On Wed, Oct 12, 2011 at 08:03:50PM -0400, H. Peter Anvin wrote:
->> On 10/12/2011 05:00 PM, Jeremy Fitzhardinge wrote:
->>>
->>> Presumably we'd want some way to make all possible microcode files
->>> available to the hypervisor/kernel so that there's no need to construct
->>> the bootloader config for a specific CPU vendor (or worse, CPU model).
->>> So that would need either some way of specifying multiple files, or a
->>> wrapper which can contain multiple files?
->>>
->>
->> I have been thinking a "bundle" format with a per-vendor header followed 
->> by the microcode in the appropriate format for each vendor.
+On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
+> On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org> wrote:
+> > >From the stack trace, we've kicked off a rtc_timer_do_work, probably
+> > from the rtc_initialize_alarm() schedule_work call added in Neil's
+> > patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm ->
+> > cmos_rq_disable -> cmos_checkintr -> rtc_update_irq -> schedule_work.
+> > 
+> > So, what it looks to me is that in cmos_checkintr, we grab the cmos->rtc
+> > and pass that along. Unfortunately, since the cmos->rtc value isn't set
+> > until after rtc_device_register() returns its null at that point. So
+> > your patch isn't really fixing the issue, but just reducing the race
+> > window for the second cpu to schedule the work.
+> > 
+> > Sigh. I'd guess dropping the schedule_work call from
+> > rtc_initialize_alarm() is the right approach (see below). When reviewing
+> > Neil's patch it seemed like a good idea there, but it seems off to me
+> > now.
+> > 
+> > Neil, any thoughts on the following? Can you expand on the condition you
+> > were worried about in around that call?
 > 
-> Yes, makes sense. Keep it as simple as possible.
+> If you set an alarm in the future, then shutdown and boot again after that
+> time, then you will end up with a timer_queue node which is in the past.
 
-For the majority of the past 10 years, the microcode has been shipped as
-one big file (at least for intel).
-So have you looked at the file format of the bundles that already exist?
+Thanks for explaining this again.
+
+Hrm. It seems the easy answer is to simply not add alarms that are in
+the past.  Further, I'm a bit perplexed, as if they are in the past, the
+enabled flag shouldn't be set.   __rtc_read_alarm() does check the
+current time, so maybe we can make sure we don't return old values? I
+guess I assumed __rtc_read_alarm() avoided returning stale values, but
+apparently not.
+
+> When this happens the queue gets stuck.  That entry-in-the-past won't get
+> removed until and interrupt happens and an interrupt won't happen because the
+> RTC only triggers an interrupt when the alarm is "now".
+> 
+> So you'll find that e.g. "hwclock" will always tell you that 'select' timed
+> out.
+> 
+> So we force the interrupt work to happen at the start just in case.
+
+Unfortunately its too early. 
+
+> Did you see my proposed patch which converted those calls to do the work
+> in-process rather than passing it to a worker-thread?  I think that is a
+> clean fix.
+
+I don't think I saw it today. Was it from before the holidays?
+
+Even so, at this point, I don't know if we have enough time for testing,
+so I'm thinking we either just drop the problematic sched_work call or
+revert the whole thing and try again for 3.3
+
+thanks
+-john
+
 
