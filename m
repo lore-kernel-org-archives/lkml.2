@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755529Ab2ADMlG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 07:41:06 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:45813 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755425Ab2ADMky (ORCPT
+	id S1755590Ab2ADMlV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 07:41:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47296 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755565Ab2ADMlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 07:40:54 -0500
+	Wed, 4 Jan 2012 07:41:16 -0500
 From: Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
 To: gregkh@suse.de, wfp5p@virginia.edu
@@ -15,9 +15,9 @@ Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         valdis.kletnieks@vt.edu,
         Ravishankar karkala Mallikarjunayya 
 	<ravishankar.km@greenturtles.in>
-Subject: [PATCH 05/11] Staging: comedi: fix printk warning issue in ni_at_a2150.c
-Date: Wed,  4 Jan 2012 18:10:00 +0530
-Message-Id: <1325680806-10917-5-git-send-email-ravishankar.km@greenturtles.in>
+Subject: [PATCH 08/11] Staging: comedi: fix printk warning issue in contec_pci_dio.c
+Date: Wed,  4 Jan 2012 18:10:03 +0530
+Message-Id: <1325680806-10917-8-git-send-email-ravishankar.km@greenturtles.in>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1325680806-10917-1-git-send-email-ravishankar.km@greenturtles.in>
 References: <1325680806-10917-1-git-send-email-ravishankar.km@greenturtles.in>
@@ -25,120 +25,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a printk warning found by the checkpatch.pl tool.
-Convert printk messages to dev_<levels> and removes useless printk
-messages.
+This patch removes useless printk messages.
 
 Signed-off-by: Ravishankar Karkala Mallikarjunayya <ravishankar.km@greenturtles.in>
 ---
- drivers/staging/comedi/drivers/ni_at_a2150.c |   51 ++++++--------------------
- 1 files changed, 12 insertions(+), 39 deletions(-)
+ drivers/staging/comedi/drivers/contec_pci_dio.c |   14 +-------------
+ 1 files changed, 1 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_at_a2150.c b/drivers/staging/comedi/drivers/ni_at_a2150.c
-index c25e44c..f1a15ed 100644
---- a/drivers/staging/comedi/drivers/ni_at_a2150.c
-+++ b/drivers/staging/comedi/drivers/ni_at_a2150.c
-@@ -215,9 +215,10 @@ module_exit(driver_a2150_cleanup_module);
+diff --git a/drivers/staging/comedi/drivers/contec_pci_dio.c b/drivers/staging/comedi/drivers/contec_pci_dio.c
+index e3659bd..ab39bdf 100644
+--- a/drivers/staging/comedi/drivers/contec_pci_dio.c
++++ b/drivers/staging/comedi/drivers/contec_pci_dio.c
+@@ -105,8 +105,6 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	struct pci_dev *pcidev = NULL;
+ 	struct comedi_subdevice *s;
  
- static void ni_dump_regs(struct comedi_device *dev)
- {
--	printk("config bits 0x%x\n", devpriv->config_bits);
--	printk("irq dma bits 0x%x\n", devpriv->irq_dma_bits);
--	printk("status bits 0x%x\n", inw(dev->iobase + STATUS_REG));
-+	dev_dbg(dev->hw_dev, "config bits 0x%x\n", devpriv->config_bits);
-+	dev_dbg(dev->hw_dev, "irq dma bits 0x%x\n", devpriv->irq_dma_bits);
-+	dev_dbg(dev->hw_dev, "status bits 0x%x\n",
-+		inw(dev->iobase + STATUS_REG));
+-	printk("comedi%d: contec: ", dev->minor);
+-
+ 	dev->board_name = thisboard->name;
+ 
+ 	if (alloc_private(dev, sizeof(struct contec_private)) < 0)
+@@ -126,14 +124,9 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 				}
+ 			}
+ 			devpriv->pci_dev = pcidev;
+-			if (comedi_pci_enable(pcidev, "contec_pci_dio")) {
+-				printk
+-				    ("error enabling PCI device and request regions!\n");
++			if (comedi_pci_enable(pcidev, "contec_pci_dio"))
+ 				return -EIO;
+-			}
+ 			dev->iobase = pci_resource_start(pcidev, 0);
+-			printk(" base addr %lx ", dev->iobase);
+-
+ 			dev->board_ptr = contec_boards + 0;
+ 
+ 			s = dev->subdevices + 0;
+@@ -153,20 +146,15 @@ static int contec_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 			s->range_table = &range_digital;
+ 			s->insn_bits = contec_do_insn_bits;
+ 
+-			printk("attached\n");
+-
+ 			return 1;
+ 		}
+ 	}
+ 
+-	printk("card not present!\n");
+-
+ 	return -EIO;
  }
  
- #endif
-@@ -347,61 +348,35 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	static const int timeout = 2000;
- 	int i;
- 
--	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
--	       iobase);
--	if (irq) {
--		printk(", irq %u", irq);
--	} else {
--		printk(", no irq");
--	}
--	if (dma) {
--		printk(", dma %u", dma);
--	} else {
--		printk(", no dma");
--	}
--	printk("\n");
--
- 	/* allocate and initialize dev->private */
- 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
- 		return -ENOMEM;
- 
--	if (iobase == 0) {
--		printk(" io base address required\n");
-+	if (iobase == 0)
- 		return -EINVAL;
--	}
- 
- 	/* check if io addresses are available */
--	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
--		printk(" I/O port conflict\n");
-+	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name))
- 		return -EIO;
--	}
- 	dev->iobase = iobase;
- 
- 	/* grab our IRQ */
- 	if (irq) {
--		/*  check that irq is supported */
--		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
--			printk(" invalid irq line %u\n", irq);
-+		/* check that irq is supported */
-+		if (irq < 3 || irq == 8 || irq == 13 || irq > 15)
- 			return -EINVAL;
--		}
- 		if (request_irq(irq, a2150_interrupt, 0,
--				driver_a2150.driver_name, dev)) {
--			printk("unable to allocate irq %u\n", irq);
-+				driver_a2150.driver_name, dev))
- 			return -EINVAL;
--		}
- 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
- 		dev->irq = irq;
- 	}
- 	/*  initialize dma */
- 	if (dma) {
--		if (dma == 4 || dma > 7) {
--			printk(" invalid dma channel %u\n", dma);
-+		if (dma == 4 || dma > 7)
- 			return -EINVAL;
--		}
--		if (request_dma(dma, driver_a2150.driver_name)) {
--			printk(" failed to allocate dma channel %u\n", dma);
-+		if (request_dma(dma, driver_a2150.driver_name))
- 			return -EINVAL;
--		}
- 		devpriv->dma = dma;
- 		devpriv->dma_buffer =
- 		    kmalloc(A2150_DMA_BUFFER_SIZE, GFP_KERNEL | GFP_DMA);
-@@ -466,8 +441,6 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static int a2150_detach(struct comedi_device *dev)
+ static int contec_detach(struct comedi_device *dev)
  {
--	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
--
- 	/* only free stuff if it has been allocated by _attach */
- 	if (dev->iobase) {
- 		/*  put board in power-down mode */
-@@ -801,7 +774,7 @@ static int a2150_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
- #endif
- 		data[n] = inw(dev->iobase + FIFO_DATA_REG);
- #ifdef A2150_DEBUG
--		printk(" data is %i\n", data[n]);
-+		dev_dbg(dev->hw_dev "data is %i\n", data[n]);
- #endif
- 		data[n] ^= 0x8000;
- 	}
+-	printk("comedi%d: contec: remove\n", dev->minor);
+ 
+ 	if (devpriv && devpriv->pci_dev) {
+ 		if (dev->iobase)
 -- 
 1.7.0.4
 
