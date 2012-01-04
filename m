@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab2ADXPW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 18:15:22 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:59723 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752255Ab2ADXPS (ORCPT
+	id S932208Ab2ADXPx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 18:15:53 -0500
+Received: from emh06.mail.saunalahti.fi ([62.142.5.116]:48428 "EHLO
+	emh06.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932144Ab2ADXPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 18:15:18 -0500
-X-Sasl-enc: ieVh4OQpr6bSma1osucFXxA550GcF0+UADYuo4YfY5vj 1325718917
-Date: Wed, 4 Jan 2012 15:13:07 -0800
-From: Greg KH <greg@kroah.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20120104231307.GA4604@kroah.com>
-References: <20111228174518.721624fad9d048f9f85b3d50@canb.auug.org.au>
- <20120103162108.GC25909@kroah.com>
- <CAPXgP11yiS5hF9q3+A1tyORmtp=z2T6CWBUDFh3FhcL19jADpw@mail.gmail.com>
- <20120104003116.GC22350@kroah.com>
- <CAPXgP13mifJCuPZKtbqvDnBwAQnGtg2HKM_Sk7PzOjGD3SB3RA@mail.gmail.com>
+	Wed, 4 Jan 2012 18:15:50 -0500
+Subject: [PATCH 0/6] ath6kl: create ath6kl_core.ko
+To: linville@tuxdriver.com
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, ath6kl-devel@qualcomm.com,
+        davem@davemloft.net
+Date: Thu, 05 Jan 2012 01:07:20 +0200
+Message-ID: <20120104230429.32306.75965.stgit@x201>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAPXgP13mifJCuPZKtbqvDnBwAQnGtg2HKM_Sk7PzOjGD3SB3RA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-Antivirus: VAMS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 11:03:54PM +0100, Kay Sievers wrote:
-> On Wed, Jan 4, 2012 at 01:31, Greg KH <greg@kroah.com> wrote:
-> > On Wed, Jan 04, 2012 at 01:07:52AM +0100, Kay Sievers wrote:
-> >> On Tue, Jan 3, 2012 at 17:21, Greg KH <greg@kroah.com> wrote:
-> >> > On Wed, Dec 28, 2011 at 05:45:18PM +1100, Stephen Rothwell wrote:
-> >> >> Because of the powerpc problems above, I have used the driver-core tree
-> >> >> from next-20111222 for today.
-> >> >
-> >> > Sorry about all of the problems, we tried to fix everything we could,
-> >> > but your merges and cross-builds found stuff we missed :(
-> >> >
-> >> > Kay, care to send me patches to fix this, and all of the other
-> >> > linux-next-reported problems to me so we can get this resolved this
-> >> > week?
-> >>
-> >> I rather don't want to add error checking to stuff that doesn't do it
-> >> today. The sysdev stuff never had that forced checks, but the normal
-> >> device stuff has.
-> >
-> > That's fine.
-> >
-> >> I think the force return value check is really a pretty misguided idea
-> >> in general, and it's up to the caller to do these checks and handle
-> >> rollbacks, not the driver core, I think.
-> >>
-> >> Can't we just remove that forced check?
-> >
-> > Probably, if it fixes these warning-is-an-error problems.  There were
-> > other issues with linux-next that were build issues, not just this one
-> > from what I recall, that kept Stephen from including the tree in
-> > linux-next.  I can bounce them to you if you missed them.
-> 
-> Oh, I thought that was all: "I fixed it up (see below) and can carry
-> the fix as necessary" material.
-> 
-> I might have missed some stuff, I don't see any others. Care to check
-> yours and let me know?
+Here's the patchset to fix the allyesconfig build breakage. My fix is to
+create a separate module ath6kl_core.ko which both ath6kl_sdio.ko and
+ath6kl_usb.ko use. I have tested various combinations to make sure that
+there are no compile errors anymore. Also allyesconfig build is running
+right now.
 
-Ok, I think you are right, I've pushed the "remove __must_check" patch
-to driver-core-next and hopefully it should all be good now.
+Dave, please take a look and let me know if you prefer to fix this somehow
+differently.
 
-thanks,
+John, these patches are based your wireless-next tree, they do not even
+apply to ath6kl.git. If the patches are ok, please take them directly to
+get them faster to Dave.
 
-greg k-h
+Sorry again for this mess and taking so long to fix it.
+
+---
+
+Kalle Valo (6):
+      ath6kl: rename vif init and cleanup functions
+      ath6kl: unify cfg80211 init/cleanup functions
+      ath6kl: create core.c
+      ath6kl: get rid of AR_DBG_LVL_CHECK()
+      ath6kl: convert ath6kl_dbg() and ath6kl_dbg_dump() into functions
+      ath6kl: create ath6kl_core.ko
+
+
+ drivers/net/wireless/ath/ath6kl/Makefile   |   35 +--
+ drivers/net/wireless/ath/ath6kl/cfg80211.c |  207 ++++++++------------
+ drivers/net/wireless/ath/ath6kl/cfg80211.h |   12 +
+ drivers/net/wireless/ath/ath6kl/common.h   |    3 
+ drivers/net/wireless/ath/ath6kl/core.c     |  297 ++++++++++++++++++++++++++++
+ drivers/net/wireless/ath/ath6kl/core.h     |   10 +
+ drivers/net/wireless/ath/ath6kl/debug.c    |   62 ++++--
+ drivers/net/wireless/ath/ath6kl/debug.h    |   27 ---
+ drivers/net/wireless/ath/ath6kl/hif.c      |   10 +
+ drivers/net/wireless/ath/ath6kl/init.c     |  211 +-------------------
+ drivers/net/wireless/ath/ath6kl/sdio.c     |    4 
+ drivers/net/wireless/ath/ath6kl/usb.c      |    8 -
+ drivers/net/wireless/ath/ath6kl/wmi.c      |    3 
+ 13 files changed, 478 insertions(+), 411 deletions(-)
+ create mode 100644 drivers/net/wireless/ath/ath6kl/core.c
+
