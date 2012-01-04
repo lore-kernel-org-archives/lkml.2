@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2ADTGO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 14:06:14 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43766 "EHLO
+	id S1756821Ab2ADTGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 14:06:35 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35553 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2ADTGK (ORCPT
+	with ESMTP id S1756809Ab2ADTG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 14:06:10 -0500
-Date: Wed, 4 Jan 2012 10:53:51 -0700
+	Wed, 4 Jan 2012 14:06:26 -0500
+Date: Wed, 4 Jan 2012 11:24:10 -0700
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 8/8] MAINTAINERS: spi: Update F: patterns
-Message-ID: <20120104175351.GE15503@ponder.secretlab.ca>
-References: <cover.1323418149.git.joe@perches.com>
- <86f4a9099c8ff7961190a540155356446dda2ade.1323418149.git.joe@perches.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com
+Subject: Re: [PATCHv3 1/3] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+Message-ID: <20120104182410.GT15503@ponder.secretlab.ca>
+References: <1325508798-25439-1-git-send-email-jamie@jamieiles.com>
+ <1325508798-25439-2-git-send-email-jamie@jamieiles.com>
+ <20120102132500.GB18443@sirena.org.uk>
+ <CACRpkdYxjVG2XVb5iXPmVe5uTcpemBkOA-=AcuyNx-9cWPpaiA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <86f4a9099c8ff7961190a540155356446dda2ade.1323418149.git.joe@perches.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdYxjVG2XVb5iXPmVe5uTcpemBkOA-=AcuyNx-9cWPpaiA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 09, 2011 at 12:12:54AM -0800, Joe Perches wrote:
-> commit ca632f55669 ("spi: reorganize drivers")
-> renamed the files, update the F: patterns.
+On Mon, Jan 02, 2012 at 02:48:40PM +0100, Linus Walleij wrote:
+> On Mon, Jan 2, 2012 at 2:25 PM, Mark Brown
+> <broonie@opensource.wolfsonmicro.com> wrote:
 > 
-> CC: Grant Likely <grant.likely@secretlab.ca>
+> > On Mon, Jan 02, 2012 at 12:53:16PM +0000, Jamie Iles wrote:
+> >> The Synopsys DesignWare block is used in some ARM devices (picoxcell)
+> >> and can be configured to provide multiple banks of GPIO pins.
+> >>
+> >> v3:   - depend on rather than select IRQ_DOMAIN
+> >>       - split IRQ support into a separate patch
+> >> v2:   - use Rob Herring's irqdomain in generic irq chip patches
+> >>       - use reg property to indicate bank index
+> >>       - support irqs on both edges based on LinusW's u300 driver
+> >
+> > Put stuff like this after the ---, it shouldn't end up in git history.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> The other day I was being told the exact opposite by Grant
+> Likely, so which one is it?
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-> ---
->  MAINTAINERS |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 410f190..68d5147 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1151,7 +1151,7 @@ F:	drivers/watchdog/nuc900_wdt.c
->  F:	drivers/net/ethernet/nuvoton/w90p910_ether.c
->  F:	drivers/mtd/nand/nuc900_nand.c
->  F:	drivers/rtc/rtc-nuc900.c
-> -F:	drivers/spi/spi_nuc900.c
-> +F:	drivers/spi/spi-nuc900.c
->  F:	drivers/usb/host/ehci-w90x900.c
->  F:	drivers/video/nuc900fb.c
->  
-> @@ -1355,7 +1355,7 @@ F:	drivers/net/ethernet/cadence/
->  ATMEL SPI DRIVER
->  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
->  S:	Supported
-> -F:	drivers/spi/atmel_spi.*
-> +F:	drivers/spi/spi-atmel.*
->  
->  ATMEL USBA UDC DRIVER
->  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
-> @@ -5280,7 +5280,7 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:	Maintained
->  F:	arch/arm/mach-pxa/
->  F:	drivers/pcmcia/pxa2xx*
-> -F:	drivers/spi/pxa2xx*
-> +F:	drivers/spi/spi-pxa2xx*
->  F:	drivers/usb/gadget/pxa2*
->  F:	include/sound/pxa2xx-lib.h
->  F:	sound/arm/pxa*
-> -- 
-> 1.7.8.111.gad25c.dirty
-> 
+It's the preference of whatever maintainer will actually be picking up
+the patch.  :-)  There is no definitive answer.
