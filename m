@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab2ADW1K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 17:27:10 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:46184 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757099Ab2ADW1F (ORCPT
+	id S1757202Ab2ADWgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 17:36:07 -0500
+Received: from sargas.telkomsa.net ([196.25.211.69]:23971 "EHLO
+	sargas.telkomsa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757115Ab2ADWgE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 17:27:05 -0500
-Message-ID: <4F04DFF0.8000006@xenotime.net>
-Date: Wed, 04 Jan 2012 15:25:36 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Wed, 4 Jan 2012 17:36:04 -0500
+Date: Thu, 5 Jan 2012 00:35:56 +0200 (SAST)
+From: =?utf-8?Q?Western_Union_Company_=C2=A9?= 
+	<online1256015@telkomsa.net>
+Reply-To: =?utf-8?Q?Western_Union_Company_=C2=A9?= <wumtf101@yahoo.com.hk>
+Message-ID: <2085885912.3570317.1325716556771.JavaMail.root@zimbra6-vm1.telkomsa.net>
+Subject: New  Year  Payment  Alert!!!
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Greg Kroah-Hartman <greg@kroah.com>, stable@vger.kernel.org,
-        Harry Wei <harryxiyou@gmail.com>,
-        xiyoulinuxkernelgroup@googlegroups.com,
-        Tsugikazu Shibata <tshibata@ab.jp.nec.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Documentation: Update stable address
-References: <1323468720.27746.42.camel@joe2Laptop>
-In-Reply-To: <1323468720.27746.42.camel@joe2Laptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [192.168.16.52]
+X-Mailer: Zimbra 6.0.10_GA_2692 (zclient/6.0.10_GA_2692)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/09/2011 02:12 PM, Joe Perches wrote:
-> The Japanese/Korean/Chinese versions still need updating.
-> 
-> Also, the stable kernel 2.6.x.y descriptions are out of date
-> and should be updated as well.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+Dear Beneficiary,
+ 
+We are here to notify you that the sum of  $250,000 U.S.Dollars was generated and awarded to you by the Western Union Foundation in conjunction with the African Union Foundation.This award was been selected through the internet, where your e-mail address was indicated and notified.The Western Union  Foundation, All the email addresses of the people that are active online,among the millions of our customers who use Western Union in their business transactions.Four people are selected Every year  to benefit from this promotion and you are one of the Selected Winners.
 
-Applied, thanks.
+To avoid misappropriation of funds, proper verifications must be carried out before the fund is transferred. We require the details below for verification so that the transfer can be carried out.
 
-> ---
->  Documentation/HOWTO                         |    4 ++--
->  Documentation/development-process/5.Posting |    8 ++++----
->  2 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/HOWTO b/Documentation/HOWTO
-> index 81bc1a9..f7ade3b 100644
-> --- a/Documentation/HOWTO
-> +++ b/Documentation/HOWTO
-> @@ -275,8 +275,8 @@ versions.
->  If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
->  kernel is the current stable kernel.
->  
-> -2.6.x.y are maintained by the "stable" team <stable@kernel.org>, and are
-> -released as needs dictate.  The normal release period is approximately 
-> +2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
-> +are released as needs dictate.  The normal release period is approximately
->  two weeks, but it can be longer if there are no pressing problems.  A
->  security-related problem, instead, can cause a release to happen almost
->  instantly.
-> diff --git a/Documentation/development-process/5.Posting b/Documentation/development-process/5.Posting
-> index 903a254..8a48c9b 100644
-> --- a/Documentation/development-process/5.Posting
-> +++ b/Documentation/development-process/5.Posting
-> @@ -271,10 +271,10 @@ copies should go to:
->     the linux-kernel list.
->  
->   - If you are fixing a bug, think about whether the fix should go into the
-> -   next stable update.  If so, stable@kernel.org should get a copy of the
-> -   patch.  Also add a "Cc: stable@kernel.org" to the tags within the patch
-> -   itself; that will cause the stable team to get a notification when your
-> -   fix goes into the mainline.
-> +   next stable update.  If so, stable@vger.kernel.org should get a copy of
-> +   the patch.  Also add a "Cc: stable@vger.kernel.org" to the tags within
-> +   the patch itself; that will cause the stable team to get a notification
-> +   when your fix goes into the mainline.
->  
->  When selecting recipients for a patch, it is good to have an idea of who
->  you think will eventually accept the patch and get it merged.  While it
-> 
-> 
-> 
+1. Receiver's Full Name:
+2. Receiver's Address:
+3. Receiver's Country:
+4. Receiver's Telephone Number:
+5. Receiver's Occupation:
 
+  Send the above details to us via the email addresses stated below:
+ 
+Western Union District Manager (Mr. Mike Moris)
+Website: www.westernunion.com
+E-mail: wumtf101@yahoo.com.hk
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Note: You were selected as a winner on this promotion and I personally advise that you use the funds wisely. However, we need your information as stated above to commence the transaction due process.
+
+As soon as these details are received and verified, the fund will be transferred to you.
+
+Copyright © 2001-2011 The Western Union Company , All Rights Reserved.
