@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756531Ab2ADRHM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 12:07:12 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:47656 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433Ab2ADRHK convert rfc822-to-8bit (ORCPT
+	id S1756525Ab2ADRIr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 12:08:47 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:33899 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756447Ab2ADRIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 12:07:10 -0500
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Andrew Burgess'" <aab@cichlid.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-uvc-devel@lists.berlios.de>
-References: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com> (from jpiszcz@lucidpixels.com on Tue Jan  3 06:21:02 2012) <1325694071.16950.49@hogo>
-In-Reply-To: <1325694071.16950.49@hogo>
-Subject: RE: 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
-Date: Wed, 4 Jan 2012 12:07:07 -0500
-Message-ID: <003301cccb03$4a8cbea0$dfa63be0$@lucidpixels.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQGqYLYAn5/D/gBGSH6ojlIpFGPwmJZBROhw
-Content-Language: en-us
+	Wed, 4 Jan 2012 12:08:45 -0500
+Date: Wed, 4 Jan 2012 09:08:41 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: Add Dell Studio 1557 to pci=nocrs blacklist
+Message-ID: <20120104090841.5007db44@jbarnes-desktop>
+In-Reply-To: <20120104163311.GB31667@redhat.com>
+References: <20111230193704.GA2874@redhat.com>
+	<20120101145354.GA1791@elte.hu>
+	<20120103093020.0cbcd735@jbarnes-desktop>
+	<CAErSpo4YB6Rpe==-vbia9B_aJNtJ7BrDySs-jw5cGmeMv9zRgA@mail.gmail.com>
+	<20120104163311.GB31667@redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/z+8aTmjTXHVH+KUOJ+jJzCF"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/z+8aTmjTXHVH+KUOJ+jJzCF
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
+On Wed, 4 Jan 2012 11:33:12 -0500
+Dave Jones <davej@redhat.com> wrote:
 
------Original Message-----
-From: Andrew Burgess [mailto:aab@cichlid.com] 
+> The Dell Studio 1557 also doesn't suspend correctly when CRS is enabled.
+> Details at https://bugzilla.redhat.com/show_bug.cgi?id=3D769657
+>=20
+> Reported-by: Gregory S. Hoerner <ghoerner@transcendingthought.com>
+> Signed-off-by: Dave Jones <davej@redhat.com>
+> =20
+> --- linux-3.1.noarch/arch/x86/pci/acpi.c~	2012-01-04 11:19:36.783664477 -=
+0500
+> +++ linux-3.1.noarch/arch/x86/pci/acpi.c	2012-01-04 11:23:42.403666272 -0=
+500
+> @@ -75,6 +75,16 @@ static const struct dmi_system_id pci_us
+>  	/* https://bugzilla.redhat.com/show_bug.cgi?id=3D769657 */
+>  	{
+>  		.callback =3D set_nouse_crs,
+> +		.ident =3D "Dell Studio 1557",
+> +		.matches =3D {
+> +			DMI_MATCH(DMI_BOARD_VENDOR, "Dell Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557");
+> +			DMI_MATCH(DMI_BIOS_VERSION, "A09"),
+> +		},
+> +	},
+> +	/* https://bugzilla.redhat.com/show_bug.cgi?id=3D769657 */
+> +	{
+> +		.callback =3D set_nouse_crs,
+>  		.ident =3D "Thinkpad SL510",
+>  		.matches =3D {
+>  			DMI_MATCH(DMI_BOARD_VENDOR, "LENOVO"),
+>=20
 
-it sounds like a bug recently tracked down on the usb devel list
-(search for 'Failed to resubmit video URB')
+Looks like this depends on a Thinkpad patch you haven't sent yet; did
+you mean to?
 
-it turned out to be a bug in the usb host controller; if you
-do an lspci do you see anything made by NetMos or MosChip?
+I've fixed it up by hand and applied both the 1536 and 1557 patches to
+my for-linus branch.  I'll see if Linus wants to take it before he
+releases (doubtful, but it would be nice if these machines just worked
+with the new kernel).
 
-mine says:
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-0b:00.0 USB Controller: NetMos Technology MCS9990 PCIe to 4‐Port USB  
-2.0 Host Controller
+--Sig_/z+8aTmjTXHVH+KUOJ+jJzCF
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-mine is a pcie card; perhaps you have one built in?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
--
+iQIcBAEBAgAGBQJPBIeZAAoJEIEoDkX4Qk9hE7wP/2uIDZ7nKn1kmMwJHyWdPAuE
+bYx2BTJ9t58f3LkPH/C9c0ZvTtrcmJyaNtgy8uYD5luH2Wd3duu7CS2waFC2BVZ1
+IWzPL6BCRKmiKXhv51F1c1eKIFpwkfMdGFqSr3Uaxjh1NoAERNW7IDmsJTcdrJzN
+GnDbU9APBhn6xkMSyYH34A02F3L4vYHikQYE1rL+qK/EjBhfdt9SjyDB4q2DwJhT
+6yiuqzoCJh/6ADAwhPGrGAejTO9IKUUtMPg52303G+QxwRpWVn+ch/AOI6cnVFcM
+pFnjT09IWWwZBOSg4APrKssEr41N5xIHFscn/+I6D6rB65iKjMzGeZ+5PkjRN6rx
+NCIf1/Kmie4KFmM+MHyvN60nI46MULNiOjTFiLyJHa6jgv/c2HuhDzqoE/I4LYUj
+laFK94BoyGjTmM3olafssvBzIC4HhI/WaLyUQc9pa73bLA6pRRaqNfOcfMfvwOCz
+yrUh1It5RU1xTPgYaIwVfQ4WfWpSfnthfyosr4SkP4LCnUgmF30c9BFIo3WLZnoD
+MxPHps8EWXNcOBoJTRgpc4OeWmLzjW1E4NtFGaRK+1Jj4emSo79oVSw0CzGqS78K
+B4KQq5cEVsKkww98noT5T+PjYSnJFmc2jfUUL9HUUSVbhgGh1pjb6qZA5O+UsmAa
+E0e0O5DRvKjaZUJdFcwe
+=sC+7
+-----END PGP SIGNATURE-----
 
-It’s a bit different for my model:
-
-# lspci
-00:00.0 Host bridge: Advanced Micro Devices [AMD] RS880 Host Bridge
-00:01.0 PCI bridge: Acer Incorporated [ALI] AMD RS780/RS880 PCI to PCI bridge (int gfx)
-00:04.0 PCI bridge: Advanced Micro Devices [AMD] RS780/RS880 PCI to PCI bridge (PCIE port 0)
-00:05.0 PCI bridge: Advanced Micro Devices [AMD] RS780/RS880 PCI to PCI bridge (PCIE port 1)
-00:11.0 SATA controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 SATA Controller [AHCI mode]
-00:12.0 USB controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
-00:12.2 USB controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI Controller
-00:13.0 USB controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB OHCI0 Controller
-00:13.2 USB controller: ATI Technologies Inc SB7x0/SB8x0/SB9x0 USB EHCI Controller
-00:14.0 SMBus: ATI Technologies Inc SBx00 SMBus Controller (rev 42)
-00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA) (rev 40)
-00:14.3 ISA bridge: ATI Technologies Inc SB7x0/SB8x0/SB9x0 LPC host controller (rev 40)
-00:14.4 PCI bridge: ATI Technologies Inc SBx00 PCI to PCI Bridge (rev 40)
-00:18.0 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor HyperTransport Configuration
-00:18.1 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor Address Map
-00:18.2 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor DRAM Controller
-00:18.3 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor Miscellaneous Control
-00:18.4 Host bridge: Advanced Micro Devices [AMD] Family 10h Processor Link Control
-01:05.0 VGA compatible controller: ATI Technologies Inc RS880M [Mobility Radeon HD 4200 Series]
-01:05.1 Audio device: ATI Technologies Inc RS880 HDMI Audio [Radeon HD 4200 Series]
-03:00.0 Ethernet controller: Broadcom Corporation NetLink BCM57780 Gigabit Ethernet PCIe (rev 01)
-06:00.0 Network controller: Atheros Communications Inc. AR9287 Wireless Network Adapter (PCI-Express) (rev 01)
-
-Justin.
-
+--Sig_/z+8aTmjTXHVH+KUOJ+jJzCF--
