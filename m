@@ -1,66 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab2ADU5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 15:57:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201Ab2ADU5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 15:57:09 -0500
-Message-ID: <4F04BD11.8090302@redhat.com>
-Date: Wed, 04 Jan 2012 15:56:49 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com> <4F046536.5080207@redhat.com> <4F048295.1050907@redhat.com> <4F04898B.1080600@redhat.com>
-In-Reply-To: <4F04898B.1080600@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756937Ab2ADVAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:00:19 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47125 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab2ADVAR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 16:00:17 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: tytso@mit.edu, adilger.kernel@dilger.ca, akpm@linux-foundation.org,
+        jack@suse.cz
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ext2/3/4: delete unneeded includes of module.h
+Date: Wed,  4 Jan 2012 15:59:47 -0500
+Message-Id: <1325710787-32576-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2012 12:16 PM, Avi Kivity wrote:
-> On 01/04/2012 06:47 PM, Rik van Riel wrote:
->>> So it looks like the default is optimal, at least wrt the cases you
->>> tested and your test workload.
->>
->>
->> It depends on the workload.
->>
->> I believe ebizzy synchronously bounces messages around between
->> userland threads, and may benefit from lower latency preemption
->> and re-scheduling.
->>
->> Workloads like AMQP do asynchronous messaging, and are likely
->> to benefit from having a lower number of switches.
->>
->> I do not know which kind of workload is more prevalent.
->>
->> Another worry with gang scheduling is scalability.  One of
->> the reasons Linux scales well to larger systems is that a
->> lot of things are done CPU local, without communicating
->> things with other CPUs.  Making the scheduling algorithm
->> system-global has the potential to add in a lot of overhead.
->>
->> Likewise, removing the ability to migrate workloads to idle
->> CPUs is likely to hurt a lot of real world workloads.
->>
->> Benchmarks don't care, because they run full-out. However,
->> users do not run benchmarks nearly as much as they run
->> actual workloads...
->>
->
-> I think we can solve it at the guest level.  The paravirt ticketlock
-> stuff introduces wait/wake calls (actually wait is just a HLT
-> instruction); we could spin for a while, then HLT until the other side
-> wakes us.  We should do this for all sites that busy wait.
+Delete any instances of include module.h that were not strictly
+required.  In the case of ext2, the declaration of MODULE_LICENSE
+etc. were in inode.c but the module_init/exit were in super.c, so
+relocate the MODULE_LICENCE/AUTHOR block to super.c which makes it
+consistent with ext3 and ext4 at the same time.
 
-Agreed, that would probably be the best (and nicest) solution.
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 91a6945..740cad8 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -26,7 +26,6 @@
+ #include <linux/highuid.h>
+ #include <linux/pagemap.h>
+ #include <linux/quotaops.h>
+-#include <linux/module.h>
+ #include <linux/writeback.h>
+ #include <linux/buffer_head.h>
+ #include <linux/mpage.h>
+@@ -36,10 +35,6 @@
+ #include "acl.h"
+ #include "xip.h"
+ 
+-MODULE_AUTHOR("Remy Card and others");
+-MODULE_DESCRIPTION("Second Extended Filesystem");
+-MODULE_LICENSE("GPL");
+-
+ static int __ext2_write_inode(struct inode *inode, int do_sync);
+ 
+ /*
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index bd8ac16..9e7e203 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1521,5 +1521,8 @@ static void __exit exit_ext2_fs(void)
+ 	exit_ext2_xattr();
+ }
+ 
++MODULE_AUTHOR("Remy Card and others");
++MODULE_DESCRIPTION("Second Extended Filesystem");
++MODULE_LICENSE("GPL");
+ module_init(init_ext2_fs)
+ module_exit(exit_ext2_fs)
+diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
+index d27b71f..6dcafc7 100644
+--- a/fs/ext2/xattr.c
++++ b/fs/ext2/xattr.c
+@@ -54,7 +54,6 @@
+  */
+ 
+ #include <linux/buffer_head.h>
+-#include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/slab.h>
+ #include <linux/mbcache.h>
+diff --git a/fs/ext2/xattr_security.c b/fs/ext2/xattr_security.c
+index c922adc..be7a8d0 100644
+--- a/fs/ext2/xattr_security.c
++++ b/fs/ext2/xattr_security.c
+@@ -3,7 +3,6 @@
+  * Handler for storing security labels as extended attributes.
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
+diff --git a/fs/ext2/xattr_trusted.c b/fs/ext2/xattr_trusted.c
+index 667e46a..2989467 100644
+--- a/fs/ext2/xattr_trusted.c
++++ b/fs/ext2/xattr_trusted.c
+@@ -5,7 +5,6 @@
+  * Copyright (C) 2003 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/capability.h>
+ #include <linux/fs.h>
+diff --git a/fs/ext2/xattr_user.c b/fs/ext2/xattr_user.c
+index 099d20f..f470e44 100644
+--- a/fs/ext2/xattr_user.c
++++ b/fs/ext2/xattr_user.c
+@@ -6,7 +6,6 @@
+  */
+ 
+ #include <linux/init.h>
+-#include <linux/module.h>
+ #include <linux/string.h>
+ #include "ext2.h"
+ #include "xattr.h"
+diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
+index 85fe655..779c8de 100644
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -22,7 +22,6 @@
+  *  Assorted race fixes, rewrite of ext3_get_block() by Al Viro, 2000
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/time.h>
+ #include <linux/ext3_jbd.h>
+diff --git a/fs/ext3/xattr_security.c b/fs/ext3/xattr_security.c
+index 3c218b8..ea26f2a 100644
+--- a/fs/ext3/xattr_security.c
++++ b/fs/ext3/xattr_security.c
+@@ -3,7 +3,6 @@
+  * Handler for storing security labels as extended attributes.
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
+diff --git a/fs/ext3/xattr_trusted.c b/fs/ext3/xattr_trusted.c
+index dc8edda..2526a88 100644
+--- a/fs/ext3/xattr_trusted.c
++++ b/fs/ext3/xattr_trusted.c
+@@ -5,7 +5,6 @@
+  * Copyright (C) 2003 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/capability.h>
+ #include <linux/fs.h>
+diff --git a/fs/ext3/xattr_user.c b/fs/ext3/xattr_user.c
+index 7a32197..b32e473 100644
+--- a/fs/ext3/xattr_user.c
++++ b/fs/ext3/xattr_user.c
+@@ -5,7 +5,6 @@
+  * Copyright (C) 2001 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
+ #include <linux/ext3_jbd.h>
+diff --git a/fs/ext4/block_validity.c b/fs/ext4/block_validity.c
+index 8efb2f0..3f11656 100644
+--- a/fs/ext4/block_validity.c
++++ b/fs/ext4/block_validity.c
+@@ -13,7 +13,6 @@
+ #include <linux/namei.h>
+ #include <linux/quotaops.h>
+ #include <linux/buffer_head.h>
+-#include <linux/module.h>
+ #include <linux/swap.h>
+ #include <linux/pagemap.h>
+ #include <linux/blkdev.h>
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 607b155..841faf5 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -29,7 +29,6 @@
+  *   - smart tree reduction
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/time.h>
+ #include <linux/jbd2.h>
+diff --git a/fs/ext4/indirect.c b/fs/ext4/indirect.c
+index 3cfc73f..830e1b2 100644
+--- a/fs/ext4/indirect.c
++++ b/fs/ext4/indirect.c
+@@ -20,7 +20,6 @@
+  *	(sct@redhat.com), 1993, 1998
+  */
+ 
+-#include <linux/module.h>
+ #include "ext4_jbd2.h"
+ #include "truncate.h"
+ 
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 92655fd..7ea726f 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -18,7 +18,6 @@
+  *  Assorted race fixes, rewrite of ext4_get_block() by Al Viro, 2000
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/time.h>
+ #include <linux/jbd2.h>
+diff --git a/fs/ext4/migrate.c b/fs/ext4/migrate.c
+index 16ac228..e7d6bb0 100644
+--- a/fs/ext4/migrate.c
++++ b/fs/ext4/migrate.c
+@@ -12,7 +12,6 @@
+  *
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/slab.h>
+ #include "ext4_jbd2.h"
+ 
+diff --git a/fs/ext4/page-io.c b/fs/ext4/page-io.c
+index 7e106c8..4758518 100644
+--- a/fs/ext4/page-io.c
++++ b/fs/ext4/page-io.c
+@@ -6,7 +6,6 @@
+  * Written by Theodore Ts'o, 2010.
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/fs.h>
+ #include <linux/time.h>
+ #include <linux/jbd2.h>
+diff --git a/fs/ext4/xattr_security.c b/fs/ext4/xattr_security.c
+index 34e4350..b60f9f8 100644
+--- a/fs/ext4/xattr_security.c
++++ b/fs/ext4/xattr_security.c
+@@ -3,7 +3,6 @@
+  * Handler for storing security labels as extended attributes.
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
+ #include <linux/security.h>
+diff --git a/fs/ext4/xattr_trusted.c b/fs/ext4/xattr_trusted.c
+index 37e6ebc..95f1f4a 100644
+--- a/fs/ext4/xattr_trusted.c
++++ b/fs/ext4/xattr_trusted.c
+@@ -5,7 +5,6 @@
+  * Copyright (C) 2003 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/capability.h>
+ #include <linux/fs.h>
+diff --git a/fs/ext4/xattr_user.c b/fs/ext4/xattr_user.c
+index 98c3753..0edb7611 100644
+--- a/fs/ext4/xattr_user.c
++++ b/fs/ext4/xattr_user.c
+@@ -5,7 +5,6 @@
+  * Copyright (C) 2001 by Andreas Gruenbacher, <a.gruenbacher@computer.org>
+  */
+ 
+-#include <linux/module.h>
+ #include <linux/string.h>
+ #include <linux/fs.h>
+ #include "ext4_jbd2.h"
 -- 
-All rights reversed
+1.7.7
+
