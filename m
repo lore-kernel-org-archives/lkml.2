@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab2ADVdb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:33:31 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38771 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754203Ab2ADVd3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:33:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <1325712298.3084.5.camel@laptop>
-References: <20120104143945.GA4783@quad>
-	<1325712298.3084.5.camel@laptop>
-Date: Wed, 4 Jan 2012 21:33:27 +0000
-Message-ID: <CABPqkBSR4a7PCyYxhE0kpepc3f0f6Rh6JU55_A3ubWYnN+G3iA@mail.gmail.com>
-Subject: Re: perf_events: proposed fix for broken intr throttling (repost)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, gleb@redhat.com,
-        asharma@fb.com, vince@deater.net, wcohen@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1757021Ab2ADVg7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:36:59 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:60046 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756935Ab2ADVg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 16:36:56 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        j.glisse@gmail.com, bskeggs@redhat.com, thellstrom@vmware.co,
+        airlied@linux.ie
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 2/3] drm/ttm/dma: Fix accounting error when calling ttm_mem_global_free_page and don't try to free freed pages.
+Date: Wed,  4 Jan 2012 16:35:15 -0500
+Message-Id: <1325712916-27962-3-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.7.4
+In-Reply-To: <1325712916-27962-1-git-send-email-konrad.wilk@oracle.com>
+References: <1325712916-27962-1-git-send-email-konrad.wilk@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090209.4F04C674.0016,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 9:24 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2012-01-04 at 15:39 +0100, Stephane Eranian wrote:
->
->> In running some tests with 3.2.0-rc7-tip, I noticed unexpected throttling
->> notification samples. I was using fixed period with a long enough period
->> that I could not possibly hit the default limit of 100000 samples/sec/cpu.
->>
->> I investigated the matter and discovered that the following commit
->> is the culprit:
->>
->> commit 0f5a2601284237e2ba089389fd75d67f77626cef
->> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Date:   Wed Nov 16 14:38:16 2011 +0100
->>
->>     perf: Avoid a useless pmu_disable() in the perf-tick
->>
->>
->> The throttling mechanism REQUIRES that the hwc->interrupt counter be reset
->> at EACH timer tick. This is regardless of the fact that the counter is in fixed
->> period or frequency mode. The optimization introduced in this patch breaks this
->> by avoiding calling perf_ctx_adjust_freq() at each timer tick. For events with
->> fixed period, it would not adjust any period at all BUT it would reset the
->> throttling counter.
->>
->> Given the way the throttling mechanism is implemented we cannot avoid doing
->> some work at each timer tick. Otherwise we loose many samples for no good
->> reasons.
->>
->> One may also question the motivation behind checking the interrupt rate at
->> each timer tick rather than every second, i.e., average it out over a longer
->> period.
->
-> That also allows your system to be dead for longer..
->
-Yes, I concur...
+The code to figure out how many pages to shrink the pool
+ends up capping the 'count' at _manager->options.max_size - which is OK.
+Except that the 'count' is also used when accounting for how many pages
+are recycled - which we end up with the invalid values. This fixes
+it by using a different value for the amount of pages to shrink.
 
->> I see two solutions short term:
->>    1 - revert the commit above
->>    2 - special case the situation with no frequency-based sampling event
->>
->> I have implemented solution 2 with the draft fix below. It does not invoke
->> perf_pmu_enable()/perf_pmu_disable().  I am not clear on whether or not this
->> is really needed in this case. Please advise.
->
-> I don't think it needs that, I do dislike the unconditional iterate all
-> events thing though. Maybe we can set some per-cpu state indicating
-> someone got throttled (rare under normal operation -- you'd hope) and
-> only iterate to unthrottle when we find this set.
->
-Could try that too.
+On top of that we would free the cached page pool - which is nonsense
+as they are deleted from the pool - so there are no free pages in that
+pool..
 
-> I think the event scheduling resulting from migration will already
-> re-enable the event, avoiding the loss of unthrottle due to that..
-> although it would be good to verify that.
->
-Yes, you're not dead forever, but still it is not acceptable as is.
+Also we also missed the opportunity to batch the amount of pages
+to free (similar to how ttm_page_alloc.c does it). This reintroduces
+the code that was lost during rebasing.
 
-Will code the solution you suggested.
+Reviewed-by: Jerome Glisse <jglisse@redhat.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+index 6c06d0b..156ddcd 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
+@@ -949,7 +949,7 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
+ 	struct dma_page *d_page, *next;
+ 	enum pool_type type;
+ 	bool is_cached = false;
+-	unsigned count = 0, i;
++	unsigned count = 0, i, npages = 0;
+ 	unsigned long irq_flags;
+ 
+ 	type = ttm_to_type(ttm->page_flags, ttm->caching_state);
+@@ -974,8 +974,13 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
+ 	} else {
+ 		pool->npages_free += count;
+ 		list_splice(&ttm_dma->pages_list, &pool->free_list);
++		npages = count;
+ 		if (pool->npages_free > _manager->options.max_size) {
+-			count = pool->npages_free - _manager->options.max_size;
++			npages = pool->npages_free - _manager->options.max_size;
++			/* free at least NUM_PAGES_TO_ALLOC number of pages
++			 * to reduce calls to set_memory_wb */
++			if (npages < NUM_PAGES_TO_ALLOC)
++				npages = NUM_PAGES_TO_ALLOC;
+ 		}
+ 	}
+ 	spin_unlock_irqrestore(&pool->lock, irq_flags);
+@@ -999,9 +1004,9 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
+ 		ttm_dma->dma_address[i] = 0;
+ 	}
+ 
+-	/* shrink pool if necessary */
+-	if (count)
+-		ttm_dma_page_pool_free(pool, count);
++	/* shrink pool if necessary (only on !is_cached pools)*/
++	if (npages)
++		ttm_dma_page_pool_free(pool, npages);
+ 	ttm->state = tt_unpopulated;
+ }
+ EXPORT_SYMBOL_GPL(ttm_dma_unpopulate);
+-- 
+1.7.7.4
+
