@@ -1,85 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab2ADAC7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:02:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43442 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234Ab2ADAC4 (ORCPT
+	id S1755264Ab2ADAFM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:05:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47132 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab2ADAFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:02:56 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ACX1LXelnEveKIP2YgUA:9 a=O6C0Hbbwd9DMcZ8dbJMA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325635373.12696.4.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 03 Jan 2012 19:02:53 -0500
-In-Reply-To: <20120102134856.GA32673@elte.hu>
-References: <20111221123624.193898256@goodmis.org>
-	 <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
-	 <20120102134856.GA32673@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jan 2012 19:05:07 -0500
+Date: Tue, 3 Jan 2012 16:05:05 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH] mm: vmscam: check page order in isolating lru pages
+Message-Id: <20120103160505.6f7a9aab.akpm@linux-foundation.org>
+In-Reply-To: <CAJd=RBCuh=zDLZ7J9sV_p_ghoXP-VX6PEAx01t8p_pziTimxnA@mail.gmail.com>
+References: <CAJd=RBBJG+hLLc3mR-WzByU1gZEcdFUAoZzyir+1A4a0tVnSmg@mail.gmail.com>
+	<4EFCA4F9.7070703@gmail.com>
+	<CAJd=RBCuh=zDLZ7J9sV_p_ghoXP-VX6PEAx01t8p_pziTimxnA@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-02 at 14:48 +0100, Ingo Molnar wrote:
-> * Ingo Molnar <mingo@elte.hu> wrote:
+On Sat, 31 Dec 2011 22:55:22 +0800
+Hillf Danton <dhillf@gmail.com> wrote:
+
+> From: Hillf Danton <dhillf@gmail.com>
+> Subject: [PATCH] mm: vmscam: check page order in isolating lru pages
 > 
-> > Just to give you an impression of how a failure looks like, the 
-> > serial console just stops printing mid-line:
-> > 
-> >  [   53.212942] calling  vt1211_init+0x0/0x9b @ 1                                                   
-> >  [   53.212971] initcall vt1211_init+0x0/0x9b returned -19 after 23 usecs                           
-> >  [   53.212975] calling  sm_vt8231_init+0x0/0x1b @ 1                                                
-> >    Booting 'Fedora'
-> > 
-> > and the next message is GRUB's 'Booting ...' line.
+> Before try to isolate physically contiguous pages, check for page order is
+> added, and if it is not regular page, we should give up the attempt.
+
+Well..  why?  Neither the changelog nor the code comments explain why
+we skip these pages.  They should!
+
+> --- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
+> +++ b/mm/vmscan.c	Sat Dec 31 22:44:16 2011
+> @@ -1162,6 +1162,7 @@ static unsigned long isolate_lru_pages(u
+>  		unsigned long end_pfn;
+>  		unsigned long page_pfn;
+>  		int zone_id;
+> +		unsigned int isolated_pages = 1;
 > 
-> here's another one:
+>  		page = lru_to_page(src);
+>  		prefetchw_prev_lru_page(page, src, flags);
+> @@ -1172,7 +1173,7 @@ static unsigned long isolate_lru_pages(u
+>  		case 0:
+>  			mem_cgroup_lru_del(page);
+>  			list_move(&page->lru, dst);
+> -			nr_taken += hpage_nr_pages(page);
+> +			isolated_pages = hpage_nr_pages(page);
+>  			break;
 > 
-> [   53.224579] calling  sm_via686a_init+0x0/0x1b @ 1                                               
-> [   53.224622] bus: 'pci': add driver via686a                                                      
->   Booting 'Fedora
+>  		case -EBUSY:
+> @@ -1184,8 +1185,12 @@ static unsigned long isolate_lru_pages(u
+>  			BUG();
+>  		}
 > 
-> This occured after a series of 50 successful bootups ...
+> +		nr_taken += isolated_pages;
+>  		if (!order)
+>  			continue;
+> +		/* try pfn-based isolation only for regular page */
+> +		if (isolated_pages != 1)
+> +			continue;
 > 
-> Unfortunately this means that the 'baseline' numbers are 
-> probably not reliable.
+>  		/*
+>  		 * Attempt to take all pages in the order aligned region
+> @@ -1227,7 +1232,6 @@ static unsigned long isolate_lru_pages(u
+>  				break;
+> 
+>  			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
+> -				unsigned int isolated_pages;
+> 
+>  				mem_cgroup_lru_del(cursor_page);
+>  				list_move(&cursor_page->lru, dst);
 
-Hi Ingo,
+The code has become rather awkward.
 
-I have a machine that seems to lock up 100% of the time when the bad
-commit is used.
+I don't like the trick of reusing a local (isolated_pages) for other
+purposes later on in the function.  This introduces risk that someone
+will add a usage of the local for its original application after it has
+been reused.  And it's a little bit deceiving for readers - they first
+have to work out "oh, it's being reused for something else".  It would
+be better to use two identifiers.  The compiler is good at reusing
+registers (and sometimes stack slots) if the earlier local has gone
+dead.
 
-I started with tip/master (1bc2a3035df) and merged in my branch (this
-patch set) and applied your config and it locks up in different places.
-I booted it 4 times, and it locked up 4 times.
-
-Then I tried your config against my branch, and I booted it 10 times
-without failure.  Can you crash it with just my branch?
-
-I then tried it against just tip/master, and it again locked up the two
-times I booted it.
-
-I then looked at the merge you did with Linus's branch:
-
-c7f46b7aa4ae5cbef32eb5e016512a14f936affa
-
-Checked that out, and booted it twice with your config, and it booted
-without failure both times.
-
-I'm currently running a ktest git bisect and will let it run over night.
-As building a allyesconfig takes a bit of time. I'm hoping that it will
-be done by tomorrow.
-
--- Steve
+Also, why do we test hpage_nr_pages() here?  Why not directly test
+PageTransHuge()?
 
 
+iow, something like this?
+
+--- a/mm/vmscan.c~mm-vmscam-check-page-order-in-isolating-lru-pages-fix
++++ a/mm/vmscan.c
+@@ -1173,7 +1173,6 @@ static unsigned long isolate_lru_pages(u
+ 		unsigned long end_pfn;
+ 		unsigned long page_pfn;
+ 		int zone_id;
+-		unsigned int isolated_pages = 1;
+ 
+ 		page = lru_to_page(src);
+ 		prefetchw_prev_lru_page(page, src, flags);
+@@ -1184,7 +1183,7 @@ static unsigned long isolate_lru_pages(u
+ 		case 0:
+ 			mem_cgroup_lru_del(page);
+ 			list_move(&page->lru, dst);
+-			isolated_pages = hpage_nr_pages(page);
++			nr_taken += hpage_nr_pages(page);
+ 			break;
+ 
+ 		case -EBUSY:
+@@ -1196,11 +1195,11 @@ static unsigned long isolate_lru_pages(u
+ 			BUG();
+ 		}
+ 
+-		nr_taken += isolated_pages;
+ 		if (!order)
+ 			continue;
+-		/* try pfn-based isolation only for regular page */
+-		if (isolated_pages != 1)
++
++		/* Try pfn-based isolation only for regular pages */
++		if (PageTransHuge(page) != 1)
+ 			continue;
+ 
+ 		/*
+@@ -1243,6 +1242,7 @@ static unsigned long isolate_lru_pages(u
+ 				break;
+ 
+ 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
++				unsigned int isolated_pages;
+ 
+ 				mem_cgroup_del_lru(cursor_page);
+ 				list_move(&cursor_page->lru, dst);
+
+
+If hpage_nr_pages() is the official way of testing for a thp page
+then I guess this is the wrong thing to do!
