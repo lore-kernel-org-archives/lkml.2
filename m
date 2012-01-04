@@ -1,169 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122Ab2ADPsg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 10:48:36 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34725 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2ADPse convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 10:48:34 -0500
+	id S1756165Ab2ADP7p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 10:59:45 -0500
+Received: from mx2.compro.net ([12.186.155.4]:61733 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756145Ab2ADP7k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 10:59:40 -0500
+X-IronPort-AV: E=Sophos;i="4.71,456,1320642000"; 
+   d="scan'208";a="7460498"
+Message-ID: <4F047767.5060708@compro.net>
+Date: Wed, 04 Jan 2012 10:59:35 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CANFwon0=VMXuXKDqZVYxad42J8hJ6wSuiPE4Sr0cSaxSo6dMPQ@mail.gmail.com>
-References: <CANFwon3hXH-1PQi1XZsxjFFDQ4Z0X25db87rJYG_4DF2ZXGLeQ@mail.gmail.com>
-	<CABiHV1ROEiCD-dMER+MTPQKgKTgEj2_ynCJ3XOd_YwPA-xQySQ@mail.gmail.com>
-	<CANFwon1XmtFZbUimF7kGSoz=ASyoZ64f-k8s8cO=0fwTcc-N7w@mail.gmail.com>
-	<CABiHV1THdkAMUGmT6TUJWRA7gkyEAnf-zPW0Tawhx31w3YpTZA@mail.gmail.com>
-	<CANFwon0=VMXuXKDqZVYxad42J8hJ6wSuiPE4Sr0cSaxSo6dMPQ@mail.gmail.com>
-Date: Thu, 5 Jan 2012 00:48:33 +0900
-Message-ID: <CABiHV1QoPf1KK-BqRv7GMmVabKJm9GEz5kyN63nX0ASXsaF7eA@mail.gmail.com>
-Subject: Re: KGTP (Linux Kernel debugger and tracer) 20111218 release
-From: Geunsik Lim <leemgs1@gmail.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "gdb@sourceware.org" <gdb@sourceware.org>,
-        kgtp <kgtp@freelists.org>, Marc Khouzam <marc.khouzam@ericsson.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>,
-        Steven <mqyoung@gmail.com>, colyli@gmail.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Hounschell <dmarkh@cfl.rr.com>
+Subject: Re: tty  TTY_HUPPED anomaly
+References: <4EF49579.9040907@compro.net> <4EF4CC92.5090502@compro.net> <20111223204015.541924f2@pyx>
+In-Reply-To: <20111223204015.541924f2@pyx>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 12:12 AM, Hui Zhu <teawater@gmail.com> wrote:
-> On Mon, Dec 26, 2011 at 15:53, Geunsik Lim <leemgs1@gmail.com> wrote:
->> On Fri, Dec 23, 2011 at 3:21 PM, Hui Zhu <teawater@gmail.com> wrote:
->>> Hi Geunsik,
->>>
->>> On Fri, Dec 23, 2011 at 12:58, Geunsik Lim <leemgs1@gmail.com> wrote:
->>>> On Sun, Dec 18, 2011 at 9:11 PM, Hui Zhu <teawater@gmail.com> wrote:
->>>>> KGTP is a realtime and lightweight Linux Kernel debugger and tracer.
->>>>>
->>>>> It makes Linux Kernel supply a GDB remote debug interface. Then GDB in
->>>>> current machine or remote machine (see
->>>>> https://code.google.com/p/kgtp/wiki/HOWTO#Make_GDB_connect_to_gtp) can
->>>>> debug and trace Linux through GDB tracepoint without stopping the
->>>>> Linux Kernel.
->>>>> And even if the board doesn't have GDB on it and doesn't have
->>>>> interface for remote debug. It can debug the Linux Kernel using
->>>>> offline debug (See
->>>>> https://code.google.com/p/kgtp/wiki/HOWTO#Offline_debug).
->>>>> And it can work with Android (See
->>>>> https://code.google.com/p/kgtp/wiki/HowToUseKGTPinAndroid).
->>>>> Now, it supports X86-32, X86-64, MIPS and ARM.
->>>>>
->>>>> Now, KGTP 20111218 release.
->>>>> You can get the package for it from
->>>>> http://kgtp.googlecode.com/files/kgtp_20111218.tar.bz2
->>>>> or
->>>>> svn co https://kgtp.googlecode.com/svn/tags/20111218
->>>>>
->>>>> The change of this release is:
->>>>> Add gtp_rb to be the new frame buffer to make trace record speed up
->>>>> and more friendly to the older version Linux kernel.
->>>>> Rename gtp.patch to gtp_for_review.patch.
->>>>> Add Linux Kernel patch gtp_3.0_to_upstream.patch(3.0 to upstream),
->>>>> gtp_2.6.39.patch(2.6.39), gtp_2.6.33_to_2.6.38.patch(2.6.33 to 2.6.38)
->>>>> and gtp_older_to_2.6.32.patch(older to 2.6.32).
->>>> Thank you for your upgrade work for the compatibility among various
->>>> linux version.
->>>> I am testing normally on evaluation board based on ARM cortex using
->>>> the latest Linux.
->>>
->>> Thanks.  Please tell me if you get some trouble with it.
->>>
->>>>> Then you can include KGTP in your Kernel source tree.
->>>>> Add special trace state variable $gtp_version to show the version of KGTP.
->>>>> Fix some build errors of gtp_for_review.patch.
->>>>> Fix some build errors in ARM.
->>>>> Update doc.
->>>>> To get other change info please goto https://code.google.com/p/kgtp/wiki/UPDATE
->>>>>
->>>>> According to the comments of Christoph.  I make a patch for Linux
->>>>> Kernel and make it looks OK with checkpatch.pl.  The file
->>>>> gtp_for_review.patch is include in the source of KGTP code.
->>>> I have one question about KGTP.
->>>> Previously, GDB Tracepoints for linux Linux kernel 2.6.19 is developed
->>>> by Jim Blandy
->>>> of Cygnus. He also presented to share this practical approach at FOSDEM 2007.
->>>> If you can, Can you explain the difference(e.g: merits, demerits, and
->>>> so on) between
->>>> GDB Tracepoint of Jim  and KGTP by you?
->>>
->>> I am not sure about this one.  Because I cannot find anything about
->>> it.  Could you give me a link or something?
->> Sorry I am late because of X-mas day.
->> Refer to http://www.red-bean.com/trac/tracepoints
->> You can read about Tracepoints for the Linux kernel in detail at the
->> above website .
+On 12/23/2011 03:40 PM, Alan Cox wrote:
 >
-> Is it included in Kernel upstream?
-Currently, GDB Tracepoint of Jim is not included in mainline version.
-> It is not update for a long time.
-My questions is not the merging issue into latest Linux (upstream kernel).
-I want  you to explain the merits of KGTP compared to GDB Tracepoint
-of Jim that presented
-at FOSDEM 2007.
-
-When I compared/checked  internals between KGTP and GDB Tracepoint of
-Jim, It seems
- that  both are same approaches. Can you share the difference(e.g:
-merits, demerits, design,
-and so on) between GDB Tracepoint of Jim  and KGTP of you If you can?
-
-Thanks.
+>> I turned the TTY_DEBUG_HANGUP and added some additional printks. You see
+>> below the first port works just fine but the second fails because
+>> something is calling the tty_hangup function around 70usecs after I open
+>> the device???
+>> What and Why???
 >
+> The driver will be - and because the carrier dropped and the HUPCL flag
+> is set on the port.
 >
->>>
->>> For now, I just know the difference is I am a GDB developer too.  So I
->>> can make KGTP develop more close to GDB devekop.  It can handle some
->>> issue more easy.
->>>
->>> Thanks,
->>> Hui
->>>
->>>>
->>>>>
->>>>> Thanks,
->>>>> Hui
->>>>
->>>>
->>>>
->>>> --
->>>> Best regards,
->>>> Geunsik Lim ( Samsung Electronics )
->>>> Blog : http://blog.naver.com/invain/
->>>> Homepage: http://leemgs.fedorapeople.org
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->>
->> --
->> Best regards,
->> Geunsik Lim ( Samsung Electronics )
->> Blog : http://blog.naver.com/invain/
->> Homepage: http://leemgs.fedorapeople.org
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+
+Thanks Alan,
+
+But what has carrier dropping got to do with an TIOCSETD ioctl. For that 
+matter, any operation other than an actual read or write to the port? 
+This seems wrong. You've obviously looked at my code being executed. 
+What can be done to prevent tty_hangup from being called after opening 
+the port? And if this is really supposed to happen, why does it not 
+always happen?
+
+Even if the first thing I do after opening the port is to clear HUPCL 
+and set CLOCAL, this still randomly happens the first time I open the 
+port after booting.
+
+Thanks again for your help
+Mark
 
 
 
--- 
-Best regards,
-Geunsik Lim, Samsung Electronics
-Homepage: http://leemgs.fedorapeople.org
------------------------------------------------------------------------
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
------------------------------------------------------------------------
