@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756964Ab2ADVXh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:23:37 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45626 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab2ADVXe (ORCPT
+	id S1756984Ab2ADVZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:25:50 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35617 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756952Ab2ADVZt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:23:34 -0500
-Subject: Re: perf_events: proposed fix for broken intr throttling (repost)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, gleb@redhat.com,
-        asharma@fb.com, vince@deater.net, wcohen@redhat.com
-In-Reply-To: <20120104143945.GA4783@quad>
-References: <20120104143945.GA4783@quad>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Jan 2012 22:24:58 +0100
-Message-ID: <1325712298.3084.5.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 4 Jan 2012 16:25:49 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+5PVA4=j_pXQ0L9NBoaGGGhEWFhga_LxVG-oi11vSrm4UG3Sg@mail.gmail.com>
+References: <20120103185304.GA25184@hmsreliant.think-freely.org>
+	<20120104091952.7cc5316d@jbarnes-desktop>
+	<20120104195134.GB24324@hmsreliant.think-freely.org>
+	<20120104.145619.1728971973635198635.davem@davemloft.net>
+	<20120104120248.4f4747bf@jbarnes-desktop>
+	<CA+5PVA4=j_pXQ0L9NBoaGGGhEWFhga_LxVG-oi11vSrm4UG3Sg@mail.gmail.com>
+Date: Wed, 4 Jan 2012 16:25:47 -0500
+Message-ID: <CA+5PVA4-Xofs3AKq3L2UjtmVLa4HpjMwv0_rMdXO5ku8uFvfkg@mail.gmail.com>
+Subject: Re: [PATCH] msi: fix imbalanced refcount of msi irq sysfs objects
+From: Josh Boyer <jwboyer@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: David Miller <davem@davemloft.net>, nhorman@tuxdriver.com,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com, gregkh@suse.de,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-04 at 15:39 +0100, Stephane Eranian wrote:
+On Wed, Jan 4, 2012 at 4:18 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+>>> The bug only exists in the PCI -next code I thought.
+>>
+>> Oh yeah, looks like it.  Lost track of my -next vs master branches
+>> there...
+>
+> Er... Neil's commit log in the patch itself has an oops from 3.1.6 in
+> it.  If the bug the patch fixes is only present in -next PCI code, how
+> did it get hit on that release?
+>
+> Did we switch to talking about some other patch here and I'm just confused?
 
-> In running some tests with 3.2.0-rc7-tip, I noticed unexpected throttling
-> notification samples. I was using fixed period with a long enough period
-> that I could not possibly hit the default limit of 100000 samples/sec/cpu.
-> 
-> I investigated the matter and discovered that the following commit
-> is the culprit:
-> 
-> commit 0f5a2601284237e2ba089389fd75d67f77626cef
-> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date:   Wed Nov 16 14:38:16 2011 +0100
-> 
->     perf: Avoid a useless pmu_disable() in the perf-tick
-> 
-> 
-> The throttling mechanism REQUIRES that the hwc->interrupt counter be reset
-> at EACH timer tick. This is regardless of the fact that the counter is in fixed
-> period or frequency mode. The optimization introduced in this patch breaks this
-> by avoiding calling perf_ctx_adjust_freq() at each timer tick. For events with
-> fixed period, it would not adjust any period at all BUT it would reset the
-> throttling counter.
-> 
-> Given the way the throttling mechanism is implemented we cannot avoid doing
-> some work at each timer tick. Otherwise we loose many samples for no good
-> reasons.
-> 
-> One may also question the motivation behind checking the interrupt rate at
-> each timer tick rather than every second, i.e., average it out over a longer
-> period.
+I'm just confused.  I forgot Neil backported that upstream code to the
+F16 3.1.6 kernel.  Sorry for the noise.
 
-That also allows your system to be dead for longer..
-
-> I see two solutions short term:
->    1 - revert the commit above
->    2 - special case the situation with no frequency-based sampling event
-> 
-> I have implemented solution 2 with the draft fix below. It does not invoke
-> perf_pmu_enable()/perf_pmu_disable().  I am not clear on whether or not this
-> is really needed in this case. Please advise.
-
-I don't think it needs that, I do dislike the unconditional iterate all
-events thing though. Maybe we can set some per-cpu state indicating
-someone got throttled (rare under normal operation -- you'd hope) and
-only iterate to unthrottle when we find this set.
-
-I think the event scheduling resulting from migration will already
-re-enable the event, avoiding the loss of unthrottle due to that..
-although it would be good to verify that.
-
+josh
