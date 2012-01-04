@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab2ADTlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 14:41:15 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:53283 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751798Ab2ADTlN (ORCPT
+	id S1754878Ab2ADTtO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 14:49:14 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:29942 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798Ab2ADTtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 14:41:13 -0500
-Date: Wed, 4 Jan 2012 14:41:12 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: Tejun Heo <tj@kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: Sysfs attributes racing with unregistration
-In-Reply-To: <m1d3azfiab.fsf@fess.ebiederm.org>
-Message-ID: <Pine.LNX.4.44L0.1201041431160.1505-100000@iolanthe.rowland.org>
+	Wed, 4 Jan 2012 14:49:11 -0500
+Date: Wed, 4 Jan 2012 14:47:17 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: John Stultz <john.stultz@linaro.org>
+Cc: Stefan Bader <stefan.bader@canonical.com>, NeilBrown <neilb@suse.de>,
+        Sander Eikelenboom <linux@eikelenboom.it>, rjw@sisk.pl,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
+ to handle kernel NULL pointer dereference at 0000000000000598  1.478005] IP:
+ [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
+Message-ID: <20120104194717.GB16758@phenom.dumpdata.com>
+References: <1599287628.20120103171351@eikelenboom.it>
+ <20120103190754.GA27651@phenom.dumpdata.com>
+ <1325632188.3037.59.camel@work-vm>
+ <20120104113155.27bf6e46@notabene.brown>
+ <1325638380.3037.69.camel@work-vm>
+ <4F040B25.1080405@canonical.com>
+ <1325702212.3037.102.camel@work-vm>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325702212.3037.102.camel@work-vm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4F04AD26.0037,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jan 2012, Eric W. Biederman wrote:
-
-> > Someone (I think Eric, right?) was trying to generalize the semantics
-> > to vfs layer so that severance/revocation capability is generally
-> > available.  IIRC, it didn't get through tho.
+On Wed, Jan 04, 2012 at 10:36:52AM -0800, John Stultz wrote:
+> On Wed, 2012-01-04 at 09:17 +0100, Stefan Bader wrote:
+> > Over night I had still be thinking on this and maybe one important fact I had
+> > been ignoring. This really has only been observed on paravirt guests on Xen as
+> > far as I know. And one thing that I should have pointed out is that
+> > 
+> > [    0.792634] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
+> > [    0.792725] rtc_cmos: probe of rtc_cmos failed with error -38
+> > 
+> > So first the registration is done and the first line is the last thing printed
+> > in the registration function. Then, and that line always comes after, the probe,
+> > which looks like being done asynchronously, detects that the rtc is not
+> > implemented. I would assume that this causes the rtc to be unregistered again
+> > and that is probably the point where, under the right circumstances, the worker
+> > triggered by the initialize alarm is trying to set another alarm. Probably while
+> > some of the elements of the structure started to be torn down. I need to check
+> > on that code path, yet. So right now its more a guess.
 > 
-> Unfortunately I didn't have time to complete the effort of those
-> patches.  The approach was not fundamentally rejected but it needed a
-> clear and convincing use case as well as some strong scrutiny.  But
-> fundamentally finding a way to do that was seen as an interesting,
-> if it could be solved without slowing down the existing cases.
+> Hrm. Do you see the same probe error with 3.1 kernels as well?  
+> 
+> Konrad: Is the probe failure a known issue on Xen? Any clues on whats
+> going on there?
 
-Ted Ts'o has been talking about something similar but not the same -- a
-way to revoke an entire filesystem.  For example, see commit
-7c2e70879fc0949b4220ee61b7c4553f6976a94d (ext4: add ext4-specific
-kludge to avoid an oops after the disk disappears).
+Hey John,
 
-The use case for that is obvious and widespread: Somebody yanks out a
-USB drive without unmounting it first.
+Stefan kind of summarized it - the paravirtualized guests do not have access
+to the CMOS. In fact they have no access to any legacy device (except if one does
+PCI passthrough) - so the rtc_core returning -38 is correct.
 
-Alan Stern
-
+We have our own timer - which is the Xen hypervisor stamps the the nanosecond
+resolution data in a per-cpu field that the timer API uses.
