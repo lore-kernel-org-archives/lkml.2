@@ -1,110 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab2ADCo4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 21:44:56 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:56487 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778Ab2ADCoV (ORCPT
+	id S1755808Ab2ADCoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 21:44:54 -0500
+Received: from smtp2.ustc.edu.cn ([202.38.64.46]:49687 "HELO ustc.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753880Ab2ADCoW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 21:44:21 -0500
-Date: Tue, 3 Jan 2012 16:35:34 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, Greg KH <greg@kroah.com>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH 1/7] amp/remoteproc: add framework for controlling remote
- processors
-Message-ID: <20120103233534.GC2492@ponder.secretlab.ca>
-References: <1319536106-25802-1-git-send-email-ohad@wizery.com>
- <1319536106-25802-2-git-send-email-ohad@wizery.com>
+	Tue, 3 Jan 2012 21:44:22 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1319536106-25802-2-git-send-email-ohad@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120103203357.GD17472@phenom.dumpdata.com>
+References: <CAJULonj9rFDKNCzpEXj2r3XjkYojy-CGYpVQ1RF8SxwLVrXqAA@mail.gmail.com>
+	<20120103203357.GD17472@phenom.dumpdata.com>
+Date: Wed, 4 Jan 2012 10:44:11 +0800
+Message-ID: <CAJULongKix3QXmcoUcraQxCyLN0wz6oe6p5Efg2A7S_r3nO6Fg@mail.gmail.com>
+Subject: =?UTF-8?Q?Re=3A_=E3=80=90Question=E3=80=91Whether_it=27s_legal_to_enable_same_?=
+	=?UTF-8?Q?physical_DMA_memory_mapped_for_different_NIC_device=3F?=
+From: Yanfei Wang <backyes@mail.ustc.edu.cn>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-pci@vger.kernel.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-CM-TRANSID: yia_0ZCbbwf9vANPQEIPAA--.29699S2
+X-Coremail-Antispam: 1Uf129KBjvJXoW7Kw1xCry3Gw4UGFy7ZF1rtFb_yoW8Cr4fpF
+	WkXFy3Kwn5JFyvyr47Ww43Za1UAa18GF4fK345Cw109w45WFySvrZ2vrZ5uFy3WFyjga4S
+	qFsrGw15GFW5Za7anT9S1TB71UUUUU7v73VFW2AGmfu7bjvjm3AaLaJ3UjIYCTnIWjp_UU
+	U0E7k042IEc7kJM7k042IE4IxYO2xFxVAqjxCEw4Av424lb7IF0VCFvT92vfvE14ylb7Iv
+	0xC_Cr1lb4IE77IF4wAFxVCF77xC6IxKo4kEV4yl1I0EscIYIxCEI4klw4CSwwAajcAI6x
+	AYOVAKp-VFvr4ln7xl0VCFbcvEwTZvWa45M2kK64x0aVW7GwIE548m6rI_Jw1UWr17M2kK
+	64x0aVW7GwIE548m6rv_Jw1UWr17M2vj6xkI62vS6c8GOVWUtr1rJFyl57IF6xkI12xvs2
+	x26I8E6xACxx1l5I8CrVACY4xI64kE6c02F40Ex7xfMcIj6xIIjxv20xvE14v26rWY6Fy7
+	McIj6I8E87Iv67AKxVW8Jr0_Cr1UMxkFs20EbsIEYx1l42xK82IYc2Ij64vIr41l42xK82
+	IY6x8ErcxFaVAv8VW8WwCFI7vE84CIb48I67vvx24l4IxY624lx4CE17CEb7AF67AKxVWU
+	AVWUtwCIc40Y0x0EwIxGrbIYCTnIWIevJa73UjIFyTuYvjxUxHUqUUUUU
+X-CM-SenderInfo: 5edfy51hv6zt1loo32lwfovvfxof0/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 25, 2011 at 11:48:20AM +0200, Ohad Ben-Cohen wrote:
-> Modern SoCs typically employ a central symmetric multiprocessing (SMP)
-> application processor running Linux, with several other asymmetric
-> multiprocessing (AMP) heterogeneous processors running different instances
-> of operating system, whether Linux or any other flavor of real-time OS.
-> 
-> Booting a remote processor in an AMP configuration typically involves:
-> - Loading a firmware which contains the OS image
-> - Allocating and providing it required system resources (e.g. memory)
-> - Programming an IOMMU (when relevant)
-> - Powering on the device
-> 
-> This patch introduces a generic framework that allows drivers to do
-> that. In the future, this framework will also include runtime power
-> management and error recovery.
-> 
-> Based on (but now quite far from) work done by Fernando Guzman Lugo
-> <fernando.lugo@ti.com>.
-[...]
-> +static int rproc_load_segments(struct rproc *rproc, const u8 *elf_data)
-> +{
-> +	struct device *dev = rproc->dev;
-> +	struct elf32_hdr *ehdr;
-> +	struct elf32_phdr *phdr;
-> +	int i, ret = 0;
-> +
-> +	ehdr = (struct elf32_hdr *)elf_data;
-> +	phdr = (struct elf32_phdr *)(elf_data + ehdr->e_phoff);
-> +
-> +	/* go through the available ELF segments */
-> +	for (i = 0; i < ehdr->e_phnum; i++, phdr++) {
-> +		u32 da = phdr->p_paddr;
-> +		u32 memsz = phdr->p_memsz;
-> +		u32 filesz = phdr->p_filesz;
+On Wed, Jan 4, 2012 at 4:33 AM, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Wed, Dec 07, 2011 at 10:16:40PM +0800, ustc.mail wrote:
+>> Dear all,
+>>
+>> In NIC driver, to eliminate the  overhead of dma_map_single() for DMA
+>> packet data,  we have statically allocated huge DMA memory buffer ring
+>> at once instead of calling dma_map_single() per packet.  Considering
+>> to further reduce the copy overhead between different NIC(port) ring
+>> while forwarding, one packet from a input NIC(port) will be
+>> transferred to output NIC(port) with no any copy action.
+>>
+>> To satisfy this requirement, the packet memory should be mapped into
+>> input port and unmapped when leaving input port, then mapped into
+>> output port and unmapped later.
+>>
+>> Whether it's legal to map the same DMA memory into input and output
+>> port simultaneously? If it's not, then the zero-copy for packet
+>> forwarding is not feasible?
+>>
+>
+> Did you ever a get a response about this?
+No.
+>
+> Is the output/input port on a seperate device function? Or is it
+> just a specific MMIO BAR in your PCI device?
+>
+Platform: x86, intel nehalem 8Core NUMA, linux 2.6.39, 10G
+82599NIC(two ports per NIC card);
+Function: Forwarding packets between different ports.
+Targets: Forwarding packets with Zero-Overhead, despite other obstacles.
 
-This could be an endianess problem.  If the endianess of the host and
-the rproc are different, then what is the endianess of the elf file?
-Is the endianess of the elf file verified before attempting to parse it?
+--Yanfei
+>> Hope PCI expert to post your suggestion.
+>>
+>> Thanks!
+>>
+>> --Yanfei
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-> +/* handle firmware resource entries before booting the remote processor */
-> +static int
-> +rproc_handle_boot_rsc(struct rproc *rproc, struct fw_resource *rsc, int len)
-> +{
-> +	struct device *dev = rproc->dev;
-> +	int ret = 0;
-> +
-> +	while (len >= sizeof(*rsc)) {
-> +		dev_dbg(dev, "rsc: type %d, da 0x%llx, pa 0x%llx, len 0x%x, "
-> +			"id %d, name %s, flags %x\n", rsc->type, rsc->da,
-> +			rsc->pa, rsc->len, rsc->id, rsc->name, rsc->flags);
-> +
-> +		switch (rsc->type) {
-> +		case RSC_CARVEOUT:
-> +			ret = rproc_handle_carveout(rproc, rsc);
-> +			break;
-> +		case RSC_DEVMEM:
-> +			ret = rproc_handle_devmem(rproc, rsc);
-> +			break;
-> +		case RSC_TRACE:
-> +			ret = rproc_handle_trace(rproc, rsc);
-> +			break;
-> +		case RSC_VRING:
-> +			ret = rproc_handle_vring(rproc, rsc);
-> +			break;
-> +		case RSC_VIRTIO_DEV:
-> +			/* this one is handled early upon registration */
-> +			break;
-> +		default:
-> +			dev_warn(dev, "unsupported resource %d\n", rsc->type);
-> +			break;
-> +		}
-
-Nitpick: A look up table would be easier to extend in the future.
-
-Otherwise;
-
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
