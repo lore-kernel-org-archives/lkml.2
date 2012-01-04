@@ -1,55 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430Ab2ADCcx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 21:32:53 -0500
-Received: from ozlabs.org ([203.10.76.45]:47214 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755035Ab2ADCcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 21:32:00 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Maik Broemme <mbroemme@plusserver.de>
-Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
-Subject: [PATCH] intelfbdrv.c: bailearly is an int module_param
-In-Reply-To: <20120103131748.GA11575@elgon.mountain>
-References: <20120103131748.GA11575@elgon.mountain>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Wed, 04 Jan 2012 12:59:26 +1030
-Message-ID: <8739bwdwu1.fsf@rustcorp.com.au>
+	id S1755178Ab2ADCi2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 21:38:28 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41907 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753742Ab2ADCiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 21:38:25 -0500
+Message-ID: <4F03BBA1.7090606@gmail.com>
+Date: Tue, 03 Jan 2012 21:38:25 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Minchan Kim <minchan@kernel.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] mm,mlock: drain pagevecs asynchronously
+References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <1325403025-22688-1-git-send-email-kosaki.motohiro@gmail.com> <20120104011715.GA18399@barrios-laptop.redhat.com>
+In-Reply-To: <20120104011715.GA18399@barrios-laptop.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Carpenter points out that it's an int, not a bool:
-intelfbdrv.c:818:	if (bailearly == 1)
-intelfbdrv.c:828:	if (bailearly == 2)
-intelfbdrv.c:836:	if (bailearly == 3)
-intelfbdrv.c:842:	if (bailearly == 4)
-intelfbdrv.c:851:	if (bailearly == 5)
-intelfbdrv.c:859:	if (bailearly == 6)
-intelfbdrv.c:866:				    bailearly > 6 ? bailearly - 6 : 0);
-intelfbdrv.c:874:	if (bailearly == 18)
-intelfbdrv.c:886:	if (bailearly == 19)
-intelfbdrv.c:893:	if (bailearly == 20)
 
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>
----
- drivers/video/intelfb/intelfbdrv.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>> @@ -704,10 +747,23 @@ static void ____pagevec_lru_add_fn(struct page *page, void *arg)
+>>   	VM_BUG_ON(PageLRU(page));
+>>
+>>   	SetPageLRU(page);
+>> -	if (active)
+>> -		SetPageActive(page);
+>> -	update_page_reclaim_stat(zone, page, file, active);
+>> -	add_page_to_lru_list(zone, page, lru);
+>> + redo:
+>> +	if (page_evictable(page, NULL)) {
+>> +		if (active)
+>> +			SetPageActive(page);
+>> +		update_page_reclaim_stat(zone, page, file, active);
+>> +		add_page_to_lru_list(zone, page, lru);
+>> +	} else {
+>> +		SetPageUnevictable(page);
+>> +		add_page_to_lru_list(zone, page, LRU_UNEVICTABLE);
+>> +		smp_mb();
+>
+> Why do we need barrier in here? Please comment it.
 
-diff --git a/drivers/video/intelfb/intelfbdrv.c b/drivers/video/intelfb/intelfbdrv.c
---- a/drivers/video/intelfb/intelfbdrv.c
-+++ b/drivers/video/intelfb/intelfbdrv.c
-@@ -263,7 +263,7 @@ module_param(probeonly, bool, 0);
- MODULE_PARM_DESC(probeonly, "Do a minimal probe (debug)");
- module_param(idonly, bool, 0);
- MODULE_PARM_DESC(idonly, "Just identify without doing anything else (debug)");
--module_param(bailearly, bool, 0);
-+module_param(bailearly, int, 0);
- MODULE_PARM_DESC(bailearly, "Bail out early, depending on value (debug)");
- module_param(mode, charp, S_IRUGO);
- MODULE_PARM_DESC(mode,
+To cut-n-paste a comment from putback_lru_page() is good idea? :)
+
++               /*
++                * When racing with an mlock clearing (page is
++                * unlocked), make sure that if the other thread does
++                * not observe our setting of PG_lru and fails
++                * isolation, we see PG_mlocked cleared below and move
++                * the page back to the evictable list.
++                *
++                * The other side is TestClearPageMlocked().
++                */
++               smp_mb();
+
+
+
+>> +		if (page_evictable(page, NULL)) {
+>> +			del_page_from_lru_list(zone, page, LRU_UNEVICTABLE);
+>> +			ClearPageUnevictable(page);
+>> +			goto redo;
+>> +		}
+>> +	}
+>
+> I am not sure it's a good idea.
+> mlock is very rare event but ____pagevec_lru_add_fn is called frequently.
+> We are adding more overhead in ____pagevec_lru_add_fn.
+> Is it valuable?
+
+dunno.
+
+Personally, I think tao's case is too artificial and I haven't observed
+any real world application do such crazy mlock/munlock repeatness. But
+he said he has a such application.
+
+If my remember is correct, ltp or some test suite depend on current 
+meminfo synching behavior. then I'm afraid simple removing bring us
+new annoying bug report.
+
