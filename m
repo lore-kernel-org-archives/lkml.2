@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab2ADAmK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:42:10 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:37988 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab2ADAmJ (ORCPT
+	id S1755267Ab2ADAqx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:46:53 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56304 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754779Ab2ADAqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:42:09 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-83-4f03a05e069b
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Greg KH'" <greg@kroah.com>
-References: <20120103180854.e9bff732db50c0fa9afd2967@canb.auug.org.au>
- <010601ccc9ef$7e784640$7b68d2c0$%kim@samsung.com>
- <CA+55aFzuEP7poPj_TiC28+T7Xn-6G1Lydt=q5FMVTj_XhOVf3w@mail.gmail.com>
-In-reply-to: <CA+55aFzuEP7poPj_TiC28+T7Xn-6G1Lydt=q5FMVTj_XhOVf3w@mail.gmail.com>
-Subject: RE: linux-next: build failure after merge of the s5p tree
-Date: Wed, 04 Jan 2012 09:42:04 +0900
-Message-id: <01bb01ccca79$ae1ad770$0a508650$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: AczKM6Up35aCZAGuTT2ilzfoEpQf1QARFz4A
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 3 Jan 2012 19:46:50 -0500
+X-Sasl-enc: kCTLv9RBB7Qh4TVI4Uyge/6PkhAfVOeEi4ZJkMLp3BPd 1325638010
+Date: Tue, 3 Jan 2012 16:44:52 -0800
+From: Greg KH <greg@kroah.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: Re: [PATCH -next] debugfs: add missing #ifdef HAS_IOMEM
+Message-ID: <20120104004452.GA22949@kroah.com>
+References: <1324994908-4288-1-git-send-email-heiko.carstens@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1324994908-4288-1-git-send-email-heiko.carstens@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds wrote:
+On Tue, Dec 27, 2011 at 03:08:28PM +0100, Heiko Carstens wrote:
+> "debugfs: add tools to printk 32-bit registers" adds new functions which rely
+> on IOMEM functionality which is not present on all architectures and therefore
+> result in compile errors:
 > 
-> On Tue, Jan 3, 2012 at 12:12 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> >
-> > OK, I see. Firstly, I will rebase my for-next as per your suggestion. As
-> you
-> > know, I just wanted to avoid known conflicts with driver-core tree.
-> 
-> Please, in general you should *not* rebase on top of other peoples
+> fs/debugfs/file.c: In function 'debugfs_print_regs32':
+> fs/debugfs/file.c:561:7: error: implicit declaration of function 'readl' [-Werror=implicit-function-declaration]
 
-OK, I will remember. And as a note, I didn't 'rebase' on top of other tree
-just 'merge' in the case of having dependency with others and of course if
-that is _really_ required. But we know, if the merged tree is rebased,
-something wrong will happen :(
+Who does not have readl()?  Surely there should be a .h file we are just
+missing to include?
 
-> trees either. What's the conflict and why do you need that other tree
-> in the first place?
-> 
-The driver-core tree changed usage(?) of sysdev_class and touched some files
-and the changed files have been merged into one file for some reason without
-driver-core's changes in samsung tree. So I just wanted to avoid the
-conflicts. Linus, how should/can I do in  this case?
+> Add an #ifdef CONFIG_HAS_IOMEM to fix this
 
-Thanks.
+I guess this is ok, thanks for the patch.
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
+greg k-h
