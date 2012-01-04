@@ -1,94 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab2ADPXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 10:23:10 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36960 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752199Ab2ADPXG (ORCPT
+	id S1756019Ab2ADPZT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 10:25:19 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:43947 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753597Ab2ADPZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 10:23:06 -0500
-Date: Wed, 4 Jan 2012 07:22:41 -0800
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Message-ID: <tip-466e2876bcb9ddc9b92502c46689679bee7d72a0@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        namhyung@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, namhyung@gmail.com, mingo@elte.hu
-In-Reply-To: <1325000151-4463-4-git-send-email-namhyung@gmail.com>
-References: <1325000151-4463-4-git-send-email-namhyung@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf script: Kill script_spec__delete
-Git-Commit-ID: 466e2876bcb9ddc9b92502c46689679bee7d72a0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 04 Jan 2012 07:22:47 -0800 (PST)
+	Wed, 4 Jan 2012 10:25:16 -0500
+Message-ID: <1325690713.2758.13.camel@dabdike.int.hansenpartnership.com>
+Subject: [PATCH] mpt2sas: fix non-x86 crash on shutdown
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Cc: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Moore, Eric" <Eric.Moore@lsi.com>
+Date: Wed, 04 Jan 2012 09:25:13 -0600
+In-Reply-To: <1325690398.2758.10.camel@dabdike.int.hansenpartnership.com>
+References: <20120103223332.GA4112@kroah.com>
+	 <20120103223325.206012007@clark.kroah.org>
+	 <A6888A6805518E4EA4AF7072A28264A60481D5AAEC@inbmail02.lsi.com>
+	 <1325690398.2758.10.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  466e2876bcb9ddc9b92502c46689679bee7d72a0
-Gitweb:     http://git.kernel.org/tip/466e2876bcb9ddc9b92502c46689679bee7d72a0
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Wed, 28 Dec 2011 00:35:51 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 3 Jan 2012 15:06:34 -0200
+From: "nagalakshmi.nandigama@lsi.com" <nagalakshmi.nandigama@lsi.com>
 
-perf script: Kill script_spec__delete
+Upstrem commit: 911ae9434f83e7355d343f6c2be3ef5b00ea7aed
 
-As script_spec__delete() frees given struct script_spec it should not be
-called if we failed to allocate the struct. Also it's the only caller of
-the function, we can get rid of the function itself.
+There's a bug in the MSIX backup and restore routines that cause a crash on
+non-x86 (direct access to PCI space not via read/write).  These routines are
+unnecessary and were removed by the above commit, so also remove them from
+stable to fix the crash.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1325000151-4463-4-git-send-email-namhyung@gmail.com
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-script.c |   13 +------------
- 1 files changed, 1 insertions(+), 12 deletions(-)
+Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 3d4c0c7..fd1909a 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -536,12 +536,6 @@ static struct script_spec *script_spec__new(const char *spec,
- 	return s;
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+index 83035bd..39e81cd 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+@@ -1082,41 +1082,6 @@ _base_config_dma_addressing(struct MPT2SAS_ADAPTER *ioc, struct pci_dev *pdev)
  }
  
--static void script_spec__delete(struct script_spec *s)
+ /**
+- * _base_save_msix_table - backup msix vector table
+- * @ioc: per adapter object
+- *
+- * This address an errata where diag reset clears out the table
+- */
+-static void
+-_base_save_msix_table(struct MPT2SAS_ADAPTER *ioc)
 -{
--	free(s->spec);
--	free(s);
+-	int i;
+-
+-	if (!ioc->msix_enable || ioc->msix_table_backup == NULL)
+-		return;
+-
+-	for (i = 0; i < ioc->msix_vector_count; i++)
+-		ioc->msix_table_backup[i] = ioc->msix_table[i];
 -}
 -
- static void script_spec__add(struct script_spec *s)
+-/**
+- * _base_restore_msix_table - this restores the msix vector table
+- * @ioc: per adapter object
+- *
+- */
+-static void
+-_base_restore_msix_table(struct MPT2SAS_ADAPTER *ioc)
+-{
+-	int i;
+-
+-	if (!ioc->msix_enable || ioc->msix_table_backup == NULL)
+-		return;
+-
+-	for (i = 0; i < ioc->msix_vector_count; i++)
+-		ioc->msix_table[i] = ioc->msix_table_backup[i];
+-}
+-
+-/**
+  * _base_check_enable_msix - checks MSIX capabable.
+  * @ioc: per adapter object
+  *
+@@ -1128,7 +1093,7 @@ _base_check_enable_msix(struct MPT2SAS_ADAPTER *ioc)
  {
- 	list_add_tail(&s->node, &script_specs);
-@@ -567,16 +561,11 @@ static struct script_spec *script_spec__findnew(const char *spec,
+ 	int base;
+ 	u16 message_control;
+-	u32 msix_table_offset;
++
  
- 	s = script_spec__new(spec, ops);
- 	if (!s)
--		goto out_delete_spec;
-+		return NULL;
+ 	base = pci_find_capability(ioc->pdev, PCI_CAP_ID_MSIX);
+ 	if (!base) {
+@@ -1141,14 +1106,8 @@ _base_check_enable_msix(struct MPT2SAS_ADAPTER *ioc)
+ 	pci_read_config_word(ioc->pdev, base + 2, &message_control);
+ 	ioc->msix_vector_count = (message_control & 0x3FF) + 1;
  
- 	script_spec__add(s);
- 
- 	return s;
+-	/* get msix table  */
+-	pci_read_config_dword(ioc->pdev, base + 4, &msix_table_offset);
+-	msix_table_offset &= 0xFFFFFFF8;
+-	ioc->msix_table = (u32 *)((void *)ioc->chip + msix_table_offset);
 -
--out_delete_spec:
--	script_spec__delete(s);
--
--	return NULL;
+ 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "msix is supported, "
+-	    "vector_count(%d), table_offset(0x%08x), table(%p)\n", ioc->name,
+-	    ioc->msix_vector_count, msix_table_offset, ioc->msix_table));
++	    "vector_count(%d)\n", ioc->name, ioc->msix_vector_count));
+ 	return 0;
  }
  
- int script_spec_register(const char *spec, struct scripting_ops *ops)
+@@ -1162,8 +1121,6 @@ _base_disable_msix(struct MPT2SAS_ADAPTER *ioc)
+ {
+ 	if (ioc->msix_enable) {
+ 		pci_disable_msix(ioc->pdev);
+-		kfree(ioc->msix_table_backup);
+-		ioc->msix_table_backup = NULL;
+ 		ioc->msix_enable = 0;
+ 	}
+ }
+@@ -1189,14 +1146,6 @@ _base_enable_msix(struct MPT2SAS_ADAPTER *ioc)
+ 	if (_base_check_enable_msix(ioc) != 0)
+ 		goto try_ioapic;
+ 
+-	ioc->msix_table_backup = kcalloc(ioc->msix_vector_count,
+-	    sizeof(u32), GFP_KERNEL);
+-	if (!ioc->msix_table_backup) {
+-		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "allocation for "
+-		    "msix_table_backup failed!!!\n", ioc->name));
+-		goto try_ioapic;
+-	}
+-
+ 	memset(&entries, 0, sizeof(struct msix_entry));
+ 	r = pci_enable_msix(ioc->pdev, &entries, 1);
+ 	if (r) {
+@@ -3513,9 +3462,6 @@ _base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
+ 	u32 hcb_size;
+ 
+ 	printk(MPT2SAS_INFO_FMT "sending diag reset !!\n", ioc->name);
+-
+-	_base_save_msix_table(ioc);
+-
+ 	drsprintk(ioc, printk(MPT2SAS_INFO_FMT "clear interrupts\n",
+ 	    ioc->name));
+ 
+@@ -3611,7 +3557,6 @@ _base_diag_reset(struct MPT2SAS_ADAPTER *ioc, int sleep_flag)
+ 		goto out;
+ 	}
+ 
+-	_base_restore_msix_table(ioc);
+ 	printk(MPT2SAS_INFO_FMT "diag reset: SUCCESS\n", ioc->name);
+ 	return 0;
+ 
+diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.h b/drivers/scsi/mpt2sas/mpt2sas_base.h
+index 8d5be21..7df640f 100644
+--- a/drivers/scsi/mpt2sas/mpt2sas_base.h
++++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
+@@ -636,8 +636,6 @@ enum mutex_type {
+  * @wait_for_port_enable_to_complete:
+  * @msix_enable: flag indicating msix is enabled
+  * @msix_vector_count: number msix vectors
+- * @msix_table: virt address to the msix table
+- * @msix_table_backup: backup msix table
+  * @scsi_io_cb_idx: shost generated commands
+  * @tm_cb_idx: task management commands
+  * @scsih_cb_idx: scsih internal commands
+@@ -779,8 +777,6 @@ struct MPT2SAS_ADAPTER {
+ 
+ 	u8		msix_enable;
+ 	u16		msix_vector_count;
+-	u32		*msix_table;
+-	u32		*msix_table_backup;
+ 	u32		ioc_reset_count;
+ 
+ 	/* internal commands, callback index */
+
+
