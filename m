@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab2ADMEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 07:04:42 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33381 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab2ADMEj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 07:04:39 -0500
-From: Fabio Estevam <festevam@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, linux@arm.linux.org.uk,
-        Fabio Estevam <festevam@gmail.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] include: crash_dump.h: Add elf.h header
-Date: Wed,  4 Jan 2012 10:04:26 -0200
-Message-Id: <1325678666-13089-1-git-send-email-festevam@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1754954Ab2ADMUU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 07:20:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64180 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754091Ab2ADMUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 07:20:15 -0500
+Date: Wed, 4 Jan 2012 07:20:09 -0500
+From: Josh Boyer <jwboyer@redhat.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch][regression after 3.1] minixfs: misplaced checks lead to
+ dentry leak
+Message-ID: <20120104122009.GA21276@zod.bos.redhat.com>
+References: <20120104105103.GE23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104105103.GE23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Building an ARM target we get the following warnings:
+On Wed, Jan 04, 2012 at 10:51:03AM +0000, Al Viro wrote:
+> bitmap size sanity checks should be done *before* allocating ->s_root;
+> there their cleanup on failure would be correct.  As it is, we do iput()
+> on root inode, but leak the root dentry...
+> 
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> 
+> I realize that we are *very* late in this cycle, but this is (a) obvious and
+> obviously affecting only minixfs and (b) introduced in this cycle.
 
-CC      arch/arm/kernel/setup.o
-In file included from arch/arm/kernel/setup.c:39:
-arch/arm/include/asm/elf.h:102:1: warning: "vmcore_elf64_check_arch" redefined
-In file included from arch/arm/kernel/setup.c:24:
-include/linux/crash_dump.h:30:1: warning: this is the location of the previous definition
+Ugh.  Yes.  Good catch.
 
-Quoting Russell King:
+Acked-by: Josh Boyer <jwboyer@redhat.com>
 
-"linux/crash_dump.h makes no attempt to include asm/elf.h, but it depends
-on stuff in asm/elf.h to determine how stuff inside this file is defined
-at parse time.
+josh
 
-So, if asm/elf.h is included after linux/crash_dump.h or not at all, you
-get a different result from the situation where asm/elf.h is included
-before."
-
-So add elf.h header to crash_dump.h to avoid this problem.
-
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
-The original discussion about this can be found at:
-http://www.spinics.net/lists/arm-kernel/msg154113.html
-
- include/linux/crash_dump.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-index 5c4abce..b936763 100644
---- a/include/linux/crash_dump.h
-+++ b/include/linux/crash_dump.h
-@@ -5,6 +5,7 @@
- #include <linux/kexec.h>
- #include <linux/device.h>
- #include <linux/proc_fs.h>
-+#include <linux/elf.h>
- 
- #define ELFCORE_ADDR_MAX	(-1ULL)
- #define ELFCORE_ADDR_ERR	(-2ULL)
--- 
-1.7.1
-
+> 
+> diff --git a/fs/minix/inode.c b/fs/minix/inode.c
+> index c811c19..8e4f5d8 100644
+> --- a/fs/minix/inode.c
+> +++ b/fs/minix/inode.c
+> @@ -262,23 +262,6 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
+>  		goto out_no_root;
+>  	}
+>  
+> -	ret = -ENOMEM;
+> -	s->s_root = d_alloc_root(root_inode);
+> -	if (!s->s_root)
+> -		goto out_iput;
+> -
+> -	if (!(s->s_flags & MS_RDONLY)) {
+> -		if (sbi->s_version != MINIX_V3) /* s_state is now out from V3 sb */
+> -			ms->s_state &= ~MINIX_VALID_FS;
+> -		mark_buffer_dirty(bh);
+> -	}
+> -	if (!(sbi->s_mount_state & MINIX_VALID_FS))
+> -		printk("MINIX-fs: mounting unchecked file system, "
+> -			"running fsck is recommended\n");
+> - 	else if (sbi->s_mount_state & MINIX_ERROR_FS)
+> -		printk("MINIX-fs: mounting file system with errors, "
+> -			"running fsck is recommended\n");
+> -
+>  	/* Apparently minix can create filesystems that allocate more blocks for
+>  	 * the bitmaps than needed.  We simply ignore that, but verify it didn't
+>  	 * create one with not enough blocks and bail out if so.
+> @@ -299,6 +282,23 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
+>  		goto out_iput;
+>  	}
+>  
+> +	ret = -ENOMEM;
+> +	s->s_root = d_alloc_root(root_inode);
+> +	if (!s->s_root)
+> +		goto out_iput;
+> +
+> +	if (!(s->s_flags & MS_RDONLY)) {
+> +		if (sbi->s_version != MINIX_V3) /* s_state is now out from V3 sb */
+> +			ms->s_state &= ~MINIX_VALID_FS;
+> +		mark_buffer_dirty(bh);
+> +	}
+> +	if (!(sbi->s_mount_state & MINIX_VALID_FS))
+> +		printk("MINIX-fs: mounting unchecked file system, "
+> +			"running fsck is recommended\n");
+> + 	else if (sbi->s_mount_state & MINIX_ERROR_FS)
+> +		printk("MINIX-fs: mounting file system with errors, "
+> +			"running fsck is recommended\n");
+> +
+>  	return 0;
+>  
+>  out_iput:
