@@ -1,80 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab2ADVSz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:18:55 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33140 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab2ADVSv convert rfc822-to-8bit (ORCPT
+	id S1756964Ab2ADVXh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:23:37 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45626 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab2ADVXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:18:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120104120248.4f4747bf@jbarnes-desktop>
-References: <20120103185304.GA25184@hmsreliant.think-freely.org>
-	<20120104091952.7cc5316d@jbarnes-desktop>
-	<20120104195134.GB24324@hmsreliant.think-freely.org>
-	<20120104.145619.1728971973635198635.davem@davemloft.net>
-	<20120104120248.4f4747bf@jbarnes-desktop>
-Date: Wed, 4 Jan 2012 16:18:49 -0500
-Message-ID: <CA+5PVA4=j_pXQ0L9NBoaGGGhEWFhga_LxVG-oi11vSrm4UG3Sg@mail.gmail.com>
-Subject: Re: [PATCH] msi: fix imbalanced refcount of msi irq sysfs objects
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: David Miller <davem@davemloft.net>, nhorman@tuxdriver.com,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com, gregkh@suse.de,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 4 Jan 2012 16:23:34 -0500
+Subject: Re: perf_events: proposed fix for broken intr throttling (repost)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, gleb@redhat.com,
+        asharma@fb.com, vince@deater.net, wcohen@redhat.com
+In-Reply-To: <20120104143945.GA4783@quad>
+References: <20120104143945.GA4783@quad>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Jan 2012 22:24:58 +0100
+Message-ID: <1325712298.3084.5.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 3:02 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> On Wed, 04 Jan 2012 14:56:19 -0500 (EST)
-> David Miller <davem@davemloft.net> wrote:
->
->> From: Neil Horman <nhorman@tuxdriver.com>
->> Date: Wed, 4 Jan 2012 14:51:34 -0500
->>
->> > On Wed, Jan 04, 2012 at 09:19:52AM -0800, Jesse Barnes wrote:
->> >> On Tue, 3 Jan 2012 13:53:05 -0500
->> >> Neil Horman <nhorman@tuxdriver.com> wrote:
->> >>
->> >> > On Tue, Jan 03, 2012 at 01:05:26PM -0500, David Miller wrote:
->> >> > > From: Neil Horman <nhorman@tuxdriver.com>
->> >> > > Date: Tue,  3 Jan 2012 10:29:54 -0500
->> >> > >
->> >> > > > This warning was recently reported to me:
->> >> > >
->> >> > > I've hit this too, see:
->> >> > >
->> >> > > http://marc.info/?l=linux-kernel&m=132458146927890&w=2
->> >> > >
->> >> > > and my analysis at:
->> >> > >
->> >> > > http://marc.info/?l=linux-arch&m=132458391128660&w=2
->> >> > >
->> >> > Yup, your analysis is correct. Regardless of the why behind msi enablement
->> >> > failing, we need to gate the kobject_del/put in free_msi_irqs on successful
->> >> > completion of kobject_init_and_add in populate_msi_sysfs.  This patch does that,
->> >> > using the parent pointer as a flag.
->> >>
->> >> I applied this to my -next branch; doesn't seem critical to land
->> >> immediately.  If you disagree let me know and I'll pull it over to my
->> >> for-linus branch instead.
->> >>
->> >> Thanks,
->> > I'm ok with it waiting, but I'll defer to Dave and others who have seen it
->> > occur.  It sounds like its alot of log noise.
->>
->> The bug only exists in the PCI -next code I thought.
->
-> Oh yeah, looks like it.  Lost track of my -next vs master branches
-> there...
+On Wed, 2012-01-04 at 15:39 +0100, Stephane Eranian wrote:
 
-Er... Neil's commit log in the patch itself has an oops from 3.1.6 in
-it.  If the bug the patch fixes is only present in -next PCI code, how
-did it get hit on that release?
+> In running some tests with 3.2.0-rc7-tip, I noticed unexpected throttling
+> notification samples. I was using fixed period with a long enough period
+> that I could not possibly hit the default limit of 100000 samples/sec/cpu.
+> 
+> I investigated the matter and discovered that the following commit
+> is the culprit:
+> 
+> commit 0f5a2601284237e2ba089389fd75d67f77626cef
+> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Date:   Wed Nov 16 14:38:16 2011 +0100
+> 
+>     perf: Avoid a useless pmu_disable() in the perf-tick
+> 
+> 
+> The throttling mechanism REQUIRES that the hwc->interrupt counter be reset
+> at EACH timer tick. This is regardless of the fact that the counter is in fixed
+> period or frequency mode. The optimization introduced in this patch breaks this
+> by avoiding calling perf_ctx_adjust_freq() at each timer tick. For events with
+> fixed period, it would not adjust any period at all BUT it would reset the
+> throttling counter.
+> 
+> Given the way the throttling mechanism is implemented we cannot avoid doing
+> some work at each timer tick. Otherwise we loose many samples for no good
+> reasons.
+> 
+> One may also question the motivation behind checking the interrupt rate at
+> each timer tick rather than every second, i.e., average it out over a longer
+> period.
 
-Did we switch to talking about some other patch here and I'm just confused?
+That also allows your system to be dead for longer..
 
-josh
+> I see two solutions short term:
+>    1 - revert the commit above
+>    2 - special case the situation with no frequency-based sampling event
+> 
+> I have implemented solution 2 with the draft fix below. It does not invoke
+> perf_pmu_enable()/perf_pmu_disable().  I am not clear on whether or not this
+> is really needed in this case. Please advise.
+
+I don't think it needs that, I do dislike the unconditional iterate all
+events thing though. Maybe we can set some per-cpu state indicating
+someone got throttled (rare under normal operation -- you'd hope) and
+only iterate to unthrottle when we find this set.
+
+I think the event scheduling resulting from migration will already
+re-enable the event, avoiding the loss of unthrottle due to that..
+although it would be good to verify that.
+
