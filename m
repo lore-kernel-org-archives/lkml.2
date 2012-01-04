@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab2ADARB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:17:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34123 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754036Ab2ADAQ7 (ORCPT
+	id S1755439Ab2ADASZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:18:25 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:41477 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755042Ab2ADASX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:16:59 -0500
-Message-ID: <1325636211.13595.270.camel@deadeye>
-Subject: [PATCH linux-firmware] cis: Add makefile for building CIS files
- from text format
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>
-Date: Wed, 04 Jan 2012 00:16:51 +0000
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-mH84HfJisAT+lcZoHKs3"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 3 Jan 2012 19:18:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LRH.2.00.1201041046330.18098@tundra.namei.org>
+References: <43556.213.228.140.150.1323560920.squirrel@webmail.decimal.pt>
+ <20111213180707.GI11747@quack.suse.cz> <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
+ <20120102115222.GA3626@quack.suse.cz> <20120103010826.GF3626@quack.suse.cz>
+ <20120103123841.GA31457@quack.suse.cz> <1325604356.2095.23.camel@falcor>
+ <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com>
+ <1325616312.2095.26.camel@falcor> <alpine.LRH.2.00.1201041046330.18098@tundra.namei.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 3 Jan 2012 16:18:01 -0800
+X-Google-Sender-Auth: NJEXRCVn5-bagSvOEJAp8V96g0c
+Message-ID: <CA+55aFxZ4_T8VRh6wAKC9-9PjsctrK1WnOmN-2EDNTeHA+OA4g@mail.gmail.com>
+Subject: Re: Reiserfs.c bug in 3.2-rc5
+To: James Morris <jmorris@namei.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Jan Kara <jack@suse.cz>,
+        linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
+        haiyangz@microsoft.com, hjanssen@microsoft.com,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 3, 2012 at 3:47 PM, James Morris <jmorris@namei.org> wrote:
+>>
+>> Just clarifying not all of commit fb88c2b, but only the
+>> security_old_inode_init_security() hunk.
+>
+> Agreed.
+>
+> And yep, it's ugly :-\
 
---=-mH84HfJisAT+lcZoHKs3
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Ok, applied - along with another last-minute fix - and pushed out.
 
-Most of the CIS files come from the pcmcia-cs project and are built
-from a text format using the pack_cis tool.
+Can everybody please test and double-check that what I applied was
+what everybody agrees is the RightThing(tm)? I really wanted to do 3.2
+today, but both of those commits are of the "please double-check"
+kind, so..
 
-In pcmcia-cs 3.2.8, apparently the last release, pack_cis had some
-bugs that are fatal when it is built with a current gcc and glibc.
-Therefore I refer to my own repackaged version that runs successfully
-and generates exactly the same binaries included here.
-
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
-I'll push this change out in a moment.
-
-Ben.
-
- cis/Makefile |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
- create mode 100644 cis/Makefile
-
-diff --git a/cis/Makefile b/cis/Makefile
-new file mode 100644
-index 0000000..0a222f1
---- /dev/null
-+++ b/cis/Makefile
-@@ -0,0 +1,14 @@
-+# The pack_cis tool from cis-tools
-+# <http://git.kernel.org/?p=3Dutils/cis-tools/cis-tools.git>.
-+PACK_CIS =3D pack_cis
-+
-+CIS_SRC :=3D $(wildcard src/*.cis)
-+CIS_BIN :=3D $(notdir $(CIS_SRC))
-+
-+all: $(CIS_BIN)
-+
-+%.cis: src/%.cis
-+	$(PACK_CIS) -o $@ $<
-+
-+clean:
-+	rm -f $(CIS_BIN)
---=20
-1.7.7.3
-
-
-
---=-mH84HfJisAT+lcZoHKs3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATwOac+e/yOyVhhEJAQqYBhAAjcvjhcKWtC1jVO1SiH2POW9VcQLlF5N9
-W5WedC6z3HG4oOkEndt9d9dlcnYqY9GCu9Rqrn1EwElv9QWv50ETbuyJSRpDhSTZ
-/dgD0Mc77lqnmp03W/YY8kDw8aAmacJ+NRJnR8i5rnrxfr+LBEJlZfn4H8DMzVC3
-pFSzsld+sqCXOOvFYruFG2R077+ItqKZ7B00HW3/TcFwamYIj70NldWrKnxklKEm
-Il9XkpdQqlqO5j4gT2ioAk3CLRtoSDop8nXBFP2JlQFmp12eNBbfC7rJmXJgdoDL
-wjG/K4iW/YU7PaODfdagvGaujivcJvWW27ti2uHp3ANqGTo192pXGERMNJtX+xAv
-9pwu7/q8kRLmqvDlaLRqL8wKWXEH2ObcIVOvu+6C6TqjUP9QKveLnca4NdBms7Jg
-8cypFii/NKbqFByhXf6BZNdC58cAYOmTTVFSkwzoUhwyFXCOrouyxiUGyOKPsZsB
-F5UcRvqwj1mdoyD6wZn2PCbFb8Ds4JlKyEOhETzEOdnO2CRbTSUTralbeycV2OE/
-F/cXKGB7vtWqy1HLHyEL4QoBv8uhUmhDwW+f6JeQipC+Ch8HPvAY5l4xbIstP+s2
-V/ecpaq0t3A2e4TiF3TyBJKFVfSDFd0TFHEgOOvuJFZDWPMjqaoR1drtqprj6qHh
-gA9Wt5mUTYs=
-=ehGI
------END PGP SIGNATURE-----
-
---=-mH84HfJisAT+lcZoHKs3--
+                Linus
