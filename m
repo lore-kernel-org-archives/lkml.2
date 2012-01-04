@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab2ADTGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 14:06:17 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:51347 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713Ab2ADTGM (ORCPT
+	id S1756809Ab2ADTK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 14:10:58 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49078 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754878Ab2ADTK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 14:06:12 -0500
-Date: Wed, 4 Jan 2012 11:21:33 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com
-Subject: Re: [PATCHv3 1/3] gpio: add a driver for the Synopsys DesignWare APB
- GPIO block
-Message-ID: <20120104182133.GS15503@ponder.secretlab.ca>
-References: <1325508798-25439-1-git-send-email-jamie@jamieiles.com>
- <1325508798-25439-2-git-send-email-jamie@jamieiles.com>
- <20120102132500.GB18443@sirena.org.uk>
+	Wed, 4 Jan 2012 14:10:56 -0500
+Date: Wed, 4 Jan 2012 19:10:42 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: ZenIV (was: Re: Status of arm-soc.git for 3.2)
+Message-ID: <20120104191042.GB11810@n2100.arm.linux.org.uk>
+References: <201201032243.06440.arnd@arndb.de> <20120104100016.GK2914@n2100.arm.linux.org.uk> <20120104181703.GA11810@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1201041337370.2907@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120102132500.GB18443@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.02.1201041337370.2907@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 02, 2012 at 01:25:00PM +0000, Mark Brown wrote:
-> On Mon, Jan 02, 2012 at 12:53:16PM +0000, Jamie Iles wrote:
-> > The Synopsys DesignWare block is used in some ARM devices (picoxcell)
-> > and can be configured to provide multiple banks of GPIO pins.
-> > 
-> > v3:	- depend on rather than select IRQ_DOMAIN
-> > 	- split IRQ support into a separate patch
-> > v2:	- use Rob Herring's irqdomain in generic irq chip patches
-> > 	- use reg property to indicate bank index
-> > 	- support irqs on both edges based on LinusW's u300 driver
+On Wed, Jan 04, 2012 at 01:55:48PM -0500, Nicolas Pitre wrote:
+> On Wed, 4 Jan 2012, Russell King - ARM Linux wrote:
+> > I've now disabled all access to my git tree there, and restarted apache.
+> > We will see whether that improves stability - I suspect it will do because
+> > I reckon that the problem is that the smart git stuff is what's killing
+> > the machine.
 > 
-> Put stuff like this after the ---, it shouldn't end up in git history.
+> I'm sure that is the case.  However faulty hardware could still be the 
+> root cause, but without the load from Git the machine might become 
+> loaded lightly enough you might not see any ill effects before quite a 
+> while.
 
-I disagree.  Keeping the revision history in the git commit is
-actually quite useful when trying to figure out which version of a
-patch actually got applied.  I'm asking patch authors to keep it above
-the ---
+When it's serving the next Fedora release (it's one of the official
+mirrors) I'm sure any problems like that would become noticable - but
+they haven't yet.  It purely seems to be something git is doing which
+is killing the machine.
 
-g.
+Another kernel developer has mentioned to me that he believes that Git
+disagrees with Pentium 4 CPUs, suggesting that Git does something which
+the P4 microcode really doesn't like: he's found that Git is dog slow
+on his P4 machines as well.
 
+That ties up with my experience too.
+
+So, I suggest rather than blaming this problem on the machines, maybe
+there could be something behind this: maybe Git is just plain incompatible
+with Pentium 4 CPUs.
+
+> If so I'd suggest you consider one of the hosting alternatives readily 
+> available to you for publishing your Git tree.  I'm sure any hurdle can 
+> be leveled out very quickly for the core ARM Linux repository.  I can 
+> certainly facilitate things if you wish.
+
+I'm already aware of your attempts in the background.
