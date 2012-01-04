@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab2ADW53 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 17:57:29 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59543 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757163Ab2ADW50 (ORCPT
+	id S1757259Ab2ADXCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 18:02:46 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:51601 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757163Ab2ADXCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 17:57:26 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] Documentation: Update stable address
-Date: Wed, 4 Jan 2012 22:57:15 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
-Cc: Joe Perches <joe@perches.com>, "Greg Kroah-Hartman" <greg@kroah.com>,
-        stable@vger.kernel.org, Harry Wei <harryxiyou@gmail.com>,
-        xiyoulinuxkernelgroup@googlegroups.com,
-        Tsugikazu Shibata <tshibata@ab.jp.nec.com>,
-        linux-kernel@vger.kernel.org
-References: <1323468720.27746.42.camel@joe2Laptop> <4F04DFF0.8000006@xenotime.net>
-In-Reply-To: <4F04DFF0.8000006@xenotime.net>
+	Wed, 4 Jan 2012 18:02:44 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201042257.15631.arnd@arndb.de>
-X-Provags-ID: V02:K0:9hRLtnpDM8m9/YS8n+Zj1a0SwVW5Z89ldM8jv2ZcCwp
- x5nGCbDzUQt9BVLFfc4dfjwHTSxIPauDnxB1Oli4Q5dsoMrXcC
- dq2+R7hGR+vMsiOX/g0XDKmlAY+MpVMtesC9O5kvr2ogCIvSJ/
- kn4b92spXYYagF/XePf2hkI6ueL6u+k8r0zj9DmmcPR1NYA83T
- W4OzJqx9A0J644XRW/jZDbtlp2OAswja+nqFTAqHDLm/y4EaQd
- bjoS53RNV+7zf3ly+AcIxBs9jPrCD88eLcXMcdgcrMsIOQsqlS
- JCMjnWEAGUGEqQq9R9CO3tnVHwCvgHhk2CcM8AMUUkRxxU1qud
- mCveQDTHv98hJ42/sfbg=
+In-Reply-To: <1325717396.3084.12.camel@laptop>
+References: <20120104143945.GA4783@quad>
+	<1325712298.3084.5.camel@laptop>
+	<CABPqkBSR4a7PCyYxhE0kpepc3f0f6Rh6JU55_A3ubWYnN+G3iA@mail.gmail.com>
+	<1325717396.3084.12.camel@laptop>
+Date: Wed, 4 Jan 2012 23:02:42 +0000
+Message-ID: <CABPqkBQ_MFdi1gc7Tje=u0n+RLd1gzo1mHb9e6i20T8JPNrpwA@mail.gmail.com>
+Subject: Re: perf_events: proposed fix for broken intr throttling (repost)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, gleb@redhat.com,
+        asharma@fb.com, vince@deater.net, wcohen@redhat.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 January 2012, Randy Dunlap wrote:
-> > @@ -275,8 +275,8 @@ versions.
-> >  If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
-> >  kernel is the current stable kernel.
-> >  
-> > -2.6.x.y are maintained by the "stable" team <stable@kernel.org>, and are
-> > -released as needs dictate.  The normal release period is approximately 
-> > +2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
-> > +are released as needs dictate.  The normal release period is approximately
-> >  two weeks, but it can be longer if there are no pressing problems.  A
-> >  security-related problem, instead, can cause a release to happen almost
-> >  instantly.
-
-Shouldn't the text get reworded as well to include the 3.x.y stable releases
-and rename the 2.6.x.y releases to "longterm" instead of "stable"?
-
-	Arnd
+On Wed, Jan 4, 2012 at 10:49 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-01-04 at 21:33 +0000, Stephane Eranian wrote:
+>> > I don't think it needs that, I do dislike the unconditional iterate all
+>> > events thing though. Maybe we can set some per-cpu state indicating
+>> > someone got throttled (rare under normal operation -- you'd hope) and
+>> > only iterate to unthrottle when we find this set.
+>> >
+>> Could try that too.
+>>
+>> > I think the event scheduling resulting from migration will already
+>> > re-enable the event, avoiding the loss of unthrottle due to that..
+>> > although it would be good to verify that.
+>> >
+>> Yes, you're not dead forever, but still it is not acceptable as is.
+>
+> Oh for sure, I didn't mean it like that. What I was getting at is a
+> counter getting throttled on one cpu, setting the per-cpu variable,
+> getting migrated and not getting unthrottled due to now living on
+> another cpu which doesn't have the per-cpu thing set.
+>
+Yes, that is true.
+I think that throttled counter needs to live in ctx and not per-cpu.
