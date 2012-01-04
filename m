@@ -1,77 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab2ADU2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 15:28:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57573 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818Ab2ADU2H (ORCPT
+	id S1756862Ab2ADU2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 15:28:21 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:32798 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756818Ab2ADU2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 15:28:07 -0500
-Date: Wed, 4 Jan 2012 12:28:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [PATCH] include: crash_dump.h: Add elf.h header
-Message-Id: <20120104122805.103eb7e2.akpm@linux-foundation.org>
-In-Reply-To: <1325678666-13089-1-git-send-email-festevam@gmail.com>
-References: <1325678666-13089-1-git-send-email-festevam@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 4 Jan 2012 15:28:19 -0500
+Message-ID: <4F04B65D.6070505@suse.cz>
+Date: Wed, 04 Jan 2012 21:28:13 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111130 Thunderbird/9.0
+MIME-Version: 1.0
+To: markh@compro.net
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Hounschell <dmarkh@cfl.rr.com>
+Subject: Re: tty  TTY_HUPPED anomaly
+References: <4EF49579.9040907@compro.net> <4EF4CC92.5090502@compro.net> <20111223204015.541924f2@pyx> <4F047767.5060708@compro.net> <20120104162745.76fc3852@pyramind.ukuu.org.uk> <4F04A187.2050705@compro.net>
+In-Reply-To: <4F04A187.2050705@compro.net>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Jan 2012 10:04:26 -0200
-Fabio Estevam <festevam@gmail.com> wrote:
+On 01/04/2012 07:59 PM, Mark Hounschell wrote:
+>> I would guess (given the distro change is the trigger) that you've got a
+>> SuSE problem not a kernel one. The kernel behaviour and code looks
+>> correct. My guess therefore is that newer SuSE is running stuff in the
+>> boot which is probing serial ports and messing with the carrier wrongly
+>> and in ways it didn't use to. That would fit the fact that something
+>> similarly broken has apparently also appeared in the Fedora user space
+>> bootup.
 
-> Building an ARM target we get the following warnings:
-> 
-> CC      arch/arm/kernel/setup.o
-> In file included from arch/arm/kernel/setup.c:39:
-> arch/arm/include/asm/elf.h:102:1: warning: "vmcore_elf64_check_arch" redefined
-> In file included from arch/arm/kernel/setup.c:24:
-> include/linux/crash_dump.h:30:1: warning: this is the location of the previous definition
-> 
-> Quoting Russell King:
-> 
-> "linux/crash_dump.h makes no attempt to include asm/elf.h, but it depends
-> on stuff in asm/elf.h to determine how stuff inside this file is defined
-> at parse time.
-> 
-> So, if asm/elf.h is included after linux/crash_dump.h or not at all, you
-> get a different result from the situation where asm/elf.h is included
-> before."
-> 
-> So add elf.h header to crash_dump.h to avoid this problem.
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-> ---
-> The original discussion about this can be found at:
-> http://www.spinics.net/lists/arm-kernel/msg154113.html
-> 
->  include/linux/crash_dump.h |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/crash_dump.h b/include/linux/crash_dump.h
-> index 5c4abce..b936763 100644
-> --- a/include/linux/crash_dump.h
-> +++ b/include/linux/crash_dump.h
-> @@ -5,6 +5,7 @@
->  #include <linux/kexec.h>
->  #include <linux/device.h>
->  #include <linux/proc_fs.h>
-> +#include <linux/elf.h>
->  
->  #define ELFCORE_ADDR_MAX	(-1ULL)
->  #define ELFCORE_ADDR_ERR	(-2ULL)
+And we (suse) have a report for enterprise, that says ModemManager
+causes a similar issue. Could you perhaps check whether you have that
+thing installed?
 
-The patch is the right thing to do, however I'm rather concerned about
-the potential for introducing build breakage so late in 3.2.
-
-Can we leave this unfixed in 3.2 and fix it in 3.2.1?  Or put a
-#include elf.h into arch/arm/kernel/setup.c for 3.2?
-
+thanks,
+-- 
+js
+suse labs
