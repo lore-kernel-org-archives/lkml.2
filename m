@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab2ADRoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 12:44:02 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:44523 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756422Ab2ADRn7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 12:43:59 -0500
+	id S1756606Ab2ADRqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 12:46:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:58580 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745Ab2ADRqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 12:46:11 -0500
+Date: Wed, 4 Jan 2012 18:46:09 +0100
+From: Jan Kara <jack@suse.cz>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl
+ updates inode
+Message-ID: <20120104174609.GD28907@quack.suse.cz>
+References: <20120103013152.GA26455@dztty>
 MIME-Version: 1.0
-In-Reply-To: <4F048905.5060004@lwfinger.net>
-References: <4f034b6c.ypfAbSdXSgMHtfqa%Larry.Finger@lwfinger.net>
- <CALSq=BaJSURcKU8RkCxxG=Mht4y04dVefKMESuHmiEdhwzc2Eg@mail.gmail.com> <4F048905.5060004@lwfinger.net>
-From: Daniel Halperin <dhalperi@cs.washington.edu>
-Date: Wed, 4 Jan 2012 09:43:37 -0800
-Message-ID: <CALSq=BYvjtTxwRCKJ1BTJkyd6vHiUwHFSZ669wWisd_b50yB9Q@mail.gmail.com>
-Subject: Re: [PATCH] rtl8192cu: Fix WARNING on suspend/resume
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: John W Linville <linville@tuxdriver.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, chaoming_li@realsil.com.cn,
-        linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120103013152.GA26455@dztty>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 9:14 AM, Larry Finger <Larry.Finger@lwfinger.net> wrote:
-> On 01/04/2012 10:16 AM, Daniel Halperin wrote:
->>
->> Sorry, Larry, I didn't see this til it was included in John's mail this
->> morning.
->>
->> On Tue, Jan 3, 2012 at 10:39 AM, Larry Finger<Larry.Finger@lwfinger.net>
->>  wrote:
->>>
->>>
->>> +#ifdef CONFIG_PM
->>> +static int rtl8192cu_usb_suspend(struct usb_interface *pusb_intf,
->>> +                                pm_message_t message)
->>> +{
->>> +       /* Increase usage_count to Save loaded fw across suspend/resume
->>> */
->>> +       atomic_inc(&usage_count);
->>> +       return 0;
->>> +}
->>> +
->>> +static int rtl8192cu_usb_resume(struct usb_interface *pusb_intf)
->>> +{
->>> +       atomic_dec(&usage_count);       /* after resume, decrease usage
->>> count */
->>> +       return 0;
->>> +}
->>> +#endif
->>
->>
->> Based on the warning-fix I submitted yesterday, this probably produces
->> a warning if CONFIG_PM is set but not CONFIG_PM_SLEEP. My patch was
->> for an ethernet driver, but iwlwifi and ath5k appear to follow the
->> same pattern using CONFIG_PM_SLEEP instead of the above.
->>
->> See: http://www.spinics.net/lists/netdev/msg184717.html for the patch
->> and http://www.spinics.net/lists/netdev/msg184715.html for the
->> discussion.
->
->
-> Thanks for the note. I will prepare a revised patch.
->
-> What architecture gave the warning? Of x86_64, I was unable to get
-> CONFIG_PM_SLEEP without CONFIG_PM.
->
+On Tue 03-01-12 02:31:52, Djalal Harouni wrote:
+> 
+> The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
+> this can lead to a race with the other operations that update the same
+> inode.
+> 
+> Patch tested.
+  OK, so I've taken the patch into my tree, just updated the changelog
+which result of our discussion in this thread. I also took the ext4 part
+since there is no risk of conflict and the patch looks obvious.
 
-x86-64. I realized that I actually explained this problem rather
-clearly when I fixed it for iwlwifi 5 months ago. :)
-https://github.com/mirrors/linux/commit/f090fba305658fe6e464e2fbd25fad81957ece26
+								Honza
 
-"""
-CC [M]  drivers/net/wireless/iwlwifi/iwl-pci.o
-  drivers/net/wireless/iwlwifi/iwl-pci.c:506: warning:
-‘iwl_pci_suspend’ defined but not used
-  drivers/net/wireless/iwlwifi/iwl-pci.c:519: warning:
-‘iwl_pci_resume’ defined but not used
-
-These are only used if CONFIG_PM_SLEEP is enabled. CONFIG_PM depends
-(CONFIG_PM_SLEEP || CONFIG_PM_RUNTIME), so it can be set without
-CONFIG_PM_SLEEP selected.
-"""
-
-Dan
+> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+> ---
+>  fs/ext3/ioctl.c |    6 +++++-
+>  fs/ext4/ioctl.c |    6 +++++-
+>  2 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/ext3/ioctl.c b/fs/ext3/ioctl.c
+> index ba1b54e..e7b2ed9 100644
+> --- a/fs/ext3/ioctl.c
+> +++ b/fs/ext3/ioctl.c
+> @@ -134,10 +134,11 @@ flags_out:
+>  			goto setversion_out;
+>  		}
+>  
+> +		mutex_lock(&inode->i_mutex);
+>  		handle = ext3_journal_start(inode, 1);
+>  		if (IS_ERR(handle)) {
+>  			err = PTR_ERR(handle);
+> -			goto setversion_out;
+> +			goto unlock_out;
+>  		}
+>  		err = ext3_reserve_inode_write(handle, inode, &iloc);
+>  		if (err == 0) {
+> @@ -146,6 +147,9 @@ flags_out:
+>  			err = ext3_mark_iloc_dirty(handle, inode, &iloc);
+>  		}
+>  		ext3_journal_stop(handle);
+> +
+> +unlock_out:
+> +		mutex_unlock(&inode->i_mutex);
+>  setversion_out:
+>  		mnt_drop_write(filp->f_path.mnt);
+>  		return err;
+> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+> index a567968..46a8de6 100644
+> --- a/fs/ext4/ioctl.c
+> +++ b/fs/ext4/ioctl.c
+> @@ -158,10 +158,11 @@ flags_out:
+>  			goto setversion_out;
+>  		}
+>  
+> +		mutex_lock(&inode->i_mutex);
+>  		handle = ext4_journal_start(inode, 1);
+>  		if (IS_ERR(handle)) {
+>  			err = PTR_ERR(handle);
+> -			goto setversion_out;
+> +			goto unlock_out;
+>  		}
+>  		err = ext4_reserve_inode_write(handle, inode, &iloc);
+>  		if (err == 0) {
+> @@ -170,6 +171,9 @@ flags_out:
+>  			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
+>  		}
+>  		ext4_journal_stop(handle);
+> +
+> +unlock_out:
+> +		mutex_unlock(&inode->i_mutex);
+>  setversion_out:
+>  		mnt_drop_write(filp->f_path.mnt);
+>  		return err;
+> -- 
+> 1.7.1
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
