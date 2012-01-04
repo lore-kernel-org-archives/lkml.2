@@ -1,81 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893Ab2ADBkh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 20:40:37 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:56143 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab2ADBkc (ORCPT
+	id S1755918Ab2ADBrH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 20:47:07 -0500
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:46128 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab2ADBrB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 20:40:32 -0500
-Date: Wed, 4 Jan 2012 12:40:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: linux-next: manual merge of the wireless tree with Linus' tree
-Message-Id: <20120104124020.5b481be704bd0040219ee0e0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__4_Jan_2012_12_40_20_+1100_WY2aPh+iFs/WMqnc"
+	Tue, 3 Jan 2012 20:47:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <01bb01ccca79$ae1ad770$0a508650$%kim@samsung.com>
+References: <20120103180854.e9bff732db50c0fa9afd2967@canb.auug.org.au>
+ <010601ccc9ef$7e784640$7b68d2c0$%kim@samsung.com> <CA+55aFzuEP7poPj_TiC28+T7Xn-6G1Lydt=q5FMVTj_XhOVf3w@mail.gmail.com>
+ <01bb01ccca79$ae1ad770$0a508650$%kim@samsung.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 3 Jan 2012 17:46:39 -0800
+X-Google-Sender-Auth: H8OpPEUWOLiE5x8l5n7SpZCKfcA
+Message-ID: <CA+55aFxgrLujQBPPTEiZk9a3GrvUpDhmR6eSd0Mg4O481MZKcg@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the s5p tree
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Jan_2012_12_40_20_+1100_WY2aPh+iFs/WMqnc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jan 3, 2012 at 4:42 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>>
+> The driver-core tree changed usage(?) of sysdev_class and touched some files
+> and the changed files have been merged into one file for some reason without
+> driver-core's changes in samsung tree. So I just wanted to avoid the
+> conflicts. Linus, how should/can I do in  this case?
 
-Hi John,
+Generally, unless the conflicts are *really* bad, just ignore them,
+and let me sort them out. It's nice if you mention the fact that there
+will be conflicts, and some people also send me a pre-merged tree that
+has the conflicts fixed up, but in general it's much better if the
+different trees ignore each other - that way we don't have random
+merges that mean that I cannot pull one tree without pulling another.
 
-Today's linux-next merge of the wireless tree got a conflict in
-drivers/net/wireless/rtlwifi/rtl8192cu/sw.c between commit 9d9779e723a5
-("drivers/net: Add module.h to drivers who were implicitly using it")
-from the  tree and commit e97173c985c0 ("rtl8192cu: Fix WARNING on
-suspend/resume") from the wireless tree.
+If the conflicts are just insanely bad, I'll ask you to resolve them
+for me when I hit them, but in general that's a sign that something
+nasty is going on and people are developing in the wrong trees or just
+stepping on each others toes too much.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index c244f2f,a48bea6..0000000
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@@ -42,7 -42,8 +42,9 @@@
-  #include "led.h"
-  #include "hw.h"
-  #include <linux/vmalloc.h>
- +#include <linux/module.h>
-+ #include <linux/atomic.h>
-+ #include <linux/types.h>
- =20
-  MODULE_AUTHOR("Georgia		<georgia@realtek.com>");
-  MODULE_AUTHOR("Ziv Huang	<ziv_huang@realtek.com>");
-
---Signature=_Wed__4_Jan_2012_12_40_20_+1100_WY2aPh+iFs/WMqnc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPA64EAAoJEECxmPOUX5FEjTAP/Ai82hdlxmnpw5DHsGAFBWWp
-3r+TZT5hRFRwFDoFBuwH+QQX9h5LfPMcutjXBZT94L3/boq0+WhUKBNhATVYNGir
-8zudWqGaaCg0h8Jm0jacKC9ledfx55GlfDHp4rO7Mqp68kiEFgX7hQxu5hlRiVt/
-xDDeuzuaSIK8Ex+4h1ELhoSgdDwO2/ZNiizDNU5/Jqv8bhUzE4Pp9YtbYywtEwof
-ip7a2Av7nvRqZNZdGOCbit7jZ5YaBf8KRDWS0wmxAb1D0oQGAzB1fKZxOg5DlXAF
-VJadyzzc7epUEwgd5k9VDRnHB8Cl1e5C3XnaF6XSkool9LyOyKraUzpXhpn4Q4DN
-luYHfCO56cXzcw43E38ztzZGADHLYwGUM/LCnnHNCn4cMf/78mLc+YZAC+uLBTMd
-DouO3sST9/NVmTOIXqViwiKaHbBopfdEfhWOn1twIe1phx3vkfBevt+nUl1UtiNX
-UaUBD4Eo0QTgFD3U78spyzLI4Dt98ELRoqFVrvAcwZUbQerv7C0DfyTSVcZnaZsK
-+yIgMIMiXeIgUvxnRfKrYGmLNuuQuuLD1qgbjV+DE16AktUH1llpIn2lUttrjQdn
-XohElee05MkSMBJRU9/NO0hulPh5xwqLNPaa3YGbg68V+L3vhQ8PTUczZnXukZMQ
-kWV/WkQJ2eGEloUS02Wj
-=YHOK
------END PGP SIGNATURE-----
-
---Signature=_Wed__4_Jan_2012_12_40_20_+1100_WY2aPh+iFs/WMqnc--
+                   Linus
