@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756744Ab2ADSzv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 13:55:51 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:36479 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab2ADSzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 13:55:49 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 04 Jan 2012 13:55:48 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: ZenIV (was: Re: Status of arm-soc.git for 3.2)
-In-reply-to: <20120104181703.GA11810@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.02.1201041337370.2907@xanadu.home>
-References: <201201032243.06440.arnd@arndb.de>
- <20120104100016.GK2914@n2100.arm.linux.org.uk>
- <20120104181703.GA11810@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	id S1756768Ab2ADS7X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 13:59:23 -0500
+Received: from mx2.compro.net ([12.186.155.4]:11299 "EHLO mx2.compro.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754854Ab2ADS7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 13:59:20 -0500
+X-IronPort-AV: E=Sophos;i="4.71,457,1320642000"; 
+   d="scan'208";a="7461654"
+Message-ID: <4F04A187.2050705@compro.net>
+Date: Wed, 04 Jan 2012 13:59:19 -0500
+From: Mark Hounschell <markh@compro.net>
+Reply-To: markh@compro.net
+Organization: Compro Computer Svcs.
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111220 Thunderbird/9.0
+MIME-Version: 1.0
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Hounschell <dmarkh@cfl.rr.com>
+Subject: Re: tty  TTY_HUPPED anomaly
+References: <4EF49579.9040907@compro.net> <4EF4CC92.5090502@compro.net> <20111223204015.541924f2@pyx> <4F047767.5060708@compro.net> <20120104162745.76fc3852@pyramind.ukuu.org.uk>
+In-Reply-To: <20120104162745.76fc3852@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jan 2012, Russell King - ARM Linux wrote:
+On 01/04/2012 11:27 AM, Alan Cox wrote:
+>> But what has carrier dropping got to do with an TIOCSETD ioctl. For that
+>
+> When the carrier is dropped and HUPCL is set then the tty is disconnected
+> from the physical interface. It's specified behaviour and required for
+> security. So by the time you go to issue the TIOCSETD you are no longer
+> connected to the tty. That may well just be a timing change.
+>
+>> What can be done to prevent tty_hangup from being called after opening
+>> the port? And if this is really supposed to happen, why does it not
+>> always happen?
+>
+> It should only happen if the carrier is dropped.
+>
+>> Even if the first thing I do after opening the port is to clear HUPCL
+>> and set CLOCAL, this still randomly happens the first time I open the
+>> port after booting.
+>
+> I'd expect the behaviour to either be
+>
+> carrier high, stays high - open works, no hangup events seen
+>
+> or
+>
+> carrier low, stays low - open blocks, but open with O_NDELAY works,
+> hangup events not seen.
+>
+> It's the act of the drop which is a hangup not the presence of low
+> carrier if I remember the spec properly. The Synclink GT correctly does
+> this as far as I can tell (I have no hardware or docs for it) but the
+> code indicates that the hardware reports changes and it acts on them
+> properly (checking CLOCAL etc).
+>
+>
+> I would guess (given the distro change is the trigger) that you've got a
+> SuSE problem not a kernel one. The kernel behaviour and code looks
+> correct. My guess therefore is that newer SuSE is running stuff in the
+> boot which is probing serial ports and messing with the carrier wrongly
+> and in ways it didn't use to. That would fit the fact that something
+> similarly broken has apparently also appeared in the Fedora user space
+> bootup.
+>
 
-> On Wed, Jan 04, 2012 at 10:00:16AM +0000, Russell King - ARM Linux wrote:
-> > Now... as for ZenIV (the machine which publically hosts my git tree).  It's
-> > developed a new problem over Christmas: apache has started regularly dying
-> > in a way that's not been seen before:
-> > [alert] (11)Resource temporarily unavailable: setuid: unable to change to uid: xx
-> > [error] server reached MaxClients setting, consider raising the MaxClients setting
-> > [alert] Child 17666 returned a Fatal error... Apache is exiting!
-> > [emerg] (43)Identifier removed: couldn't grab the accept mutex
-> > [emerg] (22)Invalid argument: couldn't grab the accept mutex
-> > ...
-> > I don't see any updates which would have caused this, so I'm going to put
-> > it down to increased server load over the Christmas period, possibly again
-> > caused by git's smart protocol being excessively resource intensive on the
-> > machine.
-> 
-> I've just checked the machine this evening - I restarted it at 8:57 and
-> it was dead again by 16:52.
-
-As we discussed last month, ZenIV with its 2 GB of RAM is becoming 
-underpowered for the task of serving the kernel Git tree.
-
-> I've now disabled all access to my git tree there, and restarted apache.
-> We will see whether that improves stability - I suspect it will do because
-> I reckon that the problem is that the smart git stuff is what's killing
-> the machine.
-
-I'm sure that is the case.  However faulty hardware could still be the 
-root cause, but without the load from Git the machine might become 
-loaded lightly enough you might not see any ill effects before quite a 
-while.
-
-> I've no idea how the kernel.org folk manage to run any
-> kind of service with this git stuff.
-
-But they do quite well, which is the important point.
-
-> If that resolves the problem, I'll re-enable access but with the "smart"
-> stuff and gitweb disabled (I've seen gitweb taking ages accessing the
-> tree as well.)
-
-That's good for the other services that ZenIV is providing, but one of 
-the most important service was certainly the publication of your Git 
-tree.  This specific problem still is unresolved.
-
-> I'm now convinced that git servers are only possible with 64-bit systems
-> with some multiple of 16GB of RAM on them - which is not something that
-> this machine can be.
-
-If so I'd suggest you consider one of the hosting alternatives readily 
-available to you for publishing your Git tree.  I'm sure any hurdle can 
-be leveled out very quickly for the core ARM Linux repository.  I can 
-certainly facilitate things if you wish.
+Yes,  I never really though it was a kernel problem. All though I can't 
+say I agree with the HUPCL/security thing. In any case, with the 
+Synclink cards, at first open after boot of SuSE-12.1, CLOCAL is not 
+set. Whereas all pre SuSE-12.1 releases do have CLOCAL set.
 
 
-Nicolas
+Mark
+
