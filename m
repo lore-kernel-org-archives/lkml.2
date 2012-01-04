@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756068Ab2ADP2Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 10:28:24 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37043 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab2ADP2X (ORCPT
+	id S1755523Ab2ADPbH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 10:31:07 -0500
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:45783 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751111Ab2ADPbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 10:28:23 -0500
-Date: Wed, 4 Jan 2012 07:27:56 -0800
-From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
-Message-ID: <tip-9e183426bfb52bb44bf3c443d6587e4d02478603@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, joerg.roedel@amd.com,
-        gleb@redhat.com, tglx@linutronix.de, avi@redhat.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        acme@redhat.com, joerg.roedel@amd.com, a.p.zijlstra@chello.nl,
-        gleb@redhat.com, tglx@linutronix.de, avi@redhat.com, mingo@elte.hu
-In-Reply-To: <1317816084-18026-5-git-send-email-gleb@redhat.com>
-References: <1317816084-18026-5-git-send-email-gleb@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kvm: Fix copy & paste error in description
-Git-Commit-ID: 9e183426bfb52bb44bf3c443d6587e4d02478603
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 4 Jan 2012 10:31:04 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: RD3cq8kVM1m.gHeLp0XIXstyTUQ9Db8xOAO5UByOdyraO6a
+ HkXf1t_ebxDTqMV5Ofi_x2txHm_cempL2Zl7KR79jqSoog_5blKaTlzXhrfk
+ u_aS6uZ2dFGZ3rbyAGjF9DLHY3azrJjHFQltkHGPAbnKdxwiIOM.8peGAESf
+ XeqYFYFmeOgzA.pjHWWmdvGHDw3h7boKG8Bp.fB.wk7bVZUFu6TGaFD6eA67
+ 1HtY6CjWyQZQBqS75M4SiSdSrMSCm1tVCmQJ0GYXGDXEa.G47_8W63QumWsC
+ .ekpFPxyCv9BinbpP7dj1ghFsq3YF7kLfZRVkaX_m.PZ0Zh2cKZljTsgmDvX
+ jvwqO8fhrJfWEXbSoEKbLkDtu_xyTlBFByNN9UcYbnJJ.Fg--
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Wed, 4 Jan 2012 09:30:59 -0600 (CST)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
+In-Reply-To: <CA+55aFzCY7TyEgkWFn6wxUMjBBaKGcx0hdV6gTdta5u8eK=Ymg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1201040906090.27157@router.home>
+References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain> <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com> <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com> <20111220162315.GC10752@google.com>
+ <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com> <20111220202854.GH10752@google.com> <alpine.DEB.2.00.1112210851230.9601@router.home> <20111221170535.GB9213@google.com> <alpine.DEB.2.00.1112220854440.31315@router.home>
+ <20111222160822.GE17084@google.com> <alpine.DEB.2.00.1112221154380.11787@router.home> <CA+55aFzY_6QYVyjAmP+w8D0Xy1Pq++XEUaBJRcCN9SbDE-pOhw@mail.gmail.com> <alpine.DEB.2.00.1112231031001.3482@router.home>
+ <CA+55aFzCY7TyEgkWFn6wxUMjBBaKGcx0hdV6gTdta5u8eK=Ymg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 04 Jan 2012 07:28:02 -0800 (PST)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  9e183426bfb52bb44bf3c443d6587e4d02478603
-Gitweb:     http://git.kernel.org/tip/9e183426bfb52bb44bf3c443d6587e4d02478603
-Author:     Joerg Roedel <joerg.roedel@amd.com>
-AuthorDate: Wed, 5 Oct 2011 14:01:19 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 3 Jan 2012 15:17:14 -0200
+On Fri, 23 Dec 2011, Linus Torvalds wrote:
 
-perf kvm: Fix copy & paste error in description
+> You have two cases:
+>
+> Case 1: you actually know what CPU you are on, and the number may have
+> some meaning. But in that case you are also *pinned* to that CPU, and
+> there is no difference between
+>
+>    x = percpu_value;
+>    x += y;
+>    percpu_value = x;
+>    .. look at 'x' .. to see what you did
+>
+> and
+>
+>     percpu_value += x;
+>    ..look at percpu_value to see what you did ..
+>
+> and
+>
+>     x = xadd percpu_value,y
+>
+> so there are no "atomicity advantages" - xadd is the same as
+> open-coding it. You are pinned to the CPU, all three ways are 100%
+> equivalent.
 
-The --host option certainly enables host-data collection.
+As mentioned before the main point of the use of these operations (in the
+form of __this_cpu_op_return) when the cpu is pinned is to reduce the
+number of instructions. __this_cpu_add_return allows replacing ~ 5
+instructions with one.
 
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: kvm@vger.kernel.org
-Link: http://lkml.kernel.org/r/1317816084-18026-5-git-send-email-gleb@redhat.com
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-kvm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+These operations are used in f.e. in vm statististics that have to scale
+well and have the lightest possible impact on the rest of the vm code.
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 34d1e85..032324a 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -38,7 +38,7 @@ static const struct option kvm_options[] = {
- 	OPT_BOOLEAN(0, "guest", &perf_guest,
- 		    "Collect guest os data"),
- 	OPT_BOOLEAN(0, "host", &perf_host,
--		    "Collect guest os data"),
-+		    "Collect host os data"),
- 	OPT_STRING(0, "guestmount", &symbol_conf.guestmount, "directory",
- 		   "guest mount directory under which every guest os"
- 		   " instance has a subdir"),
+"atomicity advantages" were never claimed to exist for the __this_cpu_xx
+operations.
+
+>> The other case is:
+>
+> Case 2: you're not pinned to the CPU, and you just do statistics and
+> add some value to memory. BUT NOW THE RESULT HAS ABSOLUTELY NO
+> MEANING!
+>
+> Now "xadd" would possibly give different results from "add and read
+> the result", since you migth be moving around between cpu's, but there
+> is absolutely no way you could ever care, sine the value you read back
+> is meaningless regardless of whether it's the return value of xadd, or
+> the value from some other CPU. There are other cpu's with the same
+> percpu variable, and they are all equivalent as far as you are
+> concerned, because you're not pinned to one of them.
+
+You would care if you had special actions that have to be triggered on all
+processors if for example a threshold was breached on a single processors
+counters (and one would fold all differentials into a global counter) or a
+per cpu counter reaches zero (and one would need to replenish lists of
+objects or some such thing). In that case it matters that the operational
+result be checked later regardless of the cpu we are on right now.
+
+There are no use cases of the this_cpu_xx_return operations as far as I
+can see so we could remove those.
+
