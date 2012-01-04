@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab2ADAle (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:41:34 -0500
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:48120 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754643Ab2ADAlc (ORCPT
+	id S1755322Ab2ADAmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:42:10 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:37988 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab2ADAmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:41:32 -0500
-From: Kevin Hilman <khilman@ti.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Trinabh Gupta <g.trinabh@gmail.com>,
-        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
-        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 0/3] coupled cpuidle state support
-Organization: Texas Instruments, Inc.
-References: <1324426147-16735-1-git-send-email-ccross@android.com>
-Date: Tue, 03 Jan 2012 16:41:27 -0800
-In-Reply-To: <1324426147-16735-1-git-send-email-ccross@android.com> (Colin
-	Cross's message of "Tue, 20 Dec 2011 16:09:04 -0800")
-Message-ID: <87sjjw70zs.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 3 Jan 2012 19:42:09 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-83-4f03a05e069b
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
+Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "'Greg KH'" <greg@kroah.com>
+References: <20120103180854.e9bff732db50c0fa9afd2967@canb.auug.org.au>
+ <010601ccc9ef$7e784640$7b68d2c0$%kim@samsung.com>
+ <CA+55aFzuEP7poPj_TiC28+T7Xn-6G1Lydt=q5FMVTj_XhOVf3w@mail.gmail.com>
+In-reply-to: <CA+55aFzuEP7poPj_TiC28+T7Xn-6G1Lydt=q5FMVTj_XhOVf3w@mail.gmail.com>
+Subject: RE: linux-next: build failure after merge of the s5p tree
+Date: Wed, 04 Jan 2012 09:42:04 +0900
+Message-id: <01bb01ccca79$ae1ad770$0a508650$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: ko
+Thread-index: AczKM6Up35aCZAGuTT2ilzfoEpQf1QARFz4A
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Colin Cross <ccross@android.com> writes:
+Linus Torvalds wrote:
+> 
+> On Tue, Jan 3, 2012 at 12:12 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+> >
+> > OK, I see. Firstly, I will rebase my for-next as per your suggestion. As
+> you
+> > know, I just wanted to avoid known conflicts with driver-core tree.
+> 
+> Please, in general you should *not* rebase on top of other peoples
 
+OK, I will remember. And as a note, I didn't 'rebase' on top of other tree
+just 'merge' in the case of having dependency with others and of course if
+that is _really_ required. But we know, if the merged tree is rebased,
+something wrong will happen :(
 
-> This patch series implements an alternative solution, where each
-> cpu will wait in the WFI state until all cpus are ready to enter
-> a coupled state, at which point the coupled state function will
-> be called on all cpus at approximately the same time.
+> trees either. What's the conflict and why do you need that other tree
+> in the first place?
+> 
+The driver-core tree changed usage(?) of sysdev_class and touched some files
+and the changed files have been merged into one file for some reason without
+driver-core's changes in samsung tree. So I just wanted to avoid the
+conflicts. Linus, how should/can I do in  this case?
 
-This looks great, and is certainly preferred to hotplug IMO.
+Thanks.
 
-[...]
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-> None of the platforms I work with have an SMP idle implementation
-> upstream, so I can't easily show a patch that converts a platform
-> from hotplug governor to coupled cpuidle states.  
-
-Basic OMAP4 CPUidle support is in now queued for v3.3 (see omap4
-branch Tony's tree[1].)  
-
-Can you (or Santosh) send a patch that adds coupled support to that
-driver so it can see some broader testing on OMAP4?
-
-Thanks,
-
-Kevin
-
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap.git
