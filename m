@@ -1,104 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab2ADRMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 12:12:35 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62627 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756447Ab2ADRMd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 12:12:33 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=0wm1LphaX4QA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=PvIzjc8avhGb6yaluUoA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325697150.12696.29.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH v8 3.2.0-rc5 1/9] uprobes: Install and remove
- breakpoints.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 04 Jan 2012 12:12:30 -0500
-In-Reply-To: <1325695916.2697.5.camel@twins>
-References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
-	 <20111216122808.2085.76986.sendpatchset@srdronam.in.ibm.com>
-	 <1325695916.2697.5.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S1756521Ab2ADROK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 12:14:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5693 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756203Ab2ADROH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 12:14:07 -0500
+Message-ID: <4F0488AB.6000003@redhat.com>
+Date: Wed, 04 Jan 2012 19:13:15 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+References: <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com> <4F046536.5080207@redhat.com> <20120104145602.GB8333@linux.vnet.ibm.com>
+In-Reply-To: <20120104145602.GB8333@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-04 at 17:51 +0100, Peter Zijlstra wrote:
+On 01/04/2012 04:56 PM, Srivatsa Vaddagiri wrote:
+> * Avi Kivity <avi@redhat.com> [2012-01-04 16:41:58]:
+>
+> > > Here are some observation related to Baseline-only(8vm case)
+> > >
+> > >               | ple_gap=128 | ple_gap=64 | ple_gap=256 | ple_window=2048
+> > > --------------+-------------+------------+-------------+----------------
+> > > EbzyRecords/s |    2247.50  |    2132.75 |    2086.25  |      1835.62
+> > > PauseExits    | 7928154.00  | 6696342.00 | 7365999.00  |  50319582.00
+> > >
+> > > With ple_window = 2048, PauseExits is more than 6times the default case
+> > 
+> > So it looks like the default is optimal, at least wrt the cases you
+> > tested and your test workload.
+>
+> The default case still lags considerably behind the results we are seeing with
+> gang scheduling. One more interesting data point would be to see how
+> many PLE exits we are seeing when the vcpu is spinning in
+> flush_tlb_others_ipi(). Is there any easy way to determine that?
+>
 
-> > +               if (is_register)
-> > +                       ret = install_breakpoint(mm, uprobe, vma, vi->vaddr);
-> > +               else
-> > +                       remove_breakpoint(mm, uprobe, vi->vaddr);
-> > +
-> > +               up_read(&mm->mmap_sem);
-> > +               mmput(mm);
-> > +               if (is_register) {
-> > +                       if (ret && ret == -EEXIST)
-> > +                               ret = 0;
-> > +                       if (ret)
-> > +                               break;
-> > +               }
-> 
-> Since you init ret := 0 and remove_breakpoint doesn't change it, this
-> conditional on is_register is superfluous.
+You could get an exit trace (trace-cmd -e kvm:kvm_exit) and filter on
+PLE exits; the trace contains the guest %rip, so you could match it
+against flush_tlb_others_ipi().
 
-True, but I would argue that this is easier to understand. That is, we
-only break on a failed install_breakpoint (is_register is set). If I
-looked at this code and saw:
-
-	if (is_register)
-		ret = install_breakpoint()
-	else	
-		remove_breakpoint()
-
-	[...]
-
-	if (ret && ret == -EEXIST)
-		ret = 0;
-	if (ret)
-		break;
-
-I would first think that there might be a bug. That is, we should have a
-ret = remove_breakpoint().
-
-Thus, I would say, either leave this as is and hope gcc is smart enough
-to optimize out the if (is_register), or add the comment:
-
-	/* ret will always be zero on remove_breakpoint */
-	if (ret && ret == -EEXIST)
-		ret = 0;
-	if (ret)
-		break;
-
--- Steve
-
-> 
-> > +       }
-> > +       list_for_each_entry_safe(vi, tmpvi, &try_list, probe_list) {
-> > +               list_del(&vi->probe_list);
-> > +               kfree(vi);
-> > +       }
-> > +       return ret;
-> > +} 
-
+-- 
+error compiling committee.c: too many arguments to function
 
