@@ -1,93 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab2ADXNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 18:13:48 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47836 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932074Ab2ADXNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 18:13:45 -0500
-Message-ID: <4F04DD19.601@nod.at>
-Date: Thu, 05 Jan 2012 00:13:29 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Bart De Schuymer <bdschuym@pandora.be>
-CC: Stephen Hemminger <shemminger@vyatta.com>, davem@davemloft.net,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with
- bridge-nf-call-ip(6)tables=0
-References: <4F025A07.2000304@nod.at> <1325597164-13459-1-git-send-email-richard@nod.at> <1325597164-13459-2-git-send-email-richard@nod.at> <20120103081521.2fec3a29@nehalam.linuxnetplumber.net> <4F033E11.5060707@nod.at> <4F0361D7.3000602@pandora.be> <4F03650D.8050200@nod.at> <4F049290.3090803@pandora.be>
-In-Reply-To: <4F049290.3090803@pandora.be>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB4BE8FEDA6EBD4B15340840A"
+	id S932161Ab2ADXPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 18:15:10 -0500
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:50465 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab2ADXPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 18:15:07 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=b/gStvK98Bs6YfhBwCpxRApoLO2qoBYaarCtclPE+68= c=1 sm=1
+ a=nSC6y5WQha8A:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=2xjvh0OlAAAA:8 a=bDVqzVESZqZmnefXYswA:9
+ a=9TVXmJdkY48uVjolDo0A:7 a=CjuIK1q_8ugA:10 a=jYdbEVJdAgYA:10
+ a=97se3XBXZHj5y759:21 a=qp_hDTJVJA_hX1UM:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl updates inode
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger.kernel@dilger.ca>
+In-Reply-To: <20120104174609.GD28907@quack.suse.cz>
+Date: Wed, 4 Jan 2012 16:15:04 -0700
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        ext4 development <linux-ext4@vger.kernel.org>,
+        linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Transfer-Encoding: 7bit
+Message-Id: <6C16105A-D0EE-413E-B993-F223CFC75307@dilger.ca>
+References: <20120103013152.GA26455@dztty> <20120104174609.GD28907@quack.suse.cz>
+To: Djalal Harouni <tixxdz@opendz.org>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB4BE8FEDA6EBD4B15340840A
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 2012-01-04, at 10:46 AM, Jan Kara wrote:
+> On Tue 03-01-12 02:31:52, Djalal Harouni wrote:
+>> 
+>> The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
+>> this can lead to a race with the other operations that update the same
+>> inode.
+>> 
+>> Patch tested.
+> 
+>  OK, so I've taken the patch into my tree, just updated the changelog
+> which result of our discussion in this thread. I also took the ext4 part
+> since there is no risk of conflict and the patch looks obvious.
 
-Am 04.01.2012 18:55, schrieb Bart De Schuymer:
-> Op 3/01/2012 21:29, Richard Weinberger schreef:
->> Am 03.01.2012 21:15, schrieb Bart De Schuymer:
->>> The documentation is probably not explicit enough, but I would keep t=
-he
->>> behavior as it is now. Setting bridge-nf-call-iptables to 0 makes
->>> iptables behave as if bridge-netfilter was not enabled at compilation=
-=2E
->>> Anyway, your patch is almost certainly flawed since the fact that
->>> skb->nf_bridge can be NULL is used as part of the logic in
->>> br_netfilter.c: it indicates that bridge-nf-call-iptables was 0 when =
-the
->>> packet was first processed by bridge-netfilter and should therefore n=
-ot
->>> be given to iptables in any other netfilter hook.
->> Thanks for the explanation!
->>
->> Wouldn't it make sense to check for bridge-nf-call-iptables in
->> xt_physdev?
->> So that the user gets warned that his iptables rule will never match..=
-=2E
->=20
-> We don't want to introduce module dependencies between the bridge modul=
-e
-> and the iptables physdev match.
+Actually, I'd like to hear more about whether this is a real problem, or
+if it is just a theoretical problem found during code inspection or from
+some static code analysis tool?
 
-CONFIG_NETFILTER_XT_MATCH_PHYSDEV depends anyway on
-CONFIG_BRIDGE_NETFILTER...
+With the metadata checksum feature we were discussing using the inode
+generation as part of the seed for the directory leaf block checksum, so
+that it wasn't possible to incorrectly access stale directory blocks from
+a previous incarnation of the same inode number.
 
-> We could add a message to the syslog whenever these proc settings are
-> changed (in br_netfilter.c::brnf_sysctl_call_tables()).
->=20
+We were discussing just disabling this ioctl on filesystems with metadata
+checksums, and printing a deprecation warning for filesystems without that
+feature enabled.  I'm not aware of any real-world use for this ioctl, since
+NFS cannot use it to reconstruct handles because there's no API to allocate
+an inode with a specific number, so setting the generation is pointless.
 
-Let's export brnf_call_iptables and brnf_call_ip6tables, such that
-physdev_mt_check() can notify the user that his iptables rule will have
-no effect.
+This ioctl (despite its confusing name) is completely different from the
+NFSv4 inode version, which is stored in i_version (and i_version_hi).
 
-Thanks,
-//richard
+Cheers, Andreas
+
+>> Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
+>> ---
+>> fs/ext3/ioctl.c |    6 +++++-
+>> fs/ext4/ioctl.c |    6 +++++-
+>> 2 files changed, 10 insertions(+), 2 deletions(-)
+>> 
+>> diff --git a/fs/ext3/ioctl.c b/fs/ext3/ioctl.c
+>> index ba1b54e..e7b2ed9 100644
+>> --- a/fs/ext3/ioctl.c
+>> +++ b/fs/ext3/ioctl.c
+>> @@ -134,10 +134,11 @@ flags_out:
+>> 			goto setversion_out;
+>> 		}
+>> 
+>> +		mutex_lock(&inode->i_mutex);
+>> 		handle = ext3_journal_start(inode, 1);
+>> 		if (IS_ERR(handle)) {
+>> 			err = PTR_ERR(handle);
+>> -			goto setversion_out;
+>> +			goto unlock_out;
+>> 		}
+>> 		err = ext3_reserve_inode_write(handle, inode, &iloc);
+>> 		if (err == 0) {
+>> @@ -146,6 +147,9 @@ flags_out:
+>> 			err = ext3_mark_iloc_dirty(handle, inode, &iloc);
+>> 		}
+>> 		ext3_journal_stop(handle);
+>> +
+>> +unlock_out:
+>> +		mutex_unlock(&inode->i_mutex);
+>> setversion_out:
+>> 		mnt_drop_write(filp->f_path.mnt);
+>> 		return err;
+>> diff --git a/fs/ext4/ioctl.c b/fs/ext4/ioctl.c
+>> index a567968..46a8de6 100644
+>> --- a/fs/ext4/ioctl.c
+>> +++ b/fs/ext4/ioctl.c
+>> @@ -158,10 +158,11 @@ flags_out:
+>> 			goto setversion_out;
+>> 		}
+>> 
+>> +		mutex_lock(&inode->i_mutex);
+>> 		handle = ext4_journal_start(inode, 1);
+>> 		if (IS_ERR(handle)) {
+>> 			err = PTR_ERR(handle);
+>> -			goto setversion_out;
+>> +			goto unlock_out;
+>> 		}
+>> 		err = ext4_reserve_inode_write(handle, inode, &iloc);
+>> 		if (err == 0) {
+>> @@ -170,6 +171,9 @@ flags_out:
+>> 			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
+>> 		}
+>> 		ext4_journal_stop(handle);
+>> +
+>> +unlock_out:
+>> +		mutex_unlock(&inode->i_mutex);
+>> setversion_out:
+>> 		mnt_drop_write(filp->f_path.mnt);
+>> 		return err;
+>> -- 
+>> 1.7.1
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
 
 
---------------enigB4BE8FEDA6EBD4B15340840A
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Cheers, Andreas
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQEcBAEBAgAGBQJPBN0eAAoJEN9758yqZn9eNVoIAKsFri6hfQdyZKl9FsCcHC4r
-kJGjdm2AWAocQb8/yYajPylhrJbS5WK103SjfUXFfRuPdTAr8VBiazo8zrqqy7Oy
-+s7iLv1k/tQpS8GcSom67fZOIpRnjshRNMaFIw0IBk1A7CBbJU1HzQaqplSCMAJS
-NeiCVaJbWfOFafiKC8VZDv8gIro0WbroNPJwC+DhzhnDi8Zq2534K4nB1R53JR0W
-wMOJa+QWi5OslHas9a3ZCo7trLxcp+lYpAa9/Q/4u+A82GSMV9t2IRtvcDSAb72o
-cBhI9WTzi2rGUVmL6RBqsXiFFgbSVtCr8GW0n5c4s0OmyyOzAkC9gZqjQjnCVlM=
-=kali
------END PGP SIGNATURE-----
 
---------------enigB4BE8FEDA6EBD4B15340840A--
+
+
