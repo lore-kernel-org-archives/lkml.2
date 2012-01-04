@@ -1,208 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab2ADVas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:30:48 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:33565 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839Ab2ADVap (ORCPT
+	id S932076Ab2ADVa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:30:57 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:54450 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757008Ab2ADVay (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:30:45 -0500
-Date: Wed, 4 Jan 2012 13:30:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: Improve detection of illegal synchronize_rcu() call
- from RCU read side
-Message-ID: <20120104213035.GF2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <20111226163734.GF28309@somewhere.redhat.com>
- <20111226195656.GD2435@linux.vnet.ibm.com>
- <20120104190336.GC1143@somewhere>
+	Wed, 4 Jan 2012 16:30:54 -0500
+Date: Wed, 4 Jan 2012 16:28:09 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Subject: Re: ath9k crash 3.2-rc7
+Message-ID: <20120104212808.GI2540@tuxdriver.com>
+References: <NEXT-4f04c2111e5f83.17805410@nextmail.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120104190336.GC1143@somewhere>
+In-Reply-To: <NEXT-4f04c2111e5f83.17805410@nextmail.ru>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010421-1780-0000-0000-00000213E93D
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000244; HX=3.00000180; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00102110; UDB=6.00026052; UTC=2012-01-04
- 21:30:43
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 08:03:39PM +0100, Frederic Weisbecker wrote:
-> On Mon, Dec 26, 2011 at 11:56:57AM -0800, Paul E. McKenney wrote:
-> > On Mon, Dec 26, 2011 at 05:37:36PM +0100, Frederic Weisbecker wrote:
-> > > On Mon, Dec 26, 2011 at 08:31:48AM -0800, Paul E. McKenney wrote:
-> > > > On Mon, Dec 26, 2011 at 02:16:43PM +0200, Sasha Levin wrote:
-> > > > > Hi Paul,
-> > > > > 
-> > > > > I've recently got the following panic which was caused by khungtask:
-> > > > > 
-> > > > > [ 1921.589512] INFO: task rcuc/0:7 blocked for more than 120 seconds.
-> > > > > [ 1921.590370] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > > > > [ 1921.597103] rcuc/0          D ffff880012f61630  4400     7      2 0x00000000
-> > > > > [ 1921.598646]  ffff880012f6b980 0000000000000086 ffff880012f6bfd8 00000000001d4740
-> > > > > [ 1921.600289]  ffff880012f6bfd8 ffff880012f61630 ffff880012f6bfd8 ffff880012f6a000
-> > > > > [ 1921.601707]  00000000001d4800 ffff880012f6a000 ffff880012f6bfd8 00000000001d4800
-> > > > > [ 1921.603258] Call Trace:
-> > > > > [ 1921.603703]  [<ffffffff8255eefa>] schedule+0x3a/0x50
-> > > > > [ 1921.605462]  [<ffffffff8255cd65>] schedule_timeout+0x255/0x4d0
-> > > > > [ 1921.606540]  [<ffffffff8112a25e>] ? mark_held_locks+0x6e/0x130
-> > > > > [ 1921.607633]  [<ffffffff811277b2>] ? lock_release_holdtime+0xb2/0x160
-> > > > > [ 1921.608798]  [<ffffffff825602bb>] ? _raw_spin_unlock_irq+0x2b/0x70
-> > > > > [ 1921.610154]  [<ffffffff8255f630>] wait_for_common+0x120/0x170
-> > > > > [ 1921.617878]  [<ffffffff81104f30>] ? try_to_wake_up+0x2f0/0x2f0
-> > > > > [ 1921.618949]  [<ffffffff811754d0>] ? __call_rcu+0x3c0/0x3c0
-> > > > > [ 1921.621405]  [<ffffffff8255f728>] wait_for_completion+0x18/0x20
-> > > > > [ 1921.623622]  [<ffffffff810ee0b9>] wait_rcu_gp+0x59/0x80
-> > > > > [ 1921.626789]  [<ffffffff810ec0c0>] ? perf_trace_rcu_batch_end+0x120/0x120
-> > > > > [ 1921.629440]  [<ffffffff8255f554>] ? wait_for_common+0x44/0x170
-> > > > > [ 1921.632445]  [<ffffffff81179d3c>] synchronize_rcu+0x1c/0x20
-> > > > > [ 1921.635455]  [<ffffffff810f8980>] atomic_notifier_chain_unregister+0x60/0x80
-> > > > 
-> > > > This called synchronize_rcu().
-> > > > 
-> > > > > [ 1921.638550]  [<ffffffff8111bab3>] task_handoff_unregister+0x13/0x20
-> > > > > [ 1921.641271]  [<ffffffff8211342f>] task_notify_func+0x2f/0x40
-> > > > > [ 1921.643894]  [<ffffffff810f8817>] notifier_call_chain+0x67/0x110
-> > > > > [ 1921.646580]  [<ffffffff810f8a14>] __atomic_notifier_call_chain+0x74/0x110
-> > > > 
-> > > > This called rcu_read_lock().
-> > > > 
-> > > > Now, calling synchronize_rcu() from within an RCU read-side critical
-> > > > section is grossly illegal.  This will result in either deadlock (for
-> > > > preemptible RCU) or premature grace-period end and memory corruption
-> > > > (for non-preemptible RCU).
-> > > 
-> > > Don't we have debugging checks for that? I can't seem to find any.
-> > > May be worth having a WARN_ON_ONCE(rcu_read_lock_held()) in
-> > > synchronize_rcu().
-> > 
-> > Indeed, my bad.  It should be possible to make lockdep do this.
+You probably want to try linux-wireless@vger.kernel.org for maximum exposure...
+
+On Thu, Jan 05, 2012 at 01:18:09AM +0400, MR wrote:
+> Hello.
 > 
-> Actually for the case of RCU, the wait_for_completion() called by synchronize_rcu()
-> has a might_sleep() call that triggers a warning in this case.
+> I have noticed a complete crash (forced switch to console and Alt-SysRq-B 
+> doesn't work) when I use ath9k driver for my WiFi card. The problem is that 
+> the crash occurs after a few hours of use, so blind bissecting doesn't look 
+> like a short-term plan.
 > 
-> But in the case of SMP with 1 online CPU, the rcu_blocking_is_gp()
-> checks returns right away on rcutree. So probably we need this?
-
-I modified this to push the might_sleep() down into the
-rcu_blocking_is_gp() function, queued the result, and retained your
-Signed-off-by.  (Please let me know if there is any problem with this.)
-
-This does work for TREE_PREEMPT_RCU and for synchronize_rcu_bh() in
-TREE_RCU, but not for synchronize_sched() in TREE_RCU.  This is because
-rcu_read_lock() and rcu_read_unlock() are no-ops in the TREE_RCU case.
-
-So I queued up a separate patch using rcu_lockdep_assert() to check for
-illegal RCU grace period within the same-type RCU read-side critical
-section, including for SRCU.  This is also a partial solution, as it
-does not handle things like this:
-
-	void foo(void)
-	{
-		mutex_lock(&my_mutex);
-		. . .
-		synchronize_srcu(&my_srcu);
-		. . .
-		mutex_unlock(&my_mutex);
-	}
-
-	void bar(void)
-	{
-		int idx;
-
-		idx = rcu_read_lock(&m_srcu);
-		. . .
-		mutex_lock(&my_mutex);
-		. . .
-		mutex_unlock(&my_mutex);
-		. . .
-		srcu_read_unlock(&m_srcu, idx);
-	}
-
-This can be extended into a chain of locks and a chain of SRCU instances.
-For an example of the latter, consider an SRCU-A read-side critical
-section containing an SRCU-B grace period, an SRCU-B read-side critical
-section containing an SRCU-C grace period, and so on, with the SRCU-Z
-read-side critical section containing an RCU-A grace period.  But it
-is OK to hold a mutex across one SRCU read-side critical section while
-acquiring that same mutex within another same-flavor SRCU read-side
-critical section.  So the analogy with reader-writer locking only goes
-so far.
-
-At the moment, a full solution seems to require some surgery on lockdep
-itself, but perhaps there is a better way.
-
-> rcutiny seems to be fine with the cond_resched() call, but srcu needs
-> a special treatment.
-
-For the moment, I just applied rcu_lockdep_assert() everywhere -- zero
-cost on non-lockdep kernels, and fully handles all of the RCU simple
-self-deadlock cases.
-
-							Thanx, Paul
-
-> ---
-> >From 27b99308e034046df86bab9d57be082815d77762 Mon Sep 17 00:00:00 2001
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Date: Wed, 4 Jan 2012 19:20:58 +0100
-> Subject: [PATCH] rcu: Improve detection of illegal synchronize_rcu() call from RCU read side
+> My card is (as lspci says):
 > 
-> In RCU tree, synchronize_{rcu,sched,rcu_bh} can detect illegal call from
-> RCU read side critical section with might_sleep() called before waiting
-> for the grace period completion.
+> 03:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless 
+> Network Adapter (PCI-Express) (rev 01)
+>         Subsystem: Device 1a3b:1089
+>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
+> Stepping- SERR- FastB2B- DisINTx-
+>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- 
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>         Latency: 0, Cache Line Size: 64 bytes
+>         Interrupt: pin A routed to IRQ 17
+>         Region 0: Memory at d7400000 (64-bit, non-prefetchable) [size=64K]
 > 
-> But in RCU tree, the calls to synchronize_sched() and synchronize_rcu_bh()
-> return immediately if only one CPU is running. In this case we are missing
-> the checks for calls of these APIs from atomic sections (including RCU read
-> side).
+> I use an Asus N53JN notebook, if that matters.
 > 
-> To cover every cases, put a might_sleep() call in the beginning of those
-> two functions.
+> I have photos of two instances of the crash. The backtrace goes as follows (I 
+> typed this in, so maybe there is a typo somewhere - I hope there is none, 
+> though):
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  kernel/rcutree.c |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
+> wq_worker_sleeping+0x10/0xa0
+> __schedule+0x427/0x7b0
+> ? call_rcu_sched+0x10/0x20
+> schedule+0x3a/0x50
+> do_exit+0x57c/0x840
+> ? kmsg_dump+0x45/0xe0
+> oops_end+0xa5/0xf0
+> no_context+0xf2/0x270
+> __bad_area_no_semaphore+0xe/0x10
+> do_page_fault+0x2ba/0x450
+> ? up+0x2d/0x50
+> ? console_unlock+0x1df/0x250
+> ? select_task_rq_fair+0x5be/0x970
+> page_fault+0x25/0x30
+> ? ath_update_survey_stats+0xb7/0x1c0 [ath9k]
+> ath9k_config+0x115/0x780 [ath9k]
+> ? queue_work+0x1a/0x20
+> ? queue_delayed_work+0x25/0x30
+> ? ieee80211_queue_delayed_work+0x46/0x60 [mac80211]
+> ? ath9k_flush+0x155/0x1d0 [ath9k]
+> ieee80211_hw_config+0xe2/0x160 [mac80211]
+> ieee80211_scan_work+0x243/0x5c0 [mac80211]
+> ? ieee80211_scan_rx+0x1c0/0x1c0 [mac80211]
+> process_one_work+0x111/0x390
+> worker_thread+0x162/0x340
+> manage_workers.clone.26+0x240/0x240
+> kthread+0x96/0xa0
+> kernel_thread_helper+0x4/0x10
+> ? kthread_worker_fn+0x190/0x190
+> ? gs_change+0x13/0x13
 > 
-> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> index 6c4a672..68cded7 100644
-> --- a/kernel/rcutree.c
-> +++ b/kernel/rcutree.c
-> @@ -1816,6 +1816,12 @@ EXPORT_SYMBOL_GPL(call_rcu_bh);
->   */
->  void synchronize_sched(void)
->  {
-> +	/*
-> +	 * Detect we are not calling this while in RCU
-> +	 * read side critical section, even with 1 online
-> +	 * CPU.
-> +	 */
-> +	might_sleep();
->  	if (rcu_blocking_is_gp())
->  		return;
->  	wait_rcu_gp(call_rcu_sched);
-> @@ -1833,6 +1839,12 @@ EXPORT_SYMBOL_GPL(synchronize_sched);
->   */
->  void synchronize_rcu_bh(void)
->  {
-> +	/*
-> +	 * Detect we are not calling this while in RCU
-> +	 * read side critical section, even with 1 online
-> +	 * CPU.
-> +	 */
-> +	might_sleep();
->  	if (rcu_blocking_is_gp())
->  		return;
->  	wait_rcu_gp(call_rcu_bh);
-> -- 
-> 1.7.0.4
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
 
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
