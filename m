@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755918Ab2ADBrH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 20:47:07 -0500
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:46128 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751485Ab2ADBrB convert rfc822-to-8bit (ORCPT
+	id S1755925Ab2ADBvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 20:51:05 -0500
+Received: from us-mx3.synaptics.com ([12.239.217.85]:49815 "EHLO
+	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab2ADBvD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 20:47:01 -0500
+	Tue, 3 Jan 2012 20:51:03 -0500
+X-PGP-Universal: processed;
+	by securemail.synaptics.com on Tue, 03 Jan 2012 17:39:07 -0800
+Message-ID: <4F03B085.6000101@synaptics.com>
+Date: Tue, 3 Jan 2012 17:51:01 -0800
+From: Christopher Heiny <cheiny@synaptics.com>
+Organization: Synaptics, Inc
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <01bb01ccca79$ae1ad770$0a508650$%kim@samsung.com>
-References: <20120103180854.e9bff732db50c0fa9afd2967@canb.auug.org.au>
- <010601ccc9ef$7e784640$7b68d2c0$%kim@samsung.com> <CA+55aFzuEP7poPj_TiC28+T7Xn-6G1Lydt=q5FMVTj_XhOVf3w@mail.gmail.com>
- <01bb01ccca79$ae1ad770$0a508650$%kim@samsung.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 3 Jan 2012 17:46:39 -0800
-X-Google-Sender-Auth: H8OpPEUWOLiE5x8l5n7SpZCKfcA
-Message-ID: <CA+55aFxgrLujQBPPTEiZk9a3GrvUpDhmR6eSd0Mg4O481MZKcg@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the s5p tree
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
+Subject: Re: [RFC PATCH 00/11] input: Synaptics RMI4 Touchscreen Driver
+References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com> <CACRpkdbcK9SGtQf9g55h_PGPenrvc9kxPYfZXNV1-4K8NvdAgg@mail.gmail.com>
+In-Reply-To: <CACRpkdbcK9SGtQf9g55h_PGPenrvc9kxPYfZXNV1-4K8NvdAgg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 3, 2012 at 4:42 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
->>
-> The driver-core tree changed usage(?) of sysdev_class and touched some files
-> and the changed files have been merged into one file for some reason without
-> driver-core's changes in samsung tree. So I just wanted to avoid the
-> conflicts. Linus, how should/can I do in  this case?
+On 01/01/2012 05:51 AM, Linus Walleij wrote:
+> On Thu, Dec 22, 2011 at 3:09 AM, Christopher Heiny<cheiny@synaptics.com>  wrote:
+>
+>> This patch implements a driver supporting Synaptics ClearPad and other
+>> touchscreen sensors that use the RMI4 protocol, as defined here:
+>
+> This looks like a fundamental rewrite an huge improvement over the
+> previous RMI4 patches, good job!
+>
+> I am not very deeply versed in the input subsystem but overall it looks
+> good to me, nice structure etc. I hope to be able to get back to a detailed
+> review and per-patch Acked-by:s ASAP.
 
-Generally, unless the conflicts are *really* bad, just ignore them,
-and let me sort them out. It's nice if you mention the fact that there
-will be conflicts, and some people also send me a pre-merged tree that
-has the conflicts fixed up, but in general it's much better if the
-different trees ignore each other - that way we don't have random
-merges that mean that I cannot pull one tree without pulling another.
+Thanks!
 
-If the conflicts are just insanely bad, I'll ask you to resolve them
-for me when I hit them, but in general that's a sign that something
-nasty is going on and people are developing in the wrong trees or just
-stepping on each others toes too much.
+We realized we were in a red queen's race by trying to both implement 
+customer requests and restructure the system at the same time, so 
+contracted Unixphere to help with the restructure.  We think the result 
+was pretty good, and it's nice to hear compliments.
 
-                   Linus
+We'll look forward to your input after the detailed review.
+
+					Thanks again,
+						Chris
