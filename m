@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932076Ab2ADVa5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:30:57 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:54450 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008Ab2ADVay (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:30:54 -0500
-Date: Wed, 4 Jan 2012 16:28:09 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: ath9k crash 3.2-rc7
-Message-ID: <20120104212808.GI2540@tuxdriver.com>
-References: <NEXT-4f04c2111e5f83.17805410@nextmail.ru>
+	id S1756994Ab2ADVdb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:33:31 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38771 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754203Ab2ADVd3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 16:33:29 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <NEXT-4f04c2111e5f83.17805410@nextmail.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1325712298.3084.5.camel@laptop>
+References: <20120104143945.GA4783@quad>
+	<1325712298.3084.5.camel@laptop>
+Date: Wed, 4 Jan 2012 21:33:27 +0000
+Message-ID: <CABPqkBSR4a7PCyYxhE0kpepc3f0f6Rh6JU55_A3ubWYnN+G3iA@mail.gmail.com>
+Subject: Re: perf_events: proposed fix for broken intr throttling (repost)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, gleb@redhat.com,
+        asharma@fb.com, vince@deater.net, wcohen@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You probably want to try linux-wireless@vger.kernel.org for maximum exposure...
+On Wed, Jan 4, 2012 at 9:24 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2012-01-04 at 15:39 +0100, Stephane Eranian wrote:
+>
+>> In running some tests with 3.2.0-rc7-tip, I noticed unexpected throttling
+>> notification samples. I was using fixed period with a long enough period
+>> that I could not possibly hit the default limit of 100000 samples/sec/cpu.
+>>
+>> I investigated the matter and discovered that the following commit
+>> is the culprit:
+>>
+>> commit 0f5a2601284237e2ba089389fd75d67f77626cef
+>> Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> Date:   Wed Nov 16 14:38:16 2011 +0100
+>>
+>>     perf: Avoid a useless pmu_disable() in the perf-tick
+>>
+>>
+>> The throttling mechanism REQUIRES that the hwc->interrupt counter be reset
+>> at EACH timer tick. This is regardless of the fact that the counter is in fixed
+>> period or frequency mode. The optimization introduced in this patch breaks this
+>> by avoiding calling perf_ctx_adjust_freq() at each timer tick. For events with
+>> fixed period, it would not adjust any period at all BUT it would reset the
+>> throttling counter.
+>>
+>> Given the way the throttling mechanism is implemented we cannot avoid doing
+>> some work at each timer tick. Otherwise we loose many samples for no good
+>> reasons.
+>>
+>> One may also question the motivation behind checking the interrupt rate at
+>> each timer tick rather than every second, i.e., average it out over a longer
+>> period.
+>
+> That also allows your system to be dead for longer..
+>
+Yes, I concur...
 
-On Thu, Jan 05, 2012 at 01:18:09AM +0400, MR wrote:
-> Hello.
-> 
-> I have noticed a complete crash (forced switch to console and Alt-SysRq-B 
-> doesn't work) when I use ath9k driver for my WiFi card. The problem is that 
-> the crash occurs after a few hours of use, so blind bissecting doesn't look 
-> like a short-term plan.
-> 
-> My card is (as lspci says):
-> 
-> 03:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless 
-> Network Adapter (PCI-Express) (rev 01)
->         Subsystem: Device 1a3b:1089
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- 
-> Stepping- SERR- FastB2B- DisINTx-
->         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- 
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0, Cache Line Size: 64 bytes
->         Interrupt: pin A routed to IRQ 17
->         Region 0: Memory at d7400000 (64-bit, non-prefetchable) [size=64K]
-> 
-> I use an Asus N53JN notebook, if that matters.
-> 
-> I have photos of two instances of the crash. The backtrace goes as follows (I 
-> typed this in, so maybe there is a typo somewhere - I hope there is none, 
-> though):
-> 
-> wq_worker_sleeping+0x10/0xa0
-> __schedule+0x427/0x7b0
-> ? call_rcu_sched+0x10/0x20
-> schedule+0x3a/0x50
-> do_exit+0x57c/0x840
-> ? kmsg_dump+0x45/0xe0
-> oops_end+0xa5/0xf0
-> no_context+0xf2/0x270
-> __bad_area_no_semaphore+0xe/0x10
-> do_page_fault+0x2ba/0x450
-> ? up+0x2d/0x50
-> ? console_unlock+0x1df/0x250
-> ? select_task_rq_fair+0x5be/0x970
-> page_fault+0x25/0x30
-> ? ath_update_survey_stats+0xb7/0x1c0 [ath9k]
-> ath9k_config+0x115/0x780 [ath9k]
-> ? queue_work+0x1a/0x20
-> ? queue_delayed_work+0x25/0x30
-> ? ieee80211_queue_delayed_work+0x46/0x60 [mac80211]
-> ? ath9k_flush+0x155/0x1d0 [ath9k]
-> ieee80211_hw_config+0xe2/0x160 [mac80211]
-> ieee80211_scan_work+0x243/0x5c0 [mac80211]
-> ? ieee80211_scan_rx+0x1c0/0x1c0 [mac80211]
-> process_one_work+0x111/0x390
-> worker_thread+0x162/0x340
-> manage_workers.clone.26+0x240/0x240
-> kthread+0x96/0xa0
-> kernel_thread_helper+0x4/0x10
-> ? kthread_worker_fn+0x190/0x190
-> ? gs_change+0x13/0x13
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+>> I see two solutions short term:
+>>    1 - revert the commit above
+>>    2 - special case the situation with no frequency-based sampling event
+>>
+>> I have implemented solution 2 with the draft fix below. It does not invoke
+>> perf_pmu_enable()/perf_pmu_disable().  I am not clear on whether or not this
+>> is really needed in this case. Please advise.
+>
+> I don't think it needs that, I do dislike the unconditional iterate all
+> events thing though. Maybe we can set some per-cpu state indicating
+> someone got throttled (rare under normal operation -- you'd hope) and
+> only iterate to unthrottle when we find this set.
+>
+Could try that too.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+> I think the event scheduling resulting from migration will already
+> re-enable the event, avoiding the loss of unthrottle due to that..
+> although it would be good to verify that.
+>
+Yes, you're not dead forever, but still it is not acceptable as is.
+
+Will code the solution you suggested.
