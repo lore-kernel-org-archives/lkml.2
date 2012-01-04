@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab2ADF0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 00:26:06 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:56788 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751061Ab2ADF0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 00:26:04 -0500
-Message-ID: <1325654761.28596.3.camel@joe2Laptop>
-Subject: Re: [PATCH 2/5] x86: efi: convert printk to pr_*()
-From: Joe Perches <joe@perches.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-        Matt Fleming <matt.fleming@intel.com>
-Date: Tue, 03 Jan 2012 21:26:01 -0800
-In-Reply-To: <1325610682-24811-3-git-send-email-olof@lixom.net>
-References: <1325610682-24811-1-git-send-email-olof@lixom.net>
-	 <1325610682-24811-3-git-send-email-olof@lixom.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752221Ab2ADFcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 00:32:25 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:52410 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab2ADFcU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 00:32:20 -0500
+From: Afzal Mohammed <afzal@ti.com>
+To: <davej@redhat.com>, <cpufreq@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+CC: <nsekhar@ti.com>, <hvaibhav@ti.com>, Afzal Mohammed <afzal@ti.com>
+Subject: [PATCH 1/2] cpufreq:userspace: fix cpu_cur_freq updation
+Date: Wed, 4 Jan 2012 10:52:31 +0530
+Message-ID: <1325654551-14169-1-git-send-email-afzal@ti.com>
+X-Mailer: git-send-email 1.7.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 09:11 -0800, Olof Johansson wrote:
-> Alright, I guess I'll go through and convert them, even though
-> there's no net gain to speak of.
+CPU frequency is guranteed to be changed on notifier callback with
+CPUFREQ_POSTCHANGE. Notifier callback with CPUFREQ_PRECHANGE does
+not gurantee a change in frequency; after it, if cpufreq driver is
+unable to change CPU to new frequency. This results in wrong
+information being fed to user (if setting CPU frequency fails)
+upon doing like,
 
-Perhaps it'd be better to add
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-before any #include and remove PFX from the
-formats.
+cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_setspeed
 
-> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-[]
-> @@ -254,7 +254,7 @@ int efi_set_rtc_mmss(unsigned long nowtime)
->  
->  	status = efi.get_time(&eft, &cap);
->  	if (status != EFI_SUCCESS) {
-> -		printk(KERN_ERR "Oops: efitime: can't read time!\n");
-> +		pr_err("Oops: efitime: can't read time!\n");
+Hence in userspace governer update cpu_cur_freq only if notifier
+has been called with POSTCHANGE.
 
-		pr_err("Oops: can't read time!\n")
-> @@ -367,7 +367,7 @@ static void __init print_efi_memmap(void)
->  	     p < memmap.map_end;
->  	     p += memmap.desc_size, i++) {
->  		md = p;
-> -		printk(KERN_INFO PFX "mem%02u: type=%u, attr=0x%llx, "
-> +		pr_info(PFX "mem%02u: type=%u, attr=0x%llx, "
->  			"range=[0x%016llx-0x%016llx) (%lluMB)\n",
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
+ drivers/cpufreq/cpufreq_userspace.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-		pr_info("mem%02u: type..."
-
-etc...
+diff --git a/drivers/cpufreq/cpufreq_userspace.c b/drivers/cpufreq/cpufreq_userspace.c
+index f231015..bedac1a 100644
+--- a/drivers/cpufreq/cpufreq_userspace.c
++++ b/drivers/cpufreq/cpufreq_userspace.c
+@@ -47,9 +47,11 @@ userspace_cpufreq_notifier(struct notifier_block *nb, unsigned long val,
+ 	if (!per_cpu(cpu_is_managed, freq->cpu))
+ 		return 0;
+ 
+-	pr_debug("saving cpu_cur_freq of cpu %u to be %u kHz\n",
+-			freq->cpu, freq->new);
+-	per_cpu(cpu_cur_freq, freq->cpu) = freq->new;
++	if (val == CPUFREQ_POSTCHANGE) {
++		pr_debug("saving cpu_cur_freq of cpu %u to be %u kHz\n",
++				freq->cpu, freq->new);
++		per_cpu(cpu_cur_freq, freq->cpu) = freq->new;
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
 
