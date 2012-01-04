@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab2ADAMG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:12:06 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48678 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab2ADAME (ORCPT
+	id S1755421Ab2ADARB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:17:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34123 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754036Ab2ADAQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:12:04 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=rHnKkQjduuR3Kv5nxJsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325635922.12696.8.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Tue, 03 Jan 2012 19:12:02 -0500
-In-Reply-To: <1325635373.12696.4.camel@gandalf.stny.rr.com>
-References: <20111221123624.193898256@goodmis.org>
-	 <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
-	 <20120102134856.GA32673@elte.hu>
-	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
+	Tue, 3 Jan 2012 19:16:59 -0500
+Message-ID: <1325636211.13595.270.camel@deadeye>
+Subject: [PATCH linux-firmware] cis: Add makefile for building CIS files
+ from text format
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Date: Wed, 04 Jan 2012 00:16:51 +0000
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-mH84HfJisAT+lcZoHKs3"
 X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 19:02 -0500, Steven Rostedt wrote:
 
-> I then looked at the merge you did with Linus's branch:
-> 
-> c7f46b7aa4ae5cbef32eb5e016512a14f936affa
-> 
-> Checked that out, and booted it twice with your config, and it booted
-> without failure both times.
+--=-mH84HfJisAT+lcZoHKs3
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-I should have tested this branch more. As I enabled BISECT_CHECK=1 in my
-ktest config, it boots both the bad commit and the good commit making
-sure the bad commit fails, and the good commit succeeds. The bad did
-fail, but so did the good commit, which was Linus's branch.
+Most of the CIS files come from the pcmcia-cs project and are built
+from a text format using the pack_cis tool.
 
-I booted it again just now, and it failed again.
+In pcmcia-cs 3.2.8, apparently the last release, pack_cis had some
+bugs that are fatal when it is built with a current gcc and glibc.
+Therefore I refer to my own repackaged version that runs successfully
+and generates exactly the same binaries included here.
 
-I'll boot it a couple more times and maybe even recompile. Perhaps I
-didn't test Linus's branch correctly (checkout out the wrong branch?).
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+I'll push this change out in a moment.
 
-Thanks,
+Ben.
 
--- Steve
+ cis/Makefile |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+ create mode 100644 cis/Makefile
+
+diff --git a/cis/Makefile b/cis/Makefile
+new file mode 100644
+index 0000000..0a222f1
+--- /dev/null
++++ b/cis/Makefile
+@@ -0,0 +1,14 @@
++# The pack_cis tool from cis-tools
++# <http://git.kernel.org/?p=3Dutils/cis-tools/cis-tools.git>.
++PACK_CIS =3D pack_cis
++
++CIS_SRC :=3D $(wildcard src/*.cis)
++CIS_BIN :=3D $(notdir $(CIS_SRC))
++
++all: $(CIS_BIN)
++
++%.cis: src/%.cis
++	$(PACK_CIS) -o $@ $<
++
++clean:
++	rm -f $(CIS_BIN)
+--=20
+1.7.7.3
 
 
+
+--=-mH84HfJisAT+lcZoHKs3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUATwOac+e/yOyVhhEJAQqYBhAAjcvjhcKWtC1jVO1SiH2POW9VcQLlF5N9
+W5WedC6z3HG4oOkEndt9d9dlcnYqY9GCu9Rqrn1EwElv9QWv50ETbuyJSRpDhSTZ
+/dgD0Mc77lqnmp03W/YY8kDw8aAmacJ+NRJnR8i5rnrxfr+LBEJlZfn4H8DMzVC3
+pFSzsld+sqCXOOvFYruFG2R077+ItqKZ7B00HW3/TcFwamYIj70NldWrKnxklKEm
+Il9XkpdQqlqO5j4gT2ioAk3CLRtoSDop8nXBFP2JlQFmp12eNBbfC7rJmXJgdoDL
+wjG/K4iW/YU7PaODfdagvGaujivcJvWW27ti2uHp3ANqGTo192pXGERMNJtX+xAv
+9pwu7/q8kRLmqvDlaLRqL8wKWXEH2ObcIVOvu+6C6TqjUP9QKveLnca4NdBms7Jg
+8cypFii/NKbqFByhXf6BZNdC58cAYOmTTVFSkwzoUhwyFXCOrouyxiUGyOKPsZsB
+F5UcRvqwj1mdoyD6wZn2PCbFb8Ds4JlKyEOhETzEOdnO2CRbTSUTralbeycV2OE/
+F/cXKGB7vtWqy1HLHyEL4QoBv8uhUmhDwW+f6JeQipC+Ch8HPvAY5l4xbIstP+s2
+V/ecpaq0t3A2e4TiF3TyBJKFVfSDFd0TFHEgOOvuJFZDWPMjqaoR1drtqprj6qHh
+gA9Wt5mUTYs=
+=ehGI
+-----END PGP SIGNATURE-----
+
+--=-mH84HfJisAT+lcZoHKs3--
