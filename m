@@ -1,93 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab2ADPBS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 10:01:18 -0500
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:49660
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755835Ab2ADPBN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 10:01:13 -0500
-X-SpamScore: -23
-X-BigFish: VPS-23(zz1432N98dK4015Lzz1202hzz15d4Rz2dh668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-FB-SS: 0,13,
-X-WSS-ID: 0LXA4DO-02-BZM-02
-X-M-MSG: 
-Date: Wed, 4 Jan 2012 16:01:01 +0100
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: KyongHo Cho <pullip.cho@samsung.com>, <linux-samsung-soc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
-        Younglak Kim <younglak1004.kim@samsung.com>,
-        Subash Patel <subash.ramaswamy@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v8 0/2] ommu/exynos: Add IOMMU/System MMU driver for
- Samsung Exynos
-Message-ID: <20120104150101.GA3492@amd.com>
-References: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com>
- <20120102134229.GZ29877@amd.com>
- <CAHQjnON3XYZ9cAK0kqsY4QzMzESD1wOzxt-fiQCq3TJfDObFiw@mail.gmail.com>
- <20120102155820.GB29877@amd.com>
- <20120103095527.GI2914@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <20120103095527.GI2914@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: amd.com
+	id S1755931Ab2ADPDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 10:03:52 -0500
+Received: from hotel311.server4you.de ([85.25.146.15]:35898 "EHLO
+	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753597Ab2ADPDr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 10:03:47 -0500
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jan 2012 10:03:47 EST
+From: Daniel Wagner <wagi@monom.org>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>
+Subject: [RFC v0 3/3] Bluetooth: Use hci_conn_encrypt() instead of open coded version
+Date: Wed,  4 Jan 2012 15:54:11 +0100
+Message-Id: <1325688851-14920-4-git-send-email-wagi@monom.org>
+X-Mailer: git-send-email 1.7.8.2.302.g17b4
+In-Reply-To: <1325688851-14920-1-git-send-email-wagi@monom.org>
+References: <1325688851-14920-1-git-send-email-wagi@monom.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 09:55:27AM +0000, Russell King - ARM Linux wrote:
-> On Mon, Jan 02, 2012 at 04:58:20PM +0100, Joerg Roedel wrote:
-> > On Tue, Jan 03, 2012 at 12:21:30AM +0900, KyongHo Cho wrote:
-> > > > I still get
-> > > >
-> > > >  LD      .tmp_vmlinux1
-> > > > /data/cross/gcc-4.6.0-nolibc/arm-unknown-linux-gnueabi/bin/arm-unknown-linux-gnueabi-ld: no machine record defined
-> > > > /data/cross/gcc-4.6.0-nolibc/arm-unknown-linux-gnueabi/bin/arm-unknown-linux-gnueabi-ld: no machine record defined
-> > > > /data/cross/gcc-4.6.0-nolibc/arm-unknown-linux-gnueabi/bin/arm-unknown-linux-gnueabi-ld: no machine record defined
-> > > > make[1]: *** [.tmp_vmlinux1] Error 1
-> > > >
-> > > > when trying to compile ARM/Exynos with 3.2-rc7. Am I doing something
-> > > > wrong or is this not expected to work?
-> > > >
-> > > Do you?
-> > > Ok. I will check my configuration with linux-next git.
-> > 
-> > Compiling my exynos-config with linux-next gives me:
-> > 
-> >   CC      arch/arm/kernel/process.o
-> > In file included from /data/lemmy/linux.trees.git/arch/arm/mach-exynos/include/mach/system.h:16:0,
-> >                  from /data/lemmy/linux.trees.git/arch/arm/kernel/process.c:64:
-> > /data/lemmy/linux.trees.git/arch/arm/plat-samsung/include/plat/system-reset.h:19:2: error: #error Fix me up
-> > 
-> > I better not ask the question how such an #error statement can come
-> > through to linux-next.
-> 
-> It comes through when I stick it in my tree because of a month of asking
-> for help to fix something and getting zero response from the maintainers.
-> 
-> It's a way to flag to them that they're doing something wrong - and in
-> fact something is broken, and that that brokenness will happen at the
-> next merge window unless they get off their butt and do something about
-> it.
+From: Daniel Wagner <daniel.wagner@bmw-carit.de>
 
-Okay, fine with me if it really will be fixed in 3.3-rc1 :)
+Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
+---
+ net/bluetooth/hci_event.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-Thanks,
-
-	Joerg
-
+diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
+index 453e483..7a4262d 100644
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -1754,11 +1754,7 @@ static inline void hci_auth_complete_evt(struct hci_dev *hdev, struct sk_buff *s
+ 
+ 	if (conn->state == BT_CONFIG) {
+ 		if (!ev->status && hdev->ssp_mode > 0 && conn->ssp_mode > 0) {
+-			struct hci_cp_set_conn_encrypt cp;
+-			cp.handle  = ev->handle;
+-			cp.encrypt = 0x01;
+-			hci_send_cmd(hdev, HCI_OP_SET_CONN_ENCRYPT, sizeof(cp),
+-									&cp);
++			hci_conn_encrypt(conn);
+ 		} else {
+ 			conn->state = BT_CONNECTED;
+ 			hci_proto_connect_cfm(conn, ev->status);
+@@ -1774,11 +1770,7 @@ static inline void hci_auth_complete_evt(struct hci_dev *hdev, struct sk_buff *s
+ 
+ 	if (test_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend)) {
+ 		if (!ev->status) {
+-			struct hci_cp_set_conn_encrypt cp;
+-			cp.handle  = ev->handle;
+-			cp.encrypt = 0x01;
+-			hci_send_cmd(hdev, HCI_OP_SET_CONN_ENCRYPT, sizeof(cp),
+-									&cp);
++			hci_conn_encrypt(conn);
+ 		} else {
+ 			clear_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend);
+ 			hci_encrypt_cfm(conn, ev->status, 0x00);
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+1.7.8.2.302.g17b4
 
