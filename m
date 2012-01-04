@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab2ADSgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 13:36:00 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:51566 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754084Ab2ADSf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 13:35:56 -0500
-Date: Wed, 04 Jan 2012 13:32:43 -0500 (EST)
-Message-Id: <20120104.133243.1395139417178989644.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvalo@qca.qualcomm.com
-Subject: Re: linux-next: merge of the wireless-next tree into the net-next
- tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120104140209.GA2540@tuxdriver.com>
-References: <20120104105947.8bac77d1d7198a49e6feeca8@canb.auug.org.au>
-	<20120103.202733.1070369898271428121.davem@davemloft.net>
-	<20120104140209.GA2540@tuxdriver.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Jan 2012 10:32:45 -0800 (PST)
+	id S1756708Ab2ADSjW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 13:39:22 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48145 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754084Ab2ADSjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 13:39:19 -0500
+Date: Wed, 4 Jan 2012 19:37:13 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Dave Jones <davej@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: Add Dell Studio 1557 to pci=nocrs blacklist
+Message-ID: <20120104183712.GB14966@elte.hu>
+References: <20111230193704.GA2874@redhat.com>
+ <20120101145354.GA1791@elte.hu>
+ <20120103093020.0cbcd735@jbarnes-desktop>
+ <CAErSpo4YB6Rpe==-vbia9B_aJNtJ7BrDySs-jw5cGmeMv9zRgA@mail.gmail.com>
+ <20120104163311.GB31667@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104163311.GB31667@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Wed, 4 Jan 2012 09:02:10 -0500
 
-> Kalle has sent a temporary fix that sidesteps the issue by forcing the
-> SDIO and USB versions of ath6kl to be built as modules.  I'll forward
-> that on to you today.
+* Dave Jones <davej@redhat.com> wrote:
 
-I'm not applying a temporary fix.  I want a proper fix or a revert.
+> The Dell Studio 1557 also doesn't suspend correctly when CRS is enabled.
+> Details at https://bugzilla.redhat.com/show_bug.cgi?id=769657
+> 
+> Reported-by: Gregory S. Hoerner <ghoerner@transcendingthought.com>
+> Signed-off-by: Dave Jones <davej@redhat.com>
+>  
+> --- linux-3.1.noarch/arch/x86/pci/acpi.c~	2012-01-04 11:19:36.783664477 -0500
+> +++ linux-3.1.noarch/arch/x86/pci/acpi.c	2012-01-04 11:23:42.403666272 -0500
+> @@ -75,6 +75,16 @@ static const struct dmi_system_id pci_us
+>  	/* https://bugzilla.redhat.com/show_bug.cgi?id=769657 */
+>  	{
+>  		.callback = set_nouse_crs,
+> +		.ident = "Dell Studio 1557",
+> +		.matches = {
+> +			DMI_MATCH(DMI_BOARD_VENDOR, "Dell Inc."),
+> +			DMI_MATCH(DMI_PRODUCT_NAME, "Studio 1557");
+> +			DMI_MATCH(DMI_BIOS_VERSION, "A09"),
 
-Do NOT apply any other patches from the ath6kl folks until either
-a proper fix is available or the changes that caused this problem
-are completely reverted from my tree.
+Btw., should we perhaps match on all things 'Studio*'? For these 
+two systems i'm sure there's 20 other models we have not covered 
+yet ...
+
+Thanks,
+
+	Ingo
