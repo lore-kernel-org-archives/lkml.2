@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab2ADDHl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 22:07:41 -0500
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:50745
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754474Ab2ADDHi (ORCPT
+	id S1755427Ab2ADDgT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 22:36:19 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:50162 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754952Ab2ADDgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 22:07:38 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-X-FB-DOMAIN-IP-MATCH: fail
-From: Richard Zhao <richard.zhao@linaro.org>
-To: <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <broonie@opensource.wolfsonmicro.com>, <lrg@ti.com>, <patches@linaro.org>,
-        <eric.miao@linaro.org>, Richard Zhao <richard.zhao@linaro.org>
-Subject: [PATCH v2 1/1] regulator: set constraints.apply_uV to 0 in of_get_fixed_voltage_config
-Date: Wed, 4 Jan 2012 11:07:29 +0800
-Message-ID: <1325646449-21916-1-git-send-email-richard.zhao@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1325225213-29655-1-git-send-email-richard.zhao@linaro.org>
-References: <1325225213-29655-1-git-send-email-richard.zhao@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+	Tue, 3 Jan 2012 22:36:17 -0500
+Message-ID: <1325648169.3037.84.camel@work-vm>
+Subject: RTC revert request
+From: john stultz <johnstul@us.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, NeilBrown <neilb@suse.de>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
+        lkml <linux-kernel@vger.kernel.org>, Greg KH <gregkh@suse.de>
+Date: Tue, 03 Jan 2012 19:36:09 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+x-cbid: 12010403-2398-0000-0000-00000326B1BC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix fixed regulator using DT failed to call regulator_register.
+Hey Linus,
+	Over the holiday break, its been found that a couple of the RTC fixes I
+pushed out have been causing worse problems on some hardware then they
+fix.
 
-of_get_regulator_init_data set apply_uV to 1, but fixed regulator
-doesn't need it. Set it back to 0.
+Thus, would you please revert:
 
-Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
----
- drivers/regulator/fixed.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+93b2ec0128c431148b216b8f7337c1a52131ef03
+rtc: Expire alarms after the time is set.
 
-diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
-index 393f039..e24e3a1 100644
---- a/drivers/regulator/fixed.c
-+++ b/drivers/regulator/fixed.c
-@@ -69,6 +69,7 @@ of_get_fixed_voltage_config(struct device *dev)
- 		return NULL;
- 
- 	init_data = config->init_data;
-+	init_data->constraints.apply_uV = 0;
- 
- 	config->supply_name = init_data->constraints.name;
- 	if (init_data->constraints.min_uV == init_data->constraints.max_uV) {
--- 
-1.7.5.4
+and 
+
+c0afabd3d553c521e003779c127143ffde55a16f
+rtc: Disable the alarm in the hardware
+
+
+I'll work with the Neil and Rabin to make sure the issues these patches
+try to address get properly fixed for 3.3.
+
+Sorry again for these late regressions.
+
+
+Greg: I think you've already picked up "rtc: Disable the alarm in the
+hardware" and will need to revert that too.  Again, my apologies.
+
+thanks
+-john
 
 
