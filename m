@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab2ADX2U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 18:28:20 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:53365 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932225Ab2ADX2M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 18:28:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH] serial: relocate remaining serial drivers from tty/ to tty/serial/
-Date: Wed, 4 Jan 2012 23:27:33 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, Jiri Slaby <jslaby@suse.cz>,
-        alan@linux.intel.com, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
-References: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com> <4F04BFA8.9010100@windriver.com> <20120104220332.GA22985@suse.de>
-In-Reply-To: <20120104220332.GA22985@suse.de>
+	id S1757345Ab2ADXdA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 18:33:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43285 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752281Ab2ADXc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 18:32:56 -0500
+Date: Thu, 5 Jan 2012 00:32:54 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Jan Kara <jack@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Darrick J. Wong" <djwong@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Yongqiang Yang <xiaoqiangnk@gmail.com>,
+        ext4 development <linux-ext4@vger.kernel.org>,
+        linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl
+ updates inode
+Message-ID: <20120104233254.GH28907@quack.suse.cz>
+References: <20120103013152.GA26455@dztty>
+ <20120104174609.GD28907@quack.suse.cz>
+ <6C16105A-D0EE-413E-B993-F223CFC75307@dilger.ca>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201042327.33739.arnd@arndb.de>
-X-Provags-ID: V02:K0:rg6yUf6si/AhyUpCN5IBr2H02B8q4PcUQJDLQqIHrl6
- jbRp/8XX57APWK/nHyvLWRWurEpBOfEfxiphBAn/r68gEi175Y
- OiZBcHH2c11LBh0KhxOEqYW5ouLg0aGvVRBJnO8mN93z9gdUtM
- x8//TLz0w9oGs91I4l4qWsrkKF+J07vehgse6z0oNw1GghzE6F
- n/9Fvk1I9pJZEa2mYHd/JCfSznJKtilr4iphtCn+BePeEZ/7tv
- cCXQzK6jpSJbi3i3Q6Sov27dUI60SwmOyOQclGwEoyksmX9G19
- T+0Zj5GYjT4uZaKb5UlkLm2lLE2hn0VfJ83VzPjc39o+a4V2g/
- nlqzwP8pgBYYkOUYUTxg=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <6C16105A-D0EE-413E-B993-F223CFC75307@dilger.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 04 January 2012, Greg KH wrote:
+On Wed 04-01-12 16:15:04, Andreas Dilger wrote:
+> On 2012-01-04, at 10:46 AM, Jan Kara wrote:
+> > On Tue 03-01-12 02:31:52, Djalal Harouni wrote:
+> >> 
+> >> The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
+> >> this can lead to a race with the other operations that update the same
+> >> inode.
+> >> 
+> >> Patch tested.
 > > 
-> > My thinking was that having a drivers/tty/serial dir and then
-> > not having all the serial drivers in that dir violated the
-> > principle of least surprise.  Is there a reason why the dir should
-> > be the exclusive domain of drivers with a dependency on SERIAL_CORE?
+> >  OK, so I've taken the patch into my tree, just updated the changelog
+> > which result of our discussion in this thread. I also took the ext4 part
+> > since there is no risk of conflict and the patch looks obvious.
 > 
-> Because that is what the directory is for?  :)
+> Actually, I'd like to hear more about whether this is a real problem, or
+> if it is just a theoretical problem found during code inspection or from
+> some static code analysis tool?
+  As far as I understood that was just a theoretical issue and I applied
+the patch just on the grounds that it is more consistent to use i_mutex for
+i_generation changes.
+
+> With the metadata checksum feature we were discussing using the inode
+> generation as part of the seed for the directory leaf block checksum, so
+> that it wasn't possible to incorrectly access stale directory blocks from
+> a previous incarnation of the same inode number.
 > 
-> We have other "serial" like drivers all over the kernel, this was for
-> the SERIAL_CORE drivers only at the moment.
+> We were discussing just disabling this ioctl on filesystems with metadata
+> checksums, and printing a deprecation warning for filesystems without that
+> feature enabled.  I'm not aware of any real-world use for this ioctl, since
+> NFS cannot use it to reconstruct handles because there's no API to allocate
+> an inode with a specific number, so setting the generation is pointless.
+  OK, I didn't know this. I'm fine with deprecating the ioctl if it's
+useless but since that's going to take a while I think the cleanup still
+makes some sense.
 
-My initial plan when moving some files to drivers/tty was to have a separate
-directory for the non-SERIAL_CORE serial drivers next to drivers/tty/serial.
-
-I would still prefer this solution, but I think we never agreed on a good
-name for that directory. IIRC, I had suggested drivers/tty/legacy believing
-that SERIAL_CORE was the modern way to implement a serial driver, but that
-turned out not to be true and at lease one of these (bfin_jtag) is not
-a legacy driver in practice.
-
-Maybe drivers/tty/hw? I think that one has been suggested before, too.
-I don't remember any argument against it and I think it would be nice
-to separate the core implementation from actual device drivers.
-
-	Arnd
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
