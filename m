@@ -1,163 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab2ADRBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 12:01:14 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55587 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab2ADRBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 12:01:09 -0500
-Date: Tue, 3 Jan 2012 15:47:28 +0100
-From: Jan Kara <jack@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>, Miles Lane <miles.lane@gmail.com>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: Freezing of tasks failed after 20.01 seconds in 3.2.0-rc4+
- (Linus GIT af968e2)
-Message-ID: <20120103144728.GD31457@quack.suse.cz>
-References: <CAHFgRy_AdA7iKzCwNvXiE3pR1dqdkuKPgT0soWjw8E_TcLjJtA@mail.gmail.com>
- <4EFAAFEF.6070503@linux.vnet.ibm.com>
- <201112282303.26978.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112282303.26978.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756522Ab2ADRGF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 12:06:05 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34140 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754169Ab2ADRGC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 12:06:02 -0500
+X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=kRHqAyIto0Tgq_i4W-EA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1325696759.12696.24.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
+ stop-machine, update stack tracer
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Wed, 04 Jan 2012 12:05:59 -0500
+In-Reply-To: <20120104141107.GA24770@elte.hu>
+References: <20111221123624.193898256@goodmis.org>
+	 <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
+	 <20120102134856.GA32673@elte.hu>
+	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
+	 <1325635922.12696.8.camel@gandalf.stny.rr.com>
+	 <1325653301.12696.20.camel@gandalf.stny.rr.com>
+	 <20120104141107.GA24770@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 28-12-11 23:03:26, Rafael J. Wysocki wrote:
-> On Wednesday, December 28, 2011, Srivatsa S. Bhat wrote:
-> > Hi,
-> > 
-> > Miles Lane (in CC) hit freezing failures in 3.2.0-rc4+ (Linus GIT af968e2)
-> > while trying to suspend the machine.
+On Wed, 2012-01-04 at 15:11 +0100, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Well, ext3 seems to be involved.  I don't see any problems with suspending
-> those kernels on my test machines, but I don't use ext3 on them any more.
+> > My mistake, I forgot to add the "minimum config" for booting 
+> > the box. When I did that, it booted fine. I kicked off the 
+> > bisect again, and lets see what happens.
 > 
-> It would be good to rule out ext3 somehow.
-  Well, both tasks that refuse to be frozen hit page fault and are waiting
-for data to be read from disk which apparently does not happen. Also there
-were not any changes to speak of in ext3 for a while so I don't think ext3
-is a culprit here...
+> Okay.
+> 
+> I too did a lot of testing, breaking my promise to do other 
+> stuff ;-)
+> 
+> *Both* of your trees [the NMI and the cleanup/fixes tree], when 
+> merged produced hangs or spontaneous reboots, within 5 
+> iterations typically.
 
-								Honza
-> > Here is the log:
-> > 
-> > [ 4040.037426] Freezing user space processes ...
-> > [ 4060.048526] Freezing of tasks failed after 20.01 seconds (2 tasks
-> > refusing to freeze, wq_busy=0):
-> > [ 4060.048534] Xorg            D ffffffff81806240     0   901    847 0x00c00004
-> > [ 4060.048538]  ffff8800c3877628 0000000000000086 0000000000000082
-> > ffff8800c38775d8
-> > [ 4060.048551]  ffff8800c3877fd8 ffff8800c3877fd8 ffff8800c3877fd8
-> > 00000000000136c0
-> > [ 4060.048553]  ffff880118b3dc40 ffff8800c2cc1710 ffff8800c38775f8
-> > ffff88011fb13f80
-> > [ 4060.048556] Call Trace:
-> > [ 4060.048562]  [<ffffffff811a6940>] ? __wait_on_buffer+0x30/0x30
-> > [ 4060.048565]  [<ffffffff8165094f>] schedule+0x3f/0x60
-> > [ 4060.048567]  [<ffffffff816509ff>] io_schedule+0x8f/0xd0
-> > [ 4060.048569]  [<ffffffff811a694e>] sleep_on_buffer+0xe/0x20
-> > [ 4060.048571]  [<ffffffff8165121f>] __wait_on_bit+0x5f/0x90
-> > [ 4060.048574]  [<ffffffff812ebf08>] ? generic_make_request+0x68/0x70
-> > [ 4060.048577]  [<ffffffff811a6940>] ? __wait_on_buffer+0x30/0x30
-> > [ 4060.048579]  [<ffffffff816512cc>] out_of_line_wait_on_bit+0x7c/0x90
-> > [ 4060.048582]  [<ffffffff81089c90>] ? autoremove_wake_function+0x40/0x40
-> > [ 4060.048584]  [<ffffffff811a693e>] __wait_on_buffer+0x2e/0x30
-> > [ 4060.048587]  [<ffffffff811a8761>] __bread+0x71/0xb0
-> > [ 4060.048590]  [<ffffffff811f377b>] ext3_get_branch+0x8b/0x150
-> > [ 4060.048593]  [<ffffffff811f6912>] ext3_get_blocks_handle+0x1a2/0x650
-> > [ 4060.048595]  [<ffffffff811a8d65>] ? block_read_full_page+0x225/0x390
-> > [ 4060.048598]  [<ffffffff811f6e84>] ext3_get_block+0xc4/0x120
-> > [ 4060.048600]  [<ffffffff811b2172>] do_mpage_readpage+0x3b2/0x550
-> > [ 4060.048604]  [<ffffffff81116d95>] ? add_to_page_cache_locked+0x85/0xa0
-> > [ 4060.048606]  [<ffffffff811b246e>] mpage_readpages+0xee/0x140
-> > [ 4060.048608]  [<ffffffff811f6dc0>] ? ext3_get_blocks_handle+0x650/0x650
-> > [ 4060.048610]  [<ffffffff8111f3de>] ? __alloc_pages_nodemask+0x10e/0x820
-> > [ 4060.048613]  [<ffffffff811f6dc0>] ? ext3_get_blocks_handle+0x650/0x650
-> > [ 4060.048615]  [<ffffffff811f328d>] ext3_readpages+0x1d/0x20
-> > [ 4060.048617]  [<ffffffff81121908>] read_pages+0x48/0x100
-> > [ 4060.048619]  [<ffffffff81121b23>] __do_page_cache_readahead+0x163/0x180
-> > [ 4060.048621]  [<ffffffff81121e91>] ra_submit+0x21/0x30
-> > [ 4060.048625]  [<ffffffff8163d353>] do_sync_mmap_readahead.isra.24+0x94/0x9c
-> > [ 4060.048627]  [<ffffffff81118991>] filemap_fault+0x361/0x3e0
-> > [ 4060.048642]  [<ffffffffa009c37c>] ? drm_mm_kmalloc+0x6c/0xe0 [drm]
-> > [ 4060.048646]  [<ffffffff81138c72>] __do_fault+0x72/0x550
-> > [ 4060.048649]  [<ffffffff8130ae7b>] ? prio_tree_insert+0x12b/0x1a0
-> > [ 4060.048651]  [<ffffffff8113c2aa>] handle_pte_fault+0xfa/0x200
-> > [ 4060.048653]  [<ffffffff8113c768>] handle_mm_fault+0x1f8/0x350
-> > [ 4060.048661]  [<ffffffffa00dced0>] ?
-> > i915_gem_object_set_to_gtt_domain+0x80/0x80 [i915]
-> > [ 4060.048664]  [<ffffffff816562d0>] do_page_fault+0x150/0x520
-> > [ 4060.048668]  [<ffffffff810127da>] ? __switch_to+0x1ea/0x310
-> > [ 4060.048670]  [<ffffffff81054f4d>] ? set_next_entity+0xad/0xd0
-> > [ 4060.048673]  [<ffffffff8118821a>] ? do_vfs_ioctl+0x8a/0x340
-> > [ 4060.048675]  [<ffffffff816502fc>] ? __schedule+0x3cc/0x6f0
-> > [ 4060.048677]  [<ffffffff81652fb5>] page_fault+0x25/0x30
-> > [ 4060.048685] gnome-settings- D 0000000000000001     0  1406   1344 0x00800004
-> > [ 4060.048687]  ffff8800bd305628 0000000000000082 0000000000000082
-> > ffff8800bd3055d8
-> > [ 4060.048689]  ffff8800bd305fd8 ffff8800bd305fd8 ffff8800bd305fd8
-> > 00000000000136c0
-> > [ 4060.048692]  ffff8800885cdc40 ffff8800c1228000 ffff8800bd3055f8
-> > ffff88011fa93f80
-> > [ 4060.048694] Call Trace:
-> > [ 4060.048696]  [<ffffffff811a6940>] ? __wait_on_buffer+0x30/0x30
-> > [ 4060.048698]  [<ffffffff8165094f>] schedule+0x3f/0x60
-> > [ 4060.048700]  [<ffffffff816509ff>] io_schedule+0x8f/0xd0
-> > [ 4060.048702]  [<ffffffff811a694e>] sleep_on_buffer+0xe/0x20
-> > [ 4060.048704]  [<ffffffff8165121f>] __wait_on_bit+0x5f/0x90
-> > [ 4060.048706]  [<ffffffff812ebf08>] ? generic_make_request+0x68/0x70
-> > [ 4060.048708]  [<ffffffff811a6940>] ? __wait_on_buffer+0x30/0x30
-> > [ 4060.048710]  [<ffffffff816512cc>] out_of_line_wait_on_bit+0x7c/0x90
-> > [ 4060.048712]  [<ffffffff81089c90>] ? autoremove_wake_function+0x40/0x40
-> > [ 4060.048714]  [<ffffffff811a693e>] __wait_on_buffer+0x2e/0x30
-> > [ 4060.048716]  [<ffffffff811a8761>] __bread+0x71/0xb0
-> > [ 4060.048719]  [<ffffffff811f377b>] ext3_get_branch+0x8b/0x150
-> > [ 4060.048721]  [<ffffffff811f6912>] ext3_get_blocks_handle+0x1a2/0x650
-> > [ 4060.048724]  [<ffffffff8104cd93>] ? __wake_up+0x53/0x70
-> > [ 4060.048727]  [<ffffffff814072a5>] ? loop_make_request+0xe5/0x120
-> > [ 4060.048729]  [<ffffffff812ebaf4>] ? generic_make_request.part.50+0x74/0xb0
-> > [ 4060.048732]  [<ffffffff811f6e84>] ext3_get_block+0xc4/0x120
-> > [ 4060.048734]  [<ffffffff811b2172>] do_mpage_readpage+0x3b2/0x550
-> > [ 4060.048736]  [<ffffffff81116d95>] ? add_to_page_cache_locked+0x85/0xa0
-> > [ 4060.048738]  [<ffffffff811b246e>] mpage_readpages+0xee/0x140
-> > [ 4060.048740]  [<ffffffff811f6dc0>] ? ext3_get_blocks_handle+0x650/0x650
-> > [ 4060.048742]  [<ffffffff8111f3de>] ? __alloc_pages_nodemask+0x10e/0x820
-> > [ 4060.048744]  [<ffffffff811f6dc0>] ? ext3_get_blocks_handle+0x650/0x650
-> > [ 4060.048747]  [<ffffffff8165135d>] ? mutex_lock+0x1d/0x50
-> > [ 4060.048749]  [<ffffffff811f328d>] ext3_readpages+0x1d/0x20
-> > [ 4060.048751]  [<ffffffff81121908>] read_pages+0x48/0x100
-> > [ 4060.048753]  [<ffffffff81121b23>] __do_page_cache_readahead+0x163/0x180
-> > [ 4060.048755]  [<ffffffff81121e91>] ra_submit+0x21/0x30
-> > [ 4060.048757]  [<ffffffff8163d353>] do_sync_mmap_readahead.isra.24+0x94/0x9c
-> > [ 4060.048759]  [<ffffffff81118991>] filemap_fault+0x361/0x3e0
-> > [ 4060.048761]  [<ffffffff81188fe0>] ? __pollwait+0xf0/0xf0
-> > [ 4060.048764]  [<ffffffff81138c72>] __do_fault+0x72/0x550
-> > [ 4060.048766]  [<ffffffff8113c2aa>] handle_pte_fault+0xfa/0x200
-> > [ 4060.048767]  [<ffffffff8113c768>] handle_mm_fault+0x1f8/0x350
-> > [ 4060.048769]  [<ffffffff816562d0>] do_page_fault+0x150/0x520
-> > [ 4060.048773]  [<ffffffff8129a2b3>] ? security_file_permission+0x93/0xb0
-> > [ 4060.048777]  [<ffffffff81175f41>] ? rw_verify_area+0x61/0xf0
-> > [ 4060.048778]  [<ffffffff811764d5>] ? vfs_read+0x165/0x180
-> > [ 4060.048780]  [<ffffffff81652fb5>] page_fault+0x25/0x30
-> > 
-> > Regards,
-> > Srivatsa S. Bhat
-> > 
-> > 
-> > 
+I actually haven't looked at the NMI branch yet. I'm still trying to
+figure out why the ftrace one would lockup. I'll try another box to see
+if that one also locks up on tip/master with your config.
+
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> The failure modes were different: the NMI tree tended to do the 
+> spontaneous reboot thing, the fixes tree produced the soft 
+> hangs.
+
+Did you just merge in the branches, or do you see the same problem if
+you test the head of the branch itself?
+
+In other words, did the branch have the issue, or is the branch causing
+an issue with something already in tip?
+
+> 
+> I'm now re-testing pristine -tip again - which did the 50 and 70 
+> series of successful bootups ...
+
+BTW, I did a make oldconfig with the config you gave me, and the result
+is a bit different:
+
+diffconfig your-config .config
+
+-BOOTPARAM_SUPPORT_NOT_WANTED y
+-BROKEN_BOOT_ALLOWED2 y
+-BROKEN_BOOT_ALLOWED3 y
+-BROKEN_BOOT_ALLOWED4 y
+-BROKEN_BOOT_DISALLOWED y
+-BROKEN_BOOT_EUROPE n
+-BROKEN_BOOT_TITAN n
+-FORCE_MINIMAL_CONFIG y
+-FORCE_MINIMAL_CONFIG_64 y
+-FORCE_MINIMAL_CONFIG_PHYS y
+-FORCE_SUCCESSFUL_BUILD y
+-SMP_SUPPORT y
+-UP_WANTED y
+-UP_WANTED_1 y
+-UP_WANTED_2 y
+-USB_MOUSE y
++CMDLINE_OVERRIDE n
++DEBUG_BLOCK_EXT_DEVT n
++DEBUG_INFO n
++DEBUG_KOBJECT n
++EUROTECH_WDT n
++FB_ASILIANT n
++FB_CIRRUS n
++FB_RADEON n
++FB_VESA n
++FB_VGA16 n
++FB_VIRTUAL n
++FRAMEBUFFER_CONSOLE n
++FTRACE_STARTUP_TEST n
++IDE n
++KGDB_TESTS_ON_BOOT n
++KPROBES_SANITY_TEST n
++MTD n
++PARIDE n
++PM_TEST_SUSPEND n
++PROFILE_ALL_BRANCHES n
++PROFILE_ANNOTATED_BRANCHES n
++RING_BUFFER_BENCHMARK n
++SECURITY_SELINUX_POLICYDB_VERSION_MAX n
++SECURITY_SMACK n
++SECURITY_TOMOYO_OMIT_USERSPACE_LOADER n
++SENSORS_LM90 n
++SENSORS_LM92 n
++SENSORS_LM93 n
++SENSORS_W83627HF n
++SENSORS_W83793 n
++STAGING n
++W83697HF_WDT n
++W83697UG_WDT n
+
+Was the config based off of tip/master? I'm a missing a branch?
+
+Thanks,
+
+-- Steve
+
+
