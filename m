@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756984Ab2ADVZu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:25:50 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35617 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756952Ab2ADVZt convert rfc822-to-8bit (ORCPT
+	id S1756952Ab2ADV0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:26:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47676 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab2ADV0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:25:49 -0500
+	Wed, 4 Jan 2012 16:26:38 -0500
+Date: Wed, 4 Jan 2012 21:26:20 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: KyongHo Cho <pullip.cho@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v8 0/2] ommu/exynos: Add IOMMU/System MMU driver for
+	Samsung Exynos
+Message-ID: <20120104212620.GG11810@n2100.arm.linux.org.uk>
+References: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com> <20120102134229.GZ29877@amd.com> <CAHQjnON3XYZ9cAK0kqsY4QzMzESD1wOzxt-fiQCq3TJfDObFiw@mail.gmail.com> <20120102155820.GB29877@amd.com> <20120103095527.GI2914@n2100.arm.linux.org.uk> <20120104150101.GA3492@amd.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+5PVA4=j_pXQ0L9NBoaGGGhEWFhga_LxVG-oi11vSrm4UG3Sg@mail.gmail.com>
-References: <20120103185304.GA25184@hmsreliant.think-freely.org>
-	<20120104091952.7cc5316d@jbarnes-desktop>
-	<20120104195134.GB24324@hmsreliant.think-freely.org>
-	<20120104.145619.1728971973635198635.davem@davemloft.net>
-	<20120104120248.4f4747bf@jbarnes-desktop>
-	<CA+5PVA4=j_pXQ0L9NBoaGGGhEWFhga_LxVG-oi11vSrm4UG3Sg@mail.gmail.com>
-Date: Wed, 4 Jan 2012 16:25:47 -0500
-Message-ID: <CA+5PVA4-Xofs3AKq3L2UjtmVLa4HpjMwv0_rMdXO5ku8uFvfkg@mail.gmail.com>
-Subject: Re: [PATCH] msi: fix imbalanced refcount of msi irq sysfs objects
-From: Josh Boyer <jwboyer@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: David Miller <davem@davemloft.net>, nhorman@tuxdriver.com,
-        linux-kernel@vger.kernel.org, bhelgaas@google.com, gregkh@suse.de,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104150101.GA3492@amd.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 4:18 PM, Josh Boyer <jwboyer@gmail.com> wrote:
->>> The bug only exists in the PCI -next code I thought.
->>
->> Oh yeah, looks like it.  Lost track of my -next vs master branches
->> there...
->
-> Er... Neil's commit log in the patch itself has an oops from 3.1.6 in
-> it.  If the bug the patch fixes is only present in -next PCI code, how
-> did it get hit on that release?
->
-> Did we switch to talking about some other patch here and I'm just confused?
+On Wed, Jan 04, 2012 at 04:01:01PM +0100, Joerg Roedel wrote:
+> On Tue, Jan 03, 2012 at 09:55:27AM +0000, Russell King - ARM Linux wrote:
+> > It comes through when I stick it in my tree because of a month of asking
+> > for help to fix something and getting zero response from the maintainers.
+> > 
+> > It's a way to flag to them that they're doing something wrong - and in
+> > fact something is broken, and that that brokenness will happen at the
+> > next merge window unless they get off their butt and do something about
+> > it.
+> 
+> Okay, fine with me if it really will be fixed in 3.3-rc1 :)
 
-I'm just confused.  I forgot Neil backported that upstream code to the
-F16 3.1.6 kernel.  Sorry for the noise.
-
-josh
+I can do better than that - and report that it's fixed now.  It should
+show up in linux-next sometime after Stephen pulls this evening.  The
+#error did its job in this case, and ensured that it got fixed!
