@@ -1,181 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755787Ab2ADBWl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 20:22:41 -0500
-Received: from mailgw01.dd24.net ([193.46.215.41]:55197 "EHLO
-	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab2ADBWi (ORCPT
+	id S1755912Ab2ADBa7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 20:30:59 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:45545 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab2ADBa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 20:22:38 -0500
-Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
-From: Christoph Anton Mitterer <calestyo@scientia.net>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>, linux-kernel@vger.kernel.org
-In-Reply-To: <20120103105107.GB3391@redhat.com>
-References: <20110902233806.GA22157@elie> <20110905091918.GC2221@redhat.com>
-	 <265f56a4dc9f5d3edeca3d101e445353@imap.dd24.net>
-	 <20110908084913.GB2195@redhat.com>
-	 <1321228952.3362.15.camel@fermat.scientia.net>
-	 <20111114014615.GC16508@elie.hsd1.il.comcast.net>
-	 <1321466933.3364.16.camel@fermat.scientia.net>
-	 <20111118074552.GB2203@redhat.com>
-	 <1325171851.3907.33.camel@fermat.scientia.net>
-	 <20111229201149.GB1674@elie.Belkin>  <20120103105107.GB3391@redhat.com>
-Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-0BDEraEciL/4gvzm8hop"
-Date: Wed, 04 Jan 2012 02:22:28 +0100
-Message-ID: <1325640148.3359.142.camel@fermat.scientia.net>
+	Tue, 3 Jan 2012 20:30:57 -0500
+Date: Tue, 03 Jan 2012 20:27:33 -0500 (EST)
+Message-Id: <20120103.202733.1070369898271428121.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvalo@qca.qualcomm.com,
+        linville@tuxdriver.com
+Subject: Re: linux-next: merge of the wireless-next tree into the net-next
+ tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120104105947.8bac77d1d7198a49e6feeca8@canb.auug.org.au>
+References: <20120104105947.8bac77d1d7198a49e6feeca8@canb.auug.org.au>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 03 Jan 2012 17:27:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 4 Jan 2012 10:59:47 +1100
 
---=-0BDEraEciL/4gvzm8hop
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> I noticed that the wireless-next tree has been merged into the net-next
+> tree today.  Has anything been done about the build failure I reported in
+> the wireless-next a while ago:
+> 
+> On 12/22/2011 16:58 +1100, Stephen Rothwell wrote:
+>>
+>> After merging the final tree, today's linux-next build (powerpc
+>> allyesconfig) failed like this:
+>> 
+>> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ')' before 'KBUILD_MODNAME'
+>> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: 'KBUILD_MODNAME' undeclared here (not in a function)
+>> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ',' or ';' before string constant
 
-On Tue, 2012-01-03 at 11:51 +0100, Stanislaw Gruszka wrote:
-> Hmm, on my experience, software sucks much more than hardware, but we
-> never can exclude hardware problem. I'm not sure if there are divergence
-> between iwl4965 chipsets. Also I'm not sure if there are more than one
-> chipsets revision at all.
-Me neither unfortunately...
-
-> Christoph, you mentioned that you replaced you=20
-> motherboard. Did the problem start to happen after that?
-Yep,... the old board broke (and the system didn't bot anymore at
-all)... it was replaced with a new one by the manufacturer... and
-starting with that (with no software change on the disk in the meantime)
-the wifi didn't work anymore (as described).
-
-
-> Did you
-> correctly connect antennas cables to adapter.
-yep... at first (when they sent it back to me) it was not connected at
-all... I connected it... the problem persists in both states, connected
-and unconnected.
-
-> Does adapter sits
-> tight in the mini PCIe slot?
-yep
-
-
-> No, that's not needed if there are no good logs for compare. If possible
-> try on some very old kernel, first kernel with iwl4965 support was 2.6.24=
-.
-I'll have a look...
-
-Chris.
-
---=-0BDEraEciL/4gvzm8hop
-Content-Type: application/x-pkcs7-signature; name="smime.p7s"
-Content-Disposition: attachment; filename="smime.p7s"
-Content-Transfer-Encoding: base64
-
-MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIITMjCCBggw
-ggPwoAMCAQICAQEwDQYJKoZIhvcNAQEEBQAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UECxMV
-aHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0aG9yaXR5
-MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcwHhcNMDUxMDE0MDczNjU1WhcNMzMw
-MzI4MDczNjU1WjBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
-QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MIICIjANBgkqhkiG9w0BAQEF
-AAOCAg8AMIICCgKCAgEAq0k1EUh80iZ+U5TPQ6ndKNdCKovzh3gZWHwPntqJfeH763KQDXShlmSr
-n6AkmXPa4lV2xxd79QSsRrjDvn9kjRBsJPNhnMDykPpR5vVpAWPDD1biSkLP4kSMJSioxXkJfUa5
-ivPp8zQpCEXkHJ/LlAQcgagUs5hlxEPsToKNCdG9qluNktDs3pDFfwrC4+vmMVpedD6XM1nowwM9
-YDO/99FvR8TN7mKDUm4uCJqk2RUYkaaFkkewrkjrbbch7IUaaHI1q//wEF3A9JSnatU7kn5MkAV+
-k8Esi6SOYnQVcW4LcQPqrxU4mtTSBXJvjPkr61pyJfk5RuNyGz4Ew2QnIhAqik9YpwOtvrQuE+1d
-qkjX1X3UKntc+kYEUOTMDkJbjO3b8s/8lpPg2xE2VGI0OI8MYJs7l1Y4rfPSW4ugW+pOlrh819Wg
-hnBA05Ept6I8rfWMu88akorkNHvA2Gxf6QrCw6cgmlrfLF1SXLpH1ZvvJChwOCAv1X8pwLJBA2iS
-zOCczJdLRe86EAqrcDqYlXCtNbHqhSukHIAhMamuYHqAJkgAuAHAk2NVIpE8Vuev2zol848xVOom
-i4FZ+aHRUxHFe50D9nQR4G2xLD8shpGZcZqmd4s0YNEUtCysna+MENOfxGr4bxP8c1n3ZkJ0Horj
-+NzSb5icy0eYlUAF++kCAwEAAaOBvzCBvDAPBgNVHRMBAf8EBTADAQH/MF0GCCsGAQUFBwEBBFEw
-TzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUHMAKGHGh0dHA6
-Ly93d3cuQ0FjZXJ0Lm9yZy9jYS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAzMDEGCCsGAQUF
-BwIBFiVodHRwOi8vd3d3LkNBY2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMA0GCSqGSIb3DQEBBAUA
-A4ICAQB/CIih2hpQSdqJ+6EIcvOK9x7EOrR5WyAwsUXewl3TZWnxwl1UVDyFX7l7QpHCmf0bUZur
-RqWhEFOebYisc24sM6bw9J7gdcE+iEWp4WZD/lZa0XpBePdA2ko68QtbpbsWBubC55O5hU2XT7Ee
-OEOA75sNjO+4p2AAh1d9HkQcyyPvmzyZna+1KRxFeRaWTSdt8Rxsw8JVZLO8FOLzpB8eMvwnFQXP
-3S6uPoJhe/AhEBj2ROpTOfnc0Jog4Ma74LtaT8SZyAe9tb2i2y5iDUI0Qbz/i4r1USKqiDAA4rDU
-vL5lutUDV3mb6NzITfhQ7ZGlUiiirPs2WD7plCuRUIcb1l7WjMz3DxAMUk7QFmHl5QpsvxfHckZX
-nJj1bGBjem9euU4vyLm5u2qFvJgN7fk+l4Q0lK4Ar6Hl55JuTr3z4tkUi1zS6wFsoBelLRDrnHpK
-vb3uzv3tIkCrcDiI9QqHasKrBWDJSAXaU8HeRHdqs/M8PO2AvKY4SikkX/5ZO5slelZjAGS5XaRi
-fVc2T62D7x+SU6COd1fd5WERPSMAkEw8+qNgkwSjrzX2DmqPT0pgp4UFbEahj/THduOhWVf3cbLE
-bhRcbW1BZt8bk7HUAMPuy888PSGAqV9jZfzd4F+k9CvwhXFB1Gcl+xqxl67WmYITQdJupRuZJ4Dn
-C6moADCCBo8wggR3oAMCAQICAwCyHTANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQg
-SW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xh
-c3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oXDTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhD
-aHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAiBgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlh
-Lm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEv
-MC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG
-9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4w
-LAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEzsTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiG
-JmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2zJ4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYi
-gMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/hNOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/Mu
-dT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7H
-zdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYshPV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IB
-nTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRp
-ZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0l
-BDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhC
-BAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6
-BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVudGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24u
-bWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9w
-aC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24u
-bWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEBBQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfS
-XpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlS
-GZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb95VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uB
-kAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRn
-oX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38BjULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV
-4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlYnAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD
-66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avqZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9
-uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPepTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQ
-EQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeGX3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY
-3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5bcp6cOPWgvzCCBo8wggR3oAMCAQICAwCyHTANBgkq
-hkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
-QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oX
-DTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhDaHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAi
-BgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlhLm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBj
-aHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEvMC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFu
-dG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0
-ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4wLAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50
-b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEz
-sTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiGJmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2z
-J4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYigMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/h
-NOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/MudT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/
-qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7HzdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYsh
-PV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IBnTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgB
-hvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0
-byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgor
-BgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUF
-BzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVu
-dGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFu
-dG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5p
-LW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEB
-BQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfSXpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK
-3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlSGZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb9
-5VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uBkAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8
-ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRnoX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38Bj
-ULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlY
-nAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avq
-ZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPe
-pTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQEQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeG
-X3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5b
-cp6cOPWgvzGCAr0wggK5AgEBMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0
-dHA6Ly93d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMAkG
-BSsOAwIaBQCgggE3MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEy
-MDEwNDAxMjIyNFowIwYJKoZIhvcNAQkEMRYEFBNqKU7kH0ShD63ab75XeLjgYksRMGoGCSsGAQQB
-gjcQBDFdMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0Fj
-ZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMGwGCyqGSIb3DQEJEAIL
-MV2gWzBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQu
-b3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290AgMAsh0wDQYJKoZIhvcNAQEBBQAEggEA
-GjBNgiJj3r0TlWwDCQqb1t6Kafoe1/wjbVeuY1UAHZmZfS7wc8aE+MnugvraWGWlTosK8hIkid71
-UHQUi7iGD/I4Gb8jBFGN/TCh3tnroGXGAHkqTal9bfr+Nba04Oq5qNuT3W6XvkEr+yCsUz/D58Ht
-umsJ2posxbYFNa4xZcGgu8sE8FZUCD4GqJ6nawBxfMDRtsGR50esXUY8DGyfCpsIhEzgx4dTGP2z
-9F9F7WqLsi+qPeSreSAh4nnxt/n6tJ4VF8tgrS41EDfF8JtqmVcMEvqP5hTG6jo5Cw/SkPPpKSNC
-JL1pHKPLcdg+HAQP6lMYbTwecOTyOiV1reBfXgAAAAAAAA==
-
-
---=-0BDEraEciL/4gvzm8hop--
-
+It happens on any platform not just powerpc, John please fix this and
+don't have known unresolved -next build failures in your tree when you
+push to me.
