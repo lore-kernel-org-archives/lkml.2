@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731Ab2ADJS5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 04:18:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58726 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab2ADJSy convert rfc822-to-8bit (ORCPT
+	id S1754761Ab2ADJVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 04:21:08 -0500
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:47699 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab2ADJVE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 04:18:54 -0500
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [PATCH] input: Synaptics USB device driver
-Date: Wed, 4 Jan 2012 10:20:41 +0100
-User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: Jan Steinhoff <mail@jan-steinhoff.de>,
-        Alessandro Rubini <rubini@cvml.unipv.it>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20120103194033.779cb829@greyhound> <alpine.LNX.2.00.1201040954000.24984@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1201040954000.24984@pobox.suse.cz>
+	Wed, 4 Jan 2012 04:21:04 -0500
+X-IronPort-AV: E=Sophos;i="4.71,455,1320624000"; 
+   d="scan'208";a="9805130"
+Subject: Re: [PATCH, v2] Xen: consolidate and simplify struct xenbus_driver
+ instantiation
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ben Hutchings <bhutchings@solarflare.com>, Jan Beulich <JBeulich@suse.com>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, "Jens Axboe" <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Date: Wed, 4 Jan 2012 09:20:45 +0000
+In-Reply-To: <20120103203637.GF17472@phenom.dumpdata.com>
+References: <4EF3018D020000780006986E@nat28.tlf.novell.com>
+	 <1324547820.7877.71.camel@zakaz.uk.xensource.com>
+	 <4EF327E2020000780006993E@nat28.tlf.novell.com>
+	 <1324555060.7877.84.camel@zakaz.uk.xensource.com>
+	 <1324565067.2897.2.camel@bwh-desktop>
+	 <1324586301.13113.3.camel@dagon.hellion.org.uk>
+	 <20120103203637.GF17472@phenom.dumpdata.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.3- 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1325668846.25206.172.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201201041020.41795.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 4. Januar 2012, 09:55:19 schrieb Jiri Kosina:
-> On Tue, 3 Jan 2012, Jan Steinhoff wrote:
+On Tue, 2012-01-03 at 20:36 +0000, Konrad Rzeszutek Wilk wrote:
+> On Thu, Dec 22, 2011 at 08:38:21PM +0000, Ian Campbell wrote:
+> > On Thu, 2011-12-22 at 14:44 +0000, Ben Hutchings wrote:
+> > > On Thu, 2011-12-22 at 11:57 +0000, Ian Campbell wrote:
+> > > > On Thu, 2011-12-22 at 11:51 +0000, Jan Beulich wrote:
+> > > > > >>> On 22.12.11 at 10:57, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+> > > > > > On Thu, 2011-12-22 at 09:08 +0000, Jan Beulich wrote:
+> > > > > >> The 'name', 'owner', and 'mod_name' members are redundant with the
+> > > > > >> identically named fields in the 'driver' sub-structure. Rather than
+> > > > > >> switching each instance to specify these fields explicitly, introduce
+> > > > > >> a macro to simplify this.
+> > > > > >> 
+> > > > > >> Eliminate further redundancy by allowing the drvname argument to
+> > > > > >> DEFINE_XENBUS_DRIVER() to be blank (in which case the first entry from
+> > > > > >> the ID table will be used for .driver.name).
+> > > > > > 
+> > > > > > Any reason not to always use DRV_NAME here (which is generally a bit
+> > > > > > more specific e.g. "xen-foofront" rather than "foo") and rely on the id
+> > > > > > table for the shorter names used in xenstore?
+> > > > > 
+> > > > > That would imply that DRV_NAME is always defined, but I don't
+> > > > > see this being the case.
+> > > > 
+> > > > My mistake, I thought it was a Kbuild thing.
+> > > 
+> > > You're maybe thinking of KBUILD_MODNAME.
+> > 
+> > Yes, I think I was.
 > 
-> [ ... snip ... ]
-> > +static int synusb_setup_iurb(struct synusb *synusb,
-> > +                          struct usb_endpoint_descriptor *endpoint)
-> > +{
-> > +     char *buf;
-> > +
-> > +     if (endpoint->wMaxPacketSize < 8)
-> > +             return 0;
-> > +     if (synusb->iurb) {
-> > +             synusb_warn(synusb, "Found more than one possible "
-> > +                                 "int in endpoint");
-> > +             return 0;
-> > +     }
-> > +     synusb->iurb = usb_alloc_urb(0, GFP_KERNEL);
-> > +     if (synusb->iurb == NULL)
-> > +             return -ENOMEM;
-> > +     buf = usb_alloc_coherent(synusb->udev, 8, GFP_ATOMIC,
-> > +                              &synusb->iurb->transfer_dma);
-> > +     if (buf == NULL)
-> > +             return -ENOMEM;
-> 
-> You seem to leak synusb->iurb here.
+> Ian, are you OK with this patch? I think Jan needs to repost once more with the
+> "pciback" -> DRV_NAME change and then it is OK?
 
-Seems so, but doesn't. It gets freed when the refcount hits 0.
-Now, whether this is a good technique is another question.
+I don't much like the style of leaving macro parameters blank -- I'd
+much rather have things be explicitly specified and live with the slight
+duplication in cases where the device name happens to match an entry in
+the id list. But it's not a show stopper for me.
 
-	Regards
-		Oliver
--- 
-- - - 
-SUSE LINUX Products GmbH, GF: Jeff Hawn, Jennifer Guild, Felix Imendörffer, HRB 16746 (AG Nürnberg) 
-Maxfeldstraße 5                         
-90409 Nürnberg 
-Germany 
-- - - 
+> I've tested it with all backends, except the pciback one, and I see no regressions
+> with 'xl' or 'xm' toolstack.
+
+Great!
+
+Presumably there is no actual change to sysfs arising from this patch.
+
+Ian.
+
