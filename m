@@ -1,46 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698Ab2ADSUs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 13:20:48 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36819 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752272Ab2ADSUq (ORCPT
+	id S1756702Ab2ADS1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 13:27:43 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:51480 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab2ADS1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 13:20:46 -0500
-Date: Wed, 4 Jan 2012 10:20:41 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        Eric Biederman <ebiederm@xmission.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: Sysfs attributes racing with unregistration
-Message-ID: <20120104182041.GO31746@google.com>
-References: <20120104171842.GN31746@google.com>
- <Pine.LNX.4.44L0.1201041300130.1505-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201041300130.1505-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 4 Jan 2012 13:27:41 -0500
+Date: Wed, 04 Jan 2012 13:24:12 -0500 (EST)
+Message-Id: <20120104.132412.1376413566875687968.davem@davemloft.net>
+To: kvalo@qca.qualcomm.com
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linville@tuxdriver.com
+Subject: Re: linux-next: merge of the wireless-next tree into the net-next
+ tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4F040799.7080604@qca.qualcomm.com>
+References: <20120104105947.8bac77d1d7198a49e6feeca8@canb.auug.org.au>
+	<4F040799.7080604@qca.qualcomm.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Jan 2012 10:24:17 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+Date: Wed, 4 Jan 2012 10:02:33 +0200
 
-On Wed, Jan 04, 2012 at 01:13:41PM -0500, Alan Stern wrote:
-> Now, looking through the code, I wonder why sysfs_{get,put}_active() 
-> and sysfs_deactivate() don't use a real rwsem.  Why go to all the 
-> effort of imitating one?  Is it just to save space?
+> For a temporary solution I'll send a patch which forces ath6kl to
+> build only as a module and I'll send ath6kl_core.ko patches ASAP
+> after that.
 
-Hmmm... maybe there was something which prevented that or maybe I was
-just being stupid.  I don't really remember.  Space is a fairly
-important consideration too.  Depending on configuration, there can be
-a LOT of sysfs_dirents and memory consumption from sysfs has been a
-real problem.
-
-Thanks.
-
--- 
-tejun
+That's not reasonable, fix it properly.
