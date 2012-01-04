@@ -1,90 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755509Ab2ADAxd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:53:33 -0500
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:57558 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755063Ab2ADAxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:53:30 -0500
-Message-ID: <1325638380.3037.69.camel@work-vm>
-Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
- to handle kernel NULL pointer dereference at 0000000000000598 [   
- 1.478005] IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
-From: John Stultz <john.stultz@linaro.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>, stefan.bader@canonical.com,
-        rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 03 Jan 2012 16:53:00 -0800
-In-Reply-To: <20120104113155.27bf6e46@notabene.brown>
-References: <1599287628.20120103171351@eikelenboom.it>
-	 <20120103190754.GA27651@phenom.dumpdata.com>
-	 <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12010400-3534-0000-0000-00000431E201
+	id S1755517Ab2ADAzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:55:35 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:33385 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754855Ab2ADAzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 19:55:33 -0500
+X-Sasl-enc: 2TTeAwRjp99uWYIQelJhgv3dEqnKgj+1GgQNWhkKZqfL 1325638532
+Date: Tue, 3 Jan 2012 16:55:27 -0800
+From: Greg KH <greg@kroah.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: Re: [PATCH -next] debugfs: add missing #ifdef HAS_IOMEM
+Message-ID: <20120104005527.GA29102@kroah.com>
+References: <1324994908-4288-1-git-send-email-heiko.carstens@de.ibm.com>
+ <20120104004452.GA22949@kroah.com>
+ <20120104004823.GC23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104004823.GC23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
-> On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org> wrote:
-> > >From the stack trace, we've kicked off a rtc_timer_do_work, probably
-> > from the rtc_initialize_alarm() schedule_work call added in Neil's
-> > patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm ->
-> > cmos_rq_disable -> cmos_checkintr -> rtc_update_irq -> schedule_work.
+On Wed, Jan 04, 2012 at 12:48:23AM +0000, Al Viro wrote:
+> On Tue, Jan 03, 2012 at 04:44:52PM -0800, Greg KH wrote:
+> > On Tue, Dec 27, 2011 at 03:08:28PM +0100, Heiko Carstens wrote:
+> > > "debugfs: add tools to printk 32-bit registers" adds new functions which rely
+> > > on IOMEM functionality which is not present on all architectures and therefore
+> > > result in compile errors:
+> > > 
+> > > fs/debugfs/file.c: In function 'debugfs_print_regs32':
+> > > fs/debugfs/file.c:561:7: error: implicit declaration of function 'readl' [-Werror=implicit-function-declaration]
 > > 
-> > So, what it looks to me is that in cmos_checkintr, we grab the cmos->rtc
-> > and pass that along. Unfortunately, since the cmos->rtc value isn't set
-> > until after rtc_device_register() returns its null at that point. So
-> > your patch isn't really fixing the issue, but just reducing the race
-> > window for the second cpu to schedule the work.
-> > 
-> > Sigh. I'd guess dropping the schedule_work call from
-> > rtc_initialize_alarm() is the right approach (see below). When reviewing
-> > Neil's patch it seemed like a good idea there, but it seems off to me
-> > now.
-> > 
-> > Neil, any thoughts on the following? Can you expand on the condition you
-> > were worried about in around that call?
+> > Who does not have readl()?  Surely there should be a .h file we are just
+> > missing to include?
 > 
-> If you set an alarm in the future, then shutdown and boot again after that
-> time, then you will end up with a timer_queue node which is in the past.
+> s390, uml, etc.  What the hell is that kind of stuff doing in fs/*/*, anyway?
 
-Thanks for explaining this again.
+It's a debugfs "helper" function, included below, consolidating a number
+of duplicated versions of this in other places in the kernel that were
+doing the same thing.
 
-Hrm. It seems the easy answer is to simply not add alarms that are in
-the past.  Further, I'm a bit perplexed, as if they are in the past, the
-enabled flag shouldn't be set.   __rtc_read_alarm() does check the
-current time, so maybe we can make sure we don't return old values? I
-guess I assumed __rtc_read_alarm() avoided returning stale values, but
-apparently not.
+thanks,
 
-> When this happens the queue gets stuck.  That entry-in-the-past won't get
-> removed until and interrupt happens and an interrupt won't happen because the
-> RTC only triggers an interrupt when the alarm is "now".
-> 
-> So you'll find that e.g. "hwclock" will always tell you that 'select' timed
-> out.
-> 
-> So we force the interrupt work to happen at the start just in case.
+greg k-h
 
-Unfortunately its too early. 
 
-> Did you see my proposed patch which converted those calls to do the work
-> in-process rather than passing it to a worker-thread?  I think that is a
-> clean fix.
+/**
+ * debugfs_print_regs32 - use seq_print to describe a set of registers
+ * @s: the seq_file structure being used to generate output
+ * @regs: an array if struct debugfs_reg32 structures
+ * @mregs: the length of the above array
+ * @base: the base address to be used in reading the registers
+ * @prefix: a string to be prefixed to every output line
+ *
+ * This function outputs a text block describing the current values of
+ * some 32-bit hardware registers. It is meant to be used within debugfs
+ * files based on seq_file that need to show registers, intermixed with other
+ * information. The prefix argument may be used to specify a leading string,
+ * because some peripherals have several blocks of identical registers,
+ * for example configuration of dma channels
+ */
+int debugfs_print_regs32(struct seq_file *s, const struct debugfs_reg32 *regs,
+                           int nregs, void __iomem *base, char *prefix)
+{
+        int i, ret = 0;
 
-I don't think I saw it today. Was it from before the holidays?
-
-Even so, at this point, I don't know if we have enough time for testing,
-so I'm thinking we either just drop the problematic sched_work call or
-revert the whole thing and try again for 3.3
-
-thanks
--john
-
+        for (i = 0; i < nregs; i++, regs++) {
+                if (prefix)
+                        ret += seq_printf(s, "%s", prefix);
+                ret += seq_printf(s, "%s = 0x%08x\n", regs->name,
+                                  readl(base + regs->offset));
+        }
+        return ret;
+}
+EXPORT_SYMBOL_GPL(debugfs_print_regs32);
 
