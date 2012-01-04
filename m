@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900Ab2ADUxn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 15:53:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37489 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756825Ab2ADUxk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 15:53:40 -0500
-Date: Wed, 4 Jan 2012 12:53:10 -0800
-From: Greg KH <gregkh@suse.de>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: UV serial regression since 2.6.36
-Message-ID: <20120104205310.GA21496@suse.de>
-References: <4EDE988B.6010501@suse.cz>
- <4F049D6B.6040503@suse.cz>
+	id S1756906Ab2ADUyf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 15:54:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:33345 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756825Ab2ADUyd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 15:54:33 -0500
+Message-ID: <4F04BC85.9060803@suse.cz>
+Date: Wed, 04 Jan 2012 21:54:29 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20111223 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F049D6B.6040503@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: serial ports now asserting DTR and RTS during boot; breaks connected
+ hardware
+References: <20120103153707.GA12771@redhat.com> <20120103160655.69107c93@pyramind.ukuu.org.uk>
+In-Reply-To: <20120103160655.69107c93@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 07:41:47PM +0100, Jiri Slaby wrote:
-> On 12/06/2011 11:34 PM, Jiri Slaby wrote:
-> > Hi,
-> > 
-> > In short, the issue causes serial port traffic to stop after some time
-> > on UV machines. Only when serial is used as a console. It worked
-> > perfectly with 2.6.32. It's a standard 16550 on 0x3f8 (well, it's
-> > emulated to be at that port). Also in the PNP subsys.
-> > 
-> > To reproduce that 'debug' kernel parameter must not be used.
-> > 
-> > The root cause seems to be that the serial "chip" there has problems
-> > with interrupts. It generates some but doesn't indicate it's the source
-> > or somebody clears it (NOINT is set). And when it is supposed to
-> > generate one (on THRE), it does not. So there are bytes in the TX buffer
-> > which are never sent. Until the port is kicked e.g. by "echo h >
-> > /proc/sysrq-trigger".
-> > 
-> > The unhandled interrupts were always an issue, but somehow hidden. It
-> > became a real problem with patches post 2.6.32.
-> > 
-> > I bisected it to these two commits _together_:
-> > 
-> > commit 3f582b8c11014e4ce310d9839fb335164195333f
-> > Author: Arnd Bergmann <arnd@arndb.de>
-> > Date:   Tue Jun 29 22:31:40 2010 +0200
-> > 
-> >     serial: fix termios settings in open
-> > 
-> > AND
-> > 
-> > commit 74c2107759dc6efaa1b9127014be58a742a1e7ac
-> > Author: Alan Cox <alan@linux.intel.com>
-> > Date:   Tue Jun 1 22:53:00 2010 +0200
-> > 
-> >     serial: Use block_til_ready helper
-> > 
-> > Those reverted on the top of 2.6.37 makes it work again. Those reverted
-> > on the top of 3.0 plus mine 3 reverted which removed update_set_termios
-> > completely makes it work again.
-> > 
-> > I didn't look closely to why those patches are causing that. Like
-> > c_cflag copy in uart_update_termios and "tty->termios->c_cflag & CBAUD"
-> > test in tty_port_block_til_ready don't look good to me...
+On 01/03/2012 05:06 PM, Alan Cox wrote:
+> On Tue, 3 Jan 2012 10:37:07 -0500
+> Dave Jones <davej@redhat.com> wrote:
 > 
-> My vacation is over. I suppose you haven't had a chance to take a look
-> into the regression? (Just in case any of you is looking into that right
-> now to not duplicate the effort.)
+>> Jiri,
+>> We got this report from a user who notes a change in behaviour for
+>> his serial hardware over the last few kernel versions.
+>>  
+>> https://bugzilla.redhat.com/show_bug.cgi?id=771010
+>>
+>> This sounds like it might be related to your DTR/RTS changes back in March 2011 maybe ? 
+> 
+> Looks like your userspace to me at first glance.
+> 
+> ftdi_sio sets up the modem lines in set_termios. Set_termios is called
+> from ftdi_open. ftdi_open is triggered by userspace.
+> 
+>>  > The following code in the ftdi_sio driver is one suspect but this behavior
+>>  > happens on 8250 UARTs also so it is systemic now,
+> 
+> Likewise 8250 sets up the lines in serial8250_startup. This is called via
+> uart_startup which is called via open.
 
-I haven't, sorry, as I was on vacation as well.
+Ok, let's apply the cut&paste rule. Does uninstalling ModemManager fix
+the issue?
 
-greg k-h
+-- 
+js
+suse labs
