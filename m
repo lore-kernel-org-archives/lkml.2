@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab2ADFVs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 00:21:48 -0500
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:37336 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061Ab2ADFVp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 00:21:45 -0500
-Message-ID: <4F03E1D8.6040300@linux.vnet.ibm.com>
-Date: Wed, 04 Jan 2012 10:51:28 +0530
-From: Shubham Goyal <shubham@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: ltp-list@lists.sourceforge.net, linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        yanegomi@gmail.com, chrubis@suse.cz, vapier@gentoo.org,
-        subrata@linux.vnet.ibm.com
-Subject: [ANNOUNCE] The Linux Test Project has been released for JANUARY 2012.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752131Ab2ADF0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 00:26:06 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:56788 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751061Ab2ADF0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 00:26:04 -0500
+Message-ID: <1325654761.28596.3.camel@joe2Laptop>
+Subject: Re: [PATCH 2/5] x86: efi: convert printk to pr_*()
+From: Joe Perches <joe@perches.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Matt Fleming <matt.fleming@intel.com>
+Date: Tue, 03 Jan 2012 21:26:01 -0800
+In-Reply-To: <1325610682-24811-3-git-send-email-olof@lixom.net>
+References: <1325610682-24811-1-git-send-email-olof@lixom.net>
+	 <1325610682-24811-3-git-send-email-olof@lixom.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010405-3864-0000-0000-000000C92317
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2012-01-03 at 09:11 -0800, Olof Johansson wrote:
+> Alright, I guess I'll go through and convert them, even though
+> there's no net gain to speak of.
 
-Hi,
+Perhaps it'd be better to add
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+before any #include and remove PFX from the
+formats.
 
-The Linux Test Project test suite has been released for the month of
-JANUARY 2012. Please see ltp/INSTALL file carefully, as there has been 
-multiple
-changes for building/installing the test suite after the recent changes in
-Makefile infrastructure.
+> diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+[]
+> @@ -254,7 +254,7 @@ int efi_set_rtc_mmss(unsigned long nowtime)
+>  
+>  	status = efi.get_time(&eft, &cap);
+>  	if (status != EFI_SUCCESS) {
+> -		printk(KERN_ERR "Oops: efitime: can't read time!\n");
+> +		pr_err("Oops: efitime: can't read time!\n");
 
-The latest version of the test-suite contains 3000+ tests for the Linux
-OS and can be found at:
-http://ltp.sourceforge.net/,
-Latest happenings in LTP can also be found at:
-http://ltp.sourceforge.net/wiki/,
-http://ltp.sourceforge.net/wikiArchives.php, and,
-IRC: irc.freenode.org #ltp.
+		pr_err("Oops: can't read time!\n")
+> @@ -367,7 +367,7 @@ static void __init print_efi_memmap(void)
+>  	     p < memmap.map_end;
+>  	     p += memmap.desc_size, i++) {
+>  		md = p;
+> -		printk(KERN_INFO PFX "mem%02u: type=%u, attr=0x%llx, "
+> +		pr_info(PFX "mem%02u: type=%u, attr=0x%llx, "
+>  			"range=[0x%016llx-0x%016llx) (%lluMB)\n",
 
-Our web site also contains other information such as:
-- A Linux test tools matrix
-- Technical papers
-- How To's on Linux testing
-- Code coverage analysis tool.
+		pr_info("mem%02u: type..."
 
-We would encourage the community to post results to 
-ltp-results@lists.sf.net,
-
-patches, new tests, bugs or comments/questions to ltp-list@lists.sf.net,
-
-http://sourceforge.net/tracker/?func=add&group_id=3382&atid=103382  (for
-New Bug(s)),
-http://sourceforge.net/tracker/?func=add&group_id=3382&atid=303382  (for
-New Patch(s)),
-http://sourceforge.net/tracker/?func=add&group_id=3382&atid=353382  (for
-New Feature Request(s))
-
-**Note: Some pending patches will be checked in for next release.
-
-Happy testing,
-Thanks,
-Shubham
+etc...
 
