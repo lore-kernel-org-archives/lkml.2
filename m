@@ -1,74 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756330Ab2ADCUX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 21:20:23 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:53621 "HELO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756295Ab2ADCUU (ORCPT
+	id S1756348Ab2ADCUq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 21:20:46 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40716 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab2ADCUm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 21:20:20 -0500
-From: Haojian Zhuang <haojian.zhuang@marvell.com>
-To: linus.walleij@linaro.org, swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, arnd@arndb.de
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>
-Subject: [PATCH v4 3/3] gpio: pxa: request pinmux function for gpio
-Date: Wed,  4 Jan 2012 10:26:35 +0800
-Message-Id: <1325643995-20745-4-git-send-email-haojian.zhuang@marvell.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1325643995-20745-1-git-send-email-haojian.zhuang@marvell.com>
-References: <1325643995-20745-1-git-send-email-haojian.zhuang@marvell.com>
-X-OriginalArrivalTime: 04 Jan 2012 02:19:32.0592 (UTC) FILETIME=[4BACE700:01CCCA87]
+	Tue, 3 Jan 2012 21:20:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdbvta3chYeMS=J94ehaOcEXp1OBnU74qSSCAO--PbehLg@mail.gmail.com>
+References: <1324541855-19911-1-git-send-email-haojian.zhuang@marvell.com>
+	<1324541855-19911-2-git-send-email-haojian.zhuang@marvell.com>
+	<CACRpkdbvta3chYeMS=J94ehaOcEXp1OBnU74qSSCAO--PbehLg@mail.gmail.com>
+Date: Wed, 4 Jan 2012 10:20:41 +0800
+Message-ID: <CAN1soZwhd=1bsKumvYg0hw9m-kRNb6Mio7GzOFk-d3dZZ-+pXA@mail.gmail.com>
+Subject: Re: [PATCH v3 1/3] pinctrl: enable pinmux for mmp series
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, swarren@nvidia.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        eric.y.miao@gmail.com, linux@arm.linux.org.uk, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While gpio is requested for pxa, gpio driver will request function ready
-on pin.
+On Sun, Jan 1, 2012 at 10:15 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Dec 22, 2011 at 9:17 AM, Haojian Zhuang
+> <haojian.zhuang@marvell.com> wrote:
+>
+>> Support PXA168/PXA910/MMP2 pinmux. Now only support function switch.
+>
+> (...)
+>
+>> +config PINCTRL_PXA3xx
+>> +       bool
+>> +       select PINMUX
+>> +
+>
+> Good,
+>
+>> +config PINMUX_MMP2
+>> +       bool "MMP2 pinmux driver"
+>> +       depends on ARCH_MMP
+>> +       select PINCTRL_PXA3xx
+>> +       select PINCONF
+>> +
+>> +config PINMUX_PXA168
+>> +       bool "PXA168 pinmux driver"
+>> +       depends on ARCH_MMP
+>> +       select PINCTRL_PXA3xx
+>> +       select PINCONF
+>> +
+>> +config PINMUX_PXA910
+>> +       bool "PXA910 pinmux driver"
+>> +       depends on ARCH_MMP
+>> +       select PINCTRL_PXA3xx
+>> +       select PINCONF
+>> +
+>
+> Please rename these PINCTRL_* too.
+>
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
----
- drivers/gpio/gpio-pxa.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+Changed file according to all comments in another patch series.
 
-diff --git a/drivers/gpio/gpio-pxa.c b/drivers/gpio/gpio-pxa.c
-index b2d3ee1..5e12c19 100644
---- a/drivers/gpio/gpio-pxa.c
-+++ b/drivers/gpio/gpio-pxa.c
-@@ -19,6 +19,7 @@
- #include <linux/irq.h>
- #include <linux/io.h>
- #include <linux/platform_device.h>
-+#include <linux/pinctrl/pinmux.h>
- #include <linux/syscore_ops.h>
- #include <linux/slab.h>
- 
-@@ -267,6 +268,16 @@ static void pxa_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
- 				(value ? GPSR_OFFSET : GPCR_OFFSET));
- }
- 
-+static int pxa_gpio_request(struct gpio_chip *chip, unsigned offset)
-+{
-+	return pinmux_request_gpio(chip->base + offset);
-+}
-+
-+static void pxa_gpio_free(struct gpio_chip *chip, unsigned offset)
-+{
-+	pinmux_free_gpio(chip->base + offset);
-+}
-+
- static int __devinit pxa_init_gpio_chip(int gpio_end)
- {
- 	int i, gpio, nbanks = gpio_to_bank(gpio_end) + 1;
-@@ -292,6 +303,8 @@ static int __devinit pxa_init_gpio_chip(int gpio_end)
- 		c->get = pxa_gpio_get;
- 		c->set = pxa_gpio_set;
- 		c->to_irq = pxa_gpio_to_irq;
-+		c->request = pxa_gpio_request;
-+		c->free = pxa_gpio_free;
- 
- 		/* number of GPIOs on last bank may be less than 32 */
- 		c->ngpio = (gpio + 31 > gpio_end) ? (gpio_end - gpio + 1) : 32;
--- 
-1.7.0.4
-
+Thanks
+Haojian
