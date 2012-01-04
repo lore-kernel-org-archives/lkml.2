@@ -1,152 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719Ab2ADGNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 01:13:52 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47616 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609Ab2ADGNt (ORCPT
+	id S1755776Ab2ADGTW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 01:19:22 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:6530 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754321Ab2ADGTT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 01:13:49 -0500
+	Wed, 4 Jan 2012 01:19:19 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 03 Jan 2012 22:19:19 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan.com@nvidia.com>
+CC: "lrg@ti.com" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Date: Wed, 4 Jan 2012 11:49:14 +0530
+Subject: RE: [PATCH] regulator: Rail is said to be enable only if this and
+ supply rails are enabled.
+Thread-Topic: [PATCH] regulator: Rail is said to be enable only if this and
+ supply rails are enabled.
+Thread-Index: AczKVJaJw9khZvZ+SaOhlZZPetEHKgAUZeVA
+Message-ID: <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9C2E@BGMAIL01.nvidia.com>
+References: <1325570983-3700-1-git-send-email-ldewangan@nvidia.com>
+ <20120103201624.GC2843@opensource.wolfsonmicro.com>
+In-Reply-To: <20120103201624.GC2843@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-In-Reply-To: <4F034AC0.5080900@metafoo.de>
-References: <1325483675-21908-1-git-send-email-thomas.abraham@linaro.org>
-	<4F02C50E.9030904@metafoo.de>
-	<CAJuYYwR8hnxJSfaXo4=RWCZ1HQZ1PHci+jY3K5b9ktWXryN0vA@mail.gmail.com>
-	<4F02F3FD.4010306@metafoo.de>
-	<CAJuYYwQJcW83EznpWmmZTCjSL9Ka1nztHx=4cpz2yzuhEyPtjQ@mail.gmail.com>
-	<4F034AC0.5080900@metafoo.de>
-Date: Wed, 4 Jan 2012 11:43:48 +0530
-Message-ID: <CAJuYYwTjFRR-YS4sh0Pn62fH3uRMT3cJO8EoFDSzoHAFObDysw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 0/4] lcd: platform-lcd: Add lcd panel and device tree support
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, jg1.han@samsung.com,
-        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
-        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
-        ben-linux@fluff.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lars,
+> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
+> Sent: Wednesday, January 04, 2012 1:46 AM +0530
+> >
+> > The given rail is said to be enabled only if this rail is eanbled
+> > along with supply rail.
+> > Adding check for the supply rail whether it is enabled or not when
+> > query about rail enabled.
+> 
+> This feels wrong - the code in general assumes that the parents will all
+> be enabled for an enabled child (and does the required stuff on enable
+> and disable).  Doing the check isn't unreasonable but if it fails we
+> really ought to be complaining loudly as we're probably confused and
+> things might be going wrong elsewhere.
+>
+Yes, in general checking of the parent rail is not really required but it is
+good to have on safer side because it directly checks at the interface of
+regulator level rather than the ref count and give the more correct results.
 
-On 4 January 2012 00:06, Lars-Peter Clausen <lars@metafoo.de> wrote:
-> On 01/03/2012 06:07 PM, Thomas Abraham wrote:
->> On 3 January 2012 17:56, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>> On 01/03/2012 12:54 PM, Thomas Abraham wrote:
->>>> Hi Lars,
->>>>
->>>> On 3 January 2012 14:36, Lars-Peter Clausen <lars@metafoo.de> wrote:
->>>>> On 01/02/2012 06:54 AM, Thomas Abraham wrote:
->>>>>> The platform-lcd driver depends on platform-specific callbacks to setup the
->>>>>> lcd panel. These callbacks are supplied using driver's platform data. But
->>>>>> for adding device tree support for platform-lcd driver, providing such
->>>>>> callbacks is not possible (without using auxdata).
->>>>>>
->>>>>> Since the callbacks are usually lcd panel specific, it is possible to include
->>>>>> the lcd panel specific setup and control functionality in the platform-lcd
->>>>>> driver itself, thereby eliminating the need for supplying platform specific
->>>>>> callbacks to the driver. The platform-lcd driver can include support for
->>>>>> multiple lcd panels.
->>>>>>
->>>>>> This patchset removes the need for platform data for platform-lcd driver and
->>>>>> adds support which can be used to implement lcd panel specific functionality
->>>>>> in the driver. As an example, the support for Hydis hv070wsa lcd panel is added
->>>>>> to the platform-lcd driver which is then used on the Exynos4 based Origen board.
->>>>>> This currently breaks build for other users of platform-lcd driver. Those can be
->>>>>> fixed if this approach is acceptable.
->>>>>
->>>>> The whole approach looks rather backwards to me. The exact purpose of the
->>>>> platform_lcd driver is to redirect the lcd driver callbacks to board code.
->>>>> So by removing this support you not only break all the existing driver but
->>>>> also create a driver which does nothing. Then you add another layer of
->>>>> abstraction to implement custom drivers in this driver. A better approach in
->>>>> my opinion is to simply implement these drivers as first level LCD drivers.
->>>>> So leave the platform-lcd driver as it is and just add a gpio (or maybe
->>>>> regulator) lcd driver instead.
->>>>
->>>> The existing platform-lcd driver mostly depends on the platform
->>>> callbacks for lcd panel power controls. Looking at the current users
->>>> of platform-lcd driver, a majority of the users of platform-lcd driver
->>>> use a gpio to enable/disable the display/power. The gpio is controlled
->>>> by the platform callbacks which the platform-lcd driver calls.
->>>>
->>>> Hence, it is possible to extend the platform-lcd driver to include the
->>>> functionality of managing the gpio for lcd control. The platform code
->>>> is only expected to provide a gpio number to the platform-lcd driver.
->>>> This allows consolidation of the all the different platform callbacks
->>>> that use a gpio for simple enable/disable of the lcd display.
->>>>
->>>> But there are other users of platform-lcd that do lot more than just
->>>> control a single gpio. For such cases, it is possible to reuse the
->>>> existing infrastructure of platform-lcd driver and extend it to handle
->>>> such lcd panel specific functionality.
->>>>
->>>> The main advantages that I see here is the consolidation of platform
->>>> specific callbacks into the driver which inturn allows adding device
->>>> tree support without depending on platform data which have pointers to
->>>> platform specific functions. In the next version of this patchset, it
->>>> will be ensured that no platform breaks due to this change.
->>>
->>> Consolidation of the different implementations which use a GPIO to control
->>> the LCD state is a good idea. But as I wrote above in this series you added
->>> more or less another layer of abstraction. Namely introducing the
->>> platform-lcd driver as a intermediate layer between the actual driver and
->>> the LCD framework. But the layer is so thin that all it does is to call the
->>> plat_lcd_driver_data callback from the lcd_ops callback. There is really no
->>> point in doing this since you can setup the lcd_ops callbacks directly. Also
->>> following your approach we would end up with a bunch of unrelated LCD
->>> drivers in the platform-lcd driver module. The platform-lcd driver is so
->>> generic that basically any LCD driver could be implemented on-top of it, but
->>> this does not mean it has to.
->>
->> Yes, this will lead to including support for multiple lcd panels in
->> the platform-lcd driver. But, we get to reuse most of the
->> infrastruture in the platform-lcd driver such as module init/cleanup,
->> suspend/resume, probe and lcd driver registration. There is a plan to
->> include regulator support in the platform-lcd driver as well. If we go
->> for independent drivers for all existing users of platform-lcd driver,
->> then this common code in platform-lcd driver will have to be
->> duplicated in multiple new drivers.
->
-> Most of the infrastructure code is driver boiler-plate code. And you'll add
-> about the same amount of code due to your additional layer redirection. You'll
-> still have a probe and remove function per driver. You'll have to define a set
-> of plat_lcd_driver_data per driver. You'll have all these ugly ifdefs.
->
-> An exception is the suspend/resume handling. But this does not look like it is
-> something which is specific to simple displays, more "complex" ones or
-> non-platform driver lcd drivers might want to use a similar scheme. A good idea
-> would be to add support for this to the LCD framework. Similar to the backlight
-> frameworks BL_CORE_SUSPENDRESUME.
->
->>
->> What would be your suggestion considering this. Actually, I don't
->> clearly understand the technical/maintainability reasons which do not
->> favour including support for multiple types of simple lcd panels in
->> the platform-lcd driver.
->
-> To me it seems very unidiomatic to put multiple drivers into the same driver.
-> E.g. where will we draw the line, which kind of device is simple enough so
-> support for this device should be embedded in the plaform-lcd driver. Once you
-> have support for multiple types of simple lcd panels in one driver things will
-> start to get messy. Image how the driver will look like if it has support for
-> say 5 or 10 different types of simple lcd panels.
+I came to this issue when I set the supply regulator for a rail and set the rail
+is always on but the supply regulator was not always on. And so this function
+returns true but actually the rail is not enabled because supply rail was not enabled.
+Although it is fixed in other patch but such checks help more.
 
-Ok, I understand your point now. A new lcd driver will be written
-mostly derived from platform-lcd driver (minus the platform specific
-callbacks in platform data) that can manage power control for lcd
-panels which can be controlled by a single gpio. Also, regulator and
-device tree support will be added to this driver. Thanks for your
-comments.
+> We should also look at the bootstrapping code, we're not really making
+> much effort to verify that the hardware configuration on boot is sane
+> (though realistically it's unlikely that it won't be).
+> 
+> > Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> > ---
+> > When consumer of any rails query about whether rail is enabled
+> > or not, the function regulator_is_enabled() should return enabled
+> > only if this rail and supply rail (both) are enabled.
+> > if any one of rail, whether the given rail or supply rail, is enabled
+> > then function should return as not enabled.
+> 
+> Please just put things in the changelog if they're useful.
 
-Regards,
-Thomas.
+I already send the 2nd patch for putting this info on changelog.
 
->
-> - Lars
->
+Thanks,
+Laxman
