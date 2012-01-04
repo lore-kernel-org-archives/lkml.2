@@ -1,69 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab2ADTtO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 14:49:14 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:29942 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751798Ab2ADTtL (ORCPT
+	id S1755705Ab2ADTua (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 14:50:30 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:52302 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab2ADTu2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 14:49:11 -0500
-Date: Wed, 4 Jan 2012 14:47:17 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Stefan Bader <stefan.bader@canonical.com>, NeilBrown <neilb@suse.de>,
-        Sander Eikelenboom <linux@eikelenboom.it>, rjw@sisk.pl,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
- to handle kernel NULL pointer dereference at 0000000000000598  1.478005] IP:
- [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
-Message-ID: <20120104194717.GB16758@phenom.dumpdata.com>
-References: <1599287628.20120103171351@eikelenboom.it>
- <20120103190754.GA27651@phenom.dumpdata.com>
- <1325632188.3037.59.camel@work-vm>
- <20120104113155.27bf6e46@notabene.brown>
- <1325638380.3037.69.camel@work-vm>
- <4F040B25.1080405@canonical.com>
- <1325702212.3037.102.camel@work-vm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325702212.3037.102.camel@work-vm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4F04AD26.0037,ss=1,re=0.000,fgs=0
+	Wed, 4 Jan 2012 14:50:28 -0500
+Date: Wed, 04 Jan 2012 14:49:23 -0500 (EST)
+Message-Id: <20120104.144923.372584452455227614.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-01-04 #2
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120104164339.GG2540@tuxdriver.com>
+References: <20120104164339.GG2540@tuxdriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Jan 2012 11:49:25 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 10:36:52AM -0800, John Stultz wrote:
-> On Wed, 2012-01-04 at 09:17 +0100, Stefan Bader wrote:
-> > Over night I had still be thinking on this and maybe one important fact I had
-> > been ignoring. This really has only been observed on paravirt guests on Xen as
-> > far as I know. And one thing that I should have pointed out is that
-> > 
-> > [    0.792634] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
-> > [    0.792725] rtc_cmos: probe of rtc_cmos failed with error -38
-> > 
-> > So first the registration is done and the first line is the last thing printed
-> > in the registration function. Then, and that line always comes after, the probe,
-> > which looks like being done asynchronously, detects that the rtc is not
-> > implemented. I would assume that this causes the rtc to be unregistered again
-> > and that is probably the point where, under the right circumstances, the worker
-> > triggered by the initialize alarm is trying to set another alarm. Probably while
-> > some of the elements of the structure started to be torn down. I need to check
-> > on that code path, yet. So right now its more a guess.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Wed, 4 Jan 2012 11:43:40 -0500
+
+> Here are a handful of straggler wireless fixes for 3.2.  Included is
+> a NULL pointer fix for mwifiex, a regression fix for handling rx
+> header lengths for differnt b43 firmwares in PIO mode, a revert of
+> a one-liner for Bluetooth HCI that was causing uncomfortable delays
+> during resume, and an ath9k fix for a panic when running in AP mode
+> with aggregation disabled.
 > 
-> Hrm. Do you see the same probe error with 3.1 kernels as well?  
+> The Bluetooth fix is a one-liner change of a delay value.  The mwifiex,
+> b43, and ath9k fixes are relatively small and isolated to their
+> respective drivers.
 > 
-> Konrad: Is the probe failure a known issue on Xen? Any clues on whats
-> going on there?
+> Please let me know if there are problems!
+...
+>   git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
 
-Hey John,
-
-Stefan kind of summarized it - the paravirtualized guests do not have access
-to the CMOS. In fact they have no access to any legacy device (except if one does
-PCI passthrough) - so the rtc_core returning -38 is correct.
-
-We have our own timer - which is the Xen hypervisor stamps the the nanosecond
-resolution data in a per-cpu field that the timer API uses.
+Pulled, thanks.
