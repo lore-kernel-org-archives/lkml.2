@@ -1,104 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab2ADPIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 10:08:31 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62359 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755090Ab2ADPI1 convert rfc822-to-8bit (ORCPT
+	id S1755902Ab2ADPMM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 10:12:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:57145 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab2ADPMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 10:08:27 -0500
+	Wed, 4 Jan 2012 10:12:10 -0500
+Message-ID: <4F046C42.30903@canonical.com>
+Date: Wed, 04 Jan 2012 16:12:02 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <20120104090910.7ed8ff12@tlielax.poochiereds.net>
-References: <1325432079-21179-1-git-send-email-jlayton@redhat.com>
-	<CADT32eK53tJakiLm5VVE9cY3R6mLkA2PYWxwNG17ybK=u6NYNg@mail.gmail.com>
-	<20120104090910.7ed8ff12@tlielax.poochiereds.net>
-Date: Wed, 4 Jan 2012 09:08:26 -0600
-Message-ID: <CADT32eKpSGRKHUC3ySHAhC-O7SvSUj1JAFrTBP9cSLXvSnsVSA@mail.gmail.com>
-Subject: Re: [PATCH] cifs: fix bad buffer length check in coalesce_t2
-From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: smfrench@gmail.com, linux-kernel@vger.kernel.org, k.skarlatos@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: NeilBrown <neilb@suse.de>
+CC: John Stultz <john.stultz@linaro.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>, rjw@sisk.pl,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
+ to handle kernel NULL pointer dereference at 0000000000000598  1.478005]
+ IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
+References: <1599287628.20120103171351@eikelenboom.it> <20120103190754.GA27651@phenom.dumpdata.com> <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown> <1325638380.3037.69.camel@work-vm> <20120104122040.5a0fa6a3@notabene.brown>
+In-Reply-To: <20120104122040.5a0fa6a3@notabene.brown>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/mixed;
+ boundary="------------050202090103020909030507"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 8:09 AM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Tue, 3 Jan 2012 16:46:15 -0600
-> Shirish Pargaonkar <shirishpargaonkar@gmail.com> wrote:
->
->> On Sun, Jan 1, 2012 at 9:34 AM, Jeff Layton <jlayton@redhat.com> wrote:
->> > The current check looks to see if the RFC1002 length is larger than
->> > CIFSMaxBufSize, and fails if it is. The buffer is actually larger than
->> > that by MAX_CIFS_HDR_SIZE.
->> >
->> > This bug has been around for a long time, but the fact that we used to
->> > cap the clients MaxBufferSize at the same level as the server tended
->> > to paper over it. Commit c974befa changed that however and caused this
->> > bug to bite in more cases.
->> >
->> > Reported-and-Tested-by: Konstantinos Skarlatos <k.skarlatos@gmail.com>
->> > Signed-off-by: Jeff Layton <jlayton@redhat.com>
->> > ---
->> >  fs/cifs/connect.c |    2 +-
->> >  1 files changed, 1 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
->> > index 8cd4b52..27c4f25 100644
->> > --- a/fs/cifs/connect.c
->> > +++ b/fs/cifs/connect.c
->> > @@ -282,7 +282,7 @@ static int coalesce_t2(struct smb_hdr *psecond, struct smb_hdr *pTargetSMB)
->> >        byte_count = be32_to_cpu(pTargetSMB->smb_buf_length);
->> >        byte_count += total_in_buf2;
->> >        /* don't allow buffer to overflow */
->> > -       if (byte_count > CIFSMaxBufSize)
->> > +       if (byte_count > CIFSMaxBufSize + MAX_CIFS_HDR_SIZE - 4)
->> >                return -ENOBUFS;
->> >        pTargetSMB->smb_buf_length = cpu_to_be32(byte_count);
->> >
->> > --
->> > 1.7.7.4
->> >
->>
->> This looks correct.  But the way Windows XP server responds to request
->>  trans2/find_first2/info level is different than how Windows 2003 Server
->> and Windows 2008 Server respond.
->>
->> So a related concern would be, for a response from Windows XP server,
->> this check in function check2ndT2 does not make sense.
->>  if (total_data_size > CIFSMaxBufSize) {
->>
->
-> This check looks redundant to me. We could remove it since the check in
-> coalesce_t2 is more accurate...
->
->> It is possible to have large number of entries in a directory such that the
->> response to a  ls  command can exceed CIFSMaxBufSize.
->
-> It shouldn't be possible. The CIFSFindFirst request sends this:
->
->        pSMB->MaxDataCount = cpu_to_le16(CIFSMaxBufSize & 0xFFFFFF00);
->
-> ...which should ensure that the amount of data in the response is less
-> than CIFSMaxBufSize. I'm not sure what the point of the mask is there
-> however...
->
-> In addition, we're also limited by this:
->
->        pSMB->SearchCount = cpu_to_le16(CIFSMaxBufSize/sizeof(FILE_UNIX_INFO));
->
-> ...but I think we ought to consider just setting that to 0xffff.
->
-> Dividing by sizeof(FILE_UNIX_INFO) is clearly wrong for other
-> infolevels. We don't really care how many entries the server sends as
-> long as it doesn't exceed the buffer size.
->
-> Either way, I believe this patch is correct, though we may have some
+This is a multi-part message in MIME format.
+--------------050202090103020909030507
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 
-yes, agree.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
-> other cleanup work to do in this area.
->
-> --
-> Jeff Layton <jlayton@redhat.com>
+On 04.01.2012 02:20, NeilBrown wrote:
+> On Tue, 03 Jan 2012 16:53:00 -0800 John Stultz <john.stultz@linaro.org>
+> wrote:
+> 
+>> On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
+>>> On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org>
+>>> wrote:
+>>>>> From the stack trace, we've kicked off a rtc_timer_do_work,
+>>>>> probably
+>>>> from the rtc_initialize_alarm() schedule_work call added in Neil's 
+>>>> patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm -> 
+>>>> cmos_rq_disable -> cmos_checkintr -> rtc_update_irq ->
+>>>> schedule_work.
+>>>> 
+>>>> So, what it looks to me is that in cmos_checkintr, we grab the
+>>>> cmos->rtc and pass that along. Unfortunately, since the cmos->rtc
+>>>> value isn't set until after rtc_device_register() returns its null at
+>>>> that point. So your patch isn't really fixing the issue, but just
+>>>> reducing the race window for the second cpu to schedule the work.
+>>>> 
+>>>> Sigh. I'd guess dropping the schedule_work call from 
+>>>> rtc_initialize_alarm() is the right approach (see below). When
+>>>> reviewing Neil's patch it seemed like a good idea there, but it seems
+>>>> off to me now.
+>>>> 
+>>>> Neil, any thoughts on the following? Can you expand on the condition
+>>>> you were worried about in around that call?
+>>> 
+>>> If you set an alarm in the future, then shutdown and boot again after
+>>> that time, then you will end up with a timer_queue node which is in the
+>>> past.
+>> 
+>> Thanks for explaining this again.
+>> 
+>> Hrm. It seems the easy answer is to simply not add alarms that are in the
+>> past.  Further, I'm a bit perplexed, as if they are in the past, the 
+>> enabled flag shouldn't be set.   __rtc_read_alarm() does check the 
+>> current time, so maybe we can make sure we don't return old values? I 
+>> guess I assumed __rtc_read_alarm() avoided returning stale values, but 
+>> apparently not.
+> 
+> That would probably be a more robust approach.  Also it might make sense
+> to clean out old alarms whenever we are about to add a new one.
+> 
+>> 
+>>> When this happens the queue gets stuck.  That entry-in-the-past won't
+>>> get removed until and interrupt happens and an interrupt won't happen
+>>> because the RTC only triggers an interrupt when the alarm is "now".
+>>> 
+>>> So you'll find that e.g. "hwclock" will always tell you that 'select'
+>>> timed out.
+>>> 
+>>> So we force the interrupt work to happen at the start just in case.
+>> 
+>> Unfortunately its too early.
+>> 
+>>> Did you see my proposed patch which converted those calls to do the
+>>> work in-process rather than passing it to a worker-thread?  I think
+>>> that is a clean fix.
+>> 
+>> I don't think I saw it today. Was it from before the holidays?
+> 
+> About 4 hours ago: Subject: Re: Patch Upstream: rtc: Expire alarms after
+> the time is set.
+> 
+>> 
+>> Even so, at this point, I don't know if we have enough time for testing, 
+>> so I'm thinking we either just drop the problematic sched_work call or 
+>> revert the whole thing and try again for 3.3
+> 
+> I wouldn't object to that.  The bug only triggers in unusual circumstances 
+> and is quite easy to work around so it is safer  to wait until we have a 
+> really good fix.
+> 
+> Thanks, NeilBrown
+> 
+Neil, this variation would also keep the kernel from crashing in my test
+environment. What do you think of that?
+
+- -Stefan
+
+> 
+>> 
+>> thanks -john
+>> 
+> 
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQIcBAEBCgAGBQJPBGw4AAoJEOhnXe7L7s6jg5YQAJ1PrNGhuXJSAevurIorc+l5
+Xbyj96MRk2Z7y7c0f/OQCCKzmReNMOQ91pgok2FIamHBh55JtbgdldyTWG80Jr0M
+N1jwkus1SJTIcLAeIrzoXSLU5uTvmcCcW0GBUuK98m0LDwMMJr0P1a5ilsyorRFY
+ekdFIL732Cs6hn3BAlg6zVucG/kMOi3OEOtHlbKdw83VdxJ1OmjIkW9tlj/6268j
+ZImuXh1XZmCJiTuCwdvdi3RVU3qZvQJi1AW0G0zsQcc2r13OQkSSoi/Wo5+6dNit
+7WxSbYqeZ4hPmk67yDKjOK67kDU094end++ePtQNke0d9IePB3fRvDIi+eEkrjc5
+0rJi2gLkpSyE8MJ3pBO9Bt8JCVjpY1QZnQsDT68fIHUApMnrwRK2N371JzbSim52
+8VYgTfubRRdwiLlMAL7ACilFV2FKc9PcTf7FrrR2j+GZfhKTD5iy+bNvqpWaJVVT
+jUrfCS79z+Z9v9/bjZ55n23gIJQn3jLk3B79plnFlwmxp9CDaAITmfzKsSB0EoZB
+RF0ndDkd1Oii/XuFdqaVaMeZojPCT2rVHas2H26mH+Ihb0n9EvSBgx2L64DbRrAt
+duLngf+IAO6T9ngaqnhmHwJXdwKiKGxUhWVdo92YTd16jdANd/711/B0kzHHWw4H
+FT46+Os2UQJR+HsedKZg
+=Kgpc
+-----END PGP SIGNATURE-----
+
+--------------050202090103020909030507
+Content-Type: text/x-diff;
+ name="0001-rtc-Do-not-schedule-work-in-rtc_initialize_alarm.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-rtc-Do-not-schedule-work-in-rtc_initialize_alarm.patch"
+
+>From 0c91dc5c02c828b6b57066f99d9d2b853ced5c97 Mon Sep 17 00:00:00 2001
+From: Stefan Bader <stefan.bader@canonical.com>
+Date: Wed, 4 Jan 2012 15:41:16 +0100
+Subject: [PATCH] rtc: Do not schedule work in rtc_initialize_alarm
+
+commit 93b2ec0128c431148b216b8f7337c1a52131ef03
+  rtc: Expire alarms after the time is set.
+
+added a schedule_work to rtc_initialize_alarm in order to
+get alarm processing running, even in case of an alarm that
+had been in the past.
+
+However, this is called from rtc_device_register that in turn
+is called from cmos_do_probe while rtc_cmos.rtc is still NULL.
+If the worker fires off and tries to rtc_update_irq it will
+dereference that potentially NULL pointer (this only was
+observer running a Xen paravirt guest, but I think if the
+timing is right could happen anywhere). So it seems better to
+tickle the interrupt worker just in any case when the probe
+really is complete. Worst case it should just confirm the
+fact that there is no alarm.
+
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+---
+ drivers/rtc/interface.c |    2 --
+ drivers/rtc/rtc-cmos.c  |    7 +++++++
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/rtc/interface.c b/drivers/rtc/interface.c
+index 3bcc7cf..084a137 100644
+--- a/drivers/rtc/interface.c
++++ b/drivers/rtc/interface.c
+@@ -407,8 +407,6 @@ int rtc_initialize_alarm(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+ 		timerqueue_add(&rtc->timerqueue, &rtc->aie_timer.node);
+ 	}
+ 	mutex_unlock(&rtc->ops_lock);
+-	/* maybe that was in the past.*/
+-	schedule_work(&rtc->irqwork);
+ 	return err;
+ }
+ EXPORT_SYMBOL_GPL(rtc_initialize_alarm);
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index 05beb6c..21fcb31 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -731,6 +731,13 @@ cmos_do_probe(struct device *dev, struct resource *ports, int rtc_irq)
+ 		goto cleanup2;
+ 	}
+ 
++	/* I hope it will not matter much if there was not actually
++	 * some interrupt work that needed to be done. The worker
++	 * thread just should do nothing (beside of disabling the
++	 * alarm again. At least by now all other setup is done.
++	 */
++	schedule_work(&cmos_rtc.rtc->irqwork);
++
+ 	pr_info("%s: %s%s, %zd bytes nvram%s\n",
+ 		dev_name(&cmos_rtc.rtc->dev),
+ 		!is_valid_irq(rtc_irq) ? "no alarms" :
+-- 
+1.7.5.4
+
+
+--------------050202090103020909030507--
