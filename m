@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab2ADJBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 04:01:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57814 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754373Ab2ADJBE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 04:01:04 -0500
-Date: Wed, 4 Jan 2012 10:01:03 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: kosaki.motohiro@gmail.com
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org
-Subject: Re: [PATCH 2/2] memcg: mark rcu protected member as __rcu
-Message-ID: <20120104090102.GB12581@tiehlicka.suse.cz>
-References: <1325633632-9978-1-git-send-email-kosaki.motohiro@gmail.com>
- <1325633632-9978-2-git-send-email-kosaki.motohiro@gmail.com>
+	id S1754648Ab2ADJHj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 04:07:39 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47398 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab2ADJHh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 04:07:37 -0500
+Date: Wed, 4 Jan 2012 09:07:02 +0000
+From: Russell King <rmk@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the s5p tree with the arm tree
+Message-ID: <20120104090702.GA28052@flint.arm.linux.org.uk>
+References: <20120104131830.ec4341de50a69f4f3f2c5b7b@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325633632-9978-2-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120104131830.ec4341de50a69f4f3f2c5b7b@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 03-01-12 18:33:52, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+On Wed, Jan 04, 2012 at 01:18:30PM +1100, Stephen Rothwell wrote:
+> Hi Kukjin,
 > 
-> Currently "make C=2 mm/memcontrol.o" makes following warnings. fix it.
+> Today's linux-next merge of the s5p tree got a conflict in
+> arch/arm/plat-samsung/include/plat/system-reset.h between commit
+> 281c8724c10c ("ARM: restart: Temporary #error to persuade platform
+> maintainers to take the restart changes seriously") from the arm tree and
+> commit 08c6fc52956c ("ARM: restart: EXYNOS: use new restart hook") from
+> the s5p tree.
 > 
-> mm/memcontrol.c:4243:21: error: incompatible types in comparison expression (different address spaces)
-> mm/memcontrol.c:4245:21: error: incompatible types in comparison expression (different address spaces)
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: cgroups@vger.kernel.org
+> The arm tree patch seems to have had the desired affect so I used the s5p
+> tree version.
 
-Looks correct.
+Err, what are the Samsung people playing at, merging the patches that
+they've sent me for merging into their own tree?
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+This is a recipe for breakage, especially as the exynos patch depends
+on previous patches in my tree _and_ patches in my tree depend on that
+patch as well.
 
-Thanks
+Well, we'll see what we end up with when you do the next linux-next,
+as by then my public tree should be updated with yesterdays work by
+then.
 
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 6adeeec..138be2b 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -195,7 +195,7 @@ struct mem_cgroup_threshold_ary {
->  
->  struct mem_cgroup_thresholds {
->  	/* Primary thresholds array */
-> -	struct mem_cgroup_threshold_ary *primary;
-> +	struct mem_cgroup_threshold_ary __rcu *primary;
->  	/*
->  	 * Spare threshold array.
->  	 * This is needed to make mem_cgroup_unregister_event() "never fail".
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe cgroups" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I've a feeling that this coming merge window is going to be a horrible
+mess.
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
