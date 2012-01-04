@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab2ADXRo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 18:17:44 -0500
-Received: from emh01.mail.saunalahti.fi ([62.142.5.107]:58829 "EHLO
-	emh01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2ADXRm (ORCPT
+	id S932220Ab2ADXSt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 18:18:49 -0500
+Received: from emh04.mail.saunalahti.fi ([62.142.5.110]:50433 "EHLO
+	emh04.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2ADXSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 18:17:42 -0500
-Subject: [PATCH 4/6] ath6kl: get rid of AR_DBG_LVL_CHECK()
+	Wed, 4 Jan 2012 18:18:46 -0500
+Subject: [PATCH 1/6] ath6kl: rename vif init and cleanup functions
 To: linville@tuxdriver.com
 From: Kalle Valo <kvalo@qca.qualcomm.com>
 Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org,
         linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-next@vger.kernel.org, ath6kl-devel@qualcomm.com,
         davem@davemloft.net
-Date: Thu, 05 Jan 2012 01:09:22 +0200
-Message-ID: <20120104230921.32306.63985.stgit@x201>
+Date: Thu, 05 Jan 2012 01:07:51 +0200
+Message-ID: <20120104230751.32306.2699.stgit@x201>
 In-Reply-To: <20120104230429.32306.75965.stgit@x201>
 References: <20120104230429.32306.75965.stgit@x201>
 User-Agent: StGit/0.15
@@ -27,153 +27,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need it as debug calls already have a log level and compiler
-should be smart enough to optimise away the code when ath6kl debug code
-is not enabled. Also it makes it easier to abstract core code to
-ath6kl_core.ko.
+ath6kl_cfg80211_vif_init/cleanup() follow more closely the style used
+elsewhere in ath6kl.
 
 Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
 ---
- drivers/net/wireless/ath/ath6kl/debug.c |   35 ++++++++++++++-----------------
- drivers/net/wireless/ath/ath6kl/debug.h |    2 --
- drivers/net/wireless/ath/ath6kl/hif.c   |    5 ++--
- drivers/net/wireless/ath/ath6kl/wmi.c   |    3 ---
- 4 files changed, 18 insertions(+), 27 deletions(-)
+ drivers/net/wireless/ath/ath6kl/cfg80211.c |    9 ++++-----
+ drivers/net/wireless/ath/ath6kl/cfg80211.h |    2 ++
+ drivers/net/wireless/ath/ath6kl/core.h     |    1 -
+ drivers/net/wireless/ath/ath6kl/init.c     |    5 +++--
+ 4 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath6kl/debug.c b/drivers/net/wireless/ath/ath6kl/debug.c
-index eb808b4..0d77129 100644
---- a/drivers/net/wireless/ath/ath6kl/debug.c
-+++ b/drivers/net/wireless/ath/ath6kl/debug.c
-@@ -82,31 +82,31 @@ void ath6kl_dump_registers(struct ath6kl_device *dev,
- 			   struct ath6kl_irq_enable_reg *irq_enable_reg)
- {
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.c b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+index 6c59a21..cd67cb6 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.c
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+@@ -1403,7 +1403,7 @@ static int ath6kl_cfg80211_del_iface(struct wiphy *wiphy,
  
--	ath6kl_dbg(ATH6KL_DBG_ANY, ("<------- Register Table -------->\n"));
-+	ath6kl_dbg(ATH6KL_DBG_IRQ, ("<------- Register Table -------->\n"));
+ 	ath6kl_cleanup_vif(vif, test_bit(WMI_READY, &ar->flag));
  
- 	if (irq_proc_reg != NULL) {
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			"Host Int status:           0x%x\n",
- 			irq_proc_reg->host_int_status);
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			   "CPU Int status:            0x%x\n",
- 			irq_proc_reg->cpu_int_status);
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			   "Error Int status:          0x%x\n",
- 			irq_proc_reg->error_int_status);
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			   "Counter Int status:        0x%x\n",
- 			irq_proc_reg->counter_int_status);
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			   "Mbox Frame:                0x%x\n",
- 			irq_proc_reg->mbox_frame);
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			   "Rx Lookahead Valid:        0x%x\n",
- 			irq_proc_reg->rx_lkahd_valid);
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			   "Rx Lookahead 0:            0x%x\n",
- 			irq_proc_reg->rx_lkahd[0]);
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			   "Rx Lookahead 1:            0x%x\n",
- 			irq_proc_reg->rx_lkahd[1]);
+-	ath6kl_deinit_if_data(vif);
++	ath6kl_cfg80211_vif_cleanup(vif);
  
-@@ -115,16 +115,16 @@ void ath6kl_dump_registers(struct ath6kl_device *dev,
- 			 * If the target supports GMBOX hardware, dump some
- 			 * additional state.
- 			 */
--			ath6kl_dbg(ATH6KL_DBG_ANY,
-+			ath6kl_dbg(ATH6KL_DBG_IRQ,
- 				"GMBOX Host Int status 2:   0x%x\n",
- 				irq_proc_reg->host_int_status2);
--			ath6kl_dbg(ATH6KL_DBG_ANY,
-+			ath6kl_dbg(ATH6KL_DBG_IRQ,
- 				"GMBOX RX Avail:            0x%x\n",
- 				irq_proc_reg->gmbox_rx_avail);
--			ath6kl_dbg(ATH6KL_DBG_ANY,
-+			ath6kl_dbg(ATH6KL_DBG_IRQ,
- 				"GMBOX lookahead alias 0:   0x%x\n",
- 				irq_proc_reg->rx_gmbox_lkahd_alias[0]);
--			ath6kl_dbg(ATH6KL_DBG_ANY,
-+			ath6kl_dbg(ATH6KL_DBG_IRQ,
- 				"GMBOX lookahead alias 1:   0x%x\n",
- 				irq_proc_reg->rx_gmbox_lkahd_alias[1]);
- 		}
-@@ -132,13 +132,13 @@ void ath6kl_dump_registers(struct ath6kl_device *dev,
- 	}
- 
- 	if (irq_enable_reg != NULL) {
--		ath6kl_dbg(ATH6KL_DBG_ANY,
-+		ath6kl_dbg(ATH6KL_DBG_IRQ,
- 			"Int status Enable:         0x%x\n",
- 			irq_enable_reg->int_status_en);
--		ath6kl_dbg(ATH6KL_DBG_ANY, "Counter Int status Enable: 0x%x\n",
-+		ath6kl_dbg(ATH6KL_DBG_IRQ, "Counter Int status Enable: 0x%x\n",
- 			irq_enable_reg->cntr_int_status_en);
- 	}
--	ath6kl_dbg(ATH6KL_DBG_ANY, "<------------------------------->\n");
-+	ath6kl_dbg(ATH6KL_DBG_IRQ, "<------------------------------->\n");
+ 	return 0;
+ }
+@@ -2742,7 +2742,7 @@ int ath6kl_register_ieee80211_hw(struct ath6kl *ar)
+ 	return 0;
  }
  
- static void dump_cred_dist(struct htc_endpoint_credit_dist *ep_dist)
-@@ -175,9 +175,6 @@ void dump_cred_dist_stats(struct htc_target *target)
+-static int ath6kl_init_if_data(struct ath6kl_vif *vif)
++static int ath6kl_cfg80211_vif_init(struct ath6kl_vif *vif)
  {
- 	struct htc_endpoint_credit_dist *ep_list;
+ 	vif->aggr_cntxt = aggr_init(vif->ndev);
+ 	if (!vif->aggr_cntxt) {
+@@ -2761,7 +2761,7 @@ static int ath6kl_init_if_data(struct ath6kl_vif *vif)
+ 	return 0;
+ }
  
--	if (!AR_DBG_LVL_CHECK(ATH6KL_DBG_CREDIT))
--		return;
--
- 	list_for_each_entry(ep_list, &target->cred_dist_list, list)
- 		dump_cred_dist(ep_list);
+-void ath6kl_deinit_if_data(struct ath6kl_vif *vif)
++void ath6kl_cfg80211_vif_cleanup(struct ath6kl_vif *vif)
+ {
+ 	struct ath6kl *ar = vif->ar;
  
-diff --git a/drivers/net/wireless/ath/ath6kl/debug.h b/drivers/net/wireless/ath/ath6kl/debug.h
-index e569c65..cb21d91 100644
---- a/drivers/net/wireless/ath/ath6kl/debug.h
-+++ b/drivers/net/wireless/ath/ath6kl/debug.h
-@@ -56,8 +56,6 @@ int ath6kl_printk(const char *level, const char *fmt, ...);
- #define ath6kl_warn(fmt, ...)					\
- 	ath6kl_printk(KERN_WARNING, fmt, ##__VA_ARGS__)
+@@ -2808,8 +2808,7 @@ struct net_device *ath6kl_interface_add(struct ath6kl *ar, char *name,
  
--#define AR_DBG_LVL_CHECK(mask)	(debug_mask & mask)
--
- enum ath6kl_war {
- 	ATH6KL_WAR_INVALID_RATE,
- };
-diff --git a/drivers/net/wireless/ath/ath6kl/hif.c b/drivers/net/wireless/ath/ath6kl/hif.c
-index 0772ef6..3d26c14 100644
---- a/drivers/net/wireless/ath/ath6kl/hif.c
-+++ b/drivers/net/wireless/ath/ath6kl/hif.c
-@@ -429,9 +429,8 @@ static int proc_pending_irqs(struct ath6kl_device *dev, bool *done)
- 		if (status)
- 			goto out;
+ 	ath6kl_init_control_info(vif);
  
--		if (AR_DBG_LVL_CHECK(ATH6KL_DBG_IRQ))
--			ath6kl_dump_registers(dev, &dev->irq_proc_reg,
--					 &dev->irq_en_reg);
-+		ath6kl_dump_registers(dev, &dev->irq_proc_reg,
-+				      &dev->irq_en_reg);
+-	/* TODO: Pass interface specific pointer instead of ar */
+-	if (ath6kl_init_if_data(vif))
++	if (ath6kl_cfg80211_vif_init(vif))
+ 		goto err;
  
- 		/* Update only those registers that are enabled */
- 		host_int_status = dev->irq_proc_reg.host_int_status &
-diff --git a/drivers/net/wireless/ath/ath6kl/wmi.c b/drivers/net/wireless/ath/ath6kl/wmi.c
-index f6f2aa2..fbd886a 100644
---- a/drivers/net/wireless/ath/ath6kl/wmi.c
-+++ b/drivers/net/wireless/ath/ath6kl/wmi.c
-@@ -419,9 +419,6 @@ static int ath6kl_wmi_tx_complete_event_rx(u8 *datap, int len)
- 	ath6kl_dbg(ATH6KL_DBG_WMI, "comp: %d %d %d\n",
- 		   evt->num_msg, evt->msg_len, evt->msg_type);
+ 	if (register_netdevice(ndev))
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.h b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+index 81f20a5..aa96169 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.h
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+@@ -53,6 +53,8 @@ int ath6kl_cfg80211_suspend(struct ath6kl *ar,
  
--	if (!AR_DBG_LVL_CHECK(ATH6KL_DBG_WMI))
--		return 0;
--
- 	for (index = 0; index < evt->num_msg; index++) {
- 		size = sizeof(struct wmi_tx_complete_event) +
- 		    (index * sizeof(struct tx_complete_msg_v1));
+ int ath6kl_cfg80211_resume(struct ath6kl *ar);
+ 
++void ath6kl_cfg80211_vif_cleanup(struct ath6kl_vif *vif);
++
+ void ath6kl_cfg80211_stop(struct ath6kl_vif *vif);
+ void ath6kl_cfg80211_stop_all(struct ath6kl *ar);
+ 
+diff --git a/drivers/net/wireless/ath/ath6kl/core.h b/drivers/net/wireless/ath/ath6kl/core.h
+index c863a28..93d05c0 100644
+--- a/drivers/net/wireless/ath/ath6kl/core.h
++++ b/drivers/net/wireless/ath/ath6kl/core.h
+@@ -723,7 +723,6 @@ void ath6kl_wakeup_event(void *dev);
+ void ath6kl_reset_device(struct ath6kl *ar, u32 target_type,
+ 			 bool wait_fot_compltn, bool cold_reset);
+ void ath6kl_init_control_info(struct ath6kl_vif *vif);
+-void ath6kl_deinit_if_data(struct ath6kl_vif *vif);
+ void ath6kl_core_free(struct ath6kl *ar);
+ struct ath6kl_vif *ath6kl_vif_first(struct ath6kl *ar);
+ void ath6kl_cleanup_vif(struct ath6kl_vif *vif, bool wmi_ready);
+diff --git a/drivers/net/wireless/ath/ath6kl/init.c b/drivers/net/wireless/ath/ath6kl/init.c
+index 368ecbd..ffe6254 100644
+--- a/drivers/net/wireless/ath/ath6kl/init.c
++++ b/drivers/net/wireless/ath/ath6kl/init.c
+@@ -1695,7 +1695,7 @@ err_rxbuf_cleanup:
+ 	ath6kl_htc_flush_rx_buf(ar->htc_target);
+ 	ath6kl_cleanup_amsdu_rxbufs(ar);
+ 	rtnl_lock();
+-	ath6kl_deinit_if_data(netdev_priv(ndev));
++	ath6kl_cfg80211_vif_cleanup(netdev_priv(ndev));
+ 	rtnl_unlock();
+ 	wiphy_unregister(ar->wiphy);
+ err_debug_init:
+@@ -1716,6 +1716,7 @@ err_wq:
+ 	return ret;
+ }
+ 
++/* FIXME: move this to cfg80211.c and rename to ath6kl_cfg80211_vif_stop() */
+ void ath6kl_cleanup_vif(struct ath6kl_vif *vif, bool wmi_ready)
+ {
+ 	static u8 bcast_mac[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
+@@ -1761,7 +1762,7 @@ void ath6kl_stop_txrx(struct ath6kl *ar)
+ 		spin_unlock_bh(&ar->list_lock);
+ 		ath6kl_cleanup_vif(vif, test_bit(WMI_READY, &ar->flag));
+ 		rtnl_lock();
+-		ath6kl_deinit_if_data(vif);
++		ath6kl_cfg80211_vif_cleanup(vif);
+ 		rtnl_unlock();
+ 		spin_lock_bh(&ar->list_lock);
+ 	}
 
