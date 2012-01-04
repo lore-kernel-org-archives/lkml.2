@@ -1,96 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755992Ab2ADBvp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 20:51:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:55268 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab2ADBvm (ORCPT
+	id S1756131Ab2ADCSd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 21:18:33 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:49897 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756083Ab2ADCS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 20:51:42 -0500
-Date: Tue, 3 Jan 2012 17:51:22 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: kosaki.motohiro@gmail.com
-cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH 2/2] sysvshm: SHM_LOCK use lru_add_drain_all_async()
-In-Reply-To: <1325403025-22688-2-git-send-email-kosaki.motohiro@gmail.com>
-Message-ID: <alpine.LSU.2.00.1201031724300.1254@eggly.anvils>
-References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <1325403025-22688-2-git-send-email-kosaki.motohiro@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 3 Jan 2012 21:18:29 -0500
+Date: Wed, 4 Jan 2012 13:18:18 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the s5p tree with the  tree
+Message-Id: <20120104131818.5758cb3cb563379df97ee0ad@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__4_Jan_2012_13_18_18_+1100_YtAHEa/wzR48YvEl"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 1 Jan 2012, kosaki.motohiro@gmail.com wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> shmctl also don't need synchrounous pagevec drain. This patch replace it with
-> lru_add_drain_all_async().
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+--Signature=_Wed__4_Jan_2012_13_18_18_+1100_YtAHEa/wzR48YvEl
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Let me answer this 2/2 first since it's easier.
+Hi Kukjin,
 
-I'm going to thank you for bringing this lru_add_drain_all()
-to my attention, I had not noticed it; but Nak the patch itself.
+Today's linux-next merge of the s5p tree got a conflict in
+arch/arm/mach-s3c2410/include/mach/system-reset.h between commit
+281c8724c10c ("ARM: restart: Temporary #error to persuade platform
+maintainers to take the restart changes seriously") from the arm tree and
+commit 11ca5f97077d ("ARM: restart: S3C24XX: use new restart hook") from
+the s5p tree.
 
-The reason being, that particular lru_add_drain_all() serves no
-useful purpose, so let's delete it instead of replacing it.  I believe
-that it serves no purpose for SHM_LOCK and no purpose for SHM_UNLOCK.
+The arm tree patch seems to have had the desired affect so I used the s5p
+tree version.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I'm dabbling in this area myself, since you so cogently pointed out that
-I'd tried to add a cond_resched() to scan_mapping_unevictable_pages()
-(which is a helper for SHM_UNLOCK here) while it's under spinlock.
+--Signature=_Wed__4_Jan_2012_13_18_18_+1100_YtAHEa/wzR48YvEl
+Content-Type: application/pgp-signature
 
-In testing my fix for that, I find that there has been no attempt to
-keep the Unevictable count accurate on SysVShm: SHM_LOCK pages get
-marked unevictable lazily later as memory pressure discovers them -
-which perhaps mirrors the way in which SHM_LOCK makes no attempt to
-instantiate pages, unlike mlock.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-Since nobody has complained about that in the two years since we've
-had an Unevictable count in /proc/meminfo, I don't see any need to
-add code (it would need more than just your change here; would need
-more even than calling scan_mapping_unevictable_pages() at SHM_LOCK
-time - though perhaps along with your 1/2 that could handle it) and
-overhead to satisfy a need that nobody has.
+iQIcBAEBCAAGBQJPA7bqAAoJEECxmPOUX5FEz+YP/17QeXTruZYJffs7afoGzUh6
+l9m04v10SDx0RCrv30LsTkunbd0Oamn+tnl5l1IYKs8RezPOHKUTdWPxJoZGhhtS
+vXsxR9aWvZVuIsncbuTFjS5R2JLEpFUBMj+DfZgZUspa+QJ64+V/aSZg/O9iib5k
+b+kNZYLb06qkFiThhaZYfiJs0Ajk8u88pWVg47g2t+XEhJ/5vVe2I31cEFhu9VXS
+jpEwns2ke8f3s02JgqvRomCWbcd1cqVDxv8+v3YNHDDk0/U+W8WyJ1Lo6vxEjuF1
+/F/Lz77yaD+1D7fj2BY/XMo6untZu4A3IFx6HCerHMBXHRL8LT5OLcruSFptRaza
+jTcWpcZDU8DnIfpF3UI/CvQ3JPLACS0v6VLWBjL5P24KT00pFcb/2a+ZXkyx/QHW
+cQv8ohesTWqKy150vbjAxKSAxJ18pQYMb+roPv5PQqIH4WlcHkSOz9ZX5d+20aRK
+vJdJMF7b+MRLokonWF0EbzaE+ID9XCZRGi+kiYKT5zqgF/lSiyG0iPJtnN4n7EkY
+1q40cyfOFh3GG0Oc+yHUqbW1F0GYc6oP3kJk/CvB1j7dxTG3zWGMOxgX3TTB5YY/
+1YfTB/0sTmAAFqcYeTWvt5zNhzJIQh/TbIIuT0oM3kvmkWkeduSaGxrQ1aSty1e3
+8pCToG+aahlEhU4nv9iY
+=SX85
+-----END PGP SIGNATURE-----
 
-I'll delete that lru_add_drain_all() in my patch, okay?
-
-(But in writing this, realize I still don't quite understand why
-the Unevictable count takes a second or two to get back to 0 after
-SHM_UNLOCK: perhaps I've more to discover.)
-
-Hugh
-
-> ---
->  ipc/shm.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/ipc/shm.c b/ipc/shm.c
-> index 02ecf2c..1eb25f0 100644
-> --- a/ipc/shm.c
-> +++ b/ipc/shm.c
-> @@ -872,8 +872,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
->  	{
->  		struct file *uninitialized_var(shm_file);
->  
-> -		lru_add_drain_all();  /* drain pagevecs to lru lists */
-> -
->  		shp = shm_lock_check(ns, shmid);
->  		if (IS_ERR(shp)) {
->  			err = PTR_ERR(shp);
-> @@ -911,6 +909,8 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
->  			shp->mlock_user = NULL;
->  		}
->  		shm_unlock(shp);
-> +		/* prevent user visible mismatch of unevictable accounting */
-> +		lru_add_drain_all_async();
->  		goto out;
->  	}
->  	case IPC_RMID:
-> -- 
-> 1.7.1
+--Signature=_Wed__4_Jan_2012_13_18_18_+1100_YtAHEa/wzR48YvEl--
