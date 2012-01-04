@@ -1,68 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756650Ab2ADSAi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 13:00:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59076 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750884Ab2ADSAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 13:00:36 -0500
-Date: Wed, 4 Jan 2012 19:00:33 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the vfs tree
-Message-ID: <20120104180033.GE28907@quack.suse.cz>
-References: <20120103124331.f0f0043f8ca464c9ff13f4d3@canb.auug.org.au>
- <20120103133942.GC31457@quack.suse.cz>
- <20120103144531.GA23916@ZenIV.linux.org.uk>
- <20120104021754.GD23916@ZenIV.linux.org.uk>
- <20120104025020.GW23662@dastard>
+	id S1756675Ab2ADSFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 13:05:18 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:61361 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756436Ab2ADSFO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 13:05:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120104025020.GW23662@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Wed, 4 Jan 2012 19:05:13 +0100
+Message-ID: <CALbm-EbAoDGyMpu7JOjk8t=2=Sn9PKS9EEuo8Gut8rwXpDQHmw@mail.gmail.com>
+Subject: [PATCH] Include the git way into Documentation/SubmittingPatches
+From: Stefan Beller <stefanbeller@googlemail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-01-12 13:50:20, Dave Chinner wrote:
-> On Wed, Jan 04, 2012 at 02:17:54AM +0000, Al Viro wrote:
-> > I'm still not
-> > sure about ->statfs(), BTW - any input on that would be welcome.  Can
-> > it end up blocked on a frozen fs until said fs is thawed?
-> 
-> I don't see why this should ever happen - ->statfs has to work on
-> read-only filesystems so shoul dnot be modifying state, and hence
-> should never need to care about the frozen state of the superblock.
-  Well, I'm also not aware of a filesystem where ->statfs would wait on
-frozen filesystem. Just note that e.g. for stat(2) frozen filesystem and
-RO filesystem *are* different because of atime updates. So stat(2) can
-block on frozen fs because of atime update while on RO filesystem it is
-just fine.
+I was quite confused when doing my first patch for linux
+and the documentation told me to use "diff -up" instead of
+git add/commit.
 
-> So from a ->statfs POV, a frozen filesystem should look just like a
-> read-only filesystem. If frozen filesystems are holding locks that
-> ->statfs can block on until the filesystem us thawed, then I'd
-> consider that a bug in the filesystem freeze implementation....
-  In an ideal world yes. Practically, current freeze code has races
-(vfs_check_frozen() is a totally racy check) which can leave processes
-waiting for frozen fs with filesystem locks held. I believe we need
-something like mnt_want_write()/mnt_drop_write() for freezing code in
-->page_mkwrite() and ->write_begin/->write_end. I'm now looking into how
-to do that in the best way.
- 
-> > to convert ustat(2) to "wait for thaw" semantics (should be interruptible,
-> > BTW) or document that ->statfs() is not allowed to wait for thawing.
-> > It's far too subtle to leave undocumented...
-> 
-> The latter, IMO.
-  Agreed.
+Signed-off-by: Stefan Beller <stefanbeller@googlemail.com>
+---
+ Documentation/SubmittingPatches |   26 ++++++++++++++++++++++----
+ 1 files changed, 22 insertions(+), 4 deletions(-)
 
-								Honza
+diff --git a/Documentation/SubmittingPatches b/Documentation/SubmittingPatches
+index 4468ce2..43acf99 100644
+--- a/Documentation/SubmittingPatches
++++ b/Documentation/SubmittingPatches
+@@ -20,9 +20,14 @@ Documentation/SubmittingDrivers.
+ SECTION 1 - CREATING AND SENDING YOUR CHANGE
+ --------------------------------------------
+
++The steps 1) - 3) can be either performed using the diff utility or
++using git, the distributed revision control used by the kernel developers.
++Using git is easier, but you need it installed of course.
++So either follow steps 1a), 2a) and 3a) utilising the diff method
++or just 3b) using git.
+
+
+-1) "diff -up"
++1a) "diff -up"
+ ------------
+
+ Use "diff -up" or "diff -uprN" to create patches.
+@@ -82,8 +87,7 @@ Instead of these scripts, quilt is the recommended
+patch management
+ tool (see above).
+
+
+-
+-2) Describe your changes.
++2a) Describe your changes.
+
+ Describe the technical detail of the change(s) your patch includes.
+
+@@ -111,7 +115,7 @@ If the patch fixes a logged bug entry, refer to
+that bug entry by
+ number and URL.
+
+
+-3) Separate your changes.
++3a) Separate your changes.
+
+ Separate _logical changes_ into a single patch file.
+
+@@ -131,6 +135,20 @@ in your patch description.
+ If you cannot condense your patch set into a smaller set of patches,
+ then only post say 15 or so at a time and wait for review and integration.
+
++3b) Using git
++
++If you have followed 1a) 2a) and 3a), skip this step.
++
++Use "git add -i" to add all separate _logical_ changes (as described in 3a)
++to the index of git.
++
++Use "git commit" to commit all added changes into the revision control.
++A texteditor (vi, nano or graphical) will appear, which should be used to
++describe the changes. Describe the technical detail of the change(s)
++your patch includes. (see 2a for explanation of "technical changes")
++
++Use "git format-patch HEAD~1" to put your changes and your description
++into a single textfile.
+
+
+ 4) Style check your changes.
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.5.4
