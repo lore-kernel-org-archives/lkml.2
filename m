@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab2ADBvF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 20:51:05 -0500
-Received: from us-mx3.synaptics.com ([12.239.217.85]:49815 "EHLO
-	us-mx3.synaptics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab2ADBvD (ORCPT
+	id S1755992Ab2ADBvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 20:51:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:55268 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755392Ab2ADBvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 20:51:03 -0500
-X-PGP-Universal: processed;
-	by securemail.synaptics.com on Tue, 03 Jan 2012 17:39:07 -0800
-Message-ID: <4F03B085.6000101@synaptics.com>
-Date: Tue, 3 Jan 2012 17:51:01 -0800
-From: Christopher Heiny <cheiny@synaptics.com>
-Organization: Synaptics, Inc
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Fedora/3.1.11-1.fc14 Thunderbird/3.1.11
+	Tue, 3 Jan 2012 20:51:42 -0500
+Date: Tue, 3 Jan 2012 17:51:22 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: kosaki.motohiro@gmail.com
+cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH 2/2] sysvshm: SHM_LOCK use lru_add_drain_all_async()
+In-Reply-To: <1325403025-22688-2-git-send-email-kosaki.motohiro@gmail.com>
+Message-ID: <alpine.LSU.2.00.1201031724300.1254@eggly.anvils>
+References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <1325403025-22688-2-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 00/11] input: Synaptics RMI4 Touchscreen Driver
-References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com> <CACRpkdbcK9SGtQf9g55h_PGPenrvc9kxPYfZXNV1-4K8NvdAgg@mail.gmail.com>
-In-Reply-To: <CACRpkdbcK9SGtQf9g55h_PGPenrvc9kxPYfZXNV1-4K8NvdAgg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/2012 05:51 AM, Linus Walleij wrote:
-> On Thu, Dec 22, 2011 at 3:09 AM, Christopher Heiny<cheiny@synaptics.com>  wrote:
->
->> This patch implements a driver supporting Synaptics ClearPad and other
->> touchscreen sensors that use the RMI4 protocol, as defined here:
->
-> This looks like a fundamental rewrite an huge improvement over the
-> previous RMI4 patches, good job!
->
-> I am not very deeply versed in the input subsystem but overall it looks
-> good to me, nice structure etc. I hope to be able to get back to a detailed
-> review and per-patch Acked-by:s ASAP.
+On Sun, 1 Jan 2012, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> shmctl also don't need synchrounous pagevec drain. This patch replace it with
+> lru_add_drain_all_async().
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Thanks!
+Let me answer this 2/2 first since it's easier.
 
-We realized we were in a red queen's race by trying to both implement 
-customer requests and restructure the system at the same time, so 
-contracted Unixphere to help with the restructure.  We think the result 
-was pretty good, and it's nice to hear compliments.
+I'm going to thank you for bringing this lru_add_drain_all()
+to my attention, I had not noticed it; but Nak the patch itself.
 
-We'll look forward to your input after the detailed review.
+The reason being, that particular lru_add_drain_all() serves no
+useful purpose, so let's delete it instead of replacing it.  I believe
+that it serves no purpose for SHM_LOCK and no purpose for SHM_UNLOCK.
 
-					Thanks again,
-						Chris
+I'm dabbling in this area myself, since you so cogently pointed out that
+I'd tried to add a cond_resched() to scan_mapping_unevictable_pages()
+(which is a helper for SHM_UNLOCK here) while it's under spinlock.
+
+In testing my fix for that, I find that there has been no attempt to
+keep the Unevictable count accurate on SysVShm: SHM_LOCK pages get
+marked unevictable lazily later as memory pressure discovers them -
+which perhaps mirrors the way in which SHM_LOCK makes no attempt to
+instantiate pages, unlike mlock.
+
+Since nobody has complained about that in the two years since we've
+had an Unevictable count in /proc/meminfo, I don't see any need to
+add code (it would need more than just your change here; would need
+more even than calling scan_mapping_unevictable_pages() at SHM_LOCK
+time - though perhaps along with your 1/2 that could handle it) and
+overhead to satisfy a need that nobody has.
+
+I'll delete that lru_add_drain_all() in my patch, okay?
+
+(But in writing this, realize I still don't quite understand why
+the Unevictable count takes a second or two to get back to 0 after
+SHM_UNLOCK: perhaps I've more to discover.)
+
+Hugh
+
+> ---
+>  ipc/shm.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/ipc/shm.c b/ipc/shm.c
+> index 02ecf2c..1eb25f0 100644
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -872,8 +872,6 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+>  	{
+>  		struct file *uninitialized_var(shm_file);
+>  
+> -		lru_add_drain_all();  /* drain pagevecs to lru lists */
+> -
+>  		shp = shm_lock_check(ns, shmid);
+>  		if (IS_ERR(shp)) {
+>  			err = PTR_ERR(shp);
+> @@ -911,6 +909,8 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int, cmd, struct shmid_ds __user *, buf)
+>  			shp->mlock_user = NULL;
+>  		}
+>  		shm_unlock(shp);
+> +		/* prevent user visible mismatch of unevictable accounting */
+> +		lru_add_drain_all_async();
+>  		goto out;
+>  	}
+>  	case IPC_RMID:
+> -- 
+> 1.7.1
