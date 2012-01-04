@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2ADQIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 11:08:14 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52371 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab2ADQIL (ORCPT
+	id S1756236Ab2ADQLB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 11:11:01 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:17545 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754584Ab2ADQK7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 11:08:11 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1201040906090.27157@router.home>
-References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
- <CA+55aFz23nN4EALZKf1uptn3a+LKU8wehEnxXO7WA8J5WAyPAQ@mail.gmail.com>
- <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
- <20111220162315.GC10752@google.com> <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com>
- <20111220202854.GH10752@google.com> <alpine.DEB.2.00.1112210851230.9601@router.home>
- <20111221170535.GB9213@google.com> <alpine.DEB.2.00.1112220854440.31315@router.home>
- <20111222160822.GE17084@google.com> <alpine.DEB.2.00.1112221154380.11787@router.home>
- <CA+55aFzY_6QYVyjAmP+w8D0Xy1Pq++XEUaBJRcCN9SbDE-pOhw@mail.gmail.com>
- <alpine.DEB.2.00.1112231031001.3482@router.home> <CA+55aFzCY7TyEgkWFn6wxUMjBBaKGcx0hdV6gTdta5u8eK=Ymg@mail.gmail.com>
- <alpine.DEB.2.00.1201040906090.27157@router.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 4 Jan 2012 08:07:48 -0800
-X-Google-Sender-Auth: KeBvIwd8rII0WLW6IjQtKUpble0
-Message-ID: <CA+55aFwOp1UbeexKSdQC6YwrA9pS-J5qdqs-68=H8T1GS4Nr1A@mail.gmail.com>
-Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 4 Jan 2012 11:10:59 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 04 Jan 2012 08:10:59 -0800
+From: Laxman Dewangan <ldewangan.com@nvidia.com>
+To: broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk
+Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, ldewangan@nvidia.com
+Subject: [PATCH V1] regulator: fixed: Move drivers to subsys_initcall_sync()
+Date: Wed,  4 Jan 2012 21:38:55 +0530
+Message-Id: <1325693335-1905-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 7:30 AM, Christoph Lameter <cl@linux.com> wrote:
->
-> As mentioned before the main point of the use of these operations (in the
-> form of __this_cpu_op_return) when the cpu is pinned is to reduce the
-> number of instructions. __this_cpu_add_return allows replacing ~ 5
-> instructions with one.
+From: Laxman Dewangan <ldewangan@nvidia.com>
 
-And that's fine if it's something really core, and something *so*
-important that you can tell the difference between one instruction and
-three.
+The fixed regulator is used to enable/disable rails which are
+mainly controlled by the switch. The switches are toggled by
+gpio apis.
+The switches are connected through on-chip gpios or through
+external devices' gpios like mfd, i2c based gpio expander etc.
+The registration of the fixed regulator get success only if the
+required gpios are already available in the system at this time.
+The on-chip gpios are available till this time as on-chip gpios
+are initialized in arch_init(). But external peripheral's gpios
+may not be available at this time as they get initialized as part
+of subsys_initcall() and due to this registration of the fixed
+regulator may fails.
+Moving the driver to subsys_initcall_sync() will make sure that
+all gpios i.e. on-chip gpios as well as external peripheral's gpios
+are available before fixed regulator registration.
 
-Which isn't the case here. In fact, on many (most?) x86
-microarchitectures xadd is actually slower than a regular
-add-from-memory-and-store - the big advantage of it is that with the
-"lock" prefix you do get special atomicity guarantees, and some
-algorithms (is semaphores) do want to know the value of the add
-atomically in order to know if there were other things going on.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/regulator/fixed.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The thing is, I care about maintainability and not having
-cross-architecture problems etc. And right now many of the cpulocal
-things are *much* more of a maintainability headache than they are
-worth.
+diff --git a/drivers/regulator/fixed.c b/drivers/regulator/fixed.c
+index a44a017..baec76e 100644
+--- a/drivers/regulator/fixed.c
++++ b/drivers/regulator/fixed.c
+@@ -307,7 +307,7 @@ static int __init regulator_fixed_voltage_init(void)
+ {
+ 	return platform_driver_register(&regulator_fixed_voltage_driver);
+ }
+-subsys_initcall(regulator_fixed_voltage_init);
++subsys_initcall_sync(regulator_fixed_voltage_init);
+ 
+ static void __exit regulator_fixed_voltage_exit(void)
+ {
+-- 
+1.7.1.1
 
-                     Linus
