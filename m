@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab2ADVI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:08:26 -0500
-Received: from mail.windriver.com ([147.11.1.11]:48387 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756904Ab2ADVIX (ORCPT
+	id S932082Ab2ADVLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:11:20 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:52832 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab2ADVLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:08:23 -0500
-Message-ID: <4F04BFA8.9010100@windriver.com>
-Date: Wed, 4 Jan 2012 16:07:52 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Jiri Slaby <jslaby@suse.cz>, <alan@linux.intel.com>,
-        <linux-serial@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH] serial: relocate remaining serial drivers from tty/ to
- tty/serial/
-References: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com> <4F04B7DC.70809@suse.cz> <20120104205146.GA21430@suse.de>
-In-Reply-To: <20120104205146.GA21430@suse.de>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Wed, 4 Jan 2012 16:11:18 -0500
+Date: Wed, 04 Jan 2012 16:11:14 -0500 (EST)
+Message-Id: <20120104.161114.1924910384933450343.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Jan 2012 13:11:16 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12-01-04 03:51 PM, Greg KH wrote:
-> On Wed, Jan 04, 2012 at 09:34:36PM +0100, Jiri Slaby wrote:
->> On 01/04/2012 09:01 PM, Paul Gortmaker wrote:
->>>  rename drivers/tty/{ => serial}/amiserial.c (100%)
->>>  rename drivers/tty/{ => serial}/cyclades.c (100%)
->>>  rename drivers/tty/{ => serial}/isicom.c (100%)
->>>  rename drivers/tty/{ => serial}/moxa.c (100%)
->>>  rename drivers/tty/{ => serial}/moxa.h (100%)
->>>  rename drivers/tty/{ => serial}/mxser.c (100%)
->>>  rename drivers/tty/{ => serial}/mxser.h (100%)
->>>  rename drivers/tty/{ => serial}/rocket.c (100%)
->>>  rename drivers/tty/{ => serial}/rocket.h (100%)
->>>  rename drivers/tty/{ => serial}/rocket_int.h (100%)
->>>  rename drivers/tty/{ => serial}/synclink.c (100%)
->>>  rename drivers/tty/{ => serial}/synclink_gt.c (100%)
->>>  rename drivers/tty/{ => serial}/synclinkmp.c (100%)
->>
->> Hmm, tty/serial/* used to be for those using serial-core. And tty/ for
->> those who don't. But FWIW I don't mind the change.
-> 
-> Yes, that is what I used when splitting them up, so this patch doesn't
-> make much sense.
-> 
-> Paul, why do you want these all mixed together?
 
-My thinking was that having a drivers/tty/serial dir and then
-not having all the serial drivers in that dir violated the
-principle of least surprise.  Is there a reason why the dir should
-be the exclusive domain of drivers with a dependency on SERIAL_CORE?
+Probably the bluetooth 10 second resume delay fix is the most
+interesting fix here, especially if you're actually hitting it.
 
-Paul.
+The rest are small fixes isolated to specific drivers or packet
+schedulers.
 
-> 
-> greg k-h
+1) Revert bluetooth HCI reset timeout increase, it adds a 10 second delay
+   during resume in Thinkpad laptops and potentially other machines.  From
+   Gustavo F. Padovan.
+
+2) New packet QFQ scheduler using wrong types to compute queueing limits
+   leading to overflows, fix from Eric Dumazet.
+
+3) Fix regression in b43 driver conversion to new RX descriptor header
+   format, it broke PIO mode where the header length needs to be computed
+   differently.  Fix from Guennadi Liakhovetski.
+
+4) Fix build dependencies of FEC ethernet driver, from Wolfram Sang.
+
+5) mwifiex gets OOPS when scan and connect occur simultaneously, fix from
+   Amitkumar Karwar.
+
+6) ath9k crashes in access point mode because it does aggregation
+   handling during power save even if TX aggregation is not enabled.
+   Fix from Mohammed Shafi Shajakhan.
+
+7) Update CAN MAINTAINERS entry, from Oliver Hartkopp.
+
+Please pull, thanks a lot!
+
+The following changes since commit f423fc627b05f47bc9305f9661630fce30f208f9:
+
+  Revert "rtc: Expire alarms after the time is set." (2012-01-04 07:57:22 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+Amitkumar Karwar (1):
+      mwifiex: fix crash during simultaneous scan and connect
+
+Eric Dumazet (1):
+      sch_qfq: fix overflow in qfq_update_start()
+
+Guennadi Liakhovetski (1):
+      b43: fix regression in PIO case
+
+Gustavo F. Padovan (1):
+      Revert "Bluetooth: Increase HCI reset timeout in hci_dev_do_close"
+
+John W. Linville (2):
+      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Mohammed Shafi Shajakhan (1):
+      ath9k: Fix kernel panic in AR2427 in AP mode
+
+Oliver Hartkopp (2):
+      CAN MAINTAINERS update
+      fix CAN MAINTAINERS SCM tree type
+
+Wolfram Sang (1):
+      net: fsl: fec: fix build for mx23-only kernel
+
+ MAINTAINERS                              |   11 +++++------
+ drivers/net/ethernet/freescale/Kconfig   |    4 ++--
+ drivers/net/wireless/ath/ath9k/main.c    |    3 +++
+ drivers/net/wireless/b43/pio.c           |   16 +++++++++++++---
+ drivers/net/wireless/mwifiex/sta_ioctl.c |    7 ++++++-
+ net/bluetooth/hci_core.c                 |    2 +-
+ net/sched/sch_qfq.c                      |    4 ++--
+ 7 files changed, 32 insertions(+), 15 deletions(-)
