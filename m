@@ -1,57 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754648Ab2ADJHj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 04:07:39 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47398 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab2ADJHh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 04:07:37 -0500
-Date: Wed, 4 Jan 2012 09:07:02 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Kukjin Kim <kgene.kim@samsung.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the s5p tree with the arm tree
-Message-ID: <20120104090702.GA28052@flint.arm.linux.org.uk>
-References: <20120104131830.ec4341de50a69f4f3f2c5b7b@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754724Ab2ADJQq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 04:16:46 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:46134 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab2ADJQm convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:11:1>);
+	Wed, 4 Jan 2012 04:16:42 -0500
+Message-Id: <4F04273E020000780006A502@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Wed, 04 Jan 2012 09:17:34 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Ian Campbell" <Ian.Campbell@citrix.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Konrad Rzeszutek Wilk" <konrad@darnok.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "Jens Axboe" <axboe@kernel.dk>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "Ben Hutchings" <bhutchings@solarflare.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [PATCH, v2] Xen: consolidate and simplify struct
+ xenbus_driver instantiation
+References: <4EF3018D020000780006986E@nat28.tlf.novell.com>
+ <1324547820.7877.71.camel@zakaz.uk.xensource.com>
+ <4EF327E2020000780006993E@nat28.tlf.novell.com>
+ <1324555060.7877.84.camel@zakaz.uk.xensource.com>
+ <1324565067.2897.2.camel@bwh-desktop>
+ <1324586301.13113.3.camel@dagon.hellion.org.uk>
+ <20120103203637.GF17472@phenom.dumpdata.com>
+In-Reply-To: <20120103203637.GF17472@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20120104131830.ec4341de50a69f4f3f2c5b7b@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 01:18:30PM +1100, Stephen Rothwell wrote:
-> Hi Kukjin,
+>>> On 03.01.12 at 21:36, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Thu, Dec 22, 2011 at 08:38:21PM +0000, Ian Campbell wrote:
+>> On Thu, 2011-12-22 at 14:44 +0000, Ben Hutchings wrote:
+>> > On Thu, 2011-12-22 at 11:57 +0000, Ian Campbell wrote:
+>> > > On Thu, 2011-12-22 at 11:51 +0000, Jan Beulich wrote:
+>> > > > >>> On 22.12.11 at 10:57, Ian Campbell <Ian.Campbell@citrix.com> wrote:
+>> > > > > On Thu, 2011-12-22 at 09:08 +0000, Jan Beulich wrote:
+>> > > > >> The 'name', 'owner', and 'mod_name' members are redundant with the
+>> > > > >> identically named fields in the 'driver' sub-structure. Rather than
+>> > > > >> switching each instance to specify these fields explicitly, introduce
+>> > > > >> a macro to simplify this.
+>> > > > >> 
+>> > > > >> Eliminate further redundancy by allowing the drvname argument to
+>> > > > >> DEFINE_XENBUS_DRIVER() to be blank (in which case the first entry from
+>> > > > >> the ID table will be used for .driver.name).
+>> > > > > 
+>> > > > > Any reason not to always use DRV_NAME here (which is generally a bit
+>> > > > > more specific e.g. "xen-foofront" rather than "foo") and rely on the id
+>> > > > > table for the shorter names used in xenstore?
+>> > > > 
+>> > > > That would imply that DRV_NAME is always defined, but I don't
+>> > > > see this being the case.
+>> > > 
+>> > > My mistake, I thought it was a Kbuild thing.
+>> > 
+>> > You're maybe thinking of KBUILD_MODNAME.
+>> 
+>> Yes, I think I was.
 > 
-> Today's linux-next merge of the s5p tree got a conflict in
-> arch/arm/plat-samsung/include/plat/system-reset.h between commit
-> 281c8724c10c ("ARM: restart: Temporary #error to persuade platform
-> maintainers to take the restart changes seriously") from the arm tree and
-> commit 08c6fc52956c ("ARM: restart: EXYNOS: use new restart hook") from
-> the s5p tree.
-> 
-> The arm tree patch seems to have had the desired affect so I used the s5p
-> tree version.
+> Ian, are you OK with this patch? I think Jan needs to repost once more with 
+> the
+> "pciback" -> DRV_NAME change and then it is OK?
 
-Err, what are the Samsung people playing at, merging the patches that
-they've sent me for merging into their own tree?
+But that is what v2 was about (which is this thread).
 
-This is a recipe for breakage, especially as the exynos patch depends
-on previous patches in my tree _and_ patches in my tree depend on that
-patch as well.
+Jan
 
-Well, we'll see what we end up with when you do the next linux-next,
-as by then my public tree should be updated with yesterdays work by
-then.
+> I've tested it with all backends, except the pciback one, and I see no 
+> regressions
+> with 'xl' or 'xm' toolstack.
 
-I've a feeling that this coming merge window is going to be a horrible
-mess.
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+
