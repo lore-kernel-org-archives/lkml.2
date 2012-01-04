@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab2ADIfE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 03:35:04 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44276 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058Ab2ADIfC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 03:35:02 -0500
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1201032103580.1522@eggly.anvils>
-References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com>
- <1325403025-22688-2-git-send-email-kosaki.motohiro@gmail.com>
- <alpine.LSU.2.00.1201031724300.1254@eggly.anvils> <4F03B715.4080005@gmail.com>
- <alpine.LSU.2.00.1201032103580.1522@eggly.anvils>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Wed, 4 Jan 2012 03:34:40 -0500
-Message-ID: <CAHGf_=rKjz40Oq--M3QB74WJ7uDYSC+mM+DO53XdX2Pq_nFzkQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] sysvshm: SHM_LOCK use lru_add_drain_all_async()
-To: Hugh Dickins <hughd@google.com>
+	id S1752721Ab2ADIqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 03:46:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57274 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751275Ab2ADIqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 03:46:14 -0500
+Date: Wed, 4 Jan 2012 09:46:11 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: kosaki.motohiro@gmail.com
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Michel Lespinasse <walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, cgroups@vger.kernel.org
+Subject: Re: [PATCH 1/2] memcg: root_mem_cgroup makes static
+Message-ID: <20120104084611.GA12581@tiehlicka.suse.cz>
+References: <1325633632-9978-1-git-send-email-kosaki.motohiro@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325633632-9978-1-git-send-email-kosaki.motohiro@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/4 Hugh Dickins <hughd@google.com>:
-> On Tue, 3 Jan 2012, KOSAKI Motohiro wrote:
->> (1/3/12 8:51 PM), Hugh Dickins wrote:
->> >
->> > In testing my fix for that, I find that there has been no attempt to
->> > keep the Unevictable count accurate on SysVShm: SHM_LOCK pages get
->> > marked unevictable lazily later as memory pressure discovers them -
->> > which perhaps mirrors the way in which SHM_LOCK makes no attempt to
->> > instantiate pages, unlike mlock.
->>
->> Ugh, you are right. I'm recovering my remember gradually. Lee implemented
->> immediate lru off logic at first and I killed it
->> to close a race. I completely forgot. So, yes, now SHM_LOCK has no attempt to
->> instantiate pages. I'm ashamed.
->
-> Why ashamed?  The shmctl man-page documents "The caller must fault in any
-> pages that are required to be present after locking is enabled."  That's
-> just how it behaves.
+On Tue 03-01-12 18:33:51, kosaki.motohiro@gmail.com wrote:
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> root_mem_cgroup is only referenced from memcontrol.c. It should be static.
 
-hehe, I have big bad reputation about for bad remember capabilities from
-my friends. I should have remembered what i implemented. ;-)
+This has been already posted by Kirill
+https://lkml.org/lkml/2011/12/23/292
 
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>,
+> Cc: cgroups@vger.kernel.org
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 90fdaeb..6adeeec 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -59,7 +59,7 @@
+>  
+>  struct cgroup_subsys mem_cgroup_subsys __read_mostly;
+>  #define MEM_CGROUP_RECLAIM_RETRIES	5
+> -struct mem_cgroup *root_mem_cgroup __read_mostly;
+> +static struct mem_cgroup *root_mem_cgroup __read_mostly;
+>  
+>  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+>  /* Turned on only when memory cgroup is enabled && really_do_swap_account = 1 */
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
->> > (But in writing this, realize I still don't quite understand why
->> > the Unevictable count takes a second or two to get back to 0 after
->> > SHM_UNLOCK: perhaps I've more to discover.)
->>
->> Interesting. I'm looking at this too.
->
-> In case you got distracted before you found it, mm/vmstat.c's
->
-> static DEFINE_PER_CPU(struct delayed_work, vmstat_work);
-> int sysctl_stat_interval __read_mostly = HZ;
->
-> static void vmstat_update(struct work_struct *w)
-> {
->        refresh_cpu_vm_stats(smp_processor_id());
->        schedule_delayed_work(&__get_cpu_var(vmstat_work),
->                round_jiffies_relative(sysctl_stat_interval));
-> }
->
-> would be why, I think.  And that implies to me that your
-> lru_add_drain_all_async() is not necessary, you'd get just as good
-> an effect, more cheaply, by doing a local lru_add_drain() before the
-> refresh in vmstat_update().
-
-When, I implement lru_add_drain_all_async(), I thought this idea. I don't
-dislike both. But if we take vmstat_update() one, I think we need more tricks.
-pcp draining in refresh_cpu_vm_stats() delays up to 3 seconds. Why?
-round_jiffies_relative() don't silly round to HZ boundary. Instead of, it adds
-a few unique offset per each cpus. thus, 3 seconds mean max 3000cpus
-don't make zone_{lru_}lock contention. pagevec draining also need same
-trick for rescue SGI UV. It might be too pessimistic concern. but
-vmstat_update() shouldn't make obsevable lock contention.
-
-
-> But it would still require your changes to ____pagevec_lru_add_fn(),
-> if those turn out to help more than they hurt.
-
-I agree.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
