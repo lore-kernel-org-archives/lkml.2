@@ -1,157 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755542Ab2ADNRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 08:17:14 -0500
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:60450
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab2ADNRL (ORCPT
+	id S1755525Ab2ADN0n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 08:26:43 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:54782 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234Ab2ADN0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 08:17:11 -0500
-Date: Wed, 4 Jan 2012 14:17:03 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <18544246.20120104141703@eikelenboom.it>
-To: Stefan Bader <stefan.bader@canonical.com>
-CC: John Stultz <john.stultz@linaro.org>, NeilBrown <neilb@suse.de>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
-Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable to handle kernel NULL pointer dereference at 0000000000000598  1.478005] IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
-In-Reply-To: <4F04452C.7020209@canonical.com>
-References: <1599287628.20120103171351@eikelenboom.it>  <20120103190754.GA27651@phenom.dumpdata.com>  <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown> <1325638380.3037.69.camel@work-vm> <4F040B25.1080405@canonical.com> <4F04452C.7020209@canonical.com>
+	Wed, 4 Jan 2012 08:26:40 -0500
+Message-ID: <4F045386.3050706@openvz.org>
+Date: Wed, 04 Jan 2012 17:26:30 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111108 Iceape/2.0.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tty: cleanup prohibition of direct opening for unix98
+ pty master
+References: <20120102172231.11476.57711.stgit@zurg> <20120103085110.17283.60539.stgit@zurg>  <CA+55aFyG476bzW1kBeF0MFRkXZkumaG-SzMexoPLdPFAzDUG6A@mail.gmail.com>
+In-Reply-To: <CA+55aFyG476bzW1kBeF0MFRkXZkumaG-SzMexoPLdPFAzDUG6A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Stefan,
+Linus Torvalds wrote:
+> Looks ok as far as I can tell, and does indeed clean things up. I
+> assume somebody tested the case that we used to have issues with?
 
-Wednesday, January 4, 2012, 1:25:16 PM, you wrote:
+Yes of course I tested it.
 
-> On 04.01.2012 09:17, Stefan Bader wrote:
->> On 04.01.2012 01:53, John Stultz wrote:
->>> On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
->>>> On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org> wrote:
->>>>> >From the stack trace, we've kicked off a rtc_timer_do_work, probably
->>>>> from the rtc_initialize_alarm() schedule_work call added in Neil's
->>>>> patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm ->
->>>>> cmos_rq_disable -> cmos_checkintr -> rtc_update_irq -> schedule_work.
->> 
->> Sorry, I was off for the evening a while after sending this out. And I just
->> started, so a few thing I will be doing later but have not yet had time.
->> 
->> Over night I had still be thinking on this and maybe one important fact I had
->> been ignoring. This really has only been observed on paravirt guests on Xen as
->> far as I know. And one thing that I should have pointed out is that
->> 
->> [    0.792634] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
->> [    0.792725] rtc_cmos: probe of rtc_cmos failed with error -38
->> 
->> So first the registration is done and the first line is the last thing printed
->> in the registration function. Then, and that line always comes after, the probe,
->> which looks like being done asynchronously, detects that the rtc is not
->> implemented. I would assume that this causes the rtc to be unregistered again
->> and that is probably the point where, under the right circumstances, the worker
->> triggered by the initialize alarm is trying to set another alarm. Probably while
->> some of the elements of the structure started to be torn down. I need to check
->> on that code path, yet. So right now its more a guess.
->> 
->>>>>
->>>>> So, what it looks to me is that in cmos_checkintr, we grab the cmos->rtc
->>>>> and pass that along. Unfortunately, since the cmos->rtc value isn't set
->>>>> until after rtc_device_register() returns its null at that point. So
->>>>> your patch isn't really fixing the issue, but just reducing the race
->>>>> window for the second cpu to schedule the work.
->>>>>
->>>>> Sigh. I'd guess dropping the schedule_work call from
->>>>> rtc_initialize_alarm() is the right approach (see below). When reviewing
->>>>> Neil's patch it seemed like a good idea there, but it seems off to me
->>>>> now.
->>>>>
->>>>> Neil, any thoughts on the following? Can you expand on the condition you
->>>>> were worried about in around that call?
->>>>
->>>> If you set an alarm in the future, then shutdown and boot again after that
->>>> time, then you will end up with a timer_queue node which is in the past.
->>>
->>> Thanks for explaining this again.
->>>
->>> Hrm. It seems the easy answer is to simply not add alarms that are in
->>> the past.  Further, I'm a bit perplexed, as if they are in the past, the
->>> enabled flag shouldn't be set.   __rtc_read_alarm() does check the
->>> current time, so maybe we can make sure we don't return old values? I
->>> guess I assumed __rtc_read_alarm() avoided returning stale values, but
->>> apparently not.
->>>
->>>> When this happens the queue gets stuck.  That entry-in-the-past won't get
->>>> removed until and interrupt happens and an interrupt won't happen because the
->>>> RTC only triggers an interrupt when the alarm is "now".
->>>>
->>>> So you'll find that e.g. "hwclock" will always tell you that 'select' timed
->>>> out.
->>>>
->>>> So we force the interrupt work to happen at the start just in case.
->>>
->>> Unfortunately its too early. 
->>>
->>>> Did you see my proposed patch which converted those calls to do the work
->>>> in-process rather than passing it to a worker-thread?  I think that is a
->>>> clean fix.
->>>
->>> I don't think I saw it today. Was it from before the holidays?
->>>
->> 
->> I fear I caused a bit of confusion there. Neil responded to my initial mail
->> which was done as a reply to the mail announcing this patch for stable (which
->> just was the first thread I could get hold of).
->> I will try Neil's patch as well. And in parallel try to see whether the theory I
->> had this night makes sense. If it does, then it is only indirectly that the work
->> is scheduled too early. In that case just the teardown needs to make sure that
->> no work is being run while removal. Well, maybe the question is whether there
->> should be a delay in running the irq work until the device really, really is
->> completely set up... But that sounds a bit more complicated.
-
-> By now I tried Neil's proposed patch and unfortunately that makes things rather
-> worse. I also played around with the idea of the unregistration race. Maybe
-> there also is one (that cancel_work_sync should be called before unregistering
-> the device) but definitely it is not what happens at least in the one CPU case.
-> I added some more printk's and the crash happens before even the rtc core class
-> has been fully registered. And no unregister is call has been made either.
-
-> Which may point to execution of the irq worker (including a schedule_work)
-> before the rtc-cmos parts are finished... Would explain why moving the
-> initialize call further down does at least narrow the window for it to happen...
-> The only thing I do not understand then is why that seems only to happen on Xen
-> guests...
-
-> -Stefan
-
-Has there been a request to revert this for 3.2 final gone to Linus ?
-
-
->>> Even so, at this point, I don't know if we have enough time for testing,
->>> so I'm thinking we either just drop the problematic sched_work call or
->>> revert the whole thing and try again for 3.3
->> 
->> That was the reason I was in a bit of hurry to get this back to you. Especially
->> since this patch had been marked as stable material and sooner or later will or
->> would be added to all the stable releases it applies to.
->> 
->> Thanks,
->> Stefan
->> 
->>> thanks
->>> -john
->>>
->>>
->> 
-
-
-
-
--- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
-
+>
+>                      Linus
+>
+> On Tue, Jan 3, 2012 at 12:51 AM, Konstantin Khlebnikov
+> <khlebnikov@openvz.org>  wrote:
+>> cleanup hack added in v2.6.27-3203-g15582d3
+>>
+>> comment from that patch:
+>>
+>> : pty: If the administrator creates a device for a ptmx slave we should not error
+>> :
+>> : The open path for ptmx slaves is via the ptmx device. Opening them any
+>> : other way is not allowed. Vegard Nossum found that previously this was not
+>> : the case and mknod foo c 128 42; cat foo would produce nasty diagnostics
+>> :
+>> : Signed-off-by: Alan Cox<alan@redhat.com>
+>> : Signed-off-by: Linus Torvalds<torvalds@linux-foundation.org>
+>>
+>> devpts_get_tty() returns non-null only for inodes on devpts, but there is no
+>> inodes for master-devices, /dev/ptmx (/dev/pts/ptmx) is the only way to open them.
+>> Thus we can completely forbid lookup for master-devices and eliminate that hack in
+>> tty_init_dev() because tty_open() will get EIO from tty_driver_lookup_tty().
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
