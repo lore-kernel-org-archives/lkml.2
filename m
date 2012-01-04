@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab2ADEHL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 23:07:11 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47823 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755446Ab2ADEHJ (ORCPT
+	id S1755579Ab2ADELP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 23:11:15 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34421 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755446Ab2ADELM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 23:07:09 -0500
-Date: Wed, 4 Jan 2012 15:06:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-Subject: linux-next: manual merge of the net-next tree with the arm-soc tree
-Message-Id: <20120104150658.aafd5ae8ebce944e897f1079@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__4_Jan_2012_15_06_58_+1100_EE_gJhZvLnF10E3h"
+	Tue, 3 Jan 2012 23:11:12 -0500
+Date: Wed, 4 Jan 2012 08:11:03 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Donggeun Kim <dg77.kim@samsung.com>
+Cc: linux-pm@vger.kernel.org, len.brown@intel.com, pavel@ucw.cz, rjw@sisk.pl,
+        rdunlap@xenotime.net, pali.rohar@gmail.com, prakity@mavell.com,
+        broonie@opensource.wolfsonmicro.com, lars@metafoo.de,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] power: introduce Charger-Manager
+Message-ID: <20120104041103.GA12650@oksana.dev.rtsoft.ru>
+References: <1324979269-2453-1-git-send-email-dg77.kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1324979269-2453-1-git-send-email-dg77.kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__4_Jan_2012_15_06_58_+1100_EE_gJhZvLnF10E3h
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Dec 27, 2011 at 06:47:47PM +0900, Donggeun Kim wrote:
+> Charger Manager provides in-kernel battery charger management that
+> requires temperature monitoring during both normal and suspend-to-RAM states
+> and where each battery may have multiple chargers attached and the userland
+> wants to look at the aggregated information of the multiple chargers.
+> 
+> Charger Manager is a platform_driver with power-supply-class entries.
+> An instance of Charger Manager (a platform-device created with
+> Charger-Manager) represents a battery with chargers. If there are multiple
+> batteries with their own chargers acting independently in a system,
+> the system may need multiple instances of Charger Manager.
+> Multiple chargers (e.g., USB, wireless, and solar panels) may be included
+> as pairs of a regulator and a power-supply-class
+> per charger.
+> 
+> Charger Manager glues multiple charger-related frameworks (regulators of
+> chargers, power-supply-class from chargers and fuel-gauge, RTC,
+> suspend-again, ...) together to provide aggregated information and
+> transparent battery monitoring to userspace.
+> 
+> For the discussions about the need for in-suspend monitoring, please
+> refer to the discussions of suspend-again in PM:
+> v1 https://lists.linux-foundation.org/pipermail/linux-pm/2011-April/031052.html
+> v2 https://lists.linux-foundation.org/pipermail/linux-pm/2011-April/031111.html
+> v3 https://lists.linux-foundation.org/pipermail/linux-pm/2011-May/031267.html
+> v4 https://lists.linux-foundation.org/pipermail/linux-pm/2011-May/031357.html
+> v5 (last, applied) https://lists.linux-foundation.org/pipermail/linux-pm/2011-June/031561.html
+> 
+> To see the usage example, please refer to:
+> http://git.infradead.org/users/kmpark/linux-2.6-samsung/shortlog/refs/heads/charger-manager
+> In this git branch, a test code for Exynos4-NURI is shown.
+> 
+> This patch set supports initial Charger Manager driver.
 
-Hi all,
+Merged, thanks! I'm pretty excited, we have a full fledged charger
+manager, yay! :-)
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/freescale/fec.c between commit 0ebafefcaa7a ("net:
-fec: add clk_prepare/clk_unprepare") from the arm-soc tree and commit
-e163cc97f9ac ("net/fec: fix the .remove code") from the net-next tree.
+Please send all further improvements against these patches, or (better)
+against battery-2.6.git tree: http://git.infradead.org/battery-2.6.git
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Much thanks for your hard work! Also million thanks to reviewers!
 
-diff --cc drivers/net/ethernet/freescale/fec.c
-index 112af9b,b0b0445..0000000
---- a/drivers/net/ethernet/freescale/fec.c
-+++ b/drivers/net/ethernet/freescale/fec.c
-@@@ -1638,13 -1657,18 +1657,18 @@@ fec_drv_remove(struct platform_device *
-  	struct net_device *ndev =3D platform_get_drvdata(pdev);
-  	struct fec_enet_private *fep =3D netdev_priv(ndev);
-  	struct resource *r;
-+ 	int i;
- =20
-- 	fec_stop(ndev);
-+ 	unregister_netdev(ndev);
-  	fec_enet_mii_remove(fep);
-+ 	for (i =3D 0; i < FEC_IRQ_NUM; i++) {
-+ 		int irq =3D platform_get_irq(pdev, i);
-+ 		if (irq > 0)
-+ 			free_irq(irq, ndev);
-+ 	}
- -	clk_disable(fep->clk);
- +	clk_disable_unprepare(fep->clk);
-  	clk_put(fep->clk);
-  	iounmap(fep->hwp);
-- 	unregister_netdev(ndev);
-  	free_netdev(ndev);
- =20
-  	r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-
---Signature=_Wed__4_Jan_2012_15_06_58_+1100_EE_gJhZvLnF10E3h
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPA9BiAAoJEECxmPOUX5FEPDsP/14/DwT4uwfSLdGOt99ZWL1A
-ETiUykRTREyEI5fdHXf1l8iigmGFErmv25+jFiyBHiZU6eu3okpX2VL8ysPSqRel
-SQKS1vO1iuV+5boBGxHMekB12C+pDZj/1cPuAPa5CVtZVQyBR47sujqshm8f+wXG
-u4HOlFuy+Ct/eqz75e50kBeHBITd8Sp63Av2Vr7/77U5iVAxSzY7q2kwoMtppB/p
-cZcdS7oAvf9JmvtIJ5gRgFV5hX6cHoSU1BGqgbrItmn29PDnraESALsSckjBcaQQ
-+V+L0jOpcMSImgCWU6ZguXFClI2WsRWg/k3z/iUeHfWoM4V2bIaBD3UlIJCs8Ch3
-3djbAHE4sUd8mEO4gceOaY+N43Wda9xLXDhckuVaVnAZC7lC+jcx9n2Fjv+DkMuF
-4Tz6dmxV+65UiHSgbas6GQ1nXdkKtSiN8oAOBisZlmb2Wkc8VJlk+Uo6wqXsNv0I
-ewIMuKXoRTiNAbAWmUDcgeMahauHnv6YkOy3sNzAfY80fe027hIhcq3zdh+ExbxM
-bjv96ARb31Hg4jvkxhvrM1BXcDLKSM4OGYtjjun8DWWtrcGu0t2B9mg39zZZJPAu
-Rcad111rJ501o/DvkSm9/l//kdPKeb88gBijw+fjE/9IQ8GhYaYLsdb1x9fT4DKc
-YIq3IwTcGYDBfNa85dzz
-=oSr8
------END PGP SIGNATURE-----
-
---Signature=_Wed__4_Jan_2012_15_06_58_+1100_EE_gJhZvLnF10E3h--
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
