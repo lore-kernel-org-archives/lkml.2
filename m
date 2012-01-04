@@ -1,117 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab2ADHM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 02:12:26 -0500
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:49647 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751910Ab2ADHMX (ORCPT
+	id S1753778Ab2ADHST (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 02:18:19 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:59372 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab2ADHSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 02:12:23 -0500
-Subject: Re: [PATCH 12/15] module_param: make bool parameters really bool
- (drivers & misc)
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>
-In-Reply-To: <87ehw6sesk.fsf@rustcorp.com.au>
-References: <87ehw6sesk.fsf@rustcorp.com.au>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-mP76F8GUuwUIEJF6t4kO"
-Date: Wed, 04 Jan 2012 09:12:18 +0200
-Message-ID: <1325661138.1875.6.camel@deskari>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Wed, 4 Jan 2012 02:18:15 -0500
+Date: Wed, 4 Jan 2012 10:18:00 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] fsnotify: remove unused parameter from send_to_group()
+Message-ID: <20120104071800.GA30978@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090206.4F03FD30.002A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We don't use "mnt" anymore in send_to_group() after 1968f5eed5
+"fanotify: use both marks when possible" was applied.
 
---=-mP76F8GUuwUIEJF6t4kO
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Hi,
-
-On Thu, 2011-12-15 at 13:48 +1030, Rusty Russell wrote:
-> module_param(bool) used to counter-intuitively take an int.  In
-> fddd5201 (mid-2009) we allowed bool or int/unsigned int using a messy
-> trick.
->=20
-> It's time to remove the int/unsigned int option.  For this version
-> it'll simply give a warning, but it'll break next kernel version.
->=20
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-
-The changes below break compilation for omapdss and omapfb: dss_debug
-and omapfb_debug are declared in dss.h and omapfb.h, and those
-declarations are not changed, resulting in conflicting types error.
-
-Perhaps extra care should be taken in cases where the variable in
-question is not declared as static.
-
- Tomi
-
-> diff --git a/drivers/video/omap2/dss/core.c
-> b/drivers/video/omap2/dss/core.c
-> --- a/drivers/video/omap2/dss/core.c
-> +++ b/drivers/video/omap2/dss/core.c
-> @@ -50,7 +50,7 @@ module_param_named(def_disp, def_disp_na
->  MODULE_PARM_DESC(def_disp, "default display name");
-> =20
->  #ifdef DEBUG
-> -unsigned int dss_debug;
-> +bool dss_debug;
->  module_param_named(debug, dss_debug, bool, 0644);
->  #endif
-
-
-> diff --git a/drivers/video/omap2/omapfb/omapfb-main.c
-> b/drivers/video/omap2/omapfb/omapfb-main.c
-> --- a/drivers/video/omap2/omapfb/omapfb-main.c
-> +++ b/drivers/video/omap2/omapfb/omapfb-main.c
-> @@ -43,18 +43,18 @@
-> =20
->  static char *def_mode;
->  static char *def_vram;
-> -static int def_vrfb;
-> +static bool def_vrfb;
->  static int def_rotate;
-> -static int def_mirror;
-> +static bool def_mirror;
->  static bool auto_update;
->  static unsigned int auto_update_freq;
->  module_param(auto_update, bool, 0);
->  module_param(auto_update_freq, uint, 0644);
-> =20
->  #ifdef DEBUG
-> -unsigned int omapfb_debug;
-> +bool omapfb_debug;
->  module_param_named(debug, omapfb_debug, bool, 0644);
-> -static unsigned int omapfb_test_pattern;
-> +static bool omapfb_test_pattern;
->  module_param_named(test, omapfb_test_pattern, bool, 0644);
->  #endif
-
---=-mP76F8GUuwUIEJF6t4kO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPA/vOAAoJEPo9qoy8lh71idMQAKXzm+3bojxo+B1RxjckaSmd
-PynXe85D4ekfSPmCrkYGVEVWNc3ImLZn8HhIt+YXZY/HtPNuROy+zgNSD64hkhJf
-j/hXQWoF9yyqi/nSX1kd8qA026CtDeSvEel49xlFbVUNeyvKG+MSOQAsKz3VEIcr
-9RuUECmMqxv9UZx+N+2l/rO0R8NYGqpPlSd+hUeG4fOgVAizWxZgyD5xSDAwRUPy
-lFhHL5dq521kzxSK5a/BTdQlsSfkvDBWDhez1c5yi3LSjTUd/FZJL9yoZz3orYUs
-21fxGxT5oLMMRxkevc5ZWqNGfk6BmTc2XTWA7LjnRzIsUfKCfHrx7esu0IsnpqRK
-eHU6I/Wf311Nk34Zcx6NvwoW9cSz46wQOZEn8PPpRrFVbhKtnoX5cxzeC4Aroz+N
-7uRFvrOmQay8aj/jW4l3D0XbO22BJssPO4u7w6g1NIRKY9Sbo0JzA6YunGW+fB32
-9a+zWHViswRmyMkI9e/0YVKd8r4ZZAACo60ex9AIynyLO97a6Ufk/t667J84Qol7
-Gy/ikcAD1Xo5QSKwd0GeyiQT+X/j+214sWjts5/i8Fk3kua0pIomRsC/syVvnjDk
-47YZcy47twzbfTV4KKMxutVbiV3cXNYKRirvB6IZXvrKDJAjl1rNSTOA7MuVIEZE
-dCP9HSN/TVvnRwKEB1z0
-=nMyR
------END PGP SIGNATURE-----
-
---=-mP76F8GUuwUIEJF6t4kO--
-
+diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
+index ccb14d3..b39c5c1 100644
+--- a/fs/notify/fsnotify.c
++++ b/fs/notify/fsnotify.c
+@@ -123,7 +123,7 @@ int __fsnotify_parent(struct path *path, struct dentry *dentry, __u32 mask)
+ }
+ EXPORT_SYMBOL_GPL(__fsnotify_parent);
+ 
+-static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
++static int send_to_group(struct inode *to_tell,
+ 			 struct fsnotify_mark *inode_mark,
+ 			 struct fsnotify_mark *vfsmount_mark,
+ 			 __u32 mask, void *data,
+@@ -168,10 +168,10 @@ static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
+ 			vfsmount_test_mask &= ~inode_mark->ignored_mask;
+ 	}
+ 
+-	pr_debug("%s: group=%p to_tell=%p mnt=%p mask=%x inode_mark=%p"
++	pr_debug("%s: group=%p to_tell=%p mask=%x inode_mark=%p"
+ 		 " inode_test_mask=%x vfsmount_mark=%p vfsmount_test_mask=%x"
+ 		 " data=%p data_is=%d cookie=%d event=%p\n",
+-		 __func__, group, to_tell, mnt, mask, inode_mark,
++		 __func__, group, to_tell, mask, inode_mark,
+ 		 inode_test_mask, vfsmount_mark, vfsmount_test_mask, data,
+ 		 data_is, cookie, *event);
+ 
+@@ -258,16 +258,16 @@ int fsnotify(struct inode *to_tell, __u32 mask, void *data, int data_is,
+ 
+ 		if (inode_group > vfsmount_group) {
+ 			/* handle inode */
+-			ret = send_to_group(to_tell, NULL, inode_mark, NULL, mask, data,
++			ret = send_to_group(to_tell, inode_mark, NULL, mask, data,
+ 					    data_is, cookie, file_name, &event);
+ 			/* we didn't use the vfsmount_mark */
+ 			vfsmount_group = NULL;
+ 		} else if (vfsmount_group > inode_group) {
+-			ret = send_to_group(to_tell, &mnt->mnt, NULL, vfsmount_mark, mask, data,
++			ret = send_to_group(to_tell, NULL, vfsmount_mark, mask, data,
+ 					    data_is, cookie, file_name, &event);
+ 			inode_group = NULL;
+ 		} else {
+-			ret = send_to_group(to_tell, &mnt->mnt, inode_mark, vfsmount_mark,
++			ret = send_to_group(to_tell, inode_mark, vfsmount_mark,
+ 					    mask, data, data_is, cookie, file_name,
+ 					    &event);
+ 		}
