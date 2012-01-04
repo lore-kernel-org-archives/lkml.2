@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab2ADXdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 18:33:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43285 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281Ab2ADXc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 18:32:56 -0500
-Date: Thu, 5 Jan 2012 00:32:54 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: Djalal Harouni <tixxdz@opendz.org>, Jan Kara <jack@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Darrick J. Wong" <djwong@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        ext4 development <linux-ext4@vger.kernel.org>,
-        linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl
- updates inode
-Message-ID: <20120104233254.GH28907@quack.suse.cz>
-References: <20120103013152.GA26455@dztty>
- <20120104174609.GD28907@quack.suse.cz>
- <6C16105A-D0EE-413E-B993-F223CFC75307@dilger.ca>
+	id S1757372Ab2ADXdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 18:33:22 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:53039 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752281Ab2ADXdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 18:33:19 -0500
+Message-ID: <4F04E1B8.10109@gmail.com>
+Date: Wed, 04 Jan 2012 18:33:12 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6C16105A-D0EE-413E-B993-F223CFC75307@dilger.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH 1/2] mm,mlock: drain pagevecs asynchronously
+References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <1325403025-22688-1-git-send-email-kosaki.motohiro@gmail.com> <20120104140547.75d4dd55.akpm@linux-foundation.org>
+In-Reply-To: <20120104140547.75d4dd55.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 04-01-12 16:15:04, Andreas Dilger wrote:
-> On 2012-01-04, at 10:46 AM, Jan Kara wrote:
-> > On Tue 03-01-12 02:31:52, Djalal Harouni wrote:
-> >> 
-> >> The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
-> >> this can lead to a race with the other operations that update the same
-> >> inode.
-> >> 
-> >> Patch tested.
-> > 
-> >  OK, so I've taken the patch into my tree, just updated the changelog
-> > which result of our discussion in this thread. I also took the ext4 part
-> > since there is no risk of conflict and the patch looks obvious.
-> 
-> Actually, I'd like to hear more about whether this is a real problem, or
-> if it is just a theoretical problem found during code inspection or from
-> some static code analysis tool?
-  As far as I understood that was just a theoretical issue and I applied
-the patch just on the grounds that it is more consistent to use i_mutex for
-i_generation changes.
+(1/4/12 5:05 PM), Andrew Morton wrote:
+> On Sun,  1 Jan 2012 02:30:24 -0500
+> kosaki.motohiro@gmail.com wrote:
+>
+>> Because lru_add_drain_all() spent much time.
+>
+> Those LRU pagevecs are horrid things.  They add high code and
+> conceptual complexity, they add pointless uniprocessor overhead and the
+> way in which they leave LRU pages floating around not on an LRU is
+> rather maddening.
+>
+> So the best way to fix all of this as well as this problem we're
+> observing is, I hope, to completely remove them.
+>
+> They've been in there for ~10 years and at the time they were quite
+> beneficial in reducing lru_lock contention, hold times, acquisition
+> frequency, etc.
+>
+> The approach to take here is to prepare the patches which eliminate
+> lru_*_pvecs then identify the problems which occur as a result, via
+> code inspection and runtime testing.  Then fix those up.
+>
+> Many sites which take lru_lock are already batching the operation.
+> It's a matter of hunting down those sites which take the lock
+> once-per-page and, if they have high frequency, batch them up.
+>
+> Converting readahead to batch the locking will be pretty simple
+> (read_pages(), mpage_readpages(), others).  That will fix pagefaults
+> too.
+>
+> rotate_reclaimable_page() can be batched by batching
+> end_page_writeback(): a bio contains many pages already.
+>
+> deactivate_page() can be batched too - invalidate_mapping_pages() is
+> already working on large chunks of pages.
+>
+> Those three cases are fairly simple - we just didn't try, because the
+> lru_*_pvecs were there to do the work for us.
 
-> With the metadata checksum feature we were discussing using the inode
-> generation as part of the seed for the directory leaf block checksum, so
-> that it wasn't possible to incorrectly access stale directory blocks from
-> a previous incarnation of the same inode number.
-> 
-> We were discussing just disabling this ioctl on filesystems with metadata
-> checksums, and printing a deprecation warning for filesystems without that
-> feature enabled.  I'm not aware of any real-world use for this ioctl, since
-> NFS cannot use it to reconstruct handles because there's no API to allocate
-> an inode with a specific number, so setting the generation is pointless.
-  OK, I didn't know this. I'm fine with deprecating the ioctl if it's
-useless but since that's going to take a while I think the cleanup still
-makes some sense.
+got it. so, let's wait hugh's "mm: take pagevecs off reclaim stack" next spin
+and make the patches on top of it.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
