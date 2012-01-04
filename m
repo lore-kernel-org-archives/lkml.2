@@ -1,186 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2ADKOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 05:14:11 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:62602 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab2ADKOJ convert rfc822-to-8bit (ORCPT
+	id S1754880Ab2ADKXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 05:23:44 -0500
+Received: from mga11.intel.com ([192.55.52.93]:19850 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862Ab2ADKXl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 05:14:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <1325629553.26706.11.camel@groeck-laptop>
-References: <1324468798-20423-1-git-send-email-amit.kachhap@linaro.org>
-	<1324468798-20423-3-git-send-email-amit.kachhap@linaro.org>
-	<1325629553.26706.11.camel@groeck-laptop>
-Date: Wed, 4 Jan 2012 15:44:07 +0530
-Message-ID: <CAK44p20XeLVkJyox2SsDqyy=RYgEQNpyGGypwTMPXpueQT1T3g@mail.gmail.com>
-Subject: Re: [lm-sensors] [RFC PATCH 2/3] thermal: exynos4: Register the tmu
- sensor with the thermal interface layer
-From: Amit Kachhap <amit.kachhap@linaro.org>
-To: guenter.roeck@ericsson.com, Donggeun Kim <dg77.kim@samsung.com>
-Cc: "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-samsung-soc@vger.kernel.org" 
+	Wed, 4 Jan 2012 05:23:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="103209170"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Amit Kachhap <amit.kachhap@linaro.org>,
+        "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>,
+        Donggeun Kim <dg77.kim@samsung.com>
+CC: "linux-samsung-soc@vger.kernel.org" 
 	<linux-samsung-soc@vger.kernel.org>,
         "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
         "patches@linaro.org" <patches@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
         "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: RE: [linux-pm] [lm-sensors] [RFC PATCH 2/3] thermal: exynos4:
+ Register the tmu sensor with the thermal interface layer
+Thread-Topic: [linux-pm] [lm-sensors] [RFC PATCH 2/3] thermal: exynos4:
+ Register the tmu sensor with the thermal interface layer
+Thread-Index: AQHMv9hopayZ5ImWw0eNRbo2kBWOy5X68WqAgADF4YCAAFyrUA==
+Date: Wed, 4 Jan 2012 10:23:35 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5901B976@BGSMSX101.gar.corp.intel.com>
+References: <1324468798-20423-1-git-send-email-amit.kachhap@linaro.org>
+	<1324468798-20423-3-git-send-email-amit.kachhap@linaro.org>
+	<1325629553.26706.11.camel@groeck-laptop>
+ <CAK44p20XeLVkJyox2SsDqyy=RYgEQNpyGGypwTMPXpueQT1T3g@mail.gmail.com>
+In-Reply-To: <CAK44p20XeLVkJyox2SsDqyy=RYgEQNpyGGypwTMPXpueQT1T3g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guenter,
+Hi Amit Daniel,
 
-The main idea of this work is to leave the current userspace based
-notification scheme and add the kernel based cooling scheme on top of
-it. Anyway, It is a good idea to move the file hwmon/exynos4_tmu.c as
-this creates 2 hwmon entries.
-Adding CC: Donggeun Kim to know his opinion.
+> Hi Guenter,
+> 
+> The main idea of this work is to leave the current userspace based
+> notification scheme and add the kernel based cooling scheme on top of
+> it. Anyway, It is a good idea to move the file hwmon/exynos4_tmu.c as
+
+But, What I feel is, kernel based cooling scheme will work only for
+Controlling 'CPU' frequency. But in SoC's there are other devices that
+Contribute to Thermal. For example, GPU, Display, Battery (during charging)
+etc.. In this case, we need a user space to control these devices. So, in a
+way, the user space notification mechanism is a unified solution for
+throttling all devices and keeps the kernel code light weight.
+
+I am also curious to know why the existing mechanism did not work for you ?
 
 Thanks,
-Amit Daniel
+Durga
 
-On 4 January 2012 03:55, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
-> On Wed, 2011-12-21 at 06:59 -0500, Amit Daniel Kachhap wrote:
->> Export and register information from the hwmon tmu sensor to the samsung
->> exynos kernel thermal framework where different cooling devices and thermal
->> zone are binded. The exported information is based according to the data
->> structure thermal_sensor_conf present in exynos_thermal.h. HWMON sysfs
->> functions are currently left although all of them are present in generic
->> linux thermal layer.
->> Also the platform data structure is modified to pass frequency cooling
->> in percentages for each thermal level.
->>
-> Hi Amit,
->
-> wouldn't it make more sense to merge the code as necessary from
-> hwmon/exynos4_tmu.c into the new thermal/exynos_thermal.c, and drop
-> hwmon/exynos4_tmu.c entirely ?
->
-> With that, you should get the hwmon entries for free, and we would not
-> have to maintain two drivers with overlapping functionality.
->
+> this creates 2 hwmon entries.
+> Adding CC: Donggeun Kim to know his opinion.
+> 
 > Thanks,
-> Guenter
->
->> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
->> ---
->>  drivers/hwmon/exynos4_tmu.c               |   34 ++++++++++++++++++++++++++--
->>  include/linux/platform_data/exynos4_tmu.h |    7 ++++++
->>  2 files changed, 38 insertions(+), 3 deletions(-)
->>
->> diff --git a/drivers/hwmon/exynos4_tmu.c b/drivers/hwmon/exynos4_tmu.c
->> index f2359a0..6912a7f 100644
->> --- a/drivers/hwmon/exynos4_tmu.c
->> +++ b/drivers/hwmon/exynos4_tmu.c
->> @@ -37,6 +37,9 @@
->>  #include <linux/hwmon-sysfs.h>
->>
->>  #include <linux/platform_data/exynos4_tmu.h>
->> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->> +#include <linux/exynos_thermal.h>
->> +#endif
->>
->>  #define EXYNOS4_TMU_REG_TRIMINFO     0x0
->>  #define EXYNOS4_TMU_REG_CONTROL              0x20
->> @@ -248,10 +251,13 @@ static void exynos4_tmu_work(struct work_struct *work)
->>
->>       kobject_uevent(&data->hwmon_dev->kobj, KOBJ_CHANGE);
->>
->> -     enable_irq(data->irq);
->>
->>       clk_disable(data->clk);
->>       mutex_unlock(&data->lock);
->> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->> +     exynos4_report_trigger();
->> +#endif
->> +     enable_irq(data->irq);
->>  }
->>
->>  static irqreturn_t exynos4_tmu_irq(int irq, void *id)
->> @@ -345,6 +351,14 @@ static const struct attribute_group exynos4_tmu_attr_group = {
->>       .attrs = exynos4_tmu_attributes,
->>  };
->>
->> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->> +static struct thermal_sensor_conf exynos4_sensor_conf = {
->> +     .name                   = "exynos4-therm",
->> +     .read_temperature       = (int (*)(void *))exynos4_tmu_read,
->> +};
->> +#endif
->> +/*CONFIG_SAMSUNG_THERMAL_INTERFACE*/
->> +
->>  static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
->>  {
->>       struct exynos4_tmu_data *data;
->> @@ -432,9 +446,20 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
->>       }
->>
->>       exynos4_tmu_control(pdev, true);
->> -
->> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->> +     (&exynos4_sensor_conf)->private_data = data;
->> +     (&exynos4_sensor_conf)->sensor_data = pdata;
->> +     ret = exynos4_register_thermal(&exynos4_sensor_conf);
->> +     if (ret) {
->> +             dev_err(&pdev->dev, "Failed to register thermal interface\n");
->> +             goto err_hwmon_device;
->> +     }
->> +#endif
->>       return 0;
->> -
->> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->> +err_hwmon_device:
->> +     hwmon_device_unregister(data->hwmon_dev);
->> +#endif
->>  err_create_group:
->>       sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
->>  err_clk:
->> @@ -458,6 +483,9 @@ static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
->>
->>       exynos4_tmu_control(pdev, false);
->>
->> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->> +     exynos4_unregister_thermal();
->> +#endif
->>       hwmon_device_unregister(data->hwmon_dev);
->>       sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
->>
->> diff --git a/include/linux/platform_data/exynos4_tmu.h b/include/linux/platform_data/exynos4_tmu.h
->> index 39e038c..642c508 100644
->> --- a/include/linux/platform_data/exynos4_tmu.h
->> +++ b/include/linux/platform_data/exynos4_tmu.h
->> @@ -21,6 +21,7 @@
->>
->>  #ifndef _LINUX_EXYNOS4_TMU_H
->>  #define _LINUX_EXYNOS4_TMU_H
->> +#include <linux/cpu_cooling.h>
->>
->>  enum calibration_type {
->>       TYPE_ONE_POINT_TRIMMING,
->> @@ -64,6 +65,9 @@ enum calibration_type {
->>   *   in the positive-TC generator block
->>   *   0 <= reference_voltage <= 31
->>   * @cal_type: calibration type for temperature
->> + * @freq_pctg_table: Table representing frequency reduction percentage.
->> + * @freq_tab_count: Count of the above table as frequency reduction may
->> + *   applicable to only some of the trigger levels.
->>   *
->>   * This structure is required for configuration of exynos4_tmu driver.
->>   */
->> @@ -79,5 +83,8 @@ struct exynos4_tmu_platform_data {
->>       u8 reference_voltage;
->>
->>       enum calibration_type cal_type;
->> +
->> +     struct freq_pctg_table freq_tab[4];
->> +     unsigned int freq_tab_count;
->>  };
->>  #endif /* _LINUX_EXYNOS4_TMU_H */
->
->
+> Amit Daniel
+[snip.]
