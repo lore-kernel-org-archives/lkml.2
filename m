@@ -1,514 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab2ADJwh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 04:52:37 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:36051 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755060Ab2ADJwe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 04:52:34 -0500
-From: AnilKumar Ch <anilkumar@ti.com>
-To: <sameo@linux.intel.com>, <lrg@ti.com>,
-        <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
-        AnilKumar Ch <anilkumar@ti.com>
-Subject: [PATCH V3 2/2] regulator: tps65217: Add tps65217 regulator driver
-Date: Wed, 4 Jan 2012 15:22:27 +0530
-Message-ID: <1325670747-31429-1-git-send-email-anilkumar@ti.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755162Ab2ADJyg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 04:54:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60344 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754880Ab2ADJye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 04:54:34 -0500
+From: Oliver Neukum <oneukum@suse.de>
+Organization: SUSE
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH] input: Synaptics USB device driver
+Date: Wed, 4 Jan 2012 10:56:20 +0100
+User-Agent: KMail/1.13.5 (Linux/3.2.0-rc4-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Jiri Kosina <jkosina@suse.cz>, Jan Steinhoff <mail@jan-steinhoff.de>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120103194033.779cb829@greyhound> <201201041020.41795.oneukum@suse.de> <20120104094103.GA29069@core.coreip.homeip.net>
+In-Reply-To: <20120104094103.GA29069@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201041056.20226.oneukum@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds tps65217 PMIC as a regulator
+Am Mittwoch, 4. Januar 2012, 10:41:03 schrieb Dmitry Torokhov:
 
-The regulator module consists of 3 DCDCs and 4 LDOs. The output
-voltages are configurable and are meant to supply power to the
-main processor and other components
 
-Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
----
- drivers/regulator/Kconfig              |    9 +
- drivers/regulator/Makefile             |    1 +
- drivers/regulator/tps65217-regulator.c |  435 ++++++++++++++++++++++++++++++++
- 3 files changed, 445 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/tps65217-regulator.c
+> +static void synusb_irq(struct urb *urb)
+> +{
+> +	struct synusb *synusb = urb->context;
+> +	int error;
+> +
+> +	/* Check our status in case we need to bail out early. */
+> +	switch (urb->status) {
+> +	case 0:
+> +		usb_mark_last_busy(synusb->udev);
+> +		break;
+> +
+> +	case -EOVERFLOW:
+> +		dev_err(&synusb->intf->dev,
+> +			"%s: OVERFLOW with data length %d, actual length is %d\n",
+> +			__func__, SYNUSB_RECV_SIZE, urb->actual_length);
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 9713b1b..529c591 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -259,6 +259,15 @@ config REGULATOR_TPS6507X
- 	  three step-down converters and two general-purpose LDO voltage regulators.
- 	  It supports TI's software based Class-2 SmartReflex implementation.
- 
-+config REGULATOR_TPS65217
-+	tristate "TI TPS65217 Power regulators"
-+	depends on MFD_TPS65217
-+	help
-+	  This driver supports TPS65217 voltage regulator chips. TPS65217
-+	  provides three step-down converters and four general-purpose LDO
-+	  voltage regulators. It supports software based voltage control
-+	  for different voltage domains
-+
- config REGULATOR_TPS65912
- 	tristate "TI TPS65912 Power regulator"
- 	depends on (MFD_TPS65912_I2C || MFD_TPS65912_SPI)
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 93a6318..aeae546 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -38,6 +38,7 @@ obj-$(CONFIG_REGULATOR_AB3100) += ab3100.o
- obj-$(CONFIG_REGULATOR_TPS6105X) += tps6105x-regulator.o
- obj-$(CONFIG_REGULATOR_TPS65023) += tps65023-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6507X) += tps6507x-regulator.o
-+obj-$(CONFIG_REGULATOR_TPS65217) += tps65217-regulator.o
- obj-$(CONFIG_REGULATOR_TPS6524X) += tps6524x-regulator.o
- obj-$(CONFIG_REGULATOR_TPS65912) += tps65912-regulator.o
- obj-$(CONFIG_REGULATOR_88PM8607) += 88pm8607.o
-diff --git a/drivers/regulator/tps65217-regulator.c b/drivers/regulator/tps65217-regulator.c
-new file mode 100644
-index 0000000..a5d7d9f
---- /dev/null
-+++ b/drivers/regulator/tps65217-regulator.c
-@@ -0,0 +1,435 @@
-+/*
-+ * tps65217-regulator.c
-+ *
-+ * Regulator driver for TPS65217 PMIC
-+ *
-+ * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any
-+ * kind, whether express or implied; without even the implied warranty
-+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/mfd/tps65217.h>
-+
-+#define TPS65217_REGULATOR(_name, _id, _ops, _n)	\
-+	{						\
-+		.name		= _name,		\
-+		.id		= _id,			\
-+		.ops		= &_ops,		\
-+		.n_voltages	= _n,			\
-+		.type		= REGULATOR_VOLTAGE,	\
-+		.owner		= THIS_MODULE,		\
-+	}						\
-+
-+#define TPS65217_INFO(_name, _fun, _n, _emsk, _vreg, _vmsk)	\
-+	{						\
-+		.name		= _name,		\
-+		.tps_range	= _fun,			\
-+		.table_len	= _n,			\
-+		.enable_mask	= _emsk,		\
-+		.set_vout_reg	= _vreg,		\
-+		.set_vout_mask	= _vmsk,		\
-+	}
-+
-+static int tps65217_vsel_to_uv_range0(unsigned int vsel)
-+{
-+	int uV = 0;
-+
-+	if (vsel > 63)
-+		return -EINVAL;
-+
-+	if (vsel <= 24)
-+		uV = vsel * 25000 + 900000;
-+	else if (vsel <= 52)
-+		uV = (vsel - 24) * 50000 + 1500000;
-+	else if (vsel < 56)
-+		uV = (vsel - 52) * 100000 + 2900000;
-+	else
-+		uV = 3300000;
-+
-+	return uV;
-+}
-+
-+static int tps65217_vsel_to_uv_range1(unsigned int vsel)
-+{
-+	int uV = 0;
-+
-+	if (vsel > 15)
-+		return -EINVAL;
-+
-+	if (vsel <= 2)
-+		uV = vsel * 100000 + 1000000;
-+	else if (vsel <= 6)
-+		uV = (vsel - 2) * 50000 + 1200000;
-+	else if (vsel <= 9)
-+		uV = (vsel - 6) * 100000 + 1400000;
-+	else if (vsel == 10)
-+		uV = 2500000;
-+	else if (vsel == 11)
-+		uV = 2750000;
-+	else if (vsel == 12)
-+		uV = 2800000;
-+	else if (vsel == 13)
-+		uV = 3000000;
-+	else if (vsel == 14)
-+		uV = 3100000;
-+	else
-+		uV = 3300000;
-+
-+	return uV;
-+}
-+
-+static int tps65217_vsel_to_uv_range2(unsigned int vsel)
-+{
-+	int uV = 0;
-+
-+	if (vsel > 31)
-+		return -EINVAL;
-+
-+	if (vsel <= 8)
-+		uV = vsel * 50000 + 1500000;
-+	else if (vsel <= 13)
-+		uV = (vsel - 8) * 100000 + 1900000;
-+	else
-+		uV = (vsel - 13) * 50000 + 2400000;
-+
-+	return uV;
-+}
-+
-+static struct tps_info tps65217_pmic_regs[] = {
-+	TPS65217_INFO("DCDC1", tps65217_vsel_to_uv_range0, 64,
-+			TPS65217_ENABLE_DC1_EN, TPS65217_REG_DEFDCDC1,
-+			TPS65217_DEFDCDCX_DCDC_MASK),
-+	TPS65217_INFO("DCDC2", tps65217_vsel_to_uv_range0, 64,
-+			TPS65217_ENABLE_DC2_EN, TPS65217_REG_DEFDCDC2,
-+			TPS65217_DEFDCDCX_DCDC_MASK),
-+	TPS65217_INFO("DCDC3", tps65217_vsel_to_uv_range0, 64,
-+			TPS65217_ENABLE_DC3_EN, TPS65217_REG_DEFDCDC3,
-+			TPS65217_DEFDCDCX_DCDC_MASK),
-+	TPS65217_INFO("LDO1", tps65217_vsel_to_uv_range1, 16,
-+			TPS65217_ENABLE_LDO1_EN, TPS65217_REG_DEFLDO1,
-+			TPS65217_DEFLDO1_LDO1_MASK),
-+	TPS65217_INFO("LDO2", tps65217_vsel_to_uv_range0, 64,
-+			TPS65217_ENABLE_LDO2_EN, TPS65217_REG_DEFLDO2,
-+			TPS65217_DEFLDO2_LDO2_MASK),
-+	TPS65217_INFO("LDO3", tps65217_vsel_to_uv_range2, 32,
-+			TPS65217_ENABLE_LS1_EN | TPS65217_DEFLDO3_LDO3_EN,
-+			TPS65217_REG_DEFLS1, TPS65217_DEFLDO3_LDO3_MASK),
-+	TPS65217_INFO("LDO4", tps65217_vsel_to_uv_range2, 32,
-+			TPS65217_ENABLE_LS2_EN | TPS65217_DEFLDO4_LDO4_EN,
-+			TPS65217_REG_DEFLS2, TPS65217_DEFLDO4_LDO4_MASK),
-+};
-+
-+static int tps65217_pmic_dcdc_is_enabled(struct regulator_dev *dev)
-+{
-+	int ret;
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int data, dcdc = rdev_get_id(dev);
-+
-+	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+		return -EINVAL;
-+
-+	ret = tps65217_reg_read(tps, TPS65217_REG_ENABLE, &data);
-+	if (ret)
-+		return ret;
-+
-+	return (data & tps->info[dcdc]->enable_mask) ? 1 : 0;
-+}
-+
-+static int tps65217_pmic_ldo_is_enabled(struct regulator_dev *dev)
-+{
-+	int ret;
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int data, ldo = rdev_get_id(dev);
-+
-+	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
-+		return -EINVAL;
-+
-+	ret = tps65217_reg_read(tps, TPS65217_REG_ENABLE, &data);
-+	if (ret)
-+		return ret;
-+
-+	return (data & tps->info[ldo]->enable_mask) ? 1 : 0;
-+}
-+
-+static int tps65217_pmic_dcdc_enable(struct regulator_dev *dev)
-+{
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int dcdc = rdev_get_id(dev);
-+
-+	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+		return -EINVAL;
-+
-+	/* Enable the regulator and password protection is level 1 */
-+	return tps65217_set_bits(tps, TPS65217_REG_ENABLE,
-+				tps->info[dcdc]->enable_mask,
-+				tps->info[dcdc]->enable_mask,
-+				TPS65217_PROTECT_L1);
-+}
-+
-+static int tps65217_pmic_dcdc_disable(struct regulator_dev *dev)
-+{
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int dcdc = rdev_get_id(dev);
-+
-+	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+		return -EINVAL;
-+
-+	/* Disable the regulator and password protection is level 1 */
-+	return tps65217_clear_bits(tps, TPS65217_REG_ENABLE,
-+			tps->info[dcdc]->enable_mask, TPS65217_PROTECT_L1);
-+}
-+
-+static int tps65217_pmic_ldo_enable(struct regulator_dev *dev)
-+{
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int ldo = rdev_get_id(dev);
-+
-+	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
-+		return -EINVAL;
-+
-+	/* Enable the regulator and password protection is level 1 */
-+	return tps65217_set_bits(tps, TPS65217_REG_ENABLE,
-+				tps->info[ldo]->enable_mask,
-+				tps->info[ldo]->enable_mask,
-+				TPS65217_PROTECT_L1);
-+}
-+
-+static int tps65217_pmic_ldo_disable(struct regulator_dev *dev)
-+{
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int ldo = rdev_get_id(dev);
-+
-+	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
-+		return -EINVAL;
-+
-+	/* Disable the regulator and password protection is level 1 */
-+	return tps65217_clear_bits(tps, TPS65217_REG_ENABLE,
-+			tps->info[ldo]->enable_mask, TPS65217_PROTECT_L1);
-+}
-+
-+static int tps65217_pmic_dcdc_get_voltage(struct regulator_dev *dev)
-+{
-+	int ret;
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int data, dcdc = rdev_get_id(dev);
-+
-+	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+		return -EINVAL;
-+
-+	ret = tps65217_reg_read(tps, tps->info[dcdc]->set_vout_reg, &data);
-+	if (ret)
-+		return ret;
-+
-+	data &= tps->info[dcdc]->set_vout_mask;
-+
-+	ret = tps->info[dcdc]->tps_range(data);
-+	if (ret < 0)
-+		dev_err(&dev->dev, "Failed to get voltage\n");
-+
-+	return ret;
-+}
-+
-+static int tps65217_pmic_dcdc_set_voltage(struct regulator_dev *dev,
-+						unsigned selector)
-+{
-+	int ret;
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	int dcdc = rdev_get_id(dev);
-+
-+	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+		return -EINVAL;
-+
-+	if (selector >= tps->info[dcdc]->table_len)
-+		return -EINVAL;
-+
-+	/* Set the voltage based on vsel value and write protect level is 2 */
-+	ret = tps65217_set_bits(tps, tps->info[dcdc]->set_vout_reg,
-+					tps->info[dcdc]->set_vout_mask,
-+					selector, TPS65217_PROTECT_L2);
-+	if (ret)
-+		return ret;
-+
-+	/* Set GO bit to initiate voltage transistion */
-+	return tps65217_set_bits(tps, TPS65217_REG_DEFSLEW,
-+				TPS65217_DEFSLEW_GO, TPS65217_DEFSLEW_GO,
-+				TPS65217_PROTECT_L2);
-+}
-+
-+static int tps65217_pmic_ldo_get_voltage(struct regulator_dev *dev)
-+{
-+	int ret;
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int data, ldo = rdev_get_id(dev);
-+
-+	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
-+		return -EINVAL;
-+
-+	ret = tps65217_reg_read(tps, tps->info[ldo]->set_vout_reg, &data);
-+	if (ret)
-+		return ret;
-+
-+	data &= tps->info[ldo]->set_vout_mask;
-+
-+	ret = tps->info[ldo]->tps_range(data);
-+	if (ret < 0)
-+		dev_err(&dev->dev, "Failed to get voltage\n");
-+
-+	return ret;
-+}
-+
-+static int tps65217_pmic_ldo_set_voltage(struct regulator_dev *dev,
-+						unsigned selector)
-+{
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	int ldo = rdev_get_id(dev);
-+
-+	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
-+		return -EINVAL;
-+
-+	if (selector >= tps->info[ldo]->table_len)
-+		return -EINVAL;
-+
-+	/* Set the voltage based on vsel value and write protect level is 2 */
-+	return tps65217_set_bits(tps, tps->info[ldo]->set_vout_reg,
-+					tps->info[ldo]->set_vout_mask,
-+					selector, TPS65217_PROTECT_L2);
-+}
-+
-+static int tps65217_pmic_dcdc_list_voltage(struct regulator_dev *dev,
-+					unsigned selector)
-+{
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int dcdc = rdev_get_id(dev);
-+
-+	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-+		return -EINVAL;
-+
-+	if (selector >= tps->info[dcdc]->table_len)
-+		return -EINVAL;
-+
-+	return tps->info[dcdc]->tps_range(selector);
-+}
-+
-+static int tps65217_pmic_ldo_list_voltage(struct regulator_dev *dev,
-+					unsigned selector)
-+{
-+	struct tps65217 *tps = rdev_get_drvdata(dev);
-+	unsigned int ldo = rdev_get_id(dev);
-+
-+	if (ldo < TPS65217_LDO_1 || ldo > TPS65217_LDO_4)
-+		return -EINVAL;
-+
-+	if (selector >= tps->info[ldo]->table_len)
-+		return -EINVAL;
-+
-+	return tps->info[ldo]->tps_range(selector);
-+}
-+
-+/* Operations permitted on DCDCx */
-+static struct regulator_ops tps65217_pmic_dcdc_ops = {
-+	.is_enabled		= tps65217_pmic_dcdc_is_enabled,
-+	.enable			= tps65217_pmic_dcdc_enable,
-+	.disable		= tps65217_pmic_dcdc_disable,
-+	.get_voltage		= tps65217_pmic_dcdc_get_voltage,
-+	.set_voltage_sel	= tps65217_pmic_dcdc_set_voltage,
-+	.list_voltage		= tps65217_pmic_dcdc_list_voltage,
-+};
-+
-+/* Operations permitted on LDOx */
-+static struct regulator_ops tps65217_pmic_ldo_ops = {
-+	.is_enabled		= tps65217_pmic_ldo_is_enabled,
-+	.enable			= tps65217_pmic_ldo_enable,
-+	.disable		= tps65217_pmic_ldo_disable,
-+	.get_voltage		= tps65217_pmic_ldo_get_voltage,
-+	.set_voltage_sel	= tps65217_pmic_ldo_set_voltage,
-+	.list_voltage		= tps65217_pmic_ldo_list_voltage,
-+};
-+
-+static struct regulator_desc regulators[] = {
-+	TPS65217_REGULATOR("DCDC1", TPS65217_DCDC_1,
-+				tps65217_pmic_dcdc_ops, 64),
-+	TPS65217_REGULATOR("DCDC2",TPS65217_DCDC_2,
-+				tps65217_pmic_dcdc_ops, 64),
-+	TPS65217_REGULATOR("DCDC3", TPS65217_DCDC_3,
-+				tps65217_pmic_dcdc_ops, 64),
-+	TPS65217_REGULATOR("LDO1", TPS65217_LDO_1,
-+				tps65217_pmic_ldo_ops, 16),
-+	TPS65217_REGULATOR("LDO2", TPS65217_LDO_2,
-+				tps65217_pmic_ldo_ops, 64),
-+	TPS65217_REGULATOR("LDO3", TPS65217_LDO_3,
-+				tps65217_pmic_ldo_ops, 32),
-+	TPS65217_REGULATOR("LDO4", TPS65217_LDO_4,
-+				tps65217_pmic_ldo_ops, 32),
-+};
-+
-+static int __devinit tps65217_regulator_probe(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev;
-+	struct tps65217 *tps;
-+	struct tps_info *info = &tps65217_pmic_regs[pdev->id];
-+
-+	/* Already set by core driver */
-+	tps = dev_to_tps65217(pdev->dev.parent);
-+	tps->info[pdev->id] = info;
-+
-+	rdev = regulator_register(&regulators[pdev->id], &pdev->dev,
-+				  pdev->dev.platform_data, tps);
-+	if (IS_ERR(rdev))
-+		return PTR_ERR(rdev);
-+
-+	platform_set_drvdata(pdev, rdev);
-+
-+	return 0;
-+}
-+
-+static int __devexit tps65217_regulator_remove(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev = platform_get_drvdata(pdev);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	regulator_unregister(rdev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver tps65217_regulator_driver = {
-+	.driver = {
-+		.name = "tps65217-pmic",
-+	},
-+	.probe = tps65217_regulator_probe,
-+	.remove = __devexit_p(tps65217_regulator_remove),
-+};
-+
-+static int __init tps65217_regulator_init(void)
-+{
-+	return platform_driver_register(&tps65217_regulator_driver);
-+}
-+subsys_initcall(tps65217_regulator_init);
-+
-+static void __exit tps65217_regulator_exit(void)
-+{
-+	platform_driver_unregister(&tps65217_regulator_driver);
-+}
-+module_exit(tps65217_regulator_exit);
-+
-+
-+MODULE_AUTHOR("AnilKumar Ch <anilkumar@ti.com>");
-+MODULE_DESCRIPTION("TPS65217 voltage regulator driver");
-+MODULE_ALIAS("platform:tps65217-pmic");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.0.4
+Do you really want to fall through here?
 
+> +
+> +	/* Device went away so don't keep trying to read from it. */
+> +	case -ECONNRESET:
+> +	case -ENOENT:
+> +	case -ESHUTDOWN:
+> +		return;
+> +
+> +	default:
+> +		goto resubmit;
+> +		break;
+> +	}
+> +
+> +	if (synusb->flags & SYNUSB_STICK)
+> +		synusb_report_stick(synusb);
+> +	else
+> +		synusb_report_touchpad(synusb);
+> +
+> +resubmit:
+> +	error = usb_submit_urb(urb, GFP_ATOMIC);
+> +	if (error && error != -EPERM)
+> +		dev_err(&synusb->intf->dev,
+> +			"%s - usb_submit_urb failed with result: %d",
+> +			__func__, error);
+> +}
+> +
+
+[..]
+> +static int synusb_open(struct input_dev *dev)
+> +{
+> +	struct synusb *synusb = input_get_drvdata(dev);
+> +	int retval = 0;
+> +
+> +	dev_err(&synusb->intf->dev, "%s\n", __func__);
+> +
+> +	if (usb_autopm_get_interface(synusb->intf) < 0)
+> +		return -EIO;
+> +
+> +	if (usb_submit_urb(synusb->urb, GFP_KERNEL)) {
+> +		dev_err(&synusb->intf->dev,
+> +			"%s - usb_submit_urb failed", __func__);
+> +		retval = -EIO;
+> +		goto out;
+> +	}
+> +
+> +	synusb->intf->needs_remote_wakeup = 1;
+> +
+> +out:
+> +	usb_autopm_put_interface(synusb->intf);
+> +	dev_err(&synusb->intf->dev, "%s done: %d\n", __func__, retval);
+> +	return retval;
+> +}
+> +
+> +static void synusb_close(struct input_dev *dev)
+> +{
+> +	struct synusb *synusb = input_get_drvdata(dev);
+> +	int autopm_error;
+> +
+> +	autopm_error = usb_autopm_get_interface(synusb->intf);
+> +
+> +	usb_kill_urb(synusb->urb);
+> +	synusb->intf->needs_remote_wakeup = 0;
+> +
+> +	if (!autopm_error)
+> +		usb_autopm_put_interface(synusb->intf);
+> +}
+> +
+> +static int synusb_probe(struct usb_interface *intf,
+> +			const struct usb_device_id *id)
+> +{
+> +	struct usb_device *udev = interface_to_usbdev(intf);
+> +	struct usb_endpoint_descriptor *ep;
+> +	struct synusb *synusb;
+> +	struct input_dev *input_dev;
+> +	unsigned int intf_num = intf->cur_altsetting->desc.bInterfaceNumber;
+> +	unsigned int altsetting = min(intf->num_altsetting, 1U);
+> +	int error;
+> +
+> +	error = usb_set_interface(udev, intf_num, altsetting);
+> +	if (error) {
+> +		dev_err(&udev->dev,
+> +			"Can not set alternate setting to %i, error: %i",
+> +			altsetting, error);
+> +		return error;
+> +	}
+> +
+> +	ep = synusb_get_in_endpoint(intf->cur_altsetting);
+> +	if (!ep)
+> +		return -ENODEV;
+> +
+> +	synusb = kzalloc(sizeof(*synusb), GFP_KERNEL);
+> +	input_dev = input_allocate_device();
+> +	if (!synusb || !input_dev) {
+> +		error = -ENOMEM;
+> +		goto err_free_mem;
+> +	}
+> +
+> +	synusb->udev = udev;
+> +	synusb->intf = intf;
+> +	synusb->input = input_dev;
+> +
+> +	synusb->flags = id->driver_info;
+> +	if (test_bit(SYNUSB_STICK, &synusb->flags) &&
+> +	    test_bit(SYNUSB_STICK, &synusb->flags)) {
+
+??? Voodoo ???
+
+> +		/*
+> +		 * This is a combo device, we need to leave only proper
+> +		 * capability, depending on the interface.
+> +		 */
+> +		clear_bit(intf_num == 1 ? SYNUSB_TOUCHPAD : SYNUSB_STICK,
+> +			  &synusb->flags);
+> +	}
+> +
+> +	synusb->urb = usb_alloc_urb(0, GFP_KERNEL);
+> +	if (!synusb->urb) {
+> +		error = -ENOMEM;
+> +		goto err_free_mem;
+> +	}
+> +
+> +	synusb->data = usb_alloc_coherent(udev, SYNUSB_RECV_SIZE, GFP_KERNEL,
+> +					  &synusb->urb->transfer_dma);
+> +	if (!synusb->data) {
+> +		error = -ENOMEM;
+> +		goto err_free_urb;
+> +	}
+> +
+> +	usb_fill_int_urb(synusb->urb, udev,
+> +			 usb_rcvintpipe(udev, ep->bEndpointAddress),
+> +			 synusb->data, SYNUSB_RECV_SIZE,
+> +			 synusb_irq, synusb,
+> +			 ep->bInterval);
+> +	synusb->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
+
+According to the comment in the original driver you must submit the URB.
+Are you sure not doing so is save?
+
+> +
+> +	if (udev->manufacturer)
+> +		strlcpy(synusb->name, udev->manufacturer,
+> +			sizeof(synusb->name));
+> +
+> +	if (udev->product) {
+> +		if (udev->manufacturer)
+> +			strlcat(synusb->name, " ", sizeof(synusb->name));
+> +		strlcat(synusb->name, udev->product, sizeof(synusb->name));
+> +	}
+> +
+> +	if (!strlen(synusb->name))
+> +		snprintf(synusb->name, sizeof(synusb->name),
+> +			 "USB Synaptics Device %04x:%04x",
+> +			 le16_to_cpu(udev->descriptor.idVendor),
+> +			 le16_to_cpu(udev->descriptor.idProduct));
+> +
+> +	if (synusb->flags & SYNUSB_STICK)
+> +		strlcat(synusb->name, " (Stick) ", sizeof(synusb->name));
+> +
+> +	usb_make_path(udev, synusb->phys, sizeof(synusb->phys));
+> +	strlcat(synusb->phys, "/input0", sizeof(synusb->phys));
+> +
+> +	input_dev->name = synusb->name; // synusb_get_name(synusb);
+> +	input_dev->phys = synusb->phys;
+> +	usb_to_input_id(udev, &input_dev->id);
+> +	input_dev->dev.parent = &synusb->intf->dev;
+> +
+> +	input_dev->open = synusb_open;
+> +	input_dev->close = synusb_close;
+> +
+> +	input_set_drvdata(input_dev, synusb);
+> +
+> +	__set_bit(EV_ABS, input_dev->evbit);
+> +	__set_bit(EV_KEY, input_dev->evbit);
+> +
+> +	if (synusb->flags & SYNUSB_STICK) {
+> +		__set_bit(EV_REL, input_dev->evbit);
+> +		__set_bit(REL_X, input_dev->relbit);
+> +		__set_bit(REL_Y, input_dev->relbit);
+> +		input_set_abs_params(input_dev, ABS_PRESSURE, 0, 127, 0, 0);
+> +	} else {
+> +		input_set_abs_params(input_dev, ABS_X, xmin, xmax, 0, 0);
+> +		input_set_abs_params(input_dev, ABS_Y, ymin, ymax, 0, 0);
+> +		input_set_abs_params(input_dev, ABS_PRESSURE, 0, 255, 0, 0);
+> +		input_set_abs_params(input_dev, ABS_TOOL_WIDTH, 0, 15, 0, 0);
+> +		__set_bit(BTN_TOUCH, input_dev->keybit);
+> +		__set_bit(BTN_TOOL_FINGER, input_dev->keybit);
+> +		__set_bit(BTN_TOOL_DOUBLETAP, input_dev->keybit);
+> +		__set_bit(BTN_TOOL_TRIPLETAP, input_dev->keybit);
+> +	}
+> +
+> +	__set_bit(BTN_LEFT, input_dev->keybit);
+> +	__set_bit(BTN_RIGHT, input_dev->keybit);
+> +	__set_bit(BTN_MIDDLE, input_dev->keybit);
+> +	if (synusb->flags & SYNUSB_AUXDISPLAY)
+> +		__set_bit(BTN_MISC, input_dev->keybit);
+> +
+> +	error = input_register_device(input_dev);
+> +	if (error) {
+> +		dev_err(&udev->dev, "Failed to register input device, error %d\n",
+> +			error);
+> +		goto err_free_dma;
+> +	}
+> +
+> +	usb_set_intfdata(intf, synusb);
+> +	return 0;
+> +
+> +err_free_dma:
+> +	usb_free_coherent(udev, SYNUSB_RECV_SIZE, synusb->data,
+> +			  synusb->urb->transfer_dma);
+> +err_free_urb:
+> +	usb_free_urb(synusb->urb);
+> +err_free_mem:
+> +	input_free_device(input_dev);
+> +	kfree(synusb);
+> +
+> +	return error;
+> +}
+> +
+
+[..]
+> +static struct usb_driver synusb_driver = {
+> +	.name		= "synaptics_usb",
+> +	.probe		= synusb_probe,
+> +	.disconnect	= synusb_disconnect,
+> +	.id_table	= synusb_idtable,
+> +	.suspend	= synusb_suspend,
+> +	.resume		= synusb_resume,
+> +	.reset_resume	= synusb_reset_resume,
+
+You've killed the support for reset. That is not cool.
+
+> +	.supports_autosuspend = 1,
+> +};
+
+	Regards
+		Oliver
