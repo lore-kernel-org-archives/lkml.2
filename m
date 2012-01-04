@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752420Ab2ADHHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 02:07:41 -0500
-Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:34972 "HELO
-	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752026Ab2ADHHh (ORCPT
+	id S1753267Ab2ADHHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 02:07:54 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:58819 "HELO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752542Ab2ADHHp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 02:07:37 -0500
+	Wed, 4 Jan 2012 02:07:45 -0500
 From: Haojian Zhuang <haojian.zhuang@marvell.com>
 To: sameo@linux.intel.com, a.zummo@towertech.it, dmitry.torokhov@gmail.com,
         linux-kernel@vger.kernel.org
 Cc: Kevin Liu <kliu5@marvell.com>, Haojian Zhuang <haojian.zhuang@marvell.com>
-Subject: [PATCH 1/3] mfd: max8925: add function to work as wakeup source
-Date: Wed,  4 Jan 2012 15:14:24 +0800
-Message-Id: <1325661266-7982-1-git-send-email-haojian.zhuang@marvell.com>
+Subject: [PATCH 2/3] misc: max8925_onkey: add function to work as wakeup source
+Date: Wed,  4 Jan 2012 15:14:25 +0800
+Message-Id: <1325661266-7982-2-git-send-email-haojian.zhuang@marvell.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 04 Jan 2012 07:07:13.0428 (UTC) FILETIME=[7BEF7540:01CCCAAF]
+In-Reply-To: <1325661266-7982-1-git-send-email-haojian.zhuang@marvell.com>
+References: <1325661266-7982-1-git-send-email-haojian.zhuang@marvell.com>
+X-OriginalArrivalTime: 04 Jan 2012 07:07:14.0866 (UTC) FILETIME=[7CCAE120:01CCCAAF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,72 +27,61 @@ From: Kevin Liu <kliu5@marvell.com>
 Signed-off-by: Kevin Liu <kliu5@marvell.com>
 Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
 ---
- drivers/mfd/max8925-i2c.c   |   27 +++++++++++++++++++++++++++
- include/linux/mfd/max8925.h |    2 ++
- 2 files changed, 29 insertions(+), 0 deletions(-)
+ drivers/input/misc/max8925_onkey.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
-index 0219115..d9e4b36 100644
---- a/drivers/mfd/max8925-i2c.c
-+++ b/drivers/mfd/max8925-i2c.c
-@@ -161,6 +161,8 @@ static int __devinit max8925_probe(struct i2c_client *client,
- 	chip->adc = i2c_new_dummy(chip->i2c->adapter, ADC_I2C_ADDR);
- 	i2c_set_clientdata(chip->adc, chip);
+diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
+index 7de0ded..89a5ac6 100644
+--- a/drivers/input/misc/max8925_onkey.c
++++ b/drivers/input/misc/max8925_onkey.c
+@@ -122,6 +122,7 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
+ 	info->idev->evbit[0] = BIT_MASK(EV_KEY);
+ 	info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
  
-+	device_init_wakeup(&client->dev, 1);
-+
- 	max8925_device_init(chip, pdata);
++	device_init_wakeup(&pdev->dev, 1);
  
- 	return 0;
-@@ -177,10 +179,35 @@ static int __devexit max8925_remove(struct i2c_client *client)
+ 	error = input_register_device(info->idev);
+ 	if (error) {
+@@ -158,10 +159,39 @@ static int __devexit max8925_onkey_remove(struct platform_device *pdev)
  	return 0;
  }
  
 +#ifdef CONFIG_PM_SLEEP
-+static int max8925_suspend(struct device *dev)
++static int max8925_onkey_suspend(struct device *dev)
 +{
-+	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
-+	struct max8925_chip *chip = i2c_get_clientdata(client);
++	struct platform_device *pdev = to_platform_device(dev);
++	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
 +
-+	if (device_may_wakeup(dev) && chip->wakeup_flag)
-+		enable_irq_wake(chip->core_irq);
++	if (device_may_wakeup(dev)) {
++		chip->wakeup_flag |= 1 << (onkey_irq[0] - chip->irq_base);
++		chip->wakeup_flag |= 1 << (onkey_irq[1] - chip->irq_base);
++	}
 +	return 0;
 +}
 +
-+static int max8925_resume(struct device *dev)
++static int max8925_onkey_resume(struct device *dev)
 +{
-+	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
-+	struct max8925_chip *chip = i2c_get_clientdata(client);
++	struct platform_device *pdev = to_platform_device(dev);
++	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
 +
-+	if (device_may_wakeup(dev) && chip->wakeup_flag)
-+		disable_irq_wake(chip->core_irq);
++	if (device_may_wakeup(dev)) {
++		chip->wakeup_flag &= ~(1 << (onkey_irq[0] - chip->irq_base));
++		chip->wakeup_flag &= ~(1 << (onkey_irq[1] - chip->irq_base));
++	}
 +	return 0;
 +}
 +#endif
 +
-+static SIMPLE_DEV_PM_OPS(max8925_pm_ops, max8925_suspend, max8925_resume);
++static SIMPLE_DEV_PM_OPS(max8925_onkey_pm_ops, max8925_onkey_suspend, max8925_onkey_resume);
 +
- static struct i2c_driver max8925_driver = {
- 	.driver	= {
- 		.name	= "max8925",
+ static struct platform_driver max8925_onkey_driver = {
+ 	.driver		= {
+ 		.name	= "max8925-onkey",
  		.owner	= THIS_MODULE,
-+		.pm     = &max8925_pm_ops,
++		.pm	= &max8925_onkey_pm_ops,
  	},
- 	.probe		= max8925_probe,
- 	.remove		= __devexit_p(max8925_remove),
-diff --git a/include/linux/mfd/max8925.h b/include/linux/mfd/max8925.h
-index 5259dfe..daaba00 100644
---- a/include/linux/mfd/max8925.h
-+++ b/include/linux/mfd/max8925.h
-@@ -206,6 +206,8 @@ struct max8925_chip {
- 	int			irq_base;
- 	int			core_irq;
- 	int			tsc_irq;
-+
-+	unsigned int            wakeup_flag;
- };
- 
- struct max8925_backlight_pdata {
+ 	.probe		= max8925_onkey_probe,
+ 	.remove		= __devexit_p(max8925_onkey_remove),
 -- 
 1.7.0.4
 
