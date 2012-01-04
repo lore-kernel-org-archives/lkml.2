@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab2ADROw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 12:14:52 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:48978 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab2ADROu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 12:14:50 -0500
-Message-ID: <4F048905.5060004@lwfinger.net>
-Date: Wed, 04 Jan 2012 11:14:45 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	id S1756560Ab2ADRPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 12:15:44 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56662 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756422Ab2ADRPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 12:15:41 -0500
+Date: Wed, 4 Jan 2012 18:15:33 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: James Morris <jmorris@namei.org>, Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Jan Kara <jack@suse.cz>, linux-kernel@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org, haiyangz@microsoft.com,
+        hjanssen@microsoft.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jorge Bastos <mysql.jorge@decimal.pt>, Mark Fasheh <mfasheh@suse.com>,
+        Joel Becker <jlbec@evilplan.org>
+Subject: Re: Reiserfs.c bug in 3.2-rc5
+Message-ID: <20120104171533.GB28907@quack.suse.cz>
+References: <20111213180707.GI11747@quack.suse.cz>
+ <!&!AAAAAAAAAAAYAAAAAAAAAKCACr8ZwetPrGXZsycJodKihAAAEAAAAGPJDX4w3wxIo8Onu2+q/xMBAAAAAA==@decimal.pt>
+ <20120102115222.GA3626@quack.suse.cz>
+ <20120103010826.GF3626@quack.suse.cz>
+ <20120103123841.GA31457@quack.suse.cz>
+ <1325604356.2095.23.camel@falcor>
+ <CA+55aFzwq6XiAnX26uV+-mNsbGbnj0S=4nP5avPqKPw8OT+cmw@mail.gmail.com>
+ <1325616312.2095.26.camel@falcor>
+ <alpine.LRH.2.00.1201041046330.18098@tundra.namei.org>
+ <CA+55aFxZ4_T8VRh6wAKC9-9PjsctrK1WnOmN-2EDNTeHA+OA4g@mail.gmail.com>
 MIME-Version: 1.0
-To: Daniel Halperin <dhalperi@cs.washington.edu>
-CC: John W Linville <linville@tuxdriver.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, chaoming_li@realsil.com.cn,
-        linux-wireless@vger.kernel.org
-Subject: Re: [PATCH] rtl8192cu: Fix WARNING on suspend/resume
-References: <4f034b6c.ypfAbSdXSgMHtfqa%Larry.Finger@lwfinger.net> <CALSq=BaJSURcKU8RkCxxG=Mht4y04dVefKMESuHmiEdhwzc2Eg@mail.gmail.com>
-In-Reply-To: <CALSq=BaJSURcKU8RkCxxG=Mht4y04dVefKMESuHmiEdhwzc2Eg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxZ4_T8VRh6wAKC9-9PjsctrK1WnOmN-2EDNTeHA+OA4g@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2012 10:16 AM, Daniel Halperin wrote:
-> Sorry, Larry, I didn't see this til it was included in John's mail this morning.
->
-> On Tue, Jan 3, 2012 at 10:39 AM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
->>
->> +#ifdef CONFIG_PM
->> +static int rtl8192cu_usb_suspend(struct usb_interface *pusb_intf,
->> +                                pm_message_t message)
->> +{
->> +       /* Increase usage_count to Save loaded fw across suspend/resume */
->> +       atomic_inc(&usage_count);
->> +       return 0;
->> +}
->> +
->> +static int rtl8192cu_usb_resume(struct usb_interface *pusb_intf)
->> +{
->> +       atomic_dec(&usage_count);       /* after resume, decrease usage count */
->> +       return 0;
->> +}
->> +#endif
->
-> Based on the warning-fix I submitted yesterday, this probably produces
-> a warning if CONFIG_PM is set but not CONFIG_PM_SLEEP. My patch was
-> for an ethernet driver, but iwlwifi and ath5k appear to follow the
-> same pattern using CONFIG_PM_SLEEP instead of the above.
->
-> See: http://www.spinics.net/lists/netdev/msg184717.html for the patch
-> and http://www.spinics.net/lists/netdev/msg184715.html for the
-> discussion.
+On Tue 03-01-12 16:18:01, Linus Torvalds wrote:
+> On Tue, Jan 3, 2012 at 3:47 PM, James Morris <jmorris@namei.org> wrote:
+> >>
+> >> Just clarifying not all of commit fb88c2b, but only the
+> >> security_old_inode_init_security() hunk.
+> >
+> > Agreed.
+> >
+> > And yep, it's ugly :-\
+> 
+> Ok, applied - along with another last-minute fix - and pushed out.
+> 
+> Can everybody please test and double-check that what I applied was
+> what everybody agrees is the RightThing(tm)? I really wanted to do 3.2
+> today, but both of those commits are of the "please double-check"
+> kind, so..
+  Thanks. The patch looks OK and current HEAD works for me.
 
-Thanks for the note. I will prepare a revised patch.
-
-What architecture gave the warning? Of x86_64, I was unable to get 
-CONFIG_PM_SLEEP without CONFIG_PM.
-
-Larry
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
