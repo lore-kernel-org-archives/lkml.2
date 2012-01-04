@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab2ADKj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 05:39:28 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:16673 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078Ab2ADKjZ convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:5:1>);
-	Wed, 4 Jan 2012 05:39:25 -0500
-Message-Id: <4F043AA2020000780006A55B@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Wed, 04 Jan 2012 10:40:18 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Christoph Lameter" <cl@linux.com>
-Cc: <mingo@elte.hu>, "Jeremy Fitzhardinge" <jeremy@goop.org>,
-        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: irqsafe_cpu_...() 64-bit operations on 32-bit platform
-References: <4EF4581C0200007800069BA2@nat28.tlf.novell.com>
- <alpine.DEB.2.00.1112230908550.1691@router.home>
- <4F018015020000780006A015@nat28.tlf.novell.com>
- <alpine.DEB.2.00.1201031034240.2810@router.home>
-In-Reply-To: <alpine.DEB.2.00.1201031034240.2810@router.home>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1755330Ab2ADKvI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 05:51:08 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33498 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755215Ab2ADKvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 05:51:07 -0500
+Date: Wed, 4 Jan 2012 10:51:03 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Josh Boyer <jwboyer@redhat.com>
+Subject: [patch][regression after 3.1] minixfs: misplaced checks lead to
+ dentry leak
+Message-ID: <20120104105103.GE23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 03.01.12 at 17:37, Christoph Lameter <cl@linux.com> wrote:
-> On Mon, 2 Jan 2012, Jan Beulich wrote:
-> 
->> > However, if you are using a loop to sum up all counters from every
->> > processor then you cannot use the this_cpu ops but would have to use
->> > something like get_64().
->>
->> I understand that, but again statistics aren't my focus here.
-> 
-> Ok then we need to understand better what you are trying to accomplish.
-> You may be outside of the realm of percpu data and be just trying to read
-> and write 64 bit variables reliably on 32 bit?
+bitmap size sanity checks should be done *before* allocating ->s_root;
+there their cleanup on failure would be correct.  As it is, we do iput()
+on root inode, but leak the root dentry...
 
-The get_64bit() use case is quite obvious: arch/x86/xen/time.c has
-get64(), which really should be required to get defined here.
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
-The same file has potential for using the per-CPU variant: In particular
-after the "blocked time" accounting gets removed from
-do_stolen_accounting() (for which there is a patch pending), obtaining
-a full runstate snapshot (via get_runstate_snapshot()) becomes sort
-of overkill - reading the RUNSTATE_runnable and RUNSTATE_offline
-array entries individually (and atomically) would be sufficient and faster,
-and as xen_runstate is a per-CPU variable doing this through a
-per-CPU accessor would be the obviously preferred method. Except
-that "irqsafe_...()" isn't really the right thing (as emulating it through
-disabling interrupts is not a correct alternative - it has to be
-implemented as a single instruction, but since this is arch-specific
-code, using it would be safe; alternatively some accessor could be 
-introduced that doesn't have fallbacks when there's no single-
-instruction implementation, causing the improper use to be noticed
-at build time).
+I realize that we are *very* late in this cycle, but this is (a) obvious and
+obviously affecting only minixfs and (b) introduced in this cycle.
 
-Jan
-
-
+diff --git a/fs/minix/inode.c b/fs/minix/inode.c
+index c811c19..8e4f5d8 100644
+--- a/fs/minix/inode.c
++++ b/fs/minix/inode.c
+@@ -262,23 +262,6 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
+ 		goto out_no_root;
+ 	}
+ 
+-	ret = -ENOMEM;
+-	s->s_root = d_alloc_root(root_inode);
+-	if (!s->s_root)
+-		goto out_iput;
+-
+-	if (!(s->s_flags & MS_RDONLY)) {
+-		if (sbi->s_version != MINIX_V3) /* s_state is now out from V3 sb */
+-			ms->s_state &= ~MINIX_VALID_FS;
+-		mark_buffer_dirty(bh);
+-	}
+-	if (!(sbi->s_mount_state & MINIX_VALID_FS))
+-		printk("MINIX-fs: mounting unchecked file system, "
+-			"running fsck is recommended\n");
+- 	else if (sbi->s_mount_state & MINIX_ERROR_FS)
+-		printk("MINIX-fs: mounting file system with errors, "
+-			"running fsck is recommended\n");
+-
+ 	/* Apparently minix can create filesystems that allocate more blocks for
+ 	 * the bitmaps than needed.  We simply ignore that, but verify it didn't
+ 	 * create one with not enough blocks and bail out if so.
+@@ -299,6 +282,23 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
+ 		goto out_iput;
+ 	}
+ 
++	ret = -ENOMEM;
++	s->s_root = d_alloc_root(root_inode);
++	if (!s->s_root)
++		goto out_iput;
++
++	if (!(s->s_flags & MS_RDONLY)) {
++		if (sbi->s_version != MINIX_V3) /* s_state is now out from V3 sb */
++			ms->s_state &= ~MINIX_VALID_FS;
++		mark_buffer_dirty(bh);
++	}
++	if (!(sbi->s_mount_state & MINIX_VALID_FS))
++		printk("MINIX-fs: mounting unchecked file system, "
++			"running fsck is recommended\n");
++ 	else if (sbi->s_mount_state & MINIX_ERROR_FS)
++		printk("MINIX-fs: mounting file system with errors, "
++			"running fsck is recommended\n");
++
+ 	return 0;
+ 
+ out_iput:
