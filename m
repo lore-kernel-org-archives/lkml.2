@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab2ADSm6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 13:42:58 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:53231 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754084Ab2ADSm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 13:42:57 -0500
-Message-ID: <1325702212.3037.102.camel@work-vm>
-Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
- to handle kernel NULL pointer dereference at 0000000000000598  1.478005]
- IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
-From: John Stultz <john.stultz@linaro.org>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: NeilBrown <neilb@suse.de>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>, rjw@sisk.pl,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Date: Wed, 04 Jan 2012 10:36:52 -0800
-In-Reply-To: <4F040B25.1080405@canonical.com>
-References: <1599287628.20120103171351@eikelenboom.it>
-	 <20120103190754.GA27651@phenom.dumpdata.com>
-	 <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown>
-	 <1325638380.3037.69.camel@work-vm> <4F040B25.1080405@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1756727Ab2ADSoE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 13:44:04 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:47204 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754084Ab2ADSoB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 13:44:01 -0500
+Message-ID: <4F049DEA.30506@suse.cz>
+Date: Wed, 04 Jan 2012 19:43:54 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20111223 Thunderbird/10.0
+MIME-Version: 1.0
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: serial ports now asserting DTR and RTS during boot; breaks connected
+ hardware
+References: <20120103153707.GA12771@redhat.com> <4F03262D.8090506@suse.cz> <20120103161310.GA8727@redhat.com>
+In-Reply-To: <20120103161310.GA8727@redhat.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12010418-1976-0000-0000-0000092819F6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-04 at 09:17 +0100, Stefan Bader wrote:
-> Over night I had still be thinking on this and maybe one important fact I had
-> been ignoring. This really has only been observed on paravirt guests on Xen as
-> far as I know. And one thing that I should have pointed out is that
+On 01/03/2012 05:13 PM, Dave Jones wrote:
+> On Tue, Jan 03, 2012 at 05:00:45PM +0100, Jiri Slaby wrote:
+>  > On 01/03/2012 04:37 PM, Dave Jones wrote:
+>  > > Jiri,
+>  > > We got this report from a user who notes a change in behaviour for
+>  > > his serial hardware over the last few kernel versions.
+>  > 
+>  > Hi!
+>  > 
+>  > I'm busy right now, however just after a quick look, it may be related to:
+>  > https://lkml.org/lkml/2011/12/6/573
+>  > 
+>  > I'll take a look later.
 > 
-> [    0.792634] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
-> [    0.792725] rtc_cmos: probe of rtc_cmos failed with error -38
+> thanks. I'll dig a little deeper. 
 > 
-> So first the registration is done and the first line is the last thing printed
-> in the registration function. Then, and that line always comes after, the probe,
-> which looks like being done asynchronously, detects that the rtc is not
-> implemented. I would assume that this causes the rtc to be unregistered again
-> and that is probably the point where, under the right circumstances, the worker
-> triggered by the initialize alarm is trying to set another alarm. Probably while
-> some of the elements of the structure started to be torn down. I need to check
-> on that code path, yet. So right now its more a guess.
+>  > > https://bugzilla.redhat.com/show_bug.cgi?id=771010
+>  > > 
+>  > > This sounds like it might be related to your DTR/RTS changes back in March 2011 maybe ? 
+>  > 
+>  > What changes do you mean? In serial-core.c? Thaat one is not used by USB
+>  > serials. Hence this wouldn't occur with FTDI.
+> 
+> yeah, 303a7a1199c20f7c9452f024a6e17bf348b6b398 and c7d7abff40c27f82fe78b1091ab3fad69b2546f9
+> jumped out at me, as they were they only things that changed DTR/RTS handling
+> (at least mentioned in changelog) in recent times.
 
-Hrm. Do you see the same probe error with 3.1 kernels as well?  
+Rollback. The two commits are about uart. So they don't as well affect FTDI.
 
-Konrad: Is the probe failure a known issue on Xen? Any clues on whats
-going on there?
+> The user mentions that it also affects 8250, though your point may mean
+> that this is caused by something further up in the serial/tty code.
 
-thanks
--john
+Or userspace. Try what Alan suggested. And ensure that FTDI is really
+affected. Sometimes bug reporters do mistakes.
 
-
+-- 
+js
+suse labs
