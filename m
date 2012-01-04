@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab2ADT4c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 14:56:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:35151 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755731Ab2ADT41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 14:56:27 -0500
-Date: Wed, 4 Jan 2012 11:56:12 -0800
-From: Greg KH <gregkh@suse.de>
-To: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cesarb@cesarb.net,
-        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, penberg@kernel.org,
-        aarcange@redhat.com, riel@redhat.com, mel@csn.ul.ie,
-        rientjes@google.com, dima@android.com, rebecca@android.com,
-        san@google.com, akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
-Subject: Re: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and
- related changes in MM
-Message-ID: <20120104195612.GB19181@suse.de>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756482Ab2ADT5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 14:57:33 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:52372 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755819Ab2ADT5b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 14:57:31 -0500
+Date: Wed, 04 Jan 2012 14:56:19 -0500 (EST)
+Message-Id: <20120104.145619.1728971973635198635.davem@davemloft.net>
+To: nhorman@tuxdriver.com
+Cc: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, gregkh@suse.de, linux-pci@vger.kernel.org
+Subject: Re: [PATCH] msi: fix imbalanced refcount of msi irq sysfs objects
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120104195134.GB24324@hmsreliant.think-freely.org>
+References: <20120103185304.GA25184@hmsreliant.think-freely.org>
+	<20120104091952.7cc5316d@jbarnes-desktop>
+	<20120104195134.GB24324@hmsreliant.think-freely.org>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Jan 2012 11:56:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 07:21:53PM +0200, Leonid Moiseichuk wrote:
-> The main idea of Used Memory Meter (UMM) is to provide low-cost interface
-> for user-space to notify about memory consumption using similar approach /proc/meminfo
-> does but focusing only on "modified" pages which cannot be fogotten.
-> 
-> The calculation formula in terms of meminfo looks the following:
->   UsedMemory = (MemTotal - MemFree - Buffers - Cached - SwapCached) +
->                                                (SwapTotal - SwapFree)
-> It reflects well amount of system memory used in applications in heaps and shared pages.
-> 
-> Previously (n770..n900) we had lowmem.c [1] which used LSM and did a lot other things,
-> n9 implementation based on memcg [2] which has own problems, so the proposed variant
-> I hope is the best one for n9:
-> - Keeps connections from user space
-> - When amount of modified pages reaches crossed pointed value for particular connection
->   makes POLLIN and allow user-space app to read it and react
-> - Economic as much as possible, so currently its operates if allocation higher than 487
->   pages or last check happened 250 ms before
-> Of course if no allocation happened then no activities performed, use-time
-> must be not affected.
-> 
-> Testing results:
-> - Checkpatch produced 0 warning
-> - Sparse does not produce warnings
-> - One check costs ~20 us or less (could be checked with probe=1 insmod)
-> - One connection costs 20 bytes in kernel-space  (see observer structure) for 32-bit variant
-> - For 10K connections poll update in requested in ~10ms, but for practically device expected
->   to will have about 10 connections (like n9 has now).
-> 
-> Known weak points which I do not know how to fix but will if you have a brillian idea:
-> - Having hook in MM is nasty but MM/shrinker cannot be used there and LSM even worse idea
-> - If I made 
-> 	$cat /dev/used_memory
->   it is produced lines in non-stop mode. Adding position check in umm_read seems doesn not help,
->   so "head -1 /dev/used_memory" should be used if you need to quick check
-> - Format of output is USED_PAGES:AVAILABLE_PAGES, primitive but enough for tasks module does
-> 
-> Tested on ARM, x86-32 and x86-64 with and without CONFIG_SWAP. Seems works in all combinations.
-> Sorry for wide distributions but list of names were produced by scripts/get_maintainer.pl
+From: Neil Horman <nhorman@tuxdriver.com>
+Date: Wed, 4 Jan 2012 14:51:34 -0500
 
-How does this compare with the lowmemorykiller.c driver from the android
-developers that is currently in the linux-next tree?
+> On Wed, Jan 04, 2012 at 09:19:52AM -0800, Jesse Barnes wrote:
+>> On Tue, 3 Jan 2012 13:53:05 -0500
+>> Neil Horman <nhorman@tuxdriver.com> wrote:
+>> 
+>> > On Tue, Jan 03, 2012 at 01:05:26PM -0500, David Miller wrote:
+>> > > From: Neil Horman <nhorman@tuxdriver.com>
+>> > > Date: Tue,  3 Jan 2012 10:29:54 -0500
+>> > > 
+>> > > > This warning was recently reported to me:
+>> > > 
+>> > > I've hit this too, see:
+>> > > 
+>> > > http://marc.info/?l=linux-kernel&m=132458146927890&w=2
+>> > > 
+>> > > and my analysis at:
+>> > > 
+>> > > http://marc.info/?l=linux-arch&m=132458391128660&w=2
+>> > > 
+>> > Yup, your analysis is correct. Regardless of the why behind msi enablement
+>> > failing, we need to gate the kobject_del/put in free_msi_irqs on successful
+>> > completion of kobject_init_and_add in populate_msi_sysfs.  This patch does that,
+>> > using the parent pointer as a flag.
+>> 
+>> I applied this to my -next branch; doesn't seem critical to land
+>> immediately.  If you disagree let me know and I'll pull it over to my
+>> for-linus branch instead.
+>> 
+>> Thanks,
+> I'm ok with it waiting, but I'll defer to Dave and others who have seen it
+> occur.  It sounds like its alot of log noise.
 
-thanks,
-
-greg k-h
+The bug only exists in the PCI -next code I thought.
