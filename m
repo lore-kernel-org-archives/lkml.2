@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab2ADAIR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:08:17 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51164 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab2ADAIN (ORCPT
+	id S1755292Ab2ADAMG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:12:06 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48678 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193Ab2ADAME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:08:13 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120103162108.GC25909@kroah.com>
-References: <20111228174518.721624fad9d048f9f85b3d50@canb.auug.org.au> <20120103162108.GC25909@kroah.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Wed, 4 Jan 2012 01:07:52 +0100
-Message-ID: <CAPXgP11yiS5hF9q3+A1tyORmtp=z2T6CWBUDFh3FhcL19jADpw@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 3 Jan 2012 19:12:04 -0500
+X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=rHnKkQjduuR3Kv5nxJsA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1325635922.12696.8.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
+ stop-machine, update stack tracer
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Date: Tue, 03 Jan 2012 19:12:02 -0500
+In-Reply-To: <1325635373.12696.4.camel@gandalf.stny.rr.com>
+References: <20111221123624.193898256@goodmis.org>
+	 <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
+	 <20120102134856.GA32673@elte.hu>
+	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 3, 2012 at 17:21, Greg KH <greg@kroah.com> wrote:
-> On Wed, Dec 28, 2011 at 05:45:18PM +1100, Stephen Rothwell wrote:
->> Because of the powerpc problems above, I have used the driver-core tree
->> from next-20111222 for today.
->
-> Sorry about all of the problems, we tried to fix everything we could,
-> but your merges and cross-builds found stuff we missed :(
->
-> Kay, care to send me patches to fix this, and all of the other
-> linux-next-reported problems to me so we can get this resolved this
-> week?
+On Tue, 2012-01-03 at 19:02 -0500, Steven Rostedt wrote:
 
-I rather don't want to add error checking to stuff that doesn't do it
-today. The sysdev stuff never had that forced checks, but the normal
-device stuff has.
+> I then looked at the merge you did with Linus's branch:
+> 
+> c7f46b7aa4ae5cbef32eb5e016512a14f936affa
+> 
+> Checked that out, and booted it twice with your config, and it booted
+> without failure both times.
 
-I think the force return value check is really a pretty misguided idea
-in general, and it's up to the caller to do these checks and handle
-rollbacks, not the driver core, I think.
+I should have tested this branch more. As I enabled BISECT_CHECK=1 in my
+ktest config, it boots both the bad commit and the good commit making
+sure the bad commit fails, and the good commit succeeds. The bad did
+fail, but so did the good commit, which was Linus's branch.
 
-Can't we just remove that forced check?
+I booted it again just now, and it failed again.
 
-Kay
+I'll boot it a couple more times and maybe even recompile. Perhaps I
+didn't test Linus's branch correctly (checkout out the wrong branch?).
+
+Thanks,
+
+-- Steve
+
+
