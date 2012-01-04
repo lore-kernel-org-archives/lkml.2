@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932239Ab2ADX5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 18:57:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59872 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2ADX5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 18:57:53 -0500
-Date: Wed, 4 Jan 2012 15:57:52 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] pagemap: document KPF_THP and make page-types aware
- of it
-Message-Id: <20120104155752.86435535.akpm@linux-foundation.org>
-In-Reply-To: <1324506228-18327-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<1324506228-18327-5-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757420Ab2ADX6i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 18:58:38 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:49532 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757298Ab2ADX6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 18:58:37 -0500
+Message-ID: <1325721515.4116.11.camel@joe2Laptop>
+Subject: Re: [PATCH 4/6] ath6kl: get rid of AR_DBG_LVL_CHECK()
+From: Joe Perches <joe@perches.com>
+To: Kalle Valo <kvalo@qca.qualcomm.com>
+Cc: linville@tuxdriver.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-next@vger.kernel.org, ath6kl-devel@qualcomm.com,
+        davem@davemloft.net
+Date: Wed, 04 Jan 2012 15:58:35 -0800
+In-Reply-To: <20120104230921.32306.63985.stgit@x201>
+References: <20120104230429.32306.75965.stgit@x201>
+	 <20120104230921.32306.63985.stgit@x201>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Dec 2011 17:23:48 -0500
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
+On Thu, 2012-01-05 at 01:09 +0200, Kalle Valo wrote:
+> We don't need it as debug calls already have a log level and compiler
+> should be smart enough to optimise away the code when ath6kl debug code
+> is not enabled. Also it makes it easier to abstract core code to
+> ath6kl_core.ko.
 
-> page-types, which is a common user of pagemap, gets aware of thp
-> with this patch. This helps system admins and kernel hackers know
-> about how thp works.
-> Here is a sample output of page-types over a thp:
+Changelog isn't representative of code changes.
+ATH6KL_DBG_ANY -> ATH6KL_DBG_IRQ.
 
-Oh, there it is.
+> diff --git a/drivers/net/wireless/ath/ath6kl/debug.c b/drivers/net/wireless/ath/ath6kl/debug.c
+[]
+> @@ -82,31 +82,31 @@ void ath6kl_dump_registers(struct ath6kl_device *dev,
+>  			   struct ath6kl_irq_enable_reg *irq_enable_reg)
+>  {
+>  
+> -	ath6kl_dbg(ATH6KL_DBG_ANY, ("<------- Register Table -------->\n"));
+> +	ath6kl_dbg(ATH6KL_DBG_IRQ, ("<------- Register Table -------->\n"));
 
-It would be nice to generate a /proc/pid/pagemap test for the forthcoming
-tools/testing/selftests/.  But I guess page-types.c is good
-enough for now.
+etc...
+
+
