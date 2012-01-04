@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab2ADFck (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 00:32:40 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:52426 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab2ADFcc (ORCPT
+	id S1752389Ab2ADFln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 00:41:43 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:58608 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856Ab2ADFlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 00:32:32 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: <davej@redhat.com>, <cpufreq@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <nsekhar@ti.com>, <hvaibhav@ti.com>, Afzal Mohammed <afzal@ti.com>
-Subject: [PATCH 2/2] cpufreq: update lpj only if frequency has changed
-Date: Wed, 4 Jan 2012 10:52:46 +0530
-Message-ID: <1325654566-14217-1-git-send-email-afzal@ti.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 4 Jan 2012 00:41:39 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [PATCH 0/4] sysfs:  Reduce the size of sysfs_dirent
+References: <m1aa6pky2r.fsf@fess.ebiederm.org>
+Date: Tue, 03 Jan 2012 21:43:47 -0800
+In-Reply-To: <m1aa6pky2r.fsf@fess.ebiederm.org> (Eric W. Biederman's message
+	of "Sun, 18 Dec 2011 20:03:08 -0800")
+Message-ID: <m1sjjwggz0.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX18yyL55CeLSuuRiYZWwq9rDrmRpAJi19fk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During scaling up of cpu frequency, loops_per_jiffy
-is updated upon invoking PRECHANGE notifier.
-If setting to new frequency fails in cpufreq driver,
-lpj is left at incorrect value.
+ebiederm@xmission.com (Eric W. Biederman) writes:
 
-Hence update lpj only if cpu frequency is changed,
-i.e. upon invoking POSTCHANGE notifier.
+> After throwing rb_trees at the problem sysfs_dirent increased in size by
+> 6 pointers, or 48 bytes.    Since the point of having struct
+> sysfs_dirent is to keep the size down increasing in size that much seems
+> unfortunate.
+>
+> The following patches attack this problem and if I have counted right
+> reduce the size of sysfs_dirent by 4 pointers on 64bit.  Not quite
+> where we were but reducing sysfs_dirent by 32bytes to 104 bytes is
+> an improvement.
 
-Penalty would be that during time period between
-changing cpu frequency & invocation of POSTCHANGE
-notifier, udelay(x) may not gurantee minimal delay
-of 'x' us for frequency scaling up operation.
+Greg did you see these patches for reducing the sysfs memory size
+regression in 3.2?
 
-Perhaps a better solution would be to define
-CPUFREQ_ABORTCHANGE & handle accordingly, but then
-it would be more intrusive (using ABORTCHANGE may
-help drivers also; if any has registered notifier
-and expect POST for a PRECHANGE, their needs can
-be taken care using ABORT)
-
-Signed-off-by: Afzal Mohammed <afzal@ti.com>
----
- drivers/cpufreq/cpufreq.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 987a165..2f5801a 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -204,8 +204,7 @@ static void adjust_jiffies(unsigned long val, struct cpufreq_freqs *ci)
- 		pr_debug("saving %lu as reference value for loops_per_jiffy; "
- 			"freq is %u kHz\n", l_p_j_ref, l_p_j_ref_freq);
- 	}
--	if ((val == CPUFREQ_PRECHANGE  && ci->old < ci->new) ||
--	    (val == CPUFREQ_POSTCHANGE && ci->old > ci->new) ||
-+	if ((val == CPUFREQ_POSTCHANGE  && ci->old != ci->new) ||
- 	    (val == CPUFREQ_RESUMECHANGE || val == CPUFREQ_SUSPENDCHANGE)) {
- 		loops_per_jiffy = cpufreq_scale(l_p_j_ref, l_p_j_ref_freq,
- 								ci->new);
--- 
-1.7.1
-
+Eric
