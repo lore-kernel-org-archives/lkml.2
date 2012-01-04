@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab2ADIzX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 03:55:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57517 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab2ADIzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 03:55:21 -0500
-Date: Wed, 4 Jan 2012 09:55:19 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Jan Steinhoff <mail@jan-steinhoff.de>
-Cc: Alessandro Rubini <rubini@cvml.unipv.it>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-input@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: Synaptics USB device driver
-In-Reply-To: <20120103194033.779cb829@greyhound>
-Message-ID: <alpine.LNX.2.00.1201040954000.24984@pobox.suse.cz>
-References: <20120103194033.779cb829@greyhound>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754425Ab2ADI6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 03:58:25 -0500
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:56104 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975Ab2ADI6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 03:58:24 -0500
+Message-ID: <4F041496.5030905@linux.vnet.ibm.com>
+Date: Wed, 04 Jan 2012 14:27:58 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: =?ISO-8859-15?Q?Sven_K=F6hler?= <sven.koehler@gmail.com>
+CC: linux-kernel@vger.kernel.org, Borislav Petkov <bp@amd64.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: microcode should perform update after suspend to disk
+References: <jdq23r$vni$1@dough.gmane.org> <4F03ECAF.4080207@linux.vnet.ibm.com> <4F0413A6.4060704@gmail.com>
+In-Reply-To: <4F0413A6.4060704@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+x-cbid: 12010408-2674-0000-0000-000002D96A05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 3 Jan 2012, Jan Steinhoff wrote:
+On 01/04/2012 02:23 PM, Sven Köhler wrote:
 
-[ ... snip ... ]
-> +static int synusb_setup_iurb(struct synusb *synusb,
-> +			     struct usb_endpoint_descriptor *endpoint)
-> +{
-> +	char *buf;
-> +
-> +	if (endpoint->wMaxPacketSize < 8)
-> +		return 0;
-> +	if (synusb->iurb) {
-> +		synusb_warn(synusb, "Found more than one possible "
-> +				    "int in endpoint");
-> +		return 0;
-> +	}
-> +	synusb->iurb = usb_alloc_urb(0, GFP_KERNEL);
-> +	if (synusb->iurb == NULL)
-> +		return -ENOMEM;
-> +	buf = usb_alloc_coherent(synusb->udev, 8, GFP_ATOMIC,
-> +				 &synusb->iurb->transfer_dma);
-> +	if (buf == NULL)
-> +		return -ENOMEM;
+> Am 04.01.2012 07:07, schrieb Srivatsa S. Bhat:
+>> Which kernel version are you using?
+> 
+> I was using 3.1.4 or something. However, I updated to 3.1.7 lately.
+> Sorry, I should have mentioned that.
+> 
+>> I tried doing suspend-to-ram and suspend-to-disk on latest kernel (3.2-rc7+)
+>> and I saw exactly the same messages getting emitted from the microcode
+>> module in both cases. Not sure what is going wrong in your case...
+> 
+> I'm absolutely puzzled, cause I just tried to reproduce it again, and
+> microcode was updated successfully during resume from suspend to disk. I
+> apologize for the noise.
+> 
 
-You seem to leak synusb->iurb here.
+Good to hear that everything is fine :-)
 
--- 
-Jiri Kosina
-SUSE Labs
+Regards,
+Srivatsa S. Bhat
+
