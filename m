@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750862Ab2ADFBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 00:01:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:50818 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab2ADFBo (ORCPT
+	id S1751146Ab2ADFLr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 00:11:47 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:33913 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2ADFLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 00:01:44 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=iF1DTRsR_oHYW5j3V28A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325653301.12696.20.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Wed, 04 Jan 2012 00:01:41 -0500
-In-Reply-To: <1325635922.12696.8.camel@gandalf.stny.rr.com>
-References: <20111221123624.193898256@goodmis.org>
-	 <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
-	 <20120102134856.GA32673@elte.hu>
-	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
-	 <1325635922.12696.8.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 4 Jan 2012 00:11:45 -0500
+Date: Wed, 4 Jan 2012 09:11:39 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Richard Hughes <hughsient@gmail.com>,
+        Daniel Nicoletti <dantti12@gmail.com>, linux-input@vger.kernel.org,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: Re: [PATCH RFC V2 0/4] Add "scope" to power supplies
+Message-ID: <20120104051139.GA8081@oksana.dev.rtsoft.ru>
+References: <cover.1323454016.git.jeremy@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <cover.1323454016.git.jeremy@goop.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 19:12 -0500, Steven Rostedt wrote:
-
-> I should have tested this branch more. As I enabled BISECT_CHECK=1 in my
-> ktest config, it boots both the bad commit and the good commit making
-> sure the bad commit fails, and the good commit succeeds. The bad did
-> fail, but so did the good commit, which was Linus's branch.
+On Fri, Dec 09, 2011 at 02:43:15PM -0800, Jeremy Fitzhardinge wrote:
+> This series adds a "scope" attribute to power supplies, to indicate
+> whether it powers the whole system ("System") or just some subset of
+> the devices ("Device").  This allows upowerd to distinguish between
+> system-wide power supplies and self-powered devices such as cordless
+> mice.
 > 
-> I booted it again just now, and it failed again.
+> This series also adds a "powers" link to power supplies, so that if
+> they're scope=Device, they can specifically indicate which device
+> tree they power.
 > 
-> I'll boot it a couple more times and maybe even recompile. Perhaps I
-> didn't test Linus's branch correctly (checkout out the wrong branch?).
+> Updates since last post:
+>  - Add more complete documentation to scope and "powers" links
+>  - Remove unnecessary scopes on System power supplies
+>  - Make HID battery supplies Device, and add "powers" pointers
+>    for them.
+> 
+> This can also be pulled from:
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git power-supply-scope
+> 
+> Jeremy Fitzhardinge (4):
+>   power_supply: add SCOPE attribute to power supplies
+>   power_supply: allow a power supply to explicitly point to powered
+>     device
+>   power_supply: add scope properties to some self-powered HID devices
+>   power_supply: add "powers" links to self-powered HID devices
+> 
+>  drivers/hid/hid-wacom.c            |   16 ++++++++++++++--
+>  drivers/hid/hid-wiimote.c          |   10 +++++++++-
+>  drivers/power/power_supply_core.c  |    7 +++++++
+>  drivers/power/power_supply_sysfs.c |    6 ++++++
+>  include/linux/power_supply.h       |    8 ++++++++
+>  5 files changed, 44 insertions(+), 3 deletions(-)
 
-My mistake, I forgot to add the "minimum config" for booting the box.
-When I did that, it booted fine. I kicked off the bisect again, and lets
-see what happens.
+Pulled into battery-2.6.git, thank you!
 
--- Steve
-
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
