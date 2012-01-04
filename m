@@ -1,88 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab2ADUcU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 15:32:20 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:27089 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506Ab2ADUcS (ORCPT
+	id S1756841Ab2ADUen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 15:34:43 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:50628 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506Ab2ADUek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 15:32:18 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Wed, 04 Jan 2012 15:32:13 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Olof Johansson <olof@lixom.net>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
-Subject: Re: ZenIV (was: Re: Status of arm-soc.git for 3.2)
-In-reply-to: <20120104200447.GC11810@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.02.1201041520380.2907@xanadu.home>
-References: <201201032243.06440.arnd@arndb.de>
- <20120104100016.GK2914@n2100.arm.linux.org.uk>
- <20120104181703.GA11810@n2100.arm.linux.org.uk>
- <alpine.LFD.2.02.1201041337370.2907@xanadu.home>
- <20120104191042.GB11810@n2100.arm.linux.org.uk>
- <20120104200447.GC11810@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Wed, 4 Jan 2012 15:34:40 -0500
+Message-ID: <4F04B7DC.70809@suse.cz>
+Date: Wed, 04 Jan 2012 21:34:36 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111130 Thunderbird/9.0
+MIME-Version: 1.0
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: alan@linux.intel.com, gregkh@suse.de, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jirislaby@gmail.com>
+Subject: Re: [PATCH] serial: relocate remaining serial drivers from tty/ to
+ tty/serial/
+References: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com>
+In-Reply-To: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jan 2012, Russell King - ARM Linux wrote:
+On 01/04/2012 09:01 PM, Paul Gortmaker wrote:
+>  rename drivers/tty/{ => serial}/amiserial.c (100%)
+>  rename drivers/tty/{ => serial}/cyclades.c (100%)
+>  rename drivers/tty/{ => serial}/isicom.c (100%)
+>  rename drivers/tty/{ => serial}/moxa.c (100%)
+>  rename drivers/tty/{ => serial}/moxa.h (100%)
+>  rename drivers/tty/{ => serial}/mxser.c (100%)
+>  rename drivers/tty/{ => serial}/mxser.h (100%)
+>  rename drivers/tty/{ => serial}/rocket.c (100%)
+>  rename drivers/tty/{ => serial}/rocket.h (100%)
+>  rename drivers/tty/{ => serial}/rocket_int.h (100%)
+>  rename drivers/tty/{ => serial}/synclink.c (100%)
+>  rename drivers/tty/{ => serial}/synclink_gt.c (100%)
+>  rename drivers/tty/{ => serial}/synclinkmp.c (100%)
 
-> On Wed, Jan 04, 2012 at 07:10:42PM +0000, Russell King - ARM Linux wrote:
-> > On Wed, Jan 04, 2012 at 01:55:48PM -0500, Nicolas Pitre wrote:
-> > > On Wed, 4 Jan 2012, Russell King - ARM Linux wrote:
-> > > > I've now disabled all access to my git tree there, and restarted apache.
-> > > > We will see whether that improves stability - I suspect it will do because
-> > > > I reckon that the problem is that the smart git stuff is what's killing
-> > > > the machine.
-> > > 
-> > > I'm sure that is the case.  However faulty hardware could still be the 
-> > > root cause, but without the load from Git the machine might become 
-> > > loaded lightly enough you might not see any ill effects before quite a 
-> > > while.
-> > 
-> > When it's serving the next Fedora release (it's one of the official
-> > mirrors) I'm sure any problems like that would become noticable - but
-> > they haven't yet.  It purely seems to be something git is doing which
-> > is killing the machine.
-> 
-> I think we've just found the issue causing httpd to die:
-> 
-> - Fedora systems set a limit at login time on the number of processes a
->   user can run - which is set to a soft limit of 1024.
-> 
-> - When someone logs in, their shell inherits this soft rlimit.  This
->   gets inherited by all sub-processes, including through a su to their
->   root shell.
-> 
-> - When they restart httpd, httpd also inherits this limit.
-> 
-> - httpd's own internal limits are set to a max clients of 1024.
-> 
-> The problem comes when httpd hits 1024 processes - as it forks as root,
-> this succeeds (root is not subjected to this rlimit), and then a
-> subsequent setuid() fails with -EAGAIN, causing httpd to experience a
-> fatal error.
-> 
-> Obviously, this is not a good combination of things to happen.  It's
-> also completely unnoticable to anyone who restarts apache.
+Hmm, tty/serial/* used to be for those using serial-core. And tty/ for
+those who don't. But FWIW I don't mind the change.
 
-Nasty.
-
-> So, I've 'fixed' it by raising the rlimit in the httpd startup scripts,
-> which should keep it fixed whenever anyone else restarts httpd.
-> 
-> The problem should be solved, and as such I've re-enabled access to
-> the git tree.
-
-OK, let's hope things will hold up.
-
-I suspect this might not be correlated to the memory exhaustion ZenIV 
-experienced in the past though.  That might require another kind of 
-solution if that comes again.
-
-
-Nicolas
+-- 
+js
+suse labs
