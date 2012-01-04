@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab2ADOPh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 09:15:37 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46160 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754848Ab2ADOPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 09:15:35 -0500
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <linux-watchdog@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH RFC] OMAP : watchdog : fix the WDIOC_GETBOOTSTATUS ioctl if not implemented.
-Date: Wed, 4 Jan 2012 19:45:28 +0530
-Message-ID: <1325686528-26997-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755701Ab2ADOP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 09:15:58 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:44237 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab2ADOP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 09:15:56 -0500
+Date: Wed, 4 Jan 2012 09:02:10 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: David Miller <davem@davemloft.net>
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvalo@qca.qualcomm.com
+Subject: Re: linux-next: merge of the wireless-next tree into the net-next
+ tree
+Message-ID: <20120104140209.GA2540@tuxdriver.com>
+References: <20120104105947.8bac77d1d7198a49e6feeca8@canb.auug.org.au>
+ <20120103.202733.1070369898271428121.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120103.202733.1070369898271428121.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WDIOC_GETBOOTSTATUS ioctl is imlemented for cpu_is_omap16xx and cpu_is_omap24xx
-cpus only. For other cpus it falls through to WDIOC_KEEPALIVE.
-This patch prevents the fall through.
+On Tue, Jan 03, 2012 at 08:27:33PM -0500, David Miller wrote:
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Wed, 4 Jan 2012 10:59:47 +1100
+> 
+> > I noticed that the wireless-next tree has been merged into the net-next
+> > tree today.  Has anything been done about the build failure I reported in
+> > the wireless-next a while ago:
+> > 
+> > On 12/22/2011 16:58 +1100, Stephen Rothwell wrote:
+> >>
+> >> After merging the final tree, today's linux-next build (powerpc
+> >> allyesconfig) failed like this:
+> >> 
+> >> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ')' before 'KBUILD_MODNAME'
+> >> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: 'KBUILD_MODNAME' undeclared here (not in a function)
+> >> drivers/net/wireless/ath/ath6kl/cfg80211.c:27:1: error: expected ',' or ';' before string constant
+> 
+> It happens on any platform not just powerpc, John please fix this and
+> don't have known unresolved -next build failures in your tree when you
+> push to me.
 
-Cc :  sricharan <r.sricharan@ti.com>
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
-Untested!
+I'm sorry, Dave.  I must have let this slip my mind over the holidays
+-- maybe this explains why I didn't send the pull request before
+Christmas...
 
- drivers/watchdog/omap_wdt.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Kalle has sent a temporary fix that sidesteps the issue by forcing the
+SDIO and USB versions of ath6kl to be built as modules.  I'll forward
+that on to you today.
 
-diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
-index 2b4acb8..971179d 100644
---- a/drivers/watchdog/omap_wdt.c
-+++ b/drivers/watchdog/omap_wdt.c
-@@ -232,6 +232,7 @@ static long omap_wdt_ioctl(struct file *file, unsigned int cmd,
- 		if (cpu_is_omap24xx())
- 			return put_user(omap_prcm_get_reset_sources(),
- 					(int __user *)arg);
-+		return 0;
- 	case WDIOC_KEEPALIVE:
- 		pm_runtime_get_sync(wdev->dev);
- 		spin_lock(&wdt_lock);
+John
 -- 
-1.7.1
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
