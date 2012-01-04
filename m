@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2ADPD4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 10:03:56 -0500
-Received: from hotel311.server4you.de ([85.25.146.15]:35903 "EHLO
+	id S1755953Ab2ADPDy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 10:03:54 -0500
+Received: from hotel311.server4you.de ([85.25.146.15]:35899 "EHLO
 	hotel311.server4you.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755861Ab2ADPDs (ORCPT
+	with ESMTP id S1753977Ab2ADPDr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 10:03:48 -0500
+	Wed, 4 Jan 2012 10:03:47 -0500
 From: Daniel Wagner <wagi@monom.org>
 To: linux-kernel@vger.kernel.org
 Cc: Daniel Wagner <daniel.wagner@bmw-carit.de>
-Subject: [RFC v0 2/3] Bluetooth: Use hci_conn_auth() instead of open coded version
-Date: Wed,  4 Jan 2012 15:54:10 +0100
-Message-Id: <1325688851-14920-3-git-send-email-wagi@monom.org>
+Subject: [RFC v0 1/3] Bluetooth: Make hci_conn_auth/encrypt public functions
+Date: Wed,  4 Jan 2012 15:54:09 +0100
+Message-Id: <1325688851-14920-2-git-send-email-wagi@monom.org>
 X-Mailer: git-send-email 1.7.8.2.302.g17b4
 In-Reply-To: <1325688851-14920-1-git-send-email-wagi@monom.org>
 References: <1325688851-14920-1-git-send-email-wagi@monom.org>
@@ -22,44 +22,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Wagner <daniel.wagner@bmw-carit.de>
 
-Note this will also enable the encryption which will
-not happen in the open coded version.
-
 Signed-off-by: Daniel Wagner <daniel.wagner@bmw-carit.de>
 ---
- net/bluetooth/hci_event.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ include/net/bluetooth/hci_core.h |    2 ++
+ net/bluetooth/hci_conn.c         |    4 ++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index d37f5b2..453e483 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -1296,11 +1296,7 @@ static void hci_cs_remote_name_req(struct hci_dev *hdev, __u8 status)
- 	if (!hci_outgoing_auth_needed(hdev, conn))
- 		goto unlock;
+diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
+index ea9231f..301b86b 100644
+--- a/include/net/bluetooth/hci_core.h
++++ b/include/net/bluetooth/hci_core.h
+@@ -527,6 +527,8 @@ void hci_chan_list_flush(struct hci_conn *conn);
+ struct hci_conn *hci_connect(struct hci_dev *hdev, int type, bdaddr_t *dst,
+ 						__u8 sec_level, __u8 auth_type);
+ int hci_conn_check_link_mode(struct hci_conn *conn);
++int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type);
++void hci_conn_encrypt(struct hci_conn *conn);
+ int hci_conn_check_secure(struct hci_conn *conn, __u8 sec_level);
+ int hci_conn_security(struct hci_conn *conn, __u8 sec_level, __u8 auth_type);
+ int hci_conn_change_link_key(struct hci_conn *conn);
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index 07bc69e..da49b9c 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -616,7 +616,7 @@ int hci_conn_check_link_mode(struct hci_conn *conn)
+ EXPORT_SYMBOL(hci_conn_check_link_mode);
  
--	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->pend)) {
--		struct hci_cp_auth_requested cp;
--		cp.handle = __cpu_to_le16(conn->handle);
--		hci_send_cmd(hdev, HCI_OP_AUTH_REQUESTED, sizeof(cp), &cp);
--	}
-+	hci_conn_auth(conn, BT_SECURITY_HIGH, conn->auth_type);
+ /* Authenticate remote device */
+-static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
++int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
+ {
+ 	BT_DBG("conn %p", conn);
  
- unlock:
- 	hci_dev_unlock(hdev);
-@@ -1814,11 +1810,7 @@ static inline void hci_remote_name_evt(struct hci_dev *hdev, struct sk_buff *skb
- 	if (!hci_outgoing_auth_needed(hdev, conn))
- 		goto unlock;
+@@ -650,7 +650,7 @@ static int hci_conn_auth(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
+ }
  
--	if (!test_and_set_bit(HCI_CONN_AUTH_PEND, &conn->pend)) {
--		struct hci_cp_auth_requested cp;
--		cp.handle = __cpu_to_le16(conn->handle);
--		hci_send_cmd(hdev, HCI_OP_AUTH_REQUESTED, sizeof(cp), &cp);
--	}
-+	hci_conn_auth(conn, BT_SECURITY_HIGH, conn->auth_type);
+ /* Encrypt the the link */
+-static void hci_conn_encrypt(struct hci_conn *conn)
++void hci_conn_encrypt(struct hci_conn *conn)
+ {
+ 	BT_DBG("conn %p", conn);
  
- unlock:
- 	hci_dev_unlock(hdev);
 -- 
 1.7.8.2.302.g17b4
 
