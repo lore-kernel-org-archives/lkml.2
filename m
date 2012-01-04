@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757247Ab2ADWwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 17:52:30 -0500
+	id S1757267Ab2ADWwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 17:52:39 -0500
 Received: from mail-gy0-f202.google.com ([209.85.160.202]:58585 "EHLO
 	mail-gy0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757177Ab2ADWw1 (ORCPT
+	with ESMTP id S1757177Ab2ADWwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 17:52:27 -0500
-Subject: [RFC PATCH v1 0/2] virtio_net: Better low memory handling.
+	Wed, 4 Jan 2012 17:52:33 -0500
+Subject: [RFC PATCH v1 1/2] virtio_net: Pass gfp flags when allocating rx
+	buffers.
 To: Rusty Russell <rusty@rustcorp.com.au>,
         "Michael S. Tsirkin" <mst@redhat.com>
 From: Mike Waychison <mikew@google.com>
 Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         virtualization@lists.linux-foundation.org
-Date: Wed, 04 Jan 2012 14:52:26 -0800
-Message-ID: <20120104225223.18184.1537.stgit@mike2.sea.corp.google.com>
+Date: Wed, 04 Jan 2012 14:52:32 -0800
+Message-ID: <20120104225231.18184.96390.stgit@mike2.sea.corp.google.com>
+In-Reply-To: <20120104225223.18184.1537.stgit@mike2.sea.corp.google.com>
+References: <20120104225223.18184.1537.stgit@mike2.sea.corp.google.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,53 +26,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following series applies to net-next.
+Currently, the refill path for RX buffers will always allocate the
+buffers as GFP_ATOMIC, even if we are in process context.  This will
+fail to apply memory pressure as the worker thread will not contribute
+to the freeing of memory.
 
-The following series changes the low memory paths in virtio_net to allow
-the driver to contribute to reclaim when memory is tight.
+Fix this by changing add_recvbuf_small to use the gfp variant allocator,
+__netdev_alloc_skb_ip_align().
 
-It attempts to rectify some performance problems we've seen where the
-network performance drops significantly when memory is low.  The working
-theory is that while the driver contributes to memory pressure when
-throughput is high, it does not contribute to reclaim when memory is
-low.
-
-The observed situation on an unmodified kernel is that a system with low
-memory will in turn quickly stop being being able to refill the rx queue
-with buffers, in turn causing packets to be dropped by the host OS while
-the driver waits for somebody else to free up memory.  The way the
-process-context refill loop works, the memory subsystem is effectively
-polled every half second when things look bleak, leading to significant
-packet loss and congestion window collapse.
-
-The first patch rectifies the "not contributing to reclaim" by letting
-the driver try to allocate as GFP_KERNEL when run from process context.
-
-The second patch is a bit more complicated.  It essentially removes the
-serialization that is currently in place built around enabling and
-disabling napi polling, and replaces it by protecting the underlying
-virtqueue accesses with a bottom-half spinlock.  As well, in order to
-continue allocating as GFP_KERNEL in the slow path allocation of buffers
-and adding them to the virtqueue for device use is split apart.  To try
-and amortize the locking, batching is used.
-
-This patchset seems to help the test setups that I'm playing with.
-Example tests include using several bit-torrent clients within a VM and
-watching the network throughputs on the host.  Other similar workloads
-(high network traffic, reasonably high disk IO causing memory pressure)
-also appear to have throughput problems alleviated by these changes.
-
-
-As a warning, I've only really tested this using the "small buffers"
-paths.  The devices I'm using do not yet support "mergeable" or "big"
-receive buffers.
+Signed-off-by: Mike Waychison <mikew@google.com>
 ---
+ drivers/net/virtio_net.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Mike Waychison (2):
-      virtio_net: Pass gfp flags when allocating rx buffers.
-      virtio_net: Don't disable napi on low memory.
-
-
- drivers/net/virtio_net.c |  213 +++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 162 insertions(+), 51 deletions(-)
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 2055386..76fe14e 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -156,6 +156,7 @@ static void set_skb_frag(struct sk_buff *skb, struct page *page,
+ 	*len -= size;
+ }
+ 
++/* Called from bottom half context */
+ static struct sk_buff *page_to_skb(struct virtnet_info *vi,
+ 				   struct page *page, unsigned int len)
+ {
+@@ -358,7 +359,7 @@ static int add_recvbuf_small(struct virtnet_info *vi, gfp_t gfp)
+ 	struct skb_vnet_hdr *hdr;
+ 	int err;
+ 
+-	skb = netdev_alloc_skb_ip_align(vi->dev, MAX_PACKET_LEN);
++	skb = __netdev_alloc_skb_ip_align(vi->dev, MAX_PACKET_LEN, gfp);
+ 	if (unlikely(!skb))
+ 		return -ENOMEM;
+ 
 
