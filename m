@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab2ADVLU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 16:11:20 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:52832 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754009Ab2ADVLS (ORCPT
+	id S932079Ab2ADVSz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 16:18:55 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:33140 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab2ADVSv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 16:11:18 -0500
-Date: Wed, 04 Jan 2012 16:11:14 -0500 (EST)
-Message-Id: <20120104.161114.1924910384933450343.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 04 Jan 2012 13:11:16 -0800 (PST)
+	Wed, 4 Jan 2012 16:18:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120104120248.4f4747bf@jbarnes-desktop>
+References: <20120103185304.GA25184@hmsreliant.think-freely.org>
+	<20120104091952.7cc5316d@jbarnes-desktop>
+	<20120104195134.GB24324@hmsreliant.think-freely.org>
+	<20120104.145619.1728971973635198635.davem@davemloft.net>
+	<20120104120248.4f4747bf@jbarnes-desktop>
+Date: Wed, 4 Jan 2012 16:18:49 -0500
+Message-ID: <CA+5PVA4=j_pXQ0L9NBoaGGGhEWFhga_LxVG-oi11vSrm4UG3Sg@mail.gmail.com>
+Subject: Re: [PATCH] msi: fix imbalanced refcount of msi irq sysfs objects
+From: Josh Boyer <jwboyer@gmail.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: David Miller <davem@davemloft.net>, nhorman@tuxdriver.com,
+        linux-kernel@vger.kernel.org, bhelgaas@google.com, gregkh@suse.de,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 4, 2012 at 3:02 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> On Wed, 04 Jan 2012 14:56:19 -0500 (EST)
+> David Miller <davem@davemloft.net> wrote:
+>
+>> From: Neil Horman <nhorman@tuxdriver.com>
+>> Date: Wed, 4 Jan 2012 14:51:34 -0500
+>>
+>> > On Wed, Jan 04, 2012 at 09:19:52AM -0800, Jesse Barnes wrote:
+>> >> On Tue, 3 Jan 2012 13:53:05 -0500
+>> >> Neil Horman <nhorman@tuxdriver.com> wrote:
+>> >>
+>> >> > On Tue, Jan 03, 2012 at 01:05:26PM -0500, David Miller wrote:
+>> >> > > From: Neil Horman <nhorman@tuxdriver.com>
+>> >> > > Date: Tue,  3 Jan 2012 10:29:54 -0500
+>> >> > >
+>> >> > > > This warning was recently reported to me:
+>> >> > >
+>> >> > > I've hit this too, see:
+>> >> > >
+>> >> > > http://marc.info/?l=linux-kernel&m=132458146927890&w=2
+>> >> > >
+>> >> > > and my analysis at:
+>> >> > >
+>> >> > > http://marc.info/?l=linux-arch&m=132458391128660&w=2
+>> >> > >
+>> >> > Yup, your analysis is correct. Regardless of the why behind msi enablement
+>> >> > failing, we need to gate the kobject_del/put in free_msi_irqs on successful
+>> >> > completion of kobject_init_and_add in populate_msi_sysfs.  This patch does that,
+>> >> > using the parent pointer as a flag.
+>> >>
+>> >> I applied this to my -next branch; doesn't seem critical to land
+>> >> immediately.  If you disagree let me know and I'll pull it over to my
+>> >> for-linus branch instead.
+>> >>
+>> >> Thanks,
+>> > I'm ok with it waiting, but I'll defer to Dave and others who have seen it
+>> > occur.  It sounds like its alot of log noise.
+>>
+>> The bug only exists in the PCI -next code I thought.
+>
+> Oh yeah, looks like it.  Lost track of my -next vs master branches
+> there...
 
-Probably the bluetooth 10 second resume delay fix is the most
-interesting fix here, especially if you're actually hitting it.
+Er... Neil's commit log in the patch itself has an oops from 3.1.6 in
+it.  If the bug the patch fixes is only present in -next PCI code, how
+did it get hit on that release?
 
-The rest are small fixes isolated to specific drivers or packet
-schedulers.
+Did we switch to talking about some other patch here and I'm just confused?
 
-1) Revert bluetooth HCI reset timeout increase, it adds a 10 second delay
-   during resume in Thinkpad laptops and potentially other machines.  From
-   Gustavo F. Padovan.
-
-2) New packet QFQ scheduler using wrong types to compute queueing limits
-   leading to overflows, fix from Eric Dumazet.
-
-3) Fix regression in b43 driver conversion to new RX descriptor header
-   format, it broke PIO mode where the header length needs to be computed
-   differently.  Fix from Guennadi Liakhovetski.
-
-4) Fix build dependencies of FEC ethernet driver, from Wolfram Sang.
-
-5) mwifiex gets OOPS when scan and connect occur simultaneously, fix from
-   Amitkumar Karwar.
-
-6) ath9k crashes in access point mode because it does aggregation
-   handling during power save even if TX aggregation is not enabled.
-   Fix from Mohammed Shafi Shajakhan.
-
-7) Update CAN MAINTAINERS entry, from Oliver Hartkopp.
-
-Please pull, thanks a lot!
-
-The following changes since commit f423fc627b05f47bc9305f9661630fce30f208f9:
-
-  Revert "rtc: Expire alarms after the time is set." (2012-01-04 07:57:22 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Amitkumar Karwar (1):
-      mwifiex: fix crash during simultaneous scan and connect
-
-Eric Dumazet (1):
-      sch_qfq: fix overflow in qfq_update_start()
-
-Guennadi Liakhovetski (1):
-      b43: fix regression in PIO case
-
-Gustavo F. Padovan (1):
-      Revert "Bluetooth: Increase HCI reset timeout in hci_dev_do_close"
-
-John W. Linville (2):
-      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Mohammed Shafi Shajakhan (1):
-      ath9k: Fix kernel panic in AR2427 in AP mode
-
-Oliver Hartkopp (2):
-      CAN MAINTAINERS update
-      fix CAN MAINTAINERS SCM tree type
-
-Wolfram Sang (1):
-      net: fsl: fec: fix build for mx23-only kernel
-
- MAINTAINERS                              |   11 +++++------
- drivers/net/ethernet/freescale/Kconfig   |    4 ++--
- drivers/net/wireless/ath/ath9k/main.c    |    3 +++
- drivers/net/wireless/b43/pio.c           |   16 +++++++++++++---
- drivers/net/wireless/mwifiex/sta_ioctl.c |    7 ++++++-
- net/bluetooth/hci_core.c                 |    2 +-
- net/sched/sch_qfq.c                      |    4 ++--
- 7 files changed, 32 insertions(+), 15 deletions(-)
+josh
