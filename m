@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab2ADUyf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 15:54:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:33345 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab2ADUyd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 15:54:33 -0500
-Message-ID: <4F04BC85.9060803@suse.cz>
-Date: Wed, 04 Jan 2012 21:54:29 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20111223 Thunderbird/10.0
+	id S1756928Ab2ADU5M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 15:57:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:31237 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756201Ab2ADU5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 15:57:09 -0500
+Message-ID: <4F04BD11.8090302@redhat.com>
+Date: Wed, 04 Jan 2012 15:56:49 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: serial ports now asserting DTR and RTS during boot; breaks connected
- hardware
-References: <20120103153707.GA12771@redhat.com> <20120103160655.69107c93@pyramind.ukuu.org.uk>
-In-Reply-To: <20120103160655.69107c93@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com> <4F046536.5080207@redhat.com> <4F048295.1050907@redhat.com> <4F04898B.1080600@redhat.com>
+In-Reply-To: <4F04898B.1080600@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2012 05:06 PM, Alan Cox wrote:
-> On Tue, 3 Jan 2012 10:37:07 -0500
-> Dave Jones <davej@redhat.com> wrote:
-> 
->> Jiri,
->> We got this report from a user who notes a change in behaviour for
->> his serial hardware over the last few kernel versions.
->>  
->> https://bugzilla.redhat.com/show_bug.cgi?id=771010
+On 01/04/2012 12:16 PM, Avi Kivity wrote:
+> On 01/04/2012 06:47 PM, Rik van Riel wrote:
+>>> So it looks like the default is optimal, at least wrt the cases you
+>>> tested and your test workload.
 >>
->> This sounds like it might be related to your DTR/RTS changes back in March 2011 maybe ? 
-> 
-> Looks like your userspace to me at first glance.
-> 
-> ftdi_sio sets up the modem lines in set_termios. Set_termios is called
-> from ftdi_open. ftdi_open is triggered by userspace.
-> 
->>  > The following code in the ftdi_sio driver is one suspect but this behavior
->>  > happens on 8250 UARTs also so it is systemic now,
-> 
-> Likewise 8250 sets up the lines in serial8250_startup. This is called via
-> uart_startup which is called via open.
+>>
+>> It depends on the workload.
+>>
+>> I believe ebizzy synchronously bounces messages around between
+>> userland threads, and may benefit from lower latency preemption
+>> and re-scheduling.
+>>
+>> Workloads like AMQP do asynchronous messaging, and are likely
+>> to benefit from having a lower number of switches.
+>>
+>> I do not know which kind of workload is more prevalent.
+>>
+>> Another worry with gang scheduling is scalability.  One of
+>> the reasons Linux scales well to larger systems is that a
+>> lot of things are done CPU local, without communicating
+>> things with other CPUs.  Making the scheduling algorithm
+>> system-global has the potential to add in a lot of overhead.
+>>
+>> Likewise, removing the ability to migrate workloads to idle
+>> CPUs is likely to hurt a lot of real world workloads.
+>>
+>> Benchmarks don't care, because they run full-out. However,
+>> users do not run benchmarks nearly as much as they run
+>> actual workloads...
+>>
+>
+> I think we can solve it at the guest level.  The paravirt ticketlock
+> stuff introduces wait/wake calls (actually wait is just a HLT
+> instruction); we could spin for a while, then HLT until the other side
+> wakes us.  We should do this for all sites that busy wait.
 
-Ok, let's apply the cut&paste rule. Does uninstalling ModemManager fix
-the issue?
+Agreed, that would probably be the best (and nicest) solution.
 
 -- 
-js
-suse labs
+All rights reversed
