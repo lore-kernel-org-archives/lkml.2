@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756614Ab2ADRYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 12:24:55 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:23750 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756472Ab2ADRYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 12:24:53 -0500
-From: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: cesarb@cesarb.net, kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net,
-        penberg@kernel.org, aarcange@redhat.com, riel@redhat.com,
-        mel@csn.ul.ie, rientjes@google.com, dima@android.com, gregkh@suse.de,
-        rebecca@android.com, san@google.com, akpm@linux-foundation.org,
-        vesa.jaaskelainen@nokia.com
-Subject: [PATCH 3.2.0-rc1 1/3] Making si_swapinfo exportable
-Date: Wed,  4 Jan 2012 19:21:54 +0200
-Message-Id: <58b74a5014e323cebeb4d3654f7f8a18c2f8d132.1325696593.git.leonid.moiseichuk@nokia.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
-In-Reply-To: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
-X-Nokia-AV: Clean
+	id S1756602Ab2ADR1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 12:27:54 -0500
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:34926 "EHLO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752585Ab2ADR1v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 12:27:51 -0500
+MIME-Version: 1.0
+In-Reply-To: <87sjjw70zs.fsf@ti.com>
+References: <1324426147-16735-1-git-send-email-ccross@android.com> <87sjjw70zs.fsf@ti.com>
+From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Wed, 4 Jan 2012 18:27:29 +0100
+Message-ID: <CAMQu2gwsw+RC+Y9P8r9Yjy+ADuQ-tPzcXPPncLxMjjb3tvdbbQ@mail.gmail.com>
+Subject: Re: [PATCH 0/3] coupled cpuidle state support
+To: Kevin Hilman <khilman@ti.com>
+Cc: Colin Cross <ccross@android.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-pm@lists.linux-foundation.org, Len Brown <len.brown@intel.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Trinabh Gupta <g.trinabh@gmail.com>,
+        Deepthi Dharwar <deepthi@linux.vnet.ibm.com>,
+        linux-omap@vger.kernel.org, linux-tegra@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we will make si_swapinfo() exportable it could be called from modules.
-Otherwise modules have no interface to obtain information about swap usage.
-Change made in the same way as si_meminfo() declared.
+On Wed, Jan 4, 2012 at 1:41 AM, Kevin Hilman <khilman@ti.com> wrote:
+> Colin Cross <ccross@android.com> writes:
+>
+>
+>> This patch series implements an alternative solution, where each
+>> cpu will wait in the WFI state until all cpus are ready to enter
+>> a coupled state, at which point the coupled state function will
+>> be called on all cpus at approximately the same time.
+>
+> This looks great, and is certainly preferred to hotplug IMO.
+>
+> [...]
+>
+>> None of the platforms I work with have an SMP idle implementation
+>> upstream, so I can't easily show a patch that converts a platform
+>> from hotplug governor to coupled cpuidle states.
+>
+> Basic OMAP4 CPUidle support is in now queued for v3.3 (see omap4
+> branch Tony's tree[1].)
+>
+> Can you (or Santosh) send a patch that adds coupled support to that
+> driver so it can see some broader testing on OMAP4?
+>
+I briefly attempted OMAP4 idle with this series but had some lock
+up related issues which we faced in the older development.
 
-Signed-off-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
----
- mm/swapfile.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+Then I got busy into other activities which will keep me occupied for
+next few weeks. I will be happy to share the patches in case some one
+would like to have a look till then.
 
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index b1cd120..192cc25 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -5,10 +5,12 @@
-  *  Swap reorganised 29.12.95, Stephen Tweedie
-  */
- 
-+#include <linux/export.h>
- #include <linux/mm.h>
- #include <linux/hugetlb.h>
- #include <linux/mman.h>
- #include <linux/slab.h>
-+#include <linux/kernel.h>
- #include <linux/kernel_stat.h>
- #include <linux/swap.h>
- #include <linux/vmalloc.h>
-@@ -2177,6 +2179,7 @@ void si_swapinfo(struct sysinfo *val)
- 	val->totalswap = total_swap_pages + nr_to_be_unused;
- 	spin_unlock(&swap_lock);
- }
-+EXPORT_SYMBOL(si_swapinfo);
- 
- /*
-  * Verify that a swap entry is valid and increment its swap map count.
--- 
-1.7.7.3
-
+Regards
+Santosh
