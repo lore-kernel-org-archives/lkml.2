@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab2ADHTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 02:19:36 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:42979 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753454Ab2ADHTf (ORCPT
+	id S1754185Ab2ADHTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 02:19:43 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:18202 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab2ADHTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 02:19:35 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjQFAMD5A095LLu4/2dsb2JhbABDggWqYYEGgXIBAQU6HCMQCAMYLhQlAyETvWgTixljBJUDkkk
-Date: Wed, 4 Jan 2012 18:19:31 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, vgoyal@redhat.com,
-        jmoyer@redhat.com
-Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
-Message-ID: <20120104071931.GB17026@dastard>
-References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
+	Wed, 4 Jan 2012 02:19:39 -0500
+Date: Wed, 4 Jan 2012 10:19:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Steven Whitehouse <swhiteho@redhat.com>,
+        David Teigland <teigland@redhat.com>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] gfs2: make some sizes unsigned in set_recover_size()
+Message-ID: <20120104071931.GC30978@elgon.mountain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120104065337.230911609@sli10-conroe.sh.intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4F03FD89.00A6,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 02:53:37PM +0800, Shaohua Li wrote:
-> An IOPS based I/O scheduler
-> 
-> Flash based storage has some different characteristics against rotate disk.
-> 1. no I/O seek.
-> 2. read and write I/O cost usually is much different.
-> 3. Time which a request takes depends on request size.
-> 4. High throughput and IOPS, low latency.
-> 
-> CFQ iosched does well for rotate disk, for example fair dispatching, idle
-> for sequential read. It also has optimization for flash based storage (for
-> item 1 above), but overall it's not designed for flash based storage. It's
-> a slice based algorithm. Since flash based storage request cost is very
-> low, and drive has big queue_depth is quite popular now which makes
-> dispatching cost even lower, CFQ's slice accounting (jiffy based)
-> doesn't work well. CFQ doesn't consider above item 2 & 3.
-> 
-> FIOPS (Fair IOPS) ioscheduler is trying to fix the gaps. It's IOPS based, so
-> only targets for drive without I/O seek. It's quite similar like CFQ, but
-> the dispatch decision is made according to IOPS instead of slice.
-> 
-> The algorithm is simple. Drive has a service tree, and each task lives in
-> the tree. The key into the tree is called vios (virtual I/O). Every request
-> has vios, which is calculated according to its ioprio, request size and so
-> on. Task's vios is the sum of vios of all requests it dispatches. FIOPS
-> always selects task with minimum vios in the service tree and let the task
-> dispatch request. The dispatched request's vios is then added to the task's
-> vios and the task is repositioned in the sevice tree.
-> 
-> The series are orgnized as:
-> Patch 1: separate CFQ's io context management code. FIOPS will use it too.
-> Patch 2: The core FIOPS.
-> Patch 3: request read/write vios scale. This demontrates how the vios scale.
-> 
-> To make the code simple for easy view, some scale code isn't included here,
-> some not implementated yet.
-> 
-> TODO:
-> 1. ioprio support (have patch already)
-> 2. request size vios scale
-> 3. cgroup support
-> 4. tracing support
-> 5. automatically select default iosched according to QUEUE_FLAG_NONROT.
-> 
-> Comments and suggestions are welcome!
+ls->ls_recover_size is uint32_t so old_size and new_size should be
+unsigned as well.  Otherwise a large value could count as a negative
+and we could get past the "if (old_size >= max_jid + 1)" check by
+mistake.
 
-Benchmark results?
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
+index 82c82d0..400d041 100644
+--- a/fs/gfs2/lock_dlm.c
++++ b/fs/gfs2/lock_dlm.c
+@@ -886,7 +886,8 @@ static int set_recover_size(struct gfs2_sbd *sdp, struct dlm_slot *slots,
+ 	struct lm_lockstruct *ls = &sdp->sd_lockstruct;
+ 	uint32_t *submit = NULL;
+ 	uint32_t *result = NULL;
+-	int i, max_jid, old_size, new_size;
++	uint32_t old_size, new_size;
++	int i, max_jid;
+ 
+ 	max_jid = 0;
+ 	for (i = 0; i < num_slots; i++) {
