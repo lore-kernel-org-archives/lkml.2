@@ -1,136 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755831Ab2ADOjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 09:39:52 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:35072 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683Ab2ADOju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 09:39:50 -0500
-Date: Wed, 4 Jan 2012 15:39:45 +0100
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, gleb@redhat.com, asharma@fb.com,
-        vince@deater.net, wcohen@redhat.com
-Subject: perf_events: proposed fix for broken intr throttling (repost)
-Message-ID: <20120104143945.GA4783@quad>
+	id S1755825Ab2ADOmO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 09:42:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755090Ab2ADOmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 09:42:13 -0500
+Message-ID: <4F046536.5080207@redhat.com>
+Date: Wed, 04 Jan 2012 16:41:58 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>
+CC: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        vatsa@linux.vnet.ibm.com, bharata@linux.vnet.ibm.com
+Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
+References: <20111219083141.32311.9429.stgit@abhimanyu.in.ibm.com> <20111219112326.GA15090@elte.hu> <87sjke1a53.fsf@abhimanyu.in.ibm.com> <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com>
+In-Reply-To: <87mxa3zqm1.fsf@abhimanyu.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[repost, misspelled Peter's email address]
+On 01/04/2012 12:52 PM, Nikunj A Dadhania wrote:
+> On Mon, 02 Jan 2012 11:37:22 +0200, Avi Kivity <avi@redhat.com> wrote:
+> > On 12/31/2011 04:21 AM, Nikunj A Dadhania wrote:
+> > >
+> > >     GangV2:
+> > >     27.45%       ebizzy  libc-2.12.so            [.] __memcpy_ssse3_back
+> > >     12.12%       ebizzy  [kernel.kallsyms]       [k] clear_page
+> > >      9.22%       ebizzy  [kernel.kallsyms]       [k] __do_page_fault
+> > >      6.91%       ebizzy  [kernel.kallsyms]       [k] flush_tlb_others_ipi
+> > >      4.06%       ebizzy  [kernel.kallsyms]       [k] get_page_from_freelist
+> > >      4.04%       ebizzy  [kernel.kallsyms]       [k] ____pagevec_lru_add
+> > >
+> > >     GangBase:
+> > >     45.08%       ebizzy  [kernel.kallsyms]       [k] flush_tlb_others_ipi
+> > >     15.38%       ebizzy  libc-2.12.so            [.] __memcpy_ssse3_back
+> > >      7.00%       ebizzy  [kernel.kallsyms]       [k] clear_page
+> > >      4.88%       ebizzy  [kernel.kallsyms]       [k] __do_page_fault
+> > 
+> > Looping in flush_tlb_others().  Rik, what trace an we run to find out
+> > why PLE directed yield isn't working as expected?
+> > 
+> I tried some experiments by adding a pause_loop_exits stat in the
+> kvm_vpu_stat.
 
-Hi,
+(that's deprecated, we use tracepoints these days for stats)
 
-In running some tests with 3.2.0-rc7-tip, I noticed unexpected throttling
-notification samples. I was using fixed period with a long enough period
-that I could not possibly hit the default limit of 100000 samples/sec/cpu.
+> Here are some observation related to Baseline-only(8vm case)
+>
+>               | ple_gap=128 | ple_gap=64 | ple_gap=256 | ple_window=2048
+> --------------+-------------+------------+-------------+----------------
+> EbzyRecords/s |    2247.50  |    2132.75 |    2086.25  |      1835.62
+> PauseExits    | 7928154.00  | 6696342.00 | 7365999.00  |  50319582.00
+>
+> With ple_window = 2048, PauseExits is more than 6times the default case
 
-I investigated the matter and discovered that the following commit
-is the culprit:
+So it looks like the default is optimal, at least wrt the cases you
+tested and your test workload.
 
-commit 0f5a2601284237e2ba089389fd75d67f77626cef
-Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date:   Wed Nov 16 14:38:16 2011 +0100
-
-    perf: Avoid a useless pmu_disable() in the perf-tick
-
-
-The throttling mechanism REQUIRES that the hwc->interrupt counter be reset
-at EACH timer tick. This is regardless of the fact that the counter is in fixed
-period or frequency mode. The optimization introduced in this patch breaks this
-by avoiding calling perf_ctx_adjust_freq() at each timer tick. For events with
-fixed period, it would not adjust any period at all BUT it would reset the
-throttling counter.
-
-Given the way the throttling mechanism is implemented we cannot avoid doing
-some work at each timer tick. Otherwise we loose many samples for no good
-reasons.
-
-One may also question the motivation behind checking the interrupt rate at
-each timer tick rather than every second, i.e., average it out over a longer
-period.
-
-I see two solutions short term:
-   1 - revert the commit above
-   2 - special case the situation with no frequency-based sampling event
-
-I have implemented solution 2 with the draft fix below. It does not invoke
-perf_pmu_enable()/perf_pmu_disable().  I am not clear on whether or not this
-is really needed in this case. Please advise.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
-
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 91fb68a..d1fe81a 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -2325,6 +2325,37 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
- 	}
- }
- 
-+static void perf_ctx_adjust_throttle(struct perf_event_context *ctx)
-+{
-+	struct perf_event *event;
-+	struct hw_perf_event *hwc;
-+	u64 interrupts;
-+
-+	raw_spin_lock(&ctx->lock);
-+
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
-+		if (event->state != PERF_EVENT_STATE_ACTIVE)
-+			continue;
-+
-+		if (!event_filter_match(event))
-+			continue;
-+
-+		hwc = &event->hw;
-+
-+		interrupts = hwc->interrupts;
-+		hwc->interrupts = 0;
-+
-+		/*
-+		 * unthrottle events on the tick
-+		 */
-+		if (interrupts == MAX_INTERRUPTS) {
-+			perf_log_throttle(event, 1);
-+			event->pmu->start(event, 0);
-+		}
-+	}
-+	raw_spin_unlock(&ctx->lock);
-+}
-+
- static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
- {
- 	struct perf_event *event;
-@@ -2445,10 +2476,24 @@ void perf_event_task_tick(void)
- {
- 	struct list_head *head = &__get_cpu_var(rotation_list);
- 	struct perf_cpu_context *cpuctx, *tmp;
-+	struct perf_event_context *ctx;
- 
- 	WARN_ON(!irqs_disabled());
- 
- 	list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
-+
-+		/*
-+		 * throttling counter must be reset at each tick
-+		 * unthrottling must be done at each tick
-+		 */
-+		ctx = &cpuctx->ctx;
-+		if (!ctx->nr_freq)
-+			perf_ctx_adjust_throttle(&cpuctx->ctx);
-+
-+		ctx = cpuctx->task_ctx;
-+		if (ctx && !ctx->nr_freq)
-+			perf_ctx_adjust_throttle(ctx);
-+
- 		if (cpuctx->jiffies_interval == 1 ||
- 				!(jiffies % cpuctx->jiffies_interval))
- 			perf_rotate_context(cpuctx);
+-- 
+error compiling committee.c: too many arguments to function
 
