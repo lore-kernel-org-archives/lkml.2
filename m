@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab2ADTGd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 14:06:33 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:38380 "EHLO
+	id S932088Ab2ADTGR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 14:06:17 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51347 "EHLO
 	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756810Ab2ADTG0 (ORCPT
+	with ESMTP id S1756713Ab2ADTGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 14:06:26 -0500
-Date: Wed, 4 Jan 2012 11:30:57 -0700
+	Wed, 4 Jan 2012 14:06:12 -0500
+Date: Wed, 4 Jan 2012 11:21:33 -0700
 From: Grant Likely <grant.likely@secretlab.ca>
-To: Michal Simek <monstr@monstr.eu>
-Cc: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/8] gpio/microblaze: Eliminate duplication of
- of_get_named_gpio_flags()
-Message-ID: <20120104183057.GU15503@ponder.secretlab.ca>
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca>
- <1320801583-12774-2-git-send-email-grant.likely@secretlab.ca>
- <4EF1B36A.8050304@monstr.eu>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linus.walleij@stericsson.com
+Subject: Re: [PATCHv3 1/3] gpio: add a driver for the Synopsys DesignWare APB
+ GPIO block
+Message-ID: <20120104182133.GS15503@ponder.secretlab.ca>
+References: <1325508798-25439-1-git-send-email-jamie@jamieiles.com>
+ <1325508798-25439-2-git-send-email-jamie@jamieiles.com>
+ <20120102132500.GB18443@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EF1B36A.8050304@monstr.eu>
+In-Reply-To: <20120102132500.GB18443@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 11:22:34AM +0100, Michal Simek wrote:
-> Grant Likely wrote:
-> >of_reset_gpio_handle() is largely a cut-and-paste copy of
-> >of_get_named_gpio_flags(). There really isn't any reason for the
-> >split, so this patch deletes the duplicate function
-> >
-> >Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> >Cc: Michal Simek <monstr@monstr.eu>
-> >---
-> > arch/microblaze/kernel/reset.c |   43 +--------------------------------------
-> > 1 files changed, 2 insertions(+), 41 deletions(-)
+On Mon, Jan 02, 2012 at 01:25:00PM +0000, Mark Brown wrote:
+> On Mon, Jan 02, 2012 at 12:53:16PM +0000, Jamie Iles wrote:
+> > The Synopsys DesignWare block is used in some ARM devices (picoxcell)
+> > and can be configured to provide multiple banks of GPIO pins.
+> > 
+> > v3:	- depend on rather than select IRQ_DOMAIN
+> > 	- split IRQ support into a separate patch
+> > v2:	- use Rob Herring's irqdomain in generic irq chip patches
+> > 	- use reg property to indicate bank index
+> > 	- support irqs on both edges based on LinusW's u300 driver
 > 
-> Sorry for taking to long.
-> 
-> Tested and applied to microblaze tree.
+> Put stuff like this after the ---, it shouldn't end up in git history.
 
-I'd rather take this one through the gpio tree if that is okay.
+I disagree.  Keeping the revision history in the git commit is
+actually quite useful when trying to figure out which version of a
+patch actually got applied.  I'm asking patch authors to keep it above
+the ---
 
 g.
 
-> 
-> Thanks,
-> Michal
-> 
-> -- 
-> Michal Simek, Ing. (M.Eng)
-> w: www.monstr.eu p: +42-0-721842854
-> Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-> Microblaze U-BOOT custodian
