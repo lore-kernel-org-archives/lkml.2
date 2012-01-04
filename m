@@ -1,78 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab2ADOQG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 09:16:06 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38978 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755714Ab2ADOQB convert rfc822-to-8bit (ORCPT
+	id S1755721Ab2ADOX4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 09:23:56 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34579 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753267Ab2ADOXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 09:16:01 -0500
+	Wed, 4 Jan 2012 09:23:53 -0500
+Date: Wed, 4 Jan 2012 15:23:49 +0100
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: perterz@infradead.org, mingo@elte.hu, gleb@redhat.com, asharma@fb.com,
+        vince@deater.net, wcohen@redhat.com
+Subject: [PATCH] perf_events: proposed fix for broken intr throttling
+ mechanism
+Message-ID: <20120104142349.GA4716@quad>
 MIME-Version: 1.0
-In-Reply-To: <4F044042.2080502@gmail.com>
-References: <4EF3BACA.1080405@gmail.com>
-	<CACJA=fVezGGcgAtbzG=+ouWq0PiHbgXN1YPwL+VDUphWS7wnrw@mail.gmail.com>
-	<4EFA1EB8.9090005@gmail.com>
-	<20111227203008.GA13870@joana>
-	<4EFA447C.3030906@gmail.com>
-	<20111228012248.GC13870@joana>
-	<20111228012850.GD13870@joana>
-	<4EFA7696.6060506@gmail.com>
-	<20111228155225.GA23292@joana>
-	<1325090923.1965.282.camel@aeonflux>
-	<4F044042.2080502@gmail.com>
-Date: Wed, 4 Jan 2012 11:16:00 -0300
-Message-ID: <CACJA=fU4QerTS0EEz_Q+16_nPH73WEPadVM53-ZEV8vkEgQD8Q@mail.gmail.com>
-Subject: Re: [bluetooth] linux-3.x regression (bisected)
-From: Andre Guedes <andre.guedes@openbossa.org>
-To: Rene Herman <rene.herman@gmail.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <padovan@profusion.mobi>, linux-kernel@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rene,
+Hi,
 
-On Wed, Jan 4, 2012 at 9:04 AM, Rene Herman <rene.herman@gmail.com> wrote:
->
-> On 28-12-11 17:48, Marcel Holtmann wrote:
->
->> The correct patch would be something like this:
->>
->> diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
->> index 919e3c0..b6eb9c5 100644
->> --- a/net/bluetooth/hci_event.c
->> +++ b/net/bluetooth/hci_event.c
->> @@ -711,7 +711,8 @@ static void hci_cc_read_local_ext_features(struct
->> hci_dev *h
->>         if (rp->status)
->>                 return;
->>
->> -       memcpy(hdev->extfeatures, rp->features, 8);
->> +       if (rp->page == 1)
->> +               memcpy(hdev->extfeatures, rp->features, 8);
->>
->>         hci_req_complete(hdev, HCI_OP_READ_LOCAL_EXT_FEATURES,
->> rp->status);
->>  }
->>
->> The current patch is actually fully broken anyway. So besides switching
->> LE on when requesting page 0, you will also switch it off when
->> requesting any other page and it accidentally returns 0x00 since we
->> unconditionally overwrite it.
->
->
-> Any word on a final fix for this?
+In running some tests with 3.2.0-rc7-tip, I noticed unexpected throttling
+notification samples. I was using fixed period with a long enough period
+that I could not possibly hit the default limit of 100000 samples/sec/cpu.
 
-Yes,this couple of patches fixes this issue:
-http://article.gmane.org/gmane.linux.bluez.kernel/19950/
-http://article.gmane.org/gmane.linux.bluez.kernel/19951/
+I investigated the matter and discovered that the following commit
+is the culprit:
 
-They were already pushed to bluetooth-next tree.
+commit 0f5a2601284237e2ba089389fd75d67f77626cef
+Author: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date:   Wed Nov 16 14:38:16 2011 +0100
 
-BR,
+    perf: Avoid a useless pmu_disable() in the perf-tick
 
-Andre
+
+The throttling mechanism REQUIRES that the hwc->interrupt counter be reset
+at EACH timer tick. This is regardless of the fact that the counter is in fixed
+period or frequency mode. The optimization introduced in this patch breaks this
+by avoiding calling perf_ctx_adjust_freq() at each timer tick. For events with
+fixed period, it would not adjust any period at all BUT it would reset the
+throttling counter.
+
+Given the way the throttling mechanism is implemented we cannot avoid doing
+some work at each timer tick. Otherwise we loose many samples for no good
+reasons.
+
+One may also question the motivation behind checking the interrupt rate at
+each timer tick rather than every second, i.e., average it out over a longer
+period.
+
+I see two solutions short term:
+   1 - revert the commit above
+   2 - special case the situation with no frequency-based sampling event
+
+I have implemented solution 2 with the draft fix below. It does not invoke
+perf_pmu_enable()/perf_pmu_disable().  I am not clear on whether or not this
+is really needed in this case. Please advise.
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 91fb68a..d1fe81a 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2325,6 +2325,37 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ 	}
+ }
+ 
++static void perf_ctx_adjust_throttle(struct perf_event_context *ctx)
++{
++	struct perf_event *event;
++	struct hw_perf_event *hwc;
++	u64 interrupts;
++
++	raw_spin_lock(&ctx->lock);
++
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++		if (event->state != PERF_EVENT_STATE_ACTIVE)
++			continue;
++
++		if (!event_filter_match(event))
++			continue;
++
++		hwc = &event->hw;
++
++		interrupts = hwc->interrupts;
++		hwc->interrupts = 0;
++
++		/*
++		 * unthrottle events on the tick
++		 */
++		if (interrupts == MAX_INTERRUPTS) {
++			perf_log_throttle(event, 1);
++			event->pmu->start(event, 0);
++		}
++	}
++	raw_spin_unlock(&ctx->lock);
++}
++
+ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ {
+ 	struct perf_event *event;
+@@ -2445,10 +2476,24 @@ void perf_event_task_tick(void)
+ {
+ 	struct list_head *head = &__get_cpu_var(rotation_list);
+ 	struct perf_cpu_context *cpuctx, *tmp;
++	struct perf_event_context *ctx;
+ 
+ 	WARN_ON(!irqs_disabled());
+ 
+ 	list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
++
++		/*
++		 * throttling counter must be reset at each tick
++		 * unthrottling must be done at each tick
++		 */
++		ctx = &cpuctx->ctx;
++		if (!ctx->nr_freq)
++			perf_ctx_adjust_throttle(&cpuctx->ctx);
++
++		ctx = cpuctx->task_ctx;
++		if (ctx && !ctx->nr_freq)
++			perf_ctx_adjust_throttle(ctx);
++
+ 		if (cpuctx->jiffies_interval == 1 ||
+ 				!(jiffies % cpuctx->jiffies_interval))
+ 			perf_rotate_context(cpuctx);
