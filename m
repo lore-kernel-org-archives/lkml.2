@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab2ADP7a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 10:59:30 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:44025 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755918Ab2ADP72 (ORCPT
+	id S1756183Ab2ADP7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 10:59:53 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38996 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756145Ab2ADP7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 10:59:28 -0500
-Message-ID: <1325692766.2758.22.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: =?UTF-8?Q?=E3=80=90Question=E3=80=91Whether?= it's legal to
- enable same physical DMA memory mapped for different NIC device?
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Yanfei Wang <backyes@mail.ustc.edu.cn>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-pci@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 04 Jan 2012 09:59:26 -0600
-In-Reply-To: <CAJULongKix3QXmcoUcraQxCyLN0wz6oe6p5Efg2A7S_r3nO6Fg@mail.gmail.com>
-References: <CAJULonj9rFDKNCzpEXj2r3XjkYojy-CGYpVQ1RF8SxwLVrXqAA@mail.gmail.com>
-	 <20120103203357.GD17472@phenom.dumpdata.com>
-	 <CAJULongKix3QXmcoUcraQxCyLN0wz6oe6p5Efg2A7S_r3nO6Fg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 4 Jan 2012 10:59:49 -0500
+Date: Wed, 4 Jan 2012 16:59:44 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH] nohz: Remove ts->inidle checks before restarting the tick
+Message-ID: <20120104155939.GB1143@somewhere>
+References: <1323181843-12144-1-git-send-email-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1323181843-12144-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-04 at 10:44 +0800, Yanfei Wang wrote:
-> On Wed, Jan 4, 2012 at 4:33 AM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > On Wed, Dec 07, 2011 at 10:16:40PM +0800, ustc.mail wrote:
-> >> Dear all,
-> >>
-> >> In NIC driver, to eliminate the  overhead of dma_map_single() for DMA
-> >> packet data,  we have statically allocated huge DMA memory buffer ring
-> >> at once instead of calling dma_map_single() per packet.  Considering
-> >> to further reduce the copy overhead between different NIC(port) ring
-> >> while forwarding, one packet from a input NIC(port) will be
-> >> transferred to output NIC(port) with no any copy action.
-> >>
-> >> To satisfy this requirement, the packet memory should be mapped into
-> >> input port and unmapped when leaving input port, then mapped into
-> >> output port and unmapped later.
-> >>
-> >> Whether it's legal to map the same DMA memory into input and output
-> >> port simultaneously? If it's not, then the zero-copy for packet
-> >> forwarding is not feasible?
-> >>
-> >
-> > Did you ever a get a response about this?
-> No.
+Hi,
 
-This is probably because no-one really understands what you're asking.
-As far as mapping memory to PCI devices goes, it's the job of the bridge
-(or the iommu which may or may not be part of the bridge).  A standard
-iommu tends not to care about devices and functions, so a range once
-mapped is available to everything behind the bridge.  A more secure
-virtualisation based iommu (like the on in VT-D) does, and tends to map
-ranges per device.  I know of none that map per device and function, but
-maybe there are.
+Just a ping to prevent this from being buried by the holidays :)
 
-Your question reads like you have a range of memory mapped to a PCI
-device that you want to use for two different purposes, can you do this?
-to which the answer is that a standard PCI bridge really doesn't care
-and it all depends on the mechanics of the actual device.  The only
-wrinkle might be if the two different purposes are on two separate PCI
-functions of the device and the iommu does care.
+Thanks.
 
-> >
-> > Is the output/input port on a seperate device function? Or is it
-> > just a specific MMIO BAR in your PCI device?
-> >
-> Platform: x86, intel nehalem 8Core NUMA, linux 2.6.39, 10G
-> 82599NIC(two ports per NIC card);
-> Function: Forwarding packets between different ports.
-> Targets: Forwarding packets with Zero-Overhead, despite other obstacles.
-
-This still doesn't really provide the information needed to elucidate
-the question.
-
-James
-
-
+On Tue, Dec 06, 2011 at 03:30:43PM +0100, Frederic Weisbecker wrote:
+> ts->inidle is set by tick_nohz_stop_sched_tick(1) and unset
+> by tick_nohz_restart_sched_tick(). These two calls are assumed
+> to be always paired. This means that by the time we call
+> tick_nohz_restart_sched_tick(), ts->inidle is supposed to
+> be always set to 1.
+> 
+> Remove the checks for ts->inidle in tick_nohz_restart_sched_tick().
+> This simplifies a bit the code and improves its debuggability
+> (ie: ensure the call is paired with a tick_nohz_stop_sched_tick() call).
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> ---
+>  kernel/time/tick-sched.c |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 4042064..0f7c5e5 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -529,20 +529,22 @@ void tick_nohz_restart_sched_tick(void)
+>  	ktime_t now;
+>  
+>  	local_irq_disable();
+> -	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
+> +
+> +	WARN_ON_ONCE(!ts->inidle);
+> +
+> +	ts->inidle = 0;
+> +
+> +	if (ts->idle_active || ts->tick_stopped)
+>  		now = ktime_get();
+>  
+>  	if (ts->idle_active)
+>  		tick_nohz_stop_idle(cpu, now);
+>  
+> -	if (!ts->inidle || !ts->tick_stopped) {
+> -		ts->inidle = 0;
+> +	if (!ts->tick_stopped) {
+>  		local_irq_enable();
+>  		return;
+>  	}
+>  
+> -	ts->inidle = 0;
+> -
+>  	rcu_exit_nohz();
+>  
+>  	/* Update jiffies first */
+> -- 
+> 1.7.5.4
+> 
