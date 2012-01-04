@@ -1,341 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab2ADCRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 21:17:51 -0500
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:34533
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752256Ab2ADCRt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 21:17:49 -0500
-X-SpamScore: -17
-X-BigFish: VS-17(zz9371I148cM168aJ1432N98dKzz1202hzz8275dhz2dh2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-Date: Wed, 4 Jan 2012 10:15:42 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: "Turquette, Mike" <mturquette@ti.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, <andrew@lunn.ch>,
-        <linaro-dev@lists.linaro.org>, <eric.miao@linaro.org>,
-        <grant.likely@secretlab.ca>, Colin Cross <ccross@google.com>,
-        <jeremy.kerr@canonical.com>, <linux@arm.linux.org.uk>,
-        <sboyd@quicinc.com>, <magnus.damm@gmail.com>, <dsaxena@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>, <arnd.bergmann@linaro.org>,
-        <patches@linaro.org>, <linux-omap@vger.kernel.org>,
-        <richard.zhao@linaro.org>, <shawn.guo@freescale.com>, <paul@pwsan.com>,
-        <linus.walleij@stericsson.com>, <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>, <amit.kucheria@linaro.org>,
-        <skannan@quicinc.com>
-Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
-Message-ID: <20120104021541.GI2414@b20223-02.ap.freescale.net>
-References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
- <1323834838-2206-4-git-send-email-mturquette@linaro.org>
- <alpine.LFD.2.02.1112141007550.3020@ionos>
- <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com>
+	id S1756089Ab2ADCS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 21:18:28 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55216 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752334Ab2ADCSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 21:18:09 -0500
+Date: Wed, 4 Jan 2012 02:17:54 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jan Kara <jack@suse.cz>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-ID: <20120104021754.GD23916@ZenIV.linux.org.uk>
+References: <20120103124331.f0f0043f8ca464c9ff13f4d3@canb.auug.org.au>
+ <20120103133942.GC31457@quack.suse.cz>
+ <20120103144531.GA23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com>
+In-Reply-To: <20120103144531.GA23916@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
-> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Tue, 13 Dec 2011, Mike Turquette wrote:
-> >> +void __clk_unprepare(struct clk *clk)
-> >> +{
-> >> +     if (!clk)
-> >> +             return;
-> >> +
-> >> +     if (WARN_ON(clk->prepare_count == 0))
-> >> +             return;
-> >> +
-> >> +     if (--clk->prepare_count > 0)
-> >> +             return;
-> >> +
-> >> +     WARN_ON(clk->enable_count > 0);
-> >
-> > So this leaves the clock enable count set. I'm a bit wary about
-> > that. Shouldn't it either return (including bumping the prepare_count
-> > again) or call clk_disable() ?
+On Tue, Jan 03, 2012 at 02:45:32PM +0000, Al Viro wrote:
+> On Tue, Jan 03, 2012 at 02:39:42PM +0100, Jan Kara wrote:
 > 
-> I've hit this in my port of OMAP.  It comes from this simple situation:
+> >   Thanks Stephen! Al, how shall we resolve this? You wrote you can provide
+> > a VFS helper like get_super() which will also guarantee that the fs is
+> > unfrozen.  That could be used in quotactl_block() and fsync_bdev(). If you
+> > plan to do this for 3.3 then I can just remove the quota fix and let you
+> > do it.
 > 
-> driver 1 (adapted for clk_prepare/clk_unprepare):
-> clk_prepare(clk);
-> clk_enable(clk);
+> I started digging in that area and I really don't like what I'm seeing.
+> sget() race fix from Aug 2010 (MS_BORN one) had not covered all cases.
+> The thing is, we can get hit with this:
+> 	1) mount(2) does sget(), etc. and fails very late in the game - with
+> ->s_root already allocated.  For some filesystems such failure exits are
+> possible.
+> 	2) something crawling through the superblock list finds our new
+> sb before we realize it's doomed.  Tries to grab s_umount, gets blocked.
+> 	3) in the meanwhile *another* mount(2) does sget() that catches
+> the same sb and decides to pick it.  ->s_active is grabbed, we get blocked
+> on attempt to get ->s_umount exclusive.
+> 	4) the original mount(2) gets to the failure point and does
+> deactivate_locked_super().  ->s_active is decremented, ->s_umount unlocked.
+> However, because of (3) ->s_active does not reach 0 yet.  Guy stuck in (2)
+> gets to run.  ->s_root is non-NULL here.  And fs is not in a good shape...
+> 	5) sget() from (3) gets to ->s_umount, notices that MS_BORN hadn't
+> been set and does deactivate_locked_super().  Now ->s_active is 0 and
+> we get around to shutting the sucker down.  ->kill_sb() gets called, ->s_root
+> is dropped, etc. - the whole nine yards.  Caller of sget() had been saved from
+> the race.  However, whoever that had been in (2) and (4) still got hit.
 > 
-> ...
+> IOW, MS_BORN check is needed in the places that go through the superblock
+> list, grab ->s_umount and check ->s_root.  That will close the hole for
+> good.
 > 
-> driver2 (not adapted for clk_prepare/clk_unprepare):
-> clk_enable(clk);
-> 
-> ...
-> 
-> driver1:
-> clk_disable(clk);
-> clk_unprepare(clk);
-> 
-> In such a case we don't want to bump the prepare_count, since the
-> offending driver2 won't decrement that count.  Also we don't want to
-> shut down that clk since driver2 is using it.
-> 
-> Returning after the WARN is maybe OK, but the point of this check is
-> really to find code which hasn't yet been made prepare-aware, and the
-> current implementation is noisy enough about it.
-> 
-> >> +/**
-> >> + * clk_get_parent - return the parent of a clk
-> >> + * @clk: the clk whose parent gets returned
-> >> + *
-> >> + * Simply returns clk->parent.  It is up to the caller to hold the
-> >> + * prepare_lock, if desired.  Returns NULL if clk is NULL.
-> >
-> > Holding the prepare lock in the caller will deadlock. So it's not a
-> > real good idea to document it as an option :)
-> 
-> Oops.  That comment is left over from before clk_get_parent held the
-> lock.  Will remove.
-> 
-> >
-> >> + */
-> >> +struct clk *clk_get_parent(struct clk *clk)
-> >> +{
-> >> +     struct clk *parent;
-> >> +
-> >> +     if (!clk)
-> >> +             return NULL;
-> >> +
-> >> +     mutex_lock(&prepare_lock);
-> >
-> >> +/**
-> >> + * clk_init - initialize the data structures in a struct clk
-> >> + * @dev: device initializing this clk, placeholder for now
-> >> + * @clk: clk being initialized
-> >> + *
-> >> + * Initializes the lists in struct clk, queries the hardware for the
-> >> + * parent and rate and sets them both.  Adds the clk to the sysfs tree
-> >> + * topology.
-> >> + *
-> >> + * Caller must populate clk->name and clk->flags before calling
-> >
-> > I'm not too happy about this construct. That leaves struct clk and its
-> > members exposed to the world instead of making it a real opaque
-> > cookie. I know from my own painful experience, that this will lead to
-> > random fiddling in that data structure in drivers and arch code just
-> > because the core code has a shortcoming.
-> >
-> > Why can't we make struct clk a real cookie and confine the data
-> > structure to the core code ?
-> >
-> > That would change the init call to something like:
-> >
-> > struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
-> >                     struct clk *parent)
-> >
-> > And have:
-> > struct clk_hw {
-> >       struct clk_hw_ops *ops;
-> >       const char        *name;
-> >       unsigned long     flags;
-> > };
-> >
-> > Implementers can do:
-> > struct my_clk_hw {
-> >       struct clk_hw    hw;
-> >       mydata;
-> > };
-> >
-> > And then change the clk ops callbacks to take struct clk_hw * as an
-> > argument.
-We have to define static clocks before we adopt DT binding.
-If clk is opaque and allocate memory in clk core, it'll make hard
-to define static clocks. And register/init will pass a long parameter
-list.
-> >
-> > So the core code can allocate the clk data structure and you return a
-> > real opaque cookie. You do the same thing for the basic gated clock in
-> > one of the next patches, so doing it for struct clk itself is just
-> > consequent.
-> 
-> The opaque cookie would work if platform code never needs any
-> information outside of the data a single clk_hw_whatever provides.
-> Unfortunately hardware doesn't make things that easy on us and the
-> operations we do for a single clk are affected by the state of other
-> clks.
-> 
-> Here is an example I've been using a lot lately: on OMAP we have two
-> clock inputs to our PLLs: a bypass clk and reference clk (actually we
-> can have more than this).  When changing the PLL rate both clks must
-> be enabled, regardless of which clk ends up driving the PLL.  To
-> illustrate, the PLL may be driven by clk_ref at 400MHz, and then we
-> call clk_set_rate(pll_clk, 196000000); which will also leave it
-> clocked by clk_ref but at 196MHz.  For this to happen however, the
-> clk_bypass had to be enabled during the rate change operation.  Here
-> is the relevant .set_rate implementation:
-> http://git.linaro.org/gitweb?p=people/mturquette/linux.git;a=blob;f=arch/arm/mach-omap2/dpll3xxx.c;h=b2412574b63829944593c1a7a6eda5fa4350686f;hb=738bde65918ae1ac743b1498801da0b860e2ee32#l461
-> 
-> In order for the OMAP platform code to do this, we have to have two
-> things: firstly we need the struct clk so that we can call
-> clk_enable/disable and __clk_prepare/unprepare on the ref and bypass
-> clks from within .set_rate.  The second thing is that we need
-> __clk_prepare and __clk_unprepare to be visible by this code so that
-> we don't nest the prepare_lock mutex.
-> 
-> Is there a good way to solve such problems if we hide struct clk from
-> the platform code/clk driver implementation?
-You can add a function clk_to_hw to convert struct clk to struct clk_hw.
-It's the way I did with the patch you didn't expose struct clk.
+> We also have a problem in get_active_super() caller; again, the missing MS_BORN
+> check (in freeze_super(), after getting ->s_umount).
 
-clock driver gate2b needs to access clk_hw. clk_gate2b_set_val can set
-value for enable and disable at runtime. At opaque time, it have to get
-clk_hw first and then get struct clk_gate2b.
-> 
-> Also note that if top-level clk APIs are going to be holding
-> prepare_lock (clk_get_rate, clk_get_parent, etc) then we can't call
-> these APIs to get the info we want from within the platform code.  For
-> example, today most .recalc_rate implementations reference
-> clk->parent->rate and apply it to some divider or something.  To get
-> around having an opaque cookie .recalc_rate would have to have
-> parent->rate passed into it since the implementation cannot call
-> clk_get_rate(clk_get_parent(clk)) due to not having 'clk' in the first
-> place, and also because of mutex nesting.
-why do we need lock in clk_get_rate?
-> 
-> I agree that by not using an opaque cookie we open ourselves up to the
-> possibility of badness, but we'll just have to catch it in code
-> review.
-> 
-> >
-> >> + * clk_init.  A key assumption in the call to .get_parent is that clks
-> >> + * are being initialized in-order.
-> >
-> > We should not require that, see below.
-> >
-> >> + */
-> >
-> >> +void clk_init(struct device *dev, struct clk *clk)
-> >> +{
-> >> +     if (!clk)
-> >> +             return;
-> >> +
-> >> +     INIT_HLIST_HEAD(&clk->children);
-> >> +     INIT_HLIST_NODE(&clk->child_node);
-> >> +
-> >> +     mutex_lock(&prepare_lock);
-> >> +
-> >> +     /*
-> >> +      * .get_parent is mandatory for populating .parent for clks with
-> >> +      * multiple possible parents.  For clks with a fixed parent
-> >> +      * .get_parent is not mandatory and .parent can be statically
-> >> +      * initialized
-> >> +      */
-> >> +     if (clk->ops->get_parent)
-> >> +             clk->parent = clk->ops->get_parent(clk);
-> >> +
-> >> +     /* clks without a parent are considered root clks */
-> >
-> > I'd rather prefer that root clocks are explicitely marked with a flag
-> > instead of relying on clk->parent being NULL.
-> 
-> I originally had CLK_IS_ROOT flag but removed it after thinking that
-> some clks might be a root sometimes, or a child at other times and I
-> had considered the flags to be constant.
-I didn't see part-time root clock in IMX.
-> 
-> If the flags aren't going to be constant and can change at run-time
-> then I can move this back to a flag.  Also if there are no use cases
-> where a clk can change from a root to a child then again this can
-> safely go into flags.  Thoughts?
-> 
-> >
-> >> +     if (clk->parent)
-> >> +             hlist_add_head(&clk->child_node,
-> >> +                             &clk->parent->children);
-> >> +     else
-> >> +             hlist_add_head(&clk->child_node, &clk_root_list);
-> >
-> > You could put clocks which have no parent and are not marked as root
-> > clock onto a separate list clk_orphaned or such. You might need this
-> > for handling clocks which are disconnected from any parent runtime as
-> > well.
-> 
-> Agreed, that is a more well-defined approach.
-> 
-> > And to avoid the whole in-order initialization issue, you could change
-> > clk_init to:
-> >
-> > struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
-> >                     unsigned long flags, const char *parent_name)
-> >
-> > Then you can lookup the requested parent by name. If that fails, you
-> > put the clock into the orphaned list. When a new clock is initialized,
-> > then you walk the orphaned list and check whether something is waiting
-> > for that clock.
-> >
-> > To handle multi-parent clocks you need to go one step further and add:
-> >
-> > struct clk_hw {
-> >       struct clk_hw_ops *ops;
-> >       const char        *name;
-> >       const char        **possible_parents;
-> > };
-> >
-> > You also require a get_parent_idx() function in clk_hw_ops. So when
-> > clk_init() is called with parent_name = NULL and get_parent_idx() is
-> > implemented, then you call it and the clock returns you the index of
-> > the possible_parents array. If that parent clock is not yet
-> > registered, you store the requested name and do the lookup when new
-> > clocks are registered.
-> 
-> This approach ends up having something like O(n^2) (similar to
-> discussion around driver re-probing).
-Split it to two functions? clk_add can add clks in any order, and
-clk_tree_init call .get_parent (if possible) create the tree.
-Adding clk after clk_tree_init must be in strong order.
-> 
-> However, I agree that forcing folks to register/init clks in-order is
-> asking for trouble.  I also think that for groups of well defined clks
-> (SoC clks, or clks in the same device) that are statically initialized
-> we should allow for having clk->parent populated statically and leave
-> it at that (mux clks will still need to run clk->get_parent() in
-> clk_init of course, since we can't trust the bootloader).
-right.
-> 
-> >
-> > That has also the advantage, that you can validate parent settings
-> > upfront and for setting the parent during runtime, you don't have to
-> > acquire a pointer to the parent clock. It's enough to call
-> > clk_set_named_parent().
-That'll cause clk core to call clkdev functions. But looks fine.
+These should be fixed by the patch below; I don't think that it needs
+to go in 3.2-final (the three-way race in question is neither new nor
+easy to hit and it's a non-issue for most of the filesystem types), but it's
+definitely a -stable fodder.  Bugs on failure exits in ->mount() instances
+(at the very least, ext4 and minixfs are leaking dentry on some of those)
+are separate story; so's dealing with get_super() and user_get_super()
+vs. thaw.  Mikulas: adding an extra argument deciding whether we wait for
+thaw is no-go - it's worse than splitting get_super() in two functions;
+the effect is the same, but misuses are harder to spot.  I'm still not
+sure about ->statfs(), BTW - any input on that would be welcome.  Can
+it end up blocked on a frozen fs until said fs is thawed?  We either need
+to convert ustat(2) to "wait for thaw" semantics (should be interruptible,
+BTW) or document that ->statfs() is not allowed to wait for thawing.
+It's far too subtle to leave undocumented...
 
-Thanks
-Richard
-> 
-> Right, but the usefulness of this last point hinges on whether or not
-> we want to hide struct clk from the rest of the world.  I still think
-> that doing so will end up being a limitation that platforms end up
-> having to hack around.  I'd like a lot more input from the folks
-> porting their platforms to this code on that point, as it is a
-> critical design element.
-> 
-> Thanks for reviewing,
-> Mike
-> 
-> >
-> > Thoughts ?
-> >
-> >         tglx
-> >
-> >
-> >
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+commit a33a3874084823990acc2a857e54a93e0611a7ff
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Tue Jan 3 21:01:29 2012 -0500
 
+    vfs: fix the rest of sget() races
+    
+    unfortunately, just checking MS_BORN after having grabbed ->s_umount in
+    sget() is not enough; places that pick superblock from a list and
+    grab s_umount shared need the same check in addition to checking for
+    ->s_root; otherwise three-way race between failing mount, sget() and
+    such list-walker can leave us with list-walker coming *second*, when
+    temporary active ref grabbed by sget() (to be dropped when sget()
+    notices that original mount has failed by checking MS_BORN) has
+    lead to deactivate_locked_super() from failing ->mount() *not* doing
+    ->kill_sb() and just releasing ->s_umount.  Once sget() gets through
+    and notices that MS_BORN had never been set it will drop the active
+    ref and fs will be shut down and kicked out of all lists, but it's
+    too late for something like sync_supers().
+    
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+diff --git a/fs/super.c b/fs/super.c
+index e25b2e8..1b0c814 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -340,7 +340,7 @@ bool grab_super_passive(struct super_block *sb)
+ 	spin_unlock(&sb_lock);
+ 
+ 	if (down_read_trylock(&sb->s_umount)) {
+-		if (sb->s_root)
++		if (sb->s_root && (sb->s_flags & MS_BORN))
+ 			return true;
+ 		up_read(&sb->s_umount);
+ 	}
+@@ -508,7 +508,7 @@ void sync_supers(void)
+ 			spin_unlock(&sb_lock);
+ 
+ 			down_read(&sb->s_umount);
+-			if (sb->s_root && sb->s_dirt)
++			if (sb->s_root && sb->s_dirt && (sb->s_flags & MS_BORN))
+ 				sb->s_op->write_super(sb);
+ 			up_read(&sb->s_umount);
+ 
+@@ -543,7 +543,7 @@ void iterate_supers(void (*f)(struct super_block *, void *), void *arg)
+ 		spin_unlock(&sb_lock);
+ 
+ 		down_read(&sb->s_umount);
+-		if (sb->s_root)
++		if (sb->s_root && (sb->s_flags & MS_BORN))
+ 			f(sb, arg);
+ 		up_read(&sb->s_umount);
+ 
+@@ -578,7 +578,7 @@ void iterate_supers_type(struct file_system_type *type,
+ 		spin_unlock(&sb_lock);
+ 
+ 		down_read(&sb->s_umount);
+-		if (sb->s_root)
++		if (sb->s_root && (sb->s_flags & MS_BORN))
+ 			f(sb, arg);
+ 		up_read(&sb->s_umount);
+ 
+@@ -619,7 +619,7 @@ rescan:
+ 			spin_unlock(&sb_lock);
+ 			down_read(&sb->s_umount);
+ 			/* still alive? */
+-			if (sb->s_root)
++			if (sb->s_root && (sb->s_flags & MS_BORN))
+ 				return sb;
+ 			up_read(&sb->s_umount);
+ 			/* nope, got unmounted */
+@@ -679,7 +679,7 @@ rescan:
+ 			spin_unlock(&sb_lock);
+ 			down_read(&sb->s_umount);
+ 			/* still alive? */
+-			if (sb->s_root)
++			if (sb->s_root && (sb->s_flags & MS_BORN))
+ 				return sb;
+ 			up_read(&sb->s_umount);
+ 			/* nope, got unmounted */
+@@ -776,7 +776,8 @@ static void do_emergency_remount(struct work_struct *work)
+ 		sb->s_count++;
+ 		spin_unlock(&sb_lock);
+ 		down_write(&sb->s_umount);
+-		if (sb->s_root && sb->s_bdev && !(sb->s_flags & MS_RDONLY)) {
++		if (sb->s_root && sb->s_bdev && (sb->s_flags & MS_BORN) &&
++		    !(sb->s_flags & MS_RDONLY)) {
+ 			/*
+ 			 * What lock protects sb->s_flags??
+ 			 */
+@@ -1159,6 +1160,11 @@ int freeze_super(struct super_block *sb)
+ 		return -EBUSY;
+ 	}
+ 
++	if (!(sb->s_flags & MS_BORN)) {
++		up_write(&sb->s_umount);
++		return 0;	/* sic - it's "nothing to do" */
++	}
++
+ 	if (sb->s_flags & MS_RDONLY) {
+ 		sb->s_frozen = SB_FREEZE_TRANS;
+ 		smp_wmb();
