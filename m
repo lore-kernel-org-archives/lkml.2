@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab2ADROK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 12:14:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:5693 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756203Ab2ADROH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 12:14:07 -0500
-Message-ID: <4F0488AB.6000003@redhat.com>
-Date: Wed, 04 Jan 2012 19:13:15 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1756557Ab2ADROw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 12:14:52 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:48978 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab2ADROu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 12:14:50 -0500
+Message-ID: <4F048905.5060004@lwfinger.net>
+Date: Wed, 04 Jan 2012 11:14:45 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-To: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-CC: Nikunj A Dadhania <nikunj@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        bharata@linux.vnet.ibm.com
-Subject: Re: [RFC PATCH 0/4] Gang scheduling in CFS
-References: <4EF1B85F.7060105@redhat.com> <877h1o9dp7.fsf@linux.vnet.ibm.com> <20111223103620.GD4749@elte.hu> <4EF701C7.9080907@redhat.com> <20111230095147.GA10543@elte.hu> <878vlu4bgh.fsf@linux.vnet.ibm.com> <87pqf5mqg4.fsf@abhimanyu.in.ibm.com> <4F017AD2.3090504@redhat.com> <87mxa3zqm1.fsf@abhimanyu.in.ibm.com> <4F046536.5080207@redhat.com> <20120104145602.GB8333@linux.vnet.ibm.com>
-In-Reply-To: <20120104145602.GB8333@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Daniel Halperin <dhalperi@cs.washington.edu>
+CC: John W Linville <linville@tuxdriver.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, chaoming_li@realsil.com.cn,
+        linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] rtl8192cu: Fix WARNING on suspend/resume
+References: <4f034b6c.ypfAbSdXSgMHtfqa%Larry.Finger@lwfinger.net> <CALSq=BaJSURcKU8RkCxxG=Mht4y04dVefKMESuHmiEdhwzc2Eg@mail.gmail.com>
+In-Reply-To: <CALSq=BaJSURcKU8RkCxxG=Mht4y04dVefKMESuHmiEdhwzc2Eg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2012 04:56 PM, Srivatsa Vaddagiri wrote:
-> * Avi Kivity <avi@redhat.com> [2012-01-04 16:41:58]:
+On 01/04/2012 10:16 AM, Daniel Halperin wrote:
+> Sorry, Larry, I didn't see this til it was included in John's mail this morning.
 >
-> > > Here are some observation related to Baseline-only(8vm case)
-> > >
-> > >               | ple_gap=128 | ple_gap=64 | ple_gap=256 | ple_window=2048
-> > > --------------+-------------+------------+-------------+----------------
-> > > EbzyRecords/s |    2247.50  |    2132.75 |    2086.25  |      1835.62
-> > > PauseExits    | 7928154.00  | 6696342.00 | 7365999.00  |  50319582.00
-> > >
-> > > With ple_window = 2048, PauseExits is more than 6times the default case
-> > 
-> > So it looks like the default is optimal, at least wrt the cases you
-> > tested and your test workload.
+> On Tue, Jan 3, 2012 at 10:39 AM, Larry Finger<Larry.Finger@lwfinger.net>  wrote:
+>>
+>> +#ifdef CONFIG_PM
+>> +static int rtl8192cu_usb_suspend(struct usb_interface *pusb_intf,
+>> +                                pm_message_t message)
+>> +{
+>> +       /* Increase usage_count to Save loaded fw across suspend/resume */
+>> +       atomic_inc(&usage_count);
+>> +       return 0;
+>> +}
+>> +
+>> +static int rtl8192cu_usb_resume(struct usb_interface *pusb_intf)
+>> +{
+>> +       atomic_dec(&usage_count);       /* after resume, decrease usage count */
+>> +       return 0;
+>> +}
+>> +#endif
 >
-> The default case still lags considerably behind the results we are seeing with
-> gang scheduling. One more interesting data point would be to see how
-> many PLE exits we are seeing when the vcpu is spinning in
-> flush_tlb_others_ipi(). Is there any easy way to determine that?
+> Based on the warning-fix I submitted yesterday, this probably produces
+> a warning if CONFIG_PM is set but not CONFIG_PM_SLEEP. My patch was
+> for an ethernet driver, but iwlwifi and ath5k appear to follow the
+> same pattern using CONFIG_PM_SLEEP instead of the above.
 >
+> See: http://www.spinics.net/lists/netdev/msg184717.html for the patch
+> and http://www.spinics.net/lists/netdev/msg184715.html for the
+> discussion.
 
-You could get an exit trace (trace-cmd -e kvm:kvm_exit) and filter on
-PLE exits; the trace contains the guest %rip, so you could match it
-against flush_tlb_others_ipi().
+Thanks for the note. I will prepare a revised patch.
 
--- 
-error compiling committee.c: too many arguments to function
+What architecture gave the warning? Of x86_64, I was unable to get 
+CONFIG_PM_SLEEP without CONFIG_PM.
+
+Larry
 
