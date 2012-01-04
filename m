@@ -1,147 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab2ADAFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 19:05:12 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47132 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab2ADAFH (ORCPT
+	id S1755317Ab2ADAIR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 19:08:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51164 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab2ADAIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 19:05:07 -0500
-Date: Tue, 3 Jan 2012 16:05:05 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>
-Subject: Re: [PATCH] mm: vmscam: check page order in isolating lru pages
-Message-Id: <20120103160505.6f7a9aab.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBCuh=zDLZ7J9sV_p_ghoXP-VX6PEAx01t8p_pziTimxnA@mail.gmail.com>
-References: <CAJd=RBBJG+hLLc3mR-WzByU1gZEcdFUAoZzyir+1A4a0tVnSmg@mail.gmail.com>
-	<4EFCA4F9.7070703@gmail.com>
-	<CAJd=RBCuh=zDLZ7J9sV_p_ghoXP-VX6PEAx01t8p_pziTimxnA@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 3 Jan 2012 19:08:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120103162108.GC25909@kroah.com>
+References: <20111228174518.721624fad9d048f9f85b3d50@canb.auug.org.au> <20120103162108.GC25909@kroah.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 4 Jan 2012 01:07:52 +0100
+Message-ID: <CAPXgP11yiS5hF9q3+A1tyORmtp=z2T6CWBUDFh3FhcL19jADpw@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 31 Dec 2011 22:55:22 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
+On Tue, Jan 3, 2012 at 17:21, Greg KH <greg@kroah.com> wrote:
+> On Wed, Dec 28, 2011 at 05:45:18PM +1100, Stephen Rothwell wrote:
+>> Because of the powerpc problems above, I have used the driver-core tree
+>> from next-20111222 for today.
+>
+> Sorry about all of the problems, we tried to fix everything we could,
+> but your merges and cross-builds found stuff we missed :(
+>
+> Kay, care to send me patches to fix this, and all of the other
+> linux-next-reported problems to me so we can get this resolved this
+> week?
 
-> From: Hillf Danton <dhillf@gmail.com>
-> Subject: [PATCH] mm: vmscam: check page order in isolating lru pages
-> 
-> Before try to isolate physically contiguous pages, check for page order is
-> added, and if it is not regular page, we should give up the attempt.
+I rather don't want to add error checking to stuff that doesn't do it
+today. The sysdev stuff never had that forced checks, but the normal
+device stuff has.
 
-Well..  why?  Neither the changelog nor the code comments explain why
-we skip these pages.  They should!
+I think the force return value check is really a pretty misguided idea
+in general, and it's up to the caller to do these checks and handle
+rollbacks, not the driver core, I think.
 
-> --- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
-> +++ b/mm/vmscan.c	Sat Dec 31 22:44:16 2011
-> @@ -1162,6 +1162,7 @@ static unsigned long isolate_lru_pages(u
->  		unsigned long end_pfn;
->  		unsigned long page_pfn;
->  		int zone_id;
-> +		unsigned int isolated_pages = 1;
-> 
->  		page = lru_to_page(src);
->  		prefetchw_prev_lru_page(page, src, flags);
-> @@ -1172,7 +1173,7 @@ static unsigned long isolate_lru_pages(u
->  		case 0:
->  			mem_cgroup_lru_del(page);
->  			list_move(&page->lru, dst);
-> -			nr_taken += hpage_nr_pages(page);
-> +			isolated_pages = hpage_nr_pages(page);
->  			break;
-> 
->  		case -EBUSY:
-> @@ -1184,8 +1185,12 @@ static unsigned long isolate_lru_pages(u
->  			BUG();
->  		}
-> 
-> +		nr_taken += isolated_pages;
->  		if (!order)
->  			continue;
-> +		/* try pfn-based isolation only for regular page */
-> +		if (isolated_pages != 1)
-> +			continue;
-> 
->  		/*
->  		 * Attempt to take all pages in the order aligned region
-> @@ -1227,7 +1232,6 @@ static unsigned long isolate_lru_pages(u
->  				break;
-> 
->  			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-> -				unsigned int isolated_pages;
-> 
->  				mem_cgroup_lru_del(cursor_page);
->  				list_move(&cursor_page->lru, dst);
+Can't we just remove that forced check?
 
-The code has become rather awkward.
-
-I don't like the trick of reusing a local (isolated_pages) for other
-purposes later on in the function.  This introduces risk that someone
-will add a usage of the local for its original application after it has
-been reused.  And it's a little bit deceiving for readers - they first
-have to work out "oh, it's being reused for something else".  It would
-be better to use two identifiers.  The compiler is good at reusing
-registers (and sometimes stack slots) if the earlier local has gone
-dead.
-
-Also, why do we test hpage_nr_pages() here?  Why not directly test
-PageTransHuge()?
-
-
-iow, something like this?
-
---- a/mm/vmscan.c~mm-vmscam-check-page-order-in-isolating-lru-pages-fix
-+++ a/mm/vmscan.c
-@@ -1173,7 +1173,6 @@ static unsigned long isolate_lru_pages(u
- 		unsigned long end_pfn;
- 		unsigned long page_pfn;
- 		int zone_id;
--		unsigned int isolated_pages = 1;
- 
- 		page = lru_to_page(src);
- 		prefetchw_prev_lru_page(page, src, flags);
-@@ -1184,7 +1183,7 @@ static unsigned long isolate_lru_pages(u
- 		case 0:
- 			mem_cgroup_lru_del(page);
- 			list_move(&page->lru, dst);
--			isolated_pages = hpage_nr_pages(page);
-+			nr_taken += hpage_nr_pages(page);
- 			break;
- 
- 		case -EBUSY:
-@@ -1196,11 +1195,11 @@ static unsigned long isolate_lru_pages(u
- 			BUG();
- 		}
- 
--		nr_taken += isolated_pages;
- 		if (!order)
- 			continue;
--		/* try pfn-based isolation only for regular page */
--		if (isolated_pages != 1)
-+
-+		/* Try pfn-based isolation only for regular pages */
-+		if (PageTransHuge(page) != 1)
- 			continue;
- 
- 		/*
-@@ -1243,6 +1242,7 @@ static unsigned long isolate_lru_pages(u
- 				break;
- 
- 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
-+				unsigned int isolated_pages;
- 
- 				mem_cgroup_del_lru(cursor_page);
- 				list_move(&cursor_page->lru, dst);
-
-
-If hpage_nr_pages() is the official way of testing for a thp page
-then I guess this is the wrong thing to do!
+Kay
