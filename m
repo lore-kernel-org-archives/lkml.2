@@ -1,148 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755636Ab2ADBU5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 20:20:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45809 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754125Ab2ADBUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 20:20:55 -0500
-Date: Wed, 4 Jan 2012 12:20:40 +1100
-From: NeilBrown <neilb@suse.de>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>, stefan.bader@canonical.com,
-        rjw@sisk.pl, Thomas Gleixner <tglx@linutronix.de>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
- to handle kernel NULL pointer dereference at 0000000000000598 [   
- 1.478005] IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
-Message-ID: <20120104122040.5a0fa6a3@notabene.brown>
-In-Reply-To: <1325638380.3037.69.camel@work-vm>
-References: <1599287628.20120103171351@eikelenboom.it>
-	<20120103190754.GA27651@phenom.dumpdata.com>
-	<1325632188.3037.59.camel@work-vm>
-	<20120104113155.27bf6e46@notabene.brown>
-	<1325638380.3037.69.camel@work-vm>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1755787Ab2ADBWl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 20:22:41 -0500
+Received: from mailgw01.dd24.net ([193.46.215.41]:55197 "EHLO
+	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab2ADBWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 3 Jan 2012 20:22:38 -0500
+Subject: Re: iwl4965: "MAC is in deep sleep!" freezes
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, linux-wireless@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120103105107.GB3391@redhat.com>
+References: <20110902233806.GA22157@elie> <20110905091918.GC2221@redhat.com>
+	 <265f56a4dc9f5d3edeca3d101e445353@imap.dd24.net>
+	 <20110908084913.GB2195@redhat.com>
+	 <1321228952.3362.15.camel@fermat.scientia.net>
+	 <20111114014615.GC16508@elie.hsd1.il.comcast.net>
+	 <1321466933.3364.16.camel@fermat.scientia.net>
+	 <20111118074552.GB2203@redhat.com>
+	 <1325171851.3907.33.camel@fermat.scientia.net>
+	 <20111229201149.GB1674@elie.Belkin>  <20120103105107.GB3391@redhat.com>
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-0BDEraEciL/4gvzm8hop"
+Date: Wed, 04 Jan 2012 02:22:28 +0100
+Message-ID: <1325640148.3359.142.camel@fermat.scientia.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/F9IINQDRN2H/ZM.sJw1r4gA"; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.32.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/F9IINQDRN2H/ZM.sJw1r4gA
-Content-Type: text/plain; charset=US-ASCII
+
+--=-0BDEraEciL/4gvzm8hop
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, 03 Jan 2012 16:53:00 -0800 John Stultz <john.stultz@linaro.org> wro=
-te:
+On Tue, 2012-01-03 at 11:51 +0100, Stanislaw Gruszka wrote:
+> Hmm, on my experience, software sucks much more than hardware, but we
+> never can exclude hardware problem. I'm not sure if there are divergence
+> between iwl4965 chipsets. Also I'm not sure if there are more than one
+> chipsets revision at all.
+Me neither unfortunately...
 
-> On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
-> > On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org>=
- wrote:
-> > > >From the stack trace, we've kicked off a rtc_timer_do_work, probably
-> > > from the rtc_initialize_alarm() schedule_work call added in Neil's
-> > > patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm ->
-> > > cmos_rq_disable -> cmos_checkintr -> rtc_update_irq -> schedule_work.
-> > >=20
-> > > So, what it looks to me is that in cmos_checkintr, we grab the cmos->=
-rtc
-> > > and pass that along. Unfortunately, since the cmos->rtc value isn't s=
-et
-> > > until after rtc_device_register() returns its null at that point. So
-> > > your patch isn't really fixing the issue, but just reducing the race
-> > > window for the second cpu to schedule the work.
-> > >=20
-> > > Sigh. I'd guess dropping the schedule_work call from
-> > > rtc_initialize_alarm() is the right approach (see below). When review=
-ing
-> > > Neil's patch it seemed like a good idea there, but it seems off to me
-> > > now.
-> > >=20
-> > > Neil, any thoughts on the following? Can you expand on the condition =
-you
-> > > were worried about in around that call?
-> >=20
-> > If you set an alarm in the future, then shutdown and boot again after t=
-hat
-> > time, then you will end up with a timer_queue node which is in the past.
->=20
-> Thanks for explaining this again.
->=20
-> Hrm. It seems the easy answer is to simply not add alarms that are in
-> the past.  Further, I'm a bit perplexed, as if they are in the past, the
-> enabled flag shouldn't be set.   __rtc_read_alarm() does check the
-> current time, so maybe we can make sure we don't return old values? I
-> guess I assumed __rtc_read_alarm() avoided returning stale values, but
-> apparently not.
-
-That would probably be a more robust approach.  Also it might make sense to
-clean out old alarms whenever we are about to add a new one.
-
->=20
-> > When this happens the queue gets stuck.  That entry-in-the-past won't g=
-et
-> > removed until and interrupt happens and an interrupt won't happen becau=
-se the
-> > RTC only triggers an interrupt when the alarm is "now".
-> >=20
-> > So you'll find that e.g. "hwclock" will always tell you that 'select' t=
-imed
-> > out.
-> >=20
-> > So we force the interrupt work to happen at the start just in case.
->=20
-> Unfortunately its too early.=20
->=20
-> > Did you see my proposed patch which converted those calls to do the work
-> > in-process rather than passing it to a worker-thread?  I think that is a
-> > clean fix.
->=20
-> I don't think I saw it today. Was it from before the holidays?
-
-About 4 hours ago:
-  Subject: Re: Patch Upstream: rtc: Expire alarms after the time is set.
-
->=20
-> Even so, at this point, I don't know if we have enough time for testing,
-> so I'm thinking we either just drop the problematic sched_work call or
-> revert the whole thing and try again for 3.3
-
-I wouldn't object to that.  The bug only triggers in unusual circumstances
-and is quite easy to work around so it is safer  to wait until we have a
-really good fix.
-
-Thanks,
-NeilBrown
+> Christoph, you mentioned that you replaced you=20
+> motherboard. Did the problem start to happen after that?
+Yep,... the old board broke (and the system didn't bot anymore at
+all)... it was replaced with a new one by the manufacturer... and
+starting with that (with no software change on the disk in the meantime)
+the wifi didn't work anymore (as described).
 
 
->=20
-> thanks
-> -john
->=20
+> Did you
+> correctly connect antennas cables to adapter.
+yep... at first (when they sent it back to me) it was not connected at
+all... I connected it... the problem persists in both states, connected
+and unconnected.
+
+> Does adapter sits
+> tight in the mini PCIe slot?
+yep
 
 
---Sig_/F9IINQDRN2H/ZM.sJw1r4gA
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+> No, that's not needed if there are no good logs for compare. If possible
+> try on some very old kernel, first kernel with iwl4965 support was 2.6.24=
+.
+I'll have a look...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
+Chris.
 
-iQIVAwUBTwOpaDnsnt1WYoG5AQKc2RAAngrKjRK2FVip8Q8HFStx3Q/15lVsLHKx
-7IFCfh7LbYBGRS/ra4Cp33hvwMTmG8/et5o0WmCW7cXCp0izSL3AKAi9e50xjqKf
-gbBHbTRGCYw+DNJYTNzPwko6Znx7/yrPgwW1YQR48qr0G+lrlj4KjugDv1431r9n
-GkoCoyuCzye65tY/D3u4nca8RTrcgQnDzIzglxkEebjVqkSZNlDN416YFFSkIIjx
-IWEx2PeZ8RxyESKL31kcJLKLnCnsjmvSlv/Z1AzfNagdomKI40wPOVU97JiUxOEu
-rbwBX0PNyY3uHimaFxuaHg0nfv+COx5zvpeToR+Tsw2N5lHrShpK9uV7z2nyt7zI
-vx9Bonf/h0PuBILEgGT3tl+xepswmSS3uLIJTPFv4joXwLLJ74O73rIlUvdJyIZ5
-cwztAhV7Vjwc6V9e0bTJtczj5PglhendxUE7+/FDFLVf0ZMo3DdaJK2oifzboF6s
-Klo1E5ulB6024aiHoVpANJ3xvO3/jFq5OXIcVuTTpcdfdd0OdwCqPixJBhWvvNPY
-XYn805n+IqWo8s4zqxugAdVgQjYsuAafyUK/yx1zy7o7+kukt138fRWITLazrtqa
-NYMpxdJZyJS1cSee1JOlsl5IkzQb+268eoexnMMJrJ8Hpdb9vpmG8aTkPcq9vRtw
-xhDSJKqjfzk=
-=XCnD
------END PGP SIGNATURE-----
+--=-0BDEraEciL/4gvzm8hop
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
 
---Sig_/F9IINQDRN2H/ZM.sJw1r4gA--
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIITMjCCBggw
+ggPwoAMCAQICAQEwDQYJKoZIhvcNAQEEBQAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UECxMV
+aHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0aG9yaXR5
+MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcwHhcNMDUxMDE0MDczNjU1WhcNMzMw
+MzI4MDczNjU1WjBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
+QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MIICIjANBgkqhkiG9w0BAQEF
+AAOCAg8AMIICCgKCAgEAq0k1EUh80iZ+U5TPQ6ndKNdCKovzh3gZWHwPntqJfeH763KQDXShlmSr
+n6AkmXPa4lV2xxd79QSsRrjDvn9kjRBsJPNhnMDykPpR5vVpAWPDD1biSkLP4kSMJSioxXkJfUa5
+ivPp8zQpCEXkHJ/LlAQcgagUs5hlxEPsToKNCdG9qluNktDs3pDFfwrC4+vmMVpedD6XM1nowwM9
+YDO/99FvR8TN7mKDUm4uCJqk2RUYkaaFkkewrkjrbbch7IUaaHI1q//wEF3A9JSnatU7kn5MkAV+
+k8Esi6SOYnQVcW4LcQPqrxU4mtTSBXJvjPkr61pyJfk5RuNyGz4Ew2QnIhAqik9YpwOtvrQuE+1d
+qkjX1X3UKntc+kYEUOTMDkJbjO3b8s/8lpPg2xE2VGI0OI8MYJs7l1Y4rfPSW4ugW+pOlrh819Wg
+hnBA05Ept6I8rfWMu88akorkNHvA2Gxf6QrCw6cgmlrfLF1SXLpH1ZvvJChwOCAv1X8pwLJBA2iS
+zOCczJdLRe86EAqrcDqYlXCtNbHqhSukHIAhMamuYHqAJkgAuAHAk2NVIpE8Vuev2zol848xVOom
+i4FZ+aHRUxHFe50D9nQR4G2xLD8shpGZcZqmd4s0YNEUtCysna+MENOfxGr4bxP8c1n3ZkJ0Horj
++NzSb5icy0eYlUAF++kCAwEAAaOBvzCBvDAPBgNVHRMBAf8EBTADAQH/MF0GCCsGAQUFBwEBBFEw
+TzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUHMAKGHGh0dHA6
+Ly93d3cuQ0FjZXJ0Lm9yZy9jYS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAzMDEGCCsGAQUF
+BwIBFiVodHRwOi8vd3d3LkNBY2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMA0GCSqGSIb3DQEBBAUA
+A4ICAQB/CIih2hpQSdqJ+6EIcvOK9x7EOrR5WyAwsUXewl3TZWnxwl1UVDyFX7l7QpHCmf0bUZur
+RqWhEFOebYisc24sM6bw9J7gdcE+iEWp4WZD/lZa0XpBePdA2ko68QtbpbsWBubC55O5hU2XT7Ee
+OEOA75sNjO+4p2AAh1d9HkQcyyPvmzyZna+1KRxFeRaWTSdt8Rxsw8JVZLO8FOLzpB8eMvwnFQXP
+3S6uPoJhe/AhEBj2ROpTOfnc0Jog4Ma74LtaT8SZyAe9tb2i2y5iDUI0Qbz/i4r1USKqiDAA4rDU
+vL5lutUDV3mb6NzITfhQ7ZGlUiiirPs2WD7plCuRUIcb1l7WjMz3DxAMUk7QFmHl5QpsvxfHckZX
+nJj1bGBjem9euU4vyLm5u2qFvJgN7fk+l4Q0lK4Ar6Hl55JuTr3z4tkUi1zS6wFsoBelLRDrnHpK
+vb3uzv3tIkCrcDiI9QqHasKrBWDJSAXaU8HeRHdqs/M8PO2AvKY4SikkX/5ZO5slelZjAGS5XaRi
+fVc2T62D7x+SU6COd1fd5WERPSMAkEw8+qNgkwSjrzX2DmqPT0pgp4UFbEahj/THduOhWVf3cbLE
+bhRcbW1BZt8bk7HUAMPuy888PSGAqV9jZfzd4F+k9CvwhXFB1Gcl+xqxl67WmYITQdJupRuZJ4Dn
+C6moADCCBo8wggR3oAMCAQICAwCyHTANBgkqhkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQg
+SW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xh
+c3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oXDTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhD
+aHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAiBgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlh
+Lm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEv
+MC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG
+9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4w
+LAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG
+9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEzsTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiG
+JmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2zJ4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYi
+gMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/hNOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/Mu
+dT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7H
+zdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYshPV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IB
+nTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgBhvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRp
+ZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0l
+BDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgorBgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhC
+BAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6
+BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVudGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24u
+bWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9w
+aC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24u
+bWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEBBQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfS
+XpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlS
+GZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb95VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uB
+kAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRn
+oX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38BjULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV
+4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlYnAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD
+66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avqZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9
+uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPepTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQ
+EQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeGX3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY
+3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5bcp6cOPWgvzCCBo8wggR3oAMCAQICAwCyHTANBgkq
+hkiG9w0BAQUFADBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
+QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MB4XDTEwMDgwMTIxMjc0M1oX
+DTEyMDczMTIxMjc0M1owggEdMSEwHwYDVQQDExhDaHJpc3RvcGggQW50b24gTWl0dGVyZXIxJDAi
+BgkqhkiG9w0BCQEWFWNhbGVzdHlvQHNjaWVudGlhLm5ldDExMC8GCSqGSIb3DQEJARYibWFpbEBj
+aHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZTEvMC0GCSqGSIb3DQEJARYgY2hyaXN0b3BoLmFu
+dG9uLm1pdHRlcmVyQGNlcm4uY2gxPjA8BgkqhkiG9w0BCQEWL2NocmlzdG9waC5hbnRvbi5taXR0
+ZXJlckBwaHlzaWsudW5pLW11ZW5jaGVuLmRlMS4wLAYJKoZIhvcNAQkBFh9jaHJpc3RvcGguYW50
+b24ubWl0dGVyZXJAbG11LmRlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuwNa6CEz
+sTRd3bRYXPNn2KYKhFZbyPPk1CjuFfy+1PAfKBiGJmhhHGkmwCdnOd5aVnGzwIPfTv/+Rw3Cuw2z
+J4YmJmX3uNDz/l2M6h5MO7Bawv7CjdR+ljGaIBYigMuNaBawmoo60shkvOwf8df/Ou5KTxX7uL/h
+NOb1Q2/3yJWBBMPCbKD0nTvVH34nE1lfZxvKk/MudT7jc/WZ3kJshsO7y0WS/DEDvqPiQI5zfCx/
+qslMYCSCwcqZ4/NHwEXX4zgt9tfPj34iBNLEod7HzdNhCfdqn1j/FTsRI12M2OXEYhYgBoRNRYsh
+PV10ePbV9+GPzvWlJm7Hn07fxVi4ZQIDAQABo4IBnTCCAZkwDAYDVR0TAQH/BAIwADBWBglghkgB
+hvhCAQ0ESRZHVG8gZ2V0IHlvdXIgb3duIGNlcnRpZmljYXRlIGZvciBGUkVFIGhlYWQgb3ZlciB0
+byBodHRwOi8vd3d3LkNBY2VydC5vcmcwQAYDVR0lBDkwNwYIKwYBBQUHAwQGCCsGAQUFBwMCBgor
+BgEEAYI3CgMEBgorBgEEAYI3CgMDBglghkgBhvhCBAEwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUF
+BzABhhZodHRwOi8vb2NzcC5jYWNlcnQub3JnMIG6BgNVHREEgbIwga+BFWNhbGVzdHlvQHNjaWVu
+dGlhLm5ldIEibWFpbEBjaHJpc3RvcGguYW50b24ubWl0dGVyZXIubmFtZYEgY2hyaXN0b3BoLmFu
+dG9uLm1pdHRlcmVyQGNlcm4uY2iBL2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBwaHlzaWsudW5p
+LW11ZW5jaGVuLmRlgR9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAbG11LmRlMA0GCSqGSIb3DQEB
+BQUAA4ICAQAQFRkG3/PZgFdEFzeQyB2Gy8aXvyfSXpoF14+eAplacl6HXG874gfBw0VlTMkG7ynK
+3sh2cOEz20BMbly/MGT9tMpo246EhINlIwpfnqlSGZ+AVXrmztX25Eler+fO2wOVEeCn+HV09wb9
+5VJtdzeAVaWpON5cEjGm9TLpMfR3RDDDkkcKI1uBkAcwVugRHmAXgx+2Mi6bDrG1q3TXA8JCdo+8
+ojdboSEpJvPXhXeKcN9N9ajLqcv/J0jp5s1jZCRnoX8OGIu9KWYmD7w2dHaYDmi/JHAa1ddd38Bj
+ULi1azqAVr32f1UWzU12JucqGHvlsZvkr479f/jV4G8ID7zz/KG0Qb1op7gOZnj56/ek2jHyFBlY
+nAsnqM2imqSkNZsOAhxLPsYvqE3APCTcFMSilCCD66K8OLrzpAj6fzcY9UJ9pkRZBP+nkOTN9avq
+ZivxwKR8Zvl4XG9NJEdftSDTjFaVeYjn8hiDW0c9uqVlayI35d2L0jC6h/npeihVWSOBiqFd5sPe
+pTrqe7AvPrpYR12QrbkYeqARcqYnLe3jKuyWyqhQEQty00Zb0n3d7ezZ15ECXBOQHhvlDkbT6UeG
+X3Xa9kvNYWIb62S1nZ4oicU94NPxwMYtttaOTjzY3hb5/aS+TWT+xkTFSFmd2perZmiiyByCKC5b
+cp6cOPWgvzGCAr0wggK5AgEBMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0
+dHA6Ly93d3cuQ0FjZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMAkG
+BSsOAwIaBQCgggE3MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEy
+MDEwNDAxMjIyNFowIwYJKoZIhvcNAQkEMRYEFBNqKU7kH0ShD63ab75XeLjgYksRMGoGCSsGAQQB
+gjcQBDFdMFswVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0Fj
+ZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAIDALIdMGwGCyqGSIb3DQEJEAIL
+MV2gWzBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5DQWNlcnQu
+b3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290AgMAsh0wDQYJKoZIhvcNAQEBBQAEggEA
+GjBNgiJj3r0TlWwDCQqb1t6Kafoe1/wjbVeuY1UAHZmZfS7wc8aE+MnugvraWGWlTosK8hIkid71
+UHQUi7iGD/I4Gb8jBFGN/TCh3tnroGXGAHkqTal9bfr+Nba04Oq5qNuT3W6XvkEr+yCsUz/D58Ht
+umsJ2posxbYFNa4xZcGgu8sE8FZUCD4GqJ6nawBxfMDRtsGR50esXUY8DGyfCpsIhEzgx4dTGP2z
+9F9F7WqLsi+qPeSreSAh4nnxt/n6tJ4VF8tgrS41EDfF8JtqmVcMEvqP5hTG6jo5Cw/SkPPpKSNC
+JL1pHKPLcdg+HAQP6lMYbTwecOTyOiV1reBfXgAAAAAAAA==
+
+
+--=-0BDEraEciL/4gvzm8hop--
+
