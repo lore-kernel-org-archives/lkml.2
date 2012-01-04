@@ -1,88 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab2ADEqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 3 Jan 2012 23:46:35 -0500
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:8254
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755458Ab2ADEqd (ORCPT
+	id S1755880Ab2ADEv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 3 Jan 2012 23:51:56 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:55623 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755166Ab2ADEvz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 3 Jan 2012 23:46:33 -0500
-X-SpamScore: -16
-X-BigFish: VS-16(zz1432N98dK14ffOzz1202hzz8275dhz2dh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Wed, 4 Jan 2012 12:46:21 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Subject: Re: linux-next: manual merge of the net-next tree with the arm-soc
- tree
-Message-ID: <20120104044620.GL2414@b20223-02.ap.freescale.net>
-References: <20120104150658.aafd5ae8ebce944e897f1079@canb.auug.org.au>
+	Tue, 3 Jan 2012 23:51:55 -0500
+Date: Wed, 4 Jan 2012 08:51:50 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>
+Subject: Re: [PATCH] power_supply: add "unknown" in power supply type
+Message-ID: <20120104045150.GA1039@oksana.dev.rtsoft.ru>
+References: <B567DBAB974C0544994013492B949F8E38125B223C@EXMAIL03.scwf.nsc.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20120104150658.aafd5ae8ebce944e897f1079@canb.auug.org.au>
+In-Reply-To: <B567DBAB974C0544994013492B949F8E38125B223C@EXMAIL03.scwf.nsc.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 03:06:58PM +1100, Stephen Rothwell wrote:
-> Hi all,
+On Wed, Nov 30, 2011 at 11:08:33PM -0800, Kim, Milo wrote:
+> Hi, Anton
 > 
-> Today's linux-next merge of the net-next tree got a conflict in
-> drivers/net/ethernet/freescale/fec.c between commit 0ebafefcaa7a ("net:
-> fec: add clk_prepare/clk_unprepare") from the arm-soc tree and commit
-> e163cc97f9ac ("net/fec: fix the .remove code") from the net-next tree.
-> 
-> Just context changes.  I fixed it up (see below) and can carry the fix as
-> necessary.
-It's good. 
+> For the default value of power supply type, "unknown" is added.
+> With default prop value, supply type property can be displayed as default - "Unknown".
 
-Thanks
-Richard
+Applied, thanks!
+
+> And union propval is set to zero.
+> Then no data abort exception even if the propval is not updated by xxx_get_property().
+
+Why it is not updated in the first place (assuming get_property() returned
+success)?.. Driver should be fixed then... I dropped this change.
+
+In any case, if we want this change, it should be a separate patch.
+
+Thanks!
+
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
+>  drivers/power/power_supply_sysfs.c |    4 +++-
+>  include/linux/power_supply.h       |    3 ++-
+>  2 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+> index 58cc490..6250686 100644
+> --- a/drivers/power/power_supply_sysfs.c
+> +++ b/drivers/power/power_supply_sysfs.c
+> @@ -42,7 +42,7 @@ static ssize_t power_supply_show_property(struct device *dev,
+>  					  struct device_attribute *attr,
+>  					  char *buf) {
+>  	static char *type_text[] = {
+> -		"Battery", "UPS", "Mains", "USB",
+> +		"Unknown", "Battery", "UPS", "Mains", "USB",
+>  		"USB_DCP", "USB_CDP", "USB_ACA"
+>  	};
+>  	static char *status_text[] = {
+> @@ -67,6 +67,8 @@ static ssize_t power_supply_show_property(struct device *dev,
+>  	const ptrdiff_t off = attr - power_supply_attrs;
+>  	union power_supply_propval value;
+>  
+> +	memset(&value, 0, sizeof(value));
+> +
+>  	if (off == POWER_SUPPLY_PROP_TYPE)
+>  		value.intval = psy->type;
+>  	else
+> diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+> index 204c18d..9c83e04 100644
+> --- a/include/linux/power_supply.h
+> +++ b/include/linux/power_supply.h
+> @@ -123,7 +123,8 @@ enum power_supply_property {
+>  };
+>  
+>  enum power_supply_type {
+> -	POWER_SUPPLY_TYPE_BATTERY = 0,
+> +	POWER_SUPPLY_TYPE_UNKNOWN = 0,
+> +	POWER_SUPPLY_TYPE_BATTERY,
+>  	POWER_SUPPLY_TYPE_UPS,
+>  	POWER_SUPPLY_TYPE_MAINS,
+>  	POWER_SUPPLY_TYPE_USB,		/* Standard Downstream Port */
 > -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> 1.7.4.1
 > 
-> diff --cc drivers/net/ethernet/freescale/fec.c
-> index 112af9b,b0b0445..0000000
-> --- a/drivers/net/ethernet/freescale/fec.c
-> +++ b/drivers/net/ethernet/freescale/fec.c
-> @@@ -1638,13 -1657,18 +1657,18 @@@ fec_drv_remove(struct platform_device *
->   	struct net_device *ndev = platform_get_drvdata(pdev);
->   	struct fec_enet_private *fep = netdev_priv(ndev);
->   	struct resource *r;
-> + 	int i;
->   
-> - 	fec_stop(ndev);
-> + 	unregister_netdev(ndev);
->   	fec_enet_mii_remove(fep);
-> + 	for (i = 0; i < FEC_IRQ_NUM; i++) {
-> + 		int irq = platform_get_irq(pdev, i);
-> + 		if (irq > 0)
-> + 			free_irq(irq, ndev);
-> + 	}
->  -	clk_disable(fep->clk);
->  +	clk_disable_unprepare(fep->clk);
->   	clk_put(fep->clk);
->   	iounmap(fep->hwp);
-> - 	unregister_netdev(ndev);
->   	free_netdev(ndev);
->   
->   	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> 
+> Best Regards
+> 
+> Milo (Woogyom) Kim
+> Texas Instruments Incorporated
 
-
-
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
