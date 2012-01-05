@@ -1,193 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab2AEAPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 19:15:54 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:60477 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757431Ab2AEAPt (ORCPT
+	id S932250Ab2AEASH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 19:18:07 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:34519 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab2AEASF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 19:15:49 -0500
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
-        Mohan Pallaka <mpallaka@codeaurora.org>,
-        Kevin McNeely <kev@cypress.com>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier@dowhile0.org>
-Subject: [PATCH v8 2/3] Input: cyttsp - add support for Cypress TTSP touchscreen I2C bus interface
-Date: Thu,  5 Jan 2012 01:16:25 +0100
-Message-Id: <1325722586-12886-3-git-send-email-javier@dowhile0.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1325722586-12886-1-git-send-email-javier@dowhile0.org>
-References: <1325722586-12886-1-git-send-email-javier@dowhile0.org>
+	Wed, 4 Jan 2012 19:18:05 -0500
+Date: Thu, 5 Jan 2012 11:17:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-Id: <20120105111758.d0d640b9d072f04104a5fc4e@canb.auug.org.au>
+In-Reply-To: <CAPXgP13TC4iuy=MW-p8x05VG8ad-9rC+jxm6qHtx90tBX9zhTw@mail.gmail.com>
+References: <20111228174518.721624fad9d048f9f85b3d50@canb.auug.org.au>
+	<20120104230720.GD24583@kroah.com>
+	<20120105104835.fd6c0fd173622af59d11012f@canb.auug.org.au>
+	<CAPXgP13TC4iuy=MW-p8x05VG8ad-9rC+jxm6qHtx90tBX9zhTw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver is composed of a core driver that process the data sent by
-the contacts and a set of bus specific interface modules.
+--Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch add supports for the Cypress TTSP I2C bus interface.
+Hi Kay,
 
-Signed-off-by: Javier Martinez Canillas <javier@dowhile0.org>
----
+On Thu, 5 Jan 2012 01:01:51 +0100 Kay Sievers <kay.sievers@vrfy.org> wrote:
+>
+> Yes, that look like the right pattern.
 
-Changes for v8:
-	Javier Martinez Canillas (5):
-      	- Check i2c_master_recv() didn't return and error before checking length
-	- Check i2c read completed sucessful
-	- Define module exit macro in i2c driver
-	- Fix return values for I2C transport
-	- Add error msg when capability is not supported
+Good, thanks.
 
- drivers/input/touchscreen/cyttsp_i2c.c |  137 ++++++++++++++++++++++++++++++++
- 1 files changed, 137 insertions(+), 0 deletions(-)
- create mode 100644 drivers/input/touchscreen/cyttsp_i2c.c
+> Stephen, thanks a lot for your help here, it's very much appreciated.
+> I know we cause a lot of trouble every other year. :)
 
-diff --git a/drivers/input/touchscreen/cyttsp_i2c.c b/drivers/input/touchscreen/cyttsp_i2c.c
-new file mode 100644
-index 0000000..cdbf61d
---- /dev/null
-+++ b/drivers/input/touchscreen/cyttsp_i2c.c
-@@ -0,0 +1,137 @@
-+/*
-+ * Source for:
-+ * Cypress TrueTouch(TM) Standard Product (TTSP) I2C touchscreen driver.
-+ * For use with Cypress Txx3xx parts.
-+ * Supported parts include:
-+ * CY8CTST341
-+ * CY8CTMA340
-+ *
-+ * Copyright (C) 2009, 2010, 2011 Cypress Semiconductor, Inc.
-+ * Copyright (C) 2012 Javier Martinez Canillas <javier@dowhile0.org>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2, and only version 2, as published by the
-+ * Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-+ *
-+ * Contact Cypress Semiconductor at www.cypress.com <kev@cypress.com>
-+ *
-+ */
-+
-+#include "cyttsp_core.h"
-+
-+#include <linux/i2c.h>
-+#include <linux/input.h>
-+
-+#define CY_I2C_DATA_SIZE  128
-+
-+static int cyttsp_i2c_read_block_data(struct device *dev,
-+				      u8 addr, u8 length, void *values)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	int retval;
-+
-+	retval = i2c_master_send(client, &addr, 1);
-+	if (retval < 0)
-+		return retval;
-+
-+	retval = i2c_master_recv(client, values, length);
-+
-+	if (retval < 0)
-+		return retval;
-+
-+	return (retval != length) ? -EIO : 0;
-+}
-+
-+static int cyttsp_i2c_write_block_data(struct device *dev,
-+				       u8 addr, u8 length, const void *values)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct cyttsp *ts = i2c_get_clientdata(client);
-+	int retval;
-+
-+	ts->xfer_buf[0] = addr;
-+	memcpy(&ts->xfer_buf[1], values, length);
-+	retval = i2c_master_send(client, ts->xfer_buf, length + 1);
-+
-+	return (retval < 0) ? retval : 0;
-+}
-+
-+static const struct cyttsp_bus_ops cyttsp_i2c_bus_ops = {
-+	.bustype        = BUS_I2C,
-+	.write          = cyttsp_i2c_write_block_data,
-+	.read           = cyttsp_i2c_read_block_data,
-+};
-+
-+static int __devinit cyttsp_i2c_probe(struct i2c_client *client,
-+				      const struct i2c_device_id *id)
-+{
-+	struct cyttsp *ts;
-+
-+	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-+		dev_err(&client->dev, "I2C functionality not Supported\n");
-+		return -EIO;
-+	}
-+
-+	ts = cyttsp_probe(&cyttsp_i2c_bus_ops, &client->dev, client->irq,
-+			  CY_I2C_DATA_SIZE);
-+
-+	if (IS_ERR(ts))
-+		return PTR_ERR(ts);
-+
-+	i2c_set_clientdata(client, ts);
-+
-+	return 0;
-+}
-+
-+static int __devexit cyttsp_i2c_remove(struct i2c_client *client)
-+{
-+	struct cyttsp *ts = i2c_get_clientdata(client);
-+
-+	cyttsp_remove(ts);
-+
-+	return 0;
-+}
-+
-+static const struct i2c_device_id cyttsp_i2c_id[] = {
-+	{ CY_I2C_NAME, 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, cyttsp_i2c_id);
-+
-+static struct i2c_driver cyttsp_i2c_driver = {
-+	.driver = {
-+		.name   = CY_I2C_NAME,
-+		.owner  = THIS_MODULE,
-+		.pm     = &cyttsp_pm_ops,
-+	},
-+	.probe          = cyttsp_i2c_probe,
-+	.remove         = __devexit_p(cyttsp_i2c_remove),
-+	.id_table       = cyttsp_i2c_id,
-+};
-+
-+static int __init cyttsp_i2c_init(void)
-+{
-+	return i2c_add_driver(&cyttsp_i2c_driver);
-+}
-+module_init(cyttsp_i2c_init);
-+
-+static void __exit cyttsp_i2c_exit(void)
-+{
-+	return i2c_del_driver(&cyttsp_i2c_driver);
-+}
-+module_exit(cyttsp_i2c_exit);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP) I2C driver");
-+MODULE_AUTHOR("Cypress");
-+MODULE_ALIAS("i2c:cyttsp");
--- 
-1.7.4.1
+Its how I justify myself :-)
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIbBAEBCAAGBQJPBOw2AAoJEECxmPOUX5FEsX8P+MT7LK9RucY5uKwc6FqdyxXk
+HojASocxFv30zk9NZRyXJtplghJcqNQul2CyZSuDRL4JWmobTK4Ng6NFC/T/c/38
+O85Q2CLlSHTg5Sz61fqPYoggAeR78eP9+ovnOQkFSR7oiNDaH4ftqd7N6I+hQqgk
+XxQL/KtyT83I78OBvQPQjPGbaZ8gj1LK/STFL0QJtpHac0gKaArBANdpY/1Rxwy4
+0jifj5YHQL8VpPTmmVE6Zx7Pt6Zy2erTH/htIGpZ++5ByZRwS3fgEiP5+89UO29N
+VOtbvY2QEL+m/QvP6Ipr99FWMMkpZZAhYchri6wrfuoIllgbpXMYbFoghvFX4Rw1
+aU01cluaorDccUixyv9X722STZlUZRNBCQAJIbBsXUvgPbSWLIyDVdwz7Xfqn0Wt
+CKEPECl4Terag4Jhhx0fc6aXlCy/DZFux7kdb66YgeJ3hpdcTkmDzGcbYmH+jfKA
+45n6KbDW7HvMn4ekqbNvZRzW4l+yKt1MOXV+vM8q0hPT5vrqK6ucQwxTcXFDfbVR
+qjaoh04poPpqqUBArJ1z26l7u6pqmQ6IeTE6nxeJbLhMgJyE6AJJFGnsagtCQlDj
+xy4qYhxhjdCh9UwVc8RBGnEr3gjtOX2MWcgHLoJyrkTvwEWU7UveLQL+x8xXsbUw
+f8dL3d+P/l/bbqfeE90=
+=KgZk
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c--
