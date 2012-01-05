@@ -1,120 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758030Ab2AEG3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 01:29:10 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:56883 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab2AEG3J (ORCPT
+	id S1758047Ab2AEG3W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 01:29:22 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41829 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758033Ab2AEG3R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 01:29:09 -0500
-Date: Thu, 5 Jan 2012 17:28:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Jan Beulich <JBeulich@suse.com>, Kay Sievers <kay.sievers@vrfy.org>
-Subject: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20120105172856.07fc66f37d76f16a88d22799@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_17_28_56_+1100_2a+Zu7F3f7VtEgvG"
+	Thu, 5 Jan 2012 01:29:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120104212808.GI2540@tuxdriver.com>
+References: <NEXT-4f04c2111e5f83.17805410@nextmail.ru>
+	<20120104212808.GI2540@tuxdriver.com>
+Date: Thu, 5 Jan 2012 11:59:16 +0530
+Message-ID: <CAD2nsn05O3e1ZnaK9ZMNk=qFFvLiB7oE-D+zfzofhVgosKibtg@mail.gmail.com>
+Subject: Re: ath9k crash 3.2-rc7
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: MR <g7af0ec1e3ea1e7b1@nextmail.ru>, linux-kernel@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_17_28_56_+1100_2a+Zu7F3f7VtEgvG
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi John,
 
-Hi Greg,
+we will take a look at this.
 
-After merging the driver-core tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+i can later come up with few debug patches to narrow down the panic.
+looks like a problem in ath_update_survey_stats(survey pointer). full
+stack trace will be helpful
+thanks.
 
-arch/x86/kernel/microcode_core.c: In function 'microcode_init':
-arch/x86/kernel/microcode_core.c:557:2: error: implicit declaration of func=
-tion 'sysdev_driver_unregister' [-Werror=3Dimplicit-function-declaration]
-arch/x86/kernel/microcode_core.c:557:28: error: 'cpu_sysdev_class' undeclar=
-ed (first use in this function)
-arch/x86/kernel/microcode_core.c:557:47: error: 'mc_sysdev_driver' undeclar=
-ed (first use in this function)
+On Thu, Jan 5, 2012 at 2:58 AM, John W. Linville <linville@tuxdriver.com> wrote:
+> You probably want to try linux-wireless@vger.kernel.org for maximum exposure...
+>
+> On Thu, Jan 05, 2012 at 01:18:09AM +0400, MR wrote:
+>> Hello.
+>>
+>> I have noticed a complete crash (forced switch to console and Alt-SysRq-B
+>> doesn't work) when I use ath9k driver for my WiFi card. The problem is that
+>> the crash occurs after a few hours of use, so blind bissecting doesn't look
+>> like a short-term plan.
+>>
+>> My card is (as lspci says):
+>>
+>> 03:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless
+>> Network Adapter (PCI-Express) (rev 01)
+>>         Subsystem: Device 1a3b:1089
+>>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
+>> Stepping- SERR- FastB2B- DisINTx-
+>>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>         Latency: 0, Cache Line Size: 64 bytes
+>>         Interrupt: pin A routed to IRQ 17
+>>         Region 0: Memory at d7400000 (64-bit, non-prefetchable) [size=64K]
+>>
+>> I use an Asus N53JN notebook, if that matters.
+>>
+>> I have photos of two instances of the crash. The backtrace goes as follows (I
+>> typed this in, so maybe there is a typo somewhere - I hope there is none,
+>> though):
+>>
+>> wq_worker_sleeping+0x10/0xa0
+>> __schedule+0x427/0x7b0
+>> ? call_rcu_sched+0x10/0x20
+>> schedule+0x3a/0x50
+>> do_exit+0x57c/0x840
+>> ? kmsg_dump+0x45/0xe0
+>> oops_end+0xa5/0xf0
+>> no_context+0xf2/0x270
+>> __bad_area_no_semaphore+0xe/0x10
+>> do_page_fault+0x2ba/0x450
+>> ? up+0x2d/0x50
+>> ? console_unlock+0x1df/0x250
+>> ? select_task_rq_fair+0x5be/0x970
+>> page_fault+0x25/0x30
+>> ? ath_update_survey_stats+0xb7/0x1c0 [ath9k]
+>> ath9k_config+0x115/0x780 [ath9k]
+>> ? queue_work+0x1a/0x20
+>> ? queue_delayed_work+0x25/0x30
+>> ? ieee80211_queue_delayed_work+0x46/0x60 [mac80211]
+>> ? ath9k_flush+0x155/0x1d0 [ath9k]
+>> ieee80211_hw_config+0xe2/0x160 [mac80211]
+>> ieee80211_scan_work+0x243/0x5c0 [mac80211]
+>> ? ieee80211_scan_rx+0x1c0/0x1c0 [mac80211]
+>> process_one_work+0x111/0x390
+>> worker_thread+0x162/0x340
+>> manage_workers.clone.26+0x240/0x240
+>> kthread+0x96/0xa0
+>> kernel_thread_helper+0x4/0x10
+>> ? kthread_worker_fn+0x190/0x190
+>> ? gs_change+0x13/0x13
+>>
+>>
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> John W. Linville                Someday the world will need a hero, and you
+> linville@tuxdriver.com                  might be all we have.  Be ready.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Caused by commit 8a25a2fd126c ("cpu: convert 'cpu' and 'machinecheck'
-sysdev_class to a regular subsystem") interacting with commit
-bd399063976c ("x86, microcode: Fix the failure path of microcode update
-driver init code") which was added to Linux' tree in v3.2-rc5,
 
-I have applied the following merge fix patch:
 
-=46rom e4aefaed98c4462d5d5d71099756606b547e7364 Mon Sep 17 00:00:00 2001
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 5 Jan 2012 17:26:14 +1100
-Subject: [PATCH] cpu: fix up for sysdev removal
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/x86/kernel/microcode_core.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_c=
-ore.c
-index ef127e54..fb34a56 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -540,7 +540,7 @@ static int __init microcode_init(void)
-=20
- 	error =3D microcode_dev_init();
- 	if (error)
--		goto out_sysdev_driver;
-+		goto out_driver;
-=20
- 	register_syscore_ops(&mc_syscore_ops);
- 	register_hotcpu_notifier(&mc_cpu_notifier);
-@@ -550,11 +550,11 @@ static int __init microcode_init(void)
-=20
- 	return 0;
-=20
--out_sysdev_driver:
-+out_driver:
- 	get_online_cpus();
- 	mutex_lock(&microcode_mutex);
-=20
--	sysdev_driver_unregister(&cpu_sysdev_class, &mc_sysdev_driver);
-+	subsys_interface_unregister(&mc_cpu_interface);
-=20
- 	mutex_unlock(&microcode_mutex);
- 	put_online_cpus();
---=20
-1.7.8.197.g73c6b
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__5_Jan_2012_17_28_56_+1100_2a+Zu7F3f7VtEgvG
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBUMoAAoJEECxmPOUX5FE1AcP/0ItjsVqARo2nymieDboahCZ
-6m1DuDXkKbwO3ecCvFYFPuFNFp23ZmCin7VVGzzr7VcLN46SKM1GkDXChs0cbErm
-eNesIwGiY3St07rBE6iM4RxgRL3OY3lsz+TqayT5y1To38542gKwI2xakIv5Derk
-CRheoCqFE6epYTdOt85IvEqqSFJ2sWyoT7oIGQx/Gq81XpSwsqaTHWnUromInTnm
-CsFfCXoUITtLjJVfODGd5afKeCNUoDHjZ4ThoQ1BexL3IEcijd1FoirQSA1nmR1i
-8EPp5fbo2JX2t5C7b3JUSjVfG96BbOI/cHGM/UHodDtqtQ1owMfX/EVuYaO5nbVZ
-KEi70le2PI4dgR9vQX3Ga+aLou1VacxAqRlOb+85D9UmrFInGsaWIEaErPH63xhn
-KYwPZOGMMBb/DE3ZPx4dK+2JbQCv+aAm3198u03Hl7JU5c6z0O/t6hptK2vq+L2X
-7s4N4ElVkFxeKQkD+nQRpzQeTwVZM32JgIYxpS5+RV397wGxvX/K1NqsvuOJ9MBu
-z35PELCho6Qu56MqNn4P9lQKdC8Igl/ype5R1PUkmQ8LDgUKzj/oYkt3fmjIo8gl
-ilS/IfrwDEwKESR6ELY+K05PiZiIaJBd39SE0cHUu7SS3KhS2hc9VHEWu5un6tDl
-wqy83oQ/f/5zbgv0bVuy
-=uI9k
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jan_2012_17_28_56_+1100_2a+Zu7F3f7VtEgvG--
+-- 
+shafi
