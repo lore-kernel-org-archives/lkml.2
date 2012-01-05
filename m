@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758074Ab2AEH3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 02:29:55 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:57911 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465Ab2AEH3w (ORCPT
+	id S1758079Ab2AEHfg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 02:35:36 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15490 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758037Ab2AEHf3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 02:29:52 -0500
-Date: Thu, 5 Jan 2012 18:29:49 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dimitri Sivanich <sivanich@sgi.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20120105182949.e35b2430b915b50e4bb9bc04@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_18_29_49_+1100_9GQUtW1Y9+Z8tMhf"
+	Thu, 5 Jan 2012 02:35:29 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 04 Jan 2012 23:35:29 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Laxman Dewangan <ldewangan.com@nvidia.com>
+CC: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Date: Thu, 5 Jan 2012 13:05:25 +0530
+Subject: RE: [PATCH V1] regulator: fixed: Move drivers to
+	subsys_initcall_sync()
+Thread-Topic: [PATCH V1] regulator: fixed: Move drivers to
+	subsys_initcall_sync()
+Thread-Index: AczLbyKO1iqS9QGKTlKicht3eSDNcgADEIIw
+Message-ID: <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9DEC@BGMAIL01.nvidia.com>
+References: <1325693335-1905-1-git-send-email-ldewangan@nvidia.com>
+ <20120105055900.GE11867@opensource.wolfsonmicro.com>
+In-Reply-To: <20120105055900.GE11867@opensource.wolfsonmicro.com>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_18_29_49_+1100_9GQUtW1Y9+Z8tMhf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> From: linux-pm-owner@vger.kernel.org [mailto:linux-pm-owner@vger.kernel.org]
+> On Behalf Of Mark Brown
+> Sent: Thursday, January 05, 2012 11:29 AM
 
-Hi Andrew,
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+> > The fixed regulator is used to enable/disable rails which are
+> > mainly controlled by the switch. The switches are toggled by
+> > gpio apis.
+> > The switches are connected through on-chip gpios or through
+> > external devices' gpios like mfd, i2c based gpio expander etc.
+> > The registration of the fixed regulator get success only if the
+> > required gpios are already available in the system at this time.
+> > The on-chip gpios are available till this time as on-chip gpios
+> > are initialized in arch_init(). But external peripheral's gpios
+> > may not be available at this time as they get initialized as part
+> > of subsys_initcall() and due to this registration of the fixed
+> > regulator may fails.
+> > Moving the driver to subsys_initcall_sync() will make sure that
+> > all gpios i.e. on-chip gpios as well as external peripheral's gpios
+> > are available before fixed regulator registration.
+> 
+> I don't really think this is worth faffing about with, it seems at least
+> as likely to create more problems with things that depend on the
+> regulator as it is to make the regulator work.  Really we need Grant's
+> probe retry stuff or something else to solve the init ordering issues
+> properly.
+Yes, I agree, the init ordering need to be done properly but this is how we
+have as of now to make ordering.
+I have the switchA which is connected on regulatorA (from PMIC) and the
+switchB which is in the gpio of the pmic. The fixed regulator registration for
+switchA and switchB are failing because it did not found the valid supply/gpio.
+The one way to resolve the call probe of the fixed regulator only when pmic
+initialization is done and it is in subsys_init().
+The other way is to do the platform device registration of the fixed regulator
+is in subsys_initcall_sync() in place of arch_init, although driver is in
+subsys_initcall() to postponed the probe calling.
 
-kernel/time/tick-sched.c:874:7: warning: 'struct sysdev_attribute' declared=
- inside parameter list [enabled by default]
-kernel/time/tick-sched.c:874:7: warning: its scope is only this definition =
-or declaration, which is probably not what you want [enabled by default]
-kernel/time/tick-sched.c:874:7: warning: 'struct sys_device' declared insid=
-e parameter list [enabled by default]
-kernel/time/tick-sched.c: In function 'sysfs_store_do_timer_cpu':
-kernel/time/tick-sched.c:876:9: error: implicit declaration of function 'SY=
-SDEV_TO_EXT_ATTR' [-Werror=3Dimplicit-function-declaration]
-kernel/time/tick-sched.c:876:36: warning: initialization makes pointer from=
- integer without a cast [enabled by default]
-kernel/time/tick-sched.c:898:22: error: dereferencing pointer to incomplete=
- type
-kernel/time/tick-sched.c: At top level:
-kernel/time/tick-sched.c:905:15: error: variable 'attr_jiffies_cpu' has ini=
-tializer but incomplete type
-kernel/time/tick-sched.c:906:4: error: implicit declaration of function '_S=
-YSDEV_ATTR' [-Werror=3Dimplicit-function-declaration]
-kernel/time/tick-sched.c:906:17: error: 'jiffies_cpu' undeclared here (not =
-in a function)
-kernel/time/tick-sched.c:906:36: error: 'sysdev_show_int' undeclared here (=
-not in a function)
-kernel/time/tick-sched.c:907:6: warning: excess elements in struct initiali=
-zer [enabled by default]
-kernel/time/tick-sched.c:907:6: warning: (near initialization for 'attr_jif=
-fies_cpu') [enabled by default]
-kernel/time/tick-sched.c:908:4: warning: excess elements in struct initiali=
-zer [enabled by default]
-kernel/time/tick-sched.c:908:4: warning: (near initialization for 'attr_jif=
-fies_cpu') [enabled by default]
-kernel/time/tick-sched.c:910:15: error: variable 'timekeeping_sysclass' has=
- initializer but incomplete type
-kernel/time/tick-sched.c:911:2: error: unknown field 'name' specified in in=
-itializer
-kernel/time/tick-sched.c:911:2: warning: excess elements in struct initiali=
-zer [enabled by default]
-kernel/time/tick-sched.c:911:2: warning: (near initialization for 'timekeep=
-ing_sysclass') [enabled by default]
-kernel/time/tick-sched.c:914:15: error: variable 'device_timekeeping' has i=
-nitializer but incomplete type
-kernel/time/tick-sched.c:915:2: error: unknown field 'id' specified in init=
-ializer
-kernel/time/tick-sched.c:915:2: warning: excess elements in struct initiali=
-zer [enabled by default]
-kernel/time/tick-sched.c:915:2: warning: (near initialization for 'device_t=
-imekeeping') [enabled by default]
-kernel/time/tick-sched.c:916:2: error: unknown field 'cls' specified in ini=
-tializer
-kernel/time/tick-sched.c:916:2: warning: excess elements in struct initiali=
-zer [enabled by default]
-kernel/time/tick-sched.c:916:2: warning: (near initialization for 'device_t=
-imekeeping') [enabled by default]
-kernel/time/tick-sched.c: In function 'init_timekeeping_sysfs':
-kernel/time/tick-sched.c:921:2: error: implicit declaration of function 'sy=
-sdev_class_register' [-Werror=3Dimplicit-function-declaration]
-kernel/time/tick-sched.c:924:3: error: implicit declaration of function 'sy=
-sdev_register' [-Werror=3Dimplicit-function-declaration]
-kernel/time/tick-sched.c:926:3: error: implicit declaration of function 'sy=
-sdev_create_file' [-Werror=3Dimplicit-function-declaration]
-kernel/time/tick-sched.c:928:5: error: invalid use of undefined type 'struc=
-t sysdev_ext_attribute'
+What do you suggest on this case?
 
-Caused by commit 629d589817da ("tick-sched: add specific do_timer_cpu
-value for nohz off mode") interacting with the removal of sysdevs in the
-driver-core tree.  This patch will need reworking for that.
-
-I have reverted that commit for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__5_Jan_2012_18_29_49_+1100_9GQUtW1Y9+Z8tMhf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBVFtAAoJEECxmPOUX5FEjfgP/AsBCpyvqL5HZlG3NEGShKmL
-ej4spLyYv+bZvMoKrKaIOfdVm81LVhfTxrAgLzXiU44r4OcXHhbb501SJkcYzvUN
-LhVkZgykjXlzqsWnXGxGVNd1H5PlVVkv7YQOa0j0fgJ2dLGxXuPGSi3t8YGFvZYu
-2J219a6ZmiEa3k5gariE3Fysf2bM+U7ck+8AlnsfzEKeCMQah35U0z2w2u2317ja
-289KAmwHYx04EWQmIaOQMevIZF9wIv3mGLZncyuu/ZkAR+MvuIirUG49a1Zxj31t
-94ZOYpi2kmbL8QPwVt2Aa2R8n23tZfnZc9Ap9MPX33OYsHPjVCXzHHObEcfWSA6K
-iw2e8Fl+ja0QZfBsDGmd2cyTarxx95luxdT4IgnZsg0PwT5TnHF3WkjosQ0trPaM
-qMaQi8cPfwVIN/ggFCDjRvuF69xI9Yy/MXzh2i4buytf/Nb0TSOukgMhjUI/uFWH
-n0Y6StVeGOW3AWirLzb2el7UOfjsbBb8io+EmUohzKWQ4aigN0KjwYtX9SryVkHd
-Qmhf85OsIw3UBW4h+h5AU6rDhWOpwXtDPtSpAiKx9Cehdt0DkbWB3UfWr4cCzlHG
-omzTwaWZdR7cnzRqJya6qbZDgy85lCqHS5dudTMO2XQQAX8xk6Cw1mHBjG/BBnyj
-T/UodPYyco1gK6G0Oqyd
-=I63B
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jan_2012_18_29_49_+1100_9GQUtW1Y9+Z8tMhf--
