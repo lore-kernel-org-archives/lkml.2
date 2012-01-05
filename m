@@ -1,193 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932964Ab2AEWnc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:43:32 -0500
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:35930
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab2AEWnb (ORCPT
+	id S932996Ab2AEWqd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:46:33 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:35067 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932467Ab2AEWqb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:43:31 -0500
-Date: Thu, 5 Jan 2012 23:43:22 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1829329984.20120105234322@eikelenboom.it>
-To: "Ted Ts'o" <tytso@mit.edu>
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        <dm-devel@redhat.com>
-Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
-In-Reply-To: <20120105181535.GB26382@thunk.org>
-References: <217150909.20120105113759@eikelenboom.it> <197607646.20120105142107@eikelenboom.it> <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu> <4910694144.20120105171428@eikelenboom.it> <20120105181535.GB26382@thunk.org>
+	Thu, 5 Jan 2012 17:46:31 -0500
+Message-ID: <4F0635FE.6050507@xenotime.net>
+Date: Thu, 05 Jan 2012 15:45:02 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Fabio Estevam <festevam@gmail.com>
+CC: netdev@vger.kernel.org, gwingerde@gmail.com, larry.finger@lwfinger.net,
+        davem@davemloft.net, bhutchings@solarflare.com, greg@kroah.com,
+        arnd@arndb.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] drivers: misc: Remove MISC_DEVICES config option
+References: <1325796541-11402-1-git-send-email-festevam@gmail.com>
+In-Reply-To: <1325796541-11402-1-git-send-email-festevam@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ted,
+On 01/05/2012 12:49 PM, Fabio Estevam wrote:
+> MISC_DEVICES option alone does not select any kernel code and can cause dependency build warnings, such as:
+> 
+> warning: (KS8851 && AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI && RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has unmet direct dependencies (MISC_DEVICES)
+> 
+> Remove MISC_DEVICES option so that any dependency on this symbol is avoided.
 
-Thursday, January 5, 2012, 7:15:35 PM, you wrote:
+I thought that one purpose of MISC_DEVICES was to allow anyone to disable all
+options under it with one click (or keystroke), but since several drivers now
+"select MISC_DEVICES", that does not work.
 
-> On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
->> 
->> OK spoke too soon, i have been able to trigger it again:
->> - copying files from LV to the same LV without the snapshot went OK
->> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
-
-> OK.  Originally, you said you did this:
-
-> 1) fsck -v -p -f the filesystem
-> 2) mount the filesystem
-> 3) Try to copy a file
-> 4) filesystem will be mounted RO on error  (see below)
-> 5) fsck again, journal will be recovered, no other errors
-> 6) start at 1)
-
-> Was this with with a read-only snapshot always being in existence
-> through all of these five steps?  When was the RO snapshot created?
-
-> If a RO snapshot has to be there in order for this to happen, then
-> this is almost certainly a device-mapper regression.  (dm-devel folks,
-> this is a problem which apparently occurred when the user went from
-> v3.1.5 to v3.2, so this looks likes 3.2 regression.)
-
->                                                 - Ted
-
-Tried to bisect, but every kernel in between seems to have some drivers for devices f*cked up so it doesn't even boot.
-That was a quite frustrating and disappointing experience.
-So it's back to 3.1.5 and continue with i was actually trying to do, and try later if it's still reproducible with another disk layout.
-
-Thx for your effort so far.
-
---
-Sander
-
->> 
->> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
->> [ 2357.656056] Aborting journal on device dm-2-8.
->> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
->> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
->> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
->> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
->> 
->> 
->> Attached are 4x output from dumpe2fs
->> - dumpe2fs-xen_images-3.2.0                           Made just after boot
->> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
->> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
->> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
->> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
->> 
->> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
->> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
->> 
->> --
->> Sander
->> 
->> 
->> 
->> >> 
->> >> --
->> >> Sander
->> >> 
->> >> 
->> >> This is a forwarded message
->> >> From: Sander Eikelenboom <linux@eikelenboom.it>
->> >> To: "Theodore Ts'o" <tytso@mit.edu>
->> >> Date: Thursday, January 5, 2012, 11:37:59 AM
->> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> >> 
->> >> ===8<==============Original message text===============
->> >> 
->> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
->> >> 
->> >> Steps:
->> >> 1) fsck -v -p -f the filesystem
->> >> 2) mount the filesystem
->> >> 3) Try to copy a file
->> >> 4) filesystem will be mounted RO on error  (see below)
->> >> 5) fsck again, journal will be recovered, no other errors
->> >> 6) start at 1)
->> >> 
->> >> 
->> >> I think the way i bricked it is:
->> >> - make a lvm snapshot from that lvm logical disk
->> >> - mount that lvm snapshot as RO
->> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
->> >> - it fails and i can't recover (see above)
->> >> 
->> >> 
->> >> Is there a way to recover from this ?
->> >> 
->> >> 
->> >> 
->> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> >> [  220.749415] Aborting journal on device dm-2-8.
->> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
->> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
->> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
->> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
->> >> serveerstertje:/mnt/xen_images/domains/production# cd /
->> >> serveerstertje:/# umount /mnt/xen_images/
->> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
->> >> fsck from util-linux-ng 2.17.2
->> >> /dev/mapper/serveerstertje-xen_images: recovering journal
->> >> 
->> >>     277 inodes used (0.00%)
->> >>       5 non-contiguous files (1.8%)
->> >>       0 non-contiguous directories (0.0%)
->> >>         # of inodes with ind/dind/tind blocks: 41/41/3
->> >>         Extent depth histogram: 69/28/2
->> >> 51890920 blocks used (79.18%)
->> >>       0 bad blocks
->> >>      41 large files
->> >> 
->> >>     199 regular files
->> >>      53 directories
->> >>       0 character device files
->> >>       0 block device files
->> >>       0 fifos
->> >>       0 links
->> >>      16 symbolic links (16 fast symbolic links)
->> >>       0 sockets
->> >> --------
->> >>     268 files
->> >> serveerstertje:/#
->> >> 
->> >> 
->> >> 
->> >> 
->> >> System:
->> >> - Kernel 3.2.0
->> >> - Debian Squeeze with:
->> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
->> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
->> >> 
->> >> ===8<===========End of original message text===========
->> >> 
->> >> 
->> >> 
->> >> -- 
->> >> Best regards,
->> >> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
->> 
->> 
->> 
->> 
->> -- 
->> Best regards,
->>  Sander                            mailto:linux@eikelenboom.it
+I would like to be able to disable all MISC_DEVICES, but since that
+does not currently function, this change is OK with me.
 
 
-
-
-
-
-
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+> This applies against linux-next
+> 
+>  drivers/misc/Kconfig                |   17 +++--------------
+>  drivers/mmc/host/Kconfig            |    1 -
+>  drivers/net/ethernet/micrel/Kconfig |    1 -
+>  3 files changed, 3 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 6a1a092..c779509 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -2,24 +2,14 @@
+>  # Misc strange devices
+>  #
+>  
+> -# This one has to live outside of the MISC_DEVICES conditional,
+> -# because it may be selected by drivers/platform/x86/hp_accel.
+> +menu "Misc devices"
+> +
+>  config SENSORS_LIS3LV02D
+>  	tristate
+>  	depends on INPUT
+>  	select INPUT_POLLDEV
+>  	default n
+>  
+> -menuconfig MISC_DEVICES
+> -	bool "Misc devices"
+> -	---help---
+> -	  Say Y here to get to see options for device drivers from various
+> -	  different categories. This option alone does not add any kernel code.
+> -
+> -	  If you say N, all options in this submenu will be skipped and disabled.
+> -
+> -if MISC_DEVICES
+> -
+>  config AD525X_DPOT
+>  	tristate "Analog Devices Digital Potentiometers"
+>  	depends on (I2C || SPI) && SYSFS
+> @@ -516,5 +506,4 @@ source "drivers/misc/ti-st/Kconfig"
+>  source "drivers/misc/lis3lv02d/Kconfig"
+>  source "drivers/misc/carma/Kconfig"
+>  source "drivers/misc/altera-stapl/Kconfig"
+> -
+> -endif # MISC_DEVICES
+> +endmenu
+> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+> index cf444b0..00fcbed 100644
+> --- a/drivers/mmc/host/Kconfig
+> +++ b/drivers/mmc/host/Kconfig
+> @@ -477,7 +477,6 @@ config MMC_SDHI
+>  config MMC_CB710
+>  	tristate "ENE CB710 MMC/SD Interface support"
+>  	depends on PCI
+> -	select MISC_DEVICES
+>  	select CB710_CORE
+>  	help
+>  	  This option enables support for MMC/SD part of ENE CB710/720 Flash
+> diff --git a/drivers/net/ethernet/micrel/Kconfig b/drivers/net/ethernet/micrel/Kconfig
+> index 1ea811c..fe42fc0 100644
+> --- a/drivers/net/ethernet/micrel/Kconfig
+> +++ b/drivers/net/ethernet/micrel/Kconfig
+> @@ -42,7 +42,6 @@ config KS8851
+>  	select NET_CORE
+>  	select MII
+>  	select CRC32
+> -	select MISC_DEVICES
+>  	select EEPROM_93CX6
+>  	---help---
+>  	  SPI driver for Micrel KS8851 SPI attached network chip.
 
 
 -- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
