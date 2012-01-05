@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab2AEB4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 20:56:13 -0500
-Received: from mga03.intel.com ([143.182.124.21]:36444 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab2AEB4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 20:56:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="92514405"
-Date: Thu, 5 Jan 2012 09:56:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Yongqiang Yang <xiaoqiangnk@gmail.com>
-Cc: "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.2.0-rc5 NULL dereference BUG
-Message-ID: <20120105015609.GA7913@localhost>
-References: <20111218055359.GA17182@localhost>
- <20111218063054.GA4979@localhost>
- <CAGBYx2bxdnkXcZF+A1iOvnsW=xdtDJR7Fx3Rz-HWeWH5n0ByKg@mail.gmail.com>
- <20111218113237.GA1359@localhost>
+	id S1757626Ab2AEB4f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 20:56:35 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:57021 "EHLO
+	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553Ab2AEB4U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 20:56:20 -0500
+X-SpamScore: -13
+X-BigFish: VS-13(zz1dbaL1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 5 Jan 2012 09:56:10 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: <s.hauer@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: <patches@linaro.org>, <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>, <eric.miao@linaro.org>,
+        <kernel@pengutronix.de>, <dan.j.williams@intel.com>,
+        <shawn.guo@linaro.org>, Richard Zhao <richard.zhao@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 2/2] dma/imx-sdma: add wmb before enable a channel
+Message-ID: <20120105015609.GN2414@b20223-02.ap.freescale.net>
+References: <1325428692-11473-1-git-send-email-richard.zhao@linaro.org>
+ <1325428692-11473-3-git-send-email-richard.zhao@linaro.org>
+ <20120103174639.GF2914@n2100.arm.linux.org.uk>
+ <20120104023157.GJ2414@b20223-02.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20111218113237.GA1359@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120104023157.GJ2414@b20223-02.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 18, 2011 at 07:32:37PM +0800, Wu Fengguang wrote:
-> Yongqiang,
-> 
-> Thanks for the quick fix!
-> 
-> On Sun, Dec 18, 2011 at 03:17:18PM +0800, Yongqiang Yang wrote:
-> > Hi Fengguang,
+Hi Sascha,
+
+On Wed, Jan 04, 2012 at 10:31:58AM +0800, Richard Zhao wrote:
+> On Tue, Jan 03, 2012 at 05:46:39PM +0000, Russell King - ARM Linux wrote:
+> > On Sun, Jan 01, 2012 at 10:38:12PM +0800, Richard Zhao wrote:
+> > > dma_alloc_coherent memory may be bufferable. We need to add
+> > > nececcary memory barrier.
+> > > 
+> > > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+> > > ---
+> > >  drivers/dma/imx-sdma.c |    1 +
+> > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> > > index f8e87b5..9301bff 100644
+> > > --- a/drivers/dma/imx-sdma.c
+> > > +++ b/drivers/dma/imx-sdma.c
+> > > @@ -394,6 +394,7 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+> > >  
+> > >  static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
+> > >  {
+> > > +	wmb();
+> > >  	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
 > > 
-> > Could you try the patch [ext4: do not reference pa_inode from group_pa]?
+> > Use writel().  That's what it's there for:
+> > 
+> > #ifdef CONFIG_ARM_DMA_MEM_BUFFERABLE
+> > #define __iowmb()               wmb()
+> > #endif
+> > #define writel_relaxed(v,c)     ((void)__raw_writel((__force u32) \
+> >                                         cpu_to_le32(v),__mem_pci(c)))
+> > #define writel(v,c)             ({ __iowmb(); writel_relaxed(v,c); })
+> Why does writel always call wmb? ioremap memory needs mb too?
+> Isn't it supposed to be when there's prior touch of dma memory? 
+What do you think?
+
+Thanks
+Richard
 > 
-> It works! You can add my tested-by and CC stable.
+> Thanks
+> Richard
+> > 
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-The patch seems to only fix part of the problem. Today I get this slightly
-different dmesg (the kernel has been patched with [ext4: do not reference
-pa_inode from group_pa]):
-
-[  646.026574] BUG: unable to handle kernel NULL pointer dereference at 0000000000000178
-[  646.027004] IP: [<ffffffff810a5092>] __lock_acquire+0x8b/0x932
-[  646.027004] PGD 4f85067 PUD 99cb4067 PMD 0
-[  646.027004] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[  646.027004] CPU 6
-[  646.051405] Modules linked in:
-[  646.051405]
-[  646.051405] Pid: 6149, comm: dd Not tainted 3.2.0-rc5-ioless-full+ #1009 Supermicro X7DW3/X7DWN
-[  646.051405] RIP: 0010:[<ffffffff810a5092>]  [<ffffffff810a5092>] __lock_acquire+0x8b/0x932
-[  646.051405] RSP: 0018:ffff880004ee18d8  EFLAGS: 00010097
-[  646.051405] RAX: 0000000000000000 RBX: 0000000000000170 RCX: 0000000000000000
-[  646.051405] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000170
-[  646.051405] RBP: ffff880004ee1948 R08: 0000000000000000 R09: 0000000000000000
-[  646.051405] R10: 0000000000000170 R11: ffffffff81175de4 R12: 0000000000000000
-[  646.051405] R13: 0000000000000000 R14: ffff880004fc4540 R15: 0000000000000000
-[  646.051405] FS:  00007f193aa90700(0000) GS:ffff880226a00000(0000) knlGS:0000000000000000
-[  646.051405] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  646.051405] CR2: 0000000000000178 CR3: 00000000b17cb000 CR4: 00000000000006e0
-[  646.051405] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  646.051405] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  646.051405] Process dd (pid: 6149, threadinfo ffff880004ee0000, task ffff880004fc4540)
-[  646.051405] Stack:
-[  646.051405]  ffff880004ee18f8 ffffffff81099aa3 0000000000000006 0000000000000002
-[  646.051405]  0000000000000000 0000000000008010 ffff880225806b00 ffff88005fc08d68
-[  646.051405]  ffff880004ee1978 0000000000000000 0000000000000170 0000000000000000
-[  646.051405] Call Trace:
-[  646.051405]  [<ffffffff81099aa3>] ? sched_clock_local+0x12/0x75
-[  646.051405]  [<ffffffff810a5a16>] lock_acquire+0xdd/0x10a
-[  646.051405]  [<ffffffff81175de4>] ? create_empty_buffers+0x4a/0xc1
-[  646.051405]  [<ffffffff8199f623>] _raw_spin_lock+0x36/0x69
-[  646.051405]  [<ffffffff81175de4>] ? create_empty_buffers+0x4a/0xc1
-[  646.051405]  [<ffffffff81175de4>] create_empty_buffers+0x4a/0xc1
-[  646.051405]  [<ffffffff811efd2f>] ext4_discard_partial_page_buffers_no_lock+0x9f/0x406
-[  646.051405]  [<ffffffff8199ffeb>] ? _raw_spin_unlock+0x2b/0x2f
-[  646.051405]  [<ffffffff81170c26>] ? __mark_inode_dirty+0x1ac/0x1cc
-[  646.051405]  [<ffffffff811767f3>] ? generic_write_end+0x6d/0x7f
-[  646.051405]  [<ffffffff811f15e5>] ext4_da_write_end+0x244/0x2ed
-[  646.051405]  [<ffffffff810ffeec>] generic_file_buffered_write+0x183/0x22d
-[  646.051405]  [<ffffffff8107946a>] ? current_fs_time+0x27/0x2e
-[  646.051405]  [<ffffffff8110198c>] __generic_file_aio_write+0x334/0x364
-[  646.051405]  [<ffffffff8199e55c>] ? mutex_lock_nested+0x2e2/0x2f1
-[  646.051405]  [<ffffffff81101a06>] ? generic_file_aio_write+0x4a/0xc1
-[  646.051405]  [<ffffffff81101a22>] generic_file_aio_write+0x66/0xc1
-[  646.051405]  [<ffffffff811ea020>] ext4_file_write+0x1f9/0x251
-[  646.051405]  [<ffffffff8103c24b>] ? sched_clock+0x9/0xd
-[  646.051405]  [<ffffffff8118180e>] ? fsnotify+0x216/0x26f
-[  646.051405]  [<ffffffff8114d45e>] do_sync_write+0xce/0x10b
-[  646.051405]  [<ffffffff8118180e>] ? fsnotify+0x216/0x26f
-[  646.051405]  [<ffffffff8118166e>] ? fsnotify+0x76/0x26f
-[  646.051405]  [<ffffffff8114dc1b>] vfs_write+0xb8/0x157
-[  646.051405]  [<ffffffff8114ded2>] sys_write+0x4d/0x77
-[  646.051405]  [<ffffffff819a6c02>] system_call_fastpath+0x16/0x1b
-[  646.051405] Code: bd 08 00 00 be d5 0b 00 00 48 c7 c7 86 41 d3 81 83 3d 82 f2 9f 01 00 0f 85 a4 08 00 00 e9 bb 03 00 00 41 83 fc 01 77 13 44 89 e0 <4c> 8b 6c c3 08 4d 85 ed 0f 85 5b 03 00 00 eb 34 41 83 fc 07 76
-[  646.051405] RIP  [<ffffffff810a5092>] __lock_acquire+0x8b/0x932
-[  646.051405]  RSP <ffff880004ee18d8>
-[  646.051405] CR2: 0000000000000178
-[  646.051405] ---[ end trace ebd0c8e3a842a6f1 ]---
-
-The test case is about running 100 dd tasks on each of the 10 JBOD disks:
-
-        lkp-st02-x8664/JBOD-10HDD-thresh=100M/ext4-100dd-1-3.2.0-rc5-ioless-full+
-
-Thanks,
-Fengguang
