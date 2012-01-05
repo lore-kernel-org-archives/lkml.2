@@ -1,96 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932500Ab2AEO3l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 09:29:41 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:14433 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932418Ab2AEO3j convert rfc822-to-8bit (ORCPT
+	id S932504Ab2AEObO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 09:31:14 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:59731 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932076Ab2AEObM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 09:29:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 05 Jan 2012 06:29:38 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linaro-mm-sig-bounces@lists.linaro.org" 
-	<linaro-mm-sig-bounces@lists.linaro.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 5 Jan 2012 15:29:30 +0100
-Subject: Re: [PATCH v3 0/2] ARM: IOMMU: tegra: Add iommu_ops for GART/SMMU
- driver
-Thread-Topic: [PATCH v3 0/2] ARM: IOMMU: tegra: Add iommu_ops for GART/SMMU
- driver
-Thread-Index: AczLtnLqHr6ejlptTliYqShMSKHh0g==
-Message-ID: <20120105.162930.604365154868332443.hdoyu@nvidia.com>
-References: <1325747509-29665-1-git-send-email-hdoyu@nvidia.com><20120105091718.3fb378b2a1d390f9dd63c396@nvidia.com><20120105125326.GT11810@n2100.arm.linux.org.uk>
-In-Reply-To: <20120105125326.GT11810@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 5 Jan 2012 09:31:12 -0500
+Date: Thu, 5 Jan 2012 16:31:05 +0200
+From: Amit Kucheria <amit.kucheria@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        jeremy.kerr@canonical.com, paul@pwsan.com,
+        broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
+        linus.walleij@stericsson.com, dsaxena@linaro.org, patches@linaro.org,
+        linaro-dev@lists.linaro.org, grant.likely@secretlab.ca,
+        sboyd@quicinc.com, shawn.guo@freescale.com, skannan@quicinc.com,
+        magnus.damm@gmail.com, arnd.bergmann@linaro.org, eric.miao@linaro.org,
+        richard.zhao@linaro.org, mturquette@ti.com, andrew@lunn.ch
+Subject: Re: [PATCH v4 2/6] Documentation: common clk API
+Message-ID: <20120105143105.GA2865@matterhorn1>
+Mail-Followup-To: Mike Turquette <mturquette@linaro.org>,
+	linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+	linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+	jeremy.kerr@canonical.com, paul@pwsan.com,
+	broonie@opensource.wolfsonmicro.com, tglx@linutronix.de,
+	linus.walleij@stericsson.com, dsaxena@linaro.org,
+	patches@linaro.org, linaro-dev@lists.linaro.org,
+	grant.likely@secretlab.ca, sboyd@quicinc.com,
+	shawn.guo@freescale.com, skannan@quicinc.com, magnus.damm@gmail.com,
+	arnd.bergmann@linaro.org, eric.miao@linaro.org,
+	richard.zhao@linaro.org, mturquette@ti.com, andrew@lunn.ch
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
+ <1323834838-2206-3-git-send-email-mturquette@linaro.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1323834838-2206-3-git-send-email-mturquette@linaro.org>
+X-URL: http://www.verdurent.com/
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Tiny, tiny typo...
 
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 0/2] ARM: IOMMU: tegra: Add iommu_ops for GART/SMMU driver
-Date: Thu, 5 Jan 2012 13:53:26 +0100
-Message-ID: <20120105125326.GT11810@n2100.arm.linux.org.uk>
+On 11 Dec 13, Mike Turquette wrote:
 
-> On Thu, Jan 05, 2012 at 09:17:18AM +0200, Hiroshi Doyu wrote:
-> > Just for DMA mapping test from MPU side, the following one is used.
->
-> This patch is buggy.
->
-> > +static void dmaapi_test_map_page(struct device *dev)
-> > +{
-> > +	struct page *page;
-> > +	dma_addr_t dma_addr;
-> > +	void *cpu_addr;
-> > +
-> > +	page = alloc_page(GFP_KERNEL);
-> > +	BUG_ON(!page);
-> > +
-> > +	dma_addr = dma_map_page(dev, page, 0, PAGE_SIZE, DMA_TO_DEVICE);
-> > +	BUG_ON(!dma_addr);
-> > +
-> > +	cpu_addr = kmap(page);
-> > +	BUG_ON(!cpu_addr);
-> > +	memset(cpu_addr, 0xa5, PAGE_SIZE);
-> > +	kunmap(cpu_addr);
->
-> The DMA API works like this:
->
-> - The CPU owns the page or buffer and can access it.
-> - You map the page or buffer.
-> - The device owns the page or buffer; the CPU must explicitly access it.
-> - You unmap the page or buffer.
-> - The CPU again owns the page/buffer and can access it.
->
-> Please respect the DMA API rules.
+> +clk_set_rate deserves a special mention because it is more complex than
+> +the other operations.  There are three key concepts to the common
+> +clk_set_rate implementation:
+> +
+> +1) recursively traversing up the clk tree and changing clk rates, one
+> +parent at a time, if each clk allows it
+> +2) failing to change rate if the clk is enabled and must only change
+> +rates while disabled
+> +3) using clk rate change notifiers to allow devices to handle dynamic
+> +rate changes for clks which do support changing rates while enabled
+> +
+> +For the simple, non-recursive case the call graph looks like:
+> +
+> +clk_set_rate(clk, rate);
+> +	__clk_set_rate(clk, rate);
+> +		clk->round_rate(clk, rate *parent_rate);
+                                      ^^^^^^^^
 
-Right, I do.
+need a comma here? The next sentence kept me busy for 5 mins.
 
-> So.  Once dma_map_page() has returned, you must not kmap() or otherwise
-> access the data contained in that page until after you have unmapped it.
-
-Ok, the above function order should be as below?
-
-  page = alloc_page(GFP_KERNEL);
-      cpu_addr = kmap(page);
-      memset(cpu_addr, 0xa5, PAGE_SIZE);
-  	dma_addr = dma_map_page(dev, page, 0, PAGE_SIZE, DMA_TO_DEVICE);
-  	    < expect GPU does something >
-  	dma_unmap_page(dev, dma_addr, PAGE_SIZE, DMA_TO_DEVICE);
-      < CPU can access data here again>
-      kunmap(cpu_addr);
-  __free_page(page);
+> +		clk->set_rate(clk, rate);
+> +
+> +You might be wondering what that third paramater in .round_rate is.  If
+> +a clk supports the CLK_PARENT_SET_RATE flag then that enables it's
+> +hardware-specific .round_rate function to provide a new rate that the
+> +parent should transition to.  For example, imagine a rate-adjustable clk
+> +A that is the parent of clk B, which has a fixed divider of 2.
