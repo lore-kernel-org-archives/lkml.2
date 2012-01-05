@@ -1,62 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932840Ab2AEU6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:58:39 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35239 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932656Ab2AEU6i (ORCPT
+	id S932857Ab2AEU7B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:59:01 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:27938 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932656Ab2AEU67 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:58:38 -0500
-Date: Thu, 5 Jan 2012 14:58:31 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-        Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Lin, Ming M" <ming.m.lin@intel.com>
-Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
- hotkey problems
-Message-ID: <20120105205831.GH25386@ubuntu-macmini>
-Mail-Followup-To: "Moore, Robert" <robert.moore@intel.com>,
-	Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
-	Azael Avalos <coproscefalo@gmail.com>,
-	Thomas Renninger <trenn@suse.de>,
-	"platform-driver-x86@vger.kernel.org" <platform-driver-x86@vger.kernel.org>,
-	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"Lin, Ming M" <ming.m.lin@intel.com>
-References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
- <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
- <20120105182627.GE24242@srcf.ucam.org>
- <20120105193228.GB25386@ubuntu-macmini>
- <94F2FBAB4432B54E8AACC7DFDE6C92E3256C799D@ORSMSX101.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E3256C799D@ORSMSX101.amr.corp.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Jan 2012 15:58:59 -0500
+X-IronPort-AV: E=Sophos;i="4.71,464,1320652800"; 
+   d="scan'208";a="613813606"
+Message-ID: <1325797111.11084.22.camel@lade.trondhjem.org>
+Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
+ context
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Thu, 05 Jan 2012 15:58:31 -0500
+In-Reply-To: <1325285705.10984.4.camel@lade.trondhjem.org>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+	 <1325285705.10984.4.camel@lade.trondhjem.org>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 05 Jan 2012 20:58:56.0442 (UTC) FILETIME=[D6DCD9A0:01CCCBEC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 08:46:43PM +0000, Moore, Robert wrote:
-> > My only guess is that Windows is more permissive about this sort of
-> > thing than ACPICA is, but by my reading of the spec throwing a fatal
-> > error is what's supposed to happen.
+On Fri, 2011-12-30 at 17:55 -0500, Trond Myklebust wrote: 
+> On Tue, 2011-11-29 at 13:10 +0300, Stanislav Kinsbursky wrote: 
+> > This patch set was created in context of clone of git
+> > branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+> > tag: v3.1
+> > 
+> > This patch set depends on previous patch sets titled:
+> > 1) "SUNRPC: initial part of making pipefs work in net ns"
+> > 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+> > 3) "SUNRPC: make RPC clients use network-namespace-aware PipeFS routines"
+> > 4) "NFS: create clients and IDMAP pipes per network namespace"
+> > 
+> > This patch set is the final part of making SUNRPC PipeFS and it's users work in
+> > network namespace context.
+> > 
+> > The following series consists of:
+> > 
+> > ---
+> > 
+> > Stanislav Kinsbursky (5):
+> >       NFS: handle blocklayout pipe PipeFS dentry by network namespace aware routines
+> >       NFS: blocklayout pipe creation per network namespace context introduced
+> >       NFS: blocklayout PipeFS notifier introduced
+> >       NFS: remove RPC PipeFS mount point reference from blocklayout routines
+> >       SUNRPC: kernel PipeFS mount point creation routines removed
+> > 
+> > 
+> >  fs/nfs/blocklayout/blocklayout.c    |  154 ++++++++++++++++++++++++++++-------
+> >  fs/nfs/blocklayout/blocklayout.h    |    3 -
+> >  fs/nfs/blocklayout/blocklayoutdev.c |    5 +
+> >  fs/nfs/blocklayout/blocklayoutdm.c  |    7 +-
+> >  fs/nfs/inode.c                      |    1 
+> >  fs/nfs/netns.h                      |    1 
+> >  include/linux/sunrpc/rpc_pipe_fs.h  |    2 
+> >  net/sunrpc/rpc_pipe.c               |   21 -----
+> >  8 files changed, 137 insertions(+), 57 deletions(-)
 > 
-> If it is true that Windows will execute this code without error, then ACPICA should be changed to match the Windows behavior. ACPICA is now a "Windows compatible" implementation of ACPI, but that of course means we are attempting to be compatible with a black box ACPI implementation. On the other hand, it may be the case that Windows never executes this code, so the error is not seen on Windows.
 > 
-> We would like to investigate this further. Please send or point me to the acpidump for this machine.
+> These patches need rebasing in order to apply on top of 3.2-rc7...
 
-I posted the ACPI tables at the following link. Let me know if there's
-anything I can do to help.
+OK. Further testing seems to indicate that we're going to have to
+postpone merging these patches until the 3.4 merge window.
 
-http://people.canonical.com/~sforshee/toshiba-acpi/nb505-acpi-tables.txt
+The problems are twofold:
 
-Thanks,
-Seth
+As the patches stand now in the linux-next tree, they can (and
+occasionally do) Oops on unmount. The reason was that I rejected the
+PipeFS notifier patch for the idmapper (due to the reported problem of
+nfs_idmap_init/nfs_idmap_quit being undefined when CONFIG_NFS_V4 is
+undefined), and the fact that it is missing causes the unmount at the
+end of our tests to hit the BUG() in fs/dcache.c:905. This suggests that
+we will have the same problem with the pNFS block layout driver, since I
+still haven't received a rebased update of the 5 'create blocklayout
+pipe per network namesapce context' patches.
+
+The second problem that was highlighted was the fact that as they stand
+today, these patchsets do not allow for bisection. When we hit the Oops,
+I had Bryan try to bisect where the problem arose. He ended up pointing
+at the patch "SUNRPC: handle RPC client pipefs dentries by network
+namespace aware routine", which is indeed the cause, but which is one of
+the _dependencies_ for all the PipeFS notifier patches that fix the
+problem.
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
