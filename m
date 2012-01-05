@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab2AEPCF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 10:02:05 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48907 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754000Ab2AEPCD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 10:02:03 -0500
-Date: Thu, 5 Jan 2012 15:01:40 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: hamo.by@gmail.com
-Cc: will.deacon@arm.com, marc.zyngier@arm.com, sboyd@codeaurora.org,
-        akpm@linux-foundation.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] arm: Define cpu_logical_map when CONFIG_SMP is not
-	set
-Message-ID: <20120105150140.GX11810@n2100.arm.linux.org.uk>
-References: <1325767486-6392-1-git-send-email-hamo.by@gmail.com>
+	id S1755284Ab2AEPF6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 10:05:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44401 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754361Ab2AEPF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 10:05:57 -0500
+Message-ID: <4F05BC1F.7070009@redhat.com>
+Date: Thu, 05 Jan 2012 10:05:03 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325767486-6392-1-git-send-email-hamo.by@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Pekka Enberg <penberg@kernel.org>
+CC: leonid.moiseichuk@nokia.com, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org, cesarb@cesarb.net,
+        emunson@mgebm.net, aarcange@redhat.com, mel@csn.ul.ie,
+        rientjes@google.com, dima@android.com, gregkh@suse.de,
+        rebecca@android.com, san@google.com, akpm@linux-foundation.org,
+        vesa.jaaskelainen@nokia.com
+Subject: Re: [PATCH 3.2.0-rc1 2/3] MM hook for page allocation and release
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <e78b4ac9d3d51ac16180114c08733e4bf62ec65e.1325696593.git.leonid.moiseichuk@nokia.com> <20120105155950.9e49651b.kamezawa.hiroyu@jp.fujitsu.com> <84FF21A720B0874AA94B46D76DB9826904554270@008-AM1MPN1-003.mgdnok.nokia.com> <CAOJsxLF706VeThxqWostJr84N_8q8UXoQzxGmMXj8mpgTLCagg@mail.gmail.com>
+In-Reply-To: <CAOJsxLF706VeThxqWostJr84N_8q8UXoQzxGmMXj8mpgTLCagg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 08:44:46PM +0800, hamo.by@gmail.com wrote:
-> From: Yang Bai <hamo.by@gmail.com>
-> 
-> If CONFIG_SMP is not set, define cpu_logical_map(cpu) as
-> (cpu), this fixes the problem described in this mail:
-> https://lkml.org/lkml/2012/1/2/142
+On 01/05/2012 07:49 AM, Pekka Enberg wrote:
+> On Thu, Jan 5, 2012 at 1:26 PM,<leonid.moiseichuk@nokia.com>  wrote:
+>> I agree that hooking alloc_pages is ugly way. So alternatives I see:
+>>
+>> - shrinkers (as e.g. Android OOM used) but shrink_slab called only from
+>> try_to_free_pages only if we are on slow reclaim path on memory allocation,
+>> so it cannot be used for e.g. 75% memory tracking or when pages released to
+>> notify user space that we are OK. But according to easy to use it will be the
+>> best approach.
 
-This doesn't solve the reported problem.  asm/smp.h should not be included
-by any .c file, and won't be included by linux/smp.h if CONFIG_SMP is not
-set.
+Well, there is always the page cache.
+
+If, at reclaim time, the amount of page cache + free memory
+is below the free threshold, we should still have space left
+to handle userspace things.
+
+It may be possible to hijack memcg accounting to get lower
+usage thresholds for earlier notification.  That way the code
+can stay out of the true fast paths like alloc_pages.
+
+-- 
+All rights reversed
