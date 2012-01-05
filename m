@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964885Ab2AEWv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:51:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52082 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932570Ab2AEWv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:51:56 -0500
-Message-ID: <1325803909.17118.17.camel@localhost>
-Subject: Re: linux-next: manual merge of the selinux tree with the net-next
- tree
-From: Eric Paris <eparis@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Moore <pmoore@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Date: Thu, 05 Jan 2012 17:51:49 -0500
-In-Reply-To: <20120106091550.534131cb1fe6e3dee323699c@canb.auug.org.au>
-References: <20120105151255.f72ad113a93493bb55844034@canb.auug.org.au>
-	 <27624574.j8RvKjachg@sifl>
-	 <20120106091550.534131cb1fe6e3dee323699c@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932977Ab2AEXBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 18:01:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50554 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932617Ab2AEXBP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 18:01:15 -0500
+Date: Thu, 5 Jan 2012 15:01:10 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Rik van Riel <riel@redhat.com>, Greg KH <gregkh@suse.de>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, cesarb@cesarb.net,
+        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, aarcange@redhat.com,
+        mel@csn.ul.ie, dima@android.com, rebecca@android.com, san@google.com,
+        akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com,
+        Minchan Kim <minchan@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Subject: Re: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and related
+ changes in MM
+In-Reply-To: <CAOJsxLH8s5cjUSdpBpLNDvtNaJjnhBwNKOMXZPzUD=XDivr7Rg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1201051458560.10521@chino.kir.corp.google.com>
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <20120104195612.GB19181@suse.de> <4F04B3F0.6080103@redhat.com> <CAOJsxLH8s5cjUSdpBpLNDvtNaJjnhBwNKOMXZPzUD=XDivr7Rg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 09:15 +1100, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> On Thu, 05 Jan 2012 16:25:53 -0500 Paul Moore <pmoore@redhat.com> wrote:
-> >
-> > On Thursday, January 05, 2012 03:12:55 PM Stephen Rothwell wrote:
-> > > 
-> > > Today's linux-next merge of the selinux tree got a conflict in
-> > > net/bluetooth/l2cap_sock.c between commit 15770b1ab974 ("Bluetooth:
-> > > convert force_active variable to flag in l2cap chan") from the net-next
-> > > tree and commit 53860f3d0499 ("bluetooth: Properly clone LSM attributes
-> > > to newly created child connections") from the selinux tree.
-> > > 
-> > > These both remove the same line, but there is probably something more
-> > > subtle going on ...  I just used the version from the net-next tree.
-> > 
-> > Something is a bit odd.  When I look in the current linux-next tree I see two 
-> > commits which fix a Bluetooth/LSM bug; the first is correct, the second one 
-> > appears to be some other commit which just hijacked the description from the 
-> > first ... I have no idea what is going on in the second commit; I'll leave 
-> > that to you git gurus :)
-> > 
-> >  * Correct commit -> 6230c9b4f8957c8938ee4cf2d03166d3c2dc89de
-> 
-> That is a commit in Linus' tree before v3.1
-> 
-> >  * Garbage commit -> 53860f3d0499992855d58e33f0f79bfe642dfccb
-> 
-> That is the commit in the selinux tree.  This should be unnecessary as
-> the selinux tree is based on v3.1 (and I basically ignored it in the
-> merge resolution).
+On Wed, 4 Jan 2012, Pekka Enberg wrote:
 
-Thanks paul...  This must be a result of me rebasing my tree onto 3.1.
-No way I should have left this garbage.  It doesn't make sense.  I think
-I'll rewrite history for tomorrow since noone is going to notice or
-care...
+> And even if people want to support multiple ABIs and fight it out to
+> see which one wins, we should factor out the generic parts and put
+> them under mm/*.c and not hide them in random modules.
+> 
 
--Eric
-
+Agreed.  This came up recently when another lowmem killer was proposed and 
+the suggestion was to enable the memory controller to be able to have the 
+memory threshold notifications with eventfd(2) and cgroup.event_control.  
+It would be very nice to have a generic lowmem notifier (like 
+/dev/mem_notify that has been reworked several times in the past) rather 
+than tying it to a particular cgroup, especially when that cgroup incurs a 
+substantial overhead for embedded users.
