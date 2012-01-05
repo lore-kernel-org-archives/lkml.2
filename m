@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757793Ab2AERMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 12:12:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36480 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755188Ab2AERMA (ORCPT
+	id S1758155Ab2AERNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 12:13:43 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:60970 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757285Ab2AERNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 12:12:00 -0500
-Date: Thu, 5 Jan 2012 09:11:57 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: Revoking filesystems [was Re: Sysfs attributes racing with
- unregistration]
-Message-ID: <20120105171157.GA18486@google.com>
-References: <m1ehvecf23.fsf@fess.ebiederm.org>
- <Pine.LNX.4.44L0.1201051133490.1434-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201051133490.1434-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 5 Jan 2012 12:13:41 -0500
+Date: Thu, 05 Jan 2012 12:12:25 -0500 (EST)
+Message-Id: <20120105.121225.66084189564874875.davem@davemloft.net>
+To: gurligebis@gentoo.org
+Cc: romieu@fr.zoreil.com, shemminger@vyatta.com, bhutchings@solarflare.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org, rl@hellgate.ch
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on
+ low-end broads.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CACPM=kWL+Z6PH268qg=i0Nafrouq4O25+uFf8WLcE08azqpqpA@mail.gmail.com>
+References: <20120103223243.GB8563@electric-eye.fr.zoreil.com>
+	<CACPM=kUhBydaVDQaxs7BaB_ZkFRa2p6cVme-77Gbsk+QDk=MFA@mail.gmail.com>
+	<CACPM=kWL+Z6PH268qg=i0Nafrouq4O25+uFf8WLcE08azqpqpA@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 05 Jan 2012 09:12:28 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Date: Thu, 5 Jan 2012 13:01:41 +0100
 
-On Thu, Jan 05, 2012 at 11:47:54AM -0500, Alan Stern wrote:
-> One problem (which was reported by a user last spring) is that
-> del_gendisk() calls device_del() for the disk and bdi_unregister() for
-> the disk's backing_dev_info structure.  Now, del_gendisk will leave the
-> data structure in memory until the disk's refcount drops to 0, but
-> bdi_unregister ignores refcounts and simply erases the bdi->dev
-> pointer.  Once this happens, any attempt to call mark_buffer_dirty()
-> (for example, by ext4_commit_super) will cause an oops.
+> Sorry for repeating myself David, but would it be possible to get this
+> into net-next for 3.4 inclusion?
 
-Yeah, there were multiple bugs in block device hot-removal path.  I
-got some of them fixed recently but didn't get to the bdi one yet.
-It's a bug and needs to be fixed regardless of fs revoke support.
-
-Thanks.
-
--- 
-tejun
+Francois will formally submit it to me when he feels it is
+appropriate, please be patient.
