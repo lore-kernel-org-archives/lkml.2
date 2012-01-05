@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757626Ab2AEB4f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 20:56:35 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:57021 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751553Ab2AEB4U (ORCPT
+	id S1757573Ab2AECBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 21:01:24 -0500
+Received: from e31.co.us.ibm.com ([32.97.110.149]:57857 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab2AECBV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 20:56:20 -0500
-X-SpamScore: -13
-X-BigFish: VS-13(zz1dbaL1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Thu, 5 Jan 2012 09:56:10 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: <s.hauer@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <patches@linaro.org>, <vinod.koul@intel.com>,
-        <linux-kernel@vger.kernel.org>, <eric.miao@linaro.org>,
-        <kernel@pengutronix.de>, <dan.j.williams@intel.com>,
-        <shawn.guo@linaro.org>, Richard Zhao <richard.zhao@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2 2/2] dma/imx-sdma: add wmb before enable a channel
-Message-ID: <20120105015609.GN2414@b20223-02.ap.freescale.net>
-References: <1325428692-11473-1-git-send-email-richard.zhao@linaro.org>
- <1325428692-11473-3-git-send-email-richard.zhao@linaro.org>
- <20120103174639.GF2914@n2100.arm.linux.org.uk>
- <20120104023157.GJ2414@b20223-02.ap.freescale.net>
+	Wed, 4 Jan 2012 21:01:21 -0500
+Date: Wed, 4 Jan 2012 18:01:08 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: Improve detection of illegal synchronize_rcu() call
+ from RCU read side
+Message-ID: <20120105020108.GQ2448@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1324901803.31721.4.camel@lappy>
+ <20111226163148.GC2435@linux.vnet.ibm.com>
+ <20111226163734.GF28309@somewhere.redhat.com>
+ <20111226195656.GD2435@linux.vnet.ibm.com>
+ <20120104190336.GC1143@somewhere>
+ <20120104213035.GF2448@linux.vnet.ibm.com>
+ <20120105014518.GD1143@somewhere>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120104023157.GJ2414@b20223-02.ap.freescale.net>
+In-Reply-To: <20120105014518.GD1143@somewhere>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+x-cbid: 12010502-7282-0000-0000-000005639E7F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
-
-On Wed, Jan 04, 2012 at 10:31:58AM +0800, Richard Zhao wrote:
-> On Tue, Jan 03, 2012 at 05:46:39PM +0000, Russell King - ARM Linux wrote:
-> > On Sun, Jan 01, 2012 at 10:38:12PM +0800, Richard Zhao wrote:
-> > > dma_alloc_coherent memory may be bufferable. We need to add
-> > > nececcary memory barrier.
+On Thu, Jan 05, 2012 at 02:45:20AM +0100, Frederic Weisbecker wrote:
+> On Wed, Jan 04, 2012 at 01:30:35PM -0800, Paul E. McKenney wrote:
+> > On Wed, Jan 04, 2012 at 08:03:39PM +0100, Frederic Weisbecker wrote:
+> > > Actually for the case of RCU, the wait_for_completion() called by synchronize_rcu()
+> > > has a might_sleep() call that triggers a warning in this case.
 > > > 
-> > > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-> > > ---
-> > >  drivers/dma/imx-sdma.c |    1 +
-> > >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> > > index f8e87b5..9301bff 100644
-> > > --- a/drivers/dma/imx-sdma.c
-> > > +++ b/drivers/dma/imx-sdma.c
-> > > @@ -394,6 +394,7 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
-> > >  
-> > >  static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
-> > >  {
-> > > +	wmb();
-> > >  	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
+> > > But in the case of SMP with 1 online CPU, the rcu_blocking_is_gp()
+> > > checks returns right away on rcutree. So probably we need this?
 > > 
-> > Use writel().  That's what it's there for:
+> > I modified this to push the might_sleep() down into the
+> > rcu_blocking_is_gp() function, queued the result, and retained your
+> > Signed-off-by.  (Please let me know if there is any problem with this.)
 > > 
-> > #ifdef CONFIG_ARM_DMA_MEM_BUFFERABLE
-> > #define __iowmb()               wmb()
-> > #endif
-> > #define writel_relaxed(v,c)     ((void)__raw_writel((__force u32) \
-> >                                         cpu_to_le32(v),__mem_pci(c)))
-> > #define writel(v,c)             ({ __iowmb(); writel_relaxed(v,c); })
-> Why does writel always call wmb? ioremap memory needs mb too?
-> Isn't it supposed to be when there's prior touch of dma memory? 
-What do you think?
+> > This does work for TREE_PREEMPT_RCU and for synchronize_rcu_bh() in
+> > TREE_RCU, but not for synchronize_sched() in TREE_RCU.  This is because
+> > rcu_read_lock() and rcu_read_unlock() are no-ops in the TREE_RCU case.
+> 
+> Not sure about that. This calls preempt_disable() which, in any case with
+> CONFIG_DEBUG_ATOMIC_SLEEP, handles the preempt count. And that even if
+> !CONFIG_PREEMPT.
 
-Thanks
-Richard
-> 
-> Thanks
-> Richard
+Ah, of course!  I keep forgetting that CONFIG_DEBUG_ATOMIC_SLEEP selects
+CONFIG_PREEMPT_COUNT.
+
+> > So I queued up a separate patch using rcu_lockdep_assert() to check for
+> > illegal RCU grace period within the same-type RCU read-side critical
+> > section, including for SRCU.  This is also a partial solution, as it
+> > does not handle things like this:
 > > 
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > 	void foo(void)
+> > 	{
+> > 		mutex_lock(&my_mutex);
+> > 		. . .
+> > 		synchronize_srcu(&my_srcu);
+> > 		. . .
+> > 		mutex_unlock(&my_mutex);
+> > 	}
 > > 
+> > 	void bar(void)
+> > 	{
+> > 		int idx;
+> > 
+> > 		idx = rcu_read_lock(&m_srcu);
+> > 		. . .
+> > 		mutex_lock(&my_mutex);
+> > 		. . .
+> > 		mutex_unlock(&my_mutex);
+> > 		. . .
+> > 		srcu_read_unlock(&m_srcu, idx);
+> > 	}
+> > 
+> > This can be extended into a chain of locks and a chain of SRCU instances.
+> > For an example of the latter, consider an SRCU-A read-side critical
+> > section containing an SRCU-B grace period, an SRCU-B read-side critical
+> > section containing an SRCU-C grace period, and so on, with the SRCU-Z
+> > read-side critical section containing an RCU-A grace period.
 > 
+> Heh! Indeed...
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > But it
+> > is OK to hold a mutex across one SRCU read-side critical section while
+> > acquiring that same mutex within another same-flavor SRCU read-side
+> > critical section.  So the analogy with reader-writer locking only goes
+> > so far.
+> > 
+> > At the moment, a full solution seems to require some surgery on lockdep
+> > itself, but perhaps there is a better way.
 > 
+> Ok.
+> 
+> > 
+> > > rcutiny seems to be fine with the cond_resched() call, but srcu needs
+> > > a special treatment.
+> > 
+> > For the moment, I just applied rcu_lockdep_assert() everywhere -- zero
+> > cost on non-lockdep kernels, and fully handles all of the RCU simple
+> > self-deadlock cases.
+> 
+> So, for RCU I'm not sure this is useful given the might_sleep() things.
+> But for srcu it is.
+
+One nice thing about the lockdep approach is that it tracks where the
+conflicting RCU read-side critical section started.  But I am planning
+for these to be 3.4 material, so we do have some time to refine them.
+
+							Thanx, Paul
 
