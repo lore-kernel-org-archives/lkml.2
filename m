@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab2AETnp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:43:45 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34962 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab2AETnn (ORCPT
+	id S932556Ab2AEToW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:44:22 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52507 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235Ab2AEToU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:43:43 -0500
-Date: Thu, 5 Jan 2012 13:43:38 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] toshiba_acpi: Support alternate hotkey interfaces
-Message-ID: <20120105194338.GD25386@ubuntu-macmini>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-	Thomas Renninger <trenn@suse.de>,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
- <1325617358-8286-3-git-send-email-seth.forshee@canonical.com>
- <20120105182522.GD24242@srcf.ucam.org>
+	Thu, 5 Jan 2012 14:44:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105182522.GD24242@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120105141913.GA3937@tiehlicka.suse.cz>
+References: <20111227105340.GD5344@tiehlicka.suse.cz>
+	<20120103103457.GA3391@redhat.com>
+	<20120103130306.GA3891@tiehlicka.suse.cz>
+	<20120105110744.GA2222@redhat.com>
+	<20120105141913.GA3937@tiehlicka.suse.cz>
+Date: Thu, 5 Jan 2012 11:44:17 -0800
+X-Google-Sender-Auth: 15jPAPttnS22uzE4B95-nCzLV-c
+Message-ID: <CAE9FiQVi_TN29mUtvHG6ZqWRCkyE6H5eG5z350uXrub=zUmYgA@mail.gmail.com>
+Subject: Re: iwl3945 didn't survive after s2ram failure
+From: Yinghai Lu <yinghai@kernel.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org,
+        Stanislaw Gruszka <sgruszka@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 06:25:22PM +0000, Matthew Garrett wrote:
-> On Tue, Jan 03, 2012 at 01:02:36PM -0600, Seth Forshee wrote:
-> > There are two types of problems that prevent hotkeys from working
-> > on many of the machines supported by toshiba_acpi. The first of
-> > these is the lack of a functioning SCI for hotkey events. For these
-> > machines it is possible to filter the Fn keypresses from the
-> > keyboard and generate a notification by executing the ACPI NTFY
-> > method.
-> > 
-> > The second problem is a lack of support for HCI_SYSTEM_EVENT, which
-> > is used for reading the hotkey scancodes. On these machines the
-> > scancodes can be read by executing the ACPI NTFY method.
-> > 
-> > This patch fixes both problems by installing an i8042 filter when
-> > the NTFY method is present to generate notifications and by
-> > detecting which of INFO or HCI_SYSTEM_EVENT is supported for
-> > reading scancodes. If neither method of reading scancodes is
-> > supported, the hotkey input device is not registered.
-> > 
-> > Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
-> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-> 
-> It's still an awful way to implement things, but it doesn't seem like 
-> there's any alternative, so sure.
+On Thu, Jan 5, 2012 at 6:19 AM, Michal Hocko <mhocko@suse.cz> wrote:
 
-I agree. If there's an alternative I couldn't find it, and not for a
-lack of trying.
+>
+> Looking in the history it seems that 497f16f2 [pci: Fix hotplug of
+> Express Module with pci bridges] might be related. It fixes an issue
+> introduced by bbef98ab [PCI: defer enablement of SRIOV BARS] which is a
+> part of my 3.2.0-rc6-00005-ga36bfdd problematic version. But I do not
+> understand details of the patch so I cannot tell that for 100%.
+> Yinghai Lu, is it possible that I the problem I have seen is somehow
+> related? For reference the thread started at
+> https://lkml.org/lkml/2011/12/27/65
 
-> > +		error = i8042_install_filter(toshiba_acpi_i8042_filter);
-> 
-> If this is only needed for TOS1900 machines then I think I'd prefer to 
-> see it only done on them. Just add a flag to the data field of the IDs 
-> and check that.
+you have one bridge that BIOS does not assign resource to it.
+so kernel will allocate resource to it.
 
-I checked all the Toshiba DSDTs I have, and every machine with NTFY is a
-TOS1900 machine, but only a subset of the TOS1900 machines have NTFY. So
-I think we need to still limit it to only machines with NTFY. I can add
-an additional check for TOS1900 if that's what you want.
+[    0.331694] pci 0000:00:1c.2: BAR 8: assigned [mem 0x80100000-0x803fffff]
+[    0.331825] pci 0000:00:1c.2: BAR 9: assigned [mem
+0x80400000-0x805fffff 64bit pref]
+[    0.332041] pci 0000:00:1c.2: BAR 7: assigned [io  0x4000-0x4fff]
+[    0.334271] pci 0000:05:00.0: BAR 0: assigned [mem 0x80100000-0x80100fff]
+[    0.334455] pci 0000:05:00.0: BAR 0: set to [mem
+0x80100000-0x80100fff] (PCI address [0x80100000-0x80100fff])
+[    0.334666] pci 0000:00:1c.2: PCI bridge to [bus 05-05]
+[    0.334794] pci 0000:00:1c.2:   bridge window [io  0x4000-0x4fff]
+[    0.334926] pci 0000:00:1c.2:   bridge window [mem 0x80100000-0x803fffff]
+[    0.335058] pci 0000:00:1c.2:   bridge window [mem
+0x80400000-0x805fffff 64bit pref]
 
+yes, the commit fix the problem.
+
+in the commit log i already said:
+
+|    That should fix regression like BIOS does not assign correct resource to
+|    bridge.
+
+
+Thanks
+
+Yinghai Lu
