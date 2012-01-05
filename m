@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab2AEJTR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 04:19:17 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55755 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754048Ab2AEJTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 04:19:11 -0500
-Date: Thu, 5 Jan 2012 10:17:04 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
-Message-ID: <20120105091704.GB3249@elte.hu>
-References: <20120104201800.GA2587@www.outflux.net>
+	id S1754842Ab2AEJTf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 04:19:35 -0500
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:23782
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754202Ab2AEJTP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 04:19:15 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Thu, 5 Jan 2012 17:19:05 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Richard Zhao <richard.zhao@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        <patches@linaro.org>, <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>, <eric.miao@linaro.org>,
+        <kernel@pengutronix.de>, <dan.j.williams@intel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 2/2] dma/imx-sdma: use writel to write register when
+ enable a channel
+Message-ID: <20120105091904.GO2414@b20223-02.ap.freescale.net>
+References: <1325750362-22598-1-git-send-email-richard.zhao@linaro.org>
+ <1325750362-22598-3-git-send-email-richard.zhao@linaro.org>
+ <20120105092316.GB1729@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120104201800.GA2587@www.outflux.net>
+In-Reply-To: <20120105092316.GB1729@S2101-09.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Shawn,
 
-* Kees Cook <keescook@chromium.org> wrote:
+On Thu, Jan 05, 2012 at 05:23:17PM +0800, Shawn Guo wrote:
+> On Thu, Jan 05, 2012 at 03:59:22PM +0800, Richard Zhao wrote:
+> > dma_alloc_coherent memory may be bufferable when set
+> > CONFIG_ARM_DMA_MEM_BUFFERABLE. We need to add nececcary
+> > memory barrier. writel implicitly call wmb in such case.
+> > 
+> > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+> > ---
+> >  drivers/dma/imx-sdma.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> > index c2bc4f1..e987468 100644
+> > --- a/drivers/dma/imx-sdma.c
+> > +++ b/drivers/dma/imx-sdma.c
+> > @@ -396,7 +396,7 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+> >  
+> >  static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
+> >  {
+> > -	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
+> > +	writel(1 << channel, sdma->regs + SDMA_H_START);
+> >  }
+> >  
+> 
+> As educated by Arnd, generally it's safer to use pair of readl/writel
+> than __raw_readl/__raw_writel in driver.  I'm wondering if it's a good
+> opportunity for us to change the pair all over this driver.
+Russel mentioned that too. But I cannot understand.
+If CONFIG_ARM_DMA_MEM_BUFFERABLE, readl/writel always call rmb/wmb. Do
+we realy need it? It might affect performance.
 
-> @@ -1495,6 +1496,15 @@ static struct ctl_table fs_table[] = {
->  #endif
->  #endif
->  	{
-> +		.procname	= "protected_sticky_symlinks",
-> +		.data		= &protected_sticky_symlinks,
-> +		.maxlen		= sizeof(int),
-> +		.mode		= 0644,
-> +		.proc_handler	= proc_dointvec_minmax,
-> +		.extra1		= &zero,
-> +		.extra2		= &one,
-> +	},
+Du to the concern, I didn't convert all the readl/writel.
 
-Small detail:
+Thanks
+Richard
+> 
+> -- 
+> Regards,
+> Shawn
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
 
-Might make sense to change the .mode to 0600, to make it harder 
-for unprivileged attack code to guess whether this protection 
-(and the resulting audit warning to the administrator) is 
-enabled on a system or not.
-
-It can be probed, but only at the cost of generating a warning.
-
-Likewise, distros should set /etc/sysctl.conf to 0600 as well, 
-for similar reasons.
-
-Thanks,
-
-	Ingo
