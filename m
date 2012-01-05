@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932901Ab2AEVrL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:47:11 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:58541 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932376Ab2AEVrK (ORCPT
+	id S932909Ab2AEV6b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:58:31 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:49477 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751101Ab2AEV6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:47:10 -0500
-Date: Fri, 6 Jan 2012 08:47:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] use generic pci_iomap on all architectures
-Message-Id: <20120106084701.8f704542754db826deda318a@canb.auug.org.au>
-In-Reply-To: <20120106083916.9588034bde22a6803e327aa9@canb.auug.org.au>
-References: <20120105145836.GA2751@redhat.com>
-	<20120106083141.9c14a8d2d09539c6a6c0db75@canb.auug.org.au>
-	<20120106083916.9588034bde22a6803e327aa9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Jan_2012_08_47_01_+1100_KBYSo2Pvqw7/GW48"
+	Thu, 5 Jan 2012 16:58:30 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Richard Weinberger <richard@nod.at>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, xiyou.wangcong@gmail.com
+Subject: Re: [PATCH] init: Warn on non-existent rdinit
+References: <1325789819-30502-1-git-send-email-richard@nod.at>
+	<m14nw9c1me.fsf@fess.ebiederm.org> <4F0619F9.8010505@nod.at>
+Date: Thu, 05 Jan 2012 14:00:41 -0800
+In-Reply-To: <4F0619F9.8010505@nod.at> (Richard Weinberger's message of "Thu,
+	05 Jan 2012 22:45:29 +0100")
+Message-ID: <m1vcopajxy.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+K3an9K8mf4eUM3Ct5AzDxHxWOxEMkzCM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Jan_2012_08_47_01_+1100_KBYSo2Pvqw7/GW48
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Richard Weinberger <richard@nod.at> writes:
 
-On Fri, 6 Jan 2012 08:39:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+> Am 05.01.2012 21:53, schrieb Eric W. Biederman:
+>> Richard Weinberger <richard@nod.at> writes:
+>> 
+>>> Such a warning would have saved me some time...
+>>> Hopefully this printk() saves someone else's time. :-)
+>> 
+>> The warning is wrong if you are not using an initramfs or an initial
+>> ramdisk.
 >
-> So why does you pull request refer to "commit
-> 805a6af8dba5dfdd35ec35dc52ec0122400b2610", I wonder?  Is that just what
-> "git request-pull" produced?
+> Gnah, you're so right.
+> I did not test it without a ramdisk.
+>
+>> I expect what you want is something like:
+>> 
+>> diff --git a/init/main.c b/init/main.c
+>> index 217ed23..8d53d28 100644
+>> --- a/init/main.c
+>> +++ b/init/main.c
+>> @@ -830,10 +830,11 @@ static int __init kernel_init(void * unused)
+>>          * the work
+>>          */
+>>  
+>> -       if (!ramdisk_execute_command)
+>> +       if (!ramdisk_execute_command &&
+>> +           (sys_access((const char __user *)"/init", 0) == 0))
+>>                 ramdisk_execute_command = "/init";
+>>  
+>> -       if (sys_access((const char __user *) ramdisk_execute_command, 0) != 0) {
+>> +       if (!ramdisk_execute_command) {
+>>                 ramdisk_execute_command = NULL;
+>>                 prepare_namespace();
+>>         }
+>
+> Why ramdisk_execute_command = NULL; in the !ramdisk_execute_command
+> case?
 
-I see, "git request-pull" just puts in whatever you specify on the
-command line rather than the merge-base ...
+Because in my untested patch I didn't get as far as deleting that line.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>> That way we don't clear ramdisk_execute_command if it was set and
+>> we complain if we attempt exec the ramdisk_execute_command.
+>
+> If "/init" does not exist we still don't get a warning.
 
---Signature=_Fri__6_Jan_2012_08_47_01_+1100_KBYSo2Pvqw7/GW48
-Content-Type: application/pgp-signature
+Perhaps it has a /linuxrc.  If you can find a way of figuring out we
+always need the file we can print an error.  Otherwise it is a case of
+the kernel auto-detecting what to do, and not printing a warning when it
+has decided there is no /init to play with.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBhpVAAoJEECxmPOUX5FESo4P/3ImliZXBEQhbm1KbwcAn4bd
-BZLqpV3UUAxmDHt3OSZOlRDbAUuqAFWudezMk3cl0HcApBfeA8IjuWg7cCR+FPsY
-srMXYyNX+TnByLsGUplQ+JQr+G32+hjG1/1z+jBLt5nKJneIxVhDLUFDcyb0peFe
-Y2Ac5zc8rs9cLT51Dpw9oCVR2aeiY3qomUmuaTuAtdEvcGk0zfE8Ngj9z484SXXA
-DJ6sQX4CWeFETZcPF/MMeQl5fMsH5B1h+qeAM/ttcyH6ZIW7mt4UNANbiOf8v8dB
-2y6wePCOe/BRHDR9bcE2kJwR8nnGc7vpgJvbr3PMTQnmJwsmffRNwytwUXXrvb/X
-vtItLETgWOdhaFylUw3QCItmVJM6tAJTWAHdAj6+IBAT+OSOe+4mey/C3r+y9UBT
-O/7nKoQw3BN7s1KQifUB4qAtvp0ZmKsHo7+Z6Obb6aOL6Yp+I6g/33tT9pqfULyk
-lghhWYiz7yq15ehcKbzZhU7HaJthmcPV9bw7pN1BcinLnwvXdQ8iEQ3p5n05yTG6
-JnHiYM8AUdYvAGqb9o+aLHPdgcgBWdYQo4iFTaQiWv9CP9H3qCeRdeXFORwaA0Nu
-ZUThqg78QGU6MIrB3p74ebrvgD0Sl9rEduyV0Z2rI/Nqgpqusf7RXTQl4RqUsL32
-HxnRfQLBjmBOx3miTWMU
-=3oyj
------END PGP SIGNATURE-----
-
---Signature=_Fri__6_Jan_2012_08_47_01_+1100_KBYSo2Pvqw7/GW48--
+Eric
