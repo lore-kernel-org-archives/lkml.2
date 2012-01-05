@@ -1,103 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab2AELqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 06:46:55 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:58757 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab2AELqy (ORCPT
+	id S1756242Ab2AELrp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 06:47:45 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:33540
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755921Ab2AELrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 06:46:54 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=IkcTkHD0fZMA:10 a=meVymXHHAAAA:8 a=yGs7r1cpJES-BhCyZUwA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325764011.12696.38.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 05 Jan 2012 06:46:51 -0500
-In-Reply-To: <20120105091916.GA22598@elte.hu>
-References: <20111221123624.193898256@goodmis.org>
-	 <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
-	 <20120102134856.GA32673@elte.hu>
-	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
-	 <1325635922.12696.8.camel@gandalf.stny.rr.com>
-	 <1325653301.12696.20.camel@gandalf.stny.rr.com>
-	 <20120104141107.GA24770@elte.hu>
-	 <1325696759.12696.24.camel@gandalf.stny.rr.com>
-	 <20120105091916.GA22598@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Thu, 5 Jan 2012 06:47:43 -0500
+X-SpamScore: -23
+X-BigFish: VPS-23(zz1432N98dK4015Lzz1202hzz15d4Rz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 13,
+X-WSS-ID: 0LXBQ3A-01-2UQ-02
+X-M-MSG: 
+Date: Thu, 5 Jan 2012 12:47:32 +0100
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: KyongHo Cho <pullip.cho@samsung.com>, <linux-samsung-soc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <iommu@lists.linux-foundation.org>,
+        Younglak Kim <younglak1004.kim@samsung.com>,
+        Subash Patel <subash.ramaswamy@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v8 0/2] ommu/exynos: Add IOMMU/System MMU driver for
+ Samsung Exynos
+Message-ID: <20120105114732.GA7166@amd.com>
+References: <000e01ccc624$c9349310$5b9db930$%cho@samsung.com>
+ <20120102134229.GZ29877@amd.com>
+ <CAHQjnON3XYZ9cAK0kqsY4QzMzESD1wOzxt-fiQCq3TJfDObFiw@mail.gmail.com>
+ <20120102155820.GB29877@amd.com>
+ <20120103095527.GI2914@n2100.arm.linux.org.uk>
+ <20120104150101.GA3492@amd.com>
+ <20120104212620.GG11810@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120104212620.GG11810@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 10:19 +0100, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-
-> > I actually haven't looked at the NMI branch yet. I'm still 
-> > trying to figure out why the ftrace one would lockup. I'll try 
-> > another box to see if that one also locks up on tip/master 
-> > with your config.
+On Wed, Jan 04, 2012 at 09:26:20PM +0000, Russell King - ARM Linux wrote:
+> On Wed, Jan 04, 2012 at 04:01:01PM +0100, Joerg Roedel wrote:
+> > On Tue, Jan 03, 2012 at 09:55:27AM +0000, Russell King - ARM Linux wrote:
+> > > It comes through when I stick it in my tree because of a month of asking
+> > > for help to fix something and getting zero response from the maintainers.
+> > > 
+> > > It's a way to flag to them that they're doing something wrong - and in
+> > > fact something is broken, and that that brokenness will happen at the
+> > > next merge window unless they get off their butt and do something about
+> > > it.
+> > 
+> > Okay, fine with me if it really will be fixed in 3.3-rc1 :)
 > 
-> Any update on this?
+> I can do better than that - and report that it's fixed now.  It should
+> show up in linux-next sometime after Stephen pulls this evening.  The
+> #error did its job in this case, and ensured that it got fixed!
 
-No, for some reason my other box doesn't want to boot your config (no
-root found). But I noticed that my first box fails on tip/master with
-just my min-config. I ran the bisect and hit this as the bad commit:
-
-
-commit 41e95d95208c62d4b0fbcee5f16d93e23ca32984
-Author: Ingo Molnar <mingo@elte.hu>
-Date:   Thu Sep 17 23:12:20 2009 +0200
-
-    <not-for-merge> Disable DEVTMPFS_MOUNT for now
-    
-    Causing bootup problems - /dev/zero and /dev/null not being there, etc.
-    
-    NOT-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-index ee37727..c52aaad 100644
---- a/drivers/base/Kconfig
-+++ b/drivers/base/Kconfig
-@@ -28,6 +28,7 @@ config DEVTMPFS
- config DEVTMPFS_MOUNT
-        bool "Automount devtmpfs at /dev"
-        depends on DEVTMPFS
-+       depends on 0
-        help
-          This will mount devtmpfs at /dev if the kernel mounts the root
-          filesystem. It will not affect initramfs based mounting.
-
-
-When I reverted this, my machine booted. I'm now trying that machine
-again with your allyesconfig.
-
-Is there other strange things in tip/master that I should be aware
-about?
-
-Again, do you see these errors when just booting my branch directly?
-(not merging the branch into another branch).
-
-
-> 
-> I'm also seeing build failures with certain configs:
-> 
-> kernel/trace/trace_stack.c:387:3: error: implicit declaration of function ‘ftrace_set_early_filter’ 
-> [-Werror=implicit-function-declaration]
-
-Hmm, your right. It depends on dyn_ftrace to be configured. Strange that
-my tests didn't catch that as I thought one of my tests compiles with
-static ftrace. I'll have to look into why my test didn't catch that.
-I'll send a fix later today.
+Great. So it looks like I can finally compile-test Exynos and merge
+their IOMMU driver after the merge window :)
 
 Thanks,
 
--- Steve
+	Joerg
 
+-- 
+AMD Operating System Research Center
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
