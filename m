@@ -1,122 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab2AECBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 21:01:24 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:57857 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751923Ab2AECBV (ORCPT
+	id S1757600Ab2AECDT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 21:03:19 -0500
+Received: from eastrmfepo101.cox.net ([68.230.241.213]:44437 "EHLO
+	eastrmfepo101.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923Ab2AECDQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 21:01:21 -0500
-Date: Wed, 4 Jan 2012 18:01:08 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: Improve detection of illegal synchronize_rcu() call
- from RCU read side
-Message-ID: <20120105020108.GQ2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <20111226163734.GF28309@somewhere.redhat.com>
- <20111226195656.GD2435@linux.vnet.ibm.com>
- <20120104190336.GC1143@somewhere>
- <20120104213035.GF2448@linux.vnet.ibm.com>
- <20120105014518.GD1143@somewhere>
+	Wed, 4 Jan 2012 21:03:16 -0500
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A020203.4F0504E2.008A,ss=2,re=0.000,fgs=64
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=5NIuvhVWHzt3D08YIQVCWCT0D+J982xUH/jHreRN8to=
+ c=1 sm=1 a=Dyoqhi_TatcA:10 a=9VLovUTTsuYA:10 a=nY948ivv-DcA:10
+ a=Cfj4BQAnxiAA:10 a=79FJBTaEl08990sRVKebZw==:17 a=Zo5euW2OAAAA:8
+ a=G-_bNFh8cy00l7DVTPoA:9 a=Ft8UYL4EG9YA:10 a=nTxC2ANawTMA:10
+ a=9eCwGWfDHQ4A:10 a=pU7FlzPCx1kvwvLK:21 a=GHHqUW01S6opM_j4:21
+ a=79FJBTaEl08990sRVKebZw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=turk113@cox.net
+Reply-To: <aacac@qatar.io>
+From: "Chevron Texaco Oil Company" <info@texaco.com>
+Subject: Winning ticket number: (CHTX-210-11-38LSD)
+Date: Wed, 4 Jan 2012 18:03:09 -0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105014518.GD1143@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010502-7282-0000-0000-000005639E7F
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20120105020315.IBJW24648.eastrmfepo101.cox.net@eastrmimpo305.cox.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 02:45:20AM +0100, Frederic Weisbecker wrote:
-> On Wed, Jan 04, 2012 at 01:30:35PM -0800, Paul E. McKenney wrote:
-> > On Wed, Jan 04, 2012 at 08:03:39PM +0100, Frederic Weisbecker wrote:
-> > > Actually for the case of RCU, the wait_for_completion() called by synchronize_rcu()
-> > > has a might_sleep() call that triggers a warning in this case.
-> > > 
-> > > But in the case of SMP with 1 online CPU, the rcu_blocking_is_gp()
-> > > checks returns right away on rcutree. So probably we need this?
-> > 
-> > I modified this to push the might_sleep() down into the
-> > rcu_blocking_is_gp() function, queued the result, and retained your
-> > Signed-off-by.  (Please let me know if there is any problem with this.)
-> > 
-> > This does work for TREE_PREEMPT_RCU and for synchronize_rcu_bh() in
-> > TREE_RCU, but not for synchronize_sched() in TREE_RCU.  This is because
-> > rcu_read_lock() and rcu_read_unlock() are no-ops in the TREE_RCU case.
-> 
-> Not sure about that. This calls preempt_disable() which, in any case with
-> CONFIG_DEBUG_ATOMIC_SLEEP, handles the preempt count. And that even if
-> !CONFIG_PREEMPT.
-
-Ah, of course!  I keep forgetting that CONFIG_DEBUG_ATOMIC_SLEEP selects
-CONFIG_PREEMPT_COUNT.
-
-> > So I queued up a separate patch using rcu_lockdep_assert() to check for
-> > illegal RCU grace period within the same-type RCU read-side critical
-> > section, including for SRCU.  This is also a partial solution, as it
-> > does not handle things like this:
-> > 
-> > 	void foo(void)
-> > 	{
-> > 		mutex_lock(&my_mutex);
-> > 		. . .
-> > 		synchronize_srcu(&my_srcu);
-> > 		. . .
-> > 		mutex_unlock(&my_mutex);
-> > 	}
-> > 
-> > 	void bar(void)
-> > 	{
-> > 		int idx;
-> > 
-> > 		idx = rcu_read_lock(&m_srcu);
-> > 		. . .
-> > 		mutex_lock(&my_mutex);
-> > 		. . .
-> > 		mutex_unlock(&my_mutex);
-> > 		. . .
-> > 		srcu_read_unlock(&m_srcu, idx);
-> > 	}
-> > 
-> > This can be extended into a chain of locks and a chain of SRCU instances.
-> > For an example of the latter, consider an SRCU-A read-side critical
-> > section containing an SRCU-B grace period, an SRCU-B read-side critical
-> > section containing an SRCU-C grace period, and so on, with the SRCU-Z
-> > read-side critical section containing an RCU-A grace period.
-> 
-> Heh! Indeed...
-> 
-> > But it
-> > is OK to hold a mutex across one SRCU read-side critical section while
-> > acquiring that same mutex within another same-flavor SRCU read-side
-> > critical section.  So the analogy with reader-writer locking only goes
-> > so far.
-> > 
-> > At the moment, a full solution seems to require some surgery on lockdep
-> > itself, but perhaps there is a better way.
-> 
-> Ok.
-> 
-> > 
-> > > rcutiny seems to be fine with the cond_resched() call, but srcu needs
-> > > a special treatment.
-> > 
-> > For the moment, I just applied rcu_lockdep_assert() everywhere -- zero
-> > cost on non-lockdep kernels, and fully handles all of the RCU simple
-> > self-deadlock cases.
-> 
-> So, for RCU I'm not sure this is useful given the might_sleep() things.
-> But for srcu it is.
-
-One nice thing about the lockdep approach is that it tracks where the
-conflicting RCU read-side critical section started.  But I am planning
-for these to be 3.4 material, so we do have some time to refine them.
-
-							Thanx, Paul
-
+Your email emerged in the on-going Chevron/Texaco Award that was held January 4th 2012, and you are to claim the sum of
+$750,000.00 usd, which means you are one of our (5) lucky winner's, Winning ticket number: (CHTX-210-11-38LSD). send the
+following info for funds release.1.Full Names 2. Address 3. Country/State 4. phone  5. Sex: 6. Age 7. Occupation.
+CONTACT AGENT
+Name: Rev Patrick Hanks
+chevtex@hotmail.co.uk
+with regards Tom Hings.Promotion Announcer
