@@ -1,77 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab2AESOP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:14:15 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41242
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab2AESON (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:14:13 -0500
-Date: Thu, 5 Jan 2012 13:14:01 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
-Message-ID: <20120105181401.GA418@infradead.org>
-References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
- <1324560391.1964.8.camel@falcor>
- <20120104152801.d8f555ca.akpm@linux-foundation.org>
- <1325723630.13419.2.camel@falcor>
- <20120104164638.cc21fc2e.akpm@linux-foundation.org>
- <20120105020639.GA1161@kroah.com>
- <1325737033.13419.43.camel@falcor>
- <20120105045354.GE24466@dastard>
+	id S1756292Ab2AESPm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:15:42 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:38838 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754713Ab2AESPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 13:15:41 -0500
+Date: Thu, 5 Jan 2012 13:15:35 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739:
+ group 1687, 32254 clusters in bitmap, 32258 in gd
+Message-ID: <20120105181535.GB26382@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Sander Eikelenboom <linux@eikelenboom.it>,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	dm-devel@redhat.com
+References: <217150909.20120105113759@eikelenboom.it>
+ <197607646.20120105142107@eikelenboom.it>
+ <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu>
+ <4910694144.20120105171428@eikelenboom.it>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120105045354.GE24466@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <4910694144.20120105171428@eikelenboom.it>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 03:53:54PM +1100, Dave Chinner wrote:
-> That's seems like a rather unreliable way of detecting that a file
-> has changed to me.  I mean, only ext4 uses inode_inc_version() when
-> it internally dirties an inode, and only ext4 sets the MS_I_VERSION
-> so that inode_inc_version is only called for ext4 inodes when
-> timestamps change.
-
-And even ext4 only does it when using the non-default "i_version"
-mount option.
-
-> Hence just adding an increment to the truncate case doesn't seem to
-> be sufficient to me. e.g. what about the equivalent case of having a
-> hole punched in the file via fallocate? The file has definitely
-> changed, but i_version won't change....
+On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
 > 
-> Perhaps bumping i_version in __mark_inode_dirty() might be the best
-> way to capture all changes (other than timestamp updates) to any
-> inode regardless of the filesystem type?
+> OK spoke too soon, i have been able to trigger it again:
+> - copying files from LV to the same LV without the snapshot went OK
+> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
 
-It has the same problem as the timestamp updates doing that right now -
-the fs can't do locking around it, and it can't return errors.  That's
-something affecting at least btrfs, xfs and IIRC ubifs, and probably
-the cluster filesystems as well.  The right answer is to replace the
-timestmap updates which are the only places doing that with a method
-as Josef had planned to do, and then we can include the i_version
-updates in there.
+OK.  Originally, you said you did this:
 
-That assumes we figure out a coherent way to do it - except for the
-conditional abuse in file_updates_times it's currently entirely under
-fs control.  So the best way to fix it would be to:
+1) fsck -v -p -f the filesystem
+2) mount the filesystem
+3) Try to copy a file
+4) filesystem will be mounted RO on error  (see below)
+5) fsck again, journal will be recovered, no other errors
+6) start at 1)
 
- - move the fs-private use into those filesystems actually using it.
-   Note that a lot less actually check for it rather than just updating
-   it based on some cargo cult, and most only do so for directories.
- - figure a why what exact change count semantics NFS (and IMA) want
-   and find a way to implement them so that the fs can tell the callers
-   that they don't exist.
+Was this with with a read-only snapshot always being in existence
+through all of these five steps?  When was the RO snapshot created?
 
-Btw, does IMA care about these beeing persistent?
+If a RO snapshot has to be there in order for this to happen, then
+this is almost certainly a device-mapper regression.  (dm-devel folks,
+this is a problem which apparently occurred when the user went from
+v3.1.5 to v3.2, so this looks likes 3.2 regression.)
+
+						- Ted
+
+
+> 
+> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
+> [ 2357.656056] Aborting journal on device dm-2-8.
+> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
+> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
+> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
+> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
+> 
+> 
+> Attached are 4x output from dumpe2fs
+> - dumpe2fs-xen_images-3.2.0                           Made just after boot
+> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
+> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
+> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
+> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
+> 
+> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
+> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
+> 
+> --
+> Sander
+> 
+> 
+> 
+> >> 
+> >> --
+> >> Sander
+> >> 
+> >> 
+> >> This is a forwarded message
+> >> From: Sander Eikelenboom <linux@eikelenboom.it>
+> >> To: "Theodore Ts'o" <tytso@mit.edu>
+> >> Date: Thursday, January 5, 2012, 11:37:59 AM
+> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+> >> 
+> >> ===8<==============Original message text===============
+> >> 
+> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
+> >> 
+> >> Steps:
+> >> 1) fsck -v -p -f the filesystem
+> >> 2) mount the filesystem
+> >> 3) Try to copy a file
+> >> 4) filesystem will be mounted RO on error  (see below)
+> >> 5) fsck again, journal will be recovered, no other errors
+> >> 6) start at 1)
+> >> 
+> >> 
+> >> I think the way i bricked it is:
+> >> - make a lvm snapshot from that lvm logical disk
+> >> - mount that lvm snapshot as RO
+> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
+> >> - it fails and i can't recover (see above)
+> >> 
+> >> 
+> >> Is there a way to recover from this ?
+> >> 
+> >> 
+> >> 
+> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+> >> [  220.749415] Aborting journal on device dm-2-8.
+> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
+> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
+> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
+> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
+> >> serveerstertje:/mnt/xen_images/domains/production# cd /
+> >> serveerstertje:/# umount /mnt/xen_images/
+> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
+> >> fsck from util-linux-ng 2.17.2
+> >> /dev/mapper/serveerstertje-xen_images: recovering journal
+> >> 
+> >>     277 inodes used (0.00%)
+> >>       5 non-contiguous files (1.8%)
+> >>       0 non-contiguous directories (0.0%)
+> >>         # of inodes with ind/dind/tind blocks: 41/41/3
+> >>         Extent depth histogram: 69/28/2
+> >> 51890920 blocks used (79.18%)
+> >>       0 bad blocks
+> >>      41 large files
+> >> 
+> >>     199 regular files
+> >>      53 directories
+> >>       0 character device files
+> >>       0 block device files
+> >>       0 fifos
+> >>       0 links
+> >>      16 symbolic links (16 fast symbolic links)
+> >>       0 sockets
+> >> --------
+> >>     268 files
+> >> serveerstertje:/#
+> >> 
+> >> 
+> >> 
+> >> 
+> >> System:
+> >> - Kernel 3.2.0
+> >> - Debian Squeeze with:
+> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
+> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
+> >> 
+> >> ===8<===========End of original message text===========
+> >> 
+> >> 
+> >> 
+> >> -- 
+> >> Best regards,
+> >> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
+> 
+> 
+> 
+> 
+> -- 
+> Best regards,
+>  Sander                            mailto:linux@eikelenboom.it
+
+
+
+
+
+
