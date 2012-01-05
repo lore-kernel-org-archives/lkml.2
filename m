@@ -1,196 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932889Ab2AEVbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:31:40 -0500
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:35811
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758302Ab2AEVbj (ORCPT
+	id S932909Ab2AEVb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:31:56 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:34442 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932892Ab2AEVby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:31:39 -0500
-Date: Thu, 5 Jan 2012 22:31:27 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1136620602.20120105223127@eikelenboom.it>
-To: "Ted Ts'o" <tytso@mit.edu>
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        <dm-devel@redhat.com>
-Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
-In-Reply-To: <20120105181535.GB26382@thunk.org>
-References: <217150909.20120105113759@eikelenboom.it> <197607646.20120105142107@eikelenboom.it> <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu> <4910694144.20120105171428@eikelenboom.it> <20120105181535.GB26382@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jan 2012 16:31:54 -0500
+Date: Fri, 6 Jan 2012 08:31:41 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] use generic pci_iomap on all architectures
+Message-Id: <20120106083141.9c14a8d2d09539c6a6c0db75@canb.auug.org.au>
+In-Reply-To: <20120105145836.GA2751@redhat.com>
+References: <20120105145836.GA2751@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__6_Jan_2012_08_31_41_+1100_Q0QqBWaSy8V9O_y/"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ted,
+--Signature=_Fri__6_Jan_2012_08_31_41_+1100_Q0QqBWaSy8V9O_y/
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thursday, January 5, 2012, 7:15:35 PM, you wrote:
+Hi Michael,
 
-> On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
->> 
->> OK spoke too soon, i have been able to trigger it again:
->> - copying files from LV to the same LV without the snapshot went OK
->> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
+[I am not *just* picking on you - others do this as well ...]
 
-> OK.  Originally, you said you did this:
+On Thu, 5 Jan 2012 16:58:36 +0200 "Michael S. Tsirkin" <mst@redhat.com> wro=
+te:
+>
+> Linus, please pull the following changes for 3.3, thanks a lot!
+>=20
+> These changes have been on linux-next for a while now.
+> They touch a lot of arches and have interdependencies, so merging
+> separately seems to make sense, I think.
+>=20
+> The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b26=
+10:
+>=20
+>   Linux 3.2 (2012-01-04 15:55:44 -0800)
 
-> 1) fsck -v -p -f the filesystem
-> 2) mount the filesystem
-> 3) Try to copy a file
-> 4) filesystem will be mounted RO on error  (see below)
-> 5) fsck again, journal will be recovered, no other errors
-> 6) start at 1)
+So why have you rebased this?  All this stuff in in linux-next based on
+v3.2-rc3 since December 5 (and that version will be in linux-next today
+as well unless you update your linux-next branch in the next sort while).
 
-> Was this with with a read-only snapshot always being in existence
-> through all of these five steps?  When was the RO snapshot created?
+Is there something in v3.2 that interacts with this series of patches?
+If so, then you had better delay your pull request and do more testing.
+If not, then *don't rebase*.
 
-> If a RO snapshot has to be there in order for this to happen, then
-> this is almost certainly a device-mapper regression.  (dm-devel folks,
-> this is a problem which apparently occurred when the user went from
-> v3.1.5 to v3.2, so this looks likes 3.2 regression.)
+(and if you do rebase, please make sure that what goes into linux-next is
+the *same commits* (not just the same patches) as what Linus is merging)
 
->                                                 - Ted
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Fri__6_Jan_2012_08_31_41_+1100_Q0QqBWaSy8V9O_y/
+Content-Type: application/pgp-signature
 
-OK Xen is out of the equation, it also happens on baremetal.
-Last time under both Xen and baremetal i got a slightly different error (different numbers (group)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-[  823.782633] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1865, 32254 clusters in bitmap, 32258 in gd
-[  823.788129] Aborting journal on device dm-2-8.
-[  823.852443] EXT4-fs (dm-2): Remounting filesystem read-only
-[  823.857956] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
-[  823.858646] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 12288 pages, ino 4079617; err -30
+iQIcBAEBCAAGBQJPBha9AAoJEECxmPOUX5FEJaYP/0nf91UzqarGn/yD3ZIS9PcQ
+3l+9uCCy+ImaK30wgcZ56FSf8Im70vmUiNw1j9S99ejiyPErFJ335IHHrrZZics3
+Pf7+mIz+1N3CRvLYTUEE6h+yu4ctcF3OYAnF8zb+CyRCGiDNfu235xBUCFbQQsID
+v+x8BgDbPq9G+H6Xuw7QF9SHhoGguttIcaOLTfn5g0hI1YQaUAcIPGBwLkLAIgWe
+NF89Nq9LXSw/rpmrAbu/ZAV7hT4SnuOTsIg5mconBVUzytVR498H2r795Gd73LVf
+4BRgz7o3zH6dOBCto1LXTLqNOv2tQ9A3WEBKgQ/UHSS02fh7WCRpYxHxEUZWTV1C
+6Gy8fYY3hFxLkZDQnVYq3hSM3QTVCs3soEHQb/a+yzArmP4kuIRQ4xoXZs0zMjd8
+dVfzKFb72iWns13cuD5OXT8TUwxqSme15di/6FhXDRhm2OjgY6rPPOHCA1DIXJP3
+QwlrLFJLdF9ILDs49b6GGfVM/sNbhUmxkVgNsF1EpD5sLXny/Pf3eQsJIy0/rWIS
+H6GB1ngfelLmjuPJcKcuEx8E5BWOmm1PL3sNRrqurDSKxKBQQ83/U6ahFn+lAGVq
+qD21i1NkbMRODYintriNPV4Ui+3TzNshcWbPdvZRGM7+vXHIUJcMAIJQkZ7mVrs7
+EHf2ba7n0n3sCp0rBnhO
+=SbMx
+-----END PGP SIGNATURE-----
 
-
-
->> 
->> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
->> [ 2357.656056] Aborting journal on device dm-2-8.
->> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
->> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
->> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
->> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
->> 
->> 
->> Attached are 4x output from dumpe2fs
->> - dumpe2fs-xen_images-3.2.0                           Made just after boot
->> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
->> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
->> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
->> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
->> 
->> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
->> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
->> 
->> --
->> Sander
->> 
->> 
->> 
->> >> 
->> >> --
->> >> Sander
->> >> 
->> >> 
->> >> This is a forwarded message
->> >> From: Sander Eikelenboom <linux@eikelenboom.it>
->> >> To: "Theodore Ts'o" <tytso@mit.edu>
->> >> Date: Thursday, January 5, 2012, 11:37:59 AM
->> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> >> 
->> >> ===8<==============Original message text===============
->> >> 
->> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
->> >> 
->> >> Steps:
->> >> 1) fsck -v -p -f the filesystem
->> >> 2) mount the filesystem
->> >> 3) Try to copy a file
->> >> 4) filesystem will be mounted RO on error  (see below)
->> >> 5) fsck again, journal will be recovered, no other errors
->> >> 6) start at 1)
->> >> 
->> >> 
->> >> I think the way i bricked it is:
->> >> - make a lvm snapshot from that lvm logical disk
->> >> - mount that lvm snapshot as RO
->> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
->> >> - it fails and i can't recover (see above)
->> >> 
->> >> 
->> >> Is there a way to recover from this ?
->> >> 
->> >> 
->> >> 
->> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> >> [  220.749415] Aborting journal on device dm-2-8.
->> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
->> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
->> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
->> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
->> >> serveerstertje:/mnt/xen_images/domains/production# cd /
->> >> serveerstertje:/# umount /mnt/xen_images/
->> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
->> >> fsck from util-linux-ng 2.17.2
->> >> /dev/mapper/serveerstertje-xen_images: recovering journal
->> >> 
->> >>     277 inodes used (0.00%)
->> >>       5 non-contiguous files (1.8%)
->> >>       0 non-contiguous directories (0.0%)
->> >>         # of inodes with ind/dind/tind blocks: 41/41/3
->> >>         Extent depth histogram: 69/28/2
->> >> 51890920 blocks used (79.18%)
->> >>       0 bad blocks
->> >>      41 large files
->> >> 
->> >>     199 regular files
->> >>      53 directories
->> >>       0 character device files
->> >>       0 block device files
->> >>       0 fifos
->> >>       0 links
->> >>      16 symbolic links (16 fast symbolic links)
->> >>       0 sockets
->> >> --------
->> >>     268 files
->> >> serveerstertje:/#
->> >> 
->> >> 
->> >> 
->> >> 
->> >> System:
->> >> - Kernel 3.2.0
->> >> - Debian Squeeze with:
->> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
->> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
->> >> 
->> >> ===8<===========End of original message text===========
->> >> 
->> >> 
->> >> 
->> >> -- 
->> >> Best regards,
->> >> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
->> 
->> 
->> 
->> 
->> -- 
->> Best regards,
->>  Sander                            mailto:linux@eikelenboom.it
-
-
-
-
-
-
-
-
-
--- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
-
+--Signature=_Fri__6_Jan_2012_08_31_41_+1100_Q0QqBWaSy8V9O_y/--
