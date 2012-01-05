@@ -1,298 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757717Ab2AEC7l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 21:59:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52613 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014Ab2AEC7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 21:59:38 -0500
-Message-ID: <4F051210.50300@gmail.com>
-Date: Thu, 05 Jan 2012 10:59:28 +0800
-From: Cong Wang <xiyou.wangcong@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1757781Ab2AEDAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 22:00:09 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:51128 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757525Ab2AEDAH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 22:00:07 -0500
+Message-ID: <4F0508F4.2020705@cn.fujitsu.com>
+Date: Thu, 05 Jan 2012 10:20:36 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [git pull] Please pull my kmap_atomic branch
-References: <CA+55aFzQrdFP3Sie2ug8uicNyqpD2mYEedj8srgcphfM2rP8JQ@mail.gmail.com>
-In-Reply-To: <CA+55aFzQrdFP3Sie2ug8uicNyqpD2mYEedj8srgcphfM2rP8JQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix to allow mounting a hierarchy by name
+References: <4EF9291D.7030208@cn.fujitsu.com> <20111227163535.GA17712@google.com> <4EFAB2E2.4040008@cn.fujitsu.com> <20111228163631.GN17712@google.com> <4EFBD55E.5030106@cn.fujitsu.com> <20111229162313.GD3516@google.com> <4EFD531C.50300@cn.fujitsu.com>
+In-Reply-To: <4EFD531C.50300@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-05 10:17:18,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-05 10:17:19,
+	Serialize complete at 2012-01-05 10:17:19
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Linus,
+Any comments on this?
 
-Please pull
-
-	git://github.com/congwang/linux.git kmap_atomic
-
-It has all patches for removing the unused argument of 
-kmap_atomic()/kunmap_atomic(). I already got some ACK's from subsystem 
-maintainers, and the tree has been in linux-next for many days.
-
-Thanks!
-
-
-Cong Wang (62):
-       highmem: mark k[un]map_atomic() with two arguments as deprecated
-       include/linux/highmem.h: remove the second argument of 
-k[un]map_atomic()
-       arm: remove the second argument of k[un]map_atomic()
-       mips: remove the second argument of k[un]map_atomic()
-       powerpc: remove the second argument of k[un]map_atomic()
-       sh: remove the second argument of k[un]map_atomic()
-       um: remove the second argument of k[un]map_atomic()
-       x86: remove the second argument of k[un]map_atomic()
-       crypto: remove the second argument of k[un]map_atomic()
-       ata: remove the second argument of k[un]map_atomic()
-       block: remove the second argument of k[un]map_atomic()
-       crypto: remove the second argument of k[un]map_atomic()
-       edac: remove the second argument of k[un]map_atomic()
-       drm: remove the second argument of k[un]map_atomic()
-       ide: remove the second argument of k[un]map_atomic()
-       infiniband: remove the second argument of k[un]map_atomic()
-       md: remove the second argument of k[un]map_atomic()
-       media: remove the second argument of k[un]map_atomic()
-       memstick: remove the second argument of k[un]map_atomic()
-       mmc: remove the second argument of k[un]map_atomic()
-       net: remove the second argument of k[un]map_atomic()
-       scsi: remove the second argument of k[un]map_atomic()
-       hv: remove the second argument of k[un]map_atomic()
-       pohmelfs: remove the second argument of k[un]map_atomic()
-       rtl8192u: remove the second argument of k[un]map_atomic()
-       zram: remove the second argument of k[un]map_atomic()
-       target: remove the second argument of k[un]map_atomic()
-       vhost: remove the second argument of k[un]map_atomic()
-       fs: remove the second argument of k[un]map_atomic()
-       btrfs: remove the second argument of k[un]map_atomic()
-       ecryptfs: remove the second argument of k[un]map_atomic()
-       afs: remove the second argument of k[un]map_atomic()
-       exofs: remove the second argument of k[un]map_atomic()
-       ext2: remove the second argument of k[un]map_atomic()
-       fuse: remove the second argument of k[un]map_atomic()
-       gfs2: remove the second argument of k[un]map_atomic()
-       jbd: remove the second argument of k[un]map_atomic()
-       jbd2: remove the second argument of k[un]map_atomic()
-       logfs: remove the second argument of k[un]map_atomic()
-       minix: remove the second argument of k[un]map_atomic()
-       nfs: remove the second argument of k[un]map_atomic()
-       nilfs2: remove the second argument of k[un]map_atomic()
-       ntfs: remove the second argument of k[un]map_atomic()
-       ocfs2: remove the second argument of k[un]map_atomic()
-       reiserfs: remove the second argument of k[un]map_atomic()
-       squashfs: remove the second argument of k[un]map_atomic()
-       ubifs: remove the second argument of k[un]map_atomic()
-       udf: remove the second argument of k[un]map_atomic()
-       kdb: remove the second argument of k[un]map_atomic()
-       power: remove the second argument of k[un]map_atomic()
-       lib: remove the second argument of k[un]map_atomic()
-       mm: remove the second argument of k[un]map_atomic()
-       net: remove the second argument of k[un]map_atomic()
-       rds: remove the second argument of k[un]map_atomic()
-       sunrpc: remove the second argument of k[un]map_atomic()
-       tomoyo: remove the second argument of k[un]map_atomic()
-       dm: remove the second argument of k[un]map_atomic()
-       gma500: remove the second argument of k[un]map_atomic()
-       zcache: remove the second argument of k[un]map_atomic()
-       drbd: remove the second argument of k[un]map_atomic()
-       highmem: kill all __kmap_atomic()     [swarren@nvidia.com: 
-highmem: Fix ARM build break due to __kmap_atomic rename]
-       feature-removal-schedule.txt: add the deprecated form of 
-kmap_atomic()
-
-
-
-  Documentation/feature-removal-schedule.txt       |    8 ++
-  arch/arm/include/asm/highmem.h                   |    2 +-
-  arch/arm/mm/copypage-fa.c                        |   12 ++--
-  arch/arm/mm/copypage-feroceon.c                  |   12 ++--
-  arch/arm/mm/copypage-v3.c                        |   12 ++--
-  arch/arm/mm/copypage-v4mc.c                      |    8 +-
-  arch/arm/mm/copypage-v4wb.c                      |   12 ++--
-  arch/arm/mm/copypage-v4wt.c                      |   12 ++--
-  arch/arm/mm/copypage-v6.c                        |   12 ++--
-  arch/arm/mm/copypage-xsc3.c                      |   12 ++--
-  arch/arm/mm/copypage-xscale.c                    |    8 +-
-  arch/arm/mm/highmem.c                            |    4 +-
-  arch/frv/include/asm/highmem.h                   |    2 +-
-  arch/frv/mm/highmem.c                            |    4 +-
-  arch/mips/include/asm/highmem.h                  |    2 +-
-  arch/mips/mm/c-r4k.c                             |    4 +-
-  arch/mips/mm/highmem.c                           |    4 +-
-  arch/mips/mm/init.c                              |    8 +-
-  arch/mn10300/include/asm/highmem.h               |    2 +-
-  arch/parisc/include/asm/cacheflush.h             |    2 +-
-  arch/powerpc/include/asm/highmem.h               |    2 +-
-  arch/powerpc/kvm/book3s_pr.c                     |    4 +-
-  arch/powerpc/mm/dma-noncoherent.c                |    5 +-
-  arch/powerpc/mm/hugetlbpage.c                    |    4 +-
-  arch/powerpc/mm/mem.c                            |    4 +-
-  arch/sh/mm/cache-sh4.c                           |    4 +-
-  arch/sh/mm/cache.c                               |   12 ++--
-  arch/sparc/include/asm/highmem.h                 |    2 +-
-  arch/sparc/mm/highmem.c                          |    4 +-
-  arch/tile/include/asm/highmem.h                  |    2 +-
-  arch/tile/mm/highmem.c                           |    4 +-
-  arch/um/kernel/skas/uaccess.c                    |    4 +-
-  arch/x86/crypto/aesni-intel_glue.c               |   24 +++---
-  arch/x86/include/asm/highmem.h                   |    2 +-
-  arch/x86/kernel/crash_dump_32.c                  |    6 +-
-  arch/x86/kvm/lapic.c                             |    8 +-
-  arch/x86/kvm/paging_tmpl.h                       |    4 +-
-  arch/x86/kvm/x86.c                               |    8 +-
-  arch/x86/lib/usercopy_32.c                       |    4 +-
-  arch/x86/mm/highmem_32.c                         |    4 +-
-  crypto/ahash.c                                   |    4 +-
-  crypto/async_tx/async_memcpy.c                   |    8 +-
-  crypto/blkcipher.c                               |    8 +-
-  crypto/ccm.c                                     |    4 +-
-  crypto/scatterwalk.c                             |    8 +-
-  crypto/shash.c                                   |    8 +-
-  drivers/ata/libata-sff.c                         |    8 +-
-  drivers/block/brd.c                              |   20 +++---
-  drivers/block/drbd/drbd_bitmap.c                 |   50 ++++++------
-  drivers/block/drbd/drbd_nl.c                     |    4 +-
-  drivers/block/loop.c                             |   16 ++--
-  drivers/block/pktcdvd.c                          |    8 +-
-  drivers/crypto/hifn_795x.c                       |   10 +-
-  drivers/edac/edac_mc.c                           |    4 +-
-  drivers/gpu/drm/drm_cache.c                      |    8 +-
-  drivers/gpu/drm/ttm/ttm_tt.c                     |   16 ++--
-  drivers/gpu/drm/vmwgfx/vmwgfx_gmr.c              |    6 +-
-  drivers/ide/ide-taskfile.c                       |    4 +-
-  drivers/infiniband/ulp/iser/iser_memory.c        |    8 +-
-  drivers/md/bitmap.c                              |   42 +++++-----
-  drivers/md/dm-crypt.c                            |    8 +-
-  drivers/media/video/ivtv/ivtv-udma.c             |    4 +-
-  drivers/memstick/host/jmb38x_ms.c                |    4 +-
-  drivers/memstick/host/tifm_ms.c                  |    4 +-
-  drivers/mmc/host/at91_mci.c                      |    8 +-
-  drivers/mmc/host/msm_sdcc.c                      |    6 +-
-  drivers/mmc/host/sdhci.c                         |    4 +-
-  drivers/mmc/host/tifm_sd.c                       |   16 ++--
-  drivers/mmc/host/tmio_mmc.h                      |    4 +-
-  drivers/net/ethernet/intel/e1000/e1000_main.c    |    6 +-
-  drivers/net/ethernet/intel/e1000e/netdev.c       |   10 +--
-  drivers/net/ethernet/sun/cassini.c               |    4 +-
-  drivers/scsi/arcmsr/arcmsr_hba.c                 |    8 +-
-  drivers/scsi/bnx2fc/bnx2fc_fcoe.c                |    5 +-
-  drivers/scsi/cxgbi/libcxgbi.c                    |    5 +-
-  drivers/scsi/fcoe/fcoe.c                         |    4 +-
-  drivers/scsi/fcoe/fcoe_transport.c               |    5 +-
-  drivers/scsi/gdth.c                              |    4 +-
-  drivers/scsi/ips.c                               |    6 +-
-  drivers/scsi/isci/request.c                      |   16 ++--
-  drivers/scsi/libfc/fc_fcp.c                      |    8 +-
-  drivers/scsi/libfc/fc_libfc.c                    |    8 +-
-  drivers/scsi/libfc/fc_libfc.h                    |    2 +-
-  drivers/scsi/libfc/fc_lport.c                    |    2 +-
-  drivers/scsi/libiscsi_tcp.c                      |    4 +-
-  drivers/scsi/libsas/sas_host_smp.c               |    8 +-
-  drivers/scsi/megaraid.c                          |    4 +-
-  drivers/scsi/mvsas/mv_sas.c                      |    4 +-
-  drivers/scsi/scsi_debug.c                        |   24 +++---
-  drivers/scsi/scsi_lib.c                          |    4 +-
-  drivers/scsi/sd_dif.c                            |   12 ++--
-  drivers/staging/gma500/mmu.c                     |   30 ++++----
-  drivers/staging/hv/netvsc_drv.c                  |    5 +-
-  drivers/staging/hv/rndis_filter.c                |    4 +-
-  drivers/staging/hv/storvsc_drv.c                 |   31 +++----
-  drivers/staging/pohmelfs/inode.c                 |    8 +-
-  drivers/staging/rtl8192u/ieee80211/cipher.c      |    8 +-
-  drivers/staging/rtl8192u/ieee80211/digest.c      |    8 +-
-  drivers/staging/rtl8192u/ieee80211/internal.h    |   17 ----
-  drivers/staging/rtl8192u/ieee80211/kmap_types.h  |   20 -----
-  drivers/staging/rtl8192u/ieee80211/scatterwalk.c |   19 +---
-  drivers/staging/zcache/zcache-main.c             |   16 ++--
-  drivers/staging/zram/xvmalloc.c                  |   39 +++++-----
-  drivers/staging/zram/zram_drv.c                  |   44 +++++-----
-  drivers/target/target_core_transport.c           |    4 +-
-  drivers/target/tcm_fc/tfc_io.c                   |   10 +--
-  drivers/vhost/vhost.c                            |    4 +-
-  fs/afs/fsclient.c                                |    8 +-
-  fs/afs/mntpt.c                                   |    4 +-
-  fs/aio.c                                         |   30 ++++----
-  fs/bio-integrity.c                               |   10 +-
-  fs/btrfs/compression.c                           |   12 ++--
-  fs/btrfs/extent_io.c                             |   16 ++--
-  fs/btrfs/file-item.c                             |    4 +-
-  fs/btrfs/inode.c                                 |   26 +++---
-  fs/btrfs/lzo.c                                   |    4 +-
-  fs/btrfs/scrub.c                                 |    8 +-
-  fs/btrfs/zlib.c                                  |    4 +-
-  fs/ecryptfs/mmap.c                               |    4 +-
-  fs/ecryptfs/read_write.c                         |    8 +-
-  fs/exec.c                                        |    4 +-
-  fs/exofs/dir.c                                   |    4 +-
-  fs/ext2/dir.c                                    |    4 +-
-  fs/fuse/dev.c                                    |    4 +-
-  fs/fuse/file.c                                   |    4 +-
-  fs/gfs2/aops.c                                   |   12 ++--
-  fs/gfs2/lops.c                                   |    8 +-
-  fs/gfs2/quota.c                                  |    4 +-
-  fs/jbd/journal.c                                 |   12 ++--
-  fs/jbd/transaction.c                             |    4 +-
-  fs/jbd2/commit.c                                 |    4 +-
-  fs/jbd2/journal.c                                |   12 ++--
-  fs/jbd2/transaction.c                            |    4 +-
-  fs/logfs/dir.c                                   |   18 ++--
-  fs/logfs/readwrite.c                             |   38 +++++-----
-  fs/logfs/segment.c                               |    4 +-
-  fs/minix/dir.c                                   |    4 +-
-  fs/namei.c                                       |    4 +-
-  fs/nfs/dir.c                                     |    8 +-
-  fs/nfs/nfs4proc.c                                |    4 +-
-  fs/nilfs2/cpfile.c                               |   94 
-+++++++++++-----------
-  fs/nilfs2/dat.c                                  |   38 +++++-----
-  fs/nilfs2/dir.c                                  |    4 +-
-  fs/nilfs2/ifile.c                                |    4 +-
-  fs/nilfs2/mdt.c                                  |    4 +-
-  fs/nilfs2/page.c                                 |    8 +-
-  fs/nilfs2/recovery.c                             |    4 +-
-  fs/nilfs2/segbuf.c                               |    4 +-
-  fs/nilfs2/sufile.c                               |   68 ++++++++--------
-  fs/ntfs/aops.c                                   |   20 +++---
-  fs/ntfs/attrib.c                                 |   20 +++---
-  fs/ntfs/file.c                                   |   16 ++--
-  fs/ntfs/super.c                                  |    8 +-
-  fs/ocfs2/aops.c                                  |   16 ++--
-  fs/pipe.c                                        |    8 +-
-  fs/reiserfs/stree.c                              |    4 +-
-  fs/reiserfs/tail_conversion.c                    |    4 +-
-  fs/splice.c                                      |    7 +-
-  fs/squashfs/file.c                               |    8 +-
-  fs/squashfs/symlink.c                            |    4 +-
-  fs/ubifs/file.c                                  |    4 +-
-  fs/udf/file.c                                    |    4 +-
-  include/crypto/scatterwalk.h                     |   28 +------
-  include/linux/bio.h                              |    8 +-
-  include/linux/highmem.h                          |   79 +++++++++++++-----
-  kernel/debug/kdb/kdb_support.c                   |    4 +-
-  kernel/power/snapshot.c                          |   28 +++---
-  lib/scatterlist.c                                |    4 +-
-  lib/swiotlb.c                                    |    5 +-
-  mm/bounce.c                                      |    4 +-
-  mm/filemap.c                                     |    8 +-
-  mm/ksm.c                                         |   12 ++--
-  mm/memory.c                                      |    4 +-
-  mm/shmem.c                                       |    4 +-
-  mm/swapfile.c                                    |   30 ++++----
-  mm/vmalloc.c                                     |    8 +-
-  net/core/kmap_skb.h                              |    4 +-
-  net/rds/ib_recv.c                                |    7 +-
-  net/rds/info.c                                   |    6 +-
-  net/rds/iw_recv.c                                |    7 +-
-  net/rds/loop.c                                   |    2 +-
-  net/rds/rds.h                                    |    2 +-
-  net/rds/recv.c                                   |    2 +-
-  net/rds/tcp_recv.c                               |   11 +--
-  net/sunrpc/auth_gss/gss_krb5_wrap.c              |    4 +-
-  net/sunrpc/socklib.c                             |    4 +-
-  net/sunrpc/xdr.c                                 |   20 +++---
-  net/sunrpc/xprtrdma/rpc_rdma.c                   |    8 +-
-  security/tomoyo/domain.c                         |    4 +-
-  189 files changed, 940 insertions(+), 991 deletions(-)
+Li Zefan wrote:
+> Tejun Heo wrote:
+>> Hello,
+>>
+>> On Thu, Dec 29, 2011 at 10:50:06AM +0800, Li Zefan wrote:
+>>> Tejun Heo wrote:
+>>>> Hello, Li.
+>>>>
+>>>> On Wed, Dec 28, 2011 at 02:10:42PM +0800, Li Zefan wrote:
+>>>>> The "name" option was introduced along with the "none" option, so we
+>>>>> can distinguish between different cgroup hierarchies which have no
+>>>>> bound subsystems, like this:
+>>>>>
+>>>>> 	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
+>>>>> 	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
+>>>>>
+>>>>> As the name is unique, we have this "mount by hierarchy name" feature.
+>>>>
+>>>> I could be missing something but does that add anything other than
+>>>> naming convenience?
+>>>
+>>> The name option is necessary, otherwise how can we mount hierarchies
+>>> as shown in the above example?
+>>
+>> I don't think mounting itself would be a problem.  We don't need name
+>> option to create multiple tmpfs instances, right?  The problem is
+> 
+> Right, but you can't mount the same tmpfs instance in more than one mount
+> point.
+> 
+>> referencing to them after they're created.  Filesystems generally
+>> don't need such identifier because, once they're created, they can be
+>> referenced by their mount points.  I'm still not very familiar with
+>> different corners of cgroup, so it's entirely possible that I'm
+>> missing something.  If I am, please point me to it.
+>>
+> 
+> Normal filesystems can have multi mount points, and an fs instance
+> is identified by device name, but cgroupfs ignores device name like
+> other pseudo filesystems. Instead a set of subsystems is used, so
+> to mount the same cgroupfs instance in different mount points, we
+> can do this:
+> 
+> 	# mount -t cgroup -o cpuset xxx /cgroup1
+> 	# mount -t cgroup -o cpuset xxx /cgroup2
+> 
+> Now we have the "none" option, so a cgroupfs can have no subsystems
+> bound to it, and we allow multi instances of such cgroupfs, so we
+> have to assign names to each instance:
+> 
+> 	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
+> 	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
+> 
+> Then we want to also mount "hier1" in another mount point, we can't
+> do this:
+> 
+> 	# mount -t cgroup -o none xxx /mnt
+> 
+> because we have two different instances with "none" subsystem. So
+> we specify its name:
+> 
+> 	# mount -t cgroup -o none,name=hier1 xxx /mnt
+> 
+> Hope I have made things clear to you?
+> 
+>>>> If it's a redundant feature which has been broken over a year without
+>>>> anyone complaining, it really doesn't need to exist.  It might not
+>>>> save a lot of code but would save some WTH moments.
+>>>>
+>>>
+>>> The redundant feature is mouting existing hierarchies by specifying name
+>>> only, and the cleanup patch I sent has this feature removed in effect.
+>>>
+>>> kernel/cgroup.c |   15 +++++++--------
+>>> 1 files changed, 7 insertions(+), 8 deletions(-)
+>>>
+>>> This is why I'm not so keen to remove the feature.
+>>
+>> Code reduction is definitely a plus and I don't want to remove a
+>> useful feature either, but an unusual redundant feature without
+>> necessity is confusing / misleading even if it doesn't necessasrily
+>> add a lot of code complexity.
+>>
+>> Also, I at least want to understand why it's actually necessary before
+>> applying the patches.  :)
+>>
+> 
+> What I try to fix here is the behavior of "mount -t cgroup -o name=xxx ..."
+> (no other options are specified), so what behavior do we want?
+> 
+> 1. find if any existing cgroupfs instance matches the name, which is
+> the orginal behavior.
+> 
+> 2. the same as "mount -t cgroup -o all,name=xxx ...", which is the
+> current behavior due to the commit that broke (1).
+> 
+> 3. make it invalid and fail to mount.
+> 
+> 4. any other idea?
