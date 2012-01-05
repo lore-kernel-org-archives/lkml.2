@@ -1,201 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883Ab2AEF54 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 00:57:56 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:31380 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab2AEF5y (ORCPT
+	id S1751945Ab2AEF7E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 00:59:04 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54860 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751377Ab2AEF7C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 00:57:54 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee61b-b7b95ae00000198b-b9-4f053bdfc976
-Message-id: <4F053BCF.7030600@samsung.com>
-Date: Thu, 05 Jan 2012 14:57:35 +0900
-From: Donggeun Kim <dg77.kim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419
- Thunderbird/3.1.9
-To: Amit Kachhap <amit.kachhap@linaro.org>
-Cc: guenter.roeck@ericsson.com,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "lenb@kernel.org" <lenb@kernel.org>
-Subject: Re: [lm-sensors] [RFC PATCH 2/3] thermal: exynos4: Register the tmu
- sensor with the thermal interface layer
-References: <1324468798-20423-1-git-send-email-amit.kachhap@linaro.org>
- <1324468798-20423-3-git-send-email-amit.kachhap@linaro.org>
- <1325629553.26706.11.camel@groeck-laptop>
- <CAK44p20XeLVkJyox2SsDqyy=RYgEQNpyGGypwTMPXpueQT1T3g@mail.gmail.com>
-In-reply-to: <CAK44p20XeLVkJyox2SsDqyy=RYgEQNpyGGypwTMPXpueQT1T3g@mail.gmail.com>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 5 Jan 2012 00:59:02 -0500
+Date: Thu, 5 Jan 2012 05:59:00 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan.com@nvidia.com>
+Cc: lrg@slimlogic.co.uk, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        ldewangan@nvidia.com
+Subject: Re: [PATCH V1] regulator: fixed: Move drivers to
+	subsys_initcall_sync()
+Message-ID: <20120105055900.GE11867@opensource.wolfsonmicro.com>
+References: <1325693335-1905-1-git-send-email-ldewangan@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325693335-1905-1-git-send-email-ldewangan@nvidia.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Actually, the TMU driver is closely related to thermal layer.
-I think it's okay to move it to the thermal.
+On Wed, Jan 04, 2012 at 09:38:55PM +0530, Laxman Dewangan wrote:
+> From: Laxman Dewangan <ldewangan@nvidia.com>
+> 
+> The fixed regulator is used to enable/disable rails which are
+> mainly controlled by the switch. The switches are toggled by
+> gpio apis.
+> The switches are connected through on-chip gpios or through
+> external devices' gpios like mfd, i2c based gpio expander etc.
+> The registration of the fixed regulator get success only if the
+> required gpios are already available in the system at this time.
+> The on-chip gpios are available till this time as on-chip gpios
+> are initialized in arch_init(). But external peripheral's gpios
+> may not be available at this time as they get initialized as part
+> of subsys_initcall() and due to this registration of the fixed
+> regulator may fails.
+> Moving the driver to subsys_initcall_sync() will make sure that
+> all gpios i.e. on-chip gpios as well as external peripheral's gpios
+> are available before fixed regulator registration.
 
-Thanks.
--Donggeun
-
-On 2012년 01월 04일 19:14, Amit Kachhap wrote:
-> Hi Guenter,
-> 
-> The main idea of this work is to leave the current userspace based
-> notification scheme and add the kernel based cooling scheme on top of
-> it. Anyway, It is a good idea to move the file hwmon/exynos4_tmu.c as
-> this creates 2 hwmon entries.
-> Adding CC: Donggeun Kim to know his opinion.
-> 
-> Thanks,
-> Amit Daniel
-> 
-> On 4 January 2012 03:55, Guenter Roeck <guenter.roeck@ericsson.com> wrote:
->> On Wed, 2011-12-21 at 06:59 -0500, Amit Daniel Kachhap wrote:
->>> Export and register information from the hwmon tmu sensor to the samsung
->>> exynos kernel thermal framework where different cooling devices and thermal
->>> zone are binded. The exported information is based according to the data
->>> structure thermal_sensor_conf present in exynos_thermal.h. HWMON sysfs
->>> functions are currently left although all of them are present in generic
->>> linux thermal layer.
->>> Also the platform data structure is modified to pass frequency cooling
->>> in percentages for each thermal level.
->>>
->> Hi Amit,
->>
->> wouldn't it make more sense to merge the code as necessary from
->> hwmon/exynos4_tmu.c into the new thermal/exynos_thermal.c, and drop
->> hwmon/exynos4_tmu.c entirely ?
->>
->> With that, you should get the hwmon entries for free, and we would not
->> have to maintain two drivers with overlapping functionality.
->>
->> Thanks,
->> Guenter
->>
->>> Signed-off-by: Amit Daniel Kachhap <amit.kachhap@linaro.org>
->>> ---
->>>  drivers/hwmon/exynos4_tmu.c               |   34 ++++++++++++++++++++++++++--
->>>  include/linux/platform_data/exynos4_tmu.h |    7 ++++++
->>>  2 files changed, 38 insertions(+), 3 deletions(-)
->>>
->>> diff --git a/drivers/hwmon/exynos4_tmu.c b/drivers/hwmon/exynos4_tmu.c
->>> index f2359a0..6912a7f 100644
->>> --- a/drivers/hwmon/exynos4_tmu.c
->>> +++ b/drivers/hwmon/exynos4_tmu.c
->>> @@ -37,6 +37,9 @@
->>>  #include <linux/hwmon-sysfs.h>
->>>
->>>  #include <linux/platform_data/exynos4_tmu.h>
->>> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->>> +#include <linux/exynos_thermal.h>
->>> +#endif
->>>
->>>  #define EXYNOS4_TMU_REG_TRIMINFO     0x0
->>>  #define EXYNOS4_TMU_REG_CONTROL              0x20
->>> @@ -248,10 +251,13 @@ static void exynos4_tmu_work(struct work_struct *work)
->>>
->>>       kobject_uevent(&data->hwmon_dev->kobj, KOBJ_CHANGE);
->>>
->>> -     enable_irq(data->irq);
->>>
->>>       clk_disable(data->clk);
->>>       mutex_unlock(&data->lock);
->>> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->>> +     exynos4_report_trigger();
->>> +#endif
->>> +     enable_irq(data->irq);
->>>  }
->>>
->>>  static irqreturn_t exynos4_tmu_irq(int irq, void *id)
->>> @@ -345,6 +351,14 @@ static const struct attribute_group exynos4_tmu_attr_group = {
->>>       .attrs = exynos4_tmu_attributes,
->>>  };
->>>
->>> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->>> +static struct thermal_sensor_conf exynos4_sensor_conf = {
->>> +     .name                   = "exynos4-therm",
->>> +     .read_temperature       = (int (*)(void *))exynos4_tmu_read,
->>> +};
->>> +#endif
->>> +/*CONFIG_SAMSUNG_THERMAL_INTERFACE*/
->>> +
->>>  static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
->>>  {
->>>       struct exynos4_tmu_data *data;
->>> @@ -432,9 +446,20 @@ static int __devinit exynos4_tmu_probe(struct platform_device *pdev)
->>>       }
->>>
->>>       exynos4_tmu_control(pdev, true);
->>> -
->>> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->>> +     (&exynos4_sensor_conf)->private_data = data;
->>> +     (&exynos4_sensor_conf)->sensor_data = pdata;
->>> +     ret = exynos4_register_thermal(&exynos4_sensor_conf);
->>> +     if (ret) {
->>> +             dev_err(&pdev->dev, "Failed to register thermal interface\n");
->>> +             goto err_hwmon_device;
->>> +     }
->>> +#endif
->>>       return 0;
->>> -
->>> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->>> +err_hwmon_device:
->>> +     hwmon_device_unregister(data->hwmon_dev);
->>> +#endif
->>>  err_create_group:
->>>       sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
->>>  err_clk:
->>> @@ -458,6 +483,9 @@ static int __devexit exynos4_tmu_remove(struct platform_device *pdev)
->>>
->>>       exynos4_tmu_control(pdev, false);
->>>
->>> +#ifdef CONFIG_SAMSUNG_THERMAL_INTERFACE
->>> +     exynos4_unregister_thermal();
->>> +#endif
->>>       hwmon_device_unregister(data->hwmon_dev);
->>>       sysfs_remove_group(&pdev->dev.kobj, &exynos4_tmu_attr_group);
->>>
->>> diff --git a/include/linux/platform_data/exynos4_tmu.h b/include/linux/platform_data/exynos4_tmu.h
->>> index 39e038c..642c508 100644
->>> --- a/include/linux/platform_data/exynos4_tmu.h
->>> +++ b/include/linux/platform_data/exynos4_tmu.h
->>> @@ -21,6 +21,7 @@
->>>
->>>  #ifndef _LINUX_EXYNOS4_TMU_H
->>>  #define _LINUX_EXYNOS4_TMU_H
->>> +#include <linux/cpu_cooling.h>
->>>
->>>  enum calibration_type {
->>>       TYPE_ONE_POINT_TRIMMING,
->>> @@ -64,6 +65,9 @@ enum calibration_type {
->>>   *   in the positive-TC generator block
->>>   *   0 <= reference_voltage <= 31
->>>   * @cal_type: calibration type for temperature
->>> + * @freq_pctg_table: Table representing frequency reduction percentage.
->>> + * @freq_tab_count: Count of the above table as frequency reduction may
->>> + *   applicable to only some of the trigger levels.
->>>   *
->>>   * This structure is required for configuration of exynos4_tmu driver.
->>>   */
->>> @@ -79,5 +83,8 @@ struct exynos4_tmu_platform_data {
->>>       u8 reference_voltage;
->>>
->>>       enum calibration_type cal_type;
->>> +
->>> +     struct freq_pctg_table freq_tab[4];
->>> +     unsigned int freq_tab_count;
->>>  };
->>>  #endif /* _LINUX_EXYNOS4_TMU_H */
->>
->>
-> 
-
+I don't really think this is worth faffing about with, it seems at least
+as likely to create more problems with things that depend on the
+regulator as it is to make the regulator work.  Really we need Grant's
+probe retry stuff or something else to solve the init ordering issues
+properly.
