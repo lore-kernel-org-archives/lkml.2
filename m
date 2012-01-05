@@ -1,114 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab2AEDES (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 22:04:18 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:42047 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab2AEDEP (ORCPT
+	id S1757821Ab2AEDFq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 22:05:46 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:48416 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757770Ab2AEDFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 22:04:15 -0500
-Date: Thu, 5 Jan 2012 14:04:05 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Larry Finger <Larry.Finger@lwfinger.net>
-Subject: linux-next: manual merge of the wireless-next tree with the
- net-next tree
-Message-Id: <20120105140405.92816482d364abfcf3854d74@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_14_04_05_+1100_6QZJW+EiW.bI.Th="
+	Wed, 4 Jan 2012 22:05:44 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Tejun Heo <tj@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: Sysfs attributes racing with unregistration
+References: <Pine.LNX.4.44L0.1201041431160.1505-100000@iolanthe.rowland.org>
+Date: Wed, 04 Jan 2012 19:07:52 -0800
+In-Reply-To: <Pine.LNX.4.44L0.1201041431160.1505-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Wed, 4 Jan 2012 14:41:12 -0500 (EST)")
+Message-ID: <m1boqietiv.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX19ZrUDoeugCeI934q9GIjZj52BmRw/B4Lk=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_14_04_05_+1100_6QZJW+EiW.bI.Th=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-Hi John,
+> On Wed, 4 Jan 2012, Eric W. Biederman wrote:
+>
+>> > Someone (I think Eric, right?) was trying to generalize the semantics
+>> > to vfs layer so that severance/revocation capability is generally
+>> > available.  IIRC, it didn't get through tho.
+>> 
+>> Unfortunately I didn't have time to complete the effort of those
+>> patches.  The approach was not fundamentally rejected but it needed a
+>> clear and convincing use case as well as some strong scrutiny.  But
+>> fundamentally finding a way to do that was seen as an interesting,
+>> if it could be solved without slowing down the existing cases.
+>
+> Ted Ts'o has been talking about something similar but not the same -- a
+> way to revoke an entire filesystem.  For example, see commit
+> 7c2e70879fc0949b4220ee61b7c4553f6976a94d (ext4: add ext4-specific
+> kludge to avoid an oops after the disk disappears).
+>
+> The use case for that is obvious and widespread: Somebody yanks out a
+> USB drive without unmounting it first.
 
-Today's linux-next merge of the wireless-next tree got a conflict in
-drivers/net/wireless/b43legacy/dma.c between commit 3db1cd5c05f3 ("net:
-fix assignment of 0/1 to bool variables") from the net-next tree and
-commit 5d07a3d62f63 ("b43legacy: Avoid packet losses in the dma worker
-code") from the wireless-next tree.
+Agreed.  The best I have at the moment is a library that can wrap
+filesystem methods to implement the hotplug bits.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Do you know how hard it is to remove event up to the filesystem that
+sits on top of a block device?
 
-diff --cc drivers/net/wireless/b43legacy/dma.c
-index 1ee31c5,aebef75..0000000
---- a/drivers/net/wireless/b43legacy/dma.c
-+++ b/drivers/net/wireless/b43legacy/dma.c
-@@@ -1186,8 -1180,10 +1180,10 @@@ int b43legacy_dma_tx(struct b43legacy_w
-  	if ((free_slots(ring) < SLOTS_PER_PACKET) ||
-  	    should_inject_overflow(ring)) {
-  		/* This TX ring is full. */
-- 		ieee80211_stop_queue(dev->wl->hw, txring_to_priority(ring));
-+ 		unsigned int skb_mapping =3D skb_get_queue_mapping(skb);
-+ 		ieee80211_stop_queue(dev->wl->hw, skb_mapping);
-+ 		dev->wl->tx_queue_stopped[skb_mapping] =3D 1;
- -		ring->stopped =3D 1;
- +		ring->stopped =3D true;
-  		if (b43legacy_debug(dev, B43legacy_DBG_DMAVERBOSE))
-  			b43legacydbg(dev->wl, "Stopped TX ring %d\n",
-  			       ring->index);
-@@@ -1285,14 -1293,21 +1293,21 @@@ void b43legacy_dma_handle_txstatus(stru
-  	dev->stats.last_tx =3D jiffies;
-  	if (ring->stopped) {
-  		B43legacy_WARN_ON(free_slots(ring) < SLOTS_PER_PACKET);
-- 		ieee80211_wake_queue(dev->wl->hw, txring_to_priority(ring));
- -		ring->stopped =3D 0;
- +		ring->stopped =3D false;
-+ 	}
-+=20
-+ 	if (dev->wl->tx_queue_stopped[ring->queue_prio]) {
-+ 		dev->wl->tx_queue_stopped[ring->queue_prio] =3D 0;
-+ 	} else {
-+ 		/* If the driver queue is running wake the corresponding
-+ 		 * mac80211 queue. */
-+ 		ieee80211_wake_queue(dev->wl->hw, ring->queue_prio);
-  		if (b43legacy_debug(dev, B43legacy_DBG_DMAVERBOSE))
-  			b43legacydbg(dev->wl, "Woke up TX ring %d\n",
-- 			       ring->index);
-+ 				     ring->index);
-  	}
--=20
-- 	spin_unlock(&ring->lock);
-+ 	/* Add work to the queue. */
-+ 	ieee80211_queue_work(dev->wl->hw, &dev->wl->tx_work);
-  }
- =20
-  static void dma_rx(struct b43legacy_dmaring *ring,
+Do you know how hard it is to detect at mount time if a block device
+might be hot-plugable?  We can always use a mount option here and
+make userspace figure it out, but being to have a good default would
+be nice.
 
---Signature=_Thu__5_Jan_2012_14_04_05_+1100_6QZJW+EiW.bI.Th=
-Content-Type: application/pgp-signature
+If it isn't too hard to get the event up from the block device to the
+filesystem when the block device is uncermoniously removed I might just
+make the time to have hotunplug trigger a filesystem wide revoke on a
+filesystem like ext4.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+In addition to sysfs we need the same logic in proc, sysctl, and uio.
+So it makes sense to move towards a common library that can do all of
+the hard bits.
 
-iQIcBAEBCAAGBQJPBRMlAAoJEECxmPOUX5FEnbUP/0GNpT1I5oqPc0RwPiliHTRq
-T97vek5Mjc1Y7ENvJl5DnPSda1D5sDVMGuvXR1y1Qnw+LhsyJVYsjnumsR22haFg
-+4McRvzLt8E56hePDx+l0rZ56MlFx8vL1Ogf6Wh9UlZ8Ze5aZEyG2EvLa6RzRaFN
-Hndf4ZTXfpAKxnFiTCZvR+4jI2tqXEpjyNyoiJZoAgF8FFlvgqZR6M9XjHp117EV
-HPQRj+fseiKsWHch+hMlabD70RcR5chX/PT8AaoC/tdRgOHokrPH8AdYIwoEzcAv
-5T4xfE9czc/zBfAEOXAI/DYTA0PsuVvXTyYU2+CxF+EID4EKaht5G+VLEwy0AV7v
-LUFSFCMLrnCrIW+8GRccOUGqhgBE5JoKVZ0/xrI3NrV08xw9evPfoK5QKNj/eFzt
-9QiMbWLK1FXDNvzqmS+CQjwaXqWtIPLy/yT24fAejITvDXMSWLpNIhYFRXXWHYxZ
-U+TDNoL0jTIbuTnw34z9WkOYfMWhDc6/W+4HASYRiKP/24oZ/pyfIS3s1oqwmN/K
-BdfRCR8YNd6yWNBJ5iyoYNa69Kdd0Xsj8wwmo6kC7KSiU8HV9lrZTWgBUP7PLYDO
-opV+nvOnSH2TTQq7hpjVSTOonl+UN8gKf99moVhC/KPIjwRjuMTlsDwNnBsly9SC
-ainihfmB7j7dihCAmNOm
-=zd4a
------END PGP SIGNATURE-----
+I just notice that sysctl is currently sysctl is broken in design if not
+in practice by having poll methods that will break if you unregister
+the sysctls.  Fortunately for the time being we don't have any sysctls
+where that case comes up.
 
---Signature=_Thu__5_Jan_2012_14_04_05_+1100_6QZJW+EiW.bI.Th=--
+Eric
