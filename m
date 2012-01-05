@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932795Ab2AEUYh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:24:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35122 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758287Ab2AEUYf (ORCPT
+	id S1758323Ab2AEU0J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:26:09 -0500
+Received: from zone0.gcu-squad.org ([212.85.147.21]:10306 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758065Ab2AEU0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:24:35 -0500
-Date: Thu, 5 Jan 2012 14:24:29 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
- hotkey problems
-Message-ID: <20120105202429.GF25386@ubuntu-macmini>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-	Thomas Renninger <trenn@suse.de>,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
- <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
- <20120105182627.GE24242@srcf.ucam.org>
- <20120105193228.GB25386@ubuntu-macmini>
- <20120105193431.GA26097@srcf.ucam.org>
- <20120105200432.GE25386@ubuntu-macmini>
- <20120105200925.GA26877@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105200925.GA26877@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Jan 2012 15:26:07 -0500
+Date: Thu, 5 Jan 2012 21:25:53 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rudolf Marek <r.marek@assembler.cz>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        Olof Johansson <olof@lixom.net>,
+        "Mark M. Hoffman" <mhoffman@lightlink.com>,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>,
+        Wolfram Sang <w.sang@pengutronix.de>, Feng Tang <feng.tang@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        linux-i2c@vger.kernel.org
+Subject: Re: [PATCH RESEND] i2c: Convert to DEFINE_PCI_DEVICE_TABLE
+Message-ID: <20120105212553.02d69dda@endymion.delvare>
+In-Reply-To: <1325076512.6997.1.camel@phoenix>
+References: <1325076512.6997.1.camel@phoenix>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 08:09:26PM +0000, Matthew Garrett wrote:
-> On Thu, Jan 05, 2012 at 02:04:32PM -0600, Seth Forshee wrote:
-> > On Thu, Jan 05, 2012 at 07:34:31PM +0000, Matthew Garrett wrote:
-> > > In that case, can you check for the presence of the WMI interface and 
-> > > then refuse to bind? That's seem far simpler than adding an unknown 
-> > > number of systems to the blacklist.
-> > 
-> > Hmm, I suppose I could look for the specific WMI event guid, although
-> > the relationship between the two seems tenuous at best. It would make
-> > sense to me if we were refusing to bind because there was a better
-> > interface available, but Toshiba is obviously treating hotkeys on the
-> > WMI interface as legacy since it's disabled in the BIOS for Vista or
-> > later. INFO seems to be the preferred interface.
+On Wed, 28 Dec 2011 20:48:32 +0800, Axel Lin wrote:
+> Convert static struct pci_device_id *[] to static DEFINE_PCI_DEVICE_TABLE
+> tables.
 > 
-> ...but doesn't work?
+> Use DEFINE_PCI_DEVICE_TABLE ensures we make the pci_device_id table const
+> and marked as __devinitconst.
+> 
+> This also fixes some warnings from checkpatch:
+> e.g.
+> WARNING: Use DEFINE_PCI_DEVICE_TABLE for struct pci_device_id
+> #1096: FILE: i2c/busses/i2c-intel-mid.c:1096:
+> +static struct pci_device_id intel_mid_i2c_ids[] = {
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Rudolf Marek <r.marek@assembler.cz>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: "Mark M. Hoffman" <mhoffman@lightlink.com>
+> Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
+> Cc: Tomoya MORINAGA <tomoya-linux@dsn.lapis-semi.com>
+> Cc: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Feng Tang <feng.tang@intel.com>
+> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Cc: linux-i2c@vger.kernel.org
+> ---
+> This resend updates the change log.
+> This patch is against linux-next tree.
+> Axel
+> 
+>  drivers/i2c/busses/i2c-ali1563.c           |    2 +-
+>  drivers/i2c/busses/i2c-ali15x3.c           |    2 +-
+>  drivers/i2c/busses/i2c-amd756.c            |    2 +-
+>  drivers/i2c/busses/i2c-amd8111.c           |    2 +-
+>  drivers/i2c/busses/i2c-designware-pcidrv.c |    2 +-
+>  drivers/i2c/busses/i2c-eg20t.c             |    2 +-
+>  drivers/i2c/busses/i2c-hydra.c             |    2 +-
+>  drivers/i2c/busses/i2c-i801.c              |    2 +-
+>  drivers/i2c/busses/i2c-intel-mid.c         |    2 +-
+>  drivers/i2c/busses/i2c-nforce2.c           |    2 +-
+>  drivers/i2c/busses/i2c-pasemi.c            |    2 +-
+>  drivers/i2c/busses/i2c-piix4.c             |    2 +-
+>  drivers/i2c/busses/i2c-pxa-pci.c           |    2 +-
+>  drivers/i2c/busses/i2c-sis5595.c           |    2 +-
+>  drivers/i2c/busses/i2c-sis630.c            |    2 +-
+>  drivers/i2c/busses/i2c-sis96x.c            |    2 +-
+>  drivers/i2c/busses/i2c-via.c               |    2 +-
+>  drivers/i2c/busses/i2c-viapro.c            |    2 +-
+>  drivers/i2c/busses/scx200_acb.c            |    2 +-
+>  19 files changed, 19 insertions(+), 19 deletions(-)
+> (...)
 
-Yes. But that's not because of the WMI interface. They both just belong
-to the same BIOS implementation. There's no reason why a future machine
-couldn't have this WMI interface along with a working INFO
-implementation.
+Applied, thanks!
 
-For now that's theoretical though, so I'll change it to use the guid
-instead of the blacklist. If such a machine appears in the future we can
-deal with it then.
-
+-- 
+Jean Delvare
