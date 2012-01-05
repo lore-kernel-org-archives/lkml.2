@@ -1,622 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932557Ab2AEOuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 09:50:04 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53895 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932474Ab2AEOuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 09:50:02 -0500
-Date: Thu, 5 Jan 2012 15:47:57 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/debug changes for v3.3
-Message-ID: <20120105144757.GA6043@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S932588Ab2AEOuN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 09:50:13 -0500
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:64261 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932474Ab2AEOuJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 09:50:09 -0500
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jan 2012 09:50:08 EST
+X-AuditID: 1209190e-b7f7c6d0000008c3-f4-4f05b7730599
+Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=windows-1252
+From: Theodore Tso <tytso@MIT.EDU>
+X-Priority: 3 (Normal)
+In-Reply-To: <197607646.20120105142107@eikelenboom.it>
+Date: Thu, 5 Jan 2012 09:45:01 -0500
+Cc: Theodore Tso <tytso@MIT.EDU>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu>
+References: <217150909.20120105113759@eikelenboom.it> <197607646.20120105142107@eikelenboom.it>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+X-Mailer: Apple Mail (2.1251.1)
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGKsWRmVeSWpSXmKPExsUixG6nrlu8ndXf4OAtTouZ8+6wWVzeNYfN
+	4s+EGewOzB4/J65l8/i8SS6AKYrLJiU1J7MstUjfLoEr4+ifiUwFzWoVZ6dMZ29gnCTbxcjJ
+	ISFgIvFo72smCFtM4sK99WxdjFwcQgL7GCW6n5yBctYzSkx6fpARwlnJJPFr7WN2kBZhgUqJ
+	1as+M4LYvALGEmtuvWMBsZkF9CR2XP/FCmKzCShJ3Pm0nwVmxYR1v5hBbE4BM4kdfdfB4iwC
+	KhLPJh1jguhNlnhxdwo7hK0tsWzha2aI+VYSXd3NYDOFBOIlJm7dAdTLwSEioCvx7WoBxHh5
+	iZavd9gmMArNQnLRLCQXzUIydQEj8ypG2ZTcKt3cxMyc4tRk3eLkxLy81CJdY73czBK91JTS
+	TYygAOeU5NvB+PWg0iFGAQ5GJR7ehw0s/kKsiWXFlbmHGCU5mJREef9sYfUX4kvKT6nMSCzO
+	iC8qzUktPsQowcGsJMIbtwoox5uSWFmVWpQPk5LmYFES51XTeucnJJCeWJKanZpakFoEk9Xg
+	4BC4cvDIbEYplrz8vFQlCd4724CGCBalpqdWpGXmlCCUMnFwgiziAVrEvx1kUXFBYm5xZjpE
+	/hSjMce+V/PPMXKcm77gHKMQ2Dgpcd63IOMEQEozSvPgpsGS1ytGcaBHhXmvglTxABMf3LxX
+	QKuYgFZFibCArCpJREhJNTCuq9DvK2CUiTc9yMWhX1l58y97VVr5u8nby9MuLn+UzNdg1hZz
+	f0On3dK3Qo7rdL2eXw9bO73McG/bmbWm185ZNn25UWzYL6HSqmYYrCP95q3P8S+/Z9yaN8H6
+	cV1jB8P8mtmuvKHdXNvcVVMMXnPu3z/z4uudjycvZclbc8P7nI7HhB33q72UWIozEg21mIuK
+	EwFirXUXOQMAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull the latest x86-debug-for-linus git tree from:
+On Jan 5, 2012, at 8:21 AM, Sander Eikelenboom wrote:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-debug-for-linus
+> Hmm it seems to be over by reverting from a 3.2.0 to a 3.1.5 kernel, i now can copy the files after the fsck without it being remounted-ro due to the error.
 
+Hmm…  So the question is whether this is caused by changes to ext4 or in the device-mapper / LVM.
 
-out-of-topic modifications in x86-debug-for-linus:
---------------------------------------------------
-include/linux/kernel.h             # 55af779: x86: Panic on detection of stack 
-kernel/sysctl.c                    # 55af779: x86: Panic on detection of stack 
+The error which ext4 is reporting is that a block bitmap appears to be corrupted; the block group descriptors are reporting that there are 32258 free blocks, while only 32254 free blocks are found in the block bitmap.  Since one or the other is must be wrong, and continuing could potentially cause data loss, the file system gets mounted remounted read-only.
 
- Thanks,
+What's funny is that fsck didn't report anything wrong.   That implies that the LVM volume is returning different block contents, at least under some circumstances.
 
-	Ingo
+Hmm…. can you try reproducing this?   What happens if you now reboot into 3.2?   Do you still get the file system getting remounted read-only?    Can you try running dumpe2fs on the file system before and after running e2fsck, and when you try to reproduce it, can you make a special note of the EXT4-fs error message:
 
------------------->
-Dan Carpenter (1):
-      x86, NMI: Add to_cpumask() to silence compile warning
+[  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
 
-Don Zickus (5):
-      x86, reboot: Use NMI instead of REBOOT_VECTOR to stop cpus
-      x86, NMI: Add NMI IPI selftest
-      x86, NMI: Add knob to disable using NMI IPIs to stop cpus
-      x86, NMI: NMI-selftest should handle the UP case properly
-      x86, NMI: NMI selftest depends on the local apic
+Do the numbers stay the same each time you reproduce the problem?   And are there any changes in the output of dumpe2fs (run diff; it will probably be a very tiny difference).
 
-Ingo Molnar (1):
-      x86: Fix the 32-bit stackoverflow-debug build
+Also, what is the underlying devices underlying the LVM?   Are you using a MD device?   Or is the 200T volume spread out across multiple hard drives directly (i.e., no RAID)?
 
-Mitsuo Hayasaka (4):
-      x86: Check stack overflow in detail
-      x86: Panic on detection of stack overflow
-      x86: Clean up the range of stack overflow checking
-      x86: Add stack top margin for stack overflow checking
+-- Ted
 
 
- Documentation/kernel-parameters.txt |    4 +
- Documentation/sysctl/kernel.txt     |   14 +++
- arch/x86/Kconfig.debug              |   19 ++++-
- arch/x86/include/asm/smp.h          |    6 +
- arch/x86/kernel/Makefile            |    1 +
- arch/x86/kernel/irq_32.c            |    5 +
- arch/x86/kernel/irq_64.c            |   35 ++++++-
- arch/x86/kernel/nmi_selftest.c      |  180 +++++++++++++++++++++++++++++++++++
- arch/x86/kernel/smp.c               |   72 ++++++++++++++-
- arch/x86/kernel/smpboot.c           |    1 +
- include/linux/kernel.h              |    1 +
- kernel/sysctl.c                     |    9 ++
- 12 files changed, 337 insertions(+), 10 deletions(-)
- create mode 100644 arch/x86/kernel/nmi_selftest.c
+> 
+> --
+> Sander
+> 
+> 
+> This is a forwarded message
+> From: Sander Eikelenboom <linux@eikelenboom.it>
+> To: "Theodore Ts'o" <tytso@mit.edu>
+> Date: Thursday, January 5, 2012, 11:37:59 AM
+> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+> 
+> ===8<==============Original message text===============
+> 
+> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
+> 
+> Steps:
+> 1) fsck -v -p -f the filesystem
+> 2) mount the filesystem
+> 3) Try to copy a file
+> 4) filesystem will be mounted RO on error  (see below)
+> 5) fsck again, journal will be recovered, no other errors
+> 6) start at 1)
+> 
+> 
+> I think the way i bricked it is:
+> - make a lvm snapshot from that lvm logical disk
+> - mount that lvm snapshot as RO
+> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
+> - it fails and i can't recover (see above)
+> 
+> 
+> Is there a way to recover from this ?
+> 
+> 
+> 
+> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+> [  220.749415] Aborting journal on device dm-2-8.
+> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
+> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
+> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
+> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
+> serveerstertje:/mnt/xen_images/domains/production# cd /
+> serveerstertje:/# umount /mnt/xen_images/
+> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
+> fsck from util-linux-ng 2.17.2
+> /dev/mapper/serveerstertje-xen_images: recovering journal
+> 
+>     277 inodes used (0.00%)
+>       5 non-contiguous files (1.8%)
+>       0 non-contiguous directories (0.0%)
+>         # of inodes with ind/dind/tind blocks: 41/41/3
+>         Extent depth histogram: 69/28/2
+> 51890920 blocks used (79.18%)
+>       0 bad blocks
+>      41 large files
+> 
+>     199 regular files
+>      53 directories
+>       0 character device files
+>       0 block device files
+>       0 fifos
+>       0 links
+>      16 symbolic links (16 fast symbolic links)
+>       0 sockets
+> --------
+>     268 files
+> serveerstertje:/#
+> 
+> 
+> 
+> 
+> System:
+> - Kernel 3.2.0
+> - Debian Squeeze with:
+> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
+> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
+> 
+> ===8<===========End of original message text===========
+> 
+> 
+> 
+> -- 
+> Best regards,
+> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index a0c5c5f..b4339e5 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1796,6 +1796,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	nomfgpt		[X86-32] Disable Multi-Function General Purpose
- 			Timer usage (for AMD Geode machines).
- 
-+	nonmi_ipi	[X86] Disable using NMI IPIs during panic/reboot to
-+			shutdown the other cpus.  Instead use the REBOOT_VECTOR
-+			irq.
-+
- 	nopat		[X86] Disable PAT (page attribute table extension of
- 			pagetables) support.
- 
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 1f24636..6d8cd8b 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -49,6 +49,7 @@ show up in /proc/sys/kernel:
- - panic
- - panic_on_oops
- - panic_on_unrecovered_nmi
-+- panic_on_stackoverflow
- - pid_max
- - powersave-nap               [ PPC only ]
- - printk
-@@ -393,6 +394,19 @@ Controls the kernel's behaviour when an oops or BUG is encountered.
- 
- ==============================================================
- 
-+panic_on_stackoverflow:
-+
-+Controls the kernel's behavior when detecting the overflows of
-+kernel, IRQ and exception stacks except a user stack.
-+This file shows up if CONFIG_DEBUG_STACKOVERFLOW is enabled.
-+
-+0: try to continue operation.
-+
-+1: panic immediately.
-+
-+==============================================================
-+
-+
- pid_max:
- 
- PID allocation wrap value.  When the kernel's next PID value
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index bf56e17..aa4158f 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -63,8 +63,11 @@ config DEBUG_STACKOVERFLOW
- 	bool "Check for stack overflows"
- 	depends on DEBUG_KERNEL
- 	---help---
--	  This option will cause messages to be printed if free stack space
--	  drops below a certain limit.
-+	  Say Y here if you want to check the overflows of kernel, IRQ
-+	  and exception stacks. This option will cause messages of the
-+	  stacks in detail when free stack space drops below a certain
-+	  limit.
-+	  If in doubt, say "N".
- 
- config X86_PTDUMP
- 	bool "Export kernel pagetable layout to userspace via debugfs"
-@@ -284,4 +287,16 @@ config DEBUG_STRICT_USER_COPY_CHECKS
- 
- 	  If unsure, or if you run an older (pre 4.4) gcc, say N.
- 
-+config DEBUG_NMI_SELFTEST
-+	bool "NMI Selftest"
-+	depends on DEBUG_KERNEL && X86_LOCAL_APIC
-+	---help---
-+	  Enabling this option turns on a quick NMI selftest to verify
-+	  that the NMI behaves correctly.
-+
-+	  This might help diagnose strange hangs that rely on NMI to
-+	  function properly.
-+
-+	  If unsure, say N.
-+
- endmenu
-diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
-index 73b11bc..0434c40 100644
---- a/arch/x86/include/asm/smp.h
-+++ b/arch/x86/include/asm/smp.h
-@@ -225,5 +225,11 @@ extern int hard_smp_processor_id(void);
- 
- #endif /* CONFIG_X86_LOCAL_APIC */
- 
-+#ifdef CONFIG_DEBUG_NMI_SELFTEST
-+extern void nmi_selftest(void);
-+#else
-+#define nmi_selftest() do { } while (0)
-+#endif
-+
- #endif /* __ASSEMBLY__ */
- #endif /* _ASM_X86_SMP_H */
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index 8baca3c..02b2f05 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -80,6 +80,7 @@ obj-$(CONFIG_APB_TIMER)		+= apb_timer.o
- obj-$(CONFIG_AMD_NB)		+= amd_nb.o
- obj-$(CONFIG_DEBUG_RODATA_TEST)	+= test_rodata.o
- obj-$(CONFIG_DEBUG_NX_TEST)	+= test_nx.o
-+obj-$(CONFIG_DEBUG_NMI_SELFTEST) += nmi_selftest.o
- 
- obj-$(CONFIG_KVM_GUEST)		+= kvm.o
- obj-$(CONFIG_KVM_CLOCK)		+= kvmclock.o
-diff --git a/arch/x86/kernel/irq_32.c b/arch/x86/kernel/irq_32.c
-index 7209070..40fc861 100644
---- a/arch/x86/kernel/irq_32.c
-+++ b/arch/x86/kernel/irq_32.c
-@@ -28,6 +28,9 @@ DEFINE_PER_CPU(struct pt_regs *, irq_regs);
- EXPORT_PER_CPU_SYMBOL(irq_regs);
- 
- #ifdef CONFIG_DEBUG_STACKOVERFLOW
-+
-+int sysctl_panic_on_stackoverflow __read_mostly;
-+
- /* Debugging check for stack overflow: is there less than 1KB free? */
- static int check_stack_overflow(void)
- {
-@@ -43,6 +46,8 @@ static void print_stack_overflow(void)
- {
- 	printk(KERN_WARNING "low stack detected by irq handler\n");
- 	dump_stack();
-+	if (sysctl_panic_on_stackoverflow)
-+		panic("low stack detected by irq handler - check messages\n");
- }
- 
- #else
-diff --git a/arch/x86/kernel/irq_64.c b/arch/x86/kernel/irq_64.c
-index 69bca46..d04d3ec 100644
---- a/arch/x86/kernel/irq_64.c
-+++ b/arch/x86/kernel/irq_64.c
-@@ -26,6 +26,8 @@ EXPORT_PER_CPU_SYMBOL(irq_stat);
- DEFINE_PER_CPU(struct pt_regs *, irq_regs);
- EXPORT_PER_CPU_SYMBOL(irq_regs);
- 
-+int sysctl_panic_on_stackoverflow;
-+
- /*
-  * Probabilistic stack overflow check:
-  *
-@@ -36,18 +38,39 @@ EXPORT_PER_CPU_SYMBOL(irq_regs);
- static inline void stack_overflow_check(struct pt_regs *regs)
- {
- #ifdef CONFIG_DEBUG_STACKOVERFLOW
-+#define STACK_TOP_MARGIN	128
-+	struct orig_ist *oist;
-+	u64 irq_stack_top, irq_stack_bottom;
-+	u64 estack_top, estack_bottom;
- 	u64 curbase = (u64)task_stack_page(current);
- 
- 	if (user_mode_vm(regs))
- 		return;
- 
--	WARN_ONCE(regs->sp >= curbase &&
--		  regs->sp <= curbase + THREAD_SIZE &&
--		  regs->sp <  curbase + sizeof(struct thread_info) +
--					sizeof(struct pt_regs) + 128,
-+	if (regs->sp >= curbase + sizeof(struct thread_info) +
-+				  sizeof(struct pt_regs) + STACK_TOP_MARGIN &&
-+	    regs->sp <= curbase + THREAD_SIZE)
-+		return;
-+
-+	irq_stack_top = (u64)__get_cpu_var(irq_stack_union.irq_stack) +
-+			STACK_TOP_MARGIN;
-+	irq_stack_bottom = (u64)__get_cpu_var(irq_stack_ptr);
-+	if (regs->sp >= irq_stack_top && regs->sp <= irq_stack_bottom)
-+		return;
-+
-+	oist = &__get_cpu_var(orig_ist);
-+	estack_top = (u64)oist->ist[0] - EXCEPTION_STKSZ + STACK_TOP_MARGIN;
-+	estack_bottom = (u64)oist->ist[N_EXCEPTION_STACKS - 1];
-+	if (regs->sp >= estack_top && regs->sp <= estack_bottom)
-+		return;
-+
-+	WARN_ONCE(1, "do_IRQ(): %s has overflown the kernel stack (cur:%Lx,sp:%lx,irq stk top-bottom:%Lx-%Lx,exception stk top-bottom:%Lx-%Lx)\n",
-+		current->comm, curbase, regs->sp,
-+		irq_stack_top, irq_stack_bottom,
-+		estack_top, estack_bottom);
- 
--		  "do_IRQ: %s near stack overflow (cur:%Lx,sp:%lx)\n",
--			current->comm, curbase, regs->sp);
-+	if (sysctl_panic_on_stackoverflow)
-+		panic("low stack detected by irq handler - check messages\n");
- #endif
- }
- 
-diff --git a/arch/x86/kernel/nmi_selftest.c b/arch/x86/kernel/nmi_selftest.c
-new file mode 100644
-index 0000000..0d01a8e
---- /dev/null
-+++ b/arch/x86/kernel/nmi_selftest.c
-@@ -0,0 +1,180 @@
-+/*
-+ * arch/x86/kernel/nmi-selftest.c
-+ *
-+ * Testsuite for NMI: IPIs
-+ *
-+ * Started by Don Zickus:
-+ * (using lib/locking-selftest.c as a guide)
-+ *
-+ *   Copyright (C) 2011 Red Hat, Inc., Don Zickus <dzickus@redhat.com>
-+ */
-+
-+#include <linux/smp.h>
-+#include <linux/cpumask.h>
-+#include <linux/delay.h>
-+
-+#include <asm/apic.h>
-+#include <asm/nmi.h>
-+
-+#define SUCCESS		0
-+#define FAILURE		1
-+#define TIMEOUT		2
-+
-+static int nmi_fail;
-+
-+/* check to see if NMI IPIs work on this machine */
-+static DECLARE_BITMAP(nmi_ipi_mask, NR_CPUS) __read_mostly;
-+
-+static int testcase_total;
-+static int testcase_successes;
-+static int expected_testcase_failures;
-+static int unexpected_testcase_failures;
-+static int unexpected_testcase_unknowns;
-+
-+static int nmi_unk_cb(unsigned int val, struct pt_regs *regs)
-+{
-+	unexpected_testcase_unknowns++;
-+	return NMI_HANDLED;
-+}
-+
-+static void init_nmi_testsuite(void)
-+{
-+	/* trap all the unknown NMIs we may generate */
-+	register_nmi_handler(NMI_UNKNOWN, nmi_unk_cb, 0, "nmi_selftest_unk");
-+}
-+
-+static void cleanup_nmi_testsuite(void)
-+{
-+	unregister_nmi_handler(NMI_UNKNOWN, "nmi_selftest_unk");
-+}
-+
-+static int test_nmi_ipi_callback(unsigned int val, struct pt_regs *regs)
-+{
-+        int cpu = raw_smp_processor_id();
-+
-+        if (cpumask_test_and_clear_cpu(cpu, to_cpumask(nmi_ipi_mask)))
-+                return NMI_HANDLED;
-+
-+        return NMI_DONE;
-+}
-+
-+static void test_nmi_ipi(struct cpumask *mask)
-+{
-+	unsigned long timeout;
-+
-+	if (register_nmi_handler(NMI_LOCAL, test_nmi_ipi_callback,
-+				 NMI_FLAG_FIRST, "nmi_selftest")) {
-+		nmi_fail = FAILURE;
-+		return;
-+	}
-+
-+	/* sync above data before sending NMI */
-+	wmb();
-+
-+	apic->send_IPI_mask(mask, NMI_VECTOR);
-+
-+	/* Don't wait longer than a second */
-+	timeout = USEC_PER_SEC;
-+	while (!cpumask_empty(mask) && timeout--)
-+	        udelay(1);
-+
-+	/* What happens if we timeout, do we still unregister?? */
-+	unregister_nmi_handler(NMI_LOCAL, "nmi_selftest");
-+
-+	if (!timeout)
-+		nmi_fail = TIMEOUT;
-+	return;
-+}
-+
-+static void remote_ipi(void)
-+{
-+	cpumask_copy(to_cpumask(nmi_ipi_mask), cpu_online_mask);
-+	cpumask_clear_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
-+	if (!cpumask_empty(to_cpumask(nmi_ipi_mask)))
-+		test_nmi_ipi(to_cpumask(nmi_ipi_mask));
-+}
-+
-+static void local_ipi(void)
-+{
-+	cpumask_clear(to_cpumask(nmi_ipi_mask));
-+	cpumask_set_cpu(smp_processor_id(), to_cpumask(nmi_ipi_mask));
-+	test_nmi_ipi(to_cpumask(nmi_ipi_mask));
-+}
-+
-+static void reset_nmi(void)
-+{
-+	nmi_fail = 0;
-+}
-+
-+static void dotest(void (*testcase_fn)(void), int expected)
-+{
-+	testcase_fn();
-+	/*
-+	 * Filter out expected failures:
-+	 */
-+	if (nmi_fail != expected) {
-+		unexpected_testcase_failures++;
-+
-+		if (nmi_fail == FAILURE)
-+			printk("FAILED |");
-+		else if (nmi_fail == TIMEOUT)
-+			printk("TIMEOUT|");
-+		else
-+			printk("ERROR  |");
-+		dump_stack();
-+	} else {
-+		testcase_successes++;
-+		printk("  ok  |");
-+	}
-+	testcase_total++;
-+
-+	reset_nmi();
-+}
-+
-+static inline void print_testname(const char *testname)
-+{
-+	printk("%12s:", testname);
-+}
-+
-+void nmi_selftest(void)
-+{
-+	init_nmi_testsuite();
-+
-+        /*
-+	 * Run the testsuite:
-+	 */
-+	printk("----------------\n");
-+	printk("| NMI testsuite:\n");
-+	printk("--------------------\n");
-+
-+	print_testname("remote IPI");
-+	dotest(remote_ipi, SUCCESS);
-+	printk("\n");
-+	print_testname("local IPI");
-+	dotest(local_ipi, SUCCESS);
-+	printk("\n");
-+
-+	cleanup_nmi_testsuite();
-+
-+	if (unexpected_testcase_failures) {
-+		printk("--------------------\n");
-+		printk("BUG: %3d unexpected failures (out of %3d) - debugging disabled! |\n",
-+			unexpected_testcase_failures, testcase_total);
-+		printk("-----------------------------------------------------------------\n");
-+	} else if (expected_testcase_failures && testcase_successes) {
-+		printk("--------------------\n");
-+		printk("%3d out of %3d testcases failed, as expected. |\n",
-+			expected_testcase_failures, testcase_total);
-+		printk("----------------------------------------------------\n");
-+	} else if (expected_testcase_failures && !testcase_successes) {
-+		printk("--------------------\n");
-+		printk("All %3d testcases failed, as expected. |\n",
-+			expected_testcase_failures);
-+		printk("----------------------------------------\n");
-+	} else {
-+		printk("--------------------\n");
-+		printk("Good, all %3d testcases passed! |\n",
-+			testcase_successes);
-+		printk("---------------------------------\n");
-+	}
-+}
-diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
-index 16204dc..113acda 100644
---- a/arch/x86/kernel/smp.c
-+++ b/arch/x86/kernel/smp.c
-@@ -29,6 +29,7 @@
- #include <asm/mmu_context.h>
- #include <asm/proto.h>
- #include <asm/apic.h>
-+#include <asm/nmi.h>
- /*
-  *	Some notes on x86 processor bugs affecting SMP operation:
-  *
-@@ -148,6 +149,60 @@ void native_send_call_func_ipi(const struct cpumask *mask)
- 	free_cpumask_var(allbutself);
- }
- 
-+static atomic_t stopping_cpu = ATOMIC_INIT(-1);
-+
-+static int smp_stop_nmi_callback(unsigned int val, struct pt_regs *regs)
-+{
-+	/* We are registered on stopping cpu too, avoid spurious NMI */
-+	if (raw_smp_processor_id() == atomic_read(&stopping_cpu))
-+		return NMI_HANDLED;
-+
-+	stop_this_cpu(NULL);
-+
-+	return NMI_HANDLED;
-+}
-+
-+static void native_nmi_stop_other_cpus(int wait)
-+{
-+	unsigned long flags;
-+	unsigned long timeout;
-+
-+	if (reboot_force)
-+		return;
-+
-+	/*
-+	 * Use an own vector here because smp_call_function
-+	 * does lots of things not suitable in a panic situation.
-+	 */
-+	if (num_online_cpus() > 1) {
-+		/* did someone beat us here? */
-+		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id() != -1))
-+			return;
-+
-+		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
-+					 NMI_FLAG_FIRST, "smp_stop"))
-+			/* Note: we ignore failures here */
-+			return;
-+
-+		/* sync above data before sending NMI */
-+		wmb();
-+
-+		apic->send_IPI_allbutself(NMI_VECTOR);
-+
-+		/*
-+		 * Don't wait longer than a second if the caller
-+		 * didn't ask us to wait.
-+		 */
-+		timeout = USEC_PER_SEC;
-+		while (num_online_cpus() > 1 && (wait || timeout--))
-+			udelay(1);
-+	}
-+
-+	local_irq_save(flags);
-+	disable_local_APIC();
-+	local_irq_restore(flags);
-+}
-+
- /*
-  * this function calls the 'stop' function on all other CPUs in the system.
-  */
-@@ -160,7 +215,7 @@ asmlinkage void smp_reboot_interrupt(void)
- 	irq_exit();
- }
- 
--static void native_stop_other_cpus(int wait)
-+static void native_irq_stop_other_cpus(int wait)
- {
- 	unsigned long flags;
- 	unsigned long timeout;
-@@ -194,6 +249,11 @@ static void native_stop_other_cpus(int wait)
- 	local_irq_restore(flags);
- }
- 
-+static void native_smp_disable_nmi_ipi(void)
-+{
-+	smp_ops.stop_other_cpus = native_irq_stop_other_cpus;
-+}
-+
- /*
-  * Reschedule call back.
-  */
-@@ -225,12 +285,20 @@ void smp_call_function_single_interrupt(struct pt_regs *regs)
- 	irq_exit();
- }
- 
-+static int __init nonmi_ipi_setup(char *str)
-+{
-+        native_smp_disable_nmi_ipi();
-+        return 1;
-+}
-+
-+__setup("nonmi_ipi", nonmi_ipi_setup);
-+
- struct smp_ops smp_ops = {
- 	.smp_prepare_boot_cpu	= native_smp_prepare_boot_cpu,
- 	.smp_prepare_cpus	= native_smp_prepare_cpus,
- 	.smp_cpus_done		= native_smp_cpus_done,
- 
--	.stop_other_cpus	= native_stop_other_cpus,
-+	.stop_other_cpus	= native_nmi_stop_other_cpus,
- 	.smp_send_reschedule	= native_smp_send_reschedule,
- 
- 	.cpu_up			= native_cpu_up,
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 9f548cb..1927781 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1142,6 +1142,7 @@ void __init native_smp_cpus_done(unsigned int max_cpus)
- {
- 	pr_debug("Boot done.\n");
- 
-+	nmi_selftest();
- 	impress_friends();
- #ifdef CONFIG_X86_IO_APIC
- 	setup_ioapic_dest();
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index e8b1597..ff83683 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -341,6 +341,7 @@ extern int panic_timeout;
- extern int panic_on_oops;
- extern int panic_on_unrecovered_nmi;
- extern int panic_on_io_nmi;
-+extern int sysctl_panic_on_stackoverflow;
- extern const char *print_tainted(void);
- extern void add_taint(unsigned flag);
- extern int test_taint(unsigned flag);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index ae27196..f487f25 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -803,6 +803,15 @@ static struct ctl_table kern_table[] = {
- 		.mode		= 0644,
- 		.proc_handler	= proc_dointvec,
- 	},
-+#ifdef CONFIG_DEBUG_STACKOVERFLOW
-+	{
-+		.procname	= "panic_on_stackoverflow",
-+		.data		= &sysctl_panic_on_stackoverflow,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec,
-+	},
-+#endif
- 	{
- 		.procname	= "bootloader_type",
- 		.data		= &bootloader_type,
