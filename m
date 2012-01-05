@@ -1,98 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932695Ab2AEPjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 10:39:49 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53705 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab2AEPjr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 10:39:47 -0500
-Content-Type: text/plain; charset=utf-8; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "Marek Szyprowski" <m.szyprowski@samsung.com>
-Cc: "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "Andrew Morton" <akpm@linux-foundation.org>,
-        "KAMEZAWA Hiroyuki" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Daniel Walker" <dwalker@codeaurora.org>, "Mel Gorman" <mel@csn.ul.ie>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        "Jesse Barker" <jesse.barker@linaro.org>,
-        "Jonathan Corbet" <corbet@lwn.net>,
-        "Shariq Hasnain" <shariq.hasnain@linaro.org>,
-        "Chunsang Jeong" <chunsang.jeong@linaro.org>,
-        "Dave Hansen" <dave@linux.vnet.ibm.com>,
-        "Benjamin Gaignard" <benjamin.gaignard@linaro.org>
-Subject: Re: [PATCH 01/11] mm: page_alloc: set_migratetype_isolate: drain PCP
- prior to isolating
-References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
- <1325162352-24709-2-git-send-email-m.szyprowski@samsung.com>
-Date: Thu, 05 Jan 2012 16:39:43 +0100
+	id S932682Ab2AEPm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 10:42:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42968 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755886Ab2AEPm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 10:42:28 -0500
+Date: Thu, 5 Jan 2012 06:57:53 -0800
+From: Greg KH <gregkh@suse.de>
+To: leonid.moiseichuk@nokia.com
+Cc: penberg@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        cesarb@cesarb.net, kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net,
+        aarcange@redhat.com, riel@redhat.com, mel@csn.ul.ie,
+        rientjes@google.com, dima@android.com, rebecca@android.com,
+        san@google.com, akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
+Subject: Re: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and
+ related changes in MM
+Message-ID: <20120105145753.GA3937@suse.de>
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
+ <20120104195612.GB19181@suse.de>
+ <84FF21A720B0874AA94B46D76DB98269045542B5@008-AM1MPN1-003.mgdnok.nokia.com>
+ <CAOJsxLEdTMB6JtYViRJq5gZ4_w5aaV18S3q-1rOXGzaMtmiW6A@mail.gmail.com>
+ <84FF21A720B0874AA94B46D76DB9826904554391@008-AM1MPN1-003.mgdnok.nokia.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-From: "Michal Nazarewicz" <mina86@mina86.com>
-Message-ID: <op.v7ma4hm33l0zgt@mpn-glaptop>
-In-Reply-To: <1325162352-24709-2-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Opera Mail/11.60 (Linux)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <84FF21A720B0874AA94B46D76DB9826904554391@008-AM1MPN1-003.mgdnok.nokia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 29 Dec 2011 13:39:02 +0100, Marek Szyprowski <m.szyprowski@samsung.com> wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
->
-> When set_migratetype_isolate() sets pageblock's migrate type, it does
-> not change each page_private data.  This makes sense, as the function
-> has no way of knowing what kind of information page_private stores.
->
-> Unfortunately, if a page is on PCP list, it's page_private indicates
-> its migrate type.  This means, that if a page on PCP list gets
-> isolated, a call to free_pcppages_bulk() will assume it has the old
-> migrate type rather than MIGRATE_ISOLATE.  This means, that a page
-> which should be isolated, will end up on a free list of it's old
-> migrate type.
->
-> Coincidentally, at the very end, set_migratetype_isolate() calls
-> drain_all_pages() which leads to calling free_pcppages_bulk(), which
-> does the wrong thing.
->
-> To avoid this situation, this commit moves the draining prior to
-> setting pageblock's migratetype and moving pages from old free list to
-> MIGRATETYPE_ISOLATE's free list.
->
-> Because of spin locks this is a non-trivial change however as both
-> set_migratetype_isolate() and free_pcppages_bulk() grab zone->lock.
-> To solve this problem, this commit renames free_pcppages_bulk() to
-> __free_pcppages_bulk() and changes it so that it no longer grabs
-> zone->lock instead requiring caller to hold it.  This commit later
-> adds a __zone_drain_all_pages() function which works just like
-> drain_all_pages() expects that it drains only pages from a single zone
-> and assumes that caller holds zone->lock.
+A: No.
+Q: Should I include quotations after my reply?
 
-As it turns out, with some more testing on SMP systems, this whole patch
-turned out to be incorrect.
+http://daringfireball.net/2007/07/on_top
 
-We have been thinking about other approach and, if we were to use something
-else then the first patch from CMAv17[1], the best thing we could came up
-with was to unconditionally call drain_all_pages() at the beginning of
-set_migratetype_isolate() before the call to spin_lock_irqsave().  It has
-a possible race condition but a nightly stress test did have not shown any
-problems.
+On Thu, Jan 05, 2012 at 01:02:23PM +0000, leonid.moiseichuk@nokia.com wrote:
+> Well, mm/notify.c seems a bit global for me. At the first step I
+> handle inputs from Greg and try to find less destructive approach to
+> allocation tracking rather than page_alloc.
 
-Nonetheless, the cleanest, in my opinion, solution is to use the first patch
- from CMAv17 which can be found at [1].
+No, please listen to what people, including me, are saying, otherwise
+your code will be totally ignored.
 
-So, to sum up: if you intend to test CMAv18, instead of applying this first
-patch either use first patch from CMAv17[1] or put an unconditional call to
-drain_all_pages() at the beginning of set_migrate_isolate() function.
-
-Sorry for the troubles.
-
-[1] http://www.spinics.net/lists/arm-kernel/msg148494.html
-
--- 
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+greg k-h
