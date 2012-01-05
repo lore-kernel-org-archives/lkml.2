@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab2AEMkw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 07:40:52 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39097 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751277Ab2AEMkv (ORCPT
+	id S1754713Ab2AEMpR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 07:45:17 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51621 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2AEMpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 07:40:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045542B5@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
-	<20120104195612.GB19181@suse.de>
-	<84FF21A720B0874AA94B46D76DB98269045542B5@008-AM1MPN1-003.mgdnok.nokia.com>
-Date: Thu, 5 Jan 2012 14:40:49 +0200
-X-Google-Sender-Auth: w_STJzUaLNbyRW1BDus88D-A29M
-Message-ID: <CAOJsxLEdTMB6JtYViRJq5gZ4_w5aaV18S3q-1rOXGzaMtmiW6A@mail.gmail.com>
-Subject: Re: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and related
- changes in MM
-From: Pekka Enberg <penberg@kernel.org>
-To: leonid.moiseichuk@nokia.com
-Cc: gregkh@suse.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        cesarb@cesarb.net, kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net,
-        aarcange@redhat.com, riel@redhat.com, mel@csn.ul.ie,
-        rientjes@google.com, dima@android.com, rebecca@android.com,
-        san@google.com, akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Jan 2012 07:45:15 -0500
+From: hamo.by@gmail.com
+To: linux@arm.linux.org.uk, will.deacon@arm.com, marc.zyngier@arm.com,
+        sboyd@codeaurora.org, akpm@linux-foundation.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Yang Bai <hamo.by@gmail.com>
+Subject: [PATCH RFC] arm: Define cpu_logical_map when CONFIG_SMP is not set
+Date: Thu,  5 Jan 2012 20:44:46 +0800
+Message-Id: <1325767486-6392-1-git-send-email-hamo.by@gmail.com>
+X-Mailer: git-send-email 1.7.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 1:47 PM,  <leonid.moiseichuk@nokia.com> wrote:
-> As I understand AOOM it wait until situation is reached bad conditions which
-> required memory reclaiming, selects application according to free memory and
-> oom_adj level and kills it.  So no intermediate levels could be checked (e.g.
-> 75% usage),  nothing could be done in user-space to prevent killing, no
-> notification for case when memory becomes OK.
->
-> What I try to do is to get notification in any application that memory
-> becomes low, and do something about it like stop processing data, close
-> unused pages or correctly shuts applications, daemons.  Application(s) might
-> have necessity to install several notification levels, so reaction could be
-> adjusted based on current utilization level per each application, not
-> globally.
+From: Yang Bai <hamo.by@gmail.com>
 
-Sure. However, from VM point of view, both have the exact same
-functionality: detect when we reach low memory condition (for some
-configurable threshold) and notify userspace or kernel subsystem about
-it.
+If CONFIG_SMP is not set, define cpu_logical_map(cpu) as
+(cpu), this fixes the problem described in this mail:
+https://lkml.org/lkml/2012/1/2/142
 
-That's the part I'd like to see implemented in mm/notify.c or similar.
-I really don't care what Android or any other folks use it for exactly
-as long as the generic code is light-weight, clean, and we can
-reasonably assume that distros can actually enable it.
+Signed-off-by: Yang Bai <hamo.by@gmail.com>
+---
+ arch/arm/include/asm/smp.h |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/include/asm/smp.h b/arch/arm/include/asm/smp.h
+index 1e5717a..0a06ead 100644
+--- a/arch/arm/include/asm/smp.h
++++ b/arch/arm/include/asm/smp.h
+@@ -10,14 +10,12 @@
+ #ifndef __ASM_ARM_SMP_H
+ #define __ASM_ARM_SMP_H
+ 
++#ifdef CONFIG_SMP
++
+ #include <linux/threads.h>
+ #include <linux/cpumask.h>
+ #include <linux/thread_info.h>
+ 
+-#ifndef CONFIG_SMP
+-# error "<asm/smp.h> included in non-SMP build"
+-#endif
+-
+ #define raw_smp_processor_id() (current_thread_info()->cpu)
+ 
+ struct seq_file;
+@@ -99,4 +97,10 @@ extern void platform_cpu_enable(unsigned int cpu);
+ extern void arch_send_call_function_single_ipi(int cpu);
+ extern void arch_send_call_function_ipi_mask(const struct cpumask *mask);
+ 
++#else
++
++#define cpu_logical_map(cpu)	(cpu)
++
++#endif /* CONFIG_SMP */
++
+ #endif /* ifndef __ASM_ARM_SMP_H */
+-- 
+1.7.8.2
+
