@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab2AESkX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:40:23 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:33860 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751494Ab2AESkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:40:21 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 3.3-rc1
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Message-Id: <20120105184017.089CB426DA7@whiskey.americas.sgi.com>
-Date: Thu,  5 Jan 2012 12:40:17 -0600 (CST)
-From: bpm@sgi.com (Ben Myers)
+	id S1757753Ab2AESll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:41:41 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33168 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab2AESlj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 13:41:39 -0500
+Date: Thu, 5 Jan 2012 11:41:36 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>, Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: Driver core support for early platform devices
+Message-ID: <20120105184136.GJ22653@ponder.secretlab.ca>
+References: <0282FD61-7E73-45CE-8EC8-32BF411C7619@boeing.com>
+ <20111222174521.GA29144@suse.de>
+ <99F3E881-FB9E-4D49-9A91-793FDD04795D@boeing.com>
+ <4EF396CD.2000601@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EF396CD.2000601@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, Dec 22, 2011 at 02:45:01PM -0600, Rob Herring wrote:
+> On 12/22/2011 11:55 AM, Moffett, Kyle D wrote:
+> > On Dec 22, 2011, at 12:45, Greg KH wrote:
+> >> On Thu, Dec 22, 2011 at 11:15:06AM -0600, Moffett, Kyle D wrote:
+> >>> Hi,
+> >>>
+> >>> I'm tinkering with some improvements to the way that OpenPIC/MPIC are
+> >>> detected and loaded on PowerPC platforms, and it seems like I am trying
+> >>> to use the driver model before it is fully initialized.
+> >>>
+> >>> In particular, it seems like it should be possible to simply declare an
+> >>> OpenPIC in the device-tree and have it automatically bound to a platform
+> >>> driver declaring the right OpenFirmware match strings.
+> >>>
+> >>> Unfortunately, it needs to be bound by init_IRQ() time, while the driver
+> >>> model does not get initialized until much later (after the scheduler is
+> >>> up and running).
+> >>>
+> >>> As far as I can tell, there seem to be 2 possible approaches to making
+> >>> that possible:
+> >>>
+> >>> (1) Split the driver-model initialization into "early" and "late" phases
+> >>>    so that drivers can be registered and devices probed very early on
+> >>>    and then replay the necessary scheduler-dependent things after the
+> >>>    system is mostly started up (IE: devtmpfs, etc).
+> >>
+> >> We already have that today with the "early_platform*" functions, right?
+> >> Will those work for you, or do you need this for a bus you are creating
+> >> and not using the platform bus?
+> > 
+> > Well, I can't figure out how "early_platform" is actually supposed to
+> > integrate with the platform bus itself.  It seems designed mostly for
+> > drivers like "earlyprintk" et. al. for which loading is controlled by
+> > a kernel parameter.
+> > 
+> > Specifically, I don't see any "early_platform" logic to match devices in
+> > the OF device-tree based on the driver "of_match" parameters, just based
+> > on text strings in early_param().
+> > 
+> > Furthermore, if I register an "early_platform" device, it seems to get
+> > unregistered when the normal driver model is brought up, instead of
+> > being sucked in and promoted to a normal platform_device.  That code is
+> > pretty poorly documented and only used in a couple places right now,
+> > though, so it's possible I am misreading it.
+> > 
+> > Cheers,
+> > Kyle Moffett
+> 
+> There was a proposal for DT support of early platform devices here:
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-June/054529.html
 
-   Please pull the following changes for 3.3-rc1.  There is
-   a merge conflict between
+I'm not a fan of early platform devices, and as Kyle points out, it
+doesn't really solve his problem.
 
-   be4f1ac - xfs: log all dirty inodes in xfs_fs_sync_fs
-   and
-   34625c6 - xfs: remove xfs_qm_sync
+Kyle, I wouldn't get too tied up with thinking about the device model.
+There are always some critical core devices, like root interrupt
+controllers, that just have to be set up way earlier than any of the
+initcalls.  So, yes, it would be nice if the kernel automagically
+picked up the root irq controller from the device tree, and if it was
+wired into the driver model. However, in practical terms it doesn't
+buy us much.  You can get almost the same behaviour by the SoC support
+code providing a table of the irq controllers that need to be set up
+at boot time and using a helper function to initialize them in the
+correct order.
 
-   which I have resolved in the for-linus-merged branch for
-   your convenience.
+Have a look at of_irq_init().  It might do what you need.
 
-Thanks,
-	Ben
+g.
 
-The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
-  Linus Torvalds (1):
-        Linux 3.2
-
-are available in the git repository at:
-
-  git://oss.sgi.com/xfs/xfs for-linus
-
-Christoph Hellwig (20):
-      xfs: remove the deprecated nodelaylog option
-      xfs: cleanup the transaction commit path a bit
-      xfs: remove the lid_size field in struct log_item_desc
-      xfs: untangle SYNC_WAIT and SYNC_TRYLOCK meanings for xfs_qm_dqflush
-      xfs: make sure to really flush all dquots in xfs_qm_quotacheck
-      xfs: remove xfs_qm_sync
-      xfs: remove the sync_mode argument to xfs_qm_dqflush_all
-      xfs: cleanup dquot locking helpers
-      xfs: cleanup xfs_qm_dqlookup
-      xfs: remove XFS_DQ_INACTIVE
-      xfs: implement lazy removal for the dquot freelist
-      xfs: flatten the dquot lock ordering
-      xfs: nest qm_dqfrlist_lock inside the dquot qlock
-      xfs: simplify xfs_qm_dqattach_grouphint
-      xfs: add a xfs_dqhold helper
-      xfs: merge xfs_qm_dqinit_core into the only caller
-      xfs: kill xfs_qm_idtodq
-      xfs: remove XFS_QMOPT_DQSUSER
-      xfs: simplify xfs_qm_detach_gdquots
-      xfs: mark the xfssyncd workqueue as non-reentrant
-
-Eric Sandeen (1):
-      xfs: remove unused XBT_FORCE_SLEEP bit
-
-Xi Wang (1):
-      xfs: fix acl count validation in xfs_acl_from_disk()
-
- fs/xfs/xfs_acl.c        |    2 +-
- fs/xfs/xfs_buf.c        |    6 +-
- fs/xfs/xfs_buf.h        |    3 +-
- fs/xfs/xfs_dquot.c      |  500 ++++++++++++++++-------------------------------
- fs/xfs/xfs_dquot.h      |   39 +++-
- fs/xfs/xfs_dquot_item.c |    5 +-
- fs/xfs/xfs_inode_item.c |    2 -
- fs/xfs/xfs_log.c        |   79 ++------
- fs/xfs/xfs_log.h        |    8 +-
- fs/xfs/xfs_log_cil.c    |   96 ++++++----
- fs/xfs/xfs_mount.h      |    1 -
- fs/xfs/xfs_qm.c         |  464 ++++++++++---------------------------------
- fs/xfs/xfs_qm.h         |    6 -
- fs/xfs/xfs_quota.h      |   12 +-
- fs/xfs/xfs_super.c      |   36 +---
- fs/xfs/xfs_sync.c       |    6 +-
- fs/xfs/xfs_trace.h      |    2 -
- fs/xfs/xfs_trans.c      |  475 +--------------------------------------------
- fs/xfs/xfs_trans.h      |    3 +-
- 19 files changed, 412 insertions(+), 1333 deletions(-)
