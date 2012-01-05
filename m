@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932250Ab2AEASH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 19:18:07 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:34519 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932073Ab2AEASF (ORCPT
+	id S1757467Ab2AEAT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 19:19:29 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60954 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757414Ab2AEAT1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 19:18:05 -0500
-Date: Thu, 5 Jan 2012 11:17:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20120105111758.d0d640b9d072f04104a5fc4e@canb.auug.org.au>
-In-Reply-To: <CAPXgP13TC4iuy=MW-p8x05VG8ad-9rC+jxm6qHtx90tBX9zhTw@mail.gmail.com>
-References: <20111228174518.721624fad9d048f9f85b3d50@canb.auug.org.au>
-	<20120104230720.GD24583@kroah.com>
-	<20120105104835.fd6c0fd173622af59d11012f@canb.auug.org.au>
-	<CAPXgP13TC4iuy=MW-p8x05VG8ad-9rC+jxm6qHtx90tBX9zhTw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c"
+	Wed, 4 Jan 2012 19:19:27 -0500
+Date: Wed, 4 Jan 2012 16:19:13 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <jweiner@redhat.com>
+Subject: Re: [PATCH 1/2] mm,mlock: drain pagevecs asynchronously
+In-Reply-To: <4F04E1B8.10109@gmail.com>
+Message-ID: <alpine.LSU.2.00.1201041549410.1267@eggly.anvils>
+References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <1325403025-22688-1-git-send-email-kosaki.motohiro@gmail.com> <20120104140547.75d4dd55.akpm@linux-foundation.org> <4F04E1B8.10109@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 4 Jan 2012, KOSAKI Motohiro wrote:
+> (1/4/12 5:05 PM), Andrew Morton wrote:
+> > On Sun,  1 Jan 2012 02:30:24 -0500
+> > kosaki.motohiro@gmail.com wrote:
+> > 
+> > > Because lru_add_drain_all() spent much time.
+> > 
+> > Those LRU pagevecs are horrid things.  They add high code and
+> > conceptual complexity, they add pointless uniprocessor overhead and the
+> > way in which they leave LRU pages floating around not on an LRU is
+> > rather maddening.
 
-Hi Kay,
+Yes, we continue to have difficulties with not-quite-PageLRU-yet pages.
 
-On Thu, 5 Jan 2012 01:01:51 +0100 Kay Sievers <kay.sievers@vrfy.org> wrote:
->
-> Yes, that look like the right pattern.
+> > 
+> > So the best way to fix all of this as well as this problem we're
+> > observing is, I hope, to completely remove them.
 
-Good, thanks.
+Nice aim, sounds like a dirty job.  I wonder how far we could get using
+lru_add_drain, avoiding lru_add_drain_all, and flushing pvec when pre-empted.
 
-> Stephen, thanks a lot for your help here, it's very much appreciated.
-> I know we cause a lot of trouble every other year. :)
+> ...
+> 
+> got it. so, let's wait hugh's "mm: take pagevecs off reclaim stack" next spin
+> and make the patches on top of it.
 
-Its how I justify myself :-)
+Don't wait on me, I wasn't intending another spin, with Andrew's last
+word on it today:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> If we already have the latency problem at the isolate_lru_pages() stage
+> then I suppose we can assume that nobody is noticing it, so we'll
+> probably be OK.
+> 
+> For a while.  Someone will complain at some stage and we'll probably
+> end up busting this work into chunks.
 
---Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c
-Content-Type: application/pgp-signature
+and mm-commits does presently have my
+mm-rearrange-putback-inactive-pages.patch in on top of it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Besides, these free_hot_cold_page_list() users are already avoiding
+the lru add pagevecs which Andrew is nudging towards removing above,
+so there shouldn't be much overlap.
 
-iQIbBAEBCAAGBQJPBOw2AAoJEECxmPOUX5FEsX8P+MT7LK9RucY5uKwc6FqdyxXk
-HojASocxFv30zk9NZRyXJtplghJcqNQul2CyZSuDRL4JWmobTK4Ng6NFC/T/c/38
-O85Q2CLlSHTg5Sz61fqPYoggAeR78eP9+ovnOQkFSR7oiNDaH4ftqd7N6I+hQqgk
-XxQL/KtyT83I78OBvQPQjPGbaZ8gj1LK/STFL0QJtpHac0gKaArBANdpY/1Rxwy4
-0jifj5YHQL8VpPTmmVE6Zx7Pt6Zy2erTH/htIGpZ++5ByZRwS3fgEiP5+89UO29N
-VOtbvY2QEL+m/QvP6Ipr99FWMMkpZZAhYchri6wrfuoIllgbpXMYbFoghvFX4Rw1
-aU01cluaorDccUixyv9X722STZlUZRNBCQAJIbBsXUvgPbSWLIyDVdwz7Xfqn0Wt
-CKEPECl4Terag4Jhhx0fc6aXlCy/DZFux7kdb66YgeJ3hpdcTkmDzGcbYmH+jfKA
-45n6KbDW7HvMn4ekqbNvZRzW4l+yKt1MOXV+vM8q0hPT5vrqK6ucQwxTcXFDfbVR
-qjaoh04poPpqqUBArJ1z26l7u6pqmQ6IeTE6nxeJbLhMgJyE6AJJFGnsagtCQlDj
-xy4qYhxhjdCh9UwVc8RBGnEr3gjtOX2MWcgHLoJyrkTvwEWU7UveLQL+x8xXsbUw
-f8dL3d+P/l/bbqfeE90=
-=KgZk
------END PGP SIGNATURE-----
+Or maybe you're thinking of my observation that it could avoid the
+!page_evictable putback_lru_page special case now: yes, I'd like to
+make that change sometime, but moved away to other things for now.
 
---Signature=_Thu__5_Jan_2012_11_17_58_+1100_35FJ=6Nbob1jkk2c--
+Hugh
