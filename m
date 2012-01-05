@@ -1,69 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933036Ab2AEXRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 18:17:43 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38429 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932957Ab2AEXRl (ORCPT
+	id S933043Ab2AEXTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 18:19:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43860 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758151Ab2AEXTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 18:17:41 -0500
-X-Sasl-enc: /YosR3L8Q83e3++q7RsKkPVXyTQHbOUlcKCmin49uo9D 1325805460
-Date: Thu, 5 Jan 2012 15:17:31 -0800
-From: Greg KH <greg@kroah.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
-Message-ID: <20120105231731.GA15539@kroah.com>
-References: <20120105200515.GA1071@core.coreip.homeip.net>
- <Pine.LNX.4.44L0.1201051531410.1434-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201051531410.1434-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Jan 2012 18:19:21 -0500
+Date: Thu, 5 Jan 2012 15:19:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
+ exist
+Message-Id: <20120105151919.37d64365.akpm@linux-foundation.org>
+In-Reply-To: <20120105223106.GG27881@csn.ul.ie>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+	<1325499859-2262-8-git-send-email-gilad@benyossef.com>
+	<4F033EC9.4050909@gmail.com>
+	<20120105142017.GA27881@csn.ul.ie>
+	<20120105144011.GU11810@n2100.arm.linux.org.uk>
+	<20120105161739.GD27881@csn.ul.ie>
+	<20120105140645.42498cdd.akpm@linux-foundation.org>
+	<20120105223106.GG27881@csn.ul.ie>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 03:48:19PM -0500, Alan Stern wrote:
-> On Thu, 5 Jan 2012, Dmitry Torokhov wrote:
-> 
-> > So I looked at the users of device_attach():
+On Thu, 5 Jan 2012 22:31:06 +0000
+Mel Gorman <mel@csn.ul.ie> wrote:
+
+> On Thu, Jan 05, 2012 at 02:06:45PM -0800, Andrew Morton wrote:
+> > On Thu, 5 Jan 2012 16:17:39 +0000
+> > Mel Gorman <mel@csn.ul.ie> wrote:
 > > 
-> > - we call it from generic bus code when adding a new driver so naturally
-> >   driver is valid there;
-> > - serio and gameport call it by hand but they ensure that the driver is
-> >   valid because they protected by subsystem-private mutex;
-> > - PCI, PCMCI, HID and USB new_id handling is tied to the driver itself
-> >   and attributes are removed when driver is unregistered so there is no
-> >   chance driver will be attached through newid after it has been
-> >   unregistered;
-> > - agp_amd64_init calls it once immediately after registering the driver;
-> > - pci-stub driver is safe as well.
+> > > mm: page allocator: Guard against CPUs going offline while draining per-cpu page lists
+> > > 
+> > > While running a CPU hotplug stress test under memory pressure, I
+> > > saw cases where under enough stress the machine would halt although
+> > > it required a machine with 8 cores and plenty memory. I think the
+> > > problems may be related.
+> > 
+> > When we first implemented them, the percpu pages in the page allocator
+> > were of really really marginal benefit.  I didn't merge the patches at
+> > all for several cycles, and it was eventually a 49/51 decision.
+> > 
+> > So I suggest that our approach to solving this particular problem
+> > should be to nuke the whole thing, then see if that caused any
+> > observeable problems.  If it did, can we solve those problems by means
+> > other than bringing the dang things back?
+> > 
 > 
-> Okay, that's all good.
-> 
-> > That leaves only usb-serial which is problematic exactly as you
-> > described below. So I think we should remove get_driver() and
-> > put_driver(); document that caller if driver_attach() should ensure
-> > that driver is live and let usb-serial code solve this issue as this
-> > is the only code that plays games with drivers it does not own.
-> 
-> If Greg confirms that there's nothing with registering the usb driver 
-> before the usb_serial driver, I can fix the usb-serial code easily.
-> 
-> Greg, do you know offhand whether this will break anything?  It really 
-> seems like the right thing to do, because the usb_serial driver uses 
-> the usb driver but not vice versa.
+> Sounds drastic.
 
-Hm, there was a reason I ordered the way I did, as I remember having to
-go fix up a number of drivers that did it in the reverse order.  Give me
-a day or so to dig it up and figure out what is going on here, and to
-review this thread.
+Wrong thinking ;)
 
-thanks,
+Simplifying the code should always be the initial proposal.  Adding
+more complexity on top is the worst-case when-all-else-failed option. 
+Yet we so often reach for that option first :(
 
-greg k-h
+> It would be less controversial to replace this patch
+> with a version that calls get_online_cpu() in drain_all_pages() but
+> remove the call to drain_all_pages() call from the page allocator on
+> the grounds it is not safe against CPU hotplug and to hell with the
+> slightly elevated allocation failure rates and stalls. That would avoid
+> the try_get_online_cpus() crappiness and be less complex.
+
+If we can come up with a reasonably simple patch which improves or even
+fixes the problem then I suppose there is some value in that, as it
+provides users of earlier kernels with something to backport if they
+hit problems.
+
+But the social downside of that is that everyone would shuffle off
+towards other bright and shiny things and we'd be stuck with more
+complexity piled on top of dubiously beneficial code.
+
+> If you really want to consider deleting the per-cpu allocator, maybe
+> it could be a LSF/MM topic?
+
+eek, spare me.
+
+Anyway, we couldn't discuss such a topic without data.  Such data would
+be obtained by deleting the code and measuring the results.  Which is
+what I just said ;)
+
+> Personally I would be wary of deleting
+> it but mostly because I lack regular access to the type of hardware
+> to evaulate whether it was safe to remove or not. Minimally, removing
+> the per-cpu allocator could make the zone lock very hot even though slub
+> probably makes it very hot already.
+
+Much of the testing of the initial code was done on mbligh's weirdass
+NUMAq box: 32-way 386 NUMA which suffered really badly if there were
+contention issues.  And even on that box, the code was marginal.  So
+I'm hopeful that things will be similar on current machines.  Of
+course, it's possible that calling patterns have changed in ways which
+make the code more beneficial than it used to be.
+
+But this all ties into my proposal yesterday to remove
+mm/swap.c:lru_*_pvecs.  Most or all of the heavy one-page-at-a-time
+code can pretty easily be converted to operate on batches of pages. 
+Folowing on from that, it should be pretty simple to extend the
+batching down into the page freeing.  Look at put_pages_list() and
+weep.  And stuff like free_hot_cold_page_list() which could easily free
+the pages directly whilebatching the locking.
+
+Page freeing should be relatively straightforward.  Batching page
+allocation is hard in some cases (anonymous pagefaults).
+
+Please do note that the above suggestions are only needed if removing
+the pcp lists causes a problem!  It may not.
+
