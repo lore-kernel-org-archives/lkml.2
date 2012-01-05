@@ -1,386 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab2AEPWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 10:22:45 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41495 "EHLO mx2.mail.elte.hu"
+	id S1757592Ab2AEPW6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 10:22:58 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:41417 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754284Ab2AEPWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 10:22:43 -0500
-Date: Thu, 5 Jan 2012 16:20:35 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/platform changes for v3.3
-Message-ID: <20120105152035.GA11286@elte.hu>
+	id S1755785Ab2AEPW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 10:22:56 -0500
+Date: Thu, 5 Jan 2012 15:22:53 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, cesarb@cesarb.net,
+        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, penberg@kernel.org,
+        aarcange@redhat.com, riel@redhat.com, rientjes@google.com,
+        dima@android.com, gregkh@suse.de, rebecca@android.com, san@google.com,
+        akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
+Subject: Re: [PATCH 3.2.0-rc1 2/3] MM hook for page allocation and release
+Message-ID: <20120105152253.GB27881@csn.ul.ie>
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
+ <e78b4ac9d3d51ac16180114c08733e4bf62ec65e.1325696593.git.leonid.moiseichuk@nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
+In-Reply-To: <e78b4ac9d3d51ac16180114c08733e4bf62ec65e.1325696593.git.leonid.moiseichuk@nokia.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Wed, Jan 04, 2012 at 07:21:55PM +0200, Leonid Moiseichuk wrote:
+> That is required by Used Memory Meter (UMM) pseudo-device
+> to track memory utilization in system. It is expected that
+> hook MUST be very light to prevent performance impact
+> on the hot allocation path. Accuracy of number managed pages
+> does not expected to be absolute but fact of allocation or
+> deallocation must be registered.
+> 
+> Signed-off-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
+> ---
+>  include/linux/mm.h |   15 +++++++++++++++
+>  mm/Kconfig         |    8 ++++++++
+>  mm/page_alloc.c    |   31 +++++++++++++++++++++++++++++++
+>  3 files changed, 54 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 3dc3a8c..d133f73 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1618,6 +1618,21 @@ extern int soft_offline_page(struct page *page, int flags);
+>  
+>  extern void dump_page(struct page *page);
+>  
+> +#ifdef CONFIG_MM_ALLOC_FREE_HOOK
+> +/*
+> + * Hook function type which called when some pages allocated or released.
+> + * Value of nr_pages is positive for post-allocation calls and negative
+> + * after free.
+> + */
+> +typedef void (*mm_alloc_free_hook_t)(int nr_pages);
+> +
+> +/*
 
-Please pull the latest x86-platform-for-linus git tree from:
+I'm going to chime in and say that hooks like this into the page
+allocator are a no-go unless there really is absolutely no other option.
+There is too much scope for abuse.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-platform-for-linus
+Even if they were not, this takes no account of the zone or node
+we are allocating from making it useful only in the case where the
+system had a single node and zone. This applies to mobile devices
+but not a lot of other systems.
 
+It also would have very poor information about memory pressure which
+is likely to be far more interesting and for that, awareness of what
+is happening in page reclaim is required.
 
-out-of-topic modifications in x86-platform-for-linus:
------------------------------------------------------
-drivers/platform/x86/Kconfig       # c95aaef: x86/intel/scu/ipc: Match the chan
-drivers/rtc/Kconfig                # 933b946: x86/intel config: Revamp configur
-init/calibrate.c                   # b565201: x86: Reduce clock calibration tim
+I haven't looked at the alternatives but there has been some vague
+discussion recently on reviving the concept of a low memory notifier,
+somehow making the existing memcg oom notifier global or maybe the
+andro lowmem killer can be adapted to your needs.
 
- Thanks,
+> @@ -2298,6 +2322,10 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
+>  	put_mems_allowed();
+>  
+>  	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+> +#ifdef CONFIG_MM_ALLOC_FREE_HOOK
+> +	call_alloc_free_hook(1 << order);
+> +#endif
+> +
+>  	return page;
+>  }
 
-	Ingo
+you are calling a free hook there in the alloc path. Seems odd.
 
------------------->
-Alan Cox (7):
-      x86/sfi: Kill the IRQ as id hack
-      x86/config: Revamp configuration for MID devices
-      x86: Fix INTEL_MID silly
-      x86/apb: Fix configuration constraints
-      x86/intel/scu/ipc: Match the changes in the x86 configuration
-      x86/intel config: Revamp configuration to allow for Moorestown and Medfield
-      x86/intel config: Fix the APB_TIMER selection
+This is just a side-note but as this information is meant to be
+consumed by userspace you have the option of hooking into the
+mm_page_alloc tracepoint. You get the same information about how
+many pages are allocated or freed. I accept that it will probably be
+a bit slower but on the plus side it'll be backwards compatible and
+you don't need a kernel patch for it.
 
-Alessandro Rubini (1):
-      x86/Kconfig: Cyclone-timer depends on x86-summit
-
-Jack Steiner (1):
-      x86: Reduce clock calibration time during slave cpu startup
-
-Michael Demeter (1):
-      x86/mrst: Add additional debug prints for pb_keys
-
-
- arch/x86/Kconfig                |   31 +++++++++++++++++++++++++++----
- arch/x86/Kconfig.debug          |    6 +++---
- arch/x86/include/asm/fixmap.h   |    2 +-
- arch/x86/include/asm/setup.h    |    2 +-
- arch/x86/kernel/early_printk.c  |    2 +-
- arch/x86/kernel/smpboot.c       |   16 +++++++++++-----
- arch/x86/kernel/tsc.c           |   20 ++++++++++++++++++++
- arch/x86/pci/Makefile           |    2 +-
- arch/x86/platform/mrst/Makefile |    6 +++---
- arch/x86/platform/mrst/mrst.c   |    4 ++--
- drivers/platform/x86/Kconfig    |    2 +-
- drivers/rtc/Kconfig             |    6 +++---
- init/calibrate.c                |   15 +++++++++++++++
- 13 files changed, 89 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index efb4294..78fbb34 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -409,12 +409,14 @@ config X86_MRST
- 	depends on PCI
- 	depends on PCI_GOANY
- 	depends on X86_IO_APIC
-+	select X86_INTEL_MID
-+	select SFI
-+	select DW_APB_TIMER
- 	select APB_TIMER
- 	select I2C
- 	select SPI
- 	select INTEL_SCU_IPC
- 	select X86_PLATFORM_DEVICES
--	select X86_INTEL_MID
- 	---help---
- 	  Moorestown is Intel's Low Power Intel Architecture (LPIA) based Moblin
- 	  Internet Device(MID) platform. Moorestown consists of two chips:
-@@ -423,6 +425,26 @@ config X86_MRST
- 	  nor standard legacy replacement devices/features. e.g. Moorestown does
- 	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
- 
-+config X86_MDFLD
-+       bool "Medfield MID platform"
-+	depends on PCI
-+	depends on PCI_GOANY
-+	depends on X86_IO_APIC
-+	select X86_INTEL_MID
-+	select SFI
-+	select DW_APB_TIMER
-+	select APB_TIMER
-+	select I2C
-+	select SPI
-+	select INTEL_SCU_IPC
-+	select X86_PLATFORM_DEVICES
-+	---help---
-+	  Medfield is Intel's Low Power Intel Architecture (LPIA) based Moblin
-+	  Internet Device(MID) platform. 
-+	  Unlike standard x86 PCs, Medfield does not have many legacy devices
-+	  nor standard legacy replacement devices/features. e.g. Medfield does
-+	  not contain i8259, i8254, HPET, legacy BIOS, most of the io ports.
-+
- endif
- 
- config X86_RDC321X
-@@ -620,7 +642,7 @@ config X86_SUMMIT_NUMA
- 
- config X86_CYCLONE_TIMER
- 	def_bool y
--	depends on X86_32_NON_STANDARD
-+	depends on X86_SUMMIT
- 
- source "arch/x86/Kconfig.cpu"
- 
-@@ -648,9 +670,10 @@ config HPET_EMULATE_RTC
- 	depends on HPET_TIMER && (RTC=y || RTC=m || RTC_DRV_CMOS=m || RTC_DRV_CMOS=y)
- 
- config APB_TIMER
--       def_bool y if MRST
--       prompt "Langwell APB Timer Support" if X86_MRST
-+       def_bool y if X86_INTEL_MID
-+       prompt "Intel MID APB Timer Support" if X86_INTEL_MID
-        select DW_APB_TIMER
-+       depends on X86_INTEL_MID && SFI
-        help
-          APB timer is the replacement for 8254, HPET on X86 MID platforms.
-          The APBT provides a stable time base on SMP
-diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-index bf56e17..28c3c73 100644
---- a/arch/x86/Kconfig.debug
-+++ b/arch/x86/Kconfig.debug
-@@ -43,9 +43,9 @@ config EARLY_PRINTK
- 	  with klogd/syslogd or the X server. You should normally N here,
- 	  unless you want to debug such a crash.
- 
--config EARLY_PRINTK_MRST
--	bool "Early printk for MRST platform support"
--	depends on EARLY_PRINTK && X86_MRST
-+config EARLY_PRINTK_INTEL_MID
-+	bool "Early printk for Intel MID platform support"
-+	depends on EARLY_PRINTK && X86_INTEL_MID
- 
- config EARLY_PRINTK_DBGP
- 	bool "Early printk via EHCI debug port"
-diff --git a/arch/x86/include/asm/fixmap.h b/arch/x86/include/asm/fixmap.h
-index 460c74e..4da3c0c 100644
---- a/arch/x86/include/asm/fixmap.h
-+++ b/arch/x86/include/asm/fixmap.h
-@@ -117,7 +117,7 @@ enum fixed_addresses {
- #endif
- 	FIX_TEXT_POKE1,	/* reserve 2 pages for text_poke() */
- 	FIX_TEXT_POKE0, /* first page is last, because allocation is backward */
--#ifdef	CONFIG_X86_MRST
-+#ifdef	CONFIG_X86_INTEL_MID
- 	FIX_LNW_VRTC,
- #endif
- 	__end_of_permanent_fixed_addresses,
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index 9756551..d0f19f9 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -47,7 +47,7 @@ extern void reserve_standard_io_resources(void);
- extern void i386_reserve_resources(void);
- extern void setup_default_timer_irq(void);
- 
--#ifdef CONFIG_X86_MRST
-+#ifdef CONFIG_X86_INTEL_MID
- extern void x86_mrst_early_setup(void);
- #else
- static inline void x86_mrst_early_setup(void) { }
-diff --git a/arch/x86/kernel/early_printk.c b/arch/x86/kernel/early_printk.c
-index cd28a35..7a53da0 100644
---- a/arch/x86/kernel/early_printk.c
-+++ b/arch/x86/kernel/early_printk.c
-@@ -240,7 +240,7 @@ static int __init setup_early_printk(char *buf)
- 		if (!strncmp(buf, "xen", 3))
- 			early_console_register(&xenboot_console, keep);
- #endif
--#ifdef CONFIG_EARLY_PRINTK_MRST
-+#ifdef CONFIG_EARLY_PRINTK_INTEL_MID
- 		if (!strncmp(buf, "mrst", 4)) {
- 			mrst_early_console_init();
- 			early_console_register(&early_mrst_console, keep);
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 9f548cb..00eef55 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -207,23 +207,29 @@ static void __cpuinit smp_callin(void)
- 	 * Need to setup vector mappings before we enable interrupts.
- 	 */
- 	setup_vector_irq(smp_processor_id());
-+
-+	/*
-+	 * Save our processor parameters. Note: this information
-+	 * is needed for clock calibration.
-+	 */
-+	smp_store_cpu_info(cpuid);
-+
- 	/*
- 	 * Get our bogomips.
-+	 * Update loops_per_jiffy in cpu_data. Previous call to
-+	 * smp_store_cpu_info() stored a value that is close but not as
-+	 * accurate as the value just calculated.
- 	 *
- 	 * Need to enable IRQs because it can take longer and then
- 	 * the NMI watchdog might kill us.
- 	 */
- 	local_irq_enable();
- 	calibrate_delay();
-+	cpu_data(cpuid).loops_per_jiffy = loops_per_jiffy;
- 	local_irq_disable();
- 	pr_debug("Stack at about %p\n", &cpuid);
- 
- 	/*
--	 * Save our processor parameters
--	 */
--	smp_store_cpu_info(cpuid);
--
--	/*
- 	 * This must be done before setting cpu_online_mask
- 	 * or calling notify_cpu_starting.
- 	 */
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index db48336..490fb33 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -995,3 +995,23 @@ void __init tsc_init(void)
- 	check_system_tsc_reliable();
- }
- 
-+#ifdef CONFIG_SMP
-+/*
-+ * If we have a constant TSC and are using the TSC for the delay loop,
-+ * we can skip clock calibration if another cpu in the same socket has already
-+ * been calibrated. This assumes that CONSTANT_TSC applies to all
-+ * cpus in the socket - this should be a safe assumption.
-+ */
-+unsigned long __cpuinit calibrate_delay_is_known(void)
-+{
-+	int i, cpu = smp_processor_id();
-+
-+	if (!tsc_disabled && !cpu_has(&cpu_data(cpu), X86_FEATURE_CONSTANT_TSC))
-+		return 0;
-+
-+	for_each_online_cpu(i)
-+		if (cpu_data(i).phys_proc_id == cpu_data(cpu).phys_proc_id)
-+			return cpu_data(i).loops_per_jiffy;
-+	return 0;
-+}
-+#endif
-diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
-index 6b8759f..75b06f3 100644
---- a/arch/x86/pci/Makefile
-+++ b/arch/x86/pci/Makefile
-@@ -15,7 +15,7 @@ obj-$(CONFIG_X86_VISWS)		+= visws.o
- 
- obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
- 
--obj-$(CONFIG_X86_MRST)		+= mrst.o
-+obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
- 
- obj-y				+= common.o early.o
- obj-y				+= amd_bus.o bus_numa.o
-diff --git a/arch/x86/platform/mrst/Makefile b/arch/x86/platform/mrst/Makefile
-index 1ea3877..7baed51 100644
---- a/arch/x86/platform/mrst/Makefile
-+++ b/arch/x86/platform/mrst/Makefile
-@@ -1,4 +1,4 @@
--obj-$(CONFIG_X86_MRST)		+= mrst.o
--obj-$(CONFIG_X86_MRST)		+= vrtc.o
--obj-$(CONFIG_EARLY_PRINTK_MRST)	+= early_printk_mrst.o
-+obj-$(CONFIG_X86_INTEL_MID)	+= mrst.o
-+obj-$(CONFIG_X86_INTEL_MID)	+= vrtc.o
-+obj-$(CONFIG_EARLY_PRINTK_INTEL_MID)	+= early_printk_mrst.o
- obj-$(CONFIG_X86_MRST)		+= pmu.o
-diff --git a/arch/x86/platform/mrst/mrst.c b/arch/x86/platform/mrst/mrst.c
-index ad4ec1c..475e2cd 100644
---- a/arch/x86/platform/mrst/mrst.c
-+++ b/arch/x86/platform/mrst/mrst.c
-@@ -848,8 +848,7 @@ static void __init sfi_handle_ipc_dev(struct sfi_device_table_entry *entry)
- 	if (mrst_has_msic())
- 		return;
- 
--	/* ID as IRQ is a hack that will go away */
--	pdev = platform_device_alloc(entry->name, entry->irq);
-+	pdev = platform_device_alloc(entry->name, 0);
- 	if (pdev == NULL) {
- 		pr_err("out of memory for SFI platform device '%s'.\n",
- 			entry->name);
-@@ -1030,6 +1029,7 @@ static int __init pb_keys_init(void)
- 	num = sizeof(gpio_button) / sizeof(struct gpio_keys_button);
- 	for (i = 0; i < num; i++) {
- 		gb[i].gpio = get_gpio_by_name(gb[i].desc);
-+		pr_debug("info[%2d]: name = %s, gpio = %d\n", i, gb[i].desc, gb[i].gpio);
- 		if (gb[i].gpio == -1)
- 			continue;
- 
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 7f43cf8..f995e6e 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -639,7 +639,7 @@ config ACPI_CMPC
- 
- config INTEL_SCU_IPC
- 	bool "Intel SCU IPC Support"
--	depends on X86_MRST
-+	depends on X86_INTEL_MID
- 	default y
- 	---help---
- 	  IPC is used to bridge the communications between kernel and SCU on
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 53eb4e5..3a125b8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -498,9 +498,9 @@ config RTC_DRV_CMOS
- 	  will be called rtc-cmos.
- 
- config RTC_DRV_VRTC
--	tristate "Virtual RTC for Moorestown platforms"
--	depends on X86_MRST
--	default y if X86_MRST
-+	tristate "Virtual RTC for Intel MID platforms"
-+	depends on X86_INTEL_MID
-+	default y if X86_INTEL_MID
- 
- 	help
- 	Say "yes" here to get direct support for the real time clock
-diff --git a/init/calibrate.c b/init/calibrate.c
-index 24df797..5f117ca 100644
---- a/init/calibrate.c
-+++ b/init/calibrate.c
-@@ -246,6 +246,19 @@ recalibrate:
- 
- static DEFINE_PER_CPU(unsigned long, cpu_loops_per_jiffy) = { 0 };
- 
-+/*
-+ * Check if cpu calibration delay is already known. For example,
-+ * some processors with multi-core sockets may have all cores
-+ * with the same calibration delay.
-+ *
-+ * Architectures should override this function if a faster calibration
-+ * method is available.
-+ */
-+unsigned long __attribute__((weak)) __cpuinit calibrate_delay_is_known(void)
-+{
-+	return 0;
-+}
-+
- void __cpuinit calibrate_delay(void)
- {
- 	unsigned long lpj;
-@@ -265,6 +278,8 @@ void __cpuinit calibrate_delay(void)
- 		lpj = lpj_fine;
- 		pr_info("Calibrating delay loop (skipped), "
- 			"value calculated using timer frequency.. ");
-+	} else if ((lpj = calibrate_delay_is_known())) {
-+		;
- 	} else if ((lpj = calibrate_delay_direct()) != 0) {
- 		if (!printed)
- 			pr_info("Calibrating delay using timer "
+-- 
+Mel Gorman
+SUSE Labs
