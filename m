@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932727Ab2AEUIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:08:17 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:7369 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755357Ab2AEUIQ (ORCPT
+	id S1758304Ab2AEUJc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:09:32 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:56912 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab2AEUJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:08:16 -0500
-Date: Thu, 5 Jan 2012 15:08:10 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
-Message-ID: <20120105200810.GA3826@elliptictech.com>
-References: <20120104201800.GA2587@www.outflux.net>
- <20120105143008.GA31728@elliptictech.com>
- <CAGXu5jLYhxOK8u-H8mhTvHBzvkRi8d-=zTeginjukDMEFri-0Q@mail.gmail.com>
+	Thu, 5 Jan 2012 15:09:30 -0500
+Date: Thu, 5 Jan 2012 20:09:26 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
+        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
+ hotkey problems
+Message-ID: <20120105200925.GA26877@srcf.ucam.org>
+References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
+ <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
+ <20120105182627.GE24242@srcf.ucam.org>
+ <20120105193228.GB25386@ubuntu-macmini>
+ <20120105193431.GA26097@srcf.ucam.org>
+ <20120105200432.GE25386@ubuntu-macmini>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAGXu5jLYhxOK8u-H8mhTvHBzvkRi8d-=zTeginjukDMEFri-0Q@mail.gmail.com>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120105200432.GE25386@ubuntu-macmini>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-05 11:34 -0800, Kees Cook wrote:
-> On Thu, Jan 5, 2012 at 6:30 AM, Nick Bowler <nbowler@elliptictech.com> wrote:
-> > On 2012-01-04 12:18 -0800, Kees Cook wrote:
-> >> diff --git a/fs/Kconfig b/fs/Kconfig
-> >> index 5f4c45d..26ede24 100644
-> >> --- a/fs/Kconfig
-> >> +++ b/fs/Kconfig
-> >> @@ -278,3 +278,19 @@ source "fs/nls/Kconfig"
-> >>  source "fs/dlm/Kconfig"
-> >>
-> >>  endmenu
-> >> +
-> >> +config PROTECTED_STICKY_SYMLINKS
-> >> +     bool "Protect symlink following in sticky world-writable directories"
-> >> +     default y
-> > [...]
-> >
-> > Why do we need a config option for this?  What's wrong with just using
-> > the sysctl?
+On Thu, Jan 05, 2012 at 02:04:32PM -0600, Seth Forshee wrote:
+> On Thu, Jan 05, 2012 at 07:34:31PM +0000, Matthew Garrett wrote:
+> > In that case, can you check for the presence of the WMI interface and 
+> > then refuse to bind? That's seem far simpler than adding an unknown 
+> > number of systems to the blacklist.
 > 
-> This way the sysctl can configured directly without needing to have a
-> distro add a new item to sysctl.conf.
+> Hmm, I suppose I could look for the specific WMI event guid, although
+> the relationship between the two seems tenuous at best. It would make
+> sense to me if we were refusing to bind because there was a better
+> interface available, but Toshiba is obviously treating hotkeys on the
+> WMI interface as legacy since it's disabled in the BIOS for Vista or
+> later. INFO seems to be the preferred interface.
 
-This seems totally pointless to me.  There are tons of sysctls that
-don't have Kconfig options: what makes this one special?
+...but doesn't work?
 
-> > Why have you made this option "default y", when enabling it clearly
-> > makes user-visible changes to kernel behaviour?
-> 
-> Ingo specifically asked me to make it "default y".
-
-But this is a brand new feature that changes longstanding behaviour of
-various syscalls.  Making it default to enabled is rather mean to users
-(since it will tend to get enabled by "oldconfig") and seems almost
-guaranteed to cause regressions.
-
-Cheers,
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
-
+Matthew Garrett | mjg59@srcf.ucam.org
