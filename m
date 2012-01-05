@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977Ab2AEXBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 18:01:16 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50554 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932617Ab2AEXBP (ORCPT
+	id S932992Ab2AEXEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 18:04:36 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37493 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235Ab2AEXEe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 18:01:15 -0500
-Date: Thu, 5 Jan 2012 15:01:10 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: Rik van Riel <riel@redhat.com>, Greg KH <gregkh@suse.de>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, cesarb@cesarb.net,
-        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, aarcange@redhat.com,
-        mel@csn.ul.ie, dima@android.com, rebecca@android.com, san@google.com,
-        akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com,
-        Minchan Kim <minchan@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Subject: Re: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and related
- changes in MM
-In-Reply-To: <CAOJsxLH8s5cjUSdpBpLNDvtNaJjnhBwNKOMXZPzUD=XDivr7Rg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1201051458560.10521@chino.kir.corp.google.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <20120104195612.GB19181@suse.de> <4F04B3F0.6080103@redhat.com> <CAOJsxLH8s5cjUSdpBpLNDvtNaJjnhBwNKOMXZPzUD=XDivr7Rg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 5 Jan 2012 18:04:34 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20120106084701.8f704542754db826deda318a@canb.auug.org.au>
+References: <20120105145836.GA2751@redhat.com>
+	<20120106083141.9c14a8d2d09539c6a6c0db75@canb.auug.org.au>
+	<20120106083916.9588034bde22a6803e327aa9@canb.auug.org.au>
+	<20120106084701.8f704542754db826deda318a@canb.auug.org.au>
+Date: Fri, 6 Jan 2012 00:04:33 +0100
+X-Google-Sender-Auth: mis9yJqEhNWFYU0MXDnRdjfyon4
+Message-ID: <CAMuHMdX9x-dTju4YB9yY7mt2-DNV7=y2oW2pSfuSdfPkEhzraA@mail.gmail.com>
+Subject: Re: [GIT PULL] use generic pci_iomap on all architectures
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jan 2012, Pekka Enberg wrote:
+On Thu, Jan 5, 2012 at 22:47, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Fri, 6 Jan 2012 08:39:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> So why does you pull request refer to "commit
+>> 805a6af8dba5dfdd35ec35dc52ec0122400b2610", I wonder?  Is that just what
+>> "git request-pull" produced?
+>
+> I see, "git request-pull" just puts in whatever you specify on the
+> command line rather than the merge-base ...
 
-> And even if people want to support multiple ABIs and fight it out to
-> see which one wins, we should factor out the generic parts and put
-> them under mm/*.c and not hide them in random modules.
-> 
+Yep, I noticed the samething, for
 
-Agreed.  This came up recently when another lowmem killer was proposed and 
-the suggestion was to enable the memory controller to be able to have the 
-memory threshold notifications with eventfd(2) and cgroup.event_control.  
-It would be very nice to have a generic lowmem notifier (like 
-/dev/mem_notify that has been reworked several times in the past) rather 
-than tying it to a particular cgroup, especially when that cgroup incurs a 
-substantial overhead for embedded users.
+|git request-pull v3.2
+ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+while for-linus is based on v3.2-rc5, not v3.2.
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
