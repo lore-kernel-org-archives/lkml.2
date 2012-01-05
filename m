@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab2AEEUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 23:20:09 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:51018 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757849Ab2AEEUF (ORCPT
+	id S1757985Ab2AEEYL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 23:24:11 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:50636 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757849Ab2AEEYI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 23:20:05 -0500
-Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Date: Wed, 04 Jan 2012 23:17:12 -0500
-In-Reply-To: <20120105020639.GA1161@kroah.com>
-References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
-	 <1324560391.1964.8.camel@falcor>
-	 <20120104152801.d8f555ca.akpm@linux-foundation.org>
-	 <1325723630.13419.2.camel@falcor>
-	 <20120104164638.cc21fc2e.akpm@linux-foundation.org>
-	 <20120105020639.GA1161@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325737033.13419.43.camel@falcor>
+	Wed, 4 Jan 2012 23:24:08 -0500
+Date: Thu, 5 Jan 2012 15:24:00 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: linux-next: build failure after merge of the selinux tree
+Message-Id: <20120105152400.8ea64cf56587bac73d27c474@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-x-cbid: 12010504-6148-0000-0000-000002685538
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-04 at 18:06 -0800, Greg KH wrote:
-> On Wed, Jan 04, 2012 at 04:46:38PM -0800, Andrew Morton wrote:
-> > On Wed, 04 Jan 2012 19:33:49 -0500
-> > Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > 
-> > > On Wed, 2012-01-04 at 15:28 -0800, Andrew Morton wrote:
-> > > > On Thu, 22 Dec 2011 08:26:30 -0500
-> > > > Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> > > > 
-> > > > > On Thu, 2011-12-22 at 12:54 +0200, Dmitry Kasatkin wrote:
-> > > > > > When a file is truncated with truncate()/ftruncate() and then closed,
-> > > > > > iversion is not updated. This patch uses ATTR_SIZE flag as an indication
-> > > > > > to increment iversion.
-> > > > > > 
-> > > > > > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> > > > > 
-> > > > > Acked-by: Mimi Zohar <zohar@us.ibm.com> 
-> > > > > (Stable should be cc'ed on this patch.)
-> > > > 
-> > > > why?
-> > > 
-> > > Why backported?
-> > 
-> > Yes.  If you want to submit the patch to the -stable maintainer then
-> > you should explain to him why the fix is important enough to warrant
-> > doing that.  That involves explaining the user-visible effects of
-> > the bug.
-> > 
-> > >  The IMA measurement list could be incomplete.
-> > 
-> > In more detail than this.  Maybe he knows what the above sentence
-> > means, but I sure don't.
-> 
-> Nope, I don't either :)
+--Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On fput(), i_version is used to detect and flag files that have changed
-and need to be re-measured in the IMA measurement policy.  When a file
-is truncated with truncate()/ftruncate() and then closed, i_version is
-not updated.  As a result, although the file has changed, it will not be
-re-measured and added to the IMA measurement list on subsequent access.
+Hi Eric,
 
-Mimi
+After merging the selinux tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+crypto/crypto_user.c: In function 'crypto_user_rcv_msg':
+crypto/crypto_user.c:385:2: error: implicit declaration of function 'securi=
+ty_netlink_recv' [-Werror=3Dimplicit-function-declaration]
+
+Caused by commit f452f33b1f3a ("security: remove the
+security_netlink_recv hook as it is equivalent to capable()") interacting
+with commit a38f7907b926 ("crypto: Add userspace configuration API")
+which was added to Linus' tree before v3.2-rc1.
+
+I applied the following (supplied) fix as a merge fix.
+
+From: Eric Paris <eparis@redhat.com>
+Subject: selinux tree pull for 2012-01-05, known build issue
+Date: Wed, 04 Jan 2012 17:47:18 -0500
+
+I updated my SELinux tree which is based on 3.1.  I know there is a
+build problem after it is merged with current Linus.  The following
+patch is also needed as the security function is removed by my tree, but
+this caller was added by someone else.  I figured you could carry this
+patch and I'd make sure Linus does the same when he merges...
+
+diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
+index 0605a2b..c7e5b66 100644
+--- a/crypto/crypto_user.c
++++ b/crypto/crypto_user.c
+@@ -382,7 +382,7 @@ static int crypto_user_rcv_msg(struct sk_buff *skb, str=
+uct nlmsghdr *nlh)
+ 	type -=3D CRYPTO_MSG_BASE;
+ 	link =3D &crypto_dispatch[type];
+=20
+-	if (security_netlink_recv(skb, CAP_NET_ADMIN))
++	if (!capable(CAP_NET_ADMIN))
+ 		return -EPERM;
+=20
+ 	if ((type =3D=3D (CRYPTO_MSG_GETALG - CRYPTO_MSG_BASE) &&
+
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPBSXgAAoJEECxmPOUX5FEW3AP/3kaxdExNHn1R2MDSnf2ZC1l
+GHmOtXflbL6LNppQNIHOWUfsorA/+pvz8hk5v9qHOjOLt9O9Jk5fN8SHrhv5R1UF
+yTcKLbRxBtl/RAZzr/aAp6tDR1TZxaQsfw4kB6H9DNxpWrGbY7dKvZU5uzLzJ5wu
+GKevqFvM73x01I/J75Jr2qxsWZMfEH9pSDzMuhn4xNEca4/5Oj3a1Bn+PrgujxCM
+8/upmOxqgz/MJdeLl989tv8E4OalhhmPSGHPmq4MdFWsMUmq6kukHCSWJE4fCIyU
+gg3AKy3v0ZjtWcnYQhXYvoQDf7me0tNeJPv79YpTrplV2R0wgEwGETEqIrLnoZnA
+AKQo55FHfYaAeLkdyJI9OW5kdrDe/atpoNX739TyQOMYSSnu/9p7mvGoq4RAu/lt
+ZeClZj1MEsJdNp7S/hx848FEgkqABZskv3ou2o2QSPqou/6/sLGzXJkyvi12cNdO
+1cIthsOCXpNCCaGFadMCTIto6KuxLVqlxvy9ItbiPWnyGpYVA/+cv/V0CKQQjbqH
+g5clfNjzEdjm3W6NSX48FtM6v6OxZIbs9F30THMPThwIvD2iz5xCgRdZYpxhOk4H
+sM9+lVUu0TZVZWr+qRpmjUZPR8DYyqa5wdhadd+LCbKglEwmr+QnHx0dUls6UXmZ
+G8RXM2iHVTkzVzFjCb3c
+=gVth
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L=--
