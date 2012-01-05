@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933018Ab2AEXKQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 18:10:16 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56228 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2AEXKO (ORCPT
+	id S964877Ab2AEXKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 18:10:32 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50972 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235Ab2AEXKa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 18:10:14 -0500
-Date: Thu, 5 Jan 2012 15:10:11 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: leonid.moiseichuk@nokia.com
-cc: gregkh@suse.de, penberg@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, cesarb@cesarb.net,
-        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, aarcange@redhat.com,
-        riel@redhat.com, mel@csn.ul.ie, dima@android.com, rebecca@android.com,
-        san@google.com, akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
-Subject: RE: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and related
- changes in MM
-In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045545E5@008-AM1MPN1-003.mgdnok.nokia.com>
-Message-ID: <alpine.DEB.2.00.1201051503530.10521@chino.kir.corp.google.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <20120104195612.GB19181@suse.de> <84FF21A720B0874AA94B46D76DB98269045542B5@008-AM1MPN1-003.mgdnok.nokia.com> <CAOJsxLEdTMB6JtYViRJq5gZ4_w5aaV18S3q-1rOXGzaMtmiW6A@mail.gmail.com>
- <84FF21A720B0874AA94B46D76DB9826904554391@008-AM1MPN1-003.mgdnok.nokia.com> <20120105145753.GA3937@suse.de> <84FF21A720B0874AA94B46D76DB98269045545E5@008-AM1MPN1-003.mgdnok.nokia.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 5 Jan 2012 18:10:30 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 5 Jan 2012 18:10:29 -0500
+Message-ID: <CAHFgRy8GUhyBZonZ_3c2=COxnCJ9DhX6EiaKe3JpMWaSpYJWWw@mail.gmail.com>
+Subject: panic - init: io.c:1312: Unhandled error from nih_io_destroy: Bad
+ file descriptor
+From: Miles Lane <miles.lane@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jan 2012, leonid.moiseichuk@nokia.com wrote:
+Suddenly, all my kernels are failing to boot.  These include ones from
+Ubuntu 12.04 and my Linus' GIT kernels.  Any suggestions for what
+might be broken?  Is it possible for me to fix this?
 
-> I tried to sort out all inputs coming. But before doing the next step I 
-> prefer to have tests passed. Changes you proposed are strain forward and 
-> understandable. 
-> Hooking in mm/vmscan.c and mm/page-writeback.c is not so easy, I need 
-> to find proper place and make adequate proposal.
-> Using memcg is doesn't not look for me now as a good way because I 
-> wouldn't like to change memory accounting - memcg has strong reason to 
-> keep caches.
-> 
-
-If you can accept the overhead of the memory controller (increase in 
-kernel text size and amount of metadata for page_cgroup), then you can 
-already do this with a combination of memory thresholds with 
-cgroup.event_control and disabling of the oom killer entirely with 
-memory.oom_control.  You can also get notified when the oom killer is 
-triggered by using eventfd(2) on memory.oom_control even though it's 
-disabled in the kernel.  Then, the userspace task attached to that control 
-file can send signals to applications to free their memory or, in the 
-worst case, choose to kill an application but have all that policy be 
-implemented in userspace.
-
-We actually have extended that internally to have an oom killer delay, 
-i.e. a specific amount of time must pass for userspace to react to the oom 
-situation or the oom killer will actually be triggered.  This is needed in 
-case our userspace is blocked or can't respond for whatever reason and is 
-a nice fallback so that we're guaranteed to never end up livelocked.  That 
-delay gets reset anytime a page is uncharged to a memcg, the memcg limit 
-is increased, or the delay is rewritten (for userspace to say "I've 
-handled the event").  Those patches were posted on linux-mm several months 
-ago but never merged upstream.  You should be able to use the same concept 
-apart from the memory controller and implement it generically.
-
-You also presented this as an alternative for "embedded or small" users so 
-I wasn't aware that using the memory controller was an acceptable solution 
-given its overhead.
+init: log.c:291: Assertion failed in log_io_error_handler: err->number == EIR
+init: Caught abort, core dumped
+init: io.c:1312: Unhandled error from nih_io_destroy: Bad file descriptor
+init: Caught abort. core dumped
+Kernel panic - not syncing: Attempted to kill init!
+Pid: 1. comm: init Not tainted 3.2.0-rc7+ #70
+ Call Trace:
+  [<ffffffff812eee23>] panic+0x96/0x1a2
+  [<ffffffff810386fb>] forget_original_parent+0x9b/0x1e5
+  [<flffffff81038857>] exit_notify+0x12/0x139
+  [<ffffffff81038e52>] do_exit+0x2fe/0x371
+  [<ffffffff812fe48e>] ? retint_swapgs+0xe/0x13
+  [<ffffffff81039079>] do_group_exit+0x7d/0xa8
+  [<ffffffff810390b6>] sys_exit_group+0x12/0x12
+  [<ffffffff812febfb>] system_call_fastpath+0x16/0x1b
+panic occurred, switching back to text console
