@@ -1,151 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755887Ab2AEKYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 05:24:15 -0500
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:42219 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754819Ab2AEKYN (ORCPT
+	id S1756810Ab2AEKiG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 05:38:06 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:34661
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754534Ab2AEKiE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 05:24:13 -0500
-X-IronPort-AV: E=Sophos;i="4.71,461,1320624000"; 
-   d="scan'208";a="9830200"
-Subject: Re: [Xen-devel] [PATCH 2/5] xen/pciback: Support
- pci_reset_function, aka FLR or D3 support.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Date: Thu, 5 Jan 2012 10:24:11 +0000
-In-Reply-To: <1325724403-29642-3-git-send-email-konrad.wilk@oracle.com>
-References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com>
-	 <1325724403-29642-3-git-send-email-konrad.wilk@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325759051.25206.361.camel@zakaz.uk.xensource.com>
+	Thu, 5 Jan 2012 05:38:04 -0500
+Date: Thu, 5 Jan 2012 11:37:59 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <217150909.20120105113759@eikelenboom.it>
+To: "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 00:46 +0000, Konrad Rzeszutek Wilk wrote:
-> We use the __pci_reset_function_locked to perform the action.
-> Also on attaching ("bind") and detaching ("unbind") we save and
-> restore the configuration states. When the device is disconnected
-> from a guest we use the "pci_reset_function" to also reset the
-> device before being passed to another guest.
 
-Currently I thought the toolstack was supposed to do the reset (by
-writing to the reset node in sysfs) as it was (de)assigning devices
-to/from guests. That's not to say that there isn't an argument for
-preferring to do it kernels side but it would be interesting to make
-that argument explicitly.
+I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
 
-I guess the toolstack doesn't currently save/restore the configuration
-state, could it though? I guess the state is all available in sysfs. On
-the other hand the kernel provides us with a very handy function which
-Just Does It...
+Steps:
+1) fsck -v -p -f the filesystem
+2) mount the filesystem
+3) Try to copy a file
+4) filesystem will be mounted RO on error  (see below)
+5) fsck again, journal will be recovered, no other errors
+6) start at 1)
 
-Ian.
 
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  drivers/xen/xen-pciback/pci_stub.c |   41 +++++++++++++++++++++++++++++++++--
->  drivers/xen/xen-pciback/pciback.h  |    1 +
->  2 files changed, 39 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-> index 8f06e1e..0ce0dc6 100644
-> --- a/drivers/xen/xen-pciback/pci_stub.c
-> +++ b/drivers/xen/xen-pciback/pci_stub.c
-> @@ -85,19 +85,34 @@ static struct pcistub_device *pcistub_device_alloc(struct pci_dev *dev)
->  static void pcistub_device_release(struct kref *kref)
->  {
->  	struct pcistub_device *psdev;
-> +	struct xen_pcibk_dev_data *dev_data;
->  
->  	psdev = container_of(kref, struct pcistub_device, kref);
-> +	dev_data = pci_get_drvdata(psdev->dev);
->  
->  	dev_dbg(&psdev->dev->dev, "pcistub_device_release\n");
->  
->  	xen_unregister_device_domain_owner(psdev->dev);
->  
-> -	/* Clean-up the device */
-> +	/* Call the reset function which does not take lock as this
-> +	 * is called from "unbind" which takes a device_lock mutex.
-> +	 */
-> +	__pci_reset_function_locked(psdev->dev);
-> +	if (pci_load_and_free_saved_state(psdev->dev,
-> +					  &dev_data->pci_saved_state)) {
-> +		dev_dbg(&psdev->dev->dev, "Could not reload PCI state\n");
-> +	} else
-> +		pci_restore_state(psdev->dev);
-> +
-> +	/* Disable the device */
->  	xen_pcibk_reset_device(psdev->dev);
-> +
-> +	kfree(dev_data);
-> +	pci_set_drvdata(psdev->dev, NULL);
-> +
-> +	/* Clean-up the device */
->  	xen_pcibk_config_free_dyn_fields(psdev->dev);
->  	xen_pcibk_config_free_dev(psdev->dev);
-> -	kfree(pci_get_drvdata(psdev->dev));
-> -	pci_set_drvdata(psdev->dev, NULL);
->  
->  	pci_dev_put(psdev->dev);
->  
-> @@ -230,7 +245,17 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
->  	/* Cleanup our device
->  	 * (so it's ready for the next domain)
->  	 */
-> +
-> +	/* This is OK - we are running from workqueue context
-> +	 * and want to inhibit the user from fiddling with 'reset'
-> +	 */
-> +	pci_reset_function(dev);
-> +	pci_restore_state(psdev->dev);
-> +
-> +	/* This disables the device. */
->  	xen_pcibk_reset_device(found_psdev->dev);
-> +
-> +	/* And cleanup up our emulated fields. */
->  	xen_pcibk_config_free_dyn_fields(found_psdev->dev);
->  	xen_pcibk_config_reset_dev(found_psdev->dev);
->  
-> @@ -325,6 +350,16 @@ static int __devinit pcistub_init_device(struct pci_dev *dev)
->  	if (err)
->  		goto config_release;
->  
-> +	dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
-> +	__pci_reset_function_locked(dev);
-> +
-> +	/* We need the device active to save the state. */
-> +	dev_dbg(&dev->dev, "save state of device\n");
-> +	pci_save_state(dev);
-> +	dev_data->pci_saved_state = pci_store_saved_state(dev);
-> +	if (!dev_data->pci_saved_state)
-> +		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
-> +
->  	/* Now disable the device (this also ensures some private device
->  	 * data is setup before we export)
->  	 */
-> diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
-> index e9b4011..a7def01 100644
-> --- a/drivers/xen/xen-pciback/pciback.h
-> +++ b/drivers/xen/xen-pciback/pciback.h
-> @@ -41,6 +41,7 @@ struct xen_pcibk_device {
->  
->  struct xen_pcibk_dev_data {
->  	struct list_head config_fields;
-> +	struct pci_saved_state *pci_saved_state;
->  	unsigned int permissive:1;
->  	unsigned int warned_on_write:1;
->  	unsigned int enable_intx:1;
+I think the way i bricked it is:
+- make a lvm snapshot from that lvm logical disk
+- mount that lvm snapshot as RO
+- try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
+- it fails and i can't recover (see above)
 
+
+Is there a way to recover from this ?
+
+
+
+[  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+[  220.749415] Aborting journal on device dm-2-8.
+[  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
+[  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
+[  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
+[  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
+serveerstertje:/mnt/xen_images/domains/production# cd /
+serveerstertje:/# umount /mnt/xen_images/
+serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
+fsck from util-linux-ng 2.17.2
+/dev/mapper/serveerstertje-xen_images: recovering journal
+
+     277 inodes used (0.00%)
+       5 non-contiguous files (1.8%)
+       0 non-contiguous directories (0.0%)
+         # of inodes with ind/dind/tind blocks: 41/41/3
+         Extent depth histogram: 69/28/2
+51890920 blocks used (79.18%)
+       0 bad blocks
+      41 large files
+
+     199 regular files
+      53 directories
+       0 character device files
+       0 block device files
+       0 fifos
+       0 links
+      16 symbolic links (16 fast symbolic links)
+       0 sockets
+--------
+     268 files
+serveerstertje:/#
+
+
+
+
+System:
+- Kernel 3.2.0
+- Debian Squeeze with:
+ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
+ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
 
