@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932911Ab2AEVCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:02:33 -0500
+	id S932886Ab2AEVC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:02:27 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:34853 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932900Ab2AEVCc (ORCPT
+	with ESMTP id S932656Ab2AEVCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:02:32 -0500
+	Thu, 5 Jan 2012 16:02:25 -0500
 From: Olof Johansson <olof@lixom.net>
 To: Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>
 Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
         Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
         Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org,
         Olof Johansson <olof@lixom.net>
-Subject: [PATCH 3/5] x86: efi: cleanup config table walking
-Date: Thu,  5 Jan 2012 13:02:09 -0800
-Message-Id: <1325797331-14758-4-git-send-email-olof@lixom.net>
+Subject: [PATCH 1/5] x86: efi: refactor efi_init() a bit
+Date: Thu,  5 Jan 2012 13:02:07 -0800
+Message-Id: <1325797331-14758-2-git-send-email-olof@lixom.net>
 X-Mailer: git-send-email 1.7.8.GIT
 In-Reply-To: <1325797331-14758-1-git-send-email-olof@lixom.net>
 References: <1325610682-24811-1-git-send-email-olof@lixom.net>
@@ -24,101 +24,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trivial cleanup, move guid and table pointers to local copies to
-make the code cleaner.
+Break out some of the init steps into helper functions.
+
+Only change to execution flow is the removal of the warning when the
+kernel memdesc structure differ in size from what firmware specifies
+since it's a bogus warning (it's a valid difference per spec).
+
+v4:
+* Removed memdesc warning as per above
 
 Signed-off-by: Olof Johansson <olof@lixom.net>
 Acked-by: Matt Fleming <matt.fleming@intel.com>
 ---
- arch/x86/platform/efi/efi.c |   61 +++++++++++++++++++-----------------------
- 1 files changed, 28 insertions(+), 33 deletions(-)
+ arch/x86/platform/efi/efi.c |   89 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 54 insertions(+), 35 deletions(-)
 
 diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index 511fb15..03259d1 100644
+index 4cf9bd0..6d88dca 100644
 --- a/arch/x86/platform/efi/efi.c
 +++ b/arch/x86/platform/efi/efi.c
-@@ -455,53 +455,48 @@ static void __init efi_systab_init(void *phys)
- static void __init efi_config_init(u64 tables, int nr_tables)
+@@ -429,23 +429,8 @@ static void __init efi_free_boot_services(void)
+ 	}
+ }
+ 
+-void __init efi_init(void)
++static void __init efi_systab_init(void *phys)
  {
- 	efi_config_table_t *config_tables;
--	int i;
-+	int i, sz = sizeof(efi_config_table_t);
+-	efi_config_table_t *config_tables;
+-	efi_runtime_services_t *runtime;
+-	efi_char16_t *c16;
+-	char vendor[100] = "unknown";
+-	int i = 0;
+-	void *tmp;
+-
+-#ifdef CONFIG_X86_32
+-	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
+-#else
+-	efi_phys.systab = (efi_system_table_t *)
+-		(boot_params.efi_info.efi_systab |
+-		 ((__u64)boot_params.efi_info.efi_systab_hi<<32));
+-#endif
+-
+ 	efi.systab = early_ioremap((unsigned long)efi_phys.systab,
+ 				   sizeof(efi_system_table_t));
+ 	if (efi.systab == NULL)
+@@ -464,22 +449,12 @@ void __init efi_init(void)
+ 		       "%d.%02d, expected 1.00 or greater!\n",
+ 		       efi.systab->hdr.revision >> 16,
+ 		       efi.systab->hdr.revision & 0xffff);
++}
+ 
+-	/*
+-	 * Show what we know for posterity
+-	 */
+-	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
+-	if (c16) {
+-		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
+-			vendor[i] = *c16++;
+-		vendor[i] = '\0';
+-	} else
+-		printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
+-	early_iounmap(tmp, 2);
+-
+-	printk(KERN_INFO "EFI v%u.%.02u by %s\n",
+-	       efi.systab->hdr.revision >> 16,
+-	       efi.systab->hdr.revision & 0xffff, vendor);
++static void __init efi_config_init(u64 tables, int nr_tables)
++{
++	efi_config_table_t *config_tables;
++	int i;
  
  	/*
  	 * Let's see what config tables the firmware passed to us.
- 	 */
--	config_tables = early_ioremap(
--		efi.systab->tables,
--		efi.systab->nr_tables * sizeof(efi_config_table_t));
-+	config_tables = early_ioremap(efi.systab->tables,
-+				      efi.systab->nr_tables * sz);
- 	if (config_tables == NULL)
- 		pr_err("Could not map Configuration table!\n");
- 
- 	pr_info("");
- 	for (i = 0; i < efi.systab->nr_tables; i++) {
--		if (!efi_guidcmp(config_tables[i].guid, MPS_TABLE_GUID)) {
--			efi.mps = config_tables[i].table;
--			pr_cont(" MPS=0x%lx ", config_tables[i].table);
--		} else if (!efi_guidcmp(config_tables[i].guid,
--					ACPI_20_TABLE_GUID)) {
--			efi.acpi20 = config_tables[i].table;
--			pr_cont(" ACPI 2.0=0x%lx ", config_tables[i].table);
--		} else if (!efi_guidcmp(config_tables[i].guid,
--					ACPI_TABLE_GUID)) {
--			efi.acpi = config_tables[i].table;
--			pr_cont(" ACPI=0x%lx ", config_tables[i].table);
--		} else if (!efi_guidcmp(config_tables[i].guid,
--					SMBIOS_TABLE_GUID)) {
--			efi.smbios = config_tables[i].table;
--			pr_cont(" SMBIOS=0x%lx ", config_tables[i].table);
-+		efi_guid_t guid = config_tables[i].guid;
-+		unsigned long table = config_tables[i].table;
+@@ -526,6 +501,11 @@ void __init efi_init(void)
+ 	printk("\n");
+ 	early_iounmap(config_tables,
+ 			  efi.systab->nr_tables * sizeof(efi_config_table_t));
++}
 +
-+		if (!efi_guidcmp(guid, MPS_TABLE_GUID)) {
-+			efi.mps = table;
-+			pr_cont(" MPS=0x%lx ", table);
-+		} else if (!efi_guidcmp(guid, ACPI_20_TABLE_GUID)) {
-+			efi.acpi20 = table;
-+			pr_cont(" ACPI 2.0=0x%lx ", table);
-+		} else if (!efi_guidcmp(guid, ACPI_TABLE_GUID)) {
-+			efi.acpi = table;
-+			pr_cont(" ACPI=0x%lx ", table);
-+		} else if (!efi_guidcmp(guid, SMBIOS_TABLE_GUID)) {
-+			efi.smbios = table;
-+			pr_cont(" SMBIOS=0x%lx ", table);
- #ifdef CONFIG_X86_UV
--		} else if (!efi_guidcmp(config_tables[i].guid,
--					UV_SYSTEM_TABLE_GUID)) {
--			efi.uv_systab = config_tables[i].table;
--			pr_cont(" UVsystab=0x%lx ", config_tables[i].table);
-+		} else if (!efi_guidcmp(guid, UV_SYSTEM_TABLE_GUID)) {
-+			efi.uv_systab = table;
-+			pr_cont(" UVsystab=0x%lx ", table);
- #endif
--		} else if (!efi_guidcmp(config_tables[i].guid,
--					HCDP_TABLE_GUID)) {
--			efi.hcdp = config_tables[i].table;
--			pr_cont(" HCDP=0x%lx ", config_tables[i].table);
--		} else if (!efi_guidcmp(config_tables[i].guid,
--					UGA_IO_PROTOCOL_GUID)) {
--			efi.uga = config_tables[i].table;
--			pr_cont(" UGA=0x%lx ", config_tables[i].table);
-+		} else if (!efi_guidcmp(guid, HCDP_TABLE_GUID)) {
-+			efi.hcdp = table;
-+			pr_cont(" HCDP=0x%lx ", table);
-+		} else if (!efi_guidcmp(guid, UGA_IO_PROTOCOL_GUID)) {
-+			efi.uga = table;
-+			pr_cont(" UGA=0x%lx ", table);
- 		}
- 	}
- 	pr_cont("\n");
--	early_iounmap(config_tables,
--			  efi.systab->nr_tables * sizeof(efi_config_table_t));
-+	early_iounmap(config_tables, efi.systab->nr_tables * sz);
- }
++static void __init efi_runtime_init(void)
++{
++	efi_runtime_services_t *runtime;
  
- static void __init efi_runtime_init(void)
+ 	/*
+ 	 * Check out the runtime services table. We need to map
+@@ -554,7 +534,10 @@ void __init efi_init(void)
+ 		printk(KERN_ERR "Could not map the EFI runtime service "
+ 		       "table!\n");
+ 	early_iounmap(runtime, sizeof(efi_runtime_services_t));
++}
+ 
++static void __init efi_memmap_init(void)
++{
+ 	/* Map the EFI memory map */
+ 	memmap.map = early_ioremap((unsigned long)memmap.phys_map,
+ 				   memmap.nr_map * memmap.desc_size);
+@@ -562,12 +545,48 @@ void __init efi_init(void)
+ 		printk(KERN_ERR "Could not map the EFI memory map!\n");
+ 	memmap.map_end = memmap.map + (memmap.nr_map * memmap.desc_size);
+ 
+-	if (memmap.desc_size != sizeof(efi_memory_desc_t))
+-		printk(KERN_WARNING
+-		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+-
+ 	if (add_efi_memmap)
+ 		do_add_efi_memmap();
++}
++
++void __init efi_init(void)
++{
++	efi_char16_t *c16;
++	char vendor[100] = "unknown";
++	int i = 0;
++	void *tmp;
++
++#ifdef CONFIG_X86_32
++	efi_phys.systab = (efi_system_table_t *)boot_params.efi_info.efi_systab;
++#else
++	efi_phys.systab = (efi_system_table_t *)
++		(boot_params.efi_info.efi_systab |
++		 ((__u64)boot_params.efi_info.efi_systab_hi<<32));
++#endif
++
++	efi_systab_init(efi_phys.systab);
++
++	/*
++	 * Show what we know for posterity
++	 */
++	c16 = tmp = early_ioremap(efi.systab->fw_vendor, 2);
++	if (c16) {
++		for (i = 0; i < sizeof(vendor) - 1 && *c16; ++i)
++			vendor[i] = *c16++;
++		vendor[i] = '\0';
++	} else
++		printk(KERN_ERR PFX "Could not map the firmware vendor!\n");
++	early_iounmap(tmp, 2);
++
++	printk(KERN_INFO "EFI v%u.%.02u by %s\n",
++	       efi.systab->hdr.revision >> 16,
++	       efi.systab->hdr.revision & 0xffff, vendor);
++
++	efi_config_init(efi.systab->tables, efi.systab->nr_tables);
++
++	efi_runtime_init();
++
++	efi_memmap_init();
+ 
+ #ifdef CONFIG_X86_32
+ 	x86_platform.get_wallclock = efi_get_time;
 -- 
 1.7.8.GIT
 
