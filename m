@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757869Ab2AEDk5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 22:40:57 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43125 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763Ab2AEDkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 22:40:55 -0500
-Date: Thu, 5 Jan 2012 14:40:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the battery tree
-Message-Id: <20120105144042.4e03850089cce56a7e9312e4@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_14_40_42_+1100_Wt5wvfxwae63Lh1l"
+	id S1757891Ab2AEDlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 22:41:15 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:41260 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757855Ab2AEDlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 22:41:13 -0500
+From: Joe Perches <joe@perches.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        linux-wireless@vger.kernel.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/7] rtlwifi: debug macros and uses neatening
+Date: Wed,  4 Jan 2012 19:40:38 -0800
+Message-Id: <cover.1325734202.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_14_40_42_+1100_Wt5wvfxwae63Lh1l
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Shrinks the objects a fair bit too.
 
-Hi Anton,
+Joe Perches (7):
+  rtlwifi: Neaten RT_ASSERT, RT_TRACE, RTPRINT, RT_PRINT_DATA macros
+  rtlwifi: Standardize RT_PRINT_DATA macro and uses
+  rtlwifi: Convert RT_TRACE macro to use ##__VA_ARGS__
+  rtlwifi: Convert RTPRINT macro to use ##__VA_ARGS__
+  rtlwifi: Convert RT_ASSERT macro to use ##__VA_ARGS__
+  rtlwifi: Remove duplicate __func__
+  rtlwifi: Optimize RT_TRACE macro use of KBUILD_MODNAME for size
 
-After merging the battery tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+ drivers/net/wireless/rtlwifi/base.c                |   56 +-
+ drivers/net/wireless/rtlwifi/cam.c                 |   81 ++--
+ drivers/net/wireless/rtlwifi/core.c                |  124 ++--
+ drivers/net/wireless/rtlwifi/debug.h               |   85 ++--
+ drivers/net/wireless/rtlwifi/efuse.c               |   61 +-
+ drivers/net/wireless/rtlwifi/pci.c                 |  211 +++----
+ drivers/net/wireless/rtlwifi/ps.c                  |   31 +-
+ drivers/net/wireless/rtlwifi/rc.c                  |    2 +-
+ drivers/net/wireless/rtlwifi/regd.c                |   12 +-
+ drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c  |  189 +++---
+ drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c  |   84 ++--
+ drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |  211 +++---
+ drivers/net/wireless/rtlwifi/rtl8192ce/dm.c        |   24 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c        |  262 ++++----
+ drivers/net/wireless/rtlwifi/rtl8192ce/led.c       |   16 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/phy.c       |  108 ++--
+ drivers/net/wireless/rtlwifi/rtl8192ce/rf.c        |   83 ++--
+ drivers/net/wireless/rtlwifi/rtl8192ce/sw.c        |    8 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/trx.c       |   23 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/dm.c        |   24 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/hw.c        |  257 ++++----
+ drivers/net/wireless/rtlwifi/rtl8192cu/led.c       |   15 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/mac.c       |  105 ++--
+ drivers/net/wireless/rtlwifi/rtl8192cu/phy.c       |  121 ++--
+ drivers/net/wireless/rtlwifi/rtl8192cu/rf.c        |   71 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c        |    6 +-
+ drivers/net/wireless/rtlwifi/rtl8192cu/trx.c       |   42 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/dm.c        |  239 +++----
+ drivers/net/wireless/rtlwifi/rtl8192de/fw.c        |  117 ++--
+ drivers/net/wireless/rtlwifi/rtl8192de/hw.c        |  188 +++---
+ drivers/net/wireless/rtlwifi/rtl8192de/led.c       |   14 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/phy.c       |  682 ++++++++++----------
+ drivers/net/wireless/rtlwifi/rtl8192de/rf.c        |   95 ++--
+ drivers/net/wireless/rtlwifi/rtl8192de/sw.c        |    8 +-
+ drivers/net/wireless/rtlwifi/rtl8192de/trx.c       |   26 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/dm.c        |   30 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/fw.c        |   66 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/hw.c        |  244 ++++----
+ drivers/net/wireless/rtlwifi/rtl8192se/led.c       |   15 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/phy.c       |  204 +++---
+ drivers/net/wireless/rtlwifi/rtl8192se/rf.c        |   60 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/sw.c        |    8 +-
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c       |   18 +-
+ drivers/net/wireless/rtlwifi/usb.c                 |   39 +-
+ 44 files changed, 2084 insertions(+), 2281 deletions(-)
 
-ERROR: "sysfs_create_link_nowarn" [drivers/power/power_supply.ko] undefined!
+-- 
+1.7.8.111.gad25c.dirty
 
-Caused by commit 8351665195ce ("power_supply: allow a power supply to
-explicitly point to powered device").  That symbol is not exported to
-modules.
-
-I have used the battery tree from next-20120104 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__5_Jan_2012_14_40_42_+1100_Wt5wvfxwae63Lh1l
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBRu6AAoJEECxmPOUX5FEM58P/39RwpaO86H//pLtZH0Psy3M
-cH5DZuBLDGjhPfTa2W2jchC5ubLdWVV8bo3qPtsBHaad5Axx2ZXQ4AFlbwksDta7
-KQI5pJ0BPGSIwM8Uuwd+HuCXWNu8wOytugoGB93bwxfK6aNaZEVlRGBqQgaQ3fGU
-URqklXVmFrr0qVC/LU5A9tVvZhQI21IxugbhBMiSIc0IX2w7M01tO2UyEqxKoCJD
-ZT9SGLFkf901OpWx8Nt1HlLS0HdbMMDXgjmdo6bIzSoI20WBkxLMsI/ZcZVyOoow
-4ifHU4HcYPYdlSR/1vUP67VNsqVS28E8CI88tD1UpewcXdKCsvsJgwBt2W1jgoXV
-HF2OzDxesr5orytkhkdoRlvQp+3o36Fu5S09t2qeRixqqjLWbpbbChy9hNorBuQt
-WvZyO6lHCy3xWwQj5lkPz2B0QTfMUwiLjg7e5ncQOC6/1m3GqeGVIm5YxhUpEliS
-YIocisC2XwalXHoqg7oV9JlbTEnC8K0oELtVnx2XocqGOhoapwvEHIAtBJZKK1Zy
-umMcM3rJZKNScK+62TUDG4IwmG+G5ybZnzk87ETYeUBhSe8h9WxzbipVqkm/kMgI
-NWFvpI2JkBO5IEx04wm565LjWrjmQ1cZMVeyWK672wyqMiTVYzIvgIuUwpY7QzIa
-uBM2dTzEXixDAaDjJORp
-=luo3
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jan_2012_14_40_42_+1100_Wt5wvfxwae63Lh1l--
