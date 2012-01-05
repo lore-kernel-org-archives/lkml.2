@@ -1,462 +1,449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab2AEPRT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 10:17:19 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19904 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755450Ab2AEPRR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 10:17:17 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 05 Jan 2012 07:17:16 -0800
-From: Laxman Dewangan <ldewangan.com@nvidia.com>
-To: broonie@opensource.wolfsonmicro.com, lrg@slimlogic.co.uk
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, ldewangan@nvidia.com
-Subject: [PATCH V3] regulator: TPS62360: Add tps62360 regulator driver
-Date: Thu,  5 Jan 2012 20:45:04 +0530
-Message-Id: <1325776504-31738-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S932610Ab2AEPRo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 10:17:44 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47802 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932527Ab2AEPRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 10:17:43 -0500
+Date: Thu, 5 Jan 2012 16:15:35 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/mm changes for v3.3
+Message-ID: <20120105151535.GA10472@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Laxman Dewangan <ldewangan@nvidia.com>
+Linus,
 
-The regulator module consists of 1 DCDC. The output voltage
-is configurable and is meant for supply power to the core
-voltage of Soc.
+Please pull the latest x86-mm-for-linus git tree from:
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Main changes from patch V1: 
- 1. Used the euation for voltage selection in place of lookup table.
- 2. Used regmap inplace of direct i2c api for register access.
- 3. Removed unimplmented function.
- 4. Used devm_kzalloc()
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-mm-for-linus
 
-Change from patch V2:
- Added regmap_exit in failing path.
 
- drivers/regulator/Kconfig              |   10 +
- drivers/regulator/Makefile             |    1 +
- drivers/regulator/tps62360-regulator.c |  317 ++++++++++++++++++++++++++++++++
- include/linux/regulator/tps62360.h     |   49 +++++
- 4 files changed, 377 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/tps62360-regulator.c
- create mode 100644 include/linux/regulator/tps62360.h
+out-of-topic modifications in x86-mm-for-linus:
+-----------------------------------------------
+include/linux/mm.h                 # 54c29c6: mm, x86: Remove debug_pagealloc_e
+mm/debug-pagealloc.c               # 54c29c6: mm, x86: Remove debug_pagealloc_e
 
-diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 7a61b17..b9ad3d8 100644
---- a/drivers/regulator/Kconfig
-+++ b/drivers/regulator/Kconfig
-@@ -328,6 +328,16 @@ config REGULATOR_TPS65910
- 	help
- 	  This driver supports TPS65910 voltage regulator chips.
+ Thanks,
+
+	Ingo
+
+------------------>
+H Hartley Sweeten (1):
+      arch/x86/kernel/e820.c: quiet sparse noise about plain integer as NULL pointer
+
+Ludwig Nussel (1):
+      x86: Fix mmap random address range
+
+Mike Ditto (1):
+      arch/x86/kernel/e820.c: Eliminate bubble sort from sanitize_e820_map()
+
+Pekka Enberg (7):
+      x86, mm: Use MAX_DMA_PFN for ZONE_DMA on 32-bit
+      x86, mm: Move zone init from paging_init() on 64-bit
+      x86, mm: Use max_pfn instead of highend_pfn
+      x86, mm: Wrap ZONE_DMA32 with CONFIG_ZONE_DMA32
+      x86, mm: Use max_low_pfn for ZONE_NORMAL on 64-bit
+      x86, mm: Prepare zone_sizes_init() for unification
+      x86, mm: Unify zone_sizes_init()
+
+Petr Holasek (1):
+      x86/numa: Add constraints check for nid parameters
+
+Stanislaw Gruszka (2):
+      x86/mm: Initialize high mem before free_all_bootmem()
+      mm, x86: Remove debug_pagealloc_enabled
+
+
+ arch/x86/include/asm/init.h |    2 +
+ arch/x86/kernel/e820.c      |   59 +++++++++++++++++-------------------------
+ arch/x86/mm/init.c          |   23 ++++++++++++++++
+ arch/x86/mm/init_32.c       |   29 ++++++++-------------
+ arch/x86/mm/init_64.c       |   11 +-------
+ arch/x86/mm/mmap.c          |    4 +-
+ arch/x86/mm/numa.c          |   10 ++++---
+ arch/x86/mm/pageattr.c      |    6 ----
+ include/linux/mm.h          |   10 -------
+ init/main.c                 |    5 ---
+ mm/debug-pagealloc.c        |    3 --
+ 11 files changed, 69 insertions(+), 93 deletions(-)
+
+diff --git a/arch/x86/include/asm/init.h b/arch/x86/include/asm/init.h
+index 8dbe353..adcc0ae 100644
+--- a/arch/x86/include/asm/init.h
++++ b/arch/x86/include/asm/init.h
+@@ -5,6 +5,8 @@
+ extern void __init early_ioremap_page_table_range_init(void);
+ #endif
  
-+config REGULATOR_TPS62360
-+	tristate "TI TPS62360 Power Regulator"
-+	depends on I2C
-+	select REGMAP_I2C
-+	help
-+	  This driver supports TPS62360 voltage regulator chip. This
-+	  regulator is meant for processor core supply. This chip is
-+	  high-frequency synchronous step down dc-dc converter optimized
-+	  for battery-powered portable applications.
++extern void __init zone_sizes_init(void);
 +
- config REGULATOR_AAT2870
- 	tristate "AnalogicTech AAT2870 Regulators"
- 	depends on MFD_AAT2870_CORE
-diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index 503bac8..1668b2e 100644
---- a/drivers/regulator/Makefile
-+++ b/drivers/regulator/Makefile
-@@ -47,6 +47,7 @@ obj-$(CONFIG_REGULATOR_ISL6271A) += isl6271a-regulator.o
- obj-$(CONFIG_REGULATOR_AB8500)	+= ab8500.o
- obj-$(CONFIG_REGULATOR_DB8500_PRCMU) += db8500-prcmu.o
- obj-$(CONFIG_REGULATOR_TPS65910) += tps65910-regulator.o
-+obj-$(CONFIG_REGULATOR_TPS62360) += tps62360-regulator.o
- obj-$(CONFIG_REGULATOR_AAT2870) += aat2870-regulator.o
+ extern unsigned long __init
+ kernel_physical_mapping_init(unsigned long start,
+ 			     unsigned long end,
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 303a0e4..d6bd853 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -19,6 +19,7 @@
+ #include <linux/acpi.h>
+ #include <linux/firmware-map.h>
+ #include <linux/memblock.h>
++#include <linux/sort.h>
  
- ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
-diff --git a/drivers/regulator/tps62360-regulator.c b/drivers/regulator/tps62360-regulator.c
-new file mode 100644
-index 0000000..30c0615
---- /dev/null
-+++ b/drivers/regulator/tps62360-regulator.c
-@@ -0,0 +1,317 @@
-+/*
-+ * tps62360.c -- TI tps62360
-+ *
-+ * Driver for processor core supply tps62360 and tps62361B
-+ *
-+ * Copyright (c) 2012, NVIDIA Corporation.
-+ *
-+ * Author: Laxman Dewangan <ldewangan@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
-+ * whether express or implied; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-+ * 02111-1307, USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/tps62360.h>
-+#include <linux/i2c.h>
-+#include <linux/delay.h>
-+#include <linux/slab.h>
-+#include <linux/regmap.h>
-+
-+/* Register definitions */
-+#define REG_VSET0		0
-+#define REG_VSET1		1
-+#define REG_VSET2		2
-+#define REG_VSET3		3
-+#define REG_CONTROL		4
-+#define REG_TEMP		5
-+#define REG_RAMPCTRL		6
-+#define REG_CHIPID		8
-+
-+enum chips {TPS62360, TPS62361};
-+
-+#define TPS62360_BASE_VOLTAGE	770
-+#define TPS62360_N_VOLTAGES	64
-+
-+#define TPS62361_BASE_VOLTAGE	500
-+#define TPS62361_N_VOLTAGES	128
-+
-+/* tps 62360 chip information */
-+struct tps62360_chip {
-+	const char *name;
-+	struct device *dev;
-+	struct regulator_desc desc;
-+	struct i2c_client *client;
-+	struct regulator_dev *rdev;
-+	struct regmap *regmap;
-+	int chip_id;
-+	int vsel_id;
-+	int voltage_base;
-+	u8 voltage_reg_mask;
-+	bool en_internal_pulldn;
-+	bool en_force_pwm;
-+	bool en_discharge;
+ #include <asm/e820.h>
+ #include <asm/proto.h>
+@@ -227,22 +228,38 @@ void __init e820_print_map(char *who)
+  *	   ____________________33__
+  *	   ______________________4_
+  */
++struct change_member {
++	struct e820entry *pbios; /* pointer to original bios entry */
++	unsigned long long addr; /* address for this change point */
 +};
 +
-+static int tps62360_dcdc_get_voltage(struct regulator_dev *dev)
++static int __init cpcompare(const void *a, const void *b)
 +{
-+	struct tps62360_chip *tps = rdev_get_drvdata(dev);
-+	int vsel;
-+	unsigned int data;
-+	int ret;
++	struct change_member * const *app = a, * const *bpp = b;
++	const struct change_member *ap = *app, *bp = *bpp;
 +
-+	ret = regmap_read(tps->regmap, REG_VSET0 + tps->vsel_id, &data);
-+	if (ret < 0)
-+		return ret;
-+	vsel = (int)data & tps->voltage_reg_mask;
-+	return (tps->voltage_base + vsel * 10) * 1000;
-+}
-+
-+static int tps62360_dcdc_set_voltage(struct regulator_dev *dev,
-+	     int min_uV, int max_uV, unsigned *selector)
-+{
-+	struct tps62360_chip *tps = rdev_get_drvdata(dev);
-+	int vsel;
-+	int ret;
-+
-+	if (max_uV < min_uV)
-+		return -EINVAL;
-+
-+	if (min_uV >
-+		((tps->voltage_base + (tps->desc.n_voltages - 1) * 10) * 1000))
-+		return -EINVAL;
-+
-+	if (max_uV < tps->voltage_base * 1000)
-+		return -EINVAL;
-+
-+	vsel = DIV_ROUND_UP(min_uV - (tps->voltage_base * 1000), 10000);
-+	if (selector)
-+		*selector = (vsel & tps->voltage_reg_mask);
-+	ret = regmap_update_bits(tps->regmap, REG_VSET0 + tps->vsel_id,
-+				tps->voltage_reg_mask, vsel);
-+	if (ret < 0)
-+		dev_err(tps->dev, "%s: Error in updating register\n", __func__);
-+	return ret;
-+}
-+
-+static int tps62360_dcdc_list_voltage(struct regulator_dev *dev,
-+					unsigned selector)
-+{
-+	struct tps62360_chip *tps = rdev_get_drvdata(dev);
-+
-+	if ((selector < 0) || (selector >= tps->desc.n_voltages))
-+		return -EINVAL;
-+	return (tps->voltage_base + selector * 10) * 1000;
-+}
-+
-+static struct regulator_ops tps62360_dcdc_ops = {
-+	.get_voltage = tps62360_dcdc_get_voltage,
-+	.set_voltage = tps62360_dcdc_set_voltage,
-+	.list_voltage = tps62360_dcdc_list_voltage,
-+};
-+
-+static int tps62360_init_dcdc(struct i2c_client *client,
-+		struct tps62360_regulator_platform_data *pdata,
-+		struct tps62360_chip *tps)
-+{
-+	int st;
-+
-+	/* Initailize internal pull up/down control */
-+	if (tps->en_internal_pulldn)
-+		st = regmap_write(tps->regmap, REG_CONTROL, 0xE0);
-+	else
-+		st = regmap_write(tps->regmap, REG_CONTROL, 0x0);
-+	if (st < 0) {
-+		dev_err(tps->dev, "%s() fails in writing reg %d\n",
-+			__func__, REG_CONTROL);
-+		return st;
-+	}
-+
-+	/* Initailize force PWM mode */
-+	if (pdata->en_force_pwm)
-+		st = regmap_update_bits(tps->regmap, REG_VSET0 + tps->vsel_id,
-+				BIT(7), BIT(7));
-+	else
-+		st = regmap_update_bits(tps->regmap, REG_VSET0 + tps->vsel_id,
-+				BIT(7), 0u);
-+	if (st < 0) {
-+		dev_err(tps->dev, "%s() fails in updating reg %d\n",
-+			__func__, REG_VSET0 + tps->vsel_id);
-+		return st;
-+	}
-+
-+	/* Reset output discharge path to reduce power consumption */
-+	st = regmap_update_bits(tps->regmap, REG_RAMPCTRL, BIT(2), 0);
-+	if (st < 0)
-+		dev_err(tps->dev, "%s() fails in updating reg %d\n",
-+			__func__, REG_RAMPCTRL);
-+	return st;
-+}
-+
-+static const struct regmap_config tps62360_regmap_config = {
-+	.reg_bits = 8,
-+	.val_bits = 8,
-+};
-+
-+static int __devinit tps62360_probe(struct i2c_client *client,
-+				     const struct i2c_device_id *id)
-+{
-+	struct tps62360_regulator_platform_data *pdata;
-+	struct regulator_init_data *init_data;
-+	struct regulator_dev *rdev;
-+	struct tps62360_chip *tps;
-+	int ret;
-+
-+	/**
-+	 * init_data points to array of regulator_init structures
-+	 * coming from the board-evm file.
++	/*
++	 * Inputs are pointers to two elements of change_point[].  If their
++	 * addresses are unequal, their difference dominates.  If the addresses
++	 * are equal, then consider one that represents the end of its region
++	 * to be greater than one that does not.
 +	 */
-+	pdata = client->dev.platform_data;
-+	if (!pdata) {
-+		dev_err(&client->dev, "%s() Err: Platform data not found\n",
-+						__func__);
-+		return -EIO;
-+	}
++	if (ap->addr != bp->addr)
++		return ap->addr > bp->addr ? 1 : -1;
 +
-+	init_data = &pdata->reg_init_data;
-+	tps = devm_kzalloc(&client->dev, sizeof(*tps), GFP_KERNEL);
-+	if (!tps) {
-+		dev_err(&client->dev, "%s() Err: Memory allocation fails\n",
-+						__func__);
-+		return -ENOMEM;
-+	}
-+
-+	tps->en_force_pwm = pdata->en_force_pwm;
-+	tps->en_discharge = pdata->en_discharge;
-+	tps->en_internal_pulldn = pdata->en_internal_pulldn;
-+	tps->chip_id = id->driver_data;
-+	tps->client = client;
-+	tps->dev = &client->dev;
-+	tps->vsel_id = pdata->vsel;
-+	tps->name = id->name;
-+	tps->voltage_base = (tps->chip_id == TPS62360) ?
-+				TPS62360_BASE_VOLTAGE : TPS62361_BASE_VOLTAGE;
-+	tps->voltage_reg_mask = (tps->chip_id == TPS62360) ? 0x3F : 0x7F;
-+
-+	tps->desc.name = id->name;
-+	tps->desc.id = 0;
-+	tps->desc.n_voltages = (tps->chip_id == TPS62360) ?
-+				TPS62360_N_VOLTAGES : TPS62361_N_VOLTAGES;
-+	tps->desc.ops = &tps62360_dcdc_ops;
-+	tps->desc.type = REGULATOR_VOLTAGE;
-+	tps->desc.owner = THIS_MODULE;
-+	tps->regmap = regmap_init_i2c(client, &tps62360_regmap_config);
-+	if (IS_ERR(tps->regmap)) {
-+		ret = PTR_ERR(tps->regmap);
-+		dev_err(&client->dev, "%s() Err: Failed to allocate register"
-+			"map: %d\n", __func__, ret);
-+		return ret;
-+	}
-+	i2c_set_clientdata(client, tps);
-+
-+	ret = tps62360_init_dcdc(client, pdata, tps);
-+	if (ret < 0) {
-+		dev_err(tps->dev, "%s() Err: Init fails with = %d\n",
-+				__func__, ret);
-+		goto fail;
-+	}
-+
-+	/* Register the regulators */
-+	rdev = regulator_register(&tps->desc, &client->dev,
-+			init_data, tps, NULL);
-+	if (IS_ERR(rdev)) {
-+		dev_err(tps->dev, "%s() Err: Failed to register %s\n",
-+				__func__, id->name);
-+		ret = PTR_ERR(rdev);
-+		goto fail;
-+	}
-+
-+	tps->rdev = rdev;
-+	return 0;
-+
-+fail:
-+	regmap_exit(tps->regmap);
-+	return ret;
++	return (ap->addr != ap->pbios->addr) - (bp->addr != bp->pbios->addr);
 +}
+ 
+ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 			     u32 *pnr_map)
+ {
+-	struct change_member {
+-		struct e820entry *pbios; /* pointer to original bios entry */
+-		unsigned long long addr; /* address for this change point */
+-	};
+ 	static struct change_member change_point_list[2*E820_X_MAX] __initdata;
+ 	static struct change_member *change_point[2*E820_X_MAX] __initdata;
+ 	static struct e820entry *overlap_list[E820_X_MAX] __initdata;
+ 	static struct e820entry new_bios[E820_X_MAX] __initdata;
+-	struct change_member *change_tmp;
+ 	unsigned long current_type, last_type;
+ 	unsigned long long last_addr;
+-	int chgidx, still_changing;
++	int chgidx;
+ 	int overlap_entries;
+ 	int new_bios_entry;
+ 	int old_nr, new_nr, chg_nr;
+@@ -279,35 +296,7 @@ int __init sanitize_e820_map(struct e820entry *biosmap, int max_nr_map,
+ 	chg_nr = chgidx;
+ 
+ 	/* sort change-point list by memory addresses (low -> high) */
+-	still_changing = 1;
+-	while (still_changing)	{
+-		still_changing = 0;
+-		for (i = 1; i < chg_nr; i++)  {
+-			unsigned long long curaddr, lastaddr;
+-			unsigned long long curpbaddr, lastpbaddr;
+-
+-			curaddr = change_point[i]->addr;
+-			lastaddr = change_point[i - 1]->addr;
+-			curpbaddr = change_point[i]->pbios->addr;
+-			lastpbaddr = change_point[i - 1]->pbios->addr;
+-
+-			/*
+-			 * swap entries, when:
+-			 *
+-			 * curaddr > lastaddr or
+-			 * curaddr == lastaddr and curaddr == curpbaddr and
+-			 * lastaddr != lastpbaddr
+-			 */
+-			if (curaddr < lastaddr ||
+-			    (curaddr == lastaddr && curaddr == curpbaddr &&
+-			     lastaddr != lastpbaddr)) {
+-				change_tmp = change_point[i];
+-				change_point[i] = change_point[i-1];
+-				change_point[i-1] = change_tmp;
+-				still_changing = 1;
+-			}
+-		}
+-	}
++	sort(change_point, chg_nr, sizeof *change_point, cpcompare, NULL);
+ 
+ 	/* create a new bios memory map, removing overlaps */
+ 	overlap_entries = 0;	 /* number of entries in the overlap table */
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 87488b9..2426b60 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -3,6 +3,7 @@
+ #include <linux/ioport.h>
+ #include <linux/swap.h>
+ #include <linux/memblock.h>
++#include <linux/bootmem.h>	/* for max_low_pfn */
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/e820.h>
+@@ -15,6 +16,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/tlb.h>
+ #include <asm/proto.h>
++#include <asm/dma.h>		/* for MAX_DMA_PFN */
+ 
+ unsigned long __initdata pgt_buf_start;
+ unsigned long __meminitdata pgt_buf_end;
+@@ -392,3 +394,24 @@ void free_initrd_mem(unsigned long start, unsigned long end)
+ 	free_init_pages("initrd memory", start, PAGE_ALIGN(end));
+ }
+ #endif
 +
-+/**
-+ * tps62360_remove - tps62360 driver i2c remove handler
-+ * @client: i2c driver client device structure
-+ *
-+ * Unregister TPS driver as an i2c client device driver
-+ */
-+static int __devexit tps62360_remove(struct i2c_client *client)
++void __init zone_sizes_init(void)
 +{
-+	struct tps62360_chip *tps = i2c_get_clientdata(client);
++	unsigned long max_zone_pfns[MAX_NR_ZONES];
 +
-+	regulator_unregister(tps->rdev);
-+	regmap_exit(tps->regmap);
-+	return 0;
++	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
++
++#ifdef CONFIG_ZONE_DMA
++	max_zone_pfns[ZONE_DMA]		= MAX_DMA_PFN;
++#endif
++#ifdef CONFIG_ZONE_DMA32
++	max_zone_pfns[ZONE_DMA32]	= MAX_DMA32_PFN;
++#endif
++	max_zone_pfns[ZONE_NORMAL]	= max_low_pfn;
++#ifdef CONFIG_HIGHMEM
++	max_zone_pfns[ZONE_HIGHMEM]	= max_pfn;
++#endif
++
++	free_area_init_nodes(max_zone_pfns);
 +}
 +
-+static void tps62360_shutdown(struct i2c_client *client)
-+{
-+	struct tps62360_chip *tps = i2c_get_clientdata(client);
-+	int st;
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 29f7c6d..a2fecb1 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -674,22 +674,6 @@ void __init initmem_init(void)
+ }
+ #endif /* !CONFIG_NEED_MULTIPLE_NODES */
+ 
+-static void __init zone_sizes_init(void)
+-{
+-	unsigned long max_zone_pfns[MAX_NR_ZONES];
+-	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+-#ifdef CONFIG_ZONE_DMA
+-	max_zone_pfns[ZONE_DMA] =
+-		virt_to_phys((char *)MAX_DMA_ADDRESS) >> PAGE_SHIFT;
+-#endif
+-	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
+-#ifdef CONFIG_HIGHMEM
+-	max_zone_pfns[ZONE_HIGHMEM] = highend_pfn;
+-#endif
+-
+-	free_area_init_nodes(max_zone_pfns);
+-}
+-
+ void __init setup_bootmem_allocator(void)
+ {
+ 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+@@ -760,6 +744,17 @@ void __init mem_init(void)
+ #ifdef CONFIG_FLATMEM
+ 	BUG_ON(!mem_map);
+ #endif
++	/*
++	 * With CONFIG_DEBUG_PAGEALLOC initialization of highmem pages has to
++	 * be done before free_all_bootmem(). Memblock use free low memory for
++	 * temporary data (see find_range_array()) and for this purpose can use
++	 * pages that was already passed to the buddy allocator, hence marked as
++	 * not accessible in the page tables when compiled with
++	 * CONFIG_DEBUG_PAGEALLOC. Otherwise order of initialization is not
++	 * important here.
++	 */
++	set_highmem_pages_init();
 +
-+	if (!tps->en_discharge)
-+		return;
-+
-+	/* Configure the output discharge path */
-+	st = regmap_update_bits(tps->regmap, REG_RAMPCTRL, BIT(2), BIT(2));
-+	if (st < 0)
-+		dev_err(tps->dev, "%s() fails in updating reg %d\n",
-+			__func__, REG_RAMPCTRL);
-+}
-+
-+static const struct i2c_device_id tps62360_id[] = {
-+	{.name = "tps62360", .driver_data = TPS62360},
-+	{.name = "tps62361", .driver_data = TPS62361},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(i2c, tps62360_id);
-+
-+static struct i2c_driver tps62360_i2c_driver = {
-+	.driver = {
-+		.name = "tps62360",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = tps62360_probe,
-+	.remove = __devexit_p(tps62360_remove),
-+	.shutdown = tps62360_shutdown,
-+	.id_table = tps62360_id,
-+};
-+
-+static int __init tps62360_init(void)
-+{
-+	return i2c_add_driver(&tps62360_i2c_driver);
-+}
-+subsys_initcall(tps62360_init);
-+
-+static void __exit tps62360_cleanup(void)
-+{
-+	i2c_del_driver(&tps62360_i2c_driver);
-+}
-+module_exit(tps62360_cleanup);
-+
-+MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
-+MODULE_DESCRIPTION("TPS62360 voltage regulator driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/regulator/tps62360.h b/include/linux/regulator/tps62360.h
-new file mode 100644
-index 0000000..2b28190
---- /dev/null
-+++ b/include/linux/regulator/tps62360.h
-@@ -0,0 +1,49 @@
-+/*
-+ * tps62360.h -- TI tps62360
-+ *
-+ * Interface for regulator driver for TI TPS62360 Processor core supply
-+ *
-+ * Copyright (C) 2012 NVIDIA Corporation
-+
-+ * Author: Laxman Dewangan <ldewangan@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.
-+ *
-+ */
-+
-+#ifndef __LINUX_REGULATOR_TPS62360_H
-+#define __LINUX_REGULATOR_TPS62360_H
-+
-+#include <linux/regulator/machine.h>
-+
-+/*
-+ * struct tps62360_regulator_platform_data - tps62360 regulator platform data.
-+ *
-+ * @reg_init_data: The regulator init data.
-+ * @en_force_pwm: Enable force pwm or not.
-+ * @en_discharge: Enable discharge the output capacitor via internal register.
-+ * @en_internal_pulldn: internal pull down enable or not.
-+ * @vsel: Select the voltage id register.
-+ */
-+
-+struct tps62360_regulator_platform_data {
-+	struct regulator_init_data reg_init_data;
-+	bool en_force_pwm;
-+	bool en_discharge;
-+	bool en_internal_pulldn;
-+	int vsel;
-+};
-+
-+#endif /* __LINUX_REGULATOR_TPS62360_H */
--- 
-1.7.1.1
-
+ 	/* this will put all low memory onto the freelists */
+ 	totalram_pages += free_all_bootmem();
+ 
+@@ -771,8 +766,6 @@ void __init mem_init(void)
+ 		if (page_is_ram(tmp) && PageReserved(pfn_to_page(tmp)))
+ 			reservedpages++;
+ 
+-	set_highmem_pages_init();
+-
+ 	codesize =  (unsigned long) &_etext - (unsigned long) &_text;
+ 	datasize =  (unsigned long) &_edata - (unsigned long) &_etext;
+ 	initsize =  (unsigned long) &__init_end - (unsigned long) &__init_begin;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index bbaaa00..6fcce7d 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -614,15 +614,6 @@ void __init initmem_init(void)
+ 
+ void __init paging_init(void)
+ {
+-	unsigned long max_zone_pfns[MAX_NR_ZONES];
+-
+-	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
+-#ifdef CONFIG_ZONE_DMA
+-	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
+-#endif
+-	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
+-	max_zone_pfns[ZONE_NORMAL] = max_pfn;
+-
+ 	sparse_memory_present_with_active_regions(MAX_NUMNODES);
+ 	sparse_init();
+ 
+@@ -634,7 +625,7 @@ void __init paging_init(void)
+ 	 */
+ 	node_clear_state(0, N_NORMAL_MEMORY);
+ 
+-	free_area_init_nodes(max_zone_pfns);
++	zone_sizes_init();
+ }
+ 
+ /*
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index 4b5ba85..845df68 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -75,9 +75,9 @@ static unsigned long mmap_rnd(void)
+ 	*/
+ 	if (current->flags & PF_RANDOMIZE) {
+ 		if (mmap_is_ia32())
+-			rnd = (long)get_random_int() % (1<<8);
++			rnd = get_random_int() % (1<<8);
+ 		else
+-			rnd = (long)(get_random_int() % (1<<28));
++			rnd = get_random_int() % (1<<28);
+ 	}
+ 	return rnd << PAGE_SHIFT;
+ }
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index fbeaaf4..cdc0054 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -430,8 +430,9 @@ static int __init numa_alloc_distance(void)
+  * calls are ignored until the distance table is reset with
+  * numa_reset_distance().
+  *
+- * If @from or @to is higher than the highest known node at the time of
+- * table creation or @distance doesn't make sense, the call is ignored.
++ * If @from or @to is higher than the highest known node or lower than zero
++ * at the time of table creation or @distance doesn't make sense, the call
++ * is ignored.
+  * This is to allow simplification of specific NUMA config implementations.
+  */
+ void __init numa_set_distance(int from, int to, int distance)
+@@ -439,8 +440,9 @@ void __init numa_set_distance(int from, int to, int distance)
+ 	if (!numa_distance && numa_alloc_distance() < 0)
+ 		return;
+ 
+-	if (from >= numa_distance_cnt || to >= numa_distance_cnt) {
+-		printk_once(KERN_DEBUG "NUMA: Debug: distance out of bound, from=%d to=%d distance=%d\n",
++	if (from >= numa_distance_cnt || to >= numa_distance_cnt ||
++			from < 0 || to < 0) {
++		pr_warn_once("NUMA: Warning: node ids are out of bound, from=%d to=%d distance=%d\n",
+ 			    from, to, distance);
+ 		return;
+ 	}
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index f9e5267..5031eef 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -1334,12 +1334,6 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
+ 	}
+ 
+ 	/*
+-	 * If page allocator is not up yet then do not call c_p_a():
+-	 */
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+-	/*
+ 	 * The return value is ignored as the calls cannot fail.
+ 	 * Large pages for identity mappings are not used at boot time
+ 	 * and hence no memory allocations during large page split.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 3dc3a8c..0a22db1 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1537,23 +1537,13 @@ static inline void vm_stat_account(struct mm_struct *mm,
+ #endif /* CONFIG_PROC_FS */
+ 
+ #ifdef CONFIG_DEBUG_PAGEALLOC
+-extern int debug_pagealloc_enabled;
+-
+ extern void kernel_map_pages(struct page *page, int numpages, int enable);
+-
+-static inline void enable_debug_pagealloc(void)
+-{
+-	debug_pagealloc_enabled = 1;
+-}
+ #ifdef CONFIG_HIBERNATION
+ extern bool kernel_page_present(struct page *page);
+ #endif /* CONFIG_HIBERNATION */
+ #else
+ static inline void
+ kernel_map_pages(struct page *page, int numpages, int enable) {}
+-static inline void enable_debug_pagealloc(void)
+-{
+-}
+ #ifdef CONFIG_HIBERNATION
+ static inline bool kernel_page_present(struct page *page) { return true; }
+ #endif /* CONFIG_HIBERNATION */
+diff --git a/init/main.c b/init/main.c
+index 217ed23..99c4ba3 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -282,10 +282,6 @@ static int __init unknown_bootoption(char *param, char *val)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_DEBUG_PAGEALLOC
+-int __read_mostly debug_pagealloc_enabled = 0;
+-#endif
+-
+ static int __init init_setup(char *str)
+ {
+ 	unsigned int i;
+@@ -597,7 +593,6 @@ asmlinkage void __init start_kernel(void)
+ 	}
+ #endif
+ 	page_cgroup_init();
+-	enable_debug_pagealloc();
+ 	debug_objects_mem_init();
+ 	kmemleak_init();
+ 	setup_per_cpu_pageset();
+diff --git a/mm/debug-pagealloc.c b/mm/debug-pagealloc.c
+index 7cea557..789ff70 100644
+--- a/mm/debug-pagealloc.c
++++ b/mm/debug-pagealloc.c
+@@ -95,9 +95,6 @@ static void unpoison_pages(struct page *page, int n)
+ 
+ void kernel_map_pages(struct page *page, int numpages, int enable)
+ {
+-	if (!debug_pagealloc_enabled)
+-		return;
+-
+ 	if (enable)
+ 		unpoison_pages(page, numpages);
+ 	else
