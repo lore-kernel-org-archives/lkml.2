@@ -1,146 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757936Ab2AEEDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 23:03:35 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51524 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757803Ab2AEEDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 23:03:34 -0500
-Date: Thu, 5 Jan 2012 15:03:19 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [PULL REQUEST] md for 3.3
-Message-ID: <20120105150319.375211fd@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/An_sbt5NhfT.B72T=ji_GhF"; protocol="application/pgp-signature"
+	id S1757946Ab2AEEIQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 23:08:16 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:32826 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757802Ab2AEEIO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 23:08:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F0506D0.30109@gmail.com>
+References: <1323834838-2206-1-git-send-email-mturquette@linaro.org>
+ <1323834838-2206-4-git-send-email-mturquette@linaro.org> <alpine.LFD.2.02.1112141007550.3020@ionos>
+ <CAJOA=zO=gM2r4pCVo+orLqE9Q1SSw4h5nXsAHo-e_SHZAfvKDA@mail.gmail.com>
+ <20120104021541.GI2414@b20223-02.ap.freescale.net> <4F0462FF.1000308@gmail.com>
+ <CAJOA=zPw7UuhE4R3SsBeyzQ2_iN29Zv-ExaUTTFCah+GoFSfNQ@mail.gmail.com> <4F0506D0.30109@gmail.com>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Wed, 4 Jan 2012 20:07:28 -0800
+Message-ID: <CAJOA=zPgwiOSoyZK1SpzZVZfTOmwruTR=WO+gRdVZrZVzNuPSA@mail.gmail.com>
+Subject: Re: [PATCH v4 3/6] clk: introduce the common clock framework
+To: Rob Herring <robherring2@gmail.com>
+Cc: Richard Zhao <richard.zhao@freescale.com>, andrew@lunn.ch,
+        linaro-dev@lists.linaro.org, eric.miao@linaro.org,
+        grant.likely@secretlab.ca, Colin Cross <ccross@google.com>,
+        jeremy.kerr@canonical.com, linux@arm.linux.org.uk, sboyd@quicinc.com,
+        magnus.damm@gmail.com, dsaxena@linaro.org,
+        linux-arm-kernel@lists.infradead.org, arnd.bergmann@linaro.org,
+        patches@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
+        linux-omap@vger.kernel.org, richard.zhao@linaro.org,
+        shawn.guo@freescale.com, paul@pwsan.com, linus.walleij@stericsson.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        amit.kucheria@linaro.org, skannan@quicinc.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/An_sbt5NhfT.B72T=ji_GhF
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 4, 2012 at 6:11 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On 01/04/2012 07:01 PM, Turquette, Mike wrote:
+>> On Wed, Jan 4, 2012 at 6:32 AM, Rob Herring <robherring2@gmail.com> wrote:
+>>> On 01/03/2012 08:15 PM, Richard Zhao wrote:
+>>>> On Fri, Dec 16, 2011 at 04:45:48PM -0800, Turquette, Mike wrote:
+>>>>> On Wed, Dec 14, 2011 at 5:18 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>>>>>> On Tue, 13 Dec 2011, Mike Turquette wrote:
+>>>
+>>> snip
+>>>
+>>>>>>> +/**
+>>>>>>> + * clk_init - initialize the data structures in a struct clk
+>>>>>>> + * @dev: device initializing this clk, placeholder for now
+>>>>>>> + * @clk: clk being initialized
+>>>>>>> + *
+>>>>>>> + * Initializes the lists in struct clk, queries the hardware for the
+>>>>>>> + * parent and rate and sets them both.  Adds the clk to the sysfs tree
+>>>>>>> + * topology.
+>>>>>>> + *
+>>>>>>> + * Caller must populate clk->name and clk->flags before calling
+>>>>>>
+>>>>>> I'm not too happy about this construct. That leaves struct clk and its
+>>>>>> members exposed to the world instead of making it a real opaque
+>>>>>> cookie. I know from my own painful experience, that this will lead to
+>>>>>> random fiddling in that data structure in drivers and arch code just
+>>>>>> because the core code has a shortcoming.
+>>>>>>
+>>>>>> Why can't we make struct clk a real cookie and confine the data
+>>>>>> structure to the core code ?
+>>>>>>
+>>>>>> That would change the init call to something like:
+>>>>>>
+>>>>>> struct clk *clk_init(struct device *dev, const struct clk_hw *hw,
+>>>>>>                     struct clk *parent)
+>>>>>>
+>>>>>> And have:
+>>>>>> struct clk_hw {
+>>>>>>       struct clk_hw_ops *ops;
+>>>>>>       const char        *name;
+>>>>>>       unsigned long     flags;
+>>>>>> };
+>>>>>>
+>>>>>> Implementers can do:
+>>>>>> struct my_clk_hw {
+>>>>>>       struct clk_hw    hw;
+>>>>>>       mydata;
+>>>>>> };
+>>>>>>
+>>>>>> And then change the clk ops callbacks to take struct clk_hw * as an
+>>>>>> argument.
+>>>> We have to define static clocks before we adopt DT binding.
+>>>> If clk is opaque and allocate memory in clk core, it'll make hard
+>>>> to define static clocks. And register/init will pass a long parameter
+>>>> list.
+>>>
+>>> DT is not a prerequisite for having dynamically created clocks. You can
+>>> make clock init dynamic without DT.
+>>
+>> Agreed.
+>>
+>>> What data goes in struct clk vs. struct clk_hw could change over time.
+>>> So perhaps we can start with some data in clk_hw and plan to move it to
+>>> struct clk later. Even if almost everything ends up in clk_hw initially,
+>>> at least the structure is in place to have common, core-only data
+>>> separate from platform data.
+>>
+>> What is the point of this?
+>
+> To have a way forward. It would be nice to have a clk infrastructure
+> before I retire...
 
+Haha, agreed.
 
-Thanks,
-NeilBrown
+>
+>> The original clk_hw was defined simply as:
+>>
+>> struct clk_hw {
+>>         struct clk *clk;
+>> };
+>>
+>> It's only purpose in life was as a handle for navigation between the
+>> opaque struct clk and the hardware-specific struct my_clk_hw.  struct
+>> clk_hw is defined in clk.h and everyone can see it.  If we're suddenly
+>> OK putting clk data in this structure then why bother with an opaque
+>> struct clk at all?
+>>
+>>> What is the actual data you need to be static and accessible to the
+>>> platform code? A ptr to parent clk is the main thing I've seen for
+>>> static initialization. So make the parent ptr be struct clk_hw* and
+>>> allow the platforms to access.
+>>
+>> To answer your question on what data we're trying to expose: platform
+>> code commonly needs the parent pointer and the clk rate (and by
+>> extension, the rate of the parent).  For debug/error prints it is also
+>> nice to have the clk name.  Generic clk flags are also conceivably
+>> something that platform code might want.
+>
+> I agree with the need to have the parent and flags from a static init
+> perspective. There's not really a good reason the others can't be
+> accessed thru accessors though.
+>
+>> I'd like to spin the question around: if we're OK exposing some stuff
+>> (in your example above, the parent pointer), then what clk data are
+>> you trying to hide?
+>
+> Well, everything from drivers which the current clk implementations do
+> hide. Catching abuse in with drivers coming in from all different trees
+> and lists will be impossible.
+>
+> For platform code it is more fuzzy. I don't think platform code should
+> be allowed to muck with prepare/enable counts for example.
 
+So there is a clear dichotomy: drivers shouldn't be exposed to any of
+it and platform code should be exposed to some of it.
 
-The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
+How about a drivers/clk/clk-private.h which will define struct clk and
+must only be included by clk drivers in drivers/clk/*?
 
-  Linux 3.2 (2012-01-04 15:55:44 -0800)
+This establishes a bright line between those things which are allowed
+to know the details of struct clk and those that are not: namely that
+clk drivers in drivers/clk/ may use '#include "clk-private.h"'.
+Obviously struct clk is opaque to the rest of the kernel (in the same
+way it has been prior to the common clk patches) and there is no need
+for struct clk_hw anymore.  Also helper functions are no longer needed
+for clock driver code, which I think *is* a manageable set of code to
+review.  Also clk drivers must live in drivers/clk/ for this to work
+(without a big ugly path in someone's #include directive somewhere).
 
-are available in the git repository at:
+Thoughts?
 
-  git://neil.brown.name/md/ md-3.3
+Regards,
+Mike
 
-for you to fetch changes up to 19d671695e1931ebfd75b2b888778201aefe35ca:
-
-  md/raid1: Mark device want_replacement when we see a write error. (2011-1=
-2-23 10:17:57 +1100)
-
-----------------------------------------------------------------
-(from the branch description for md-scratch local branch)
-
-for-linus
-md update for 3.3
-
-Big change is new hot-replacement.
-A slot in an array can hold 2 devices - one that
-wants-replacement and one that is the replacement.
-Once the replacement is built - either from the
-original or (in the case of errors) from elsewhere,
-the wants-replacement device will be removed.
-
-----------------------------------------------------------------
-NeilBrown (35):
-      md: allow non-privileged uses to GET_*_INFO about raid arrays.
-      md/bitmap: daemon_work cleanup.
-      md/raid5: be more thorough in calculating 'degraded' value.
-      md/bitmap: be more consistent when setting new bits in memory bitmap.
-      md: remove test for duplicate device when setting slot number.
-      md: change hot_remove_disk to take an rdev rather than a number.
-      md: create externally visible flags for supporting hot-replace.
-      md/raid5: allow each slot to have an extra replacement device
-      md/raid5: raid5.h cleanup
-      md/raid5: remove redundant bio initialisations.
-      md/raid5: preferentially read from replacement device if possible.
-      md/raid5: allow removal for failed replacement devices.
-      md/raid5: writes should get directed to replacement as well as origin=
-al.
-      md/raid5:  detect and handle replacements during recovery.
-      md/raid5: handle activation of replacement device when recovery compl=
-etes.
-      md/raid5: recognise replacements when assembling array.
-      md/raid5: If there is a spare and a want_replacement device, start re=
-placement.
-      md/raid5: Mark device want_replacement when we see a write error.
-      md/raid10: prepare data structures for handling replacement.
-      md/raid10:  change read_balance to return an rdev
-      md/raid10: preferentially read from replacement device if possible.
-      md/raid10: allow removal of failed replacement devices.
-      md/raid10: writes should get directed to replacement as well as origi=
-nal.
-      md/raid10:  Handle replacement devices during resync.
-      md/raid10: handle recovery of replacement devices.
-      md/raid10: Allow replacement device to be replace old drive.
-      md/raid10: recognise replacements when assembling array.
-      md/raid10: If there is a spare and a want_replacement device, start r=
-eplacement.
-      md/raid1:  Replace use of mddev->raid_disks with conf->raid_disks.
-      md/raid1: Allocate spare to store replacement devices and their bios.
-      md/raid1: Allow a failed replacement device to be removed.
-      md/raid1: handle activation of replacement device when recovery compl=
-etes.
-      md/raid1: recognise replacements when assembling arrays.
-      md/raid1: If there is a spare and a want_replacement device, start re=
-placement.
-      md/raid1: Mark device want_replacement when we see a write error.
-
-Steven Rostedt (1):
-      md: Fix userspace free_pages() macro
-
- Documentation/md.txt      |   22 ++-
- drivers/md/bitmap.c       |   12 +-
- drivers/md/md.c           |  107 ++++++--
- drivers/md/md.h           |   82 ++++---
- drivers/md/multipath.c    |    7 +-
- drivers/md/raid1.c        |  174 ++++++++++----
- drivers/md/raid1.h        |    7 +-
- drivers/md/raid10.c       |  582 ++++++++++++++++++++++++++++++++++++-----=
-----
- drivers/md/raid10.h       |   61 +++--
- drivers/md/raid5.c        |  557 ++++++++++++++++++++++++++++++++---------=
---
- drivers/md/raid5.h        |   98 +++++----
- include/linux/raid/md_p.h |    7 +-
- include/linux/raid/pq.h   |    2 +-
- 13 files changed, 1280 insertions(+), 438 deletions(-)
-
---Sig_/An_sbt5NhfT.B72T=ji_GhF
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBTwUhBznsnt1WYoG5AQImhg/8DznoW3G8PzuSzpGbjL1wjMz7eXxkUq/i
-Tv14Ksm67czvNe8DNK1nvg7ACXmqyL31i4ErnnQvtgDkMfigFsrpWqIcq5v967+h
-mPYkbOqg+d29+klsTsmXe+wiwZWoN9c2ctGTQGQbaf914YExfvJpHIJdmphMGipx
-2D+tBuA0+7sVVjhoWNY9h/ACpfezodcm6STtsq6FVVyot3yDKWsTjR1R+L9M/Wtu
-00YRqjQHIz3U8FLauLb3eg4JUqz+PiGayKDDwTwoco07rUEwJLJoqJzTL/pKvcse
-rLTOmiMn0wqCWsbRBx4apNJOVnQmSX2pK5elD8z/KIUL2Tnk/3kRwsZrqUuAJXrf
-tA8a+7Xdog+gmnOAHaT33pDviHC4W8YqDxEjWhKaIGBiCX0d7hNY+f3CT3xqp9tZ
-lbrHDrDuBBqLJjIDA0PUkz0BeLxFuXin1pu3+0Ww5Y8OH3xXdv4f3oVbSUo9Q7Fz
-IhueqiqXqMjr3DY2kT+G2IG8j1h4PW3R1jdFLcFJ2JYpIU6TNhbOhS+Z8Va3ZeHc
-FkBS9HfxDKUQQ57UIs9H1bm0hHNi1dSoZ4mpjR2oTKL4HW6d8tMe9IlBQlu5/IRX
-S5YG2SyCZ34p+92r1Ru30dBT66IeZRmEp2zqo+HQKrQJTmy+UGoGGVtZa4cZX+o9
-b31pQhAF2OI=
-=ov37
------END PGP SIGNATURE-----
-
---Sig_/An_sbt5NhfT.B72T=ji_GhF--
+>
+> Rob
+>
+>>
+>> Regards,
+>> Mike
+>>
+>>>
+>>> Rob
+>
