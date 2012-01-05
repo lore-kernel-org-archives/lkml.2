@@ -1,41 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab2AEBe5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 20:34:57 -0500
-Received: from ozlabs.org ([203.10.76.45]:52487 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab2AEBey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 20:34:54 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Mike Waychison <mikew@google.com>, "Michael S. Tsirkin" <mst@redhat.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [RFC PATCH v1 1/2] virtio_net: Pass gfp flags when allocating rx buffers.
-In-Reply-To: <20120104225231.18184.96390.stgit@mike2.sea.corp.google.com>
-References: <20120104225223.18184.1537.stgit@mike2.sea.corp.google.com> <20120104225231.18184.96390.stgit@mike2.sea.corp.google.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Thu, 05 Jan 2012 10:40:02 +1030
-Message-ID: <871urfc8md.fsf@rustcorp.com.au>
+	id S1757296Ab2AEBp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 20:45:28 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:64668 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751190Ab2AEBpY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 20:45:24 -0500
+Date: Thu, 5 Jan 2012 02:45:20 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: Improve detection of illegal synchronize_rcu() call
+ from RCU read side
+Message-ID: <20120105014518.GD1143@somewhere>
+References: <1324901803.31721.4.camel@lappy>
+ <20111226163148.GC2435@linux.vnet.ibm.com>
+ <20111226163734.GF28309@somewhere.redhat.com>
+ <20111226195656.GD2435@linux.vnet.ibm.com>
+ <20120104190336.GC1143@somewhere>
+ <20120104213035.GF2448@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104213035.GF2448@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Jan 2012 14:52:32 -0800, Mike Waychison <mikew@google.com> wrote:
-> Currently, the refill path for RX buffers will always allocate the
-> buffers as GFP_ATOMIC, even if we are in process context.  This will
-> fail to apply memory pressure as the worker thread will not contribute
-> to the freeing of memory.
+On Wed, Jan 04, 2012 at 01:30:35PM -0800, Paul E. McKenney wrote:
+> On Wed, Jan 04, 2012 at 08:03:39PM +0100, Frederic Weisbecker wrote:
+> > Actually for the case of RCU, the wait_for_completion() called by synchronize_rcu()
+> > has a might_sleep() call that triggers a warning in this case.
+> > 
+> > But in the case of SMP with 1 online CPU, the rcu_blocking_is_gp()
+> > checks returns right away on rcutree. So probably we need this?
 > 
-> Fix this by changing add_recvbuf_small to use the gfp variant allocator,
-> __netdev_alloc_skb_ip_align().
+> I modified this to push the might_sleep() down into the
+> rcu_blocking_is_gp() function, queued the result, and retained your
+> Signed-off-by.  (Please let me know if there is any problem with this.)
 > 
-> Signed-off-by: Mike Waychison <mikew@google.com>
+> This does work for TREE_PREEMPT_RCU and for synchronize_rcu_bh() in
+> TREE_RCU, but not for synchronize_sched() in TREE_RCU.  This is because
+> rcu_read_lock() and rcu_read_unlock() are no-ops in the TREE_RCU case.
 
-OK, this is a no-brainer.  Thanks!  Dave, can you pick this up?
+Not sure about that. This calls preempt_disable() which, in any case with
+CONFIG_DEBUG_ATOMIC_SLEEP, handles the preempt count. And that even if
+!CONFIG_PREEMPT.
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> So I queued up a separate patch using rcu_lockdep_assert() to check for
+> illegal RCU grace period within the same-type RCU read-side critical
+> section, including for SRCU.  This is also a partial solution, as it
+> does not handle things like this:
+> 
+> 	void foo(void)
+> 	{
+> 		mutex_lock(&my_mutex);
+> 		. . .
+> 		synchronize_srcu(&my_srcu);
+> 		. . .
+> 		mutex_unlock(&my_mutex);
+> 	}
+> 
+> 	void bar(void)
+> 	{
+> 		int idx;
+> 
+> 		idx = rcu_read_lock(&m_srcu);
+> 		. . .
+> 		mutex_lock(&my_mutex);
+> 		. . .
+> 		mutex_unlock(&my_mutex);
+> 		. . .
+> 		srcu_read_unlock(&m_srcu, idx);
+> 	}
+> 
+> This can be extended into a chain of locks and a chain of SRCU instances.
+> For an example of the latter, consider an SRCU-A read-side critical
+> section containing an SRCU-B grace period, an SRCU-B read-side critical
+> section containing an SRCU-C grace period, and so on, with the SRCU-Z
+> read-side critical section containing an RCU-A grace period.
 
-Cheers,
-Rusty.
+Heh! Indeed...
+
+> But it
+> is OK to hold a mutex across one SRCU read-side critical section while
+> acquiring that same mutex within another same-flavor SRCU read-side
+> critical section.  So the analogy with reader-writer locking only goes
+> so far.
+> 
+> At the moment, a full solution seems to require some surgery on lockdep
+> itself, but perhaps there is a better way.
+
+Ok.
+
+> 
+> > rcutiny seems to be fine with the cond_resched() call, but srcu needs
+> > a special treatment.
+> 
+> For the moment, I just applied rcu_lockdep_assert() everywhere -- zero
+> cost on non-lockdep kernels, and fully handles all of the RCU simple
+> self-deadlock cases.
+
+So, for RCU I'm not sure this is useful given the might_sleep() things.
+But for srcu it is.
+
+Thanks.
