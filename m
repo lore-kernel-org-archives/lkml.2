@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab2AEWhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:37:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37315 "EHLO mx2.suse.de"
+	id S932992Ab2AEWiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:38:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37285 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758378Ab2AEWhA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:37:00 -0500
+	id S932863Ab2AEWgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:36:44 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:29:59 2012
-Message-Id: <20120105222959.512233155@clark.kroah.org>
+Message-Id: <20120105222959.164416755@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Thu, 05 Jan 2012 14:30:53 -0800
+Date: Thu, 05 Jan 2012 14:30:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [80/80] ath9k: Fix kernel panic in AR2427 in AP mode
+        alan@lxorguk.ukuu.org.uk, Mandeep Singh Baines <msb@chromium.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        John Kacur <jkacur@redhat.com>
+Subject: [76/80] hung_task: fix false positive during vfork
 In-Reply-To: <20120105223610.GA9914@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +25,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.1-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2620
-Lines: 69
+Content-Length: 1649
+Lines: 48
 
-From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+From: Mandeep Singh Baines <msb@chromium.org>
 
-commit b25bfda38236f349cde0d1b28952f4eea2148d3f upstream.
+commit f9fab10bbd768b0e5254e53a4a8477a94bfc4b96 upstream.
 
-don't do aggregation related stuff for 'AP mode client power save
-handling' if aggregation is not enabled in the driver, otherwise it
-will lead to panic because those data structures won't be never
-intialized in 'ath_tx_node_init' if aggregation is disabled
+vfork parent uninterruptibly and unkillably waits for its child to
+exec/exit. This wait is of unbounded length. Ignore such waits
+in the hung_task detector.
 
-	EIP is at ath_tx_aggr_wakeup+0x37/0x80 [ath9k]
-	EAX: e8c09a20 EBX: f2a304e8 ECX: 00000001 EDX: 00000000
-	ESI: e8c085e0 EDI: f2a304ac EBP: f40e1ca4 ESP: f40e1c8c
-	DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-	Process swapper/1 (pid: 0, ti=f40e0000 task=f408e860
-	task.ti=f40dc000)
-	Stack:
-	0001e966 e8c09a20 00000000 f2a304ac e8c085e0 f2a304ac
-	f40e1cb0 f8186741
-	f8186700 f40e1d2c f922988d f2a304ac 00000202 00000001
-	c0b4ba43 00000000
-	0000000f e8eb75c0 e8c085e0 205b0001 34383220 f2a304ac
-	f2a30000 00010020
-	Call Trace:
-	[<f8186741>] ath9k_sta_notify+0x41/0x50 [ath9k]
-	[<f8186700>] ? ath9k_get_survey+0x110/0x110 [ath9k]
-	[<f922988d>] ieee80211_sta_ps_deliver_wakeup+0x9d/0x350
-	[mac80211]
-	[<c018dc75>] ? __module_address+0x95/0xb0
-	[<f92465b3>] ap_sta_ps_end+0x63/0xa0 [mac80211]
-	[<f9246746>] ieee80211_rx_h_sta_process+0x156/0x2b0
-	[mac80211]
-	[<f9247d1e>] ieee80211_rx_handlers+0xce/0x510 [mac80211]
-	[<c018440b>] ? trace_hardirqs_on+0xb/0x10
-	[<c056936e>] ? skb_queue_tail+0x3e/0x50
-	[<f9248271>] ieee80211_prepare_and_rx_handle+0x111/0x750
-	[mac80211]
-	[<f9248bf9>] ieee80211_rx+0x349/0xb20 [mac80211]
-	[<f9248949>] ? ieee80211_rx+0x99/0xb20 [mac80211]
-	[<f818b0b8>] ath_rx_tasklet+0x818/0x1d00 [ath9k]
-	[<f8187a75>] ? ath9k_tasklet+0x35/0x1c0 [ath9k]
-	[<f8187a75>] ? ath9k_tasklet+0x35/0x1c0 [ath9k]
-	[<f8187b33>] ath9k_tasklet+0xf3/0x1c0 [ath9k]
-	[<c0151b7e>] tasklet_action+0xbe/0x180
-
-Cc: Senthil Balasubramanian <senthilb@qca.qualcomm.com>
-Cc: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Reported-by: Ashwin Mendonca <ashwinloyal@gmail.com>
-Tested-by: Ashwin Mendonca <ashwinloyal@gmail.com>
-Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+LKML-Reference: <1325344394.28904.43.camel@lappy>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: John Kacur <jkacur@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    3 +++
- 1 file changed, 3 insertions(+)
+ kernel/hung_task.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1841,6 +1841,9 @@ static void ath9k_sta_notify(struct ieee
- 	struct ath_softc *sc = hw->priv;
- 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -74,11 +74,17 @@ static void check_hung_task(struct task_
  
-+	if (!(sc->sc_flags & SC_OP_TXAGGR))
-+		return;
+ 	/*
+ 	 * Ensure the task is not frozen.
+-	 * Also, when a freshly created task is scheduled once, changes
+-	 * its state to TASK_UNINTERRUPTIBLE without having ever been
+-	 * switched out once, it musn't be checked.
++	 * Also, skip vfork and any other user process that freezer should skip.
+ 	 */
+-	if (unlikely(t->flags & PF_FROZEN || !switch_count))
++	if (unlikely(t->flags & (PF_FROZEN | PF_FREEZER_SKIP)))
++	    return;
 +
- 	switch (cmd) {
- 	case STA_NOTIFY_SLEEP:
- 		an->sleeping = true;
++	/*
++	 * When a freshly created task is scheduled once, changes its state to
++	 * TASK_UNINTERRUPTIBLE without having ever been switched out once, it
++	 * musn't be checked.
++	 */
++	if (unlikely(!switch_count))
+ 		return;
+ 
+ 	if (switch_count != t->last_switch_count) {
 
 
