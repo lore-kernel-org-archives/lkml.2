@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab2AECF6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 21:05:58 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:62923 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab2AECFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 21:05:55 -0500
-Message-ID: <4F05060F.5090600@cn.fujitsu.com>
-Date: Thu, 05 Jan 2012 10:08:15 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1757655Ab2AECGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 21:06:09 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:52005 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757641Ab2AECGH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 21:06:07 -0500
+Date: Thu, 5 Jan 2012 03:06:03 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Sasha Levin <levinsasha928@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] rcu: Improve detection of illegal synchronize_rcu() call
+ from RCU read side
+Message-ID: <20120105020601.GE1143@somewhere>
+References: <1324901803.31721.4.camel@lappy>
+ <20111226163148.GC2435@linux.vnet.ibm.com>
+ <20111226163734.GF28309@somewhere.redhat.com>
+ <20111226195656.GD2435@linux.vnet.ibm.com>
+ <20120104190336.GC1143@somewhere>
+ <20120104213035.GF2448@linux.vnet.ibm.com>
+ <20120105014518.GD1143@somewhere>
+ <20120105020108.GQ2448@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Mandeep Singh Baines <msb@chromium.org>
-CC: Tejun Heo <tj@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 1/3] cgroup: simplify double-check locking in cgroup_attach_proc
-References: <1325654312-32477-1-git-send-email-msb@chromium.org>
-In-Reply-To: <1325654312-32477-1-git-send-email-msb@chromium.org>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-05 10:04:57,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2012-01-05 10:04:59,
-	Serialize complete at 2012-01-05 10:04:59
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105020108.GQ2448@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mandeep Singh Baines wrote:
-> To keep the complexity of the double-check locking in one place,
-> I moved the thread_group_leader check up into attach_task_by_pid.
-> This allows us to use a goto instead of returning -EAGAIN.
+On Wed, Jan 04, 2012 at 06:01:08PM -0800, Paul E. McKenney wrote:
+> On Thu, Jan 05, 2012 at 02:45:20AM +0100, Frederic Weisbecker wrote:
+> > On Wed, Jan 04, 2012 at 01:30:35PM -0800, Paul E. McKenney wrote:
+> > > On Wed, Jan 04, 2012 at 08:03:39PM +0100, Frederic Weisbecker wrote:
+> > > > Actually for the case of RCU, the wait_for_completion() called by synchronize_rcu()
+> > > > has a might_sleep() call that triggers a warning in this case.
+> > > > 
+> > > > But in the case of SMP with 1 online CPU, the rcu_blocking_is_gp()
+> > > > checks returns right away on rcutree. So probably we need this?
+> > > 
+> > > I modified this to push the might_sleep() down into the
+> > > rcu_blocking_is_gp() function, queued the result, and retained your
+> > > Signed-off-by.  (Please let me know if there is any problem with this.)
+> > > 
+> > > This does work for TREE_PREEMPT_RCU and for synchronize_rcu_bh() in
+> > > TREE_RCU, but not for synchronize_sched() in TREE_RCU.  This is because
+> > > rcu_read_lock() and rcu_read_unlock() are no-ops in the TREE_RCU case.
+> > 
+> > Not sure about that. This calls preempt_disable() which, in any case with
+> > CONFIG_DEBUG_ATOMIC_SLEEP, handles the preempt count. And that even if
+> > !CONFIG_PREEMPT.
 > 
-> While at it, converted a couple of returns to gotos and used
-> rcu for the !pid case also in order to simplify the logic.
+> Ah, of course!  I keep forgetting that CONFIG_DEBUG_ATOMIC_SLEEP selects
+> CONFIG_PREEMPT_COUNT.
 > 
-> Changes in V2:
-> * https://lkml.org/lkml/2011/12/22/86 (Tejun Heo)
->   * Use a goto instead of returning -EAGAIN
+> > > So I queued up a separate patch using rcu_lockdep_assert() to check for
+> > > illegal RCU grace period within the same-type RCU read-side critical
+> > > section, including for SRCU.  This is also a partial solution, as it
+> > > does not handle things like this:
+> > > 
+> > > 	void foo(void)
+> > > 	{
+> > > 		mutex_lock(&my_mutex);
+> > > 		. . .
+> > > 		synchronize_srcu(&my_srcu);
+> > > 		. . .
+> > > 		mutex_unlock(&my_mutex);
+> > > 	}
+> > > 
+> > > 	void bar(void)
+> > > 	{
+> > > 		int idx;
+> > > 
+> > > 		idx = rcu_read_lock(&m_srcu);
+> > > 		. . .
+> > > 		mutex_lock(&my_mutex);
+> > > 		. . .
+> > > 		mutex_unlock(&my_mutex);
+> > > 		. . .
+> > > 		srcu_read_unlock(&m_srcu, idx);
+> > > 	}
+> > > 
+> > > This can be extended into a chain of locks and a chain of SRCU instances.
+> > > For an example of the latter, consider an SRCU-A read-side critical
+> > > section containing an SRCU-B grace period, an SRCU-B read-side critical
+> > > section containing an SRCU-C grace period, and so on, with the SRCU-Z
+> > > read-side critical section containing an RCU-A grace period.
+> > 
+> > Heh! Indeed...
+> > 
+> > > But it
+> > > is OK to hold a mutex across one SRCU read-side critical section while
+> > > acquiring that same mutex within another same-flavor SRCU read-side
+> > > critical section.  So the analogy with reader-writer locking only goes
+> > > so far.
+> > > 
+> > > At the moment, a full solution seems to require some surgery on lockdep
+> > > itself, but perhaps there is a better way.
+> > 
+> > Ok.
+> > 
+> > > 
+> > > > rcutiny seems to be fine with the cond_resched() call, but srcu needs
+> > > > a special treatment.
+> > > 
+> > > For the moment, I just applied rcu_lockdep_assert() everywhere -- zero
+> > > cost on non-lockdep kernels, and fully handles all of the RCU simple
+> > > self-deadlock cases.
+> > 
+> > So, for RCU I'm not sure this is useful given the might_sleep() things.
+> > But for srcu it is.
 > 
-> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
+> One nice thing about the lockdep approach is that it tracks where the
+> conflicting RCU read-side critical section started.  But I am planning
+> for these to be 3.4 material, so we do have some time to refine them.
 
-Acked-by: Li Zefan <lizf@cn.fujitsu.com>
-
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: containers@lists.linux-foundation.org
-> Cc: cgroups@vger.kernel.org
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Paul Menage <paul@paulmenage.org>
-> ---
->  kernel/cgroup.c |   79 ++++++++++++++++++++----------------------------------
->  1 files changed, 29 insertions(+), 50 deletions(-)
+Yeah sure. And in any case it's still good to keep might_sleep() early
+to spot other sources of illegal atomic sections (irqs disabled and co)
