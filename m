@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964877Ab2AEWal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:30:41 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:57912 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964841Ab2AEWaa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:30:30 -0500
-Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, Greg KH <greg@kroah.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Date: Thu, 05 Jan 2012 17:27:29 -0500
-References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
-	 <1324560391.1964.8.camel@falcor>
-	 <20120104152801.d8f555ca.akpm@linux-foundation.org>
-	 <1325723630.13419.2.camel@falcor>
-	 <20120104164638.cc21fc2e.akpm@linux-foundation.org>
-	 <20120105020639.GA1161@kroah.com> <1325737033.13419.43.camel@falcor>
-	 <20120105045354.GE24466@dastard> <20120105181401.GA418@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325802450.2062.54.camel@falcor.watson.ibm.com>
-Mime-Version: 1.0
-x-cbid: 12010522-3352-0000-0000-000001BF40A2
+	id S932964Ab2AEWbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:31:11 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:46388 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932863Ab2AEWbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:31:09 -0500
+Date: Thu, 5 Jan 2012 22:31:06 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
+ exist
+Message-ID: <20120105223106.GG27881@csn.ul.ie>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+ <1325499859-2262-8-git-send-email-gilad@benyossef.com>
+ <4F033EC9.4050909@gmail.com>
+ <20120105142017.GA27881@csn.ul.ie>
+ <20120105144011.GU11810@n2100.arm.linux.org.uk>
+ <20120105161739.GD27881@csn.ul.ie>
+ <20120105140645.42498cdd.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120105140645.42498cdd.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 14:49 -0500, Mimi Zohar wrote:
-> On Thu, 2012-01-05 at 13:14 -0500, Christoph Hellwig wrote:
-> > On Thu, Jan 05, 2012 at 03:53:54PM +1100, Dave Chinner wrote:
-> > > That's seems like a rather unreliable way of detecting that a file
-> > > has changed to me.  I mean, only ext4 uses inode_inc_version() when
-> > > it internally dirties an inode, and only ext4 sets the MS_I_VERSION
-> > > so that inode_inc_version is only called for ext4 inodes when
-> > > timestamps change.
-> > 
-> > And even ext4 only does it when using the non-default "i_version"
-> > mount option.
-> > 
-> > > Hence just adding an increment to the truncate case doesn't seem to
-> > > be sufficient to me. e.g. what about the equivalent case of having a
-> > > hole punched in the file via fallocate? The file has definitely
-> > > changed, but i_version won't change....
-> > > 
-> > > Perhaps bumping i_version in __mark_inode_dirty() might be the best
-> > > way to capture all changes (other than timestamp updates) to any
-> > > inode regardless of the filesystem type?
-> > 
-> > It has the same problem as the timestamp updates doing that right now -
-> > the fs can't do locking around it, and it can't return errors.  That's
-> > something affecting at least btrfs, xfs and IIRC ubifs, and probably
-> > the cluster filesystems as well.  The right answer is to replace the
-> > timestmap updates which are the only places doing that with a method
-> > as Josef had planned to do, and then we can include the i_version
-> > updates in there.
-> > 
-> > That assumes we figure out a coherent way to do it - except for the
-> > conditional abuse in file_updates_times it's currently entirely under
-> > fs control.  So the best way to fix it would be to:
-> > 
-> >  - move the fs-private use into those filesystems actually using it.
-> >    Note that a lot less actually check for it rather than just updating
-> >    it based on some cargo cult, and most only do so for directories.
-> >  - figure a why what exact change count semantics NFS (and IMA) want
-> >    and find a way to implement them so that the fs can tell the callers
-> >    that they don't exist.
-> > 
-> > Btw, does IMA care about these beeing persistent?
+On Thu, Jan 05, 2012 at 02:06:45PM -0800, Andrew Morton wrote:
+> On Thu, 5 Jan 2012 16:17:39 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> By 'persistent' I assume you mean across boots.  IMA (and IMA-appraisal)
-> measure and appraise files the first time they're accessed/executed.  So
-> no, it does not need to be persistent. IMA/IMA-appraisal just need some
-> way to detect file change in order to know whether the file needs to be
-> re-measured/appraised on subsequent access.
+> > mm: page allocator: Guard against CPUs going offline while draining per-cpu page lists
+> > 
+> > While running a CPU hotplug stress test under memory pressure, I
+> > saw cases where under enough stress the machine would halt although
+> > it required a machine with 8 cores and plenty memory. I think the
+> > problems may be related.
+> 
+> When we first implemented them, the percpu pages in the page allocator
+> were of really really marginal benefit.  I didn't merge the patches at
+> all for several cycles, and it was eventually a 49/51 decision.
+> 
+> So I suggest that our approach to solving this particular problem
+> should be to nuke the whole thing, then see if that caused any
+> observeable problems.  If it did, can we solve those problems by means
+> other than bringing the dang things back?
+> 
 
-One other IMA requirement would be the ability to detect if a file
-mmapped executable, after the point that it has been locked from
-modification, has changed since the last time measured/appraised.  The
-concern here, in particular, is the ability to detect file change while
-holding the mmap_sem.
+Sounds drastic. It would be less controversial to replace this patch
+with a version that calls get_online_cpu() in drain_all_pages() but
+remove the call to drain_all_pages() call from the page allocator on
+the grounds it is not safe against CPU hotplug and to hell with the
+slightly elevated allocation failure rates and stalls. That would avoid
+the try_get_online_cpus() crappiness and be less complex.
 
-thanks,
+If you really want to consider deleting the per-cpu allocator, maybe
+it could be a LSF/MM topic? Personally I would be wary of deleting
+it but mostly because I lack regular access to the type of hardware
+to evaulate whether it was safe to remove or not. Minimally, removing
+the per-cpu allocator could make the zone lock very hot even though slub
+probably makes it very hot already.
 
-Mimi
-
+-- 
+Mel Gorman
+SUSE Labs
