@@ -1,105 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346Ab2AEVBq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:01:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1765 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758265Ab2AEVBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:01:45 -0500
-Date: Thu, 5 Jan 2012 16:01:23 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-Message-ID: <20120105210123.GI5650@redhat.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
+	id S932849Ab2AEVCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:02:09 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:64143 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932656Ab2AEVCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 16:02:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
+In-Reply-To: <CAOesGMj=EVXGNNY+nj4BvsrFShhvQkSeS2RB8SYtVOXOENwFng@mail.gmail.com>
+References: <1325610682-24811-1-git-send-email-olof@lixom.net>
+	<1325610682-24811-5-git-send-email-olof@lixom.net>
+	<1325762519.3635.22.camel@mfleming-mobl1.ger.corp.intel.com>
+	<CAOesGMj=EVXGNNY+nj4BvsrFShhvQkSeS2RB8SYtVOXOENwFng@mail.gmail.com>
+Date: Thu, 5 Jan 2012 13:02:07 -0800
+Message-ID: <CAOesGMhh1bJp2aLD3GtEdJByVnPqbEf2jcHTTH=fJsaxtFG0Pg@mail.gmail.com>
+Subject: Re: [PATCH 4/5] x86: efi: add basic error handling
+From: Olof Johansson <olof@lixom.net>
+To: Matt Fleming <matt.fleming@intel.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 03:10:25PM -0500, Seiji Aguchi wrote:
-> 
-> >Aren't you worried about the comment about smp_send_stop() not
-> >being hardened to work in a panic situation?
-> > 	/*
-> > 	 * Note smp_send_stop is the usual smp shutdown function, which
-> > 	 * unfortunately means it may not be hardened to work in a panic
-> 
-> This comment is wrong because Don improved smp_send_stop() by switching REBOOT_VECTOR to NMI.
-> And his patch has already merged to linux-next tree.
+On Thu, Jan 5, 2012 at 9:52 AM, Olof Johansson <olof@lixom.net> wrote:
 
-I only fixed x86.  Who knows what the other arches do..
+> Not much, since the systems I have won't boot if there's an error
+> (even if graceful) and I didn't have a console with earlyprintk
+> support until yesterday. I'll beat on it a bit this afternoon but it
+> should be OK as it is.
 
-I don't know how to prove something is hardened other than not seeing any
-hangs or false reboots on in that piece of code.
+Ok, tested now to the point that I made sure the errors are shown
+appropriately on the early console for the appropriate error paths,
+but since the system doesn't come up there isn't much more than that
+to test at this time.
 
-Cheers,
-Don
 
-> 
-> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=3603a2512f9e69dc87914ba922eb4a0812b21cd6
-> 
-> So, current smp_send_stop() is hardened to work in a panic situation.
-> 
-> I will remove this wrong comment.
-> 
-> Seiji
-> 
-> >-----Original Message-----
-> >From: Luck, Tony [mailto:tony.luck@intel.com]
-> >Sent: Thursday, January 05, 2012 2:07 PM
-> >To: Seiji Aguchi; Don Zickus
-> >Cc: linux-kernel@vger.kernel.org; Matthew Garrett; Vivek Goyal; Chen, Gong; akpm@linux-foundation.org; Brown, Len;
-> >'ying.huang@intel.com'; 'ak@linux.intel.com'; 'hughd@chromium.org'; 'mingo@elte.hu'; jmorris@namei.org;
-> >a.p.zijlstra@chello.nl; namhyung@gmail.com; dle-develop@lists.sourceforge.net; Satoru Moriya
-> >Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
-> >
-> >-	kmsg_dump(KMSG_DUMP_PANIC);
-> >-
-> > 	/*
-> > 	 * Note smp_send_stop is the usual smp shutdown function, which
-> > 	 * unfortunately means it may not be hardened to work in a panic
-> >@@ -117,6 +115,8 @@ void panic(const char *fmt, ...)
-> > 	 */
-> > 	smp_send_stop();
-> >
-> >+	kmsg_dump(KMSG_DUMP_PANIC);
-> >+
-> >
-> >Aren't you worried about the comment about smp_send_stop() not
-> >being hardened to work in a panic situation?
-> >
-> >If it does work - we are clearly much better off moving the
-> >kmsg_dump() call down like this. It makes life much simpler
-> >and cleaner to work with just one running cpu.
-> >
-> >But if something goes wrong - we might not see the dump at all!
-> >
-> >How do we compare these cases and decide that it is better to
-> >trust that smp_send_stop() will return?
-> >
-> >-Tony
+-olof
