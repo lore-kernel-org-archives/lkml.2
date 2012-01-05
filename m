@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933064Ab2AEWrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:47:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37824 "EHLO mx2.suse.de"
+	id S1030193Ab2AEWr2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:47:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37847 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932938Ab2AEWrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:47:18 -0500
+	id S933077Ab2AEWrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:47:25 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:44:03 2012
-Message-Id: <20120105224402.968395464@clark.kroah.org>
+Message-Id: <20120105224403.138492777@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Thu, 05 Jan 2012 14:44:55 -0800
+Date: Thu, 05 Jan 2012 14:44:57 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mandeep Singh Baines <msb@chromium.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [70/73] hung_task: fix false positive during vfork
+        alan@lxorguk.ukuu.org.uk, Tejun Heo <tj@kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [72/73] ptrace: partially fix the do_wait(WEXITED) vs EXIT_DEAD->EXIT_ZOMBIE race
 In-Reply-To: <20120105224632.GA14659@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,55 +24,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1649
-Lines: 48
+Content-Length: 2354
+Lines: 86
 
-From: Mandeep Singh Baines <msb@chromium.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit f9fab10bbd768b0e5254e53a4a8477a94bfc4b96 upstream.
+commit 50b8d257486a45cba7b65ca978986ed216bbcc10 upstream.
 
-vfork parent uninterruptibly and unkillably waits for its child to
-exec/exit. This wait is of unbounded length. Ignore such waits
-in the hung_task detector.
+Test-case:
 
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-LKML-Reference: <1325344394.28904.43.camel@lappy>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: John Kacur <jkacur@redhat.com>
+	int main(void)
+	{
+		int pid, status;
+
+		pid = fork();
+		if (!pid) {
+			for (;;) {
+				if (!fork())
+					return 0;
+				if (waitpid(-1, &status, 0) < 0) {
+					printf("ERR!! wait: %m\n");
+					return 0;
+				}
+			}
+		}
+
+		assert(ptrace(PTRACE_ATTACH, pid, 0,0) == 0);
+		assert(waitpid(-1, NULL, 0) == pid);
+
+		assert(ptrace(PTRACE_SETOPTIONS, pid, 0,
+					PTRACE_O_TRACEFORK) == 0);
+
+		do {
+			ptrace(PTRACE_CONT, pid, 0, 0);
+			pid = waitpid(-1, NULL, 0);
+		} while (pid > 0);
+
+		return 1;
+	}
+
+It fails because ->real_parent sees its child in EXIT_DEAD state
+while the tracer is going to change the state back to EXIT_ZOMBIE
+in wait_task_zombie().
+
+The offending commit is 823b018e which moved the EXIT_DEAD check,
+but in fact we should not blame it. The original code was not
+correct as well because it didn't take ptrace_reparented() into
+account and because we can't really trust ->ptrace.
+
+This patch adds the additional check to close this particular
+race but it doesn't solve the whole problem. We simply can't
+rely on ->ptrace in this case, it can be cleared if the tracer
+is multithreaded by the exiting ->parent.
+
+I think we should kill EXIT_DEAD altogether, we should always
+remove the soon-to-be-reaped child from ->children or at least
+we should never do the DEAD->ZOMBIE transition. But this is too
+complex for 3.2.
+
+Reported-and-tested-by: Denys Vlasenko <vda.linux@googlemail.com>
+Tested-by: Lukasz Michalik <lmi@ift.uni.wroc.pl>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/hung_task.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ kernel/exit.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -74,11 +74,17 @@ static void check_hung_task(struct task_
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -1553,8 +1553,15 @@ static int wait_consider_task(struct wai
+ 	}
  
- 	/*
- 	 * Ensure the task is not frozen.
--	 * Also, when a freshly created task is scheduled once, changes
--	 * its state to TASK_UNINTERRUPTIBLE without having ever been
--	 * switched out once, it musn't be checked.
-+	 * Also, skip vfork and any other user process that freezer should skip.
- 	 */
--	if (unlikely(t->flags & PF_FROZEN || !switch_count))
-+	if (unlikely(t->flags & (PF_FROZEN | PF_FREEZER_SKIP)))
-+	    return;
-+
-+	/*
-+	 * When a freshly created task is scheduled once, changes its state to
-+	 * TASK_UNINTERRUPTIBLE without having ever been switched out once, it
-+	 * musn't be checked.
-+	 */
-+	if (unlikely(!switch_count))
- 		return;
+ 	/* dead body doesn't have much to contribute */
+-	if (p->exit_state == EXIT_DEAD)
++	if (unlikely(p->exit_state == EXIT_DEAD)) {
++		/*
++		 * But do not ignore this task until the tracer does
++		 * wait_task_zombie()->do_notify_parent().
++		 */
++		if (likely(!ptrace) && unlikely(ptrace_reparented(p)))
++			wo->notask_error = 0;
+ 		return 0;
++	}
  
- 	if (switch_count != t->last_switch_count) {
+ 	/* slay zombie? */
+ 	if (p->exit_state == EXIT_ZOMBIE) {
 
 
