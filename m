@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab2AEHMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 02:12:10 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13369 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab2AEHMB (ORCPT
+	id S1757964Ab2AEHM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 02:12:26 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10355 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757123Ab2AEHMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 02:12:01 -0500
+	Thu, 5 Jan 2012 02:12:10 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 04 Jan 2012 23:11:58 -0800
+	by hqnvupgp08.nvidia.com on Wed, 04 Jan 2012 23:12:00 -0800
 From: Hiroshi DOYU <hdoyu@nvidia.com>
 To: Hiroshi DOYU <hdoyu@nvidia.com>
 Cc: iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
         linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
         linaro-mm-sig-bounces@lists.linaro.org
-Subject: [PATCH 1/2] ARM: IOMMU: Tegra20: Add iommu_ops for GART driver
-Date: Thu,  5 Jan 2012 09:11:48 +0200
-Message-Id: <1325747509-29665-2-git-send-email-hdoyu@nvidia.com>
+Subject: [PATCH 2/2] ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+Date: Thu,  5 Jan 2012 09:11:49 +0200
+Message-Id: <1325747509-29665-3-git-send-email-hdoyu@nvidia.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1325747509-29665-1-git-send-email-hdoyu@nvidia.com>
 References: <1325747509-29665-1-git-send-email-hdoyu@nvidia.com>
@@ -24,59 +24,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra 20 IOMMU H/W, GART (Graphics Address Relocation Table). This
-patch implements struct iommu_ops for GART for the upper IOMMU API.
+Tegra 30 IOMMU H/W, SMMU (System Memory Management Unit). This patch
+implements struct iommu_ops for SMMU for the upper IOMMU API.
 
-This H/W module supports only single virtual address space(domain),
-and manages a single level 1-to-1 mapping H/W translation page table.
+This H/W module supports multiple virtual address spaces(domain x4),
+and manages 2 level H/W translation pagetable.
 
 Signed-off-by: Hiroshi DOYU <hdoyu@nvidia.com>
 ---
- drivers/iommu/Kconfig      |   11 +
- drivers/iommu/Makefile     |    1 +
- drivers/iommu/tegra-gart.c |  436 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 448 insertions(+), 0 deletions(-)
- create mode 100644 drivers/iommu/tegra-gart.c
+ arch/arm/mach-tegra/include/mach/smmu.h |   63 ++
+ drivers/iommu/Kconfig                   |   11 +
+ drivers/iommu/Makefile                  |    1 +
+ drivers/iommu/tegra-smmu.c              | 1026 +++++++++++++++++++++++++++++++
+ 4 files changed, 1101 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/include/mach/smmu.h
+ create mode 100644 drivers/iommu/tegra-smmu.c
 
+diff --git a/arch/arm/mach-tegra/include/mach/smmu.h b/arch/arm/mach-tegra/include/mach/smmu.h
+new file mode 100644
+index 0000000..dad403a
+--- /dev/null
++++ b/arch/arm/mach-tegra/include/mach/smmu.h
+@@ -0,0 +1,63 @@
++/*
++ * IOMMU API for SMMU in Tegra30
++ *
++ * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#ifndef	MACH_SMMU_H
++#define	MACH_SMMU_H
++
++enum smmu_hwgrp {
++	HWGRP_AFI,
++	HWGRP_AVPC,
++	HWGRP_DC,
++	HWGRP_DCB,
++	HWGRP_EPP,
++	HWGRP_G2,
++	HWGRP_HC,
++	HWGRP_HDA,
++	HWGRP_ISP,
++	HWGRP_MPE,
++	HWGRP_NV,
++	HWGRP_NV2,
++	HWGRP_PPCS,
++	HWGRP_SATA,
++	HWGRP_VDE,
++	HWGRP_VI,
++
++	HWGRP_COUNT,
++
++	HWGRP_END = ~0,
++};
++
++#define HWG_AFI		(1 << HWGRP_AFI)
++#define HWG_AVPC	(1 << HWGRP_AVPC)
++#define HWG_DC		(1 << HWGRP_DC)
++#define HWG_DCB		(1 << HWGRP_DCB)
++#define HWG_EPP		(1 << HWGRP_EPP)
++#define HWG_G2		(1 << HWGRP_G2)
++#define HWG_HC		(1 << HWGRP_HC)
++#define HWG_HDA		(1 << HWGRP_HDA)
++#define HWG_ISP		(1 << HWGRP_ISP)
++#define HWG_MPE		(1 << HWGRP_MPE)
++#define HWG_NV		(1 << HWGRP_NV)
++#define HWG_NV2		(1 << HWGRP_NV2)
++#define HWG_PPCS	(1 << HWGRP_PPCS)
++#define HWG_SATA	(1 << HWGRP_SATA)
++#define HWG_VDE		(1 << HWGRP_VDE)
++#define HWG_VI		(1 << HWGRP_VI)
++
++#endif	/* MACH_SMMU_H */
 diff --git a/drivers/iommu/Kconfig b/drivers/iommu/Kconfig
-index 6bea696..4562698 100644
+index 4562698..4b3d616 100644
 --- a/drivers/iommu/Kconfig
 +++ b/drivers/iommu/Kconfig
-@@ -142,4 +142,15 @@ config OMAP_IOMMU_DEBUG
+@@ -153,4 +153,15 @@ config TEGRA_IOMMU_GART
+ 	  space through the GART (Graphics Address Relocation Table)
+ 	  hardware included on Tegra SoCs.
  
-          Say N unless you know you need this.
- 
-+config TEGRA_IOMMU_GART
-+	bool "Tegra GART IOMMU Support"
-+	depends on ARCH_TEGRA_2x_SOC
++config TEGRA_IOMMU_SMMU
++	bool "Tegra SMMU IOMMU Support"
++	depends on ARCH_TEGRA_3x_SOC
 +	default y
 +	select IOMMU_API
 +	help
 +	  Enables support for remapping discontiguous physical memory
 +	  shared with the operating system into contiguous I/O virtual
-+	  space through the GART (Graphics Address Relocation Table)
++	  space through the SMMU (System Memory Management Unit)
 +	  hardware included on Tegra SoCs.
 +
  endif # IOMMU_SUPPORT
 diff --git a/drivers/iommu/Makefile b/drivers/iommu/Makefile
-index 0e36b49..3238a31 100644
+index 3238a31..7ad7a3b 100644
 --- a/drivers/iommu/Makefile
 +++ b/drivers/iommu/Makefile
-@@ -8,3 +8,4 @@ obj-$(CONFIG_IRQ_REMAP) += intr_remapping.o
- obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
+@@ -9,3 +9,4 @@ obj-$(CONFIG_OMAP_IOMMU) += omap-iommu.o
  obj-$(CONFIG_OMAP_IOVMM) += omap-iovmm.o
  obj-$(CONFIG_OMAP_IOMMU_DEBUG) += omap-iommu-debug.o
-+obj-$(CONFIG_TEGRA_IOMMU_GART) += tegra-gart.o
-diff --git a/drivers/iommu/tegra-gart.c b/drivers/iommu/tegra-gart.c
+ obj-$(CONFIG_TEGRA_IOMMU_GART) += tegra-gart.o
++obj-$(CONFIG_TEGRA_IOMMU_SMMU) += tegra-smmu.o
+diff --git a/drivers/iommu/tegra-smmu.c b/drivers/iommu/tegra-smmu.c
 new file mode 100644
-index 0000000..feaccd4
+index 0000000..7deea32
 --- /dev/null
-+++ b/drivers/iommu/tegra-gart.c
-@@ -0,0 +1,436 @@
++++ b/drivers/iommu/tegra-smmu.c
+@@ -0,0 +1,1026 @@
 +/*
-+ * IOMMU API for GART in Tegra20
++ * IOMMU API for SMMU in Tegra30
 + *
-+ * Copyright (c) 2010-2012, NVIDIA CORPORATION.  All rights reserved.
++ * Copyright (c) 2011-2012, NVIDIA CORPORATION.  All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms and conditions of the GNU General Public License,
@@ -100,415 +171,1005 @@ index 0000000..feaccd4
 +#include <linux/slab.h>
 +#include <linux/vmalloc.h>
 +#include <linux/mm.h>
-+#include <linux/list.h>
++#include <linux/pagemap.h>
 +#include <linux/device.h>
-+#include <linux/io.h>
++#include <linux/sched.h>
 +#include <linux/iommu.h>
++#include <linux/io.h>
 +
++#include <asm/page.h>
 +#include <asm/cacheflush.h>
 +
++#include <mach/iomap.h>
++#include <mach/smmu.h>
++
 +/* bitmap of the page sizes currently supported */
-+#define GART_IOMMU_PGSIZES	(SZ_4K)
++#define SMMU_IOMMU_PGSIZES	(SZ_4K | SZ_4M)
 +
-+#define GART_CONFIG		0x24
-+#define GART_ENTRY_ADDR		0x28
-+#define GART_ENTRY_DATA		0x2c
-+#define GART_ENTRY_PHYS_ADDR_VALID	(1 << 31)
++#define SMMU_CONFIG				0x10
++#define SMMU_CONFIG_DISABLE			0
++#define SMMU_CONFIG_ENABLE			1
 +
-+#define GART_PAGE_SHIFT		12
-+#define GART_PAGE_SIZE		(1 << GART_PAGE_SHIFT)
-+#define GART_PAGE_MASK						\
-+	(~(GART_PAGE_SIZE - 1) & ~GART_ENTRY_PHYS_ADDR_VALID)
++#define SMMU_TLB_CONFIG				0x14
++#define SMMU_TLB_CONFIG_STATS__MASK		(1 << 31)
++#define SMMU_TLB_CONFIG_STATS__ENABLE		(1 << 31)
++#define SMMU_TLB_CONFIG_HIT_UNDER_MISS__ENABLE	(1 << 29)
++#define SMMU_TLB_CONFIG_ACTIVE_LINES__VALUE	0x10
++#define SMMU_TLB_CONFIG_RESET_VAL		0x20000010
 +
-+struct gart_client {
++#define SMMU_PTC_CONFIG				0x18
++#define SMMU_PTC_CONFIG_STATS__MASK		(1 << 31)
++#define SMMU_PTC_CONFIG_STATS__ENABLE		(1 << 31)
++#define SMMU_PTC_CONFIG_CACHE__ENABLE		(1 << 29)
++#define SMMU_PTC_CONFIG_INDEX_MAP__PATTERN	0x3f
++#define SMMU_PTC_CONFIG_RESET_VAL		0x2000003f
++
++#define SMMU_PTB_ASID				0x1c
++#define SMMU_PTB_ASID_CURRENT_SHIFT		0
++
++#define SMMU_PTB_DATA				0x20
++#define SMMU_PTB_DATA_RESET_VAL			0
++#define SMMU_PTB_DATA_ASID_NONSECURE_SHIFT	29
++#define SMMU_PTB_DATA_ASID_WRITABLE_SHIFT	30
++#define SMMU_PTB_DATA_ASID_READABLE_SHIFT	31
++
++#define SMMU_TLB_FLUSH				0x30
++#define SMMU_TLB_FLUSH_VA_MATCH_ALL		0
++#define SMMU_TLB_FLUSH_VA_MATCH_SECTION		2
++#define SMMU_TLB_FLUSH_VA_MATCH_GROUP		3
++#define SMMU_TLB_FLUSH_ASID_SHIFT		29
++#define SMMU_TLB_FLUSH_ASID_MATCH_DISABLE	0
++#define SMMU_TLB_FLUSH_ASID_MATCH_ENABLE	1
++#define SMMU_TLB_FLUSH_ASID_MATCH_SHIFT		31
++
++#define SMMU_PTC_FLUSH				0x34
++#define SMMU_PTC_FLUSH_TYPE_ALL			0
++#define SMMU_PTC_FLUSH_TYPE_ADR			1
++#define SMMU_PTC_FLUSH_ADR_SHIFT		4
++
++#define SMMU_ASID_SECURITY			0x38
++
++#define SMMU_STATS_TLB_HIT_COUNT		0x1f0
++#define SMMU_STATS_TLB_MISS_COUNT		0x1f4
++#define SMMU_STATS_PTC_HIT_COUNT		0x1f8
++#define SMMU_STATS_PTC_MISS_COUNT		0x1fc
++
++#define SMMU_TRANSLATION_ENABLE_0		0x228
++#define SMMU_TRANSLATION_ENABLE_1		0x22c
++#define SMMU_TRANSLATION_ENABLE_2		0x230
++
++#define SMMU_AFI_ASID	0x238   /* PCIE */
++#define SMMU_AVPC_ASID	0x23c   /* AVP */
++#define SMMU_DC_ASID	0x240   /* Display controller */
++#define SMMU_DCB_ASID	0x244   /* Display controller B */
++#define SMMU_EPP_ASID	0x248   /* Encoder pre-processor */
++#define SMMU_G2_ASID	0x24c   /* 2D engine */
++#define SMMU_HC_ASID	0x250   /* Host1x */
++#define SMMU_HDA_ASID	0x254   /* High-def audio */
++#define SMMU_ISP_ASID	0x258   /* Image signal processor */
++#define SMMU_MPE_ASID	0x264   /* MPEG encoder */
++#define SMMU_NV_ASID	0x268   /* (3D) */
++#define SMMU_NV2_ASID	0x26c   /* (3D) */
++#define SMMU_PPCS_ASID	0x270   /* AHB */
++#define SMMU_SATA_ASID	0x278   /* SATA */
++#define SMMU_VDE_ASID	0x27c   /* Video decoder */
++#define SMMU_VI_ASID	0x280   /* Video input */
++
++#define SMMU_PDE_NEXT_SHIFT		28
++
++/* AHB Arbiter Registers */
++#define AHB_XBAR_CTRL				0xe0
++#define AHB_XBAR_CTRL_SMMU_INIT_DONE_DONE	1
++#define AHB_XBAR_CTRL_SMMU_INIT_DONE_SHIFT	17
++
++#define SMMU_NUM_ASIDS				4
++#define SMMU_TLB_FLUSH_VA_SECTION__MASK		0xffc00000
++#define SMMU_TLB_FLUSH_VA_SECTION__SHIFT	12 /* right shift */
++#define SMMU_TLB_FLUSH_VA_GROUP__MASK		0xffffc000
++#define SMMU_TLB_FLUSH_VA_GROUP__SHIFT		12 /* right shift */
++#define SMMU_TLB_FLUSH_VA(iova, which)	\
++	((((iova) & SMMU_TLB_FLUSH_VA_##which##__MASK) >> \
++		SMMU_TLB_FLUSH_VA_##which##__SHIFT) |	\
++	SMMU_TLB_FLUSH_VA_MATCH_##which)
++#define SMMU_PTB_ASID_CUR(n)	\
++		((n) << SMMU_PTB_ASID_CURRENT_SHIFT)
++#define SMMU_TLB_FLUSH_ASID_MATCH_disable		\
++		(SMMU_TLB_FLUSH_ASID_MATCH_DISABLE <<	\
++			SMMU_TLB_FLUSH_ASID_MATCH_SHIFT)
++#define SMMU_TLB_FLUSH_ASID_MATCH__ENABLE		\
++		(SMMU_TLB_FLUSH_ASID_MATCH_ENABLE <<	\
++			SMMU_TLB_FLUSH_ASID_MATCH_SHIFT)
++
++#define SMMU_PAGE_SHIFT 12
++#define SMMU_PAGE_SIZE	(1 << SMMU_PAGE_SHIFT)
++
++#define SMMU_PDIR_COUNT	1024
++#define SMMU_PDIR_SIZE	(sizeof(unsigned long) * SMMU_PDIR_COUNT)
++#define SMMU_PTBL_COUNT	1024
++#define SMMU_PTBL_SIZE	(sizeof(unsigned long) * SMMU_PTBL_COUNT)
++#define SMMU_PDIR_SHIFT	12
++#define SMMU_PDE_SHIFT	12
++#define SMMU_PTE_SHIFT	12
++#define SMMU_PFN_MASK	0x000fffff
++
++#define SMMU_ADDR_TO_PFN(addr)	((addr) >> 12)
++#define SMMU_ADDR_TO_PDN(addr)	((addr) >> 22)
++#define SMMU_PDN_TO_ADDR(addr)	((pdn) << 22)
++
++#define _READABLE	(1 << SMMU_PTB_DATA_ASID_READABLE_SHIFT)
++#define _WRITABLE	(1 << SMMU_PTB_DATA_ASID_WRITABLE_SHIFT)
++#define _NONSECURE	(1 << SMMU_PTB_DATA_ASID_NONSECURE_SHIFT)
++#define _PDE_NEXT	(1 << SMMU_PDE_NEXT_SHIFT)
++#define _MASK_ATTR	(_READABLE | _WRITABLE | _NONSECURE)
++
++#define _PDIR_ATTR	(_READABLE | _WRITABLE | _NONSECURE)
++
++#define _PDE_ATTR	(_READABLE | _WRITABLE | _NONSECURE)
++#define _PDE_ATTR_N	(_PDE_ATTR | _PDE_NEXT)
++#define _PDE_VACANT(pdn)	(((pdn) << 10) | _PDE_ATTR)
++
++#define _PTE_ATTR	(_READABLE | _WRITABLE | _NONSECURE)
++#define _PTE_VACANT(addr)	(((addr) >> SMMU_PAGE_SHIFT) | _PTE_ATTR)
++
++#define SMMU_MK_PDIR(page, attr)	\
++		((page_to_phys(page) >> SMMU_PDIR_SHIFT) | (attr))
++#define SMMU_MK_PDE(page, attr)		\
++		(unsigned long)((page_to_phys(page) >> SMMU_PDE_SHIFT) | (attr))
++#define SMMU_EX_PTBL_PAGE(pde)		\
++		pfn_to_page((unsigned long)(pde) & SMMU_PFN_MASK)
++#define SMMU_PFN_TO_PTE(pfn, attr)	(unsigned long)((pfn) | (attr))
++
++#define SMMU_ASID_ENABLE(asid)	((asid) | (1 << 31))
++#define SMMU_ASID_DISABLE	0
++#define SMMU_ASID_ASID(n)	((n) & ~SMMU_ASID_ENABLE(0))
++
++#define smmu_client_enable_hwgrp(c, m)	smmu_client_set_hwgrp(c, m, 1)
++#define smmu_client_disable_hwgrp(c)	smmu_client_set_hwgrp(c, 0, 0)
++#define __smmu_client_enable_hwgrp(c, m) __smmu_client_set_hwgrp(c, m, 1)
++#define __smmu_client_disable_hwgrp(c)	__smmu_client_set_hwgrp(c, 0, 0)
++
++#define HWGRP_INIT(client) [HWGRP_##client] = SMMU_##client##_ASID
++
++static const u32 smmu_hwgrp_asid_reg[] = {
++	HWGRP_INIT(AFI),
++	HWGRP_INIT(AVPC),
++	HWGRP_INIT(DC),
++	HWGRP_INIT(DCB),
++	HWGRP_INIT(EPP),
++	HWGRP_INIT(G2),
++	HWGRP_INIT(HC),
++	HWGRP_INIT(HDA),
++	HWGRP_INIT(ISP),
++	HWGRP_INIT(MPE),
++	HWGRP_INIT(NV),
++	HWGRP_INIT(NV2),
++	HWGRP_INIT(PPCS),
++	HWGRP_INIT(SATA),
++	HWGRP_INIT(VDE),
++	HWGRP_INIT(VI),
++};
++#define HWGRP_ASID_REG(x) (smmu_hwgrp_asid_reg[x])
++
++/*
++ * Per client for address space
++ */
++struct smmu_client {
 +	struct device		*dev;
 +	struct list_head	list;
++	struct smmu_as		*as;
++	u32			hwgrp;
 +};
 +
-+struct gart_device {
-+	void __iomem		*regs;
-+	u32			*savedata;
-+	u32			page_count; /* total remappable size */
-+	dma_addr_t		iovmm_base; /* offset to apply to vmm_area */
-+	spinlock_t		pte_lock; /* for pagetable */
++/*
++ * Per address space
++ */
++struct smmu_as {
++	struct smmu_device	*smmu;	/* back pointer to container */
++	unsigned int		asid;
++	spinlock_t		lock;	/* for pagetable */
++	struct page		*pdir_page;
++	unsigned long		pdir_attr;
++	unsigned long		pde_attr;
++	unsigned long		pte_attr;
++	unsigned int		*pte_count;
++
 +	struct list_head	client;
 +	spinlock_t		client_lock; /* for client list */
-+	struct device		*dev;
 +};
 +
-+#define GART_PTE(_pfn)						\
-+	(GART_ENTRY_PHYS_ADDR_VALID | ((_pfn) << PAGE_SHIFT))
++/*
++ * Per SMMU device - IOMMU device
++ */
++struct smmu_device {
++	void __iomem	*regs, *regs_ahbarb;
++	unsigned long	iovmm_base;	/* remappable base address */
++	unsigned long	page_count;	/* total remappable size */
++	spinlock_t	lock;
++	char		*name;
++	struct device	*dev;
++	int		num_as;
++	struct smmu_as	*as;		/* Run-time allocated array */
++	struct page *avp_vector_page;	/* dummy page shared by all AS's */
++
++	/*
++	 * Register image savers for suspend/resume
++	 */
++	unsigned long translation_enable_0;
++	unsigned long translation_enable_1;
++	unsigned long translation_enable_2;
++	unsigned long asid_security;
++};
++
++static struct smmu_device *smmu_handle; /* unique for a system */
++
++/*
++ *	SMMU/AHB register accessors
++ */
++static inline u32 smmu_read(struct smmu_device *smmu, size_t offs)
++{
++	return readl(smmu->regs + offs);
++}
++static inline void smmu_write(struct smmu_device *smmu, u32 val, size_t offs)
++{
++	writel(val, smmu->regs + offs);
++}
++
++static inline u32 ahb_read(struct smmu_device *smmu, size_t offs)
++{
++	return readl(smmu->regs_ahbarb + offs);
++}
++static inline void ahb_write(struct smmu_device *smmu, u32 val, size_t offs)
++{
++	writel(val, smmu->regs_ahbarb + offs);
++}
++
++#define VA_PAGE_TO_PA(va, page)	\
++	(page_to_phys(page) + ((unsigned long)(va) & ~PAGE_MASK))
++
++#define FLUSH_CPU_DCACHE(va, page, size)	\
++	do {	\
++		unsigned long _pa_ = VA_PAGE_TO_PA(va, page);		\
++		__cpuc_flush_dcache_area((void *)(va), (size_t)(size));	\
++		outer_flush_range(_pa_, _pa_+(size_t)(size));		\
++	} while (0)
 +
 +/*
 + * Any interaction between any block on PPSB and a block on APB or AHB
-+ * must have these read-back to ensure the APB/AHB bus transaction is
-+ * complete before initiating activity on the PPSB block.
++ * must have these read-back barriers to ensure the APB/AHB bus
++ * transaction is complete before initiating activity on the PPSB
++ * block.
 + */
-+#define FLUSH_GART_REGS(gart)	((void)readl((gart)->regs + GART_CONFIG))
++#define FLUSH_SMMU_REGS(smmu)	smmu_read(smmu, SMMU_CONFIG)
 +
-+#define for_each_gart_pte(gart, iova)					\
-+	for (iova = gart->iovmm_base;					\
-+	     iova < gart->iovmm_base + GART_PAGE_SIZE * gart->page_count; \
-+	     iova += GART_PAGE_SIZE)
++#define smmu_client_hwgrp(c) (u32)((c)->dev->platform_data)
 +
-+static inline void gart_set_pte(struct gart_device *gart,
-+				unsigned long offs, u32 pte)
++static int __smmu_client_set_hwgrp(struct smmu_client *c,
++				   unsigned long map, int on)
 +{
-+	writel(offs, gart->regs + GART_ENTRY_ADDR);
-+	writel(pte, gart->regs + GART_ENTRY_DATA);
++	int i;
++	struct smmu_as *as = c->as;
++	u32 val, offs, mask = SMMU_ASID_ENABLE(as->asid);
++	struct smmu_device *smmu = as->smmu;
 +
-+	dev_dbg(gart->dev, "%s %08lx:%08x\n",
-+		 pte ? "map" : "unmap", offs, pte & GART_PAGE_MASK);
-+}
++	WARN_ON(!on && map);
++	if (on && !map)
++		return -EINVAL;
++	if (!on)
++		map = smmu_client_hwgrp(c);
 +
-+static inline unsigned long gart_read_pte(struct gart_device *gart,
-+					  unsigned long offs)
-+{
-+	unsigned long pte;
-+
-+	writel(offs, gart->regs + GART_ENTRY_ADDR);
-+	pte = readl(gart->regs + GART_ENTRY_DATA);
-+
-+	return pte;
-+}
-+
-+static void do_gart_setup(struct gart_device *gart, const u32 *data)
-+{
-+	unsigned long iova;
-+
-+	for_each_gart_pte(gart, iova)
-+		gart_set_pte(gart, iova, data ? *(data++) : 0);
-+
-+	writel(1, gart->regs + GART_CONFIG);
-+	FLUSH_GART_REGS(gart);
-+}
-+
-+#ifdef DEBUG
-+static void gart_dump_table(struct gart_device *gart)
-+{
-+	unsigned long iova;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&gart->pte_lock, flags);
-+	for_each_gart_pte(gart, iova) {
-+		unsigned long pte;
-+
-+		pte = gart_read_pte(gart, iova);
-+
-+		dev_dbg(gart->dev, "%s %08lx:%08lx\n",
-+			(GART_ENTRY_PHYS_ADDR_VALID & pte) ? "v" : " ",
-+			iova, pte & GART_PAGE_MASK);
++	for_each_set_bit(i, &map, HWGRP_COUNT) {
++		offs = HWGRP_ASID_REG(i);
++		val = smmu_read(smmu, offs);
++		if (on) {
++			if (WARN_ON(val & mask))
++				goto err_hw_busy;
++			val |= mask;
++		} else {
++			WARN_ON((val & mask) == mask);
++			val &= ~mask;
++		}
++		smmu_write(smmu, val, offs);
 +	}
-+	spin_unlock_irqrestore(&gart->pte_lock, flags);
++	FLUSH_SMMU_REGS(smmu);
++	c->hwgrp = map;
++	return 0;
++
++err_hw_busy:
++	for_each_set_bit(i, &map, HWGRP_COUNT) {
++		offs = HWGRP_ASID_REG(i);
++		val = smmu_read(smmu, offs);
++		val &= ~mask;
++		smmu_write(smmu, val, offs);
++	}
++	return -EBUSY;
++}
++
++static int smmu_client_set_hwgrp(struct smmu_client *c, u32 map, int on)
++{
++	u32 val;
++	unsigned long flags;
++	struct smmu_as *as = c->as;
++	struct smmu_device *smmu = as->smmu;
++
++	spin_lock_irqsave(&smmu->lock, flags);
++	val = __smmu_client_set_hwgrp(c, map, on);
++	spin_unlock_irqrestore(&smmu->lock, flags);
++	return val;
++}
++
++/*
++ * Flush all TLB entries and all PTC entries
++ * Caller must lock smmu
++ */
++static void smmu_flush_regs(struct smmu_device *smmu, int enable)
++{
++	u32 val;
++
++	smmu_write(smmu, SMMU_PTC_FLUSH_TYPE_ALL, SMMU_PTC_FLUSH);
++	FLUSH_SMMU_REGS(smmu);
++	val = SMMU_TLB_FLUSH_VA_MATCH_ALL |
++		SMMU_TLB_FLUSH_ASID_MATCH_disable;
++	smmu_write(smmu, val, SMMU_TLB_FLUSH);
++
++	if (enable)
++		smmu_write(smmu, SMMU_CONFIG_ENABLE, SMMU_CONFIG);
++	FLUSH_SMMU_REGS(smmu);
++}
++
++static void smmu_setup_regs(struct smmu_device *smmu)
++{
++	int i;
++	u32 val;
++
++	for (i = 0; i < smmu->num_as; i++) {
++		struct smmu_as *as = &smmu->as[i];
++		struct smmu_client *c;
++
++		smmu_write(smmu, SMMU_PTB_ASID_CUR(as->asid), SMMU_PTB_ASID);
++		val = as->pdir_page ?
++			SMMU_MK_PDIR(as->pdir_page, as->pdir_attr) :
++			SMMU_PTB_DATA_RESET_VAL;
++		smmu_write(smmu, val, SMMU_PTB_DATA);
++
++		list_for_each_entry(c, &as->client, list)
++			__smmu_client_set_hwgrp(c, c->hwgrp, 1);
++	}
++
++	smmu_write(smmu, smmu->translation_enable_0, SMMU_TRANSLATION_ENABLE_0);
++	smmu_write(smmu, smmu->translation_enable_1, SMMU_TRANSLATION_ENABLE_1);
++	smmu_write(smmu, smmu->translation_enable_2, SMMU_TRANSLATION_ENABLE_2);
++	smmu_write(smmu, smmu->asid_security, SMMU_ASID_SECURITY);
++	smmu_write(smmu, SMMU_TLB_CONFIG_RESET_VAL, SMMU_TLB_CONFIG);
++	smmu_write(smmu, SMMU_PTC_CONFIG_RESET_VAL, SMMU_PTC_CONFIG);
++
++	smmu_flush_regs(smmu, 1);
++
++	val = ahb_read(smmu, AHB_XBAR_CTRL);
++	val |= AHB_XBAR_CTRL_SMMU_INIT_DONE_DONE <<
++		AHB_XBAR_CTRL_SMMU_INIT_DONE_SHIFT;
++	ahb_write(smmu, val, AHB_XBAR_CTRL);
++}
++
++static void flush_ptc_and_tlb(struct smmu_device *smmu,
++		      struct smmu_as *as, dma_addr_t iova,
++		      unsigned long *pte, struct page *page, int is_pde)
++{
++	u32 val;
++	unsigned long tlb_flush_va = is_pde
++		?  SMMU_TLB_FLUSH_VA(iova, SECTION)
++		:  SMMU_TLB_FLUSH_VA(iova, GROUP);
++
++	val = SMMU_PTC_FLUSH_TYPE_ADR | VA_PAGE_TO_PA(pte, page);
++	smmu_write(smmu, val, SMMU_PTC_FLUSH);
++	FLUSH_SMMU_REGS(smmu);
++	val = tlb_flush_va |
++		SMMU_TLB_FLUSH_ASID_MATCH__ENABLE |
++		(as->asid << SMMU_TLB_FLUSH_ASID_SHIFT);
++	smmu_write(smmu, val, SMMU_TLB_FLUSH);
++	FLUSH_SMMU_REGS(smmu);
++}
++
++static void free_ptbl(struct smmu_as *as, dma_addr_t iova)
++{
++	unsigned long pdn = SMMU_ADDR_TO_PDN(iova);
++	unsigned long *pdir = (unsigned long *)page_address(as->pdir_page);
++
++	if (pdir[pdn] != _PDE_VACANT(pdn)) {
++		dev_dbg(as->smmu->dev, "pdn: %lx\n", pdn);
++
++		ClearPageReserved(SMMU_EX_PTBL_PAGE(pdir[pdn]));
++		__free_page(SMMU_EX_PTBL_PAGE(pdir[pdn]));
++		pdir[pdn] = _PDE_VACANT(pdn);
++		FLUSH_CPU_DCACHE(&pdir[pdn], as->pdir_page, sizeof pdir[pdn]);
++		flush_ptc_and_tlb(as->smmu, as, iova, &pdir[pdn],
++				  as->pdir_page, 1);
++	}
++}
++
++static void free_pdir(struct smmu_as *as)
++{
++	unsigned addr;
++	int count;
++	struct device *dev = as->smmu->dev;
++
++	if (!as->pdir_page)
++		return;
++
++	addr = as->smmu->iovmm_base;
++	count = as->smmu->page_count;
++	while (count-- > 0) {
++		free_ptbl(as, addr);
++		addr += SMMU_PAGE_SIZE * SMMU_PTBL_COUNT;
++	}
++	ClearPageReserved(as->pdir_page);
++	__free_page(as->pdir_page);
++	as->pdir_page = NULL;
++	devm_kfree(dev, as->pte_count);
++	as->pte_count = NULL;
++}
++
++/*
++ * Maps PTBL for given iova and returns the PTE address
++ * Caller must unmap the mapped PTBL returned in *ptbl_page_p
++ */
++static unsigned long *locate_pte(struct smmu_as *as,
++				 dma_addr_t iova, bool allocate,
++				 struct page **ptbl_page_p,
++				 unsigned int **count)
++{
++	unsigned long ptn = SMMU_ADDR_TO_PFN(iova);
++	unsigned long pdn = SMMU_ADDR_TO_PDN(iova);
++	unsigned long *pdir = page_address(as->pdir_page);
++	unsigned long *ptbl;
++
++	if (pdir[pdn] != _PDE_VACANT(pdn)) {
++		/* Mapped entry table already exists */
++		*ptbl_page_p = SMMU_EX_PTBL_PAGE(pdir[pdn]);
++		ptbl = page_address(*ptbl_page_p);
++	} else if (!allocate) {
++		return NULL;
++	} else {
++		int pn;
++		unsigned long addr = SMMU_PDN_TO_ADDR(pdn);
++
++		/* Vacant - allocate a new page table */
++		dev_dbg(as->smmu->dev, "New PTBL pdn: %lx\n", pdn);
++
++		*ptbl_page_p = alloc_page(GFP_ATOMIC);
++		if (!*ptbl_page_p) {
++			dev_err(as->smmu->dev,
++				"failed to allocate smmu_device page table\n");
++			return NULL;
++		}
++		SetPageReserved(*ptbl_page_p);
++		ptbl = (unsigned long *)page_address(*ptbl_page_p);
++		for (pn = 0; pn < SMMU_PTBL_COUNT;
++		     pn++, addr += SMMU_PAGE_SIZE) {
++			ptbl[pn] = _PTE_VACANT(addr);
++		}
++		FLUSH_CPU_DCACHE(ptbl, *ptbl_page_p, SMMU_PTBL_SIZE);
++		pdir[pdn] = SMMU_MK_PDE(*ptbl_page_p,
++					as->pde_attr | _PDE_NEXT);
++		FLUSH_CPU_DCACHE(&pdir[pdn], as->pdir_page, sizeof pdir[pdn]);
++		flush_ptc_and_tlb(as->smmu, as, iova, &pdir[pdn],
++				  as->pdir_page, 1);
++	}
++	*count = &as->pte_count[pdn];
++
++	return &ptbl[ptn % SMMU_PTBL_COUNT];
++}
++
++#ifdef CONFIG_SMMU_SIG_DEBUG
++static void put_signature(struct smmu_as *as,
++			  dma_addr_t iova, unsigned long pfn)
++{
++	struct page *page;
++	unsigned long *vaddr;
++
++	page = pfn_to_page(pfn);
++	vaddr = page_address(page);
++	if (!vaddr)
++		return;
++
++	vaddr[0] = iova;
++	vaddr[1] = pfn << PAGE_SHIFT;
++	FLUSH_CPU_DCACHE(vaddr, page, sizeof(vaddr[0]) * 2);
 +}
 +#else
-+static inline void gart_dump_table(struct gart_device *gart)
++static inline void put_signature(struct smmu_as *as,
++				 unsigned long addr, unsigned long pfn)
 +{
 +}
 +#endif
 +
-+static inline bool gart_iova_range_valid(struct gart_device *gart,
-+					 unsigned long iova, size_t bytes)
++/*
++ * Caller must lock/unlock as
++ */
++static int alloc_pdir(struct smmu_as *as)
 +{
-+	unsigned long iova_start, iova_end, gart_start, gart_end;
++	unsigned long *pdir;
++	int pdn;
++	u32 val;
++	struct smmu_device *smmu = as->smmu;
 +
-+	iova_start = iova;
-+	iova_end = iova_start + bytes - 1;
-+	gart_start = gart->iovmm_base;
-+	gart_end = gart_start + gart->page_count * GART_PAGE_SIZE - 1;
++	if (as->pdir_page)
++		return 0;
 +
-+	if (iova_start < gart_start)
-+		return false;
-+	if (iova_end > gart_end)
-+		return false;
-+	return true;
-+}
-+
-+static int gart_iommu_domain_init(struct iommu_domain *domain)
-+{
-+	return 0;
-+}
-+
-+static void gart_iommu_domain_destroy(struct iommu_domain *domain)
-+{
-+	struct gart_device *gart = domain->priv;
-+
-+	spin_lock(&gart->client_lock);
-+	if (!list_empty(&gart->client)) {
-+		struct gart_client *c;
-+
-+		list_for_each_entry(c, &gart->client, list)
-+			dev_err(gart->dev,
-+				"%s is still attached\n", dev_name(c->dev));
-+	}
-+	spin_unlock(&gart->client_lock);
-+	domain->priv = NULL;
-+}
-+
-+static int gart_iommu_attach_dev(struct iommu_domain *domain,
-+				 struct device *dev)
-+{
-+	struct gart_device *gart;
-+	struct gart_client *client, *c;
-+	int err = 0;
-+
-+	gart = dev_get_drvdata(dev->parent);
-+	if (!gart)
-+		return -EINVAL;
-+	domain->priv = gart;
-+	client = devm_kzalloc(dev, sizeof(*c), GFP_KERNEL);
-+	if (!client)
++	as->pte_count = devm_kzalloc(smmu->dev,
++		     sizeof(as->pte_count[0]) * SMMU_PDIR_COUNT, GFP_KERNEL);
++	if (!as->pte_count) {
++		dev_err(smmu->dev,
++			"failed to allocate smmu_device PTE cunters\n");
 +		return -ENOMEM;
-+	client->dev = dev;
-+
-+	spin_lock(&gart->client_lock);
-+	list_for_each_entry(c, &gart->client, list) {
-+		if (c->dev == dev) {
-+			dev_err(gart->dev,
-+				"%s is already attached\n", dev_name(dev));
-+			err = -EINVAL;
-+			goto fail;
-+		}
 +	}
-+	list_add(&client->list, &gart->client);
-+	spin_unlock(&gart->client_lock);
-+	dev_dbg(gart->dev, "Attached %s\n", dev_name(dev));
++	as->pdir_page = alloc_page(GFP_KERNEL | __GFP_DMA);
++	if (!as->pdir_page) {
++		dev_err(smmu->dev,
++			"failed to allocate smmu_device page directory\n");
++		devm_kfree(smmu->dev, as->pte_count);
++		as->pte_count = NULL;
++		return -ENOMEM;
++	}
++	SetPageReserved(as->pdir_page);
++	pdir = page_address(as->pdir_page);
++
++	for (pdn = 0; pdn < SMMU_PDIR_COUNT; pdn++)
++		pdir[pdn] = _PDE_VACANT(pdn);
++	FLUSH_CPU_DCACHE(pdir, as->pdir_page, SMMU_PDIR_SIZE);
++	val = SMMU_PTC_FLUSH_TYPE_ADR | VA_PAGE_TO_PA(pdir, as->pdir_page);
++	smmu_write(smmu, val, SMMU_PTC_FLUSH);
++	FLUSH_SMMU_REGS(as->smmu);
++	val = SMMU_TLB_FLUSH_VA_MATCH_ALL |
++		SMMU_TLB_FLUSH_ASID_MATCH__ENABLE |
++		(as->asid << SMMU_TLB_FLUSH_ASID_SHIFT);
++	smmu_write(smmu, val, SMMU_TLB_FLUSH);
++	FLUSH_SMMU_REGS(as->smmu);
++
 +	return 0;
-+
-+fail:
-+	devm_kfree(dev, client);
-+	spin_unlock(&gart->client_lock);
-+	return err;
 +}
 +
-+static void gart_iommu_detach_dev(struct iommu_domain *domain,
-+				  struct device *dev)
++static void __smmu_iommu_unmap(struct smmu_as *as, dma_addr_t iova)
 +{
-+	struct gart_device *gart = domain->priv;
-+	struct gart_client *c;
++	unsigned long *pte;
++	struct page *page;
++	unsigned int *count;
 +
-+	spin_lock(&gart->client_lock);
++	pte = locate_pte(as, iova, false, &page, &count);
++	if (WARN_ON(!pte))
++		return;
 +
-+	list_for_each_entry(c, &gart->client, list) {
-+		if (c->dev == dev) {
-+			list_del(&c->list);
-+			devm_kfree(dev, c);
-+			dev_dbg(gart->dev, "Detached %s\n", dev_name(dev));
-+			goto out;
-+		}
++	if (WARN_ON(*pte == _PTE_VACANT(iova)))
++		return;
++
++	*pte = _PTE_VACANT(iova);
++	FLUSH_CPU_DCACHE(pte, page, sizeof(*pte));
++	flush_ptc_and_tlb(as->smmu, as, iova, pte, page, 0);
++	if (!--(*count)) {
++		free_ptbl(as, iova);
++		smmu_flush_regs(as->smmu, 0);
 +	}
-+	dev_err(gart->dev, "Couldn't find\n");
-+out:
-+	spin_unlock(&gart->client_lock);
 +}
 +
-+static int gart_iommu_map(struct iommu_domain *domain, unsigned long iova,
++static void __smmu_iommu_map_pfn(struct smmu_as *as, dma_addr_t iova,
++				 unsigned long pfn)
++{
++	struct smmu_device *smmu = as->smmu;
++	unsigned long *pte;
++	unsigned int *count;
++	struct page *page;
++
++	pte = locate_pte(as, iova, true, &page, &count);
++	if (WARN_ON(!pte))
++		return;
++
++	if (*pte == _PTE_VACANT(iova))
++		(*count)++;
++	*pte = SMMU_PFN_TO_PTE(pfn, as->pte_attr);
++	if (unlikely((*pte == _PTE_VACANT(iova))))
++		(*count)--;
++	FLUSH_CPU_DCACHE(pte, page, sizeof(*pte));
++	flush_ptc_and_tlb(smmu, as, iova, pte, page, 0);
++	put_signature(as, iova, pfn);
++}
++
++static int smmu_iommu_map(struct iommu_domain *domain, unsigned long iova,
 +			  phys_addr_t pa, size_t bytes, int prot)
 +{
-+	struct gart_device *gart = domain->priv;
++	struct smmu_as *as = domain->priv;
++	unsigned long pfn = __phys_to_pfn(pa);
 +	unsigned long flags;
-+	unsigned long pfn;
 +
-+	if (!gart_iova_range_valid(gart, iova, bytes))
-+		return -EINVAL;
++	dev_dbg(as->smmu->dev, "[%d] %08lx:%08x\n", as->asid, iova, pa);
 +
-+	spin_lock_irqsave(&gart->pte_lock, flags);
-+	pfn = __phys_to_pfn(pa);
-+	if (!pfn_valid(pfn)) {
-+		dev_err(gart->dev, "Invalid page: %08x\n", pa);
-+		spin_unlock(&gart->pte_lock);
-+		return -EINVAL;
-+	}
-+	gart_set_pte(gart, iova, GART_PTE(pfn));
-+	FLUSH_GART_REGS(gart);
-+	spin_unlock_irqrestore(&gart->pte_lock, flags);
++	if (!pfn_valid(pfn))
++		return -ENOMEM;
++
++	spin_lock_irqsave(&as->lock, flags);
++	__smmu_iommu_map_pfn(as, iova, pfn);
++	spin_unlock_irqrestore(&as->lock, flags);
 +	return 0;
 +}
 +
-+static size_t gart_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
++static size_t smmu_iommu_unmap(struct iommu_domain *domain, unsigned long iova,
 +			       size_t bytes)
 +{
-+	struct gart_device *gart = domain->priv;
++	struct smmu_as *as = domain->priv;
 +	unsigned long flags;
 +
-+	if (!gart_iova_range_valid(gart, iova, bytes))
-+		return -EINVAL;
++	dev_dbg(as->smmu->dev, "[%d] %08lx\n", as->asid, iova);
 +
-+	spin_lock_irqsave(&gart->pte_lock, flags);
-+	gart_set_pte(gart, iova, 0);
-+	FLUSH_GART_REGS(gart);
-+	spin_unlock_irqrestore(&gart->pte_lock, flags);
-+	return 0;
++	spin_lock_irqsave(&as->lock, flags);
++	__smmu_iommu_unmap(as, iova);
++	spin_unlock_irqrestore(&as->lock, flags);
++	return SMMU_PAGE_SIZE;
 +}
 +
-+static phys_addr_t gart_iommu_iova_to_phys(struct iommu_domain *domain,
++static phys_addr_t smmu_iommu_iova_to_phys(struct iommu_domain *domain,
 +					   unsigned long iova)
 +{
-+	struct gart_device *gart = domain->priv;
-+	unsigned long pte;
-+	phys_addr_t pa;
++	struct smmu_as *as = domain->priv;
++	unsigned long *pte;
++	unsigned int *count;
++	struct page *page;
++	unsigned long pfn;
 +	unsigned long flags;
 +
-+	if (!gart_iova_range_valid(gart, iova, 0))
-+		return -EINVAL;
++	spin_lock_irqsave(&as->lock, flags);
 +
-+	spin_lock_irqsave(&gart->pte_lock, flags);
-+	pte = gart_read_pte(gart, iova);
-+	spin_unlock_irqrestore(&gart->pte_lock, flags);
++	pte = locate_pte(as, iova, true, &page, &count);
++	pfn = *pte & SMMU_PFN_MASK;
++	WARN_ON(!pfn_valid(pfn));
++	dev_dbg(as->smmu->dev,
++		"iova:%08lx pfn:%08lx asid:%d\n", iova, pfn, as->asid);
 +
-+	pa = (pte & GART_PAGE_MASK);
-+	if (!pfn_valid(__phys_to_pfn(pa))) {
-+		dev_err(gart->dev, "No entry for %08lx:%08x\n", iova, pa);
-+		gart_dump_table(gart);
-+		return -EINVAL;
-+	}
-+	return pa;
++	spin_unlock_irqrestore(&as->lock, flags);
++	return PFN_PHYS(pfn);
 +}
 +
-+static int gart_iommu_domain_has_cap(struct iommu_domain *domain,
++static int smmu_iommu_domain_has_cap(struct iommu_domain *domain,
 +				     unsigned long cap)
 +{
 +	return 0;
 +}
 +
-+static struct iommu_ops gart_iommu_ops = {
-+	.domain_init	= gart_iommu_domain_init,
-+	.domain_destroy	= gart_iommu_domain_destroy,
-+	.attach_dev	= gart_iommu_attach_dev,
-+	.detach_dev	= gart_iommu_detach_dev,
-+	.map		= gart_iommu_map,
-+	.unmap		= gart_iommu_unmap,
-+	.iova_to_phys	= gart_iommu_iova_to_phys,
-+	.domain_has_cap	= gart_iommu_domain_has_cap,
-+	.pgsize_bitmap	= GART_IOMMU_PGSIZES,
-+};
-+
-+static int tegra_gart_suspend(struct device *dev)
++static int smmu_iommu_domain_init(struct iommu_domain *domain)
 +{
-+	struct gart_device *gart = dev_get_drvdata(dev);
-+	unsigned long iova;
-+	u32 *data = gart->savedata;
++	int i;
 +	unsigned long flags;
++	struct smmu_as *as;
++	struct smmu_device *smmu = smmu_handle;
 +
-+	spin_lock_irqsave(&gart->pte_lock, flags);
-+	for_each_gart_pte(gart, iova)
-+		*(data++) = gart_read_pte(gart, iova);
-+	spin_unlock_irqrestore(&gart->pte_lock, flags);
++	/* Look for a free AS with lock held */
++	for  (i = 0; i < smmu->num_as; i++) {
++		struct smmu_as *tmp = &smmu->as[i];
++
++		spin_lock_irqsave(&tmp->lock, flags);
++		if (!tmp->pdir_page) {
++			as = tmp;
++			goto found;
++		}
++		spin_unlock_irqrestore(&tmp->lock, flags);
++	}
++	dev_err(smmu->dev, "no free AS\n");
++	return -ENODEV;
++
++found:
++	if (alloc_pdir(as) < 0)
++		goto err_alloc_pdir;
++
++	spin_lock(&smmu->lock);
++
++	/* Update PDIR register */
++	smmu_write(smmu, SMMU_PTB_ASID_CUR(as->asid), SMMU_PTB_ASID);
++	smmu_write(smmu,
++		   SMMU_MK_PDIR(as->pdir_page, as->pdir_attr), SMMU_PTB_DATA);
++	FLUSH_SMMU_REGS(smmu);
++
++	spin_unlock(&smmu->lock);
++
++	spin_unlock_irqrestore(&as->lock, flags);
++	domain->priv = as;
++	dev_dbg(smmu->dev, "smmu_as@%p\n", as);
 +	return 0;
++
++err_alloc_pdir:
++	spin_unlock_irqrestore(&as->lock, flags);
++	return -ENODEV;
 +}
 +
-+static int tegra_gart_resume(struct device *dev)
++static void smmu_iommu_domain_destroy(struct iommu_domain *domain)
 +{
-+	struct gart_device *gart = dev_get_drvdata(dev);
++	struct smmu_as *as = domain->priv;
++	struct smmu_device *smmu = as->smmu;
 +	unsigned long flags;
 +
-+	spin_lock_irqsave(&gart->pte_lock, flags);
-+	do_gart_setup(gart, gart->savedata);
-+	spin_unlock_irqrestore(&gart->pte_lock, flags);
-+	return 0;
-+}
++	spin_lock_irqsave(&as->lock, flags);
 +
-+static int tegra_gart_probe(struct platform_device *pdev)
-+{
-+	struct gart_device *gart;
-+	struct resource *res, *res_remap;
-+	void __iomem *gart_regs;
-+	int err;
-+	struct device *dev = &pdev->dev;
++	if (as->pdir_page) {
++		spin_lock(&smmu->lock);
++		smmu_write(smmu, SMMU_PTB_ASID_CUR(as->asid), SMMU_PTB_ASID);
++		smmu_write(smmu, SMMU_PTB_DATA_RESET_VAL, SMMU_PTB_DATA);
++		FLUSH_SMMU_REGS(smmu);
++		spin_unlock(&smmu->lock);
 +
-+	BUILD_BUG_ON(PAGE_SHIFT != GART_PAGE_SHIFT);
-+
-+	/* the GART memory aperture is required */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	res_remap = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!res || !res_remap) {
-+		dev_err(dev, "GART memory aperture expected\n");
-+		return -ENXIO;
++		free_pdir(as);
 +	}
 +
-+	gart = devm_kzalloc(dev, sizeof(*gart), GFP_KERNEL);
-+	if (!gart) {
-+		dev_err(dev, "failed to allocate gart_device\n");
++	if (!list_empty(&as->client)) {
++		struct smmu_client *c;
++
++		list_for_each_entry(c, &as->client, list)
++			dev_err(smmu->dev,
++				"%s is still attached\n", dev_name(c->dev));
++	}
++
++	spin_unlock_irqrestore(&as->lock, flags);
++
++	domain->priv = NULL;
++	dev_dbg(smmu->dev, "smmu_as@%p\n", as);
++}
++
++static int smmu_iommu_attach_dev(struct iommu_domain *domain,
++				 struct device *dev)
++{
++	struct smmu_as *as = domain->priv;
++	struct smmu_device *smmu = as->smmu;
++	struct smmu_client *client, *c;
++	u32 map;
++	int err;
++
++	client = devm_kzalloc(smmu->dev, sizeof(*c), GFP_KERNEL);
++	if (!client)
++		return -ENOMEM;
++	client->dev = dev;
++	client->as = as;
++	map = (unsigned long)dev->platform_data;
++	if (!map)
++		return -EINVAL;
++
++	err = smmu_client_enable_hwgrp(client, map);
++	if (err)
++		goto err_hwgrp;
++
++	spin_lock(&as->client_lock);
++	list_for_each_entry(c, &as->client, list) {
++		if (c->dev == dev) {
++			dev_err(smmu->dev,
++				"%s is already attached\n", dev_name(c->dev));
++			err = -EINVAL;
++			goto err_client;
++		}
++	}
++	list_add(&client->list, &as->client);
++	spin_unlock(&as->client_lock);
++
++	/*
++	 * Reserve "page zero" for AVP vectors using a common dummy
++	 * page.
++	 */
++	if (map & HWG_AVPC) {
++		struct page *page;
++
++		page = as->smmu->avp_vector_page;
++		__smmu_iommu_map_pfn(as, 0, page_to_pfn(page));
++
++		pr_info("Reserve \"page zero\" for AVP vectors using a common dummy\n");
++	}
++
++	dev_dbg(smmu->dev, "%s is attached\n", dev_name(c->dev));
++	return 0;
++
++err_client:
++	smmu_client_disable_hwgrp(client);
++	spin_unlock(&as->client_lock);
++err_hwgrp:
++	devm_kfree(smmu->dev, client);
++	return err;
++}
++
++static void smmu_iommu_detach_dev(struct iommu_domain *domain,
++				  struct device *dev)
++{
++	struct smmu_as *as = domain->priv;
++	struct smmu_device *smmu = as->smmu;
++	struct smmu_client *c;
++
++	spin_lock(&as->client_lock);
++
++	list_for_each_entry(c, &as->client, list) {
++		if (c->dev == dev) {
++			smmu_client_disable_hwgrp(c);
++			list_del(&c->list);
++			devm_kfree(smmu->dev, c);
++			c->as = NULL;
++			dev_dbg(smmu->dev,
++				"%s is detached\n", dev_name(c->dev));
++			goto out;
++		}
++	}
++	dev_err(smmu->dev, "Couldn't find %s\n", dev_name(c->dev));
++out:
++	spin_unlock(&as->client_lock);
++}
++
++static struct iommu_ops smmu_iommu_ops = {
++	.domain_init	= smmu_iommu_domain_init,
++	.domain_destroy	= smmu_iommu_domain_destroy,
++	.attach_dev	= smmu_iommu_attach_dev,
++	.detach_dev	= smmu_iommu_detach_dev,
++	.map		= smmu_iommu_map,
++	.unmap		= smmu_iommu_unmap,
++	.iova_to_phys	= smmu_iommu_iova_to_phys,
++	.domain_has_cap	= smmu_iommu_domain_has_cap,
++	.pgsize_bitmap	= SMMU_IOMMU_PGSIZES,
++};
++
++static int tegra_smmu_suspend(struct device *dev)
++{
++	struct smmu_device *smmu = dev_get_drvdata(dev);
++
++	smmu->translation_enable_0 = smmu_read(smmu, SMMU_TRANSLATION_ENABLE_0);
++	smmu->translation_enable_1 = smmu_read(smmu, SMMU_TRANSLATION_ENABLE_1);
++	smmu->translation_enable_2 = smmu_read(smmu, SMMU_TRANSLATION_ENABLE_2);
++	smmu->asid_security = smmu_read(smmu, SMMU_ASID_SECURITY);
++	return 0;
++}
++
++static int tegra_smmu_resume(struct device *dev)
++{
++	struct smmu_device *smmu = dev_get_drvdata(dev);
++	unsigned long flags;
++
++	spin_lock_irqsave(&smmu->lock, flags);
++	smmu_setup_regs(smmu);
++	spin_unlock_irqrestore(&smmu->lock, flags);
++	return 0;
++}
++
++static int tegra_smmu_probe(struct platform_device *pdev)
++{
++	struct smmu_device *smmu;
++	struct resource *regs, *regs2, *window;
++	struct device *dev = &pdev->dev;
++	int i, err = 0;
++
++	BUILD_BUG_ON(PAGE_SHIFT != SMMU_PAGE_SHIFT);
++
++	regs = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	regs2 = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	window = platform_get_resource(pdev, IORESOURCE_MEM, 2);
++	if (!regs || !regs2 || !window) {
++		dev_err(dev, "No SMMU resources\n");
++		return -ENODEV;
++	}
++
++	smmu = devm_kzalloc(dev, sizeof(*smmu), GFP_KERNEL);
++	if (!smmu) {
++		dev_err(dev, "failed to allocate smmu_device\n");
 +		return -ENOMEM;
 +	}
 +
-+	gart_regs = devm_ioremap(dev, res->start, resource_size(res));
-+	if (!gart_regs) {
-+		dev_err(dev, "failed to remap GART registers\n");
++	smmu->dev = dev;
++	smmu->num_as = SMMU_NUM_ASIDS;
++	smmu->iovmm_base = (unsigned long)window->start;
++	smmu->page_count = resource_size(window) >> SMMU_PAGE_SHIFT;
++	smmu->regs = devm_ioremap(dev, regs->start, resource_size(regs));
++	smmu->regs_ahbarb = devm_ioremap(dev, regs2->start,
++					 resource_size(regs2));
++	if (!smmu->regs || !smmu->regs_ahbarb) {
++		dev_err(dev, "failed to remap SMMU registers\n");
 +		err = -ENXIO;
 +		goto fail;
 +	}
 +
-+	gart->dev = &pdev->dev;
-+	spin_lock_init(&gart->pte_lock);
-+	spin_lock_init(&gart->client_lock);
-+	INIT_LIST_HEAD(&gart->client);
-+	gart->regs = gart_regs;
-+	gart->iovmm_base = (dma_addr_t)res_remap->start;
-+	gart->page_count = (resource_size(res_remap) >> GART_PAGE_SHIFT);
++	smmu->translation_enable_0 = ~0;
++	smmu->translation_enable_1 = ~0;
++	smmu->translation_enable_2 = ~0;
++	smmu->asid_security = 0;
 +
-+	gart->savedata = vmalloc(sizeof(u32) * gart->page_count);
-+	if (!gart->savedata) {
-+		dev_err(dev, "failed to allocate context save area\n");
++	smmu->as = devm_kzalloc(dev,
++			sizeof(smmu->as[0]) * smmu->num_as, GFP_KERNEL);
++	if (!smmu->as) {
++		dev_err(dev, "failed to allocate smmu_as\n");
 +		err = -ENOMEM;
 +		goto fail;
 +	}
 +
-+	platform_set_drvdata(pdev, gart);
-+	do_gart_setup(gart, NULL);
++	for (i = 0; i < smmu->num_as; i++) {
++		struct smmu_as *as = &smmu->as[i];
++
++		as->smmu = smmu;
++		as->asid = i;
++		as->pdir_attr = _PDIR_ATTR;
++		as->pde_attr = _PDE_ATTR;
++		as->pte_attr = _PTE_ATTR;
++
++		spin_lock_init(&as->lock);
++		INIT_LIST_HEAD(&as->client);
++	}
++	spin_lock_init(&smmu->lock);
++	smmu_setup_regs(smmu);
++	platform_set_drvdata(pdev, smmu);
++	smmu_handle = smmu;
++
++	smmu->avp_vector_page = alloc_page(GFP_KERNEL);
++	if (!smmu->avp_vector_page)
++		goto fail;
 +	return 0;
 +
 +fail:
-+	if (gart_regs)
-+		devm_iounmap(dev, gart_regs);
-+	if (gart && gart->savedata)
-+		vfree(gart->savedata);
-+	devm_kfree(dev, gart);
++	if (smmu->avp_vector_page)
++		__free_page(smmu->avp_vector_page);
++	if (smmu->regs)
++		devm_iounmap(dev, smmu->regs);
++	if (smmu->regs_ahbarb)
++		devm_iounmap(dev, smmu->regs_ahbarb);
++	if (smmu && smmu->as) {
++		for (i = 0; i < smmu->num_as; i++) {
++			if (smmu->as[i].pdir_page) {
++				ClearPageReserved(smmu->as[i].pdir_page);
++				__free_page(smmu->as[i].pdir_page);
++			}
++		}
++		devm_kfree(dev, smmu->as);
++	}
++	devm_kfree(dev, smmu);
 +	return err;
 +}
 +
-+static int tegra_gart_remove(struct platform_device *pdev)
++static int tegra_smmu_remove(struct platform_device *pdev)
 +{
-+	struct gart_device *gart = platform_get_drvdata(pdev);
-+	struct device *dev = gart->dev;
++	struct smmu_device *smmu = platform_get_drvdata(pdev);
++	struct device *dev = smmu->dev;
 +
-+	writel(0, gart->regs + GART_CONFIG);
-+	if (gart->savedata)
-+		vfree(gart->savedata);
-+	if (gart->regs)
-+		devm_iounmap(dev, gart->regs);
-+	devm_kfree(dev, gart);
++	smmu_write(smmu, SMMU_CONFIG_DISABLE, SMMU_CONFIG);
++	platform_set_drvdata(pdev, NULL);
++	if (smmu->as) {
++		int i;
++
++		for (i = 0; i < smmu->num_as; i++)
++			free_pdir(&smmu->as[i]);
++		devm_kfree(dev, smmu->as);
++	}
++	if (smmu->avp_vector_page)
++		__free_page(smmu->avp_vector_page);
++	if (smmu->regs)
++		devm_iounmap(dev, smmu->regs);
++	if (smmu->regs_ahbarb)
++		devm_iounmap(dev, smmu->regs_ahbarb);
++	devm_kfree(dev, smmu);
++	smmu_handle = NULL;
 +	return 0;
 +}
 +
-+const struct dev_pm_ops tegra_gart_pm_ops = {
-+	.suspend	= tegra_gart_suspend,
-+	.resume		= tegra_gart_resume,
++const struct dev_pm_ops tegra_smmu_pm_ops = {
++	.suspend	= tegra_smmu_suspend,
++	.resume		= tegra_smmu_resume,
 +};
 +
-+static struct platform_driver tegra_gart_driver = {
-+	.probe		= tegra_gart_probe,
-+	.remove		= tegra_gart_remove,
++static struct platform_driver tegra_smmu_driver = {
++	.probe		= tegra_smmu_probe,
++	.remove		= tegra_smmu_remove,
 +	.driver = {
 +		.owner	= THIS_MODULE,
-+		.name	= "tegra-gart",
-+		.pm	= &tegra_gart_pm_ops,
++		.name	= "tegra-smmu",
++		.pm	= &tegra_smmu_pm_ops,
 +	},
 +};
 +
-+static int __devinit tegra_gart_init(void)
++static int __devinit tegra_smmu_init(void)
 +{
-+	bus_set_iommu(&platform_bus_type, &gart_iommu_ops);
-+	return platform_driver_register(&tegra_gart_driver);
++	bus_set_iommu(&platform_bus_type, &smmu_iommu_ops);
++	return platform_driver_register(&tegra_smmu_driver);
 +}
 +
-+static void __exit tegra_gart_exit(void)
++static void __exit tegra_smmu_exit(void)
 +{
-+	platform_driver_unregister(&tegra_gart_driver);
++	platform_driver_unregister(&tegra_smmu_driver);
 +}
 +
-+subsys_initcall(tegra_gart_init);
-+module_exit(tegra_gart_exit);
++subsys_initcall(tegra_smmu_init);
++module_exit(tegra_smmu_exit);
 -- 
 1.7.5.4
 
