@@ -1,91 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab2AESC5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:02:57 -0500
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:47049 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755488Ab2AESC4 (ORCPT
+	id S1755055Ab2AESIP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:08:15 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43382 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494Ab2AESIO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:02:56 -0500
-Date: Thu, 5 Jan 2012 10:02:51 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Daniel Vetter <daniel@ffwll.ch>
-Cc: Keith Packard <keithp@keithp.com>, "Airlie, Dave" <airlied@linux.ie>,
-        Intel drivers <Intel-gfx@lists.freedesktop.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [PULL] drm-intel-next
-Message-ID: <20120105100251.3fc7dfef@jbarnes-desktop>
-In-Reply-To: <20120105152408.GD3831@phenom.ffwll.local>
-References: <86y5tmkeia.fsf@sumi.keithp.com>
-	<20120105152408.GD3831@phenom.ffwll.local>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/60lu0j27.U_bJjye.L40_r5"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Thu, 5 Jan 2012 13:08:14 -0500
+Date: Thu, 5 Jan 2012 11:08:11 -0700
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL] gpio pl061 for 3.3
+Message-ID: <20120105180811.GD22653@ponder.secretlab.ca>
+References: <4F05BAC1.1000706@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F05BAC1.1000706@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/60lu0j27.U_bJjye.L40_r5
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 05, 2012 at 08:59:13AM -0600, Rob Herring wrote:
+> Grant,
+> 
+> Since it seems irqdomain issues aren't going to get sorted out for 3.3,
+> please pull the pl061 changes which are not dependent on irqdomain.
+> Sorry it is a bit late.
+> 
+> The following changes since commit 5f0a6e2d503896062f641639dacfe5055c2f593b:
+> 
+>   Linux 3.2-rc7 (2011-12-23 21:51:06 -0800)
+> 
+> are available in the git repository at:
+>   git://sources.calxeda.com/kernel/linux.git gpio-for-grant
 
-On Thu, 5 Jan 2012 16:24:08 +0100
-Daniel Vetter <daniel@ffwll.ch> wrote:
-> I'd also like to express my frustration with the general -next process for
-> drm/i915:
-> - This drm-intel-next tree is less than 24h ours old (if you look at when
->   it showed up at an official place where both our QA and the community
->   can pick it up and test it). I fear we'll ship yet another disaster like
->   the stack eating bug the vt-d/ilk w/a patch caused with an unbounded
->   recursion. Our QA actually caught it in testing, but there was simply
->   not enough time to fix things up before the buggy code landed in -linus.
-> - Because the drm-intel-next merge cycle started so late there has simply
->   not been enough time to include quite a few bugfixes for serious issues
->   like 20s delays in intial modeset, userspace-triggerable kernel OOPSes
->   and deadlocks and reproducible hard hw hangs. For most of these there
->   are testcases in intel-gpu-tools, and these issues span the entire set
->   of hw generations drm/i915 currently supports. But this late it's imo
->   no longer advisible to merge them, so we'll ship 3.3 with a bunch of
->   known (and sometimes longstanding) serious issues that have fixes.
+Merged, thanks.
 
-Yeah I have to second this and additionally complain about the patch
-lossiness & latency.  Part of this is my fault for not reviewing things
-as much as I should, but those reviews often get lost too...
+g.
 
-Eugeni's i2c patches are a good example.  They've been out there since
-early Oct, have received review and testing, and should have been in
--next for many months now (in previous releases!).
-
-What can we do to improve the process to get trees updated more
-regularly and get fixes integrated faster?
-
-Thanks,
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/60lu0j27.U_bJjye.L40_r5
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPBeXLAAoJEIEoDkX4Qk9h+9sQAJeUuRI0cHXcveq63cv4yz3W
-WojPQVfIpruHbmdW12eYom7piEpSlpjV8wGUPFakYskXYT9mBmUdrwLCYDh9ZIaT
-ETuo8w0lAf0LaYheyH9HjGHh5Q/rbstS6cX5lQM22JMK/ygakkbfiHOoci7KJpUZ
-6+j9082MN1Gk3vgZVyzKCMAniEOkT9ed/N4nj80zRdlZ9Hs6yWkWcHDwkHSIp1S9
-A7rk6mL4wOZMgA+3L6ndaK4lFQ2H+3M2XPq1upzx9tyn36OVtPqapbtc8Sxr1IyT
-KO1yn7PnfsB2IzWw7pMK92w3EVC+fxt4dc/TOB8SDge92ceRP2x5naIZVAv0556d
-9UYPUPj+IrqqkQCFIbyq2KKzEH731t2i/T/IZpCPwhSFD2pukA0+VITn/Utp3vP8
-1NDQ4u8pVsQ/Vdd4pIHX6i7TywQL5o0/z55gIzVb+G1I0ynI1ZXnIJ7lobrh4mev
-W3B2T4fDXRQ2VF8KLLg9s89jSvxCbvc32yDgN+V4CL21AM7wwR58z67b0kk75PzN
-e63z+aLg+bnBGjaoNunKgIV+VtKHO8qV72yZEiOE8MPs2+o13JaAi+RGcgULKGBr
-EDfXj6oBlkcLaTfYD5N7VXwo9QVuUgf1EPiDtjltaIAuR829NwKcubca0iZSvJ6Z
-pLs5OEfrzyVjXa7ugzMq
-=spbn
------END PGP SIGNATURE-----
-
---Sig_/60lu0j27.U_bJjye.L40_r5--
+> 
+> Rob Herring (5):
+>       gpio: pl061: use chained_irq_* functions in irq handler
+>       gpio: pl061: convert to use 0 for no irq
+>       ARM: realview: convert pl061 no irq to 0 instead of -1
+>       gpio: pl061: convert to use generic irq chip
+>       gpio: pl061: remove combined interrupt
+> 
+>  arch/arm/mach-realview/realview_eb.c     |    3 -
+>  arch/arm/mach-realview/realview_pb1176.c |    3 -
+>  arch/arm/mach-realview/realview_pb11mp.c |    3 -
+>  arch/arm/mach-realview/realview_pba8.c   |    3 -
+>  arch/arm/mach-realview/realview_pbx.c    |    3 -
+>  drivers/gpio/Kconfig                     |    1 +
+>  drivers/gpio/gpio-pl061.c                |  132
+> ++++++++++--------------------
+>  include/linux/amba/pl061.h               |    2 +-
+>  8 files changed, 44 insertions(+), 106 deletions(-)
+> 
+> Rob
