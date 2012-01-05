@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab2AETgO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:36:14 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40960 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932545Ab2AETgM convert rfc822-to-8bit (ORCPT
+	id S1758274Ab2AETnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:43:45 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34962 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751538Ab2AETnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:36:12 -0500
+	Thu, 5 Jan 2012 14:43:43 -0500
+Date: Thu, 5 Jan 2012 13:43:38 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
+        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] toshiba_acpi: Support alternate hotkey interfaces
+Message-ID: <20120105194338.GD25386@ubuntu-macmini>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
+	Thomas Renninger <trenn@suse.de>,
+	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
+ <1325617358-8286-3-git-send-email-seth.forshee@canonical.com>
+ <20120105182522.GD24242@srcf.ucam.org>
 MIME-Version: 1.0
-In-Reply-To: <20120105091704.GB3249@elte.hu>
-References: <20120104201800.GA2587@www.outflux.net>
-	<20120105091704.GB3249@elte.hu>
-Date: Thu, 5 Jan 2012 11:36:11 -0800
-X-Google-Sender-Auth: XIspUIDd3G1Qr40Cm8JqJyzoCdw
-Message-ID: <CAGXu5jJ=D1pKCZ8=1-WGkm0witNEH9Ux01+1BJyZKC_DAX00aA@mail.gmail.com>
-Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
-From: Kees Cook <keescook@chromium.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105182522.GD24242@srcf.ucam.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 1:17 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> * Kees Cook <keescook@chromium.org> wrote:
->
->> @@ -1495,6 +1496,15 @@ static struct ctl_table fs_table[] = {
->>  #endif
->>  #endif
->>       {
->> +             .procname       = "protected_sticky_symlinks",
->> +             .data           = &protected_sticky_symlinks,
->> +             .maxlen         = sizeof(int),
->> +             .mode           = 0644,
->> +             .proc_handler   = proc_dointvec_minmax,
->> +             .extra1         = &zero,
->> +             .extra2         = &one,
->> +     },
->
-> Small detail:
->
-> Might make sense to change the .mode to 0600, to make it harder
-> for unprivileged attack code to guess whether this protection
-> (and the resulting audit warning to the administrator) is
-> enabled on a system or not.
+On Thu, Jan 05, 2012 at 06:25:22PM +0000, Matthew Garrett wrote:
+> On Tue, Jan 03, 2012 at 01:02:36PM -0600, Seth Forshee wrote:
+> > There are two types of problems that prevent hotkeys from working
+> > on many of the machines supported by toshiba_acpi. The first of
+> > these is the lack of a functioning SCI for hotkey events. For these
+> > machines it is possible to filter the Fn keypresses from the
+> > keyboard and generate a notification by executing the ACPI NTFY
+> > method.
+> > 
+> > The second problem is a lack of support for HCI_SYSTEM_EVENT, which
+> > is used for reading the hotkey scancodes. On these machines the
+> > scancodes can be read by executing the ACPI NTFY method.
+> > 
+> > This patch fixes both problems by installing an i8042 filter when
+> > the NTFY method is present to generate notifications and by
+> > detecting which of INFO or HCI_SYSTEM_EVENT is supported for
+> > reading scancodes. If neither method of reading scancodes is
+> > supported, the hotkey input device is not registered.
+> > 
+> > Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+> > Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+> 
+> It's still an awful way to implement things, but it doesn't seem like 
+> there's any alternative, so sure.
 
-Sure, I have no problem with that. In addition to this change, what's
-the best next step for this patch?
+I agree. If there's an alternative I couldn't find it, and not for a
+lack of trying.
 
-Thanks,
+> > +		error = i8042_install_filter(toshiba_acpi_i8042_filter);
+> 
+> If this is only needed for TOS1900 machines then I think I'd prefer to 
+> see it only done on them. Just add a flag to the data field of the IDs 
+> and check that.
 
--Kees
+I checked all the Toshiba DSDTs I have, and every machine with NTFY is a
+TOS1900 machine, but only a subset of the TOS1900 machines have NTFY. So
+I think we need to still limit it to only machines with NTFY. I can add
+an additional check for TOS1900 if that's what you want.
 
--- 
-Kees Cook
-ChromeOS Security
