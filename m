@@ -1,121 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933032Ab2AEXNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 18:13:33 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:56009 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932235Ab2AEXNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 18:13:31 -0500
-Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Greg KH <greg@kroah.com>, Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Date: Thu, 05 Jan 2012 18:09:53 -0500
-In-Reply-To: <20120105143015.540ba7d7.akpm@linux-foundation.org>
-References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
-		<1324560391.1964.8.camel@falcor>
-		<20120104152801.d8f555ca.akpm@linux-foundation.org>
-		<1325723630.13419.2.camel@falcor>
-		<20120104164638.cc21fc2e.akpm@linux-foundation.org>
-		<20120105020639.GA1161@kroah.com>	<1325737033.13419.43.camel@falcor>
-		<20120105165412.GE26153@kroah.com>	<1325783951.23566.52.camel@falcor>
-		<1325788781.2775.12.camel@dabdike.Larkspurhotels.com>
-	 <20120105143015.540ba7d7.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3 (3.0.3-1.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325804994.2062.63.camel@falcor.watson.ibm.com>
-Mime-Version: 1.0
-x-cbid: 12010523-5806-0000-0000-0000111AE36F
+	id S933036Ab2AEXRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 18:17:43 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38429 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932957Ab2AEXRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 18:17:41 -0500
+X-Sasl-enc: /YosR3L8Q83e3++q7RsKkPVXyTQHbOUlcKCmin49uo9D 1325805460
+Date: Thu, 5 Jan 2012 15:17:31 -0800
+From: Greg KH <greg@kroah.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
+Message-ID: <20120105231731.GA15539@kroah.com>
+References: <20120105200515.GA1071@core.coreip.homeip.net>
+ <Pine.LNX.4.44L0.1201051531410.1434-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1201051531410.1434-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 14:30 -0800, Andrew Morton wrote:
-> On Thu, 05 Jan 2012 10:39:41 -0800
-> James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
+On Thu, Jan 05, 2012 at 03:48:19PM -0500, Alan Stern wrote:
+> On Thu, 5 Jan 2012, Dmitry Torokhov wrote:
 > 
-> > > > Please, go read Documentation/stable_kernel_rules.txt for how to
-> > > > properly submit patches to the stable kernel tree.  The information here
-> > > > needs to be in the patch changelog itself, not in some random email
-> > > > thread that will get lost instantly into my email-archive-from-hell
-> > > > after I am done reading this.
-> > > > 
-> > > > greg k-h
-> > > 
-> > > Yes, I've read Documentation/stable_kernel_rules.txt and think this
-> > > patch meets the criteria for being backported.
-> > > 
-> > > As far as I'm aware, this patch hasn't been upstreamed yet and is
-> > > waiting for someone, besides myself, to Ack it.  Once Acked, either
-> > > Dmitry or I can send a pull request with an updated patch description.
-> > > Should this patch go in via the security tree?
+> > So I looked at the users of device_attach():
 > > 
-> > If it hasn't been upstreamed yet, just make sure you put
-> > 
-> > cc: stable@kernel.org
-> > 
-> > In the signoffs of the patch you're sending upstream and the backport
-> > will occur automatically when the patch is finally upstreamed.
+> > - we call it from generic bus code when adding a new driver so naturally
+> >   driver is valid there;
+> > - serio and gameport call it by hand but they ensure that the driver is
+> >   valid because they protected by subsystem-private mutex;
+> > - PCI, PCMCI, HID and USB new_id handling is tied to the driver itself
+> >   and attributes are removed when driver is unregistered so there is no
+> >   chance driver will be attached through newid after it has been
+> >   unregistered;
+> > - agp_amd64_init calls it once immediately after registering the driver;
+> > - pci-stub driver is safe as well.
 > 
-> Mimi didn't write or send the patch.
+> Okay, that's all good.
+> 
+> > That leaves only usb-serial which is problematic exactly as you
+> > described below. So I think we should remove get_driver() and
+> > put_driver(); document that caller if driver_attach() should ensure
+> > that driver is live and let usb-serial code solve this issue as this
+> > is the only code that plays games with drivers it does not own.
+> 
+> If Greg confirms that there's nothing with registering the usb driver 
+> before the usb_serial driver, I can fix the usb-serial code easily.
+> 
+> Greg, do you know offhand whether this will break anything?  It really 
+> seems like the right thing to do, because the usb_serial driver uses 
+> the usb driver but not vice versa.
 
-Thanks for explaining it to everyone and upstreaming the patch. 
+Hm, there was a reason I ordered the way I did, as I remember having to
+go fix up a number of drivers that did it in the reverse order.  Give me
+a day or so to dig it up and figure out what is going on here, and to
+review this thread.
 
-Mimi
+thanks,
 
-> This happily git-free maintainer simply goes in and edits the
-> changelog.  I do this very very frequently.
-> 
-> Here's what I currently have.  I plan to send this to Rip Van Viro.
-> 
-> 
-> 
-> 
-> From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> Subject: vfs: increment iversion when a file is truncated
-> 
-> When a file is truncated with truncate()/ftruncate() and then closed,
-> iversion is not updated.  This patch uses ATTR_SIZE flag as an indication
-> to increment iversion.
-> 
-> Mimi said:
-> 
-> On fput(), i_version is used to detect and flag files that have changed
-> and need to be re-measured in the IMA measurement policy.  When a file
-> is truncated with truncate()/ftruncate() and then closed, i_version is
-> not updated.  As a result, although the file has changed, it will not be
-> re-measured and added to the IMA measurement list on subsequent access.
-> 
-> Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
-> Acked-by: Mimi Zohar <zohar@us.ibm.com>
-> Cc: Al Viro <viro@zeniv.linux.org.uk>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  fs/attr.c |    5 +++++
->  1 file changed, 5 insertions(+)
-> 
-> diff -puN fs/attr.c~vfs-increment-iversion-when-a-file-is-truncated fs/attr.c
-> --- a/fs/attr.c~vfs-increment-iversion-when-a-file-is-truncated
-> +++ a/fs/attr.c
-> @@ -176,6 +176,11 @@ int notify_change(struct dentry * dentry
->  			return -EPERM;
->  	}
-> 
-> +	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
-> +		if (attr->ia_size != inode->i_size)
-> +			inode_inc_iversion(inode);
-> +	}
-> +
->  	if ((ia_valid & ATTR_MODE)) {
->  		umode_t amode = attr->ia_mode;
->  		/* Flag setting protected by i_mutex */
-> _
-> 
-
-
+greg k-h
