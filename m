@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757318Ab2AELNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 06:13:06 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45630 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754898Ab2AELNE convert rfc822-to-8bit (ORCPT
+	id S1757453Ab2AELRz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 06:17:55 -0500
+Received: from smtp-out3.tiscali.nl ([195.241.79.178]:51529 "EHLO
+	smtp-out3.tiscali.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab2AELRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 06:13:04 -0500
-MIME-Version: 1.0
-Reply-To: accountmanagement101@hotmail.com
-Date: Thu, 5 Jan 2012 12:12:53 +0100
-Message-ID: <CAOw_EC8fnu=io=TAfhQSJZ8LTPt7pXh8AeNezx-6UeVSPML1=w@mail.gmail.com>
-Subject: Estimado usuario de la cuenta,
-From: "WEBMAIL CENTRO DE SEGURIDAD." <mnnghiaphuc.tk@nghean.edu.vn>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Jan 2012 06:17:54 -0500
+Message-ID: <1325762266.1807.9.camel@x61.thuisdomein>
+Subject: Re: [PATCH 2/2] time: remove the unnecessary
+ CONFIG_GENERIC_CLOCKEVENS check
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Feng Tang <feng.tang@intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Jan 2012 12:17:46 +0100
+In-Reply-To: <1325770085-5162-2-git-send-email-feng.tang@intel.com>
+References: <1325770085-5162-1-git-send-email-feng.tang@intel.com>
+	 <1325770085-5162-2-git-send-email-feng.tang@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Estimado usuario de la cuenta,
-Este es un mensaje de correo web el centro de mensajes para todos los
-propietarios de las cuentas de correo web.
+On Thu, 2012-01-05 at 21:28 +0800, Feng Tang wrote:
+> In kernel/time/Kconfig:
+> config GENERIC_CLOCKEVENTS_BUILD
+> 	bool
+> 	default y
+> 	depends on GENERIC_CLOCKEVENTS
+> 
+> So there is no need to check CONFIG_GENERIC_CLOCKEVENTS if the
+> CONFIG_GENERIC_CLOCKEVENTS_BUILD is defined already.
 
-En estos momentos estamos actualizando nuestra base de datos y e-mail
-centro cuenta. Estamos eliminando todas las cuenta de correo web
-utilizado para crear más espacio para las nuevas cuentas.
+This is only true because nothing selects GENERIC_CLOCKEVENTS_BUILD
+directly, isn't it? So if we're being strict the patch explanation
+should mention that.
 
-Para evitar que sus cuentas de cierre que usted tendrá que actualizar
-al proporcionar la información solicitada a continuación:
+(Maybe it's even better to simply state
+    There is no need to check CONFIG_GENERIC_CLOCKEVENTS if
+    CONFIG_GENERIC_CLOCKEVENTS_BUILD is defined.
 
-Confirmar detalles de su cuenta
-Webmail ID:
-contraseña:
-Fecha de nacimiento:
+    This prepares [...]
 
-Se le enviará una confirmación de la contraseña alfanumérica nuevo de
-modo que sólo tendrá validez durante este período y se puede cambiar
-después del proceso.
+as that would tell us just enough.)
 
-Gracias por su comprensión.
-Webmail administrador.
+> This prepares for the total removal of GENERIC_CLOCKEVENTS_BUILD.
 
-Advertencia! Propietario de la cuenta que se niega a actualizar su
-cuenta dentro de los siete días de haber recibido esta advertencia
-perderá su cuenta permanentemente.
+
+Paul Bolle
+
