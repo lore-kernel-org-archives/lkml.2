@@ -1,236 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822Ab2AEWTJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:19:09 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47558 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932863Ab2AEWTG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:19:06 -0500
-Message-ID: <1325801944.2775.32.camel@dabdike.Larkspurhotels.com>
-Subject: [GIT PULL] Next round of SCSI updates for 3.2 merge window
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Thu, 05 Jan 2012 14:19:04 -0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S964828Ab2AEWVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:21:22 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:46291 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758248Ab2AEWVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:21:20 -0500
+Date: Thu, 5 Jan 2012 22:21:16 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Greg KH <gregkh@suse.de>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
+ exist
+Message-ID: <20120105222116.GF27881@csn.ul.ie>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+ <1325499859-2262-8-git-send-email-gilad@benyossef.com>
+ <4F033EC9.4050909@gmail.com>
+ <20120105142017.GA27881@csn.ul.ie>
+ <20120105144011.GU11810@n2100.arm.linux.org.uk>
+ <20120105161739.GD27881@csn.ul.ie>
+ <20120105163529.GA11810@n2100.arm.linux.org.uk>
+ <20120105183504.GF2393@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120105183504.GF2393@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Trying the signed tag approach for the first time
+(Adding Greg to cc to see if he recalls seeing issues with sysfs dentry
+suffering from recursive locking recently)
 
-This patch contains the first tranche of SCSI updates including qla2xxx,
-qla4xxx, mpt2sas, lpfc and device_handler
+On Thu, Jan 05, 2012 at 10:35:04AM -0800, Paul E. McKenney wrote:
+> On Thu, Jan 05, 2012 at 04:35:29PM +0000, Russell King - ARM Linux wrote:
+> > On Thu, Jan 05, 2012 at 04:17:39PM +0000, Mel Gorman wrote:
+> > > Link please?
+> > 
+> > Forwarded, as its still in my mailbox.
+> > 
+> > > I'm including a patch below under development that is
+> > > intended to only cope with the page allocator case under heavy memory
+> > > pressure. Currently it does not pass testing because eventually RCU
+> > > gets stalled with the following trace
+> > > 
+> > > [ 1817.176001]  [<ffffffff810214d7>] arch_trigger_all_cpu_backtrace+0x87/0xa0
+> > > [ 1817.176001]  [<ffffffff810c4779>] __rcu_pending+0x149/0x260
+> > > [ 1817.176001]  [<ffffffff810c48ef>] rcu_check_callbacks+0x5f/0x110
+> > > [ 1817.176001]  [<ffffffff81068d7f>] update_process_times+0x3f/0x80
+> > > [ 1817.176001]  [<ffffffff8108c4eb>] tick_sched_timer+0x5b/0xc0
+> > > [ 1817.176001]  [<ffffffff8107f28e>] __run_hrtimer+0xbe/0x1a0
+> > > [ 1817.176001]  [<ffffffff8107f581>] hrtimer_interrupt+0xc1/0x1e0
+> > > [ 1817.176001]  [<ffffffff81020ef3>] smp_apic_timer_interrupt+0x63/0xa0
+> > > [ 1817.176001]  [<ffffffff81449073>] apic_timer_interrupt+0x13/0x20
+> > > [ 1817.176001]  [<ffffffff8116c135>] vfsmount_lock_local_lock+0x25/0x30
+> > > [ 1817.176001]  [<ffffffff8115c855>] path_init+0x2d5/0x370
+> > > [ 1817.176001]  [<ffffffff8115eecd>] path_lookupat+0x2d/0x620
+> > > [ 1817.176001]  [<ffffffff8115f4ef>] do_path_lookup+0x2f/0xd0
+> > > [ 1817.176001]  [<ffffffff811602af>] user_path_at_empty+0x9f/0xd0
+> > > [ 1817.176001]  [<ffffffff81154e7b>] vfs_fstatat+0x4b/0x90
+> > > [ 1817.176001]  [<ffffffff81154f4f>] sys_newlstat+0x1f/0x50
+> > > [ 1817.176001]  [<ffffffff81448692>] system_call_fastpath+0x16/0x1b
+> > > 
+> > > It might be a separate bug, don't know for sure.
+> 
 
-Before people start complaining, I have a lot of queued patches I didn't
-get around to merging before the Christmas holidays, so I'll do that
-now.
+I rebased the patch on top of 3.2 and tested again with a bunch of
+debugging options set (PROVE_RCU, PROVE_LOCKING etc). Same results. CPU
+hotplug is a lot more reliable and less likely to hang but eventually
+gets into trouble.
 
-The patch is available here:
+Taking a closer look though, I don't think this is an RCU problem. It's
+just the messenger.
 
-master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git#scsi-misc
+> Do you get multiple RCU CPU stall-warning messages? 
 
-The short changelog is
+Yes, one roughly every 50000 jiffies or so (HZ=250).
 
-Andrew Vasquez (3):
-      qla2xxx: Ensure there's enough request-queue space for passthru IOCBs.
-      qla2xxx: Limit excessive DPC cycles.
-      qla2xxx: Only read requested mailbox registers.
+[  878.315029] INFO: rcu_sched detected stall on CPU 3 (t=16250 jiffies)
+[  878.315032] INFO: rcu_sched detected stall on CPU 6 (t=16250 jiffies)
+[ 1072.878669] INFO: rcu_sched detected stall on CPU 3 (t=65030 jiffies)
+[ 1072.878672] INFO: rcu_sched detected stall on CPU 6 (t=65030 jiffies)
+[ 1267.442308] INFO: rcu_sched detected stall on CPU 3 (t=113810 jiffies)
+[ 1267.442312] INFO: rcu_sched detected stall on CPU 6 (t=113810 jiffies)
+[ 1462.005948] INFO: rcu_sched detected stall on CPU 3 (t=162590 jiffies)
+[ 1462.005952] INFO: rcu_sched detected stall on CPU 6 (t=162590 jiffies)
+[ 1656.569588] INFO: rcu_sched detected stall on CPU 3 (t=211370 jiffies)
+[ 1656.569592] INFO: rcu_sched detected stall on CPU 6 (t=211370 jiffies)
+[ 1851.133229] INFO: rcu_sched detected stall on CPU 6 (t=260150 jiffies)
+[ 1851.133233] INFO: rcu_sched detected stall on CPU 3 (t=260150 jiffies)
+[ 2045.696868] INFO: rcu_sched detected stall on CPU 3 (t=308930 jiffies)
+[ 2045.696872] INFO: rcu_sched detected stall on CPU 6 (t=308930 jiffies)
+[ 2240.260508] INFO: rcu_sched detected stall on CPU 6 (t=357710 jiffies)
+[ 2240.260511] INFO: rcu_sched detected stall on CPU 3 (t=357710 jiffies)
 
-Chad Dupuis (3):
-      qla2xxx: Do not check for minidump when device state is QLA82XX_DEV_READY.
-      qla2xxx: Move initialization of some variables before iospace_config.
-      qla2xxx: Update to dynamic logging.
+> If so, it can
+> be helpful to look at how the stack frame changes over time.  These
+> stalls are normally caused by a loop in the kernel with preemption
+> disabled, though other scenarios can also cause them.
+> 
 
-Chandrakala Chavva (1):
-      mptsas: Add device ID for SAS1068_820XELP.
+The stacks are not changing much over time and start with this;
 
-Dan Carpenter (1):
-      be2iscsi: cleanup a min_t() call
+[  878.315029] INFO: rcu_sched detected stall on CPU 3 (t=16250 jiffies)
+[  878.315032] INFO: rcu_sched detected stall on CPU 6 (t=16250 jiffies)
+[  878.315036] Pid: 4422, comm: udevd Not tainted 3.2.0-guardipi-v1r6 #2
+[  878.315037] Call Trace:
+[  878.315038]  <IRQ>  [<ffffffff810a8b20>] __rcu_pending+0x8e/0x36c
+[  878.315052]  [<ffffffff81071b9a>] ? tick_nohz_handler+0xdc/0xdc
+[  878.315054]  [<ffffffff810a8f04>] rcu_check_callbacks+0x106/0x172
+[  878.315056]  [<ffffffff810528e0>] update_process_times+0x3f/0x76
+[  878.315058]  [<ffffffff81071c0a>] tick_sched_timer+0x70/0x9a
+[  878.315060]  [<ffffffff8106654e>] __run_hrtimer+0xc7/0x157
+[  878.315062]  [<ffffffff810667ec>] hrtimer_interrupt+0xba/0x18a
+[  878.315065]  [<ffffffff8134fbad>] smp_apic_timer_interrupt+0x86/0x99
+[  878.315067]  [<ffffffff8134dbf3>] apic_timer_interrupt+0x73/0x80
+[  878.315068]  <EOI>  [<ffffffff81345f34>] ? retint_restore_args+0x13/0x13
+[  878.315072]  [<ffffffff81139591>] ? __shrink_dcache_sb+0x7d/0x19f
+[  878.315075]  [<ffffffff81008c6e>] ? native_read_tsc+0x1/0x16
+[  878.315077]  [<ffffffff811df434>] ? delay_tsc+0x3a/0x82
+[  878.315079]  [<ffffffff811df4a1>] __delay+0xf/0x11
+[  878.315081]  [<ffffffff811e51e5>] do_raw_spin_lock+0xb5/0xf9
+[  878.315083]  [<ffffffff81345561>] _raw_spin_lock+0x39/0x3d
+[  878.315085]  [<ffffffff8113972a>] ? shrink_dcache_parent+0x77/0x28c
+[  878.315087]  [<ffffffff8113972a>] shrink_dcache_parent+0x77/0x28c
+[  878.315089]  [<ffffffff8113741d>] ? have_submounts+0x13e/0x1bd
+[  878.315092]  [<ffffffff81185970>] sysfs_dentry_revalidate+0xaa/0xbe
+[  878.315093]  [<ffffffff8112e731>] do_lookup+0x263/0x2fc
+[  878.315096]  [<ffffffff8119ca13>] ? security_inode_permission+0x1e/0x20
+[  878.315098]  [<ffffffff8112f33d>] link_path_walk+0x1e2/0x763
+[  878.315099]  [<ffffffff8112fd66>] path_lookupat+0x5c/0x61a
+[  878.315102]  [<ffffffff810f4810>] ? might_fault+0x89/0x8d
+[  878.315104]  [<ffffffff810f47c7>] ? might_fault+0x40/0x8d
+[  878.315105]  [<ffffffff8113034e>] do_path_lookup+0x2a/0xa8
+[  878.315107]  [<ffffffff81132a51>] user_path_at_empty+0x5d/0x97
+[  878.315109]  [<ffffffff8107447f>] ? trace_hardirqs_off+0xd/0xf
+[  878.315111]  [<ffffffff81345c4f>] ? _raw_spin_unlock_irqrestore+0x44/0x5a
+[  878.315112]  [<ffffffff81132a9c>] user_path_at+0x11/0x13
+[  878.315115]  [<ffffffff81128b64>] vfs_fstatat+0x44/0x71
+[  878.315117]  [<ffffffff81128bef>] vfs_lstat+0x1e/0x20
+[  878.315118]  [<ffffffff81128c10>] sys_newlstat+0x1f/0x40
+[  878.315120]  [<ffffffff810759a8>] ? trace_hardirqs_on_caller+0x12d/0x164
+[  878.315122]  [<ffffffff811e057e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[  878.315124]  [<ffffffff8107447f>] ? trace_hardirqs_off+0xd/0xf
+[  878.315126]  [<ffffffff8134d082>] system_call_fastpath+0x16/0x1b
+[  878.557790] Pid: 5704, comm: udevd Not tainted 3.2.0-guardipi-v1r6 #2
+[  878.564226] Call Trace:
+[  878.566677]  <IRQ>  [<ffffffff810a8b20>] __rcu_pending+0x8e/0x36c
+[  878.572783]  [<ffffffff81071b9a>] ? tick_nohz_handler+0xdc/0xdc
+[  878.578702]  [<ffffffff810a8f04>] rcu_check_callbacks+0x106/0x172
+[  878.584794]  [<ffffffff810528e0>] update_process_times+0x3f/0x76
+[  878.590798]  [<ffffffff81071c0a>] tick_sched_timer+0x70/0x9a
+[  878.596459]  [<ffffffff8106654e>] __run_hrtimer+0xc7/0x157
+[  878.601944]  [<ffffffff810667ec>] hrtimer_interrupt+0xba/0x18a
+[  878.607778]  [<ffffffff8134fbad>] smp_apic_timer_interrupt+0x86/0x99
+[  878.614129]  [<ffffffff8134dbf3>] apic_timer_interrupt+0x73/0x80
+[  878.620134]  <EOI>  [<ffffffff81051e66>] ? run_timer_softirq+0x49/0x32a
+[  878.626759]  [<ffffffff81139591>] ? __shrink_dcache_sb+0x7d/0x19f
+[  878.632851]  [<ffffffff811df402>] ? delay_tsc+0x8/0x82
+[  878.637988]  [<ffffffff811df4a1>] __delay+0xf/0x11
+[  878.642778]  [<ffffffff811e51e5>] do_raw_spin_lock+0xb5/0xf9
+[  878.648437]  [<ffffffff81345561>] _raw_spin_lock+0x39/0x3d
+[  878.653920]  [<ffffffff8113972a>] ? shrink_dcache_parent+0x77/0x28c
+[  878.660186]  [<ffffffff8113972a>] shrink_dcache_parent+0x77/0x28c
+[  878.666277]  [<ffffffff8113741d>] ? have_submounts+0x13e/0x1bd
+[  878.672107]  [<ffffffff81185970>] sysfs_dentry_revalidate+0xaa/0xbe
+[  878.678372]  [<ffffffff8112e731>] do_lookup+0x263/0x2fc
+[  878.683596]  [<ffffffff8119ca13>] ? security_inode_permission+0x1e/0x20
+[  878.690207]  [<ffffffff8112f33d>] link_path_walk+0x1e2/0x763
+[  878.695866]  [<ffffffff8112fd66>] path_lookupat+0x5c/0x61a
+[  878.701350]  [<ffffffff810f4810>] ? might_fault+0x89/0x8d
+[  878.706747]  [<ffffffff810f47c7>] ? might_fault+0x40/0x8d
+[  878.712145]  [<ffffffff8113034e>] do_path_lookup+0x2a/0xa8
+[  878.717630]  [<ffffffff81132a51>] user_path_at_empty+0x5d/0x97
+[  878.723463]  [<ffffffff8107447f>] ? trace_hardirqs_off+0xd/0xf
+[  878.729295]  [<ffffffff81345c4f>] ? _raw_spin_unlock_irqrestore+0x44/0x5a
+[  878.736080]  [<ffffffff81132a9c>] user_path_at+0x11/0x13
+[  878.741391]  [<ffffffff81128b64>] vfs_fstatat+0x44/0x71
+[  878.746616]  [<ffffffff81128bef>] vfs_lstat+0x1e/0x20
+[  878.751668]  [<ffffffff81128c10>] sys_newlstat+0x1f/0x40
+[  878.756981]  [<ffffffff810759a8>] ? trace_hardirqs_on_caller+0x12d/0x164
+[  878.763678]  [<ffffffff811e057e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[  878.770116]  [<ffffffff8107447f>] ? trace_hardirqs_off+0xd/0xf
+[  878.775949]  [<ffffffff8134d082>] system_call_fastpath+0x16/0x1b
+[  908.769486] BUG: spinlock lockup on CPU#6, udevd/4422
+[  908.774547]  lock: ffff8803b4c701c8, .magic: dead4ead, .owner: udevd/5709, .owner_cpu: 4
 
-Eddie Wai (1):
-      bnx2i: Fixed kernel panic caused by unprotected task->sc->request deref
+Seeing that the owner was CPU 4, I found earlier in the log
 
-Ferenc Wagner (1):
-      fusion: ensure NUL-termination of MptCallbacksName elements
+[  815.244051] BUG: spinlock lockup on CPU#4, udevd/5709
+[  815.249103]  lock: ffff8803b4c701c8, .magic: dead4ead, .owner: udevd/5709, .owner_cpu: 4
+[  815.258430] Pid: 5709, comm: udevd Not tainted 3.2.0-guardipi-v1r6 #2
+[  815.264866] Call Trace:
+[  815.267329]  [<ffffffff811e507d>] spin_dump+0x88/0x8d
+[  815.272388]  [<ffffffff811e5206>] do_raw_spin_lock+0xd6/0xf9
+[  815.278062]  [<ffffffff81345561>] ? _raw_spin_lock+0x39/0x3d
+[  815.283720]  [<ffffffff8113972a>] ? shrink_dcache_parent+0x77/0x28c
+[  815.289986]  [<ffffffff8113972a>] ? shrink_dcache_parent+0x77/0x28c
+[  815.296249]  [<ffffffff8113741d>] ? have_submounts+0x13e/0x1bd
+[  815.302080]  [<ffffffff81185970>] ? sysfs_dentry_revalidate+0xaa/0xbe
+[  815.308515]  [<ffffffff8112e731>] ? do_lookup+0x263/0x2fc
+[  815.313915]  [<ffffffff8119ca13>] ? security_inode_permission+0x1e/0x20
+[  815.320524]  [<ffffffff8112f33d>] ? link_path_walk+0x1e2/0x763
+[  815.326357]  [<ffffffff8112fd66>] ? path_lookupat+0x5c/0x61a
+[  815.332014]  [<ffffffff810f4810>] ? might_fault+0x89/0x8d
+[  815.337410]  [<ffffffff810f47c7>] ? might_fault+0x40/0x8d
+[  815.342807]  [<ffffffff8113034e>] ? do_path_lookup+0x2a/0xa8
+[  815.348465]  [<ffffffff81132a51>] ? user_path_at_empty+0x5d/0x97
+[  815.354474]  [<ffffffff8107447f>] ? trace_hardirqs_off+0xd/0xf
+[  815.360303]  [<ffffffff81345c4f>] ? _raw_spin_unlock_irqrestore+0x44/0x5a
+[  815.367085]  [<ffffffff81132a9c>] ? user_path_at+0x11/0x13
+[  815.372569]  [<ffffffff81128b64>] ? vfs_fstatat+0x44/0x71
+[  815.377965]  [<ffffffff81128bef>] ? vfs_lstat+0x1e/0x20
+[  815.383192]  [<ffffffff81128c10>] ? sys_newlstat+0x1f/0x40
+[  815.388676]  [<ffffffff810759a8>] ? trace_hardirqs_on_caller+0x12d/0x164
+[  815.395373]  [<ffffffff811e057e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[  815.401811]  [<ffffffff8107447f>] ? trace_hardirqs_off+0xd/0xf
+[  815.407642]  [<ffffffff8134d082>] ? system_call_fastpath+0x16/0x1b
 
-Geert Uytterhoeven (1):
-      mac_scsi: Remove obsolete IRQ_FLG_* users
+The trace is not particularly useful but it looks like it
+recursively locked even though the message doesn't say that.  If the
+shrink_dcache_parent() entry is accurate, that corresponds to this
 
-Giridhar Malavali (8):
-      qla2xxx: Consolidated IOCB processing routines.
-      qla2xxx: Process marker IOCB request on request queue 0.
-      qla2xxx: Added a new entry to ISP specific function pointers structure.
-      qla2xxx: Corrected the display of firmware dump availability for ISP82xx.
-      qla2xxx: Corrected the default setting of the help text of Minidump capture mask.
-      qla2xxx: Correct report-id acquisition check
-      qla2xxx: Fix to include FCE data as part of dump.
-      qla2xxx: Proper cleanup of pass through commands when firmware returns error.
+static int select_parent(struct dentry * parent)
+{
+        struct dentry *this_parent;
+        struct list_head *next;
+        unsigned seq;
+        int found = 0;
+        int locked = 0;
 
-James Smart (7):
-      lpfc 8.3.28: Update driver version to 8.3.28
-      lpfc 8.3.28: Add Loopback support for SLI4 adapters
-      lpfc 8.3.28: Critical Miscellaneous fixes
-      Lpfc 8.3.28: FC and SCSI Discovery Fixes
-      lpfc 8.3.28: Add support for ABTS failure handling
-      lpfc 8.3.28: SLI fixes and added SLI4 support
-      lpfc 8.3.28: Miscellaneous fixes in sysfs and mgmt interfaces
+        seq = read_seqbegin(&rename_lock);
+again: 
+        this_parent = parent;
+        spin_lock(&this_parent->d_lock); <----- HERE
 
-Jesper Juhl (1):
-      qla2xxx: remove redundant semicolon
+I'm not overly clear on how VFS locking is meant to work but it almost
+looks as if the last reference to an inode is being dropped during a
+sysfs path lookup. Is that meant to happen?
 
-Jing Huang (2):
-      bfa: fix endian and bit field check bug
-      bfa: fix formating and checkpatch issues
+Judging by sysfs_dentry_revalidate() - possibly not. It looks like
+we must have reached out_bad: and called shrink_dcache_parent() on a
+dentry that was already locked by the running process. Not sure how
+this could have happened - Greg, does this look familiar?
 
-Joe Carnuccio (1):
-      qla2xxx: Corrections to returned sysfs error codes.
-
-Joe Perches (2):
-      qla2xxx: Make the logging functions verify their arguments and fixed the current broken uses as appropriate.
-      qla2xxx: Use less stack to emit logging messages.
-
-Mike Christie (1):
-      iscsi class: export pid of process that created
-
-Mike Hernandez (1):
-      qla4xxx: Fix CPU lockups when ql4xdontresethba set
-
-Moger, Babu (4):
-      scsi_dh: code cleanup and remove the references to scsi_dev_info
-      scsi_dh_rdac: Adding the match function for rdac device handler
-      scsi_dh_hp_sw: Adding the match function for hp_sw device handler
-      scsi_dh_emc: Add a match function for emc device handler
-
-Nilesh Javali (1):
-      qla4xxx: Fix the IDC locking mechanism
-
-Roland Dreier (3):
-      mpt2sas: Remove unused duplicate diag_buffer_enable param
-      mpt2sas: Fix possible integer truncation of cpu_count
-      mpt2sas: Fix leak on mpt2sas_base_attach() error path
-
-Sarang Radke (2):
-      qla4xxx: Don't recover adapter if device state is FAILED
-      qla4xxx: fix call trace on rmmod with ql4xdontresethba=1
-
-Saurav Kashyap (1):
-      qla2xxx: Implement FCP priority tagging for 82xx adapters.
-
-Shyam Sunder (1):
-      qla4xxx: check for FW alive before calling chip_reset
-
-Stephen M. Cameron (1):
-      hpsa: Add IRQF_SHARED back in for the non-MSI(X) interrupt handler
-
-Tomas Henzl (1):
-      hpsa: add the Smart Array 5i to the kdump blacklist
-
-Vikas Chaudhary (4):
-      qla4xxx: Update driver version to 5.02.00-k10
-      qla4xxx: Fix qla4xxx_dump_buffer to dump buffer correctly
-      qla4xxx: Wait for disable_acb before doing set_acb
-      qla4xxx: Perform context resets in case of context failures.
-
-nagalakshmi.nandigama@lsi.com (16):
-      mpt2sas: Removed redundant calling of _scsih_probe_devices() from _scsih_probe
-      mpt2sas : Bump driver vesion to 12.100.00.00
-      mpt2sas : Fix for memory allocation error for large host credits
-      mpt2sas: Do not retry a timed out direct IO for warpdrive
-      mpt2sas: Release spinlock for the raid device list before blocking it
-      mpt2sas: MPI next revision header update
-      mpt2sas: Added support for customer specific branding
-      mpt2sas: Increase max transfer support from 4MB to 16MB
-      mpt2sas: Support for greater than 2TB capacity WarpDrive
-      mpt2sas: Bump driver version to 11.100.00.00
-      mpt2sas: Rearrange the the code so that the completion queues are initialized prior to sending the request to controller firmware
-      mpt2sas: Do not set sas_device->starget to NULL from the slave_destroy callback when all the LUNS have been deleted
-      mpt2sas: MPI next revision header update
-      mpt2sas: Adding support for customer specific branding
-      mpt2sas: When IOs are terminated, update the result to DID_SOFT_ERROR to avoid infinite resets
-      mpt2sas: Better handling DEAD IOC (PCI-E LInk down) error condition
-
-And the diffstat:
-
- drivers/message/fusion/lsi/mpi_cnfg.h       |    1 +
- drivers/message/fusion/mptbase.c            |    7 +-
- drivers/message/fusion/mptbase.h            |    1 +
- drivers/message/fusion/mptsas.c             |    2 +
- drivers/scsi/be2iscsi/be_main.c             |    5 +-
- drivers/scsi/bfa/bfa_defs.h                 |    4 +-
- drivers/scsi/bfa/bfa_defs_svc.h             |  437 +++++++++--------
- drivers/scsi/bfa/bfa_ioc.c                  |    6 +-
- drivers/scsi/bfa/bfad_debugfs.c             |    3 +-
- drivers/scsi/bnx2i/bnx2i_hwi.c              |    5 +-
- drivers/scsi/device_handler/scsi_dh.c       |   58 ---
- drivers/scsi/device_handler/scsi_dh_emc.c   |   19 +
- drivers/scsi/device_handler/scsi_dh_hp_sw.c |   19 +
- drivers/scsi/device_handler/scsi_dh_rdac.c  |   19 +
- drivers/scsi/hpsa.c                         |    6 +-
- drivers/scsi/lpfc/lpfc.h                    |   14 -
- drivers/scsi/lpfc/lpfc_attr.c               |  436 ++++++-----------
- drivers/scsi/lpfc/lpfc_bsg.c                |  432 +++++++++++++----
- drivers/scsi/lpfc/lpfc_bsg.h                |    3 +-
- drivers/scsi/lpfc/lpfc_compat.h             |    5 +-
- drivers/scsi/lpfc/lpfc_crtn.h               |   13 +-
- drivers/scsi/lpfc/lpfc_debugfs.c            |  172 +++++---
- drivers/scsi/lpfc/lpfc_els.c                |  214 +++++----
- drivers/scsi/lpfc/lpfc_hbadisc.c            |  157 +++++--
- drivers/scsi/lpfc/lpfc_hw.h                 |   21 +-
- drivers/scsi/lpfc/lpfc_hw4.h                |   11 +-
- drivers/scsi/lpfc/lpfc_init.c               |  338 +++++++++-----
- drivers/scsi/lpfc/lpfc_mbox.c               |   25 +-
- drivers/scsi/lpfc/lpfc_mem.c                |    4 +-
- drivers/scsi/lpfc/lpfc_nportdisc.c          |   10 +-
- drivers/scsi/lpfc/lpfc_scsi.c               |   17 +-
- drivers/scsi/lpfc/lpfc_scsi.h               |    5 +-
- drivers/scsi/lpfc/lpfc_sli.c                |  704 +++++++++++++++++++--------
- drivers/scsi/lpfc/lpfc_sli4.h               |   11 +-
- drivers/scsi/lpfc/lpfc_version.h            |    2 +-
- drivers/scsi/lpfc/lpfc_vport.c              |    6 +-
- drivers/scsi/mac_scsi.c                     |    3 +-
- drivers/scsi/mpt2sas/mpi/mpi2.h             |   10 +-
- drivers/scsi/mpt2sas/mpi/mpi2_cnfg.h        |   28 +-
- drivers/scsi/mpt2sas/mpi/mpi2_ioc.h         |   49 ++-
- drivers/scsi/mpt2sas/mpi/mpi2_raid.h        |   67 +++-
- drivers/scsi/mpt2sas/mpi/mpi2_tool.h        |    9 +-
- drivers/scsi/mpt2sas/mpt2sas_base.c         |  205 +++++----
- drivers/scsi/mpt2sas/mpt2sas_base.h         |   26 +-
- drivers/scsi/mpt2sas/mpt2sas_ctl.c          |    8 +-
- drivers/scsi/mpt2sas/mpt2sas_scsih.c        |  168 ++++---
- drivers/scsi/mpt2sas/mpt2sas_transport.c    |    9 +-
- drivers/scsi/qla2xxx/qla_attr.c             |   10 +-
- drivers/scsi/qla2xxx/qla_bsg.c              |   20 +-
- drivers/scsi/qla2xxx/qla_dbg.c              |  310 ++++++------
- drivers/scsi/qla2xxx/qla_dbg.h              |   19 +-
- drivers/scsi/qla2xxx/qla_def.h              |    6 +-
- drivers/scsi/qla2xxx/qla_gbl.h              |    2 +-
- drivers/scsi/qla2xxx/qla_gs.c               |    2 +-
- drivers/scsi/qla2xxx/qla_init.c             |   95 ++--
- drivers/scsi/qla2xxx/qla_iocb.c             |  641 ++++++++++++++++++++----
- drivers/scsi/qla2xxx/qla_isr.c              |  253 ++++++----
- drivers/scsi/qla2xxx/qla_mbx.c              |    2 +-
- drivers/scsi/qla2xxx/qla_nx.c               |  512 +-------------------
- drivers/scsi/qla2xxx/qla_os.c               |  363 +++++++-------
- drivers/scsi/qla2xxx/qla_sup.c              |    5 +-
- drivers/scsi/qla4xxx/ql4_dbg.c              |    6 +-
- drivers/scsi/qla4xxx/ql4_def.h              |    1 +
- drivers/scsi/qla4xxx/ql4_isr.c              |   30 +-
- drivers/scsi/qla4xxx/ql4_nx.c               |   23 +-
- drivers/scsi/qla4xxx/ql4_os.c               |  127 ++++-
- drivers/scsi/qla4xxx/ql4_version.h          |    2 +-
- drivers/scsi/scsi_priv.h                    |    1 -
- drivers/scsi/scsi_transport_iscsi.c         |   21 +-
- include/scsi/scsi_device.h                  |    1 -
- include/scsi/scsi_transport_iscsi.h         |    5 +
- 71 files changed, 3627 insertions(+), 2604 deletions(-)
-
-James
-
-
+-- 
+Mel Gorman
+SUSE Labs
