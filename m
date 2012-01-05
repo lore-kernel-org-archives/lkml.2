@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab2AEDu3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 22:50:29 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34876 "EHLO
+	id S932371Ab2AEDu7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 22:50:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63363 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932285Ab2AEDs1 (ORCPT
+	with ESMTP id S932276Ab2AEDs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jan 2012 22:48:27 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=DORMkN_iJMoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=taykJ6Z7e8FN82nOYiUA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=grPy5k4eAr-chNMA:21 a=Jd7hyYFukoDyrqi3:21 a=qIYj9Wx2vn7_DHVbAoIA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=zqWe77YZEdMA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=OvctI5GLiqHzMLXBzbMA:9 a=vD2VAKx01p6bn-MT_vIA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=tU3vplRDN1yW7w2_:21 a=vvme4PbLWBaAWuVX:21 a=dKs_TYUcxuJFYrtBlfsA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120105034825.504239431@goodmis.org>
+Message-Id: <20120105034825.814806721@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Wed, 04 Jan 2012 22:48:10 -0500
+Date: Wed, 04 Jan 2012 22:48:11 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 15/20] ktest: Change initialization of defaults hash to perl format
+Subject: [PATCH 16/20] ktest: Have all values be set by defaults
 References: <20120105034755.793909214@goodmis.org>
-Content-Disposition: inline; filename=0015-ktest-Change-initialization-of-defaults-hash-to-perl.patch
+Content-Disposition: inline; filename=0016-ktest-Have-all-values-be-set-by-defaults.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,106 +30,225 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-Initializing each default value by specifying the hash name is
-ugly. This is one of the rare cases that the "perl way" is actually
-much cleaner and easier to read.
+Currently the patchcheck, bisect, and config_bisect variables
+are only able to be set per test. You can not set a default
+value for them.
+
+By letting default values be set, it makes some config files
+a bit easier, and also makes it easier to find typos in the
+option names.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |   71 +++++++++++++++++++++-----------------=
+ tools/testing/ktest/ktest.pl |   86 ++++++++++++++++++++++++++++----------=
 ---
- 1 files changed, 36 insertions(+), 35 deletions(-)
+ 1 files changed, 59 insertions(+), 27 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index ff21e92..85c5d94 100755
+index 85c5d94..5ba9ad4 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -18,46 +18,47 @@ $| =3D 1;
- my %opt;
- my %repeat_tests;
- my %repeats;
--my %default;
+@@ -103,7 +103,7 @@ my $output_minconfig;
+ my $ignore_config;
+ my $addconfig;
+ my $in_bisect =3D 0;
+-my $bisect_bad =3D "";
++my $bisect_bad_commit =3D "";
+ my $reverse_bisect;
+ my $bisect_manual;
+ my $bisect_skip;
+@@ -140,10 +140,27 @@ my $stop_after_failure;
+ my $stop_test_after;
+ my $build_target;
+ my $target_image;
++my $checkout;
+ my $localversion;
+ my $iteration =3D 0;
+ my $successes =3D 0;
 =20
- #default opts
--$default{"NUM_TESTS"}		=3D 1;
--$default{"TEST_TYPE"}		=3D "build";
--$default{"BUILD_TYPE"}		=3D "randconfig";
--$default{"MAKE_CMD"}		=3D "make";
--$default{"TIMEOUT"}		=3D 120;
--$default{"TMP_DIR"}		=3D "/tmp/ktest/\${MACHINE}";
--$default{"SLEEP_TIME"}		=3D 60;	# sleep time between tests
--$default{"BUILD_NOCLEAN"}	=3D 0;
--$default{"REBOOT_ON_ERROR"}	=3D 0;
--$default{"POWEROFF_ON_ERROR"}	=3D 0;
--$default{"REBOOT_ON_SUCCESS"}	=3D 1;
--$default{"POWEROFF_ON_SUCCESS"}	=3D 0;
--$default{"BUILD_OPTIONS"}	=3D "";
--$default{"BISECT_SLEEP_TIME"}	=3D 60;   # sleep time between bisects
--$default{"PATCHCHECK_SLEEP_TIME"} =3D 60; # sleep time between patch checks
--$default{"CLEAR_LOG"}		=3D 0;
--$default{"BISECT_MANUAL"}	=3D 0;
--$default{"BISECT_SKIP"}		=3D 1;
--$default{"SUCCESS_LINE"}	=3D "login:";
--$default{"DETECT_TRIPLE_FAULT"} =3D 1;
--$default{"NO_INSTALL"}		=3D 0;
--$default{"BOOTED_TIMEOUT"}	=3D 1;
--$default{"DIE_ON_FAILURE"}	=3D 1;
--$default{"SSH_EXEC"}		=3D "ssh \$SSH_USER\@\$MACHINE \$SSH_COMMAND";
--$default{"SCP_TO_TARGET"}	=3D "scp \$SRC_FILE \$SSH_USER\@\$MACHINE:\$DST_=
-FILE";
--$default{"REBOOT"}		=3D "ssh \$SSH_USER\@\$MACHINE reboot";
--$default{"STOP_AFTER_SUCCESS"}	=3D 10;
--$default{"STOP_AFTER_FAILURE"}	=3D 60;
--$default{"STOP_TEST_AFTER"}	=3D 600;
-+my %default =3D (
-+    "NUM_TESTS"			=3D> 1,
-+    "TEST_TYPE"			=3D> "build",
-+    "BUILD_TYPE"		=3D> "randconfig",
-+    "MAKE_CMD"			=3D> "make",
-+    "TIMEOUT"			=3D> 120,
-+    "TMP_DIR"			=3D> "/tmp/ktest/\${MACHINE}",
-+    "SLEEP_TIME"		=3D> 60,	# sleep time between tests
-+    "BUILD_NOCLEAN"		=3D> 0,
-+    "REBOOT_ON_ERROR"		=3D> 0,
-+    "POWEROFF_ON_ERROR"		=3D> 0,
-+    "REBOOT_ON_SUCCESS"		=3D> 1,
-+    "POWEROFF_ON_SUCCESS"	=3D> 0,
-+    "BUILD_OPTIONS"		=3D> "",
-+    "BISECT_SLEEP_TIME"		=3D> 60,   # sleep time between bisects
-+    "PATCHCHECK_SLEEP_TIME"	=3D> 60, # sleep time between patch checks
-+    "CLEAR_LOG"			=3D> 0,
-+    "BISECT_MANUAL"		=3D> 0,
-+    "BISECT_SKIP"		=3D> 1,
-+    "SUCCESS_LINE"		=3D> "login:",
-+    "DETECT_TRIPLE_FAULT"	=3D> 1,
-+    "NO_INSTALL"		=3D> 0,
-+    "BOOTED_TIMEOUT"		=3D> 1,
-+    "DIE_ON_FAILURE"		=3D> 1,
-+    "SSH_EXEC"			=3D> "ssh \$SSH_USER\@\$MACHINE \$SSH_COMMAND",
-+    "SCP_TO_TARGET"		=3D> "scp \$SRC_FILE \$SSH_USER\@\$MACHINE:\$DST_FILE=
-",
-+    "REBOOT"			=3D> "ssh \$SSH_USER\@\$MACHINE reboot",
-+    "STOP_AFTER_SUCCESS"	=3D> 10,
-+    "STOP_AFTER_FAILURE"	=3D> 60,
-+    "STOP_TEST_AFTER"		=3D> 600,
++my $bisect_good;
++my $bisect_bad;
++my $bisect_type;
++my $bisect_start;
++my $bisect_replay;
++my $bisect_files;
++my $bisect_reverse;
++my $bisect_check;
++
++my $config_bisect;
++my $config_bisect_type;
++
++my $patchcheck_type;
++my $patchcheck_start;
++my $patchcheck_end;
++
+ # set when a test is something other that just building or install
+ # which would require more options.
+ my $buildonly =3D 1;
+@@ -1940,7 +1957,7 @@ sub run_git_bisect {
+     if ($output =3D~ m/^(Bisecting: .*\(roughly \d+ steps?\))\s+\[([[:xdig=
+it:]]+)\]/) {
+ 	doprint "$1 [$2]\n";
+     } elsif ($output =3D~ m/^([[:xdigit:]]+) is the first bad commit/) {
+-	$bisect_bad =3D $1;
++	$bisect_bad_commit =3D $1;
+ 	doprint "Found bad commit... $1\n";
+ 	return 0;
+     } else {
+@@ -2050,16 +2067,16 @@ sub bisect {
 =20
- # required, and we will ask users if they don't have them but we keep the =
-default
- # value something that is common.
--$default{"REBOOT_TYPE"}		=3D "grub";
--$default{"LOCALVERSION"}	=3D "-test";
--$default{"SSH_USER"}		=3D "root";
--$default{"BUILD_TARGET"} 	=3D "arch/x86/boot/bzImage";
--$default{"TARGET_IMAGE"}	=3D "/boot/vmlinuz-test";
-+    "REBOOT_TYPE"		=3D> "grub",
-+    "LOCALVERSION"		=3D> "-test",
-+    "SSH_USER"			=3D> "root",
-+    "BUILD_TARGET"	 	=3D> "arch/x86/boot/bzImage",
-+    "TARGET_IMAGE"		=3D> "/boot/vmlinuz-test",
-+);
+     my $result;
 =20
- my $ktest_config;
- my $version;
+-    die "BISECT_GOOD[$i] not defined\n"	if (!defined($opt{"BISECT_GOOD[$i]=
+"}));
+-    die "BISECT_BAD[$i] not defined\n"	if (!defined($opt{"BISECT_BAD[$i]"}=
+));
+-    die "BISECT_TYPE[$i] not defined\n"	if (!defined($opt{"BISECT_TYPE[$i]=
+"}));
++    die "BISECT_GOOD[$i] not defined\n"	if (!defined($bisect_good));
++    die "BISECT_BAD[$i] not defined\n"	if (!defined($bisect_bad));
++    die "BISECT_TYPE[$i] not defined\n"	if (!defined($bisect_type));
+=20
+-    my $good =3D $opt{"BISECT_GOOD[$i]"};
+-    my $bad =3D $opt{"BISECT_BAD[$i]"};
+-    my $type =3D $opt{"BISECT_TYPE[$i]"};
+-    my $start =3D $opt{"BISECT_START[$i]"};
+-    my $replay =3D $opt{"BISECT_REPLAY[$i]"};
+-    my $start_files =3D $opt{"BISECT_FILES[$i]"};
++    my $good =3D $bisect_good;
++    my $bad =3D $bisect_bad;
++    my $type =3D $bisect_type;
++    my $start =3D $bisect_start;
++    my $replay =3D $bisect_replay;
++    my $start_files =3D $bisect_files;
+=20
+     if (defined($start_files)) {
+ 	$start_files =3D " -- " . $start_files;
+@@ -2071,8 +2088,7 @@ sub bisect {
+     $good =3D get_sha1($good);
+     $bad =3D get_sha1($bad);
+=20
+-    if (defined($opt{"BISECT_REVERSE[$i]"}) &&
+-	$opt{"BISECT_REVERSE[$i]"} =3D=3D 1) {
++    if (defined($bisect_reverse) && $bisect_reverse =3D=3D 1) {
+ 	doprint "Performing a reverse bisect (bad is good, good is bad!)\n";
+ 	$reverse_bisect =3D 1;
+     } else {
+@@ -2087,7 +2103,7 @@ sub bisect {
+     # Check if a bisect was running
+     my $bisect_start_file =3D "$builddir/.git/BISECT_START";
+=20
+-    my $check =3D $opt{"BISECT_CHECK[$i]"};
++    my $check =3D $bisect_check;
+     my $do_check =3D defined($check) && $check ne "0";
+=20
+     if ( -f $bisect_start_file ) {
+@@ -2173,7 +2189,7 @@ sub bisect {
+     run_command "git bisect reset" or
+ 	dodie "could not reset git bisect";
+=20
+-    doprint "Bad commit was [$bisect_bad]\n";
++    doprint "Bad commit was [$bisect_bad_commit]\n";
+=20
+     success $i;
+ }
+@@ -2329,7 +2345,7 @@ sub run_config_bisect {
+     }
+=20
+     doprint "***** RUN TEST ***\n";
+-    my $type =3D $opt{"CONFIG_BISECT_TYPE[$iteration]"};
++    my $type =3D $config_bisect_type;
+     my $ret;
+     my %current_config;
+=20
+@@ -2433,7 +2449,7 @@ sub run_config_bisect {
+ sub config_bisect {
+     my ($i) =3D @_;
+=20
+-    my $start_config =3D $opt{"CONFIG_BISECT[$i]"};
++    my $start_config =3D $config_bisect;
+=20
+     my $tmpconfig =3D "$tmpdir/use_config";
+=20
+@@ -2553,22 +2569,22 @@ sub patchcheck {
+     my ($i) =3D @_;
+=20
+     die "PATCHCHECK_START[$i] not defined\n"
+-	if (!defined($opt{"PATCHCHECK_START[$i]"}));
++	if (!defined($patchcheck_start));
+     die "PATCHCHECK_TYPE[$i] not defined\n"
+-	if (!defined($opt{"PATCHCHECK_TYPE[$i]"}));
++	if (!defined($patchcheck_type));
+=20
+-    my $start =3D $opt{"PATCHCHECK_START[$i]"};
++    my $start =3D $patchcheck_start;
+=20
+     my $end =3D "HEAD";
+-    if (defined($opt{"PATCHCHECK_END[$i]"})) {
+-	$end =3D $opt{"PATCHCHECK_END[$i]"};
++    if (defined($patchcheck_end)) {
++	$end =3D $patchcheck_end;
+     }
+=20
+     # Get the true sha1's since we can use things like HEAD~3
+     $start =3D get_sha1($start);
+     $end =3D get_sha1($end);
+=20
+-    my $type =3D $opt{"PATCHCHECK_TYPE[$i]"};
++    my $type =3D $patchcheck_type;
+=20
+     # Can't have a test without having a test to run
+     if ($type eq "test" && !defined($run_test)) {
+@@ -3366,9 +3382,26 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+     $build_target =3D set_test_option("BUILD_TARGET", $i);
+     $ssh_exec =3D set_test_option("SSH_EXEC", $i);
+     $scp_to_target =3D set_test_option("SCP_TO_TARGET", $i);
++    $checkout =3D set_test_option("CHECKOUT", $i);
+     $target_image =3D set_test_option("TARGET_IMAGE", $i);
+     $localversion =3D set_test_option("LOCALVERSION", $i);
+=20
++    $bisect_good =3D set_test_option("BISECT_GOOD", $i);
++    $bisect_bad =3D set_test_option("BISECT_BAD", $i);
++    $bisect_type =3D set_test_option("BISECT_TYPE", $i);
++    $bisect_start =3D set_test_option("BISECT_START", $i);
++    $bisect_replay =3D set_test_option("BISECT_REPLAY", $i);
++    $bisect_files =3D set_test_option("BISECT_FILES", $i);
++    $bisect_reverse =3D set_test_option("BISECT_REVERSE", $i);
++    $bisect_check =3D set_test_option("BISECT_CHECK", $i);
++
++    $config_bisect =3D set_test_option("CONFIG_BISECT", $i);
++    $config_bisect_type =3D set_test_option("CONFIG_BISECT_TYPE", $i);
++
++    $patchcheck_type =3D set_test_option("PATCHCHECK_TYPE", $i);
++    $patchcheck_start =3D set_test_option("PATCHCHECK_START", $i);
++    $patchcheck_end =3D set_test_option("PATCHCHECK_END", $i);
++
+     $start_minconfig_defined =3D 1;
+=20
+     if (!defined($start_minconfig)) {
+@@ -3405,11 +3438,11 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+=20
+     my $run_type =3D $build_type;
+     if ($test_type eq "patchcheck") {
+-	$run_type =3D $opt{"PATCHCHECK_TYPE[$i]"};
++	$run_type =3D $patchcheck_type;
+     } elsif ($test_type eq "bisect") {
+-	$run_type =3D $opt{"BISECT_TYPE[$i]"};
++	$run_type =3D $bisect_type;
+     } elsif ($test_type eq "config_bisect") {
+-	$run_type =3D $opt{"CONFIG_BISECT_TYPE[$i]"};
++	$run_type =3D $config_bisect_type;
+     }
+=20
+     if ($test_type eq "make_min_config") {
+@@ -3441,7 +3474,6 @@ for (my $i =3D 1; $i <=3D $opt{"NUM_TESTS"}; $i++) {
+ 	$minconfig =3D "$tmpdir/add_config";
+     }
+=20
+-    my $checkout =3D $opt{"CHECKOUT[$i]"};
+     if (defined($checkout)) {
+ 	run_command "git checkout $checkout" or
+ 	    die "failed to checkout $checkout";
 --=20
 1.7.7.3
 
@@ -142,19 +261,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPBR2JAAoJEIy3vGnGbaoADFIP/1T2jXdP7TVkxyuW2vuV+SuU
-EQjPiAr16UyZUxy8V86hJva6IXwOsoKgQlSJOJ9hBggxFZzNL4JCpNQtPKiNFZiC
-ELWUTlqMFFqX6MJl4NBlmCnBUdEljRegcxsvGebR0F82peqaOCPrSbn4ocR0MJrL
-4fAFibr8TgaNU8PMzQO9Zuv9NaU9CETX/KEc0FzLhP4HBiFRL0eeUG4wI+skcv8y
-NTK0fLr2Juay1/bA+avRq6Rloeu5vZOREXIdL82wzz5U5bMJkZi2ypMgzNrIlIuz
-4NTc6cm3wnUECbPoNiYb2rl7MRxe4fIa1LuY4gzilzIxEWwqphR1zgJRbQ2nyNnS
-14+lZiuOaMnR3r53N+/jfU0hNViUISYgbN/32DuaSaiEl2f7l3AC7ZKgcQTGs4mZ
-zuuNJnI4tzaU1tqqjivs2ZEOdYYoCz4tWcPwjoGQfpnbv6Z410ApMhtJGfIgk6zC
-uHDiQpSSQcmPGI30NcdNvRC3ERADxjMrBhjzUhejNlRXESG4Zh7wtFJ6uBWcY2tE
-O6hTtQ0nhnE1xO8MxQVQmxbyUnzIsB9KQMEQsWlDUnRkqqgLgsiWXlMzUcTkDIr8
-VuUpv2zvqRFojebLt8oo10xP4pJmFzU/pRge9COvh2clzo2RaOBrrwRlWZgUcare
-JTyO35Txp+c1EVIqejzN
-=WP1h
+iQIcBAABAgAGBQJPBR2JAAoJEIy3vGnGbaoASBwQAMLpI4I9+R6XYaNva5CvXRxb
+zM9AQE8osFRITYulWsODvVnFA7gUZZhym95Gv7QIkeFnM5lREEBRZxvN1g7rcWnI
+giDU1pYDMNdF9o+eLK2S/CQYt/HS39ybcag61IZgDuN5plIHwypxbJwZaVFjST4T
+1B3bIoqr4buinWm/dDidf2dfbTUVDGv15Rn9h+tgksI2gOehh16Bx4EExr0mxFzi
+zz7TZtIbdU2jjPfIAlIUMmvTSDtMjXUE8543Wmel0BoZ+x+BFAjhOKkM8GFVM1QA
+WWSKc7+5zGTPV53sXPmhH3aGA/omATPWhYUSj7jIzfDmWTd8467Yi2mvmP32gW4p
+/d4NkBdLUoeo/t6PXXiFe5icsZ6Wk//TJL51SxRCsuy7Czbv3U+bGkLaPCZUbVng
+rQzFBAU9J27PRvIc2io7VUGfit84LrnyamF3/SS/8NM9B7nRk785EMfe7JXFVRJK
+S52bX07DRB8LUnC3WEPmCssCIFqpjFOcfSxyluj7w9G9/PSw5qWjU1mYBmsLLVYX
+5l6Ve09F5jEWBT+uzoKZVJp2qkIhEnuDV1jdtpSPWMcNbOFL82PgX78RscYBPJiB
+M8tcRIv9Wt5npGt98/fdzl6brwFNU9rTr4YIAWftGlUFgOQKqfbRyL7Jg7RQKe2q
+LRIvEOnzpgCP5Mxt4h+C
+=3AqN
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
