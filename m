@@ -1,89 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329Ab2AEUlB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:41:01 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:36447 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234Ab2AEUlA (ORCPT
+	id S932736Ab2AEUp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:45:57 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:35734
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234Ab2AEUp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:41:00 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Tejun Heo <tj@kernel.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Alan Stern <stern@rowland.harvard.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: Revoking filesystems [was Re: Sysfs attributes racing with unregistration]
-References: <m1ehvecf23.fsf@fess.ebiederm.org>
-	<Pine.LNX.4.44L0.1201051133490.1434-100000@iolanthe.rowland.org>
-	<20120105182752.GC26382@thunk.org> <20120105183602.GE18486@google.com>
-Date: Thu, 05 Jan 2012 12:43:11 -0800
-In-Reply-To: <20120105183602.GE18486@google.com> (Tejun Heo's message of "Thu,
-	5 Jan 2012 10:36:02 -0800")
-Message-ID: <m1d3axc23k.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 5 Jan 2012 15:45:56 -0500
+Date: Thu, 5 Jan 2012 21:45:46 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <676824156.20120105214546@eikelenboom.it>
+To: "Ted Ts'o" <tytso@mit.edu>
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        <dm-devel@redhat.com>
+Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+In-Reply-To: <20120105181535.GB26382@thunk.org>
+References: <217150909.20120105113759@eikelenboom.it> <197607646.20120105142107@eikelenboom.it> <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu> <4910694144.20120105171428@eikelenboom.it> <20120105181535.GB26382@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+6BpLNYY17sE8Gz6N5P/mJNCRm6z8LDmo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
 
-> Hello, Ted.
->
-> On Thu, Jan 05, 2012 at 01:27:52PM -0500, Ted Ts'o wrote:
->> So it's really more of a filesystem force-umount method.  I could
->> imagine that this could also be used to extend the functionality of
->> umount(2) so that the MNT_FORCE flag could be used with non-NFS file
->> systems as well as NFS file systems.
->
-> I think these are two separate mechanisms.  Filesystems need to be
-> able to handle IO errors no matter what and underlying device going
-> away is the same situation.  There's no reason to mix that with force
-> unmount.  That's a separate feature and whether to force unmount
-> filesystem on device removal or permanent failure is a policy decision
-> which belongs to userland - ie. if such behavior is desired, it should
-> be implemented via udev/udisk instead of hard coded logic in kernel.
->
-> I don't know enough to decide whether such forced unmount is a useful
-> feature tho.  It can be neat for development but is there any real
-> necessity for the feature?
->
->> [1] Interesting question: do we convert an mmap region to an anonymous
->> region and perhaps notify the user out of band this has happened?  Or
->> do we just make the mapping disappear and nuke the process with a SEGV
->> if it attempts to access it?
->
-> FWIW, I vote for SIGBUS similarly to the way we handle mmap
-> vs. truncate.
+Thursday, January 5, 2012, 7:15:35 PM, you wrote:
 
-Agreed.  SIGBUS is documented as the mapping exists but the backing
-store has gone away, which seems to describe hotunplug very well.
-Additionally we already do this for sysfs and it works well.
+> On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
+>> 
+>> OK spoke too soon, i have been able to trigger it again:
+>> - copying files from LV to the same LV without the snapshot went OK
+>> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
 
-So it appears that on a hotunplug it is desirable to wake all poll
-waiters of a filesystem, invalidate all mmaps, and probably notify
-all inotify watchers.  And in general scream to userspace that the
-filesystem is gone leave it alone.
+> OK.  Originally, you said you did this:
 
-That does require a notification from the block device going away
-to the filesystem.  Tejun is there an existing mechanism that we
-can plug into or do we need to implement something new?
+> 1) fsck -v -p -f the filesystem
+> 2) mount the filesystem
+> 3) Try to copy a file
+> 4) filesystem will be mounted RO on error  (see below)
+> 5) fsck again, journal will be recovered, no other errors
+> 6) start at 1)
 
-Ted we can scream that the filesystem is going away without freeing
-all of the filesystem data structures.  To userspace there would
-effectively be no difference but internal to the kernel it should
-allows to skip the expensive logic of tracking every time a filesystem
-method is invoked, allowing us to not penalize the fast path.
+> Was this with with a read-only snapshot always being in existence
+> through all of these five steps?  When was the RO snapshot created?
 
-If I don't have to provide a zero cost ability to track which filesystem
-methods are active at any given time I think I can whip up something
-that is usable in a couple of days.
+> If a RO snapshot has to be there in order for this to happen, then
+> this is almost certainly a device-mapper regression.  (dm-devel folks,
+> this is a problem which apparently occurred when the user went from
+> v3.1.5 to v3.2, so this looks likes 3.2 regression.)
 
-Eric
+>                                                 - Ted
+
+
+Also found some old info that might be related, http://answers.softpicks.net/answers/topic/2-6-28-ext4-xen-and-lvm-volume-becomes-ro-after-snapshot-1610734-1.htm
+I'm also running under xen (host only, no guests started), will try baremetal as well to see if that plays a role.
+
+--
+Sander
+
+
+>> 
+>> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
+>> [ 2357.656056] Aborting journal on device dm-2-8.
+>> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
+>> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
+>> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
+>> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
+>> 
+>> 
+>> Attached are 4x output from dumpe2fs
+>> - dumpe2fs-xen_images-3.2.0                           Made just after boot
+>> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
+>> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
+>> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
+>> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
+>> 
+>> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
+>> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
+>> 
+>> --
+>> Sander
+>> 
+>> 
+>> 
+>> >> 
+>> >> --
+>> >> Sander
+>> >> 
+>> >> 
+>> >> This is a forwarded message
+>> >> From: Sander Eikelenboom <linux@eikelenboom.it>
+>> >> To: "Theodore Ts'o" <tytso@mit.edu>
+>> >> Date: Thursday, January 5, 2012, 11:37:59 AM
+>> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+>> >> 
+>> >> ===8<==============Original message text===============
+>> >> 
+>> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
+>> >> 
+>> >> Steps:
+>> >> 1) fsck -v -p -f the filesystem
+>> >> 2) mount the filesystem
+>> >> 3) Try to copy a file
+>> >> 4) filesystem will be mounted RO on error  (see below)
+>> >> 5) fsck again, journal will be recovered, no other errors
+>> >> 6) start at 1)
+>> >> 
+>> >> 
+>> >> I think the way i bricked it is:
+>> >> - make a lvm snapshot from that lvm logical disk
+>> >> - mount that lvm snapshot as RO
+>> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
+>> >> - it fails and i can't recover (see above)
+>> >> 
+>> >> 
+>> >> Is there a way to recover from this ?
+>> >> 
+>> >> 
+>> >> 
+>> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+>> >> [  220.749415] Aborting journal on device dm-2-8.
+>> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
+>> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
+>> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
+>> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
+>> >> serveerstertje:/mnt/xen_images/domains/production# cd /
+>> >> serveerstertje:/# umount /mnt/xen_images/
+>> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
+>> >> fsck from util-linux-ng 2.17.2
+>> >> /dev/mapper/serveerstertje-xen_images: recovering journal
+>> >> 
+>> >>     277 inodes used (0.00%)
+>> >>       5 non-contiguous files (1.8%)
+>> >>       0 non-contiguous directories (0.0%)
+>> >>         # of inodes with ind/dind/tind blocks: 41/41/3
+>> >>         Extent depth histogram: 69/28/2
+>> >> 51890920 blocks used (79.18%)
+>> >>       0 bad blocks
+>> >>      41 large files
+>> >> 
+>> >>     199 regular files
+>> >>      53 directories
+>> >>       0 character device files
+>> >>       0 block device files
+>> >>       0 fifos
+>> >>       0 links
+>> >>      16 symbolic links (16 fast symbolic links)
+>> >>       0 sockets
+>> >> --------
+>> >>     268 files
+>> >> serveerstertje:/#
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> System:
+>> >> - Kernel 3.2.0
+>> >> - Debian Squeeze with:
+>> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
+>> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
+>> >> 
+>> >> ===8<===========End of original message text===========
+>> >> 
+>> >> 
+>> >> 
+>> >> -- 
+>> >> Best regards,
+>> >> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
+>> 
+>> 
+>> 
+>> 
+>> -- 
+>> Best regards,
+>>  Sander                            mailto:linux@eikelenboom.it
+
+
+
+
+
+
+
+
+
+-- 
+Best regards,
+ Sander                            mailto:linux@eikelenboom.it
+
