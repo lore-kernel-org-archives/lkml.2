@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab2AEMUy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 07:20:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55945 "EHLO mx2.suse.de"
+	id S932102Ab2AEMWa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 07:22:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56273 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754562Ab2AEMUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 07:20:53 -0500
-Date: Thu, 5 Jan 2012 13:20:51 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
-Subject: Re: iwl3945 didn't survive after s2ram failure
-Message-ID: <20120105122051.GC4194@tiehlicka.suse.cz>
-References: <20111227105340.GD5344@tiehlicka.suse.cz>
- <20120103103457.GA3391@redhat.com>
- <20120103122311.GC3391@redhat.com>
- <20120103130733.GB3891@tiehlicka.suse.cz>
- <20120105112648.GB2222@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105112648.GB2222@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755415Ab2AEMW2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 07:22:28 -0500
+Date: Thu, 5 Jan 2012 07:22:17 -0500
+From: Jeff Layton <jlayton@redhat.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: Freezing of tasks failed after 20.01 seconds in 3.2.0-rc4+
+ (Linus GIT af968e2)
+Message-ID: <20120105072217.7ce7943f@tlielax.poochiereds.net>
+In-Reply-To: <3BA6B994-29A1-44E6-AF10-C9331F3BB521@gmail.com>
+References: <CAHFgRy_AdA7iKzCwNvXiE3pR1dqdkuKPgT0soWjw8E_TcLjJtA@mail.gmail.com>
+	<4EFAAFEF.6070503@linux.vnet.ibm.com>
+	<201112282303.26978.rjw@sisk.pl>
+	<20120105115330.GA29569@atrey.karlin.mff.cuni.cz>
+	<3BA6B994-29A1-44E6-AF10-C9331F3BB521@gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 05-01-12 12:26:49, Stanislaw Gruszka wrote:
-> On Tue, Jan 03, 2012 at 02:07:33PM +0100, Michal Hocko wrote:
-> > On Tue 03-01-12 13:23:12, Stanislaw Gruszka wrote:
-> > > On Tue, Jan 03, 2012 at 11:34:58AM +0100, Stanislaw Gruszka wrote:
-> > [...]
-> > > > If anything other will not help, is possible to rewrite eeprom, I don't
-> > > > know how to do this, but I know that tool for that exist:
-> > > > http://code.google.com/p/iwleeprom/
-> > > Actually I do not think we overwrite eeprom, seems problem is at pci-e
-> > > bus level. Simply we can not communicate with device through pci-e bus.
-> > > That is kind a silly, but you can check if removing cart from slot
-> > > and put it back again (assuring it correctly connected) helps.
-> > 
-> > I am not sure whether the wireless is integrated (this is a laptop) and
-> > I am little bit reluctant to open it as the warranty seems to be still
-> > valid and I would break it if I get inside.
-> Wow, laptop with so old wifi adapter has still a warranty. That good news,
-> you can ask vendor for fixing the problem :-)
-
-Well it came with some kind of premium warranty and that one ends at the
-end of this month so I should better hurry ;)
-
-> > I have just realized that I haven't provided lspci output so just in
-> > case it is helpful:
-> I tried to reproduce on my laptop by suspend and removing power sources,
-> device initialize properly during boot.
-
-I assume that you don't see the same issue...
-
-> I'm still wondering why we can break anything by power off during
-> suspend. Maybe there is some BIOS facility that power off PCIe device
-> or bridge during suspend, and now it in powered off state. Hard to tell,
-> except mentioned in other email pci* boot parameter try to change PCIe
-> related BIOS settings if there are any. 
-
-Unfortunately not much to set up...
+On Thu, 5 Jan 2012 07:11:21 -0500
+Miles Lane <miles.lane@gmail.com> wrote:
 
 > 
-> Stanislaw
+> On Jan 5, 2012, at 6:53 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> 
+> > Hi!
+> >>> 
+> >>> Miles Lane (in CC) hit freezing failures in 3.2.0-rc4+ (Linus GIT af968e2)
+> >>> while trying to suspend the machine.
+> >> 
+> >> Well, ext3 seems to be involved.  I don't see any problems with suspending
+> >> those kernels on my test machines, but I don't use ext3 on them any more.
+> >> 
+> >> It would be good to rule out ext3 somehow.
+> > 
+> > I still use ext3 here, and suspend works in recent kernels.
+> > 
+> > Is it reproducible for Miles?
+> 
+> It was a one time event, sorry.
+> 
+> All the best.
 
-Thanks
+>From looking at the stack traces, it really just looks like the ext3
+code was waiting for requests to come back from the underlying storage.
+I don't know ext3 that well, but could something have offlined the
+storage while these tasks were waiting for their requests to come back?
+
+Another hypothesis...could those requests require kthreads that got
+frozen while processing these requests?
+
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Jeff Layton <jlayton@redhat.com>
