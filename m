@@ -1,148 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab2AERiL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 12:38:11 -0500
-Received: from casper.infradead.org ([85.118.1.10]:58918 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757717Ab2AERiJ (ORCPT
+	id S932376Ab2AERif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 12:38:35 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:45677 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932195Ab2AERie convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 12:38:09 -0500
-Message-ID: <4F05DFF0.3000809@infradead.org>
-Date: Thu, 05 Jan 2012 15:37:52 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	Thu, 5 Jan 2012 12:38:34 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Thu, 5 Jan 2012 12:38:08 -0500
+Subject: [RFC][PATCH v4 -next 2/4] Skip spin_locks in panic case and Add
+ WARN_ON()
+Thread-Topic: [RFC][PATCH v4 -next 2/4] Skip spin_locks in panic case and
+ Add WARN_ON()
+Thread-Index: AczL0HMFUhgCH34WQWyA76ETk3pYJwAAC3+A
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF83@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Paolo Bonzini <pbonzini@redhat.com>, linux-media@vger.kernel.org,
-        Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
-        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: Broken ioctl error returns (was Re: [PATCH 2/3] block: fail SCSI
- passthrough ioctls on partition devices)
-References: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
-In-Reply-To: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1201050179
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05-01-2012 15:02, Linus Torvalds wrote:
-> On Thu, Jan 5, 2012 at 8:16 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> Just fix the *obvious* breakage in BLKROSET. It's clearly what the
->> code *intends* to do, it just didn't check for ENOIOCTLCMD.
-> 
-> So it seems from quick grepping that the block layer isn't actually
-> all that confused apart from that one BLK[SG]ETRO issue, although I'm
-> sure there are crazy drivers that think that EINVAL is the right error
-> return.
-> 
-> The *really* confused layer seems to be the damn media drivers. The
-> confusion there seems to go very deep indeed, where for some crazy
-> reason the media people seem to have made it part of the semantics
-> that "if a driver doesn't support a particular ioctl, it returns
-> EINVAL".
-> 
-> Added, linux-media and Mauro to the Cc, because I'm about to commit
-> something like the attached patch to see if anything breaks. We may
-> have to revert it if things get too nasty, but we should have done
-> this years and years ago, so let's hope not.
+This patch does followings.
 
-For the media drivers, we've already fixed it, at the V4L side:
--EINVAL doesn't mean that an ioctl is not supported anymore.
-I think that such fix went into Kernel 3.1.
+   - Skip spin_locks in panic case in both kmsg_dump() and pstore_dump() because they are 
+     serialized via smp_send_stop
 
-There are still two different behaviors there:
-	at the V4L API: the return code is -ENOTTY;
-	at the DVB API: the return code is currrently -EOPNOTSUPP.
+   - Add WARN_ON() in "in_nmi() and !panic" case into kmsg_dump(). Currently, this case never 
+     happens because only kmsg_dump(KMSG_DUMP_PANIC) is called in NMI case.
+     But if someone adds new kmsg_dump() into NMI path in the future, kmsg_dump() may deadlock. 
+     We can trap it and complain with this WARN_ON().
+     
 
-Yeah, I know that DVB is returning the wrong code. Fixing it is on
-my todo list, although with low priority, as the behavior inside the
-DVB part is consistent.
+ With this patch, kmsg_dump()/pstore_dump() work as follows.
+   panic case (KMSG_DUMP_PANIC):
+     - don't take lock because they are serialized.
 
-On both DVB and V4L, -EINVAL now means only invalid parameters.
+   not panic case (KMSG_DUMP_OOPS/KMSG_DUMP_EMERG/KMSG_DUMP_RESTART/KMSG_DUMP_HALT):
+     - take locks normally
+ 
+ Regarding as NMI case,
+    - kmsg_dump()/pstore_dump() don't take locks, so deadlock issue will not happen
+      because kmsg_dump() is called in just panic case with current implementation.
+    - If someone adds new kmsg_dump() into NMI path, WARN_ON() is called.
+      So we can trap it and ask to fix it.
 
-Regards,
-Mauro
+ Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
 
-> Basic rules: ENOTTY means "I don't recognize this ioctl". Yes, the
-> name is odd, and yes, it's for historical Unix reasons. ioctl's were
-> originally a way to control mainly terminal settings - think termios -
-> so when you did an ioctl on a file, you'd get "I'm not a tty, dummy".
-> File flags were controlled with fcntl().
-> 
-> In contrast, EINVAL means "there is something wrong with the
-> arguments", which very much implies "I do recognize the ioctl".
-> 
-> And finally, ENOIOCTLCMD is a way to say ENOTTY in a sane manner, and
-> will now be turned into ENOTTY for the user space return (not EINVAL -
-> I have no idea where that idiocy came from, but it's clearly confused,
-> although it's also clearly very old).
-> 
-> This fixes the core files I noticed. It removes the *insane*
-> complaints from the compat_ioctl() (which would complain if you
-> returned ENOIOCTLCMD after an ioctl translation - the reason that is
-> totally insane is that somebody might use an ioctl on the wrong kind
-> of file descriptor, so even if it was translated perfectly fine,
-> ENOIOCTLCMD is a perfectly fine error return and shouldn't cause
-> warnings - and that allows us to remove stupid crap from the socket
-> ioctl code).
-> 
-> Does this break things and need to be reverted? Maybe. There could be
-> user code that tests *explicitly* for EINVAL and considers that the
-> "wrong ioctl number", even though it's the wrong error return.
-> 
-> And we may have those kinds of mistakes inside the kernel too. We did
-> in the block layer BLKSETRO code, for example, as pointed out by
-> Paulo. That one is fixed here, but there may be others.
-> 
-> I didn't change any media layers, since there it's clearly an endemic
-> problem, and there it seems to be used as a "we pass media ioctls down
-> and drivers should by definition recognize them, so if they don't, we
-> assume the driver is limited and doesn't support those particular
-> settings and return EINVAL".
-> 
-> But in general, any code like this is WRONG:
-> 
->    switch (cmd) {
->    case MYIOCTL:
->       .. do something ..
->    default:
->       return -EINVAL;
->    }
-> 
-> while something like this is CORRECT:
-> 
->    switch (cmd) {
->    case MYIOCT:
->       if (arg)
->          return -EINVAL;
->       ...
-> 
->    case OTHERIOCT:
->       /* I recognize this one, but I don't support it */
->       return -EINVAL;
-> 
->    default:
->       return -ENOIOCTLCMD; // Or -ENOTTY - see below about the difference
->    }
-> 
-> where right now we do have some magic differences between ENOIOCTLCMD
-> and ENOTTY (the compat layer will try to do a translated ioctl *only*
-> if it gets ENOIOCTLCMD, iirc, so ENOTTY basically means "this is my
-> final answer").
-> 
-> I'll try it out on my own setup here to see what problems I can
-> trigger, but I thought I'd send it out first just as (a) a heads-up
-> and (b) to let others try it out and see.. See the block/ioctl.c code
-> for an example of the kinds of things we may need even just inside the
-> kernel (and the kinds of things that could cause problems for
-> user-space that makes a difference between EINVAL and ENOTTY).
-> 
->                              Linus
+---
+ fs/pstore/platform.c |   16 ++++++----------
+ kernel/printk.c      |   20 ++++++++++++++++++--
+ 2 files changed, 24 insertions(+), 12 deletions(-)
+
+diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
+index 9ec22d3..426e77d 100644
+--- a/fs/pstore/platform.c
++++ b/fs/pstore/platform.c
+@@ -90,18 +90,17 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 	int		hsize, ret;
+ 	unsigned int	part = 1;
+ 	unsigned long	flags = 0;
+-	int		is_locked = 0;
+ 
+ 	if (reason < ARRAY_SIZE(reason_str))
+ 		why = reason_str[reason];
+ 	else
+ 		why = "Unknown";
+ 
+-	if (in_nmi()) {
+-		is_locked = spin_trylock(&psinfo->buf_lock);
+-		if (!is_locked)
+-			pr_err("pstore dump routine blocked in NMI, may corrupt error record\n");
+-	} else
++	/*
++	 * pstore_dump() is serialized in panic path.
++	 * So, we don't need to take any locks.
++	 */
++	if (reason != KMSG_DUMP_PANIC)
+ 		spin_lock_irqsave(&psinfo->buf_lock, flags);
+ 	oopscount++;
+ 	while (total < kmsg_bytes) {
+@@ -131,10 +130,7 @@ static void pstore_dump(struct kmsg_dumper *dumper,
+ 		total += l1_cpy + l2_cpy;
+ 		part++;
+ 	}
+-	if (in_nmi()) {
+-		if (is_locked)
+-			spin_unlock(&psinfo->buf_lock);
+-	} else
++	if (reason != KMSG_DUMP_PANIC)
+ 		spin_unlock_irqrestore(&psinfo->buf_lock, flags);
+ }
+ 
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 13c0a11..5294426 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -1732,13 +1732,29 @@ void kmsg_dump(enum kmsg_dump_reason reason)
+ 	unsigned long l1, l2;
+ 	unsigned long flags;
+ 
++	/*
++	 * Currently, "in_nmi() && reason != KMSG_DUMP_PANIC" case never happens
++	 * because ,in NMI path, only kmsg_dump(KMSG_DUMP_PANIC) is called.
++	 * But if someone adds new kmsg_dump() into NMI path in the future,
++	 * kmsg_dump() may deadlock. We can trap it and complain
++	 * with this WARN_ON().
++	 */
++	WARN_ON(in_nmi() && reason != KMSG_DUMP_PANIC);
++
+ 	/* Theoretically, the log could move on after we do this, but
+ 	   there's not a lot we can do about that. The new messages
+ 	   will overwrite the start of what we dump. */
+-	raw_spin_lock_irqsave(&logbuf_lock, flags);
++
++	/*
++	 * kmsg_dump(KMSG_DUMP_PANIC) is serialized.
++	 * So, we don't need to take any locks.
++	 */
++	if (reason != KMSG_DUMP_PANIC)
++		raw_spin_lock_irqsave(&logbuf_lock, flags);
+ 	end = log_end & LOG_BUF_MASK;
+ 	chars = logged_chars;
+-	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
++	if (reason != KMSG_DUMP_PANIC)
++		raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+ 
+ 	if (chars > end) {
+ 		s1 = log_buf + log_buf_len - chars + end;
+-- 
+1.7.1
 
