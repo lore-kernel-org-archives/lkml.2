@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab2AEPNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 10:13:33 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:46285 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754399Ab2AEPNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 10:13:32 -0500
-Date: Thu, 5 Jan 2012 10:13:31 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: "Theodore Ts'o" <tytso@mit.edu>, Tejun Heo <tj@kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Revoking filesystems [was Re: Sysfs attributes racing with
- unregistration]
-In-Reply-To: <m1boqietiv.fsf@fess.ebiederm.org>
-Message-ID: <Pine.LNX.4.44L0.1201051001360.1434-100000@iolanthe.rowland.org>
+	id S1755593Ab2AEPQA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 10:16:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52849 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754399Ab2AEPP6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 10:15:58 -0500
+Date: Thu, 5 Jan 2012 16:10:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Chris Yeoh <yeohc@au1.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org
+Subject: cross memory attach && security check
+Message-ID: <20120105151012.GA25671@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jan 2012, Eric W. Biederman wrote:
+Hello,
 
-> > Ted Ts'o has been talking about something similar but not the same -- a
-> > way to revoke an entire filesystem.  For example, see commit
-> > 7c2e70879fc0949b4220ee61b7c4553f6976a94d (ext4: add ext4-specific
-> > kludge to avoid an oops after the disk disappears).
-> >
-> > The use case for that is obvious and widespread: Somebody yanks out a
-> > USB drive without unmounting it first.
-> 
-> Agreed.  The best I have at the moment is a library that can wrap
-> filesystem methods to implement the hotplug bits.
-> 
-> Do you know how hard it is to remove event up to the filesystem that
-> sits on top of a block device?
+Just noticed the new file in mm/ ;) A couple of questions.
 
-I don't have a clear idea of what's involved (in particular, how to go
-from a block_device structure to a mounted filesystem).  But the place
-to do it would probably be block/genhd.c:invalidate_partition().  Ted
-can tell you if there's a better alternative.
+process_vm_rw_core() does
 
-> Do you know how hard it is to detect at mount time if a block device
-> might be hot-plugable?  We can always use a mount option here and
-> make userspace figure it out, but being to have a good default would
-> be nice.
+	task_lock(task);
+	if (__ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
+		task_unlock(task);
+		rc = -EPERM;
+		goto put_task_struct;
+	}
+	mm = task->mm;
 
-I don't think it's possible to tell if a device is hot-unpluggable.  
-For example, the device itself might not be removable from its parent, 
-but the parent might be hot-unpluggable.  You'll probably have to 
-assume that every device can potentially be unplugged, one way or 
-another.
+this is racy, task_lock() can't help. And I don't think you should
+use it directly.
 
-Also, even devices that aren't hot-unpluggable can fail.  The end 
-result should be pretty much the same.
+execve() does exec_mmap() first, this switches to the new ->mm.
+After that install_exec_creds() changes task->cred. The window
+is not that small.
 
-> If it isn't too hard to get the event up from the block device to the
-> filesystem when the block device is uncermoniously removed I might just
-> make the time to have hotunplug trigger a filesystem wide revoke on a
-> filesystem like ext4.
-> 
-> In addition to sysfs we need the same logic in proc, sysctl, and uio.
-> So it makes sense to move towards a common library that can do all of
-> the hard bits.
+I guess you need ->cred_guard_mutex, please look at mm_for_maps().
 
-Ted mentioned the need for a new "device removed" superblock method.  
-Then each filesystem can add its own implementation as people get
-around to it.
 
-Alan Stern
+
+
+Another question, process_vm_rw_pages() does get_user_pages() without
+FOLL_FORCE. Is this on purpose? This limits the usage of the new
+syscalls.
+
+
+
+
+Hmm. And could you please explain the change in rw_copy_check_uvector()?
+Why process_vm_rw() does
+rw_copy_check_uvector(READ, rvec, check_access => 0) ?
+
+Oleg.
 
