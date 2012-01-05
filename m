@@ -1,176 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab2AEJHQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 04:07:16 -0500
-Received: from smtp04.smtpout.orange.fr ([80.12.242.126]:34743 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752096Ab2AEJG4 (ORCPT
+	id S1753798Ab2AEJMm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 04:12:42 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50055 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751247Ab2AEJMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 04:06:56 -0500
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-To: akpm@linux-foundation.org
-Cc: serge.hallyn@canonical.com, oleg@redhat.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
-Subject: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
-Date: Thu,  5 Jan 2012 10:06:50 +0100
-Message-Id: <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
-References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
+	Thu, 5 Jan 2012 04:12:40 -0500
+Message-ID: <1325754886.6755.20.camel@sauron.fi.intel.com>
+Subject: Re: possible use-after-free in drivers/mtd/ubi/wl.c: erase_worker
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Emese Revfy <re.emese@gmail.com>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 05 Jan 2012 11:14:46 +0200
+In-Reply-To: <20120104003446.695fd426@gmail.com>
+References: <20120104003446.695fd426@gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-sLu2pGJCzv6xDNEsX724"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the case of a child pid namespace, rebooting the system does not
-really makes sense. When the pid namespace is used in conjunction
-with the other namespaces in order to create a linux container, the
-reboot syscall leads to some problems.
 
-A container can reboot the host. That can be fixed by dropping
-the sys_reboot capability but we are unable to correctly to poweroff/
-halt/reboot a container and the container stays stuck at the shutdown
-time with the container's init process waiting indefinitively.
+--=-sLu2pGJCzv6xDNEsX724
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-After several attempts, no solution from userspace was found to reliabily
-handle the shutdown from a container.
+Well-spotted, thanks. I've just pushed this patch to the UBIFS git tree:
 
-This patch propose to make the init process of the child pid namespace to
-exit with a signal status set to : SIGINT if the child pid namespace called
-"halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
-When the reboot syscall is called and we are not in the initial
-pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
-and "RESTART2". Otherwise we return EINVAL.
 
-Returning EINVAL is also an easy way to check if this feature is supported
-by the kernel when invoking another 'reboot' option like CAD.
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH] UBI: fix use-after-free on error path
 
-By this way the parent process of the child pid namespace knows if
-it rebooted or not and can take the right decision.
+When we fail to erase a PEB, we free the corresponding erase entry object,
+but then re-schedule this object if the error code was something like -EAGA=
+IN.
+Obviously, it is a bug to use the object after we have freed it.
 
-Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
-Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Emese Revfy <re.emese@gmail.com>
+Cc: stable@kernel.org [v2.6.23+]
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 ---
- include/linux/pid_namespace.h |    8 +++++++-
- kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
- kernel/sys.c                  |    8 ++++++++
- 3 files changed, 48 insertions(+), 1 deletions(-)
+ drivers/mtd/ubi/wl.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index e7cf666..b90c798 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -32,6 +32,7 @@ struct pid_namespace {
- #endif
- 	gid_t pid_gid;
- 	int hide_pid;
-+	int reboot;
- };
- 
- extern struct pid_namespace init_pid_ns;
-@@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
- extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
- extern void free_pid_ns(struct kref *kref);
- extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
-+extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
- 
- static inline void put_pid_ns(struct pid_namespace *ns)
- {
-@@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
- {
- }
- 
--
- static inline void zap_pid_ns_processes(struct pid_namespace *ns)
- {
- 	BUG();
- }
-+
-+static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_PID_NS */
- 
- extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index a896839..0d355e8 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -15,6 +15,7 @@
- #include <linux/acct.h>
- #include <linux/slab.h>
- #include <linux/proc_fs.h>
-+#include <linux/reboot.h>
- 
- #define BITS_PER_PAGE		(PAGE_SIZE*8)
- 
-@@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
- 		rc = sys_wait4(-1, NULL, __WALL, NULL);
- 	} while (rc != -ECHILD);
- 
-+	if (pid_ns->reboot)
-+		current->signal->group_exit_code = pid_ns->reboot;
-+
- 	acct_exit_ns(pid_ns);
- 	return;
- }
-@@ -221,6 +225,35 @@ static struct ctl_table pid_ns_ctl_table[] = {
- 
- static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
- 
-+int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-+{
-+	if (pid_ns == &init_pid_ns)
-+		return 0;
-+
-+	switch(cmd) {
-+	case LINUX_REBOOT_CMD_RESTART2:
-+	case LINUX_REBOOT_CMD_RESTART:
-+		pid_ns->reboot = SIGHUP;
-+		break;
-+
-+	case LINUX_REBOOT_CMD_POWER_OFF:
-+	case LINUX_REBOOT_CMD_HALT:
-+		pid_ns->reboot = SIGINT;
-+		break;
-+	default:
-+		return -EINVAL;
+diff --git a/drivers/mtd/ubi/wl.c b/drivers/mtd/ubi/wl.c
+index 42c684c..036d213 100644
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -1049,7 +1049,6 @@ static int erase_worker(struct ubi_device *ubi, struc=
+t ubi_work *wl_wrk,
+=20
+ 	ubi_err("failed to erase PEB %d, error %d", pnum, err);
+ 	kfree(wl_wrk);
+-	kmem_cache_free(ubi_wl_entry_slab, e);
+=20
+ 	if (err =3D=3D -EINTR || err =3D=3D -ENOMEM || err =3D=3D -EAGAIN ||
+ 	    err =3D=3D -EBUSY) {
+@@ -1062,14 +1061,16 @@ static int erase_worker(struct ubi_device *ubi, str=
+uct ubi_work *wl_wrk,
+ 			goto out_ro;
+ 		}
+ 		return err;
+-	} else if (err !=3D -EIO) {
 +	}
 +
-+	read_lock(&tasklist_lock);
-+	force_sig(SIGKILL, pid_ns->child_reaper);
-+	read_unlock(&tasklist_lock);
-+
-+	do_exit(0);
-+
-+	/* Not reached */
-+	return 0;
-+}
-+
- static __init int pid_namespaces_init(void)
- {
- 	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 4070153..bd924fa 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -444,6 +444,14 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
- 	                magic2 != LINUX_REBOOT_MAGIC2C))
- 		return -EINVAL;
- 
-+	/* In case the pid namespaces are enabled, the current task is in a
-+	 * child pid_namespace and the command is handled by 'reboot_pid_ns',
-+	 * this one will invoke 'do_exit'.
-+	 */
-+	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
-+	if (ret)
-+		return ret;
-+
- 	/* Instead of trying to make the power_off code look like
- 	 * halt when pm_power_off is not set do it the easy way.
- 	 */
--- 
-1.7.5.4
++	kmem_cache_free(ubi_wl_entry_slab, e);
++	if (err !=3D -EIO)
+ 		/*
+ 		 * If this is not %-EIO, we have no idea what to do. Scheduling
+ 		 * this physical eraseblock for erasure again would cause
+ 		 * errors again and again. Well, lets switch to R/O mode.
+ 		 */
+ 		goto out_ro;
+-	}
+=20
+ 	/* It is %-EIO, the PEB went bad */
+=20
+--=20
+1.7.7.3
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-sLu2pGJCzv6xDNEsX724
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPBWoGAAoJECmIfjd9wqK0K+UP/0L4s+nrNLQmWPHgUXUHyiJe
++tnpeeX+6CM2RnnhiFIrh3q8cHNBUnwgdVlFKsDiCMFIWen62+ZG7O+yZVZC6fdo
+CTlYxtzxLThFWnNx2qWgiFT5IaITSIZiyczFEDzK3xPYLao5FzKyoPsX7aJfCaAO
+asIXkH8k7xyNbGXmwLgBkUM2FndcPZsoeXipwKMFI+xeSuod3Laik/Vo7qS9L0ud
+ZIdjuWD3AJVvkunAhl8Skj9u8dY5fzYFRqsfblJuRQ7DJYEKjCo3ika2faVSeJ+f
+C/5uqdoV3W7DGavoQFUV6ugkyhWuHiv/60VlsFvqg5fZl8h8Jo20NN8aQDxfP+BK
+BUvdFhD/xjZein1Q8MdrjLGzZp8Rnu6iLZkPK7i0cOQy/VcjQZ7+FvW0ikJznPmv
+dxuWrWT+H5F/bQWKPY8IcrH6Q8x6735t5cwF29MT9mcIy7bTR6a5yfFPxvDTJV2/
+P2xF4vj6U7Qn3hGbnMOwOjQJhd+lm2AFioHPW3sGRJPHt6sPYsxEGgwUTnsyids9
+G9v2YHNzUia44cUhovJLHgJQjuf1e0SGdCFL27iqrzTUgP3WnfbH9ScL/9eM+6L7
+KatC2LEhyCGcQcFjWqHf+WoQerM91lwE3tHDChOFsuPMVCQubq24c/88b9A/Foy1
+Q3T0mWkkJoGGUIw1+Le8
+=Ax3H
+-----END PGP SIGNATURE-----
+
+--=-sLu2pGJCzv6xDNEsX724--
 
