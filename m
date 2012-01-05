@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab2AEKnQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 05:43:16 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:41659 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756911Ab2AEKnO convert rfc822-to-8bit (ORCPT
+	id S1756839Ab2AELAW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 06:00:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53420 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab2AELAV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 05:43:14 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Thu, 5 Jan 2012 06:00:21 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 5/6] ath6kl: convert ath6kl_dbg() and ath6kl_dbg_dump() into functions
-Date: Thu, 5 Jan 2012 10:41:28 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AF2F@saturn3.aculab.com>
-In-Reply-To: <1325720472.4116.7.camel@joe2Laptop>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 5/6] ath6kl: convert ath6kl_dbg() and ath6kl_dbg_dump() into functions
-Thread-Index: AczLOkiAZyCQ9KCWRuap1YxWvLGTUwAWwuMg
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Joe Perches" <joe@perches.com>, "Kalle Valo" <kvalo@qca.qualcomm.com>
-Cc: <linville@tuxdriver.com>, <sfr@canb.auug.org.au>, <netdev@vger.kernel.org>,
-        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-next@vger.kernel.org>, <ath6kl-devel@qualcomm.com>,
-        <davem@davemloft.net>
-X-OriginalArrivalTime: 05 Jan 2012 10:41:28.0444 (UTC) FILETIME=[9488FBC0:01CCCB96]
+Date: Thu, 5 Jan 2012 20:00:19 +0900
+Message-ID: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
+Subject: [PATCH] sched_rt: the task in irq context can be migrated during
+ context switching
+From: Chanho Min <chanho0207@gmail.com>
+To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: chanho.min@lge.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> > +	va_start(args, fmt);
-> > +	ath6kl_printk(KERN_DEBUG, fmt, &args);
-> 
-> Passing a va_list as an argument?
-> I believe this doesn't work.
-> I think you'll need to add and use:
+This issue happens under the following conditions
+1. preemption is off
+2. __ARCH_WANT_INTERRUPTS_ON_CTXSW is defined.
+3. RT scheduling class
+4. SMP system
 
-Passing a va_list certainly does work - vprintf() etc.
-What is problematical is taking the address of a va_list.
+Sequence is as follows:
+1.suppose current task is A. start schedule()
+2.task A is enqueued pushable task at the entry of schedule()
+   __schedule
+    prev = rq->curr;
+    ...
+    put_prev_task
+     put_prev_task_rt
+      enqueue_pushable_task
+4.pick the task B as next task.
+   next = pick_next_task(rq);
+3.rq->curr set to task B and context_switch is started.
+   rq->curr = next;
+4.At the entry of context_swtich, release this cpu's rq->lock.
+   context_switch
+    prepare_task_switch
+     prepare_lock_switch
+      raw_spin_unlock_irq(&rq->lock);
+5.Shortly after rq->lock is released, interrupt is occurred and start
+IRQ context
+6.try_to_wake_up() which called by ISR acquires rq->lock
+    try_to_wake_up
+     ttwu_remote
+      rq = __task_rq_lock(p)
+      ttwu_do_wakeup(rq, p, wake_flags);
+        task_woken_rt
+7.push_rt_task picks the task A which is enqueued before.
+   task_woken_rt
+    push_rt_tasks(rq)
+     next_task = pick_next_pushable_task(rq)
+8.At find_lock_lowest_rq(), If double_lock_balance() returns 0,
+lowest_rq can be the remote rq.
+  (But,If preemption is on, double_lock_balance always return 1 and it
+does't happen.)
+   push_rt_task
+    find_lock_lowest_rq
+     if (double_lock_balance(rq, lowest_rq))..
+9.find_lock_lowest_rq return the available rq. task A is migrated to
+the remote cpu/rq.
+   push_rt_task
+    ...
+    deactivate_task(rq, next_task, 0);
+    set_task_cpu(next_task, lowest_rq->cpu);
+    activate_task(lowest_rq, next_task, 0);
+10. But, task A is on irq context at this cpu.
+    So, task A is scheduled by two cpus at the same time until restore from IRQ.
+    Task A's stack is corrupted. Unexpected problem is occurred.
 
-The likely problem is a 'levels of indirection' one
-because, when va_list needs to be a struct (very
-likely when arguments are passed in registers),
-it is often declared as as array type.
+In recent ARM, I saw the patch to remove
+__ARCH_WANT_INTERRUPTS_ON_CTXSW is posted.
+But, if that feature is adopted by the others architecture or to
+remain in the release version,,this can occur.
+This is my patch to fix it. Any opinions will be appreciated.
 
-	David
+Signed-off-by: Chanho Min <chanho.min@lge.com>
+---
+ kernel/sched_rt.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index 583a136..59e66e3 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1388,6 +1388,11 @@ static int push_rt_task(struct rq *rq)
+        if (!next_task)
+                return 0;
 
++#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
++       if (unlikely(task_running(rq, next_task)))
++               return 0;
++#endif
++
+ retry:
+        if (unlikely(next_task == rq->curr)) {
+                WARN_ON(1);
+--
