@@ -1,60 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758151Ab2AEIn4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 03:43:56 -0500
-Received: from mail.sf-mail.de ([62.27.20.61]:39201 "EHLO mail.sf-mail.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758069Ab2AEInz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 03:43:55 -0500
-Message-ID: <a2507aff2913b402cfb2d3e2a0bb887a.squirrel@webmail.sf-mail.de>
-In-Reply-To: <1325721002-6094-1-git-send-email-yinghai@kernel.org>
-References: <1325721002-6094-1-git-send-email-yinghai@kernel.org>
-Date: Thu, 5 Jan 2012 09:43:51 +0100
-Subject: Re: [PATCH] PCI: Increase resource array mask bit size in
- pcim_iomap_regions()
-From: "Rolf Eike Beer" <eike-kernel@sf-tec.de>
-To: "Yinghai Lu" <yinghai@kernel.org>
-Cc: "Jesse Barnes" <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, "Yinghai Lu" <yinghai@kernel.org>
-User-Agent: SquirrelMail/1.4.22
+	id S1752235Ab2AEIt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 03:49:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40932 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab2AEIt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 03:49:26 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Date: Thu, 5 Jan 2012 17:49:25 +0900
+Message-ID: <CAOAMb1AUHV6mHwkUbX4+0wfOJpnMuVj_vr9jvb=h-Q4+6HKFzg@mail.gmail.com>
+Subject: RE: [PATCH] mm/backing-dev.c: fix crash when USB/SCSI device is detached
+From: Chanho Min <chanho0207@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> DEVICE_COUNT_RESOURCE will be bigger than 16 when SRIOV supported is
-> enabled.
+>On Tue, Jan 03, 2012 at 12:23:44PM +0900, Chanho Min wrote:
+>> >On Mon, Jan 02, 2012 at 06:38:21PM +0900,wrote:
+>> >> from Chanho Min <chanho.min@lge.com>
+>> >>
+>> >> System may crash in backing-dev.c when removal SCSI device is detached.
+>> >> bdi task is killed by bdi_unregister()/'khubd', but task's point
+>remains.
+>> >> Shortly afterward, If 'wb->wakeup_timer' is expired before
+>> >> del_timer()/bdi_forker_thread,
+>> >> wakeup_timer_fn() may wake up the dead thread which cause the crash.
+>> >> 'bdi->wb.task' should be NULL as this patch.
+>> >
+>> >Is it some race condition between del_timer() and del_timer_sync()?
+>> >
+>> >bdi_unregister() calls
+>> >
+>> >        del_timer_sync
+>> >        bdi_wb_shutdown
+>> >            kthread_stop
+>> >
+>> >in turn, and del_timer_sync() should guarantee wakeup_timer_fn() is
+>> >no longer called to access the stopped task.
+>> >
+>>
+>> It is not race condition. This happens when USB is removed during write-
+>access.
+>> bdi_wakeup_thread_delayed is called after kthread_stop, and timer is
+>activated again.
+>>
+>> 	bdi_unregister
+>> 		kthread_stop
+>> 	bdi_wakeup_thread_delayed (sys_write mostly calls this)
+>> 	timer fires
 >
-> Let them pass with int just like pci_enable_resources().
+>Ah OK, the timer could be restarted in the mean while, which breaks
+>the synchronization rule in del_timer_sync().
 >
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>I noticed a related fix is merged recently, does your test kernel
+>contain this commit?
 >
-> ---
->  include/linux/pci.h |    6 +++---
->  lib/devres.c        |    6 +++---
->  2 files changed, 6 insertions(+), 6 deletions(-)
->
-> Index: linux-2.6/include/linux/pci.h
-> ===================================================================
-> --- linux-2.6.orig/include/linux/pci.h
-> +++ linux-2.6/include/linux/pci.h
-> @@ -1433,10 +1433,10 @@ static inline void pci_fixup_device(enum
->  void __iomem *pcim_iomap(struct pci_dev *pdev, int bar, unsigned long
-> maxlen);
->  void pcim_iounmap(struct pci_dev *pdev, void __iomem *addr);
->  void __iomem * const *pcim_iomap_table(struct pci_dev *pdev);
-> -int pcim_iomap_regions(struct pci_dev *pdev, u16 mask, const char *name);
-> -int pcim_iomap_regions_request_all(struct pci_dev *pdev, u16 mask,
-> +int pcim_iomap_regions(struct pci_dev *pdev, int mask, const char *name);
-> +int pcim_iomap_regions_request_all(struct pci_dev *pdev, int mask,
->  				   const char *name);
-[...]
 
-You are switching from unsigned to signed here, is this intentional? In my
-feeling such masks should end up in an unsigned int, no?
+No, I will try to reproduce with this patch.
+But, bdi_destroy is not called during write-access. Same result is expected.
 
-Eike
+>commit 7a401a972df8e184b3d1a3fc958c0a4ddee8d312
+>Author: Rabin Vincent <rabin.vincent@stericsson.com>
+>Date:   Fri Nov 11 13:29:04 2011 +0100
+>
+>    backing-dev: ensure wakeup_timer is deleted
+>
+>> Anyway,Is this safeguard to prevent from waking up killed thread?
+>
+>This patch makes no guarantee wakeup_timer_fn() will see NULL
+>bdi->wb.task before the task is stopped, so there is still race
+>conditions. And still, the complete fix would be to prevent
+>wakeup_timer_fn() from being called at all.
+
+If wakeup_timer_fn() see NULL bdi->wb.task, wakeup_timer_fn regards
+task as killed
+and wake up forker thread instead of the defined thread.
+Is this intended behavior of the bdi?
+
+>
+>Thanks,
+>Fengguang
+>
+>> >> Signed-off-by: Chanho Min <chanho.min@lge.com>
+>> >> ---
+>> >>  mm/backing-dev.c |    1 +
+>> >>  1 files changed, 1 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+>> >> index 71034f4..4378a5e 100644
+>> >> --- a/mm/backing-dev.c
+>> >> +++ b/mm/backing-dev.c
+>> >> @@ -607,6 +607,7 @@ static void bdi_wb_shutdown(struct backing_dev_info
+>> >> *bdi)
+>> >>         if (bdi->wb.task) {
+>> >>                 thaw_process(bdi->wb.task);
+>> >>                 kthread_stop(bdi->wb.task);
+>> >> +               bdi->wb.task = NULL;
+>> >>         }
+>> >>  }
+>> >>
+>> >> --
+>> >> 1.7.0.4
