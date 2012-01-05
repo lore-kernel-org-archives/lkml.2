@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755388Ab2AEHFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 02:05:17 -0500
-Received: from zougloub.eu ([188.165.233.99]:42756 "EHLO zougloub.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab2AEHFO convert rfc822-to-8bit (ORCPT
+	id S1756679Ab2AEHMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 02:12:00 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:10335 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab2AEHL7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 02:05:14 -0500
-X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jan 2012 02:05:14 EST
-Date: Thu, 5 Jan 2012 01:52:12 -0500
-From: =?UTF-8?B?SsOpcsO0bWU=?= Carretero <cJ-ko@zougloub.eu>
-To: Toralf =?UTF-8?B?RsO2cnN0ZXI=?= <toralf.foerster@gmx.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: kernel crashed after unplugging an (encrypted) USB stick
-Message-ID: <20120105015212.1d5045b2@zougloub.eu>
-In-Reply-To: <201112271914.18564.toralf.foerster@gmx.de>
-References: <201112271914.18564.toralf.foerster@gmx.de>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.5; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Jan 2012 02:11:59 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 04 Jan 2012 23:11:56 -0800
+From: Hiroshi DOYU <hdoyu@nvidia.com>
+To: Hiroshi DOYU <hdoyu@nvidia.com>
+Cc: iommu@lists.linux-foundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linaro-mm-sig-bounces@lists.linaro.org
+Subject: [PATCH v3 0/2] ARM: IOMMU: tegra: Add iommu_ops for GART/SMMU driver
+Date: Thu,  5 Jan 2012 09:11:47 +0200
+Message-Id: <1325747509-29665-1-git-send-email-hdoyu@nvidia.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 27 Dec 2011 19:14:18 +0100
-Toralf Förster <toralf.foerster@gmx.de> wrote:
+This patchset adds support for IOMMU API for Tegra20(GART) and
+Tegra30(SMMU). "struct iommu_ops" are implemented for both H/W IOMMU
+modules.
 
-> 2011-12-27T19:03:56.681+01:00 n22 kernel: IP: [<c12172e5>] sd_revalidate_disk+0x25/0x1d70
-> 2011-12-27T19:03:56.681+01:00 n22 kernel: *pde = 00000000 
-> 2011-12-27T19:03:56.681+01:00 n22 kernel: Oops: 0000 [#1] SMP 
+Tested with "Ion memory manager" and "DMA mapping API"(*1).
 
-Recently I've been playing with SD cards on my netbook.
-I had it today on 3.2-rc7, when removing/inserting one.
+This was originally developed with Tegra specific IOMMU
+API(tegra_iovmm_*()) in:
 
-2011-10-08_20:30:30 [5681.629701] IP: [<ffffffff812cc3fe>] sd_revalidate_disk+0x26/0x159d
-2011-12-22_15:06:07 [19094.131490] IP: [<ffffffff812cce54>] sd_revalidate_disk+0x26/0x1638
+git://nv-tegra.nvidia.com/linux-2.6.git.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=750389
-https://bugzilla.redhat.com/show_bug.cgi?id=754518
-http://www.spinics.net/lists/linux-scsi/msg56270.html (Yet another hot unplug NULL pointer dereference (was Re: status of oops in sd_revalidate_disk?))
+v2:
+https://lkml.org/lkml/2011/12/15/203
 
-Apparently udisks-daemon triggers the bug, so it can be worked until proper fix.
+v1:
+https://lkml.org/lkml/2011/11/17/111
+
+*1: Reworking the DMA mapping code (especially on ARM)
+    http://lwn.net/Articles/467509/
+
+Hiroshi DOYU (2):
+  ARM: IOMMU: Tegra20: Add iommu_ops for GART driver
+  ARM: IOMMU: Tegra30: Add iommu_ops for SMMU driver
+
+ arch/arm/mach-tegra/include/mach/smmu.h |   63 ++
+ drivers/iommu/Kconfig                   |   22 +
+ drivers/iommu/Makefile                  |    2 +
+ drivers/iommu/tegra-gart.c              |  436 +++++++++++++
+ drivers/iommu/tegra-smmu.c              | 1026 +++++++++++++++++++++++++++++++
+ 5 files changed, 1549 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-tegra/include/mach/smmu.h
+ create mode 100644 drivers/iommu/tegra-gart.c
+ create mode 100644 drivers/iommu/tegra-smmu.c
 
 -- 
-cJ
+1.7.5.4
+
