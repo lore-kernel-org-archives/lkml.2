@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab2AEAT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 19:19:29 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60954 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757414Ab2AEAT1 (ORCPT
+	id S1757483Ab2AEATs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 19:19:48 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:48830 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757451Ab2AEATq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 19:19:27 -0500
-Date: Wed, 4 Jan 2012 16:19:13 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH 1/2] mm,mlock: drain pagevecs asynchronously
-In-Reply-To: <4F04E1B8.10109@gmail.com>
-Message-ID: <alpine.LSU.2.00.1201041549410.1267@eggly.anvils>
-References: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <1325403025-22688-1-git-send-email-kosaki.motohiro@gmail.com> <20120104140547.75d4dd55.akpm@linux-foundation.org> <4F04E1B8.10109@gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 4 Jan 2012 19:19:46 -0500
+Date: Thu, 5 Jan 2012 11:19:40 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dave Jones <davej@redhat.com>
+Subject: Re: linux-next: build failure after merge of the pci-current tree
+Message-Id: <20120105111940.e5675c8d16715767ed193461@canb.auug.org.au>
+In-Reply-To: <20120104161122.4e9d844a@jbarnes-desktop>
+References: <20120105110712.2666364926458942240d6534@canb.auug.org.au>
+	<20120104161122.4e9d844a@jbarnes-desktop>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Jan 2012, KOSAKI Motohiro wrote:
-> (1/4/12 5:05 PM), Andrew Morton wrote:
-> > On Sun,  1 Jan 2012 02:30:24 -0500
-> > kosaki.motohiro@gmail.com wrote:
-> > 
-> > > Because lru_add_drain_all() spent much time.
-> > 
-> > Those LRU pagevecs are horrid things.  They add high code and
-> > conceptual complexity, they add pointless uniprocessor overhead and the
-> > way in which they leave LRU pages floating around not on an LRU is
-> > rather maddening.
+--Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, we continue to have difficulties with not-quite-PageLRU-yet pages.
+Hi Jesse,
 
-> > 
-> > So the best way to fix all of this as well as this problem we're
-> > observing is, I hope, to completely remove them.
+On Wed, 4 Jan 2012 16:11:22 -0800 Jesse Barnes <jbarnes@virtuousgeek.org> w=
+rote:
+>
+> Arg failure of my hand merge.
 
-Nice aim, sounds like a dirty job.  I wonder how far we could get using
-lru_add_drain, avoiding lru_add_drain_all, and flushing pvec when pre-empted.
+Not really, the original was broken (as is the version in fc16 (which has
+been disabled there)).
 
-> ...
-> 
-> got it. so, let's wait hugh's "mm: take pagevecs off reclaim stack" next spin
-> and make the patches on top of it.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Don't wait on me, I wasn't intending another spin, with Andrew's last
-word on it today:
+--Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc
+Content-Type: application/pgp-signature
 
-> If we already have the latency problem at the isolate_lru_pages() stage
-> then I suppose we can assume that nobody is noticing it, so we'll
-> probably be OK.
-> 
-> For a while.  Someone will complain at some stage and we'll probably
-> end up busting this work into chunks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-and mm-commits does presently have my
-mm-rearrange-putback-inactive-pages.patch in on top of it.
+iQIcBAEBCAAGBQJPBOycAAoJEECxmPOUX5FE1qcP/A5lh+MIhW3hbSKgXYyC+dV4
+Y2uPA4gGm3ZBQIfaDQoUNz/XmgeuiIR0RZEypaF6mWq1PWAwY7zsDBuxMIDDzXRS
+7xho1JCetbI+BwHUBXSN191+6Zms+VaguqVAGpq9xb9vUa2e0HH7TRGIXkCj0v9A
+LvqUPM3rPgaBZDukd6b+QNRqKnsoZOSqrczg0Cs2F8+3O4xC8Z+myHF486sYUFyx
++OPeeC1cmf32qn5rWKckubbxcR/s1jAOYobx0+UuTS7szGnssQ4k6LN2hJVGYXSb
+Gk2+rwtJ7iDDzJjGJ2jjEg67wOBIvIK4nr1Zmp7JcGuUOaYeFf4LSOZFeEXacqcZ
+UWp2w13jt6F5lgGCyOOKOX7Eyk+jSryXqkCOanda2zGxOTDW8bRpHih0Zyx65yp/
+ZvsXs8Xn+cU0U3mxH6XllnYaR4WzKmtJimkU6IRXh5yG2tLspEwWYUIZkhc2SKdG
+w2Xi+xke+c83CGNGYj4oGh8R6a5xiuLJxhGJWIhN1t8odTpgQfmKnmJE20Sb344w
+hFVkAvWctyne4ddQHxkTBsGwccbkno/c0yh/pWJk3hGxpUIfoW9PyKFFZEZSDo/v
+rDuKwOO4f9onHIhnB4BkBZCc6Chbj+ANCxOpuKP5WV4kY0D/teuaF9aj/w3nzj/d
+JaOm24jvZRthuyVqjjfX
+=LnoU
+-----END PGP SIGNATURE-----
 
-Besides, these free_hot_cold_page_list() users are already avoiding
-the lru add pagevecs which Andrew is nudging towards removing above,
-so there shouldn't be much overlap.
-
-Or maybe you're thinking of my observation that it could avoid the
-!page_evictable putback_lru_page special case now: yes, I'd like to
-make that change sometime, but moved away to other things for now.
-
-Hugh
+--Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc--
