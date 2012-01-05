@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932606Ab2AETuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:50:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:59235 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932133Ab2AETuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:50:17 -0500
-Date: Thu, 5 Jan 2012 11:36:51 -0800
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [00/75] 3.1.8-stable review
-Message-ID: <20120105193651.GA28486@suse.de>
-References: <20120103223332.GA4112@kroah.com>
- <CA+55aFzd9nwBGy57+FM0oytAYk61R5XFP02pHDj-MVUXiZJE-w@mail.gmail.com>
+	id S932686Ab2AETuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:50:51 -0500
+Received: from georges.telenet-ops.be ([195.130.137.68]:51516 "EHLO
+	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504Ab2AETuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 14:50:50 -0500
+Message-ID: <4F05FF15.5010809@pandora.be>
+Date: Thu, 05 Jan 2012 20:50:45 +0100
+From: Bart De Schuymer <bdschuym@pandora.be>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFzd9nwBGy57+FM0oytAYk61R5XFP02pHDj-MVUXiZJE-w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Weinberger <richard@nod.at>
+CC: Stephen Hemminger <shemminger@vyatta.com>, davem@davemloft.net,
+        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with
+ bridge-nf-call-ip(6)tables=0
+References: <4F025A07.2000304@nod.at> <1325597164-13459-1-git-send-email-richard@nod.at> <1325597164-13459-2-git-send-email-richard@nod.at> <20120103081521.2fec3a29@nehalam.linuxnetplumber.net> <4F033E11.5060707@nod.at> <4F0361D7.3000602@pandora.be> <4F03650D.8050200@nod.at> <4F049290.3090803@pandora.be> <4F04DD19.601@nod.at>
+In-Reply-To: <4F04DD19.601@nod.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Antivirus: avast! (VPS 120105-1, 05/01/2012), Outbound message
+X-Antivirus-Status: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 11:29:15AM -0800, Linus Torvalds wrote:
-> On Tue, Jan 3, 2012 at 2:33 PM, Greg KH <gregkh@suse.de> wrote:
-> >
-> > The whole patch series can be found in one patch at:
-> >        kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.1.8-rc1.gz
-> > and the diffstat can be found below.
-> 
-> Btw, the diffstat seems to be the wrong thing to post. Wouldn't it be
-> much more natural to post the shortlog instead? That's the one that
-> people are much more likely to react to, in a "Ooh, Greg merged that
-> broken patch, I'd better tell him".
+Op 5/01/2012 0:13, Richard Weinberger schreef:
+>
+> Let's export brnf_call_iptables and brnf_call_ip6tables, such that
+> physdev_mt_check() can notify the user that his iptables rule will have
+> no effect.
+>
 
-Ah, ok, with 75+ patches, a diff of the shortlog is probably best, with
-only the new patches listed, I'll go generate that...
+I don't want to introduce a runtime dependency between the iptables 
+physdev module and the bridge module.
+This should keep working:
+#modprobe bridge
+#modprobe xt_physdev
+#rmmod bridge
+It will stop working if you use exported symbols of the bridge module in 
+the physdev module.
 
-greg k-h
+Bart
+
+-- 
+Bart De Schuymer
+www.artinalgorithms.be
+
