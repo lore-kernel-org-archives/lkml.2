@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab2AETr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:47:57 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:35712 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757318Ab2AETrz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:47:55 -0500
-Date: Thu, 5 Jan 2012 19:47:49 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] toshiba_acpi: Support alternate hotkey
- interfaces
-Message-ID: <20120105194749.GA26432@srcf.ucam.org>
-References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
- <1325617358-8286-3-git-send-email-seth.forshee@canonical.com>
- <20120105182522.GD24242@srcf.ucam.org>
- <20120105194338.GD25386@ubuntu-macmini>
+	id S932606Ab2AETuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:50:18 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59235 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932133Ab2AETuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 14:50:17 -0500
+Date: Thu, 5 Jan 2012 11:36:51 -0800
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/75] 3.1.8-stable review
+Message-ID: <20120105193651.GA28486@suse.de>
+References: <20120103223332.GA4112@kroah.com>
+ <CA+55aFzd9nwBGy57+FM0oytAYk61R5XFP02pHDj-MVUXiZJE-w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120105194338.GD25386@ubuntu-macmini>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFzd9nwBGy57+FM0oytAYk61R5XFP02pHDj-MVUXiZJE-w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh, if NTFY is only present on TOS1900, that'll be fine.
+On Thu, Jan 05, 2012 at 11:29:15AM -0800, Linus Torvalds wrote:
+> On Tue, Jan 3, 2012 at 2:33 PM, Greg KH <gregkh@suse.de> wrote:
+> >
+> > The whole patch series can be found in one patch at:
+> >        kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.1.8-rc1.gz
+> > and the diffstat can be found below.
+> 
+> Btw, the diffstat seems to be the wrong thing to post. Wouldn't it be
+> much more natural to post the shortlog instead? That's the one that
+> people are much more likely to react to, in a "Ooh, Greg merged that
+> broken patch, I'd better tell him".
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Ah, ok, with 75+ patches, a diff of the shortlog is probably best, with
+only the new patches listed, I'll go generate that...
+
+greg k-h
