@@ -1,124 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012Ab2AESBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:01:34 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:60846 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2AESBd (ORCPT
+	id S1756924Ab2AESC5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:02:57 -0500
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:47049 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755488Ab2AESC4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:01:33 -0500
-Date: Thu, 5 Jan 2012 10:01:24 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
-Message-ID: <20120105180123.GA8035@core.coreip.homeip.net>
-References: <Pine.LNX.4.44L0.1201051035330.1434-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201051035330.1434-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Jan 2012 13:02:56 -0500
+Date: Thu, 5 Jan 2012 10:02:51 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Keith Packard <keithp@keithp.com>, "Airlie, Dave" <airlied@linux.ie>,
+        Intel drivers <Intel-gfx@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PULL] drm-intel-next
+Message-ID: <20120105100251.3fc7dfef@jbarnes-desktop>
+In-Reply-To: <20120105152408.GD3831@phenom.ffwll.local>
+References: <86y5tmkeia.fsf@sumi.keithp.com>
+	<20120105152408.GD3831@phenom.ffwll.local>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/60lu0j27.U_bJjye.L40_r5"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+--Sig_/60lu0j27.U_bJjye.L40_r5
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jan 05, 2012 at 11:31:00AM -0500, Alan Stern wrote:
-> Greg and Kay:
-> 
-> There are some nasty problems connected with the driver core's
-> get_driver(), put_driver(), and driver_attach().  Not just
-> implementation bugs, but deeper conceptual difficulties.
-> 
-> Let's start with get_driver().  Its comment says that it increments the 
-> driver's refcount, just like get_device() and a lot of other utility 
-> routines.
-> 
-> But a struct driver is _not_ like a struct device!  It resembles a
-> piece of code more than a piece of data -- it acts as an encapsulation
-> of a driver.  Incrementing its refcount doesn't have much meaning
-> because a driver's lifetime isn't determined by the structure's
-> refcount; it's determined by when the driver's module gets unloaded.
-> 
-> What really matters for a driver is whether or not it is registered.  
-> Drivers expect, for example, that none of their methods will be called
-> after driver_unregister() returns.  It doesn't matter if some other
-> thread still holds a reference to the driver structure; that reference
-> mustn't be used for accessing the driver code after unregistration.  
-> And of course, driver_attach() does access the driver code, by calling 
-> the probe routine.
+On Thu, 5 Jan 2012 16:24:08 +0100
+Daniel Vetter <daniel@ffwll.ch> wrote:
+> I'd also like to express my frustration with the general -next process for
+> drm/i915:
+> - This drm-intel-next tree is less than 24h ours old (if you look at when
+>   it showed up at an official place where both our QA and the community
+>   can pick it up and test it). I fear we'll ship yet another disaster like
+>   the stack eating bug the vt-d/ilk w/a patch caused with an unbounded
+>   recursion. Our QA actually caught it in testing, but there was simply
+>   not enough time to fix things up before the buggy code landed in -linus.
+> - Because the drm-intel-next merge cycle started so late there has simply
+>   not been enough time to include quite a few bugfixes for serious issues
+>   like 20s delays in intial modeset, userspace-triggerable kernel OOPSes
+>   and deadlocks and reproducible hard hw hangs. For most of these there
+>   are testcases in intel-gpu-tools, and these issues span the entire set
+>   of hw generations drm/i915 currently supports. But this late it's imo
+>   no longer advisible to merge them, so we'll ship 3.3 with a bunch of
+>   known (and sometimes longstanding) serious issues that have fixes.
 
-Agree here.
+Yeah I have to second this and additionally complain about the patch
+lossiness & latency.  Part of this is my fault for not reviewing things
+as much as I should, but those reviews often get lost too...
 
-> 
-> An example where this is violated occurs in the usb-serial core.  Each
-> serial driver module registers (at least) two driver structures, one on
-> the usb_serial_bus and one on the usb_bus.  The usb_serial_driver
-> structure contains a pointer to the usb_driver structure, and this
-> pointer is passed to get_driver() when the serial driver's new_id sysfs
-> attribute is written to.
-> 
-> Now, udev scripts are capable of writing to sysfs attributes very soon
-> after the attribute is created.  In the case of USB serial drivers, we
-> have a bug report of a situation where this write took place after the
-> usb_serial_driver was registered but before the usb_driver was
-> registered.  Thus, get_driver() was handed a pointer to a driver
-> structure that had not even been initialized, let alone registered, and
-> so naturally it crashed.
-> 
-> Almost as bad is what can happen when a driver is unregistered while
-> some thread is holding a reference obtained from get_driver().  The
-> reference prevents the driver structure from being freed, but it
-> doesn't prevent the thread from calling driver_attach() after the
-> unregistration is complete, at which time the driver code does not
-> expect to be invoked.
-> 
-> To fix these problems, we need to change the semantics of get_driver()  
-> and put_driver().  Instead of taking a reference to the driver
-> structure, get_driver() should check whether the driver is currently
-> registered.  If not, return NULL; otherwise, pin the driver (i.e.,
-> block it from being unregistered) until put_driver() is called.
+Eugeni's i2c patches are a good example.  They've been out there since
+early Oct, have received review and testing, and should have been in
+-next for many months now (in previous releases!).
 
-Or maybe we should just drop get_driver() and put_driver() and just make
-sure that driver_attach() does not race with driver_unregister()?
-I think pinning driver so that it can't be unregistered (and
-consequently module unload hangs) its a mis-feature.
+What can we do to improve the process to get trees updated more
+regularly and get fixes integrated faster?
 
-> 
-> This will require some code auditing, because there are places where
-> get_driver() is called without checking the return value (see
-> drivers/pci/pci_driver.c:pci_add_dynid() for an example; there are
-> others).  It should be marked __must_check.
-> 
-> Also, there are places that call driver_attach() without first calling
-> get_driver() (see drivers/input/gameport/gameport.c,
-> drivers/input/serio/serio.c, and drivers/char/agp/amd64-agp.c).  They
-> may or may not be safe; I don't know.
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-Serio and gameport are safe as everyting is protected by serio_mutex so
-it is not possible to yank the driver our while we are trying to attach
-it to a device.
+--Sig_/60lu0j27.U_bJjye.L40_r5
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-> 
-> One more thing.  The new_id sysfs attribute can cause problems of its 
-> own.  Writes to it cause a dynamic ID structure to be allocated, and 
-> these structures will leak unless they are properly deallocated.  
-> Normally they are freed when the driver is unregistered.  But what if 
-> registration fails to begin with?  It might fail at a point after the 
-> new_id attribute was created, which means the attribute could have been 
-> written to.  The dynamic IDs need to be freed after registration fails, 
-> but nobody does this currently.
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Don't we create corresponding sysfs attributes only after driver
-successfully registered? And attributes are the only way to add (and
-thus allocate) new ids so I do not see why we'd be leaking here.
+iQIcBAEBAgAGBQJPBeXLAAoJEIEoDkX4Qk9h+9sQAJeUuRI0cHXcveq63cv4yz3W
+WojPQVfIpruHbmdW12eYom7piEpSlpjV8wGUPFakYskXYT9mBmUdrwLCYDh9ZIaT
+ETuo8w0lAf0LaYheyH9HjGHh5Q/rbstS6cX5lQM22JMK/ygakkbfiHOoci7KJpUZ
+6+j9082MN1Gk3vgZVyzKCMAniEOkT9ed/N4nj80zRdlZ9Hs6yWkWcHDwkHSIp1S9
+A7rk6mL4wOZMgA+3L6ndaK4lFQ2H+3M2XPq1upzx9tyn36OVtPqapbtc8Sxr1IyT
+KO1yn7PnfsB2IzWw7pMK92w3EVC+fxt4dc/TOB8SDge92ceRP2x5naIZVAv0556d
+9UYPUPj+IrqqkQCFIbyq2KKzEH731t2i/T/IZpCPwhSFD2pukA0+VITn/Utp3vP8
+1NDQ4u8pVsQ/Vdd4pIHX6i7TywQL5o0/z55gIzVb+G1I0ynI1ZXnIJ7lobrh4mev
+W3B2T4fDXRQ2VF8KLLg9s89jSvxCbvc32yDgN+V4CL21AM7wwR58z67b0kk75PzN
+e63z+aLg+bnBGjaoNunKgIV+VtKHO8qV72yZEiOE8MPs2+o13JaAi+RGcgULKGBr
+EDfXj6oBlkcLaTfYD5N7VXwo9QVuUgf1EPiDtjltaIAuR829NwKcubca0iZSvJ6Z
+pLs5OEfrzyVjXa7ugzMq
+=spbn
+-----END PGP SIGNATURE-----
 
-Thanks.
-
--- 
-Dmitry
+--Sig_/60lu0j27.U_bJjye.L40_r5--
