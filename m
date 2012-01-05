@@ -1,80 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756619Ab2AENIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 08:08:44 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:38370 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751457Ab2AENIn (ORCPT
+	id S1756647Ab2AENOP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 08:14:15 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65141 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751277Ab2AENOO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 08:08:43 -0500
+	Thu, 5 Jan 2012 08:14:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <CABPqkBQ_MFdi1gc7Tje=u0n+RLd1gzo1mHb9e6i20T8JPNrpwA@mail.gmail.com>
-References: <20120104143945.GA4783@quad>
-	<1325712298.3084.5.camel@laptop>
-	<CABPqkBSR4a7PCyYxhE0kpepc3f0f6Rh6JU55_A3ubWYnN+G3iA@mail.gmail.com>
-	<1325717396.3084.12.camel@laptop>
-	<CABPqkBQ_MFdi1gc7Tje=u0n+RLd1gzo1mHb9e6i20T8JPNrpwA@mail.gmail.com>
-Date: Thu, 5 Jan 2012 13:08:41 +0000
-Message-ID: <CABPqkBR2PmqVUF2XmTouLy5jDiDhFVgzBvcaMw-NqEksVjYg_w@mail.gmail.com>
-Subject: Re: perf_events: proposed fix for broken intr throttling (repost)
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, gleb@redhat.com,
-        asharma@fb.com, vince@deater.net, wcohen@redhat.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20111229024647.GA11309@S2100-06.ap.freescale.net>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+	<1324402840-32451-3-git-send-email-b29396@freescale.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
+	<7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
+	<74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
+	<7FE21149F4667147B645348EC6057885077F82@039-SN2MPN1-013.039d.mgd.msft.net>
+	<20111229024647.GA11309@S2100-06.ap.freescale.net>
+Date: Thu, 5 Jan 2012 21:14:13 +0800
+Message-ID: <CAA+hA=Tx0==PLFSN-vqOkRKmKZ-5FvzTNZqRwCLov+FcQxiNNQ@mail.gmail.com>
+Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux mappings
+From: Dong Aisheng <dongas86@gmail.com>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
-
-I looked into this some more this morning. I don't think your proposed
-scheme can work.
-Unless, I misunderstood you, you were suggesting that we could perhaps
-use a lazy
-approach in perf_event_task_tick() and walk the event list only when
-we have, at least,  one
-event to unthrottle, i.e., similar to what is done with nr_freq. That
-cannot work. The problem is
-that you'd let all events get throttled before you'd unthrottle them
-in the next timer tick.
-At each overflow, hwc->interrupt would get incremented until it
-reached MAX_INTERRUPTS.
-Then, the event would be stopped (throttled), you'd do
-ctx->nr_throttled = 1. At the next
-timer tick, perf_event_task_tick() would then unthrottle the event. In
-that scheme, the
-event would be throttled for at most a tick. But in fact, the event
-never generated that
-many overflows/tick to justify throttling.
-
-I think there is no other way than what I suggested in my initial email:
-  1- revert the nr_freq optimization
-  2- reset hwc->interrupt on all events at each tick
-
-Do you have a better idea?
-
-On Wed, Jan 4, 2012 at 11:02 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Wed, Jan 4, 2012 at 10:49 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> On Wed, 2012-01-04 at 21:33 +0000, Stephane Eranian wrote:
->>> > I don't think it needs that, I do dislike the unconditional iterate all
->>> > events thing though. Maybe we can set some per-cpu state indicating
->>> > someone got throttled (rare under normal operation -- you'd hope) and
->>> > only iterate to unthrottle when we find this set.
->>> >
->>> Could try that too.
->>>
->>> > I think the event scheduling resulting from migration will already
->>> > re-enable the event, avoiding the loss of unthrottle due to that..
->>> > although it would be good to verify that.
->>> >
->>> Yes, you're not dead forever, but still it is not acceptable as is.
+On Thu, Dec 29, 2011 at 10:46 AM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> On Tue, Dec 27, 2011 at 02:41:25PM +0000, Dong Aisheng-B29396 wrote:
+> [...]
+>> > You could have nested sub-nodes, say something like:
+>> >
+>> > iomuxc@020e0000 {
+>> >     compatible = "fsl,imx6q-iomuxc";
+>> >     reg = <0x020e0000 0x4000>;
+>> >     fsl,pins {
+>> >         ... // fsl-specific pin properties
+>> >     };
+>> >     fsl,groups {
+>> >         ... // fsl-specific group properties
+>> >     };
+>> >     fsl,functions {
+>> >         ... // fsl-specific mux function properties
+>> >     };
+>> >     pinmux-usage {
+>> >         // standardized pinmux "table" properties
+>> >         sd4 { // pin group name
+>> >             function = "sdio4"; // this function active on it
+>> >             ...
+>> >         };
+>> >         ...
+>> >     }
+>> >     ...
+>> > }
+>> >
+>> Yes, I could do that.
+>> The extra effort is that we have to manually exclude one pinmux-usage
+>> node in pinmux driver since originally i take the child node count of
+>> iomuxc as the function count since all child nodes are functions,
+>> that why I firstly took the mapping node out of iomuxc, in addition
+>> the old way i used seems to be more brief and clear.
 >>
->> Oh for sure, I didn't mean it like that. What I was getting at is a
->> counter getting throttled on one cpu, setting the per-cpu variable,
->> getting migrated and not getting unthrottled due to now living on
->> another cpu which doesn't have the per-cpu thing set.
+> Stephen suggested you put all the function nodes under node
+> 'fsl,functions' (not sure prefix fsl is necessary).  In that case,
+> of_get_child_count() on 'fsl,functions' still get you the function
+> count you want, right?
+>
+> But we do not bother with it, if we do not have pinmux-usage at all.
+> See below ...
+>
+>> I tried adding pinmux-usage as a sub node of iomuxc and got two issues:
+>> Taking imx6q as an example:
+>> iomuxc@020e0000 {
+>>         uart4 {
+>>                 func-name = "uart4";
+>>                 grp-name = "uart4grp";
+>>                 grp-pins = <107 108>;
+>>                 num-pins = <2>;
+>>                 grp-mux = <4 4>;
+>>                 num-mux = <2>;
+>>         };
 >>
-> Yes, that is true.
-> I think that throttled counter needs to live in ctx and not per-cpu.
+>>         sd4 {
+>>                 func-name = "sd4";
+>>                 grp-name = "sd4grp";
+>>                 grp-pins = <170 171 180 181 182 183 184 185 186 187>;
+>>                 num-pins = <10>;
+>>                 grp-mux = <0 0 1 1 1 1 1 1 1 1>;
+>>                 num-mux = <10>;
+>>         };
+>>
+>>         pinmux-mapping {
+>>                 uart4 {
+>>                         function = "uart4";
+>>                         dev = <&uart4>;
+>>                 };
+>>
+>>                 usdhc4 {
+>> /*                        ctrl-dev-name = "20e0000.iomuxc"; */
+>>                         function = "sd4";
+>>                         dev = <&usdhc4>;
+>>                 };
+>>         };
+>> };
+>>
+>> If we remove ctrl-dev-name and get it from its parent node in drivers as
+>> you suggested,
+>> first, since this work will be done in the common API (pinmux_of_register_mappings
+>> Requires pass the pinmux mapping node to it for construct the mapping table)
+>> It will introduce a restriction that all platforms should define this node
+>> under their pinctrl device node.
+>> Second, it seems we cannot get its parent node device or device name in driver
+>> (can only get node Name which is not sufficient for construct the pin map table
+>> required by pinctrl core) and current device tree subsystem seems do not support
+>> get its associated device from a device node.
+>> We may not be able to construct ctrl-dev-name or ctrl-dev for struct pinmux_map.
+>> I'm not sure if I missed something, if missed please let me know.
+>> To support it, we may need to add support for converting device node
+>> to device. Not sure it's applicable since I still have not tried it.
+>>
+>> The same issue applies to dev using a phandle.
+>>
+> We do not bother with it, if we do not have pinmux-usage at all.
+> See below ...
+>
+> [...]
+>
+>> I was ever thought putting a phandle of pinmux function in each device,
+>> Then pinmux mapping table seems not need anymore. Like:
+>>
+>> usdhc4: usdhc@0219c000 { /* uSDHC4 */
+>>         compatible = "fsl,imx6q-usdhc";
+>>       ....
+>>         pinmux = <&pinmux-sd4>;
+>> };
+>>
+>> iomuxc@020e0000 {
+>>         pinmux-sd4 : sd4 {
+>>                 func-name = "sd4";
+>>                 grp-name = "sd4grp";
+>>                 grp-pins = <170 171 180 181 182 183 184 185 186 187>;
+>>                 num-pins = <10>;
+>>                 grp-mux = <0 0 1 1 1 1 1 1 1 1>;
+>>                 num-mux = <10>;
+>>         };
+>>
+>> It is a pure hw point of view to define node.
+>
+> That's the way we should go for.  This is exactly the same thing that
+> clk and regulator DT support is doing.  And right, in that way, we do
+> not need pinmux mapping for DT at all.
+>
+I tried this way and basically it works but has a few limitations due to
+via dt.
+I will send out patch in this thread for discussion.
+
+>> And it may need to implement a of_pinmux_get.
+>
+> To make the pinmux api generic for both dt and non-dt users, the pinmux
+> client driver should still see/call pinmux_get, something like
+> of_pinmux_get should be sorted out behind pinmux_get.
+>
+>> But what about the pin maps without device associated?
+>>
+> Do we have such cases?
+>
+It's hog_on_boot function.
+
+Regards
+Dong Aisheng
