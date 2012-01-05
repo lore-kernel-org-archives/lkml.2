@@ -1,183 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab2AESPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:15:42 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:38838 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713Ab2AESPl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:15:41 -0500
-Date: Thu, 5 Jan 2012 13:15:35 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com
-Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739:
- group 1687, 32254 clusters in bitmap, 32258 in gd
-Message-ID: <20120105181535.GB26382@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Sander Eikelenboom <linux@eikelenboom.it>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	dm-devel@redhat.com
-References: <217150909.20120105113759@eikelenboom.it>
- <197607646.20120105142107@eikelenboom.it>
- <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu>
- <4910694144.20120105171428@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4910694144.20120105171428@eikelenboom.it>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1757073Ab2AESPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:15:47 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52258 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756619Ab2AESPp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 13:15:45 -0500
+X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Uad61z6EFVoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=YjAkv39DpMX50EvOdBYA:9 a=NLtazRfXxHU_26MMG-0A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1325787342.12696.59.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] sched_rt: the task in irq context can be migrated
+ during context switching
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Chanho Min <chanho0207@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, chanho.min@lge.com
+Date: Thu, 05 Jan 2012 13:15:42 -0500
+In-Reply-To: <1325786132.3508.1.camel@twins>
+References: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
+	 <1325786132.3508.1.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
-> 
-> OK spoke too soon, i have been able to trigger it again:
-> - copying files from LV to the same LV without the snapshot went OK
-> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
+On Thu, 2012-01-05 at 18:55 +0100, Peter Zijlstra wrote:
 
-OK.  Originally, you said you did this:
+> So the problem is quite real, as already said we don't need to worry
+> about the future, but we might want to fix this in previous kernels.
+> What I'm not entirely sure of is the proposed solution, Steven don't we
+> get in trouble by simply bailing out on the push?
 
-1) fsck -v -p -f the filesystem
-2) mount the filesystem
-3) Try to copy a file
-4) filesystem will be mounted RO on error  (see below)
-5) fsck again, journal will be recovered, no other errors
-6) start at 1)
+It shouldn't break anything. We shouldn't be pushing tasks that are
+running on a rq anyway. I don't see any harm here. As this scenario can
+only happen if we get an interrupt after letting go of the rq lock and
+before doing the switch_to(). The schedule_tail() calls
+post_schedule_rt() which does the push again, and will push task A at
+that time.
 
-Was this with with a read-only snapshot always being in existence
-through all of these five steps?  When was the RO snapshot created?
+That said, I'm not sure this patch is enough. I'm worried about a pull
+happening. As task A is running, we could possible possibly pick it on
+another CPU to do a pull.
 
-If a RO snapshot has to be there in order for this to happen, then
-this is almost certainly a device-mapper regression.  (dm-devel folks,
-this is a problem which apparently occurred when the user went from
-v3.1.5 to v3.2, so this looks likes 3.2 regression.)
+Hmm, looking at the code, the pull already does a task_running() test,
+so I guess we should be fine.
 
-						- Ted
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-
-> 
-> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
-> [ 2357.656056] Aborting journal on device dm-2-8.
-> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
-> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
-> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
-> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
-> 
-> 
-> Attached are 4x output from dumpe2fs
-> - dumpe2fs-xen_images-3.2.0                           Made just after boot
-> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
-> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
-> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
-> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
-> 
-> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
-> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
-> 
-> --
-> Sander
-> 
-> 
-> 
-> >> 
-> >> --
-> >> Sander
-> >> 
-> >> 
-> >> This is a forwarded message
-> >> From: Sander Eikelenboom <linux@eikelenboom.it>
-> >> To: "Theodore Ts'o" <tytso@mit.edu>
-> >> Date: Thursday, January 5, 2012, 11:37:59 AM
-> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
-> >> 
-> >> ===8<==============Original message text===============
-> >> 
-> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
-> >> 
-> >> Steps:
-> >> 1) fsck -v -p -f the filesystem
-> >> 2) mount the filesystem
-> >> 3) Try to copy a file
-> >> 4) filesystem will be mounted RO on error  (see below)
-> >> 5) fsck again, journal will be recovered, no other errors
-> >> 6) start at 1)
-> >> 
-> >> 
-> >> I think the way i bricked it is:
-> >> - make a lvm snapshot from that lvm logical disk
-> >> - mount that lvm snapshot as RO
-> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
-> >> - it fails and i can't recover (see above)
-> >> 
-> >> 
-> >> Is there a way to recover from this ?
-> >> 
-> >> 
-> >> 
-> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
-> >> [  220.749415] Aborting journal on device dm-2-8.
-> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
-> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
-> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
-> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
-> >> serveerstertje:/mnt/xen_images/domains/production# cd /
-> >> serveerstertje:/# umount /mnt/xen_images/
-> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
-> >> fsck from util-linux-ng 2.17.2
-> >> /dev/mapper/serveerstertje-xen_images: recovering journal
-> >> 
-> >>     277 inodes used (0.00%)
-> >>       5 non-contiguous files (1.8%)
-> >>       0 non-contiguous directories (0.0%)
-> >>         # of inodes with ind/dind/tind blocks: 41/41/3
-> >>         Extent depth histogram: 69/28/2
-> >> 51890920 blocks used (79.18%)
-> >>       0 bad blocks
-> >>      41 large files
-> >> 
-> >>     199 regular files
-> >>      53 directories
-> >>       0 character device files
-> >>       0 block device files
-> >>       0 fifos
-> >>       0 links
-> >>      16 symbolic links (16 fast symbolic links)
-> >>       0 sockets
-> >> --------
-> >>     268 files
-> >> serveerstertje:/#
-> >> 
-> >> 
-> >> 
-> >> 
-> >> System:
-> >> - Kernel 3.2.0
-> >> - Debian Squeeze with:
-> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
-> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
-> >> 
-> >> ===8<===========End of original message text===========
-> >> 
-> >> 
-> >> 
-> >> -- 
-> >> Best regards,
-> >> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
-> 
-> 
-> 
-> 
-> -- 
-> Best regards,
->  Sander                            mailto:linux@eikelenboom.it
-
-
-
-
+-- Steve
 
 
