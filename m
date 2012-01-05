@@ -1,52 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757158Ab2AEMQi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 07:16:38 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55347 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757026Ab2AEMQe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 07:16:34 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=AiASCQQQssdXkmXwB5IA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325765791.12696.41.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Thu, 05 Jan 2012 07:16:31 -0500
-In-Reply-To: <1325764011.12696.38.camel@gandalf.stny.rr.com>
-References: <20111221123624.193898256@goodmis.org>
-	 <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
-	 <20120102134856.GA32673@elte.hu>
-	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
-	 <1325635922.12696.8.camel@gandalf.stny.rr.com>
-	 <1325653301.12696.20.camel@gandalf.stny.rr.com>
-	 <20120104141107.GA24770@elte.hu>
-	 <1325696759.12696.24.camel@gandalf.stny.rr.com>
-	 <20120105091916.GA22598@elte.hu>
-	 <1325764011.12696.38.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1757324Ab2AEMRf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 07:17:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757152Ab2AEMQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 07:16:37 -0500
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Cc: H Hartley Sweeten <hartleys@visionengravers.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 16/16] GFS2: local functions should be static
+Date: Thu,  5 Jan 2012 11:52:02 +0000
+Message-Id: <1325764322-10807-17-git-send-email-swhiteho@redhat.com>
+In-Reply-To: <1325764322-10807-1-git-send-email-swhiteho@redhat.com>
+References: <1325764322-10807-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 06:46 -0500, Steven Rostedt wrote:
+From: H Hartley Sweeten <hartleys@visionengravers.com>
 
-> When I reverted this, my machine booted. I'm now trying that machine
-> again with your allyesconfig.
+Quiets the sparse noise:
 
-After reverting that patch, your allyesconfig boots up fine on this
-machine. I'll reboot it several more times to see if I can reproduce any
-of the lockups you see. If I'm not getting anywhere on this, I'll go and
-test the NMI side.
+warning: symbol 'gfs2_initxattrs' was not declared. Should it be static?
 
--- Steve
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index e0ada04..cb81898 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -621,7 +621,7 @@ fail:
+ 	return error;
+ }
+ 
+-int gfs2_initxattrs(struct inode *inode, const struct xattr *xattr_array,
++static int gfs2_initxattrs(struct inode *inode, const struct xattr *xattr_array,
+ 		    void *fs_info)
+ {
+ 	const struct xattr *xattr;
+-- 
+1.7.4
 
