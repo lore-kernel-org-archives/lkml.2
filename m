@@ -1,115 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab2AEG3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 01:29:32 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47507 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758035Ab2AEG3V (ORCPT
+	id S1758021Ab2AEGeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 01:34:10 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55317 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2AEGeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 01:29:21 -0500
-Date: Thu, 5 Jan 2012 06:29:19 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan.com@nvidia.com>
-Cc: lrg@slimlogic.co.uk, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        ldewangan@nvidia.com
-Subject: Re: [PATCH V1] TPS62360: Add tps62360 regulator driver
-Message-ID: <20120105062919.GI11867@opensource.wolfsonmicro.com>
-References: <1325668818-1096-1-git-send-email-ldewangan@nvidia.com>
+	Thu, 5 Jan 2012 01:34:08 -0500
+Date: Wed, 4 Jan 2012 22:34:00 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jan Steinhoff <mail@jan-steinhoff.de>
+Cc: Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: Synaptics USB device driver
+Message-ID: <20120105063400.GA31895@core.coreip.homeip.net>
+References: <20120103194033.779cb829@greyhound>
+ <alpine.LNX.2.00.1201040954000.24984@pobox.suse.cz>
+ <201201041020.41795.oneukum@suse.de>
+ <20120104094103.GA29069@core.coreip.homeip.net>
+ <20120105053957.6f01ae73@greyhound>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325668818-1096-1-git-send-email-ldewangan@nvidia.com>
-X-Cookie: Don't read everything you believe.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20120105053957.6f01ae73@greyhound>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 02:50:18PM +0530, Laxman Dewangan wrote:
-> Change-Id: I93739aad865401047738f899b2248f2714d824ea
+On Thu, Jan 05, 2012 at 05:39:57AM +0000, Jan Steinhoff wrote:
+> On Wed, 4 Jan 2012 01:41:03 -0800
+> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> > Om, so I have been looking at the driver and the following seems to be
+> > still working with my Lenovo composite touchpad/stick.
+> > 
+> > Changes:
+> > 
+> > - the stick is reported in relative mode; we might consider addig
+> >   sensitivity control similar to trackpoint driver. Press-to-select -
+> >   maybe in driver, or in client; undecided.
+> > 
+> > - got rid of BTN_MISC/BTN_MIDDLE option (at least for now);
+> 
+> Please make BTN_MIDDLE the default in this case for the cPad. This
+> button is actually located where the middle button should be. Only if
+> one uses the cPad's background display it obtains a "special" meaning.
+> (Then pressing it should launch a menu on the background display and the
+> touchpad works as a touchscreen for this display.)
 
-Don't include gerritt droppings in upstream submissions.
+OK, let's change it to MTN_MIDDLE. We may consider changing it to
+BTN_MISC if cPad display support is merged and active.
 
-> +/* Supported voltage values for regulators */
-> +static const u16 TPS62360_VOLTAGES[] = {
-> +	 770,  780,  790,  800,  810,  820,  830,  840,  850,  860,
-> +	 870,  880,  890,  900,  910,  920,  930,  940,  950,  960,
-> +	 970,  980,  990, 1000, 1010, 1020, 1030, 1040, 1050, 1060,
-> +	1070, 1080, 1090, 1110, 1110, 1120, 1130, 1140, 1150, 1160,
-> +	1170, 1180, 1190, 1200, 1210, 1220, 1230, 1240, 1250, 1260,
-> +	1270, 1280, 1290, 1300, 1310, 1320, 1330, 1340, 1350, 1360,
-> +	1370, 1380, 1390, 1400,
-> +};
+> 
+> > - added devices to HID blacklist;
+> 
+> I think it is more flexible and save to use the manual driver binding
+> capability of the USB core instead:
+> 
+> http://lwn.net/Articles/143397/
+> 
+> Which driver to use for which device can then be set, e.g., with the
+> help of udev config files.
 
-Why are you using a lookup table here?  Just calaculate the values.
-This is a pervasive problem with the TI drivers which leads me to
-suspect cut'n'paste and therefore an opportunity to factor some code
-out.
+However it is more work for distributions and users. As it stands now
+adding blacklist and compiling synaptics_usb does not require any
+additional userspace support (everyone packages and installs synaptics X
+driver nowadays).
 
-> +static int tps62360_reg_modify_bits(struct tps62360_chip *tps, u8 reg,
-> +		u8 set_mask, u8 clear_mask)
-> +{
+> 
+> Blacklisting has the big disadvantage that the device will not work at
+> all if the synaptics-usb kernel module is not loaded/present, whereas
+> otherwise usbhid is used as the default. At least the corresponding
+> part in the blacklist should be enclosed in
+> #ifdef CONFIG_MOUSE_SYNAPTICS_USB ... #endif
 
-There's a lot of code in this driver that looks like it could be
-factored out by using the regmap API, not just the register I/O but also
-the cache.
+This is a good idea, I'll add ifdefs.
 
-> +static int tps62360_dcdc_is_enabled(struct regulator_dev *dev)
-> +{
-> +	/**
-> +	 * Always return 1 as the EN is not controlled by register
-> +	 * programming */
-> +	return 1;
-> +}
+> 
+> Further, as noted in the initial comment, not all devices have been
+> tested with this driver. This is another reason to allow the user to
+> choose which driver to use.
 
-Don't implement unsupported operations.
+I'll remove touchscreen from blacklist/device table as it really should
+generate different set of events; the rest I hope we'll be able to fix
+reasonably quickly if there are complaints.
 
-> +
-> +	for (vsel = 0; vsel < tps->desc.n_voltages; ++vsel) {
-> +		int uV = tps->voltages[vsel] * 1000;
-> +		if (min_uV <= uV && uV <= max_uV) {
+> 
+> > - runtime PM (hopefully I got it right);
+> > 
+> > - open/close.
+> 
+> I do not understand why needs_remote_wakeup is flipped in open/close.
+> As far as I know, the device can not autosuspend after
+> usb_autopm_get_interface was called anyway?
 
-Not only do all the drivers coming in for these devices use lookup
-tables they also all open code the lookup :/
+We do usb_autopm_put_interface as last action in open() so the device
+will be suspended and needs wakeups.
 
-> +	init_data = &pdata->reg_init_data;
-> +	tps = kzalloc(sizeof(*tps), GFP_KERNEL);
-> +	if (!tps) {
+> 
+> > Still TODO:
+> > 
+> > - query device for supported rages instead of having module
+> > parameters.
+> 
+> At least for the cPad the device does unfortunately not provide this
+> information. I tried to read the HID descriptors once but just got
+> errors. However, the defaults work quite well for all tested devices.
+> The module parameters are actually meant to just provide a simple
+> workaround in case one of the untested devices (especially the
+> touchscreen) might need them.
 
-Use devm_kzalloc(), saves having to worry about cleanup.
+OK, so why don't we replace module parameters with default ranges and
+maybe later Synaptics guys will tell us how to query ranges properly?
+Default ranges worked reasonably well for PS/2 version for several
+years.
 
-> +static void tps62360_shutdown(struct i2c_client *client)
-> +{
-> +	struct tps62360_chip *tps = i2c_get_clientdata(client);
-> +	int st;
-> +
-> +	if (!tps->en_discharge)
-> +		return;
-> +
-> +	/* Configure the output discharge path */
-> +	st = tps62360_reg_modify_bits(tps, REG_RAMPCTRL, BIT(2), BIT(2));
-> +	if (st < 0)
-> +		dev_err(tps->dev, "%s() fails in updating reg %d\n",
-> +			__func__, REG_RAMPCTRL);
-> +}
+Thanks.
 
-I rather suspect that if this is worth doing it's also worth doing over
-suspend...
-
-> +MODULE_DESCRIPTION("TPS62360 voltage regulator driver");
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_ALIAS("platform:tps62360");
-
-This isn't a platform driver, it's a driver for an I2C device.
-
-> + * @vsel: Select the voltage id register.
-
-What's this?
-
-> + * @init_uV: initial micro volts which need to be set.
-
-No, there's no way stuff like this should be being open coded in
-individual regulator drivers - this isn't at all specific to this
-regulator so it should be (and is) supported by the standard
-constraints.
+-- 
+Dmitry
