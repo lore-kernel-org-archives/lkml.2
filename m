@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab2AEATs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 19:19:48 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:48830 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757451Ab2AEATq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 19:19:46 -0500
-Date: Thu, 5 Jan 2012 11:19:40 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dave Jones <davej@redhat.com>
-Subject: Re: linux-next: build failure after merge of the pci-current tree
-Message-Id: <20120105111940.e5675c8d16715767ed193461@canb.auug.org.au>
-In-Reply-To: <20120104161122.4e9d844a@jbarnes-desktop>
-References: <20120105110712.2666364926458942240d6534@canb.auug.org.au>
-	<20120104161122.4e9d844a@jbarnes-desktop>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	id S1757479Ab2AEAXZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 19:23:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:23633 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757414Ab2AEAXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 19:23:24 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="93044611"
+Date: Thu, 5 Jan 2012 00:36:18 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: gregkh@suse.de, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: driver for m32 arch should not have DEC alpha
+ errata
+Message-ID: <20120105003618.2232c5d9@bob.linux.org.uk>
+In-Reply-To: <1325708184-9861-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1325708184-9861-1-git-send-email-paul.gortmaker@windriver.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed,  4 Jan 2012 15:16:24 -0500
+Paul Gortmaker <paul.gortmaker@windriver.com> wrote:
 
-Hi Jesse,
+> This driver was copied from the original 8250 driver and hence
+> got the DEC alpha errata workaround.  But the workaround is ugly
+> and we don't really want it in any more places than it absolutely
+> needs to be.  Obviously ARCH=m32r means ARCH != alpha, so just
+> remove the references to the ALPHA_KLUDGE_MCR define.
+> 
+> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-On Wed, 4 Jan 2012 16:11:22 -0800 Jesse Barnes <jbarnes@virtuousgeek.org> w=
-rote:
->
-> Arg failure of my hand merge.
-
-Not really, the original was broken (as is the version in fc16 (which has
-been disabled there)).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBOycAAoJEECxmPOUX5FE1qcP/A5lh+MIhW3hbSKgXYyC+dV4
-Y2uPA4gGm3ZBQIfaDQoUNz/XmgeuiIR0RZEypaF6mWq1PWAwY7zsDBuxMIDDzXRS
-7xho1JCetbI+BwHUBXSN191+6Zms+VaguqVAGpq9xb9vUa2e0HH7TRGIXkCj0v9A
-LvqUPM3rPgaBZDukd6b+QNRqKnsoZOSqrczg0Cs2F8+3O4xC8Z+myHF486sYUFyx
-+OPeeC1cmf32qn5rWKckubbxcR/s1jAOYobx0+UuTS7szGnssQ4k6LN2hJVGYXSb
-Gk2+rwtJ7iDDzJjGJ2jjEg67wOBIvIK4nr1Zmp7JcGuUOaYeFf4LSOZFeEXacqcZ
-UWp2w13jt6F5lgGCyOOKOX7Eyk+jSryXqkCOanda2zGxOTDW8bRpHih0Zyx65yp/
-ZvsXs8Xn+cU0U3mxH6XllnYaR4WzKmtJimkU6IRXh5yG2tLspEwWYUIZkhc2SKdG
-w2Xi+xke+c83CGNGYj4oGh8R6a5xiuLJxhGJWIhN1t8odTpgQfmKnmJE20Sb344w
-hFVkAvWctyne4ddQHxkTBsGwccbkno/c0yh/pWJk3hGxpUIfoW9PyKFFZEZSDo/v
-rDuKwOO4f9onHIhnB4BkBZCc6Chbj+ANCxOpuKP5WV4kY0D/teuaF9aj/w3nzj/d
-JaOm24jvZRthuyVqjjfX
-=LnoU
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jan_2012_11_19_40_+1100_0nBWPN2a2kuVy=sc--
+Acked-by: Alan Cox <alan@linux.intel.com>
