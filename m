@@ -1,116 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756082Ab2AERzn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 12:55:43 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:43269 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752303Ab2AERzm convert rfc822-to-8bit (ORCPT
+	id S1756535Ab2AER6r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 12:58:47 -0500
+Received: from 184-106-247-128.static.cloud-ips.com ([184.106.247.128]:60482
+	"EHLO cloud01.chad-versace.us" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754282Ab2AER6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 12:55:42 -0500
-Message-ID: <1325786132.3508.1.camel@twins>
-Subject: Re: [PATCH] sched_rt: the task in irq context can be migrated
- during context switching
-From: Peter Zijlstra <peterz@infradead.org>
-To: Chanho Min <chanho0207@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        chanho.min@lge.com, rostedt <rostedt@goodmis.org>
-Date: Thu, 05 Jan 2012 18:55:32 +0100
-In-Reply-To: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
-References: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Thu, 5 Jan 2012 12:58:46 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -1
+Message-ID: <4F05E4CC.1040705@bwidawsk.net>
+Date: Thu, 05 Jan 2012 09:58:36 -0800
+From: Ben Widawsky <ben@bwidawsk.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
+MIME-Version: 1.0
+To: Keith Packard <keithp@keithp.com>, "Airlie, Dave" <airlied@linux.ie>,
+        Intel drivers <Intel-gfx@lists.freedesktop.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PULL] drm-intel-next
+References: <86y5tmkeia.fsf@sumi.keithp.com> <20120105152408.GD3831@phenom.ffwll.local>
+In-Reply-To: <20120105152408.GD3831@phenom.ffwll.local>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 20:00 +0900, Chanho Min wrote:
-> This issue happens under the following conditions
-> 1. preemption is off
-> 2. __ARCH_WANT_INTERRUPTS_ON_CTXSW is defined.
-> 3. RT scheduling class
-> 4. SMP system
-> 
-> Sequence is as follows:
-> 1.suppose current task is A. start schedule()
-> 2.task A is enqueued pushable task at the entry of schedule()
->    __schedule
->     prev = rq->curr;
->     ...
->     put_prev_task
->      put_prev_task_rt
->       enqueue_pushable_task
-> 4.pick the task B as next task.
->    next = pick_next_task(rq);
-> 3.rq->curr set to task B and context_switch is started.
->    rq->curr = next;
-> 4.At the entry of context_swtich, release this cpu's rq->lock.
->    context_switch
->     prepare_task_switch
->      prepare_lock_switch
->       raw_spin_unlock_irq(&rq->lock);
-> 5.Shortly after rq->lock is released, interrupt is occurred and start
-> IRQ context
-> 6.try_to_wake_up() which called by ISR acquires rq->lock
->     try_to_wake_up
->      ttwu_remote
->       rq = __task_rq_lock(p)
->       ttwu_do_wakeup(rq, p, wake_flags);
->         task_woken_rt
-> 7.push_rt_task picks the task A which is enqueued before.
->    task_woken_rt
->     push_rt_tasks(rq)
->      next_task = pick_next_pushable_task(rq)
-> 8.At find_lock_lowest_rq(), If double_lock_balance() returns 0,
-> lowest_rq can be the remote rq.
->   (But,If preemption is on, double_lock_balance always return 1 and it
-> does't happen.)
->    push_rt_task
->     find_lock_lowest_rq
->      if (double_lock_balance(rq, lowest_rq))..
-> 9.find_lock_lowest_rq return the available rq. task A is migrated to
-> the remote cpu/rq.
->    push_rt_task
->     ...
->     deactivate_task(rq, next_task, 0);
->     set_task_cpu(next_task, lowest_rq->cpu);
->     activate_task(lowest_rq, next_task, 0);
-> 10. But, task A is on irq context at this cpu.
->     So, task A is scheduled by two cpus at the same time until restore from IRQ.
->     Task A's stack is corrupted. Unexpected problem is occurred.
-> 
-> In recent ARM, I saw the patch to remove
-> __ARCH_WANT_INTERRUPTS_ON_CTXSW is posted.
-> But, if that feature is adopted by the others architecture or to
-> remain in the release version,,this can occur.
-> This is my patch to fix it. Any opinions will be appreciated.
+On 01/05/2012 07:24 AM, Daniel Vetter wrote:
+> On Wed, Jan 04, 2012 at 07:35:41PM -0800, Keith Packard wrote:
+>>
+>> Here are the rest of the 3.3 pending changes.
+>>
+>> This has a bunch of small bug fixes and overlay plane support for i915.
+>>
+>> The following changes since commit 7a7e8734ac3235efafd34819b27fbdf5417e6d60:
+>>
+>>    Merge branch 'drm-radeon-testing' of ../drm-radeon-next into drm-core-next (2012-01-03 09:45:12 +0000)
+>>
+>> are available in the git repository at:
+>>
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/keithp/linux drm-intel-next
+>
+> I'm not happy with Eric's missed IRQ workaround because
+> - it's incomplete, the BSD ring is similarly affected by these issues like
+>    the blitter ring, but not handled by his patches.
+> - it does a busy-loop wait until the gpu signals completion - in normal
+>    useage this can easily be a few msecs, especially since now semaphores
+>    are enabled by defailt on Ivybridge. With offscreen benchmarking it can
+>    easily reach seconds. This is imo unacceptable.
+>
+> Furthermore
+> - Chris Wilson proposed an alternative approach quite a bit before these
+>    patches have been created that combines the irq signalling path with a
+>    short timer as a backup. This works really well because we only rarely
+>    miss irqs. See
+>    Message-Id:<1323978198-3501-1-git-send-email-chris@chris-wilson.co.uk>
+> - Meanwhile I've discovered a magic set of tricks that seem to completely
+>    solve missed irq issues on both ivb and snb. This would render all this
+>    ducttape irrelevant.
+>
+> Imo the minimal right thing to do is to revert the patch "drm/i915: Make
+> the fallback IRQ wait not sleep". This will regress piglit throughput (and
+> anything else stupid enough to crazily ping-pong between the gpu and cpu)
+> quite a bit, but honestly that's not something our userbase cares about.
+>
+> I'd also like to express my frustration with the general -next process for
+> drm/i915:
+> - This drm-intel-next tree is less than 24h ours old (if you look at when
+>    it showed up at an official place where both our QA and the community
+>    can pick it up and test it). I fear we'll ship yet another disaster like
+>    the stack eating bug the vt-d/ilk w/a patch caused with an unbounded
+>    recursion. Our QA actually caught it in testing, but there was simply
+>    not enough time to fix things up before the buggy code landed in -linus.
+> - Because the drm-intel-next merge cycle started so late there has simply
+>    not been enough time to include quite a few bugfixes for serious issues
+>    like 20s delays in intial modeset, userspace-triggerable kernel OOPSes
+>    and deadlocks and reproducible hard hw hangs. For most of these there
+>    are testcases in intel-gpu-tools, and these issues span the entire set
+>    of hw generations drm/i915 currently supports. But this late it's imo
+>    no longer advisible to merge them, so we'll ship 3.3 with a bunch of
+>    known (and sometimes longstanding) serious issues that have fixes.
+>
+> Yours, Daniel
 
-So the problem is quite real, as already said we don't need to worry
-about the future, but we might want to fix this in previous kernels.
-What I'm not entirely sure of is the proposed solution, Steven don't we
-get in trouble by simply bailing out on the push?
-
-> Signed-off-by: Chanho Min <chanho.min@lge.com>
-> ---
->  kernel/sched_rt.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index 583a136..59e66e3 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -1388,6 +1388,11 @@ static int push_rt_task(struct rq *rq)
->         if (!next_task)
->                 return 0;
-> 
-> +#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-> +       if (unlikely(task_running(rq, next_task)))
-> +               return 0;
-> +#endif
-> +
->  retry:
->         if (unlikely(next_task == rq->curr)) {
->                 WARN_ON(1);
-> --
+I'd like to echo my concerns regarding late merging and therefore lack 
+of QA testing. I ended up looking like quite the fool last time around, 
+and that would have been prevented with QA testing of intel-gpu-tools.
 
