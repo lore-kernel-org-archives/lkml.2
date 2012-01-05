@@ -1,67 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab2AEL1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 06:27:24 -0500
-Received: from mx0.aculab.com ([213.249.233.131]:42253 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755529Ab2AEL1Q convert rfc822-to-8bit (ORCPT
+	id S1755705Ab2AEL2a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 06:28:30 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:25567 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755107Ab2AEL22 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 06:27:16 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 1/7] rtlwifi: Neaten RT_ASSERT, RT_TRACE, RTPRINT, RT_PRINT_DATA macros
-Date: Thu, 5 Jan 2012 11:25:30 -0000
-Message-ID: <AE90C24D6B3A694183C094C60CF0A2F6D8AF30@saturn3.aculab.com>
-In-Reply-To: <54d3f83c3e53d7008a013a631c23360a983695a6.1325734202.git.joe@perches.com>
+	Thu, 5 Jan 2012 06:28:28 -0500
+From: <leonid.moiseichuk@nokia.com>
+To: <kamezawa.hiroyu@jp.fujitsu.com>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <cesarb@cesarb.net>,
+        <emunson@mgebm.net>, <penberg@kernel.org>, <aarcange@redhat.com>,
+        <riel@redhat.com>, <mel@csn.ul.ie>, <rientjes@google.com>,
+        <dima@android.com>, <gregkh@suse.de>, <rebecca@android.com>,
+        <san@google.com>, <akpm@linux-foundation.org>,
+        <vesa.jaaskelainen@nokia.com>
+Subject: RE: [PATCH 3.2.0-rc1 2/3] MM hook for page allocation and release
+Thread-Topic: [PATCH 3.2.0-rc1 2/3] MM hook for page allocation and release
+Thread-Index: AQHMy3eesLomgDcz/UG8qdbzjsIuzJX9l2wg
+Date: Thu, 5 Jan 2012 11:26:34 +0000
+Message-ID: <84FF21A720B0874AA94B46D76DB9826904554270@008-AM1MPN1-003.mgdnok.nokia.com>
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
+	<e78b4ac9d3d51ac16180114c08733e4bf62ec65e.1325696593.git.leonid.moiseichuk@nokia.com>
+ <20120105155950.9e49651b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120105155950.9e49651b.kamezawa.hiroyu@jp.fujitsu.com>
+Accept-Language: en-US
+Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/7] rtlwifi: Neaten RT_ASSERT, RT_TRACE, RTPRINT, RT_PRINT_DATA macros
-Thread-Index: AczLW/QI5gIzzK95SqK28TxWrA4RPgAP+54g
-From: "David Laight" <David.Laight@ACULAB.COM>
-To: "Joe Perches" <joe@perches.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "Chaoming Li" <chaoming_li@realsil.com.cn>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 05 Jan 2012 11:25:30.0292 (UTC) FILETIME=[BB32FF40:01CCCB9C]
+x-originating-ip: [172.21.23.171]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 05 Jan 2012 11:26:35.0368 (UTC) FILETIME=[E1FCCE80:01CCCB9C]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +#define RT_PRINT_DATA(rtlpriv, _comp, _level, _titlestring, _hexdata,
-\
-> +		      _hexdatalen)			 	\
-> +do {							 	\
-> +	if (unlikely(((_comp) & rtlpriv->dbg.global_debugcomponents) &&
-\
-> +		     (_level <= rtlpriv->dbg.global_debuglevel))) {
-\
-> +		printk(KERN_DEBUG "%s: ", KBUILD_MODNAME); 	\
-> +		pr_cont("In process \"%s\" (pid %i):",	 	\
-> +			current->comm, current->pid);	 	\
-> +		printk(_titlestring);			 	\
-> +		print_hex_dump_bytes("", DUMP_PREFIX_NONE, 	\
-> +				     _hexdata, _hexdatalen);
-\
-> +	}
-\
-> +} while (0)
+Hi,
 
->From my experiences you need to use:
-  if (unlikely(a) && b)
-not:
-  if (unlikely(a && b))
-to get the expected static branch prediction.
+I agree that hooking alloc_pages is ugly way. So alternatives I see:
 
-Also, only the initial test need be in the #define,
-the printfs (etc) can be moved into a real function.
-This would reduce the code size (if used more than once).
+- shrinkers (as e.g. Android OOM used) but shrink_slab called only from try_to_free_pages only if we are on slow reclaim path on memory allocation, so it cannot be used for e.g. 75% memory tracking or when pages released to notify user space that we are OK. But according to easy to use it will be the best approach.
 
-	David
+- memcg-kind of changes like mem_cgroup_newpage_charge/uncharge_page but without blocking decision making logic. Seems to me more changes. Threshold currently in memcg set 128 pages per CPU, that is quite often for level tracking needs.
 
+- tracking situation using timer? Maybe not due to will impact battery.
+
+With Best Wishes,
+Leonid
+
+
+-----Original Message-----
+From: ext KAMEZAWA Hiroyuki [mailto:kamezawa.hiroyu@jp.fujitsu.com] 
+Sent: 05 January, 2012 09:00
+To: Moiseichuk Leonid (Nokia-MP/Helsinki)
+Cc: linux-mm@kvack.org; linux-kernel@vger.kernel.org; cesarb@cesarb.net; emunson@mgebm.net; penberg@kernel.org; aarcange@redhat.com; riel@redhat.com; mel@csn.ul.ie; rientjes@google.com; dima@android.com; gregkh@suse.de; rebecca@android.com; san@google.com; akpm@linux-foundation.org; Jaaskelainen Vesa (Nokia-MP/Helsinki)
+Subject: Re: [PATCH 3.2.0-rc1 2/3] MM hook for page allocation and release
+
+On Wed,  4 Jan 2012 19:21:55 +0200
+Leonid Moiseichuk <leonid.moiseichuk@nokia.com> wrote:
+
+> That is required by Used Memory Meter (UMM) pseudo-device to track 
+> memory utilization in system. It is expected that hook MUST be very 
+> light to prevent performance impact on the hot allocation path. 
+> Accuracy of number managed pages does not expected to be absolute but 
+> fact of allocation or deallocation must be registered.
+> 
+> Signed-off-by: Leonid Moiseichuk <leonid.moiseichuk@nokia.com>
+
+I never like arbitrary hooks to alloc_pages().
+Could you find another way ?
+
+Hmm. memcg uses per-cpu counters for counting event of alloc/free and trigger threashold check per 128 event on a cpu.
+
+
+Thanks,
+-Kame
+
+
+> ---
+>  include/linux/mm.h |   15 +++++++++++++++
+>  mm/Kconfig         |    8 ++++++++
+>  mm/page_alloc.c    |   31 +++++++++++++++++++++++++++++++
+>  3 files changed, 54 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/mm.h b/include/linux/mm.h index 
+> 3dc3a8c..d133f73 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1618,6 +1618,21 @@ extern int soft_offline_page(struct page *page, 
+> int flags);
+>  
+>  extern void dump_page(struct page *page);
+>  
+> +#ifdef CONFIG_MM_ALLOC_FREE_HOOK
+> +/*
+> + * Hook function type which called when some pages allocated or released.
+> + * Value of nr_pages is positive for post-allocation calls and 
+> +negative
+> + * after free.
+> + */
+> +typedef void (*mm_alloc_free_hook_t)(int nr_pages);
+> +
+> +/*
+> + * Setups specified hook function for tracking pages allocation.
+> + * Returns value of old hook to organize chains of calls if necessary.
+> + */
+> +mm_alloc_free_hook_t set_mm_alloc_free_hook(mm_alloc_free_hook_t 
+> +hook); #endif
+> +
+>  #if defined(CONFIG_TRANSPARENT_HUGEPAGE) || defined(CONFIG_HUGETLBFS)  
+> extern void clear_huge_page(struct page *page,
+>  			    unsigned long addr,
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 011b110..2aaa1e9 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -373,3 +373,11 @@ config CLEANCACHE
+>  	  in a negligible performance hit.
+>  
+>  	  If unsure, say Y to enable cleancache
+> +
+> +config MM_ALLOC_FREE_HOOK
+> +	bool "Enable callback support for pages allocation and releasing"
+> +	default n
+> +	help
+> +	  Required for some features like used memory meter.
+> +	  If unsure, say N to disable alloc/free hook.
+> +
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c index 9dd443d..9307800 
+> 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -236,6 +236,30 @@ static void set_pageblock_migratetype(struct page 
+> *page, int migratetype)
+>  
+>  bool oom_killer_disabled __read_mostly;
+>  
+> +#ifdef CONFIG_MM_ALLOC_FREE_HOOK
+> +static atomic_long_t alloc_free_hook __read_mostly = 
+> +ATOMIC_LONG_INIT(0);
+> +
+> +mm_alloc_free_hook_t set_mm_alloc_free_hook(mm_alloc_free_hook_t 
+> +hook) {
+> +	const mm_alloc_free_hook_t old_hook =
+> +		(mm_alloc_free_hook_t)atomic_long_read(&alloc_free_hook);
+> +
+> +	atomic_long_set(&alloc_free_hook, (long)hook);
+> +	pr_info("MM alloc/free hook set to 0x%p (was 0x%p)\n", hook, 
+> +old_hook);
+> +
+> +	return old_hook;
+> +}
+> +EXPORT_SYMBOL(set_mm_alloc_free_hook);
+> +
+> +static inline void call_alloc_free_hook(int pages) {
+> +	const mm_alloc_free_hook_t hook =
+> +		(mm_alloc_free_hook_t)atomic_long_read(&alloc_free_hook);
+> +	if (hook)
+> +		hook(pages);
+> +}
+> +#endif
+> +
+>  #ifdef CONFIG_DEBUG_VM
+>  static int page_outside_zone_boundaries(struct zone *zone, struct 
+> page *page)  { @@ -2298,6 +2322,10 @@ __alloc_pages_nodemask(gfp_t 
+> gfp_mask, unsigned int order,
+>  	put_mems_allowed();
+>  
+>  	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+> +#ifdef CONFIG_MM_ALLOC_FREE_HOOK
+> +	call_alloc_free_hook(1 << order);
+> +#endif
+> +
+>  	return page;
+>  }
+>  EXPORT_SYMBOL(__alloc_pages_nodemask);
+> @@ -2345,6 +2373,9 @@ void __free_pages(struct page *page, unsigned int order)
+>  			free_hot_cold_page(page, 0);
+>  		else
+>  			__free_pages_ok(page, order);
+> +#ifdef CONFIG_MM_ALLOC_FREE_HOOK
+> +		call_alloc_free_hook(-(1 << order)); #endif
+>  	}
+>  }
+>  
+> --
+> 1.7.7.3
+> 
+> 
 
