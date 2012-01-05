@@ -1,99 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab2AEMSG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 07:18:06 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55225 "EHLO mx2.suse.de"
+	id S1756970Ab2AEMS2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 07:18:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39479 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932076Ab2AEMR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 07:17:59 -0500
-Date: Thu, 5 Jan 2012 13:17:55 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: linux-mm@kvack.org
-Cc: cgroups@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
-        Hugh Dickins <hughd@google.com>, Glauber Costa <glommer@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: memcg-devel git tree updated to 3.2
-Message-ID: <20120105121755.GA4628@tiehlicka.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755525Ab2AEMQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 07:16:28 -0500
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 11/16] GFS2: Fix up "off by one" in the previous patch
+Date: Thu,  5 Jan 2012 11:51:57 +0000
+Message-Id: <1325764322-10807-12-git-send-email-swhiteho@redhat.com>
+In-Reply-To: <1325764322-10807-1-git-send-email-swhiteho@redhat.com>
+References: <1325764322-10807-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-JFYI I have just created since-3.2 branch and rebased all pending
-patches on top of 3.2 for the next development cycle. Let me know if I
-missed some changes (Hugh - I will push your late patches soonish)
+The trace point should take extlen and not *ndata as the
+extent length.
 
-The shortlog since v3.2 says:
-Andrew Morton (6):
-      mm-vmscan-distinguish-between-memcg-triggering-reclaim-and-memcg-being-scanned-checkpatch-fixes
-      memcg-make-mem_cgroup_split_huge_fixup-more-efficient-fix
-      memcg-clear-pc-mem_cgorup-if-necessary-fix
-      memcg-clear-pc-mem_cgorup-if-necessary-fix-2-fix
-      memcg-simplify-lru-handling-by-new-rule-fix
-      memcg-simplify-lru-handling-by-new-rule-memcg-return-eintr-at-bypassing-try_charge-fix
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
-Bob Liu (5):
-      page_cgroup: add helper function to get swap_cgroup
-      page_cgroup: cleanup lookup_swap_cgroup()
-      memcg: cleanup for_each_node_state()
-      page_alloc: break early in check_for_regular_memory()
-      page_cgroup: drop multi CONFIG_MEMORY_HOTPLUG
-
-David Rientjes (1):
-      oom, memcg: fix exclusion of memcg threads after they have detached their mm
-
-Hugh Dickins (4):
-      mm: memcg: remove unused node/section info from pc->flags fix
-      memcg-clear-pc-mem_cgorup-if-necessary-fix-2
-      memcg-clear-pc-mem_cgorup-if-necessary fix 3
-      mm-memcg-lookup_page_cgroup-almost-never-returns-null fix
-
-Johannes Weiner (19):
-      mm: memcg: consolidate hierarchy iteration primitives
-      mm: vmscan: distinguish global reclaim from global LRU scanning
-      mm: vmscan: distinguish between memcg triggering reclaim and memcg being scanned
-      mm: memcg: per-priority per-zone hierarchy scan generations
-      mm: move memcg hierarchy reclaim to generic reclaim code
-      mm: memcg: remove optimization of keeping the root_mem_cgroup LRU lists empty
-      mm: vmscan: convert global reclaim to per-memcg LRU lists
-      mm: collect LRU list heads into struct lruvec
-      mm: make per-memcg LRU lists exclusive
-      mm: memcg: remove unused node/section info from pc->flags
-      mm: memcg: shorten preempt-disabled section around event checks
-      mm: oom_kill: remove memcg argument from oom_kill_task()
-      mm: unify remaining mem_cont, mem, etc. variable names to memcg
-      mm: memcg: clean up fault accounting
-      mm: memcg: lookup_page_cgroup (almost) never returns NULL
-      mm: page_cgroup: check page_cgroup arrays in lookup_page_cgroup() only when necessary
-      mm: memcg: remove unneeded checks from newpage_charge()
-      mm: memcg: remove unneeded checks from uncharge_page()
-      memcg-clear-pc-mem_cgorup-if-necessary-comments
-
-KAMEZAWA Hiroyuki (7):
-      memcg: make mem_cgroup_split_huge_fixup() more efficient
-      memcg: add mem_cgroup_replace_page_cache() to fix LRU issue
-      memcg: simplify page cache charging
-      memcg: simplify corner case handling of LRU.
-      memcg: clear pc->mem_cgorup if necessary.
-      memcg: simplify LRU handling by new rule
-      memcg: return -EINTR at bypassing try_charge()
-
-Michal Hocko (1):
-      memcg: free entries in soft_limit_tree if allocation fails
-
-Happy development.
+diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
+index b8935af..f1d1960 100644
+--- a/fs/gfs2/rgrp.c
++++ b/fs/gfs2/rgrp.c
+@@ -1378,7 +1378,7 @@ int gfs2_alloc_blocks(struct gfs2_inode *ip, u64 *bn, unsigned int *ndata,
+ 				  ip->i_inode.i_gid);
+ 
+ 	rgd->rd_free_clone -= extlen;
+-	trace_gfs2_block_alloc(ip, block, *ndata,
++	trace_gfs2_block_alloc(ip, block, extlen,
+ 			       dinode ? GFS2_BLKST_DINODE : GFS2_BLKST_USED);
+ 	*bn = block;
+ 	return 0;
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+1.7.4
+
