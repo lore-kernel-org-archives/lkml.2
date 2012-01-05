@@ -1,208 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab2AETQW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:16:22 -0500
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:52869 "EHLO
+	id S932473Ab2AETSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:18:43 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57115 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758231Ab2AETQU (ORCPT
+	by vger.kernel.org with ESMTP id S932324Ab2AETSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:16:20 -0500
-X-Sasl-enc: 0EGbf3/i+a8uQm5JKPQ4kB+5uU1klenr7yS4Icvoq1GC 1325790979
-Subject: Patch "mpt2sas: fix non-x86 crash on shutdown" has been added to the 3.0-stable tree
-To: James.Bottomley@HansenPartnership.com, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, davem@davemloft.net, Eric.Moore@lsi.com,
-        gregkh@suse.de, JBottomley@Parallels.com, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, nagalakshmi.nandigama@lsi.com,
-        Nagalakshmi.Nandigama@lsi.com, stable@vger.kernel.org,
-        torvalds@linux-foundation.org
-Cc: <stable@vger.kernel.org>, <stable-commits@vger.kernel.org>
-From: <gregkh@suse.de>
-Date: Thu, 05 Jan 2012 11:10:08 -0800
-In-Reply-To: <1325690713.2758.13.camel@dabdike.int.hansenpartnership.com>
-Message-ID: <13257906083471@kroah.org>
+	Thu, 5 Jan 2012 14:18:41 -0500
+X-Sasl-enc: ExiCYKeTrhcGDafUWz4jI2/+3D04Yv6pN2lnIKEeJlXG 1325791120
+Date: Thu, 5 Jan 2012 11:18:13 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/67] 3.0.16-stable review
+Message-ID: <20120105191813.GA5762@kroah.com>
+References: <20120103223043.GA26738@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="FCuugMFkClbJLl1L"
+Content-Disposition: inline
+In-Reply-To: <20120103223043.GA26738@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This is a note to let you know that I've just added the patch titled
+--FCuugMFkClbJLl1L
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-    mpt2sas: fix non-x86 crash on shutdown
+On Tue, Jan 03, 2012 at 02:30:43PM -0800, Greg KH wrote:
+> This is the start of the stable review cycle for the 3.0.16 release.
+> There are 67 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let us know.  If anyone is a maintainer of the proper subsystem, and
+> wants to add a Signed-off-by: line to the patch, please respond with it.
+>=20
+> Responses should be made by Friday, January 6, 2012, 20:00:00 UTC.
+> Anything received after that time might be too late.
+>=20
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.16-rc1.gz
+> and the diffstat can be found below.
 
-to the 3.0-stable tree which can be found at:
-    http://www.kernel.org/git/?p=linux/kernel/git/stable/stable-queue.git;a=summary
+Due to a few noted issues in this series, and a few last-minute
+straggler patches being applied to the final 3.2 release, there's a new
+3.0.16-rc2 release, which can be found at:
+ 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.16-rc1.gz
+and the diffstat can be found below.
 
-The filename of the patch is:
-     mpt2sas-fix-non-x86-crash-on-shutdown.patch
-and it can be found in the queue-3.0 subdirectory.
+thanks,
 
-If you, or anyone else, feels it should not be added to the stable tree,
-please let <stable@vger.kernel.org> know about it.
-
-
->From James.Bottomley@HansenPartnership.com  Thu Jan  5 10:58:15 2012
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-Date: Wed, 04 Jan 2012 09:25:13 -0600
-Subject: mpt2sas: fix non-x86 crash on shutdown
-To: "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>, "stable@vger.kernel.org" <stable@vger.kernel.org>
-Cc: Greg KH <gregkh@suse.de>, "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>, "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>, "akpm@linux-foundation.org" <akpm@linux-foundation.org>, "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>, "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>, "Moore, Eric" <Eric.Moore@lsi.com>
-Message-ID: <1325690713.2758.13.camel@dabdike.int.hansenpartnership.com>
-
-
-From: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-
-Upstrem commit: 911ae9434f83e7355d343f6c2be3ef5b00ea7aed
-
-There's a bug in the MSIX backup and restore routines that cause a crash on
-non-x86 (direct access to PCI space not via read/write).  These routines are
-unnecessary and were removed by the above commit, so also remove them from
-stable to fix the crash.
-
-Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/scsi/mpt2sas/mpt2sas_base.c |   59 +-----------------------------------
- drivers/scsi/mpt2sas/mpt2sas_base.h |    4 --
- 2 files changed, 2 insertions(+), 61 deletions(-)
-
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1082,41 +1082,6 @@ _base_config_dma_addressing(struct MPT2S
- }
- 
- /**
-- * _base_save_msix_table - backup msix vector table
-- * @ioc: per adapter object
-- *
-- * This address an errata where diag reset clears out the table
-- */
--static void
--_base_save_msix_table(struct MPT2SAS_ADAPTER *ioc)
--{
--	int i;
--
--	if (!ioc->msix_enable || ioc->msix_table_backup == NULL)
--		return;
--
--	for (i = 0; i < ioc->msix_vector_count; i++)
--		ioc->msix_table_backup[i] = ioc->msix_table[i];
--}
--
--/**
-- * _base_restore_msix_table - this restores the msix vector table
-- * @ioc: per adapter object
-- *
-- */
--static void
--_base_restore_msix_table(struct MPT2SAS_ADAPTER *ioc)
--{
--	int i;
--
--	if (!ioc->msix_enable || ioc->msix_table_backup == NULL)
--		return;
--
--	for (i = 0; i < ioc->msix_vector_count; i++)
--		ioc->msix_table[i] = ioc->msix_table_backup[i];
--}
--
--/**
-  * _base_check_enable_msix - checks MSIX capabable.
-  * @ioc: per adapter object
-  *
-@@ -1128,7 +1093,7 @@ _base_check_enable_msix(struct MPT2SAS_A
- {
- 	int base;
- 	u16 message_control;
--	u32 msix_table_offset;
-+
- 
- 	base = pci_find_capability(ioc->pdev, PCI_CAP_ID_MSIX);
- 	if (!base) {
-@@ -1141,14 +1106,8 @@ _base_check_enable_msix(struct MPT2SAS_A
- 	pci_read_config_word(ioc->pdev, base + 2, &message_control);
- 	ioc->msix_vector_count = (message_control & 0x3FF) + 1;
- 
--	/* get msix table  */
--	pci_read_config_dword(ioc->pdev, base + 4, &msix_table_offset);
--	msix_table_offset &= 0xFFFFFFF8;
--	ioc->msix_table = (u32 *)((void *)ioc->chip + msix_table_offset);
--
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "msix is supported, "
--	    "vector_count(%d), table_offset(0x%08x), table(%p)\n", ioc->name,
--	    ioc->msix_vector_count, msix_table_offset, ioc->msix_table));
-+	    "vector_count(%d)\n", ioc->name, ioc->msix_vector_count));
- 	return 0;
- }
- 
-@@ -1162,8 +1121,6 @@ _base_disable_msix(struct MPT2SAS_ADAPTE
- {
- 	if (ioc->msix_enable) {
- 		pci_disable_msix(ioc->pdev);
--		kfree(ioc->msix_table_backup);
--		ioc->msix_table_backup = NULL;
- 		ioc->msix_enable = 0;
- 	}
- }
-@@ -1189,14 +1146,6 @@ _base_enable_msix(struct MPT2SAS_ADAPTER
- 	if (_base_check_enable_msix(ioc) != 0)
- 		goto try_ioapic;
- 
--	ioc->msix_table_backup = kcalloc(ioc->msix_vector_count,
--	    sizeof(u32), GFP_KERNEL);
--	if (!ioc->msix_table_backup) {
--		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "allocation for "
--		    "msix_table_backup failed!!!\n", ioc->name));
--		goto try_ioapic;
--	}
--
- 	memset(&entries, 0, sizeof(struct msix_entry));
- 	r = pci_enable_msix(ioc->pdev, &entries, 1);
- 	if (r) {
-@@ -3513,9 +3462,6 @@ _base_diag_reset(struct MPT2SAS_ADAPTER
- 	u32 hcb_size;
- 
- 	printk(MPT2SAS_INFO_FMT "sending diag reset !!\n", ioc->name);
--
--	_base_save_msix_table(ioc);
--
- 	drsprintk(ioc, printk(MPT2SAS_INFO_FMT "clear interrupts\n",
- 	    ioc->name));
- 
-@@ -3611,7 +3557,6 @@ _base_diag_reset(struct MPT2SAS_ADAPTER
- 		goto out;
- 	}
- 
--	_base_restore_msix_table(ioc);
- 	printk(MPT2SAS_INFO_FMT "diag reset: SUCCESS\n", ioc->name);
- 	return 0;
- 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -626,8 +626,6 @@ struct mpt2sas_port_facts {
-  * @wait_for_port_enable_to_complete:
-  * @msix_enable: flag indicating msix is enabled
-  * @msix_vector_count: number msix vectors
-- * @msix_table: virt address to the msix table
-- * @msix_table_backup: backup msix table
-  * @scsi_io_cb_idx: shost generated commands
-  * @tm_cb_idx: task management commands
-  * @scsih_cb_idx: scsih internal commands
-@@ -768,8 +766,6 @@ struct MPT2SAS_ADAPTER {
- 
- 	u8		msix_enable;
- 	u16		msix_vector_count;
--	u32		*msix_table;
--	u32		*msix_table_backup;
- 	u32		ioc_reset_count;
- 
- 	/* internal commands, callback index */
+greg k-h
 
 
-Patches currently in stable-queue which might be from James.Bottomley@HansenPartnership.com are
+ Makefile                                     |    4 +-
+ arch/arm/mach-omap2/board-rx51-peripherals.c |    2 +-
+ arch/arm/oprofile/common.c                   |    2 +-
+ arch/arm/plat-mxc/pwm.c                      |   16 +-
+ arch/s390/oprofile/init.c                    |    2 +-
+ arch/sh/oprofile/common.c                    |    4 +-
+ arch/sparc/include/asm/pgtable_32.h          |   20 +-
+ arch/sparc/include/asm/pgtable_64.h          |   20 +-
+ arch/sparc/kernel/entry.h                    |    7 +
+ arch/sparc/kernel/module.c                   |   27 +
+ arch/sparc/kernel/pci_sun4v.c                |    4 +-
+ arch/sparc/kernel/setup_64.c                 |   48 +-
+ arch/sparc/kernel/signal32.c                 |   18 +-
+ arch/sparc/kernel/signal_32.c                |   30 +-
+ arch/sparc/kernel/signal_64.c                |   42 +-
+ arch/sparc/kernel/visemul.c                  |   32 +-
+ arch/sparc/lib/memcpy.S                      |  804 ++++------------------=
+----
+ arch/sparc/mm/Makefile                       |    1 -
+ arch/sparc/mm/btfixup.c                      |    3 +-
+ arch/sparc/mm/generic_32.c                   |   98 ----
+ arch/sparc/mm/generic_64.c                   |  164 ------
+ arch/x86/net/bpf_jit_comp.c                  |    4 +-
+ block/blk-core.c                             |   14 +-
+ block/cfq-iosched.c                          |   16 +-
+ drivers/gpu/drm/i915/i915_dma.c              |   10 +
+ drivers/gpu/drm/i915/i915_drv.h              |    1 +
+ drivers/gpu/drm/radeon/evergreen.c           |   12 +
+ drivers/gpu/drm/radeon/radeon_atombios.c     |    6 +-
+ drivers/input/mouse/synaptics.c              |   11 +
+ drivers/media/video/s5p-fimc/fimc-core.c     |    2 +-
+ drivers/mfd/twl-core.c                       |   16 +-
+ drivers/mfd/twl4030-madc.c                   |   35 +-
+ drivers/mmc/host/mmci.c                      |   14 +-
+ drivers/mmc/host/vub300.c                    |    2 +-
+ drivers/net/pptp.c                           |    4 +-
+ drivers/net/wireless/ath/ath9k/main.c        |    3 +
+ drivers/net/wireless/ath/ath9k/rc.c          |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-rxon.c  |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-agn-tx.c    |   10 +-
+ drivers/oprofile/oprofile_files.c            |    7 +-
+ drivers/oprofile/oprofilefs.c                |   11 +-
+ drivers/rtc/interface.c                      |   44 +--
+ drivers/rtc/rtc-m41t80.c                     |    9 +
+ drivers/s390/scsi/zfcp_scsi.c                |    4 +
+ drivers/scsi/fcoe/fcoe.c                     |    1 +
+ drivers/scsi/mpt2sas/mpt2sas_base.c          |   59 +--
+ drivers/scsi/mpt2sas/mpt2sas_base.h          |    4 -
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c         |    2 +-
+ drivers/ssb/driver_pcicore.c                 |    8 +-
+ drivers/watchdog/hpwdt.c                     |    5 +-
+ drivers/xen/swiotlb-xen.c                    |    2 +-
+ fs/nfs/nfs4state.c                           |    8 +-
+ fs/nilfs2/ioctl.c                            |   13 +
+ fs/xfs/linux-2.6/xfs_super.c                 |   30 +-
+ fs/xfs/linux-2.6/xfs_sync.c                  |   37 ++
+ fs/xfs/linux-2.6/xfs_sync.h                  |    2 +
+ include/linux/blkdev.h                       |    3 -
+ include/linux/i2c/twl4030-madc.h             |    4 +
+ include/linux/lglock.h                       |   36 +-
+ include/net/sctp/structs.h                   |    4 +
+ kernel/cgroup.c                              |    5 -
+ kernel/exit.c                                |    9 +-
+ kernel/futex.c                               |   28 +-
+ kernel/hung_task.c                           |   14 +-
+ kernel/sysctl_binary.c                       |    2 +-
+ mm/filemap.c                                 |    7 +-
+ mm/hugetlb.c                                 |    2 +-
+ mm/memcontrol.c                              |    3 +-
+ mm/oom_kill.c                                |    2 +-
+ mm/percpu.c                                  |    6 +-
+ net/ipv4/devinet.c                           |    5 +
+ net/ipv4/ipconfig.c                          |    4 +
+ net/ipv4/ipip.c                              |    7 +-
+ net/ipv4/route.c                             |  107 ++++
+ net/ipv6/sit.c                               |    7 +-
+ net/llc/af_llc.c                             |   14 +-
+ net/mac80211/agg-tx.c                        |   86 ++--
+ net/sched/sch_gred.c                         |    2 +-
+ net/sched/sch_mqprio.c                       |    2 +-
+ net/sctp/associola.c                         |    2 +-
+ net/sctp/output.c                            |    8 +-
+ net/sctp/outqueue.c                          |    6 +-
+ net/sctp/protocol.c                          |    3 +
+ net/sctp/socket.c                            |    2 -
+ net/sctp/sysctl.c                            |   13 +
+ security/selinux/netport.c                   |    4 +-
+ 86 files changed, 824 insertions(+), 1335 deletions(-)
 
-queue-3.0/mpt2sas-fix-non-x86-crash-on-shutdown.patch
+--FCuugMFkClbJLl1L
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPBfd1AAoJEDjbvchgkmk+71EP/jDd9CLYnDDJ/vSoDjPzslNm
+opfW6zIjUkNDiHvyJLENpWvgTr1GkA4L64aILBNk6x/dL1Oa6PryIRQPz0+3qY5W
+R5p4qLmHTrBUWSFTeO33mBh2hHTk08A0SaLXOTG5LiM91iJzxtXTRMSUygOwal41
+StOq6MciWIavDc9hEjOWEyk37OFe6aUaXLMWzuQdDthEkuJ+TvfESk6QI3cXA5xr
+mpPlb1Pekqz7HlPvv6zmZsHpo56xwC3M84hjZk09llEseVCrnWPwPXD8xXs9ee61
+m0ls5OfwpWH65Q15anj0To8cJRQw1l9Fsz9wtKE84ltGcsmD2R1mAkgIbcCyuBvh
+sBeOVXnkZieoXgn8vR7Hg2HfxYcVG/b5pTXiLd/S99jzCsY7QgYxnnZ1CbtN/clk
+nKoUXMSgHHCobhpFHG7zlBDBQgKx86rZrdM8E5akTs/klj38WUwSvK4Y5ituTBmL
+a/ZLT4GYAOSF4JaiN87bXZDeDnY2NU97BqNJLTamcDmVDl1iSnDD5tCvZ6i2H6Jg
+ZuKcgDrNBcJAUdfKXoWJD2cUHcUitNBkxBbXUci5fCeTGxp22RTrKh2JMkoffq+P
+aSieJc03oR9wkPnlib8Fz1vUjm//wdCyEzMlN3YhNnkhhI5HgHtwrv7EmLXybo3z
+4XJyK305/Z881jyFpzkC
+=DxkV
+-----END PGP SIGNATURE-----
+
+--FCuugMFkClbJLl1L--
