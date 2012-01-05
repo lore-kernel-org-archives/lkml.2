@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025Ab2AEH2c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 02:28:32 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:53820 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab2AEH23 (ORCPT
+	id S1758040Ab2AEH3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 02:29:47 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:40761 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab2AEH3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 02:28:29 -0500
-Message-ID: <4F055117.7060901@monstr.eu>
-Date: Thu, 05 Jan 2012 08:28:23 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 1/8] gpio/microblaze: Eliminate duplication of of_get_named_gpio_flags()
-References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca> <1320801583-12774-2-git-send-email-grant.likely@secretlab.ca> <4EF1B36A.8050304@monstr.eu> <20120104183057.GU15503@ponder.secretlab.ca>
-In-Reply-To: <20120104183057.GU15503@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Jan 2012 02:29:46 -0500
+Date: Thu, 5 Jan 2012 18:29:37 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>, Greg KH <greg@kroah.com>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Subject: linux-next: build failure after merge of the akpm tree
+Message-Id: <20120105182937.58ec59c2fa2bc34e9e48542a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jan_2012_18_29_37_+1100_SFA+s.rM9TO7u4Fr"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> On Wed, Dec 21, 2011 at 11:22:34AM +0100, Michal Simek wrote:
->> Grant Likely wrote:
->>> of_reset_gpio_handle() is largely a cut-and-paste copy of
->>> of_get_named_gpio_flags(). There really isn't any reason for the
->>> split, so this patch deletes the duplicate function
->>>
->>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->>> Cc: Michal Simek <monstr@monstr.eu>
->>> ---
->>> arch/microblaze/kernel/reset.c |   43 +--------------------------------------
->>> 1 files changed, 2 insertions(+), 41 deletions(-)
->> Sorry for taking to long.
->>
->> Tested and applied to microblaze tree.
-> 
-> I'd rather take this one through the gpio tree if that is okay.
+--Signature=_Thu__5_Jan_2012_18_29_37_+1100_SFA+s.rM9TO7u4Fr
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK. Please do.
+Hi Andrew,
 
-Thanks,
-Michal
+After merging the akpm tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+drivers/base/memory.c: In function 'memory_block_change_state':
+drivers/base/memory.c:306:22: error: 'struct memory_block' has no member na=
+med 'sysdev'
+drivers/base/memory.c:309:22: error: 'struct memory_block' has no member na=
+med 'sysdev'
+
+Caused by commit 2691cc121386 ("kdump: add udev events for memory
+online/offline") interacting with commit 10fbcf4c6cb1 ("convert 'memory'
+sysdev_class to a regular subsystem") from the driver-core tree.
+
+I have added the following merge fix patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 5 Jan 2012 18:25:57 +1100
+Subject: [PATCH] memory: fix ups for class to subsystem conversion
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/base/memory.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+index 3463e87..ed5de58 100644
+--- a/drivers/base/memory.c
++++ b/drivers/base/memory.c
+@@ -303,10 +303,10 @@ static int memory_block_change_state(struct memory_bl=
+ock *mem,
+ 	mem->state =3D to_state;
+ 	switch (mem->state) {
+ 	case MEM_OFFLINE:
+-		kobject_uevent(&mem->sysdev.kobj, KOBJ_OFFLINE);
++		kobject_uevent(&mem->dev.kobj, KOBJ_OFFLINE);
+ 		break;
+ 	case MEM_ONLINE:
+-		kobject_uevent(&mem->sysdev.kobj, KOBJ_ONLINE);
++		kobject_uevent(&mem->dev.kobj, KOBJ_ONLINE);
+ 		break;
+ 	default:
+ 		break;
+--=20
+1.7.8.197.g73c6b
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__5_Jan_2012_18_29_37_+1100_SFA+s.rM9TO7u4Fr
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPBVFhAAoJEECxmPOUX5FE8XIP/0pKptKR1P0dVH0lFgHcSBtf
+OClICUifwCFjs7QbBs+4nhO9hDBEAdGg1DtRe1fSW6iF/N00x5bjedas+uomJWCM
+B4sqPwzk8KceDtDOnWiMrrvpqkXTsHsHQHgOAyBKv4NW9v67wGFyBSrzjb2jMQKE
+DCG1kzOkyG1N+mDE0+3oqeEw+bTJ/gZeLv+ghydTW7N8W3rorhsbXC9Ngv3kYT8Q
+MQ0IHwKsExXT1Q6QVwu4ZjxvcoaflufUur5TRVregVH6s06pVBSlke/pL7TYdb+0
+zLmdOVX9oHOJteN5V4wv4r9WI7UocruKxwigMd/ae3m1nmUF2py5dJlEWtzRw1PC
+SdaGaffLL50bnNsp0ezNhk5tmZnaSdwygQWpSoYtCWdMuSuSIB6zv56nASvQAmdD
+WboFfwDTCrJ/2PeFeqaK3VZnoSsBPrNApPmVcEA5e9KZbemulwtMJnsdCXVhDtfE
+PsHTVWnw+/hzoYj4J+7vTKtdxNT8q/iN1vqpxZig1femoAPweHKWL0DqLs6Yow4r
+EiYVEvIPr34glrAEhwutO2PsyBiJC5hCE3u+pevyNokXIW2J7iQcMLjfVMal5Gwj
+AJBwAUN8CO+Pov5V2njv9FcrBgRtrdaJ3WA51dOxthne8olB2MlEKBuW55Hsyl5W
+aGQdKzA3YsKsmzA7va5M
+=azfS
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Jan_2012_18_29_37_+1100_SFA+s.rM9TO7u4Fr--
