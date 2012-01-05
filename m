@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757511Ab2AEAhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 19:37:09 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:34554 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757296Ab2AEAhG (ORCPT
+	id S1757514Ab2AEAqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 19:46:23 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:51962 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757264Ab2AEAqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 19:37:06 -0500
-Date: Thu, 5 Jan 2012 01:40:09 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Darrick J. Wong" <djwong@us.ibm.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Yongqiang Yang <xiaoqiangnk@gmail.com>,
-        ext4 development <linux-ext4@vger.kernel.org>,
-        linux-kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] fs/ext{3,4}: fix potential race when setversion ioctl
- updates inode
-Message-ID: <20120105003751.GA4010@dztty>
-References: <20120103013152.GA26455@dztty>
- <20120104174609.GD28907@quack.suse.cz>
- <6C16105A-D0EE-413E-B993-F223CFC75307@dilger.ca>
- <20120104233254.GH28907@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120104233254.GH28907@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 4 Jan 2012 19:46:21 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-d9-4f04f2ccaaa5
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Russell King'" <rmk@arm.linux.org.uk>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20120104131830.ec4341de50a69f4f3f2c5b7b@canb.auug.org.au>
+ <20120104090702.GA28052@flint.arm.linux.org.uk>
+In-reply-to: <20120104090702.GA28052@flint.arm.linux.org.uk>
+Subject: RE: linux-next: manual merge of the s5p tree with the arm tree
+Date: Thu, 05 Jan 2012 09:46:02 +0900
+Message-id: <00bf01cccb43$667542f0$335fc8d0$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczKwEnxS04g+8tfQOKtUs0Pfe1MrwAgk+fA
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 12:32:54AM +0100, Jan Kara wrote:
-> On Wed 04-01-12 16:15:04, Andreas Dilger wrote:
-> > On 2012-01-04, at 10:46 AM, Jan Kara wrote:
-> > > On Tue 03-01-12 02:31:52, Djalal Harouni wrote:
-> > >> 
-> > >> The EXT{3,4}_IOC_SETVERSION ioctl() updates the inode without i_mutex,
-> > >> this can lead to a race with the other operations that update the same
-> > >> inode.
-> > >> 
-> > >> Patch tested.
-> > > 
-> > >  OK, so I've taken the patch into my tree, just updated the changelog
-> > > which result of our discussion in this thread. I also took the ext4 part
-> > > since there is no risk of conflict and the patch looks obvious.
-> > 
-> > Actually, I'd like to hear more about whether this is a real problem, or
-> > if it is just a theoretical problem found during code inspection or from
-> > some static code analysis tool?
->   As far as I understood that was just a theoretical issue and I applied
-> the patch just on the grounds that it is more consistent to use i_mutex for
-> i_generation changes.
-This was found using a static code analysis tool (currently a PoC) which
-is a part of a research project at our university.
+Russell King wrote:
+> 
+> On Wed, Jan 04, 2012 at 01:18:30PM +1100, Stephen Rothwell wrote:
+> > Hi Kukjin,
+> >
+> > Today's linux-next merge of the s5p tree got a conflict in
+> > arch/arm/plat-samsung/include/plat/system-reset.h between commit
+> > 281c8724c10c ("ARM: restart: Temporary #error to persuade platform
+> > maintainers to take the restart changes seriously") from the arm tree
+> and
+> > commit 08c6fc52956c ("ARM: restart: EXYNOS: use new restart hook") from
+> > the s5p tree.
+> >
+> > The arm tree patch seems to have had the desired affect so I used the
+> s5p
+> > tree version.
+> 
+> Err, what are the Samsung people playing at, merging the patches that
+> they've sent me for merging into their own tree?
+> 
+Russell, no. They will be removed in my tree.
 
-And later, code inspection confirms that i_ctime updates can be disturbed.
+> This is a recipe for breakage, especially as the exynos patch depends
+> on previous patches in my tree _and_ patches in my tree depend on that
+> patch as well.
+> 
+Yes, you're right. So they should be sent to upstream via arm tree.
 
-I should have specified this. Sorry.
+> Well, we'll see what we end up with when you do the next linux-next,
+> as by then my public tree should be updated with yesterdays work by
+> then.
+> 
+> I've a feeling that this coming merge window is going to be a horrible
+> mess.
+> 
 
-> > With the metadata checksum feature we were discussing using the inode
-> > generation as part of the seed for the directory leaf block checksum, so
-> > that it wasn't possible to incorrectly access stale directory blocks from
-> > a previous incarnation of the same inode number.
-> > 
-> > We were discussing just disabling this ioctl on filesystems with metadata
-> > checksums, and printing a deprecation warning for filesystems without that
-> > feature enabled.  I'm not aware of any real-world use for this ioctl, since
-> > NFS cannot use it to reconstruct handles because there's no API to allocate
-> > an inode with a specific number, so setting the generation is pointless.
->   OK, I didn't know this. I'm fine with deprecating the ioctl if it's
-> useless but since that's going to take a while I think the cleanup still
-> makes some sense.
-Actually I've grepped this ioctl but did not found use cases, but as
-ext{3,2} also support it, I did not say anything (this is old, there is
-even the EXT4_IOC_SETVERSION_OLD ioctl ?). I don't know if this ioctl is
-used or not.
+Thanks.
 
-Only the reiserfs and ext{2,3,4} filesystems support this ioctl. The reiserfs
-do not use mutexes at all, even in the REISERFS_IOC_SETFLAGS ioctl which will
-test and set _all_ the possible values of the i_flags field.
-Perhaps I should also send a patch for this ?
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-And perhaps ext2 should also be updated.
-
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-Thanks for the feedback.
-
--- 
-tixxdz
-http://opendz.org
