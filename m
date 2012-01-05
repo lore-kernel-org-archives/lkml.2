@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717Ab2AETzD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:55:03 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47835 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932504Ab2AETzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:55:00 -0500
-Message-ID: <4F06000F.10303@nod.at>
-Date: Thu, 05 Jan 2012 20:54:55 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1758290Ab2AEUDV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:03:21 -0500
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:58984
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755357Ab2AEUDU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 15:03:20 -0500
+X-SpamScore: 0
+X-BigFish: VPS0(zzzz1202hzz8275bhz2dh668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-FB-SS: 0,
+X-WSS-ID: 0LXCD08-02-COZ-02
+X-M-MSG: 
+Date: Thu, 5 Jan 2012 21:02:30 +0100
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
+Subject: [PATCH] x86, microcode_amd: Add support for CPU family specific
+ container files
+Message-ID: <20120105200230.GA24451@alberich.amd.com>
 MIME-Version: 1.0
-To: Bart De Schuymer <bdschuym@pandora.be>
-CC: Stephen Hemminger <shemminger@vyatta.com>, davem@davemloft.net,
-        bridge@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org
-Subject: Re: [PATCH] netfilter: Fix br_nf_pre_routing() in conjunction with
- bridge-nf-call-ip(6)tables=0
-References: <4F025A07.2000304@nod.at> <1325597164-13459-1-git-send-email-richard@nod.at> <1325597164-13459-2-git-send-email-richard@nod.at> <20120103081521.2fec3a29@nehalam.linuxnetplumber.net> <4F033E11.5060707@nod.at> <4F0361D7.3000602@pandora.be> <4F03650D.8050200@nod.at> <4F049290.3090803@pandora.be> <4F04DD19.601@nod.at> <4F05FF15.5010809@pandora.be>
-In-Reply-To: <4F05FF15.5010809@pandora.be>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigBCBBD152521AE419BAC6D58E"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigBCBBD152521AE419BAC6D58E
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
 
-Am 05.01.2012 20:50, schrieb Bart De Schuymer:
-> Op 5/01/2012 0:13, Richard Weinberger schreef:
->>
->> Let's export brnf_call_iptables and brnf_call_ip6tables, such that
->> physdev_mt_check() can notify the user that his iptables rule will hav=
-e
->> no effect.
->>
->=20
-> I don't want to introduce a runtime dependency between the iptables
-> physdev module and the bridge module.
-> This should keep working:
-> #modprobe bridge
-> #modprobe xt_physdev
-> #rmmod bridge
-> It will stop working if you use exported symbols of the bridge module i=
-n
-> the physdev module.
->=20
+We've decided to provide CPU family specific container files (starting
+with CPU family 15h). E.g. for family 15h we have to load
+microcode_amd_fam15h.bin instead of microcode_amd.bin
 
-IMHO this behavior would be useful. 8-)
+Rationale is that starting with family 15h patch size is larger than
+2KB which was hard coded as maximum patch size in various microcode
+loaders (not just Linux).
 
-Removing bridge while xt_physdev is loaded will make some netfilter
-rules void.
-Which is not fun on a production firewall.
+Container files which include patches larger than 2KB cause different
+kinds of trouble with such old patch loaders. Thus we have to ensure
+that the default container file provides only patches with size less
+than 2KB.
 
-Thanks,
-//richard
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/microcode_amd.c |    9 +++++++--
+ 1 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/microcode_amd.c b/arch/x86/kernel/microcode_amd.c
+index fe86493..d4e679a 100644
+--- a/arch/x86/kernel/microcode_amd.c
++++ b/arch/x86/kernel/microcode_amd.c
+@@ -313,11 +313,16 @@ out:
+ 
+ static enum ucode_state request_microcode_amd(int cpu, struct device *device)
+ {
+-	const char *fw_name = "amd-ucode/microcode_amd.bin";
++	char fw_name[36] = "amd-ucode/microcode_amd.bin";
+ 	const struct firmware *fw;
+ 	enum ucode_state ret = UCODE_NFOUND;
++	struct cpuinfo_x86 *c = &cpu_data(cpu);
++
++	if (c->x86 >= 0x15)
++		snprintf(fw_name, sizeof(fw_name),
++			 "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+ 
+-	if (request_firmware(&fw, fw_name, device)) {
++	if (request_firmware(&fw, (const char *) fw_name, device)) {
+ 		pr_err("failed to load file %s\n", fw_name);
+ 		goto out;
+ 	}
+-- 
+1.7.8.1
 
 
---------------enigBCBBD152521AE419BAC6D58E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPBgAQAAoJEN9758yqZn9eknAIAL1xVa5ClYRqdGMmXeJ1cdk5
-u1aqx89IJLtGCnuQ7RZChpXjoRUCKejokGbMoQzN6NN2iZayzAqYPA8YJXptE1lw
-5d3/QklB9zVr7KxwXVdBHg7FagbLJMfPT66JX2Y6CkyP/w0Qw1UdRiGtJW3fLMbG
-Vcn3NWh4fWpPe4Wb4BsA9CLjXHL7o6QBUE1Y4oka1hbzP5Xu4roMg++TwhZ/w3Zp
-JQ8dz4mPAO9InpXNv1ulaX3ImkP/XXO/nEhF3lKSkZvnND8ZoxazIrJDqloaWQ5W
-rAhW5v3XMy8YdG9gtCwfCnFv29Ocjp7j0OLnh2RsQVITDn4fpI1G0D3HETsIc/I=
-=fFns
------END PGP SIGNATURE-----
-
---------------enigBCBBD152521AE419BAC6D58E--
