@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757073Ab2AESPr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:15:47 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:52258 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756619Ab2AESPp (ORCPT
+	id S1756841Ab2AESRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:17:33 -0500
+Received: from cavan.codon.org.uk ([93.93.128.6]:48183 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753099Ab2AESRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:15:45 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=Uad61z6EFVoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=YjAkv39DpMX50EvOdBYA:9 a=NLtazRfXxHU_26MMG-0A:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325787342.12696.59.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] sched_rt: the task in irq context can be migrated
- during context switching
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Chanho Min <chanho0207@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, chanho.min@lge.com
-Date: Thu, 05 Jan 2012 13:15:42 -0500
-In-Reply-To: <1325786132.3508.1.camel@twins>
-References: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
-	 <1325786132.3508.1.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 5 Jan 2012 13:17:32 -0500
+Date: Thu, 5 Jan 2012 18:17:24 +0000
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, Matt Fleming <matt.fleming@intel.com>
+Subject: Re: [PATCH 1/5] x86: efi: refactor efi_init() a bit
+Message-ID: <20120105181723.GA24242@srcf.ucam.org>
+References: <1325610682-24811-1-git-send-email-olof@lixom.net>
+ <1325610682-24811-2-git-send-email-olof@lixom.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325610682-24811-2-git-send-email-olof@lixom.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 18:55 +0100, Peter Zijlstra wrote:
+On Tue, Jan 03, 2012 at 09:11:18AM -0800, Olof Johansson wrote:
 
-> So the problem is quite real, as already said we don't need to worry
-> about the future, but we might want to fix this in previous kernels.
-> What I'm not entirely sure of is the proposed solution, Steven don't we
-> get in trouble by simply bailing out on the push?
+>  	if (memmap.desc_size != sizeof(efi_memory_desc_t))
+> -		printk(KERN_WARNING
+> -		  "Kernel-defined memdesc doesn't match the one from EFI!\n");
+> +		printk(KERN_WARNING "Kernel-defined memdesc doesn't match the "
+> +		       "one from EFI!\n");
 
-It shouldn't break anything. We shouldn't be pushing tasks that are
-running on a rq anyway. I don't see any harm here. As this scenario can
-only happen if we get an interrupt after letting go of the rq lock and
-before doing the switch_to(). The schedule_tail() calls
-post_schedule_rt() which does the push again, and will push task A at
-that time.
+Just kill this - it's valid per-spec, there's no reason for us to 
+complain.
 
-That said, I'm not sure this patch is enough. I'm worried about a pull
-happening. As task A is running, we could possible possibly pick it on
-another CPU to do a pull.
+Looks fine otherwise.
 
-Hmm, looking at the code, the pull already does a task_running() test,
-so I guess we should be fine.
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
