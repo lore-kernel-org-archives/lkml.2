@@ -1,138 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932805Ab2AEQ3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 11:29:13 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:39119 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932728Ab2AEQ3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 11:29:11 -0500
-Message-ID: <1325780947.22154.14.camel@joe2Laptop>
-Subject: Re: [PATCH 2/7] rtlwifi: Standardize RT_PRINT_DATA macro and uses
-From: Joe Perches <joe@perches.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	id S964774Ab2AEQ3V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 11:29:21 -0500
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:63529 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932728Ab2AEQ3T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 11:29:19 -0500
+Message-ID: <4F05CFAF.9020502@ah.jp.nec.com>
+Date: Thu, 05 Jan 2012 11:28:31 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Organization: NEC Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org
-Date: Thu, 05 Jan 2012 08:29:07 -0800
-In-Reply-To: <20120105114314.GD2222@redhat.com>
-References: <cover.1325734202.git.joe@perches.com>
-	 <e7d4163a9897f33145d8a07be54f507ab68e0243.1325734203.git.joe@perches.com>
-	 <20120105114314.GD2222@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+Subject: Re: [PATCH 1/4] pagemap: avoid splitting thp when reading /proc/pid/pagemap
+References: <1324506228-18327-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1324506228-18327-2-git-send-email-n-horiguchi@ah.jp.nec.com> <20120104155042.c24e529b.akpm@linux-foundation.org>
+In-Reply-To: <20120104155042.c24e529b.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 12:43 +0100, Stanislaw Gruszka wrote:
-> Hi Joe
-
-Morning Stanislaw.
-
-> On Wed, Jan 04, 2012 at 07:40:40PM -0800, Joe Perches wrote:
-> >  	RT_PRINT_DATA(rtlpriv, COMP_CMD, DBG_DMESG,
+On Wed, Jan 04, 2012 at 03:50:42PM -0800, Andrew Morton wrote:
+> On Wed, 21 Dec 2011 17:23:45 -0500
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> wrote:
 > 
-> Since you are working on it, can you also get rid of this DBG_*
-> parameter, if rtlwifi maintainers are ok with that? It is additional
-> console loglvevel, standard kernel loglevel should be used.
+> > Thp split is not necessary if we explicitly check whether pmds are
+> > mapping thps or not. This patch introduces the check and the code
+> > to generate pagemap entries for pmds mapping thps, which results in
+> > less performance impact of pagemap on thp.
+> > 
+> >
+> > ...
+> 
+> The type choices seem odd:
+> 
+> > +#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> > +static u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
+> > +{
+> > +	u64 pme = 0;
+> 
+> Why are these u64?
 
-Not quite, all of the RT_PRINT_DATA are emitted at KERN_DEBUG.
-These DBG_*s are just a normal debug verbosity level. 
+I guess (I just copied this type choice from other *pte_to_pagemap_entry()
+type functions) it's because each entry in /proc/pid/pagemap is in fixed
+sized (64 bit) format as described in the comment above pagemap_read().
 
-It does seem odd though to have a DBG_EMERG and not always
-emit it.
+> Should we have a pme_t, matching pte_t, pmd_t, etc?
 
-What might also be useful for any embedded use is to add
-CONFIG_RTLWIFI_DEBUG to conditionally remove all of the
-debug logging code to reduce the largish object size.
+Yes, it makes code's meaning clearer.
 
-This reduces the object size by about 1/3 (250KB)
-when CONFIG_RTLWIFI_DEBUG is not set.
+> 
+> > +	if (pte_present(pte))
+> > +		pme = PM_PFRAME(pte_pfn(pte) + offset)
+> > +			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+> > +	return pme;
+> > +}
+> > +#else
+> > +static inline u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
+> > +{
+> > +	return 0;
+> > +}
+> > +#endif
+> > +
+> >  static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+> >  			     struct mm_walk *walk)
+> >  {
+> > @@ -665,14 +684,34 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+> >  	struct pagemapread *pm = walk->private;
+> >  	pte_t *pte;
+> >  	int err = 0;
+> > -
+> > -	split_huge_page_pmd(walk->mm, pmd);
+> > +	u64 pfn = PM_NOT_PRESENT;
+> 
+> Again, why a u64?  pfn's are usually unsigned long.
 
-$ size drivers/net/wireless/rtlwifi/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 368722	  55333	  94224	 518279	  7e887	drivers/net/wireless/rtlwifi/built-in.o.new
- 586904	  55333	 127216	 769453	  bbdad	drivers/net/wireless/rtlwifi/built-in.o.old
+I think variable's name 'pfn' is wrong rather than type choice
+because this variable stores pagemap entry which is not a pure pfn.
+There's room for improvement, so I'll try it in the next turn.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-
----
-
- drivers/net/wireless/rtlwifi/Kconfig |    5 +++++
- drivers/net/wireless/rtlwifi/debug.h |   34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 39 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/Kconfig b/drivers/net/wireless/rtlwifi/Kconfig
-index d6c42e6..44b9c0a 100644
---- a/drivers/net/wireless/rtlwifi/Kconfig
-+++ b/drivers/net/wireless/rtlwifi/Kconfig
-@@ -49,6 +49,11 @@ config RTLWIFI
- 	depends on RTL8192CE || RTL8192CU || RTL8192SE || RTL8192DE
- 	default m
- 
-+config RTLWIFI_DEBUG
-+	tristate "Additional debugging output"
-+	depends on RTL8192CE || RTL8192CU || RTL8192SE || RTL8192DE
-+	default y
-+
- config RTL8192C_COMMON
- 	tristate
- 	depends on RTL8192CE || RTL8192CU
-diff --git a/drivers/net/wireless/rtlwifi/debug.h b/drivers/net/wireless/rtlwifi/debug.h
-index b024c23..fd5600c 100644
---- a/drivers/net/wireless/rtlwifi/debug.h
-+++ b/drivers/net/wireless/rtlwifi/debug.h
-@@ -156,6 +156,8 @@ enum dbgp_flag_e {
- 	DBGP_TYPE_MAX
- };
- 
-+#ifdef CONFIG_RTLWIFI_DEBUG
-+
- #define RT_ASSERT(_exp, fmt, ...)					\
- do {									\
- 	if (!(_exp)) {							\
-@@ -195,5 +197,37 @@ do {									\
- 	}								\
- } while (0)
- 
-+#else
-+
-+struct rtl_priv;
-+
-+__printf(2, 3)
-+static inline void RT_ASSERT(int exp, const char *fmt, ...)
-+{
-+}
-+
-+__printf(4, 5)
-+static inline void RT_TRACE(struct rtl_priv *rtlpriv,
-+			    int comp, int level,
-+			    const char *fmt, ...)
-+{
-+}
-+
-+__printf(4, 5)
-+static inline void RTPRINT(struct rtl_priv *rtlpriv,
-+			   int dbgtype, int dbgflag,
-+			   const char *fmt, ...)
-+{
-+}
-+
-+static inline void RT_PRINT_DATA(struct rtl_priv *rtlpriv,
-+				 int comp, int level,
-+				 const char *titlestring,
-+				 const void *hexdata, size_t hexdatalen)
-+{
-+}
-+
-+#endif
-+
- void rtl_dbgp_flag_init(struct ieee80211_hw *hw);
- #endif
-
-
-
+Thanks,
+Naoya
