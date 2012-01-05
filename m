@@ -1,189 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932772Ab2AEUqw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:46:52 -0500
-Received: from mga14.intel.com ([143.182.124.37]:46424 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932179Ab2AEUqr convert rfc822-to-8bit (ORCPT
+	id S932816Ab2AEUsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:48:22 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46659 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757073Ab2AEUsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:46:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="92833111"
-From: "Moore, Robert" <robert.moore@intel.com>
-To: Seth Forshee <seth.forshee@canonical.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Lin, Ming M" <ming.m.lin@intel.com>
-Subject: RE: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
- hotkey problems
-Thread-Topic: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
- hotkey problems
-Thread-Index: AQHMykrx6e2dclWZuE2ZaiXTpmxihpX+oJmAgAAScgD//4140A==
-Date: Thu, 5 Jan 2012 20:46:43 +0000
-Message-ID: <94F2FBAB4432B54E8AACC7DFDE6C92E3256C799D@ORSMSX101.amr.corp.intel.com>
-References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
- <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
- <20120105182627.GE24242@srcf.ucam.org>
- <20120105193228.GB25386@ubuntu-macmini>
-In-Reply-To: <20120105193228.GB25386@ubuntu-macmini>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Jan 2012 15:48:21 -0500
+Date: Thu, 5 Jan 2012 15:48:19 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
+In-Reply-To: <20120105200515.GA1071@core.coreip.homeip.net>
+Message-ID: <Pine.LNX.4.44L0.1201051531410.1434-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> My only guess is that Windows is more permissive about this sort of
-> thing than ACPICA is, but by my reading of the spec throwing a fatal
-> error is what's supposed to happen.
+On Thu, 5 Jan 2012, Dmitry Torokhov wrote:
 
-If it is true that Windows will execute this code without error, then ACPICA should be changed to match the Windows behavior. ACPICA is now a "Windows compatible" implementation of ACPI, but that of course means we are attempting to be compatible with a black box ACPI implementation. On the other hand, it may be the case that Windows never executes this code, so the error is not seen on Windows.
+> So I looked at the users of device_attach():
+> 
+> - we call it from generic bus code when adding a new driver so naturally
+>   driver is valid there;
+> - serio and gameport call it by hand but they ensure that the driver is
+>   valid because they protected by subsystem-private mutex;
+> - PCI, PCMCI, HID and USB new_id handling is tied to the driver itself
+>   and attributes are removed when driver is unregistered so there is no
+>   chance driver will be attached through newid after it has been
+>   unregistered;
+> - agp_amd64_init calls it once immediately after registering the driver;
+> - pci-stub driver is safe as well.
 
-We would like to investigate this further. Please send or point me to the acpidump for this machine.
+Okay, that's all good.
 
-Thanks,
-Bob
+> That leaves only usb-serial which is problematic exactly as you
+> described below. So I think we should remove get_driver() and
+> put_driver(); document that caller if driver_attach() should ensure
+> that driver is live and let usb-serial code solve this issue as this
+> is the only code that plays games with drivers it does not own.
 
-> -----Original Message-----
-> From: linux-acpi-owner@vger.kernel.org [mailto:linux-acpi-
-> owner@vger.kernel.org] On Behalf Of Seth Forshee
-> Sent: Thursday, January 05, 2012 11:32 AM
-> To: Matthew Garrett
-> Cc: Len Brown; Azael Avalos; Thomas Renninger; platform-driver-
-> x86@vger.kernel.org; linux-acpi@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
-> hotkey problems
+If Greg confirms that there's nothing with registering the usb driver 
+before the usb_serial driver, I can fix the usb-serial code easily.
+
+Greg, do you know offhand whether this will break anything?  It really 
+seems like the right thing to do, because the usb_serial driver uses 
+the usb driver but not vice versa.
+
+
+> > > Don't we create corresponding sysfs attributes only after driver
+> > > successfully registered?
+> > 
+> > No, some attribute files are created during registration;
+> > driver_register() calls driver_add_groups().
 > 
-> On Thu, Jan 05, 2012 at 06:26:27PM +0000, Matthew Garrett wrote:
-> > On Tue, Jan 03, 2012 at 01:02:38PM -0600, Seth Forshee wrote:
-> > > Several Satellite models have a buggy implementation of the INFO
-> method
-> > > that causes ACPI exceptions when executed:
-> > >
-> > >  ACPI Error: Result stack is empty! State=ffff88012d70f800
-> (20110413/dswstate-98)
-> > >  ACPI Exception: AE_AML_NO_RETURN_VALUE, Missing or null operand
-> (20110413/dsutils-646)
-> > >  ACPI Exception: AE_AML_NO_RETURN_VALUE, While creating Arg 0
-> (20110413/dsutils-763)
-> > >  ACPI Error: Method parse/execution failed [\_SB_.VALZ.GETE] (Node
-> ffff880131175eb0), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
-> > >  ACPI Error: Method parse/execution failed [\_SB_.VALZ.INFO] (Node
-> ffff880131175ed8), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
-> > >  toshiba_acpi: ACPI INFO method execution failed
-> > >  toshiba_acpi: Failed to query hotkey event
-> >
-> > Ugh, in several ways. The hotkeys on these machines are presumably
-> > supposed to work - do we have any idea what we should be doing?
+> But new_id only created by individual bus code after registering the
+> driver. No individual drivers involved here.
+
+In usb/serial/bus.c, the usb_serial_bus_type structure contains a
+.drv_attrs field with an entry for the new_id attribute.  Thus
+driver_register calls bus_add_driver, which calls driver_add_attrs,
+which creates the attribute file -- all during registration.
+
+> > Another example, taken from drivers/pci/pci-driver.c:
+> > 
+> > 	__pci_register_driver() calls
+> > 	driver_register()
+> > 
+> > 	pci_create_newid_file() creates the new_id
+> > 	sysfs attribute
+> > 
+> > 					A udev process writes to the 
+> > 					new_id attribute, causing a
+> > 					dynamic_id structure to be
+> > 					allocated
+> > 
+> > 	pci_create_removeid_file() fails
+> > 
+> > 	__pci_register_driver() calls
+> > 	pci_remove_newid_file() and
+> > 	driver_unregister(), but it doesn't
+> > 	call pci_free_dynids()
 > 
-> Here's a run-down of why this happens. First, the relevant sections of
-> the DSDT:
-> 
->     Name (EVCD, Package (0x64) {})
->     Name (EVCT, 0x00)
-> 
->     Method (PUTE, 1, Serialized)
->     {
->         <snip>
-> 
->         If (LLess (EVCT, 0x64))
->         {
->             Store (Arg0, Index (EVCD, EVCT))
->             Increment (EVCT)
->         }
-> 
-> 	<snip>
-> 
->         Notify (VALZ, 0x80)
->         Sleep (0x64)
->         Return (0x00)
->     }
-> 
->     Method (GETE, 0, Serialized)
->     {
->         <snip>
-> 
->         If (LEqual (EVCT, 0x00))
->         {
->             Release (MUEV)
->             Return (0x00)
->         }
-> 
->         Store (DerefOf (Index (EVCD, 0x00)), Local0)
->         Store (0x00, Local1)
->         While (LLess (Local1, Subtract (0x64, 0x01)))
->         {
->             Store (DerefOf (Index (EVCD, Add (Local1, 0x01))), Index (
->                 EVCD, Local1))
->             Increment (Local1)
->         }
-> 
->         Decrement (EVCT)
->         Release (MUEV)
->         If (LNotEqual (EVCT, 0x00))
->         {
->             And (HKEV, 0x02, Local0)
->             If (LEqual (Local0, 0x02))
->             {
->                 Return (0x00)
->             }
-> 
->             Notify (VALZ, 0x80)
->             Sleep (0x64)
->         }
-> 
->         Return (Local0)
->     }
-> 
->     Method (INFO, 0, Serialized)
->     {
->         Store (GETE (), Local0)
->         Return (Local0)
->     }
-> 
-> So EVCD is a queue of events, and EVCT is the number of events in the
-> queue. NTFY calls PUTE, which puts an event in the queue. INFO calls
-> GETE to read an event from the queue. Reading an event consists of
-> copying out the first object out of EVCD, then copying each subsequent
-> object to the previous element in EVCD. Inefficient, but it should
-> work.
-> 
-> Except for that fact that EVCD will initially contain uninitialized
-> objects. So until/unless PUTE writes every element in EVCD that copy
-> loop is going to dereference unintialized objects, which causes the
-> exceptions.
-> 
-> GETE/PUTE are the only methods which write to EVCD, so there's not some
-> initialization method or something like that which we're forgetting to
-> call. We could do something like call PUTE 64 times during
-> initialization, but that's relying on a BIOS implementation detail
-> which
-> just seems like a bad idea.
-> 
-> My only guess is that Windows is more permissive about this sort of
-> thing than ACPICA is, but by my reading of the spec throwing a fatal
-> error is what's supposed to happen.
-> 
-> Also a side note of interest: The machines that suffer from this all
-> also have a WMI interface with code to support hotkeys, and that code
-> shouldn't suffer from this problem. Unfortunately these models are the
-> only ones I've seen with this WMI interface, and the code to generate
-> the hotkey events isn't executed if the OS reports itself as Vista or
-> newer.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> So this is a simple bug in pci bus error unwinding code...
+
+That was my point -- the places that use new_id attributes don't unwind 
+their registration errors correctly.  Fortunately there aren't very 
+many such places...
+
+Alan Stern
+
