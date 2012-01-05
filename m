@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab2AEHUm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 02:20:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:3018 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756159Ab2AEHUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 02:20:40 -0500
-Date: Thu, 5 Jan 2012 09:20:05 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: rostedt@goodmis.org, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jump label: close race in jump_label_inc() vs.
- jump_label_dec()
-Message-ID: <20120105072005.GP2072@redhat.com>
-References: <201201041532.q04FWbBl022103@int-mx10.intmail.prod.int.phx2.redhat.com>
+	id S1758025Ab2AEH2c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 02:28:32 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:53820 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132Ab2AEH23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 02:28:29 -0500
+Message-ID: <4F055117.7060901@monstr.eu>
+Date: Thu, 05 Jan 2012 08:28:23 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201201041532.q04FWbBl022103@int-mx10.intmail.prod.int.phx2.redhat.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Rob Herring <rob.herring@calxeda.com>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC 1/8] gpio/microblaze: Eliminate duplication of of_get_named_gpio_flags()
+References: <1320801583-12774-1-git-send-email-grant.likely@secretlab.ca> <1320801583-12774-2-git-send-email-grant.likely@secretlab.ca> <4EF1B36A.8050304@monstr.eu> <20120104183057.GU15503@ponder.secretlab.ca>
+In-Reply-To: <20120104183057.GU15503@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 04, 2012 at 10:32:37AM -0500, Jason Baron wrote:
-> The previous fix to ensure that jump_label_inc() does not return until the jump
-> is completely patched, opened up a race in the inc/dec path. The scenario is:
+Grant Likely wrote:
+> On Wed, Dec 21, 2011 at 11:22:34AM +0100, Michal Simek wrote:
+>> Grant Likely wrote:
+>>> of_reset_gpio_handle() is largely a cut-and-paste copy of
+>>> of_get_named_gpio_flags(). There really isn't any reason for the
+>>> split, so this patch deletes the duplicate function
+>>>
+>>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>>> Cc: Michal Simek <monstr@monstr.eu>
+>>> ---
+>>> arch/microblaze/kernel/reset.c |   43 +--------------------------------------
+>>> 1 files changed, 2 insertions(+), 41 deletions(-)
+>> Sorry for taking to long.
+>>
+>> Tested and applied to microblaze tree.
 > 
-> key->enabled = 0;
-> 
-> 	CPU 0					CPU 1
->         ----- 					-----
-> 
-> jump_label_inc():			jump_label_dec():
-> 
-> 1) if (atomic_read(&key->enabled) == 0)
-> 	jump_label_update(key, JUMP_LABEL_ENABLE);
-> 
-> 					 2) if (!atomic_dec_and_mutex_lock(&key->enabled, &jump_label_mutex))
-> 					 	return;
-> 
-> 3) atomic_inc(&key->enabled);
-> 
-> So now, key->enabled = 0, but the jump has been enabled, which is an invalid
-> state.
-> 
-Isn't it an indication of a higher level bug if jump_label_dec() is
-called on a disabled jump label? In other words isn't key->enabled == -1
-invalid sate by itself? I do not see how the call sequence above can
-happen with perf events for instance. jump_label_dec() is called on
-event destruction and if key->enabled = 0 then there is no events to
-destroy.
+> I'd rather take this one through the gpio tree if that is okay.
 
---
-			Gleb.
+OK. Please do.
+
+Thanks,
+Michal
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
