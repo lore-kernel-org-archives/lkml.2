@@ -1,100 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757753Ab2AESll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:41:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33168 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab2AESlj (ORCPT
+	id S1757611Ab2AESqJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:46:09 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55211 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab2AESqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:41:39 -0500
-Date: Thu, 5 Jan 2012 11:41:36 -0700
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>, Greg KH <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: Driver core support for early platform devices
-Message-ID: <20120105184136.GJ22653@ponder.secretlab.ca>
-References: <0282FD61-7E73-45CE-8EC8-32BF411C7619@boeing.com>
- <20111222174521.GA29144@suse.de>
- <99F3E881-FB9E-4D49-9A91-793FDD04795D@boeing.com>
- <4EF396CD.2000601@gmail.com>
+	Thu, 5 Jan 2012 13:46:07 -0500
+Date: Thu, 5 Jan 2012 19:46:05 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Barry Song <21cnbao@gmail.com>
+Cc: Barry Song <Barry.Song@csr.com>, rjw@sisk.pl,
+        linux-pm@lists.linux-foundation.org, workgroup.linux@csr.com,
+        Xiangzhen Ye <Xiangzhen.Ye@csr.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Barry Song <Baohua.Song@csr.com>
+Subject: Re: [PATCH v2] PM: HIBERNATION: skip the swap size check if the
+ snapshot image size is anticipative
+Message-ID: <20120105184604.GA11065@atrey.karlin.mff.cuni.cz>
+References: <1322208422-12346-1-git-send-email-Barry.Song@csr.com>
+ <CAGsJ_4ziRj1oEhmMYjc6yJvS2FHYn+uRWmSaggnJQQjqi=B6gw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <4EF396CD.2000601@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAGsJ_4ziRj1oEhmMYjc6yJvS2FHYn+uRWmSaggnJQQjqi=B6gw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 22, 2011 at 02:45:01PM -0600, Rob Herring wrote:
-> On 12/22/2011 11:55 AM, Moffett, Kyle D wrote:
-> > On Dec 22, 2011, at 12:45, Greg KH wrote:
-> >> On Thu, Dec 22, 2011 at 11:15:06AM -0600, Moffett, Kyle D wrote:
-> >>> Hi,
-> >>>
-> >>> I'm tinkering with some improvements to the way that OpenPIC/MPIC are
-> >>> detected and loaded on PowerPC platforms, and it seems like I am trying
-> >>> to use the driver model before it is fully initialized.
-> >>>
-> >>> In particular, it seems like it should be possible to simply declare an
-> >>> OpenPIC in the device-tree and have it automatically bound to a platform
-> >>> driver declaring the right OpenFirmware match strings.
-> >>>
-> >>> Unfortunately, it needs to be bound by init_IRQ() time, while the driver
-> >>> model does not get initialized until much later (after the scheduler is
-> >>> up and running).
-> >>>
-> >>> As far as I can tell, there seem to be 2 possible approaches to making
-> >>> that possible:
-> >>>
-> >>> (1) Split the driver-model initialization into "early" and "late" phases
-> >>>    so that drivers can be registered and devices probed very early on
-> >>>    and then replay the necessary scheduler-dependent things after the
-> >>>    system is mostly started up (IE: devtmpfs, etc).
-> >>
-> >> We already have that today with the "early_platform*" functions, right?
-> >> Will those work for you, or do you need this for a bus you are creating
-> >> and not using the platform bus?
-> > 
-> > Well, I can't figure out how "early_platform" is actually supposed to
-> > integrate with the platform bus itself.  It seems designed mostly for
-> > drivers like "earlyprintk" et. al. for which loading is controlled by
-> > a kernel parameter.
-> > 
-> > Specifically, I don't see any "early_platform" logic to match devices in
-> > the OF device-tree based on the driver "of_match" parameters, just based
-> > on text strings in early_param().
-> > 
-> > Furthermore, if I register an "early_platform" device, it seems to get
-> > unregistered when the normal driver model is brought up, instead of
-> > being sucked in and promoted to a normal platform_device.  That code is
-> > pretty poorly documented and only used in a couple places right now,
-> > though, so it's possible I am misreading it.
-> > 
-> > Cheers,
-> > Kyle Moffett
+Hi!
+
+Is the check even useful these days? Should we remove it altogether?
+
+       	     	  	       	     	       Pavel
+
+
+> Pavel ,Rafael, any feedback?
+> -barry
 > 
-> There was a proposal for DT support of early platform devices here:
-> 
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-June/054529.html
+> 2011/11/25 Barry Song <Barry.Song@csr.com>:
+> > From: Barry Song <baohua.song@csr.com>
+> >
+> > Current swsusp requires swap partitions even larger than real saved pages
+> > based on the worst compression ratio:
+> > but for an embedded system, which has limited storage space, then it might
+> > can't give the large partition to save snapshot.
+> > In the another way, some embedded systems can definitely know the most size
+> > needed for snapshot since they run some specific application lists.
+> > So this patch provides the possibility for users to tell kernel even
+> > the system has a little snapshot partition, but it is still enough.
+> > For example, if the system need to save 120MB memory, origin swsusp will require
+> > a 130MB partition to save snapshot. but if users know 30MB is enough for them(
+> > compressed image will be less than 30MB), they just make a 30MB partition by
+> > echo 0 > /sys/power/check_swap_size
+> >
+> > Signed-off-by: Barry Song <Baohua.Song@csr.com>
+> > Cc: Xiangzhen Ye <Xiangzhen.Ye@csr.com>
+> > ---
+> >  -v2:drop swap_enough bootargs and use /sys/power/check_swap_size node
+> >
+> >  Documentation/power/interface.txt |    5 +++++
+> >  kernel/power/hibernate.c          |   22 ++++++++++++++++++++++
+> >  kernel/power/power.h              |    2 ++
+> >  kernel/power/swap.c               |    9 +++++++++
+> >  4 files changed, 38 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/Documentation/power/interface.txt b/Documentation/power/interface.txt
+> > index c537834..5e205f0 100644
+> > --- a/Documentation/power/interface.txt
+> > +++ b/Documentation/power/interface.txt
+> > @@ -47,6 +47,11 @@ Writing to this file will accept one of
+> >        'testproc'
+> >        'test'
+> >
+> > +/sys/power/check_swap_size controls whether we can skip checking the swap
+> > +partition size by worst compression ratio. If users know the swap partition
+> > +is enough for compressed snapshot, write 0 to /sys/power/check_swap_size.
+> > +It is useful for an embedded system with known running softwares.
+> > +
+> >  /sys/power/image_size controls the size of the image created by
+> >  the suspend-to-disk mechanism.  It can be written a string
+> >  representing a non-negative integer that will be used as an upper
+> > diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+> > index 1c53f7f..5552473 100644
+> > --- a/kernel/power/hibernate.c
+> > +++ b/kernel/power/hibernate.c
+> > @@ -1024,11 +1024,33 @@ static ssize_t reserved_size_store(struct kobject *kobj,
+> >
+> >  power_attr(reserved_size);
+> >
+> > +static ssize_t check_swap_size_show(struct kobject *kobj, struct kobj_attribute *attr,
+> > +                              char *buf)
+> > +{
+> > +       return sprintf(buf, "%d\n", check_swap_size);
+> > +}
+> > +
+> > +static ssize_t check_swap_size_store(struct kobject *kobj, struct kobj_attribute *attr,
+> > +                               const char *buf, size_t n)
+> > +{
+> > +       int check_size;
+> > +
+> > +       if (sscanf(buf, "%d", &check_size) == 1) {
+> > +               check_swap_size = check_size;
+> > +               return n;
+> > +       }
+> > +
+> > +       return -EINVAL;
+> > +}
+> > +
+> > +power_attr(check_swap_size);
+> > +
+> >  static struct attribute * g[] = {
+> >        &disk_attr.attr,
+> >        &resume_attr.attr,
+> >        &image_size_attr.attr,
+> >        &reserved_size_attr.attr,
+> > +       &check_swap_size_attr.attr,
+> >        NULL,
+> >  };
+> >
+> > diff --git a/kernel/power/power.h b/kernel/power/power.h
+> > index 23a2db1..4f0fa78 100644
+> > --- a/kernel/power/power.h
+> > +++ b/kernel/power/power.h
+> > @@ -74,6 +74,8 @@ static struct kobj_attribute _name##_attr = { \
+> >
+> >  /* Preferred image size in bytes (default 500 MB) */
+> >  extern unsigned long image_size;
+> > +/* If 0, skip checking whether the swap size is enough for compressed snapshot */
+> > +extern int check_swap_size;
+> >  /* Size of memory reserved for drivers (default SPARE_PAGES x PAGE_SIZE) */
+> >  extern unsigned long reserved_size;
+> >  extern int in_suspend;
+> > diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+> > index 11a594c..db90195 100644
+> > --- a/kernel/power/swap.c
+> > +++ b/kernel/power/swap.c
+> > @@ -37,6 +37,12 @@
+> >  #define HIBERNATE_SIG  "S1SUSPEND"
+> >
+> >  /*
+> > + * if users know swap partitions are enough for compressed snapshots,
+> > + * echo 0 > /sys/power/check_swap_size
+> > + */
+> > +int check_swap_size = 1;
+> > +
+> > +/*
+> >  *     The swap map is a data structure used for keeping track of each page
+> >  *     written to a swap partition.  It consists of many swap_map_page
+> >  *     structures that contain each an array of MAP_PAGE_ENTRIES swap entries.
+> > @@ -772,6 +778,9 @@ static int enough_swap(unsigned int nr_pages, unsigned int flags)
+> >        unsigned int free_swap = count_swap_pages(root_swap, 1);
+> >        unsigned int required;
+> >
+> > +       if (!check_swap_size)
+> > +               return 1;
+> > +
+> >        pr_debug("PM: Free swap pages: %u\n", free_swap);
+> >
+> >        required = PAGES_FOR_IO + ((flags & SF_NOCOMPRESS_MODE) ?
+> > --
+> > 1.7.1
 
-I'm not a fan of early platform devices, and as Kyle points out, it
-doesn't really solve his problem.
-
-Kyle, I wouldn't get too tied up with thinking about the device model.
-There are always some critical core devices, like root interrupt
-controllers, that just have to be set up way earlier than any of the
-initcalls.  So, yes, it would be nice if the kernel automagically
-picked up the root irq controller from the device tree, and if it was
-wired into the driver model. However, in practical terms it doesn't
-buy us much.  You can get almost the same behaviour by the SoC support
-code providing a table of the irq controllers that need to be set up
-at boot time and using a helper function to initialize them in the
-correct order.
-
-Have a look at of_irq_init().  It might do what you need.
-
-g.
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
