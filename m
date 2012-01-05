@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824Ab2AEQbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 11:31:05 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:46430 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932785Ab2AEQbC (ORCPT
+	id S964782Ab2AEQgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 11:36:19 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60619 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932488Ab2AEQgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 11:31:02 -0500
-Date: Thu, 5 Jan 2012 11:31:00 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>
-cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Problems with get_driver() and driver_attach() (and new_id too)
-Message-ID: <Pine.LNX.4.44L0.1201051035330.1434-100000@iolanthe.rowland.org>
+	Thu, 5 Jan 2012 11:36:18 -0500
+Date: Thu, 5 Jan 2012 16:35:29 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
+	exist
+Message-ID: <20120105163529.GA11810@n2100.arm.linux.org.uk>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com> <1325499859-2262-8-git-send-email-gilad@benyossef.com> <4F033EC9.4050909@gmail.com> <20120105142017.GA27881@csn.ul.ie> <20120105144011.GU11810@n2100.arm.linux.org.uk> <20120105161739.GD27881@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105161739.GD27881@csn.ul.ie>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg and Kay:
+On Thu, Jan 05, 2012 at 04:17:39PM +0000, Mel Gorman wrote:
+> Link please?
 
-There are some nasty problems connected with the driver core's
-get_driver(), put_driver(), and driver_attach().  Not just
-implementation bugs, but deeper conceptual difficulties.
+Forwarded, as its still in my mailbox.
 
-Let's start with get_driver().  Its comment says that it increments the 
-driver's refcount, just like get_device() and a lot of other utility 
-routines.
+> I'm including a patch below under development that is
+> intended to only cope with the page allocator case under heavy memory
+> pressure. Currently it does not pass testing because eventually RCU
+> gets stalled with the following trace
+> 
+> [ 1817.176001]  [<ffffffff810214d7>] arch_trigger_all_cpu_backtrace+0x87/0xa0
+> [ 1817.176001]  [<ffffffff810c4779>] __rcu_pending+0x149/0x260
+> [ 1817.176001]  [<ffffffff810c48ef>] rcu_check_callbacks+0x5f/0x110
+> [ 1817.176001]  [<ffffffff81068d7f>] update_process_times+0x3f/0x80
+> [ 1817.176001]  [<ffffffff8108c4eb>] tick_sched_timer+0x5b/0xc0
+> [ 1817.176001]  [<ffffffff8107f28e>] __run_hrtimer+0xbe/0x1a0
+> [ 1817.176001]  [<ffffffff8107f581>] hrtimer_interrupt+0xc1/0x1e0
+> [ 1817.176001]  [<ffffffff81020ef3>] smp_apic_timer_interrupt+0x63/0xa0
+> [ 1817.176001]  [<ffffffff81449073>] apic_timer_interrupt+0x13/0x20
+> [ 1817.176001]  [<ffffffff8116c135>] vfsmount_lock_local_lock+0x25/0x30
+> [ 1817.176001]  [<ffffffff8115c855>] path_init+0x2d5/0x370
+> [ 1817.176001]  [<ffffffff8115eecd>] path_lookupat+0x2d/0x620
+> [ 1817.176001]  [<ffffffff8115f4ef>] do_path_lookup+0x2f/0xd0
+> [ 1817.176001]  [<ffffffff811602af>] user_path_at_empty+0x9f/0xd0
+> [ 1817.176001]  [<ffffffff81154e7b>] vfs_fstatat+0x4b/0x90
+> [ 1817.176001]  [<ffffffff81154f4f>] sys_newlstat+0x1f/0x50
+> [ 1817.176001]  [<ffffffff81448692>] system_call_fastpath+0x16/0x1b
+> 
+> It might be a separate bug, don't know for sure.
 
-But a struct driver is _not_ like a struct device!  It resembles a
-piece of code more than a piece of data -- it acts as an encapsulation
-of a driver.  Incrementing its refcount doesn't have much meaning
-because a driver's lifetime isn't determined by the structure's
-refcount; it's determined by when the driver's module gets unloaded.
-
-What really matters for a driver is whether or not it is registered.  
-Drivers expect, for example, that none of their methods will be called
-after driver_unregister() returns.  It doesn't matter if some other
-thread still holds a reference to the driver structure; that reference
-mustn't be used for accessing the driver code after unregistration.  
-And of course, driver_attach() does access the driver code, by calling 
-the probe routine.
-
-An example where this is violated occurs in the usb-serial core.  Each
-serial driver module registers (at least) two driver structures, one on
-the usb_serial_bus and one on the usb_bus.  The usb_serial_driver
-structure contains a pointer to the usb_driver structure, and this
-pointer is passed to get_driver() when the serial driver's new_id sysfs
-attribute is written to.
-
-Now, udev scripts are capable of writing to sysfs attributes very soon
-after the attribute is created.  In the case of USB serial drivers, we
-have a bug report of a situation where this write took place after the
-usb_serial_driver was registered but before the usb_driver was
-registered.  Thus, get_driver() was handed a pointer to a driver
-structure that had not even been initialized, let alone registered, and
-so naturally it crashed.
-
-Almost as bad is what can happen when a driver is unregistered while
-some thread is holding a reference obtained from get_driver().  The
-reference prevents the driver structure from being freed, but it
-doesn't prevent the thread from calling driver_attach() after the
-unregistration is complete, at which time the driver code does not
-expect to be invoked.
-
-To fix these problems, we need to change the semantics of get_driver()  
-and put_driver().  Instead of taking a reference to the driver
-structure, get_driver() should check whether the driver is currently
-registered.  If not, return NULL; otherwise, pin the driver (i.e.,
-block it from being unregistered) until put_driver() is called.
-
-This will require some code auditing, because there are places where
-get_driver() is called without checking the return value (see
-drivers/pci/pci_driver.c:pci_add_dynid() for an example; there are
-others).  It should be marked __must_check.
-
-Also, there are places that call driver_attach() without first calling
-get_driver() (see drivers/input/gameport/gameport.c,
-drivers/input/serio/serio.c, and drivers/char/agp/amd64-agp.c).  They
-may or may not be safe; I don't know.
-
-
-One more thing.  The new_id sysfs attribute can cause problems of its 
-own.  Writes to it cause a dynamic ID structure to be allocated, and 
-these structures will leak unless they are properly deallocated.  
-Normally they are freed when the driver is unregistered.  But what if 
-registration fails to begin with?  It might fail at a point after the 
-new_id attribute was created, which means the attribute could have been 
-written to.  The dynamic IDs need to be freed after registration fails, 
-but nobody does this currently.
-
-Alan Stern
-
+I'm not going to even pretend to understand what the above backtrace
+means: it doesn't look like what I'd expect from the problem which
+PeterZ's patch is supposed to address.  It certainly doesn't do anything
+to address the cpu-going-offline problem you seem to have found.
