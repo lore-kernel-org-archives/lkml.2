@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab2AECSG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 21:18:06 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44593 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757099Ab2AECSD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 21:18:03 -0500
-Date: Wed, 4 Jan 2012 18:17:58 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] rcu: Improve detection of illegal synchronize_rcu() call
- from RCU read side
-Message-ID: <20120105021758.GS2448@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1324901803.31721.4.camel@lappy>
- <20111226163148.GC2435@linux.vnet.ibm.com>
- <20111226163734.GF28309@somewhere.redhat.com>
- <20111226195656.GD2435@linux.vnet.ibm.com>
- <20120104190336.GC1143@somewhere>
- <20120104213035.GF2448@linux.vnet.ibm.com>
- <20120105014518.GD1143@somewhere>
- <20120105020108.GQ2448@linux.vnet.ibm.com>
- <20120105020601.GE1143@somewhere>
+	id S1757754Ab2AECWj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 21:22:39 -0500
+Received: from solo.fdn.fr ([80.67.169.19]:34260 "EHLO solo.fdn.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757357Ab2AECWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 21:22:34 -0500
+X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Wed, 04 Jan 2012 21:22:34 EST
+Date: Thu, 5 Jan 2012 03:16:46 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [REGRESSION] i915 KMS dual head broken on DELL latitude E6420 in
+ 3.1-rc*
+Message-ID: <20120105021646.GA4099@type.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
+	linux-kernel@vger.kernel.org
+References: <20110914232717.GA5410@type.famille.thibault.fr>
+ <yunobym743b.fsf@aiko.keithp.com>
+ <20110915074106.GA4544@type.famille.thibault.fr>
+ <20110915081259.GB4877@type.bordeaux.inria.fr>
+ <yunlitp7umf.fsf@aiko.keithp.com>
+ <20110916163050.GT4891@type.bordeaux.inria.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120105020601.GE1143@somewhere>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010502-3270-0000-0000-000002FF2031
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110916163050.GT4891@type.bordeaux.inria.fr>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 03:06:03AM +0100, Frederic Weisbecker wrote:
-> On Wed, Jan 04, 2012 at 06:01:08PM -0800, Paul E. McKenney wrote:
-> > On Thu, Jan 05, 2012 at 02:45:20AM +0100, Frederic Weisbecker wrote:
-> > > On Wed, Jan 04, 2012 at 01:30:35PM -0800, Paul E. McKenney wrote:
-> > > > On Wed, Jan 04, 2012 at 08:03:39PM +0100, Frederic Weisbecker wrote:
-> > > > > Actually for the case of RCU, the wait_for_completion() called by synchronize_rcu()
-
-[ . . . ]
-
-> > > > > rcutiny seems to be fine with the cond_resched() call, but srcu needs
-> > > > > a special treatment.
-> > > > 
-> > > > For the moment, I just applied rcu_lockdep_assert() everywhere -- zero
-> > > > cost on non-lockdep kernels, and fully handles all of the RCU simple
-> > > > self-deadlock cases.
-> > > 
-> > > So, for RCU I'm not sure this is useful given the might_sleep() things.
-> > > But for srcu it is.
+Samuel Thibault, le Fri 16 Sep 2011 18:30:50 +0200, a écrit :
+> Keith Packard, le Thu 15 Sep 2011 09:22:48 -0500, a écrit :
+> > On Thu, 15 Sep 2011 10:12:59 +0200, Samuel Thibault <samuel.thibault@ens-lyon.org> wrote:
 > > 
-> > One nice thing about the lockdep approach is that it tracks where the
-> > conflicting RCU read-side critical section started.  But I am planning
-> > for these to be 3.4 material, so we do have some time to refine them.
+> > > At home only. At work, with a different VGA screen, I'm still getting
+> > > the issue.
+> > 
+> > You're still having a problem with the LVDS screen at work with FBC
+> > disabled?
 > 
-> Yeah sure. And in any case it's still good to keep might_sleep() early
-> to spot other sources of illegal atomic sections (irqs disabled and co)
+> Yes, though it now seems random, sometimes it works, sometimes not.
 
-Agreed!
+I have just tried a fresh 3.2 once, without problem. Within a few days,
+I'll know whether it's luck or magical-fixup.
 
-							Thanx, Paul
-
+Samuel
