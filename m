@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932992Ab2AEWiR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:38:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37285 "EHLO mx2.suse.de"
+	id S1758385Ab2AEWmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:42:06 -0500
+Received: from mail.vyatta.com ([76.74.103.46]:50777 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932863Ab2AEWgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:36:44 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:29:59 2012
-Message-Id: <20120105222959.164416755@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Thu, 05 Jan 2012 14:30:49 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Mandeep Singh Baines <msb@chromium.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        John Kacur <jkacur@redhat.com>
-Subject: [76/80] hung_task: fix false positive during vfork
-In-Reply-To: <20120105223610.GA9914@kroah.com>
+	id S1751277Ab2AEWmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:42:05 -0500
+Date: Thu, 5 Jan 2012 14:42:01 -0800
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] iproute2 3.2.0
+Message-ID: <20120105144201.67348e16@nehalam.linuxnetplumber.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+Linus released 3.2, and this means it is time for another release
+of iproute2. Lots of little build and typo fixes.
+The real visible changes in this release are:
+  * better manual pages
+  * L2TPv3 support
+  * improved RED options
+  * netem additions for loss models
+  * iptables integration fixes
 
-------------------
-Content-Length: 1649
-Lines: 48
+Download:
+  http://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-3.2.0.tar.gz
 
-From: Mandeep Singh Baines <msb@chromium.org>
+Repository:
+  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-commit f9fab10bbd768b0e5254e53a4a8477a94bfc4b96 upstream.
+This version is signed with my GPG public key
 
-vfork parent uninterruptibly and unkillably waits for its child to
-exec/exit. This wait is of unbounded length. Ignore such waits
-in the hung_task detector.
-
-Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-Reported-by: Sasha Levin <levinsasha928@gmail.com>
-LKML-Reference: <1325344394.28904.43.camel@lappy>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: John Kacur <jkacur@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
 
 ---
- kernel/hung_task.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+Eric Dumazet (5):
+      ss: report ecnseen
+      red: give a hint about burst value
+      red: make burst optional
+      red: harddrop support and cleanups
+      netem: fix a typo in explain()
 
---- a/kernel/hung_task.c
-+++ b/kernel/hung_task.c
-@@ -74,11 +74,17 @@ static void check_hung_task(struct task_
- 
- 	/*
- 	 * Ensure the task is not frozen.
--	 * Also, when a freshly created task is scheduled once, changes
--	 * its state to TASK_UNINTERRUPTIBLE without having ever been
--	 * switched out once, it musn't be checked.
-+	 * Also, skip vfork and any other user process that freezer should skip.
- 	 */
--	if (unlikely(t->flags & PF_FROZEN || !switch_count))
-+	if (unlikely(t->flags & (PF_FROZEN | PF_FREEZER_SKIP)))
-+	    return;
-+
-+	/*
-+	 * When a freshly created task is scheduled once, changes its state to
-+	 * TASK_UNINTERRUPTIBLE without having ever been switched out once, it
-+	 * musn't be checked.
-+	 */
-+	if (unlikely(!switch_count))
- 		return;
- 
- 	if (switch_count != t->last_switch_count) {
+Florian Westphal (1):
+      tc: man: add man page for stochastic fair blue
 
+Greg Rose (1):
+      iproute2: Add new command to ip link to enable/disable VF spoof check
+
+Hagen Paul Pfeifer (1):
+      netem: add man-page
+
+Jan Engelhardt (3):
+      iproute2: avoid use of implicit declarations
+      iproute2: proper detection of libxtables position and flags
+      iproute2: fix calling up the xt action
+
+Stephen Hemminger (14):
+      Update to 3.2.0-rc2 headers
+      Split up ip man page
+      Update to latest 3.2 kernel headers
+      netem: fix man page
+      netem: add support for 4 state and GE loss model
+      libnetlink: change rtnl_send() to take void *
+      libnetlink: add more attribute functions
+      libnetlink: remove unused junk callback
+      libnetlink: add attribute access inline functions
+      l2tp: Add l2tp support
+      ematch: fix warning about yyerror and const
+      ematch: fix warning about unused input()
+      README cleanup's
+      v3.2.0
+
+Thomas Jarosch (2):
+      tc: Remove unused variable 'res'.
+      tc: Use correct variable type for get_distribution() result
 
