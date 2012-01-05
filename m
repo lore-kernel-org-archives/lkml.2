@@ -1,57 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab2AEUEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:04:43 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:35062 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758265Ab2AEUEi (ORCPT
+	id S932668Ab2AEUE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:04:56 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:35665
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758287Ab2AEUEl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:04:38 -0500
-Date: Thu, 5 Jan 2012 14:04:32 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
- hotkey problems
-Message-ID: <20120105200432.GE25386@ubuntu-macmini>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-	Thomas Renninger <trenn@suse.de>,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
- <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
- <20120105182627.GE24242@srcf.ucam.org>
- <20120105193228.GB25386@ubuntu-macmini>
- <20120105193431.GA26097@srcf.ucam.org>
+	Thu, 5 Jan 2012 15:04:41 -0500
+Date: Thu, 5 Jan 2012 21:04:34 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <193489064.20120105210434@eikelenboom.it>
+To: "Ted Ts'o" <tytso@mit.edu>
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        <dm-devel@redhat.com>
+Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+In-Reply-To: <20120105181535.GB26382@thunk.org>
+References: <217150909.20120105113759@eikelenboom.it> <197607646.20120105142107@eikelenboom.it> <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu> <4910694144.20120105171428@eikelenboom.it> <20120105181535.GB26382@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105193431.GA26097@srcf.ucam.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 07:34:31PM +0000, Matthew Garrett wrote:
-> On Thu, Jan 05, 2012 at 01:32:28PM -0600, Seth Forshee wrote:
-> 
-> > Also a side note of interest: The machines that suffer from this all
-> > also have a WMI interface with code to support hotkeys, and that code
-> > shouldn't suffer from this problem. Unfortunately these models are the
-> > only ones I've seen with this WMI interface, and the code to generate
-> > the hotkey events isn't executed if the OS reports itself as Vista or
-> > newer.
-> 
-> In that case, can you check for the presence of the WMI interface and 
-> then refuse to bind? That's seem far simpler than adding an unknown 
-> number of systems to the blacklist.
+Thursday, January 5, 2012, 7:15:35 PM, you wrote:
 
-Hmm, I suppose I could look for the specific WMI event guid, although
-the relationship between the two seems tenuous at best. It would make
-sense to me if we were refusing to bind because there was a better
-interface available, but Toshiba is obviously treating hotkeys on the
-WMI interface as legacy since it's disabled in the BIOS for Vista or
-later. INFO seems to be the preferred interface.
+> On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
+>> 
+>> OK spoke too soon, i have been able to trigger it again:
+>> - copying files from LV to the same LV without the snapshot went OK
+>> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
+
+> OK.  Originally, you said you did this:
+
+> 1) fsck -v -p -f the filesystem
+> 2) mount the filesystem
+> 3) Try to copy a file
+> 4) filesystem will be mounted RO on error  (see below)
+> 5) fsck again, journal will be recovered, no other errors
+> 6) start at 1)
+
+> Was this with with a read-only snapshot always being in existence
+> through all of these five steps?  When was the RO snapshot created?
+
+> If a RO snapshot has to be there in order for this to happen, then
+> this is almost certainly a device-mapper regression.  (dm-devel folks,
+> this is a problem which apparently occurred when the user went from
+> v3.1.5 to v3.2, so this looks likes 3.2 regression.)
+
+>                                                 - Ted
+
+
+Well it seems to consist of 2 issues with a kernel booted with a 3.2.0 kernel:
+
+1) - It only seems to trigger with a snapshot of the LV present
+   - Just tested if the snapshot being mounted RO did really matter, it doesn't.
+   - It can also be triggerd if mounted RW
+   - It can also be triggered when the snapshot is not mounted at all (by just copying some files on the filesystem itself)
+
+   So that seems a device mapper issue
+
+2) BUT:
+   after the error triggerd by 1:
+   - After removing the snapshot with lvremove,
+   - umounting the filesystem on the LV
+   - fsckíng the filesystem without errors (apart from the journal recovery)
+   - rebooting the machine again with 3.2.0 kernel
+   - mounting the filesystem on the LV
+   - removing the partially copied files
+   - trying to copy files from the filesystem on the LV to the same filesystem, without a snapshot of the LV present
+   - it fails with the exact same error mounting the filesystem RO.
+
+   then
+   - umounting the filesystem on the LV
+   - fsckíng the filesystem without errors (apart from the journal recovery)
+   - rebooting the machine with a 3.1.5 kernel
+   - mounting the filesystem on the LV
+   - removing the partially copied files
+   - trying to copy files from the filesystem on the LV to the same filesystem, without a snapshot of the LV present
+   - no problems files copied ok
+
+   then
+   - rebooting into 3.2.0 again
+   - mounting the filesystem on the LV
+   - removing the completly copied files
+   - trying to copy files from the filesystem on the LV to the same filesystem, without a snapshot of the LV present
+   - no problems files copied ok
+
+
+   SO
+   - it keeps on failing on 3.2.0, even when the snapshot is gone and the system is rebooted, after 3.1.5 is booted once everything seems to be OK again .... even under 3.2.0
+   - that seems more like a filesystem thing ?
+
+
+I doubled checked and performed all these steps again.
+
+--
+Sander
+
+
+
+
+
+
+
+
+>> 
+>> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
+>> [ 2357.656056] Aborting journal on device dm-2-8.
+>> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
+>> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
+>> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
+>> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
+>> 
+>> 
+>> Attached are 4x output from dumpe2fs
+>> - dumpe2fs-xen_images-3.2.0                           Made just after boot
+>> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
+>> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
+>> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
+>> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
+>> 
+>> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
+>> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
+>> 
+>> --
+>> Sander
+>> 
+>> 
+>> 
+>> >> 
+>> >> --
+>> >> Sander
+>> >> 
+>> >> 
+>> >> This is a forwarded message
+>> >> From: Sander Eikelenboom <linux@eikelenboom.it>
+>> >> To: "Theodore Ts'o" <tytso@mit.edu>
+>> >> Date: Thursday, January 5, 2012, 11:37:59 AM
+>> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+>> >> 
+>> >> ===8<==============Original message text===============
+>> >> 
+>> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
+>> >> 
+>> >> Steps:
+>> >> 1) fsck -v -p -f the filesystem
+>> >> 2) mount the filesystem
+>> >> 3) Try to copy a file
+>> >> 4) filesystem will be mounted RO on error  (see below)
+>> >> 5) fsck again, journal will be recovered, no other errors
+>> >> 6) start at 1)
+>> >> 
+>> >> 
+>> >> I think the way i bricked it is:
+>> >> - make a lvm snapshot from that lvm logical disk
+>> >> - mount that lvm snapshot as RO
+>> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
+>> >> - it fails and i can't recover (see above)
+>> >> 
+>> >> 
+>> >> Is there a way to recover from this ?
+>> >> 
+>> >> 
+>> >> 
+>> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+>> >> [  220.749415] Aborting journal on device dm-2-8.
+>> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
+>> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
+>> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
+>> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
+>> >> serveerstertje:/mnt/xen_images/domains/production# cd /
+>> >> serveerstertje:/# umount /mnt/xen_images/
+>> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
+>> >> fsck from util-linux-ng 2.17.2
+>> >> /dev/mapper/serveerstertje-xen_images: recovering journal
+>> >> 
+>> >>     277 inodes used (0.00%)
+>> >>       5 non-contiguous files (1.8%)
+>> >>       0 non-contiguous directories (0.0%)
+>> >>         # of inodes with ind/dind/tind blocks: 41/41/3
+>> >>         Extent depth histogram: 69/28/2
+>> >> 51890920 blocks used (79.18%)
+>> >>       0 bad blocks
+>> >>      41 large files
+>> >> 
+>> >>     199 regular files
+>> >>      53 directories
+>> >>       0 character device files
+>> >>       0 block device files
+>> >>       0 fifos
+>> >>       0 links
+>> >>      16 symbolic links (16 fast symbolic links)
+>> >>       0 sockets
+>> >> --------
+>> >>     268 files
+>> >> serveerstertje:/#
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> System:
+>> >> - Kernel 3.2.0
+>> >> - Debian Squeeze with:
+>> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
+>> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
+>> >> 
+>> >> ===8<===========End of original message text===========
+>> >> 
+>> >> 
+>> >> 
+>> >> -- 
+>> >> Best regards,
+>> >> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
+>> 
+>> 
+>> 
+>> 
+>> -- 
+>> Best regards,
+>>  Sander                            mailto:linux@eikelenboom.it
+
+
+
+
+
+
+
+
+
+-- 
+Best regards,
+ Sander                            mailto:linux@eikelenboom.it
+
