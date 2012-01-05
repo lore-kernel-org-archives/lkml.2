@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673Ab2AECGV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 21:06:21 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:55704 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757533Ab2AECGR (ORCPT
+	id S1757684Ab2AECGz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 21:06:55 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38424 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757645Ab2AECGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 21:06:17 -0500
-Date: Thu, 5 Jan 2012 13:06:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>, Jan Kara <jack@suse.cz>
-Subject: linux-next: manual merge of the vfs tree with the ext3 tree
-Message-Id: <20120105130609.2e4915ff183727456b527477@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_13_06_09_+1100_/BeyiupTGiCM7.T0"
+	Wed, 4 Jan 2012 21:06:52 -0500
+X-Sasl-enc: hRTK5fvZZbgAGr9DPyjmTQZeHCvouAepuxnHKup8lEIC 1325729211
+Date: Wed, 4 Jan 2012 18:06:39 -0800
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
+Message-ID: <20120105020639.GA1161@kroah.com>
+References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
+ <1324560391.1964.8.camel@falcor>
+ <20120104152801.d8f555ca.akpm@linux-foundation.org>
+ <1325723630.13419.2.camel@falcor>
+ <20120104164638.cc21fc2e.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104164638.cc21fc2e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_13_06_09_+1100_/BeyiupTGiCM7.T0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 04, 2012 at 04:46:38PM -0800, Andrew Morton wrote:
+> On Wed, 04 Jan 2012 19:33:49 -0500
+> Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> 
+> > On Wed, 2012-01-04 at 15:28 -0800, Andrew Morton wrote:
+> > > On Thu, 22 Dec 2011 08:26:30 -0500
+> > > Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > On Thu, 2011-12-22 at 12:54 +0200, Dmitry Kasatkin wrote:
+> > > > > When a file is truncated with truncate()/ftruncate() and then closed,
+> > > > > iversion is not updated. This patch uses ATTR_SIZE flag as an indication
+> > > > > to increment iversion.
+> > > > > 
+> > > > > Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+> > > > 
+> > > > Acked-by: Mimi Zohar <zohar@us.ibm.com> 
+> > > > (Stable should be cc'ed on this patch.)
+> > > 
+> > > why?
+> > 
+> > Why backported?
+> 
+> Yes.  If you want to submit the patch to the -stable maintainer then
+> you should explain to him why the fix is important enough to warrant
+> doing that.  That involves explaining the user-visible effects of
+> the bug.
+> 
+> >  The IMA measurement list could be incomplete.
+> 
+> In more detail than this.  Maybe he knows what the above sentence
+> means, but I sure don't.
 
-Hi Al,
-
-Today's linux-next merge of the vfs tree got a conflict in
-include/linux/fs.h between commit 4789fd4495a4 ("quota: Fix deadlock with
-suspend and quotas") from the ext3 tree and commit cf31e70d6cf9 ("vfs:
-new helper - vfs_ustat()") from the vfs tree.
-
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc include/linux/fs.h
-index 3aba12c,7aacf31..0000000
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@@ -2531,8 -2489,6 +2489,7 @@@ extern void put_filesystem(struct file_
-  extern struct file_system_type *get_fs_type(const char *name);
-  extern struct super_block *get_super(struct block_device *);
-  extern struct super_block *get_active_super(struct block_device *bdev);
-- extern struct super_block *user_get_super(dev_t);
- +extern void put_super(struct super_block *sb);
-  extern void drop_super(struct super_block *sb);
-  extern void iterate_supers(void (*)(struct super_block *, void *), void *=
-);
-  extern void iterate_supers_type(struct file_system_type *,
-
---Signature=_Thu__5_Jan_2012_13_06_09_+1100_/BeyiupTGiCM7.T0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBQWRAAoJEECxmPOUX5FEKlMP/i5BTMBYAa87ymBgDkoIGBzE
-n8I586Rd9cEGRwLZ4LuYoJoVibNxEu1SxweFcw0RciGnTo73QrQRbzlF43sWoAB2
-Is1R9bVQrPSoScktQaB0rjiWLfOe4m4xUs/eXeWZUqKOCtuSY/CTk1awPD+YPWso
-1UuLzhlEr64+Gq1Iok0EciEtJEjW3vofSRib7cJSiILDIy3rCimZwFWzwulfS7PM
-xxIoRtI1mfyIjiRdVVZDhKz5XWWIRi8KDSp0wG2zZj6stBcdTygev8Dm8MAhGscH
-C1XmvahVeqIkg56t21DTQh56ssbeyQtlixcxGxaggTS2u+36RRrkuW+2jnoVm/p1
-YM/R7m3IB7OlKilAPOjRn1n3ZDgJ8GmuVmIeL4q2uj1ZU+2sotHtAL55HeE15/9A
-7RS19pyZgQxmnoAYQIq/gmsKbAbi1121ipkb967zybQ3M8DJaRzFuRBhV7fM9B4N
-CK3VTfTMHzVz/bh35MJS5MNg1rEbd8GVSJA4gctpuGJOnKAELVBDjgdLMF5F+zbs
-9dcYWFcIF2S1ivPQK4SiYnSrkVmS9LDUU4r6QvmgQXBB2KkJR4fwjY6aLblD53RB
-ZuaNlDR72vQU+E9my81kn5LjE/+0E+8jC6slQXIFUzroLzHmadq7lbGPFH46TE2n
-84DjsmT8SY15GvMkFXiZ
-=PkCl
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jan_2012_13_06_09_+1100_/BeyiupTGiCM7.T0--
+Nope, I don't either :)
