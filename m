@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758206Ab2AERfl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 12:35:41 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35329 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755401Ab2AERfj (ORCPT
+	id S1758211Ab2AERhF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 12:37:05 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:45039 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab2AERhD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 12:35:39 -0500
-Date: Thu, 5 Jan 2012 09:35:30 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Paul Menage <paul@paulmenage.org>
-Subject: Re: [PATCH 3/3] cgroup: remove extra calls to find_existing_css_set
-Message-ID: <20120105173530.GB18486@google.com>
-References: <1325654312-32477-1-git-send-email-msb@chromium.org>
- <1325654312-32477-3-git-send-email-msb@chromium.org>
- <4F0506B1.1070909@cn.fujitsu.com>
+	Thu, 5 Jan 2012 12:37:03 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Thu, 5 Jan 2012 12:35:43 -0500
+Subject: [RFC][PATCH v4 -next 0/4] Make pstore/kmsg_dump run after stopping
+ other cpus in panic path
+Thread-Topic: [RFC][PATCH v4 -next 0/4] Make pstore/kmsg_dump run after
+ stopping other cpus in panic path
+Thread-Index: AczL0HMFUhgCH34WQWyA76ETk3pYJw==
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0506B1.1070909@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1201050179
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+Hi,
 
-On Thu, Jan 05, 2012 at 10:10:57AM +0800, Li Zefan wrote:
-> Mandeep Singh Baines wrote:
-> > In cgroup_attach_proc, we indirectly call find_existing_css_set 3
-> > times. It is an expensive call so we want to call it a minimum
-> > of times. This patch only calls it once and stores the result so
-> > that it can be used later on when we call cgroup_task_migrate.
-> > 
-> > This required modifying cgroup_task_migrate to take the new css_set
-> > (which we obtained from find_css_set) as a parameter. The nice side
-> > effect of this is that cgroup_task_migrate is now identical for
-> > cgroup_attach_task and cgroup_attach_proc. It also now returns a
-> > void since it can never fail.
-> > 
-> > Changes in V4:
-> > * https://lkml.org/lkml/2011/12/22/421 (Li Zefan)
-> >   * Avoid GFP_KERNEL (sleep) in rcu_read_lock by getting css_set in
-> >     a separate loop not under an rcu_read_lock
-> > Changes in V3:
-> > * https://lkml.org/lkml/2011/12/22/13 (Li Zefan)
-> >   * Fixed earlier bug by creating a seperate patch to remove tasklist_lock
-> > Changes in V2:
-> > * https://lkml.org/lkml/2011/12/20/372 (Tejun Heo)
-> >   * Move find_css_set call into loop which creates the flex array
-> > * Author
-> >   * Kill css_set_refs and use group_size instead
-> >   * Fix an off-by-one error in counting css_set refs
-> >   * Add a retval check in out_list_teardown
-> > 
-> > Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
-> 
-> Acked-by: Li Zefan <lizf@cn.fujitsu.com>
+Discussion:
+ As Don mentioned in following thread, it would be nice for pstore/kmsg_dump to serialize 
+ panic path because they can log messages reliably.
 
-I like this series but it's too late for the current merge window.
-I'll apply them on for-3.4 once this merge window closes.  If I don't,
-please ping me.
+ https://lkml.org/lkml/2011/10/13/427
 
-Thank you.
+ This patchset is based on his proposal switching smp_send_stop() from REBOOT_VECTOR to NMI.
 
--- 
-tejun
+Change Log:
+
+ v3 -> v4
+   - Add comment for explaining the purpose of WARN_ON() based on Don's comment (patch 2/4)
+     https://lkml.org/lkml/2011/12/12/296
+
+   - Skip spin_lock of efi_pstore_write() in panic case based on discussion with Tony (patch 4/4)
+     https://lkml.org/lkml/2012/1/3/151
+
+   - Apply this patchset to -next tree instead of linus -tree so that "patch 4/4" makes simple
+
+ v2 -> v3
+   - Skip spin_locks in panic case in both kmsg_dump() and pstore_dump() instead of calling spin_lock_init()
+     to avoid potential issues due to spin_lock_init()
+   - Add WARN_ON() in "in_nmi() and !panic" case into kmsg_dump() so that we trap when someone adds 
+     new kmsg_dump() in NMI path in the future
+   - Skip subsequent kmsg_dump() function calls to avoid deadlock.
+
+ v1 -> v2
+  - Add trylocks to kmsg_dump()/pstore_dump() so that they can work in NMI context.  
+  - Divide a patch into two
+     First one is just moving kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
+     Second one is changing lock operations in kmsg_dump()/pstore_dump()
+ v1
+  - Move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop
+  - Bust logbuf_lock of kmsg_dump() in panic path for avoiding deadlock
+  - Bust psinfo->buf_lock of pstore_dump() in panic path for avoiding deadlock
+
+Patch Description:
+   [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
+     - Just move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
+
+   [RFC][PATCH v4 -next 2/4] Skip spin_locks in panic case and Add WARN_ON()
+     - Skip spin_locks in panic case in both kmsg_dump() and pstore_dump()
+     - Add WARN_ON() in "in_nmi() and !panic" case into kmsg_dump()
+
+   [RFC][PATCH v4 -next 3/4] Skip subsequent kmsg_dump()
+     - Skip subsequent kmsg_dump() function calls in panic path
+
+   [RFC][PATCH v4 -next 4/4] Skip spin_lock of efi_pstore_write() in panic case
+     - Skip spin_lock of efi_pstore_write() in panic case to avoid deadlock
+
+Seiji
