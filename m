@@ -1,105 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758309Ab2AEULS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:11:18 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:56748 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755978Ab2AEULR convert rfc822-to-8bit (ORCPT
+	id S932781Ab2AEUQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:16:51 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:38115 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932707Ab2AEUQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:11:17 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Thu, 5 Jan 2012 15:10:25 -0500
-Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
- below smp_send_stop()
-Thread-Index: AQHMy9CqWb3Eal+luUidUg+JrwynPJX+IWHAgAAOOEA=
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Jan 2012 15:16:49 -0500
+X-Sasl-enc: j+7kiNSKMgZcH/PLdUu7OdifWWFN08QSRatcVZtzn1Mj 1325794608
+Date: Thu, 5 Jan 2012 12:14:18 -0800
+From: Greg KH <greg@kroah.com>
+To: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Cc: oliver@neukum.name, gregkh@suse.de, jhovold@gmail.com,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] usb: cdc-acm: Fix acm_tty_hangup() vs.
+ acm_tty_close() race
+Message-ID: <20120105201418.GA32610@kroah.com>
+References: <1324115710-14756-1-git-send-email-thilo@ginkel.com>
+ <CANvSZQ_y6uZSGgF28+AH+se-ecg+sHhy6pzo7++YvqtArHsUMg@mail.gmail.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=2 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1201050226
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANvSZQ_y6uZSGgF28+AH+se-ecg+sHhy6pzo7++YvqtArHsUMg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Dec 25, 2011 at 10:43:09PM +0100, Thilo-Alexander Ginkel wrote:
+> Hi there,
+> 
+> On Sat, Dec 17, 2011 at 10:55, Thilo-Alexander Ginkel <thilo@ginkel.com> wrote:
+> > There is a race condition involving acm_tty_hangup() and acm_tty_close() where
+> > hangup() would attempt to access tty->driver_data without proper locking and
+> > NULL checking after close() has potentially already set it to NULL.
+> > One possibility to (sporadically) trigger this behavior is to perform a
+> > suspend/resume cycle with a running WWAN data connection.
+> >
+> > This patch addresses the issue by introducing a NULL check for
+> > tty->driver_data in acm_tty_hangup() protected by open_mutex and exiting
+> > gracefully when hangup() is invoked on a device that has already been closed.
+> 
+> just wondering: Is there any chance that this patch will make it into
+> 3.3? I would really appreciate that as the bug it fixes is pretty
+> annoying (and potentially causes data loss when the laptop locks up on
+> resume) and I am sure that I am not the only one affected by it (at
+> least all Lenovo T420s with an Ericsson F5521gw WWAN modem should be
+> similarly affected).
+> 
+> If you would like to see any changes to the code or commit message
+> before considering the patch for inclusion, please let me know.
 
->Aren't you worried about the comment about smp_send_stop() not
->being hardened to work in a panic situation?
-> 	/*
-> 	 * Note smp_send_stop is the usual smp shutdown function, which
-> 	 * unfortunately means it may not be hardened to work in a panic
+As this isn't going to be an issue with 3.3 (from what I can tell, the
+code is correctly reworked in the patch set queued up for 3.3), I'll
+submit this for only the 3.2 and older kernel -stable releases, as that
+is the only place this should be relevant for.
 
-This comment is wrong because Don improved smp_send_stop() by switching REBOOT_VECTOR to NMI.
-And his patch has already merged to linux-next tree.
+thanks,
 
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commitdiff;h=3603a2512f9e69dc87914ba922eb4a0812b21cd6
-
-So, current smp_send_stop() is hardened to work in a panic situation.
-
-I will remove this wrong comment.
-
-Seiji
-
->-----Original Message-----
->From: Luck, Tony [mailto:tony.luck@intel.com]
->Sent: Thursday, January 05, 2012 2:07 PM
->To: Seiji Aguchi; Don Zickus
->Cc: linux-kernel@vger.kernel.org; Matthew Garrett; Vivek Goyal; Chen, Gong; akpm@linux-foundation.org; Brown, Len;
->'ying.huang@intel.com'; 'ak@linux.intel.com'; 'hughd@chromium.org'; 'mingo@elte.hu'; jmorris@namei.org;
->a.p.zijlstra@chello.nl; namhyung@gmail.com; dle-develop@lists.sourceforge.net; Satoru Moriya
->Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
->
->-	kmsg_dump(KMSG_DUMP_PANIC);
->-
-> 	/*
-> 	 * Note smp_send_stop is the usual smp shutdown function, which
-> 	 * unfortunately means it may not be hardened to work in a panic
->@@ -117,6 +115,8 @@ void panic(const char *fmt, ...)
-> 	 */
-> 	smp_send_stop();
->
->+	kmsg_dump(KMSG_DUMP_PANIC);
->+
->
->Aren't you worried about the comment about smp_send_stop() not
->being hardened to work in a panic situation?
->
->If it does work - we are clearly much better off moving the
->kmsg_dump() call down like this. It makes life much simpler
->and cleaner to work with just one running cpu.
->
->But if something goes wrong - we might not see the dump at all!
->
->How do we compare these cases and decide that it is better to
->trust that smp_send_stop() will return?
->
->-Tony
+greg k-h
