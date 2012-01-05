@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756768Ab2AEMQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 07:16:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47668 "EHLO mx1.redhat.com"
+	id S1756702Ab2AEMQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 07:16:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60749 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756717Ab2AEMQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 07:16:18 -0500
+	id S1756581Ab2AEMQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 07:16:15 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>,
-        Bob Peterson <rpeterso@redhat.com>
-Subject: [PATCH 05/16] GFS2: f_ra is always valid in dir readahead function
-Date: Thu,  5 Jan 2012 11:51:51 +0000
-Message-Id: <1325764322-10807-6-git-send-email-swhiteho@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 03/16] GFS2: More automated code analysis fixes
+Date: Thu,  5 Jan 2012 11:51:49 +0000
+Message-Id: <1325764322-10807-4-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1325764322-10807-1-git-send-email-swhiteho@redhat.com>
 References: <1325764322-10807-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a result, we don't need to test it each time.
+A potentially uninitialised variable, some unreachable code,
+and the main part of this, fixing the error path in the
+unlink function.
 
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
-Cc: Bob Peterson <rpeterso@redhat.com>
 
-diff --git a/fs/gfs2/dir.c b/fs/gfs2/dir.c
-index 9144117..946b6f8 100644
---- a/fs/gfs2/dir.c
-+++ b/fs/gfs2/dir.c
-@@ -1378,12 +1378,14 @@ out:
+diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
+index 41d494d..f6be14f 100644
+--- a/fs/gfs2/bmap.c
++++ b/fs/gfs2/bmap.c
+@@ -743,9 +743,6 @@ static int do_strip(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 	else if (ip->i_depth)
+ 		revokes = sdp->sd_inptrs;
+ 
+-	if (error)
+-		return error;
+-
+ 	memset(&rlist, 0, sizeof(struct gfs2_rgrp_list));
+ 	bstart = 0;
+ 	blen = 0;
+diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+index 46f6f9a..6336bc6 100644
+--- a/fs/gfs2/file.c
++++ b/fs/gfs2/file.c
+@@ -609,7 +609,7 @@ static int gfs2_fsync(struct file *file, loff_t start, loff_t end,
+ 	struct inode *inode = mapping->host;
+ 	int sync_state = inode->i_state & (I_DIRTY_SYNC|I_DIRTY_DATASYNC);
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+-	int ret, ret1 = 0;
++	int ret = 0, ret1 = 0;
+ 
+ 	if (mapping->nrpages) {
+ 		ret1 = filemap_fdatawrite_range(mapping, start, end);
+diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
+index cfd4959..377920d 100644
+--- a/fs/gfs2/inode.c
++++ b/fs/gfs2/inode.c
+@@ -1037,12 +1037,14 @@ static int gfs2_unlink(struct inode *dir, struct dentry *dentry)
+ 	struct buffer_head *bh;
+ 	struct gfs2_holder ghs[3];
+ 	struct gfs2_rgrpd *rgd;
+-	int error;
++	int error = -EROFS;
+ 
+ 	gfs2_holder_init(dip->i_gl, LM_ST_EXCLUSIVE, 0, ghs);
+ 	gfs2_holder_init(ip->i_gl,  LM_ST_EXCLUSIVE, 0, ghs + 1);
+ 
+ 	rgd = gfs2_blk2rgrpd(sdp, ip->i_no_addr);
++	if (!rgd)
++		goto out_inodes;
+ 	gfs2_holder_init(rgd->rd_gl, LM_ST_EXCLUSIVE, 0, ghs + 2);
+ 
+ 
+@@ -1088,12 +1090,13 @@ out_end_trans:
+ out_gunlock:
+ 	gfs2_glock_dq(ghs + 2);
+ out_rgrp:
+-	gfs2_holder_uninit(ghs + 2);
+ 	gfs2_glock_dq(ghs + 1);
+ out_child:
+-	gfs2_holder_uninit(ghs + 1);
+ 	gfs2_glock_dq(ghs);
+ out_parent:
++	gfs2_holder_uninit(ghs + 2);
++out_inodes:
++	gfs2_holder_uninit(ghs + 1);
+ 	gfs2_holder_uninit(ghs);
  	return error;
  }
- 
--/* gfs2_dir_readahead - Issue read-ahead requests for leaf blocks.
-+/**
-+ * gfs2_dir_readahead - Issue read-ahead requests for leaf blocks.
-  *
-  * Note: we can't calculate each index like dir_e_read can because we don't
-  * have the leaf, and therefore we don't have the depth, and therefore we
-  * don't have the length. So we have to just read enough ahead to make up
-- * for the loss of information. */
-+ * for the loss of information.
-+ */
- static void gfs2_dir_readahead(struct inode *inode, unsigned hsize, u32 index,
- 			       struct file_ra_state *f_ra)
- {
-@@ -1394,7 +1396,7 @@ static void gfs2_dir_readahead(struct inode *inode, unsigned hsize, u32 index,
- 	unsigned count;
- 
- 	/* First check if we've already read-ahead for the whole range. */
--	if (!f_ra || index + MAX_RA_BLOCKS < f_ra->start)
-+	if (index + MAX_RA_BLOCKS < f_ra->start)
- 		return;
- 
- 	f_ra->start = max((pgoff_t)index, f_ra->start);
-@@ -1448,7 +1450,7 @@ static int dir_e_read(struct inode *inode, u64 *offset, void *opaque,
- 	hash = gfs2_dir_offset2hash(*offset);
- 	index = hash >> (32 - dip->i_depth);
- 
--	if (f_ra && dip->i_hash_cache == NULL)
-+	if (dip->i_hash_cache == NULL)
- 		f_ra->start = 0;
- 	lp = gfs2_dir_get_hash_table(dip);
- 	if (IS_ERR(lp))
 -- 
 1.7.4
 
