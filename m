@@ -1,117 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489Ab2AEPML (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 10:12:11 -0500
-Received: from jacques.telenet-ops.be ([195.130.132.50]:57815 "EHLO
-	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab2AEPMI (ORCPT
+	id S1755516Ab2AEPNd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 10:13:33 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46285 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754399Ab2AEPNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 10:12:08 -0500
-Date: Thu, 5 Jan 2012 16:12:03 +0100 (CET)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>, Greg Ungerer <gerg@uclinux.org>,
-        Greg Ungerer <gerg@snapgear.com>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 3.3
-Message-ID: <alpine.DEB.2.00.1201051608180.5699@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 5 Jan 2012 10:13:32 -0500
+Date: Thu, 5 Jan 2012 10:13:31 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: "Theodore Ts'o" <tytso@mit.edu>, Tejun Heo <tj@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Revoking filesystems [was Re: Sysfs attributes racing with
+ unregistration]
+In-Reply-To: <m1boqietiv.fsf@fess.ebiederm.org>
+Message-ID: <Pine.LNX.4.44L0.1201051001360.1434-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
+On Wed, 4 Jan 2012, Eric W. Biederman wrote:
 
-The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
-  Linus Torvalds (1):
-        Linux 3.2
+> > Ted Ts'o has been talking about something similar but not the same -- a
+> > way to revoke an entire filesystem.  For example, see commit
+> > 7c2e70879fc0949b4220ee61b7c4553f6976a94d (ext4: add ext4-specific
+> > kludge to avoid an oops after the disk disappears).
+> >
+> > The use case for that is obvious and widespread: Somebody yanks out a
+> > USB drive without unmounting it first.
+> 
+> Agreed.  The best I have at the moment is a library that can wrap
+> filesystem methods to implement the hotplug bits.
+> 
+> Do you know how hard it is to remove event up to the filesystem that
+> sits on top of a block device?
 
-are available in the git repository at:
+I don't have a clear idea of what's involved (in particular, how to go
+from a block_device structure to a mounted filesystem).  But the place
+to do it would probably be block/genhd.c:invalidate_partition().  Ted
+can tell you if there's a better alternative.
 
-  ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+> Do you know how hard it is to detect at mount time if a block device
+> might be hot-plugable?  We can always use a mount option here and
+> make userspace figure it out, but being to have a good default would
+> be nice.
 
-The drivers/net change has been acked by David S. Miller.
+I don't think it's possible to tell if a device is hot-unpluggable.  
+For example, the device itself might not be removable from its parent, 
+but the parent might be hot-unpluggable.  You'll probably have to 
+assume that every device can potentially be unplugged, one way or 
+another.
 
-Thanks for pulling!
+Also, even devices that aren't hot-unpluggable can fail.  The end 
+result should be pretty much the same.
 
-Andi Kleen (1):
-      m68k: Initconst section fixes
+> If it isn't too hard to get the event up from the block device to the
+> filesystem when the block device is uncermoniously removed I might just
+> make the time to have hotunplug trigger a filesystem wide revoke on a
+> filesystem like ext4.
+> 
+> In addition to sysfs we need the same logic in proc, sysctl, and uio.
+> So it makes sense to move towards a common library that can do all of
+> the hard bits.
 
-Andreas Schwab (1):
-      m68k: Don't comment out syscalls used by glibc
+Ted mentioned the need for a new "device removed" superblock method.  
+Then each filesystem can add its own implementation as people get
+around to it.
 
-Finn Thain (11):
-      m68k/mac: early console
-      m68k/mac: cleanup mac_clear_irq
-      m68k/mac: cleanup mac_irq_pending
-      m68k/mac: cleanup forward declarations
-      m68k/mac: enable via_alt_mapping on performa 580
-      m68k/mac: fix nubus slot irq disable and shutdown
-      m68k/mac: oss irq fixes
-      m68k/mac: fix baboon irq disable and shutdown
-      m68k/mac: fix powerbook 150 adb_type
-      mac_scsi: fix mac_scsi on some powerbooks
-      m68k/mac: cleanup macro case
+Alan Stern
 
-Geert Uytterhoeven (6):
-      m68k/hp300: Export hp300_ledstate
-      m68k/serial: Remove references to obsolete CONFIG_SERIAL167
-      m68k/atari: Move declaration of atari_SCC_reset_done to header file
-      m68k/net: Remove obsolete IRQ_FLG_* users
-      m68k/serial: Remove references to obsolete serial config options
-      m68k/mac: Make CONFIG_HEARTBEAT unavailable on Mac
-
-Kars de Jong (2):
-      m68k/serial: SERIAL_PORT_DFNS only if CONFIG_ISA
-      m68k/mvme16x: Add support for EARLY_PRINTK
-
- arch/m68k/Kconfig.debug                 |   11 ++
- arch/m68k/Kconfig.devices               |   46 +-----
- arch/m68k/atari/ataints.c               |    2 -
- arch/m68k/atari/debug.c                 |    1 -
- arch/m68k/configs/amiga_defconfig       |    1 -
- arch/m68k/configs/apollo_defconfig      |    2 -
- arch/m68k/configs/atari_defconfig       |    3 -
- arch/m68k/configs/multi_defconfig       |    5 -
- arch/m68k/configs/mvme16x_defconfig     |    2 -
- arch/m68k/emu/nfeth.c                   |    2 +-
- arch/m68k/hp300/config.c                |    3 +-
- arch/m68k/include/asm/atarihw.h         |    2 +
- arch/m68k/include/asm/blinken.h         |    8 +-
- arch/m68k/include/asm/mac_baboon.h      |    6 +
- arch/m68k/include/asm/mac_iop.h         |    2 +
- arch/m68k/include/asm/mac_oss.h         |   23 +---
- arch/m68k/include/asm/mac_psc.h         |    4 +
- arch/m68k/include/asm/mac_via.h         |    9 +
- arch/m68k/include/asm/macintosh.h       |   10 +-
- arch/m68k/include/asm/macints.h         |    6 +-
- arch/m68k/include/asm/serial.h          |    2 +
- arch/m68k/include/asm/unistd.h          |   10 +-
- arch/m68k/kernel/head.S                 |  117 +++++++-------
- arch/m68k/mac/baboon.c                  |   41 +----
- arch/m68k/mac/config.c                  |   93 ++++++++----
- arch/m68k/mac/iop.c                     |    8 +-
- arch/m68k/mac/macints.c                 |  197 ++++++------------------
- arch/m68k/mac/oss.c                     |  157 +++++++-------------
- arch/m68k/mac/psc.c                     |   17 --
- arch/m68k/mac/via.c                     |  255 +++++++++++++++----------------
- arch/m68k/mvme16x/config.c              |  160 +++++++++++++++++++
- drivers/block/swim.c                    |    1 -
- drivers/net/ethernet/natsemi/macsonic.c |    7 +-
- drivers/scsi/mac_esp.c                  |    3 +-
- 34 files changed, 582 insertions(+), 634 deletions(-)
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
