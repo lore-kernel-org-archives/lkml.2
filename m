@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932992Ab2AEXEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 18:04:36 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:37493 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2AEXEe convert rfc822-to-8bit (ORCPT
+	id S933011Ab2AEXIM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 18:08:12 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35809 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235Ab2AEXIK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 18:04:34 -0500
+	Thu, 5 Jan 2012 18:08:10 -0500
+From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
+To: "'Andrew Burgess'" <aab@cichlid.com>
+Cc: <linux-kernel@vger.kernel.org>, <linux-uvc-devel@lists.berlios.de>
+References: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com> (from jpiszcz@lucidpixels.com on Tue Jan  3 06:21:02 2012) <1325694071.16950.49@hogo> <003301cccb03$4a8cbea0$dfa63be0$@lucidpixels.com>
+In-Reply-To: <003301cccb03$4a8cbea0$dfa63be0$@lucidpixels.com>
+Subject: RE: 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
+Date: Thu, 5 Jan 2012 18:08:08 -0500
+Message-ID: <017d01cccbfe$e3a82100$aaf86300$@lucidpixels.com>
 MIME-Version: 1.0
-In-Reply-To: <20120106084701.8f704542754db826deda318a@canb.auug.org.au>
-References: <20120105145836.GA2751@redhat.com>
-	<20120106083141.9c14a8d2d09539c6a6c0db75@canb.auug.org.au>
-	<20120106083916.9588034bde22a6803e327aa9@canb.auug.org.au>
-	<20120106084701.8f704542754db826deda318a@canb.auug.org.au>
-Date: Fri, 6 Jan 2012 00:04:33 +0100
-X-Google-Sender-Auth: mis9yJqEhNWFYU0MXDnRdjfyon4
-Message-ID: <CAMuHMdX9x-dTju4YB9yY7mt2-DNV7=y2oW2pSfuSdfPkEhzraA@mail.gmail.com>
-Subject: Re: [GIT PULL] use generic pci_iomap on all architectures
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+X-Mailer: Microsoft Outlook 14.0
+Thread-Index: AQEP3FQPGNkjbsETjYM87qM0UoHbNAGqYLYAAwAb7q+XUvD9UA==
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 22:47, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Fri, 6 Jan 2012 08:39:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->>
->> So why does you pull request refer to "commit
->> 805a6af8dba5dfdd35ec35dc52ec0122400b2610", I wonder?  Is that just what
->> "git request-pull" produced?
->
-> I see, "git request-pull" just puts in whatever you specify on the
-> command line rather than the merge-base ...
 
-Yep, I noticed the samething, for
 
-|git request-pull v3.2
-ra.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+-----Original Message-----
+From: Andrew Burgess [mailto:aab@cichlid.com] 
 
-while for-linus is based on v3.2-rc5, not v3.2.
+it sounds like a bug recently tracked down on the usb devel list
+(search for 'Failed to resubmit video URB')
 
-Gr{oetje,eeting}s,
-
-                        Geert
+it turned out to be a bug in the usb host controller; if you
+do an lspci do you see anything made by NetMos or MosChip?
 
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Hi,
+
+Running kernel 3.2 for 12+ hours, no issues yet, will update thread if any further issues occur.
+
+Justin.
+
