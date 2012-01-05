@@ -1,100 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985Ab2AEEYL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 23:24:11 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:50636 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757849Ab2AEEYI (ORCPT
+	id S932282Ab2AEEfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 23:35:08 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:32878 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757878Ab2AEEfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 23:24:08 -0500
-Date: Thu, 5 Jan 2012 15:24:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: linux-next: build failure after merge of the selinux tree
-Message-Id: <20120105152400.8ea64cf56587bac73d27c474@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L="
+	Wed, 4 Jan 2012 23:35:06 -0500
+MIME-Version: 1.0
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 4 Jan 2012 21:34:44 -0700
+X-Google-Sender-Auth: r__jSo5qqqTDtBBpS34A4YlKIxU
+Message-ID: <CACxGe6sJ8LqQM175zGNmCp4ecn9ZkkWT9gkX7OUyBiB8--TAGA@mail.gmail.com>
+Subject: [GIT PULL] gpio changes for 3.3 (plus some random spi and dt stuff)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: spi-devel-general@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L=
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-Hi Eric,
+Here are the gpio/next changes queued up for 3.3 and which are in
+linux-next.  There are a few device tree and spi changes mixed in here
+as well. The dt changes are there because they were tested alongside
+gpio changes that use them.  The spi changes are there because I'm
+stupid and applied them into the wrong branch which I didn't notice
+until now when I've got other commits on top of it.  If this bothers
+you then I can rebase the branch.
 
-After merging the selinux tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+There is a signed tag for this branch: gpio-for-linus-20110104
 
-crypto/crypto_user.c: In function 'crypto_user_rcv_msg':
-crypto/crypto_user.c:385:2: error: implicit declaration of function 'securi=
-ty_netlink_recv' [-Werror=3Dimplicit-function-declaration]
+g.
 
-Caused by commit f452f33b1f3a ("security: remove the
-security_netlink_recv hook as it is equivalent to capable()") interacting
-with commit a38f7907b926 ("crypto: Add userspace configuration API")
-which was added to Linus' tree before v3.2-rc1.
+The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
 
-I applied the following (supplied) fix as a merge fix.
+  Linux 3.2 (2012-01-04 15:55:44 -0800)
 
-From: Eric Paris <eparis@redhat.com>
-Subject: selinux tree pull for 2012-01-05, known build issue
-Date: Wed, 04 Jan 2012 17:47:18 -0500
+are available in the git repository at:
+  git://git.secretlab.ca/git/linux-2.6 gpio/for-linus-20120104
 
-I updated my SELinux tree which is based on 3.1.  I know there is a
-build problem after it is merged with current Linus.  The following
-patch is also needed as the security function is removed by my tree, but
-this caller was added by someone else.  I figured you could carry this
-patch and I'd make sure Linus does the same when he merges...
+Chris Blair (3):
+      spi/pl022: only enable RX interrupts when TX is complete
+      spi/pl022: move device disable to workqueue thread
+      spi/pl022: add support for pm_runtime autosuspend
 
-diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-index 0605a2b..c7e5b66 100644
---- a/crypto/crypto_user.c
-+++ b/crypto/crypto_user.c
-@@ -382,7 +382,7 @@ static int crypto_user_rcv_msg(struct sk_buff *skb, str=
-uct nlmsghdr *nlh)
- 	type -=3D CRYPTO_MSG_BASE;
- 	link =3D &crypto_dispatch[type];
-=20
--	if (security_netlink_recv(skb, CAP_NET_ADMIN))
-+	if (!capable(CAP_NET_ADMIN))
- 		return -EPERM;
-=20
- 	if ((type =3D=3D (CRYPTO_MSG_GETALG - CRYPTO_MSG_BASE) &&
+Grant Likely (7):
+      gpiolib: output basic details and consolidate gpio device drivers
+      gpio/microblaze: Eliminate duplication of of_get_named_gpio_flags()
+      gpio/powerpc: Eliminate duplication of of_get_named_gpio_flags()
+      of: create of_phandle_args to simplify return of phandle parsing data
+      of: Add device tree selftests
+      gpio: Add Linus Walleij as gpio co-maintainer
+      Merge branch 'pl022' of
+git://git.kernel.org/.../linusw/linux-stericsson into gpio/next
+
+Jonas Aaberg (1):
+      spi/pl022: fix build warnings
+
+Mark Brown (4):
+      gpio: Explicitly index samsung_gpio_cfgs
+      gpio: Fix typo in comment in Samsung driver
+      gpio: Convert GPIO drivers to module_platform_driver
+      gpio: Add decode of WM8994 GPIO configuration
+
+Tomoya MORINAGA (2):
+      pch_gpio: Support new device LAPIS Semiconductor ML7831 IOH
+      pch_gpio: Change company name OKI SEMICONDUCTOR to LAPIS Semiconductor
+
+Virupax Sadashivpetimath (3):
+      spi/pl022: skip default configuration before suspending
+      spi/pl022: disable the PL022 block when unused
+      spi/pl022: make the chip deselect handling thread safe
+
+ MAINTAINERS                                    |    1 +
+ arch/arm/boot/dts/testcases/tests-phandle.dtsi |   37 ++++++
+ arch/arm/boot/dts/testcases/tests.dtsi         |    1 +
+ arch/arm/boot/dts/versatile-pb.dts             |    2 +
+ arch/microblaze/kernel/reset.c                 |   43 +-------
+ arch/powerpc/sysdev/qe_lib/gpio.c              |   42 ++------
+ drivers/gpio/Kconfig                           |   11 +-
+ drivers/gpio/gpio-adp5520.c                    |   12 +--
+ drivers/gpio/gpio-adp5588.c                    |    5 +-
+ drivers/gpio/gpio-bt8xx.c                      |    3 -
+ drivers/gpio/gpio-cs5535.c                     |   14 +--
+ drivers/gpio/gpio-da9052.c                     |   12 +--
+ drivers/gpio/gpio-generic.c                    |   12 +--
+ drivers/gpio/gpio-janz-ttl.c                   |   15 +---
+ drivers/gpio/gpio-nomadik.c                    |    4 +-
+ drivers/gpio/gpio-pcf857x.c                    |    5 +-
+ drivers/gpio/gpio-pch.c                        |    7 +-
+ drivers/gpio/gpio-rdc321x.c                    |   13 +--
+ drivers/gpio/gpio-samsung.c                    |   31 ++++--
+ drivers/gpio/gpio-sch.c                        |   13 +--
+ drivers/gpio/gpio-timberdale.c                 |   13 +--
+ drivers/gpio/gpio-ucb1400.c                    |   13 +--
+ drivers/gpio/gpio-vr41xx.c                     |   13 +--
+ drivers/gpio/gpio-vx855.c                      |   12 +--
+ drivers/gpio/gpio-wm8994.c                     |   79 +++++++++++++-
+ drivers/gpio/gpio-xilinx.c                     |    1 -
+ drivers/gpio/gpiolib.c                         |    6 +-
+ drivers/of/Kconfig                             |    9 ++
+ drivers/of/Makefile                            |    1 +
+ drivers/of/base.c                              |  146 ++++++++++++------------
+ drivers/of/gpio.c                              |   45 +++----
+ drivers/of/selftest.c                          |  139 ++++++++++++++++++++++
+ drivers/spi/spi-pl022.c                        |  141 ++++++++++++++---------
+ include/asm-generic/gpio.h                     |    6 +-
+ include/linux/amba/pl022.h                     |    4 +
+ include/linux/of.h                             |   11 ++-
+ include/linux/of_gpio.h                        |   10 +-
+ 37 files changed, 530 insertions(+), 402 deletions(-)
+ create mode 100644 arch/arm/boot/dts/testcases/tests-phandle.dtsi
+ create mode 100644 arch/arm/boot/dts/testcases/tests.dtsi
+ create mode 100644 drivers/of/selftest.c
 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBSXgAAoJEECxmPOUX5FEW3AP/3kaxdExNHn1R2MDSnf2ZC1l
-GHmOtXflbL6LNppQNIHOWUfsorA/+pvz8hk5v9qHOjOLt9O9Jk5fN8SHrhv5R1UF
-yTcKLbRxBtl/RAZzr/aAp6tDR1TZxaQsfw4kB6H9DNxpWrGbY7dKvZU5uzLzJ5wu
-GKevqFvM73x01I/J75Jr2qxsWZMfEH9pSDzMuhn4xNEca4/5Oj3a1Bn+PrgujxCM
-8/upmOxqgz/MJdeLl989tv8E4OalhhmPSGHPmq4MdFWsMUmq6kukHCSWJE4fCIyU
-gg3AKy3v0ZjtWcnYQhXYvoQDf7me0tNeJPv79YpTrplV2R0wgEwGETEqIrLnoZnA
-AKQo55FHfYaAeLkdyJI9OW5kdrDe/atpoNX739TyQOMYSSnu/9p7mvGoq4RAu/lt
-ZeClZj1MEsJdNp7S/hx848FEgkqABZskv3ou2o2QSPqou/6/sLGzXJkyvi12cNdO
-1cIthsOCXpNCCaGFadMCTIto6KuxLVqlxvy9ItbiPWnyGpYVA/+cv/V0CKQQjbqH
-g5clfNjzEdjm3W6NSX48FtM6v6OxZIbs9F30THMPThwIvD2iz5xCgRdZYpxhOk4H
-sM9+lVUu0TZVZWr+qRpmjUZPR8DYyqa5wdhadd+LCbKglEwmr+QnHx0dUls6UXmZ
-G8RXM2iHVTkzVzFjCb3c
-=gVth
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Jan_2012_15_24_00_+1100_9C1K3sPUjHJyI4L=--
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
