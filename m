@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757535Ab2AEAsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 19:48:24 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:64876 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757264Ab2AEAsW (ORCPT
+	id S932262Ab2AEAt0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 19:49:26 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:59505 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757506Ab2AEAsW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 4 Jan 2012 19:48:22 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -12,119 +12,71 @@ To: linux-kernel@vger.kernel.org, jbarnes@virtuousgeek.org,
         linux-pci@vger.kernel.org
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/5] xen/pciback: Support pci_reset_function, aka FLR or D3 support.
-Date: Wed,  4 Jan 2012 19:46:40 -0500
-Message-Id: <1325724403-29642-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 3/5] xen/pciback: Move the PCI_DEV_FLAGS_ASSIGNED ops to the "[un|]bind"
+Date: Wed,  4 Jan 2012 19:46:41 -0500
+Message-Id: <1325724403-29642-4-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.4
 In-Reply-To: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com>
 References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090206.4F04F353.004F,ss=1,re=0.000,fgs=0
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4F04F353.0045,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use the __pci_reset_function_locked to perform the action.
-Also on attaching ("bind") and detaching ("unbind") we save and
-restore the configuration states. When the device is disconnected
-from a guest we use the "pci_reset_function" to also reset the
-device before being passed to another guest.
+operation instead of doing it per guest creation/disconnection. Without
+this we could have potentially unloaded the vf driver from the
+xen pciback control even if the driver was binded to the xen-pciback.
+This will hold on to it until the user "unbind"s the PCI device using
+SysFS.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/xen-pciback/pci_stub.c |   41 +++++++++++++++++++++++++++++++++--
- drivers/xen/xen-pciback/pciback.h  |    1 +
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ drivers/xen/xen-pciback/pci_stub.c |    2 ++
+ drivers/xen/xen-pciback/xenbus.c   |    2 --
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 8f06e1e..0ce0dc6 100644
+index 0ce0dc6..d66328e 100644
 --- a/drivers/xen/xen-pciback/pci_stub.c
 +++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -85,19 +85,34 @@ static struct pcistub_device *pcistub_device_alloc(struct pci_dev *dev)
- static void pcistub_device_release(struct kref *kref)
- {
- 	struct pcistub_device *psdev;
-+	struct xen_pcibk_dev_data *dev_data;
- 
- 	psdev = container_of(kref, struct pcistub_device, kref);
-+	dev_data = pci_get_drvdata(psdev->dev);
- 
- 	dev_dbg(&psdev->dev->dev, "pcistub_device_release\n");
- 
- 	xen_unregister_device_domain_owner(psdev->dev);
- 
--	/* Clean-up the device */
-+	/* Call the reset function which does not take lock as this
-+	 * is called from "unbind" which takes a device_lock mutex.
-+	 */
-+	__pci_reset_function_locked(psdev->dev);
-+	if (pci_load_and_free_saved_state(psdev->dev,
-+					  &dev_data->pci_saved_state)) {
-+		dev_dbg(&psdev->dev->dev, "Could not reload PCI state\n");
-+	} else
-+		pci_restore_state(psdev->dev);
-+
-+	/* Disable the device */
- 	xen_pcibk_reset_device(psdev->dev);
-+
-+	kfree(dev_data);
-+	pci_set_drvdata(psdev->dev, NULL);
-+
-+	/* Clean-up the device */
+@@ -114,6 +114,7 @@ static void pcistub_device_release(struct kref *kref)
  	xen_pcibk_config_free_dyn_fields(psdev->dev);
  	xen_pcibk_config_free_dev(psdev->dev);
--	kfree(pci_get_drvdata(psdev->dev));
--	pci_set_drvdata(psdev->dev, NULL);
  
++	psdev->dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
  	pci_dev_put(psdev->dev);
  
-@@ -230,7 +245,17 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
- 	/* Cleanup our device
- 	 * (so it's ready for the next domain)
- 	 */
-+
-+	/* This is OK - we are running from workqueue context
-+	 * and want to inhibit the user from fiddling with 'reset'
-+	 */
-+	pci_reset_function(dev);
-+	pci_restore_state(psdev->dev);
-+
-+	/* This disables the device. */
- 	xen_pcibk_reset_device(found_psdev->dev);
-+
-+	/* And cleanup up our emulated fields. */
- 	xen_pcibk_config_free_dyn_fields(found_psdev->dev);
- 	xen_pcibk_config_reset_dev(found_psdev->dev);
+ 	kfree(psdev);
+@@ -366,6 +367,7 @@ static int __devinit pcistub_init_device(struct pci_dev *dev)
+ 	dev_dbg(&dev->dev, "reset device\n");
+ 	xen_pcibk_reset_device(dev);
  
-@@ -325,6 +350,16 @@ static int __devinit pcistub_init_device(struct pci_dev *dev)
- 	if (err)
- 		goto config_release;
++	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+ 	return 0;
  
-+	dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
-+	__pci_reset_function_locked(dev);
-+
-+	/* We need the device active to save the state. */
-+	dev_dbg(&dev->dev, "save state of device\n");
-+	pci_save_state(dev);
-+	dev_data->pci_saved_state = pci_store_saved_state(dev);
-+	if (!dev_data->pci_saved_state)
-+		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
-+
- 	/* Now disable the device (this also ensures some private device
- 	 * data is setup before we export)
- 	 */
-diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
-index e9b4011..a7def01 100644
---- a/drivers/xen/xen-pciback/pciback.h
-+++ b/drivers/xen/xen-pciback/pciback.h
-@@ -41,6 +41,7 @@ struct xen_pcibk_device {
+ config_release:
+diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+index 0755259..474d52e 100644
+--- a/drivers/xen/xen-pciback/xenbus.c
++++ b/drivers/xen/xen-pciback/xenbus.c
+@@ -241,7 +241,6 @@ static int xen_pcibk_export_device(struct xen_pcibk_device *pdev,
+ 		goto out;
  
- struct xen_pcibk_dev_data {
- 	struct list_head config_fields;
-+	struct pci_saved_state *pci_saved_state;
- 	unsigned int permissive:1;
- 	unsigned int warned_on_write:1;
- 	unsigned int enable_intx:1;
+ 	dev_dbg(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
+-	dev->dev_flags |= PCI_DEV_FLAGS_ASSIGNED;
+ 	if (xen_register_device_domain_owner(dev,
+ 					     pdev->xdev->otherend_id) != 0) {
+ 		dev_err(&dev->dev, "device has been assigned to another " \
+@@ -281,7 +280,6 @@ static int xen_pcibk_remove_device(struct xen_pcibk_device *pdev,
+ 	}
+ 
+ 	dev_dbg(&dev->dev, "unregistering for %d\n", pdev->xdev->otherend_id);
+-	dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
+ 	xen_unregister_device_domain_owner(dev);
+ 
+ 	xen_pcibk_release_pci_dev(pdev, dev);
 -- 
 1.7.7.4
 
