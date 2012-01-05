@@ -1,162 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab2AEFig (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 00:38:36 -0500
-Received: from tango.tkos.co.il ([62.219.50.35]:51113 "EHLO tango.tkos.co.il"
+	id S1751494Ab2AEFkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 00:40:05 -0500
+Received: from unserver.de ([88.198.20.135]:44122 "EHLO unserver.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab2AEFid (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 00:38:33 -0500
-Date: Thu, 5 Jan 2012 07:37:55 +0200
-From: Baruch Siach <baruch@tkos.co.il>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Viresh Kumar <viresh.kumar@st.com>,
-        Rajeev Kumar <rajeev-dlh.kumar@st.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] gpio: pl061: remove combined interrupt
-Message-ID: <20120105053755.GB3054@sapphire.tkos.co.il>
-References: <1325705506-24230-1-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325705506-24230-1-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1750835Ab2AEFkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 00:40:03 -0500
+Date: Thu, 5 Jan 2012 05:39:57 +0000
+From: Jan Steinhoff <mail@jan-steinhoff.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: Synaptics USB device driver
+Message-ID: <20120105053957.6f01ae73@greyhound>
+In-Reply-To: <20120104094103.GA29069@core.coreip.homeip.net>
+References: <20120103194033.779cb829@greyhound>
+	<alpine.LNX.2.00.1201040954000.24984@pobox.suse.cz>
+	<201201041020.41795.oneukum@suse.de>
+	<20120104094103.GA29069@core.coreip.homeip.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-On Wed, Jan 04, 2012 at 01:31:46PM -0600, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Wed, 4 Jan 2012 01:41:03 -0800
+Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+> Om, so I have been looking at the driver and the following seems to be
+> still working with my Lenovo composite touchpad/stick.
 > 
-> Drivers should not have a dependency on NR_IRQS. Doing so may break with
-> SPARSE_IRQ enabled. As there are no in kernel users of the pl061 which
-> have multiple instances with their interrupts combined to a single parent
-> interrupt, remove this functionality. If this capability is needed later,
-> it could be supported more cleanly by just using a devicetree property.
-
-Well, I couldn't upstream the platform I was working on. Anyway, if adding 
-support for a single interrupt source for multiple instances is as easy as you 
-describe I'm fine with this change.
-
-Acked-by: Baruch Siach <baruch@tkos.co.il>
-
-> Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Cc: Rajeev Kumar <rajeev-dlh.kumar@st.com>
-> Cc: Baruch Siach <baruch@tkos.co.il>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
-> ---
->  drivers/gpio/gpio-pl061.c |   44 ++++++++------------------------------------
->  1 files changed, 8 insertions(+), 36 deletions(-)
+> Changes:
 > 
-> diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
-> index fe19dec..ee0e4b3 100644
-> --- a/drivers/gpio/gpio-pl061.c
-> +++ b/drivers/gpio/gpio-pl061.c
-> @@ -12,7 +12,6 @@
->  #include <linux/spinlock.h>
->  #include <linux/errno.h>
->  #include <linux/module.h>
-> -#include <linux/list.h>
->  #include <linux/io.h>
->  #include <linux/ioport.h>
->  #include <linux/irq.h>
-> @@ -37,13 +36,6 @@
->  #define PL061_GPIO_NR	8
->  
->  struct pl061_gpio {
-> -	/* We use a list of pl061_gpio structs for each trigger IRQ in the main
-> -	 * interrupts controller of the system. We need this to support systems
-> -	 * in which more that one PL061s are connected to the same IRQ. The ISR
-> -	 * interates through this list to find the source of the interrupt.
-> -	 */
-> -	struct list_head	list;
-> -
->  	/* Each of the two spinlocks protects a different set of hardware
->  	 * regiters and data structurs. This decouples the code of the IRQ from
->  	 * the GPIO code. This also makes the case of a GPIO routine call from
-> @@ -209,26 +201,20 @@ static struct irq_chip pl061_irqchip = {
->  
->  static void pl061_irq_handler(unsigned irq, struct irq_desc *desc)
->  {
-> -	struct list_head *chip_list = irq_get_handler_data(irq);
-> -	struct list_head *ptr;
-> -	struct pl061_gpio *chip;
-> +	unsigned long pending;
-> +	int offset;
-> +	struct pl061_gpio *chip = irq_desc_get_handler_data(desc);
->  	struct irq_chip *irqchip = irq_desc_get_chip(desc);
->  
->  	chained_irq_enter(irqchip, desc);
-> -	list_for_each(ptr, chip_list) {
-> -		unsigned long pending;
-> -		int offset;
-> -
-> -		chip = list_entry(ptr, struct pl061_gpio, list);
-> -		pending = readb(chip->base + GPIOMIS);
-> -		writeb(pending, chip->base + GPIOIC);
-> -
-> -		if (pending == 0)
-> -			continue;
->  
-> +	pending = readb(chip->base + GPIOMIS);
-> +	writeb(pending, chip->base + GPIOIC);
-> +	if (pending) {
->  		for_each_set_bit(offset, &pending, PL061_GPIO_NR)
->  			generic_handle_irq(pl061_to_irq(&chip->gc, offset));
->  	}
-> +
->  	chained_irq_exit(irqchip, desc);
->  }
->  
-> @@ -236,9 +222,7 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
->  {
->  	struct pl061_platform_data *pdata;
->  	struct pl061_gpio *chip;
-> -	struct list_head *chip_list;
->  	int ret, irq, i;
-> -	static DECLARE_BITMAP(init_irq, NR_IRQS);
->  
->  	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
->  	if (chip == NULL)
-> @@ -270,7 +254,6 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
->  
->  	spin_lock_init(&chip->lock);
->  	spin_lock_init(&chip->irq_lock);
-> -	INIT_LIST_HEAD(&chip->list);
->  
->  	chip->gc.direction_input = pl061_direction_input;
->  	chip->gc.direction_output = pl061_direction_output;
-> @@ -300,18 +283,7 @@ static int pl061_probe(struct amba_device *dev, const struct amba_id *id)
->  		goto iounmap;
->  	}
->  	irq_set_chained_handler(irq, pl061_irq_handler);
-> -	if (!test_and_set_bit(irq, init_irq)) { /* list initialized? */
-> -		chip_list = kmalloc(sizeof(*chip_list), GFP_KERNEL);
-> -		if (chip_list == NULL) {
-> -			clear_bit(irq, init_irq);
-> -			ret = -ENOMEM;
-> -			goto iounmap;
-> -		}
-> -		INIT_LIST_HEAD(chip_list);
-> -		irq_set_handler_data(irq, chip_list);
-> -	} else
-> -		chip_list = irq_get_handler_data(irq);
-> -	list_add(&chip->list, chip_list);
-> +	irq_set_handler_data(irq, chip);
->  
->  	for (i = 0; i < PL061_GPIO_NR; i++) {
->  		if (pdata) {
-> -- 
-> 1.7.5.4
+> - the stick is reported in relative mode; we might consider addig
+>   sensitivity control similar to trackpoint driver. Press-to-select -
+>   maybe in driver, or in client; undecided.
 > 
+> - got rid of BTN_MISC/BTN_MIDDLE option (at least for now);
 
--- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Please make BTN_MIDDLE the default in this case for the cPad. This
+button is actually located where the middle button should be. Only if
+one uses the cPad's background display it obtains a "special" meaning.
+(Then pressing it should launch a menu on the background display and the
+touchpad works as a touchscreen for this display.)
+
+> - added devices to HID blacklist;
+
+I think it is more flexible and save to use the manual driver binding
+capability of the USB core instead:
+
+http://lwn.net/Articles/143397/
+
+Which driver to use for which device can then be set, e.g., with the
+help of udev config files.
+
+Blacklisting has the big disadvantage that the device will not work at
+all if the synaptics-usb kernel module is not loaded/present, whereas
+otherwise usbhid is used as the default. At least the corresponding
+part in the blacklist should be enclosed in
+#ifdef CONFIG_MOUSE_SYNAPTICS_USB ... #endif
+
+Further, as noted in the initial comment, not all devices have been
+tested with this driver. This is another reason to allow the user to
+choose which driver to use.
+
+> - runtime PM (hopefully I got it right);
+> 
+> - open/close.
+
+I do not understand why needs_remote_wakeup is flipped in open/close.
+As far as I know, the device can not autosuspend after
+usb_autopm_get_interface was called anyway?
+
+> Still TODO:
+> 
+> - query device for supported rages instead of having module
+> parameters.
+
+At least for the cPad the device does unfortunately not provide this
+information. I tried to read the HID descriptors once but just got
+errors. However, the defaults work quite well for all tested devices.
+The module parameters are actually meant to just provide a simple
+workaround in case one of the untested devices (especially the
+touchscreen) might need them.
+
+Thanks!
+
+Jan
