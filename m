@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758021Ab2AEGeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 01:34:10 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:55317 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310Ab2AEGeI (ORCPT
+	id S1758005Ab2AEGfe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 01:35:34 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:48986 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310Ab2AEGfb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 01:34:08 -0500
-Date: Wed, 4 Jan 2012 22:34:00 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jan Steinhoff <mail@jan-steinhoff.de>
-Cc: Oliver Neukum <oneukum@suse.de>, Jiri Kosina <jkosina@suse.cz>,
-        Alessandro Rubini <rubini@cvml.unipv.it>, linux-input@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] input: Synaptics USB device driver
-Message-ID: <20120105063400.GA31895@core.coreip.homeip.net>
-References: <20120103194033.779cb829@greyhound>
- <alpine.LNX.2.00.1201040954000.24984@pobox.suse.cz>
- <201201041020.41795.oneukum@suse.de>
- <20120104094103.GA29069@core.coreip.homeip.net>
- <20120105053957.6f01ae73@greyhound>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105053957.6f01ae73@greyhound>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 5 Jan 2012 01:35:31 -0500
+Date: Thu, 5 Jan 2012 17:35:21 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>, reiserfs-devel@vger.kernel.org
+Subject: linux-next: build warning after merge of the vfs tree
+Message-Id: <20120105173521.9adbe29e16ca0e7361f79c36@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__5_Jan_2012_17_35_21_+1100_ouhxGakfn4LtB2UQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 05:39:57AM +0000, Jan Steinhoff wrote:
-> On Wed, 4 Jan 2012 01:41:03 -0800
-> Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> > Om, so I have been looking at the driver and the following seems to be
-> > still working with my Lenovo composite touchpad/stick.
-> > 
-> > Changes:
-> > 
-> > - the stick is reported in relative mode; we might consider addig
-> >   sensitivity control similar to trackpoint driver. Press-to-select -
-> >   maybe in driver, or in client; undecided.
-> > 
-> > - got rid of BTN_MISC/BTN_MIDDLE option (at least for now);
-> 
-> Please make BTN_MIDDLE the default in this case for the cPad. This
-> button is actually located where the middle button should be. Only if
-> one uses the cPad's background display it obtains a "special" meaning.
-> (Then pressing it should launch a menu on the background display and the
-> touchpad works as a touchscreen for this display.)
+--Signature=_Thu__5_Jan_2012_17_35_21_+1100_ouhxGakfn4LtB2UQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, let's change it to MTN_MIDDLE. We may consider changing it to
-BTN_MISC if cPad display support is merged and active.
+Hi Al,
 
-> 
-> > - added devices to HID blacklist;
-> 
-> I think it is more flexible and save to use the manual driver binding
-> capability of the USB core instead:
-> 
-> http://lwn.net/Articles/143397/
-> 
-> Which driver to use for which device can then be set, e.g., with the
-> help of udev config files.
+After merging the vfs tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
-However it is more work for distributions and users. As it stands now
-adding blacklist and compiling synaptics_usb does not require any
-additional userspace support (everyone packages and installs synaptics X
-driver nowadays).
+fs/reiserfs/super.c:701:2: warning: initialization from incompatible pointe=
+r type [enabled by default]
+fs/reiserfs/super.c:701:2: warning: (near initialization for 'reiserfs_sops=
+.show_options') [enabled by default]
 
-> 
-> Blacklisting has the big disadvantage that the device will not work at
-> all if the synaptics-usb kernel module is not loaded/present, whereas
-> otherwise usbhid is used as the default. At least the corresponding
-> part in the blacklist should be enclosed in
-> #ifdef CONFIG_MOUSE_SYNAPTICS_USB ... #endif
+Caused by commit 2ddeb2a58b11 ("vfs: switch ->show_options() to struct
+dentry *") interacting with commit f1823b7b87d1 ("reiserfs: Properly
+display mount options in /proc/mounts") from the ext3.  This needs some
+merge fix ... (and will probably currently cause crashes :-()
 
-This is a good idea, I'll add ifdefs.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> 
-> Further, as noted in the initial comment, not all devices have been
-> tested with this driver. This is another reason to allow the user to
-> choose which driver to use.
+--Signature=_Thu__5_Jan_2012_17_35_21_+1100_ouhxGakfn4LtB2UQ
+Content-Type: application/pgp-signature
 
-I'll remove touchscreen from blacklist/device table as it really should
-generate different set of events; the rest I hope we'll be able to fix
-reasonably quickly if there are complaints.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> 
-> > - runtime PM (hopefully I got it right);
-> > 
-> > - open/close.
-> 
-> I do not understand why needs_remote_wakeup is flipped in open/close.
-> As far as I know, the device can not autosuspend after
-> usb_autopm_get_interface was called anyway?
+iQIcBAEBCAAGBQJPBUSpAAoJEECxmPOUX5FE9VIP/28QFn3dZieCy41w1MTbIMrg
+5EApTNp4snVMkalq2o0A5/HL7QwEAfKXwjygMLLM1xWPoEr2c2T/4rqfjnKHMdcs
+aGZoxYH+3Zk0dzoZn9qHRi6WQAaM8JKEocOYFSwxkmOBdKWUkm1Y22IFIhFYrw7o
+vPs1P0mvZyNarxcZNwNoxbVqsorw1J0MlQnLKfRYn+eX6hA136cDYHLPDLmtO+Lf
+vlYB95cMBOdpXtf4ZeYqkMfie5YJIBA3vxNYyDVYtxGkAItkF8PdyfhSWrTkXBrf
+/AJjI/anjNupo8UuvzmDyazbDPcWv3/uWyZSQW/ubZkTVXHtvG0GnagLHAKP3kOD
++Q8fn8wEryVMHeCk/pGidkwojocuEmS1MdZDtNfkZlxWCmIrJg+RCPb0Fi9I8l3Z
+ns54G49Vz3sEWZeoGtdaypPb9UxLgdI+93KahPQsRVK6xbGQ8sODJlp0TcI0qxt6
+YySKvCRIS5PtINAFFO1GyZ14FbeOJs68X1X0Z2jqiBGDvjovVjCeC3EX0ffDccts
+rnfQF3ulOLHVM0ZPH+H2yTGOJpQEINdiHoxfk+5gUaHLb1l87D01+XBW0DPhl3Au
+UKMAnGRcGHQrn9nztKZEVcTUbzf+J8POA7/HrW3EETRiK6E6o4I+PfyvnVJHfeDE
+7ihwuHX6RNaxE18Aa5xz
+=Rsae
+-----END PGP SIGNATURE-----
 
-We do usb_autopm_put_interface as last action in open() so the device
-will be suspended and needs wakeups.
-
-> 
-> > Still TODO:
-> > 
-> > - query device for supported rages instead of having module
-> > parameters.
-> 
-> At least for the cPad the device does unfortunately not provide this
-> information. I tried to read the HID descriptors once but just got
-> errors. However, the defaults work quite well for all tested devices.
-> The module parameters are actually meant to just provide a simple
-> workaround in case one of the untested devices (especially the
-> touchscreen) might need them.
-
-OK, so why don't we replace module parameters with default ranges and
-maybe later Synaptics guys will tell us how to query ranges properly?
-Default ranges worked reasonably well for PS/2 version for several
-years.
-
-Thanks.
-
--- 
-Dmitry
+--Signature=_Thu__5_Jan_2012_17_35_21_+1100_ouhxGakfn4LtB2UQ--
