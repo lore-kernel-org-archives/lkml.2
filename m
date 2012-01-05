@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757498Ab2AEAZE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 19:25:04 -0500
-Received: from mga11.intel.com ([192.55.52.93]:30874 "EHLO mga11.intel.com"
+	id S1757491Ab2AEA1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 19:27:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42375 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757456Ab2AEAZB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 19:25:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="103604258"
-Date: Thu, 5 Jan 2012 00:37:53 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Uwe =?ISO-8859-1?B?S2xlaW5lLUv2bmln?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org, Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] serial/documentation: fix name of DCD cpp symbol
-Message-ID: <20120105003753.1e6d2ed2@bob.linux.org.uk>
-In-Reply-To: <4F04DD19.1070602@xenotime.net>
-References: <1322857211-26654-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	<20111202234248.373cfd4f@bob.linux.org.uk>
-	<4F04DD19.1070602@xenotime.net>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757264Ab2AEA1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 19:27:37 -0500
+Date: Wed, 4 Jan 2012 19:27:30 -0500
+From: Dave Jones <davej@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the pci-current tree
+Message-ID: <20120105002729.GA27916@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>, linux-next@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20120105110712.2666364926458942240d6534@canb.auug.org.au>
+ <20120104161122.4e9d844a@jbarnes-desktop>
+ <20120105111940.e5675c8d16715767ed193461@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105111940.e5675c8d16715767ed193461@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 04 Jan 2012 15:13:29 -0800
-Randy Dunlap <rdunlap@xenotime.net> wrote:
+On Thu, Jan 05, 2012 at 11:19:40AM +1100, Stephen Rothwell wrote:
+ > Hi Jesse,
+ > 
+ > On Wed, 4 Jan 2012 16:11:22 -0800 Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+ > >
+ > > Arg failure of my hand merge.
+ > 
+ > Not really, the original was broken (as is the version in fc16 (which has
+ > been disabled there)).
 
-> On 12/02/2011 03:42 PM, Alan Cox wrote:
-> > On Fri,  2 Dec 2011 21:20:11 +0100
-> > Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
-> > 
-> >> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> >> ---
-> >>  Documentation/serial/driver |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/Documentation/serial/driver
-> >> b/Documentation/serial/driver index 77ba0af..0a25a91 100644
-> >> --- a/Documentation/serial/driver
-> >> +++ b/Documentation/serial/driver
-> >> @@ -101,7 +101,7 @@ hardware.
-> >>  	Returns the current state of modem control inputs.  The
-> >> state of the outputs should not be returned, since the core keeps
-> >>  	track of their state.  The state information should
-> >> include:
-> >> -		- TIOCM_DCD	state of DCD signal
-> >> +		- TIOCM_CAR	state of DCD signal
-> >>  		- TIOCM_CTS	state of CTS signal
-> >>  		- TIOCM_DSR	state of DSR signal
-> >>  		- TIOCM_RI	state of RI signal
-> > 
-> > Acked-by: Alan Cox <alan@linux.intel.com>
-> > 
-> > but please fix the Subject line to be less confusing - it sounds
-> > like it changes the define not the docs... 
-> 
-> 
-> (sorry for the delayed reply)
-> 
-> I thought that DCD meant Data Carrier Detect.  Is that old?  Has it
-> changed to just Carrier?
+ugh, sorry about that. too many trees.
 
-TIOCM_ are the kernel names. The documentation says we use TIOCM_DCD -
-only we don't - the #define is TIOCM_CAR
+the one I build-tested had it right, but I generated an incremental
+from a wrong one..
 
-So its a fix.
+	Dave
+
