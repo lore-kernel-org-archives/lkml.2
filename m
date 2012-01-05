@@ -1,151 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab2AEPrB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 10:47:01 -0500
-Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:35231
-	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab2AEPrA convert rfc822-to-8bit (ORCPT
+	id S932700Ab2AEPuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 10:50:00 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:41404 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755164Ab2AEPt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 10:47:00 -0500
-Date: Thu, 5 Jan 2012 16:46:54 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <138879124.20120105164654@eikelenboom.it>
-To: Theodore Tso <tytso@MIT.EDU>
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
-In-Reply-To: <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu>
-References: <217150909.20120105113759@eikelenboom.it> <197607646.20120105142107@eikelenboom.it> <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu>
+	Thu, 5 Jan 2012 10:49:59 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Theodore Ts'o" <tytso@mit.edu>, Tejun Heo <tj@kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: Revoking filesystems [was Re: Sysfs attributes racing with unregistration]
+References: <Pine.LNX.4.44L0.1201051001360.1434-100000@iolanthe.rowland.org>
+Date: Thu, 05 Jan 2012 07:52:05 -0800
+In-Reply-To: <Pine.LNX.4.44L0.1201051001360.1434-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Thu, 5 Jan 2012 10:13:31 -0500 (EST)")
+Message-ID: <m1mxa2cfkq.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/Q68cQaV1waVTgGkHxXDQ5AP5p5aufgBU=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thursday, January 5, 2012, 3:45:01 PM, you wrote:
+Alan Stern <stern@rowland.harvard.edu> writes:
 
+> On Wed, 4 Jan 2012, Eric W. Biederman wrote:
+>
+>> > Ted Ts'o has been talking about something similar but not the same -- a
+>> > way to revoke an entire filesystem.  For example, see commit
+>> > 7c2e70879fc0949b4220ee61b7c4553f6976a94d (ext4: add ext4-specific
+>> > kludge to avoid an oops after the disk disappears).
+>> >
+>> > The use case for that is obvious and widespread: Somebody yanks out a
+>> > USB drive without unmounting it first.
+>> 
+>> Agreed.  The best I have at the moment is a library that can wrap
+>> filesystem methods to implement the hotplug bits.
+>> 
+>> Do you know how hard it is to remove event up to the filesystem that
+>> sits on top of a block device?
+>
+> I don't have a clear idea of what's involved (in particular, how to go
+> from a block_device structure to a mounted filesystem).  But the place
+> to do it would probably be block/genhd.c:invalidate_partition().  Ted
+> can tell you if there's a better alternative.
 
-> On Jan 5, 2012, at 8:21 AM, Sander Eikelenboom wrote:
+Interesting.  That sounds like a good place to look.  Thanks.
 
->> Hmm it seems to be over by reverting from a 3.2.0 to a 3.1.5 kernel, i now can copy the files after the fsck without it being remounted-ro due to the error.
+>> Do you know how hard it is to detect at mount time if a block device
+>> might be hot-plugable?  We can always use a mount option here and
+>> make userspace figure it out, but being to have a good default would
+>> be nice.
+>
+> I don't think it's possible to tell if a device is hot-unpluggable.  
+> For example, the device itself might not be removable from its parent, 
+> but the parent might be hot-unpluggable.  You'll probably have to 
+> assume that every device can potentially be unplugged, one way or 
+> another.
+>
+> Also, even devices that aren't hot-unpluggable can fail.  The end 
+> result should be pretty much the same.
 
-> Hmm…  So the question is whether this is caused by changes to ext4 or in the device-mapper / LVM.
+True, and ultimately I agree with you.  Unfortunately solving the
+full general case right now looks like perfection being the enemy
+of the good.
 
-> The error which ext4 is reporting is that a block bitmap appears to be corrupted; the block group descriptors are reporting that there are 32258 free blocks, while only 32254 free blocks are found in the block bitmap.  Since one or the other is must be wrong, and continuing could potentially cause data loss, the file system gets mounted remounted read-only.
+When the requirement becomes add the ability to tear down the data
+structures and to remove the modules we have to track while we
+are in a filesystem method and to add the ability to wait for
+us to stop being in all filesystem methods.
 
-> What's funny is that fsck didn't report anything wrong.   That implies that the LVM volume is returning different block contents, at least under some circumstances.
+That tracking is hard to make free.  So implementing it for everyone
+out of the gate is a hard sell.
 
-> Hmm…. can you try reproducing this?   What happens if you now reboot into 3.2?   Do you still get the file system getting remounted read-only?    Can you try running dumpe2fs on the file system before and after running e2fsck, and when you try to reproduce it, can you make a special note of the EXT4-fs error message:
+However if we can pick those cases where we care more about doing
+the right thing on hot-unplug than we care about performance we should
+be able to go forward with a good enough method now.
 
-> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+But since there are performance implications for very common path system
+calls it makes sense to make this for the first pass something like
+mount -o sync.   Something that you can opt into when it makes sense,
+but that you don't have to opt into.
 
-> Do the numbers stay the same each time you reproduce the problem?   And are there any changes in the output of dumpe2fs (run diff; it will probably be a very tiny difference).
+So the practical option that I see is either we autodetect block devices
+that are setup to be hotpluggable or that we require a mount option.
 
-> Also, what is the underlying devices underlying the LVM?   Are you using a MD device?   Or is the 200T volume spread out across multiple hard drives directly (i.e., no RAID)?
+>> If it isn't too hard to get the event up from the block device to the
+>> filesystem when the block device is uncermoniously removed I might just
+>> make the time to have hotunplug trigger a filesystem wide revoke on a
+>> filesystem like ext4.
+>> 
+>> In addition to sysfs we need the same logic in proc, sysctl, and uio.
+>> So it makes sense to move towards a common library that can do all of
+>> the hard bits.
+>
+> Ted mentioned the need for a new "device removed" superblock method.  
+> Then each filesystem can add its own implementation as people get
+> around to it.
 
-> -- Ted
+Yeah.  If we can get the "device removed" aka "revokefs" superblock
+it isn't too hard to build a library that filesystems can use to
+wrap their normal filesystem methods and implement revokefs.
 
-Hmm it seems i can't reproduce :-(
-Not under 3.2.0, not while copying from a RO snapshot of the same LV.
-
-At least i know the steps to take when encountering a potential filesystem bug in the future.
-
---
-Sander
-
-
-
->> 
->> --
->> Sander
->> 
->> 
->> This is a forwarded message
->> From: Sander Eikelenboom <linux@eikelenboom.it>
->> To: "Theodore Ts'o" <tytso@mit.edu>
->> Date: Thursday, January 5, 2012, 11:37:59 AM
->> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> 
->> ===8<==============Original message text===============
->> 
->> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
->> 
->> Steps:
->> 1) fsck -v -p -f the filesystem
->> 2) mount the filesystem
->> 3) Try to copy a file
->> 4) filesystem will be mounted RO on error  (see below)
->> 5) fsck again, journal will be recovered, no other errors
->> 6) start at 1)
->> 
->> 
->> I think the way i bricked it is:
->> - make a lvm snapshot from that lvm logical disk
->> - mount that lvm snapshot as RO
->> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
->> - it fails and i can't recover (see above)
->> 
->> 
->> Is there a way to recover from this ?
->> 
->> 
->> 
->> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
->> [  220.749415] Aborting journal on device dm-2-8.
->> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
->> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
->> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
->> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
->> serveerstertje:/mnt/xen_images/domains/production# cd /
->> serveerstertje:/# umount /mnt/xen_images/
->> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
->> fsck from util-linux-ng 2.17.2
->> /dev/mapper/serveerstertje-xen_images: recovering journal
->> 
->>     277 inodes used (0.00%)
->>       5 non-contiguous files (1.8%)
->>       0 non-contiguous directories (0.0%)
->>         # of inodes with ind/dind/tind blocks: 41/41/3
->>         Extent depth histogram: 69/28/2
->> 51890920 blocks used (79.18%)
->>       0 bad blocks
->>      41 large files
->> 
->>     199 regular files
->>      53 directories
->>       0 character device files
->>       0 block device files
->>       0 fifos
->>       0 links
->>      16 symbolic links (16 fast symbolic links)
->>       0 sockets
->> --------
->>     268 files
->> serveerstertje:/#
->> 
->> 
->> 
->> 
->> System:
->> - Kernel 3.2.0
->> - Debian Squeeze with:
->> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
->> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
->> 
->> ===8<===========End of original message text===========
->> 
->> 
->> 
->> -- 
->> Best regards,
->> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
-
-
-
-
--- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
-
+Eric
