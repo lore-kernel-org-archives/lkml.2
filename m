@@ -1,134 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964854Ab2AEWrR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:47:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37809 "EHLO mx2.suse.de"
+	id S964885Ab2AEWv6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:51:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52082 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933033Ab2AEWrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:47:11 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:44:02 2012
-Message-Id: <20120105224402.805767225@clark.kroah.org>
-User-Agent: quilt/0.50-25.1
-Date: Thu, 05 Jan 2012 14:44:53 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org, xfs@oss.sgi.com
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Myers <bpm@sgi.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: [68/73] xfs: log all dirty inodes in xfs_fs_sync_fs
-In-Reply-To: <20120105224632.GA14659@kroah.com>
+	id S932570Ab2AEWv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:51:56 -0500
+Message-ID: <1325803909.17118.17.camel@localhost>
+Subject: Re: linux-next: manual merge of the selinux tree with the net-next
+ tree
+From: Eric Paris <eparis@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Moore <pmoore@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Date: Thu, 05 Jan 2012 17:51:49 -0500
+In-Reply-To: <20120106091550.534131cb1fe6e3dee323699c@canb.auug.org.au>
+References: <20120105151255.f72ad113a93493bb55844034@canb.auug.org.au>
+	 <27624574.j8RvKjachg@sifl>
+	 <20120106091550.534131cb1fe6e3dee323699c@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2012-01-06 at 09:15 +1100, Stephen Rothwell wrote:
+> Hi Paul,
+> 
+> On Thu, 05 Jan 2012 16:25:53 -0500 Paul Moore <pmoore@redhat.com> wrote:
+> >
+> > On Thursday, January 05, 2012 03:12:55 PM Stephen Rothwell wrote:
+> > > 
+> > > Today's linux-next merge of the selinux tree got a conflict in
+> > > net/bluetooth/l2cap_sock.c between commit 15770b1ab974 ("Bluetooth:
+> > > convert force_active variable to flag in l2cap chan") from the net-next
+> > > tree and commit 53860f3d0499 ("bluetooth: Properly clone LSM attributes
+> > > to newly created child connections") from the selinux tree.
+> > > 
+> > > These both remove the same line, but there is probably something more
+> > > subtle going on ...  I just used the version from the net-next tree.
+> > 
+> > Something is a bit odd.  When I look in the current linux-next tree I see two 
+> > commits which fix a Bluetooth/LSM bug; the first is correct, the second one 
+> > appears to be some other commit which just hijacked the description from the 
+> > first ... I have no idea what is going on in the second commit; I'll leave 
+> > that to you git gurus :)
+> > 
+> >  * Correct commit -> 6230c9b4f8957c8938ee4cf2d03166d3c2dc89de
+> 
+> That is a commit in Linus' tree before v3.1
+> 
+> >  * Garbage commit -> 53860f3d0499992855d58e33f0f79bfe642dfccb
+> 
+> That is the commit in the selinux tree.  This should be unnecessary as
+> the selinux tree is based on v3.1 (and I basically ignored it in the
+> merge resolution).
 
-------------------
-Content-Length: 3536
-Lines: 104
+Thanks paul...  This must be a result of me rebasing my tree onto 3.1.
+No way I should have left this garbage.  It doesn't make sense.  I think
+I'll rewrite history for tomorrow since noone is going to notice or
+care...
 
-
-From: Christoph Hellwig <hch@infradead.org>
-
-Commit be4f1ac828776bbc7868a68b465cd8eedb733cfd upstream.
-
-Since Linux 2.6.36 the writeback code has introduces various measures for
-live lock prevention during sync().  Unfortunately some of these are
-actively harmful for the XFS model, where the inode gets marked dirty for
-metadata from the data I/O handler.
-
-The older_than_this checks that are now more strictly enforced since
-
-    writeback: avoid livelocking WB_SYNC_ALL writeback
-
-by only calling into __writeback_inodes_sb and thus only sampling the
-current cut off time once.  But on a slow enough devices the previous
-asynchronous sync pass might not have fully completed yet, and thus XFS
-might mark metadata dirty only after that sampling of the cut off time for
-the blocking pass already happened.  I have not myself reproduced this
-myself on a real system, but by introducing artificial delay into the
-XFS I/O completion workqueues it can be reproduced easily.
-
-Fix this by iterating over all XFS inodes in ->sync_fs and log all that
-are dirty.  This might log inode that only got redirtied after the
-previous pass, but given how cheap delayed logging of inodes is it
-isn't a major concern for performance.
-
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
-Tested-by: Mark Tinguely <tinguely@sgi.com>
-Reviewed-by: Mark Tinguely <tinguely@sgi.com>
-Signed-off-by: Ben Myers <bpm@sgi.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/xfs/linux-2.6/xfs_sync.c |   37 +++++++++++++++++++++++++++++++++++++
- fs/xfs/linux-2.6/xfs_sync.h |    2 ++
- 2 files changed, 39 insertions(+)
-
---- a/fs/xfs/linux-2.6/xfs_sync.c
-+++ b/fs/xfs/linux-2.6/xfs_sync.c
-@@ -336,6 +336,32 @@ xfs_sync_fsdata(
- 	return xfs_bwrite(mp, bp);
- }
- 
-+int
-+xfs_log_dirty_inode(
-+	struct xfs_inode	*ip,
-+	struct xfs_perag	*pag,
-+	int			flags)
-+{
-+	struct xfs_mount	*mp = ip->i_mount;
-+	struct xfs_trans	*tp;
-+	int			error;
-+
-+	if (!ip->i_update_core)
-+		return 0;
-+
-+	tp = xfs_trans_alloc(mp, XFS_TRANS_FSYNC_TS);
-+	error = xfs_trans_reserve(tp, 0, XFS_FSYNC_TS_LOG_RES(mp), 0, 0, 0);
-+	if (error) {
-+		xfs_trans_cancel(tp, 0);
-+		return error;
-+	}
-+
-+	xfs_ilock(ip, XFS_ILOCK_EXCL);
-+	xfs_trans_ijoin_ref(tp, ip, XFS_ILOCK_EXCL);
-+	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE);
-+	return xfs_trans_commit(tp, 0);
-+}
-+
- /*
-  * When remounting a filesystem read-only or freezing the filesystem, we have
-  * two phases to execute. This first phase is syncing the data before we
-@@ -365,6 +391,17 @@ xfs_quiesce_data(
- 
- 	/* push and block till complete */
- 	xfs_sync_data(mp, SYNC_WAIT);
-+
-+	/*
-+	 * Log all pending size and timestamp updates.  The vfs writeback
-+	 * code is supposed to do this, but due to its overagressive
-+	 * livelock detection it will skip inodes where appending writes
-+	 * were written out in the first non-blocking sync phase if their
-+	 * completion took long enough that it happened after taking the
-+	 * timestamp for the cut-off in the blocking phase.
-+	 */
-+	xfs_inode_ag_iterator(mp, xfs_log_dirty_inode, 0);
-+
- 	xfs_qm_sync(mp, SYNC_WAIT);
- 
- 	/* write superblock and hoover up shutdown errors */
---- a/fs/xfs/linux-2.6/xfs_sync.h
-+++ b/fs/xfs/linux-2.6/xfs_sync.h
-@@ -42,6 +42,8 @@ void xfs_quiesce_attr(struct xfs_mount *
- 
- void xfs_flush_inodes(struct xfs_inode *ip);
- 
-+int xfs_log_dirty_inode(struct xfs_inode *ip, struct xfs_perag *pag, int flags);
-+
- int xfs_reclaim_inodes(struct xfs_mount *mp, int mode);
- 
- void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
-
+-Eric
 
