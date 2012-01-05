@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030209Ab2AEWrh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:47:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37901 "EHLO mx2.suse.de"
+	id S1030221Ab2AEWrt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:47:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37862 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030196Ab2AEWrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:47:32 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:44:00 2012
-Message-Id: <20120105224400.358899687@clark.kroah.org>
+	id S1030185Ab2AEWr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:47:28 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:44:03 2012
+Message-Id: <20120105224403.235919700@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Thu, 05 Jan 2012 14:44:25 -0800
+Date: Thu, 05 Jan 2012 14:44:58 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        "Nandigama, Nagalakshmi" <Nagalakshmi.Nandigama@lsi.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [40/73] mpt2sas: fix non-x86 crash on shutdown
+        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
+        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [73/73] ath9k: Fix kernel panic in AR2427 in AP mode
 In-Reply-To: <20120105224632.GA14659@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,158 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 4506
-Lines: 151
+Content-Length: 2620
+Lines: 69
 
+From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
 
-From: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
+commit b25bfda38236f349cde0d1b28952f4eea2148d3f upstream.
 
-Upstrem commit: 911ae9434f83e7355d343f6c2be3ef5b00ea7aed
+don't do aggregation related stuff for 'AP mode client power save
+handling' if aggregation is not enabled in the driver, otherwise it
+will lead to panic because those data structures won't be never
+intialized in 'ath_tx_node_init' if aggregation is disabled
 
-There's a bug in the MSIX backup and restore routines that cause a crash on
-non-x86 (direct access to PCI space not via read/write).  These routines are
-unnecessary and were removed by the above commit, so also remove them from
-stable to fix the crash.
+	EIP is at ath_tx_aggr_wakeup+0x37/0x80 [ath9k]
+	EAX: e8c09a20 EBX: f2a304e8 ECX: 00000001 EDX: 00000000
+	ESI: e8c085e0 EDI: f2a304ac EBP: f40e1ca4 ESP: f40e1c8c
+	DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+	Process swapper/1 (pid: 0, ti=f40e0000 task=f408e860
+	task.ti=f40dc000)
+	Stack:
+	0001e966 e8c09a20 00000000 f2a304ac e8c085e0 f2a304ac
+	f40e1cb0 f8186741
+	f8186700 f40e1d2c f922988d f2a304ac 00000202 00000001
+	c0b4ba43 00000000
+	0000000f e8eb75c0 e8c085e0 205b0001 34383220 f2a304ac
+	f2a30000 00010020
+	Call Trace:
+	[<f8186741>] ath9k_sta_notify+0x41/0x50 [ath9k]
+	[<f8186700>] ? ath9k_get_survey+0x110/0x110 [ath9k]
+	[<f922988d>] ieee80211_sta_ps_deliver_wakeup+0x9d/0x350
+	[mac80211]
+	[<c018dc75>] ? __module_address+0x95/0xb0
+	[<f92465b3>] ap_sta_ps_end+0x63/0xa0 [mac80211]
+	[<f9246746>] ieee80211_rx_h_sta_process+0x156/0x2b0
+	[mac80211]
+	[<f9247d1e>] ieee80211_rx_handlers+0xce/0x510 [mac80211]
+	[<c018440b>] ? trace_hardirqs_on+0xb/0x10
+	[<c056936e>] ? skb_queue_tail+0x3e/0x50
+	[<f9248271>] ieee80211_prepare_and_rx_handle+0x111/0x750
+	[mac80211]
+	[<f9248bf9>] ieee80211_rx+0x349/0xb20 [mac80211]
+	[<f9248949>] ? ieee80211_rx+0x99/0xb20 [mac80211]
+	[<f818b0b8>] ath_rx_tasklet+0x818/0x1d00 [ath9k]
+	[<f8187a75>] ? ath9k_tasklet+0x35/0x1c0 [ath9k]
+	[<f8187a75>] ? ath9k_tasklet+0x35/0x1c0 [ath9k]
+	[<f8187b33>] ath9k_tasklet+0xf3/0x1c0 [ath9k]
+	[<c0151b7e>] tasklet_action+0xbe/0x180
 
-Signed-off-by: Nagalakshmi Nandigama <nagalakshmi.nandigama@lsi.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Cc: Senthil Balasubramanian <senthilb@qca.qualcomm.com>
+Cc: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Reported-by: Ashwin Mendonca <ashwinloyal@gmail.com>
+Tested-by: Ashwin Mendonca <ashwinloyal@gmail.com>
+Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_base.c |   59 +-----------------------------------
- drivers/scsi/mpt2sas/mpt2sas_base.h |    4 --
- 2 files changed, 2 insertions(+), 61 deletions(-)
+ drivers/net/wireless/ath/ath9k/main.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -1082,41 +1082,6 @@ _base_config_dma_addressing(struct MPT2S
- }
+--- a/drivers/net/wireless/ath/ath9k/main.c
++++ b/drivers/net/wireless/ath/ath9k/main.c
+@@ -1828,6 +1828,9 @@ static void ath9k_sta_notify(struct ieee
+ 	struct ath_softc *sc = hw->priv;
+ 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
  
- /**
-- * _base_save_msix_table - backup msix vector table
-- * @ioc: per adapter object
-- *
-- * This address an errata where diag reset clears out the table
-- */
--static void
--_base_save_msix_table(struct MPT2SAS_ADAPTER *ioc)
--{
--	int i;
--
--	if (!ioc->msix_enable || ioc->msix_table_backup == NULL)
--		return;
--
--	for (i = 0; i < ioc->msix_vector_count; i++)
--		ioc->msix_table_backup[i] = ioc->msix_table[i];
--}
--
--/**
-- * _base_restore_msix_table - this restores the msix vector table
-- * @ioc: per adapter object
-- *
-- */
--static void
--_base_restore_msix_table(struct MPT2SAS_ADAPTER *ioc)
--{
--	int i;
--
--	if (!ioc->msix_enable || ioc->msix_table_backup == NULL)
--		return;
--
--	for (i = 0; i < ioc->msix_vector_count; i++)
--		ioc->msix_table[i] = ioc->msix_table_backup[i];
--}
--
--/**
-  * _base_check_enable_msix - checks MSIX capabable.
-  * @ioc: per adapter object
-  *
-@@ -1128,7 +1093,7 @@ _base_check_enable_msix(struct MPT2SAS_A
- {
- 	int base;
- 	u16 message_control;
--	u32 msix_table_offset;
++	if (!(sc->sc_flags & SC_OP_TXAGGR))
++		return;
 +
- 
- 	base = pci_find_capability(ioc->pdev, PCI_CAP_ID_MSIX);
- 	if (!base) {
-@@ -1141,14 +1106,8 @@ _base_check_enable_msix(struct MPT2SAS_A
- 	pci_read_config_word(ioc->pdev, base + 2, &message_control);
- 	ioc->msix_vector_count = (message_control & 0x3FF) + 1;
- 
--	/* get msix table  */
--	pci_read_config_dword(ioc->pdev, base + 4, &msix_table_offset);
--	msix_table_offset &= 0xFFFFFFF8;
--	ioc->msix_table = (u32 *)((void *)ioc->chip + msix_table_offset);
--
- 	dinitprintk(ioc, printk(MPT2SAS_INFO_FMT "msix is supported, "
--	    "vector_count(%d), table_offset(0x%08x), table(%p)\n", ioc->name,
--	    ioc->msix_vector_count, msix_table_offset, ioc->msix_table));
-+	    "vector_count(%d)\n", ioc->name, ioc->msix_vector_count));
- 	return 0;
- }
- 
-@@ -1162,8 +1121,6 @@ _base_disable_msix(struct MPT2SAS_ADAPTE
- {
- 	if (ioc->msix_enable) {
- 		pci_disable_msix(ioc->pdev);
--		kfree(ioc->msix_table_backup);
--		ioc->msix_table_backup = NULL;
- 		ioc->msix_enable = 0;
- 	}
- }
-@@ -1189,14 +1146,6 @@ _base_enable_msix(struct MPT2SAS_ADAPTER
- 	if (_base_check_enable_msix(ioc) != 0)
- 		goto try_ioapic;
- 
--	ioc->msix_table_backup = kcalloc(ioc->msix_vector_count,
--	    sizeof(u32), GFP_KERNEL);
--	if (!ioc->msix_table_backup) {
--		dfailprintk(ioc, printk(MPT2SAS_INFO_FMT "allocation for "
--		    "msix_table_backup failed!!!\n", ioc->name));
--		goto try_ioapic;
--	}
--
- 	memset(&entries, 0, sizeof(struct msix_entry));
- 	r = pci_enable_msix(ioc->pdev, &entries, 1);
- 	if (r) {
-@@ -3513,9 +3462,6 @@ _base_diag_reset(struct MPT2SAS_ADAPTER
- 	u32 hcb_size;
- 
- 	printk(MPT2SAS_INFO_FMT "sending diag reset !!\n", ioc->name);
--
--	_base_save_msix_table(ioc);
--
- 	drsprintk(ioc, printk(MPT2SAS_INFO_FMT "clear interrupts\n",
- 	    ioc->name));
- 
-@@ -3611,7 +3557,6 @@ _base_diag_reset(struct MPT2SAS_ADAPTER
- 		goto out;
- 	}
- 
--	_base_restore_msix_table(ioc);
- 	printk(MPT2SAS_INFO_FMT "diag reset: SUCCESS\n", ioc->name);
- 	return 0;
- 
---- a/drivers/scsi/mpt2sas/mpt2sas_base.h
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.h
-@@ -626,8 +626,6 @@ struct mpt2sas_port_facts {
-  * @wait_for_port_enable_to_complete:
-  * @msix_enable: flag indicating msix is enabled
-  * @msix_vector_count: number msix vectors
-- * @msix_table: virt address to the msix table
-- * @msix_table_backup: backup msix table
-  * @scsi_io_cb_idx: shost generated commands
-  * @tm_cb_idx: task management commands
-  * @scsih_cb_idx: scsih internal commands
-@@ -768,8 +766,6 @@ struct MPT2SAS_ADAPTER {
- 
- 	u8		msix_enable;
- 	u16		msix_vector_count;
--	u32		*msix_table;
--	u32		*msix_table_backup;
- 	u32		ioc_reset_count;
- 
- 	/* internal commands, callback index */
+ 	switch (cmd) {
+ 	case STA_NOTIFY_SLEEP:
+ 		an->sleeping = true;
 
 
