@@ -1,247 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab2AEN3T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 08:29:19 -0500
-Received: from emh01.mail.saunalahti.fi ([62.142.5.107]:45580 "EHLO
-	emh01.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932191Ab2AEN3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 08:29:16 -0500
-Subject: [PATCH v2 6/6] ath6kl: create ath6kl_core.ko
-To: linville@tuxdriver.com
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, ath6kl-devel@qualcomm.com,
-        davem@davemloft.net
-Date: Thu, 05 Jan 2012 15:28:55 +0200
-Message-ID: <20120105132855.22281.87053.stgit@x201>
-In-Reply-To: <20120105132523.22281.95999.stgit@x201>
-References: <20120105132523.22281.95999.stgit@x201>
-User-Agent: StGit/0.15
+	id S932409Ab2AENbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 08:31:33 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64619 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932262Ab2AENbc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 08:31:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Antivirus: VAMS
+In-Reply-To: <20120105131908.GH31206@redhat.com>
+References: <20120104143945.GA4783@quad>
+	<1325712298.3084.5.camel@laptop>
+	<CABPqkBSR4a7PCyYxhE0kpepc3f0f6Rh6JU55_A3ubWYnN+G3iA@mail.gmail.com>
+	<1325717396.3084.12.camel@laptop>
+	<CABPqkBQ_MFdi1gc7Tje=u0n+RLd1gzo1mHb9e6i20T8JPNrpwA@mail.gmail.com>
+	<CABPqkBR2PmqVUF2XmTouLy5jDiDhFVgzBvcaMw-NqEksVjYg_w@mail.gmail.com>
+	<20120105131908.GH31206@redhat.com>
+Date: Thu, 5 Jan 2012 13:31:27 +0000
+Message-ID: <CABPqkBTBczzc96zMbvYMG7xQJwxa1nc429XDTPxfc3Rah46Q1g@mail.gmail.com>
+Subject: Re: perf_events: proposed fix for broken intr throttling (repost)
+From: Stephane Eranian <eranian@google.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, asharma@fb.com, vince@deater.net, wcohen@redhat.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now ath6kl is ready for splitting core code to ath6kl_core.ko module.
-This also makes it possible to link both sdio and usb code to kernel
-at the same time, which earlier failed miserably.
+On Thu, Jan 5, 2012 at 1:19 PM, Gleb Natapov <gleb@redhat.com> wrote:
+> On Thu, Jan 05, 2012 at 01:08:41PM +0000, Stephane Eranian wrote:
+>> Peter,
+>>
+>> I looked into this some more this morning. I don't think your proposed
+>> scheme can work.
+>> Unless, I misunderstood you, you were suggesting that we could perhaps
+>> use a lazy
+>> approach in perf_event_task_tick() and walk the event list only when
+>> we have, at least,  one
+>> event to unthrottle, i.e., similar to what is done with nr_freq. That
+>> cannot work. The problem is
+>> that you'd let all events get throttled before you'd unthrottle them
+>> in the next timer tick.
+>> At each overflow, hwc->interrupt would get incremented until it
+>> reached MAX_INTERRUPTS.
+>> Then, the event would be stopped (throttled), you'd do
+>> ctx->nr_throttled = 1. At the next
+>> timer tick, perf_event_task_tick() would then unthrottle the event. In
+>> that scheme, the
+>> event would be throttled for at most a tick. But in fact, the event
+>> never generated that
+>> many overflows/tick to justify throttling.
+>>
+>> I think there is no other way than what I suggested in my initial email:
+>>   1- revert the nr_freq optimization
+>>   2- reset hwc->interrupt on all events at each tick
+>>
+> I think my original patch did that: https://lkml.org/lkml/2011/11/15/114
+>
+Yes, looks like it, because it is systematically calling perf_ctx_adjust_freq()
+which does reset the hwc->interrupts counter on ALL events.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Kalle Valo <kvalo@qca.qualcomm.com>
----
- drivers/net/wireless/ath/ath6kl/Makefile   |   37 +++++++++++-----------------
- drivers/net/wireless/ath/ath6kl/cfg80211.c |    3 ++
- drivers/net/wireless/ath/ath6kl/core.c     |    9 +++++++
- drivers/net/wireless/ath/ath6kl/debug.c    |    3 ++
- drivers/net/wireless/ath/ath6kl/hif.c      |    5 ++++
- drivers/net/wireless/ath/ath6kl/init.c     |    3 ++
- 6 files changed, 37 insertions(+), 23 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath6kl/Makefile b/drivers/net/wireless/ath/ath6kl/Makefile
-index 9bb69a8..863b9f6 100644
---- a/drivers/net/wireless/ath/ath6kl/Makefile
-+++ b/drivers/net/wireless/ath/ath6kl/Makefile
-@@ -21,32 +21,23 @@
- # Author(s): ="Atheros"
- #------------------------------------------------------------------------------
- 
--obj-$(CONFIG_ATH6KL_SDIO) := ath6kl_sdio.o
--ath6kl_sdio-y += debug.o
--ath6kl_sdio-y += hif.o
--ath6kl_sdio-y += htc.o
--ath6kl_sdio-y += bmi.o
--ath6kl_sdio-y += cfg80211.o
--ath6kl_sdio-y += init.o
--ath6kl_sdio-y += main.o
--ath6kl_sdio-y += txrx.o
--ath6kl_sdio-y += wmi.o
--ath6kl_sdio-y += core.o
-+obj-$(CONFIG_ATH6KL) += ath6kl_core.o
-+ath6kl_core-y += debug.o
-+ath6kl_core-y += hif.o
-+ath6kl_core-y += htc.o
-+ath6kl_core-y += bmi.o
-+ath6kl_core-y += cfg80211.o
-+ath6kl_core-y += init.o
-+ath6kl_core-y += main.o
-+ath6kl_core-y += txrx.o
-+ath6kl_core-y += wmi.o
-+ath6kl_core-y += core.o
-+ath6kl_core-$(CONFIG_NL80211_TESTMODE) += testmode.o
-+
-+obj-$(CONFIG_ATH6KL_SDIO) += ath6kl_sdio.o
- ath6kl_sdio-y += sdio.o
--ath6kl_sdio-$(CONFIG_NL80211_TESTMODE) += testmode.o
- 
- obj-$(CONFIG_ATH6KL_USB) += ath6kl_usb.o
--ath6kl_usb-y += debug.o
--ath6kl_usb-y += hif.o
--ath6kl_usb-y += htc.o
--ath6kl_usb-y += bmi.o
--ath6kl_usb-y += cfg80211.o
--ath6kl_usb-y += init.o
--ath6kl_usb-y += main.o
--ath6kl_usb-y += txrx.o
--ath6kl_usb-y += wmi.o
--ath6kl_usb-y += core.o
- ath6kl_usb-y += usb.o
--ath6kl_usb-$(CONFIG_NL80211_TESTMODE) += testmode.o
- 
- ccflags-y += -D__CHECK_ENDIAN__
-diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.c b/drivers/net/wireless/ath/ath6kl/cfg80211.c
-index 64043f8..d4ed6d1 100644
---- a/drivers/net/wireless/ath/ath6kl/cfg80211.c
-+++ b/drivers/net/wireless/ath/ath6kl/cfg80211.c
-@@ -15,6 +15,7 @@
-  */
- 
- #include <linux/moduleparam.h>
-+#include <linux/export.h>
- 
- #include "core.h"
- #include "cfg80211.h"
-@@ -1907,6 +1908,7 @@ int ath6kl_cfg80211_suspend(struct ath6kl *ar,
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(ath6kl_cfg80211_suspend);
- 
- int ath6kl_cfg80211_resume(struct ath6kl *ar)
- {
-@@ -1958,6 +1960,7 @@ int ath6kl_cfg80211_resume(struct ath6kl *ar)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(ath6kl_cfg80211_resume);
- 
- #ifdef CONFIG_PM
- 
-diff --git a/drivers/net/wireless/ath/ath6kl/core.c b/drivers/net/wireless/ath/ath6kl/core.c
-index 7e3574e..0d00475 100644
---- a/drivers/net/wireless/ath/ath6kl/core.c
-+++ b/drivers/net/wireless/ath/ath6kl/core.c
-@@ -16,7 +16,9 @@
- 
- #include "core.h"
- 
-+#include <linux/module.h>
- #include <linux/moduleparam.h>
-+#include <linux/export.h>
- 
- #include "debug.h"
- #include "hif-ops.h"
-@@ -198,6 +200,7 @@ err_wq:
- 
- 	return ret;
- }
-+EXPORT_SYMBOL(ath6kl_core_init);
- 
- struct ath6kl *ath6kl_core_create(struct device *dev)
- {
-@@ -254,6 +257,7 @@ struct ath6kl *ath6kl_core_create(struct device *dev)
- 
- 	return ar;
- }
-+EXPORT_SYMBOL(ath6kl_core_create);
- 
- void ath6kl_core_cleanup(struct ath6kl *ar)
- {
-@@ -280,9 +284,14 @@ void ath6kl_core_cleanup(struct ath6kl *ar)
- 	ath6kl_cfg80211_cleanup(ar);
- 	ath6kl_cfg80211_destroy(ar);
- }
-+EXPORT_SYMBOL(ath6kl_core_cleanup);
- 
- void ath6kl_core_destroy(struct ath6kl *ar)
- {
- 	ath6kl_cfg80211_destroy(ar);
- }
-+EXPORT_SYMBOL(ath6kl_core_destroy);
- 
-+MODULE_AUTHOR("Qualcomm Atheros");
-+MODULE_DESCRIPTION("Core module for AR600x SDIO and USB devices.");
-+MODULE_LICENSE("Dual BSD/GPL");
-diff --git a/drivers/net/wireless/ath/ath6kl/debug.c b/drivers/net/wireless/ath/ath6kl/debug.c
-index f1fa57b..5430166 100644
---- a/drivers/net/wireless/ath/ath6kl/debug.c
-+++ b/drivers/net/wireless/ath/ath6kl/debug.c
-@@ -54,6 +54,7 @@ int ath6kl_printk(const char *level, const char *fmt, ...)
- 
- 	return rtn;
- }
-+EXPORT_SYMBOL(ath6kl_printk);
- 
- #ifdef CONFIG_ATH6KL_DEBUG
- 
-@@ -74,6 +75,7 @@ void ath6kl_dbg(enum ATH6K_DEBUG_MASK mask, const char *fmt, ...)
- 
- 	va_end(args);
- }
-+EXPORT_SYMBOL(ath6kl_dbg);
- 
- void ath6kl_dbg_dump(enum ATH6K_DEBUG_MASK mask,
- 		     const char *msg, const char *prefix,
-@@ -86,6 +88,7 @@ void ath6kl_dbg_dump(enum ATH6K_DEBUG_MASK mask,
- 		print_hex_dump_bytes(prefix, DUMP_PREFIX_OFFSET, buf, len);
- 	}
- }
-+EXPORT_SYMBOL(ath6kl_dbg_dump);
- 
- #define REG_OUTPUT_LEN_PER_LINE	25
- #define REGTYPE_STR_LEN		100
-diff --git a/drivers/net/wireless/ath/ath6kl/hif.c b/drivers/net/wireless/ath/ath6kl/hif.c
-index 3d26c14..e911737 100644
---- a/drivers/net/wireless/ath/ath6kl/hif.c
-+++ b/drivers/net/wireless/ath/ath6kl/hif.c
-@@ -15,6 +15,8 @@
-  */
- #include "hif.h"
- 
-+#include <linux/export.h>
-+
- #include "core.h"
- #include "target.h"
- #include "hif-ops.h"
-@@ -59,6 +61,8 @@ int ath6kl_hif_rw_comp_handler(void *context, int status)
- 
- 	return 0;
- }
-+EXPORT_SYMBOL(ath6kl_hif_rw_comp_handler);
-+
- #define REG_DUMP_COUNT_AR6003   60
- #define REGISTER_DUMP_LEN_MAX   60
- 
-@@ -560,6 +564,7 @@ int ath6kl_hif_intr_bh_handler(struct ath6kl *ar)
- 
- 	return status;
- }
-+EXPORT_SYMBOL(ath6kl_hif_intr_bh_handler);
- 
- static int ath6kl_hif_enable_intrs(struct ath6kl_device *dev)
- {
-diff --git a/drivers/net/wireless/ath/ath6kl/init.c b/drivers/net/wireless/ath/ath6kl/init.c
-index 5a92307..6183c42 100644
---- a/drivers/net/wireless/ath/ath6kl/init.c
-+++ b/drivers/net/wireless/ath/ath6kl/init.c
-@@ -17,8 +17,10 @@
- 
- #include <linux/moduleparam.h>
- #include <linux/errno.h>
-+#include <linux/export.h>
- #include <linux/of.h>
- #include <linux/mmc/sdio_func.h>
-+
- #include "core.h"
- #include "cfg80211.h"
- #include "target.h"
-@@ -1596,3 +1598,4 @@ void ath6kl_stop_txrx(struct ath6kl *ar)
- 
- 	clear_bit(WLAN_ENABLED, &ar->flag);
- }
-+EXPORT_SYMBOL(ath6kl_stop_txrx);
-
+But the pmu_disabled trick is not very pretty. We have to find some
+middle ground
+solution here.
