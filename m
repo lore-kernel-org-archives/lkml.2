@@ -1,73 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756683Ab2AEMY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 07:24:56 -0500
-Received: from smtp.nokia.com ([147.243.128.24]:23321 "EHLO mgw-da01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755141Ab2AEMYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 07:24:55 -0500
-From: <leonid.moiseichuk@nokia.com>
-To: <riel@redhat.com>, <gregkh@suse.de>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>, <cesarb@cesarb.net>,
-        <kamezawa.hiroyu@jp.fujitsu.com>, <emunson@mgebm.net>,
-        <penberg@kernel.org>, <aarcange@redhat.com>, <mel@csn.ul.ie>,
-        <rientjes@google.com>, <dima@android.com>, <rebecca@android.com>,
-        <san@google.com>, <akpm@linux-foundation.org>,
-        <vesa.jaaskelainen@nokia.com>, <minchan@redhat.com>,
-        <kosaki.motohiro@gmail.com>
-Subject: RE: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and
- related changes in MM
-Thread-Topic: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and
- related changes in MM
-Thread-Index: AQHMyxrzN1IXGAcozUyLCM5upAjFdpX8lOUAgAEWtcA=
-Date: Thu, 5 Jan 2012 12:22:51 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB98269045542EB@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
- <20120104195612.GB19181@suse.de> <4F04B3F0.6080103@redhat.com>
-In-Reply-To: <4F04B3F0.6080103@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.23.171]
-Content-Type: text/plain; charset="utf-8"
+	id S932151Ab2AEM2J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 07:28:09 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:54020 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab2AEM2H convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 07:28:07 -0500
 MIME-Version: 1.0
-X-OriginalArrivalTime: 05 Jan 2012 12:23:04.0751 (UTC) FILETIME=[C6379BF0:01CCCBA4]
-X-Nokia-AV: Clean
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Thu, 5 Jan 2012 10:27:44 -0200
+Message-ID: <CAMOw1v5dPKLJjekMpCzDTNd2W3AGrfb12hmjcGap1DCttnWuRw@mail.gmail.com>
+Subject: [ANNOUNCE] kmod 3
+To: linux-modules <linux-modules@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-hotplug@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q05CP0VS019778
 
 Hi,
 
-We (small and embedded) needs some mechanism to notify userspace that memory consumption is going to be high to allow react properly and keep device fast and stable:  close big graphics, shuts something not used, stop processing data etc.  If we not able to do it in the right moment OOM killer starts to work and applications just disappears which is not nice for user in all cases. So the proposed code is not replacement of OOM killer at all but, yes, could be recognized as part of "cooperative-oom". 
+I'm glad to announce kmod 3! Signed tarball is available at
 
-Since n900 we tried to use memcg and notifications. Unfortunately memcg is not nice suitable to handling processes due to how memory is accounted: taking into account caches produce false-positive notifications plus stability issues which could be result of outdated 2.6.32 kernel e.g. unnecessary swapping overhead when big process moved from one group to another or even device hung.  
+http://packages.profusion.mobi/kmod/kmod-3.tar.xz
 
-With Best Wishes,
-Leonid
+In this version we added a new implementation of depmod, the only missing tool
+to completely replace module-init-tools. We have only a couple of options
+missing yet and need more testing, so I'd not say distros could start shipping
+kmod instead of module-init-tools yet. This will probably be possible with the
+next version.
 
+We removed the several kmod-* tools that mimic the module-init-tools ones. Now
+there's only one tool called 'kmod' that does the right thing when symlinks are
+used with the previous names.
 
------Original Message-----
-From: ext Rik van Riel [mailto:riel@redhat.com] 
-Sent: 04 January, 2012 22:18
-To: Greg KH
-Cc: Moiseichuk Leonid (Nokia-MP/Helsinki); linux-mm@kvack.org; linux-kernel@vger.kernel.org; cesarb@cesarb.net; kamezawa.hiroyu@jp.fujitsu.com; emunson@mgebm.net; penberg@kernel.org; aarcange@redhat.com; mel@csn.ul.ie; rientjes@google.com; dima@android.com; rebecca@android.com; san@google.com; akpm@linux-foundation.org; Jaaskelainen Vesa (Nokia-MP/Helsinki); Minchan Kim; KOSAKI Motohiro
-Subject: Re: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and related changes in MM
+I'd like to thank again Dave Reisner and Tom Gundersen for the really good work
+at testing, reporting bugs and helping on solving them. Right now we received
+feedback from them and other people that are testing on the following
+architectures: i686, x86_64, sparcv9, sparc64, powerpc64, s390, ARM and sh4.
+Any architecture missing here? With this version we also fixed a major bug on
+architectures that do not support unaligned accesses.
 
-On 01/04/2012 02:56 PM, Greg KH wrote:
+It's also worth noting that now udev is already using kmod for loading
+modules.For more information about new things, please check the NEWS file that
+we ship with kmod.
 
-> How does this compare with the lowmemorykiller.c driver from the 
-> android developers that is currently in the linux-next tree?
+For the next version we plan to review some APIs, extract documentation from
+source code and generate the missing man pages. Hopefully we will already be
+hosted on kernel.org, too.
 
-Also, the low memory notification that Kosaki-san has worked on, and which Minchan is looking at now.
+Shortlog for kmod 3 is below.
 
-We seem to have many mechanisms under development, all aimed at similar goals. I believe it would be good to agree on one mechanism that could solve multiple of these goals at once, instead of sticking a handful of different partial solutions in the kernel...
+Cristian Rodríguez (2):
+      Fix leak on error path
+      index_file_open: fix another fd leak on error path.
 
-Exactly what is the problem you are trying to solve?
+Dave Reisner (7):
+      libkmod-config: remove warning for skipped config files
+      modprobe: remove --list option
+      modprobe: use lighter access call instead of stat
+      kmodprobe: post-remove module deps with 0 refcnt
+      tools: unify error verbiage and casing
+      libkmod: Fix casing in error output
+      libkmod/hash: check for NULL before freeing hash
+
+Gustavo Sverzut Barbieri (33):
+      Fix unaligned memory access
+      kmod-modprobe: fix leak in command line option processing.
+      file: speed up loading non-gzipped modules when zlib is enabled.
+      elf: minimum size is enough.
+      elf: add get_symbols()
+      add test/test-elf
+      elf: add bind type to kmod_modversion.
+      elf: implement kmod_module_get_dependency_symbols()
+      kmod-depmod: initial code (no files generated, untested)
+      kmod-depmod: dump devname
+      kmod-depmod: dump modules.symbols
+      kmod-depmod: dump softdeps.
+      kmod-depmod: dump aliases
+      kmod-depmod: dump deps.
+      kmod-depmod: copy code from module-init-tools/index.c
+      kmod-depmod: add utility functions to be used by binary dumps.
+      kmod-depmod: dump modules.builtin.bin
+      kmod-depmod: dump modules.symbols.bin
+      kmod-depmod: dump modules.alias.bin
+      kmod-depmod: dump modules.dep.bin
+      update TODO
+      kmod-depmod: implement -F and -E options.
+      kmod-depmod: implement -A (--quick)
+      kmod-depmod: refactor extension matching array, support XZ.
+      utils/read_str_safe(): fix wrong behavior and bugs.
+      libkmod-file: refactor code to avoid ifdef mess.
+      elf: zero *array when count is zero.
+      kmod-depmod: add missing trailing \n to log messages.
+      kmod-depmod: document --config/-C in help output.
+      kmod-depmod: fix incorrect math finding out end of dirname.
+      utils/array: add array_remove_at()
+      kmod-depmod: fix comparison of module priority.
+      kmod-depmod: fix replacement of existing modules.
+
+Jan Engelhardt (4):
+      build: use pkgconfig to detect zlib
+      build: use AC_ARG_WITH for zlib
+      Support for loading Xz-compressed modules
+      libkmod: remove external cflags from .pc file
+
+Kay Sievers (2):
+      do not (mis-)use the config file generator for non-autobuild stuff
+      introduce --with-rootlibdir=DIR
+
+Leandro Pereira (3):
+      kmod tool: don't keep iterating when command has been executed
+      Do not forget parenthesis around if (streq(A, B)).
+      libkmod-util: getline_wrapped: return NULL when buffer allocation fails
+
+Lucas De Marchi (63):
+      gitignore: ignore dist files
+      Remove useless warning causing trouble in sparc64
+      Initialize line number with 0
+      kmod_modprobe: use basename(argv[0]) in help message
+      build-sys: use MKDIR_P
+      tools: add skeleton of kmod tool
+      tools: kmod: Add global options
+      tools: kmod: check progname for handling compat commands
+      tools: kmod: Add handling of compat lsmod
+      tools: kmod: Add handling of compat rmmod
+      tools: kmod: Add handling of compat insmod
+      tools: kmod: Add handling of compat modinfo
+      tools: kmod: Add handling of compat modprobe
+      tools: kmod: add list command
+      tools: kmod: print help message when no commands given
+      tools: kmod: show wrong command in err message
+      build-sys: use AS_IF
+      Fix version script with v3 symbols
+      TODO: add task in modprobe's compatibility
+      Reverse order of dependency list
+      Fix kmod_list_remove_n_latest()
+      Add functions to get ctx blacklists
+      build-sys: remove unneeded _SOURCES var
+      Allow to internally get dependencies without copying list
+      Do not cache softdeps list
+      Add implementation of modprobe's insertion
+      Add test for probe insert
+      kmod-depmod: Fix leak of dependency vector
+      TODO: format and add task
+      Log paths if kmod_module_new_from_path() failed
+      Remove kmod_ prefix from hash implementation
+      Copy missing hash functions from kmod-depmod to libkmod
+      build-sys: create libkmod-util.la convenience lib
+      hash: add iterator
+      kmod-depmod: use hash implementation from util lib
+      Move util functions to libkmod-util.c
+      Fix header guard
+      tools: kmod: bundle depmod together with the others
+      Move array implementation from depmode to libkmod-util
+      Move libkmod-util.c to convenience util lib
+      Use errno instead of return value of init_module()
+      Ignore "already loaded" error in module_probe_insert_module()
+      Move function to the right place
+      Do not call exported function for mod->name
+      Use last enum value instead of ARRAY_SIZE
+      TODO: add list of things that are different on kmod
+      Fix leak of kmod_module and fix code style
+      kmod-modprobe: mimic modprobe when removing deps with usecount=0
+      util: add helper function to compare timestamps
+      config: save list of config paths with their timestamps
+      index: save timestamp of each loaded index
+      Add call to check if resources are valid
+      Add test to check kmod_validate_resources
+      TODO: add task for providing man page
+      Add missing static const
+      config: take a weakref to ctx
+      file: take a weakref to ctx
+      file: use log facilities
+      build-sys: do not install kmod-* tools
+      kmod-depmod: demote messages to WRN when non-critical files are missing
+      Add missing doc for function argument
+      tools: use basename in help message
+      kmod 3
 
 --
-All rights reversed
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Lucas De Marchi
