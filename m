@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932542Ab2AEOkM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 09:40:12 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:55058 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932441Ab2AEOkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 09:40:05 -0500
-X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jan 2012 09:40:05 EST
-Date: Thu, 5 Jan 2012 09:30:08 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
-Message-ID: <20120105143008.GA31728@elliptictech.com>
-References: <20120104201800.GA2587@www.outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120104201800.GA2587@www.outflux.net>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932593Ab2AEOk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 09:40:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39832 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932507Ab2AEOkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 09:40:22 -0500
+From: Jan Kara <jack@suse.cz>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+        Edward Shishkin <edward@redhat.com>, Jan Kara <jack@suse.cz>
+Subject: [PATCH 2/3] fs: Do not clear uptodate flag on write IO error
+Date: Thu,  5 Jan 2012 15:40:06 +0100
+Message-Id: <1325774407-28531-3-git-send-email-jack@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1325774407-28531-1-git-send-email-jack@suse.cz>
+References: <1325774407-28531-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-04 12:18 -0800, Kees Cook wrote:
-> A long-standing class of security issues is the symlink-based
-> time-of-check-time-of-use race, most commonly seen in world-writable
-> directories like /tmp. The common method of exploitation of this flaw
-> is to cross privilege boundaries when following a given symlink (i.e. a
-> root process follows a symlink belonging to another user). For a likely
-> incomplete list of hundreds of examples across the years, please see:
-> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
-> 
-> The solution is to permit symlinks to only be followed when outside
-> a sticky world-writable directory, or when the uid of the symlink and
-> follower match, or when the directory owner matches the symlink's owner.
-[...]
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 5f4c45d..26ede24 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -278,3 +278,19 @@ source "fs/nls/Kconfig"
->  source "fs/dlm/Kconfig"
->  
->  endmenu
-> +
-> +config PROTECTED_STICKY_SYMLINKS
-> +	bool "Protect symlink following in sticky world-writable directories"
-> +	default y
-[...]
+It is semantically wrong to clear uptodate flag of buffers where the write has
+failed since the data in the buffer is still correct despite the write failing.
+This also causes spurious warnings when IO error happens, we decide to write
+the buffer again and call mark_buffer_dirty() which warns us about non-uptodate
+buffer.
 
-Why do we need a config option for this?  What's wrong with just using
-the sysctl?
+Sadly, historically buffer_uptodate() check has been the way we detected IO
+errors and quite some code still uses this check. Eventually we'd like to
+convert all users to use buffer_write_io_error() test instead but that requires
+audit of all filesystems. So for now just provide an opt-in flag in
+file_system_type by which filesystem can say it detects write IO errors by
+checking buffer_write_io_error() and thus we don't have to clear uptodate flag.
 
-Why have you made this option "default y", when enabling it clearly
-makes user-visible changes to kernel behaviour?
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/buffer.c        |    8 ++++++--
+ include/linux/fs.h |    3 +++
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-Cheers,
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 3469d53..96cbb4c 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -156,7 +156,9 @@ void end_buffer_write_sync(struct buffer_head *bh, int uptodate)
+ 				       bdevname(bh->b_bdev, b));
+ 		}
+ 		set_buffer_write_io_error(bh);
+-		clear_buffer_uptodate(bh);
++		if (!(bh->b_bdev->bd_super->s_type->fs_flags &
++						FS_HANDLE_WRITE_ERROR))
++			clear_buffer_uptodate(bh);
+ 	}
+ 	unlock_buffer(bh);
+ 	put_bh(bh);
+@@ -389,7 +391,9 @@ void end_buffer_async_write(struct buffer_head *bh, int uptodate)
+ 		}
+ 		set_bit(AS_EIO, &page->mapping->flags);
+ 		set_buffer_write_io_error(bh);
+-		clear_buffer_uptodate(bh);
++		if (!(bh->b_bdev->bd_super->s_type->fs_flags &
++						FS_HANDLE_WRITE_ERROR))
++			clear_buffer_uptodate(bh);
+ 		SetPageError(page);
+ 	}
+ 
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index e0bc4ff..f69e5f3 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -181,6 +181,9 @@ struct inodes_stat_t {
+ #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move()
+ 					 * during rename() internally.
+ 					 */
++#define FS_HANDLE_WRITE_ERROR	65536	/* Don't clear uptodate flag on buffers
++					 * when write IO error happens
++					 */
+ 
+ /*
+  * These are the fs-independent mount-flags: up to 32 flags are supported
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+1.7.1
 
