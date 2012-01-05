@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756374Ab2AELxc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 06:53:32 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43151 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab2AELxb (ORCPT
+	id S1756482Ab2AEMBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 07:01:43 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37739 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab2AEMBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 06:53:31 -0500
-Date: Thu, 5 Jan 2012 12:53:30 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Jeff Layton <jlayton@redhat.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Miles Lane <miles.lane@gmail.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: Freezing of tasks failed after 20.01 seconds in 3.2.0-rc4+
- (Linus GIT af968e2)
-Message-ID: <20120105115330.GA29569@atrey.karlin.mff.cuni.cz>
-References: <CAHFgRy_AdA7iKzCwNvXiE3pR1dqdkuKPgT0soWjw8E_TcLjJtA@mail.gmail.com>
- <4EFAAFEF.6070503@linux.vnet.ibm.com>
- <201112282303.26978.rjw@sisk.pl>
+	Thu, 5 Jan 2012 07:01:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201112282303.26978.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CACPM=kUhBydaVDQaxs7BaB_ZkFRa2p6cVme-77Gbsk+QDk=MFA@mail.gmail.com>
+References: <CACPM=kVBxcL1_Z9zVvnEEdEgAc0rbAAbzkcocz4OYWQ2xn6VmQ@mail.gmail.com>
+	<20111230180347.GA3647@electric-eye.fr.zoreil.com>
+	<CACPM=kXWXUE+JcVhkz-6tGZ2YyteN9sGA80+Pnw6+LaJ-eNWBA@mail.gmail.com>
+	<20111230215024.GA5513@electric-eye.fr.zoreil.com>
+	<CACPM=kUxSRhDc2EqgceBRTFgBei7dh3_n7bPyoH=8aNC_uq4FA@mail.gmail.com>
+	<20111230221938.GA6197@electric-eye.fr.zoreil.com>
+	<CACPM=kXAr46BXAc3t8puRB37NeFy_ZEOWZa0H=DnSioagSLpxA@mail.gmail.com>
+	<CACPM=kWn41S85eLgj4G+c6cN0WBgqF=6MigSwa9QBOxD1Uh64A@mail.gmail.com>
+	<20111231121710.GB9842@electric-eye.fr.zoreil.com>
+	<CACPM=kX2B6p6CSs+s-5WUbQCLa0WZW5K9Rr+hnB5VCxkEmh=8w@mail.gmail.com>
+	<20120103223243.GB8563@electric-eye.fr.zoreil.com>
+	<CACPM=kUhBydaVDQaxs7BaB_ZkFRa2p6cVme-77Gbsk+QDk=MFA@mail.gmail.com>
+Date: Thu, 5 Jan 2012 13:01:41 +0100
+X-Google-Sender-Auth: sGP9B63FLlKzAKnwQpLlDlT4v0Q
+Message-ID: <CACPM=kWL+Z6PH268qg=i0Nafrouq4O25+uFf8WLcE08azqpqpA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] via-rhine: Fix hanging with high CPU load on low-end broads.
+From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        bhutchings@solarflare.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, rl@hellgate.ch
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> > 
-> > Miles Lane (in CC) hit freezing failures in 3.2.0-rc4+ (Linus GIT af968e2)
-> > while trying to suspend the machine.
-> 
-> Well, ext3 seems to be involved.  I don't see any problems with suspending
-> those kernels on my test machines, but I don't use ext3 on them any more.
-> 
-> It would be good to rule out ext3 somehow.
+2012/1/4 Bjarke Istrup Pedersen <gurligebis@gentoo.org>:
+> 2012/1/3 Francois Romieu <romieu@fr.zoreil.com>:
+>> Bjarke Istrup Pedersen <gurligebis@gentoo.org> :
+>> [...]
+>>> Is there anything else I should try out?
+>>
+>> Your computer is supposed to be moderately underpowered. Find someone
+>> with an heavily overpowered one.
+>
+> Hmm, thats gonna be difficult, since it's an on-board chip in the box,
+> so it's no possible to move it to something more powerful :)
+>
+>>> Also, would it be possible to push these changes to mainline as
+>>
+>> Probably. There has not been much objection nor comments so far.
+>
+> Nice, any objections David? :)
 
-I still use ext3 here, and suspend works in recent kernels.
+Sorry for repeating myself David, but would it be possible to get this
+into net-next for 3.4 inclusion?
+(I'm thinking that now is the right time for it to have a complete
+release cycle in net-next before inclusion) :)
 
-Is it reproducible for Miles?
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+/Bjarke
+
+>>> another CONFIG option (not sure if thats possible), so more people can
+>>> enable it and test it? :)
+>>
+>> I'd rather not. It would not be terribly elegant and more CONFIG options
+>> would not imply more testing.
+>
+> I agree, but if we push these changes to mainline directly, there is
+> no need - it was more as a way of getting it to mainline, while still
+> keeping the old way around, if it was needed.
+>
+> /Bjarke
+>
+>> --
+>> Ueimor
