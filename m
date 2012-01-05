@@ -1,86 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932459Ab2AERh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 12:37:28 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:45150 "EHLO
-	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758149Ab2AERh0 convert rfc822-to-8bit (ORCPT
+	id S932340Ab2AERiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 12:38:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58918 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757717Ab2AERiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 12:37:26 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Thu, 5 Jan 2012 12:36:49 -0500
-Subject: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
- below smp_send_stop()
-Thread-Index: AczL0HMFUhgCH34WQWyA76ETk3pYJwAAAXcA
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 5 Jan 2012 12:38:09 -0500
+Message-ID: <4F05DFF0.3000809@infradead.org>
+Date: Thu, 05 Jan 2012 15:37:52 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1201050179
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Paolo Bonzini <pbonzini@redhat.com>, linux-media@vger.kernel.org,
+        Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
+        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: Broken ioctl error returns (was Re: [PATCH 2/3] block: fail SCSI
+ passthrough ioctls on partition devices)
+References: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
+In-Reply-To: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch just moves kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop
-for serializing logging process via smp_send_stop.
+On 05-01-2012 15:02, Linus Torvalds wrote:
+> On Thu, Jan 5, 2012 at 8:16 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>>
+>> Just fix the *obvious* breakage in BLKROSET. It's clearly what the
+>> code *intends* to do, it just didn't check for ENOIOCTLCMD.
+> 
+> So it seems from quick grepping that the block layer isn't actually
+> all that confused apart from that one BLK[SG]ETRO issue, although I'm
+> sure there are crazy drivers that think that EINVAL is the right error
+> return.
+> 
+> The *really* confused layer seems to be the damn media drivers. The
+> confusion there seems to go very deep indeed, where for some crazy
+> reason the media people seem to have made it part of the semantics
+> that "if a driver doesn't support a particular ioctl, it returns
+> EINVAL".
+> 
+> Added, linux-media and Mauro to the Cc, because I'm about to commit
+> something like the attached patch to see if anything breaks. We may
+> have to revert it if things get too nasty, but we should have done
+> this years and years ago, so let's hope not.
 
- Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
- Acked-by: Don Zickus <dzickus@redhat.com>
+For the media drivers, we've already fixed it, at the V4L side:
+-EINVAL doesn't mean that an ioctl is not supported anymore.
+I think that such fix went into Kernel 3.1.
 
----
- kernel/panic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+There are still two different behaviors there:
+	at the V4L API: the return code is -ENOTTY;
+	at the DVB API: the return code is currrently -EOPNOTSUPP.
 
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 80aed44..da585b8 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -108,8 +108,6 @@ void panic(const char *fmt, ...)
- 	 */
- 	crash_kexec(NULL);
- 
--	kmsg_dump(KMSG_DUMP_PANIC);
--
- 	/*
- 	 * Note smp_send_stop is the usual smp shutdown function, which
- 	 * unfortunately means it may not be hardened to work in a panic
-@@ -117,6 +115,8 @@ void panic(const char *fmt, ...)
- 	 */
- 	smp_send_stop();
- 
-+	kmsg_dump(KMSG_DUMP_PANIC);
-+
- 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
- 
- 	bust_spinlocks(0);
--- 
-1.7.1
+Yeah, I know that DVB is returning the wrong code. Fixing it is on
+my todo list, although with low priority, as the behavior inside the
+DVB part is consistent.
+
+On both DVB and V4L, -EINVAL now means only invalid parameters.
+
+Regards,
+Mauro
+
+> Basic rules: ENOTTY means "I don't recognize this ioctl". Yes, the
+> name is odd, and yes, it's for historical Unix reasons. ioctl's were
+> originally a way to control mainly terminal settings - think termios -
+> so when you did an ioctl on a file, you'd get "I'm not a tty, dummy".
+> File flags were controlled with fcntl().
+> 
+> In contrast, EINVAL means "there is something wrong with the
+> arguments", which very much implies "I do recognize the ioctl".
+> 
+> And finally, ENOIOCTLCMD is a way to say ENOTTY in a sane manner, and
+> will now be turned into ENOTTY for the user space return (not EINVAL -
+> I have no idea where that idiocy came from, but it's clearly confused,
+> although it's also clearly very old).
+> 
+> This fixes the core files I noticed. It removes the *insane*
+> complaints from the compat_ioctl() (which would complain if you
+> returned ENOIOCTLCMD after an ioctl translation - the reason that is
+> totally insane is that somebody might use an ioctl on the wrong kind
+> of file descriptor, so even if it was translated perfectly fine,
+> ENOIOCTLCMD is a perfectly fine error return and shouldn't cause
+> warnings - and that allows us to remove stupid crap from the socket
+> ioctl code).
+> 
+> Does this break things and need to be reverted? Maybe. There could be
+> user code that tests *explicitly* for EINVAL and considers that the
+> "wrong ioctl number", even though it's the wrong error return.
+> 
+> And we may have those kinds of mistakes inside the kernel too. We did
+> in the block layer BLKSETRO code, for example, as pointed out by
+> Paulo. That one is fixed here, but there may be others.
+> 
+> I didn't change any media layers, since there it's clearly an endemic
+> problem, and there it seems to be used as a "we pass media ioctls down
+> and drivers should by definition recognize them, so if they don't, we
+> assume the driver is limited and doesn't support those particular
+> settings and return EINVAL".
+> 
+> But in general, any code like this is WRONG:
+> 
+>    switch (cmd) {
+>    case MYIOCTL:
+>       .. do something ..
+>    default:
+>       return -EINVAL;
+>    }
+> 
+> while something like this is CORRECT:
+> 
+>    switch (cmd) {
+>    case MYIOCT:
+>       if (arg)
+>          return -EINVAL;
+>       ...
+> 
+>    case OTHERIOCT:
+>       /* I recognize this one, but I don't support it */
+>       return -EINVAL;
+> 
+>    default:
+>       return -ENOIOCTLCMD; // Or -ENOTTY - see below about the difference
+>    }
+> 
+> where right now we do have some magic differences between ENOIOCTLCMD
+> and ENOTTY (the compat layer will try to do a translated ioctl *only*
+> if it gets ENOIOCTLCMD, iirc, so ENOTTY basically means "this is my
+> final answer").
+> 
+> I'll try it out on my own setup here to see what problems I can
+> trigger, but I thought I'd send it out first just as (a) a heads-up
+> and (b) to let others try it out and see.. See the block/ioctl.c code
+> for an example of the kinds of things we may need even just inside the
+> kernel (and the kinds of things that could cause problems for
+> user-space that makes a difference between EINVAL and ENOTTY).
+> 
+>                              Linus
 
