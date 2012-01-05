@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754865Ab2AEKC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 05:02:56 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:21912
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752743Ab2AEKCz (ORCPT
+	id S1755288Ab2AEKFB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 05:05:01 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:55285 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754672Ab2AEKE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 05:02:55 -0500
-X-Greylist: delayed 593 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jan 2012 05:02:55 EST
-X-IronPort-AV: E=Sophos;i="4.71,461,1320620400"; 
-   d="scan'208";a="125661992"
-Date: Thu, 5 Jan 2012 10:53:01 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [REGRESSION] i915 KMS dual head broken on DELL latitude E6420 in
- 3.1-rc*
-Message-ID: <20120105095301.GA4504@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org,
-	linux-kernel@vger.kernel.org
-References: <20110914232717.GA5410@type.famille.thibault.fr>
- <yunobym743b.fsf@aiko.keithp.com>
- <20110915074106.GA4544@type.famille.thibault.fr>
- <20110915081259.GB4877@type.bordeaux.inria.fr>
- <yunlitp7umf.fsf@aiko.keithp.com>
- <20110916163050.GT4891@type.bordeaux.inria.fr>
- <20120105021646.GA4099@type.famille.thibault.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120105021646.GA4099@type.famille.thibault.fr>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+	Thu, 5 Jan 2012 05:04:57 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-bd-4f0575c75281
+From: Donggeun Kim <dg77.kim@samsung.com>
+To: linux-input@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, myungjoo.ham@samsung.com,
+        dg77.kim@samsung.com
+Subject: [PATCH 1/2] mfd: add platform data for MAX8997 haptic driver
+Date: Thu, 05 Jan 2012 19:04:35 +0900
+Message-id: <1325757876-17659-2-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+In-reply-to: <1325757876-17659-1-git-send-email-dg77.kim@samsung.com>
+References: <1325757876-17659-1-git-send-email-dg77.kim@samsung.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Samuel Thibault, le Thu 05 Jan 2012 03:16:46 +0100, a écrit :
-> Samuel Thibault, le Fri 16 Sep 2011 18:30:50 +0200, a écrit :
-> > Keith Packard, le Thu 15 Sep 2011 09:22:48 -0500, a écrit :
-> > > On Thu, 15 Sep 2011 10:12:59 +0200, Samuel Thibault <samuel.thibault@ens-lyon.org> wrote:
-> > > 
-> > > > At home only. At work, with a different VGA screen, I'm still getting
-> > > > the issue.
-> > > 
-> > > You're still having a problem with the LVDS screen at work with FBC
-> > > disabled?
-> > 
-> > Yes, though it now seems random, sometimes it works, sometimes not.
-> 
-> I have just tried a fresh 3.2 once, without problem. Within a few days,
-> I'll know whether it's luck or magical-fixup.
+MAX8997 device does not support haptic function of it.
+This patch adds platform data for MAX8997 haptic driver.
 
-It didn't take long. I'm still randomly getting the issue.
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ include/linux/mfd/max8997.h |   53 ++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 52 insertions(+), 1 deletions(-)
 
-Samuel
+diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
+index fff5905..9d8006b 100644
+--- a/include/linux/mfd/max8997.h
++++ b/include/linux/mfd/max8997.h
+@@ -153,6 +153,55 @@ struct max8997_led_platform_data {
+ 	u8 brightness[2];
+ };
+ 
++enum max8997_haptic_motor_type {
++	MAX8997_HAPTIC_ERM,
++	MAX8997_HAPTIC_LRA,
++};
++
++enum max8997_haptic_pulse_mode {
++	MAX8997_EXTERNAL_MODE,
++	MAX8997_INTERNAL_MODE,
++};
++
++enum max8997_haptic_pwm_divisor {
++	MAX8997_PWM_DIVISOR_32,
++	MAX8997_PWM_DIVISOR_64,
++	MAX8997_PWM_DIVISOR_128,
++	MAX8997_PWM_DIVISOR_256,
++};
++
++/*
++ * max8997_haptic_platform_data
++ * @pwm_channel_id: channel number of PWM device
++ *		    valid for MAX8997_EXTERNAL_MODE
++ * @pwm_period: period in nano second for PWM device
++ *		valid for MAX8997_EXTERNAL_MODE
++ * @type: motor type
++ * @mode: pulse mode
++ *     MAX8997_EXTERNAL_MODE: external PWM device is used to control motor
++ *     MAX8997_INTERNAL_MODE: internal pulse generator is used to control motor
++ * @pwm_divisor: divisor for external PWM device
++ * @internal_mode_pattern: internal mode pattern for internal mode
++ *     [0 - 3]: valid pattern number
++ * @pattern_cycle: the number of cycles of the waveform
++ *		   for the internal mode pattern
++ *     [0 - 15]: available cycles
++ * @pattern_signal_period: period of the waveform for the internal mode pattern
++ *     [0 - 255]: available period
++ */
++struct max8997_haptic_platform_data {
++	int pwm_channel_id;
++	int pwm_period;
++
++	enum max8997_haptic_motor_type type;
++	enum max8997_haptic_pulse_mode mode;
++	enum max8997_haptic_pwm_divisor pwm_divisor;
++
++	int internal_mode_pattern;
++	int pattern_cycle;
++	int pattern_signal_period;
++};
++
+ struct max8997_platform_data {
+ 	/* IRQ */
+ 	int irq_base;
+@@ -192,7 +241,9 @@ struct max8997_platform_data {
+ 	/* ---- MUIC ---- */
+ 	struct max8997_muic_platform_data *muic_pdata;
+ 
+-	/* HAPTIC: Not implemented */
++	/* ---- HAPTIC ---- */
++	struct max8997_haptic_platform_data *haptic_pdata;
++
+ 	/* RTC: Not implemented */
+ 	/* ---- LED ---- */
+ 	struct max8997_led_platform_data *led_pdata;
+-- 
+1.7.4.1
+
