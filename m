@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab2AEDvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 22:51:23 -0500
+	id S932376Ab2AEDvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 22:51:18 -0500
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34876 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757934Ab2AEDsZ (ORCPT
+	with ESMTP id S932113Ab2AEDs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 22:48:25 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=B60UIce8vKIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=EY7yrsVz9WzIrqMmz14A:9 a=h1C6u8u6QLVgUEO3AfsA:7 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=SyuQLDgLEiboFxdDF1EA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+	Wed, 4 Jan 2012 22:48:26 -0500
+X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=UBy9sU4F98IA:10 a=G_KXoexwFB0A:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=QIw1zoSjksk70hDLe4YA:9 a=QEXdDO2ut3YA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=X9Q3iD4FXkIu9lhQMjoA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.80.29
-Message-Id: <20120105034823.026754603@goodmis.org>
+Message-Id: <20120105034823.920360460@goodmis.org>
 User-Agent: quilt/0.50-1
-Date: Wed, 04 Jan 2012 22:48:02 -0500
+Date: Wed, 04 Jan 2012 22:48:05 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 07/20] ktest: Ask for type of test when creating a new config
+Subject: [PATCH 10/20] ktest: Only ask options needed for install
 References: <20120105034755.793909214@goodmis.org>
-Content-Disposition: inline; filename=0007-ktest-Ask-for-type-of-test-when-creating-a-new-confi.patch
+Content-Disposition: inline; filename=0010-ktest-Only-ask-options-needed-for-install.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,66 +30,65 @@ Content-Transfer-Encoding: quoted-printable
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-When no argument is supplied to ktest, or the config applied does
-not exist and a new config is being created, instead of just using
-the default test type, give the user an option to pick the test type
-of either 'build, install, or boot'. Other options may be added later
-but then those would require more questions as they require more
-fields. But that's for another release of ktest to add that feature.
+If all the tests are only for build or install, do not ask
+for options not needed to do the install, if the options do
+not exist.
 
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ tools/testing/ktest/ktest.pl |   19 ++++++++++++++-----
+ 1 files changed, 14 insertions(+), 5 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 2ffb67c..f50b44f 100755
+index 2b547d6..5d82c27 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -752,6 +752,15 @@ sub __read_config {
-     return $test_case;
- }
+@@ -136,7 +136,7 @@ my $localversion;
+ my $iteration =3D 0;
+ my $successes =3D 0;
 =20
-+sub get_test_case {
-+	print "What test case would you like to run?\n";
-+	print " (build, install or boot)\n";
-+	print " Other tests are available but require editing the config file\n";
-+	my $ans =3D <STDIN>;
-+	chomp $ans;
-+	$default{"TEST_TYPE"} =3D $ans;
-+}
+-# set when a test is something other that just building
++# set when a test is something other that just building or install
+ # which would require more options.
+ my $buildonly =3D 1;
+=20
+@@ -343,11 +343,15 @@ sub get_ktest_configs {
+=20
+     # options required for other than just building a kernel
+     if (!$buildonly) {
++	get_ktest_config("POWER_CYCLE");
++	get_ktest_config("CONSOLE");
++    }
 +
- sub read_config {
-     my ($config) =3D @_;
-=20
-@@ -766,10 +775,7 @@ sub read_config {
-     # was a test specified?
-     if (!$test_case) {
- 	print "No test case specified.\n";
--	print "What test case would you like to run?\n";
--	my $ans =3D <STDIN>;
--	chomp $ans;
--	$default{"TEST_TYPE"} =3D $ans;
-+	get_test_case;
++    # options required for install and more
++    if ($buildonly !=3D 1) {
+ 	get_ktest_config("SSH_USER");
+ 	get_ktest_config("BUILD_TARGET");
+ 	get_ktest_config("TARGET_IMAGE");
+-	get_ktest_config("POWER_CYCLE");
+-	get_ktest_config("CONSOLE");
      }
 =20
-     # set any defaults
-@@ -3070,6 +3076,7 @@ if ($#ARGV =3D=3D 0) {
- }
+     get_ktest_config("LOCALVERSION");
+@@ -412,10 +416,15 @@ sub process_variables {
+ sub set_value {
+     my ($lvalue, $rvalue, $override, $overrides, $name) =3D @_;
 =20
- if (! -f $ktest_config) {
-+    get_test_case;
-     open(OUT, ">$ktest_config") or die "Can not create $ktest_config";
-     print OUT << "EOF"
- # Generated by ktest.pl
-@@ -3088,6 +3095,7 @@ THIS_DIR :=3D $variable{"PWD"}
- # Define each test with TEST_START
- # The config options below it will override the defaults
- TEST_START
-+TEST_TYPE =3D $default{"TEST_TYPE"}
+-    if ($lvalue =3D~ /^TEST_TYPE(\[.*\])?$/ && $rvalue ne "build") {
++    if ($buildonly && $lvalue =3D~ /^TEST_TYPE(\[.*\])?$/ && $rvalue ne "b=
+uild") {
+ 	# Note if a test is something other than build, then we
+ 	# will need other manditory options.
+-	$buildonly =3D 0;
++	if ($rvalue ne "install") {
++	    $buildonly =3D 0;
++	} else {
++	    # install still limits some manditory options.
++	    $buildonly =3D 2;
++	}
+     }
 =20
- DEFAULTS
- EOF
+     if (defined($opt{$lvalue})) {
 --=20
 1.7.7.3
 
@@ -102,19 +101,19 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAABAgAGBQJPBR2HAAoJEIy3vGnGbaoAP7wP/08Gad37y7pFQhcMCqMawp1a
-IF7BQgaKHLQZqxQUIbjZNB01Tpmgm0hX4ZCxeI5cHTMd4qmrdIKPKVYNtvwPFn5z
-uatL+KJFI18AKgFEzpaQTazJTXCvEzQB5XKwOoHG3w6laOO6VYTYw9Iuw+c2Or1q
-Q0krDvxb5Dk5VamphCySAb45Fh2o19BlnaRsL8iF+68br+MKc6QaSy3i9lBa+S1R
-FX/7gG0ODMiU4tG7UM1vEMP3TfL0VXVQn9ZReLGFNuO3U+2sIldkPRekY7PlPABT
-Um0pO5aGzX/PvVBudFxWXoYZIAS5wEZjrcd5L9RsrYp3q2ZA3vdMUZQMson5D7xz
-H7bjSU68WNODWhkBP60qFy61QG3Ffa2iKmSzCjJVywHlc+INtBBR2lFMUBPFHkL9
-rVW1KE+4BPqzKEyPo1gfR7DPOeG1ChHt/YKZDtfcwlWVu244OwQnegDIKhSAB28x
-sIqrCBLohrpjEd4hebK1FxLNNaFGFCQmb79PnuggsgyDnq0rs/W+4UHZ+7WqHLzp
-juBR+qYqsweJUs8xERMddeNtnKIC5S1hrKOmAXk+rE6HT96b0AEYH+3ZlHXhCZ+u
-aeA1KQ4dyZY3qCFdb6fzLE9bvE4Xts6pEioaDlWMUhGbALxYPfqPf0fzNMu+m2Ch
-mW95g1FpaYhFlGq//SK0
-=V9MN
+iQIcBAABAgAGBQJPBR2IAAoJEIy3vGnGbaoAm48P/0RRGSlbnb6y9DygcHChXH6M
+SOB+XstOPYemJtnSbleGZGcAj/HtQ2YQOMKTaEqWi8rfmjAodNwFrNkWocg7Rm7Y
+O6gWc8otDXskGOD172OXTrTuDH5I0sqKD8HPmWpvY06S8B00uHmhUNS466R2lr/A
+or+mNmJvHzpqAiLbBTlrsEKACcQvHQMK65P7odUIU6HPb9UT2Ye8zS/nyWniJFL6
+s1ca0wdPT01C59wu10aFzMjks4U4EDTArha45K1g7Uo05ImOxRBvmOnz/2mkAnHD
+/7umOUtupFHn1thxOmvngxc53NK8BvpXP/28hjqxNVP/tI59Tl6mfNfkkIVMQoML
+S1lE0NeY5NChPdI2mEJEEwsTjo3zFIgi1h1L4L/3OxHtKQRlhGJWjSxxUiBs+QMH
+aK1D+IrGTGrwz90/QQZ3raYXHcsSujbTLVqBptqN+UpB0eYfeGkhNNUdukCLmaFv
+73Y/I/Sryre0LGjCX52LC9f/Q2g6yA2laI8wEh/UF7l7MHdHKCDixKwfCXrjeqQH
+3BZUZJj+Ab5mEf5PwhFnTZ7k5PUrV94C46PmWAwk5gBUt+W4QwgCm3VpJjLlccKA
+ODyrT8I0vOcjcNrRg+y/nFg/JdA6YqojH/XV7mHq/dV1y1RmQw8ofj4OlQLqyY6K
+h1o15UDcijQSJjh1TZPF
+=B8No
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
