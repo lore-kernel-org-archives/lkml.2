@@ -1,55 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869Ab2AEV0H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:26:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47280 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758302Ab2AEV0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:26:04 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Eric Paris <eparis@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrei Emeltchenko <andrei.emeltchenko@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Subject: Re: linux-next: manual merge of the selinux tree with the net-next tree
-Date: Thu, 05 Jan 2012 16:25:53 -0500
-Message-ID: <27624574.j8RvKjachg@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.7.4 (Linux/3.1.5-gentoo; KDE/4.7.4; x86_64; ; )
-In-Reply-To: <20120105151255.f72ad113a93493bb55844034@canb.auug.org.au>
-References: <20120105151255.f72ad113a93493bb55844034@canb.auug.org.au>
+	id S932834Ab2AEV1X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:27:23 -0500
+Received: from mail-yw0-f74.google.com ([209.85.213.74]:64612 "EHLO
+	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab2AEV1U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 16:27:20 -0500
+Subject: [PATCH 1/2] x86, amd: factor out MMCONFIG discovery
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: stable@kernel.org#2.6.34+, Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Len Brown <lenb@kernel.org>
+Date: Thu, 05 Jan 2012 14:27:19 -0700
+Message-ID: <20120105212719.3965.40406.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 05, 2012 03:12:55 PM Stephen Rothwell wrote:
-> Hi Eric,
-> 
-> Today's linux-next merge of the selinux tree got a conflict in
-> net/bluetooth/l2cap_sock.c between commit 15770b1ab974 ("Bluetooth:
-> convert force_active variable to flag in l2cap chan") from the net-next
-> tree and commit 53860f3d0499 ("bluetooth: Properly clone LSM attributes
-> to newly created child connections") from the selinux tree.
-> 
-> These both remove the same line, but there is probably something more
-> subtle going on ...  I just used the version from the net-next tree.
+This factors out the AMD native MMCONFIG discovery so we can use it
+outside amd_bus.c.
 
-Something is a bit odd.  When I look in the current linux-next tree I see two 
-commits which fix a Bluetooth/LSM bug; the first is correct, the second one 
-appears to be some other commit which just hijacked the description from the 
-first ... I have no idea what is going on in the second commit; I'll leave 
-that to you git gurus :)
+amd_bus.c reads AMD MSRs so it can remove the MMCONFIG area from the
+PCI resources.  We may also need the MMCONFIG information to work
+around BIOS defects in the ACPI MCFG table.
 
- * Correct commit -> 6230c9b4f8957c8938ee4cf2d03166d3c2dc89de
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org       # 2.6.34+
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+---
+ arch/x86/include/asm/amd_nb.h |    2 ++
+ arch/x86/kernel/amd_nb.c      |   31 ++++++++++++++++++++++++++++++
+ arch/x86/pci/amd_bus.c        |   42 +++++++++++------------------------------
+ 3 files changed, 44 insertions(+), 31 deletions(-)
 
- * Garbage commit -> 53860f3d0499992855d58e33f0f79bfe642dfccb
-
--- 
-paul moore
-virtualization @ redhat
+diff --git a/arch/x86/include/asm/amd_nb.h b/arch/x86/include/asm/amd_nb.h
+index 8e41071..49ad773 100644
+--- a/arch/x86/include/asm/amd_nb.h
++++ b/arch/x86/include/asm/amd_nb.h
+@@ -1,6 +1,7 @@
+ #ifndef _ASM_X86_AMD_NB_H
+ #define _ASM_X86_AMD_NB_H
+ 
++#include <linux/ioport.h>
+ #include <linux/pci.h>
+ 
+ struct amd_nb_bus_dev_range {
+@@ -13,6 +14,7 @@ extern const struct pci_device_id amd_nb_misc_ids[];
+ extern const struct amd_nb_bus_dev_range amd_nb_bus_dev_ranges[];
+ 
+ extern bool early_is_amd_nb(u32 value);
++extern struct resource *amd_get_mmconfig_range(struct resource *res);
+ extern int amd_cache_northbridges(void);
+ extern void amd_flush_garts(void);
+ extern int amd_numa_init(void);
+diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
+index 4c39baa..bae1efe 100644
+--- a/arch/x86/kernel/amd_nb.c
++++ b/arch/x86/kernel/amd_nb.c
+@@ -119,6 +119,37 @@ bool __init early_is_amd_nb(u32 device)
+ 	return false;
+ }
+ 
++struct resource *amd_get_mmconfig_range(struct resource *res)
++{
++	u32 address;
++	u64 base, msr;
++	unsigned segn_busn_bits;
++
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
++		return NULL;
++
++	/* assume all cpus from fam10h have mmconfig */
++        if (boot_cpu_data.x86 < 0x10)
++		return NULL;
++
++	address = MSR_FAM10H_MMIO_CONF_BASE;
++	rdmsrl(address, msr);
++
++	/* mmconfig is not enabled */
++	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
++		return NULL;
++
++	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
++
++	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
++			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
++
++	res->flags = IORESOURCE_MEM;
++	res->start = base;
++	res->end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
++	return res;
++}
++
+ int amd_get_subcaches(int cpu)
+ {
+ 	struct pci_dev *link = node_to_amd_nb(amd_get_nb_id(cpu))->link;
+diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+index 026e493..385a940 100644
+--- a/arch/x86/pci/amd_bus.c
++++ b/arch/x86/pci/amd_bus.c
+@@ -30,34 +30,6 @@ static struct pci_hostbridge_probe pci_probes[] __initdata = {
+ 	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
+ };
+ 
+-static u64 __initdata fam10h_mmconf_start;
+-static u64 __initdata fam10h_mmconf_end;
+-static void __init get_pci_mmcfg_amd_fam10h_range(void)
+-{
+-	u32 address;
+-	u64 base, msr;
+-	unsigned segn_busn_bits;
+-
+-	/* assume all cpus from fam10h have mmconf */
+-        if (boot_cpu_data.x86 < 0x10)
+-		return;
+-
+-	address = MSR_FAM10H_MMIO_CONF_BASE;
+-	rdmsrl(address, msr);
+-
+-	/* mmconfig is not enable */
+-	if (!(msr & FAM10H_MMIO_CONF_ENABLE))
+-		return;
+-
+-	base = msr & (FAM10H_MMIO_CONF_BASE_MASK<<FAM10H_MMIO_CONF_BASE_SHIFT);
+-
+-	segn_busn_bits = (msr >> FAM10H_MMIO_CONF_BUSRANGE_SHIFT) &
+-			 FAM10H_MMIO_CONF_BUSRANGE_MASK;
+-
+-	fam10h_mmconf_start = base;
+-	fam10h_mmconf_end = base + (1ULL<<(segn_busn_bits + 20)) - 1;
+-}
+-
+ #define RANGE_NUM 16
+ 
+ /**
+@@ -85,6 +57,9 @@ static int __init early_fill_mp_bus_info(void)
+ 	u64 val;
+ 	u32 address;
+ 	bool found;
++	struct resource fam10h_mmconf_res, *fam10h_mmconf;
++	u64 fam10h_mmconf_start;
++	u64 fam10h_mmconf_end;
+ 
+ 	if (!early_pci_allowed())
+ 		return -1;
+@@ -211,12 +186,17 @@ static int __init early_fill_mp_bus_info(void)
+ 		subtract_range(range, RANGE_NUM, 0, end);
+ 
+ 	/* get mmconfig */
+-	get_pci_mmcfg_amd_fam10h_range();
++	fam10h_mmconf = amd_get_mmconfig_range(&fam10h_mmconf_res);
+ 	/* need to take out mmconf range */
+-	if (fam10h_mmconf_end) {
+-		printk(KERN_DEBUG "Fam 10h mmconf [%llx, %llx]\n", fam10h_mmconf_start, fam10h_mmconf_end);
++	if (fam10h_mmconf) {
++		printk(KERN_DEBUG "Fam 10h mmconf %pR\n", fam10h_mmconf);
++		fam10h_mmconf_start = fam10h_mmconf->start;
++		fam10h_mmconf_end = fam10h_mmconf->end;
+ 		subtract_range(range, RANGE_NUM, fam10h_mmconf_start,
+ 				 fam10h_mmconf_end + 1);
++	} else {
++		fam10h_mmconf_start = 0;
++		fam10h_mmconf_end = 0;
+ 	}
+ 
+ 	/* mmio resource */
 
