@@ -1,65 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab2AEIHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 03:07:30 -0500
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:38157
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752952Ab2AEIH2 (ORCPT
+	id S1758115Ab2AEIKA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 03:10:00 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:59297 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960Ab2AEIJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 03:07:28 -0500
-Message-ID: <4F055A30.2010309@compulab.co.il>
-Date: Thu, 05 Jan 2012 10:07:12 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.17) Gecko/20110824 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Chris Wright <chrisw@sous-sol.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Sanjeev Premi <premi@ti.com>,
-        Kyle Manna <kyle@kylemanna.com>, stable@vger.kernel.org
-Subject: Re: Several MFD patches for stable
-References: <4F031233.7040007@compulab.co.il> <20120103210144.GE17131@kroah.com>
-In-Reply-To: <20120103210144.GE17131@kroah.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
+	Thu, 5 Jan 2012 03:09:58 -0500
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 1/2] fs/9p: v9fs_stat2inode should update suid/sgid bits.
+Date: Thu,  5 Jan 2012 13:39:49 +0530
+Message-Id: <1325750990-8149-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.8.1.362.g5d6df
+x-cbid: 12010422-6102-0000-0000-00000094B0B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/12 23:01, Greg KH wrote:
-> On Tue, Jan 03, 2012 at 04:35:31PM +0200, Igor Grinberg wrote:
->> Hi Greg, Chris,
->>
->> I've found several MFD patches that I think should have been
->> applied also to stable, but they hadn't been applied
->> (probably because nobody cared to send them to stable@vger.kernel.org).
->>
->> The patches are upstream:
->> e178ccb33569da17dc897a08a3865441b813bdfb (mfd: Fix mismatch in twl4030 mutex lock-unlock)
->> 66cc5b8e50af87b0bbd0f179d76d2826f4549c13 (mfd: Copy the device pointer to the twl4030-madc structure)
->> d0e84caeb4cd535923884735906e5730329505b4 (mfd: Check for twl4030-madc NULL pointer)
-> 
-> Ok, I've applied these 3 to the 3.0-stable tree now.
-> 
->> 3d6271f92e98094584fd1e609a9969cd33e61122 (mfd: Turn on the twl4030-madc MADC clock)
-> 
-> And this one to both 3.0-stable and 3.1-stable.
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 
-Sorry for the late response, I've just got back online...
-Yes, it seems correct.
-Sorry for making you work more then expected...
-I will specify the relevant kernel versions next time...
+Create a new helper that update the permission bits and use
+that, instead of opencoding the logic.
 
-Thanks
+Reported and bisected by:  M. Mohan Kumar <mohan@in.ibm.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/vfs_inode.c |   40 ++++++++++++++++++++++++++++------------
+ 1 files changed, 28 insertions(+), 12 deletions(-)
 
-
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 879ed88..c330776 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -93,6 +93,32 @@ static int unixmode2p9mode(struct v9fs_session_info *v9ses, int mode)
+ }
+ 
+ /**
++ * p9mode2perm- convert plan9 mode bits to unix permission bits
++ * @v9ses: v9fs session information
++ * @stat: p9_wstat from which mode need to be derived
++ *
++ */
++static int p9mode2perm(struct v9fs_session_info *v9ses,
++		       struct p9_wstat *stat)
++{
++	int res;
++	int mode = stat->mode;
++
++	res = mode & S_IALLUGO;
++	if (v9fs_proto_dotu(v9ses)) {
++		if ((mode & P9_DMSETUID) == P9_DMSETUID)
++			res |= S_ISUID;
++
++		if ((mode & P9_DMSETGID) == P9_DMSETGID)
++			res |= S_ISGID;
++
++		if ((mode & P9_DMSETVTX) == P9_DMSETVTX)
++			res |= S_ISVTX;
++	}
++	return res;
++}
++
++/**
+  * p9mode2unixmode- convert plan9 mode bits to unix mode bits
+  * @v9ses: v9fs session information
+  * @stat: p9_wstat from which mode need to be derived
+@@ -105,8 +131,8 @@ static int p9mode2unixmode(struct v9fs_session_info *v9ses,
+ 	int res;
+ 	int mode = stat->mode;
+ 
+-	res = mode & S_IALLUGO;
+ 	*rdev = 0;
++	res = p9mode2perm(v9ses, stat);
+ 
+ 	if ((mode & P9_DMDIR) == P9_DMDIR)
+ 		res |= S_IFDIR;
+@@ -141,16 +167,6 @@ static int p9mode2unixmode(struct v9fs_session_info *v9ses,
+ 	} else
+ 		res |= S_IFREG;
+ 
+-	if (v9fs_proto_dotu(v9ses)) {
+-		if ((mode & P9_DMSETUID) == P9_DMSETUID)
+-			res |= S_ISUID;
+-
+-		if ((mode & P9_DMSETGID) == P9_DMSETGID)
+-			res |= S_ISGID;
+-
+-		if ((mode & P9_DMSETVTX) == P9_DMSETVTX)
+-			res |= S_ISVTX;
+-	}
+ 	return res;
+ }
+ 
+@@ -1167,7 +1183,7 @@ v9fs_stat2inode(struct p9_wstat *stat, struct inode *inode,
+ 				set_nlink(inode, i_nlink);
+ 		}
+ 	}
+-	mode = stat->mode & S_IALLUGO;
++	mode = p9mode2perm(v9ses, stat);
+ 	mode |= inode->i_mode & ~S_IALLUGO;
+ 	inode->i_mode = mode;
+ 	i_size_write(inode, stat->length);
 -- 
-Regards,
-Igor.
+1.7.8.1.362.g5d6df
+
