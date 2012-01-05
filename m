@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091Ab2AESir (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 13:38:47 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:41362
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753099Ab2AESiq (ORCPT
+	id S1758165Ab2AESi7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 13:38:59 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:42413 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757259Ab2AESir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 13:38:46 -0500
-Date: Thu, 5 Jan 2012 13:38:32 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: "Ted Ts'o" <tytso@mit.edu>, Alan Stern <stern@rowland.harvard.edu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Tejun Heo <tj@kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: Revoking filesystems [was Re: Sysfs attributes racing with
- unregistration]
-Message-ID: <20120105183831.GA21565@infradead.org>
-References: <m1ehvecf23.fsf@fess.ebiederm.org>
- <Pine.LNX.4.44L0.1201051133490.1434-100000@iolanthe.rowland.org>
- <20120105182752.GC26382@thunk.org>
+	Thu, 5 Jan 2012 13:38:47 -0500
+Date: Thu, 5 Jan 2012 10:38:42 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, x86@kernel.org
+Subject: Re: [PATCH block/for-3.3/core] block: an exiting task should be
+ allowed to create io_context
+Message-ID: <20120105183842.GF18486@google.com>
+References: <CAOS58YOzUcZz41+H+7dk5FteHy+Ufrtpk9dvdPqX6eie-GHi0Q@mail.gmail.com>
+ <20111228211918.GA3516@google.com>
+ <20120103173500.GB31746@google.com>
+ <20120103175922.GC31746@google.com>
+ <20120103200906.GG31746@google.com>
+ <4F03631C.8080501@kernel.dk>
+ <20120103221301.GH31746@google.com>
+ <20120103223505.GI31746@google.com>
+ <20120105012445.GP31746@google.com>
+ <alpine.LSU.2.00.1201051026090.2009@eggly.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120105182752.GC26382@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LSU.2.00.1201051026090.2009@eggly.anvils>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 01:27:52PM -0500, Ted Ts'o wrote:
-> Ideally, we should do both.  The block device should call a
-> notification function (probably run out of a workqueue context, to
-> avoid locking issues) which tells the file system, "the block device
-> is _gone_ and isn't coming back".  Any attempts to read or write to
-> the block device should return errors, since there maybe writeback
-> happening in the background while the file system is shutting down
-> file system mount.  Once the file system is done, it can all a
-> function which tells the block device layer that it's OK to release
-> the block device and its related structures.
+Hello, Hugh.
 
-FYI: we have all the functionality for that available in XFS and would
-just need to wire it up.  It's also triggered if we get a write I/O
-error for metadata (typically the log), so with a minim delay we
-actually provide that behaviour already.
+On Thu, Jan 05, 2012 at 10:36:21AM -0800, Hugh Dickins wrote:
+> I can vouch that it makes the list_debug.c:53 warnings go away: they
+> used to come in half an hour, but I've run on two machines for 10
+> hours so far without seeing any.
 
-> In order for the file system to shut down the file system cleanly, it
-> will need to access VFS-level revoke functionality that replaces file
-> descriptors with ones that returns an error on reads and writes, and
-> which does the right thing with mmap's[1], etc.
+Yeah, my overnight test is pretty conclusive too.  I can usually hit
+the bug under 30mins without the patch.
 
-And that part is close to impossible to get right.
+> And I've not yet seen a cfq-iosched.c:2585 with that patch in; but
+> those were more elusive - we'll have to run until tomorrow night
+> before concluding that it makes those go away too.
+> 
+> Or if you understand the connection between these, and would prefer
+> to assume that it fixes them both, and want me to try another patch
+> instead (I assume the one I'm running with is a workaround to narrow
+> down the issue, rather than an intended fix?), let me know and I'll
+> switch over.
 
+Yeap, I can see the connections now and think I know where the bug is
+too.  I'll, hopefully, be able to post fix soon.
+
+Thanks.
+
+-- 
+tejun
