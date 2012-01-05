@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758211Ab2AERhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 12:37:05 -0500
-Received: from usindpps03.hds.com ([207.126.252.16]:45039 "EHLO
+	id S932459Ab2AERh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 12:37:28 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:45150 "EHLO
 	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755401Ab2AERhD convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1758149Ab2AERh0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 12:37:03 -0500
+	Thu, 5 Jan 2012 12:37:26 -0500
 From: Seiji Aguchi <seiji.aguchi@hds.com>
 To: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
@@ -24,13 +24,15 @@ CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "dle-develop@lists.sourceforge.net" 
 	<dle-develop@lists.sourceforge.net>,
         Satoru Moriya <satoru.moriya@hds.com>
-Date: Thu, 5 Jan 2012 12:35:43 -0500
-Subject: [RFC][PATCH v4 -next 0/4] Make pstore/kmsg_dump run after stopping
- other cpus in panic path
-Thread-Topic: [RFC][PATCH v4 -next 0/4] Make pstore/kmsg_dump run after
- stopping other cpus in panic path
-Thread-Index: AczL0HMFUhgCH34WQWyA76ETk3pYJw==
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+Date: Thu, 5 Jan 2012 12:36:49 -0500
+Subject: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
+ smp_send_stop()
+Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
+ below smp_send_stop()
+Thread-Index: AczL0HMFUhgCH34WQWyA76ETk3pYJwAAAXcA
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
 Accept-Language: ja-JP, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -47,56 +49,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch just moves kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop
+for serializing logging process via smp_send_stop.
 
-Discussion:
- As Don mentioned in following thread, it would be nice for pstore/kmsg_dump to serialize 
- panic path because they can log messages reliably.
+ Signed-off-by: Seiji Aguchi <seiji.aguchi@hds.com>
+ Acked-by: Don Zickus <dzickus@redhat.com>
 
- https://lkml.org/lkml/2011/10/13/427
+---
+ kernel/panic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- This patchset is based on his proposal switching smp_send_stop() from REBOOT_VECTOR to NMI.
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 80aed44..da585b8 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -108,8 +108,6 @@ void panic(const char *fmt, ...)
+ 	 */
+ 	crash_kexec(NULL);
+ 
+-	kmsg_dump(KMSG_DUMP_PANIC);
+-
+ 	/*
+ 	 * Note smp_send_stop is the usual smp shutdown function, which
+ 	 * unfortunately means it may not be hardened to work in a panic
+@@ -117,6 +115,8 @@ void panic(const char *fmt, ...)
+ 	 */
+ 	smp_send_stop();
+ 
++	kmsg_dump(KMSG_DUMP_PANIC);
++
+ 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
+ 
+ 	bust_spinlocks(0);
+-- 
+1.7.1
 
-Change Log:
-
- v3 -> v4
-   - Add comment for explaining the purpose of WARN_ON() based on Don's comment (patch 2/4)
-     https://lkml.org/lkml/2011/12/12/296
-
-   - Skip spin_lock of efi_pstore_write() in panic case based on discussion with Tony (patch 4/4)
-     https://lkml.org/lkml/2012/1/3/151
-
-   - Apply this patchset to -next tree instead of linus -tree so that "patch 4/4" makes simple
-
- v2 -> v3
-   - Skip spin_locks in panic case in both kmsg_dump() and pstore_dump() instead of calling spin_lock_init()
-     to avoid potential issues due to spin_lock_init()
-   - Add WARN_ON() in "in_nmi() and !panic" case into kmsg_dump() so that we trap when someone adds 
-     new kmsg_dump() in NMI path in the future
-   - Skip subsequent kmsg_dump() function calls to avoid deadlock.
-
- v1 -> v2
-  - Add trylocks to kmsg_dump()/pstore_dump() so that they can work in NMI context.  
-  - Divide a patch into two
-     First one is just moving kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
-     Second one is changing lock operations in kmsg_dump()/pstore_dump()
- v1
-  - Move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop
-  - Bust logbuf_lock of kmsg_dump() in panic path for avoiding deadlock
-  - Bust psinfo->buf_lock of pstore_dump() in panic path for avoiding deadlock
-
-Patch Description:
-   [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
-     - Just move kmsg_dump(KMSG_DUMP_PANIC) below smp_send_stop()
-
-   [RFC][PATCH v4 -next 2/4] Skip spin_locks in panic case and Add WARN_ON()
-     - Skip spin_locks in panic case in both kmsg_dump() and pstore_dump()
-     - Add WARN_ON() in "in_nmi() and !panic" case into kmsg_dump()
-
-   [RFC][PATCH v4 -next 3/4] Skip subsequent kmsg_dump()
-     - Skip subsequent kmsg_dump() function calls in panic path
-
-   [RFC][PATCH v4 -next 4/4] Skip spin_lock of efi_pstore_write() in panic case
-     - Skip spin_lock of efi_pstore_write() in panic case to avoid deadlock
-
-Seiji
