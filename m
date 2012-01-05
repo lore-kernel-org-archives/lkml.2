@@ -1,58 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964801Ab2AEQln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 11:41:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1032 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932711Ab2AEQlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 11:41:42 -0500
-Message-ID: <4F05D286.7030205@redhat.com>
-Date: Thu, 05 Jan 2012 17:40:38 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S964813Ab2AEQoW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 11:44:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59472 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932711Ab2AEQoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 11:44:20 -0500
+Message-ID: <4F05D361.6040809@lwfinger.net>
+Date: Thu, 05 Jan 2012 10:44:17 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
-        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition
- devices
-References: <1324576939-23619-3-git-send-email-pbonzini@redhat.com> <CA+55aFzAo5hjCkKe1aaHgyCYc6RYRb8tf+zPTUwO6R8WWd9T-Q@mail.gmail.com> <4EF38269.7080804@redhat.com> <CA+55aFz9aRjSaof+vtHRquYn4w3fYd_+qXdNO3M+7kRWWfKxvA@mail.gmail.com> <4EF391A6.2040504@redhat.com> <CA+55aFzmCoX17j9h5-RLrPctpf5GAh5i7bG3vDUBKsZoXNFugg@mail.gmail.com> <4EF3AA74.1060801@redhat.com> <CA+55aFw+ipBQFTj9SbNjE1KkS+xNpY7RdF1emSf7WrzavyReqA@mail.gmail.com> <20111222234830.GC31021@agk-dp.fab.redhat.com> <CA+55aFxqy1wJFFVbykBJWuGm8YAjA-VP=xAqHttVOwC_zuxvOA@mail.gmail.com> <20111223062649.GD21994@1wt.eu> <CA+55aFxnOwkquH8tirqJnM_KTcavAejY8drL11jy2S+2PXmZuw@mail.gmail.com> <4EF48CE4.3000104@redhat.com> <CA+55aFy=7wGzQv76dirJ=ZjeNdbKVKDRCLA323orsE13GcKvwQ@mail.gmail.com> <4F05A332.1060600@redhat.com> <CA+55aFwcZjxZsVV_9rsKgApDfEMdCdHYvkDW5Wz7j-=gd_tFeQ@mail.gmail.com>
-In-Reply-To: <CA+55aFwcZjxZsVV_9rsKgApDfEMdCdHYvkDW5Wz7j-=gd_tFeQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Joe Perches <joe@perches.com>
+CC: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] rtlwifi: Standardize RT_PRINT_DATA macro and uses
+References: <cover.1325734202.git.joe@perches.com>  <e7d4163a9897f33145d8a07be54f507ab68e0243.1325734203.git.joe@perches.com>  <20120105114314.GD2222@redhat.com> <1325780947.22154.14.camel@joe2Laptop>
+In-Reply-To: <1325780947.22154.14.camel@joe2Laptop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2012 05:16 PM, Linus Torvalds wrote:
-> On Thu, Jan 5, 2012 at 5:18 AM, Paolo Bonzini<pbonzini@redhat.com>  wrote:
+On 01/05/2012 10:29 AM, Joe Perches wrote:
+> On Thu, 2012-01-05 at 12:43 +0100, Stanislaw Gruszka wrote:
+>> Hi Joe
+>
+> Morning Stanislaw.
+>
+>> On Wed, Jan 04, 2012 at 07:40:40PM -0800, Joe Perches wrote:
+>>>   	RT_PRINT_DATA(rtlpriv, COMP_CMD, DBG_DMESG,
 >>
->> Hence, changing scsi_verify_blk_ioctl to return ENOIOCTLCMD is not
->> really possible.
+>> Since you are working on it, can you also get rid of this DBG_*
+>> parameter, if rtlwifi maintainers are ok with that? It is additional
+>> console loglvevel, standard kernel loglevel should be used.
 >
-> What?
+> Not quite, all of the RT_PRINT_DATA are emitted at KERN_DEBUG.
+> These DBG_*s are just a normal debug verbosity level.
 >
-> "We have a bug in the block IO layer, so we cannot possible fix
-> another problem?"
+> It does seem odd though to have a DBG_EMERG and not always
+> emit it.
+
+Those are always logged, no matter what debug level is set.
+
+> What might also be useful for any embedded use is to add
+> CONFIG_RTLWIFI_DEBUG to conditionally remove all of the
+> debug logging code to reduce the largish object size.
 >
-> Whjat the f*ck is the logic there?
+> This reduces the object size by about 1/3 (250KB)
+> when CONFIG_RTLWIFI_DEBUG is not set.
 >
-> Just fix the *obvious* breakage in BLKROSET. It's clearly what the
-> code *intends* to do, it just didn't check for ENOIOCTLCMD.
+> $ size drivers/net/wireless/rtlwifi/built-in.o*
+>     text	   data	    bss	    dec	    hex	filename
+>   368722	  55333	  94224	 518279	  7e887	drivers/net/wireless/rtlwifi/built-in.o.new
+>   586904	  55333	 127216	 769453	  bbdad	drivers/net/wireless/rtlwifi/built-in.o.old
+>
+> Signed-off-by: Joe Perches<joe@perches.com>
 
-Aha, so this is clear and obvious.  And who knows that something else 
-won't break?  Such as the 32-on-64 logic that already uses ENOIOCTLCMD 
-for something else?
+This change seems sensible to me.
 
-If the block maintainers want to fix that, fine.  "git blame 
-block/ioctl.c" shows that it's been like this for 6 years and in general 
-the file has hardly seen changes.  That's enough to make me steer away 
-from that code.
+Larry
 
-Foolish me who found a bug, and an exploitable one for that matter, and 
-even tried to fix it.  Looks like security by obscurity would have 
-served users better.
+>
+> ---
+>
+>   drivers/net/wireless/rtlwifi/Kconfig |    5 +++++
+>   drivers/net/wireless/rtlwifi/debug.h |   34 ++++++++++++++++++++++++++++++++++
+>   2 files changed, 39 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rtlwifi/Kconfig b/drivers/net/wireless/rtlwifi/Kconfig
+> index d6c42e6..44b9c0a 100644
+> --- a/drivers/net/wireless/rtlwifi/Kconfig
+> +++ b/drivers/net/wireless/rtlwifi/Kconfig
+> @@ -49,6 +49,11 @@ config RTLWIFI
+>   	depends on RTL8192CE || RTL8192CU || RTL8192SE || RTL8192DE
+>   	default m
+>
+> +config RTLWIFI_DEBUG
+> +	tristate "Additional debugging output"
+> +	depends on RTL8192CE || RTL8192CU || RTL8192SE || RTL8192DE
+> +	default y
+> +
+>   config RTL8192C_COMMON
+>   	tristate
+>   	depends on RTL8192CE || RTL8192CU
+> diff --git a/drivers/net/wireless/rtlwifi/debug.h b/drivers/net/wireless/rtlwifi/debug.h
+> index b024c23..fd5600c 100644
+> --- a/drivers/net/wireless/rtlwifi/debug.h
+> +++ b/drivers/net/wireless/rtlwifi/debug.h
+> @@ -156,6 +156,8 @@ enum dbgp_flag_e {
+>   	DBGP_TYPE_MAX
+>   };
+>
+> +#ifdef CONFIG_RTLWIFI_DEBUG
+> +
+>   #define RT_ASSERT(_exp, fmt, ...)					\
+>   do {									\
+>   	if (!(_exp)) {							\
+> @@ -195,5 +197,37 @@ do {									\
+>   	}								\
+>   } while (0)
+>
+> +#else
+> +
+> +struct rtl_priv;
+> +
+> +__printf(2, 3)
+> +static inline void RT_ASSERT(int exp, const char *fmt, ...)
+> +{
+> +}
+> +
+> +__printf(4, 5)
+> +static inline void RT_TRACE(struct rtl_priv *rtlpriv,
+> +			    int comp, int level,
+> +			    const char *fmt, ...)
+> +{
+> +}
+> +
+> +__printf(4, 5)
+> +static inline void RTPRINT(struct rtl_priv *rtlpriv,
+> +			   int dbgtype, int dbgflag,
+> +			   const char *fmt, ...)
+> +{
+> +}
+> +
+> +static inline void RT_PRINT_DATA(struct rtl_priv *rtlpriv,
+> +				 int comp, int level,
+> +				 const char *titlestring,
+> +				 const void *hexdata, size_t hexdatalen)
+> +{
+> +}
+> +
+> +#endif
+> +
+>   void rtl_dbgp_flag_init(struct ieee80211_hw *hw);
+>   #endif
+>
+>
+>
+>
 
-Paolo
