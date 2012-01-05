@@ -1,89 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758222Ab2AETDz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:03:55 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38024 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752008Ab2AETDx (ORCPT
+	id S1758225Ab2AETHX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:07:23 -0500
+Received: from mga14.intel.com ([143.182.124.37]:21924 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756292Ab2AETHW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:03:53 -0500
-Message-ID: <4F05F415.2080803@lwfinger.net>
-Date: Thu, 05 Jan 2012 13:03:49 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Thu, 5 Jan 2012 14:07:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="53659742"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>, Don Zickus <dzickus@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
+ smp_send_stop()
+Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
+ below smp_send_stop()
+Thread-Index: AQHMy9CqWb3Eal+luUidUg+JrwynPJX+IWHA
+Date: Thu, 5 Jan 2012 19:06:51 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.139]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: Chaoming Li <chaoming_li@realsil.com.cn>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] rtlwifi: debug macros and uses neatening
-References: <cover.1325734202.git.joe@perches.com>
-In-Reply-To: <cover.1325734202.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2012 09:40 PM, Joe Perches wrote:
-> Shrinks the objects a fair bit too.
->
-> Joe Perches (7):
->    rtlwifi: Neaten RT_ASSERT, RT_TRACE, RTPRINT, RT_PRINT_DATA macros
->    rtlwifi: Standardize RT_PRINT_DATA macro and uses
->    rtlwifi: Convert RT_TRACE macro to use ##__VA_ARGS__
->    rtlwifi: Convert RTPRINT macro to use ##__VA_ARGS__
->    rtlwifi: Convert RT_ASSERT macro to use ##__VA_ARGS__
->    rtlwifi: Remove duplicate __func__
->    rtlwifi: Optimize RT_TRACE macro use of KBUILD_MODNAME for size
->
->   drivers/net/wireless/rtlwifi/base.c                |   56 +-
->   drivers/net/wireless/rtlwifi/cam.c                 |   81 ++--
->   drivers/net/wireless/rtlwifi/core.c                |  124 ++--
->   drivers/net/wireless/rtlwifi/debug.h               |   85 ++--
->   drivers/net/wireless/rtlwifi/efuse.c               |   61 +-
->   drivers/net/wireless/rtlwifi/pci.c                 |  211 +++----
->   drivers/net/wireless/rtlwifi/ps.c                  |   31 +-
->   drivers/net/wireless/rtlwifi/rc.c                  |    2 +-
->   drivers/net/wireless/rtlwifi/regd.c                |   12 +-
->   drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c  |  189 +++---
->   drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c  |   84 ++--
->   drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |  211 +++---
->   drivers/net/wireless/rtlwifi/rtl8192ce/dm.c        |   24 +-
->   drivers/net/wireless/rtlwifi/rtl8192ce/hw.c        |  262 ++++----
->   drivers/net/wireless/rtlwifi/rtl8192ce/led.c       |   16 +-
->   drivers/net/wireless/rtlwifi/rtl8192ce/phy.c       |  108 ++--
->   drivers/net/wireless/rtlwifi/rtl8192ce/rf.c        |   83 ++--
->   drivers/net/wireless/rtlwifi/rtl8192ce/sw.c        |    8 +-
->   drivers/net/wireless/rtlwifi/rtl8192ce/trx.c       |   23 +-
->   drivers/net/wireless/rtlwifi/rtl8192cu/dm.c        |   24 +-
->   drivers/net/wireless/rtlwifi/rtl8192cu/hw.c        |  257 ++++----
->   drivers/net/wireless/rtlwifi/rtl8192cu/led.c       |   15 +-
->   drivers/net/wireless/rtlwifi/rtl8192cu/mac.c       |  105 ++--
->   drivers/net/wireless/rtlwifi/rtl8192cu/phy.c       |  121 ++--
->   drivers/net/wireless/rtlwifi/rtl8192cu/rf.c        |   71 +-
->   drivers/net/wireless/rtlwifi/rtl8192cu/sw.c        |    6 +-
->   drivers/net/wireless/rtlwifi/rtl8192cu/trx.c       |   42 +-
->   drivers/net/wireless/rtlwifi/rtl8192de/dm.c        |  239 +++----
->   drivers/net/wireless/rtlwifi/rtl8192de/fw.c        |  117 ++--
->   drivers/net/wireless/rtlwifi/rtl8192de/hw.c        |  188 +++---
->   drivers/net/wireless/rtlwifi/rtl8192de/led.c       |   14 +-
->   drivers/net/wireless/rtlwifi/rtl8192de/phy.c       |  682 ++++++++++----------
->   drivers/net/wireless/rtlwifi/rtl8192de/rf.c        |   95 ++--
->   drivers/net/wireless/rtlwifi/rtl8192de/sw.c        |    8 +-
->   drivers/net/wireless/rtlwifi/rtl8192de/trx.c       |   26 +-
->   drivers/net/wireless/rtlwifi/rtl8192se/dm.c        |   30 +-
->   drivers/net/wireless/rtlwifi/rtl8192se/fw.c        |   66 +-
->   drivers/net/wireless/rtlwifi/rtl8192se/hw.c        |  244 ++++----
->   drivers/net/wireless/rtlwifi/rtl8192se/led.c       |   15 +-
->   drivers/net/wireless/rtlwifi/rtl8192se/phy.c       |  204 +++---
->   drivers/net/wireless/rtlwifi/rtl8192se/rf.c        |   60 +-
->   drivers/net/wireless/rtlwifi/rtl8192se/sw.c        |    8 +-
->   drivers/net/wireless/rtlwifi/rtl8192se/trx.c       |   18 +-
->   drivers/net/wireless/rtlwifi/usb.c                 |   39 +-
->   44 files changed, 2084 insertions(+), 2281 deletions(-)
+-	kmsg_dump(KMSG_DUMP_PANIC);
+-
+ 	/*
+ 	 * Note smp_send_stop is the usual smp shutdown function, which
+ 	 * unfortunately means it may not be hardened to work in a panic
+@@ -117,6 +115,8 @@ void panic(const char *fmt, ...)
+ 	 */
+ 	smp_send_stop();
+ 
++	kmsg_dump(KMSG_DUMP_PANIC);
++
 
-All 7 are
+Aren't you worried about the comment about smp_send_stop() not
+being hardened to work in a panic situation?
 
-ACKed-by: Larry Finger <Larry.Finger@lwfinger.net>
+If it does work - we are clearly much better off moving the
+kmsg_dump() call down like this. It makes life much simpler
+and cleaner to work with just one running cpu.
 
-Larry
+But if something goes wrong - we might not see the dump at all!
+
+How do we compare these cases and decide that it is better to
+trust that smp_send_stop() will return?
+
+-Tony
