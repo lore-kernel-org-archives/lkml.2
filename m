@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932849Ab2AEVCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:02:09 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:64143 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932656Ab2AEVCH (ORCPT
+	id S932872Ab2AEVCY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:02:24 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:34853 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932656Ab2AEVCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:02:07 -0500
-MIME-Version: 1.0
-X-Originating-IP: [2620:0:1000:1b02:1aa9:5ff:fe24:37a9]
-In-Reply-To: <CAOesGMj=EVXGNNY+nj4BvsrFShhvQkSeS2RB8SYtVOXOENwFng@mail.gmail.com>
-References: <1325610682-24811-1-git-send-email-olof@lixom.net>
-	<1325610682-24811-5-git-send-email-olof@lixom.net>
-	<1325762519.3635.22.camel@mfleming-mobl1.ger.corp.intel.com>
-	<CAOesGMj=EVXGNNY+nj4BvsrFShhvQkSeS2RB8SYtVOXOENwFng@mail.gmail.com>
-Date: Thu, 5 Jan 2012 13:02:07 -0800
-Message-ID: <CAOesGMhh1bJp2aLD3GtEdJByVnPqbEf2jcHTTH=fJsaxtFG0Pg@mail.gmail.com>
-Subject: Re: [PATCH 4/5] x86: efi: add basic error handling
+	Thu, 5 Jan 2012 16:02:23 -0500
 From: Olof Johansson <olof@lixom.net>
-To: Matt Fleming <matt.fleming@intel.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>, Matthew Garrett <mjg@redhat.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@elte.hu>, Matthew Garrett <mjg@redhat.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+        Matt Fleming <matt.fleming@intel.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/5] x86: efi: cleanups and basic 32/64 bit support
+Date: Thu,  5 Jan 2012 13:02:06 -0800
+Message-Id: <1325797331-14758-1-git-send-email-olof@lixom.net>
+X-Mailer: git-send-email 1.7.8.GIT
+In-Reply-To: <1325610682-24811-1-git-send-email-olof@lixom.net>
+References: <1325610682-24811-1-git-send-email-olof@lixom.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 9:52 AM, Olof Johansson <olof@lixom.net> wrote:
+Here's the second version of the refactored series of cleanups with the
+32/64-bit enablement at the end (v4 for the patch in total).
 
-> Not much, since the systems I have won't boot if there's an error
-> (even if graceful) and I didn't have a console with earlyprintk
-> support until yesterday. I'll beat on it a bit this afternoon but it
-> should be OK as it is.
+I've revised patches based on review comments, change lists for each is
+in the patches in question.
 
-Ok, tested now to the point that I made sure the errors are shown
-appropriately on the early console for the appropriate error paths,
-but since the system doesn't come up there isn't much more than that
-to test at this time.
+As Matthew pointed out: For mixed 32/64 operation on a traditional EFI
+system, there are more pieces needed to deal with variables being passed
+in, etc. It's not the case on Chrome OS due to a custom kernel boot
+wrapper that sets up kernel boot args, etc. Still, this is a good step
+on the way even for said traditional setups.
+
+(I've labelled all patches as v4 even though some have only been posted
+once and maybe not even changed to keep the series in sync)
 
 
--olof
+-Olof
+
