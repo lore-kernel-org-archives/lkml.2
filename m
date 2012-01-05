@@ -1,131 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab2AEWrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:47:00 -0500
-Received: from mail.windriver.com ([147.11.1.11]:56104 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2AEWq7 (ORCPT
+	id S933026Ab2AEWrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:47:05 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:58082 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933011Ab2AEWrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:46:59 -0500
-Message-ID: <4F062846.50804@windriver.com>
-Date: Thu, 5 Jan 2012 16:46:30 -0600
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Thu, 5 Jan 2012 17:47:02 -0500
+X-Sasl-enc: PVdi569a6az2XNZ6Py7okwzjhSQVGo/i6LiHWeF+WhlA 1325803620
+Date: Thu, 5 Jan 2012 14:46:33 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/67] 3.0.16-stable review
+Message-ID: <20120105224632.GA14659@kroah.com>
+References: <20120103223043.GA26738@kroah.com>
+ <20120105191813.GA5762@kroah.com>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kbuild <linux-kbuild@vger.kernel.org>,
-        =?ISO-8859-1?Q?Am=E9rico_?= =?ISO-8859-1?Q?Wang?= 
-	<xiyou.wangcong@gmail.com>
-Subject: Re: [PATCH] Correctly deal with make that has an argument which contains
- an "s"
-References: <1272315374-11951-1-git-send-email-jason.wessel@windriver.com> <4BD6CECC.9080507@suse.cz>
-In-Reply-To: <4BD6CECC.9080507@suse.cz>
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/mixed;
-	boundary="------------010501000307000409010403"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105191813.GA5762@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------010501000307000409010403
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-
-On 04/27/2010 06:47 AM, Michal Marek wrote:
-> On 26.4.2010 22:56, Jason Wessel wrote:
->> When using remake, which is based on gnumake, if you invoke
->> an example build as shown below, the build will become silent
->> due to the top level make file incorrectly guessing that
->> the end user wants a silent build because an argument that
->> contained an "s" was used.
->>
->> remake --no-extended-errors
+On Thu, Jan 05, 2012 at 11:18:13AM -0800, Greg KH wrote:
+> On Tue, Jan 03, 2012 at 02:30:43PM -0800, Greg KH wrote:
+> > This is the start of the stable review cycle for the 3.0.16 release.
+> > There are 67 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> > 
+> > Responses should be made by Friday, January 6, 2012, 20:00:00 UTC.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.16-rc1.gz
+> > and the diffstat can be found below.
 > 
-> BTW, make --warn-undefined-variables also triggers this (although no one
-> will use this option on the kernel makefiles).
-> 
+> Due to a few noted issues in this series, and a few last-minute
+> straggler patches being applied to the final 3.2 release, there's a new
+> 3.0.16-rc2 release, which can be found at:
+>  	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.16-rc1.gz
+> and the diffstat can be found below.
 
-Might as well add it to the commit header for clarity. 
+I've included the new patches as replies to this email, one was
+replaced, hence the 40/73 numbering, one was deleted (the developers
+responsible already know about that) and 7 new ones added.
 
->>  
->> -ifneq ($(findstring s,$(MAKEFLAGS)),)
->> +ifneq ($(filter s% -s% --silent --quiet,$(MAKEFLAGS)),)
-> 
-> I played a bit with GNU make 3.81. Checking for --silent and --quiet is
-> not necessary, because make always stores the short option if available.
-> Now I was wondering if the 's' option is always at the beginning,
-> looking at make-3.81/main.c, it turns out that the order in which the
-> options appear in $(MAKEFLAGS) is the reverse order of the switches
-> array, where 's' is near the end of the array:
-> 
-[clip]
-> 
-> The only other single-letter options that come after 's' (before 's' in
-> the $(MAKEFLAGS) variable) are 't', which doesn't work with the kernel,
-> and 'w', which doesn't work either (the Makefile adds
-> --no-print-directory). So we can indeed get away with s% and -s% (until
-> the next make version changes the sort order, that is ;)).
-> 
+thanks,
 
-This might be nearly a whole year later, but the problem is still there so perhaps we can reach some closure and get it fixed since it is fairly minor in the first place.  :-)
-
-Version 2 of the original patch is attached.
-
-Thanks,
-Jason.
-
---------------010501000307000409010403
-Content-Type: text/x-diff;
-	name="0001-Correctly-deal-with-make-that-has-an-argument-which-.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename*0="0001-Correctly-deal-with-make-that-has-an-argument-which-.pa";
-	filename*1="tch"
-
-From: Jason Wessel <jason.wessel@windriver.com>
-Date: Thu, 5 Jan 2012 16:43:09 -0600
-Subject: [PATCH] Correctly deal with make that has an argument which contains
- an "s"
-
-When using remake, which is based on gnumake, if you invoke
-an example build as shown below, the build will become silent
-due to the top level make file incorrectly guessing that
-the end user wants a silent build because an argument that
-contained an "s" was used.  Here are two examples one with remake
-and one with straight gnumake.
-
-remake --no-extended-errors
-make --warn-undefined-variables
-
-Fix up the top level Makefile to use filter to parse the options
-that mean silent instead of findstring catching other random
-arguments containing an "s".
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Michal Marek <mmarek@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kbuild@vger.kernel.org
----
- Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index adddd11..4b8ae04 100644
---- a/Makefile
-+++ b/Makefile
-@@ -312,7 +312,7 @@ endif
- # If the user is running make -s (silent mode), suppress echoing of
- # commands
- 
--ifneq ($(findstring s,$(MAKEFLAGS)),)
-+ifneq ($(filter s% -s%,$(MAKEFLAGS)),)
-   quiet=silent_
- endif
- 
--- 
-1.7.5.4
-
-
---------------010501000307000409010403--
+greg k-h
