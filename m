@@ -1,44 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932881Ab2AEVah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:30:37 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:35640 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758304Ab2AEVaf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:30:35 -0500
+	id S932889Ab2AEVbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:31:40 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:35811
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758302Ab2AEVbj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 16:31:39 -0500
+Date: Thu, 5 Jan 2012 22:31:27 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1136620602.20120105223127@eikelenboom.it>
+To: "Ted Ts'o" <tytso@mit.edu>
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        <dm-devel@redhat.com>
+Subject: Re: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+In-Reply-To: <20120105181535.GB26382@thunk.org>
+References: <217150909.20120105113759@eikelenboom.it> <197607646.20120105142107@eikelenboom.it> <6FC155DD-80C1-4088-B745-6B74D9D5AA48@mit.edu> <4910694144.20120105171428@eikelenboom.it> <20120105181535.GB26382@thunk.org>
 MIME-Version: 1.0
-In-Reply-To: <20120105212724.3965.30193.stgit@bhelgaas.mtv.corp.google.com>
-References: <20120105212719.3965.40406.stgit@bhelgaas.mtv.corp.google.com> <20120105212724.3965.30193.stgit@bhelgaas.mtv.corp.google.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 5 Jan 2012 14:30:13 -0700
-Message-ID: <CAErSpo6=yHFspY_L0rQa6iVD692nYyL=BR=3qBwc3UV8M16xbw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PNP: work around Dell 1536/1546 BIOS MMCONFIG bug
- that breaks USB
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: thuban@singularity.fr, dann frazier <dann.frazier@canonical.com>,
-        Lisa Salimbas <lisa.salimbas@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 2:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> Some Dell BIOSes have MCFG tables that don't report the entire
-> MMCONFIG area claimed by the chipset.  If we move PCI devices into
-> that claimed-but-unreported area, they don't work.
->
-> This quirk reads the AMD MMCONFIG MSRs and adds PNP0C01 resources as
-> needed to cover the entire area.
+Hello Ted,
 
-PNP stuff usually goes through Len's ACPI tree, but this is really
-x86-specific, and these two patches need to go together, so I think it
-would make sense to put them both in the x86 tree.  Len, do you
-object?
+Thursday, January 5, 2012, 7:15:35 PM, you wrote:
 
-Bjorn
+> On Thu, Jan 05, 2012 at 05:14:28PM +0100, Sander Eikelenboom wrote:
+>> 
+>> OK spoke too soon, i have been able to trigger it again:
+>> - copying files from LV to the same LV without the snapshot went OK
+>> - copying from the RO snapshot of a LV to the same LV gave the error while copying the file again:
+
+> OK.  Originally, you said you did this:
+
+> 1) fsck -v -p -f the filesystem
+> 2) mount the filesystem
+> 3) Try to copy a file
+> 4) filesystem will be mounted RO on error  (see below)
+> 5) fsck again, journal will be recovered, no other errors
+> 6) start at 1)
+
+> Was this with with a read-only snapshot always being in existence
+> through all of these five steps?  When was the RO snapshot created?
+
+> If a RO snapshot has to be there in order for this to happen, then
+> this is almost certainly a device-mapper regression.  (dm-devel folks,
+> this is a problem which apparently occurred when the user went from
+> v3.1.5 to v3.2, so this looks likes 3.2 regression.)
+
+>                                                 - Ted
+
+
+OK Xen is out of the equation, it also happens on baremetal.
+Last time under both Xen and baremetal i got a slightly different error (different numbers (group)
+
+[  823.782633] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1865, 32254 clusters in bitmap, 32258 in gd
+[  823.788129] Aborting journal on device dm-2-8.
+[  823.852443] EXT4-fs (dm-2): Remounting filesystem read-only
+[  823.857956] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
+[  823.858646] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 12288 pages, ino 4079617; err -30
+
+
+
+>> 
+>> [ 2357.655783] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1861, 32254 clusters in bitmap, 32258 in gd
+>> [ 2357.656056] Aborting journal on device dm-2-8.
+>> [ 2357.718473] EXT4-fs (dm-2): Remounting filesystem read-only
+>> [ 2357.736680] EXT4-fs error (device dm-2) in ext4_da_write_end:2532: IO failure
+>> [ 2357.738328] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 7615 pages, ino 4079617; err -30
+>> [ 2716.125010] EXT4-fs error (device dm-2): ext4_put_super:818: Couldn't clean up the journal
+>> 
+>> 
+>> Attached are 4x output from dumpe2fs
+>> - dumpe2fs-xen_images-3.2.0                           Made just after boot
+>> - dumpe2fs-xen_images-3.2.0-afterfsck                 Made after doing a fsck -v -p -f on the unmounted LV
+>> - dumpe2fs-xen_images-3.2.0-aftererror                Made after the error occured on the mounted LV
+>> - dumpe2fs-xen_images-3.2.0-aftererror-afterfsck      Made after the error occured, and after a subsequent fsck -v -p -f on the unmounted LV
+>> - dumpe2fs-xen_images-3.1.5                           Made after booting into 3.1.5 after all of the above
+>> 
+>> Oh yes also did a badblock scan to rule that out, and it seems the numbers stay the same.
+>> e2fsck 1.41.12 (17-May-2010) (from debian squeeze)
+>> 
+>> --
+>> Sander
+>> 
+>> 
+>> 
+>> >> 
+>> >> --
+>> >> Sander
+>> >> 
+>> >> 
+>> >> This is a forwarded message
+>> >> From: Sander Eikelenboom <linux@eikelenboom.it>
+>> >> To: "Theodore Ts'o" <tytso@mit.edu>
+>> >> Date: Thursday, January 5, 2012, 11:37:59 AM
+>> >> Subject: can't recover ext4 on lvm from ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+>> >> 
+>> >> ===8<==============Original message text===============
+>> >> 
+>> >> I'm having some troubles with a ext4 filesystem on LVM, it seems bricked and fsck doesn't seem to find and correct the problem.
+>> >> 
+>> >> Steps:
+>> >> 1) fsck -v -p -f the filesystem
+>> >> 2) mount the filesystem
+>> >> 3) Try to copy a file
+>> >> 4) filesystem will be mounted RO on error  (see below)
+>> >> 5) fsck again, journal will be recovered, no other errors
+>> >> 6) start at 1)
+>> >> 
+>> >> 
+>> >> I think the way i bricked it is:
+>> >> - make a lvm snapshot from that lvm logical disk
+>> >> - mount that lvm snapshot as RO
+>> >> - try to copy a file from that mounted RO snapshot to a diffrent dir on the lvm logical disk the snapshot is from.
+>> >> - it fails and i can't recover (see above)
+>> >> 
+>> >> 
+>> >> Is there a way to recover from this ?
+>> >> 
+>> >> 
+>> >> 
+>> >> [  220.748928] EXT4-fs error (device dm-2): ext4_mb_generate_buddy:739: group 1687, 32254 clusters in bitmap, 32258 in gd
+>> >> [  220.749415] Aborting journal on device dm-2-8.
+>> >> [  220.771633] EXT4-fs error (device dm-2): ext4_journal_start_sb:327: Detected aborted journal
+>> >> [  220.772593] EXT4-fs (dm-2): Remounting filesystem read-only
+>> >> [  220.792455] EXT4-fs (dm-2): Remounting filesystem read-only
+>> >> [  220.805118] EXT4-fs (dm-2): ext4_da_writepages: jbd2_start: 9680 pages, ino 4079617; err -30
+>> >> serveerstertje:/mnt/xen_images/domains/production# cd /
+>> >> serveerstertje:/# umount /mnt/xen_images/
+>> >> serveerstertje:/# fsck -f -v -p /dev/serveerstertje/xen_images
+>> >> fsck from util-linux-ng 2.17.2
+>> >> /dev/mapper/serveerstertje-xen_images: recovering journal
+>> >> 
+>> >>     277 inodes used (0.00%)
+>> >>       5 non-contiguous files (1.8%)
+>> >>       0 non-contiguous directories (0.0%)
+>> >>         # of inodes with ind/dind/tind blocks: 41/41/3
+>> >>         Extent depth histogram: 69/28/2
+>> >> 51890920 blocks used (79.18%)
+>> >>       0 bad blocks
+>> >>      41 large files
+>> >> 
+>> >>     199 regular files
+>> >>      53 directories
+>> >>       0 character device files
+>> >>       0 block device files
+>> >>       0 fifos
+>> >>       0 links
+>> >>      16 symbolic links (16 fast symbolic links)
+>> >>       0 sockets
+>> >> --------
+>> >>     268 files
+>> >> serveerstertje:/#
+>> >> 
+>> >> 
+>> >> 
+>> >> 
+>> >> System:
+>> >> - Kernel 3.2.0
+>> >> - Debian Squeeze with:
+>> >> ii  e2fslibs                              1.41.12-4stable1                     ext2/ext3/ext4 file system libraries
+>> >> ii  e2fsprogs                             1.41.12-4stable1                     ext2/ext3/ext4 file system utilities
+>> >> 
+>> >> ===8<===========End of original message text===========
+>> >> 
+>> >> 
+>> >> 
+>> >> -- 
+>> >> Best regards,
+>> >> Sander                            mailto:linux@eikelenboom.it<Message01.eml>
+>> 
+>> 
+>> 
+>> 
+>> -- 
+>> Best regards,
+>>  Sander                            mailto:linux@eikelenboom.it
+
+
+
+
+
+
+
+
+
+-- 
+Best regards,
+ Sander                            mailto:linux@eikelenboom.it
+
