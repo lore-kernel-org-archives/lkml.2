@@ -1,62 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932879Ab2AEVpU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 16:45:20 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:49627 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758290Ab2AEVpT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 16:45:19 -0500
-Message-ID: <1325799904.3508.12.camel@twins>
-Subject: Re: [PATCH] sched_rt: the task in irq context can be migrated
- during context switching
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Chanho Min <chanho0207@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, chanho.min@lge.com
-Date: Thu, 05 Jan 2012 22:45:04 +0100
-In-Reply-To: <1325787342.12696.59.camel@gandalf.stny.rr.com>
-References: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
-	 <1325786132.3508.1.camel@twins>
-	 <1325787342.12696.59.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S932920Ab2AEVpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 16:45:34 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932892Ab2AEVpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 16:45:33 -0500
+Message-ID: <4F0619F9.8010505@nod.at>
+Date: Thu, 05 Jan 2012 22:45:29 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, mingo@elte.hu, xiyou.wangcong@gmail.com
+Subject: Re: [PATCH] init: Warn on non-existent rdinit
+References: <1325789819-30502-1-git-send-email-richard@nod.at> <m14nw9c1me.fsf@fess.ebiederm.org>
+In-Reply-To: <m14nw9c1me.fsf@fess.ebiederm.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig45DC6B97144E2ED0B8D06CF6"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 13:15 -0500, Steven Rostedt wrote:
-> On Thu, 2012-01-05 at 18:55 +0100, Peter Zijlstra wrote:
-> 
-> > So the problem is quite real, as already said we don't need to worry
-> > about the future, but we might want to fix this in previous kernels.
-> > What I'm not entirely sure of is the proposed solution, Steven don't we
-> > get in trouble by simply bailing out on the push?
-> 
-> It shouldn't break anything. We shouldn't be pushing tasks that are
-> running on a rq anyway. 
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig45DC6B97144E2ED0B8D06CF6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Its not running, but its in the middle of getting scheduled out.
+Am 05.01.2012 21:53, schrieb Eric W. Biederman:
+> Richard Weinberger <richard@nod.at> writes:
+>=20
+>> Such a warning would have saved me some time...
+>> Hopefully this printk() saves someone else's time. :-)
+>=20
+> The warning is wrong if you are not using an initramfs or an initial
+> ramdisk.
 
-> I don't see any harm here. As this scenario can
-> only happen if we get an interrupt after letting go of the rq lock and
-> before doing the switch_to(). The schedule_tail() calls
-> post_schedule_rt() which does the push again, and will push task A at
-> that time.
+Gnah, you're so right.
+I did not test it without a ramdisk.
 
-Right, so the post_schedule() hook will try again.
+> I expect what you want is something like:
+>=20
+> diff --git a/init/main.c b/init/main.c
+> index 217ed23..8d53d28 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -830,10 +830,11 @@ static int __init kernel_init(void * unused)
+>          * the work
+>          */
+> =20
+> -       if (!ramdisk_execute_command)
+> +       if (!ramdisk_execute_command &&
+> +           (sys_access((const char __user *)"/init", 0) =3D=3D 0))
+>                 ramdisk_execute_command =3D "/init";
+> =20
+> -       if (sys_access((const char __user *) ramdisk_execute_command, 0=
+) !=3D 0) {
+> +       if (!ramdisk_execute_command) {
+>                 ramdisk_execute_command =3D NULL;
+>                 prepare_namespace();
+>         }
 
-> That said, I'm not sure this patch is enough. I'm worried about a pull
-> happening. As task A is running, we could possible possibly pick it on
-> another CPU to do a pull.
-> 
-> Hmm, looking at the code, the pull already does a task_running() test,
-> so I guess we should be fine.
+Why ramdisk_execute_command =3D NULL; in the !ramdisk_execute_command cas=
+e?
 
-Yeah, I'm not sure all those task_running() things make sense though,
-when !->on_rq && ->on_cpu we should busy wait for tasks, not skip them.
+>=20
+> That way we don't clear ramdisk_execute_command if it was set and
+> we complain if we attempt exec the ramdisk_execute_command.
 
-Then again, with this WANT_INTERRUPTS_ON_CTXSW the busy wait crap is
-tricky. Luckily its going the way of the Dodo very soon.
+If "/init" does not exist we still don't get a warning.
+
+Thanks,
+//richard
+
+
+
+--------------enig45DC6B97144E2ED0B8D06CF6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPBhn5AAoJEN9758yqZn9e+sgIAMg9UlnDSKMK/4lWNE+nG49x
+ISW9MbA6bReIOpAYB3dvDVhXVC/dy9Uw6x+qtbNmTDqjehbOCk1WzZGrM4PrnVcB
+O17nOnO/aNZz5wRW1ciuoN7Vd8rD/LINj9Nufv/T0QgikJFeSiqiGCzHqJfrs1Bj
+/dVhv0Hlt7A2dWMz5Rz7xAxhUVIe1J82/DhCEXfaWjjZy6UBAvIhtQDCRWwXomv0
+k5Vi/aBM2CdBhA//4yBD5q+yB1OvYYO+L6Dp72bIXHXyjPB0zXKS8TudSA7gs/8X
+czu3mXfUvc/e7VG8rbEl3Pfp1vsspF9qWjRUlzAoMx6qjyGMZp/76p164g8hZ0M=
+=eQhw
+-----END PGP SIGNATURE-----
+
+--------------enig45DC6B97144E2ED0B8D06CF6--
