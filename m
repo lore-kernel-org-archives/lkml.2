@@ -1,46 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964860Ab2AEWYd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:24:33 -0500
-Received: from ns.viprede.com.br ([189.50.0.9]:49347 "EHLO
-	SRV00013.viprede.com.br" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S964835Ab2AEWY3 (ORCPT
+	id S964834Ab2AEWaT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:30:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43516 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758248Ab2AEWaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:24:29 -0500
-Reply-To: <alert01@cpll.cn>
-From: " ACCOUNT DATABASE 2012" <info@upc.nl>
-Subject: Geachte UPC account eigenaar,
-Date: Fri, 6 Jan 2012 00:04:50 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="_iso-2022-jp$ESC"
+	Thu, 5 Jan 2012 17:30:17 -0500
+Date: Thu, 5 Jan 2012 14:30:15 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/1] vfs: iversion truncate bug fix
+Message-Id: <20120105143015.540ba7d7.akpm@linux-foundation.org>
+In-Reply-To: <1325788781.2775.12.camel@dabdike.Larkspurhotels.com>
+References: <ba9643a815137d64301559f174f6f6bf3a552b16.1324551152.git.dmitry.kasatkin@intel.com>
+	<1324560391.1964.8.camel@falcor>
+	<20120104152801.d8f555ca.akpm@linux-foundation.org>
+	<1325723630.13419.2.camel@falcor>
+	<20120104164638.cc21fc2e.akpm@linux-foundation.org>
+	<20120105020639.GA1161@kroah.com>
+	<1325737033.13419.43.camel@falcor>
+	<20120105165412.GE26153@kroah.com>
+	<1325783951.23566.52.camel@falcor>
+	<1325788781.2775.12.camel@dabdike.Larkspurhotels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1081
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
-Message-Id: <20120105183427.389AF146D810@SRV00013.viprede.com.br>
-To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geachte UPC account eigenaar,
+On Thu, 05 Jan 2012 10:39:41 -0800
+James Bottomley <James.Bottomley@HansenPartnership.com> wrote:
 
-upgrade van onze webmail service en UPC als gevolg van deze onze UPC
-de klant is veranderd en uw oorspronkelijke wachtwoord opnieuw in te stellen. sorry
+> > > Please, go read Documentation/stable_kernel_rules.txt for how to
+> > > properly submit patches to the stable kernel tree.  The information here
+> > > needs to be in the patch changelog itself, not in some random email
+> > > thread that will get lost instantly into my email-archive-from-hell
+> > > after I am done reading this.
+> > > 
+> > > greg k-h
+> > 
+> > Yes, I've read Documentation/stable_kernel_rules.txt and think this
+> > patch meets the criteria for being backported.
+> > 
+> > As far as I'm aware, this patch hasn't been upstreamed yet and is
+> > waiting for someone, besides myself, to Ack it.  Once Acked, either
+> > Dmitry or I can send a pull request with an updated patch description.
+> > Should this patch go in via the security tree?
+> 
+> If it hasn't been upstreamed yet, just make sure you put
+> 
+> cc: stable@kernel.org
+> 
+> In the signoffs of the patch you're sending upstream and the backport
+> will occur automatically when the patch is finally upstreamed.
 
-voor het ongemak, wordt u hierbij advies om je upc te upgraden
-rekening onmiddellijk.
+Mimi didn't write or send the patch.
 
-UPC op uw account, zodat u om ons uw e-mail account gegevens als
-volgt:
+This happily git-free maintainer simply goes in and edits the
+changelog.  I do this very very frequently.
 
-* User name:
-* Wachtwoord:
-* Geboortedatum:
 
-Als u dit binnen 48 uur-niet meteen maken uw account
-UPC
-gedeactiveerd uit onze database.
-Dit bericht is van UPC Database Record 2012
+Here's what I currently have.  I plan to send this to Rip Van Viro.
+
+
+
+
+From: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Subject: vfs: increment iversion when a file is truncated
+
+When a file is truncated with truncate()/ftruncate() and then closed,
+iversion is not updated.  This patch uses ATTR_SIZE flag as an indication
+to increment iversion.
+
+Mimi said:
+
+On fput(), i_version is used to detect and flag files that have changed
+and need to be re-measured in the IMA measurement policy.  When a file
+is truncated with truncate()/ftruncate() and then closed, i_version is
+not updated.  As a result, although the file has changed, it will not be
+re-measured and added to the IMA measurement list on subsequent access.
+
+Signed-off-by: Dmitry Kasatkin <dmitry.kasatkin@intel.com>
+Acked-by: Mimi Zohar <zohar@us.ibm.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ fs/attr.c |    5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff -puN fs/attr.c~vfs-increment-iversion-when-a-file-is-truncated fs/attr.c
+--- a/fs/attr.c~vfs-increment-iversion-when-a-file-is-truncated
++++ a/fs/attr.c
+@@ -176,6 +176,11 @@ int notify_change(struct dentry * dentry
+ 			return -EPERM;
+ 	}
+ 
++	if ((ia_valid & ATTR_SIZE) && IS_I_VERSION(inode)) {
++		if (attr->ia_size != inode->i_size)
++			inode_inc_iversion(inode);
++	}
++
+ 	if ((ia_valid & ATTR_MODE)) {
+ 		umode_t amode = attr->ia_mode;
+ 		/* Flag setting protected by i_mutex */
+_
