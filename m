@@ -1,105 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756839Ab2AELAW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 06:00:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53420 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab2AELAV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 06:00:21 -0500
+	id S1757394Ab2AELIH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 06:08:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755401Ab2AELIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 06:08:06 -0500
+Date: Thu, 5 Jan 2012 12:07:45 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org
+Subject: Re: iwl3945 didn't survive after s2ram failure
+Message-ID: <20120105110744.GA2222@redhat.com>
+References: <20111227105340.GD5344@tiehlicka.suse.cz>
+ <20120103103457.GA3391@redhat.com>
+ <20120103130306.GA3891@tiehlicka.suse.cz>
 MIME-Version: 1.0
-Date: Thu, 5 Jan 2012 20:00:19 +0900
-Message-ID: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
-Subject: [PATCH] sched_rt: the task in irq context can be migrated during
- context switching
-From: Chanho Min <chanho0207@gmail.com>
-To: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: chanho.min@lge.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="RnlQjJ0d97Da+TV1"
+Content-Disposition: inline
+In-Reply-To: <20120103130306.GA3891@tiehlicka.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This issue happens under the following conditions
-1. preemption is off
-2. __ARCH_WANT_INTERRUPTS_ON_CTXSW is defined.
-3. RT scheduling class
-4. SMP system
 
-Sequence is as follows:
-1.suppose current task is A. start schedule()
-2.task A is enqueued pushable task at the entry of schedule()
-   __schedule
-    prev = rq->curr;
-    ...
-    put_prev_task
-     put_prev_task_rt
-      enqueue_pushable_task
-4.pick the task B as next task.
-   next = pick_next_task(rq);
-3.rq->curr set to task B and context_switch is started.
-   rq->curr = next;
-4.At the entry of context_swtich, release this cpu's rq->lock.
-   context_switch
-    prepare_task_switch
-     prepare_lock_switch
-      raw_spin_unlock_irq(&rq->lock);
-5.Shortly after rq->lock is released, interrupt is occurred and start
-IRQ context
-6.try_to_wake_up() which called by ISR acquires rq->lock
-    try_to_wake_up
-     ttwu_remote
-      rq = __task_rq_lock(p)
-      ttwu_do_wakeup(rq, p, wake_flags);
-        task_woken_rt
-7.push_rt_task picks the task A which is enqueued before.
-   task_woken_rt
-    push_rt_tasks(rq)
-     next_task = pick_next_pushable_task(rq)
-8.At find_lock_lowest_rq(), If double_lock_balance() returns 0,
-lowest_rq can be the remote rq.
-  (But,If preemption is on, double_lock_balance always return 1 and it
-does't happen.)
-   push_rt_task
-    find_lock_lowest_rq
-     if (double_lock_balance(rq, lowest_rq))..
-9.find_lock_lowest_rq return the available rq. task A is migrated to
-the remote cpu/rq.
-   push_rt_task
-    ...
-    deactivate_task(rq, next_task, 0);
-    set_task_cpu(next_task, lowest_rq->cpu);
-    activate_task(lowest_rq, next_task, 0);
-10. But, task A is on irq context at this cpu.
-    So, task A is scheduled by two cpus at the same time until restore from IRQ.
-    Task A's stack is corrupted. Unexpected problem is occurred.
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-In recent ARM, I saw the patch to remove
-__ARCH_WANT_INTERRUPTS_ON_CTXSW is posted.
-But, if that feature is adopted by the others architecture or to
-remain in the release version,,this can occur.
-This is my patch to fix it. Any opinions will be appreciated.
+On Tue, Jan 03, 2012 at 02:03:06PM +0100, Michal Hocko wrote:
+> [ 5622.739466] ieee80211 phy0: U iwl_legacy_apm_init Init card's basic functions
+> [ 5622.740021] iwl3945 0000:05:00.0: MAC is in deep sleep!.  CSR_GP_CNTRL = 0xFFFFFFFF
+[snip]
+> Yes and no change. I even tried to disable wireless in BIOS boot and
+> then enable it again. No change...
+> It seems somebody already had the same problem
+> https://bugzilla.redhat.com/show_bug.cgi?id=639184. My BIOS doesn't
+> provide any locator setting, unfortunatelly.
+> 
+> The message above says that the HW is still in a deep sleep state. Can
+> we somehow force waking it up?
 
-Signed-off-by: Chanho Min <chanho.min@lge.com>
----
- kernel/sched_rt.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+The message is a bit confusing, it happen when on device processor does
+not clear bit it suppose to. It can be in some sleep state, reset state
+or powered off. But this message could be triggered when there is PCIe
+connection problem, since we can not read properly register value, what
+seems to be issue here as value is 0xFFFFFFFF.
 
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 583a136..59e66e3 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1388,6 +1388,11 @@ static int push_rt_task(struct rq *rq)
-        if (!next_task)
-                return 0;
+> Or, can we just ignore the signature check and (maybe) fix it by another
+> suspend/resume cycle?
 
-+#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW
-+       if (unlikely(task_running(rq, next_task)))
-+               return 0;
-+#endif
-+
- retry:
-        if (unlikely(next_task == rq->curr)) {
-                WARN_ON(1);
---
+Only interesting thing we do while resume in the driver is:
+pci_write_config_byte(pdev, PCI_CFG_RETRY_TIMEOUT, 0x00); 
+we do the same during erly stage of .probe function too.
+
+In the RH bugzilla case, it was regression. There are no iwlegacy
+changes between mentioned kernel versions. There are some APCI and pci
+changes. Can you try if any of these kernel boot parameters helps:
+pcie_aspm=off
+pcie_aspm=force
+pci=nocsr
+pci=use_csr
+
+More than that, I'm attaching a patch, there is very small chance
+it will help.
+
+Stanislaw
+
+--RnlQjJ0d97Da+TV1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="iwl3945.patch"
+
+diff --git a/drivers/net/wireless/iwlegacy/iwl3945-base.c b/drivers/net/wireless/iwlegacy/iwl3945-base.c
+index b282d86..94934eb 100644
+--- a/drivers/net/wireless/iwlegacy/iwl3945-base.c
++++ b/drivers/net/wireless/iwlegacy/iwl3945-base.c
+@@ -3700,8 +3700,8 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
+ 	/***************************
+ 	 * 2. Initializing PCI bus
+ 	 * *************************/
+-	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
+-				PCIE_LINK_STATE_CLKPM);
++	//pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
++	//			PCIE_LINK_STATE_CLKPM);
+ 
+ 	if (pci_enable_device(pdev)) {
+ 		err = -ENODEV;
+@@ -3751,7 +3751,7 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
+ 	 * strange state ... like being left stranded by a primary kernel
+ 	 * and this is now the kdump kernel trying to start up
+ 	 */
+-	iwl_write32(priv, CSR_RESET, CSR_RESET_REG_FLAG_NEVO_RESET);
++	//iwl_write32(priv, CSR_RESET, CSR_RESET_REG_FLAG_NEVO_RESET);
+ 
+ 	/***********************
+ 	 * 4. Read EEPROM
+
+--RnlQjJ0d97Da+TV1--
