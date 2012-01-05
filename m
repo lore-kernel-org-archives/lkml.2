@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab2AEOj7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 09:39:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35237 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932441Ab2AEOj6 (ORCPT
+	id S932542Ab2AEOkM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 09:40:12 -0500
+Received: from mx.scalarmail.ca ([98.158.95.75]:55058 "EHLO
+	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932441Ab2AEOkF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 09:39:58 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=sfBY0qdRI6cA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=FXrnKF72FBUWNUD0mxQA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325774396.12696.49.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] jump label: close race in jump_label_inc() vs.
- jump_label_dec()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: gleb@redhat.com, a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
-Date: Thu, 05 Jan 2012 09:39:56 -0500
-In-Reply-To: <201201041532.q04FWbBl022103@int-mx10.intmail.prod.int.phx2.redhat.com>
-References: <201201041532.q04FWbBl022103@int-mx10.intmail.prod.int.phx2.redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 5 Jan 2012 09:40:05 -0500
+X-Greylist: delayed 589 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Jan 2012 09:40:05 EST
+Date: Thu, 5 Jan 2012 09:30:08 -0500
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Federica Teodori <federica.teodori@googlemail.com>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
+Message-ID: <20120105143008.GA31728@elliptictech.com>
+References: <20120104201800.GA2587@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120104201800.GA2587@www.outflux.net>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-04 at 10:32 -0500, Jason Baron wrote:
-> The previous fix to ensure that jump_label_inc() does not return until the jump
-> is completely patched, opened up a race in the inc/dec path. The scenario is:
-
-You forgot something:
-
-
+On 2012-01-04 12:18 -0800, Kees Cook wrote:
+> A long-standing class of security issues is the symlink-based
+> time-of-check-time-of-use race, most commonly seen in world-writable
+> directories like /tmp. The common method of exploitation of this flaw
+> is to cross privilege boundaries when following a given symlink (i.e. a
+> root process follows a symlink belonging to another user). For a likely
+> incomplete list of hundreds of examples across the years, please see:
+> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
 > 
-> key->enabled = 0;
-> 
-> 	CPU 0					CPU 1
->         ----- 					-----
+> The solution is to permit symlinks to only be followed when outside
+> a sticky world-writable directory, or when the uid of the symlink and
+> follower match, or when the directory owner matches the symlink's owner.
+[...]
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index 5f4c45d..26ede24 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -278,3 +278,19 @@ source "fs/nls/Kconfig"
+>  source "fs/dlm/Kconfig"
+>  
+>  endmenu
+> +
+> +config PROTECTED_STICKY_SYMLINKS
+> +	bool "Protect symlink following in sticky world-writable directories"
+> +	default y
+[...]
 
-  jump_label_lock();
+Why do we need a config option for this?  What's wrong with just using
+the sysctl?
 
-> 
-> jump_label_inc():			jump_label_dec():
-> 
-> 1) if (atomic_read(&key->enabled) == 0)
-> 	jump_label_update(key, JUMP_LABEL_ENABLE);
-> 
-> 					 2) if (!atomic_dec_and_mutex_lock(&key->enabled, &jump_label_mutex))
-> 					 	return;
-> 
-> 3) atomic_inc(&key->enabled);
+Why have you made this option "default y", when enabling it clearly
+makes user-visible changes to kernel behaviour?
 
-  jump_label_unlock();
-
-
-
-> 
-> So now, key->enabled = 0, but the jump has been enabled, which is an invalid
-> state.
-
-How does key->enabled end up == 0?
-
-As Gleb said, it's a higher level bug if we do a jump_label_dec() when
-key->enabled already is zero.
-
-Thus, in this scenario, we enter jump_label_inc() with key->enabled=1,
-and 1) will not be true. When we hit 2), it will have to grab the
-jump_label_mutex, which will be held, thus it will block until CPU 0 is
-finished, in which case, key->enabled=1 and the
-atomic_dec_and_mutex_lock() will fail and return.
-
-The end result is key->enabled=1 and we have jump labels enabled.
-
-What's the invalid state?
-
--- Steve
-
+Cheers,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
 
