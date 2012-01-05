@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758269Ab2AET12 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:27:28 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62498 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932498Ab2AET10 (ORCPT
+	id S1758283Ab2AET1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:27:46 -0500
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:54191 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932516Ab2AET1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:27:26 -0500
+	Thu, 5 Jan 2012 14:27:17 -0500
+X-Sasl-enc: 41Chjmw0h2o63+w4wo5WfZ+W7avyfiSHcXfVBgwbjLDi 1325791636
+Date: Thu, 5 Jan 2012 11:26:58 -0800
+From: Greg KH <greg@kroah.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/67] 3.0.16-stable review
+Message-ID: <20120105192658.GA27893@kroah.com>
+References: <20120103223043.GA26738@kroah.com>
+ <20120105191813.GA5762@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1201051210040.25706@router.home>
-References: <alpine.LFD.2.02.1111292001420.4019@tux.localdomain>
- <CAOJsxLEHT4D4rfMvWe5iPFpunOaLWZD9fJxbOJ6_qMwt_rd7eg@mail.gmail.com>
- <20111220162315.GC10752@google.com> <CA+55aFwwjAtiiM5V3LfebmtKAOzxZXk-VzJ3U7PJAc1VjxK69Q@mail.gmail.com>
- <20111220202854.GH10752@google.com> <alpine.DEB.2.00.1112210851230.9601@router.home>
- <20111221170535.GB9213@google.com> <alpine.DEB.2.00.1112220854440.31315@router.home>
- <20111222160822.GE17084@google.com> <alpine.DEB.2.00.1112221154380.11787@router.home>
- <CA+55aFzY_6QYVyjAmP+w8D0Xy1Pq++XEUaBJRcCN9SbDE-pOhw@mail.gmail.com>
- <alpine.DEB.2.00.1112231031001.3482@router.home> <CA+55aFzCY7TyEgkWFn6wxUMjBBaKGcx0hdV6gTdta5u8eK=Ymg@mail.gmail.com>
- <alpine.DEB.2.00.1201040906090.27157@router.home> <CA+55aFwOp1UbeexKSdQC6YwrA9pS-J5qdqs-68=H8T1GS4Nr1A@mail.gmail.com>
- <alpine.DEB.2.00.1201041046290.29775@router.home> <CA+55aFwgN4QGowU1+5NO0QWr4nT9KDyk8opiVgzmULJG-2eKzg@mail.gmail.com>
- <alpine.DEB.2.00.1201051210040.25706@router.home>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 5 Jan 2012 11:27:04 -0800
-X-Google-Sender-Auth: zmE7PKsQzhKr5wCtDRIXZOlCGlM
-Message-ID: <CA+55aFy8DpY-Cuq8B7pOLEjZkiiaxCUE0sEQv8uTX_WZXnUJwg@mail.gmail.com>
-Subject: Re: [GIT PULL] slab fixes for 3.2-rc4
-To: Christoph Lameter <cl@linux.com>
-Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105191813.GA5762@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 11:15 AM, Christoph Lameter <cl@linux.com> wrote:
->
-> XADD and ADD have the same cycle count if the ADD is used to add to a
-> memory location. Both use 4 microops.
+On Thu, Jan 05, 2012 at 11:18:13AM -0800, Greg KH wrote:
+> On Tue, Jan 03, 2012 at 02:30:43PM -0800, Greg KH wrote:
+> > This is the start of the stable review cycle for the 3.0.16 release.
+> > There are 67 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> > 
+> > Responses should be made by Friday, January 6, 2012, 20:00:00 UTC.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.16-rc1.gz
+> > and the diffstat can be found below.
+> 
+> Due to a few noted issues in this series, and a few last-minute
+> straggler patches being applied to the final 3.2 release, there's a new
+> 3.0.16-rc2 release, which can be found at:
+>  	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.16-rc1.gz
 
-Christ, stop counting uops. They are some random internal
-microarchitectural detail, and ignores things like processor uop
-scheduling and decoding issues.
+Doh, that should be:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.0.16-rc2.gz
 
-The thing that matters is (a) performance and (b) code sanity.
+Sorry about that.
 
-The "local_cpu_return()" operations fail *seriously* in the code
-sanity department. They are a fundamentally insane operation.
-
-And nothing you have said says "it's a huge performance win" to me.
-First off, there aren't even very many users, and the users there are
-seem to not even be all that performance-critical.
-
-For statistics, just regular "add" is the normal thing to do. The
-add_return thing is insane, for all the reasons I already outlined. It
-*fundamentally* doesn't have any sane semantics. Just remove it.
-
-                         Linus
+greg k-h
