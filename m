@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964782Ab2AEQgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 11:36:19 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60619 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932488Ab2AEQgS (ORCPT
+	id S964795Ab2AEQhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 11:37:20 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54277 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932488Ab2AEQhS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 11:36:18 -0500
-Date: Thu, 5 Jan 2012 16:35:29 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
-	exist
-Message-ID: <20120105163529.GA11810@n2100.arm.linux.org.uk>
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com> <1325499859-2262-8-git-send-email-gilad@benyossef.com> <4F033EC9.4050909@gmail.com> <20120105142017.GA27881@csn.ul.ie> <20120105144011.GU11810@n2100.arm.linux.org.uk> <20120105161739.GD27881@csn.ul.ie>
+	Thu, 5 Jan 2012 11:37:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105161739.GD27881@csn.ul.ie>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20120105072217.7ce7943f@tlielax.poochiereds.net>
+References: <CAHFgRy_AdA7iKzCwNvXiE3pR1dqdkuKPgT0soWjw8E_TcLjJtA@mail.gmail.com>
+	<4EFAAFEF.6070503@linux.vnet.ibm.com>
+	<201112282303.26978.rjw@sisk.pl>
+	<20120105115330.GA29569@atrey.karlin.mff.cuni.cz>
+	<3BA6B994-29A1-44E6-AF10-C9331F3BB521@gmail.com>
+	<20120105072217.7ce7943f@tlielax.poochiereds.net>
+Date: Thu, 5 Jan 2012 11:37:16 -0500
+Message-ID: <CAHFgRy-rDsfuheS-MksgVE=Tw_Ma4JG71N-bYU9AraP7VtEYjw@mail.gmail.com>
+Subject: Re: Freezing of tasks failed after 20.01 seconds in 3.2.0-rc4+ (Linus
+ GIT af968e2)
+From: Miles Lane <miles.lane@gmail.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 04:17:39PM +0000, Mel Gorman wrote:
-> Link please?
+On Thu, Jan 5, 2012 at 7:22 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Thu, 5 Jan 2012 07:11:21 -0500
+> Miles Lane <miles.lane@gmail.com> wrote:
+>
+>>
+>> On Jan 5, 2012, at 6:53 AM, Pavel Machek <pavel@ucw.cz> wrote:
+>>
+>> > Hi!
+>> >>>
+>> >>> Miles Lane (in CC) hit freezing failures in 3.2.0-rc4+ (Linus GIT af968e2)
+>> >>> while trying to suspend the machine.
+>> >>
+>> >> Well, ext3 seems to be involved.  I don't see any problems with suspending
+>> >> those kernels on my test machines, but I don't use ext3 on them any more.
+>> >>
+>> >> It would be good to rule out ext3 somehow.
+>> >
+>> > I still use ext3 here, and suspend works in recent kernels.
+>> >
+>> > Is it reproducible for Miles?
+>>
+>> It was a one time event, sorry.
+>>
+>> All the best.
+>
+> From looking at the stack traces, it really just looks like the ext3
+> code was waiting for requests to come back from the underlying storage.
+> I don't know ext3 that well, but could something have offlined the
+> storage while these tasks were waiting for their requests to come back?
+>
+> Another hypothesis...could those requests require kthreads that got
+> frozen while processing these requests?
 
-Forwarded, as its still in my mailbox.
+FWIW, I only hit this one time.
 
-> I'm including a patch below under development that is
-> intended to only cope with the page allocator case under heavy memory
-> pressure. Currently it does not pass testing because eventually RCU
-> gets stalled with the following trace
-> 
-> [ 1817.176001]  [<ffffffff810214d7>] arch_trigger_all_cpu_backtrace+0x87/0xa0
-> [ 1817.176001]  [<ffffffff810c4779>] __rcu_pending+0x149/0x260
-> [ 1817.176001]  [<ffffffff810c48ef>] rcu_check_callbacks+0x5f/0x110
-> [ 1817.176001]  [<ffffffff81068d7f>] update_process_times+0x3f/0x80
-> [ 1817.176001]  [<ffffffff8108c4eb>] tick_sched_timer+0x5b/0xc0
-> [ 1817.176001]  [<ffffffff8107f28e>] __run_hrtimer+0xbe/0x1a0
-> [ 1817.176001]  [<ffffffff8107f581>] hrtimer_interrupt+0xc1/0x1e0
-> [ 1817.176001]  [<ffffffff81020ef3>] smp_apic_timer_interrupt+0x63/0xa0
-> [ 1817.176001]  [<ffffffff81449073>] apic_timer_interrupt+0x13/0x20
-> [ 1817.176001]  [<ffffffff8116c135>] vfsmount_lock_local_lock+0x25/0x30
-> [ 1817.176001]  [<ffffffff8115c855>] path_init+0x2d5/0x370
-> [ 1817.176001]  [<ffffffff8115eecd>] path_lookupat+0x2d/0x620
-> [ 1817.176001]  [<ffffffff8115f4ef>] do_path_lookup+0x2f/0xd0
-> [ 1817.176001]  [<ffffffff811602af>] user_path_at_empty+0x9f/0xd0
-> [ 1817.176001]  [<ffffffff81154e7b>] vfs_fstatat+0x4b/0x90
-> [ 1817.176001]  [<ffffffff81154f4f>] sys_newlstat+0x1f/0x50
-> [ 1817.176001]  [<ffffffff81448692>] system_call_fastpath+0x16/0x1b
-> 
-> It might be a separate bug, don't know for sure.
-
-I'm not going to even pretend to understand what the above backtrace
-means: it doesn't look like what I'd expect from the problem which
-PeterZ's patch is supposed to address.  It certainly doesn't do anything
-to address the cpu-going-offline problem you seem to have found.
+    Miles
