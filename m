@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051Ab2AEWrT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:47:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37814 "EHLO mx2.suse.de"
+	id S964854Ab2AEWrR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:47:17 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37809 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932863Ab2AEWrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:47:14 -0500
+	id S933033Ab2AEWrL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:47:11 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:44:02 2012
-Message-Id: <20120105224402.884277415@clark.kroah.org>
+Message-Id: <20120105224402.805767225@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Thu, 05 Jan 2012 14:44:54 -0800
+Date: Thu, 05 Jan 2012 14:44:53 -0800
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org, xfs@oss.sgi.com
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [69/73] drm/radeon/kms/atom: fix possible segfault in pm setup
+        alan@lxorguk.ukuu.org.uk, Ben Myers <bpm@sgi.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: [68/73] xfs: log all dirty inodes in xfs_fs_sync_fs
 In-Reply-To: <20120105224632.GA14659@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,43 +24,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 1216
-Lines: 36
+Content-Length: 3536
+Lines: 104
 
-From: =?UTF-8?q?Alexander=20M=C3=BCller?= <serveralex@gmail.com>
 
-commit 4376eee92e5a8332b470040e672ea99cd44c826a upstream.
+From: Christoph Hellwig <hch@infradead.org>
 
-If we end up with no power states, don't look up
-current vddc.
+Commit be4f1ac828776bbc7868a68b465cd8eedb733cfd upstream.
 
-fixes:
-https://bugs.freedesktop.org/show_bug.cgi?id=44130
+Since Linux 2.6.36 the writeback code has introduces various measures for
+live lock prevention during sync().  Unfortunately some of these are
+actively harmful for the XFS model, where the inode gets marked dirty for
+metadata from the data I/O handler.
 
-agd5f: fix patch formatting
+The older_than_this checks that are now more strictly enforced since
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+    writeback: avoid livelocking WB_SYNC_ALL writeback
+
+by only calling into __writeback_inodes_sb and thus only sampling the
+current cut off time once.  But on a slow enough devices the previous
+asynchronous sync pass might not have fully completed yet, and thus XFS
+might mark metadata dirty only after that sampling of the cut off time for
+the blocking pass already happened.  I have not myself reproduced this
+myself on a real system, but by introducing artificial delay into the
+XFS I/O completion workqueues it can be reproduced easily.
+
+Fix this by iterating over all XFS inodes in ->sync_fs and log all that
+are dirty.  This might log inode that only got redirtied after the
+previous pass, but given how cheap delayed logging of inodes is it
+isn't a major concern for performance.
+
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Dave Chinner <dchinner@redhat.com>
+Tested-by: Mark Tinguely <tinguely@sgi.com>
+Reviewed-by: Mark Tinguely <tinguely@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/radeon_atombios.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/xfs/linux-2.6/xfs_sync.c |   37 +++++++++++++++++++++++++++++++++++++
+ fs/xfs/linux-2.6/xfs_sync.h |    2 ++
+ 2 files changed, 39 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_atombios.c
-+++ b/drivers/gpu/drm/radeon/radeon_atombios.c
-@@ -2568,7 +2568,11 @@ void radeon_atombios_get_power_modes(str
- 
- 	rdev->pm.current_power_state_index = rdev->pm.default_power_state_index;
- 	rdev->pm.current_clock_mode_index = 0;
--	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
-+	if (rdev->pm.default_power_state_index >= 0)
-+		rdev->pm.current_vddc =
-+			rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
-+	else
-+		rdev->pm.current_vddc = 0;
+--- a/fs/xfs/linux-2.6/xfs_sync.c
++++ b/fs/xfs/linux-2.6/xfs_sync.c
+@@ -336,6 +336,32 @@ xfs_sync_fsdata(
+ 	return xfs_bwrite(mp, bp);
  }
  
- void radeon_atom_set_clock_gating(struct radeon_device *rdev, int enable)
++int
++xfs_log_dirty_inode(
++	struct xfs_inode	*ip,
++	struct xfs_perag	*pag,
++	int			flags)
++{
++	struct xfs_mount	*mp = ip->i_mount;
++	struct xfs_trans	*tp;
++	int			error;
++
++	if (!ip->i_update_core)
++		return 0;
++
++	tp = xfs_trans_alloc(mp, XFS_TRANS_FSYNC_TS);
++	error = xfs_trans_reserve(tp, 0, XFS_FSYNC_TS_LOG_RES(mp), 0, 0, 0);
++	if (error) {
++		xfs_trans_cancel(tp, 0);
++		return error;
++	}
++
++	xfs_ilock(ip, XFS_ILOCK_EXCL);
++	xfs_trans_ijoin_ref(tp, ip, XFS_ILOCK_EXCL);
++	xfs_trans_log_inode(tp, ip, XFS_ILOG_CORE);
++	return xfs_trans_commit(tp, 0);
++}
++
+ /*
+  * When remounting a filesystem read-only or freezing the filesystem, we have
+  * two phases to execute. This first phase is syncing the data before we
+@@ -365,6 +391,17 @@ xfs_quiesce_data(
+ 
+ 	/* push and block till complete */
+ 	xfs_sync_data(mp, SYNC_WAIT);
++
++	/*
++	 * Log all pending size and timestamp updates.  The vfs writeback
++	 * code is supposed to do this, but due to its overagressive
++	 * livelock detection it will skip inodes where appending writes
++	 * were written out in the first non-blocking sync phase if their
++	 * completion took long enough that it happened after taking the
++	 * timestamp for the cut-off in the blocking phase.
++	 */
++	xfs_inode_ag_iterator(mp, xfs_log_dirty_inode, 0);
++
+ 	xfs_qm_sync(mp, SYNC_WAIT);
+ 
+ 	/* write superblock and hoover up shutdown errors */
+--- a/fs/xfs/linux-2.6/xfs_sync.h
++++ b/fs/xfs/linux-2.6/xfs_sync.h
+@@ -42,6 +42,8 @@ void xfs_quiesce_attr(struct xfs_mount *
+ 
+ void xfs_flush_inodes(struct xfs_inode *ip);
+ 
++int xfs_log_dirty_inode(struct xfs_inode *ip, struct xfs_perag *pag, int flags);
++
+ int xfs_reclaim_inodes(struct xfs_mount *mp, int mode);
+ 
+ void xfs_inode_set_reclaim_tag(struct xfs_inode *ip);
 
 
