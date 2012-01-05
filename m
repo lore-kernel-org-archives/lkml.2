@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757618Ab2AERJT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 12:09:19 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:60208 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab2AERJS (ORCPT
+	id S1757815Ab2AERJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 12:09:24 -0500
+Received: from casper.infradead.org ([85.118.1.10]:58509 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755188Ab2AERJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 12:09:18 -0500
+	Thu, 5 Jan 2012 12:09:21 -0500
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -15,13 +15,13 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/3] perf hists: Rename total_session to total_period
-Date: Thu,  5 Jan 2012 15:09:00 -0200
-Message-Id: <1325783342-20273-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/3] perf hists: Stop using 'self' for struct hist_entry
+Date: Thu,  5 Jan 2012 15:09:01 -0200
+Message-Id: <1325783342-20273-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.7.8.rc0.35.gee6df
 In-Reply-To: <1325783342-20273-1-git-send-email-acme@infradead.org>
 References: <1325783342-20273-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by canuck.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,89 +29,248 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Nowadays we do it per evsel, not per session (that may have multiple
-evsels), so rename it to avoid confusion.
+Stop using this python/OOP convention, doesn't really helps. Will do
+more from time to time till we get it cleaned up in all of /perf.
 
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/n/tip-azsgomr5h4dmaudoogw48w49@git.kernel.org
+Link: http://lkml.kernel.org/n/tip-me4dyj6s5snh7jr8wb9gzt82@git.kernel.org
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/hist.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ tools/perf/util/hist.c |   89 +++++++++++++++++++++++++-----------------------
+ tools/perf/util/hist.h |    7 +---
+ 2 files changed, 48 insertions(+), 48 deletions(-)
 
 diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index abef270..20059d1 100644
+index 20059d1..4df4495 100644
 --- a/tools/perf/util/hist.c
 +++ b/tools/perf/util/hist.c
-@@ -733,7 +733,7 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
- static int hist_entry__pcnt_snprintf(struct hist_entry *self, char *s,
+@@ -76,21 +76,21 @@ static void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
+ 	}
+ }
+ 
+-static void hist_entry__add_cpumode_period(struct hist_entry *self,
++static void hist_entry__add_cpumode_period(struct hist_entry *he,
+ 					   unsigned int cpumode, u64 period)
+ {
+ 	switch (cpumode) {
+ 	case PERF_RECORD_MISC_KERNEL:
+-		self->period_sys += period;
++		he->period_sys += period;
+ 		break;
+ 	case PERF_RECORD_MISC_USER:
+-		self->period_us += period;
++		he->period_us += period;
+ 		break;
+ 	case PERF_RECORD_MISC_GUEST_KERNEL:
+-		self->period_guest_sys += period;
++		he->period_guest_sys += period;
+ 		break;
+ 	case PERF_RECORD_MISC_GUEST_USER:
+-		self->period_guest_us += period;
++		he->period_guest_us += period;
+ 		break;
+ 	default:
+ 		break;
+@@ -165,18 +165,18 @@ void hists__decay_entries_threaded(struct hists *hists,
+ static struct hist_entry *hist_entry__new(struct hist_entry *template)
+ {
+ 	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
+-	struct hist_entry *self = malloc(sizeof(*self) + callchain_size);
++	struct hist_entry *he = malloc(sizeof(*he) + callchain_size);
+ 
+-	if (self != NULL) {
+-		*self = *template;
+-		self->nr_events = 1;
+-		if (self->ms.map)
+-			self->ms.map->referenced = true;
++	if (he != NULL) {
++		*he = *template;
++		he->nr_events = 1;
++		if (he->ms.map)
++			he->ms.map->referenced = true;
+ 		if (symbol_conf.use_callchain)
+-			callchain_init(self->callchain);
++			callchain_init(he->callchain);
+ 	}
+ 
+-	return self;
++	return he;
+ }
+ 
+ static void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+@@ -677,15 +677,16 @@ static size_t callchain__fprintf_flat(FILE *fp, struct callchain_node *self,
+ 	return ret;
+ }
+ 
+-static size_t hist_entry_callchain__fprintf(FILE *fp, struct hist_entry *self,
+-					    u64 total_samples, int left_margin)
++static size_t hist_entry_callchain__fprintf(struct hist_entry *he,
++					    u64 total_samples, int left_margin,
++					    FILE *fp)
+ {
+ 	struct rb_node *rb_node;
+ 	struct callchain_node *chain;
+ 	size_t ret = 0;
+ 	u32 entries_printed = 0;
+ 
+-	rb_node = rb_first(&self->sorted_chain);
++	rb_node = rb_first(&he->sorted_chain);
+ 	while (rb_node) {
+ 		double percent;
+ 
+@@ -730,7 +731,7 @@ void hists__output_recalc_col_len(struct hists *hists, int max_rows)
+ 	}
+ }
+ 
+-static int hist_entry__pcnt_snprintf(struct hist_entry *self, char *s,
++static int hist_entry__pcnt_snprintf(struct hist_entry *he, char *s,
  				     size_t size, struct hists *pair_hists,
  				     bool show_displacement, long displacement,
--				     bool color, u64 session_total)
-+				     bool color, u64 total_period)
- {
- 	u64 period, total, period_sys, period_us, period_guest_sys, period_guest_us;
- 	u64 nr_events;
-@@ -754,7 +754,7 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *self, char *s,
- 	} else {
- 		period = self->period;
- 		nr_events = self->nr_events;
--		total = session_total;
-+		total = total_period;
- 		period_sys = self->period_sys;
- 		period_us = self->period_us;
- 		period_guest_sys = self->period_guest_sys;
-@@ -812,8 +812,8 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *self, char *s,
+ 				     bool color, u64 total_period)
+@@ -740,25 +741,25 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *self, char *s,
+ 	const char *sep = symbol_conf.field_sep;
+ 	int ret;
  
+-	if (symbol_conf.exclude_other && !self->parent)
++	if (symbol_conf.exclude_other && !he->parent)
+ 		return 0;
+ 
+ 	if (pair_hists) {
+-		period = self->pair ? self->pair->period : 0;
+-		nr_events = self->pair ? self->pair->nr_events : 0;
++		period = he->pair ? he->pair->period : 0;
++		nr_events = he->pair ? he->pair->nr_events : 0;
+ 		total = pair_hists->stats.total_period;
+-		period_sys = self->pair ? self->pair->period_sys : 0;
+-		period_us = self->pair ? self->pair->period_us : 0;
+-		period_guest_sys = self->pair ? self->pair->period_guest_sys : 0;
+-		period_guest_us = self->pair ? self->pair->period_guest_us : 0;
++		period_sys = he->pair ? he->pair->period_sys : 0;
++		period_us = he->pair ? he->pair->period_us : 0;
++		period_guest_sys = he->pair ? he->pair->period_guest_sys : 0;
++		period_guest_us = he->pair ? he->pair->period_guest_us : 0;
+ 	} else {
+-		period = self->period;
+-		nr_events = self->nr_events;
++		period = he->period;
++		nr_events = he->nr_events;
+ 		total = total_period;
+-		period_sys = self->period_sys;
+-		period_us = self->period_us;
+-		period_guest_sys = self->period_guest_sys;
+-		period_guest_us = self->period_guest_us;
++		period_sys = he->period_sys;
++		period_us = he->period_us;
++		period_guest_sys = he->period_guest_sys;
++		period_guest_us = he->period_guest_us;
+ 	}
+ 
+ 	if (total) {
+@@ -813,7 +814,7 @@ static int hist_entry__pcnt_snprintf(struct hist_entry *self, char *s,
  		if (total > 0)
  			old_percent = (period * 100.0) / total;
--		if (session_total > 0)
--			new_percent = (self->period * 100.0) / session_total;
-+		if (total_period > 0)
-+			new_percent = (self->period * 100.0) / total_period;
+ 		if (total_period > 0)
+-			new_percent = (self->period * 100.0) / total_period;
++			new_percent = (he->period * 100.0) / total_period;
  
  		diff = new_percent - old_percent;
  
-@@ -864,7 +864,7 @@ int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
+@@ -862,9 +863,10 @@ int hist_entry__snprintf(struct hist_entry *he, char *s, size_t size,
+ 	return ret;
+ }
  
- int hist_entry__fprintf(struct hist_entry *he, size_t size, struct hists *hists,
- 			struct hists *pair_hists, bool show_displacement,
--			long displacement, FILE *fp, u64 session_total)
-+			long displacement, FILE *fp, u64 total_period)
+-int hist_entry__fprintf(struct hist_entry *he, size_t size, struct hists *hists,
+-			struct hists *pair_hists, bool show_displacement,
+-			long displacement, FILE *fp, u64 total_period)
++static int hist_entry__fprintf(struct hist_entry *he, size_t size,
++			       struct hists *hists, struct hists *pair_hists,
++			       bool show_displacement, long displacement,
++			       u64 total_period, FILE *fp)
  {
  	char bf[512];
  	int ret;
-@@ -874,14 +874,14 @@ int hist_entry__fprintf(struct hist_entry *he, size_t size, struct hists *hists,
- 
- 	ret = hist_entry__pcnt_snprintf(he, bf, size, pair_hists,
- 					show_displacement, displacement,
--					true, session_total);
-+					true, total_period);
- 	hist_entry__snprintf(he, bf + ret, size - ret, hists);
+@@ -879,9 +881,9 @@ int hist_entry__fprintf(struct hist_entry *he, size_t size, struct hists *hists,
  	return fprintf(fp, "%s\n", bf);
  }
  
- static size_t hist_entry__fprintf_callchain(struct hist_entry *self,
- 					    struct hists *hists, FILE *fp,
--					    u64 session_total)
-+					    u64 total_period)
+-static size_t hist_entry__fprintf_callchain(struct hist_entry *self,
+-					    struct hists *hists, FILE *fp,
+-					    u64 total_period)
++static size_t hist_entry__fprintf_callchain(struct hist_entry *he,
++					    struct hists *hists,
++					    u64 total_period, FILE *fp)
  {
  	int left_margin = 0;
  
-@@ -892,7 +892,7 @@ static size_t hist_entry__fprintf_callchain(struct hist_entry *self,
- 		left_margin -= thread__comm_len(self->thread);
+@@ -889,11 +891,10 @@ static size_t hist_entry__fprintf_callchain(struct hist_entry *self,
+ 		struct sort_entry *se = list_first_entry(&hist_entry__sort_list,
+ 							 typeof(*se), list);
+ 		left_margin = hists__col_len(hists, se->se_width_idx);
+-		left_margin -= thread__comm_len(self->thread);
++		left_margin -= thread__comm_len(he->thread);
  	}
  
--	return hist_entry_callchain__fprintf(fp, self, session_total,
-+	return hist_entry_callchain__fprintf(fp, self, total_period,
- 					     left_margin);
+-	return hist_entry_callchain__fprintf(fp, self, total_period,
+-					     left_margin);
++	return hist_entry_callchain__fprintf(he, total_period, left_margin, fp);
  }
  
+ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+@@ -903,6 +904,7 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 	struct sort_entry *se;
+ 	struct rb_node *nd;
+ 	size_t ret = 0;
++	u64 total_period;
+ 	unsigned long position = 1;
+ 	long displacement = 0;
+ 	unsigned int width;
+@@ -1025,6 +1027,8 @@ size_t hists__fprintf(struct hists *hists, struct hists *pair,
+ 		goto out;
+ 
+ print_entries:
++	total_period = hists->stats.total_period;
++
+ 	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 
+@@ -1040,11 +1044,10 @@ print_entries:
+ 			++position;
+ 		}
+ 		ret += hist_entry__fprintf(h, max_cols, hists, pair, show_displacement,
+-					   displacement, fp, hists->stats.total_period);
++					   displacement, total_period, fp);
+ 
+ 		if (symbol_conf.use_callchain)
+-			ret += hist_entry__fprintf_callchain(h, hists, fp,
+-							     hists->stats.total_period);
++			ret += hist_entry__fprintf_callchain(h, hists, total_period, fp);
+ 		if (max_rows && ++nr_rows >= max_rows)
+ 			goto out;
+ 
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index ff6f9d5..f55f0a8d 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -66,11 +66,8 @@ struct hists {
+ struct hist_entry *__hists__add_entry(struct hists *self,
+ 				      struct addr_location *al,
+ 				      struct symbol *parent, u64 period);
+-extern int64_t hist_entry__cmp(struct hist_entry *, struct hist_entry *);
+-extern int64_t hist_entry__collapse(struct hist_entry *, struct hist_entry *);
+-int hist_entry__fprintf(struct hist_entry *he, size_t size, struct hists *hists,
+-			struct hists *pair_hists, bool show_displacement,
+-			long displacement, FILE *fp, u64 session_total);
++int64_t hist_entry__cmp(struct hist_entry *left, struct hist_entry *right);
++int64_t hist_entry__collapse(struct hist_entry *left, struct hist_entry *right);
+ int hist_entry__snprintf(struct hist_entry *self, char *bf, size_t size,
+ 			 struct hists *hists);
+ void hist_entry__free(struct hist_entry *);
 -- 
 1.7.8.rc0.35.gee6df
 
