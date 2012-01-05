@@ -1,266 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932765Ab2AEQRp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 11:17:45 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:42473 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757613Ab2AEQRn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 11:17:43 -0500
-Date: Thu, 5 Jan 2012 16:17:39 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
- exist
-Message-ID: <20120105161739.GD27881@csn.ul.ie>
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
- <1325499859-2262-8-git-send-email-gilad@benyossef.com>
- <4F033EC9.4050909@gmail.com>
- <20120105142017.GA27881@csn.ul.ie>
- <20120105144011.GU11810@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120105144011.GU11810@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932777Ab2AEQUW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 11:20:22 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:46657 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757613Ab2AEQUS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 11:20:18 -0500
+Message-ID: <1325780417.2775.6.camel@dabdike.Larkspurhotels.com>
+Subject: Re: =?UTF-8?Q?=E3=80=90Question=E3=80=91Whether?= it's legal to
+ enable same physical DMA memory mapped for different NIC device?
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Yanfei Wang <backyes@gmail.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, linux-pci@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 05 Jan 2012 08:20:17 -0800
+In-Reply-To: <CAJULoniAdLbyNUyrCYWbxOWAdB-Re-BxSNb0xfuFD8w6pDETWA@mail.gmail.com>
+References: <CAJULonj9rFDKNCzpEXj2r3XjkYojy-CGYpVQ1RF8SxwLVrXqAA@mail.gmail.com>
+	 <20120103203357.GD17472@phenom.dumpdata.com>
+	 <CAJULongKix3QXmcoUcraQxCyLN0wz6oe6p5Efg2A7S_r3nO6Fg@mail.gmail.com>
+	 <1325692766.2758.22.camel@dabdike.int.hansenpartnership.com>
+	 <CAJULoniAdLbyNUyrCYWbxOWAdB-Re-BxSNb0xfuFD8w6pDETWA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 02:40:11PM +0000, Russell King - ARM Linux wrote:
-> On Thu, Jan 05, 2012 at 02:20:17PM +0000, Mel Gorman wrote:
-> > On Tue, Jan 03, 2012 at 12:45:45PM -0500, KOSAKI Motohiro wrote:
-> > > >   void drain_all_pages(void)
-> > > >   {
-> > > > -	on_each_cpu(drain_local_pages, NULL, 1);
-> > > > +	int cpu;
-> > > > +	struct per_cpu_pageset *pcp;
-> > > > +	struct zone *zone;
-> > > > +
-> > > 
-> > > get_online_cpu() ?
-> > > 
-> > 
-> > Just a separate note;
-> > 
-> > I'm looking at some mysterious CPU hotplug problems that only happen
-> > under heavy load. My strongest suspicion at the moment that the problem
-> > is related to on_each_cpu() being used without get_online_cpu() but you
-> > cannot simply call get_online_cpu() in this path without causing
-> > deadlock.
+On Thu, 2012-01-05 at 20:40 +0800, Yanfei Wang wrote:
+> On Wed, Jan 4, 2012 at 11:59 PM, James Bottomley
+> <James.Bottomley@hansenpartnership.com> wrote:
+> > On Wed, 2012-01-04 at 10:44 +0800, Yanfei Wang wrote:
+> >> On Wed, Jan 4, 2012 at 4:33 AM, Konrad Rzeszutek Wilk
+> >> <konrad.wilk@oracle.com> wrote:
+> >> > On Wed, Dec 07, 2011 at 10:16:40PM +0800, ustc.mail wrote:
+> >> >> Dear all,
+> >> >>
+> >> >> In NIC driver, to eliminate the  overhead of dma_map_single() for DMA
+> >> >> packet data,  we have statically allocated huge DMA memory buffer ring
+> >> >> at once instead of calling dma_map_single() per packet.  Considering
+> >> >> to further reduce the copy overhead between different NIC(port) ring
+> >> >> while forwarding, one packet from a input NIC(port) will be
+> >> >> transferred to output NIC(port) with no any copy action.
+> >> >>
+> >> >> To satisfy this requirement, the packet memory should be mapped into
+> >> >> input port and unmapped when leaving input port, then mapped into
+> >> >> output port and unmapped later.
+> >> >>
+> >> >> Whether it's legal to map the same DMA memory into input and output
+> >> >> port simultaneously? If it's not, then the zero-copy for packet
+> >> >> forwarding is not feasible?
+> >> >>
+> >> >
+> >> > Did you ever a get a response about this?
+> >> No.
+> >
+> > This is probably because no-one really understands what you're asking.
+> > As far as mapping memory to PCI devices goes, it's the job of the bridge
+> > (or the iommu which may or may not be part of the bridge).  A standard
+> > iommu tends not to care about devices and functions, so a range once
+> > mapped is available to everything behind the bridge.  A more secure
+> > virtualisation based iommu (like the on in VT-D) does, and tends to map
+> > ranges per device.  I know of none that map per device and function, but
+> > maybe there are.
+> >
+> > Your question reads like you have a range of memory mapped to a PCI
+> > device that you want to use for two different purposes, can you do this?
+> > to which the answer is that a standard PCI bridge really doesn't care
+> > and it all depends on the mechanics of the actual device.  The only
+> > wrinkle might be if the two different purposes are on two separate PCI
+> > functions of the device and the iommu does care.
+> >
+> >> >
+> >> > Is the output/input port on a seperate device function? Or is it
+> >> > just a specific MMIO BAR in your PCI device?
+> >> >
+> >> Platform: x86, intel nehalem 8Core NUMA, linux 2.6.39, 10G
+> >> 82599NIC(two ports per NIC card);
+> >> Function: Forwarding packets between different ports.
+> >> Targets: Forwarding packets with Zero-Overhead, despite other obstacles.
+> Besides hardware and OS presented above, more detailed descriptions as follows,
 > 
-> Mel,
-> 
-> That's a known hotplug problems.  PeterZ has a patch which (probably)
-> solves it, but there seems to be very little traction of any kind to
-> merge it. 
+> When IXGBE driver do initialization, DMA Descriptors Ring Buffers are
+> allocated statically and mapped as cache coherent. Instead of
+> dynamically allocating skb buffers for packet data, to reduce the huge
+> overhead from skb memory allocation, huge Packet data buffers are
+> pre-allocated and mapped  when driver is loaded. The same strategy  is
+> done for RX end and TX end.
+> For simple packet forwarding application, one packet from RX should be
+> replicated from kernel space to userspace, then copied TX end. Here,
+> One packet at least, should be copied twice to accomplish forwarding.
+> When doing high performance network application,  the copy action want
+> to be reduced. If Zero-copy can be done, that's better. (May be you
+> will find that Zero-copy will bring other obstacles, such as memory
+> management overhead with high performance. We do not care about it
+> temporally.)
+> To achieve this goal, a alternative approach is that,  unmapping the
+> packets buffer after receiving it from A device, then mapping this
+> packet buffer to B device. We hope to reduce the two mapping
+> operation, so one packet DMA buffer should be mapped to A device(NIC
+> port) as well as B device simultaneously.
+> Q: Can this come to ture? Is it legal for mmaping operation at this platform?
 
-Link please? I'm including a patch below under development that is
-intended to only cope with the page allocator case under heavy memory
-pressure. Currently it does not pass testing because eventually RCU
-gets stalled with the following trace
+But you still haven't answered the question upon which all this depends.
+Let me make it simple.  In PCI terms are A and B
 
-[ 1817.176001]  [<ffffffff810214d7>] arch_trigger_all_cpu_backtrace+0x87/0xa0
-[ 1817.176001]  [<ffffffff810c4779>] __rcu_pending+0x149/0x260
-[ 1817.176001]  [<ffffffff810c48ef>] rcu_check_callbacks+0x5f/0x110
-[ 1817.176001]  [<ffffffff81068d7f>] update_process_times+0x3f/0x80
-[ 1817.176001]  [<ffffffff8108c4eb>] tick_sched_timer+0x5b/0xc0
-[ 1817.176001]  [<ffffffff8107f28e>] __run_hrtimer+0xbe/0x1a0
-[ 1817.176001]  [<ffffffff8107f581>] hrtimer_interrupt+0xc1/0x1e0
-[ 1817.176001]  [<ffffffff81020ef3>] smp_apic_timer_interrupt+0x63/0xa0
-[ 1817.176001]  [<ffffffff81449073>] apic_timer_interrupt+0x13/0x20
-[ 1817.176001]  [<ffffffff8116c135>] vfsmount_lock_local_lock+0x25/0x30
-[ 1817.176001]  [<ffffffff8115c855>] path_init+0x2d5/0x370
-[ 1817.176001]  [<ffffffff8115eecd>] path_lookupat+0x2d/0x620
-[ 1817.176001]  [<ffffffff8115f4ef>] do_path_lookup+0x2f/0xd0
-[ 1817.176001]  [<ffffffff811602af>] user_path_at_empty+0x9f/0xd0
-[ 1817.176001]  [<ffffffff81154e7b>] vfs_fstatat+0x4b/0x90
-[ 1817.176001]  [<ffffffff81154f4f>] sys_newlstat+0x1f/0x50
-[ 1817.176001]  [<ffffffff81448692>] system_call_fastpath+0x16/0x1b
+     I. Same Device, Same Function
+    II. Same Device, Different Function
+   III. Different Devices
 
-It might be a separate bug, don't know for sure.
+?
 
-> I've been chasing that patch and getting no replies what so
-> ever from folk like Peter, Thomas and Ingo.
-> 
-> The problem affects all IPI-raising functions, which mask with
-> cpu_online_mask directly.
-> 
+James
 
-Actually, in one sense I'm glad to hear it because from my brief
-poking around, I was having trouble understanding why we were always
-safe from sending IPIs to CPUs in the process of being offlined.
 
-> I'm not sure that smp_call_function() can use get_online_cpu() as it
-> looks like it's not permitted to sleep (it spins in csd_lock_wait if
-> it is to wait for the called function to complete on all CPUs,
-> rather than using a sleepable completion.)  get_online_cpu() solves
-> the online mask problem by sleeping until it's safe to access it.
-> 
-
-Yeah, although from the context of the page allocator calling
-get_online_cpu() is not safe because it can deadlock kthreadd.
-
-In the interest of comparing with PeterZ's patch, here is the patch I'm
-currently looking at. It has not passed testing yet. I suspect it'll be
-met with hatred but it will at least highlight some of the problems I've
-seen recently (which apparently are not new)
-
-Gilad, I expect this patch to collide with yours but I also expect
-yours could be based on top of it if necessary. There is also the
-side-effect that this patch should reduce the number of IPIs sent by the
-page allocator under memory pressure.
-
-==== CUT HERE ====
-mm: page allocator: Guard against CPUs going offline while draining per-cpu page lists
-
-While running a CPU hotplug stress test under memory pressure, I
-saw cases where under enough stress the machine would halt although
-it required a machine with 8 cores and plenty memory. I think the
-problems may be related.
-
-Part of the problem is the page allocator is sending IPIs using
-on_each_cpu() without calling get_online_cpus() to prevent changes
-to the online cpumask. This allows IPIs to be send to CPUs that
-are going offline or offline already.
-
-Adding just a call to get_online_cpus() is not enough as kthreadd
-could block on cpu_hotplug mutex while another process is blocked with
-the mutex held waiting for kthreadd to make forward progress leading
-to deadlock. Additionally, it is important that cpu_hotplug mutex
-does not become a new hot lock while under pressure.  This is also
-the consideration that CPU hotplug expects that get_online_cpus()
-is not called frequently as it can lead to livelock in exceptional
-circumstances (see comment above cpu_hotplug_begin()).
-
-Hence, this patch adds a try_get_online_cpus() function used
-by the page allocator to only acquire the mutex and elevate the
-hotplug reference count when uncontended. This ensures the CPU mask
-is valid when sending an IPI to drain all pages while avoiding
-hammering cpu_hotplug mutex or potentially deadlocking kthreadd.
-As a side-effect the number of IPIs sent while under memory pressure
-is reduced.
-
-Not-signed-off
---- 
- include/linux/cpu.h |    2 ++
- kernel/cpu.c        |   26 ++++++++++++++++++++++++++
- mm/page_alloc.c     |   22 ++++++++++++++++++----
- 3 files changed, 46 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/cpu.h b/include/linux/cpu.h
-index 5f09323..9ac5c27 100644
---- a/include/linux/cpu.h
-+++ b/include/linux/cpu.h
-@@ -133,6 +133,7 @@ extern struct sysdev_class cpu_sysdev_class;
- /* Stop CPUs going up and down. */
- 
- extern void get_online_cpus(void);
-+extern bool try_get_online_cpus(void);
- extern void put_online_cpus(void);
- #define hotcpu_notifier(fn, pri)	cpu_notifier(fn, pri)
- #define register_hotcpu_notifier(nb)	register_cpu_notifier(nb)
-@@ -156,6 +157,7 @@ static inline void cpu_hotplug_driver_unlock(void)
- 
- #define get_online_cpus()	do { } while (0)
- #define put_online_cpus()	do { } while (0)
-+#define try_put_online_cpus()	true
- #define hotcpu_notifier(fn, pri)	do { (void)(fn); } while (0)
- /* These aren't inline functions due to a GCC bug. */
- #define register_hotcpu_notifier(nb)	({ (void)(nb); 0; })
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index aa39dd7..a90422f 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -70,6 +70,32 @@ void get_online_cpus(void)
- }
- EXPORT_SYMBOL_GPL(get_online_cpus);
- 
-+/*
-+ * This differs from get_online_cpus() in that it tries to get uncontended
-+ * access to the online CPU mask. Principally this is used by the page
-+ * allocator to avoid hammering on the cpu_hotplug mutex and to limit the
-+ * number of IPIs it is sending.
-+ */
-+bool try_get_online_cpus(void)
-+{
-+	bool contention_free = false;
-+	might_sleep();
-+	if (cpu_hotplug.refcount)
-+		return false;
-+
-+	if (cpu_hotplug.active_writer == current)
-+		return true;
-+
-+	mutex_lock(&cpu_hotplug.lock);
-+	if (!cpu_hotplug.refcount) {
-+		contention_free = true;
-+		cpu_hotplug.refcount++;
-+	}
-+	mutex_unlock(&cpu_hotplug.lock);
-+
-+	return contention_free;
-+}
-+
- void put_online_cpus(void)
- {
- 	if (cpu_hotplug.active_writer == current)
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e684e6b..7f75cab 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -57,6 +57,7 @@
- #include <linux/ftrace_event.h>
- #include <linux/memcontrol.h>
- #include <linux/prefetch.h>
-+#include <linux/kthread.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -1129,7 +1130,18 @@ void drain_local_pages(void *arg)
-  */
- void drain_all_pages(void)
- {
-+	get_online_cpus();
- 	on_each_cpu(drain_local_pages, NULL, 1);
-+	put_online_cpus();
-+}
-+
-+static bool try_drain_all_pages(void)
-+{
-+	if (!try_get_online_cpus())
-+		return false;
-+	on_each_cpu(drain_local_pages, NULL, 1);
-+	put_online_cpus();
-+	return true;
- }
- 
- #ifdef CONFIG_HIBERNATION
-@@ -2026,11 +2038,13 @@ retry:
- 
- 	/*
- 	 * If an allocation failed after direct reclaim, it could be because
--	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 * pages are pinned on the per-cpu lists. Drain them and try again.
-+	 * kthreadd cannot drain all pages as the current holder of the
-+	 * cpu_hotplug mutex could be waiting for kthreadd to make forward
-+	 * progress.
- 	 */
--	if (!page && !drained) {
--		drain_all_pages();
--		drained = true;
-+	if (!page && !drained && current != kthreadd_task) {
-+		drained = try_drain_all_pages();
- 		goto retry;
- 	}
- 
