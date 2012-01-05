@@ -1,43 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932819Ab2AEQau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 11:30:50 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:38599 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932728Ab2AEQas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 11:30:48 -0500
-Message-ID: <1325781045.22154.15.camel@joe2Laptop>
-Subject: RE: [PATCH 5/6] ath6kl: convert ath6kl_dbg() and ath6kl_dbg_dump()
- into functions
-From: Joe Perches <joe@perches.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: Kalle Valo <kvalo@qca.qualcomm.com>, linville@tuxdriver.com,
-        sfr@canb.auug.org.au, netdev@vger.kernel.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, ath6kl-devel@qualcomm.com,
-        davem@davemloft.net
-Date: Thu, 05 Jan 2012 08:30:45 -0800
-In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AF2F@saturn3.aculab.com>
-References: <AE90C24D6B3A694183C094C60CF0A2F6D8AF2F@saturn3.aculab.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S932824Ab2AEQbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 11:31:05 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:46430 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932785Ab2AEQbC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 11:31:02 -0500
+Date: Thu, 5 Jan 2012 11:31:00 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>
+cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Problems with get_driver() and driver_attach() (and new_id too)
+Message-ID: <Pine.LNX.4.44L0.1201051035330.1434-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 10:41 +0000, David Laight wrote:
-> > > +	va_start(args, fmt);
-> > > +	ath6kl_printk(KERN_DEBUG, fmt, &args);
-> > Passing a va_list as an argument?
-> > I believe this doesn't work.
-> > I think you'll need to add and use:
-> Passing a va_list certainly does work - vprintf() etc.
-> What is problematical is taking the address of a va_list.
+Greg and Kay:
 
-Nope.  This referred to this specific instance.
-Taking the address of a va_list works fine.
-Look at the provide example.
+There are some nasty problems connected with the driver core's
+get_driver(), put_driver(), and driver_attach().  Not just
+implementation bugs, but deeper conceptual difficulties.
 
+Let's start with get_driver().  Its comment says that it increments the 
+driver's refcount, just like get_device() and a lot of other utility 
+routines.
+
+But a struct driver is _not_ like a struct device!  It resembles a
+piece of code more than a piece of data -- it acts as an encapsulation
+of a driver.  Incrementing its refcount doesn't have much meaning
+because a driver's lifetime isn't determined by the structure's
+refcount; it's determined by when the driver's module gets unloaded.
+
+What really matters for a driver is whether or not it is registered.  
+Drivers expect, for example, that none of their methods will be called
+after driver_unregister() returns.  It doesn't matter if some other
+thread still holds a reference to the driver structure; that reference
+mustn't be used for accessing the driver code after unregistration.  
+And of course, driver_attach() does access the driver code, by calling 
+the probe routine.
+
+An example where this is violated occurs in the usb-serial core.  Each
+serial driver module registers (at least) two driver structures, one on
+the usb_serial_bus and one on the usb_bus.  The usb_serial_driver
+structure contains a pointer to the usb_driver structure, and this
+pointer is passed to get_driver() when the serial driver's new_id sysfs
+attribute is written to.
+
+Now, udev scripts are capable of writing to sysfs attributes very soon
+after the attribute is created.  In the case of USB serial drivers, we
+have a bug report of a situation where this write took place after the
+usb_serial_driver was registered but before the usb_driver was
+registered.  Thus, get_driver() was handed a pointer to a driver
+structure that had not even been initialized, let alone registered, and
+so naturally it crashed.
+
+Almost as bad is what can happen when a driver is unregistered while
+some thread is holding a reference obtained from get_driver().  The
+reference prevents the driver structure from being freed, but it
+doesn't prevent the thread from calling driver_attach() after the
+unregistration is complete, at which time the driver code does not
+expect to be invoked.
+
+To fix these problems, we need to change the semantics of get_driver()  
+and put_driver().  Instead of taking a reference to the driver
+structure, get_driver() should check whether the driver is currently
+registered.  If not, return NULL; otherwise, pin the driver (i.e.,
+block it from being unregistered) until put_driver() is called.
+
+This will require some code auditing, because there are places where
+get_driver() is called without checking the return value (see
+drivers/pci/pci_driver.c:pci_add_dynid() for an example; there are
+others).  It should be marked __must_check.
+
+Also, there are places that call driver_attach() without first calling
+get_driver() (see drivers/input/gameport/gameport.c,
+drivers/input/serio/serio.c, and drivers/char/agp/amd64-agp.c).  They
+may or may not be safe; I don't know.
+
+
+One more thing.  The new_id sysfs attribute can cause problems of its 
+own.  Writes to it cause a dynamic ID structure to be allocated, and 
+these structures will leak unless they are properly deallocated.  
+Normally they are freed when the driver is unregistered.  But what if 
+registration fails to begin with?  It might fail at a point after the 
+new_id attribute was created, which means the attribute could have been 
+written to.  The dynamic IDs need to be freed after registration fails, 
+but nobody does this currently.
+
+Alan Stern
 
