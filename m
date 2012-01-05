@@ -1,190 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab2AETaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:30:13 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34894 "EHLO
+	id S932567Ab2AETcg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:32:36 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34910 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2AETaK (ORCPT
+	with ESMTP id S932324Ab2AETcf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:30:10 -0500
-Date: Thu, 5 Jan 2012 13:29:54 -0600
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: akpm@linux-foundation.org, oleg@redhat.com,
-        containers@lists.linux-foundation.org, gkurz@fr.ibm.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
-Subject: Re: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
-Message-ID: <20120105192954.GA16083@sergelap>
-References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
- <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
+	Thu, 5 Jan 2012 14:32:35 -0500
+Date: Thu, 5 Jan 2012 13:32:28 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
+        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
+ hotkey problems
+Message-ID: <20120105193228.GB25386@ubuntu-macmini>
+Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
+	Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
+	Thomas Renninger <trenn@suse.de>,
+	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
+ <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
+ <20120105182627.GE24242@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
+In-Reply-To: <20120105182627.GE24242@srcf.ucam.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Daniel Lezcano (daniel.lezcano@free.fr):
-> In the case of a child pid namespace, rebooting the system does not
-> really makes sense. When the pid namespace is used in conjunction
-> with the other namespaces in order to create a linux container, the
-> reboot syscall leads to some problems.
+On Thu, Jan 05, 2012 at 06:26:27PM +0000, Matthew Garrett wrote:
+> On Tue, Jan 03, 2012 at 01:02:38PM -0600, Seth Forshee wrote:
+> > Several Satellite models have a buggy implementation of the INFO method
+> > that causes ACPI exceptions when executed:
+> > 
+> >  ACPI Error: Result stack is empty! State=ffff88012d70f800 (20110413/dswstate-98)
+> >  ACPI Exception: AE_AML_NO_RETURN_VALUE, Missing or null operand (20110413/dsutils-646)
+> >  ACPI Exception: AE_AML_NO_RETURN_VALUE, While creating Arg 0 (20110413/dsutils-763)
+> >  ACPI Error: Method parse/execution failed [\_SB_.VALZ.GETE] (Node ffff880131175eb0), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
+> >  ACPI Error: Method parse/execution failed [\_SB_.VALZ.INFO] (Node ffff880131175ed8), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
+> >  toshiba_acpi: ACPI INFO method execution failed
+> >  toshiba_acpi: Failed to query hotkey event
 > 
-> A container can reboot the host. That can be fixed by dropping
-> the sys_reboot capability but we are unable to correctly to poweroff/
-> halt/reboot a container and the container stays stuck at the shutdown
-> time with the container's init process waiting indefinitively.
-> 
-> After several attempts, no solution from userspace was found to reliabily
-> handle the shutdown from a container.
-> 
-> This patch propose to make the init process of the child pid namespace to
-> exit with a signal status set to : SIGINT if the child pid namespace called
-> "halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
-> When the reboot syscall is called and we are not in the initial
-> pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
-> and "RESTART2". Otherwise we return EINVAL.
-> 
-> Returning EINVAL is also an easy way to check if this feature is supported
-> by the kernel when invoking another 'reboot' option like CAD.
-> 
-> By this way the parent process of the child pid namespace knows if
-> it rebooted or not and can take the right decision.
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
-> Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> Ugh, in several ways. The hotkeys on these machines are presumably 
+> supposed to work - do we have any idea what we should be doing?
 
-The testcase in [PATCH 0/1] passed for me, and reboot from init_pid_ns
-works as usual.
+Here's a run-down of why this happens. First, the relevant sections of
+the DSDT:
 
-Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
+    Name (EVCD, Package (0x64) {})
+    Name (EVCT, 0x00)
 
-thanks,
--serge
+    Method (PUTE, 1, Serialized)
+    {
+        <snip>
 
-> ---
->  include/linux/pid_namespace.h |    8 +++++++-
->  kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
->  kernel/sys.c                  |    8 ++++++++
->  3 files changed, 48 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-> index e7cf666..b90c798 100644
-> --- a/include/linux/pid_namespace.h
-> +++ b/include/linux/pid_namespace.h
-> @@ -32,6 +32,7 @@ struct pid_namespace {
->  #endif
->  	gid_t pid_gid;
->  	int hide_pid;
-> +	int reboot;
->  };
->  
->  extern struct pid_namespace init_pid_ns;
-> @@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
->  extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
->  extern void free_pid_ns(struct kref *kref);
->  extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
-> +extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
->  
->  static inline void put_pid_ns(struct pid_namespace *ns)
->  {
-> @@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
->  {
->  }
->  
-> -
->  static inline void zap_pid_ns_processes(struct pid_namespace *ns)
->  {
->  	BUG();
->  }
-> +
-> +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> +{
-> +	return 0;
-> +}
->  #endif /* CONFIG_PID_NS */
->  
->  extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
-> diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> index a896839..0d355e8 100644
-> --- a/kernel/pid_namespace.c
-> +++ b/kernel/pid_namespace.c
-> @@ -15,6 +15,7 @@
->  #include <linux/acct.h>
->  #include <linux/slab.h>
->  #include <linux/proc_fs.h>
-> +#include <linux/reboot.h>
->  
->  #define BITS_PER_PAGE		(PAGE_SIZE*8)
->  
-> @@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
->  		rc = sys_wait4(-1, NULL, __WALL, NULL);
->  	} while (rc != -ECHILD);
->  
-> +	if (pid_ns->reboot)
-> +		current->signal->group_exit_code = pid_ns->reboot;
-> +
->  	acct_exit_ns(pid_ns);
->  	return;
->  }
-> @@ -221,6 +225,35 @@ static struct ctl_table pid_ns_ctl_table[] = {
->  
->  static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
->  
-> +int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> +{
-> +	if (pid_ns == &init_pid_ns)
-> +		return 0;
-> +
-> +	switch(cmd) {
-> +	case LINUX_REBOOT_CMD_RESTART2:
-> +	case LINUX_REBOOT_CMD_RESTART:
-> +		pid_ns->reboot = SIGHUP;
-> +		break;
-> +
-> +	case LINUX_REBOOT_CMD_POWER_OFF:
-> +	case LINUX_REBOOT_CMD_HALT:
-> +		pid_ns->reboot = SIGINT;
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	read_lock(&tasklist_lock);
-> +	force_sig(SIGKILL, pid_ns->child_reaper);
-> +	read_unlock(&tasklist_lock);
-> +
-> +	do_exit(0);
-> +
-> +	/* Not reached */
-> +	return 0;
-> +}
-> +
->  static __init int pid_namespaces_init(void)
->  {
->  	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 4070153..bd924fa 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -444,6 +444,14 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
->  	                magic2 != LINUX_REBOOT_MAGIC2C))
->  		return -EINVAL;
->  
-> +	/* In case the pid namespaces are enabled, the current task is in a
-> +	 * child pid_namespace and the command is handled by 'reboot_pid_ns',
-> +	 * this one will invoke 'do_exit'.
-> +	 */
-> +	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
-> +	if (ret)
-> +		return ret;
-> +
->  	/* Instead of trying to make the power_off code look like
->  	 * halt when pm_power_off is not set do it the easy way.
->  	 */
-> -- 
-> 1.7.5.4
-> 
+        If (LLess (EVCT, 0x64))
+        {
+            Store (Arg0, Index (EVCD, EVCT))
+            Increment (EVCT)
+        }
+
+	<snip>
+
+        Notify (VALZ, 0x80)
+        Sleep (0x64)
+        Return (0x00)
+    }
+
+    Method (GETE, 0, Serialized)
+    {
+        <snip>
+
+        If (LEqual (EVCT, 0x00))
+        {
+            Release (MUEV)
+            Return (0x00)
+        }
+
+        Store (DerefOf (Index (EVCD, 0x00)), Local0)
+        Store (0x00, Local1)
+        While (LLess (Local1, Subtract (0x64, 0x01)))
+        {
+            Store (DerefOf (Index (EVCD, Add (Local1, 0x01))), Index (
+                EVCD, Local1))
+            Increment (Local1)
+        }
+
+        Decrement (EVCT)
+        Release (MUEV)
+        If (LNotEqual (EVCT, 0x00))
+        {
+            And (HKEV, 0x02, Local0)
+            If (LEqual (Local0, 0x02))
+            {
+                Return (0x00)
+            }
+
+            Notify (VALZ, 0x80)
+            Sleep (0x64)
+        }
+
+        Return (Local0)
+    }
+
+    Method (INFO, 0, Serialized)
+    {
+        Store (GETE (), Local0)
+        Return (Local0)
+    }
+
+So EVCD is a queue of events, and EVCT is the number of events in the
+queue. NTFY calls PUTE, which puts an event in the queue. INFO calls
+GETE to read an event from the queue. Reading an event consists of
+copying out the first object out of EVCD, then copying each subsequent
+object to the previous element in EVCD. Inefficient, but it should work.
+
+Except for that fact that EVCD will initially contain uninitialized
+objects. So until/unless PUTE writes every element in EVCD that copy
+loop is going to dereference unintialized objects, which causes the
+exceptions.
+
+GETE/PUTE are the only methods which write to EVCD, so there's not some
+initialization method or something like that which we're forgetting to
+call. We could do something like call PUTE 64 times during
+initialization, but that's relying on a BIOS implementation detail which
+just seems like a bad idea.
+
+My only guess is that Windows is more permissive about this sort of
+thing than ACPICA is, but by my reading of the spec throwing a fatal
+error is what's supposed to happen.
+
+Also a side note of interest: The machines that suffer from this all
+also have a WMI interface with code to support hotkeys, and that code
+shouldn't suffer from this problem. Unfortunately these models are the
+only ones I've seen with this WMI interface, and the code to generate
+the hotkey events isn't executed if the OS reports itself as Vista or
+newer.
