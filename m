@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab2AEB2u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Jan 2012 20:28:50 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49307 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab2AEB2s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Jan 2012 20:28:48 -0500
-Date: Wed, 4 Jan 2012 17:28:42 -0800
-From: Tejun Heo <tj@kernel.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        avi@redhat.com, nate@cpanel.net, cl@linux-foundation.org,
-        oleg@redhat.com, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] block, mempool, percpu: implement percpu mempool
- and fix blkcg percpu alloc deadlock
-Message-ID: <20120105012842.GQ31746@google.com>
-References: <20111222135925.de3221c8.akpm@linux-foundation.org>
- <20111222220911.GK17084@google.com>
- <20111222142058.41316ee0.akpm@linux-foundation.org>
- <20111223014043.GC12738@redhat.com>
- <20111222175834.66559c8b.akpm@linux-foundation.org>
- <20111223025629.GE12738@redhat.com>
- <20111226150531.3c22f2f0.kamezawa.hiroyu@jp.fujitsu.com>
- <20111227175249.GE17712@google.com>
- <20111228091402.c45a08f6.kamezawa.hiroyu@jp.fujitsu.com>
- <20111228004102.GK17712@google.com>
+	id S1757334Ab2AEBez (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Jan 2012 20:34:55 -0500
+Received: from ozlabs.org ([203.10.76.45]:53243 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751190Ab2AEBey (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Jan 2012 20:34:54 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH 12/15] module_param: make bool parameters really bool (drivers & misc)
+In-Reply-To: <1325661138.1875.6.camel@deskari>
+References: <87ehw6sesk.fsf@rustcorp.com.au> <1325661138.1875.6.camel@deskari>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Thu, 05 Jan 2012 10:33:53 +1030
+Message-ID: <874nwbc8wm.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111228004102.GK17712@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 04:41:02PM -0800, Tejun Heo wrote:
-> Hello,
+On Wed, 04 Jan 2012 09:12:18 +0200, Tomi Valkeinen <tomi.valkeinen@ti.com> wrote:
+Non-text part: multipart/signed
+> Hi,
 > 
-> On Wed, Dec 28, 2011 at 09:14:02AM +0900, KAMEZAWA Hiroyuki wrote:
-> > > This is essentially more specialized form of the mempool approach.  It
-> > > doesn't seem any simpler to me while being less generic.  I don't see
-> > > what the upside would be.
+> On Thu, 2011-12-15 at 13:48 +1030, Rusty Russell wrote:
+> > module_param(bool) used to counter-intuitively take an int.  In
+> > fddd5201 (mid-2009) we allowed bool or int/unsigned int using a messy
+> > trick.
 > > 
-> > Hm, but this never causes -ENOMEM error, at all.
+> > It's time to remove the int/unsigned int option.  For this version
+> > it'll simply give a warning, but it'll break next kernel version.
+> > 
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 > 
-> Ooh, I missed the part it falls back to the global counter if percpu
-> counters aren't allocated yet.  Yeah, this is an interesting approach.
-> I'll think more about it.
+> The changes below break compilation for omapdss and omapfb: dss_debug
+> and omapfb_debug are declared in dss.h and omapfb.h, and those
+> declarations are not changed, resulting in conflicting types error.
+> 
+> Perhaps extra care should be taken in cases where the variable in
+> question is not declared as static.
 
-I've been staring at the blkcg stats code and commit logs and am
-wondering whether we can just scrap percpu counters there.  It seems
-the reason why it was introduced in the first place is to avoid
-stats->lock, which BTW is extremely heavy handed for gathering stats,
-overhead in fast paths and I think there can be easier ways to avoid
-stats->lock.
+Yes, after the first few hours I got lazy.  Obviously, linux-next
+doesn't build with CONFIG_OMAP2_DSS_DEBUG_SUPPORT (or may not build OSS2
+at all), so it didn't catch them either.
 
-Thanks.
+I've fixed it (probably tomorrow's linux-next), but hope that the
+introduction of a 'bool' in that header doesn't break anything else.
 
--- 
-tejun
+Please post fix if it does.  Though I think the new hotness is dev_debug
+and dynamic debugging.
+
+Thanks!
+Rusty.
