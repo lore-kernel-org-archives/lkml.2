@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030221Ab2AEWrt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 17:47:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37862 "EHLO mx2.suse.de"
+	id S933051Ab2AEWrT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 17:47:19 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37814 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1030185Ab2AEWr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 17:47:28 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:44:03 2012
-Message-Id: <20120105224403.235919700@clark.kroah.org>
+	id S932863Ab2AEWrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 17:47:14 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Thu Jan  5 14:44:02 2012
+Message-Id: <20120105224402.884277415@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Thu, 05 Jan 2012 14:44:58 -0800
+Date: Thu, 05 Jan 2012 14:44:54 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>,
-        Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [73/73] ath9k: Fix kernel panic in AR2427 in AP mode
+        alan@lxorguk.ukuu.org.uk, Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>
+Subject: [69/73] drm/radeon/kms/atom: fix possible segfault in pm setup
 In-Reply-To: <20120105224632.GA14659@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,76 +24,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
-Content-Length: 2620
-Lines: 69
+Content-Length: 1216
+Lines: 36
 
-From: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
+From: =?UTF-8?q?Alexander=20M=C3=BCller?= <serveralex@gmail.com>
 
-commit b25bfda38236f349cde0d1b28952f4eea2148d3f upstream.
+commit 4376eee92e5a8332b470040e672ea99cd44c826a upstream.
 
-don't do aggregation related stuff for 'AP mode client power save
-handling' if aggregation is not enabled in the driver, otherwise it
-will lead to panic because those data structures won't be never
-intialized in 'ath_tx_node_init' if aggregation is disabled
+If we end up with no power states, don't look up
+current vddc.
 
-	EIP is at ath_tx_aggr_wakeup+0x37/0x80 [ath9k]
-	EAX: e8c09a20 EBX: f2a304e8 ECX: 00000001 EDX: 00000000
-	ESI: e8c085e0 EDI: f2a304ac EBP: f40e1ca4 ESP: f40e1c8c
-	DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-	Process swapper/1 (pid: 0, ti=f40e0000 task=f408e860
-	task.ti=f40dc000)
-	Stack:
-	0001e966 e8c09a20 00000000 f2a304ac e8c085e0 f2a304ac
-	f40e1cb0 f8186741
-	f8186700 f40e1d2c f922988d f2a304ac 00000202 00000001
-	c0b4ba43 00000000
-	0000000f e8eb75c0 e8c085e0 205b0001 34383220 f2a304ac
-	f2a30000 00010020
-	Call Trace:
-	[<f8186741>] ath9k_sta_notify+0x41/0x50 [ath9k]
-	[<f8186700>] ? ath9k_get_survey+0x110/0x110 [ath9k]
-	[<f922988d>] ieee80211_sta_ps_deliver_wakeup+0x9d/0x350
-	[mac80211]
-	[<c018dc75>] ? __module_address+0x95/0xb0
-	[<f92465b3>] ap_sta_ps_end+0x63/0xa0 [mac80211]
-	[<f9246746>] ieee80211_rx_h_sta_process+0x156/0x2b0
-	[mac80211]
-	[<f9247d1e>] ieee80211_rx_handlers+0xce/0x510 [mac80211]
-	[<c018440b>] ? trace_hardirqs_on+0xb/0x10
-	[<c056936e>] ? skb_queue_tail+0x3e/0x50
-	[<f9248271>] ieee80211_prepare_and_rx_handle+0x111/0x750
-	[mac80211]
-	[<f9248bf9>] ieee80211_rx+0x349/0xb20 [mac80211]
-	[<f9248949>] ? ieee80211_rx+0x99/0xb20 [mac80211]
-	[<f818b0b8>] ath_rx_tasklet+0x818/0x1d00 [ath9k]
-	[<f8187a75>] ? ath9k_tasklet+0x35/0x1c0 [ath9k]
-	[<f8187a75>] ? ath9k_tasklet+0x35/0x1c0 [ath9k]
-	[<f8187b33>] ath9k_tasklet+0xf3/0x1c0 [ath9k]
-	[<c0151b7e>] tasklet_action+0xbe/0x180
+fixes:
+https://bugs.freedesktop.org/show_bug.cgi?id=44130
 
-Cc: Senthil Balasubramanian <senthilb@qca.qualcomm.com>
-Cc: Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Reported-by: Ashwin Mendonca <ashwinloyal@gmail.com>
-Tested-by: Ashwin Mendonca <ashwinloyal@gmail.com>
-Signed-off-by: Mohammed Shafi Shajakhan <mohammed@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+agd5f: fix patch formatting
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/main.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/radeon_atombios.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/main.c
-+++ b/drivers/net/wireless/ath/ath9k/main.c
-@@ -1828,6 +1828,9 @@ static void ath9k_sta_notify(struct ieee
- 	struct ath_softc *sc = hw->priv;
- 	struct ath_node *an = (struct ath_node *) sta->drv_priv;
+--- a/drivers/gpu/drm/radeon/radeon_atombios.c
++++ b/drivers/gpu/drm/radeon/radeon_atombios.c
+@@ -2568,7 +2568,11 @@ void radeon_atombios_get_power_modes(str
  
-+	if (!(sc->sc_flags & SC_OP_TXAGGR))
-+		return;
-+
- 	switch (cmd) {
- 	case STA_NOTIFY_SLEEP:
- 		an->sleeping = true;
+ 	rdev->pm.current_power_state_index = rdev->pm.default_power_state_index;
+ 	rdev->pm.current_clock_mode_index = 0;
+-	rdev->pm.current_vddc = rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
++	if (rdev->pm.default_power_state_index >= 0)
++		rdev->pm.current_vddc =
++			rdev->pm.power_state[rdev->pm.default_power_state_index].clock_info[0].voltage.voltage;
++	else
++		rdev->pm.current_vddc = 0;
+ }
+ 
+ void radeon_atom_set_clock_gating(struct radeon_device *rdev, int enable)
 
 
