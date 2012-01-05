@@ -1,143 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab2AETcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 14:32:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34910 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932324Ab2AETcf (ORCPT
+	id S932570Ab2AETdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 14:33:40 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60101 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab2AETdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 14:32:35 -0500
-Date: Thu, 5 Jan 2012 13:32:28 -0600
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-        Thomas Renninger <trenn@suse.de>, platform-driver-x86@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
- hotkey problems
-Message-ID: <20120105193228.GB25386@ubuntu-macmini>
-Mail-Followup-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-	Len Brown <lenb@kernel.org>, Azael Avalos <coproscefalo@gmail.com>,
-	Thomas Renninger <trenn@suse.de>,
-	platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
- <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
- <20120105182627.GE24242@srcf.ucam.org>
+	Thu, 5 Jan 2012 14:33:39 -0500
+Date: Thu, 5 Jan 2012 14:37:40 -0500
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Thomas Hellstrom <thellstrom@vmware.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, bskeggs@redhat.com
+Subject: Re: [PATCH] fixes to drm-next - TTM DMA code (v1)
+Message-ID: <20120105193740.GC2799@homer.localdomain>
+References: <1323720569-15435-1-git-send-email-konrad.wilk@oracle.com>
+ <20111213160753.GC2339@homer.localdomain>
+ <4EE77C02.1000103@vmware.com>
+ <20111213164031.GA32052@phenom.dumpdata.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120105182627.GE24242@srcf.ucam.org>
+In-Reply-To: <20111213164031.GA32052@phenom.dumpdata.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 06:26:27PM +0000, Matthew Garrett wrote:
-> On Tue, Jan 03, 2012 at 01:02:38PM -0600, Seth Forshee wrote:
-> > Several Satellite models have a buggy implementation of the INFO method
-> > that causes ACPI exceptions when executed:
+On Tue, Dec 13, 2011 at 11:40:31AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Tue, Dec 13, 2011 at 05:23:30PM +0100, Thomas Hellstrom wrote:
+> > On 12/13/2011 05:07 PM, Jerome Glisse wrote:
+> > >On Mon, Dec 12, 2011 at 03:09:26PM -0500, Konrad Rzeszutek Wilk wrote:
+> > >>Jerome pointed me to some accounting error in the DMA API debugging code and
+> > >>while I can't figure it out yet, I did notice some extreme slowness - which
+> > >>is due to the nouveau driver calling the unpopulate (now that unbind +
+> > >>unpopulate are squashed) quite a lot (this is using Gnome Shell - I think GNOME2
+> > >>did not have those issues but I can't recall).
+> > >>
+> > >>Anyhow these patches fix the 50% perf regression I saw and also some minor bugs
+> > >>that I noticed.
+> > >>
+> > >Gonna review those today and test them.
+> > >
+> > >Cheers,
+> > >Jerome
+> > Hi!
 > > 
-> >  ACPI Error: Result stack is empty! State=ffff88012d70f800 (20110413/dswstate-98)
-> >  ACPI Exception: AE_AML_NO_RETURN_VALUE, Missing or null operand (20110413/dsutils-646)
-> >  ACPI Exception: AE_AML_NO_RETURN_VALUE, While creating Arg 0 (20110413/dsutils-763)
-> >  ACPI Error: Method parse/execution failed [\_SB_.VALZ.GETE] (Node ffff880131175eb0), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
-> >  ACPI Error: Method parse/execution failed [\_SB_.VALZ.INFO] (Node ffff880131175ed8), AE_AML_NO_RETURN_VALUE (20110413/psparse-536)
-> >  toshiba_acpi: ACPI INFO method execution failed
-> >  toshiba_acpi: Failed to query hotkey event
+> > I'm not whether any drivers are still using the AGP backend?
 > 
-> Ugh, in several ways. The hotkeys on these machines are presumably 
-> supposed to work - do we have any idea what we should be doing?
+> Uh, probably they do if the cards are AGP?
+> The problem I encountered was with an PCIe Nvidia card:
+> 
+> 01:00.0 VGA compatible controller: nVidia Corporation G84 [GeForce 8600 GT] (rev a1
+> 
+> > Calling unpopulate / (previous clear) each time unbind is done
+> > should be quite
+> > inefficient with that one, as AGP sets up its own data structures
+> > and copies page tables
+> > on each populate. That should really be avoided unless there is a
+> > good reason to have it.
+> 
+> nouveau_bo_rd32 and nv50_crtc_cursor_set showed up as the callers that
+> were causing the unpopulate calls. It did happen _a lot_ when I moved the
+> cursor madly.
 
-Here's a run-down of why this happens. First, the relevant sections of
-the DSDT:
+Looked at that and i am pretty sure that those function can't trigger
+unpopulate event (but i might have missed a path). I tested before and
+after the ttm change and those function are as time consuming as before.
 
-    Name (EVCD, Package (0x64) {})
-    Name (EVCT, 0x00)
+I think nouveau is doing something stupid in userspace when it comes to
+cursor (might be the ddx or just gnome3 or X server haven't tracked that
+down).
 
-    Method (PUTE, 1, Serialized)
-    {
-        <snip>
+Anyway, bottom line is i believe we don't call unpopulate more than
+before the ttm changes. It seems to be the same from code inspection,
+previously each time we called clear we also freed the pages so clear
+is equivalent to unpopulate. In theory we don't call unpopulate on
+each unbind but given the current user we do (only path were unbind
+is not followed by unpopulate is ttm_bo_move_ttm same as before the
+patch so no change there).
 
-        If (LLess (EVCT, 0x64))
-        {
-            Store (Arg0, Index (EVCD, EVCT))
-            Increment (EVCT)
-        }
+So, Konrad patch to avoid calling set_pages_array_wb when the page is
+cached is a proper fix, this is what happened before, and this is what
+the ttm change broke. I believe there is no performance regression with
+this ttm change on radeon or nouveau (tested only with gnome3+nexuiz
+on nv50 and r600,r700,evergreen).
 
-	<snip>
-
-        Notify (VALZ, 0x80)
-        Sleep (0x64)
-        Return (0x00)
-    }
-
-    Method (GETE, 0, Serialized)
-    {
-        <snip>
-
-        If (LEqual (EVCT, 0x00))
-        {
-            Release (MUEV)
-            Return (0x00)
-        }
-
-        Store (DerefOf (Index (EVCD, 0x00)), Local0)
-        Store (0x00, Local1)
-        While (LLess (Local1, Subtract (0x64, 0x01)))
-        {
-            Store (DerefOf (Index (EVCD, Add (Local1, 0x01))), Index (
-                EVCD, Local1))
-            Increment (Local1)
-        }
-
-        Decrement (EVCT)
-        Release (MUEV)
-        If (LNotEqual (EVCT, 0x00))
-        {
-            And (HKEV, 0x02, Local0)
-            If (LEqual (Local0, 0x02))
-            {
-                Return (0x00)
-            }
-
-            Notify (VALZ, 0x80)
-            Sleep (0x64)
-        }
-
-        Return (Local0)
-    }
-
-    Method (INFO, 0, Serialized)
-    {
-        Store (GETE (), Local0)
-        Return (Local0)
-    }
-
-So EVCD is a queue of events, and EVCT is the number of events in the
-queue. NTFY calls PUTE, which puts an event in the queue. INFO calls
-GETE to read an event from the queue. Reading an event consists of
-copying out the first object out of EVCD, then copying each subsequent
-object to the previous element in EVCD. Inefficient, but it should work.
-
-Except for that fact that EVCD will initially contain uninitialized
-objects. So until/unless PUTE writes every element in EVCD that copy
-loop is going to dereference unintialized objects, which causes the
-exceptions.
-
-GETE/PUTE are the only methods which write to EVCD, so there's not some
-initialization method or something like that which we're forgetting to
-call. We could do something like call PUTE 64 times during
-initialization, but that's relying on a BIOS implementation detail which
-just seems like a bad idea.
-
-My only guess is that Windows is more permissive about this sort of
-thing than ACPICA is, but by my reading of the spec throwing a fatal
-error is what's supposed to happen.
-
-Also a side note of interest: The machines that suffer from this all
-also have a WMI interface with code to support hotkeys, and that code
-shouldn't suffer from this problem. Unfortunately these models are the
-only ones I've seen with this WMI interface, and the code to generate
-the hotkey events isn't executed if the OS reports itself as Vista or
-newer.
+Cheers,
+Jerome
