@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932842Ab2AEUzg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:55:36 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:55892 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932805Ab2AEUze (ORCPT
+	id S932840Ab2AEU6j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:58:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:35239 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932656Ab2AEU6i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:55:34 -0500
-Date: Thu, 5 Jan 2012 12:55:28 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Alan Stern <stern@rowland.harvard.edu>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: Revoking filesystems [was Re: Sysfs attributes racing with
- unregistration]
-Message-ID: <20120105205528.GB2934@google.com>
-References: <m1ehvecf23.fsf@fess.ebiederm.org>
- <Pine.LNX.4.44L0.1201051133490.1434-100000@iolanthe.rowland.org>
- <20120105182752.GC26382@thunk.org>
- <20120105183602.GE18486@google.com>
- <m1d3axc23k.fsf@fess.ebiederm.org>
+	Thu, 5 Jan 2012 15:58:38 -0500
+Date: Thu, 5 Jan 2012 14:58:31 -0600
+From: Seth Forshee <seth.forshee@canonical.com>
+To: "Moore, Robert" <robert.moore@intel.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+        Azael Avalos <coproscefalo@gmail.com>,
+        Thomas Renninger <trenn@suse.de>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Lin, Ming M" <ming.m.lin@intel.com>
+Subject: Re: [PATCH v2 4/4] toshiba_acpi: Add blacklist for models with
+ hotkey problems
+Message-ID: <20120105205831.GH25386@ubuntu-macmini>
+Mail-Followup-To: "Moore, Robert" <robert.moore@intel.com>,
+	Matthew Garrett <mjg59@srcf.ucam.org>, Len Brown <lenb@kernel.org>,
+	Azael Avalos <coproscefalo@gmail.com>,
+	Thomas Renninger <trenn@suse.de>,
+	"platform-driver-x86@vger.kernel.org" <platform-driver-x86@vger.kernel.org>,
+	"linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"Lin, Ming M" <ming.m.lin@intel.com>
+References: <1325617358-8286-1-git-send-email-seth.forshee@canonical.com>
+ <1325617358-8286-5-git-send-email-seth.forshee@canonical.com>
+ <20120105182627.GE24242@srcf.ucam.org>
+ <20120105193228.GB25386@ubuntu-macmini>
+ <94F2FBAB4432B54E8AACC7DFDE6C92E3256C799D@ORSMSX101.amr.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1d3axc23k.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <94F2FBAB4432B54E8AACC7DFDE6C92E3256C799D@ORSMSX101.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 12:43:11PM -0800, Eric W. Biederman wrote:
-> That does require a notification from the block device going away
-> to the filesystem.  Tejun is there an existing mechanism that we
-> can plug into or do we need to implement something new?
+On Thu, Jan 05, 2012 at 08:46:43PM +0000, Moore, Robert wrote:
+> > My only guess is that Windows is more permissive about this sort of
+> > thing than ACPICA is, but by my reading of the spec throwing a fatal
+> > error is what's supposed to happen.
+> 
+> If it is true that Windows will execute this code without error, then ACPICA should be changed to match the Windows behavior. ACPICA is now a "Windows compatible" implementation of ACPI, but that of course means we are attempting to be compatible with a black box ACPI implementation. On the other hand, it may be the case that Windows never executes this code, so the error is not seen on Windows.
+> 
+> We would like to investigate this further. Please send or point me to the acpidump for this machine.
 
-Of course, udev.
+I posted the ACPI tables at the following link. Let me know if there's
+anything I can do to help.
 
-Thanks.
+http://people.canonical.com/~sforshee/toshiba-acpi/nb505-acpi-tables.txt
 
--- 
-tejun
+Thanks,
+Seth
+
