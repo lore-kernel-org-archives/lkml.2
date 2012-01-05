@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932816Ab2AEUsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 15:48:22 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:46659 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757073Ab2AEUsV (ORCPT
+	id S932831Ab2AEUtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 15:49:17 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48405 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754449Ab2AEUtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 15:48:21 -0500
-Date: Thu, 5 Jan 2012 15:48:19 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
-In-Reply-To: <20120105200515.GA1071@core.coreip.homeip.net>
-Message-ID: <Pine.LNX.4.44L0.1201051531410.1434-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 5 Jan 2012 15:49:15 -0500
+From: Fabio Estevam <festevam@gmail.com>
+To: netdev@vger.kernel.org
+Cc: gwingerde@gmail.com, larry.finger@lwfinger.net, davem@davemloft.net,
+        bhutchings@solarflare.com, greg@kroah.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH] drivers: misc: Remove MISC_DEVICES config option
+Date: Thu,  5 Jan 2012 18:49:01 -0200
+Message-Id: <1325796541-11402-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jan 2012, Dmitry Torokhov wrote:
+MISC_DEVICES option alone does not select any kernel code and can cause dependency build warnings, such as:
 
-> So I looked at the users of device_attach():
-> 
-> - we call it from generic bus code when adding a new driver so naturally
->   driver is valid there;
-> - serio and gameport call it by hand but they ensure that the driver is
->   valid because they protected by subsystem-private mutex;
-> - PCI, PCMCI, HID and USB new_id handling is tied to the driver itself
->   and attributes are removed when driver is unregistered so there is no
->   chance driver will be attached through newid after it has been
->   unregistered;
-> - agp_amd64_init calls it once immediately after registering the driver;
-> - pci-stub driver is safe as well.
+warning: (KS8851 && AX88796_93CX6 && RTL8180 && RTL8187 && ADM8211 && RT2400PCI && RT2500PCI && RT61PCI && RT2800PCI && R8187SE) selects EEPROM_93CX6 which has unmet direct dependencies (MISC_DEVICES)
 
-Okay, that's all good.
+Remove MISC_DEVICES option so that any dependency on this symbol is avoided.
 
-> That leaves only usb-serial which is problematic exactly as you
-> described below. So I think we should remove get_driver() and
-> put_driver(); document that caller if driver_attach() should ensure
-> that driver is live and let usb-serial code solve this issue as this
-> is the only code that plays games with drivers it does not own.
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+This applies against linux-next
 
-If Greg confirms that there's nothing with registering the usb driver 
-before the usb_serial driver, I can fix the usb-serial code easily.
+ drivers/misc/Kconfig                |   17 +++--------------
+ drivers/mmc/host/Kconfig            |    1 -
+ drivers/net/ethernet/micrel/Kconfig |    1 -
+ 3 files changed, 3 insertions(+), 16 deletions(-)
 
-Greg, do you know offhand whether this will break anything?  It really 
-seems like the right thing to do, because the usb_serial driver uses 
-the usb driver but not vice versa.
-
-
-> > > Don't we create corresponding sysfs attributes only after driver
-> > > successfully registered?
-> > 
-> > No, some attribute files are created during registration;
-> > driver_register() calls driver_add_groups().
-> 
-> But new_id only created by individual bus code after registering the
-> driver. No individual drivers involved here.
-
-In usb/serial/bus.c, the usb_serial_bus_type structure contains a
-.drv_attrs field with an entry for the new_id attribute.  Thus
-driver_register calls bus_add_driver, which calls driver_add_attrs,
-which creates the attribute file -- all during registration.
-
-> > Another example, taken from drivers/pci/pci-driver.c:
-> > 
-> > 	__pci_register_driver() calls
-> > 	driver_register()
-> > 
-> > 	pci_create_newid_file() creates the new_id
-> > 	sysfs attribute
-> > 
-> > 					A udev process writes to the 
-> > 					new_id attribute, causing a
-> > 					dynamic_id structure to be
-> > 					allocated
-> > 
-> > 	pci_create_removeid_file() fails
-> > 
-> > 	__pci_register_driver() calls
-> > 	pci_remove_newid_file() and
-> > 	driver_unregister(), but it doesn't
-> > 	call pci_free_dynids()
-> 
-> So this is a simple bug in pci bus error unwinding code...
-
-That was my point -- the places that use new_id attributes don't unwind 
-their registration errors correctly.  Fortunately there aren't very 
-many such places...
-
-Alan Stern
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 6a1a092..c779509 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -2,24 +2,14 @@
+ # Misc strange devices
+ #
+ 
+-# This one has to live outside of the MISC_DEVICES conditional,
+-# because it may be selected by drivers/platform/x86/hp_accel.
++menu "Misc devices"
++
+ config SENSORS_LIS3LV02D
+ 	tristate
+ 	depends on INPUT
+ 	select INPUT_POLLDEV
+ 	default n
+ 
+-menuconfig MISC_DEVICES
+-	bool "Misc devices"
+-	---help---
+-	  Say Y here to get to see options for device drivers from various
+-	  different categories. This option alone does not add any kernel code.
+-
+-	  If you say N, all options in this submenu will be skipped and disabled.
+-
+-if MISC_DEVICES
+-
+ config AD525X_DPOT
+ 	tristate "Analog Devices Digital Potentiometers"
+ 	depends on (I2C || SPI) && SYSFS
+@@ -516,5 +506,4 @@ source "drivers/misc/ti-st/Kconfig"
+ source "drivers/misc/lis3lv02d/Kconfig"
+ source "drivers/misc/carma/Kconfig"
+ source "drivers/misc/altera-stapl/Kconfig"
+-
+-endif # MISC_DEVICES
++endmenu
+diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+index cf444b0..00fcbed 100644
+--- a/drivers/mmc/host/Kconfig
++++ b/drivers/mmc/host/Kconfig
+@@ -477,7 +477,6 @@ config MMC_SDHI
+ config MMC_CB710
+ 	tristate "ENE CB710 MMC/SD Interface support"
+ 	depends on PCI
+-	select MISC_DEVICES
+ 	select CB710_CORE
+ 	help
+ 	  This option enables support for MMC/SD part of ENE CB710/720 Flash
+diff --git a/drivers/net/ethernet/micrel/Kconfig b/drivers/net/ethernet/micrel/Kconfig
+index 1ea811c..fe42fc0 100644
+--- a/drivers/net/ethernet/micrel/Kconfig
++++ b/drivers/net/ethernet/micrel/Kconfig
+@@ -42,7 +42,6 @@ config KS8851
+ 	select NET_CORE
+ 	select MII
+ 	select CRC32
+-	select MISC_DEVICES
+ 	select EEPROM_93CX6
+ 	---help---
+ 	  SPI driver for Micrel KS8851 SPI attached network chip.
+-- 
+1.7.1
 
