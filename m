@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011Ab2AEXIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 18:08:12 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35809 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2AEXIK convert rfc822-to-8bit (ORCPT
+	id S933018Ab2AEXKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 18:10:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56228 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932235Ab2AEXKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 18:08:10 -0500
-From: "Justin Piszcz" <jpiszcz@lucidpixels.com>
-To: "'Andrew Burgess'" <aab@cichlid.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-uvc-devel@lists.berlios.de>
-References: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com> (from jpiszcz@lucidpixels.com on Tue Jan  3 06:21:02 2012) <1325694071.16950.49@hogo> <003301cccb03$4a8cbea0$dfa63be0$@lucidpixels.com>
-In-Reply-To: <003301cccb03$4a8cbea0$dfa63be0$@lucidpixels.com>
-Subject: RE: 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
-Date: Thu, 5 Jan 2012 18:08:08 -0500
-Message-ID: <017d01cccbfe$e3a82100$aaf86300$@lucidpixels.com>
+	Thu, 5 Jan 2012 18:10:14 -0500
+Date: Thu, 5 Jan 2012 15:10:11 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: leonid.moiseichuk@nokia.com
+cc: gregkh@suse.de, penberg@kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, cesarb@cesarb.net,
+        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, aarcange@redhat.com,
+        riel@redhat.com, mel@csn.ul.ie, dima@android.com, rebecca@android.com,
+        san@google.com, akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
+Subject: RE: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and related
+ changes in MM
+In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045545E5@008-AM1MPN1-003.mgdnok.nokia.com>
+Message-ID: <alpine.DEB.2.00.1201051503530.10521@chino.kir.corp.google.com>
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <20120104195612.GB19181@suse.de> <84FF21A720B0874AA94B46D76DB98269045542B5@008-AM1MPN1-003.mgdnok.nokia.com> <CAOJsxLEdTMB6JtYViRJq5gZ4_w5aaV18S3q-1rOXGzaMtmiW6A@mail.gmail.com>
+ <84FF21A720B0874AA94B46D76DB9826904554391@008-AM1MPN1-003.mgdnok.nokia.com> <20120105145753.GA3937@suse.de> <84FF21A720B0874AA94B46D76DB98269045545E5@008-AM1MPN1-003.mgdnok.nokia.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQEP3FQPGNkjbsETjYM87qM0UoHbNAGqYLYAAwAb7q+XUvD9UA==
-Content-Language: en-us
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 5 Jan 2012, leonid.moiseichuk@nokia.com wrote:
 
+> I tried to sort out all inputs coming. But before doing the next step I 
+> prefer to have tests passed. Changes you proposed are strain forward and 
+> understandable. 
+> Hooking in mm/vmscan.c and mm/page-writeback.c is not so easy, I need 
+> to find proper place and make adequate proposal.
+> Using memcg is doesn't not look for me now as a good way because I 
+> wouldn't like to change memory accounting - memcg has strong reason to 
+> keep caches.
+> 
 
------Original Message-----
-From: Andrew Burgess [mailto:aab@cichlid.com] 
+If you can accept the overhead of the memory controller (increase in 
+kernel text size and amount of metadata for page_cgroup), then you can 
+already do this with a combination of memory thresholds with 
+cgroup.event_control and disabling of the oom killer entirely with 
+memory.oom_control.  You can also get notified when the oom killer is 
+triggered by using eventfd(2) on memory.oom_control even though it's 
+disabled in the kernel.  Then, the userspace task attached to that control 
+file can send signals to applications to free their memory or, in the 
+worst case, choose to kill an application but have all that policy be 
+implemented in userspace.
 
-it sounds like a bug recently tracked down on the usb devel list
-(search for 'Failed to resubmit video URB')
+We actually have extended that internally to have an oom killer delay, 
+i.e. a specific amount of time must pass for userspace to react to the oom 
+situation or the oom killer will actually be triggered.  This is needed in 
+case our userspace is blocked or can't respond for whatever reason and is 
+a nice fallback so that we're guaranteed to never end up livelocked.  That 
+delay gets reset anytime a page is uncharged to a memcg, the memcg limit 
+is increased, or the delay is rewritten (for userspace to say "I've 
+handled the event").  Those patches were posted on linux-mm several months 
+ago but never merged upstream.  You should be able to use the same concept 
+apart from the memory controller and implement it generically.
 
-it turned out to be a bug in the usb host controller; if you
-do an lspci do you see anything made by NetMos or MosChip?
-
---
-
-Hi,
-
-Running kernel 3.2 for 12+ hours, no issues yet, will update thread if any further issues occur.
-
-Justin.
-
+You also presented this as an alternative for "embedded or small" users so 
+I wasn't aware that using the memory controller was an acceptable solution 
+given its overhead.
