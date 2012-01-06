@@ -1,122 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030283Ab2AFKVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 05:21:45 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35731 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030269Ab2AFKVk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 05:21:40 -0500
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Alex Elder <aelder@sgi.com>, xfs masters <xfs-masters@oss.sgi.com>,
-        xfs <xfs@oss.sgi.com>, linux kernel <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Subject: [PATCH 1/1] xfs: serialise unaligned direct IOs
-Date: Fri,  6 Jan 2012 16:03:10 +0530
-Message-Id: <1325845990-5664-1-git-send-email-amit.sahrawat83@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1030298Ab2AFKV5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 05:21:57 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:50198 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030200Ab2AFKVy convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 6 Jan 2012 05:21:54 -0500
+Message-Id: <4F06AF4A020000780006AC14@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 06 Jan 2012 07:22:34 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andi Kleen" <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
+References: <4F05BBFE020000780006A983@nat28.tlf.novell.com>
+ <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com>
+ <20120106014748.GS11715@one.firstfloor.org> <4F06566B.8080708@zytor.com>
+In-Reply-To: <4F06566B.8080708@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Amit Sahrawat<amit.sahrawat83@gmail.com>
+>>> On 06.01.12 at 03:03, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> On 01/05/2012 05:47 PM, Andi Kleen wrote:
+>>>
+>>> Is that still true, and do we even use string instructions still on
+>>> those old CPUs?  Jan's fixes don't introduce any additional delays in
+>>> the non-string-instruction paths.
+>> 
+>> Yes various of the CPUs with bugs used string instructions.
+>> 
+> 
+> Which CPUs are you talking about here?
 
-[ This patch published in 2.6.38 kernel(Original reference
-http://oss.sgi.com/archives/xfs/2011-01/msg00013.html), but
-can not be applied to 2.6.35 kernel directly, because of the
-absence of required function, its reimplmented to resolve
-xfstest test 240 fail.]
+Indeed, I went through various specification updates/revision guides
+without finding any relevant erratum.
 
-When two concurrent unaligned, non-overlapping direct IOs are issued
-to the same block, the direct Io layer will race to zero the block.
-The result is that one of the concurrent IOs will overwrite data
-written by the other IO with zeros. This is demonstrated by the
-xfsqa test 240.
+>> 
+>> Both string and non string instructions are used on modern CPUs,
+>> so making any of that slower is not a good idea.
+>> 
+> 
+> Obviously not, but I'm perfectly fine turning REP_GOOD off on old broken
+> CPUs.
 
-To avoid this problem, serialise all unaligned direct IOs to an
-inode with a big hammer. We need a big hammer approach as we need to
-serialise AIO as well, so we can't just block writes on locks.
-Hence, the big hammer is calling xfs_ioend_wait() while holding out
-other unaligned direct IOs from starting.
+Yes, that's what my plan would have been too, had I been able to
+identify any specific CPU(s) that actually suffer from such problems.
 
-We don't bother trying to serialised aligned vs unaligned IOs as
-they are overlapping IO and the result of concurrent overlapping IOs
-is undefined - the result of either IO is a valid result so we let
-them race. Hence we only penalise unaligned IO, which already has a
-major overhead compared to aligned IO so this isn't a major problem.
-
-Signed-off-by: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
----
- fs/xfs/linux-2.6/xfs_file.c |   39 ++++++++++++++++++++++++++++++++-------
- 1 files changed, 32 insertions(+), 7 deletions(-)
-
-diff --git a/fs/xfs/linux-2.6/xfs_file.c b/fs/xfs/linux-2.6/xfs_file.c
-index 257a56b..b943aa1 100644
---- a/fs/xfs/linux-2.6/xfs_file.c
-+++ b/fs/xfs/linux-2.6/xfs_file.c
-@@ -629,6 +629,7 @@ xfs_file_aio_write(
- 	int			iolock;
- 	int			eventsent = 0;
- 	size_t			ocount = 0, count;
-+	int			unaligned_io = 0;
- 	int			need_i_mutex;
- 
- 	XFS_STATS_INC(xs_write_calls);
-@@ -709,8 +710,26 @@ start:
- 			xfs_iunlock(ip, XFS_ILOCK_EXCL|iolock);
- 			return XFS_ERROR(-EINVAL);
- 		}
-+	/*
-+	 * In most cases the direct IO writes will be done with IOLOCK_SHARED
-+	 * allowing them to be done in parallel with reads and other direct IO
-+	 * writes. However,if the IO is not aligned to filesystem blocks, the
-+	 * direct IO layer needs to do sub-block zeroing and that requires
-+	 * serialisation against other direct IOs to the same block. In this
-+	 * case we need to serialise the submission of the unaligned IOs so
-+	 * that we don't get racing block zeroing in the dio layer.
-+	 * To avoid the problem with aio, we also need to wait for outstanding
-+	 * IOs to complete so that unwritten extent conversion is completed
-+	 * before we try to map the overlapping block. This is currently
-+	 * implemented by hitting it with a big hammer (i.e. xfs_ioend_wait()).
-+	 */
-+
-+		if ((pos & mp->m_blockmask) ||
-+		   ((pos + count) & mp->m_blockmask))
-+			unaligned_io = 1;
- 
--		if (!need_i_mutex && (mapping->nrpages || pos > ip->i_size)) {
-+		if (!need_i_mutex &&
-+		   (unaligned_io || mapping->nrpages || pos > ip->i_size)) {
- 			xfs_iunlock(ip, XFS_ILOCK_EXCL|iolock);
- 			iolock = XFS_IOLOCK_EXCL;
- 			need_i_mutex = 1;
-@@ -769,12 +788,18 @@ start:
- 		}
- 
- 		if (need_i_mutex) {
--			/* demote the lock now the cached pages are gone */
--			xfs_ilock_demote(ip, XFS_IOLOCK_EXCL);
--			mutex_unlock(&inode->i_mutex);
--
--			iolock = XFS_IOLOCK_SHARED;
--			need_i_mutex = 0;
-+			if (unaligned_io)
-+				xfs_ioend_wait(ip);
-+			else {
-+				/*
-+				 * demote the lock now the cached pages
-+				 * are gone if we can
-+				 */
-+				xfs_ilock_demote(ip, XFS_IOLOCK_EXCL);
-+				iolock = XFS_IOLOCK_SHARED;
-+				mutex_unlock(&inode->i_mutex);
-+				need_i_mutex = 0;
-+			}
- 		}
- 
- 		trace_xfs_file_direct_write(ip, count, iocb->ki_pos, ioflags);
--- 
-1.7.2.3
+Jan
 
