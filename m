@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797Ab2AFQVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 11:21:36 -0500
-Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:45885 "EHLO
-	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab2AFQVf (ORCPT
+	id S1758800Ab2AFQYB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 11:24:01 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:38495 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab2AFQYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 11:21:35 -0500
-X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jan 2012 11:21:35 EST
-Message-ID: <4F071E19.60108@calxeda.com>
-Date: Fri, 06 Jan 2012 10:15:21 -0600
-From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+	Fri, 6 Jan 2012 11:24:00 -0500
+Message-ID: <4F072073.4040808@canonical.com>
+Date: Fri, 06 Jan 2012 08:25:23 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-CC: Dave Jones <davej@redhat.com>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] powernow-k8: Update copyright, maintainer and documentation
- information
-References: <20120106145500.GI24451@alberich.amd.com> <20120106145933.GL24451@alberich.amd.com>
-In-Reply-To: <20120106145933.GL24451@alberich.amd.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the
+ MT slot state
+References: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
+X-Enigmail-Version: 1.4a1pre
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2012 08:59 AM, Andreas Herrmann wrote:
+On 01/06/2012 07:16 AM, Henrik Rydberg wrote:
+> This patch adds the ability to extract the MT slot state sequentially
+> via EVIOCGABS. The slot parameter is first selected by calling
+> EVIOCSABS with ABS_MT_SLOT as argument, followed by a set of EVIOCGABS
+> calls. The slot selection is local to the evdev client handler, and
+> does not affect the actual input state.
 > 
-> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+> Cc: Chase Douglas <chase.douglas@canonical.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 > ---
->  drivers/cpufreq/powernow-k8.c |   17 ++++++++++-------
->  1 files changed, 10 insertions(+), 7 deletions(-)
+> Hi Dmitry,
 > 
-> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-> index ad683ec..8f9b2ce 100644
-> --- a/drivers/cpufreq/powernow-k8.c
-> +++ b/drivers/cpufreq/powernow-k8.c
-> @@ -1,10 +1,11 @@
->  /*
-> - *   (c) 2003-2010 Advanced Micro Devices, Inc.
-> + *   (c) 2003-2012 Advanced Micro Devices, Inc.
->   *  Your use of this code is subject to the terms and conditions of the
->   *  GNU general public license version 2. See "COPYING" or
->   *  http://www.gnu.org/licenses/gpl.html
->   *
-> - *  Support : mark.langsdorf@amd.com
-> + *  Maintainer:
-> + *  Andreas Herrmann <andreas.herrmann3@amd.com>
->   *
->   *  Based on the powernow-k7.c module written by Dave Jones.
->   *  (C) 2003 Dave Jones on behalf of SuSE Labs
-> @@ -16,12 +17,14 @@
->   *  Valuable input gratefully received from Dave Jones, Pavel Machek,
->   *  Dominik Brodowski, Jacob Shin, and others.
->   *  Originally developed by Paul Devriendt.
-> - *  Processor information obtained from Chapter 9 (Power and Thermal Management)
-> - *  of the "BIOS and Kernel Developer's Guide for the AMD Athlon 64 and AMD
-> - *  Opteron Processors" available for download from www.amd.com
->   *
-> - *  Tables for specific CPUs can be inferred from
-> - *     http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/30430.pdf
-> + *  Processor information obtained from Chapter 9 (Power and Thermal
-> + *  Management) of the "BIOS and Kernel Developer's Guide (BKDG) for
-> + *  the AMD Athlon 64 and AMD Opteron Processors" and section "2.x
-> + *  Power Management" in BKDGs for newer AMD CPU families.
-> + *
-> + *  Tables for specific CPUs can be inferred from AMD's processor
-> + *  power and thermal data sheets, (e.g. 30417.pdf, 30430.pdf, 43375.pdf)
->   */
->  
->  #include <linux/kernel.h>
+> the first version of this patch was sent a long time ago (May 2010),
+> but was put on hold due to a lack of usecases. Now, it seems such a
+> case has arrived, in the X server (evdev). Some MT events may be much
+> less frequent than others (ABS_MT_ORIENTATION, for example), resulting
+> in wrong touch values being assumed after, say, an X restart.
+> 
+> I am not 100% in favor of this patch myself. Perhaps there should be a
+> more explicit mechanism for selecting slots, for instance.
+> 
+> The patch has been tested against both 3.2 and 3.1 stable.
 
-Acked-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
+To bolster the claim, I have been working on the X multitouch
+implementation and a library on top of it, utouch-frame. I wrote a test
+case that expects the proper sequence and values of events that
+propagate from the kernel to the X input module, through utouch-frame.
+It was during this testing that I noticed issues that could occur if we
+don't know the current values of axes in each slot.
 
-formerly mark.langsdorf@amd.com
+This patch does what is says, so I'm happy to review it positively
+as-is. It doesn't require a new ioctl, which is a good thing :).
+
+Reviewed-by: Chase Douglas <chase.douglas@canonical.com>
