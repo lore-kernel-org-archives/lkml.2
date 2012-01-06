@@ -1,57 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab2AFGOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 01:14:03 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:47717 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751201Ab2AFGOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 01:14:01 -0500
-Message-ID: <4F069120.8060300@tao.ma>
-Date: Fri, 06 Jan 2012 14:13:52 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: do not drain pagevecs for mlock
-References: <1325226961-4271-1-git-send-email-tm@tao.ma> <CAHGf_=qOGy3MQgiFyfeG82+gbDXTBT5KQjgR7JqMfQ7e7RSGpA@mail.gmail.com> <4EFD7AE3.8020403@tao.ma> <CAHGf_=pODc6fLGJAEZWzQtUd6fj6v=fV9n6UTwysqRR1SwY++A@mail.gmail.com> <4EFD8832.6010905@tao.ma> <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com>
-In-Reply-To: <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+	id S1752325Ab2AFGRA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 01:17:00 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:13627 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751201Ab2AFGQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 01:16:59 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>,
+        Greg Thelen <gthelen@google.com>,
+        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
+        Laurent Chavey <chavey@google.com>
+Subject: [PATCH] net: fix sock_clone reference mismatch with tcp memcontrol
+Date: Fri,  6 Jan 2012 10:16:39 +0400
+Message-Id: <1325830599-11857-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kosaki,
-On 12/30/2011 06:07 PM, KOSAKI Motohiro wrote:
->>> Because your test program is too artificial. 20sec/100000times =
->>> 200usec. And your
->>> program repeat mlock and munlock the exact same address. so, yes, if
->>> lru_add_drain_all() is removed, it become near no-op. but it's
->>> worthless comparision.
->>> none of any practical program does such strange mlock usage.
->> yes, I should say it is artificial. But mlock did cause the problem in
->> our product system and perf shows that the mlock uses the system time
->> much more than others. That's the reason we created this program to test
->> whether mlock really sucks. And we compared the result with
->> rhel5(2.6.18) which runs much much faster.
->>
->> And from the commit log you described, we can remove lru_add_drain_all
->> safely here, so why add it? At least removing it makes mlock much faster
->> compared to the vanilla kernel.
-> 
-> If we remove it, we lose to a test way of mlock. "Memlocked" field of
-> /proc/meminfo
-> show inaccurate number very easily. So, if 200usec is no avoidable,
-> I'll ack you.
-> But I'm not convinced yet.
-Do you find something new for this?
+Sockets can also be created through sock_clone. Because it copies
+all data in the sock structure, it also copies the memcg-related pointer,
+and all should be fine. However, since we now use reference counts in
+socket creation, we are left with some sockets that have no reference
+counts. It matters when we destroy them, since it leads to a mismatch.
 
-Thanks
-Tao
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: David S. Miller <davem@davemloft.net>
+CC: Greg Thelen <gthelen@google.com>
+CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Laurent Chavey <chavey@google.com>
+---
+ include/net/sock.h |    6 ++++++
+ mm/memcontrol.c    |   19 ++++++++++++++-----
+ net/core/sock.c    |    2 ++
+ 3 files changed, 22 insertions(+), 5 deletions(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index bb972d2..0ed65e3 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1103,6 +1103,12 @@ sk_sockets_allocated_read_positive(struct sock *sk)
+ 	return percpu_counter_sum_positive(prot->sockets_allocated);
+ }
+ 
++static inline void sk_update_clone(const struct sock *sk, struct sock *newsk)
++{
++	if (mem_cgroup_sockets_enabled && sk->sk_cgrp)
++		sock_update_memcg(newsk);
++}
++
+ static inline int
+ proto_sockets_allocated_sum_positive(struct proto *prot)
+ {
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 94da8ee..9c72d5d 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -381,16 +381,25 @@ static void mem_cgroup_put(struct mem_cgroup *memcg);
+ static bool mem_cgroup_is_root(struct mem_cgroup *memcg);
+ void sock_update_memcg(struct sock *sk)
+ {
+-	/* A socket spends its whole life in the same cgroup */
+-	if (sk->sk_cgrp) {
+-		WARN_ON(1);
+-		return;
+-	}
+ 	if (static_branch(&memcg_socket_limit_enabled)) {
+ 		struct mem_cgroup *memcg;
+ 
+ 		BUG_ON(!sk->sk_prot->proto_cgroup);
+ 
++		/* Socket cloning can throw us here with sk_cgrp already
++		 * filled. It won't however, necessarily happen from
++		 * process context. So the test for root memcg given
++		 * the current task's memcg won't help us in this case.
++		 *
++		 * Respecting the original socket's memcg is a better
++		 * decision in this case.
++		 */
++		if (sk->sk_cgrp) {
++			BUG_ON(mem_cgroup_is_root(sk->sk_cgrp->memcg));
++			mem_cgroup_get(sk->sk_cgrp->memcg);
++			return;
++		}
++
+ 		rcu_read_lock();
+ 		memcg = mem_cgroup_from_task(current);
+ 		if (!mem_cgroup_is_root(memcg)) {
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 002939c..e80b64f 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1362,6 +1362,8 @@ struct sock *sk_clone_lock(const struct sock *sk, const gfp_t priority)
+ 		sk_set_socket(newsk, NULL);
+ 		newsk->sk_wq = NULL;
+ 
++		sk_update_clone(sk, newsk);
++
+ 		if (newsk->sk_prot->sockets_allocated)
+ 			sk_sockets_allocated_inc(newsk);
+ 
+-- 
+1.7.7.4
+
