@@ -1,167 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758651Ab2AFENB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 23:13:01 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:51669 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758616Ab2AFEM7 (ORCPT
+	id S1758658Ab2AFEiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 23:38:12 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:46844 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756325Ab2AFEiK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 23:12:59 -0500
-Date: Fri, 6 Jan 2012 15:12:50 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Crypto Update for 3.3
-Message-ID: <20120106041250.GA7759@gondor.apana.org.au>
-References: <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <20110315145940.GA15373@gondor.apana.org.au> <20110520235409.GA1722@gondor.apana.org.au> <20110724011752.GA14373@gondor.apana.org.au> <20111031040952.GA19659@gondor.apana.org.au>
+	Thu, 5 Jan 2012 23:38:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111031040952.GA19659@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1325823545.22361.526.camel@sli10-conroe>
+References: <20120103221301.GH31746@google.com>
+	<20120103223505.GI31746@google.com>
+	<20120105012445.GP31746@google.com>
+	<alpine.LSU.2.00.1201051026090.2009@eggly.anvils>
+	<20120105183842.GF18486@google.com>
+	<20120106021707.GA6276@google.com>
+	<20120106023638.GC6276@google.com>
+	<1325819655.22361.513.camel@sli10-conroe>
+	<20120106030406.GD6276@google.com>
+	<20120106033012.GE6276@google.com>
+	<20120106035247.GF6276@google.com>
+	<1325823545.22361.526.camel@sli10-conroe>
+Date: Thu, 5 Jan 2012 20:38:07 -0800
+X-Google-Sender-Auth: syfEczW8LKJkrBpLhYBkpfeyG6g
+Message-ID: <CAOS58YPUgK4J6j1Gme9O9HeL7GrwnJU8QTVKbVLA9cEXPQ1kag@mail.gmail.com>
+Subject: Re: [PATCH block:for-3.3/core] block: disable ELEVATOR_INSERT_SORT_MERGE
+From: Tejun Heo <tj@kernel.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, x86@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+Hello,
 
-Here is the crypto update for 3.3:
+On Thu, Jan 5, 2012 at 8:19 PM, Shaohua Li <shaohua.li@intel.com> wrote:
+>> For detailed discussion of the bug:
+>>
+>>  http://thread.gmane.org/gmane.linux.kernel.next/20064/focus=20159
+>>
+> this is overkill. when plug is added, we found huge performance
+> regression, that's why we add INSERT_SORT_MERGE.
 
-* New test vectors (serpent, xts-twofish).
-* Speed test for asynchronous ciphers.
-* SSE2 assembly implementation of serpent.
-* Support for LRW and XTS in X86-64 assembly implementation of twofish.
-* More MD5 combos for caam.
-* Channel remap on talitos for better affinity.
-* Direct support for HMAC on talitos.
-* Misc fixes.
+With what workload? I suspect most of the improvements is from merging
+across different cfqqs, no? The whole recursive thing can't be very
+useful if cross-cfqq merging isn't allowed. Maybe there are specific
+cases where last_merge hint merging can be specially effective. I
+don't know. Regardless, this is an apparent bug and the block tree
+will be pushed mainline pretty soon. If necessary, fix it better
+later. Doing complex things inside merge window usually isn't a good
+idea.
 
+Thanks.
 
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Axel Lin (2):
-      char: hw_random: convert drivers/char/hw_random/* to use module_platform_driver()
-      crypto: convert drivers/crypto/* to use module_platform_driver()
-
-Jamie Iles (1):
-      crypto: picoxcell - fix boolean and / or confusion
-
-Jarod Wilson (1):
-      crypto: ansi_cprng - enforce key != seed in fips mode
-
-Jussi Kivilinna (36):
-      crypto: testmgr - add new serpent test vectors
-      crypto: tcrypt - add test_acipher_speed
-      crypto: tcrypt - add serpent speed tests
-      crypto: serpent - export common functions for x86_64/i386-sse2 assembler implementations
-      crypto: serpent - rename module from serpent to serpent_generic
-      crypto: lrw - fix memleak
-      crypto: lrw - use blocksize constant
-      crypto: lrw - split gf128mul table initialization from setkey
-      crypto: lrw - add interface for parallelized cipher implementions
-      crypto: testmgr - add lrw(serpent) test vectors
-      crypto: tcrypt - add lrw(serpent) tests
-      crypto: testmgr - add lrw(twofish) test vectors
-      crypto: tcrypt - add lrw(twofish) tests
-      crypto: twofish-x86_64-3way - add lrw support
-      crypto: xts - use blocksize constant
-      crypto: xts: add interface for parallelized cipher implementations
-      crypto: testmgr - add xts(serpent) test vectors
-      crypto: tcrypt - add xts(serpent) tests
-      crypto: testmgr - add xts(twofish) test vectors
-      crypto: tcrypt - add xts(twofish) tests
-      crypto: twofish-x86_64-3way - add xts support
-      crypto: serpent - add 8-way parallel x86_64/SSE2 assembler implementation
-      crypto: serpent - add 4-way parallel i586/SSE2 assembler implementation
-      crypto: serpent-sse2 - add lrw support
-      crypto: serpent-sse2 - add xts support
-      crypto: serpent-sse2 - clear CRYPTO_TFM_REQ_MAY_SLEEP in lrw and xts modes
-      crypto: serpent - cleanup checkpatch errors and warnings
-      crypto: serpent - rename serpent.c to serpent_generic.c
-      crypto: serpent-sse2 - should select CRYPTO_CRYPTD
-      crypto: lrw - remove dependency on EXPERIMENTAL
-      crypto: xts - remove dependency on EXPERIMENTAL
-      crypto: twofish-x86_64-3way - select LRW and XTS
-      crypto: twofish-x86_64-3way - remove unneeded LRW/XTS #ifdefs
-      crypto: serpent-sse2 - select LRW and XTS
-      crypto: serpent-sse2 - remove unneeded LRW/XTS #ifdefs
-      crypto: gf128mul - remove leftover "(EXPERIMENTAL)" in Kconfig
-
-Kim Phillips (11):
-      crypto: talitos - be less noisy on startup
-      crypto: talitos - prepare driver for channel remap support
-      crypto: talitos - support for channel remap and 2nd IRQ
-      crypto: caam - add support for MD5 algorithm variants
-      crypto: talitos - fix bad kfree
-      crypto: talitos - remove NO_IRQ references
-      crypto: talitos - convert talitos_error to struct device
-      crypto: caam - desc.h - convert spaces to tabs
-      crypto: caam - more desc.h cleanups
-      crypto: caam - fix polarity of "propagate error" logic
-      crypto: caam - remove DECO access initialization code
-
-Lee Nipper (1):
-      crypto: talitos - add hmac algorithms
-
-Steffen Klassert (1):
-      crypto: Unlink and free instances when deleted
-
-Valdis.Kletnieks@vt.edu (1):
-      crypto: fix typo in crypto/Kconfig
-
- arch/x86/crypto/Makefile                     |    4 +
- arch/x86/crypto/serpent-sse2-i586-asm_32.S   |  638 ++++++
- arch/x86/crypto/serpent-sse2-x86_64-asm_64.S |  761 +++++++
- arch/x86/crypto/serpent_sse2_glue.c          | 1070 ++++++++++
- arch/x86/crypto/twofish_glue_3way.c          |  218 ++
- arch/x86/include/asm/serpent.h               |   63 +
- crypto/Kconfig                               |   52 +-
- crypto/Makefile                              |    2 +-
- crypto/algapi.c                              |   29 +
- crypto/ansi_cprng.c                          |    8 +
- crypto/crypto_user.c                         |    2 +-
- crypto/lrw.c                                 |  156 ++-
- crypto/serpent.c                             |  587 ------
- crypto/serpent_generic.c                     |  684 +++++++
- crypto/tcrypt.c                              |  310 +++
- crypto/tcrypt.h                              |    2 +
- crypto/testmgr.c                             |  150 ++
- crypto/testmgr.h                             | 2759 +++++++++++++++++++++++++-
- crypto/twofish_common.c                      |   13 +-
- crypto/xts.c                                 |   79 +-
- drivers/char/hw_random/atmel-rng.c           |   12 +-
- drivers/char/hw_random/n2-drv.c              |   13 +-
- drivers/char/hw_random/octeon-rng.c          |   13 +-
- drivers/char/hw_random/pasemi-rng.c          |   12 +-
- drivers/char/hw_random/picoxcell-rng.c       |   12 +-
- drivers/char/hw_random/ppc4xx-rng.c          |   12 +-
- drivers/char/hw_random/timeriomem-rng.c      |   13 +-
- drivers/crypto/amcc/crypto4xx_core.c         |   13 +-
- drivers/crypto/caam/caamalg.c                |   67 +-
- drivers/crypto/caam/compat.h                 |    1 +
- drivers/crypto/caam/ctrl.c                   |   26 +-
- drivers/crypto/caam/desc.h                   | 2265 +++++++++++-----------
- drivers/crypto/caam/desc_constr.h            |    7 +-
- drivers/crypto/caam/regs.h                   |    1 -
- drivers/crypto/mv_cesa.c                     |   12 +-
- drivers/crypto/picoxcell_crypto.c            |   16 +-
- drivers/crypto/s5p-sss.c                     |   13 +-
- drivers/crypto/talitos.c                     |  493 ++++-
- drivers/crypto/talitos.h                     |   45 +-
- include/crypto/algapi.h                      |    1 +
- include/crypto/lrw.h                         |   43 +
- include/crypto/serpent.h                     |   27 +
- include/crypto/twofish.h                     |    2 +
- include/crypto/xts.h                         |   27 +
- 44 files changed, 8684 insertions(+), 2049 deletions(-)
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+tejun
