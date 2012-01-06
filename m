@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab2AFNmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 08:42:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37639 "EHLO mx2.suse.de"
+	id S1755989Ab2AFNym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 08:54:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2225 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755481Ab2AFNms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 08:42:48 -0500
-Date: Fri, 6 Jan 2012 05:42:01 -0800
-From: Greg KH <gregkh@suse.de>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Alan Cox <alan@linux.intel.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jiri Slaby <jslaby@suse.cz>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Slaby <jirislaby@gmail.com>
-Subject: Re: [PATCH] serial: relocate remaining serial drivers from tty/ to
- tty/serial/
-Message-ID: <20120106134201.GD9453@suse.de>
-References: <1325707287-31038-1-git-send-email-paul.gortmaker@windriver.com>
- <4F04BFA8.9010100@windriver.com>
- <20120104220332.GA22985@suse.de>
- <201201042327.33739.arnd@arndb.de>
- <20120105054240.GA9093@merkur.ravnborg.org>
- <20120105124505.73c88f2c@bob.linux.org.uk>
- <20120105232142.GA10870@windriver.com>
+	id S1751673Ab2AFNyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 08:54:41 -0500
+Date: Fri, 6 Jan 2012 14:48:34 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Yasunori Goto <y-goto@jp.fujitsu.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
+	condition
+Message-ID: <20120106134834.GA19462@redhat.com>
+References: <20111226171151.GA4472@redhat.com> <20111227154828.5120.E1E9C6FF@jp.fujitsu.com> <20120106192256.AB15.E1E9C6FF@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120105232142.GA10870@windriver.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120106192256.AB15.E1E9C6FF@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 06:21:43PM -0500, Paul Gortmaker wrote:
-> [Re: [PATCH] serial: relocate remaining serial drivers from tty/ to tty/serial/] On 05/01/2012 (Thu 12:45) Alan Cox wrote:
-> 
-> > > drivers/tty/serial_core  <= drivers based on SERIAL_CORE
-> > > drivers/tty/serial       <= the rest
-> > > 
-> > > This makes it obvious that one directory is for drivers based on
-> > > SERIAL_CORE - and the other is sort of the "rest".
-> > > 
-> > > I know this imply moving files around again :-(
-> > 
-> > And putting one lot where the other were. Merge time is closed so we've
-> > got plenty of time to sort this right. For the moment can we just tidy
-> > up 8250, then think about it in more detail rather than play musical
-> > chairs ?
-> 
-> Presumably too late for 3.3, but I figured I'd send the 8250 tidy up
-> for review while the discussion was still fresh in everyone's mind.
+On 01/06, Yasunori Goto wrote:
+>
+> +change_task_state_cmpxchg(struct task_struct *p, unsigned int target_state,
+> +			  unsigned int new)
+>  {
+> -	trace_sched_wakeup(p, true);
+> -	check_preempt_curr(rq, p, wake_flags);
+> +	unsigned int old, tmp;
+>
+> -	p->state = TASK_RUNNING;
+> +	old = p->state;
+> +
+> +	while (1) {
+> +		if (old == new)
+> +			return 1;
+> +
+> +		if (unlikely(!(old & target_state)))
+> +			return 0;
+> +
+> +		tmp = cmpxchg(&p->state, old, new);
+> +		if (likely(tmp == old))
+> +			return 1;
+> +
+> +		old = tmp;
+> +	}
 
-That looks good, I'll see if I can get this in after -rc1 is out as
-moving files then is usually easier.
+I do not really think we should retry if cmpxchg fails. The state was
+changed after initial check, we can pretend it was changed after we
+change it succesfully.
 
-Unless anyone objects to this patch?
+> @@ -2828,11 +2883,18 @@ try_to_wake_up(struct task_struct *p, un
+>  	if (!(p->state & state))
+>  		goto out;
+>
+> -	success = 1; /* we're going to change ->state */
+>  	cpu = task_cpu(p);
+>
+> -	if (p->on_rq && ttwu_remote(p, wake_flags))
+> -		goto stat;
+> +	if (p->on_rq) {
+> +		int ret;
+> +		ret = ttwu_remote(p, state, wake_flags);
+> +		if (likely(ret == 1)) {
+> +			success = 1;
+> +			goto stat;
+> +		} else if (unlikely(ret < 0))
+> +			goto out;
+> +	}
+> +	success = 1; /* we're going to change ->state */
 
-thanks,
+But this is not enough, you should also recheck the state below. Although
+in this case you do not need atomic ops, the target can do nothing with
+its ->state.
 
-greg k-h
+Anyway. I have to agree with Peter even if I suggested this initially.
+This adds the unpleasant complications. Hopefully you found the only
+case when the spurious wakeup really hurts, probably it is better to
+fix do_exit().
+
+Oleg.
+
