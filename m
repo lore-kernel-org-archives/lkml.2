@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030546Ab2AFSqV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 13:46:21 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:49710 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933241Ab2AFSqT (ORCPT
+	id S1756924Ab2AFSzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 13:55:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39116 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab2AFSzW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 13:46:19 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=oQE6vNJ3d7oTBHj4PDKYH99BAdyPlqTp0xAtaaBYR4E= c=1 sm=1
- a=yzVfIOMwy8YA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=VwQbUJbxAAAA:8 a=g-JwlV_RxiMNuOAZZ58A:9
- a=CjuIK1q_8ugA:10 a=U62fhAwekXMA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH v2.2 00/23] ext4: Add metadata checksumming
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger.kernel@dilger.ca>
-In-Reply-To: <20111214013158.GB8233@tux1.beaverton.ibm.com>
-Date: Fri, 6 Jan 2012 11:46:17 -0700
-Cc: Theodore Tso <tytso@mit.edu>, Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel Devel <linux-fsdevel@vger.kernel.org>,
-        ext4 development <linux-ext4@vger.kernel.org>,
-        Coly Li <colyli@gmail.com>
+	Fri, 6 Jan 2012 13:55:22 -0500
+Message-ID: <4F0743EE.6080302@canonical.com>
+Date: Fri, 06 Jan 2012 10:56:46 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the
+ MT slot state
+References: <1325863019-2242-1-git-send-email-rydberg@euromail.se> <CAN+gG=FUEH851Um4Lco0avqdE2Eup3Jo79Ti4T7XhxT=PO6WeQ@mail.gmail.com> <20120106181845.GA22653@core.coreip.homeip.net>
+In-Reply-To: <20120106181845.GA22653@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <816F9C6C-51E4-4CB2-84F7-762EC10CB282@dilger.ca>
-References: <20111214004613.28243.54122.stgit@elm3c44.beaverton.ibm.com> <20111214011028.GA8233@tux1.beaverton.ibm.com> <20111214013158.GB8233@tux1.beaverton.ibm.com>
-To: djwong@us.ibm.com
-X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 13, 2011 at 04:46:14PM -0800, Darrick J. Wong wrote:
-> This patchset has been tested on 3.2.0-rc5 on x64, i386, ppc64, and ppc32.
-> The patches seems to work fine on all four platforms.
-[snip]
-> --D
+On 01/06/2012 10:18 AM, Dmitry Torokhov wrote:
+> Hi Benjamin,
 > 
-> [1] https://ext4.wiki.kernel.org/index.php/Ext4_Metadata_Checksums
+> On Fri, Jan 06, 2012 at 07:00:22PM +0100, Benjamin Tissoires wrote:
+>> Hi guys,
+>> I read somewhere in the code of Android a comment in which they
+>> complain about not being able to retrieve the slots states. So they
+>> assume they are all at 0.
+>> So this mechanism is good to have.
+>> However, back in January 2011, Dmitry raised the problem that this
+>> code was not thread safe.What happens if 2 applications ask for
+>> different slots values (let say X.org and utouch-frame)?
+> 
+> 2 different processes should be fine; the problem would be if 2 threads
+> of the same process share the same file descriptor. So far the rest of
+> evdev copes just fine with multiple threads using the same fd (all
+> operations are atomic in this regard), setting ABS_MT_SLOT before
+> fetching the state break this property.
 
-This URL is broken due to the kernel.org rebuild, so if it is going into
-Git it should be updated to the new URL:
+How is this any different than two threads trying to set a different
+property, like the fuzz factor of an axis? This seems like something
+that should be guarded by a lock in userspace, essentially.
 
-https://ext4.wiki.kernel.org/articles/e/x/t/Ext4_Metadata_Checksums_4d24.html
-
-Cheers, Andreas
-
-
-
-
-
+-- Chase
