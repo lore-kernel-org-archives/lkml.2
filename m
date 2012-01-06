@@ -1,84 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759206Ab2AFUoD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 15:44:03 -0500
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:34117 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759112Ab2AFUn7 (ORCPT
+	id S1759189Ab2AFUq6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 15:46:58 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:56893 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752987Ab2AFUq4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 15:43:59 -0500
-Message-ID: <4F075D02.3010407@linux.vnet.ibm.com>
-Date: Fri, 06 Jan 2012 18:43:46 -0200
-From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-CC: Breno Leitao <leitao@linux.vnet.ibm.com>, Alan Cox <alan@linux.intel.com>,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] jsm: Fixed EEH recovery error
-References: <1315834565-9280-1-git-send-email-lucaskt@linux.vnet.ibm.com> <20110912153508.GA8851@oc1711230544.ibm.com>
-In-Reply-To: <20110912153508.GA8851@oc1711230544.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-x-cbid: 12010620-9254-0000-0000-000007C07702
+	Fri, 6 Jan 2012 15:46:56 -0500
+Date: Fri, 6 Jan 2012 12:46:49 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI fixes
+Message-ID: <20120106124649.146001d6@jbarnes-desktop>
+In-Reply-To: <CA+55aFz7j8ipEn7e0dGnrG4dskyRiBOx0-ExAx3qnH_cR5mLQw@mail.gmail.com>
+References: <20111217092935.2c2e075e@jbarnes-desktop>
+	<CAE9FiQWueS=9aSAH4fLz=EpE=A_WanKU6pbfnR2a4gsymWjnDA@mail.gmail.com>
+	<dfbb748b-b9de-4390-bb8d-138fc4c5734f@email.android.com>
+	<CA+55aFz7j8ipEn7e0dGnrG4dskyRiBOx0-ExAx3qnH_cR5mLQw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/FpCkH/x/=WSxyVX_t5/_6UZ"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Sig_/FpCkH/x/=WSxyVX_t5/_6UZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 09/12/2011 12:35 PM, Thadeu Lima de Souza Cascardo wrote:
-> On Mon, Sep 12, 2011 at 10:36:05AM -0300, Lucas Kannebley Tavares wrote:
->> There was an error on the jsm driver that would cause it to be unable to
->> recover after a second error is detected.
->>
->> At the first error, the device recovers properly:
->>
->> [72521.485691] EEH: Detected PCI bus error on device 0003:02:00.0
->> [72521.485695] EEH: This PCI device has failed 1 times in the last hour:
->> ...
->> [72532.035693] ttyn3 at MMIO 0x0 (irq = 49) is a jsm
->> [72532.105689] jsm: Port 3 added
->>
->> However, at the second error, it cascades until EEH disables the device:
->>
->> [72631.229549] Call Trace:
->> ...
->> [72641.725687] jsm: Port 3 added
->> [72641.725695] EEH: Detected PCI bus error on device 0003:02:00.0
->> [72641.725698] EEH: This PCI device has failed 3 times in the last hour:
->>
->> It was caused because the PCI state was not being saved after the first
->> restore. Therefore, at the second recovery the PCI state would not be
->> restored.
->>
->> Signed-off-by: Lucas Kannebley Tavares<lucaskt@linux.vnet.ibm.com>
->Signed-off-by: Breno Leitao <brenohl@br.ibm.com>
-> Acked-by: Thadeu Lima de Souza Cascardo<cascardo@linux.vnet.ibm.com>
+On Sun, 18 Dec 2011 14:14:13 -0800
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Adding Greg to the CC list. It wasn't added earlier because 
-get_maintainers.pl only listed Alan's name. I apologize for the delay.
+> On Sat, Dec 17, 2011 at 9:52 PM, Jesse Barnes <jbarnes@virtuousgeek.org> =
+wrote:
+> >
+> > Crap, and after you guys spent so long coming up with a clean version.
+> >
+> > Linus, can you just apply this one on top? I think it's the one Yinghai=
+ and Ram agreed to.
+>=20
+> Ok, applied, but I have to say that I hate it.
+>=20
+> Why don't we just move the stupid iov indexes to the end, and then
+> ignore them by not counting through them in
+> __pci_enable_device_flags()? So the regular PCI code would always walk
+> through the resources 0 .. PCI_BRIDGE_RESOURCES_END or something. And
+> then the magic IOV code could look at its own ones that the generic
+> code apparently doesn't even want to know about.
+>=20
+> Hmm?
 
-This is a bugfix to EEH handling on jsm.
+There was some talk awhile back of pulling the SR-IOV resources out of
+the pci_dev resource array (adding a separate member to track them only
+if CONFIG_PCI_IOV is enabled), that would probably be the way to go.
+Then fix up whatever resource walking code that cares about IOV BARs
+(there isn't much I think).
 
->
->> ---
->>   drivers/tty/serial/jsm/jsm_driver.c |    1 +
->>   1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/tty/serial/jsm/jsm_driver.c b/drivers/tty/serial/jsm/jsm_driver.c
->> index 96da178..8941b15 100644
->> --- a/drivers/tty/serial/jsm/jsm_driver.c
->> +++ b/drivers/tty/serial/jsm/jsm_driver.c
->> @@ -270,6 +270,7 @@ static void jsm_io_resume(struct pci_dev *pdev)
->>   	struct jsm_board *brd = pci_get_drvdata(pdev);
->>
->>   	pci_restore_state(pdev);
->> +	pci_save_state(pdev);
->>
->>   	jsm_uart_port_init(brd);
->>   }
->> --
->> 1.7.4.4
->>
+Any thoughts Yinghai?
 
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
+
+--Sig_/FpCkH/x/=WSxyVX_t5/_6UZ
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPB125AAoJEIEoDkX4Qk9hAw4P/1f9b22hEWv/dlQG+sFO3vga
+j+g3S9aK0RWYwtc+GXgDYZIzqpwgCSHcCptpQKJlmI3uvTPX6v7B1KjU/HHLPyJ9
+8RdtFAeP+iVo8dQWrked1BVdQRMh39Tc8k2byyBr7t5FLyQh7Uu4BLDNxw7WmSPK
+UALkRUdtuJcnvtI9hnDFG+MeHZaf6nIrwksQwKX5MzXBh1YflgfjuL6lwhtrEgxq
+LO2yzPDzbRAYAt0Yo+2WIwYpk4sA5Yp52k0PXFR+IA6saY+ZvsSfeqHSnWBTu2lq
+gu9KqoZIL4xtzycwS8FWVVPRSCvZ1PBIuIsEbWUQJ1mGtDsJHopi3B4CUsRPmhi0
+TbhWwPltbG4dU7oKleHW0u3QBxzxBFwxBCZKNdXGyAcUXzNW0u39AddgHk+ssrBn
+h0wUHtfurtfw6hlFYxsc3sDUVsmpXfvNV2LYCPhkvTfdPnLB1lFdwX2ZPtf1/NOe
+8JNskSHfEQ3w1Vg8CbAvw+Yser//IiI6gPwgG1mlo/tE3eSymLj8ddaaBkyPi08U
+TI8VOKiPtq5LDgy0/P9EFkfz+332bvlRFL+/ZZexlmmgNxkh0cOqQleU6DHSO89n
+ZIvCnaN7HOeffPa6fOpwyPGwsaAmIrgsqIOTKe6TX4DQMtTvwWpBgCg889c++xS8
+YyKxd7C76UG36mZv3UU8
+=BNoN
+-----END PGP SIGNATURE-----
+
+--Sig_/FpCkH/x/=WSxyVX_t5/_6UZ--
