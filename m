@@ -1,106 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758643Ab2AFEMY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 23:12:24 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:47307 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758616Ab2AFEMX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 23:12:23 -0500
+	id S1758651Ab2AFENB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 23:13:01 -0500
+Received: from helcar.apana.org.au ([209.40.204.226]:51669 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758616Ab2AFEM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 23:12:59 -0500
+Date: Fri, 6 Jan 2012 15:12:50 +1100
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Crypto Update for 3.3
+Message-ID: <20120106041250.GA7759@gondor.apana.org.au>
+References: <20100226004914.GA20812@gondor.apana.org.au> <20100519020603.GA19654@gondor.apana.org.au> <20100521104404.GA29530@gondor.apana.org.au> <20100804140448.GA4042@gondor.apana.org.au> <20101024061625.GA23715@gondor.apana.org.au> <20110106000157.GA16089@gondor.apana.org.au> <20110315145940.GA15373@gondor.apana.org.au> <20110520235409.GA1722@gondor.apana.org.au> <20110724011752.GA14373@gondor.apana.org.au> <20111031040952.GA19659@gondor.apana.org.au>
 MIME-Version: 1.0
-In-Reply-To: <CAP=VYLpP393c0MYxPPR2j6jkLyyUQWjQBWg3RfbpJyuWxi+psA@mail.gmail.com>
-References: <1325472276.13595.200.camel@deadeye>
-	<CAOesGMgXRev24e0bmGD71J04=Aon7bs0YeK7mwX8Na12uR_b6A@mail.gmail.com>
-	<20120103144538.GU2914@n2100.arm.linux.org.uk>
-	<CAP=VYLpP393c0MYxPPR2j6jkLyyUQWjQBWg3RfbpJyuWxi+psA@mail.gmail.com>
-Date: Thu, 5 Jan 2012 20:12:22 -0800
-X-Google-Sender-Auth: NVaB__YiGLW1FvomHQpUXIBDpg4
-Message-ID: <CAPnjgZ0Q1Y0Um0fm8fHxd1tN_rFe+5Y0DPOvUYFZnodG2Q-cUA@mail.gmail.com>
-Subject: Re: Circular dependency between <linux/kernel.h> and <asm/bug.h> on ARM
-From: Simon Glass <sjg@chromium.org>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Olof Johansson <olof@lixom.net>, Ben Hutchings <ben@decadent.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111031040952.GA19659@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 7:43 PM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On Tue, Jan 3, 2012 at 9:45 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Sun, Jan 01, 2012 at 11:01:27PM -0800, Olof Johansson wrote:
->>> On Sun, Jan 1, 2012 at 6:44 PM, Ben Hutchings <ben@decadent.org.uk> wrote:
->>> > Commit 87e040b6456fd3416a1f6831c1eedaef5c0a94ff ("ARM: 7017/1: Use
->>> > generic BUG() handler") makes BUG() use BUILD_BUG_ON().  However,
->>> > BUILD_BUG_ON() is not defined in <linux/bug.h> but in <linux/kernel.h>.
->>> >
->>> > arch/include/asm/bug.h does not include <linux/kernel.h> and *cannot* do
->>> > so because the latter already includes <asm/bug.h>.
->>>
->>> Sure it can, but it's not ideal. Since the BUILD_BUG_ON is only used
->>> in bug.h in a #define, it will be resolved below the includes of
->>> either so there should be no ordering issue between the two.
->>
->> I disagree - we should not be creating circular dependencies.  This
->> creates a mess, and uncertain results.  For instance, if we include
->> linux/bug.h or asm/bug.h before linux/kernel.h has been included,
->> then we end up with linux/kernel.h being parsed without a definition
->> for BUG_ON().
->>
->> However, if linux/kernel.h is included first, we start parsing that,
->> include asm/bug.h, asm/bug.h then includes linux/kernel.h which produces
->> an empty file, and then we continue parsing asm/bug.h _without_
->> BUILD_BUG_ON() defined.
->>
->> So, adding linux/kernel.h does _not_ solve the problem.  It solves the
->> problem for _some_ cases only.
->>
->>> > Maybe BUILD_BUG_ON() should be moved out to a header of its own, or else
->>> > this particular use should be moved to some other file.  This needs to
->>> > be fixed somehow, as it obviously leads to build failures, e.g.:
->>> >
->>> > https://buildd.debian.org/status/fetch.php?pkg=linux-2.6&arch=armel&ver=3.2~rc7-1~experimental.1&stamp=1325142904
->>>
->>> Or perhaps moving BUILD_BUG_ON to include/linux/bug.h?
->>
->> and change linux/kernel.h to include linux/bug.h rather than asm/bug.h.
->
-> Actually, kernel.h doesn't need to include any variant of bug.h at all.
->
-> I started on cleaning this up a few weeks back, but didn't have the time
-> to get it ready for 3.3 -- so my intent is to do so for linux-next that will
-> be the 3.4 release.  The Work In Progress can be seen here:
->
-> http://git.kernel.org/?p=linux/kernel/git/paulg/linux.git;a=shortlog;h=refs/heads/bug.h-cleanup-WIP
->
-> I only mention it here since I'd hate to see anyone waste time on
-> duplicating work that is already done.
+Hi Linus:
 
-Thanks Paul, I hope it goes well.
+Here is the crypto update for 3.3:
 
-Regards,
-Simon
+* New test vectors (serpent, xts-twofish).
+* Speed test for asynchronous ciphers.
+* SSE2 assembly implementation of serpent.
+* Support for LRW and XTS in X86-64 assembly implementation of twofish.
+* More MD5 combos for caam.
+* Channel remap on talitos for better affinity.
+* Direct support for HMAC on talitos.
+* Misc fixes.
 
->
-> Thanks,
-> Paul.
->
-> ---
->
->>
->>> The quickest fix for now might be to take out the BUILD_BUG_ON(),
->>> especially so close to 3.2-final.
->>
->> I think just remove the BUILD_BUG_ON.  Other architectures have done
->> without it, so I see no reason we can't do as well.
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+
+Please pull from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Axel Lin (2):
+      char: hw_random: convert drivers/char/hw_random/* to use module_platform_driver()
+      crypto: convert drivers/crypto/* to use module_platform_driver()
+
+Jamie Iles (1):
+      crypto: picoxcell - fix boolean and / or confusion
+
+Jarod Wilson (1):
+      crypto: ansi_cprng - enforce key != seed in fips mode
+
+Jussi Kivilinna (36):
+      crypto: testmgr - add new serpent test vectors
+      crypto: tcrypt - add test_acipher_speed
+      crypto: tcrypt - add serpent speed tests
+      crypto: serpent - export common functions for x86_64/i386-sse2 assembler implementations
+      crypto: serpent - rename module from serpent to serpent_generic
+      crypto: lrw - fix memleak
+      crypto: lrw - use blocksize constant
+      crypto: lrw - split gf128mul table initialization from setkey
+      crypto: lrw - add interface for parallelized cipher implementions
+      crypto: testmgr - add lrw(serpent) test vectors
+      crypto: tcrypt - add lrw(serpent) tests
+      crypto: testmgr - add lrw(twofish) test vectors
+      crypto: tcrypt - add lrw(twofish) tests
+      crypto: twofish-x86_64-3way - add lrw support
+      crypto: xts - use blocksize constant
+      crypto: xts: add interface for parallelized cipher implementations
+      crypto: testmgr - add xts(serpent) test vectors
+      crypto: tcrypt - add xts(serpent) tests
+      crypto: testmgr - add xts(twofish) test vectors
+      crypto: tcrypt - add xts(twofish) tests
+      crypto: twofish-x86_64-3way - add xts support
+      crypto: serpent - add 8-way parallel x86_64/SSE2 assembler implementation
+      crypto: serpent - add 4-way parallel i586/SSE2 assembler implementation
+      crypto: serpent-sse2 - add lrw support
+      crypto: serpent-sse2 - add xts support
+      crypto: serpent-sse2 - clear CRYPTO_TFM_REQ_MAY_SLEEP in lrw and xts modes
+      crypto: serpent - cleanup checkpatch errors and warnings
+      crypto: serpent - rename serpent.c to serpent_generic.c
+      crypto: serpent-sse2 - should select CRYPTO_CRYPTD
+      crypto: lrw - remove dependency on EXPERIMENTAL
+      crypto: xts - remove dependency on EXPERIMENTAL
+      crypto: twofish-x86_64-3way - select LRW and XTS
+      crypto: twofish-x86_64-3way - remove unneeded LRW/XTS #ifdefs
+      crypto: serpent-sse2 - select LRW and XTS
+      crypto: serpent-sse2 - remove unneeded LRW/XTS #ifdefs
+      crypto: gf128mul - remove leftover "(EXPERIMENTAL)" in Kconfig
+
+Kim Phillips (11):
+      crypto: talitos - be less noisy on startup
+      crypto: talitos - prepare driver for channel remap support
+      crypto: talitos - support for channel remap and 2nd IRQ
+      crypto: caam - add support for MD5 algorithm variants
+      crypto: talitos - fix bad kfree
+      crypto: talitos - remove NO_IRQ references
+      crypto: talitos - convert talitos_error to struct device
+      crypto: caam - desc.h - convert spaces to tabs
+      crypto: caam - more desc.h cleanups
+      crypto: caam - fix polarity of "propagate error" logic
+      crypto: caam - remove DECO access initialization code
+
+Lee Nipper (1):
+      crypto: talitos - add hmac algorithms
+
+Steffen Klassert (1):
+      crypto: Unlink and free instances when deleted
+
+Valdis.Kletnieks@vt.edu (1):
+      crypto: fix typo in crypto/Kconfig
+
+ arch/x86/crypto/Makefile                     |    4 +
+ arch/x86/crypto/serpent-sse2-i586-asm_32.S   |  638 ++++++
+ arch/x86/crypto/serpent-sse2-x86_64-asm_64.S |  761 +++++++
+ arch/x86/crypto/serpent_sse2_glue.c          | 1070 ++++++++++
+ arch/x86/crypto/twofish_glue_3way.c          |  218 ++
+ arch/x86/include/asm/serpent.h               |   63 +
+ crypto/Kconfig                               |   52 +-
+ crypto/Makefile                              |    2 +-
+ crypto/algapi.c                              |   29 +
+ crypto/ansi_cprng.c                          |    8 +
+ crypto/crypto_user.c                         |    2 +-
+ crypto/lrw.c                                 |  156 ++-
+ crypto/serpent.c                             |  587 ------
+ crypto/serpent_generic.c                     |  684 +++++++
+ crypto/tcrypt.c                              |  310 +++
+ crypto/tcrypt.h                              |    2 +
+ crypto/testmgr.c                             |  150 ++
+ crypto/testmgr.h                             | 2759 +++++++++++++++++++++++++-
+ crypto/twofish_common.c                      |   13 +-
+ crypto/xts.c                                 |   79 +-
+ drivers/char/hw_random/atmel-rng.c           |   12 +-
+ drivers/char/hw_random/n2-drv.c              |   13 +-
+ drivers/char/hw_random/octeon-rng.c          |   13 +-
+ drivers/char/hw_random/pasemi-rng.c          |   12 +-
+ drivers/char/hw_random/picoxcell-rng.c       |   12 +-
+ drivers/char/hw_random/ppc4xx-rng.c          |   12 +-
+ drivers/char/hw_random/timeriomem-rng.c      |   13 +-
+ drivers/crypto/amcc/crypto4xx_core.c         |   13 +-
+ drivers/crypto/caam/caamalg.c                |   67 +-
+ drivers/crypto/caam/compat.h                 |    1 +
+ drivers/crypto/caam/ctrl.c                   |   26 +-
+ drivers/crypto/caam/desc.h                   | 2265 +++++++++++-----------
+ drivers/crypto/caam/desc_constr.h            |    7 +-
+ drivers/crypto/caam/regs.h                   |    1 -
+ drivers/crypto/mv_cesa.c                     |   12 +-
+ drivers/crypto/picoxcell_crypto.c            |   16 +-
+ drivers/crypto/s5p-sss.c                     |   13 +-
+ drivers/crypto/talitos.c                     |  493 ++++-
+ drivers/crypto/talitos.h                     |   45 +-
+ include/crypto/algapi.h                      |    1 +
+ include/crypto/lrw.h                         |   43 +
+ include/crypto/serpent.h                     |   27 +
+ include/crypto/twofish.h                     |    2 +
+ include/crypto/xts.h                         |   27 +
+ 44 files changed, 8684 insertions(+), 2049 deletions(-)
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
