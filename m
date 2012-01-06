@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab2AFMKn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 07:10:43 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45940 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab2AFMKk (ORCPT
+	id S1753600Ab2AFMMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 07:12:40 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57558 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119Ab2AFMMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 07:10:40 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=xiQ51-9SC64isCgmAYgA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325851838.12696.70.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 06 Jan 2012 07:10:38 -0500
-In-Reply-To: <20120106085104.GE14188@elte.hu>
-References: <20120102134856.GA32673@elte.hu>
-	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
-	 <1325635922.12696.8.camel@gandalf.stny.rr.com>
-	 <1325653301.12696.20.camel@gandalf.stny.rr.com>
-	 <20120104141107.GA24770@elte.hu>
-	 <1325696759.12696.24.camel@gandalf.stny.rr.com>
-	 <20120105091916.GA22598@elte.hu>
-	 <1325764011.12696.38.camel@gandalf.stny.rr.com>
-	 <1325765791.12696.41.camel@gandalf.stny.rr.com>
-	 <1325825918.12696.64.camel@gandalf.stny.rr.com>
-	 <20120106085104.GE14188@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Jan 2012 07:12:39 -0500
+Date: Fri, 6 Jan 2012 13:12:37 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: linux-kernel@vger.kernel.org
+cc: Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH/RFC] dmaengine: shdma: clear channel buffers on TERMINATE_ALL
+Message-ID: <Pine.LNX.4.64.1201061306550.16279@axis700.grange>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:QR57NUAjp7nm/iwEI7/evjsKEBBDIk4xbE12iG7b3Mj
+ Ltf4KJXilYICNqNAnK6Kj57OrwQktRsuoAdvNDUTkEy4UzL+WC
+ Gz5gs8l70NPMnH5NxwMD5LRMrPXDhEE0IFyn2VHsoklaSdmwXB
+ U53E47gfgQ3b/fFgAAvqadjecdDS8lUj75A3eHH6nTNv18isE+
+ SKEFy8nH3SnIBOnQfCxSAGXPF2rmr/oWhg5us3akeuWQDONH2M
+ O88bhvGEZkodVSRVEaCx9STte6W3K5dKQ/MVw8fbVTGQUFY5FH
+ jJJWkPU1NNjOWlzNymGWCS4gLhiDFN47m3/cji+Lx1vDetmdoZ
+ aKCMSpke4IBfZlGEXal9z0M1+W1TVb0uVxX7JSzhMjg3Oyte2l
+ oYDNzgTrTfCWQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 09:51 +0100, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > Not sure what else to do. Have you been able to trigger these 
-> > bugs without my patches? All the bugs I've been hitting after 
-> > merging my patches, I've been able to hit with tip/master as 
-> > well.
-> 
-> No, as i described to you the tree(s) without your patches all 
-> did 50+ series of bootups.
-> 
+Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+---
 
-Is it only with this config that it fails? Is there another config that
-doesn't? Also is it only failing on one box, or can you reproduce the
-failure on different hardware? What version of fedora are you running?
-Could this be something that requires systemd?
+No, I don't have a bug for this fix:-) That's why I marked it an RFC and, 
+actually, I wouldn't apply it. Clearing the buffers seems to be a good 
+idea to me, but so far I haven't had a case, where it was needed. Let's 
+just have this patch out there in archives in case we need it one day.
 
-Thanks,
+ drivers/dma/shdma.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
--- Steve
-
+diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
+index e1a2fa6..cabcfe8 100644
+--- a/drivers/dma/shdma.c
++++ b/drivers/dma/shdma.c
+@@ -707,6 +707,7 @@ static int sh_dmae_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 			   unsigned long arg)
+ {
+ 	struct sh_dmae_chan *sh_chan = to_sh_chan(chan);
++	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
+ 	unsigned long flags;
+ 
+ 	/* Only supports DMA_TERMINATE_ALL */
+@@ -719,6 +720,9 @@ static int sh_dmae_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	spin_lock_irqsave(&sh_chan->desc_lock, flags);
+ 	dmae_halt(sh_chan);
+ 
++	if (shdev->pdata->chclr_present)
++		chclr_write(sh_chan, 0);
++
+ 	if (!list_empty(&sh_chan->ld_queue)) {
+ 		/* Record partial transfer */
+ 		struct sh_desc *desc = list_entry(sh_chan->ld_queue.next,
+-- 
+1.7.2.5
 
