@@ -1,125 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759307Ab2AFXff (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 18:35:35 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49562 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759081Ab2AFXfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 18:35:34 -0500
-Date: Fri, 6 Jan 2012 15:35:03 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] regmap updates for v3.3
-Message-ID: <20120106233459.GB5070@opensource.wolfsonmicro.com>
-References: <20120106223007.GA20018@opensource.wolfsonmicro.com>
+	id S1759338Ab2AFXgD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 18:36:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43982 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759321Ab2AFXfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 18:35:40 -0500
+Date: Fri, 6 Jan 2012 15:17:27 -0800
+From: Greg KH <gregkh@suse.de>
+To: Tim Bird <tim.bird@am.sony.com>
+Cc: NeilBrown <neilb@suse.de>, Brian Swetland <swetland@google.com>,
+        "david@lang.hm" <david@lang.hm>,
+        linux-embedded <linux-embedded@vger.kernel.org>,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, john stultz <johnstul@us.ibm.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@osdl.org>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: RFC: android logger feedback request
+Message-ID: <20120106231727.GA24043@suse.de>
+References: <4EF264C3.6000104@am.sony.com>
+ <20111221231956.GB23859@suse.de>
+ <4EF27B85.9080801@am.sony.com>
+ <20111222122026.3a0fae36@notabene.brown>
+ <alpine.DEB.2.02.1112212050060.28597@asgard.lang.hm>
+ <CANqkERBPayBWjFp2nCDZA2CByJQwHMoeXe62ZutZr8QkWtcTLg@mail.gmail.com>
+ <20111222180517.20bce47d@notabene.brown>
+ <4F075FFB.4090703@am.sony.com>
+ <20120106212054.GA19509@suse.de>
+ <4F0778B0.3050104@am.sony.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120106223007.GA20018@opensource.wolfsonmicro.com>
-X-Cookie: You will triumph over your enemy.
+In-Reply-To: <4F0778B0.3050104@am.sony.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the tree below to merge regmap updates for version 3.3.
-After the rush of new features in version 3.2 this has been a fairly
-quiet cycle for the regmap API, the main change being the wider usage by
-drivers and some fixes and tweaks for them.  The main things from a
-subsystem point of view are:
+On Fri, Jan 06, 2012 at 02:41:52PM -0800, Tim Bird wrote:
+> > But for almost everything else (and
+> > really, there isn't all that much android-only code we are talking about
+> > here:
+> > $ wc drivers/staging/android/* drivers/staging/android/switch/* -l | tail -n 1
+> >    8429 total
+> > 
+> > And the switch code is already being worked on to be generalized by
+> > others, so that means we only have:
+> > $ wc drivers/staging/android/*  -l | tail -n 1
+> >    8015 total
+> > to worry about here.
+> 
+> Well, I'm not sure you've gotten it all (my count is closer to 20k,
+> some of it sprinkled in a few weird places), but I agree completely
+> that it's not a lot of code, which is encouraging.  Did you put
+> anything in besides what's in staging?
 
- - Addition of a generic interrupt controller driver which should work
-   for a range of chips, saving them from having to open code this.
- - Removal of the indexed cache type as it's not got any real advantage
-   over the rbtree cache.
+Yes, it should all be under drivers/staging/android in linux-next, soon
+to go to Linus.
 
-This pull request also includes the MFD driver for the DA9052 PMIC as it
-is one of the first users of the generic regmap IRQ code and therefore
-has a build dependency on it.
+What do you think I have missed?  I only know of two missing bits:
+	- android USB gadget drivers/stuff
+	- wakelocks
 
-The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
+The first is being addressed by the Google developers, see the post to
+the linux-usb mailing list the end of last month with the code, and all
+of the review comments on it.
 
-  Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
+The second is being worked on by someone else, as I'm sure you are
+already aware.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regmap.git for-linus
+Other than that, I don't see anything in the common.git android tree
+that I am missing, other than some odd driver updates which should all
+be upstream already from what I can tell.
 
-Ashish Jangam (3):
-      MFD: DA9052/53 MFD core module
-      MFD: DA9052/53 MFD core module add SPI support v2
-      mfd: Clearing events requires event registers to be writable for da9052-core
+So how are our line counts so far off?
 
-Lars-Peter Clausen (14):
-      regmap: Add helper function for checking if a register range is volatile
-      regmap: Support some more block operations on cached devices
-      regmap: Fix memory leak in regmap_init error path
-      regmap: return ERR_PTR instead of NULL in regmap_init
-      regmap: Fix memory leak in regcache_hw_init error path
-      regmap: Fix memory leak in regcache_init error path
-      regmap: Do not call regcache_exit from regcache_rbtree_init error path
-      regmap: Do not call regcache_exit from regcache_lzo_init error path
-      regmap: Move initialization of regcache related fields to regcache_init
-      regmap: Make reg_config reg_defaults const
-      regmap: Try cached read before checking if a hardware read is possible
-      regmap: Add support for 10/14 register formating
-      regmap: Properly round cache_word_size
-      regmap: Drop check whether a register is readable in regcache_read
+thanks,
 
-Mark Brown (25):
-      regmap: Add a reusable irq_chip for regmap based interrupt controllers
-      regmap: Prepare LZO cache for variable block sizes
-      regmap: Fix word wrap in Makefile
-      regmap: Fix typo in kerneldoc for regmap_update_bits()
-      regmap: Track if the register cache is dirty and suppress unneeded syncs
-      regmap: Rename LZO cache type to compressed
-      Merge branches 'regmap/irq' and 'regmap/cache' into regmap-next
-      regmap: Remove indexed cache type
-      regmap: Suppress noop writes in regmap_update_bits()
-      regmap: Do debugfs init before cache init
-      regmap: Provide debugfs dump of the rbtree cache data
-      regmap: Fix rbtreee build when not using debugfs
-      regmap: Report if we actually handled an interrupt in regmap-irq
-      Merge remote-tracking branch 'regmap/topic/irq' into regmap-next
-      regmap: Allow regmap_update_bits() users to detect changes
-      regmap: Add trace event for successful cache reads
-      regmap: Allow drivers to reinitialise the register cache at runtime
-      Merge branch 'topic/cache' of git://git.kernel.org/.../broonie/regmap into regmap-next
-      regmap: Add irq_base accessor to regmap_irq
-      Merge branch 'regmap/irq' into regmap-next
-      Merge branch 'topic/irq' of git://git.kernel.org/.../broonie/regmap into mfd/da9052
-      Merge branch 'mfd/da9052' of git://git.kernel.org/.../broonie/misc into regmap-next
-      mfd: Declare da9052_regmap_config for the bus drivers
-      gpiolib: Mark da9052 driver broken
-      mfd: Fix annotations in da9052-core
-
- drivers/base/regmap/Kconfig            |    3 +
- drivers/base/regmap/Makefile           |    4 +-
- drivers/base/regmap/internal.h         |    6 +-
- drivers/base/regmap/regcache-indexed.c |   64 ---
- drivers/base/regmap/regcache-lzo.c     |   21 +-
- drivers/base/regmap/regcache-rbtree.c  |   61 +++-
- drivers/base/regmap/regcache.c         |   87 +++--
- drivers/base/regmap/regmap-irq.c       |  302 +++++++++++++
- drivers/base/regmap/regmap.c           |  179 ++++++--
- drivers/gpio/Kconfig                   |    2 +-
- drivers/mfd/Kconfig                    |   28 ++
- drivers/mfd/Makefile                   |    5 +
- drivers/mfd/da9052-core.c              |  694 +++++++++++++++++++++++++++++
- drivers/mfd/da9052-i2c.c               |  140 ++++++
- drivers/mfd/da9052-spi.c               |  115 +++++
- include/linux/mfd/da9052/da9052.h      |  131 ++++++
- include/linux/mfd/da9052/pdata.h       |   40 ++
- include/linux/mfd/da9052/reg.h         |  749 ++++++++++++++++++++++++++++++++
- include/linux/regmap.h                 |   59 +++-
- include/trace/events/regmap.h          |    9 +
- 20 files changed, 2542 insertions(+), 157 deletions(-)
- delete mode 100644 drivers/base/regmap/regcache-indexed.c
- create mode 100644 drivers/base/regmap/regmap-irq.c
- create mode 100644 drivers/mfd/da9052-core.c
- create mode 100644 drivers/mfd/da9052-i2c.c
- create mode 100644 drivers/mfd/da9052-spi.c
- create mode 100644 include/linux/mfd/da9052/da9052.h
- create mode 100644 include/linux/mfd/da9052/pdata.h
- create mode 100644 include/linux/mfd/da9052/reg.h
+greg k-h
