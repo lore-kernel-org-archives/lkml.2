@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab2AFMMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 07:12:40 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:57558 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119Ab2AFMMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 07:12:39 -0500
-Date: Fri, 6 Jan 2012 13:12:37 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: linux-kernel@vger.kernel.org
-cc: Vinod Koul <vinod.koul@intel.com>
-Subject: [PATCH/RFC] dmaengine: shdma: clear channel buffers on TERMINATE_ALL
-Message-ID: <Pine.LNX.4.64.1201061306550.16279@axis700.grange>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:QR57NUAjp7nm/iwEI7/evjsKEBBDIk4xbE12iG7b3Mj
- Ltf4KJXilYICNqNAnK6Kj57OrwQktRsuoAdvNDUTkEy4UzL+WC
- Gz5gs8l70NPMnH5NxwMD5LRMrPXDhEE0IFyn2VHsoklaSdmwXB
- U53E47gfgQ3b/fFgAAvqadjecdDS8lUj75A3eHH6nTNv18isE+
- SKEFy8nH3SnIBOnQfCxSAGXPF2rmr/oWhg5us3akeuWQDONH2M
- O88bhvGEZkodVSRVEaCx9STte6W3K5dKQ/MVw8fbVTGQUFY5FH
- jJJWkPU1NNjOWlzNymGWCS4gLhiDFN47m3/cji+Lx1vDetmdoZ
- aKCMSpke4IBfZlGEXal9z0M1+W1TVb0uVxX7JSzhMjg3Oyte2l
- oYDNzgTrTfCWQ==
+	id S1752293Ab2AFMY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 07:24:27 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:57297 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751350Ab2AFMY0 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
+	Fri, 6 Jan 2012 07:24:26 -0500
+Message-Id: <4F06F640020000780006ACDE@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.0 
+Date: Fri, 06 Jan 2012 12:25:20 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Andi Kleen" <andi@firstfloor.org>
+Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
+References: <4F05BBFE020000780006A983@nat28.tlf.novell.com>
+ <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com>
+ <20120106014748.GS11715@one.firstfloor.org> <4F06566B.8080708@zytor.com>
+ <20120106094922.GU11715@one.firstfloor.org>
+ <4F06D979020000780006AC49@nat.nue.novell.com>
+ <20120106103734.GV11715@one.firstfloor.org>
+ <4F06DFEF020000780006AC84@nat28.tlf.novell.com>
+ <20120106110845.GW11715@one.firstfloor.org>
+In-Reply-To: <20120106110845.GW11715@one.firstfloor.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
----
+>>> On 06.01.12 at 12:08, Andi Kleen <andi@firstfloor.org> wrote:
+>>  It's not the traditional bootmem implementation anymore, but
+>> alloc_bootmem() et al still exist, and still clear the allocated memory
+>> (in __alloc_memory_core_early()). So there is a code path that can
+>> validly be used (and it is this code path that is presenting one of the
+>> problems with the non-pv-ops Xen kernels, as they're using flatmem
+>> rather than sparsemem since their physical address space is always
+>> fully continuous).
+> 
+> Yes but there should be no callers that do alloc_bootmem(4G)
+> The biggest ones afak are the 1GB pages I added some time ago.
+> 
+> How is it a problem in the non pv Xen kernels?
 
-No, I don't have a bug for this fix:-) That's why I marked it an RFC and, 
-actually, I wouldn't apply it. Clearing the buffers seems to be a good 
-idea to me, but so far I haven't had a case, where it was needed. Let's 
-just have this patch out there in archives in case we need it one day.
+pgdat->node_mem_map[] exceeds 4G when total memory goes far
+enough beyond 292G. At some later point ->node_page_cgroup[]
+also exceeds 4G. Finally, the phys-to-machine mapping (which gets
+resized during boot) exceeds 4G when crossing the 2T boundary.
 
- drivers/dma/shdma.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/dma/shdma.c b/drivers/dma/shdma.c
-index e1a2fa6..cabcfe8 100644
---- a/drivers/dma/shdma.c
-+++ b/drivers/dma/shdma.c
-@@ -707,6 +707,7 @@ static int sh_dmae_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 			   unsigned long arg)
- {
- 	struct sh_dmae_chan *sh_chan = to_sh_chan(chan);
-+	struct sh_dmae_device *shdev = to_sh_dev(sh_chan);
- 	unsigned long flags;
- 
- 	/* Only supports DMA_TERMINATE_ALL */
-@@ -719,6 +720,9 @@ static int sh_dmae_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	spin_lock_irqsave(&sh_chan->desc_lock, flags);
- 	dmae_halt(sh_chan);
- 
-+	if (shdev->pdata->chclr_present)
-+		chclr_write(sh_chan, 0);
-+
- 	if (!list_empty(&sh_chan->ld_queue)) {
- 		/* Record partial transfer */
- 		struct sh_desc *desc = list_entry(sh_chan->ld_queue.next,
--- 
-1.7.2.5
+Jan
 
