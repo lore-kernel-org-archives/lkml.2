@@ -1,75 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030224Ab2AFAgt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 19:36:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41933 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964847Ab2AFAgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 19:36:47 -0500
-Date: Fri, 6 Jan 2012 01:36:45 +0100
-From: Jan Kara <jack@suse.cz>
-To: Kamal Mostafa <kamal@canonical.com>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: Re: [PATCH v2 7/7] Documentation: Correct s_umount state for
- freeze_fs/unfreeze_fs
-Message-ID: <20120106003645.GE3790@quack.suse.cz>
-References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
- <1323367477-21685-8-git-send-email-kamal@canonical.com>
+	id S964928Ab2AFAkr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 19:40:47 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:59266 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932834Ab2AFAkq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 19:40:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323367477-21685-8-git-send-email-kamal@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1325665240.1862.37.camel@epip-laptop>
+References: <1325665240.1862.37.camel@epip-laptop>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 5 Jan 2012 16:40:24 -0800
+X-Google-Sender-Auth: Q3UeQyGmtN1Q4L3dpoHH2wcRgm4
+Message-ID: <CA+55aFzLoqtnvNAqSWk1=e5_M+13MiU3gqh0A9=DrQwe4UPWhg@mail.gmail.com>
+Subject: Re: [Pull: unicore32] Please pull unicore32 bugfix patches
+To: gxt@mprc.pku.edu.cn
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 08-12-11 10:04:37, Kamal Mostafa wrote:
-> From: Valerie Aurora <val@vaaconsulting.com>
-> 
-> freeze_fs/unfreeze_fs ops are called with s_umount held for write, not read.
-  Looks good. You can add:
-Acked-by: Jan Kara <jack@suse.cz>
+On Wed, Jan 4, 2012 at 12:20 AM, Guan Xuetao <gxt@mprc.pku.edu.cn> wrote:
+> Hi, Linus,
+>  Could you please pull unicore32 bugfix patches from my repo:
+>        git://github.com/gxt/linux.git unicore32
+>
+>  There are 10 patches in unicore32 branch with their logs listed below.
 
-								Honza
-> 
-> BugLink: https://bugs.launchpad.net/bugs/897421
-> Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
-> Cc: Kamal Mostafa <kamal@canonical.com>
-> Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
-> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> Reviewed-by: Christoph Hellwig <hch@lst.de>
-> ---
->  Documentation/filesystems/Locking |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-> index d819ba1..7e46a94 100644
-> --- a/Documentation/filesystems/Locking
-> +++ b/Documentation/filesystems/Locking
-> @@ -134,8 +134,8 @@ evict_inode:
->  put_super:		write
->  write_super:		read
->  sync_fs:		read
-> -freeze_fs:		read
-> -unfreeze_fs:		read
-> +freeze_fs:		write
-> +unfreeze_fs:		write
->  statfs:			maybe(read)	(see below)
->  remount_fs:		write
->  umount_begin:		no
-> -- 
-> 1.7.5.4
-> 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Please use the standard git request-pull format, which gives shortlog
+and diffstat information. That's useful for me to actually verify that
+what I get matches the pull request, in ways that the raw log messages
+are not.
+
+                     Linus
