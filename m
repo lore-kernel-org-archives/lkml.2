@@ -1,181 +1,351 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab2AFCrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 21:47:10 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:47373 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758436Ab2AFCrI (ORCPT
+	id S1758514Ab2AFCux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 21:50:53 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60365 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755019Ab2AFCuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 21:47:08 -0500
-Date: Fri, 6 Jan 2012 13:46:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Eric Van Hensbergen <ericvh@gmail.com>
-Subject: linux-next: manual merge of the vfs tree with the v9fs tree
-Message-Id: <20120106134658.7589dec177541808dad20eb9@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Jan_2012_13_46_58_+1100_/B5a9ZdHuiPALX.m"
+	Thu, 5 Jan 2012 21:50:51 -0500
+Date: Thu, 5 Jan 2012 18:50:45 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Christopher Heiny <cheiny@synaptics.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        Joerie de Gram <j.de.gram@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>,
+        Vivian Ly <vly@synaptics.com>
+Subject: Re: [RFC PATCH 10/11] input: RMI4 F19 - capacitive buttons
+Message-ID: <20120106025045.GB10062@core.coreip.homeip.net>
+References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
+ <1324519802-23894-11-git-send-email-cheiny@synaptics.com>
+ <20120105075339.GC31895@core.coreip.homeip.net>
+ <4F063AD7.8010501@synaptics.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F063AD7.8010501@synaptics.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Jan_2012_13_46_58_+1100_/B5a9ZdHuiPALX.m
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 05, 2012 at 04:05:43PM -0800, Christopher Heiny wrote:
+> On 01/04/2012 11:53 PM, Dmitry Torokhov wrote:
+> >Hi Christopher,
+> >
+> >On Wed, Dec 21, 2011 at 06:10:01PM -0800, Christopher Heiny wrote:
+> >>+
+> >>+struct f19_0d_control {
+> >>+	struct f19_0d_control_0 *general_control;
+> >
+> >Single instance, does not need to be allocated separately.
+> >
+> >>+	struct f19_0d_control_1 *button_int_enable;
+> >>+	struct f19_0d_control_2 *single_button_participation;
+> >>+	struct f19_0d_control_3_4 *sensor_map;
+> >
+> >This should probably be an array of
+> >
+> >struct f19_button_ctrl {
+> >	struct f19_0d_control_1 int_enable;
+> >	struct f19_0d_control_2 participation;
+> >	struct f19_0d_control_3_4 sensor_map;
+> >};
+> >
+> >located at the end of f19_0d_control structure so it can be all
+> >allocated in one shot.
+> 
+> We organized it this way because of how the controls are organized
+> in the register map: first the interrupt enables for all buttons,
+> then the participation for all buttons, and then the sensor map for
+> all buttons.  Typical client interactions are to adjust these in an
+> "all at once" approach - that is, change as a single group all the
+> interrupt enables, all the participation settings, or all the sensor
+> map.  By organizing them the way we did, it makes it very easy to
+> read/write the data to the RMI4 sensor's register map.  Using an
+> array of structs would require a building buffers (on write) or
+> tedious extraction from buffers (on read).
+> 
+> However, the first two of these are bitmasks, and don't really need
+> their own structs - they can conveniently be u8 * instead.
 
-Hi Al,
+I'll try coding something to show that it is not as bad as it seems...
 
-Today's linux-next merge of the vfs tree got conflicts in
-fs/9p/vfs_inode.c and fs/9p/vfs_inode_dotl.c between commit 5d3851530d6d
-("9p: Reduce object size with CONFIG_NET_9P_DEBUG") from the v9fs tree
-and commits c2837de73e80 ("9p: don't bother with unixmode2p9mode() for
-link() and symlink()") and 3eda0de677b5 ("9p: propagate umode_t") from
-the vfs tree.
+> 
+> 
+> >>+	struct f19_0d_control_5 *all_button_sensitivity_adj;
+> >
+> >Single instance, does not need to be allocated separately.
+> 
+> Agreed.
+> 
+> >
+> >>+	struct f19_0d_control_6 *all_button_hysteresis_threshold;
+> >
+> >Single instance, does not need to be allocated separately.
+> >
+> >>+};
+> >>+/* data specific to fn $19 that needs to be kept around */
+> >>+struct f19_data {
+> >>+	struct f19_0d_control *button_control;
+> >>+	struct f19_0d_query button_query;
+> >>+	u8 button_rezero;
+> >>+	bool *button_down;
+> >
+> >Just let input core track this for you.
+> 
+> That would work.  We were trying to be efficient by only generating
+> events of interest, but I'm quite happy to let another subsystem do
+> the heavy lifting for us. We'll follow your later recommendation and
+> just pass button state info along.
+> 
+> 
+> >>+	unsigned char button_count;
+> >>+	unsigned char button_data_buffer_size;
+> >
+> >Your fingers must be hurting by the time you finished writing this
+> >driver...
+> 
+> I'm a little obsessive about descriptive variable names.  As a
+> result, I have digits the size of Arnold Schwarzenegger's biceps.
+> :-)
 
-I fixed it up (see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+;)
 
-diff --cc fs/9p/vfs_inode.c
-index c8fe480,e0f20de..0000000
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@@ -127,14 -94,14 +122,14 @@@ static int p9mode2perm(struct v9fs_sess
-   * @rdev: major number, minor number in case of device files.
-   *
-   */
-- static int p9mode2unixmode(struct v9fs_session_info *v9ses,
-- 			   struct p9_wstat *stat, dev_t *rdev)
-+ static umode_t p9mode2unixmode(struct v9fs_session_info *v9ses,
-+ 			       struct p9_wstat *stat, dev_t *rdev)
-  {
-  	int res;
-- 	int mode =3D stat->mode;
-+ 	u32 mode =3D stat->mode;
- =20
- -	res =3D mode & S_IALLUGO;
-  	*rdev =3D 0;
- +	res =3D p9mode2perm(v9ses, stat);
- =20
-  	if ((mode & P9_DMDIR) =3D=3D P9_DMDIR)
-  		res |=3D S_IFDIR;
-@@@ -352,8 -329,8 +346,8 @@@ int v9fs_init_inode(struct v9fs_session
- =20
-  		break;
-  	default:
-- 		p9_debug(P9_DEBUG_ERROR, "BAD mode 0x%x S_IFMT 0x%x\n",
- -		P9_DPRINTK(P9_DEBUG_ERROR, "BAD mode 0x%hx S_IFMT 0x%x\n",
- -			   mode, mode & S_IFMT);
-++		p9_debug(P9_DEBUG_ERROR, "BAD mode 0x%hx S_IFMT 0x%x\n",
- +			 mode, mode & S_IFMT);
-  		err =3D -EINVAL;
-  		goto error;
-  	}
-@@@ -375,7 -352,7 +369,7 @@@ struct inode *v9fs_get_inode(struct sup
-  	struct inode *inode;
-  	struct v9fs_session_info *v9ses =3D sb->s_fs_info;
- =20
-- 	p9_debug(P9_DEBUG_VFS, "super block: %p mode: %o\n", sb, mode);
- -	P9_DPRINTK(P9_DEBUG_VFS, "super block: %p mode: %ho\n", sb, mode);
-++	p9_debug(P9_DEBUG_VFS, "super block: %p mode: %ho\n", sb, mode);
- =20
-  	inode =3D new_inode(sb);
-  	if (!inode) {
-@@@ -1362,10 -1333,10 +1355,10 @@@ static int v9fs_vfs_mkspecial(struct in
-  static int
-  v9fs_vfs_symlink(struct inode *dir, struct dentry *dentry, const char *sy=
-mname)
-  {
- -	P9_DPRINTK(P9_DEBUG_VFS, " %lu,%s,%s\n", dir->i_ino,
- -					dentry->d_name.name, symname);
- +	p9_debug(P9_DEBUG_VFS, " %lu,%s,%s\n",
- +		 dir->i_ino, dentry->d_name.name, symname);
- =20
-- 	return v9fs_vfs_mkspecial(dir, dentry, S_IFLNK, symname);
-+ 	return v9fs_vfs_mkspecial(dir, dentry, P9_DMSYMLINK, symname);
-  }
- =20
-  /**
-@@@ -1419,14 -1391,16 +1412,16 @@@ clunk_fid
-   */
- =20
-  static int
-- v9fs_vfs_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t =
-rdev)
-+ v9fs_vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, de=
-v_t rdev)
-  {
-+ 	struct v9fs_session_info *v9ses =3D v9fs_inode2v9ses(dir);
-  	int retval;
-  	char *name;
-+ 	u32 perm;
- =20
-- 	p9_debug(P9_DEBUG_VFS, " %lu,%s mode: %x MAJOR: %u MINOR: %u\n",
- -	P9_DPRINTK(P9_DEBUG_VFS,
- -		" %lu,%s mode: %hx MAJOR: %u MINOR: %u\n", dir->i_ino,
- -		dentry->d_name.name, mode, MAJOR(rdev), MINOR(rdev));
-++	p9_debug(P9_DEBUG_VFS, " %lu,%s mode: %hx MAJOR: %u MINOR: %u\n",
- +		 dir->i_ino, dentry->d_name.name, mode,
- +		 MAJOR(rdev), MINOR(rdev));
- =20
-  	if (!new_valid_dev(rdev))
-  		return -EINVAL;
-diff --cc fs/9p/vfs_inode_dotl.c
-index 73488fb,8ef152a..0000000
---- a/fs/9p/vfs_inode_dotl.c
-+++ b/fs/9p/vfs_inode_dotl.c
-@@@ -283,8 -283,8 +283,8 @@@ v9fs_vfs_create_dotl(struct inode *dir
-  	}
- =20
-  	name =3D (char *) dentry->d_name.name;
-- 	p9_debug(P9_DEBUG_VFS, "name:%s flags:0x%x mode:0x%x\n",
-- 		 name, flags, omode);
- -	P9_DPRINTK(P9_DEBUG_VFS, "v9fs_vfs_create_dotl: name:%s flags:0x%x "
-++	p9_debug(P9_DEBUG_VFS, "v9fs_vfs_create_dotl: name:%s flags:0x%x "
-+ 			"mode:0x%hx\n", name, flags, omode);
- =20
-  	dfid =3D v9fs_fid_lookup(dentry->d_parent);
-  	if (IS_ERR(dfid)) {
-@@@ -810,9 -813,9 +810,9 @@@ v9fs_vfs_mknod_dotl(struct inode *dir,=20
-  	struct dentry *dir_dentry;
-  	struct posix_acl *dacl =3D NULL, *pacl =3D NULL;
- =20
-- 	p9_debug(P9_DEBUG_VFS, " %lu,%s mode: %x MAJOR: %u MINOR: %u\n",
- -	P9_DPRINTK(P9_DEBUG_VFS,
- -		" %lu,%s mode: %hx MAJOR: %u MINOR: %u\n", dir->i_ino,
- -		dentry->d_name.name, omode, MAJOR(rdev), MINOR(rdev));
-++	p9_debug(P9_DEBUG_VFS, " %lu,%s mode: %hx MAJOR: %u MINOR: %u\n",
- +		 dir->i_ino, dentry->d_name.name, omode,
- +		 MAJOR(rdev), MINOR(rdev));
- =20
-  	if (!new_valid_dev(rdev))
-  		return -EINVAL;
+> >>+
+> >>+static struct device_attribute attrs[] = {
+> >>+	__ATTR(button_count, RMI_RO_ATTR,
+> >>+		rmi_f19_button_count_show, rmi_store_error),
+> >
+> >Why not NULL instead of rmi_store_error?
+> 
+> We found that customers picking up our driver would try to write RO
+> sysfs attributes (or read WO attrs) by invoking echo from the
+> command line.  The operation would fail silently (I'm looking at
+> you, Android shell), leaving the engineer baffled as to why the
+> sensor behavior didn't change.  So we adopted this approach so as to
+> give some clue as to the fact that the operation failed.
 
---Signature=_Fri__6_Jan_2012_13_46_58_+1100_/B5a9ZdHuiPALX.m
-Content-Type: application/pgp-signature
+But this ends up in various logs (dmesg, /var/log/messages, etc) making
+it potentially DOS scenario. Please help fixing tools instead.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> >>+
+> >>+	f19->button_control->single_button_participation =
+> >>+		kzalloc(f19->button_data_buffer_size *
+> >>+			sizeof(struct f19_0d_control_2), GFP_KERNEL);
+> >>+	if (!f19->button_control->single_button_participation) {
+> >>+		dev_err(&fc->dev, "Failed to allocate"
+> >>+			" f19_0d_control_2.\n");
+> >
+> >Do not split error messages; it's OK if they exceed 80 column limit.
+> 
+> We have one customer who refuses to accept any code if any line
+> exceeds 80 columns, so we wind up with ugliness like this.
 
-iQIcBAEBCAAGBQJPBmCiAAoJEECxmPOUX5FEPqkP/iZRoQ/zcbzqz4hfeKyQ5QwD
-4tZSAzEbJGXvHJgF+gPQhOtGVcrKbDCwa9SEVUIx+zm+OWW6SZCtAjC1r0i0e/yK
-PuddiTcfRc1su4bIOpZKdCrXIcWx3+nPRI1qX/v6JbKSWAmdoO4yJFw1xURyrADF
-ifJWjCN9QU6gC1o8fnjxPt9h5lGmcBOwSbVwtsAt8+awDhW0c/BFfYvlxKEgYRln
-vASW+ZNZuGoGPhOwbr0Ys63oxr8SnIW87tPIGLwAbHTkQInAbJQ1CgAFESZQF1hK
-qMXFBatqtwu388id6qKviS68ZoTfABdLDSmqK+Hv1R97jHeTIf6lR7ABeP+Gfpfs
-ZRcE5xHAaI73k/6z5safnHG4rhxjtAEBhJDmoJjSJgj4OPG7z/LlKAmLHJbeqp71
-YyJvGzmXzIguQwr/wEURQmhTcW2fA07D2uvL7mIbGZ8qlxfMOTeBHJOxCqawEqTb
-BQy1NvKxzzK0LcxQERGdBTjanYmDGQle0yyTjNgnFg2KRt+r7idJMiA98vXvggTi
-fqeEIsQxRowfCe3KCXkclrXhGDpWJKdx2MRlXAfvb5fKJowD5+PH769lV3q61RlP
-l3BrmWZnwrl4KlpcOPled5cU4unIqypcnf1EWpTCT1bQj4rFKxj8woxz/w4tIrOF
-esGDP/yd40IV163Yj+Ag
-=ZByF
------END PGP SIGNATURE-----
+This is contrary to current kernel policy though
+(Documentation/CodingStyle, ch 2):
 
---Signature=_Fri__6_Jan_2012_13_46_58_+1100_/B5a9ZdHuiPALX.m--
+"However, never break user-visible strings such as
+printk messages, because that breaks the ability to grep for them."
+
+> >>+
+> >>+static inline void rmi_f19_free_memory(struct rmi_function_container *fc)
+> >>+{
+> >>+	struct f19_data *f19 = fc->data;
+> >>+
+> >>+	if (f19) {
+> >
+> >Can it be NULL? How?
+> 
+> This is just defensive, in case someone calls this at the wrong
+> place or time.
+
+Just make sure you call it at right time ;)
+
+> >>+
+> >>+	/* Generate events for buttons that change state. */
+> >>+	for (button = 0; button<  f19->button_count;
+> >>+	     button++) {
+> >>+		int button_reg;
+> >>+		int button_shift;
+> >>+		bool button_status;
+> >>+
+> >>+		/* determine which data byte the button status is in */
+> >>+		button_reg = button / 7;
+> >>+		/* bit shift to get button's status */
+> >>+		button_shift = button % 8;
+> >>+		button_status =
+> >>+		    ((f19->button_data_buffer[button_reg]>>  button_shift)
+> >>+			&  0x01) != 0;
+> >>+
+> >>+		/* if the button state changed from the last time report it
+> >>+		 * and store the new state */
+> >>+		if (button_status != f19->button_down[button]) {
+> >>+			dev_dbg(&fc->dev, "%s: Button %d (code %d) ->  %d.\n",
+> >>+				__func__, button, f19->button_map[button],
+> >>+				 button_status);
+> >>+			/* Generate an event here. */
+> >>+			input_report_key(f19->input, f19->button_map[button],
+> >>+					 button_status);
+> >>+			f19->button_down[button] = button_status;
+> >>+		}
+> >>+	}
+> >
+> >All of the above could be reduced to:
+> >
+> >	for (button = 0; button<  f19->button_count; button++)
+> >		input_report_key(f19->input, f19->button_map[button],
+> >				 test_bit(button, f19->button_data_buffer);
+> 
+> I'd like to, but I'm not sure - can we count on the endian-ness of
+> the host processor being the same as the RMI4 register endian-ness?
+
+Hmm, I'd expect RMI transport functions take care of converting into
+proper endianness.
+
+> 
+> [snip]
+> 
+> >>+
+> >>+static ssize_t rmi_f19_sensor_map_store(struct device *dev,
+> >>+					 struct device_attribute *attr,
+> >>+					 const char *buf, size_t count)
+> >>+{
+> >>+	struct rmi_function_container *fc;
+> >>+	struct f19_data *data;
+> >>+	int sensor_map;
+> >>+	int i;
+> >>+	int retval = count;
+> >>+	int button_count = 0;
+> >>+	int ctrl_bass_addr;
+> >>+	int button_reg;
+> >>+	fc = to_rmi_function_container(dev);
+> >>+	data = fc->data;
+> >>+
+> >>+	if (data->button_query.configurable == 0) {
+> >>+		dev_err(dev,
+> >>+			"%s: Error - sensor map is not configuralbe at"
+> >>+			" run-time", __func__);
+> >
+> >This is not driver error, return error silently.
+> 
+> I don't like failing silently, for reasons outlined above.
+
+And for the reason also outlined above I disagree. Driver errors
+(especially KERNEL_ERR level) should be used to signal conditions when
+driver either can't continue or its functionality is seriously impaired.
+Bad user input does not qualify here.
+
+> 
+> >
+> >>+		return -EINVAL;
+> >>+	}
+> >
+> >If sensor is not cinfigurable maybe attributes mode should be adjusted
+> >to be read-only?
+> 
+> Good point.  Then we could eliminate the dev_err, above.  We'll look
+> into this at the same time as the attribute groups.
+
+Thanks.
+
+> 
+> [snip]
+> 
+> >>+
+> >>+static ssize_t rmi_f19_button_map_store(struct device *dev,
+> >>+				struct device_attribute *attr,
+> >>+				const char *buf,
+> >>+				size_t count)
+> >>+{
+> >>+	struct rmi_function_container *fc;
+> >>+	struct f19_data *data;
+> >>+	unsigned int button;
+> >>+	int i;
+> >>+	int retval = count;
+> >>+	int button_count = 0;
+> >>+	unsigned char temp_button_map[KEY_MAX];
+> >>+
+> >>+	fc = to_rmi_function_container(dev);
+> >>+	data = fc->data;
+> >>+
+> >>+	/* Do validation on the button map data passed in.  Store button
+> >>+	 * mappings into a temp buffer and then verify button count and
+> >>+	 * data prior to clearing out old button mappings and storing the
+> >>+	 * new ones. */
+> >>+	for (i = 0; i<  data->button_count&&  *buf != 0;
+> >>+	     i++) {
+> >>+		/* get next button mapping value and store and bump up to
+> >>+		 * point to next item in buf */
+> >>+		sscanf(buf, "%u",&button);
+> >>+
+> >>+		/* Make sure the key is a valid key */
+> >>+		if (button>  KEY_MAX) {
+> >>+			dev_err(dev,
+> >>+				"%s: Error - button map for button %d is not a"
+> >>+				" valid value 0x%x.\n", __func__, i, button);
+> >>+			retval = -EINVAL;
+> >>+			goto err_ret;
+> >>+		}
+> >>+
+> >>+		temp_button_map[i] = button;
+> >>+		button_count++;
+> >>+
+> >>+		/* bump up buf to point to next item to read */
+> >>+		while (*buf != 0) {
+> >>+			buf++;
+> >>+			if (*(buf - 1) == ' ')
+> >>+				break;
+> >>+		}
+> >>+	}
+> >>+
+> >>+	/* Make sure the button count matches */
+> >>+	if (button_count != data->button_count) {
+> >>+		dev_err(dev,
+> >>+		    "%s: Error - button map count of %d doesn't match device "
+> >>+		     "button count of %d.\n", __func__, button_count,
+> >>+		     data->button_count);
+> >>+		retval = -EINVAL;
+> >>+		goto err_ret;
+> >>+	}
+> >>+
+> >>+	/* Clear the key bits for the old button map. */
+> >>+	for (i = 0; i<  button_count; i++)
+> >>+		clear_bit(data->button_map[i], data->input->keybit);
+> >>+
+> >>+	/* Switch to the new map. */
+> >>+	memcpy(data->button_map, temp_button_map,
+> >>+	       data->button_count);
+> >>+
+> >>+	/* Loop through the key map and set the key bit for the new mapping. */
+> >>+	for (i = 0; i<  button_count; i++)
+> >>+		set_bit(data->button_map[i], data->input->keybit);
+> >>+
+> >>+err_ret:
+> >>+	return retval;
+> >>+}
+> >
+> >Button map (keymap) should be manipulated with EVIOCGKEYCODE and
+> >EVIOCSKEYCODE ioctls, no need to invent driver-specific way of doing
+> >this.
+> 
+> Makes sense, but... we had a customer request to specify the
+> boot-time keymap through the RMI4 driver's platform data.  Is it
+> legal to call setkeycode() to do that instead?
+
+No, the input device should be fully registered for that... But you can
+supply initial keymap in platform data, almost all drivers do that. It
+is new sysfs interface I object to here.
+
+>  If so, we'll do that
+> and get rid of the button_map entirely.
+> 
+> Thanks again for the review and input,
+
+Thanks for your patience.
+
+-- 
+Dmitry
