@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab2AFLf7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 06:35:59 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:8068 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932955Ab2AFLf6 (ORCPT
+	id S933195Ab2AFLpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 06:45:21 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:52714 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758648Ab2AFLpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 06:35:58 -0500
-Date: Fri, 6 Jan 2012 12:35:31 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: ben-linux@fluff.org, seth.heasley@intel.com, ben@decadent.org.uk,
-        David.Woodhouse@intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, olofj@chromium.org, bleung@chromium.org
-Subject: Re: [PATCH 0/3 v2] i2c: i801: enable irq
-Message-ID: <20120106123531.3b5ca7db@endymion.delvare>
-In-Reply-To: <1325847502-17841-1-git-send-email-djkurtz@chromium.org>
-References: <1325847502-17841-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Jan 2012 06:45:20 -0500
+Date: Fri, 6 Jan 2012 14:45:04 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: static check complains about potential oops in adfs_read_map()
+Message-ID: <20120106114503.GA1540@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4F06DEC9.004C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+My static checker is complaining about potential oops in adfs.  I don't
+know the code well enough to say if it's a real bug or what the correct
+fix is.
 
-On Fri,  6 Jan 2012 18:58:19 +0800, Daniel Kurtz wrote:
-> This is a second version of a set of patches enables the Intel PCH SMBus
-> controller interrupt.  It refactors the second two patches a little bit by
-> relying on DEV_ERR interrupt for timeouts, instead of using an explicit
-> wait_event_timeout.
-> 
-> The first attempt received absolutely no response. Maybe this time someone
-> will be interested.
+fs/adfs/super.c
+   299          nzones    = asb->s_map_size;
+                            ^^^^^^^^^^^^^^^
+This could be zero.  We read it from the disk.  I don't see any place
+where it's checked.
 
-I was on vacation. But I am very interested and will review and test
-your patches. There have been several attempts to add IRQ support to
-i2c-i801 in the past but each time there was a blocker issue which
-prevented it from making it into mainline. Hopefully this time we'll
-get it there!
+   300          zone_size = (8 << dr->log2secsize) - le16_to_cpu(dr->zone_spare);
+   301          map_addr  = (nzones >> 1) * zone_size -
+   302                       ((nzones > 1) ? ADFS_DR_SIZE_BITS : 0);
+   303          map_addr  = signed_asl(map_addr, asb->s_map2blk);
+   304  
+   305          asb->s_ids_per_zone = zone_size / (asb->s_idlen + 1);
+   306  
+   307          dm = kmalloc(nzones * sizeof(*dm), GFP_KERNEL);
+   308          if (dm == NULL) {
+   309                  adfs_error(sb, "not enough memory");
+   310                  return NULL;
+   311          }
+   312  
+   313          for (zone = 0; zone < nzones; zone++, map_addr++) {
+   314                  dm[zone].dm_startbit = 0;
+   315                  dm[zone].dm_endbit   = zone_size;
+   316                  dm[zone].dm_startblk = zone * zone_size - ADFS_DR_SIZE_BITS;
+   317                  dm[zone].dm_bh       = sb_bread(sb, map_addr);
+   318  
+   319                  if (!dm[zone].dm_bh) {
+   320                          adfs_error(sb, "unable to read map");
+   321                          goto error_free;
+   322                  }
+   323          }
+   324  
+   325          /* adjust the limits for the first and last map zones */
+   326          i = zone - 1;
+   327          dm[0].dm_startblk = 0;
+                ^^^^^
+dm is the ZERO_SIZE_PTR so this would oops.
 
-> 
-> The SMBus Host Controller Interrupt can signify:
->  INTR - the end of a complete transaction
->  DEV_ERR - that a device did not ACK a transaction
->  BYTE_DONE - the completion of a single byte during a byte-by-byte transaction
-> 
-> This patchset arrives with the following caveats:
-> 
->  1)  It has only been tested with a Cougar Point (Intel 6 Series PCH) SMBus
-> controller, so the irq is only enabled for that chip type.
+   328          dm[0].dm_startbit = ADFS_DR_SIZE_BITS;
+   329          dm[i].dm_endbit   = (le32_to_cpu(dr->disc_size_high) << (32 - dr->log2bpmb)) +
+   330                              (le32_to_cpu(dr->disc_size) >> dr->log2bpmb) +
+   331                              (ADFS_DR_SIZE_BITS - i * zone_size);
 
-I can test on ICH10 easily, and also on ICH7 and ICH3-M if needed.
-
->  2) It has not been tested with any devices that do transactions that use the
->     PEC.  In fact, I believe that an additional small patch would be required
->     to the driver working correctly in interrupt mode with PEC.
-> 
->  3) It has not been tested in SMBus Slave mode.
-> 
->  4) It has not been tested with SMI#-type interrupts.
-> 
->  5) The BIOS has to configure the PCH SMBus IRQ properly.
-> 
->  6) It has not been tested with a device that does byte-by-byte smbus (non-i2c)
->     reads.
-
-I think I can test this.
-
->  7) It has not been tested with smbus 'process call' transactions.
-
-But not this.
-
-> If would be very helpful if somebody could help test on other chipsets, with
-> a PEC device, or on additional BIOS that woudl be very helpful.
-
-I will do what I can with the hardware I have here.
-
-> In the meantime, the interrupt behavior is only enabled on the Cougar Point,
-> and even here, it can be completely disabled with the "Interrupt" feature like
-> other advanced features of the driver.
-> 
-> Daniel Kurtz (3):
->   i2c: i801: refactor i801_block_transaction_byte_by_byte
->   i2c: i801: enable irq for i801 smbus transactions
->   i2c: i801: enable irq for byte_by_byte transactions
-> 
->  drivers/i2c/busses/i2c-i801.c |  199 ++++++++++++++++++++++++++++++++++++-----
->  1 files changed, 175 insertions(+), 24 deletions(-)
-
--- 
-Jean Delvare
+regards,
+dan carpenter
