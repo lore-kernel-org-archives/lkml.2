@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758871Ab2AFRa0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 12:30:26 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:56791 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842Ab2AFRaZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 12:30:25 -0500
-Date: Fri, 6 Jan 2012 18:30:19 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andreas Schwab <schwab@linux-m68k.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] scheduler changes for v3.3
-Message-ID: <20120106173014.GB4348@somewhere>
-References: <20120105140846.GA32342@elte.hu>
- <CA+55aFwNzNSd2B57XYLC5r9sg=+GD=dP-UPZQDxmLXyLODS6+w@mail.gmail.com>
+	id S1758877Ab2AFRci (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 12:32:38 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:45381 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752842Ab2AFRcg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 12:32:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFwNzNSd2B57XYLC5r9sg=+GD=dP-UPZQDxmLXyLODS6+w@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120103180020.GA15014@redhat.com>
+References: <20111230193704.GA2874@redhat.com> <20120101145354.GA1791@elte.hu>
+ <20120103093020.0cbcd735@jbarnes-desktop> <CAErSpo4YB6Rpe==-vbia9B_aJNtJ7BrDySs-jw5cGmeMv9zRgA@mail.gmail.com>
+ <20120103180020.GA15014@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 6 Jan 2012 10:32:14 -0700
+Message-ID: <CAErSpo6S19rznjbkos3LPk8K9GK=kFUr9+OqRfeZ72TiJpj35Q@mail.gmail.com>
+Subject: Re: Dell Studio 1536 needs pci=nocrs to boot.
+To: Dave Jones <davej@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 06, 2012 at 08:58:55AM -0800, Linus Torvalds wrote:
-> On Thu, Jan 5, 2012 at 6:08 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > Please pull the latest sched-core-for-linus git tree from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-core-for-linus
-> 
-> Ugh. So I got conflicts on this one.  Big deal, fix them up.
-> 
-> But as I was fixing them up, I hit two problems that I wanted people
-> to take a look at:
-> 
->  - some of the code was utter crap. Look at my fixup for
-> include/asm-generic/cputime.h, for example. Notice how I had to change
-> __msecs to __usec, and notice the bogus semicolons that I removed?
-> 
->    This came in through commit 648616343cdb ("[S390] cputime: add
-> sparse checking and cleanup") which is also mis-named: it's not
-> S390-specific. Martin, please take a look.
-> 
->  - I did not do the right thing for the "usecs_to_cputime64()" fixup.
-> Please take a look at commit 34845636a184 ("procfs: do not confuse
-> jiffies with cputime64_t") which introduced that "usecs_to_cputime64()
-> thing, and which clashes badly with the sparse cleanups.
-> 
-> And by "clashes badly", I mean it. The sparse cleanups added a lot of
-> casts between the types, which means that the mindless
-> 
->     +#define usecs_to_cputime64(us)         usecs_to_cputime(us)
-> 
-> introduced by that commit 34845636a184 is now likely *wrong*, because
-> "usecs_to_cputime()" now explicitly casts to a non-64-bit cputime_t.
-> 
-> It may have been wrong before too, but at least on 64-bit
-> architectures it didn't really matter. Now the sparse fixes have made
-> "cputime64_t" a separate type that will complain about casting, so it
-> not only casts the type to a (potentially different and wrong size),
-> but it also breaks the sparse checks.
-> 
-> I tried to fix up the ones that caused actual conflicts (due to
-> changes nearby, like the ones in asm-generic), but the ones that
-> didn't actually cause conflicts (powerpc and s390) I left alone.
-> 
-> Guys, can you take a look? Also double-check my resolve of the
-> set_cpu_sd_state_idle() call in kernel/time/tick-sched.c, please. I've
-> pushed it out, and it seems to work for me, but...
+On Tue, Jan 3, 2012 at 11:00 AM, Dave Jones <davej@redhat.com> wrote:
+> On Tue, Jan 03, 2012 at 10:55:00AM -0700, Bjorn Helgaas wrote:
+>  > On Tue, Jan 3, 2012 at 10:30 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+>  > > On Sun, 1 Jan 2012 15:53:54 +0100
+>  > > Ingo Molnar <mingo@elte.hu> wrote:
+>  > >
+>  > >>
+>  > >> * Dave Jones <davej@redhat.com> wrote:
+>  > >>
+>  > >> > Some machines don't boot unless passed pci=nocrs.
+>  > >> > (See https://bugzilla.redhat.com/show_bug.cgi?id=770308 for details of
+>  > >> >   one report. Waiting on dmidecode output for others).
+>  > >> >
+>  > >> > Currently there is a DMI whitelist, even though the default is on.
+>  > >> >
+>  > >> > This patch extends that dmi list to add a blacklist to automatically
+>  > >> > apply disable it when necessary.
+>  > >> >
+>  > >> > Signed-off-by: Dave Jones <davej@redhat.com>
+>  > >>
+>  > >> Acked-by: Ingo Molnar <mingo@elte.hu>
+>  > >>
+>  > >> Jesse, will you take this one?
+>  > >
+>  > > Yeah, I can take it.  Bjorn, any comment (I'll bounce over the
+>  > > original)?
+>  >
+>  > This is a band-aid, and we'll have to extend the blacklist for other
+>  > machines, but it's the best we have right now, so I think it's the
+>  > right thing to do.
+>  >
+>  > It's probably the same as
+>  > https://bugzilla.kernel.org/show_bug.cgi?id=31602 (Dell 1546) and
+>  > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/647043
+>
+> There's at least one more dell (Seems that entire 'studio' product line
+> is affected) that I'm waiting on DMI data from.
+> Also a thinkpad that I have a patch pending for.
 
-Yes looks good. We want it to be called from idle loop entry but not
-from idle interrupts. So moving it to tick_nohz_idle_enter() is the
-right thing.
+I think we should drop the Dell 1536 blacklist entry from this patch
+(adding set_nouse_crs() itself is fine and may be needed for other
+machines).
+
+The patches here: https://lkml.org/lkml/2012/1/5/402 should cover the
+Dell 1536 issue as well as the Dell 1546 and any others with the same
+BIOS defect.
+
+Bjorn
