@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759090Ab2AFUMA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 15:12:00 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:59579 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759063Ab2AFUL6 (ORCPT
+	id S1759086Ab2AFUOl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 15:14:41 -0500
+Received: from smtprelay-b21.telenor.se ([195.54.99.212]:41021 "EHLO
+	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759038Ab2AFUOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 15:11:58 -0500
-Date: Fri, 6 Jan 2012 12:11:54 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
-        alan@linux.intel.com, linux-pci@vger.kernel.org, tglx@linutronix.de,
-        mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Subject: Re: [PATCH 1/6] pci_ids: add device ids for STA2X11 device (aka
- ConneXT)
-Message-ID: <20120106121154.48b570e8@jbarnes-desktop>
-In-Reply-To: <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
-References: <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/1my=IDcKxZ4cfsKToomJrY9"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 6 Jan 2012 15:14:39 -0500
+X-SENDER-IP: [85.230.170.239]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Au5VAKpVB09V5qrvPGdsb2JhbABDiVaiahkBAQEBNzKBcgEBBTocIxAIAxguFCUKGogPtjgTixtjBI0yh1SFX4xY
+X-IronPort-AV: E=Sophos;i="4.71,469,1320620400"; 
+   d="scan'208";a="27748275"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Fri, 6 Jan 2012 21:14:34 +0100
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the MT
+ slot state
+Message-ID: <20120106201434.GA3174@polaris.bitmath.org>
+References: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
+ <CAN+gG=FUEH851Um4Lco0avqdE2Eup3Jo79Ti4T7XhxT=PO6WeQ@mail.gmail.com>
+ <20120106181845.GA22653@core.coreip.homeip.net>
+ <20120106185544.GB2795@polaris.bitmath.org>
+ <20120106191835.GA2998@polaris.bitmath.org>
+ <4F074CAE.7010205@canonical.com>
+ <20120106194815.GA3116@polaris.bitmath.org>
+ <20120106200239.GB23619@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120106200239.GB23619@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/1my=IDcKxZ4cfsKToomJrY9
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Fri, Jan 06, 2012 at 12:02:40PM -0800, Dmitry Torokhov wrote:
+> On Fri, Jan 06, 2012 at 08:48:15PM +0100, Henrik Rydberg wrote:
+> > > > Ok, maybe not to so easy after all, which probably answers my own
+> > > > question. Looks like a EVIOCGMTSLOT, taking both slot and event code
+> > > > as argument, would be the cleaner route to take. Another ioctl, how do we
+> > > > feel about that?
+> > > 
+> > > What's the problem with userspace locking?
+> > 
+> > The idea was to get by without it.
+> > 
+> > Regarding ioctls, it does not seem realizable due to ioctl number
+> > exhaustion.
+> 
+> I am prettu sure we cabn spare 1 ioctl number. We just need to pass slot
+> number not as part of ioctl number but in data instead. Like
+> EVIOCGKEYCODE works.
 
-On Fri, 6 Jan 2012 13:32:41 +0100
-Alessandro Rubini <rubini@gnudd.com> wrote:
+Right, thanks. Perhaps we could even pass it as result data -
+returning all mt data in one go? With the purpose being to capture the
+full MT state, it ought to be both simpler and faster.
 
-> The chip is an I/O hub used by some Atom boards.  Most of those
-> symbols are used in arch/x86/platform/sta2x11/sta2x11.c (to be
-> introduced) and in the specific drivers as well.
->=20
-> Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
-> Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
-> Cc: Alan Cox <alan@linux.intel.com>
-> ---
-
-Applied, thanks.  Will the users land this release too?
-
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/1my=IDcKxZ4cfsKToomJrY9
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPB1WLAAoJEIEoDkX4Qk9hKv4QAJiKhE2q4aw+tpnWm8RzzZvx
-jwpAoVRgs3raHCORRdwqVB5GjXuiluG/DjGa8Sv4bScesKoRUXiXE8Qn7TEY4LQL
-6LDK0GMkJigCwmC88cPW2PTrz/tMHP4J1J1F1nkPBSbkrDGMDix/XIUDrUqPzYKt
-acjkAdrvuAfGtdSWqv8vNaDHm1CLUsEOZz/evkk9f0SKDrDJGyIlBQNffqOPATon
-XyoPAbv5EXeCTrvTEoT8/9OtorQwLgY/vv4PImPfOuzg5WhFrxSXlF9pGU3Npt3E
-qBJ4N8Sfhwraq2YXJ6cRF0y8vAD6II6HV4a94/RG3SUQwtf0U+lPhcJ4kCFp6KYN
-stexzsH8JiQ/vQ4PWkG3wBX3LXAjXLnPQV4/13o8GEJn7ou+mL9//Y0ViVqJq1q6
-O4SgiC/tUGrYu0IgT7RuP5nuG1ejf1Ke8ggYTdAy3STzG8zM5T5u4efmHBkGzl2R
-ZssjGixWf+Dck2LQeCdH1yrMfeesHbdWKPqtVItF/YR5/jKLazcDeTrVnM7kUeU4
-wpuIhOlGXOfHXBFPQYwf70u+q8G//UhGN6C2Mpl0lZWV4KSXZyBBSBVeR3zrpp2t
-cuQp9pGVBIYKMMcXuTso4A/vzgeoeksALNcdbGEoFkFIL+FqKNDByRTJci6YDJvD
-9EnxGYI6qZAZh2jkjDyK
-=3AQ0
------END PGP SIGNATURE-----
-
---Sig_/1my=IDcKxZ4cfsKToomJrY9--
+Henrik
