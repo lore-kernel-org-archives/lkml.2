@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab2AFGtm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 01:49:42 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:59657 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751201Ab2AFGtk (ORCPT
+	id S1752468Ab2AFGwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 01:52:40 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:43174 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab2AFGwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 01:49:40 -0500
-Date: Thu, 5 Jan 2012 22:49:30 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, rpurdie@rpsys.net,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, kgene.kim@samsung.com, jg1.han@samsung.com,
-        kyungmin.park@samsung.com, cbou@mail.ru, kwangwoo.lee@gmail.com,
-        augulis.darius@gmail.com, ben-linux@fluff.org, patches@linaro.org
-Subject: Re: [PATCH] backlight: lcd: add driver for raster-type lcd's with
- gpio controlled panel reset
-Message-ID: <20120106064929.GB3496@opensource.wolfsonmicro.com>
-References: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
- <4F05F509.6020405@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F05F509.6020405@metafoo.de>
-X-Cookie: You will soon forget this.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Jan 2012 01:52:39 -0500
+Date: Fri, 6 Jan 2012 17:52:27 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: linux-next: manual merge of the driver-core tree with the arm tree
+Message-Id: <20120106175227.07a7240920f3ccd95c27b9a7@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 08:07:53PM +0100, Lars-Peter Clausen wrote:
+--Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > +- lcd,pwrctrl-min-uV: If a regulator controls the Vcc voltage of the lcd panel,
-> > +  this property specifies the minimum voltage the regulator should supply.
-> > +  The value of this property should in in micro-volts.
-> > +- lcd,pwrctrl-max-uV: If a regulator controls the Vcc voltage of the lcd panel,
-> > +  this property specifies the maximum voltage the regulator should limit to
-> > +  on the Vcc line. The value of this property should in in micro-volts.
+Hi Greg,
 
-> The min and max voltage should rather be specified through the regulator
-> constraints.
+Today's linux-next merge of the driver-core tree got a conflict in
+arch/arm/mach-s5pc100/common.c between commit 109ac862f737 ("ARM:
+mach-s5pc100: use standard arch_idle()") from the arm tree and commit
+4a858cfc9af8 ("arm: convert sysdev_class to a regular subsystem") from
+the driver-core tree.
 
-In principle it should be specified in both places to account for shared
-supplies though for all practical purposes for an LCD panel I can't see
-multiple users sharing the same regulator and varying the voltage at
-runtime.
+I fixed it up (see below) and can carry the fix as necessary.
 
-> > +	if (lcd_enable) {
-> > +		if ((pd->min_uV || pd->max_uV) &&
-> > +			regulator_set_voltage(lp->regulator,
-> > +						pd->min_uV, pd->max_uV))
-> > +				dev_info(lp->dev,
-> > +					"regulator voltage set failed\n");
-> > +		if (regulator_enable(lp->regulator))
-> > +			dev_info(lp->dev, "failed to enable regulator\n");
-> > +	} else {
-> > +		regulator_disable(lp->regulator);
-> > +	}
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> I think you have to make sure that the regulator enable and disable calls are
-> balanced.
+diff --cc arch/arm/mach-s5pc100/common.c
+index 4659fb9,af52c09..0000000
+--- a/arch/arm/mach-s5pc100/common.c
++++ b/arch/arm/mach-s5pc100/common.c
+@@@ -194,27 -154,17 +195,27 @@@ static struct device s5pc100_dev =3D=20
+ =20
+  static int __init s5pc100_core_init(void)
+  {
+- 	return sysdev_class_register(&s5pc100_sysclass);
++ 	return subsys_system_register(&s5pc100_subsys, NULL);
+  }
+ -
+  core_initcall(s5pc100_core_init);
+ =20
+  int __init s5pc100_init(void)
+  {
+  	printk(KERN_INFO "S5PC100: Initializing architecture\n");
+- 	return sysdev_register(&s5pc100_sysdev);
+++	return device_register(&s5pc100_sys);
+ +}
+ =20
+ -	/* set idle function */
+ -	pm_idle =3D s5pc100_idle;
+ +/* uart registration process */
+ =20
+ -	return device_register(&s5pc100_sys);
+ +void __init s5pc100_init_uarts(struct s3c2410_uartcfg *cfg, int no)
+ +{
+ +	s3c24xx_init_uartdevs("s3c6400-uart", s5p_uart_resources, cfg, no);
+ +}
+ +
+ +void s5pc100_restart(char mode, const char *cmd)
+ +{
+ +	if (mode !=3D 's')
+ +		arch_wdt_reset();
+ +
+ +	soft_restart(0);
+  }
 
-Yes.
+--Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb
+Content-Type: application/pgp-signature
 
-> > +#ifdef CONFIG_OF
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> I think you can remove all the CONFIG_OF ifdefs, the of API should stub itself out.
+iQIcBAEBCAAGBQJPBporAAoJEECxmPOUX5FEntAQAKnX5hF7ChpR7SuEoYI4biNp
+Z6xcRXL4iUZ1u1gB2JGjAbAnoMs+RBPaLq9+Y2zHwXK8F6/42TPpFBLtTuInn5r8
+QswSs3zStn/dSeA6eoUN6dwebBR/F+Thu2CnrVZPrTu0TyI/q8HyfZk0Y4hu/CvC
+Wr0+0QV0Z1NGqj0ZU3xTA6U/JVb17/KXNdOqQnrSdP+UYDUlQnDsWuyQRYxtEDxg
+c5nYVlb/VKbwCmcc1LbXwNAUUkkSxXpaFzXGL8x1cdTRgpNCyLu74zdvdwY93x6u
+TNcUPRGVMD+uhYt37NkyaulNjOuawSX/QLGqP77lVBg3b6JKVouKd0GGi6oaIqNL
+3WkjkX2rFiUYfzCvwQQwJRXm5YLw44ZsIFi20YNnK4qITaTW3OQfrPI6VXn2y/i3
+80GBSnKYOUrcZF2O12QDSsPRhaxMRNfrXC1bsf/HH8SBCkWbDd2kOqb61ZMIoWEZ
+pzDJgLvvqi/ExALvtNChUWSnkfx6HTVrRC6sbSS1oV/5ZyLuL51HkAHIalhiglqE
+RatTkHqQEfXro0t4pNkbiMCwvTGS/x1mfkBGFGyGmbMfoSXlOxm5QhoJY2U9Emkw
+GTPfro0M6sSBpzMOk3VfBZ1pYU2DuOYNfd0xV0j6GzFnzQl0r8EInyiKegTUUJ+Y
+zU3k00m8Ldio8ZskFJsQ
+=30JS
+-----END PGP SIGNATURE-----
 
-It's reasonably idiomatic to do this if the parsing code is in a
-separate function.
+--Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb--
