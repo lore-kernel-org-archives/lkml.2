@@ -1,33 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758951Ab2AFRuB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 12:50:01 -0500
-Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:50867 "HELO
-	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758868Ab2AFRt7 (ORCPT
+	id S1758948Ab2AFRxC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 12:53:02 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44039 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758898Ab2AFRxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 12:49:59 -0500
+	Fri, 6 Jan 2012 12:53:00 -0500
+Date: Fri, 6 Jan 2012 09:52:57 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Mel Gorman <mgorman@suse.de>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH -mm] slub: debug_guardpage_minorder documentation tweak
+In-Reply-To: <alpine.DEB.2.00.1112161315220.6862@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1201060952300.10460@chino.kir.corp.google.com>
+References: <1321633507-13614-1-git-send-email-sgruszka@redhat.com> <alpine.DEB.2.00.1112081303100.8127@chino.kir.corp.google.com> <20111212145948.GA2380@redhat.com> <201112130021.41429.rjw@sisk.pl> <alpine.DEB.2.00.1112131640240.32369@chino.kir.corp.google.com>
+ <20111216132155.GA14271@redhat.com> <20111216132349.GB14271@redhat.com> <alpine.DEB.2.00.1112161315220.6862@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAL1RGDWOitrKp31RuWLCV3ifUa=CKvZ2qZaRQJMcxdU6_eubww@mail.gmail.com>
-References: <1325714596-4655-1-git-send-email-cascardo@linux.vnet.ibm.com> <CAL1RGDWOitrKp31RuWLCV3ifUa=CKvZ2qZaRQJMcxdU6_eubww@mail.gmail.com>
-From: Roland Dreier <roland@purestorage.com>
-Date: Fri, 6 Jan 2012 09:49:36 -0800
-Message-ID: <CAL1RGDVEqr9XzzcpG6wK49e209JtrhXGayFa5Qnz_NziLinR-g@mail.gmail.com>
-Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
-To: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: venkat.x.venkatsubra@oracle.com, davem@davemloft.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 6, 2012 at 9:47 AM, Roland Dreier <roland@purestorage.com> wrote:
-> Looks great to me:
+On Fri, 16 Dec 2011, David Rientjes wrote:
 
-And BTW if Oracle has some non-published work they should probably just
-rebase it on top of this fix.  We should merge this rather than shipping a
-kernel with an obvious know crash like this.
+> > Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> 
+> Acked-by: David Rientjes <rientjes@google.com>
+> 
+> Andrew, this should be folded into 
+> slub-document-setting-min-order-with-debug_guardpage_minorder-0.patch 
+> which should be folded into 
+> slub-min-order-when-debug_guardpage_minorder-0.patch
+> 
 
- - R.
+Andrew, this documentation improvement is still missing from linux-next.
