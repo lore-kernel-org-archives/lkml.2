@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab2AFND7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 08:03:59 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:46738 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751655Ab2AFND5 (ORCPT
+	id S1758697Ab2AFNEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 08:04:34 -0500
+Received: from merlin.infradead.org ([205.233.59.134]:52181 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab2AFND7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 08:03:57 -0500
-Date: Fri, 6 Jan 2012 21:14:14 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dong Aisheng-B29396 <B29396@freescale.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Message-ID: <20120106131411.GA6372@S2101-09.ap.freescale.net>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
- <1324402840-32451-3-git-send-email-b29396@freescale.com>
- <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
- <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 6 Jan 2012 08:03:59 -0500
+Message-ID: <1325854981.2442.25.camel@twins>
+Subject: Re: [RFC PATCH 0/9] Remove useless on_each_cpu return value
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Date: Fri, 06 Jan 2012 14:03:01 +0100
+In-Reply-To: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
+References: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 06, 2012 at 11:33:54AM +0000, Dong Aisheng-B29396 wrote:
-> In board dts file:
-> usdhc@0219c000 { /* uSDHC4 */
->         fsl,card-wired;
->         status = "okay";
->         pinmux = <&pinctrl_sd4>;
+On Tue, 2012-01-03 at 16:19 +0200, Gilad Ben-Yossef wrote:
+> on_each_cpu() returns as its own return value the return value of 
+> smp_call_function(). smp_call_function() in turn returns a hard 
+> coded value of zero.
+> 
+> Some callers to on_each_cpu() waste cycles and bloat code space
+> by checking the return value to on_each_cpu(), probably for 
+> historical reasons.
 
-Would it be more proper to have the phandle named as 'pinctrl' than
-'pinmux'?
+hysterical raisins,, yumm! :-)
 
-> };
+> This patch set refactors callers to not test on_each_cpu()
+> (fixed) return value and then refactors on_each_cpu to
+> return void to avoid confusing future users.
+> 
 
--- 
-Regards,
-Shawn
+Seems sane enough, fwiw:
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
