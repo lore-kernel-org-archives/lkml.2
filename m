@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758456Ab2AFCQK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 21:16:10 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:42022 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab2AFCQI (ORCPT
+	id S1758504Ab2AFCQf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 21:16:35 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:40605 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756482Ab2AFCQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 21:16:08 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-68-4f065966e076
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Thomas Abraham'" <thomas.abraham@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        kgene.kim@samsung.com, broonie@opensource.wolfsonmicro.com,
-        kyungmin.park@samsung.com, cbou@mail.ru, kwangwoo.lee@gmail.com,
-        augulis.darius@gmail.com, ben-linux@fluff.org, lars@metafoo.de,
-        patches@linaro.org
-References: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
-In-reply-to: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
-Subject: RE: [PATCH] backlight: lcd: add driver for raster-type lcd's with gpio
- controlled panel reset
-Date: Fri, 06 Jan 2012 11:16:06 +0900
-Message-id: <001401cccc19$25b52920$711f7b60$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: ko
-Thread-index: AczLwA2lMi0W2seQRkG2XLj4MxokeQAV2fDg
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 5 Jan 2012 21:16:34 -0500
+Date: Thu, 5 Jan 2012 21:14:25 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, Thomas Meyer <thomas@m3y3r.de>,
+        Li Dongyang <lidongyang@novell.com>, Ian.Campbell@citrix.com
+Subject: Re: [GIT PULL] (xen) stable/for-jens-3.3 for 3.3 merge window.
+Message-ID: <20120106021425.GB3120@phenom.dumpdata.com>
+References: <20111221153256.GA26580@phenom.dumpdata.com>
+ <4EF74583.2000707@kernel.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4EF74583.2000707@kernel.dk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090207.4F065969.0059,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Thomas.
-> -----Original Message-----
-> From: Thomas Abraham [mailto:thomas.abraham@linaro.org]
-> Sent: Friday, January 06, 2012 12:42 AM
-> Subject: [PATCH] backlight: lcd: add driver for raster-type lcd's with gpio controlled panel reset
+On Sun, Dec 25, 2011 at 04:47:15PM +0100, Jens Axboe wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA256
 > 
-> Add a lcd panel driver for simple raster-type lcd's which uses a gpio
-> controlled panel reset. The driver controls the nRESET line of the panel
-> using a gpio connected from the host system. The Vcc supply to the panel
-> is (optionally) controlled using a voltage regulator. This driver excludes
-> support for lcd panels that use a serial command interface or direct
-> memory mapped IO interface.
+> On 2011-12-21 16:32, Konrad Rzeszutek Wilk wrote:
+> > git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/for-jens-3.3
 > 
-> Suggested-by: Lars-Peter Clausen <lars@metafoo.de>
-> Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
-> ---
->  .../devicetree/bindings/lcd/lcd-pwrctrl.txt        |   39 ++++
->  drivers/video/backlight/Kconfig                    |    7 +
->  drivers/video/backlight/Makefile                   |    1 +
->  drivers/video/backlight/lcd_pwrctrl.c              |  231 ++++++++++++++++++++
->  include/video/lcd_pwrctrl.h                        |   30 +++
->  5 files changed, 308 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/lcd/lcd-pwrctrl.txt
->  create mode 100644 drivers/video/backlight/lcd_pwrctrl.c
->  create mode 100644 include/video/lcd_pwrctrl.h
-> 
-> [...]
-> --- a/drivers/video/backlight/Makefile
-> +++ b/drivers/video/backlight/Makefile
-> @@ -8,6 +8,7 @@ obj-$(CONFIG_LCD_LMS283GF05)	   += lms283gf05.o
->  obj-$(CONFIG_LCD_LTV350QV)	   += ltv350qv.o
->  obj-$(CONFIG_LCD_ILI9320)	   += ili9320.o
->  obj-$(CONFIG_LCD_PLATFORM)	   += platform_lcd.o
-> +obj-$(CONFIG_LCD_PWRCTRL) 	   += lcd_pwrctrl.o
-Can you remove unnecessary space?
-Please use <tab><space><space><space> instead of <space><tab><space><space><space>
-between PWRCTRL) and += lcd_.
-> [...]
-> +static struct platform_driver lcd_pwrctrl_driver = {
-> +	.driver		= {
-> +		.name	= "lcd-pwrctrl",
-> +		.owner	= THIS_MODULE,
-> +		.of_match_table	= of_match_ptr(lcd_pwrctrl_match),
-> +	},
-> +	.probe		= lcd_pwrctrl_probe,
-> +	.remove		= lcd_pwrctrl_remove,
-> +	.suspend	= lcd_pwrctrl_suspend,
-> +	.resume		= lcd_pwrctrl_resume,
-Please use 'struct dev_pm_ops'.
-> +};
-> +
-> +static int __init lcd_pwrctrl_init(void)
-> +{
-> +	return platform_driver_register(&lcd_pwrctrl_driver);
-> +}
-> +
-> +static void __exit lcd_pwrctrl_cleanup(void)
-> +{
-> +	platform_driver_unregister(&lcd_pwrctrl_driver);
-> +}
-> +
-> +module_init(lcd_pwrctrl_init);
-> +module_exit(lcd_pwrctrl_cleanup);
-Use module_platform_driver(lcd_pwrctrl_driver).
-It can make the code simpler.
-> [...]
+> Pulled, thanks!
 
+Thank you!
+
+BTW, what did you think of these two patches:
+
+http://mid.gmane.org/20111220155825.GC1932@phenom.dumpdata.com
+http://mid.gmane.org/20111220154541.GA1932@phenom.dumpdata.com
+
+Can I have your ACK to carry those in my tree and submit them to Linus directly?
+The full thread is:
+
+http://marc.info/?i=1319124957-32269-1-git-send-email-dgdegra@tycho.nsa.gov
