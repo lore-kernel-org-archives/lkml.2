@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab2AFMoN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 07:44:13 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:45215 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab2AFMoM convert rfc822-to-8bit (ORCPT
+	id S1755549Ab2AFMru (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 07:47:50 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:6422 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab2AFMrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 07:44:12 -0500
-Message-ID: <1325853838.2442.18.camel@twins>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-From: Peter Zijlstra <peterz@infradead.org>
-To: Yasunori Goto <y-goto@jp.fujitsu.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Date: Fri, 06 Jan 2012 13:43:58 +0100
-In-Reply-To: <20120106210108.AB18.E1E9C6FF@jp.fujitsu.com>
-References: <20120106192256.AB15.E1E9C6FF@jp.fujitsu.com>
-	 <1325847671.2442.7.camel@twins>
-	 <20120106210108.AB18.E1E9C6FF@jp.fujitsu.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Fri, 6 Jan 2012 07:47:48 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6580"; a="152754754"
+From: Ravi Kumar V <kumarrav@codeaurora.org>
+To: vinod.koul@intel.com, dan.j.williams@intel.com
+Cc: arnd@arndb.de, linux-arch@vger.kernel.org, davidb@codeaurora.org,
+        dwalker@fifo99.com, bryanh@codeaurora.org, linux@arm.linux.org.uk,
+        tsoni@qualcomm.com, johlstei@qualcomm.com,
+        Ravi Kumar V <kumarrav@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v2 0/2] Add Qualcomm MSM ADM DMAEngine driver
+Date: Fri,  6 Jan 2012 18:17:30 +0530
+Message-Id: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org>
+X-Mailer: git-send-email 1.7.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 21:01 +0900, Yasunori Goto wrote:
+Following are the changes we have done from the previous
+v1 posted here: https://lkml.org/lkml/2011/12/22/148 
 
-> Do you mean the following patch?
+As our ADM Scatter-gather hardware needs
+-32-bit command configuration parameter
+ apart from 
+-32-bit source address
+-32-bit destination address
+-16-bit length
 
-Yes, something like that. At that point ->state should be TASK_RUNNING
-(since we are after all running). The unlock_wait() will synchronize
-against any in-progress ttwu() while its fast path is a non-atomic
-compare. Any ttwu after this will bail since it will either observe
-TASK_RUNNING or TASK_DEAD, neither are a state it will act upon.
+So,we have added new parameter in struct scatterlist to support xfer descriptor
+specific private data, and for supporting ADM Box mode DMA we added new
+API and data structure.
+  
+Ravi Kumar V (2):
+  dmaengine: Add support for per xfer specific privatedata & box dma
+  msm: DMAEngine: Add DMAEngine driver based on old MSM DMA APIs
 
-Now the only question that remains is if we need the full memory barrier
-or if we can get away with less.
+ arch/arm/mach-msm/include/mach/dma.h |   33 ++
+ drivers/dma/Kconfig                  |   12 +
+ drivers/dma/Makefile                 |    1 +
+ drivers/dma/msm-dma.c                |  764 ++++++++++++++++++++++++++++++++++
+ include/asm-generic/scatterlist.h    |    1 +
+ include/linux/dmaengine.h            |   17 +-
+ 6 files changed, 827 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/dma/msm-dma.c
 
-I guess the mb separates the write to ->state (setting TASK_RUNNING)
-from the read of ->pi_lock. The remote CPU must see the TASK_RUNNING,
-and we must see ->pi_lock taken if it is.
-
-I also can't find anything to 'borrow' a barrier from (well I can for
-mainline, but not for -rt).
-
-So yes, I guess the below will do, albeit it needs a somewhat
-comprehensive comment explaining its need.
-
-Oleg, can you agree?
-
-> ---
-> 
-> Signed-off-by: Yasunori Goto <y-goto@jp.fujitsu.com>
-> 
-> ---
->  kernel/exit.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> Index: linux-3.2-rc7/kernel/exit.c
-> ===================================================================
-> --- linux-3.2-rc7.orig/kernel/exit.c
-> +++ linux-3.2-rc7/kernel/exit.c
-> @@ -1038,6 +1038,10 @@ NORET_TYPE void do_exit(long code)
->  
->  	preempt_disable();
->  	exit_rcu();
-> +
-> +	smp_mb();
-> +	raw_spin_unlock_wait(&tsk->pi_lock);
-> +
->  	/* causes final put_task_struct in finish_task_switch(). */
->  	tsk->state = TASK_DEAD;
->  	schedule();
-> 
-> 
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
