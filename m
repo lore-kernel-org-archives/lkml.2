@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759266Ab2AFVF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 16:05:28 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:46696 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759162Ab2AFVF0 (ORCPT
+	id S1759274Ab2AFVG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 16:06:29 -0500
+Received: from static.213.204.9.176.clients.your-server.de ([176.9.204.213]:40720
+	"EHLO shutemov.name" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759172Ab2AFVGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 16:05:26 -0500
-Date: Fri, 6 Jan 2012 13:05:23 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH] PCI: DEVICE_COUNT_RESOURCE should be equal to
- PCI_NUM_RESOURCES
-Message-ID: <20120106130523.2a904776@jbarnes-desktop>
-In-Reply-To: <1325720985-6051-1-git-send-email-yinghai@kernel.org>
-References: <1325720985-6051-1-git-send-email-yinghai@kernel.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/2mwAQqExp68Vbf3BTLA0lk7"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 6 Jan 2012 16:06:24 -0500
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: [RESEND, PATCH 3/6] memcg: mark stat field of mem_cgroup struct as __percpu
+Date: Fri,  6 Jan 2012 22:57:49 +0200
+Message-Id: <1325883472-5614-3-git-send-email-kirill@shutemov.name>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1325883472-5614-1-git-send-email-kirill@shutemov.name>
+References: <1325883472-5614-1-git-send-email-kirill@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/2mwAQqExp68Vbf3BTLA0lk7
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-On Wed,  4 Jan 2012 15:49:45 -0800
-Yinghai Lu <yinghai@kernel.org> wrote:
+It fixes a lot of sparse warnings.
 
-> Save some bytes for device resource array.
->=20
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->=20
-> ---
->  include/linux/pci.h |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->=20
-> Index: linux-2.6/include/linux/pci.h
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-2.6.orig/include/linux/pci.h
-> +++ linux-2.6/include/linux/pci.h
-> @@ -111,7 +111,7 @@ enum {
->  	PCI_NUM_RESOURCES,
-> =20
->  	/* preserve this for compatibility */
-> -	DEVICE_COUNT_RESOURCE
-> +	DEVICE_COUNT_RESOURCE =3D PCI_NUM_RESOURCES,
->  };
-> =20
->  typedef int __bitwise pci_power_t;
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/memcontrol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Not sure what this buys us by itself, but it's applied in preparation
-for any upcoming cleanups.
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 39c3d60..831cdc4 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -282,7 +282,7 @@ struct mem_cgroup {
+ 	/*
+ 	 * percpu counter.
+ 	 */
+-	struct mem_cgroup_stat_cpu *stat;
++	struct mem_cgroup_stat_cpu __percpu *stat;
+ 	/*
+ 	 * used when a cpu is offlined or other synchronizations
+ 	 * See mem_cgroup_read_stat().
+-- 
+1.7.8.2
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
-
---Sig_/2mwAQqExp68Vbf3BTLA0lk7
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPB2ITAAoJEIEoDkX4Qk9hay8QAK1iVFB+3e4WgDefioNNHmAP
-nCu9ntqu0TUkbVdyzqjeVe04hn7e6e8DEMuAlSQD37tPQPEQuLCoXkii7/GV0/1T
-ePSqRth6fq1LW3omNP6EVcY36Z+y0Di4x3hgd6JQbU3AiR+qCpfGTeJ6TAZg7yKb
-jzBDPhRvZMZqp2gnNq+8yienS+2lsQZejzOLXnWmDLmI4WYRMeUde/I3Ircg+dCk
-WOVDKgQTtFxnMvJmOi3sdOyRUy+OSlvDubV0H7g7mqlWWQtHIGv1FT0q4BFbb/FU
-grboQ0jswYDJTM+tZkPHWE+IXEYdNEapSVjuDI07n7lqAX9dcKr18gNugPW0ry9q
-H3GXQD71CBONrCgDiGWmSZOMShfFPB9oOv5bCoVrcXiDXoOXafIklqdhA8HYKvkB
-RHIlT8W+f3BmQGYmyV+1x9qoyGWPlLHTjEYipgOPuPJmZrkxB+mZRrJbqdR9Syrp
-5TVhXKfFvUwSHtey4gEJ0caSBIAuZC8b/xlb41zc0p9mv/6lsLh1aafPa3I7TK1w
-+ZlmW1VEuWdtM7EZkv8X6cjA8x/9lp9l/XTriuKp+Um4HUzxjiJ5SNUPyfkwlb1c
-5MW4pYY5/JY+wMxk1lcxzxI4G8Upp9S0wtWipoxQhK48ZXJnWhsqyO47cZ4dyaGh
-bYWvlGd7Hg7kFzNYnTB+
-=zRJh
------END PGP SIGNATURE-----
-
---Sig_/2mwAQqExp68Vbf3BTLA0lk7--
