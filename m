@@ -1,29 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752293Ab2AFMY1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 07:24:27 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:57297 "EHLO
+	id S1754236Ab2AFMao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 07:30:44 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:38933 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751350Ab2AFMY0 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751673Ab2AFMam convert rfc822-to-8bit (ORCPT
 	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 6 Jan 2012 07:24:26 -0500
-Message-Id: <4F06F640020000780006ACDE@nat28.tlf.novell.com>
+	Fri, 6 Jan 2012 07:30:42 -0500
+Message-Id: <4F06F7BA020000780006ACEB@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 06 Jan 2012 12:25:20 +0000
+Date: Fri, 06 Jan 2012 12:31:38 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andi Kleen" <andi@firstfloor.org>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
-References: <4F05BBFE020000780006A983@nat28.tlf.novell.com>
- <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com>
- <20120106014748.GS11715@one.firstfloor.org> <4F06566B.8080708@zytor.com>
- <20120106094922.GU11715@one.firstfloor.org>
- <4F06D979020000780006AC49@nat.nue.novell.com>
- <20120106103734.GV11715@one.firstfloor.org>
- <4F06DFEF020000780006AC84@nat28.tlf.novell.com>
- <20120106110845.GW11715@one.firstfloor.org>
-In-Reply-To: <20120106110845.GW11715@one.firstfloor.org>
+To: "Ingo Molnar" <mingo@elte.hu>
+Cc: <tglx@linutronix.de>, "Andrew Morton" <akpm@linux-foundation.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH] x86-64: fix memset() to support sizes of 4Gb and
+ above
+References: <4F05D992020000780006AA09@nat28.tlf.novell.com>
+ <20120106110519.GA32673@elte.hu>
+In-Reply-To: <20120106110519.GA32673@elte.hu>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -32,24 +28,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.01.12 at 12:08, Andi Kleen <andi@firstfloor.org> wrote:
->>  It's not the traditional bootmem implementation anymore, but
->> alloc_bootmem() et al still exist, and still clear the allocated memory
->> (in __alloc_memory_core_early()). So there is a code path that can
->> validly be used (and it is this code path that is presenting one of the
->> problems with the non-pv-ops Xen kernels, as they're using flatmem
->> rather than sparsemem since their physical address space is always
->> fully continuous).
-> 
-> Yes but there should be no callers that do alloc_bootmem(4G)
-> The biggest ones afak are the 1GB pages I added some time ago.
-> 
-> How is it a problem in the non pv Xen kernels?
+>>> On 06.01.12 at 12:05, Ingo Molnar <mingo@elte.hu> wrote:
 
-pgdat->node_mem_map[] exceeds 4G when total memory goes far
-enough beyond 292G. At some later point ->node_page_cgroup[]
-also exceeds 4G. Finally, the phys-to-machine mapping (which gets
-resized during boot) exceeds 4G when crossing the 2T boundary.
+> * Jan Beulich <JBeulich@suse.com> wrote:
+> 
+>> While currently there doesn't appear to be any reachable 
+>> in-tree case where such large memory blocks may be passed to 
+>> memset() (alloc_bootmem() being the primary non-reachable one, 
+>> as it gets called with suitably large sizes in FLATMEM 
+>> configurations), we have recently hit the problem a second 
+>> time in our Xen kernels. Rather than working around it a 
+>> second time, prevent others from falling into the same trap by 
+>> fixing this long standing limitation.
+>> 
+>> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+> 
+> Have you checked the before/after size of the hotpath?
+> 
+> The patch suggests that it got shorter by 3 instructions:
+> 
+>> -	movl %edx,%r8d
+>> -	andl $7,%r8d
+>> -	movl %edx,%ecx
+>> -	shrl $3,%ecx
+>> +	movq %rdx,%rcx
+>> +	andl $7,%edx
+>> +	shrq $3,%rcx
+> 
+> [...]
+> 
+>>  	movq %rdi,%r10
+>> -	movq %rdx,%r11
+>>  
+> 
+> [...]
+> 
+>> -	movl	%r11d,%ecx
+>> -	andl	$7,%ecx
+>> +	andl	$7,%edx
+> 
+> Is that quick impression correct? I have not tried building or 
+> measuring it.
+
+Yes, that's correct.
+
+As the bodies of the individual flavors didn't change, I see no risk in
+this change causing any performance degradation.
+
+> Would be nice to add support for arch/x86/lib/memset_64.S as 
+> well, and look at the before/after performance of it. In 
+> userspace we can do a lot more accurate measurements of this 
+> kind:
+
+I'll see whether I can get this done, but I admit that I'm entirely
+unfamiliar with this tool and its infrastructure. I hope doing this is
+not going to be a requirement for acceptance of the patch.
 
 Jan
 
