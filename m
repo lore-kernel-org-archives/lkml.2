@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758401Ab2AFBrf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 20:47:35 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:38652 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602Ab2AFBre (ORCPT
+	id S1758451Ab2AFBrx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 20:47:53 -0500
+Received: from one.firstfloor.org ([213.235.205.2]:46721 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758438Ab2AFBrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 20:47:34 -0500
-Date: Fri, 6 Jan 2012 05:47:30 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Rhyland Klein <rklein@nvidia.com>
-Cc: Olof Johansson <olof@lixom.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] bq20z75: fix devicetree match table
-Message-ID: <20120106014729.GA11316@oksana.dev.rtsoft.ru>
-References: <1324607824-2685-1-git-send-email-olof@lixom.net>
- <1325616406.13090.1.camel@rklein-linux2>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	Thu, 5 Jan 2012 20:47:52 -0500
+Date: Fri, 6 Jan 2012 02:47:48 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Jan Beulich <JBeulich@suse.com>,
+        mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
+Message-ID: <20120106014748.GS11715@one.firstfloor.org>
+References: <4F05BBFE020000780006A983@nat28.tlf.novell.com> <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325616406.13090.1.camel@rklein-linux2>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F0630CC.7050001@zytor.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 03, 2012 at 10:46:46AM -0800, Rhyland Klein wrote:
-> On Thu, 2011-12-22 at 18:37 -0800, Olof Johansson wrote:
-> > It should be an of module table, not i2c.
+On Thu, Jan 05, 2012 at 03:22:52PM -0800, H. Peter Anvin wrote:
+> On 01/05/2012 10:28 AM, Andi Kleen wrote:
+> >>
+> >> Otherwise, is there any rationale for this sort of lurking bug?
 > > 
-> > Signed-off-by: Olof Johansson <olof@lixom.net>
-> > ---
-> >  drivers/power/bq20z75.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > Most (all?) of the CPUs I cared about when writing that code had 
+> > bugs with string instructions and >4GB.
 > > 
-> > diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
-> > index ce95ff7..3efca54 100644
-> > --- a/drivers/power/bq20z75.c
-> > +++ b/drivers/power/bq20z75.c
-> > @@ -622,7 +622,7 @@ static const struct of_device_id bq20z75_dt_ids[] = {
-> >  	{ .compatible = "ti,bq20z75" },
-> >  	{ }
-> >  };
-> > -MODULE_DEVICE_TABLE(i2c, bq20z75_dt_ids);
-> > +MODULE_DEVICE_TABLE(of, bq20z75_dt_ids);
-> >  
-> >  static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
-> >  		struct i2c_client *client)
 > 
-> Acked-by: Rhyland Klein <rklein@nvidia.com>
+> Is that still true, and do we even use string instructions still on
+> those old CPUs?  Jan's fixes don't introduce any additional delays in
+> the non-string-instruction paths.
 
-Applied, thanks! (The driver is 'sbs-battery' nowadays. So I modified
-the patch a little bit.)
+Yes various of the CPUs with bugs used string instructions.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Don't know the state on current CPUs.
+
+Both string and non string instructions are used on modern CPUs,
+so making any of that slower is not a good idea.
+
+-Andi
