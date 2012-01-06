@@ -1,180 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab2AFTcB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 14:32:01 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:52121 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755282Ab2AFTb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 14:31:58 -0500
-From: Joe Perches <joe@perches.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] rtlwifi: Simplify chip version id logging
-Date: Fri,  6 Jan 2012 11:31:43 -0800
-Message-Id: <066ccb110481f572dd34b5fc83671194f3d2e00a.1325878172.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.8.111.gad25c.dirty
-In-Reply-To: <0f80cb0e369db8c8884d4a1d46e70a60c1dfb19c.1325878172.git.joe@perches.com>
-References: <0f80cb0e369db8c8884d4a1d46e70a60c1dfb19c.1325878172.git.joe@perches.com>
+	id S1758964Ab2AFTcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 14:32:43 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39239 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab2AFTcm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 14:32:42 -0500
+Message-ID: <4F074CAE.7010205@canonical.com>
+Date: Fri, 06 Jan 2012 11:34:06 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the
+ MT slot state
+References: <1325863019-2242-1-git-send-email-rydberg@euromail.se> <CAN+gG=FUEH851Um4Lco0avqdE2Eup3Jo79Ti4T7XhxT=PO6WeQ@mail.gmail.com> <20120106181845.GA22653@core.coreip.homeip.net> <20120106185544.GB2795@polaris.bitmath.org> <20120106191835.GA2998@polaris.bitmath.org>
+In-Reply-To: <20120106191835.GA2998@polaris.bitmath.org>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reduce object size a few KB too.
+On 01/06/2012 11:18 AM, Henrik Rydberg wrote:
+> On Fri, Jan 06, 2012 at 07:55:44PM +0100, Henrik Rydberg wrote:
+>>> 2 different processes should be fine; the problem would be if 2 threads
+>>> of the same process share the same file descriptor. So far the rest of
+>>> evdev copes just fine with multiple threads using the same fd (all
+>>> operations are atomic in this regard), setting ABS_MT_SLOT before
+>>> fetching the state break this property.
+>>
+>> Are we talking about the need for a per-client mutex, or something
+>> more subtle, like introducing indirect coupling between threads
+>> through per-client states? The former ought to be easily remedied.
+> 
+> Ok, maybe not to so easy after all, which probably answers my own
+> question. Looks like a EVIOCGMTSLOT, taking both slot and event code
+> as argument, would be the cleaner route to take. Another ioctl, how do we
+> feel about that?
 
-$ size drivers/net/wireless/rtlwifi/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 584493	  55333	 126800	 766626	  bb2a2	drivers/net/wireless/rtlwifi/built-in.o.new
- 586904	  55333	 127216	 769453	  bbdad	drivers/net/wireless/rtlwifi/built-in.o.old
+What's the problem with userspace locking?
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c  |   19 +++++------
- drivers/net/wireless/rtlwifi/rtl8192cu/mac.c |   46 ++++++++++----------------
- 2 files changed, 27 insertions(+), 38 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-index 18f615c..971bd29 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -991,6 +991,7 @@ static enum version_8192c _rtl92ce_read_chip_version(struct ieee80211_hw *hw)
- 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
- 	enum version_8192c version = VERSION_UNKNOWN;
- 	u32 value32;
-+	const char *versionid;
- 
- 	value32 = rtl_read_dword(rtlpriv, REG_SYS_CFG);
- 	if (value32 & TRP_VAUX_EN) {
-@@ -1003,27 +1004,25 @@ static enum version_8192c _rtl92ce_read_chip_version(struct ieee80211_hw *hw)
- 
- 	switch (version) {
- 	case VERSION_B_CHIP_92C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_B_CHIP_92C\n");
-+		versionid = "B_CHIP_92C";
- 		break;
- 	case VERSION_B_CHIP_88C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_B_CHIP_88C\n");
-+		versionid = "B_CHIP_88C";
- 		break;
- 	case VERSION_A_CHIP_92C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_A_CHIP_92C\n");
-+		versionid = "A_CHIP_92C";
- 		break;
- 	case VERSION_A_CHIP_88C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_A_CHIP_88C\n");
-+		versionid = "A_CHIP_88C";
- 		break;
- 	default:
--		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
--			 "Chip Version ID: Unknown. Bug?\n");
-+		versionid = "Unknown. Bug?";
- 		break;
- 	}
- 
-+	RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
-+		 "Chip Version ID: %s\n", versionid);
-+
- 	switch (version & 0x3) {
- 	case CHIP_88C:
- 		rtlphy->rf_type = RF_1T1R;
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-index 71c7aca..060ed5f 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/mac.c
-@@ -57,6 +57,7 @@ void rtl92c_read_chip_version(struct ieee80211_hw *hw)
- 	struct rtl_phy *rtlphy = &(rtlpriv->phy);
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
- 	enum version_8192c chip_version = VERSION_UNKNOWN;
-+	const char *versionid;
- 	u32 value32;
- 
- 	value32 = rtl_read_dword(rtlpriv, REG_SYS_CFG);
-@@ -87,62 +88,51 @@ void rtl92c_read_chip_version(struct ieee80211_hw *hw)
- 	pr_info("Chip version 0x%x\n", chip_version);
- 	switch (rtlhal->version) {
- 	case VERSION_NORMAL_TSMC_CHIP_92C_1T2R:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_B_CHIP_92C\n");
-+		versionid = "NORMAL_B_CHIP_92C";
- 		break;
- 	case VERSION_NORMAL_TSMC_CHIP_92C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_TSMC_CHIP_92C\n");
-+		versionid = "NORMAL_TSMC_CHIP_92C";
- 		break;
- 	case VERSION_NORMAL_TSMC_CHIP_88C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_TSMC_CHIP_88C\n");
-+		versionid = "NORMAL_TSMC_CHIP_88C";
- 		break;
- 	case VERSION_NORMAL_UMC_CHIP_92C_1T2R_A_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_UMC_CHIP_i92C_1T2R_A_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_i92C_1T2R_A_CUT";
- 		break;
- 	case VERSION_NORMAL_UMC_CHIP_92C_A_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_UMC_CHIP_92C_A_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_92C_A_CUT";
- 		break;
- 	case VERSION_NORMAL_UMC_CHIP_88C_A_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_UMC_CHIP_88C_A_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_88C_A_CUT";
- 		break;
- 	case VERSION_NORMAL_UMC_CHIP_92C_1T2R_B_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_UMC_CHIP_92C_1T2R_B_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_92C_1T2R_B_CUT";
- 		break;
- 	case VERSION_NORMAL_UMC_CHIP_92C_B_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_UMC_CHIP_92C_B_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_92C_B_CUT";
- 		break;
- 	case VERSION_NORMAL_UMC_CHIP_88C_B_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMAL_UMC_CHIP_88C_B_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_88C_B_CUT";
- 		break;
- 	case VERSION_NORMA_UMC_CHIP_8723_1T1R_A_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMA_UMC_CHIP_8723_1T1R_A_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_8723_1T1R_A_CUT";
- 		break;
- 	case VERSION_NORMA_UMC_CHIP_8723_1T1R_B_CUT:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_NORMA_UMC_CHIP_8723_1T1R_B_CUT\n");
-+		versionid = "NORMAL_UMC_CHIP_8723_1T1R_B_CUT";
- 		break;
- 	case VERSION_TEST_CHIP_92C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_TEST_CHIP_92C\n");
-+		versionid = "TEST_CHIP_92C";
- 		break;
- 	case VERSION_TEST_CHIP_88C:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: VERSION_TEST_CHIP_88C\n");
-+		versionid = "TEST_CHIP_88C";
- 		break;
- 	default:
--		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
--			 "Chip Version ID: ???????????????\n");
-+		versionid = "UNKNOWN";
- 		break;
- 	}
-+	RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE,
-+		 "Chip Version ID: %s\n", versionid);
-+
- 	if (IS_92C_SERIAL(rtlhal->version))
- 		rtlphy->rf_type =
- 			 (IS_92C_1T2R(rtlhal->version)) ? RF_1T2R : RF_2T2R;
--- 
-1.7.8.111.gad25c.dirty
-
+-- Chase
