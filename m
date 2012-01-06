@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030502Ab2AFSZv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 13:25:51 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51357 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758899Ab2AFSZt (ORCPT
+	id S1030521Ab2AFS0s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 13:26:48 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:38775 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758967Ab2AFS0q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 13:25:49 -0500
-Date: Fri, 6 Jan 2012 10:25:35 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20120106182535.GJ9511@google.com>
-References: <20111221034334.GD17668@somewhere>
- <20111221130848.GA19679@redhat.com>
- <20111221175632.GF17668@somewhere>
- <20111221190102.GE13529@google.com>
- <20111221190817.GI17668@somewhere>
- <20111221192413.GF13529@google.com>
- <20111221200422.GJ17668@somewhere>
- <20111222153004.GA30522@redhat.com>
- <20120104193614.GF9511@google.com>
- <20120106152356.GA23995@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120106152356.GA23995@redhat.com>
-X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 6 Jan 2012 13:26:46 -0500
+X-IronPort-AV: E=Sophos;i="4.71,469,1320652800"; 
+   d="scan'208";a="614115398"
+Message-ID: <1325874404.32470.6.camel@lade.trondhjem.org>
+Subject: Re: Boot regression caused by commit 6829a048
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: chuck.lever@oracle.com, linux@razik.name,
+        Pekka Enberg <penberg@kernel.org>,
+        linux-nfs <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 06 Jan 2012 13:26:44 -0500
+In-Reply-To: <1325871176.4629.35.camel@lappy>
+References: <1325871176.4629.35.camel@lappy>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 06 Jan 2012 18:26:45.0060 (UTC) FILETIME=[BE8C4840:01CCCCA0]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov (oleg@redhat.com) wrote:
-> On 01/04, Mandeep Singh Baines wrote:
-> >
-> > Oleg Nesterov (oleg@redhat.com) wrote:
-> > > On 12/21, Frederic Weisbecker wrote:
-> > > >
-> > > > On Wed, Dec 21, 2011 at 11:24:13AM -0800, Mandeep Singh Baines wrote:
-> > > > >
-> > > > > If you call exec from a thread other than g, g is now unlinked. So
-> > > > > "t != g" will always be true. If you then pthread_create, you now
-> > > > > have two threads so "t != __prev" will also always be true. So
-> > > > > you now have an infinite loop.
-> > > >
-> > > > Oh you're right.
-> > > >
-> > > > But then we can't use t != t->group_leader because that assumes while_each_thread()
-> > > > started on the leader.
-> > >
-> > > Yes, this can't work.
-> > >
-> > > Besides, we need more burriers to rely on the ->group_leader check.
-> > >
-> > > See http://marc.info/?t=127688987300002
-> > >
-> >
-> > I went through the thread. Were there any other concerns other than
-> > requiring that you start with the group_leader and the barrier?
-> >
-> > You could modify zap_other_threads to start with the group leader by
-> > skipping p:
-> >
-> > if (p == t)
-> >    continue;
+On Fri, 2012-01-06 at 19:32 +0200, Sasha Levin wrote: 
+> Hi all,
 > 
-> Yes, we can but there are other while_each_thread(nonleader) users.
-> Yes we can fix them too but this looks a bit ugly and we need to
-> change while_each_thread() anyway. And I do not see why this change
-> will be simpler if we restrict it to group_leader.
+> I've noticed a boot regression caused by commit 6829a048 ("NFS: Retry
+> mounting NFSROOT") which has increased boot time by 95 seconds.
 > 
-> And note that zap_other_threads() is fine in any case, it is called
-> under ->siglock.
+> The scenario is as follows:
+>  - A virtual guest running under the KVM tool.
+>  - Guest is using kernel automatic IP DHCP configuration ("ip=dhcp").
+>  - Guest is booting from a 9p device (which is not detected as block,
+> and gets mounted after NFS tries to do its mounts).
+>  - No NFS server at all, no NFS parameters passed to the guest kernel.
 > 
-> > > in particular, http://marc.info/?l=linux-kernel&m=127714242731448
-> > > I think this should work, but then we should do something with the
-> > > users like zap_threads().
-> > >
-> >
-> > With that patch, won't you potentially miss the exec thread if an exec
-> > occurs while you're iterating over the list? Is that OK?
+> Under this scenario, theres an additional 95 second delay before NFS
+> fails and tries to boot using 9p:
 > 
-> Of course it is not OK ;) Note the "we should do something with" above.
+> [...]
+> [    6.505269] md: autorun ...
+> [    6.506954] md: ... autorun DONE.
+> [  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
+> [  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
+> [...]
+
+Can't you avoid the whole NFS root mount attempt by setting "root=2:0"
+directly instead of relying on 'mount_root' to do it for you?
+
+> This probably happens since the NFS server isn't configured, so the
+> bootserver is automatically assumed to be the DHCP server, and with the
+> commit above we won't simply fail immediately when the NFS code fails
+> connecting to it.
 > 
+> I'm not quite sure about the correct solution for this. While I can
+> forcefully disable NFS, is it really the right solution? Should we be
+> retrying a NFS server even if one wasn't specifically set?
 
-So requirements should be something like this:
+One option might be to check the 'root_wait' flag. We could also add
+nfsroot support for the 'retry=' mount option.
 
-* Any task alive for the duration of the iteration MUST be visited
-* No task should be visited more than once
-* Any task born or exiting after starting the iteration MAY be skipped
-* You can start at any task in the thread group
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-Would something like this work:
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
-#define while_each_thread(g, t, o) \
-	while (t->group_leader == o && (t = next_thread(t)) != g)
-
-Where o should have the value of g->group_leader.
-
-Regards,
-Mandeep
-
-> Oleg.
-> 
