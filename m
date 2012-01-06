@@ -1,144 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933207Ab2AFK6z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 05:58:55 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:64527 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758656Ab2AFK61 (ORCPT
+	id S933218Ab2AFK7T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 05:59:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49613 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab2AFK7Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 05:58:27 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: khali@linux-fr.org, ben-linux@fluff.org, seth.heasley@intel.com,
-        ben@decadent.org.uk, David.Woodhouse@intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: olofj@chromium.org, bleung@chromium.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 3/3 v2] i2c: i801: enable irq for byte_by_byte transactions
-Date: Fri,  6 Jan 2012 18:58:22 +0800
-Message-Id: <1325847502-17841-4-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1325847502-17841-1-git-send-email-djkurtz@chromium.org>
-References: <1325847502-17841-1-git-send-email-djkurtz@chromium.org>
+	Fri, 6 Jan 2012 05:59:16 -0500
+Date: Fri, 6 Jan 2012 03:03:29 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Jan Beulich" <JBeulich@suse.com>
+Cc: "Michal Marek" <mmarek@suse.cz>, <linux-kbuild@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] consolidate WARN_...ONCE() static variables
+Message-Id: <20120106030329.d934f5bc.akpm@linux-foundation.org>
+In-Reply-To: <4F06B37D020000780006AC1F@nat28.tlf.novell.com>
+References: <4EF3609D0200007800069A30@nat28.tlf.novell.com>
+	<20120104150305.8b2ab00c.akpm@linux-foundation.org>
+	<4F059304020000780006A906@nat28.tlf.novell.com>
+	<20120105130324.44949af9.akpm@linux-foundation.org>
+	<4F06B37D020000780006AC1F@nat28.tlf.novell.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Byte-by-byte transactions are used primarily for accessing i2c devices
-with an smbus controller.  For these transactions, for each byte that is
-read or written, the SMBus controller generates a BYTE_DONE irq.  The isr
-reads/writes the next byte, and clears the irq flag to start the next byte.
-On the penultimate irq, the isr also sets the LAST_BYTE flag.
+On Fri, 06 Jan 2012 07:40:29 +0000 "Jan Beulich" <JBeulich@suse.com> wrote:
 
-There is no locking around the cmd/len/count/data variables, since the
-i2c adapter lock ensures there is never multiple simultaneous transactions
-for the same device, and the driver thread never accesses these variables
-while interrupts might be occurring.
+> >>> On 05.01.12 at 22:03, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Thu, 05 Jan 2012 11:09:40 +0000
+> > "Jan Beulich" <JBeulich@suse.com> wrote:
+> > 
+> >> >>> On 05.01.12 at 00:03, Andrew Morton <akpm@linux-foundation.org> wrote:
+> >> > On Thu, 22 Dec 2011 15:53:49 +0000
+> >> > "Jan Beulich" <JBeulich@suse.com> wrote:
+> >> > 
+> >> >> Due to the alignment of following variables, these typically consume
+> >> >> more than just the single byte that 'bool' requires, and as there are
+> >> >> a few hundred instances, the cache pollution (not so much the waste of
+> >> >> memory) sums op. Put these variables into their own section, outside
+> >> >> of half way frequently used memory range.
+> >> >> 
+> >>
+> >> ...
+> >>
+> >> > printk_once() should also be converted.  And ata_print_version_once(),
+> >> > if it insists on continuing to exist.
+> >> 
+> >> I disagree for those (and intentionally didn't touch printk_once();
+> >> wasn't aware of the other) - at best this could get marked
+> >> __read_mostly, but that's not the subject of this patch.
+> > 
+> > Confused.  It is exactly the subject of the patch?
+> 
+> No - the goal here is to eliminate the wasteful alignment holes
+> created by the __warned variables in the WARN_...ONCE()
+> instances.
 
-The end result is a dramatic speed up in emulated i2c-over smbus block
-read and write transactions.
+What are these alignment holes?  I'd assumed (without thinking a lot)
+that they were little three or two byte gaps because sizeof(bool)=1 or
+2.  But I see that sizeof(bool) is actually 4, so I don't know what
+you're talking about.
 
-Note: This patch has only been tested and verified by doing i2c read and
-write block transfers on Cougar Point 6 Series PCH.
+Apparently there is some gcc behaviour which you know about and I
+don't.
 
-Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
----
- drivers/i2c/busses/i2c-i801.c |   51 ++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 50 insertions(+), 1 deletions(-)
+> These get accessed past and unlikely() condition,
+> and hence get moved into a separate data section (so they
+> would all end up together, with no holes in between).
+>
+>
+> ...
+>
+> > I'm suspecting that there is some changelog crappiness going on here. 
+> > What didn't you tell us?
+> 
+> I think the original description says all that it has to.
 
-diff --git a/drivers/i2c/busses/i2c-i801.c b/drivers/i2c/busses/i2c-i801.c
-index b123133..f957eca 100644
---- a/drivers/i2c/busses/i2c-i801.c
-+++ b/drivers/i2c/busses/i2c-i801.c
-@@ -168,6 +168,13 @@ struct i801_priv {
- 	wait_queue_head_t waitq;
- 	spinlock_t lock;
- 	u8 status;
-+
-+	/* Command state used during by isr */
-+	u8 cmd;
-+	bool is_read;
-+	int count;
-+	int len;
-+	u8 *data;
- };
- 
- static struct pci_driver i801_driver;
-@@ -368,18 +375,24 @@ static int i801_block_transaction_by_block(struct i801_priv *priv,
- }
- 
- /*
-- * i801 signals transaction completion with one of these interrupts:
-+ * There are two kinds of interrupts:
-+ *
-+ * (1) i801 signals transaction completion with one of these interrupts:
-  *   INTR - Success
-  *   DEV_ERR - Invalid command, NAK or communication timeout
-  *   BUS_ERR - SMI# transaction collision
-  *   FAILED - transaction was canceled due to a KILL request
-  * When any of these occur, update ->status and wake up the waitq.
-  * ->status must be cleared before kicking off the next transaction.
-+ *
-+* (2) For byte-by-byte (I2C read/write) transactions, one BYTE_DONE interrupt
-+*     occurs for each byte of a byte-by-byte to prepare the next byte.
-  */
- static irqreturn_t i801_isr(int irq, void *dev_id)
- {
- 	struct i801_priv *priv = dev_id;
- 	u8 pcists, hststs;
-+	u8 cmd;
- 
- 	/* Confirm this is our interrupt */
- 	pci_read_config_byte(priv->pci_dev, SMBPCISTS, &pcists);
-@@ -391,6 +404,27 @@ static irqreturn_t i801_isr(int irq, void *dev_id)
- 	hststs = inb(SMBHSTSTS(priv));
- 	dev_dbg(&priv->pci_dev->dev, "irq: hststs = %02x\n", hststs);
- 
-+	if (hststs & SMBHSTSTS_BYTE_DONE) {
-+		if (priv->is_read) {
-+			priv->data[priv->count++] = inb(SMBBLKDAT(priv));
-+
-+			/* Set LAST_BYTE for last byte of read transaction */
-+			cmd = priv->cmd;
-+			if (priv->count == priv->len - 1)
-+				cmd |= I801_LAST_BYTE;
-+			outb_p(cmd | I801_START, SMBHSTCNT(priv));
-+		} else if (priv->count < priv->len - 1) {
-+			outb(priv->data[++priv->count], SMBBLKDAT(priv));
-+			outb_p(priv->cmd | I801_START, SMBHSTCNT(priv));
-+		}
-+
-+		/* Clear BYTE_DONE to start next transaction. */
-+		outb(SMBHSTSTS_BYTE_DONE, SMBHSTSTS(priv));
-+
-+		/* Clear BYTE_DONE so it does not wake_up waitq */
-+		hststs &= ~SMBHSTSTS_BYTE_DONE;
-+	}
-+
- 	/*
- 	 * Clear irq sources and report transaction result.
- 	 * ->status must be cleared before the next transaction is started.
-@@ -437,6 +471,21 @@ static int i801_block_transaction_byte_by_byte(struct i801_priv *priv,
- 	else
- 		smbcmd = I801_BLOCK_DATA;
- 
-+	if (priv->features & FEATURE_IRQ) {
-+		priv->is_read = (read_write == I2C_SMBUS_READ);
-+		if (len == 1 && priv->is_read)
-+			smbcmd |= I801_LAST_BYTE;
-+		priv->cmd = smbcmd | I801_INTREN;
-+		priv->len = len;
-+		priv->count = 0;
-+		priv->data = &data->block[1];
-+
-+		outb(priv->cmd | I801_START, SMBHSTCNT(priv));
-+		wait_event(priv->waitq, (status = priv->status));
-+		priv->status = 0;
-+		return i801_check_post(priv, status, 0);
-+	}
-+
- 	for (i = 1; i <= len; i++) {
- 		if (i == len && read_write == I2C_SMBUS_READ)
- 			smbcmd |= I801_LAST_BYTE;
--- 
-1.7.3.1
-
+If it did that, I wouldn't have had any questions to ask you.
