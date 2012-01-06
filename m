@@ -1,88 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab2AFRjK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 12:39:10 -0500
-Received: from na3sys010aog111.obsmtp.com ([74.125.245.90]:53224 "HELO
-	na3sys010aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758913Ab2AFRjH (ORCPT
+	id S1758902Ab2AFRoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 12:44:09 -0500
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:46277 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758864Ab2AFRoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 12:39:07 -0500
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Fri,  6 Jan 2012 09:38:57 -0800
-Message-Id: <1325871537-22436-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 6 Jan 2012 12:44:05 -0500
+Date: Fri, 6 Jan 2012 15:43:55 -0200
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
+Message-ID: <20120106174355.GF3536@oc1711230544.ibm.com>
+References: <20120105170523.GA19022@oc1711230544.ibm.com>
+ <20120106155750.GA3536@oc1711230544.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120106155750.GA3536@oc1711230544.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12010617-2362-0000-0000-000005F15819
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Jan 06, 2012 at 01:57:50PM -0200, Thadeu Lima de Souza Cascardo wrote:
+> On Thu, Jan 05, 2012 at 03:05:24PM -0200, Thadeu Lima de Souza Cascardo wrote:
+> > > ----- Original Message -----
+> > > From: cascardo@linux.vnet.ibm.com
+> > > To: venkat.x.venkatsubra@oracle.com
+> > > Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org, cascardo@linux.vnet.ibm.com, dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+> > > Sent: Wednesday, January 4, 2012 4:03:42 PM GMT -06:00 US/Canada Central
+> > > Subject: [PATCH] rds_rdma: don't assume infiniband device is PCI
+> > > 
+> > > RDS code assumes that the struct ib_device dma_device member, which is a
+> > > pointer, points to a struct device embedded in a struct pci_dev.
+> > > 
+> > > This is not the case for ehca, for example, which is a OF driver, and
+> > > makes dma_device point to a struct device embedded in a struct
+> > > platform_device.
+> > > 
+> > > This will make the system crash when rds_rdma is loaded in a system
+> > > with ehca, since it will try to access the bus member of a non-existent
+> > > struct pci_dev.
+> > > 
+> > > The only reason rds_rdma uses the struct pci_dev is to get the NUMA node
+> > > the device is attached to. Using dev_to_node for that is much better,
+> > > since it won't assume which bus the infiniband is attached to.
+> > > 
+> > > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> > > Cc: dledford@redhat.com
+> > > Cc: Jes.Sorensen@redhat.com
+> > > Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+> > > Cc: rds-devel@oss.oracle.com
+> > > ---
+> > >  net/rds/ib.h |    3 +--
+> > >  1 files changed, 1 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/net/rds/ib.h b/net/rds/ib.h
+> > > index edfaaaf..8d2b3d5 100644
+> > > --- a/net/rds/ib.h
+> > > +++ b/net/rds/ib.h
+> > > @@ -186,8 +186,7 @@ struct rds_ib_device {
+> > >  	struct work_struct	free_work;
+> > >  };
+> > >  
+> > > -#define pcidev_to_node(pcidev) pcibus_to_node(pcidev->bus)
+> > > -#define ibdev_to_node(ibdev) pcidev_to_node(to_pci_dev(ibdev->dma_device))
+> > > +#define ibdev_to_node(ibdev) dev_to_node(ibdev->dma_device)
+> > >  #define rdsibdev_to_node(rdsibdev) ibdev_to_node(rdsibdev->dev)
+> > >  
+> > >  /* bits for i_ack_flags */
+> > > -- 
+> > > 1.7.4.4
+> > > 
+> > 
+> > On Thu, Jan 05, 2012 at 08:56:34AM -0800, Venkat Venkatsubra wrote:
+> > > Hi Cascardo,
+> > > 
+> > > Your changes look good to me.
+> > > But our latest code doesn't use this rdsibdev_to_node macro anywhere.
+> > > Checking with the people in my group who know the history of the NUMA feature.
+> > > Trying to find out if the call to kzalloc_node() can be replaced by kzalloc().
+> > > In which case this macro can be removed.
+> > > 
+> > > I will keep you posted.
+> > > 
+> > > Venkat
+> > > 
+> > 
+> > Hi, Venkat.
+> > 
+> > Do you have any public tree where we can track the last changes in RDS?
+> > Note that I have changed ibsdev_to_node, which rdsibdev_to_node makes
+> > use of. Anyway, replacing kzalloc_node with kzalloc has crossed my mind,
+> > but since I was not sure if this would affect latency of RDS in any use
+> > cases, I kept that and used a better function to get the node from the
+> > device. And we have dev_to_node since 2.6.20, so it should not be a
+> > problem to use it.
+> > 
+> > If possible, keep everyone copied and avoid top posting.
+> > 
+> > Regards.
+> > Cascardo.
+> 
+> Just to make it clean, ibdev_to_node is used in Linus' tree and
+> next/master as of today and this patch fixes a real oops. I should have
+> probably added the stack trace in the log message. For completion, here
+> it is, running 3.2.0-rc7-00039-g89307ba:
+> 
+> NET: Registered protocol family 21
+> Registered RDS/iwarp transport
+> Unable to handle kernel paging request for data at address 0x00000088
+> Faulting instruction address: 0xc0000000000336d0
+> cpu 0x6: Vector: 300 (Data Access) at [c0000000ddd837e0]
+>     pc: c0000000000336d0: .pcibus_to_node+0x0/0x10
+>     lr: d000000004590de0: .rds_ib_add_one+0x100/0x360 [rds_rdma]
+>     sp: c0000000ddd83a60
+>    msr: 8000000000009032
+>    dar: 88
+>  dsisr: 40000000
+>   current = 0xc0000000ee6c0000
+>   paca    = 0xc000000006c32d00
+>     pid   = 8574, comm = modprobe
+> enter ? for help
+> [link register   ] d000000004590de0 .rds_ib_add_one+0x100/0x360
+> [rds_rdma]
+> [c0000000ddd83a60] d000000004590d88 .rds_ib_add_one+0xa8/0x360
+> [rds_rdma] (unreliable)
+> [c0000000ddd83b10] d000000003195240 .ib_register_client+0xc0/0x120
+> [ib_core]
+> [c0000000ddd83bb0] d00000000459074c .rds_ib_init+0x2c/0xf0 [rds_rdma]
+> [c0000000ddd83c30] d000000004590144 .rds_rdma_init+0xe4/0x180 [rds_rdma]
+> [c0000000ddd83cd0] c00000000000aa54 .do_one_initcall+0x64/0x1e0
+> [c0000000ddd83d90] c0000000000d359c .SyS_init_module+0xcc/0x220
+> [c0000000ddd83e30] c0000000000097e4 syscall_exit+0x0/0x40
+> --- Exception: c00 (System Call) at 00000fff7dc3d3d8
+> SP (fffe87eeeb0) is in userspace
+> 
+> Regards.
+> Cascardo.
+> 
 
-[Trying the signed tag thing for the first time here]
+David,
 
-Please pull from
+The References was broken by Venkat email, so patchwork is not catching
+up the new messages in the thread. At least, that's what I expect it
+uses. So, I am sending this message with a fixed References. Sorry for
+that.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git infiniband-for-linus
+Regards.
+Cascardo.
 
-This will get my small batch of stuff for 3.3:
- - Fix for userspace-provokable multicast membership list corruption
- - Fix for CM protocol message layout
- - Fixes and cleanups for qib hardware driver
- - Fixes and cleanup for nes hardware driver
- - Fix for mlx4 handling of Ethernet priority bits
- - Fix for bugs and warnings found by sparse in core code
-
-Eli Cohen (2):
-      IB/uverbs: Protect QP multicast list
-      IB/cm: Fix layout of APR message
-
-Mike Marciniszyn (4):
-      IB/qib: Fix style issues
-      IB/qib: Eliminate 64-bit jiffies use
-      IB/qib: Optimize locking for get_txreq()
-      IB/qib: Default some module parameters optimally
-
-Or Gerlitz (1):
-      IB/mlx4: Fix SL to 802.1Q priority-bits mapping for IBoE
-
-Ram Vepa (1):
-      IB/qib: Fix a possible data corruption when receiving packets
-
-Roland Dreier (1):
-      Merge branches 'cma', 'misc', 'mlx4', 'nes', 'qib' and 'uverbs' into for-next
-
-Sean Hefty (2):
-      RDMA/cma: Fix endianness bugs
-      rdma/core: Fix sparse warnings
-
-Tatyana Nikolova (3):
-      RDMA/nes: Change MDIO bus clock to 2.5MHz
-      RDMA/nes: Make unnecessarily global nes_set_pau() static
-      RDMA/nes: Fix terminate during AE
-
- drivers/infiniband/core/cm_msgs.h       |    1 +
- drivers/infiniband/core/cma.c           |    6 ++--
- drivers/infiniband/core/ucm.c           |    3 --
- drivers/infiniband/core/uverbs_cmd.c    |   27 ++++++++++++++-----
- drivers/infiniband/hw/mlx4/ah.c         |    2 +-
- drivers/infiniband/hw/mlx4/cq.c         |    6 +++-
- drivers/infiniband/hw/mlx4/qp.c         |    4 +-
- drivers/infiniband/hw/nes/nes_cm.c      |    1 +
- drivers/infiniband/hw/nes/nes_hw.c      |    6 +---
- drivers/infiniband/hw/nes/nes_utils.c   |    2 +-
- drivers/infiniband/hw/qib/qib_7220.h    |    2 +-
- drivers/infiniband/hw/qib/qib_driver.c  |    3 +-
- drivers/infiniband/hw/qib/qib_iba6120.c |    4 ++-
- drivers/infiniband/hw/qib/qib_iba7220.c |   10 ++++---
- drivers/infiniband/hw/qib/qib_iba7322.c |   40 ++++++++++++++--------------
- drivers/infiniband/hw/qib/qib_init.c    |    2 +-
- drivers/infiniband/hw/qib/qib_pcie.c    |    4 +-
- drivers/infiniband/hw/qib/qib_qsfp.h    |    2 +-
- drivers/infiniband/hw/qib/qib_sd7220.c  |    2 +-
- drivers/infiniband/hw/qib/qib_sysfs.c   |    2 +-
- drivers/infiniband/hw/qib/qib_verbs.c   |   43 +++++++++++++++++++++++-------
- include/rdma/ib_addr.h                  |    2 +-
- include/rdma/ib_cm.h                    |    3 ++
- 23 files changed, 109 insertions(+), 68 deletions(-)
