@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759194Ab2AFUvE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 15:51:04 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42969 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759112Ab2AFUvC (ORCPT
+	id S1759216Ab2AFUwi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 15:52:38 -0500
+Received: from oproxy9.bluehost.com ([69.89.24.6]:40087 "HELO
+	oproxy9.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759114Ab2AFUwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 15:51:02 -0500
-Date: Fri, 6 Jan 2012 20:50:36 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Greg KH <greg@kroah.com>, Frank Mandarino <fmandarino@endrelia.com>,
-        Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+	Fri, 6 Jan 2012 15:52:36 -0500
+Date: Fri, 6 Jan 2012 12:52:33 -0800
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Matthew Wilcox <matthew@wil.cx>, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Public ridicule due to sound/soc/soc-core.c abuse of the
-	driver model
-Message-ID: <20120106205036.GB13857@n2100.arm.linux.org.uk>
-References: <20120106194052.GA7781@kroah.com> <20120106201458.GF2893@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120106201458.GF2893@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Subject: Re: [PATCH -v2] pciehp: Checking pci conf reading to new added
+ device instead of sleep 1s
+Message-ID: <20120106125233.30fba248@jbarnes-desktop>
+In-Reply-To: <1324083165-805-1-git-send-email-yinghai@kernel.org>
+References: <1324083165-805-1-git-send-email-yinghai@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/moVEBvgd//6WJmn/XNno2DT"; protocol="application/pgp-signature"
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 06, 2012 at 12:15:01PM -0800, Mark Brown wrote:
-> On Fri, Jan 06, 2012 at 11:40:52AM -0800, Greg KH wrote:
-> 
-> > It was recently pointed out to me that the sound/soc/soc-core.c is
-> > flagrantly abusing the driver model by providing "empty" release
-> > functions, just to keep the kernel from complaining:
-> 
-> > Come on people, do you think that I wrote the code in the kernel that
-> > produces those errors just for fun?  It was telling you to fix your code
-> > by providing a function to free the structure that is being released,
-> > not to try to trick the kernel because you think you know better.  The
-> > kernel was trying to help you out here, to get the programming model
-> > correct, in a place that was commonly misunderstood.
-> 
-> The problem is that due to the entertaining nature of AC'97 support in
-> Linux we don't actually have anything to free at this point - we'd need
-> to redo the whole infrastructure, not just this code.
+--Sig_/moVEBvgd//6WJmn/XNno2DT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The fact is that these bugs are oopses waiting to happen.  All you need
-is the kernel to hold a reference to the kobject underlying the struct
-device, and then release that reference after you've kfree'd the structure
-containing the struct device, and the kernel will go bang.
+On Fri, 16 Dec 2011 16:52:45 -0800
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-I also disagree with your statement - I think it's quite simple to fix:
+> During reviewing
+> |	PCI: pciehp: wait 1000 ms before Link Training check
+> Linus said:
+> >...
+> > That's a *long* time, and it's irritating to the user. It makes the
+> > user think "the machine is slow".
+> >...
+> > And quite frankly, an unconditional one-second delay here seems bad.
+> >Two seconds was unacceptable, one second is just bad.
+>=20
+> Try to access the pci conf of pci device that is supposed to show up in 1=
+s,
+> if could read back valid vender/device id, could bail out early.
+>=20
+> Related discussion could be found:
+> 	https://lkml.org/lkml/2011/12/6/339
+>=20
+> -v2: seperate code to pci_bus_read_dev_vendor_id() from pci_scan_device()
+>     and reuse it from pciehp code. Suggested by Matthew Wilcox.
 
-1. Change to using a flag to indicate whether the struct device is
-   registered rather than ac97->dev.bus.
-2. Change snd_soc_new_ac97_codec() to initialize codec->ac97->dev,
-   including calling device_initialize() on it and setting the release
-   function.
-3. Change device_register(&codec->ac97->dev); to
-   device_add(&codec->ac97->dev);
-4. Make the AC97 device release function do the freeing of 'codec->ac97'
-5. Change the current device_unregister(&codec->ac97->dev); to
-   device_del(&codec->ac97->dev);
-6. Change the various kfree(codec->ac97); in the file to do a
-   device_put(&codec->ac97->dev);
+Kenji-san, you ok with this one?  Any chance you could test?
 
-This will cause device_put() to check the refcount, when that hits
-zero it will call the release function, and that in turn will then
-kfree() the ac97 structure.
+Thanks,
+--=20
+Jesse Barnes, Intel Open Source Technology Center
 
-If someone else is holding a reference to this struct device, kfree
-will be called once that reference is dropped - and this is the
-exact behaviour the driver model as a whole requires.
+--Sig_/moVEBvgd//6WJmn/XNno2DT
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-At least this gets the AC97 ASoC stuff fixed, and one less abuse of the
-driver model in the kernel.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPB18RAAoJEIEoDkX4Qk9hAEIP/1SiZHQVuU7rxXhdJSqYGQPb
+N9w8Znx5TfveLwdwP7foEk4kp9jVyiLdVpuTZzhJ5np5Zsq72srMOQe+Y/LFxiMq
+VFBESOUzk7htolgECylXxyI0wVs7hWnRcwiKrriYa7VD8RQQMRIC6st/YeF6oex7
+cD1i0zz1ojiFigvnMApZ9FRFlDqYTNEyFeuVfPNGPGR4JiEOrbKTnxMr8flqgdGr
+oOOPiLh+ate3+Pvk+mp0VRHPpsNYukxBTUK/iMHX+SGESmtmwIcb/pHlHJJ5dZW+
+ocyF1V3T2lxkqetfKFsMuz3W0n+TxgcntNPRuBPwBuUfNAND9cXatVzhRQGC7GPj
+uSs4kygaosnknZ1419l+sWhKPoLXjh5/wBeLbeVZQEuUBDfZR3NU3jaRhzEfJhDk
+0ZiMClwjc+kjTuD/D0dKxIDEE+dPeKeFq0kFk87Pvs7yAx7MGvtGHOOzr2ONyrDK
+l06Lk1Pag4eFutlmQR/CRB0ian8v8p7SlDMYOKKcNdR8sScqQmQ9w5Be/7rKcBoY
+ffCMZx8VnbSUhYEBZufxzdRqtEri+E9lZxy4XBaANmpzgPlImiDpKMwqw85+qJ3m
+Af9P0iX8h6pULJZmRZIA/P1tfueiVNnUz6n6FRVV+tcrNfIEABSUK5I461a8jv2O
+BO2j2rtylMUKujECStjr
+=KsPK
+-----END PGP SIGNATURE-----
+
+--Sig_/moVEBvgd//6WJmn/XNno2DT--
