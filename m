@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758740Ab2AFXJl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 18:09:41 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60586 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab2AFXJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 18:09:39 -0500
-X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5Kkf9dAxP3YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=wcSRNVWAP18JcTYqjYUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325891377.7642.17.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH] recordmcount: Fix handling of elf64 big-endian objects.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Daney <ddaney.cavm@gmail.com>
-Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Date: Fri, 06 Jan 2012 18:09:37 -0500
-In-Reply-To: <4F075CAE.2040709@gmail.com>
-References: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>
-	 <1324350542.5916.48.camel@gandalf.stny.rr.com> <4F075CAE.2040709@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S1759009Ab2AFXMH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 18:12:07 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56457 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166Ab2AFXMF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 18:12:05 -0500
+Message-ID: <4F077FA8.7060100@zytor.com>
+Date: Fri, 06 Jan 2012 15:11:36 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/syscall changes for v3.3
+References: <20120105152918.GA12838@elte.hu> <20120106230526.088cb77546022ecda34aaae5@canb.auug.org.au>
+In-Reply-To: <20120106230526.088cb77546022ecda34aaae5@canb.auug.org.au>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 12:42 -0800, David Daney wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> Any more feedback on this patch?  Should I look for it to appear in 3.3?
+On 01/06/2012 04:05 AM, Stephen Rothwell wrote:
+> 
+> HPA has a pending fix for this patch as it causes warnings on
+> PowerPC at least.  The idea was to move this include of
+> asm/asm-offsets.h into asm/ftrace.h so it only affects x86.
+> 
 
-OK, I tested it and then I noticed that mainline doesn't have
-"HAVE_C_RECORDMCOUNT" set. Is that going in the PPC tree? I added that
-to arch/powerpc/Kconfig, and did see the bug you saw. After adding your
-patch, I did a diff of the available_filter_functions and had this:
+Sorry... have been in baby mode for the past week, but yes, I think it
+only causes warnings and it's a trivial fix.
 
-> .elf_core_extra_phdrs
-> .elf_core_write_extra_phdrs
-> .elf_core_write_extra_data
-> .elf_core_extra_data_size
+	-hpa
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
 
-These 4 functions were added after doing the change. Weird.
-
-Anyway, I'll run the change through my normal tests and then push it
-out.
-
-Thanks!
-
--- Steve
-
-
+iQIcBAEBAgAGBQJPB3+bAAoJEL2gYIVJO6zkdxgQAIjDIV16WeaGLVSxYaxnJBi4
+wbnt4oK6DRvROSNIe8D+SvzBDsyAL1bxsqVw3klgmuWudsdIx4T20ODEsEGObKOI
+KKHWQSfMP2by5wRPxnTRJmFVnkOj8dMcCIcOWfAj8JzLe3fXXtuILkQ4iLfXnWuG
+Q1DmaFXf0b7ZgcKDoMzBj779WhJUQ03/r7laJTgvtHeppNH8qmbeoOf2mHCs5IuO
+r8EPJoAe+s1Fq+iDTPWDYrZgDIH4V3GVtd2zvlLEtgvmTwG9YNpQ7hjEX49TQnPL
+oLcutQr1t35HqH7NcKhUbL3hRoIHDcZph0P412hd2nzrXS5vm4ljI0uEI9rSUThu
+3NFbZykvXy+XisPNIcOfHt61QRO+igikM4wSh/eG4Qx8Fc7TyfsaLNzTrPRfq3u9
+1Mu0MwJj6jlHN68142As6XdPJ9egQw/mXtA/L+DRNUSn+2gANIxoXD1KB7LnN25R
+G6TIbXqtzMGlNcPEL+c93CCmRZgls4QB3jp/RfjW1OWLtgRxwOq6wPft4XK1v8aB
+BchoeckiG8K6lTEfqSIHHrqas81coMfrBxehkp/vZ2Y3qmxeA0/rrmvjLD8pEk6F
+OpMYdKwGMoVbeIf4nJdbefX3wOv53SLDjp4tTP6I+bmjz6/kZrKIqQwUmp/jWm+/
+J2ozPxkZ8faPCNY3aqDI
+=3zyX
+-----END PGP SIGNATURE-----
