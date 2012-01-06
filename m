@@ -1,31 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119Ab2AFIvI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 03:51:08 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34076 "EHLO mx3.mail.elte.hu"
+	id S1758488Ab2AFIxH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 03:53:07 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58485 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932133Ab2AFIvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 03:51:07 -0500
-Date: Fri, 6 Jan 2012 09:49:01 +0100
+	id S1752972Ab2AFIxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 03:53:06 -0500
+Date: Fri, 6 Jan 2012 09:51:04 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, thuban@singularity.fr,
-        dann frazier <dann.frazier@canonical.com>,
-        Lisa Salimbas <lisa.salimbas@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 2/2] PNP: work around Dell 1536/1546 BIOS MMCONFIG bug
- that breaks USB
-Message-ID: <20120106084901.GD14188@elte.hu>
-References: <20120105212719.3965.40406.stgit@bhelgaas.mtv.corp.google.com>
- <20120105212724.3965.30193.stgit@bhelgaas.mtv.corp.google.com>
- <CAErSpo6=yHFspY_L0rQa6iVD692nYyL=BR=3qBwc3UV8M16xbw@mail.gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
+ stop-machine, update stack tracer
+Message-ID: <20120106085104.GE14188@elte.hu>
+References: <20120102134856.GA32673@elte.hu>
+ <1325635373.12696.4.camel@gandalf.stny.rr.com>
+ <1325635922.12696.8.camel@gandalf.stny.rr.com>
+ <1325653301.12696.20.camel@gandalf.stny.rr.com>
+ <20120104141107.GA24770@elte.hu>
+ <1325696759.12696.24.camel@gandalf.stny.rr.com>
+ <20120105091916.GA22598@elte.hu>
+ <1325764011.12696.38.camel@gandalf.stny.rr.com>
+ <1325765791.12696.41.camel@gandalf.stny.rr.com>
+ <1325825918.12696.64.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAErSpo6=yHFspY_L0rQa6iVD692nYyL=BR=3qBwc3UV8M16xbw@mail.gmail.com>
+In-Reply-To: <1325825918.12696.64.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -39,23 +41,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Bjorn Helgaas <bhelgaas@google.com> wrote:
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> On Thu, Jan 5, 2012 at 2:27 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> > Some Dell BIOSes have MCFG tables that don't report the entire
-> > MMCONFIG area claimed by the chipset.  If we move PCI devices into
-> > that claimed-but-unreported area, they don't work.
-> >
-> > This quirk reads the AMD MMCONFIG MSRs and adds PNP0C01 resources as
-> > needed to cover the entire area.
-> 
-> PNP stuff usually goes through Len's ACPI tree, but this is 
-> really x86-specific, and these two patches need to go 
-> together, so I think it would make sense to put them both in 
-> the x86 tree.  Len, do you object?
+> Not sure what else to do. Have you been able to trigger these 
+> bugs without my patches? All the bugs I've been hitting after 
+> merging my patches, I've been able to hit with tip/master as 
+> well.
 
-I'd really suggest the PCI tree for this - mmconfig is really 
-PCI related.
+No, as i described to you the tree(s) without your patches all 
+did 50+ series of bootups.
 
 Thanks,
 
