@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933145Ab2AFJt2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 04:49:28 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:46857 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933000Ab2AFJt0 (ORCPT
+	id S1030217Ab2AFJvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 04:51:36 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:58938
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933124Ab2AFJve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 04:49:26 -0500
-Date: Fri, 6 Jan 2012 10:49:22 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Jan Beulich <JBeulich@suse.com>,
-        mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
-Message-ID: <20120106094922.GU11715@one.firstfloor.org>
-References: <4F05BBFE020000780006A983@nat28.tlf.novell.com> <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com> <20120106014748.GS11715@one.firstfloor.org> <4F06566B.8080708@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 6 Jan 2012 04:51:34 -0500
+X-SpamScore: -4
+X-BigFish: VS-4(zz1dbaLzz1202hzzz2dh2a8h668h839h944h65h)
+X-Spam-TCS-SCL: 4:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
+Date: Fri, 6 Jan 2012 17:51:18 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Richard Zhao <richard.zhao@linaro.org>
+CC: <linux-pm@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <broonie@opensource.wolfsonmicro.com>,
+        <lrg@ti.com>, <eric.miao@linaro.org>, <patches@linaro.org>
+Subject: Re: [PATCH v2 1/1] regulator: set constraints.apply_uV to 0 in
+ of_get_fixed_voltage_config
+Message-ID: <20120106095117.GU2414@b20223-02.ap.freescale.net>
+References: <1325225213-29655-1-git-send-email-richard.zhao@linaro.org>
+ <1325646449-21916-1-git-send-email-richard.zhao@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <4F06566B.8080708@zytor.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1325646449-21916-1-git-send-email-richard.zhao@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 06:03:23PM -0800, H. Peter Anvin wrote:
-> On 01/05/2012 05:47 PM, Andi Kleen wrote:
-> >>
-> >> Is that still true, and do we even use string instructions still on
-> >> those old CPUs?  Jan's fixes don't introduce any additional delays in
-> >> the non-string-instruction paths.
-> > 
-> > Yes various of the CPUs with bugs used string instructions.
-> > 
-> 
-> Which CPUs are you talking about here?
+Hi Mark,
 
-This was various iterations of K8 and PSC. Early Meroms may also have
-had issues (not 100% sure).
+What do you think of the patch?
 
-> 
-> > 
-> > Both string and non string instructions are used on modern CPUs,
-> > so making any of that slower is not a good idea.
-> > 
-> 
-> Obviously not, but I'm perfectly fine turning REP_GOOD off on old broken
-> CPUs.
-
-That would be even worse.
-
-You would slow a critical fast path operation down for something
-that never happens?!?  There were big differences between strings
-and the unrolled loop for several.
-
-IMHO it's a war games situation: "the only way to win is not to play"
-
--Andi
+Thanks
+Richard 
 
