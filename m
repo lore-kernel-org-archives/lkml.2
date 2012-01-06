@@ -1,24 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab2AFF4M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 00:56:12 -0500
-Received: from mga01.intel.com ([192.55.52.88]:61911 "EHLO mga01.intel.com"
+	id S1751503Ab2AFGDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 01:03:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:34673 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751102Ab2AFF4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 00:56:11 -0500
+	id S1750727Ab2AFGDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 01:03:11 -0500
 X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="104094870"
-Subject: Re: [PATCH 1/2] dmaengine: Fix status handling in imx-dma.
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="93544272"
+Subject: Re: [PATCH] dma/imx-sdma: save irq flags when use spin_lock in
+ sdma_tx_submit
 From: Vinod Koul <vinod.koul@intel.com>
-To: Javier Martin <javier.martin@vista-silicon.com>
-Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
-References: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
+To: Richard Zhao <richard.zhao@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@pengutronix.de, shawn.guo@linaro.org, dan.j.williams@intel.com,
+        eric.miao@linaro.org, patches@linaro.org,
+        Haitao Zhang <minipanda@linuxrobot.org>,
+        Haitao Zhang <haitao.zhang@linaro.org>
+In-Reply-To: <1325388606-20732-1-git-send-email-richard.zhao@linaro.org>
+References: <1325388606-20732-1-git-send-email-richard.zhao@linaro.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Jan 2012 11:26:29 +0530
-Message-ID: <1325829389.1540.95.camel@vkoul-udesk3>
+Date: Fri, 06 Jan 2012 11:33:28 +0530
+Message-ID: <1325829808.1540.96.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -26,132 +30,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-02 at 13:18 +0100, Javier Martin wrote:
-> Status must only be changed to DMA_IN_PROGRESS
-> when the DMA transfer has really begun.
+On Sun, 2012-01-01 at 11:30 +0800, Richard Zhao wrote:
+> From: Haitao Zhang <minipanda@linuxrobot.org>
 > 
-> However, since this driver lacks of support for
-> multiple descriptors a new flag has to be introduced
-> to avoid the prepare function be called multiple times.
-Thanks this is the right approach to fix this driver
-
-But this will obviously break any users of this driver as they need to
-call the right APIs now :D
-
-Sacha: can you check this patch and see which users of this driver will
-break. we need those fixes to go along this patch as well
+> mx53_loco: fix deadlock report from sdma_tx_submit() during boot
 > 
-> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+> BugLink: http://bugs.launchpad.net/bugs/878701
+> 
+> Adjust to use spin_lock_irqsave()/spin_unlock_irqresotre(), so to
+> make it safe when called from interrupt context.
+> 
+> Signed-off-by: Haitao Zhang <haitao.zhang@linaro.org>
+> Signed-off-by: Eric Miao <eric.miao@linaro.org>
+> Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+Applied thanks
+
 > ---
->  drivers/dma/imx-dma.c |   22 +++++++++++++++-------
->  1 files changed, 15 insertions(+), 7 deletions(-)
+>  drivers/dma/imx-sdma.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> index d99f71c..9a0ac14 100644
-> --- a/drivers/dma/imx-dma.c
-> +++ b/drivers/dma/imx-dma.c
-> @@ -43,6 +43,7 @@ struct imxdma_channel {
->  	enum dma_status			status;
->  	int				dma_request;
->  	struct scatterlist		*sg_list;
-> +	bool				prepared;
->  };
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index f993955..2b7a88b 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -832,17 +832,18 @@ static struct sdma_channel *to_sdma_chan(struct dma_chan *chan)
 >  
->  #define MAX_DMA_CHANNELS 8
-> @@ -72,6 +73,7 @@ static void imxdma_irq_handler(int channel, void *data)
->  
->  	imxdmac->status = DMA_SUCCESS;
->  	imxdma_handle(imxdmac);
-> +	imxdmac->prepared = false;
->  }
->  
->  static void imxdma_err_handler(int channel, void *data, int error)
-> @@ -80,6 +82,7 @@ static void imxdma_err_handler(int channel, void *data, int error)
->  
->  	imxdmac->status = DMA_ERROR;
->  	imxdma_handle(imxdmac);
-> +	imxdmac->prepared = false;
->  }
->  
->  static void imxdma_progression(int channel, void *data,
-> @@ -89,6 +92,7 @@ static void imxdma_progression(int channel, void *data,
->  
->  	imxdmac->status = DMA_SUCCESS;
->  	imxdma_handle(imxdmac);
-> +	imxdmac->prepared = false;
->  }
->  
->  static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-> @@ -103,6 +107,7 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->  	case DMA_TERMINATE_ALL:
->  		imxdmac->status = DMA_ERROR;
->  		imx_dma_disable(imxdmac->imxdma_channel);
-> +		imxdmac->prepared = false;
->  		return 0;
->  	case DMA_SLAVE_CONFIG:
->  		if (dmaengine_cfg->direction == DMA_FROM_DEVICE) {
-> @@ -204,7 +209,7 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
->  	imxdmac->desc.flags = DMA_CTRL_ACK;
->  
->  	imxdmac->status = DMA_SUCCESS;
-> -
-> +	imxdmac->prepared = false;
->  	return 0;
->  }
->  
-> @@ -230,11 +235,9 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
->  	int i, ret, dma_length = 0;
->  	unsigned int dmamode;
->  
-> -	if (imxdmac->status == DMA_IN_PROGRESS)
-> +	if (imxdmac->prepared)
->  		return NULL;
->  
-> -	imxdmac->status = DMA_IN_PROGRESS;
-> -
->  	for_each_sg(sgl, sg, sg_len, i) {
->  		dma_length += sg->length;
->  	}
-> @@ -264,6 +267,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
->  	if (ret)
->  		return NULL;
->  
-> +	imxdmac->prepared = true;
-> +
->  	return &imxdmac->desc;
->  }
->  
-> @@ -280,9 +285,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
->  	dev_dbg(imxdma->dev, "%s channel: %d buf_len=%d period_len=%d\n",
->  			__func__, imxdmac->channel, buf_len, period_len);
->  
-> -	if (imxdmac->status == DMA_IN_PROGRESS)
-> +	if (imxdmac->prepared)
->  		return NULL;
-> -	imxdmac->status = DMA_IN_PROGRESS;
->  
->  	ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
->  			imxdma_progression);
-> @@ -325,14 +329,18 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
->  	if (ret)
->  		return NULL;
->  
-> +	imxdmac->prepared = true;
-> +
->  	return &imxdmac->desc;
->  }
->  
->  static void imxdma_issue_pending(struct dma_chan *chan)
+>  static dma_cookie_t sdma_tx_submit(struct dma_async_tx_descriptor *tx)
 >  {
->  	/*
-> -	 * Nothing to do. We only have a single descriptor
-> +	 * Only change status since we have a single descriptor
->  	 */
-> +	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-> +	imxdmac->status = DMA_IN_PROGRESS;
->  }
+> +	unsigned long flags;
+>  	struct sdma_channel *sdmac = to_sdma_chan(tx->chan);
+>  	struct sdma_engine *sdma = sdmac->sdma;
+>  	dma_cookie_t cookie;
 >  
->  static int __init imxdma_probe(struct platform_device *pdev)
+> -	spin_lock_irq(&sdmac->lock);
+> +	spin_lock_irqsave(&sdmac->lock, flags);
+>  
+>  	cookie = sdma_assign_cookie(sdmac);
+>  
+>  	sdma_enable_channel(sdma, sdmac->channel);
+>  
+> -	spin_unlock_irq(&sdmac->lock);
+> +	spin_unlock_irqrestore(&sdmac->lock, flags);
+>  
+>  	return cookie;
+>  }
 
 
 -- 
