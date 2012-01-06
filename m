@@ -1,47 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758981Ab2AFSzt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 13:55:49 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:38239 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756639Ab2AFSzr (ORCPT
+	id S1758986Ab2AFS6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 13:58:09 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57785 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750964Ab2AFS6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 13:55:47 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aj9fAMVCB09V5qrvPGdsb2JhbABDiVaiahkBAQEBNzKBcgEBBAE6HCMFCwgDRhQlChqIDQK2MxOLG2MEjTKHVIVfjFg
-X-IronPort-AV: E=Sophos;i="4.71,469,1320620400"; 
-   d="scan'208";a="23351422"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 6 Jan 2012 19:55:44 +0100
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the MT
- slot state
-Message-ID: <20120106185544.GB2795@polaris.bitmath.org>
-References: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
- <CAN+gG=FUEH851Um4Lco0avqdE2Eup3Jo79Ti4T7XhxT=PO6WeQ@mail.gmail.com>
- <20120106181845.GA22653@core.coreip.homeip.net>
+	Fri, 6 Jan 2012 13:58:07 -0500
+Date: Fri, 6 Jan 2012 10:57:58 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Laxman Dewangan <ldewangan.com@nvidia.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH V1] TPS62360: Add tps62360 regulator driver
+Message-ID: <20120106185755.GC2893@opensource.wolfsonmicro.com>
+References: <1325668818-1096-1-git-send-email-ldewangan@nvidia.com>
+ <20120105062919.GI11867@opensource.wolfsonmicro.com>
+ <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9E9B@BGMAIL01.nvidia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120106181845.GA22653@core.coreip.homeip.net>
+In-Reply-To: <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9E9B@BGMAIL01.nvidia.com>
+X-Cookie: You will contract a rare disease.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2 different processes should be fine; the problem would be if 2 threads
-> of the same process share the same file descriptor. So far the rest of
-> evdev copes just fine with multiple threads using the same fd (all
-> operations are atomic in this regard), setting ABS_MT_SLOT before
-> fetching the state break this property.
+On Thu, Jan 05, 2012 at 07:18:25PM +0530, Laxman Dewangan wrote:
 
-Are we talking about the need for a per-client mutex, or something
-more subtle, like introducing indirect coupling between threads
-through per-client states? The former ought to be easily remedied.
+Please fix your mailer to word wrap in less than 80 columns.  I've
+reflowed your text for legibility.
 
-Henrik
+> > > +	/* Configure the output discharge path */
+> > > +	st = tps62360_reg_modify_bits(tps, REG_RAMPCTRL, BIT(2), BIT(2));
+> > > +	if (st < 0)
+> > > +		dev_err(tps->dev, "%s() fails in updating reg %d\n",
+> > > +			__func__, REG_RAMPCTRL);
+> > > +}
+
+> > I rather suspect that if this is worth doing it's also worth doing over
+> > suspend...
+
+> The discharge path should be only enabled when the output voltage will
+> go to 0.  If it stay in non-zero voltage and enabling discharge path
+> will consume more power.  In suspend, it is not necessarily that
+> voltage output will be 0 and hence it should not be enabled. In
+> shutdown all power goes off from pmu and hence it is worth to enable
+> discharge path for quick fall of output voltage.
+
+Why is shutdown particularly special in this regard, and surely the
+hardware is capable of automatically disabling the discharge while the
+regulator is enabled?
+
+Though frankly it seems rather broken if the hardware doesn't
+automatically remove the clamp when 
+
+> > > + * @vsel: Select the voltage id register.
+
+> > What's this?
+
+> There is 4 sets of voltage configuration register for voltage output.
+> The power on reset values for this registers are different and
+> selection of the voltage configuration register is done by 2 pins of
+> the pmu chip which is board dependent.  Based on board connection, it
+> need to be program the desired voltage configuration Register to
+> achieve the desired output.
+
+Ah, you've misunderstood this functionality.  The reason regulators have
+these pin based register selections is that they'll be connected to
+GPIOs so that we can change voltages quickly without having to take the
+cost of I2C I/O.
+
+For all practical purposes it's reasonable to assume that if vsel is
+fixed to anything rather than being connected to GPIOs it'll be
+connected to ground.
+
+The other thing is that the naming is really unclear.
