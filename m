@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933097Ab2AFASx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 19:18:53 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932617Ab2AFASw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 19:18:52 -0500
-Message-ID: <4F063DE7.2080405@nod.at>
-Date: Fri, 06 Jan 2012 01:18:47 +0100
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S964902Ab2AFA0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 19:26:47 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61270 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932617Ab2AFA0p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 19:26:45 -0500
+Message-ID: <4F063FC0.8000907@gmail.com>
+Date: Thu, 05 Jan 2012 19:26:40 -0500
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: daniel.lezcano@free.fr,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: namespaces: Out-of-bounds array access
-X-Enigmail-Version: 1.3.4
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigA25311C4A4004CC47A7FB396"
+To: leonid.moiseichuk@nokia.com
+CC: kosaki.motohiro@gmail.com, gregkh@suse.de, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, cesarb@cesarb.net,
+        kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net, penberg@kernel.org,
+        aarcange@redhat.com, riel@redhat.com, mel@csn.ul.ie,
+        rientjes@google.com, dima@android.com, rebecca@android.com,
+        san@google.com, akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
+Subject: Re: [PATCH 3.2.0-rc1 0/3] Used Memory Meter pseudo-device and related
+ changes in MM
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <20120104195612.GB19181@suse.de> <84FF21A720B0874AA94B46D76DB98269045542B5@008-AM1MPN1-003.mgdnok.nokia.com>
+In-Reply-To: <84FF21A720B0874AA94B46D76DB98269045542B5@008-AM1MPN1-003.mgdnok.nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigA25311C4A4004CC47A7FB396
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+> Android OOM (AOOM) is a different thing. Briefly Android OOM is a safety belt,
+>but I try to introduce look-ahead radar to stop before hitting wall.
 
-Hi!
+You explained why we shouldn't merge neither you nor android notification patches.
+Many embedded developers tried to merge their own patch and claimed "Hey! my patch
+is completely different from another one". That said, their patches can't be used
+each other use case, just for them.
 
-While searching a completely different bug I've found this problem:
-If CONFIG_NET_NS, CONFIG_UTS_NS and CONFIG_IPC_NS are disabled, ns_entrie=
-s[]
-becomes empty and things like ns_entries[ARRAY_SIZE(ns_entries) - 1] will=
- explode.
+Systemwide global notification itself is not bad idea. But we definitely choose
+just one implementation. thus, you need to get agree with other embedded people.
 
-Thanks,
-//richard
+Again, lowmemorykiller.c should be dropped too.
 
 
+>  UsedMemory = (MemTotal - MemFree - Buffers - Cached - SwapCached) +
+>                                               (SwapTotal - SwapFree)
 
+If you spent a few time to read past discuttion, you should have understand your fomula
+is broken and unacceptable. Think, mlocked (or pinning by other way) cache can't be
+discarded. And, When system is under swap thrashing, userland notification is
+useless. I don't think you tested w/ swap environment heavily.
 
+While you are getting stuck to make nokia specific feature, I'm recommending you
+maintain your local patch yourself.
 
---------------enigA25311C4A4004CC47A7FB396
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPBj3nAAoJEN9758yqZn9e52IH/in1mdQFv6/BujSBi1O747e7
-XRfOwFZuYAQKoaUoQ5wJbFFCNvFHYG7KH8nswIRHPVevIZyCkyXQIm7CNu94300f
-n05R+P1BOkz5Xai/6Vocz7cRLtDtEOa3forFxeOxo5dvPRyMKJOIpIpARaiOVpEn
-lw+/hHu1IzWy52Xl1w2f6UPCHZttIHBar0q0R1YoRnrVK5k5Fyde9ffDmUyC3Enc
-/6yY/A2+/BLfNzGqjC3FgX/SSOyToLa5OwfXZr0t/P2QdXVlgj05K7JE2E62fu74
-gDGm155HaiwPP7zPi+4uRKv/6CKy8fuh4ZzySAcptNS6GJkT34/m+6wX0YzS0dU=
-=NvPo
------END PGP SIGNATURE-----
-
---------------enigA25311C4A4004CC47A7FB396--
