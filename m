@@ -1,113 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964946Ab2AFBDu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 20:03:50 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43963 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964847Ab2AFBDr (ORCPT
+	id S1030230Ab2AFBFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 20:05:52 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14287 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932385Ab2AFBFu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 20:03:47 -0500
-Date: Fri, 6 Jan 2012 12:03:45 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hui Wang <jason77.wang@gmail.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-Id: <20120106120345.8157a839b1c924315d728eea@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Jan_2012_12_03_45_+1100_z.VV1Iz1g2zunkO7"
+	Thu, 5 Jan 2012 20:05:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 05 Jan 2012 17:05:47 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng <dongas86@gmail.com>
+CC: Dong Aisheng-B29396 <B29396@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>
+Date: Thu, 5 Jan 2012 17:05:46 -0800
+Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Thread-Index: AczLsJ3M8xD/MH1ETMWuzFw86HEkGAAXgcmQ
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+	<1324402840-32451-3-git-send-email-b29396@freescale.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
+	<7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
+	<74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
+ <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
+In-Reply-To: <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Jan_2012_12_03_45_+1100_z.VV1Iz1g2zunkO7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dong Aisheng wrote at Thursday, January 05, 2012 6:48 AM:
+> On Sun, Dec 25, 2011 at 11:37 AM, Stephen Warren <swarren@nvidia.com> wrote:
+> > Dong Aisheng-B29396 wrote at Thursday, December 22, 2011 1:18 AM:
+...
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl.txt
+...
+> +Examples:
+> +soc {
+> +	aips-bus@02000000 { /* AIPS1 */
+> +		iomuxc@020e0000 {
+> +			pinctrl_uart4: uart4 {
+> +				func-name = "uart4";
+> +				grp-name = "uart4grp";
+> +				grp-pins = <107 108>;
+> +				num-pins = <2>;
+> +				grp-mux = <4 4>;
+> +				num-mux = <2>;
+> +			};
 
-Hi all,
+Before I get too far into reviewing this path, could you explain the
+above node in a little more detail; what it is and what the properties
+define?
 
-Today's linux-next merge of the arm-soc tree got a conflict in
-arch/arm/mach-imx/mm-imx5.c between commit 9bdd46257ab3 ("ARM: plat-mxc:
-hook special idle handlers to arm_pm_idle") from the arm tree and commit
-010dc8af8f28 ("ARM: mx5: use generic irq chip pm interface for pm
-functions on") from the arm-soc tree.
+I'm confused because the node has properties for function name and
+group name which make sense to define the mux setting for that group.
+However, I'm not sure what the grp-pins/num-pins/grp-mux/num-mux
+properties are for; if those properties define the available mux options
+and for the group and set of pins included in the group, I think the node
+is representing too many things in one place. I'd expect to see:
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+a) Either data in the pinctrl driver or separate DT nodes to define each
+available pin group, mux function, etc.; the definition of what the SoC
+itself can do.
 
-diff --cc arch/arm/mach-imx/mm-imx5.c
-index 65139a6,bc17dfe..0000000
---- a/arch/arm/mach-imx/mm-imx5.c
-+++ b/arch/arm/mach-imx/mm-imx5.c
-@@@ -21,9 -22,27 +22,24 @@@
-  #include <mach/devices-common.h>
-  #include <mach/iomux-v3.h>
- =20
-+ static struct clk *gpc_dvfs_clk;
-+=20
-  static void imx5_idle(void)
-  {
- -	if (!need_resched()) {
- -		/* gpc clock is needed for SRPG */
- -		if (gpc_dvfs_clk =3D=3D NULL) {
- -			gpc_dvfs_clk =3D clk_get(NULL, "gpc_dvfs");
- -			if (IS_ERR(gpc_dvfs_clk))
- -				goto err0;
- -		}
- -		clk_enable(gpc_dvfs_clk);
- -		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
- -		if (tzic_enable_wake())
- -			goto err1;
- -		cpu_do_idle();
- -err1:
- -		clk_disable(gpc_dvfs_clk);
-++	/* gpc clock is needed for SRPG */
-++	if (gpc_dvfs_clk =3D=3D NULL) {
-++		gpc_dvfs_clk =3D clk_get(NULL, "gpc_dvfs");
-++		if (IS_ERR(gpc_dvfs_clk))
-++			goto err0;
-+ 	}
-++	clk_enable(gpc_dvfs_clk);
- +	mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
-++	if (tzic_enable_wake())
-++		goto err1;
-++	cpu_do_idle();
-++err1:
-++	clk_disable(gpc_dvfs_clk);
-+ err0:
- -	local_irq_enable();
-  }
- =20
-  /*
+b) The configuration of each pin group that's used by the particular board.
+All that's relevant here is the mux selection for each pin groups; things
+like which pins are included in each group are defined by the SoC not the
+board and hence wouldn't be included in a per-board node.
 
---Signature=_Fri__6_Jan_2012_12_03_45_+1100_z.VV1Iz1g2zunkO7
-Content-Type: application/pgp-signature
+Thanks for enlightening me!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+> +
+> +			pinctrl_sd4: sd4 {
+> +				func-name = "sd4";
+> +				grp-name = "sd4grp";
+> +				grp-pins = <170 171 180 181 182 183 184 185 186 187>;
+> +				num-pins = <10>;
+> +				grp-mux = <0 0 1 1 1 1 1 1 1 1>;
+> +				num-mux = <10>;
+> +			};
+> +		};
+> +	};
+> +
+> +	aips-bus@02100000 { /* AIPS2 */
+> +		usdhc@0219c000 { /* uSDHC4 */
+> +			fsl,card-wired;
+> +			status = "okay";
+> +			pinmux = <&pinctrl_sd4>;
+> +		};
+> +
+> +		uart3: uart@021f0000 { /* UART4 */
+> +			status = "okay";
+> +			pinmux = <&pinctrl_uart4>;
+> +		};
+> +	};
+> +};
 
-iQIcBAEBCAAGBQJPBkhxAAoJEECxmPOUX5FEhzUP/13Z6r1SkJdlKHG3H4j8nHUy
-K5nWY9YbY8mAqo1B2dN/sC0LJa2nGwFaSOOHT4vDMbWxjHJfJ3j6xG3N5m3G3o1O
-2UbqxFsM77vWsKE5nYU9sOo6J7U6st3XLHxLt1jg3eI375tyQoMEGCkAPOHpB52l
-Gz9trKJHboX7LAeipXTDaQLULM8U8q0NghU9XSptKnMrh7L2MGGO3J7H4aWvuX2o
-2orM1+1EX5vtupT4+1ZGdJU2yUsaUAy3wLA4VSfL3fQDUpzXb7t+XLfoKjYZRG71
-SjJqcFyw5cOIvgk6rpwcE+1fJ5WlXkl4Pq0JHxwRhshshzqBFmw4M/njE7EzmVPN
-Lz5NRy2HjQ2v6mBvaSbjUd44QIOVg6Fe/BYT2GPkfjMnLQGC32LeF7HeNwwD1e3Z
-4F8prGNg4qY+VQwEuhi60OU8AD9Bv+lAgivF2rmlPZanvnGwXW5ltpmwr2Sj21FK
-NyGReYjmIN1s1VlQKzXqR+VKfRP2xwbrkxREFbQrifpgk6DYclDZa62g9/PBw/ZG
-s5tU4jHgUc95fqmQnUU3zX/ze3ojuZNTmcjggHZLUbk+lpGoNA5eppPnhp+LG2JM
-eIfxYHnVGE3ooxZYs3TF/0aHN2puPVZG6cZdaKufPw20TlJRw6f4N8ZWFP2m/jUL
-VuU0kH4fWQYHwEnbOlin
-=NSZh
------END PGP SIGNATURE-----
+-- 
+nvpublic
 
---Signature=_Fri__6_Jan_2012_12_03_45_+1100_z.VV1Iz1g2zunkO7--
