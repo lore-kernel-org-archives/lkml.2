@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258Ab2AFWCW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 17:02:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24367 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759164Ab2AFWCU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 17:02:20 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: torvalds@linux-foundation.org
-cc: dhowells@redhat.com, arnd@arndb.de, alan@lxorguk.ukuu.org.uk,
-        hpa@zytor.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-Subject: [GIT PULL] User-API header split preliminary patches
-Date: Fri, 06 Jan 2012 22:02:03 +0000
-Message-ID: <19981.1325887323@redhat.com>
+	id S1759252Ab2AFWGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 17:06:13 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:45954 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752940Ab2AFWGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 17:06:11 -0500
+Message-ID: <4F063DD6.5050403@xenotime.net>
+Date: Thu, 05 Jan 2012 16:18:30 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Linus <torvalds@linux-foundation.org>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -next] fs: fix fs/fs-writeback.c build error
+References: <20120105191218.42825638a431bc1aba4879de@canb.auug.org.au>
+In-Reply-To: <20120105191218.42825638a431bc1aba4879de@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <rdunlap@xenotime.net>
 
-Hi Linus,
+In linux-next, fs/fs-writeback.c no longer #includes <linux/buffer_head.h>,
+which #included <linux/pagemap.h>, so add that latter header file to
+<linux/writeback.h> to fix the build error:
 
-Can you pull these patches from my GIT repository please?
+fs/fs-writeback.c:510:11: error: 'PAGE_CACHE_SHIFT' undeclared (first use in this function)
 
-They prepare the way for splitting out the User API definitions from the
-standard kernel internal headers into their own header file directories (there
-will be arch-specific directories as well as the common ones).
-
-They have been in linux-next for roughly three weeks.
-
-I have audited them from my initial patch submission to get rid of patches
-that are no longer necessary.
-
-I have also built allyesconfig with all the cross-compilers I can create on
-the full patch spectrum (on the uapi-split branch in the same tree) and
-eliminated the problems created.
-
-Can you please consider pulling the further patchset that actually performs
-the split at the end of the merge window.  It *will* need regenerating
-whenever it is pulled, but is mostly scripted.
-
-Thanks,
-David
+Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
 ---
-The following changes since commit dc47ce90c3a822cd7c9e9339fe4d5f61dcb26b50:
+ include/linux/writeback.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-  Linux 3.2-rc5 (2011-12-09 15:09:32 -0800)
-
-are available in the git repository at:
-  git://git.infradead.org/users/dhowells/linux-headers.git for-next
-
-David Howells (17):
-      UAPI: Fix arch/mips/include/asm/Kbuild to have separate header-y lines
-      UAPI: Don't include linux/compat.h in sparc's asm/siginfo.h
-      UAPI: elf_read_implies_exec() is a kernel-only feature - so hide from userspace
-      UAPI: Make MN10300 use asm-generic/param.h
-      UAPI: Make M32R use asm-generic/param.h
-      UAPI: Make FRV use asm-generic/param.h
-      UAPI: Rearrange definition of HZ in asm-generic/param.h
-      UAPI: Guard linux/sound.h
-      UAPI: Guard linux/isdn_divertif.h
-      UAPI: Guard linux/pmu.h
-      UAPI: Guard linux/cuda.h
-      UAPI: Alter the S390 asm include guards to be recognisable by the UAPI splitter
-      UAPI: Fix nested __KERNEL__ guards in video/edid.h
-      UAPI: Make linux/patchkey.h easier to parse
-      UAPI: Fix AHZ multiple inclusion when __KERNEL__ is removed
-      UAPI: Don't have a #elif clause in a __KERNEL__ guard in linux/soundcard.h
-      UAPI: Split trivial #if defined(__KERNEL__) && X conditionals
-
- arch/arm/include/asm/hwcap.h       |    4 +++-
- arch/arm/include/asm/swab.h        |    7 +++++--
- arch/arm/include/asm/unistd.h      |    4 +++-
- arch/frv/include/asm/param.h       |   16 +---------------
- arch/ia64/include/asm/intrinsics.h |   21 +++++++++++++--------
- arch/m32r/include/asm/param.h      |   18 +-----------------
- arch/mips/include/asm/Kbuild       |    4 +++-
- arch/mips/include/asm/types.h      |   10 +++++++---
- arch/mn10300/include/asm/param.h   |   18 +-----------------
- arch/s390/include/asm/chpid.h      |    2 +-
- arch/s390/include/asm/itcw.h       |    2 +-
- arch/s390/include/asm/mman.h       |    4 +++-
- arch/sparc/include/asm/siginfo.h   |    2 --
- arch/tile/include/asm/signal.h     |    4 +++-
- include/asm-generic/param.h        |   13 +++++++------
- include/linux/acct.h               |    3 +++
- include/linux/cuda.h               |    5 +++++
- include/linux/elf.h                |   18 +++++++++---------
- include/linux/isdn_divertif.h      |    4 ++++
- include/linux/mroute6.h            |    4 +++-
- include/linux/patchkey.h           |    4 +++-
- include/linux/pmu.h                |    4 ++++
- include/linux/sound.h              |    4 ++++
- include/linux/soundcard.h          |    4 +++-
- include/video/edid.h               |    6 ++----
- 25 files changed, 92 insertions(+), 93 deletions(-)
+--- linux-next-20120105.orig/include/linux/writeback.h
++++ linux-next-20120105/include/linux/writeback.h
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/fs.h>
++#include <linux/pagemap.h>
+ 
+ DECLARE_PER_CPU(int, dirty_throttle_leaks);
+ 
