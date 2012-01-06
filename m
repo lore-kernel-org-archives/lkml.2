@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757762Ab2AFBl7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 20:41:59 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35450 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab2AFBl5 (ORCPT
+	id S1758401Ab2AFBrf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 20:47:35 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:38652 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754602Ab2AFBre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 20:41:57 -0500
-Date: Fri, 6 Jan 2012 05:41:53 +0400
+	Thu, 5 Jan 2012 20:47:34 -0500
+Date: Fri, 6 Jan 2012 05:47:30 +0400
 From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        syed rafiuddin <rafiuddin.sayed@gmail.com>,
-        Rodolfo Giometti <giometti@linux.it>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] rx51: add bq27200 i2c board info
-Message-ID: <20120106014153.GB27391@oksana.dev.rtsoft.ru>
-References: <1316531933-7159-1-git-send-email-pali.rohar@gmail.com>
- <1680176.R2HCxgKt4B@pali-elitebook>
- <20111125230321.GA12373@oksana.dev.rtsoft.ru>
- <20111207202546.GJ31337@atomide.com>
+To: Rhyland Klein <rklein@nvidia.com>
+Cc: Olof Johansson <olof@lixom.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bq20z75: fix devicetree match table
+Message-ID: <20120106014729.GA11316@oksana.dev.rtsoft.ru>
+References: <1324607824-2685-1-git-send-email-olof@lixom.net>
+ <1325616406.13090.1.camel@rklein-linux2>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20111207202546.GJ31337@atomide.com>
+In-Reply-To: <1325616406.13090.1.camel@rklein-linux2>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 07, 2011 at 12:25:47PM -0800, Tony Lindgren wrote:
-> * Anton Vorontsov <cbouatmailru@gmail.com> [111125 14:28]:
-> > Cc'ing Tony Lindgren.
+On Tue, Jan 03, 2012 at 10:46:46AM -0800, Rhyland Klein wrote:
+> On Thu, 2011-12-22 at 18:37 -0800, Olof Johansson wrote:
+> > It should be an of module table, not i2c.
 > > 
-> > Tony, OK to pass this via battery git tree?
+> > Signed-off-by: Olof Johansson <olof@lixom.net>
+> > ---
+> >  drivers/power/bq20z75.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/power/bq20z75.c b/drivers/power/bq20z75.c
+> > index ce95ff7..3efca54 100644
+> > --- a/drivers/power/bq20z75.c
+> > +++ b/drivers/power/bq20z75.c
+> > @@ -622,7 +622,7 @@ static const struct of_device_id bq20z75_dt_ids[] = {
+> >  	{ .compatible = "ti,bq20z75" },
+> >  	{ }
+> >  };
+> > -MODULE_DEVICE_TABLE(i2c, bq20z75_dt_ids);
+> > +MODULE_DEVICE_TABLE(of, bq20z75_dt_ids);
+> >  
+> >  static struct bq20z75_platform_data *bq20z75_of_populate_pdata(
+> >  		struct i2c_client *client)
 > 
-> Sorry for the delay, yes that's fine with me:
-> 
-> Acked-by: Tony Lindgren <tony@atomide.com>
+> Acked-by: Rhyland Klein <rklein@nvidia.com>
 
-Applied, thanks!
-
-p.s. Pali, you did not provide a sign-off for this patch. The patch is
-trivial enough, so I took the risk to apply it w/ only my sign-off. But
-please, provide yours here for the history. Just to be safe. :-)
+Applied, thanks! (The driver is 'sbs-battery' nowadays. So I modified
+the patch a little bit.)
 
 -- 
 Anton Vorontsov
