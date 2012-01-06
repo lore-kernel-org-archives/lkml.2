@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030316Ab2AFLCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 06:02:51 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49163 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1030196Ab2AFLCu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 06:02:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <1325848338-6063-1-git-send-email-amit.sahrawat83@gmail.com>
-References: <1325848338-6063-1-git-send-email-amit.sahrawat83@gmail.com>
-Date: Fri, 6 Jan 2012 16:32:48 +0530
-Message-ID: <CADDb1s3fBFEXY5Z=ZjJtzOM09fdH4n_Je2eGAgkgqGF9n__oFg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] xfs: cleanup XFS_BB_FSB_OFFSET
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: Alex Elder <aelder@sgi.com>, Ben Myers <bpm@sgi.com>,
-        xfs masters <xfs-masters@oss.sgi.com>, xfs <xfs@oss.sgi.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        Amit Sahrawat <amit.sahrawat83@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1030322Ab2AFLDi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 06:03:38 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53701 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030241Ab2AFLDh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 06:03:37 -0500
+From: Che-Liang Chiou <clchiou@chromium.org>
+To: dmitry.torokhov@gmail.com
+Cc: linux-kernel@vger.kernel.org, Che-Liang Chiou <clchiou@chromium.org>
+Subject: [PATCH 1/2] Input: serio_raw - cosmetic fixes
+Date: Fri,  6 Jan 2012 19:03:14 +0800
+Message-Id: <1325847795-30486-1-git-send-email-clchiou@chromium.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Courtesy: Dave Chinner
+Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
+---
+ drivers/input/serio/serio_raw.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
+index 4d4cd14..a935c38 100644
+--- a/drivers/input/serio/serio_raw.c
++++ b/drivers/input/serio/serio_raw.c
+@@ -220,7 +220,7 @@ static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
+ 			goto out;
+ 		}
+ 		written++;
+-	};
++	}
+ 
+ out:
+ 	mutex_unlock(&serio_raw_mutex);
+@@ -231,11 +231,9 @@ static unsigned int serio_raw_poll(struct file *file, poll_table *wait)
+ {
+ 	struct serio_raw_client *client = file->private_data;
+ 	struct serio_raw *serio_raw = client->serio_raw;
+-	unsigned int mask;
+ 
+ 	poll_wait(file, &serio_raw->wait, wait);
+ 
+-	mask = serio_raw->dead ? POLLHUP | POLLERR : POLLOUT | POLLWRNORM;
+ 	if (serio_raw->head != serio_raw->tail)
+ 		return POLLIN | POLLRDNORM;
+ 
+-- 
+1.7.3.1
 
-Thanks & Regards,
-Amit Sahrawat
-
-On Fri, Jan 6, 2012 at 4:42 PM, Amit Sahrawat <amit.sahrawat83@gmail.com> wrote:
-> Removing the macro, as this is no more needed in the code.
-> Tried to find the reference when it was last used - but the usage
-> for this seemed to have been dropped long time ago.
->
-> Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
-> ---
->  fs/xfs/xfs_sb.h |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/xfs/xfs_sb.h b/fs/xfs/xfs_sb.h
-> index cb6ae71..f429d9d 100644
-> --- a/fs/xfs/xfs_sb.h
-> +++ b/fs/xfs/xfs_sb.h
-> @@ -529,7 +529,6 @@ static inline int xfs_sb_version_hasprojid32bit(xfs_sb_t *sbp)
->  #define        XFS_BB_TO_FSB(mp,bb)    \
->        (((bb) + (XFS_FSB_TO_BB(mp,1) - 1)) >> (mp)->m_blkbb_log)
->  #define        XFS_BB_TO_FSBT(mp,bb)   ((bb) >> (mp)->m_blkbb_log)
-> -#define        XFS_BB_FSB_OFFSET(mp,bb) ((bb) & ((mp)->m_bsize - 1))
->
->  /*
->  * File system block to byte conversions.
-> --
-> 1.7.2.3
->
