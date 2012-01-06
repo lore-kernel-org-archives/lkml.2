@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932838Ab2AFIBS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 03:01:18 -0500
-Received: from mga11.intel.com ([192.55.52.93]:59206 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751974Ab2AFIBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 03:01:15 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="109364816"
-Subject: Re: [PATCH block:for-3.3/core] block: disable
- ELEVATOR_INSERT_SORT_MERGE
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-In-Reply-To: <CAOS58YPUgK4J6j1Gme9O9HeL7GrwnJU8QTVKbVLA9cEXPQ1kag@mail.gmail.com>
-References: <20120103221301.GH31746@google.com>
-	 <20120103223505.GI31746@google.com> <20120105012445.GP31746@google.com>
-	 <alpine.LSU.2.00.1201051026090.2009@eggly.anvils>
-	 <20120105183842.GF18486@google.com> <20120106021707.GA6276@google.com>
-	 <20120106023638.GC6276@google.com>
-	 <1325819655.22361.513.camel@sli10-conroe>
-	 <20120106030406.GD6276@google.com> <20120106033012.GE6276@google.com>
-	 <20120106035247.GF6276@google.com>
-	 <1325823545.22361.526.camel@sli10-conroe>
-	 <CAOS58YPUgK4J6j1Gme9O9HeL7GrwnJU8QTVKbVLA9cEXPQ1kag@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Jan 2012 16:15:57 +0800
-Message-ID: <1325837757.22361.538.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1758399Ab2AFIJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 03:09:28 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:1034 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab2AFIJ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 03:09:26 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6580"; a="152717200"
+X-IronPort-AV: E=Sophos;i="4.71,465,1320652800"; 
+   d="scan'208";a="160661671"
+Message-ID: <4F06AC0E.1000809@qca.qualcomm.com>
+Date: Fri, 6 Jan 2012 10:08:46 +0200
+From: Kalle Valo <kvalo@qca.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110922 Thunderbird/3.1.15
+MIME-Version: 1.0
+To: David Laight <David.Laight@ACULAB.COM>
+CC: <linville@tuxdriver.com>, <sfr@canb.auug.org.au>, <netdev@vger.kernel.org>,
+        <linux-wireless@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-next@vger.kernel.org>, <ath6kl-devel@qualcomm.com>,
+        <davem@davemloft.net>
+Subject: Re: [PATCH v2 4/6] ath6kl: get rid of AR_DBG_LVL_CHECK()
+References: <AE90C24D6B3A694183C094C60CF0A2F6D8AF33@saturn3.aculab.com>
+In-Reply-To: <AE90C24D6B3A694183C094C60CF0A2F6D8AF33@saturn3.aculab.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.64.130.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 20:38 -0800, Tejun Heo wrote:
-> Hello,
+On 01/05/2012 04:14 PM, David Laight wrote:
 > 
-> On Thu, Jan 5, 2012 at 8:19 PM, Shaohua Li <shaohua.li@intel.com> wrote:
-> >> For detailed discussion of the bug:
-> >>
-> >>  http://thread.gmane.org/gmane.linux.kernel.next/20064/focus=20159
-> >>
-> > this is overkill. when plug is added, we found huge performance
-> > regression, that's why we add INSERT_SORT_MERGE.
+>> We don't need it as debug calls already have a log level and
+>> compiler should be smart enough to optimise away the code when
+>> ath6kl debug code is not enabled.
 > 
-> With what workload? I suspect most of the improvements is from merging
-> across different cfqqs, no? The whole recursive thing can't be very
-> useful if cross-cfqq merging isn't allowed. Maybe there are specific
-> cases where last_merge hint merging can be specially effective. I
-> don't know. Regardless, this is an apparent bug and the block tree
-> will be pushed mainline pretty soon. If necessary, fix it better
-> later. Doing complex things inside merge window usually isn't a good
-> idea.
-it's not related to the recursive merge. I forgot the detail of the
-workload why we add INSERT_SORT_MERGE, it's added several months ago
-anyway.
-Obviously we shouldn't do complex things inside the merge window. I just
-didn't agree to disable INSERT_SORT_MERGE, which will bring performance
-regression for sure. Can we just change CFQ like your first path?
+> Have you checked?
 
-Thanks,
-Shaohua
+No, I just assumed so.
 
+> I think you are assuming that because the called function collapses,
+> the call will be removed allowing the loop to be removed. I suspect
+> this is only true if the function is inlined. IIRC the normal linkage
+> rules mean that only static functions are candidates for inlining.
+
+I think you are right.
+
+But while I investigated more I noticed that ath6kl_dump_registers()
+will be an empty static inline whenever CONFIG_ATH6KL_DEBUG is disabled
+and that will make sure that the whole function is not included. So
+whenever ath6kl debug code is enabled there is a small performance hit,
+but it's so small that IMHO we don't need to worry about it.
+
+And for optimal performance CONFIG_ATH6KL_DEBUG should be disabled anyway.
+
+What do you think?
+
+Kalle
