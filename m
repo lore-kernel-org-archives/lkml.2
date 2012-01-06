@@ -1,107 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab2AFQTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 11:19:12 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:31389 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2AFQTL (ORCPT
+	id S1758794Ab2AFQUE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 11:20:04 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:62574 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166Ab2AFQUC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 11:19:11 -0500
-Date: Fri, 6 Jan 2012 11:17:26 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/5] xen/pciback: Support pci_reset_function,
- aka FLR or D3 support.
-Message-ID: <20120106161726.GA8657@phenom.dumpdata.com>
-References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com>
- <1325724403-29642-3-git-send-email-konrad.wilk@oracle.com>
- <1325759051.25206.361.camel@zakaz.uk.xensource.com>
+	Fri, 6 Jan 2012 11:20:02 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: Broken ioctl error returns (was Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition devices)
+Date: Fri, 6 Jan 2012 16:19:43 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
+Cc: Paolo Bonzini <pbonzini@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-media@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
+        linux-kernel@vger.kernel.org, security@kernel.org, pmatouse@redhat.com,
+        agk@redhat.com, jbottomley@parallels.com, mchristi@redhat.com,
+        msnitzer@redhat.com, Christoph Hellwig <hch@lst.de>
+References: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
+In-Reply-To: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325759051.25206.361.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090208.4F071EFC.000F,ss=1,re=0.000,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201061619.43584.arnd@arndb.de>
+X-Provags-ID: V02:K0:QSn9jwXnGX9iY6oGdQ16zV+CVFFq8hYmid/xf9a4I6P
+ VXco/40Eg0emP0YsSAy1pEHysnbrEKBGfLX+LAC2byQIf7Yapw
+ 7vEKatPfPA5Dx+KLwK1ZkeqFBCOlf77JcPZegX+I9wjua3gH3k
+ HpRBwUD3IkJv9lynht4Hig91HlGAyIZsnjYbUFLtZxH4iMgMIh
+ aNsjTeOdnlsJBEvWO7uILRKxFawQ+T/hYsSJil2pKoizVaQzBh
+ NTKXEi3gL31Kw6lW6fp8Eo25uXX1jje7M5NCTfJaAW7MIo6yHS
+ CTJ9cNhyDjyRjIKseLruSSDLlew8XdJBdr1xHSdhIEM/Q61+GU
+ Ff/KaPT6dLqJ6w8JI0ps=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 10:24:11AM +0000, Ian Campbell wrote:
-> On Thu, 2012-01-05 at 00:46 +0000, Konrad Rzeszutek Wilk wrote:
-> > We use the __pci_reset_function_locked to perform the action.
-> > Also on attaching ("bind") and detaching ("unbind") we save and
-> > restore the configuration states. When the device is disconnected
-> > from a guest we use the "pci_reset_function" to also reset the
-> > device before being passed to another guest.
-> 
-> Currently I thought the toolstack was supposed to do the reset (by
-> writing to the reset node in sysfs) as it was (de)assigning devices
-> to/from guests. That's not to say that there isn't an argument for
-> preferring to do it kernels side but it would be interesting to make
-> that argument explicitly.
+On Thursday 05 January 2012, Linus Torvalds wrote:
 
-I am kind of on the fence on this one. The one issue I found with
-the toolstack is that it sometimes is run too late (now mind you -
-I haven't actually found any bugs, so this might be all ballloony).
+> And finally, ENOIOCTLCMD is a way to say ENOTTY in a sane manner, and
+> will now be turned into ENOTTY for the user space return (not EINVAL -
+> I have no idea where that idiocy came from, but it's clearly confused,
+> although it's also clearly very old).
 
-The xen-pciback can be used to inhibit drivers from grabbing the devices
-during bootup. This can be done by 'xen-pciback.hide=(02:00.0)(02:00.1)(..)'
+To give some background here: While I did a lot of changes to the
+compat ioctl code over the years, I never touched the EINVAL/ENOTTY
+logic out of fear of breaking things further. Your patch is probably
+the right answer here and we should have done it long ago.
 
-Pretty handy as you don't have to deal with:
- echo "0000:02:00.1" > /sys/bus/pci/devices/0000:02:00.1/drivers/unbind
+> This fixes the core files I noticed. It removes the insane
+> complaints from the compat_ioctl() (which would complain if you
+> returned ENOIOCTLCMD after an ioctl translation - the reason that is
+> totally insane is that somebody might use an ioctl on the wrong kind
+> of file descriptor, so even if it was translated perfectly fine,
+> ENOIOCTLCMD is a perfectly fine error return and shouldn't cause
+> warnings - and that allows us to remove stupid crap from the socket
+> ioctl code).
 
-and then later 'rmmod e1000e' to save some memory space.
+Now this behavior was entirely intentional. ENOIOCTLCMD was introduced
+explicitly so we could tell the difference between compat_ioctl handlers
+saying "I don't know how to translate this but common code might know"
+(ENOIOCTLCMD) and "I know that this is not a valid command code here"
+(ENOTTY plus whatever a broken driver might return).
 
-The unfortunate side effect is that xen-pciback does this:
+The distinction is used in two places:
 
- pci_enable_device()
- pci_disable_device(dev)
- pci_write_config_word(dev, PCI_COMMAND, 0)
+1. To let device drivers return early from fops->compat_ioctl when
+they want to avoid the overhead from searching the COMPATIBLE_IOCTL()
+table and from the (formerly large) switch statement in do_ioctl_trans(),
+or when they want to make sure that the common translation is not
+called. We have some really tricky bits in the socket code where
+the crazy SIOCDEVPRIVATE needs to be handled specially by some drivers
+while the majority can use the default siocdevprivate_ioctl() function.
 
-... and then when the guest finally uses the device it would (this is what
-the toolstack does - I think?):
+2. To return from do_ioctl_trans() when we know that there is no
+translation for the command number, so that the we can write a warning
+to the console (which you have now removed). This was initially more
+useful back when do_ioctl_trans() knew about practically all command
+numbers, but we have gradually moved all handlers into device drivers
+where they belong, and that has caused the problem that we get warnings
+whenever a user attempts an ioctl on a device that does not handle the
+command even when all the correct devices that support the command also
+have a compat handler. The common way we handle those is to add an
+IGNORE_IOCTL() entry for a command that repeatedly shows up in logs
+that way and is known to be handled correctly.
 
- echo "1" > /sys/bus/pci/devices/0000:02:00.1/reset
+I used to have patches to completely remove the remains of do_ioctl_trans()
+that can be resurrected if that helps, but it's mostly an independent
+issue.
 
-which calls
- pci_dev_reset() - do FLR or D3, or whatnot
- pci_save_state()
+While I agree that the existing compat_ioctl_error() method was somewhat
+broken, I'd like to keep having a way to get some indication from
+drivers that are missing ioctl translations. Ideally, we would move
+all of fs/compat_ioctl.c into drivers and then just warn when we register
+some file_operations on a 64 bit machine that have an ioctl but no
+compat_ioctl function, but that would be a large amount of work.
 
- pci_write_config_word(dev, PCI_COMMAND, PCI_COMMAND_INTX_DISABLE);
+For a simpler solution, we could keep the old warning message, but change
+the logic from
 
- pci_dev_reset(dev) [with a lock held so that "reset" on SysFS cannot be done]
- pci_restore_state()
+(.compat_ioctl == NULL || .compat_ioctl() == -ENOIOCTL) && (no generic handler)
 
-which means that the PCI configuration state before the "pci_save_state"
-is already influenced by what the xen-pciback had done during startup:
-the pci_enable/pci_disable/pci_write_config_work(dev, PCI_COMMAND, 0).
+to
 
-When the 'pci_restore_state()' is called it would restore it to
-what xen-pciback.hide=(xx) did. Not what the device state is before xen-pciback
-gets its hand on it.
+(.ioctl != NULL && .compat_ioctl == NULL) && (no generic handler).
 
-This is part of this patchset - were we make sure to save it before we do our deed.
-(with those pci_save_config/pci_restore_config). 
-And to be fair - I hadn't seen any issues with this, so it might not be
-neccessary.
+and then fix the warnings we see by adding appropriate .compat_ioctl
+functions.
 
-The other way of making this work is to remove the 
-pci_write_config_work(dev, PCI_COMMAND, 0) but I hadn't seen any bugs with
-that ..
-
-> 
-> I guess the toolstack doesn't currently save/restore the configuration
-> state, could it though? I guess the state is all available in sysfs. On
-> the other hand the kernel provides us with a very handy function which
-> Just Does It...
-
-Yeah, there is one more use case - 'xm'. The 'xm' does not do 'reset' on the 
-SysFS so having it done in the kernel is kind of nice. But then 'xm' is on the
-deprecated list so xen-unstable does not care about it. But I do since
-Fedora Core 16 is using it ..
-
+	Arnd
