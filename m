@@ -1,72 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030427Ab2AFR4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 12:56:43 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:46060 "EHLO e8.ny.us.ibm.com"
+	id S1030448Ab2AFR6Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 12:58:16 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:61330 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758300Ab2AFR4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 12:56:41 -0500
-Subject: Re: [PATCH] kprobe: fix a memory leak in function
- pre_handler_kretprobe()
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-In-Reply-To: <4F07261A.6080403@gmail.com>
-References: <4F07261A.6080403@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Jan 2012 09:56:01 -0800
-Message-ID: <1325872561.3351.10.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-x-cbid: 12010617-9360-0000-0000-0000022CA2D3
+	id S1758909Ab2AFR6P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 12:58:15 -0500
+Date: Fri, 6 Jan 2012 18:57:49 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: stern@rowland.harvard.edu
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com,
+        alan@linux.intel.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, gregkh@suse.de,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH 5/6] usb: add support for STA2X11 host driver
+Message-ID: <20120106175749.GA30937@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <Pine.LNX.4.44L0.1201061132170.1326-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1201061132170.1326-100000@iolanthe.rowland.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-01-07 at 00:49 +0800, Jiang Liu wrote:
-> From: Jiang Liu<liuj97@gmail.com>
-> 
-> In function pre_handler_kretprobe(), the allocated kretprobe_instance object will
-> be leaked if the entry_handler callback returns non-zero. This may cause all the
-> preallocated kretprobe_instance objects exhausted. This issue could be reproduced
-> by changing samples/kprobes/kretprobe_example.c to probe "mutex_unlock". And the
-> fix is straight forward, just put the allocated kretprobe_instance object back
-> onto the free_instances list.
-> 
-> Signed-off-by: Jiang Liu<liuj97@gmail.com>
-> Cc: Hien Nguyen<hien@us.ibm.com>
-> Cc: Jim Keniston<jkenisto@us.ibm.com>
-> Cc: Prasanna S Panchamukhi<prasanna@in.ibm.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+Thanks.
 
-BTW, Prasanna is no longer at IBM, and Hien's address is
-hienqngu@us.ibm.com .  Ananth (cc-ed) is probably IBM's best kprobes
-reviewer.
+> Why doesn't the ConneXT implement the required PCI registers?
 
-> ---
->   kprobes.c |    6 +++++-
->   1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1660,8 +1660,12 @@
->                  ri->rp = rp;
->                  ri->task = current;
-> 
-> -               if (rp->entry_handler&&  rp->entry_handler(ri, regs))
-> +               if (rp->entry_handler&&  rp->entry_handler(ri, regs)) {
-> +                       spin_lock_irqsave(&rp->lock, flags);
-> +                       hlist_add_head(&ri->hlist,&rp->free_instances);
-> +                       spin_unlock_irqrestore(&rp->lock, flags);
->                          return 0;
-> +               }
-> 
->                  arch_prepare_kretprobe(ri, regs);
-> 
-> 
+I can't tell. Actually, I wasn't surprised, as there's a lot of
+almost-standard stuff out there. I'll ask the hardware people when I
+meet them, though.
 
-
+/alessandro
