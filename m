@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933182Ab2AFK6w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 05:58:52 -0500
-Received: from mail-yw0-f74.google.com ([209.85.213.74]:63243 "EHLO
-	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758649Ab2AFK61 (ORCPT
+	id S1030293Ab2AFLAu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 06:00:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41483 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932875Ab2AFLAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 05:58:27 -0500
-From: Daniel Kurtz <djkurtz@chromium.org>
-To: khali@linux-fr.org, ben-linux@fluff.org, seth.heasley@intel.com,
-        ben@decadent.org.uk, David.Woodhouse@intel.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: olofj@chromium.org, bleung@chromium.org,
-        Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 0/3 v2] i2c: i801: enable irq
-Date: Fri,  6 Jan 2012 18:58:19 +0800
-Message-Id: <1325847502-17841-1-git-send-email-djkurtz@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
+	Fri, 6 Jan 2012 06:00:49 -0500
+From: Amit Sahrawat <amit.sahrawat83@gmail.com>
+To: Alex Elder <aelder@sgi.com>, Ben Myers <bpm@sgi.com>,
+        xfs masters <xfs-masters@oss.sgi.com>, xfs <xfs@oss.sgi.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        Amit Sahrawat <amit.sahrawat83@gmail.com>
+Subject: [PATCH 2/2] xfs: cleanup XFS_BB_FSB_OFFSET
+Date: Fri,  6 Jan 2012 16:42:18 +0530
+Message-Id: <1325848338-6063-1-git-send-email-amit.sahrawat83@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a second version of a set of patches enables the Intel PCH SMBus
-controller interrupt.  It refactors the second two patches a little bit by
-relying on DEV_ERR interrupt for timeouts, instead of using an explicit
-wait_event_timeout.
+Removing the macro, as this is no more needed in the code. 
+Tried to find the reference when it was last used - but the usage 
+for this seemed to have been dropped long time ago.
 
-The first attempt received absolutely no response. Maybe this time someone
-will be interested.
+Signed-off-by: Amit Sahrawat <amit.sahrawat83@gmail.com>
+---
+ fs/xfs/xfs_sb.h |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-The SMBus Host Controller Interrupt can signify:
- INTR - the end of a complete transaction
- DEV_ERR - that a device did not ACK a transaction
- BYTE_DONE - the completion of a single byte during a byte-by-byte transaction
-
-This patchset arrives with the following caveats:
-
- 1)  It has only been tested with a Cougar Point (Intel 6 Series PCH) SMBus
-controller, so the irq is only enabled for that chip type.
-
- 2) It has not been tested with any devices that do transactions that use the
-    PEC.  In fact, I believe that an additional small patch would be required
-    to the driver working correctly in interrupt mode with PEC.
-
- 3) It has not been tested in SMBus Slave mode.
-
- 4) It has not been tested with SMI#-type interrupts.
-
- 5) The BIOS has to configure the PCH SMBus IRQ properly.
-
- 6) It has not been tested with a device that does byte-by-byte smbus (non-i2c)
-    reads.
-
- 7) It has not been tested with smbus 'process call' transactions.
-
-If would be very helpful if somebody could help test on other chipsets, with
-a PEC device, or on additional BIOS that woudl be very helpful.
-
-In the meantime, the interrupt behavior is only enabled on the Cougar Point,
-and even here, it can be completely disabled with the "Interrupt" feature like
-other advanced features of the driver.
-
-Daniel Kurtz (3):
-  i2c: i801: refactor i801_block_transaction_byte_by_byte
-  i2c: i801: enable irq for i801 smbus transactions
-  i2c: i801: enable irq for byte_by_byte transactions
-
- drivers/i2c/busses/i2c-i801.c |  199 ++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 175 insertions(+), 24 deletions(-)
-
+diff --git a/fs/xfs/xfs_sb.h b/fs/xfs/xfs_sb.h
+index cb6ae71..f429d9d 100644
+--- a/fs/xfs/xfs_sb.h
++++ b/fs/xfs/xfs_sb.h
+@@ -529,7 +529,6 @@ static inline int xfs_sb_version_hasprojid32bit(xfs_sb_t *sbp)
+ #define	XFS_BB_TO_FSB(mp,bb)	\
+ 	(((bb) + (XFS_FSB_TO_BB(mp,1) - 1)) >> (mp)->m_blkbb_log)
+ #define	XFS_BB_TO_FSBT(mp,bb)	((bb) >> (mp)->m_blkbb_log)
+-#define	XFS_BB_FSB_OFFSET(mp,bb) ((bb) & ((mp)->m_bsize - 1))
+ 
+ /*
+  * File system block to byte conversions.
 -- 
-1.7.3.1
+1.7.2.3
 
