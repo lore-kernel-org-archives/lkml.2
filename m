@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab2AFGwk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 01:52:40 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:43174 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab2AFGwj (ORCPT
+	id S1752680Ab2AFGxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 01:53:37 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57308 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751503Ab2AFGxg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 01:52:39 -0500
-Date: Fri, 6 Jan 2012 17:52:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Subject: linux-next: manual merge of the driver-core tree with the arm tree
-Message-Id: <20120106175227.07a7240920f3ccd95c27b9a7@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb"
+	Fri, 6 Jan 2012 01:53:36 -0500
+Date: Thu, 5 Jan 2012 22:53:30 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Laxman Dewangan <ldewangan.com@nvidia.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH V1] regulator: fixed: Move drivers to
+ subsys_initcall_sync()
+Message-ID: <20120106065329.GC3496@opensource.wolfsonmicro.com>
+References: <1325693335-1905-1-git-send-email-ldewangan@nvidia.com>
+ <20120105055900.GE11867@opensource.wolfsonmicro.com>
+ <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9DEC@BGMAIL01.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9DEC@BGMAIL01.nvidia.com>
+X-Cookie: You will soon forget this.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 05, 2012 at 01:05:25PM +0530, Laxman Dewangan wrote:
 
-Hi Greg,
+> > I don't really think this is worth faffing about with, it seems at least
+> > as likely to create more problems with things that depend on the
+> > regulator as it is to make the regulator work.  Really we need Grant's
 
-Today's linux-next merge of the driver-core tree got a conflict in
-arch/arm/mach-s5pc100/common.c between commit 109ac862f737 ("ARM:
-mach-s5pc100: use standard arch_idle()") from the arm tree and commit
-4a858cfc9af8 ("arm: convert sysdev_class to a regular subsystem") from
-the driver-core tree.
+> Yes, I agree, the init ordering need to be done properly but this is how we
+> have as of now to make ordering.
+> I have the switchA which is connected on regulatorA (from PMIC) and the
+> switchB which is in the gpio of the pmic. The fixed regulator registration for
+> switchA and switchB are failing because it did not found the valid supply/gpio.
+> The one way to resolve the call probe of the fixed regulator only when pmic
+> initialization is done and it is in subsys_init().
+> The other way is to do the platform device registration of the fixed regulator
+> is in subsys_initcall_sync() in place of arch_init, although driver is in
+> subsys_initcall() to postponed the probe calling.
 
-I fixed it up (see below) and can carry the fix as necessary.
+> What do you suggest on this case?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/mach-s5pc100/common.c
-index 4659fb9,af52c09..0000000
---- a/arch/arm/mach-s5pc100/common.c
-+++ b/arch/arm/mach-s5pc100/common.c
-@@@ -194,27 -154,17 +195,27 @@@ static struct device s5pc100_dev =3D=20
- =20
-  static int __init s5pc100_core_init(void)
-  {
-- 	return sysdev_class_register(&s5pc100_sysclass);
-+ 	return subsys_system_register(&s5pc100_subsys, NULL);
-  }
- -
-  core_initcall(s5pc100_core_init);
- =20
-  int __init s5pc100_init(void)
-  {
-  	printk(KERN_INFO "S5PC100: Initializing architecture\n");
-- 	return sysdev_register(&s5pc100_sysdev);
-++	return device_register(&s5pc100_sys);
- +}
- =20
- -	/* set idle function */
- -	pm_idle =3D s5pc100_idle;
- +/* uart registration process */
- =20
- -	return device_register(&s5pc100_sys);
- +void __init s5pc100_init_uarts(struct s3c2410_uartcfg *cfg, int no)
- +{
- +	s3c24xx_init_uartdevs("s3c6400-uart", s5p_uart_resources, cfg, no);
- +}
- +
- +void s5pc100_restart(char mode, const char *cmd)
- +{
- +	if (mode !=3D 's')
- +		arch_wdt_reset();
- +
- +	soft_restart(0);
-  }
-
---Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPBporAAoJEECxmPOUX5FEntAQAKnX5hF7ChpR7SuEoYI4biNp
-Z6xcRXL4iUZ1u1gB2JGjAbAnoMs+RBPaLq9+Y2zHwXK8F6/42TPpFBLtTuInn5r8
-QswSs3zStn/dSeA6eoUN6dwebBR/F+Thu2CnrVZPrTu0TyI/q8HyfZk0Y4hu/CvC
-Wr0+0QV0Z1NGqj0ZU3xTA6U/JVb17/KXNdOqQnrSdP+UYDUlQnDsWuyQRYxtEDxg
-c5nYVlb/VKbwCmcc1LbXwNAUUkkSxXpaFzXGL8x1cdTRgpNCyLu74zdvdwY93x6u
-TNcUPRGVMD+uhYt37NkyaulNjOuawSX/QLGqP77lVBg3b6JKVouKd0GGi6oaIqNL
-3WkjkX2rFiUYfzCvwQQwJRXm5YLw44ZsIFi20YNnK4qITaTW3OQfrPI6VXn2y/i3
-80GBSnKYOUrcZF2O12QDSsPRhaxMRNfrXC1bsf/HH8SBCkWbDd2kOqb61ZMIoWEZ
-pzDJgLvvqi/ExALvtNChUWSnkfx6HTVrRC6sbSS1oV/5ZyLuL51HkAHIalhiglqE
-RatTkHqQEfXro0t4pNkbiMCwvTGS/x1mfkBGFGyGmbMfoSXlOxm5QhoJY2U9Emkw
-GTPfro0M6sSBpzMOk3VfBZ1pYU2DuOYNfd0xV0j6GzFnzQl0r8EInyiKegTUUJ+Y
-zU3k00m8Ldio8ZskFJsQ
-=30JS
------END PGP SIGNATURE-----
-
---Signature=_Fri__6_Jan_2012_17_52_27_+1100_.3_ruuE16as+AUxb--
+Honestly I'd suggest that you contribute to the effort to get the probe
+ordering handling code implemented in mainline.  This just seems like a
+big can of worms to open up for something that's hopefully just going to
+be a short term thing.  It's a real problem but this seems fairly niche
+and like if we start doing more than we're already doing we're going to
+end up running around chasing our own tails on this stuff.  I'm really
+not sure what the status is on that work, though - it may be that you
+actually need to pick the patches up and push them forwards yourself.
