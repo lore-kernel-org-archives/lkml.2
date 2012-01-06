@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933145Ab2AFKHe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 05:07:34 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45337 "EHLO mx2.mail.elte.hu"
+	id S1030262Ab2AFKMY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 05:12:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:55026 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751971Ab2AFKHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 05:07:32 -0500
-Date: Fri, 6 Jan 2012 11:05:20 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
-Message-ID: <20120106100520.GA7962@elte.hu>
-References: <20120104201800.GA2587@www.outflux.net>
- <20120105091704.GB3249@elte.hu>
- <CAGXu5jJ=D1pKCZ8=1-WGkm0witNEH9Ux01+1BJyZKC_DAX00aA@mail.gmail.com>
- <20120106073635.GC14188@elte.hu>
- <20120106012120.32c3f370.akpm@linux-foundation.org>
- <20120106094339.GA9990@elte.hu>
- <20120106015808.1655d1c9.akpm@linux-foundation.org>
+	id S964791Ab2AFKMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 05:12:22 -0500
+Date: Fri, 6 Jan 2012 11:12:19 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Peng Haitao <penght@cn.fujitsu.com>
+Cc: cgroups@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: how to make memory.memsw.failcnt is nonzero
+Message-ID: <20120106101219.GB10292@tiehlicka.suse.cz>
+References: <4EFADFF8.5020703@cn.fujitsu.com>
+ <20120103160411.GD3891@tiehlicka.suse.cz>
+ <4F06C31E.4010904@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120106015808.1655d1c9.akpm@linux-foundation.org>
+In-Reply-To: <4F06C31E.4010904@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri 06-01-12 17:47:10, Peng Haitao wrote:
+> 
+> Michal Hocko said the following on 2012-1-4 0:04:
+> >> # echo 15M > memory.memsw.limit_in_bytes
+> >> # dd if=/dev/zero of=/tmp/temp_file count=20 bs=1M
+> >> Killed
+> >> # grep "failcnt" /var/log/messages | tail -2
+> >> Dec 28 17:08:45 K-test kernel: memory: usage 10240kB, limit 10240kB, failcnt 86
+> >> Dec 28 17:08:45 K-test kernel: memory+swap: usage 10240kB, limit 15360kB, failcnt 0
+> >> # cat memory.memsw.failcnt
+> >> 0
+> >>
+> >> The limit is 15M, but memory+swap usage also is 10M.
+> >> I think memory+swap usage should be 15M and memsw.failcnt should be nonzero.
+> >>
+> > So there is almost 10M of page cache that we can simply reclaim. If we
+> > use 40M limit then we are OK. So this looks like the small limit somehow
+> > tricks our math in the reclaim path and we think there is nothing to
+> > reclaim.
+> > I will look into this.
+> 
+> Thanks for you reply.
+> If there is something wrong, I think the bug will be in mem_cgroup_do_charge()
+> of mm/memcontrol.c
+> 
+> 2210         ret = res_counter_charge(&memcg->res, csize, &fail_res);
+> 2211 
+> 2212         if (likely(!ret)) {
+> 2213                 if (!do_swap_account)
+> 2214                         return CHARGE_OK;
+> 2215                 ret = res_counter_charge(&memcg->memsw, csize, &fail_res);
+> 2216                 if (likely(!ret))
+> 2217                         return CHARGE_OK;
+> 2218 
+> 2219                 res_counter_uncharge(&memcg->res, csize);
+> 2220                 mem_over_limit = mem_cgroup_from_res_counter(fail_res, memsw);
+> 2221                 flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+> 2222         } else
+> 2223                 mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> 
+> When hit memory.limit_in_bytes, res_counter_charge() will return -ENOMEM,
+> this will execute line 2222: } else.
+> But I think when hit memory.limit_in_bytes, the function should determine further
+> to memory.memsw.limit_in_bytes.
+> This think is OK?
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
+I don't think so. We have an invariant (hard limit is "stronger" than
+memsw limit) memory.limit_in_bytes <= memory.memsw.limit_in_bytes so
+when we hit the hard limit we do not have to consider memsw because
+resource counter:
+ a) we already have to do reclaim for hard limit
+ b) we check whether we might swap out later on in
+ mem_cgroup_hierarchical_reclaim (root_memcg->memsw_is_minimum) so we
+ will not end up swapping just to make hard limit ok and go over memsw
+ limit.
 
-> Maybe true for a general purpose computer, but someone who is 
-> making a single-purpose device such as a digital TV or a wifi 
-> router won't want it.
-
-That's the case for 99% of the features and semantics we have: 
-by definition a single-purpose device uses only a small sub-set 
-of an infinite purpose OS, right?
-
-Still we only modularize semantics out if they easily fit into 
-some existing plug-in/module concept, if the feature is arguably 
-oddball that a sizable portion of people want to disable, or if 
-it makes notable sense for size reasons. To me it looked 
-distinctly silly to complicate things for such a small piece of 
-code.
-
-I doubt Kees would mind modularizing it, but it would be nice to 
-get VFS maintainer feedback in the:
-
-   { 'you are crazy, over my dead body' ... 'cool, merge it' }
-
-continuous spectrum of possible answers.
-
-Thanks,
-
-	Ingo
+Please also note that we will retry charging after reclaim if there is a
+chance to meet the limit.
+Makes sense?
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
