@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030400Ab2AFRdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 12:33:04 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:48604 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842Ab2AFRdB (ORCPT
+	id S1758886Ab2AFRhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 12:37:43 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57820 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758813Ab2AFRhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 12:33:01 -0500
-Message-ID: <1325871176.4629.35.camel@lappy>
-Subject: Boot regression caused by commit 6829a048
-From: Sasha Levin <levinsasha928@gmail.com>
-To: chuck.lever@oracle.com
-Cc: linux@razik.name, Trond.Myklebust@netapp.com,
-        Pekka Enberg <penberg@kernel.org>,
-        linux-nfs <linux-nfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 06 Jan 2012 19:32:56 +0200
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Jan 2012 12:37:41 -0500
+Date: Fri, 6 Jan 2012 09:37:36 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Switch per cpu partial page support off for debugging
+In-Reply-To: <alpine.DEB.2.00.1112141908410.27595@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1201060934550.10460@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111230923260.16544@router.home> <alpine.LFD.2.02.1112120915030.2555@tux.localdomain> <alpine.DEB.2.00.1112141908410.27595@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, 14 Dec 2011, David Rientjes wrote:
 
-I've noticed a boot regression caused by commit 6829a048 ("NFS: Retry
-mounting NFSROOT") which has increased boot time by 95 seconds.
+> > > Eric saw an issue with accounting of slabs during validation. Its not
+> > > possible to determine accurately how many per cpu partial slabs exist at
+> > > any time so this switches off per cpu partial pages during debug.
+> > > 
+> > > Subject: Switch per cpu partial page support off for debugging
+> > > 
+> > > Otherwise we have accounting issues.
+> > > 
+> > > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > > 
+> > > 
+> > > ---
+> > > mm/slub.c |    4 +++-
+> > > 1 file changed, 3 insertions(+), 1 deletion(-)
+> > > 
+> > > Index: linux-2.6/mm/slub.c
+> > > ===================================================================
+> > > --- linux-2.6.orig/mm/slub.c	2011-11-22 11:57:21.000000000 -0600
+> > > +++ linux-2.6/mm/slub.c	2011-11-22 11:57:55.000000000 -0600
+> > > @@ -3027,7 +3027,9 @@ static int kmem_cache_open(struct kmem_c
+> > > 	 *    per node list when we run out of per cpu objects. We only fetch
+> > > 50%
+> > > 	 *    to keep some capacity around for frees.
+> > > 	 */
+> > > -	if (s->size >= PAGE_SIZE)
+> > > +	if (kmem_cache_debug(s))
+> > > +		s->cpu_partial = 0;
+> > > +	else if (s->size >= PAGE_SIZE)
+> > > 		s->cpu_partial = 2;
+> > > 	else if (s->size >= 1024)
+> > > 		s->cpu_partial = 6;
+> 
+> I think this deserves a comment since it's not clear why it's being done 
+> neither in the code or by the changelog.  Also, you'd want a check for 
+> kmem_cache_debug() when storing to /sys/kernel/slab/cache/cpu_partial as 
+> well, otherwise this could easily be broken from userspace again.  (It 
+> also seems like Documentation/ABI/testing/sysfs-kernel-slab got left out 
+> of an update when that was added, too.)
+> 
 
-The scenario is as follows:
- - A virtual guest running under the KVM tool.
- - Guest is using kernel automatic IP DHCP configuration ("ip=dhcp").
- - Guest is booting from a 9p device (which is not detected as block,
-and gets mounted after NFS tries to do its mounts).
- - No NFS server at all, no NFS parameters passed to the guest kernel.
-
-Under this scenario, theres an additional 95 second delay before NFS
-fails and tries to boot using 9p:
-
-[...]
-[    6.505269] md: autorun ...
-[    6.506954] md: ... autorun DONE.
-[  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
-[  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
-[...]
-
-This probably happens since the NFS server isn't configured, so the
-bootserver is automatically assumed to be the DHCP server, and with the
-commit above we won't simply fail immediately when the NFS code fails
-connecting to it.
-
-I'm not quite sure about the correct solution for this. While I can
-forcefully disable NFS, is it really the right solution? Should we be
-retrying a NFS server even if one wasn't specifically set?
-
-Thanks.
-
--- 
-
-Sasha.
-
+This patch is merged in slab/urgent without any changes from my comment 
+above; since userspace can alter cpu_partial directly via 
+/sys/kernel/slab/cache/cpu_partial which would reintroduce the 
+"accounting issues", shouldn't that return -EINVAL when debug is enabled?
