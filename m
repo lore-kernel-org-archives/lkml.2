@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030276Ab2AFKhh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 05:37:37 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:46897 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758230Ab2AFKhg (ORCPT
+	id S1030288Ab2AFKjn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 05:39:43 -0500
+Received: from eastrmfepi106.cox.net ([68.230.241.202]:49159 "EHLO
+	eastrmfepi106.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030200Ab2AFKjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 05:37:36 -0500
-Date: Fri, 6 Jan 2012 11:37:34 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
-Message-ID: <20120106103734.GV11715@one.firstfloor.org>
-References: <4F05BBFE020000780006A983@nat28.tlf.novell.com> <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com> <20120106014748.GS11715@one.firstfloor.org> <4F06566B.8080708@zytor.com> <20120106094922.GU11715@one.firstfloor.org> <4F06D979020000780006AC49@nat.nue.novell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F06D979020000780006AC49@nat.nue.novell.com>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 6 Jan 2012 05:39:42 -0500
+X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jan 2012 05:39:41 EST
+X-CT-Class: Clean
+X-CT-Score: 0.00
+X-CT-RefID: str=0001.0A02020B.4F06CBF3.00C3,ss=2,re=0.000,fgs=64
+X-CT-Spam: 0
+X-Authority-Analysis: v=1.1 cv=SrYs8rolcd1oag5W3dSszTvpo+kXKLnBw6FdA3lSvZA=
+ c=1 sm=1 a=Dyoqhi_TatcA:10 a=wsLI3klv4O8A:10 a=n4GsQX9EldgA:10
+ a=kkpj74WWH24A:10 a=Cfj4BQAnxiAA:10 a=79FJBTaEl08990sRVKebZw==:17
+ a=Zk3OmFfbAAAA:8 a=FLL6SuQIBzq8CCcvFlIA:9 a=Ft8UYL4EG9YA:10 a=2MwLuNeQWPYA:10
+ a=x46t9oslO7cA:10 a=thM3Zc55UQ6Gb11i:21 a=nquOak9stY0uQno8:21
+ a=79FJBTaEl08990sRVKebZw==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=gbenga1@cox.net
+Reply-To: <cchhtt@bitscn.net>
+From: "Chevron Texaco Award" <tx@cheron.com>
+Subject: Congratulation's Your Email Won !!
+Date: Fri, 6 Jan 2012 02:24:40 -0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20120106102452.CJXJ25070.eastrmfepo203.cox.net@eastrmimpo306.cox.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I checked the most recent K8 (Hammer) and Pentium4 documentation,
-> and didn't find mention of anything related. So pointing out where you
-
-Sorry don't really plan to do any errata archaeology for this folly.
-
-Maybe it got fixed in the latest versions, I remember them being there
-on some early ones at least.
-
-> >> > so making any of that slower is not a good idea.
-> >> > 
-> >> 
-> >> Obviously not, but I'm perfectly fine turning REP_GOOD off on old broken
-> >> CPUs.
-> > 
-> > That would be even worse.
-> 
-> How could you allow a CPU fall under REP_GOOD is its rep
-> implementation is buggy.
-
-The kernel never does >4GB copies, memsets, so it's not buggy.
-It's just like any other obscure errata that doesn't matter because
-it's not exercised.
-
-REP_GOOD just means "string instructions are faster for 4K operations"
-
-> 
-> > You would slow a critical fast path operation down for something
-> > that never happens?!?
-> 
-> It does happen, just (so far) not in-tree. It's a latent problem that's
-> just waiting for someone else to run into. Apart from large bootmem
-> allocations (where not even the latency of the memory clearing
-
-Modern kernels are bootmem less.
-
-> matters in any way, there's nothing I know of that would prevent
-> someone from vmalloc()-ing a huge block of memory and then
-> calling memset() on it (which ought to be tolerable in a preemptable
-> kernel at least).
-
-I bet there are more "int"s in the allocators and other code. It would
-surprise me if it worked even with a changed memset.
-
-Besides it obviously would be a bad idea on non preemptive kernels,
-and since that can always happen it would be bad code, hopefully
-never hitting any trees.
-
-If you need it in Xen please just add the cmps there.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Your email emerged in the on-going Chevron/Texaco Award that was held January 5th 2012, and you are to claim the sum of
+$750,000.00 usd, which means you are one of our (5) lucky winner's, Winning ticket number: (CHTX-210-11-38LSD). send the
+following info for funds release.1.Full Names 2. Address 3. Country/State 4. phone  5. Sex: 6. Age 7. Occupation.
+CONTACT AGENT
+Name: Rev Patrick Hanks
+pathanks001@live.com
+with regards Anna Rose.Promotion Announcer
