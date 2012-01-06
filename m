@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933221Ab2AFMF4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 07:05:56 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:60891 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758648Ab2AFMFz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 07:05:55 -0500
-Date: Fri, 6 Jan 2012 23:05:26 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] x86/syscall changes for v3.3
-Message-Id: <20120106230526.088cb77546022ecda34aaae5@canb.auug.org.au>
-In-Reply-To: <20120105152918.GA12838@elte.hu>
-References: <20120105152918.GA12838@elte.hu>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+	id S1751946Ab2AFMI4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 07:08:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab2AFMIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 07:08:55 -0500
+Subject: GFS2: Pull request (merge window)
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Fri, 06 Jan 2012 12:09:32 +0000
+Message-ID: <1325851772.2703.17.camel@menhir>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__6_Jan_2012_23_05_26_+1100_hT0A7XFmbZrEHG6Q"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__6_Jan_2012_23_05_26_+1100_hT0A7XFmbZrEHG6Q
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Ingo,
+Please consider pulling the following changes,
 
-On Thu, 5 Jan 2012 16:29:18 +0100 Ingo Molnar <mingo@elte.hu> wrote:
->
-> Please pull the latest x86-syscall-for-linus git tree from:
->=20
->    git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-syscall-=
-for-linus
->=20
->=20
-> out-of-topic modifications in x86-syscall-for-linus:
-> ----------------------------------------------------
-> Makefile                           # 052ad27: kbuild: Add support for an =
-"archh
-> arch/um/Makefile                   # 79320bc: um: Use $(srctree) not $(KB=
-UILD_S
->                                    # 392f4b7: um: Generate headers before=
- gener
->                                    # c9b284b: um: Run host archheaders, a=
-llow u
-> kernel/trace/trace_syscalls.c      # d5e553d: trace: Include <asm/asm-off=
-sets.h
+Steve.
 
-HPA has a pending fix for this patch as it causes warnings on PowerPC at
-least.  The idea was to move this include of asm/asm-offsets.h into
-asm/ftrace.h so it only affects x86.
+------------------------------------------------------------------------------
+The following changes since commit 1ea6b8f48918282bdca0b32a34095504ee65bab5:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+  Linux 3.2-rc1 (2011-11-07 16:16:02 -0800)
 
---Signature=_Fri__6_Jan_2012_23_05_26_+1100_hT0A7XFmbZrEHG6Q
-Content-Type: application/pgp-signature
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git master
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Bob Peterson (7):
+      GFS2: Add readahead to sequential directory traversal
+      GFS2: Add non-try locks back to get_local_rgrp
+      GFS2: combine gfs2_alloc_block and gfs2_alloc_di
+      GFS2: remove vestigial al_alloced
+      GFS2: move toward a generic multi-block allocator
+      GFS2: split function rgblk_search
+      GFS2: decouple quota allocations from block allocations
 
-iQIcBAEBCAAGBQJPBuOGAAoJEECxmPOUX5FEHEwP/1B655BhtWPcsZOvjWSai8Eb
-BE52AOoD9ca3o5ILB0BlCmc/u/vJaGOajzKrb0jZh2VgiIJETHQlz5wVn5tkX71e
-7BihETwVznAsiHnJVGB1xvTPUVwZS3Gxu8k1Sb5O1YdxPSCx98z6YCla1w20uAEA
-V7mNzXjPNHxsEWy4Npl6xvDZu8FijHxfd14+JrgrzrvbdadDir0eV/rM2j/nkUaF
-LzIY3MXXfM1HHaQzWMcRh0swq6kSim3tK8RarymE88iA/luzT6hu/w4gz2GDu6ok
-XYL3euNotmTuH8wG3lv7ECZaIv7JU0/7XjEe1EJYpD2VcgqifMznodesH2LQBjZ6
-kCt/9QRtFj2fB4o8EDLTtES5gub9a02ZemF1Gi/K42PyDP9Nfnv9Nw/J/zecOf28
-EC7kMIkmIlNvx6HjLM+3DL38yWzRa7XeurRu9J4QRjYeut/U0n/VhnSvLchNYZav
-dfK6hRbbJY3YCJ58Zh29vGKbrizwaT/zsMmGuTXUOTwZb53j+tFL5JMYAXmH5WEp
-rs/jDX/BKu66pT1Q6cJiHgXL1PHG6KpwrMns7ETssXNmojyzmQBVcSid4FjI8xQK
-RJmVJApj62qj6ZimnmExSaJaNMlEBXhZ6yMAdX2g4dGOx1GZi2Fao0WYrQTTKu5U
-Jo7nNF9doxx06CPtWXUV
-=gH7+
------END PGP SIGNATURE-----
+H Hartley Sweeten (1):
+      GFS2: local functions should be static
 
---Signature=_Fri__6_Jan_2012_23_05_26_+1100_hT0A7XFmbZrEHG6Q--
+Steven Whitehouse (8):
+      GFS2: Fix up REQ flags
+      GFS2: More automated code analysis fixes
+      GFS2: Fix very unlikley memory leak in ACL xattr code
+      GFS2: f_ra is always valid in dir readahead function
+      GFS2: O_(D)SYNC support for fallocate
+      GFS2: Fix up "off by one" in the previous patch
+      GFS2: Fix multi-block allocation
+      GFS2: We only need one ACL getting function
+
+ fs/gfs2/acl.c        |   14 +--
+ fs/gfs2/aops.c       |   18 ++--
+ fs/gfs2/bmap.c       |   26 ++---
+ fs/gfs2/dir.c        |   64 ++++++++++-
+ fs/gfs2/dir.h        |    2 +-
+ fs/gfs2/export.c     |    3 +-
+ fs/gfs2/file.c       |   34 +++---
+ fs/gfs2/incore.h     |   20 ++--
+ fs/gfs2/inode.c      |   72 +++++++------
+ fs/gfs2/log.c        |    2 +-
+ fs/gfs2/main.c       |    3 +-
+ fs/gfs2/meta_io.c    |    4 +-
+ fs/gfs2/ops_fstype.c |    2 +-
+ fs/gfs2/quota.c      |   87 ++++++---------
+ fs/gfs2/rgrp.c       |  293 +++++++++++++++++++++++++++----------------------
+ fs/gfs2/rgrp.h       |   16 ++--
+ fs/gfs2/super.c      |   14 ++--
+ fs/gfs2/trans.h      |    6 +-
+ fs/gfs2/xattr.c      |   48 ++++-----
+ 19 files changed, 394 insertions(+), 334 deletions(-)
+
+
