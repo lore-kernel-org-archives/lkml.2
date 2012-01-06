@@ -1,54 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759172Ab2AFXPV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 18:15:21 -0500
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:8840 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755716Ab2AFXPU (ORCPT
+	id S1759206Ab2AFXQq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 18:16:46 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:53440 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758693Ab2AFXQo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 18:15:20 -0500
-Message-ID: <4F078086.7060208@cavium.com>
-Date: Fri, 06 Jan 2012 15:15:18 -0800
-From: David Daney <david.daney@cavium.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: David Daney <ddaney.cavm@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] recordmcount: Fix handling of elf64 big-endian objects.
-References: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>	 <1324350542.5916.48.camel@gandalf.stny.rr.com> <4F075CAE.2040709@gmail.com> <1325891377.7642.17.camel@gandalf.stny.rr.com>
-In-Reply-To: <1325891377.7642.17.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jan 2012 23:15:19.0528 (UTC) FILETIME=[0EC66E80:01CCCCC9]
+	Fri, 6 Jan 2012 18:16:44 -0500
+X-IronPort-AV: E=Sophos;i="4.71,470,1320652800"; 
+   d="scan'208";a="614213766"
+Message-ID: <1325891801.11799.5.camel@lade.trondhjem.org>
+Subject: Re: Boot regression caused by commit 6829a048
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: chuck.lever@oracle.com, linux@razik.name,
+        Pekka Enberg <penberg@kernel.org>,
+        linux-nfs <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Fri, 06 Jan 2012 18:16:41 -0500
+In-Reply-To: <1325892770.4847.1.camel@lappy>
+References: <1325871176.4629.35.camel@lappy>
+	 <1325874404.32470.6.camel@lade.trondhjem.org>
+	 <1325892770.4847.1.camel@lappy>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 06 Jan 2012 23:16:42.0602 (UTC) FILETIME=[404A84A0:01CCCCC9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2012 03:09 PM, Steven Rostedt wrote:
-> On Fri, 2012-01-06 at 12:42 -0800, David Daney wrote:
->
->> Any more feedback on this patch?  Should I look for it to appear in 3.3?
->
-> OK, I tested it and then I noticed that mainline doesn't have
-> "HAVE_C_RECORDMCOUNT" set. Is that going in the PPC tree?
+On Sat, 2012-01-07 at 01:32 +0200, Sasha Levin wrote: 
+> On Fri, 2012-01-06 at 13:26 -0500, Trond Myklebust wrote:
+> > On Fri, 2012-01-06 at 19:32 +0200, Sasha Levin wrote: 
+> > > Hi all,
+> > > 
+> > > I've noticed a boot regression caused by commit 6829a048 ("NFS: Retry
+> > > mounting NFSROOT") which has increased boot time by 95 seconds.
+> > > 
+> > > The scenario is as follows:
+> > >  - A virtual guest running under the KVM tool.
+> > >  - Guest is using kernel automatic IP DHCP configuration ("ip=dhcp").
+> > >  - Guest is booting from a 9p device (which is not detected as block,
+> > > and gets mounted after NFS tries to do its mounts).
+> > >  - No NFS server at all, no NFS parameters passed to the guest kernel.
+> > > 
+> > > Under this scenario, theres an additional 95 second delay before NFS
+> > > fails and tries to boot using 9p:
+> > > 
+> > > [...]
+> > > [    6.505269] md: autorun ...
+> > > [    6.506954] md: ... autorun DONE.
+> > > [  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
+> > > [  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
+> > > [...]
+> > 
+> > Can't you avoid the whole NFS root mount attempt by setting "root=2:0"
+> > directly instead of relying on 'mount_root' to do it for you?
+> 
+> I am specifying root and root parameters fully:
+> 
+> "root=/dev/root rw rootflags=rw,trans=virtio,version=9p2000.L
+> rootfstype=9p"
+> 
+> Actually, I'm not sure why NFS comes to play at all in this case.
 
-I have no idea, I'm a MIPS guy at the moment.
+It's because mount_root() tests MAJOR(ROOT_DEV) only when probing for
+nfsroot. Since ROOT_DEV is initialised to 0, and root=/dev/root matches
+nothing in name_to_dev_t(), then you end up matching the nfsroot test.
 
-> I added that
-> to arch/powerpc/Kconfig, and did see the bug you saw. After adding your
-> patch, I did a diff of the available_filter_functions and had this:
->
->> .elf_core_extra_phdrs
->> .elf_core_write_extra_phdrs
->> .elf_core_write_extra_data
->> .elf_core_extra_data_size
->
-> These 4 functions were added after doing the change. Weird.
->
-> Anyway, I'll run the change through my normal tests and then push it
-> out.
->
+A simple fix would be either:
 
-Thanks,
-David Daney
+A) skip the root=/dev/root.
+B) change mount_root to also test MINOR(ROOT_DEV), which should equal
+255 if ROOT_DEV==Root_NFS
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
