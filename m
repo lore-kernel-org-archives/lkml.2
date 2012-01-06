@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030613Ab2AFVO1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 16:14:27 -0500
-Received: from mail-fx0-f74.google.com ([209.85.161.74]:33723 "EHLO
-	mail-fx0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759234Ab2AFVO0 (ORCPT
+	id S1030650Ab2AFVQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 16:16:26 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46106 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759237Ab2AFVQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 16:14:26 -0500
-To: Glauber Costa <glommer@parallels.com>
-CC: davem@davemloft.net, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, Greg Thelen <gthelen@google.com>,
-        Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>,
-        Laurent Chavey <chavey@google.com>
-Subject: Re: [PATCH] net: fix sock_clone reference mismatch with tcp memcontrol
-Message-Id: <20120106211423.967A716F64A@chavey.mtv.corp.google.com>
-Date: Fri,  6 Jan 2012 13:14:23 -0800 (PST)
-From: chavey@google.com (Laurent Chavey)
+	Fri, 6 Jan 2012 16:16:21 -0500
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <sebastian@breakpoint.cc>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 6/6] perf tools: Add const.h to MANIFEST to make perf-tar-src-pkg work again
+Date: Fri,  6 Jan 2012 19:16:04 -0200
+Message-Id: <1325884564-23322-7-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.7.8.GIT
+In-Reply-To: <1325884564-23322-1-git-send-email-acme@infradead.org>
+References: <1325884564-23322-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Sockets can also be created through sock_clone. Because it copies
-> all data in the sock structure, it also copies the memcg-related pointer,
-> and all should be fine. However, since we now use reference counts in
-> socket creation, we are left with some sockets that have no reference
-> counts. It matters when we destroy them, since it leads to a mismatch.
->
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: David S. Miller <davem@davemloft.net>
-> CC: Greg Thelen <gthelen@google.com>
-> CC: Hiroyouki Kamezawa <kamezawa.hiroyu@jp.fujitsu.com>
-> CC: Laurent Chavey <chavey@google.com>
->
-> ---
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
 
-Tested-by: Laurent Chavey <chavey@google.com>
+Fixes:
+|make: *** No rule to make target `../../include/linux/const.h', needed by `builtin-annotate.o'.  Stop.
+
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1324128938-17553-1-git-send-email-sebastian@breakpoint.cc
+Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/MANIFEST |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index c12659d..1078c5f 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -1,4 +1,5 @@
+ tools/perf
++include/linux/const.h
+ include/linux/perf_event.h
+ include/linux/rbtree.h
+ include/linux/list.h
+-- 
+1.7.4.4
+
