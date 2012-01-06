@@ -1,52 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030279Ab2AFKtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 05:49:14 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:26513 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758553Ab2AFKtM convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Fri, 6 Jan 2012 05:49:12 -0500
-Message-Id: <4F06DFEF020000780006AC84@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 06 Jan 2012 10:50:07 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Andi Kleen" <andi@firstfloor.org>
-Cc: <mingo@elte.hu>, <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
-References: <4F05BBFE020000780006A983@nat28.tlf.novell.com>
- <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com>
- <20120106014748.GS11715@one.firstfloor.org> <4F06566B.8080708@zytor.com>
- <20120106094922.GU11715@one.firstfloor.org>
- <4F06D979020000780006AC49@nat.nue.novell.com>
- <20120106103734.GV11715@one.firstfloor.org>
-In-Reply-To: <20120106103734.GV11715@one.firstfloor.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S933159Ab2AFKu0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 05:50:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53662 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933119Ab2AFKuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 05:50:24 -0500
+Date: Fri, 6 Jan 2012 08:49:09 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Boris Ostrovsky <boris.ostrovsky@amd.com>
+Cc: Boris Ostrovsky <ostr@amd64.org>, avi@redhat.com, joerg.roedel@amd.com,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KVM: SVM: Add support for AMD's OSVW feature in guests
+Message-ID: <20120106104909.GB23932@amt.cnet>
+References: <1325651893-7487-1-git-send-email-ostr@amd64.org>
+ <20120105112018.GA1901@amt.cnet>
+ <4F05EDF0.6040007@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <4F05EDF0.6040007@amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 06.01.12 at 11:37, Andi Kleen <andi@firstfloor.org> wrote:
->> > You would slow a critical fast path operation down for something
->> > that never happens?!?
->> 
->> It does happen, just (so far) not in-tree. It's a latent problem that's
->> just waiting for someone else to run into. Apart from large bootmem
->> allocations (where not even the latency of the memory clearing
+On Thu, Jan 05, 2012 at 01:37:36PM -0500, Boris Ostrovsky wrote:
+> On 01/05/12 06:20, Marcelo Tosatti wrote:
+> >On Tue, Jan 03, 2012 at 11:38:13PM -0500, Boris Ostrovsky wrote:
+> >>
+> >>diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> >>index e32243e..b19769d 100644
+> >>--- a/arch/x86/kvm/svm.c
+> >>+++ b/arch/x86/kvm/svm.c
+> >>@@ -110,6 +110,13 @@ struct nested_state {
+> >>  #define MSRPM_OFFSETS	16
+> >>  static u32 msrpm_offsets[MSRPM_OFFSETS] __read_mostly;
+> >>
+> >>+/*
+> >>+ * Set osvw_len to higher value when updated Revision Guides
+> >>+ * are published and we know what the new status bits are
+> >>+ */
+> >>+static uint64_t osvw_len = 4, osvw_status;
+> >>+static DEFINE_SPINLOCK(svm_lock);
+> >
+> >No need for this lock, operation already serialized by kvm_lock.
 > 
-> Modern kernels are bootmem less.
+> Will remove the lock.
+> 
+> >
+> >>  struct vcpu_svm {
+> >>  	struct kvm_vcpu vcpu;
+> >>  	struct vmcb *vmcb;
+> >>@@ -556,6 +563,20 @@ static void svm_init_erratum_383(void)
+> >>  	erratum_383_found = true;
+> >>  }
+> >>
+> >>+static void svm_init_osvw(struct kvm_vcpu *vcpu)
+> >>+{
+> >>+	/*
+> >>+	 * Guests should see errata 400 and 415 as fixed (assuming that
+> >>+	 * HLT and IO instructions are intercepted).
+> >>+	 */
+> >>+	vcpu->arch.osvw.length = (osvw_len>= 3) ? (osvw_len) : 3;
+> >>+	vcpu->arch.osvw.status = osvw_status&  ~(6ULL);
+> >
+> >Do you really want to expose the hosts osvw_status and osvw_len? If
+> >only exposure of 400 and 415 as fixed is necessary, then dealing with
+> >migration is simpler (that is, you control what workarounds are applied
+> >in the guest instead of making it dependent on particular hosts).
+> 
+> I do think we should (selectively) expose osvw information to the
+> host. As of today we have 4 errata described by these bits. Two of
+> them (400 and 415) don't need to be seen by the guest and the patch
+> would mask them off. As for the other two (errata 383 and 298) ---
+> the guest should be aware of them and the patch passes them through.
+> 
+> Since osvw_len is initialized to 4 and cannot become larger no other
+> bits will be passed to guests until we update the initial value (by
+> a future patch).
 
-It's not the traditional bootmem implementation anymore, but
-alloc_bootmem() et al still exist, and still clear the allocated memory
-(in __alloc_memory_core_early()). So there is a code path that can
-validly be used (and it is this code path that is presenting one of the
-problems with the non-pv-ops Xen kernels, as they're using flatmem
-rather than sparsemem since their physical address space is always
-fully continuous).
+OK.
 
-Jan
+> If we are concerned about migration we can always ovewrite
+> vcpu->arch.osvw registers from userspace when creating a guest.
+> 
+> >
+> >>+	/* Mark erratum 298 as present */
+> >>+	if (osvw_len == 0&&  boot_cpu_data.x86 == 0x10)
+> >>+		vcpu->arch.osvw.status |= 1;
+> >>+}
+> >
+> >Why is it necessary to explicitly do this? Please add documentation.
+> 
+> That's because we may have bumped vcpu->arch.osvw.length to 3 in
+> order to signal the guest that 400 and 415 are fixed. By doing this
+> we are also telling the guest that it can rely on state of bit0.
+> 
+> If we leave bit0 as 0 the guest will assume that 298 is fixed.
+> However, if host's osvw_length is 0 it means that the physical HW
+> *may* still be affected. So we take conservative approach and tell
+> the guest that it should work around 298.
+> 
+> I'll add a comment to that effect.
 
+OK thanks.
+
+> >
+> >>+	case MSR_AMD64_OSVW_ID_LENGTH:
+> >>+		if (!guest_cpuid_has_osvw(vcpu))
+> >>+			return 1;
+> >>+		vcpu->arch.osvw.length = data;
+> >>+		break;
+> >>+	case MSR_AMD64_OSVW_STATUS:
+> >>+		if (!guest_cpuid_has_osvw(vcpu))
+> >>+			return 1;
+> >>+		vcpu->arch.osvw.status = data;
+> >>+		break;
+> >
+> >If writes are allowed, it is necessary to migrate this.
+> 
+> Not sure I understand what you mean here. Isn't vcpu->arch state
+> migrated with the guest?
+
+Since the MSR value is setup in the kernel, there is no need to migrate
+it, actually.
