@@ -1,40 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758857Ab2AFToG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 14:44:06 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:47303 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751714Ab2AFToF (ORCPT
+	id S1758934Ab2AFTqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 14:46:38 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:51745 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756924Ab2AFTqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 14:44:05 -0500
-Date: Fri, 6 Jan 2012 20:44:00 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
-Message-ID: <20120106194400.GX11715@one.firstfloor.org>
-References: <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com> <20120106014748.GS11715@one.firstfloor.org> <4F06566B.8080708@zytor.com> <20120106094922.GU11715@one.firstfloor.org> <4F06D979020000780006AC49@nat.nue.novell.com> <20120106103734.GV11715@one.firstfloor.org> <4F06DFEF020000780006AC84@nat28.tlf.novell.com> <20120106110845.GW11715@one.firstfloor.org> <4F06F640020000780006ACDE@nat28.tlf.novell.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F06F640020000780006ACDE@nat28.tlf.novell.com>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 6 Jan 2012 14:46:36 -0500
+Message-ID: <4F074F89.6060300@linux.vnet.ibm.com>
+Date: Fri, 06 Jan 2012 17:46:17 -0200
+From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Breno Leitao <brenohl@br.ibm.com>
+CC: Zac Storer <zac.3.14159@gmail.com>, leitao@linux.vnet.ibm.com,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg KH <greg@kroah.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 29/29] Drivers: tty: serial: jsm: jsm_tty: fixed a brace
+ coding style issue
+References: <1321596182-11031-1-git-send-email-zac.3.14159@gmail.com> <4EC66C07.9020009@br.ibm.com> <4F073CF3.70604@linux.vnet.ibm.com>
+In-Reply-To: <4F073CF3.70604@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+x-cbid: 12010619-9254-0000-0000-000007C05B7A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> enough beyond 292G. At some later point ->node_page_cgroup[]
-> also exceeds 4G. Finally, the phys-to-machine mapping (which gets
-> resized during boot) exceeds 4G when crossing the 2T boundary.
+On 01/06/2012 04:26 PM, Lucas Kannebley Tavares wrote:
+> On 11/18/2011 12:30 PM, Breno Leitao wrote:
+>> On 11/18/2011 03:03 AM, Zac Storer wrote:
+>>> Fixed a brace coding style issue.
+>>>
+>>> Signed-off-by: Zac Storer<zac.3.14159@gmail.com>
+>> Acked-by: Breno Leitao<brenohl@br.ibm.com>
+> Acked-by: Lucas Kannebley Tavares<lucaskt@linux.vnet.ibm.com>
+>
 
-Ok it's moot then because the old systems with problem didn't have
-that much memory. So you could do without an errata workaround
-and just extend the moves at the minor cost of a few prefixes
-(I think that is what you did in your patch)
+Adding Alan and Greg so they can catch this up on their trees.
 
-Only hope there are no new chips with similar issues...
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
