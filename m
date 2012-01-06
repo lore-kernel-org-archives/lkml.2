@@ -1,93 +1,529 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab2AFMtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 07:49:41 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:62607 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755660Ab2AFMtg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 07:49:36 -0500
+	id S1756329Ab2AFMtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 07:49:39 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:64053 "EHLO mail.gnudd.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755035Ab2AFMtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 07:49:35 -0500
+Date: Fri, 6 Jan 2012 13:33:17 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: linux-kernel@vger.kernel.org
+Cc: giancarlo.asnaghi@st.com, alan@linux.intel.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Subject: [PATCH 4/6] x86: initial support for sta2x11
+Message-ID: <e59954abe7b67e449d9824b0a1db57254e916a31.1325852059.git.rubini@gnudd.com>
 MIME-Version: 1.0
-Date: Fri, 6 Jan 2012 20:49:34 +0800
-Message-ID: <CAJd=RBDLT54HGuM7+=rM7yKi1ziSxLBsnT2Rm2VjRPTSc8OkFg@mail.gmail.com>
-Subject: [PATCH v2] mm: vmscan: check page order in isolating lru pages
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-mm@kvack.org
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+References: <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
+In-Reply-To: <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before attempting to take all pages in the order aligned region, check for
-page order is added for minor optimization, since the pfn-based isolation
-could be bypassed if the newly isolated page is no less than that region.
+The "ConneXt" sta2x11 I/O Hub is a bridge from PCIe to AMBA, and is
+used as main chipset in some Atom boards.  The set of peripherals it
+exports live in an AMBA bus internal to the chip, so a custom
+remapping of addresses is needed. This is implemented by fixup calls
+for the PCI deivices, based on CONFIG_X86_DEV_DMA_OPS and
+CONFIG_X86_DMA_REMAP .
 
-v1->v2 changes
-1, the reason to add the check is described in change log,
-2, the check is corrected,
-3, comment for the check is corrected.
-
-Thanks for all comments recieved.
-
-
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Alessandro Rubini <rubini@gnudd.com>
+Acked-by: Giancarlo Asnaghi <giancarlo.asnaghi@st.com>
+Cc: Alan Cox <alan@linux.intel.com>
 ---
+ arch/x86/Kconfig             |   28 +++-
+ arch/x86/pci/Makefile        |    2 +
+ arch/x86/pci/sta2x11-fixup.c |  403 ++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 428 insertions(+), 5 deletions(-)
+ create mode 100644 arch/x86/pci/sta2x11-fixup.c
 
---- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
-+++ b/mm/vmscan.c	Fri Jan  6 20:28:22 2012
-@@ -1162,6 +1162,7 @@ static unsigned long isolate_lru_pages(u
- 		unsigned long end_pfn;
- 		unsigned long page_pfn;
- 		int zone_id;
-+		unsigned int isolated_pages = 1;
-
- 		page = lru_to_page(src);
- 		prefetchw_prev_lru_page(page, src, flags);
-@@ -1172,7 +1173,8 @@ static unsigned long isolate_lru_pages(u
- 		case 0:
- 			mem_cgroup_lru_del(page);
- 			list_move(&page->lru, dst);
--			nr_taken += hpage_nr_pages(page);
-+			isolated_pages = hpage_nr_pages(page);
-+			nr_taken += isolated_pages;
- 			break;
-
- 		case -EBUSY:
-@@ -1188,6 +1190,14 @@ static unsigned long isolate_lru_pages(u
- 			continue;
-
- 		/*
-+		 * To save a few cycles, the following pfn-based isolation
-+		 * could be bypassed if the newly isolated page is no less
-+		 * than the order aligned region.
-+		 */
-+		if (isolated_pages >= (1 << order))
-+			continue;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 1e4bfe3..f399557 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -329,6 +329,7 @@ config X86_EXTENDED_PLATFORM
+ 		NUMAQ (IBM/Sequent)
+ 		RDC R-321x SoC
+ 		SGI 320/540 (Visual Workstation)
++		STA2X11-based (e.g. Northville)
+ 		Summit/EXA (IBM x440)
+ 		Unisys ES7000 IA32 series
+ 		Moorestown MID devices
+@@ -477,10 +478,10 @@ config X86_32_NON_STANDARD
+ 	depends on X86_32 && SMP
+ 	depends on X86_EXTENDED_PLATFORM
+ 	---help---
+-	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000, default
+-	  subarchitectures.  It is intended for a generic binary kernel.
+-	  if you select them all, kernel will probe it one by one. and will
+-	  fallback to default.
++	  This option compiles in the NUMAQ, Summit, bigsmp, ES7000, 
++	  STA2X11, default subarchitectures.  It is intended for a generic
++	  binary kernel. If you select them all, kernel will probe it
++	  one by one and will fallback to default.
+ 
+ # Alphabetically sorted list of Non standard 32 bit platforms
+ 
+@@ -520,6 +521,22 @@ config X86_VISWS
+ 	  A kernel compiled for the Visual Workstation will run on general
+ 	  PCs as well. See <file:Documentation/sgi-visws.txt> for details.
+ 
++config STA2X11
++	bool "STA2X11 Companion Chip Support"
++	depends on X86_32_NON_STANDARD && PCI
++	select X86_DEV_DMA_OPS
++	select X86_DMA_REMAP
++	select SWIOTLB
++	select MFD_STA2X11
++	select ARCH_REQUIRE_GPIOLIB
++	default n
++	---help---
++	  This adds support for boards based on the STA2X11 IO-Hub,
++	  a.k.a. "ConneXt". The chip is used in place of the standard
++	  PC chipset, so all "standard" peripherals are missing. If this
++	  option is selected the kernel will still be able to boot on
++	  standard PC machines.
 +
-+		/*
- 		 * Attempt to take all pages in the order aligned region
- 		 * surrounding the tag page.  Only take those pages of
- 		 * the same active state as that tag page.  We may safely
-@@ -1227,7 +1237,6 @@ static unsigned long isolate_lru_pages(u
- 				break;
-
- 			if (__isolate_lru_page(cursor_page, mode, file) == 0) {
--				unsigned int isolated_pages;
-
- 				mem_cgroup_lru_del(cursor_page);
- 				list_move(&cursor_page->lru, dst);
+ config X86_SUMMIT
+ 	bool "Summit/EXA (IBM x440)"
+ 	depends on X86_32_NON_STANDARD
+@@ -2238,10 +2255,11 @@ config HAVE_TEXT_POKE_SMP
+ 
+ config X86_DEV_DMA_OPS
+ 	bool
+-	depends on X86_64
++	depends on X86_64 || STA2X11
+ 
+ config X86_DMA_REMAP
+ 	bool
++	depends on STA2X11
+ 
+ source "net/Kconfig"
+ 
+diff --git a/arch/x86/pci/Makefile b/arch/x86/pci/Makefile
+index 75b06f3..2beea66 100644
+--- a/arch/x86/pci/Makefile
++++ b/arch/x86/pci/Makefile
+@@ -11,6 +11,8 @@ obj-$(CONFIG_X86_INTEL_CE)      += ce4100.o
+ obj-$(CONFIG_ACPI)		+= acpi.o
+ obj-y				+= legacy.o irq.o
+ 
++obj-$(CONFIG_STA2X11)           += sta2x11-fixup.o
++
+ obj-$(CONFIG_X86_VISWS)		+= visws.o
+ 
+ obj-$(CONFIG_X86_NUMAQ)		+= numaq_32.o
+diff --git a/arch/x86/pci/sta2x11-fixup.c b/arch/x86/pci/sta2x11-fixup.c
+new file mode 100644
+index 0000000..3e114e8
+--- /dev/null
++++ b/arch/x86/pci/sta2x11-fixup.c
+@@ -0,0 +1,403 @@
++/*
++ * arch/x86/pci/sta2x11-fixup.c
++ * clue code for lib/swiotlb.c and DMA translation between STA2x11
++ * AMBA memory mapping and the X86 memory mapping
++ *
++ * ST Microelectronics ConneXt (STA2X11/STA2X10)
++ *
++ * Copyright (c) 2010-2011 Wind River Systems, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
++ * See the GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ *
++ */
++
++#include <linux/pci.h>
++#include <linux/export.h>
++#include <linux/list.h>
++#include <asm/sta2x11.h>
++
++#define STA2X11_SWIOTLB_SIZE (4*1024*1024)
++extern int swiotlb_late_init_with_default_size(size_t default_size);
++
++/*
++ * We build a list of bus numbers that are under the ConneXt. The
++ * main bridge hosts 4 busses, which are the 4 endpoints, in order.
++ */
++#define STA2X11_NR_EP		4	/* 0..3 included */
++#define STA2X11_NR_FUNCS	8	/* 0..7 included */
++#define STA2X11_AMBA_SIZE	(512 << 20)
++
++struct sta2x11_ahb_regs { /* saved during suspend */
++	u32 base, pexlbase, pexhbase, crw;
++};
++
++struct sta2x11_mapping {
++	u32 amba_base;
++	int is_suspended;
++	struct sta2x11_ahb_regs regs[STA2X11_NR_FUNCS];
++};
++
++struct sta2x11_instance {
++	struct list_head list;
++	int bus0;
++	struct sta2x11_mapping map[STA2X11_NR_EP];
++};
++
++static LIST_HEAD(sta2x11_instance_list);
++
++/* At probe time, record new instances (most likely, one only) */
++static void sta2x11_new_instance(struct pci_dev *pdev)
++{
++	struct sta2x11_instance *instance;
++
++	instance = kzalloc(sizeof(*instance), GFP_ATOMIC);
++	if (!instance)
++		return;
++	/* This has a subordindate bridge, with 4 more-subordinate ones */
++	instance->bus0 = pdev->subordinate->number + 1;
++
++	if (list_empty(&sta2x11_instance_list)) {
++		int size = STA2X11_SWIOTLB_SIZE;
++		/* First instance: register your own swiotlb area */
++		dev_info(&pdev->dev, "sta2x11: Using SWIOTLB (size %i)\n",
++			 size);
++		if (swiotlb_late_init_with_default_size(size))
++			dev_emerg(&pdev->dev, "%s: init swiotlb(%i) failed\n",
++				  __func__, size);
++	}
++	list_add(&instance->list, &sta2x11_instance_list);
++}
++DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, 0xcc17, sta2x11_new_instance);
++
++/*
++ * Utility functions used in this file from below
++ */
++static struct sta2x11_instance *sta2x11_pdev_to_instance(struct pci_dev *pdev)
++{
++	struct sta2x11_instance *instance;
++	int ep;
++
++	list_for_each_entry(instance, &sta2x11_instance_list, list) {
++		ep = pdev->bus->number - instance->bus0;
++		if (ep >= 0 && ep < STA2X11_NR_EP)
++			return instance;
++	}
++	return NULL;
++}
++
++static int sta2x11_pdev_to_ep(struct pci_dev *pdev)
++{
++	struct sta2x11_instance *instance;
++
++	instance = sta2x11_pdev_to_instance(pdev);
++	if (!instance)
++		return -1;
++
++	return pdev->bus->number - instance->bus0;
++}
++
++static struct sta2x11_mapping *sta2x11_pdev_to_mapping(struct pci_dev *pdev)
++{
++	struct sta2x11_instance *instance;
++	int ep;
++
++	instance = sta2x11_pdev_to_instance(pdev);
++	if (!instance)
++		return NULL;
++	ep = sta2x11_pdev_to_ep(pdev);
++	return instance->map + ep;
++}
++
++/* This is exported, as some devices need to access the MFD registers */
++struct sta2x11_instance *sta2x11_get_instance(struct pci_dev *pdev)
++{
++	return sta2x11_pdev_to_instance(pdev);
++}
++EXPORT_SYMBOL(sta2x11_get_instance);
++
++
++/**
++ * p2a - Translate physical address to STA2x11 AMBA address,
++ *       used for DMA transfers to STA2x11
++ * @p: Physical address
++ * @pdev: PCI device (must be hosted within the connext)
++ */
++static dma_addr_t p2a(dma_addr_t p, struct pci_dev *pdev)
++{
++	struct sta2x11_mapping *map;
++	dma_addr_t a;
++
++	map = sta2x11_pdev_to_mapping(pdev);
++	a = p + map->amba_base;
++	return a;
++}
++
++/**
++ * a2p - Translate STA2x11 AMBA address to physical address
++ *       used for DMA transfers from STA2x11
++ * @a: STA2x11 AMBA address
++ * @pdev: PCI device (must be hosted within the connext)
++ */
++static dma_addr_t a2p(dma_addr_t a, struct pci_dev *pdev)
++{
++	struct sta2x11_mapping *map;
++	dma_addr_t p;
++
++	map = sta2x11_pdev_to_mapping(pdev);
++	p = a - map->amba_base;
++	return p;
++}
++
++/**
++ * sta2x11_swiotlb_alloc_coherent - Allocate swiotlb bounce buffers
++ *     returns virtual address. This is the only "special" function here.
++ * @dev: PCI device
++ * @size: Size of the buffer
++ * @dma_handle: DMA address
++ * @flags: memory flags
++ */
++static void *sta2x11_swiotlb_alloc_coherent(struct device *dev,
++					    size_t size,
++					    dma_addr_t *dma_handle,
++					    gfp_t flags)
++{
++	void *vaddr;
++
++	vaddr = dma_generic_alloc_coherent(dev, size, dma_handle, flags);
++	if (!vaddr)
++		vaddr = swiotlb_alloc_coherent(dev, size, dma_handle, flags);
++	*dma_handle = p2a(*dma_handle, to_pci_dev(dev));
++	return vaddr;
++}
++
++/* We have our own dma_ops: the same as swiotlb but from alloc (above) */
++static struct dma_map_ops sta2x11_dma_ops = {
++	.alloc_coherent = sta2x11_swiotlb_alloc_coherent,
++	.free_coherent = swiotlb_free_coherent,
++	.map_page = swiotlb_map_page,
++	.unmap_page = swiotlb_unmap_page,
++	.map_sg = swiotlb_map_sg_attrs,
++	.unmap_sg = swiotlb_unmap_sg_attrs,
++	.sync_single_for_cpu = swiotlb_sync_single_for_cpu,
++	.sync_single_for_device = swiotlb_sync_single_for_device,
++	.sync_sg_for_cpu = swiotlb_sync_sg_for_cpu,
++	.sync_sg_for_device = swiotlb_sync_sg_for_device,
++	.mapping_error = swiotlb_dma_mapping_error,
++	.dma_supported = NULL, /* FIXME: we should use this instead! */
++};
++
++/* At setup time, we use our own ops if the device is a ConneXt one */
++static void sta2x11_setup_pdev(struct pci_dev *pdev)
++{
++	struct sta2x11_instance *instance = sta2x11_pdev_to_instance(pdev);
++
++	if (!instance) /* either a sta2x11 bridge or another ST device */
++		return;
++	pci_set_consistent_dma_mask(pdev, STA2X11_AMBA_SIZE - 1);
++	pci_set_dma_mask(pdev, STA2X11_AMBA_SIZE - 1);
++	pdev->dev.archdata.dma_ops = &sta2x11_dma_ops;
++
++	/* We must enable all devices as master, for audio DMA to work */
++	pci_set_master(pdev);
++}
++DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, sta2x11_setup_pdev);
++
++/*
++ * Set platform data for pci device, to use sta2x11-specifics in the drivers
++ */
++static void set_platform_data(struct pci_dev *pdev)
++{
++	void *data = sta2x11_get_platform_data(pdev);
++	if (data)
++		printk(KERN_INFO "sta2x11: setting platform data for device "
++		       "%04x:%04x\n", pdev->vendor, pdev->device);
++	pdev->dev.platform_data = data;
++}
++DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, set_platform_data);
++
++/*
++ * The following three functions are exported (used in swiotlb: FIXME)
++ */
++/**
++ * dma_capable - Check if device can manage DMA transfers (FIXME: kill it)
++ * @dev: device for a PCI device
++ * @addr: DMA address
++ * @size: DMA size
++ */
++bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
++{
++	struct sta2x11_mapping *map;
++
++	if (dev->archdata.dma_ops != &sta2x11_dma_ops) {
++		if (!dev->dma_mask)
++			return false;
++		return addr + size - 1 <= *dev->dma_mask;
++	}
++
++	map = sta2x11_pdev_to_mapping(to_pci_dev(dev));
++
++	if (!map || (addr < map->amba_base))
++		return false;
++	if (addr + size >= map->amba_base + STA2X11_AMBA_SIZE) {
++		return false;
++	}
++
++	return true;
++}
++
++/**
++ * phys_to_dma - Return the DMA AMBA address used for this STA2x11 device
++ * @dev: device for a PCI device
++ * @paddr: Physical address
++ */
++dma_addr_t phys_to_dma(struct device *dev, phys_addr_t paddr)
++{
++	if (dev->archdata.dma_ops != &sta2x11_dma_ops)
++		return paddr;
++	return p2a(paddr, to_pci_dev(dev));
++}
++
++/**
++ * dma_to_phys - Return the physical address used for this STA2x11 DMA address
++ * @dev: device for a PCI device
++ * @daddr: STA2x11 AMBA DMA address
++ */
++phys_addr_t dma_to_phys(struct device *dev, dma_addr_t daddr)
++{
++	if (dev->archdata.dma_ops != &sta2x11_dma_ops)
++		return daddr;
++	return a2p(daddr, to_pci_dev(dev));
++}
++
++
++/*
++ * At boot we must set up the mappings for the pcie-to-amba bridge.
++ * It involves device access, and the same happens at suspend/resum time
++ */
++
++#define AHB_MAPB		0xCA4
++#define AHB_CRW(i)		(AHB_MAPB + 0  + (i) * 0x10)
++#define AHB_CRW_SZMASK			0xfffffc00UL
++#define AHB_CRW_ENABLE			(1 << 0)
++#define AHB_CRW_WTYPE_MEM		(2 << 1)
++#define AHB_CRW_ROE			(1UL << 3)	/* Relax Order Ena */
++#define AHB_CRW_NSE			(1UL << 4)	/* No Snoop Enable */
++#define AHB_BASE(i)		(AHB_MAPB + 4  + (i) * 0x10)
++#define AHB_PEXLBASE(i)		(AHB_MAPB + 8  + (i) * 0x10)
++#define AHB_PEXHBASE(i)		(AHB_MAPB + 12 + (i) * 0x10)
++
++/* At probe time, enable mapping for each endpoint, using the pdev */
++static void sta2x11_map_ep(struct pci_dev *pdev)
++{
++	struct sta2x11_mapping *map = sta2x11_pdev_to_mapping(pdev);
++	int i;
++
++	if (!map)
++		return;
++	pci_read_config_dword(pdev, AHB_BASE(0), &map->amba_base);
++
++	/* Configure AHB mapping */
++	pci_write_config_dword(pdev, AHB_PEXLBASE(0), 0);
++	pci_write_config_dword(pdev, AHB_PEXHBASE(0), 0);
++	pci_write_config_dword(pdev, AHB_CRW(0), STA2X11_AMBA_SIZE |
++			       AHB_CRW_WTYPE_MEM | AHB_CRW_ENABLE);
++
++	/* Disable all the other windows */
++	for (i = 1; i < STA2X11_NR_FUNCS; i++)
++		pci_write_config_dword(pdev, AHB_CRW(i), 0);
++
++	dev_info(&pdev->dev,
++		 "sta2x11: Map EP %i: AMBA address %#8x-%#8x\n",
++		 sta2x11_pdev_to_ep(pdev),  map->amba_base,
++		 map->amba_base + STA2X11_AMBA_SIZE - 1);
++}
++DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, sta2x11_map_ep);
++
++/* Print STA2X11 version, for diagnostic information */
++static void sta2x11_print_version(struct pci_dev *pdev)
++{
++	uint32_t v[2]; /* used as a string... */
++	void __iomem *base;
++
++	base = ioremap(pci_resource_start(pdev, 1), pci_resource_len(pdev, 1));
++	if (!base) {
++		dev_err(&pdev->dev, " Can't ioreamp BAR 1\n");
++		return;
++	}
++	v[0] = readl(base + 0x7fec); /* STA2X11_ROM_VERSION_OFFSET */
++	v[1] = 0;
++	printk("STA2X11: detected version %s (%s)\n", (char *)v,
++	       v[0] == 0x30303276 ? "good" : "UNSUPPORTED");
++	iounmap(base);
++}
++
++DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_STMICRO,
++			 PCI_DEVICE_ID_STMICRO_ESRAM, sta2x11_print_version);
++
++
++
++#ifdef CONFIG_PM /* Some register values must be saved and restored */
++
++static void suspend_mapping(struct pci_dev *pdev)
++{
++	struct sta2x11_mapping *map = sta2x11_pdev_to_mapping(pdev);
++	int i;
++
++	if (!map)
++		return;
++
++	if (map->is_suspended)
++		return;
++	map->is_suspended = 1;
++
++	/* Save all window configs */
++	for (i = 0; i < STA2X11_NR_FUNCS; i++) {
++		struct sta2x11_ahb_regs *regs = map->regs + i;
++
++		pci_read_config_dword(pdev, AHB_BASE(i), &regs->base);
++		pci_read_config_dword(pdev, AHB_PEXLBASE(i), &regs->pexlbase);
++		pci_read_config_dword(pdev, AHB_PEXHBASE(i), &regs->pexhbase);
++		pci_read_config_dword(pdev, AHB_CRW(i), &regs->crw);
++	}
++}
++DECLARE_PCI_FIXUP_SUSPEND(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, suspend_mapping);
++
++static void resume_mapping(struct pci_dev *pdev)
++{
++	struct sta2x11_mapping *map = sta2x11_pdev_to_mapping(pdev);
++	int i;
++
++	if (!map)
++		return;
++
++
++	if (!map->is_suspended)
++		goto out;
++	map->is_suspended = 0;
++
++	/* Restore all window configs */
++	for (i = 0; i < STA2X11_NR_FUNCS; i++) {
++		struct sta2x11_ahb_regs *regs = map->regs + i;
++
++		pci_write_config_dword(pdev, AHB_BASE(i), regs->base);
++		pci_write_config_dword(pdev, AHB_PEXLBASE(i), regs->pexlbase);
++		pci_write_config_dword(pdev, AHB_PEXHBASE(i), regs->pexhbase);
++		pci_write_config_dword(pdev, AHB_CRW(i), regs->crw);
++	}
++out:
++	pci_set_master(pdev); /* Like at boot, enable master on all devices */
++}
++DECLARE_PCI_FIXUP_RESUME(PCI_VENDOR_ID_STMICRO, PCI_ANY_ID, resume_mapping);
++
++#endif /* CONFIG_PM */
+-- 
+1.7.7.2
