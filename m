@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab2AFAMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 19:12:49 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39450 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2AFAMr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 19:12:47 -0500
+	id S933097Ab2AFASx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 19:18:53 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932617Ab2AFASw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 19:18:52 -0500
+Message-ID: <4F063DE7.2080405@nod.at>
+Date: Fri, 06 Jan 2012 01:18:47 +0100
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <m11urffgja.fsf@fess.ebiederm.org>
-References: <CAHa016cp4uNZqCvJW0RZgEXST-VqpVWjYSXGE+RhThXXo6nzCA@mail.gmail.com>
- <m11urffgja.fsf@fess.ebiederm.org>
-From: =?UTF-8?B?TnVtYW4gREVNxLBSRMOWxJ5FTg==?= <numand46@gmail.com>
-Date: Fri, 6 Jan 2012 02:12:25 +0200
-Message-ID: <CAHa016cty=BUZ_ofksbRawLUfhyzYxwYtW+-iPR24vq_gEFCcA@mail.gmail.com>
-Subject: Re: sdhci causing WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0x9b/0xd0()
 To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+CC: daniel.lezcano@free.fr,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: namespaces: Out-of-bounds array access
+X-Enigmail-Version: 1.3.4
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigA25311C4A4004CC47A7FB396"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/4 Eric W. Biederman <ebiederm@xmission.com>:
-> Hopefully I have added some relevant Cc's.  The sdhci driver attempting
-> to abuse sysfs and sysfs is refusing to put up with it.
->
-> Can someone who understands the sdhci driver take a look at this?
->
-> Eric
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigA25311C4A4004CC47A7FB396
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: quoted-printable
 
-I forgot to add lspci output. Sorry for this. I added the relevant
-device that is being pointed in warning.
+Hi!
 
-lspci:
-06:09.4 SD Host controller [0805]: Texas Instruments
-PCI6411/6421/6611/6621/7411/7421/7611/7621 Secure Digital Controller
-[104c:8034]
-	Subsystem: Wistron Corp. Device [17c0:3007]
-	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr-
-Stepping- SERR+ FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=medium >TAbort-
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 57 (1750ns min, 1000ns max), Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 22
-	Region 0: Memory at b8009400 (32-bit, non-prefetchable) [size=256]
-	Region 1: Memory at b8009000 (32-bit, non-prefetchable) [size=256]
-	Region 2: Memory at b8007400 (32-bit, non-prefetchable) [size=256]
-	Capabilities: [80] Power Management version 2
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Kernel driver in use: sdhci-pci
-	Kernel modules: sdhci-pci
+While searching a completely different bug I've found this problem:
+If CONFIG_NET_NS, CONFIG_UTS_NS and CONFIG_IPC_NS are disabled, ns_entrie=
+s[]
+becomes empty and things like ns_entries[ARRAY_SIZE(ns_entries) - 1] will=
+ explode.
+
+Thanks,
+//richard
+
+
+
+
+
+--------------enigA25311C4A4004CC47A7FB396
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPBj3nAAoJEN9758yqZn9e52IH/in1mdQFv6/BujSBi1O747e7
+XRfOwFZuYAQKoaUoQ5wJbFFCNvFHYG7KH8nswIRHPVevIZyCkyXQIm7CNu94300f
+n05R+P1BOkz5Xai/6Vocz7cRLtDtEOa3forFxeOxo5dvPRyMKJOIpIpARaiOVpEn
+lw+/hHu1IzWy52Xl1w2f6UPCHZttIHBar0q0R1YoRnrVK5k5Fyde9ffDmUyC3Enc
+/6yY/A2+/BLfNzGqjC3FgX/SSOyToLa5OwfXZr0t/P2QdXVlgj05K7JE2E62fu74
+gDGm155HaiwPP7zPi+4uRKv/6CKy8fuh4ZzySAcptNS6GJkT34/m+6wX0YzS0dU=
+=NvPo
+-----END PGP SIGNATURE-----
+
+--------------enigA25311C4A4004CC47A7FB396--
