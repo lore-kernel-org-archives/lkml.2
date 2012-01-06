@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab2AFXgD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 18:36:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:43982 "EHLO mx2.suse.de"
+	id S1759348Ab2AFXgF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 18:36:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43994 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759321Ab2AFXfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 18:35:40 -0500
-Date: Fri, 6 Jan 2012 15:17:27 -0800
+	id S1759322Ab2AFXfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 18:35:42 -0500
+Date: Fri, 6 Jan 2012 15:35:20 -0800
 From: Greg KH <gregkh@suse.de>
 To: Tim Bird <tim.bird@am.sony.com>
 Cc: NeilBrown <neilb@suse.de>, Brian Swetland <swetland@google.com>,
@@ -22,7 +22,7 @@ Cc: NeilBrown <neilb@suse.de>, Brian Swetland <swetland@google.com>,
         Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Subject: Re: RFC: android logger feedback request
-Message-ID: <20120106231727.GA24043@suse.de>
+Message-ID: <20120106233520.GB24043@suse.de>
 References: <4EF264C3.6000104@am.sony.com>
  <20111221231956.GB23859@suse.de>
  <4EF27B85.9080801@am.sony.com>
@@ -43,43 +43,147 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Jan 06, 2012 at 02:41:52PM -0800, Tim Bird wrote:
-> > But for almost everything else (and
-> > really, there isn't all that much android-only code we are talking about
-> > here:
-> > $ wc drivers/staging/android/* drivers/staging/android/switch/* -l | tail -n 1
-> >    8429 total
+> On 01/06/2012 01:20 PM, Greg KH wrote:
+> > On Fri, Jan 06, 2012 at 12:56:27PM -0800, Tim Bird wrote:
+> >> 4) this is for a popular use case, as opposed to some minor
+> >> outlying thing, and so people perceive the need to get it
+> >> exactly right.  In this sense, the code would be a victim of
+> >> it's own success.
 > > 
-> > And the switch code is already being worked on to be generalized by
-> > others, so that means we only have:
-> > $ wc drivers/staging/android/*  -l | tail -n 1
-> >    8015 total
-> > to worry about here.
+> > It's not the code's "success" here, it's the "this solves a general
+> > problem in a very specific way" issue, that just happens to be a use
+> > case a lot of different people want to see addressed.  And since it is
+> > only solving it in a narrow way, that's a problem for all of those other
+> > people.
 > 
-> Well, I'm not sure you've gotten it all (my count is closer to 20k,
-> some of it sprinkled in a few weird places), but I agree completely
-> that it's not a lot of code, which is encouraging.  Did you put
-> anything in besides what's in staging?
+> It's only a problem in the sense that those different people
+> don't get something for free.  The presence of an isolated,
+> configurable driver somewhere in the kernel source, that
+> addresses one group's issues and not another's doesn't impose
+> any measurable burden on that other group.
 
-Yes, it should all be under drivers/staging/android in linux-next, soon
-to go to Linus.
+That's been proven incorrect over the long-run as we all must now
+maintain that user/kernel API for forever.
 
-What do you think I have missed?  I only know of two missing bits:
-	- android USB gadget drivers/stuff
-	- wakelocks
+You could say the same thing for adding new ioctls for individual
+drivers instead of creating a new syscall.  Sometimes, in rare cases, it
+does make sense to create a new ioctl.  But that decision has to be
+taken very carefully, as again, it needs to be standardized with all
+other drivers of that time, and maintained for forever.
 
-The first is being addressed by the Google developers, see the post to
-the linux-usb mailing list the end of last month with the code, and all
-of the review comments on it.
+> It's more of an opportunity cost thing.  The opportunity
+> to develop something more general can be reduced when a narrow
+> solution is accepted.  But this is exactly related to
+> encouraging people to develop more general solutions, when
+> narrow ones accomplish what they need (see point 5).
 
-The second is being worked on by someone else, as I'm sure you are
-already aware.
+When people work together on their narrow goals, they end up creating
+something that works for way more than just themselves, and in fact, it
+turns out it works better for people who originally wasn't even aware of
+the issues involved.
 
-Other than that, I don't see anything in the common.git android tree
-that I am missing, other than some odd driver updates which should all
-be upstream already from what I can tell.
+Again, this has been proven over time with the Linux kernel development
+process.  I wrote a whole chapter on this very topic in the book,
+"Beautiful Code", if you want to hear more about it.
 
-So how are our line counts so far off?
+In fact, I would argue, that is one of the top reasons why Linux has
+succeeded so well.  Again, you really aren't unique, others will have
+the same issues/problems that you do, and if you solve them in a case
+that works for more than one, it makes everything better.
+
+> I understand that the whole model is built on people contributing
+> code that not only addresses their own needs, but the needs of
+> others.  But of course there should be balance.  For example
+> I have concerns about integrating this into the printk code path,
+> because I think that code path is complex enough as it is,
+> and that combining this functionality with that is likely to
+> create more maintenance problems rather than less in the
+> long run.  (But I'll still plan to look at this option ...)
+
+Complex code paths are tough, I will grant you that.  But if it was
+easy, then, you wouldn't be the person for the job :)
+
+> Sometimes, features should just remain separate.
+
+When they do different things, of course.  When they do the same thing,
+of course not.
+
+> > Why do people get hung up on the "embedded is special" case here.  Fact,
+> > it's not.  Do you somehow think that the work done for the HUGE
+> > multiprocessor machines 10 years ago would have gotten away with hacks
+> > saying, "this is a special case, only we care about this", when they
+> > were dealing with 4 and 8 way machines?  No, they didn't, and as such,
+> > there's nothing special with embedded here either.  Matter of fact, your
+> > machines are now more powerful than those old 10 year old machines, and
+> > are really general purpose computers, just used in a single/limited
+> > manner, again, just like those original big SMP machines were.
+> > 
+> > So, I've said it many times before, and I'll say it again:
+> > 
+> >   Yes, you are special and unique, just like everyone else.
+> > 
+> > The next person who says the "embedded is different" phrase again, owes
+> > me a beer of my choice.
+> 
+> Consider this your free beer token... :-)
+
+Oooh, nice, I'll take you up on that at ELC in a few weeks :)
+
+> I believe "embedded is different" because we throw away so much code,
+> that I just don't think desktop and enterprise do.  The number of
+> non-mainlined BSPs that have gone straight from product release to
+> bit bucket is truly staggering.
+
+Yes, and that's sad.  And maybe, if embedded feels that they are so
+special, and that contributing to mainline doesn't help or matter, then
+they shouldn't.
+
+Yes, I mean it, why push stuff upstream if you aren't going to maintain
+it and no one will ever build on top of it.
+
+Oh wait, you will end up building on it with your next iteration, so if
+you throw it away, oops, you just wasted time and money.
+
+And again, this mirrors the super computer case EXACTLY!  In fact, I
+would argue that there are less machines shipped for those types of
+systems, than embedded, and do you see those developers saying that they
+should just keep their code out of mainline?  Or do they actually
+realize that it is cheaper, in time and money to mainline stuff.
+
+Remember, Intel and IBM has said publically, numerous times, that it
+makes business and money sense to do this.  Are the people at these
+companies somehow wrong?  Do they not also support the "embedded"
+markets?
+
+> You're only looking at the Android case, where the machines are as
+> powerful as they were 10 years ago.  Broad swaths of embedded
+> are not on that kind of hardware.  It's different (there it is again,
+> is that two beers?) being at the bottom side of the scalability
+> spectrum rather than at the top.  Everyone expected that eventually
+> there would be more SMP machines in the world.  This is not true of
+> all embedded processors.  We're used to developing code that we'll
+> throw away after a single release.
+
+Again, same goes for super computers.
+
+And again, if it really is going to be thrown away, then by all means,
+throw it away.  But I will bet you the beer you owe me, odds are you
+want that code again in the future to build on top of.
+
+Unless it's an obsolete architecture like Voyager or something, then
+just throw that away, no one would ever build on top of that :)
+
+Oh wait, again, look at the benifits Linux overall has achieved from
+supporting something "odd" and "obsolete" in the mainline kernel, to
+help abstract core functionality to make things more flexable and
+workable for {gasp} even the embedded folks.
+
+Sorry, again, I don't buy your argument one bit.
+
+> But I think this is beside the point for this particular code.
+
+I agree.
 
 thanks,
 
-greg k-h
+greg "beer's on Tim!" k-h
