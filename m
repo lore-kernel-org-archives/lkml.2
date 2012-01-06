@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab2AFQtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 11:49:39 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59914 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751022Ab2AFQti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 11:49:38 -0500
-Message-ID: <4F07261A.6080403@gmail.com>
-Date: Sat, 07 Jan 2012 00:49:30 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1758833Ab2AFQxx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 11:53:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751648Ab2AFQxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 11:53:52 -0500
+Message-ID: <4F072717.8090006@redhat.com>
+Date: Fri, 06 Jan 2012 11:53:43 -0500
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
 MIME-Version: 1.0
-To: Hien Nguyen <hien@us.ibm.com>, Jim Keniston <jkenisto@us.ibm.com>,
-        Prasanna S Panchamukhi <prasanna@in.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] kprobe: fix a memory leak in function pre_handler_kretprobe()
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Ian Campbell <Ian.Campbell@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [Xen-devel] [PATCH 2/5] xen/pciback: Support pci_reset_function,
+ aka FLR or D3 support.
+References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com> <1325724403-29642-3-git-send-email-konrad.wilk@oracle.com> <1325759051.25206.361.camel@zakaz.uk.xensource.com> <4F05F2EA.5030502@redhat.com> <20120105213423.GC5180@phenom.dumpdata.com>
+In-Reply-To: <20120105213423.GC5180@phenom.dumpdata.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiang Liu<liuj97@gmail.com>
-
-In function pre_handler_kretprobe(), the allocated kretprobe_instance object will
-be leaked if the entry_handler callback returns non-zero. This may cause all the
-preallocated kretprobe_instance objects exhausted. This issue could be reproduced
-by changing samples/kprobes/kretprobe_example.c to probe "mutex_unlock". And the
-fix is straight forward, just put the allocated kretprobe_instance object back
-onto the free_instances list.
-
-Signed-off-by: Jiang Liu<liuj97@gmail.com>
-Cc: Hien Nguyen<hien@us.ibm.com>
-Cc: Jim Keniston<jkenisto@us.ibm.com>
-Cc: Prasanna S Panchamukhi<prasanna@in.ibm.com>
----
-  kprobes.c |    6 +++++-
-  1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -1660,8 +1660,12 @@
-                 ri->rp = rp;
-                 ri->task = current;
-
--               if (rp->entry_handler&&  rp->entry_handler(ri, regs))
-+               if (rp->entry_handler&&  rp->entry_handler(ri, regs)) {
-+                       spin_lock_irqsave(&rp->lock, flags);
-+                       hlist_add_head(&ri->hlist,&rp->free_instances);
-+                       spin_unlock_irqrestore(&rp->lock, flags);
-                         return 0;
-+               }
-
-                 arch_prepare_kretprobe(ri, regs);
-
+On 01/05/2012 04:34 PM, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jan 05, 2012 at 01:58:50PM -0500, Don Dutile wrote:
+>> On 01/05/2012 05:24 AM, Ian Campbell wrote:
+>>> On Thu, 2012-01-05 at 00:46 +0000, Konrad Rzeszutek Wilk wrote:
+>>>> We use the __pci_reset_function_locked to perform the action.
+>>>> Also on attaching ("bind") and detaching ("unbind") we save and
+>>>> restore the configuration states. When the device is disconnected
+>>> >from a guest we use the "pci_reset_function" to also reset the
+>>>> device before being passed to another guest.
+>>>
+>>> Currently I thought the toolstack was supposed to do the reset (by
+>>> writing to the reset node in sysfs) as it was (de)assigning devices
+>>> to/from guests. That's not to say that there isn't an argument for
+>>> preferring to do it kernels side but it would be interesting to make
+>>> that argument explicitly.
+>>>
+>>> I guess the toolstack doesn't currently save/restore the configuration
+>>> state, could it though? I guess the state is all available in sysfs. On
+>> pci_reset_function() saves the config state before doing a fcn-level reset.
+>>
+>> the libvirt toolstack handles the unbind/reset/bind functionality
+>> and is used by kvm for it's device assignment.
+>
+> The KVM assigned PCI module does the call as well via the ioctls when
+> assigning/de-assigning the PCI device. Look in 'kvm_free_assigned_device'
+> and in 'kvm_vm_ioctl_assign_device'.
+>
+> Is that what you mean by the unbind/reset/bind functionality - the ioctl
+> call?
+>
+It's done in both places (libvirt & kvm-ioctl).
 
