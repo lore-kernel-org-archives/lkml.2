@@ -1,150 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759186Ab2AFUnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 15:43:07 -0500
-Received: from numidia.opendz.org ([98.142.220.152]:47194 "EHLO
-	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759062Ab2AFUnE (ORCPT
+	id S1759168Ab2AFUn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 15:43:26 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39410 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759119Ab2AFUnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 15:43:04 -0500
-Date: Fri, 6 Jan 2012 21:46:01 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        Jan Kara <jack@suse.cz>
-Subject: Re: linux-next: manual merge of the vfs tree with the ext4 tree
-Message-ID: <20120106204601.GA26305@dztty>
-References: <20120106135442.1720766a6c1510abf51b2aff@canb.auug.org.au>
+	Fri, 6 Jan 2012 15:43:24 -0500
+Message-ID: <4F075D40.6080001@canonical.com>
+Date: Fri, 06 Jan 2012 12:44:48 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120106135442.1720766a6c1510abf51b2aff@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the
+ MT slot state
+References: <1325863019-2242-1-git-send-email-rydberg@euromail.se> <CAN+gG=FUEH851Um4Lco0avqdE2Eup3Jo79Ti4T7XhxT=PO6WeQ@mail.gmail.com> <20120106181845.GA22653@core.coreip.homeip.net> <4F0743EE.6080302@canonical.com> <20120106195846.GA23619@core.coreip.homeip.net> <4F075500.3020601@canonical.com> <20120106201735.GA23818@core.coreip.homeip.net>
+In-Reply-To: <20120106201735.GA23818@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-(Cc'ed Jan Kara).
-
-On Fri, Jan 06, 2012 at 01:54:42PM +1100, Stephen Rothwell wrote:
-> Hi Al,
+On 01/06/2012 12:17 PM, Dmitry Torokhov wrote:
+> On Fri, Jan 06, 2012 at 12:09:36PM -0800, Chase Douglas wrote:
+>> I know there's a slight distinction between these two scenarios, but my
+>> point is that if you are doing multithreaded evdev reading from the same
+>> evdev fd, you are asking for trouble and you need to be careful. That
+>> even goes for modifying any of the other state through EVIOCSABS from
+>> multiple processes. And really, how many programs are out there reading
+>> from the same evdev fd in multiple threads. I'd wager a fair amount of
+>> money the answer is 0.
 > 
-> Today's linux-next merge of the vfs tree got a conflict in
-> fs/ext4/ioctl.c between commits 2a415f129806 ("ext4: add missing
-> ext4_resize_end on error paths") and 22cdfca56418 ("ext4: remove unneeded
-> file_remove_suid() from ext4_ioctl()") from the ext4 tree and commit
-There is also another commit from ext4 involved:
-commit ce06c5fa14f1a ("ext{3,4}: Fix potential race when setversion ioctl
-updates inode) by Jan Kara.
+> I am really not concerned about what userspace might do - I've looked at
+> enough code to see all kinds of weird stuff. My task is to make sure
+> that kernel interface is sane and since it is userspace ABI matter I
+> want to be extra careful.
 
-All these ext4 commits are fine.
+Evdev by its very nature is thread unsafe. There's no way to atomically
+retrieve an event frame including all the new values up through the next
+EV_SYN. That's the meat and potatoes of evdev. If the base of an API is
+thread-unsafe, it does very little to add thread safety to functions
+surrounding it.
 
-> a561be7100cd ("switch a bunch of places to mnt_want_write_file()") from
-> the vfs tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc fs/ext4/ioctl.c
-> index f2c335b,d37b3bb..0000000
-> --- a/fs/ext4/ioctl.c
-> +++ b/fs/ext4/ioctl.c
-> @@@ -173,11 -170,8 +173,11 @@@ flags_out
->   			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
->   		}
->   		ext4_journal_stop(handle);
->  +
->  +unlock_out:
->  +		mutex_unlock(&inode->i_mutex);
-This is the code related to commit: ce06c5fa14f1a
+If you want to make a line of demarcation to say that evdev reads are
+not thread-safe, but ioctls are, then that makes a slight bit of
+technical sense. However, it still seems like a fools errand to me,
+because no one will ever make a multithreaded program that opens an
+evdev device, accesses its ioctls through multiple threads, while never
+reading from the evdev fd. If for some reason someone actually does
+this, all they need is a simple mutex.
 
-Thanks for the fix.
+I really think this is a waste of time when Henrik's patch is ready to
+go, is small and self contained, and meets everyone's needs. But this is
+the last I'll speak of it.
 
->   setversion_out:
-> - 		mnt_drop_write(filp->f_path.mnt);
-> + 		mnt_drop_write_file(filp);
->   		return err;
->   	}
->   	case EXT4_IOC_GROUP_EXTEND: {
-> @@@ -197,13 -189,12 +197,13 @@@
->   			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
->   			ext4_msg(sb, KERN_ERR,
->   				 "Online resizing not supported with bigalloc");
->  -			return -EOPNOTSUPP;
->  +			err = -EOPNOTSUPP;
->  +			goto group_extend_out;
->   		}
->   
-> - 		err = mnt_want_write(filp->f_path.mnt);
-> + 		err = mnt_want_write_file(filp);
->   		if (err)
->  -			return err;
->  +			goto group_extend_out;
->   
->   		err = ext4_group_extend(sb, EXT4_SB(sb)->s_es, n_blocks_count);
->   		if (EXT4_SB(sb)->s_journal) {
-> @@@ -213,10 -204,9 +213,10 @@@
->   		}
->   		if (err == 0)
->   			err = err2;
->  +
-> - 		mnt_drop_write(filp->f_path.mnt);
-> + 		mnt_drop_write_file(filp);
->  +group_extend_out:
->   		ext4_resize_end(sb);
->  -
->   		return err;
->   	}
->   
-> @@@ -256,7 -246,9 +256,7 @@@
->   
->   		err = ext4_move_extents(filp, donor_filp, me.orig_start,
->   					me.donor_start, me.len, &me.moved_len);
-> - 		mnt_drop_write(filp->f_path.mnt);
-> + 		mnt_drop_write_file(filp);
->  -		if (me.moved_len > 0)
->  -			file_remove_suid(donor_filp);
->   
->   		if (copy_to_user((struct move_extent __user *)arg,
->   				 &me, sizeof(me)))
-> @@@ -284,13 -274,12 +284,13 @@@ mext_out
->   			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
->   			ext4_msg(sb, KERN_ERR,
->   				 "Online resizing not supported with bigalloc");
->  -			return -EOPNOTSUPP;
->  +			err = -EOPNOTSUPP;
->  +			goto group_add_out;
->   		}
->   
-> - 		err = mnt_want_write(filp->f_path.mnt);
-> + 		err = mnt_want_write_file(filp);
->   		if (err)
->  -			return err;
->  +			goto group_add_out;
->   
->   		err = ext4_group_add(sb, &input);
->   		if (EXT4_SB(sb)->s_journal) {
-> @@@ -300,10 -289,9 +300,10 @@@
->   		}
->   		if (err == 0)
->   			err = err2;
->  +
-> - 		mnt_drop_write(filp->f_path.mnt);
-> + 		mnt_drop_write_file(filp);
->  +group_add_out:
->   		ext4_resize_end(sb);
->  -
->   		return err;
->   	}
->   
-
-
-
--- 
-tixxdz
-http://opendz.org
+-- Chase
