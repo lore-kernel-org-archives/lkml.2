@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab2AFUF3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 15:05:29 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:49605 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758924Ab2AFUF1 (ORCPT
+	id S1759051Ab2AFUIO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 15:08:14 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:39330 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758822Ab2AFUIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 15:05:27 -0500
-Date: Fri, 6 Jan 2012 12:05:24 -0800
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, thuban@singularity.fr,
-        dann frazier <dann.frazier@canonical.com>,
-        Lisa Salimbas <lisa.salimbas@canonical.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        stable@kernel.org, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH 2/2] PNP: work around Dell 1536/1546 BIOS MMCONFIG bug
- that breaks USB
-Message-ID: <20120106120524.7801c73a@jbarnes-desktop>
-In-Reply-To: <20120105212724.3965.30193.stgit@bhelgaas.mtv.corp.google.com>
-References: <20120105212719.3965.40406.stgit@bhelgaas.mtv.corp.google.com>
- <20120105212724.3965.30193.stgit@bhelgaas.mtv.corp.google.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/8cI5J1yeKnqAf3pkmUVg2T/"; protocol="application/pgp-signature"
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+	Fri, 6 Jan 2012 15:08:12 -0500
+Message-ID: <4F075500.3020601@canonical.com>
+Date: Fri, 06 Jan 2012 12:09:36 -0800
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the
+ MT slot state
+References: <1325863019-2242-1-git-send-email-rydberg@euromail.se> <CAN+gG=FUEH851Um4Lco0avqdE2Eup3Jo79Ti4T7XhxT=PO6WeQ@mail.gmail.com> <20120106181845.GA22653@core.coreip.homeip.net> <4F0743EE.6080302@canonical.com> <20120106195846.GA23619@core.coreip.homeip.net>
+In-Reply-To: <20120106195846.GA23619@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/8cI5J1yeKnqAf3pkmUVg2T/
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 01/06/2012 11:58 AM, Dmitry Torokhov wrote:
+> On Fri, Jan 06, 2012 at 10:56:46AM -0800, Chase Douglas wrote:
+>> On 01/06/2012 10:18 AM, Dmitry Torokhov wrote:
+>>> Hi Benjamin,
+>>>
+>>> On Fri, Jan 06, 2012 at 07:00:22PM +0100, Benjamin Tissoires wrote:
+>>>> Hi guys,
+>>>> I read somewhere in the code of Android a comment in which they
+>>>> complain about not being able to retrieve the slots states. So they
+>>>> assume they are all at 0.
+>>>> So this mechanism is good to have.
+>>>> However, back in January 2011, Dmitry raised the problem that this
+>>>> code was not thread safe.What happens if 2 applications ask for
+>>>> different slots values (let say X.org and utouch-frame)?
+>>>
+>>> 2 different processes should be fine; the problem would be if 2 threads
+>>> of the same process share the same file descriptor. So far the rest of
+>>> evdev copes just fine with multiple threads using the same fd (all
+>>> operations are atomic in this regard), setting ABS_MT_SLOT before
+>>> fetching the state break this property.
+>>
+>> How is this any different than two threads trying to set a different
+>> property, like the fuzz factor of an axis? This seems like something
+>> that should be guarded by a lock in userspace, essentially.
+> 
+> From kernel POV both operations succeed and produce consistent reults.
+> Consider EVIOCSABS when one thread using the same FD sets range 0-100
+> and another 200-1000. At no time in the kernel we get to state of
+> min = 200 and max = 1000. In the end we'll end up with either 0-100 or
+> 200-1000 but not mix of both. So the kernle state is internally
+> consistent.
 
-On Thu, 05 Jan 2012 14:27:24 -0700
-Bjorn Helgaas <bhelgaas@google.com> wrote:
+I don't see how modifying the slot requested could ever get the kernel
+into an inconsistent state.
 
-> Some Dell BIOSes have MCFG tables that don't report the entire
-> MMCONFIG area claimed by the chipset.  If we move PCI devices into
-> that claimed-but-unreported area, they don't work.
->=20
-> This quirk reads the AMD MMCONFIG MSRs and adds PNP0C01 resources as
-> needed to cover the entire area.
->=20
+> With proposed solution one client may request data for slot 2 but
+> instead get info for slot 5 if another client manages to slide in.
 
-applied these two, thanks.
+You can do the same thing with EVIOCSABS. If you don't do proper locking
+and handling, two threads can assume they wrote a value to evdev and it
+was successful, when in reality only the second thread to make the call
+has any effect.
 
---=20
-Jesse Barnes, Intel Open Source Technology Center
+I know there's a slight distinction between these two scenarios, but my
+point is that if you are doing multithreaded evdev reading from the same
+evdev fd, you are asking for trouble and you need to be careful. That
+even goes for modifying any of the other state through EVIOCSABS from
+multiple processes. And really, how many programs are out there reading
+from the same evdev fd in multiple threads. I'd wager a fair amount of
+money the answer is 0.
 
---Sig_/8cI5J1yeKnqAf3pkmUVg2T/
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPB1QEAAoJEIEoDkX4Qk9hmqcP/3p7ELSyiNyEXfjdLUZK0RWR
-wLkJE1pVf1ZMcyhQ1vSikSWw/BVMqfT2wHDvQl3Io0nFUJMmQJXRX/YZYDhWo2eX
-PV5TaQ9K4Pn0UkcskfGq8Y0Ch1+MJthUeBkCp6i8CPpRrPZ+NorGPUQ9nC/cfrup
-mzqqMwlRgpQN2NwW013HtEd1I5IuXy4/HNYHHk96vWdy7AdXNqIjSxr197p4u1gt
-vlMQsLTH+TKoSi5CngwvCGhM98GiLuNMvy3SAlakir9cqXSo/qVmfyQLVhDX0MrC
-FGglfDC6CiUmg1IzEI++bzZlfFaBgekptPYlokksikYdN7bC83sRpgo6JrQR3Wt/
-MnzahLl6NcGm2BhaCByAf8UzQeM8V5c5ku6HV5b84QjfI1pF3GygIWfHxEx/Nod3
-qoAKWGtemy3FVxXaYtl6pci8YvLRpC6+HgAcmcUrtZ54dbk+JhGrO8f9egZSgwDc
-KKqxWb4PCtN2zJEy6BnraTMVgkwCy7rU+gSUthmo6nunAB0w4MhkQU7kLQTUXKfL
-9CXtBMgZ3Bx1plwfvYJ6Jgk73kem8gG+7Dj2hMY0ABRRiwMVrLnGcNbky4Tx74BZ
-f/8gtRj7kp+CIqWvzcKFsMEuklVhnxIb2CaNKaXJx+OGZ/cQHFGBWEtr0yjIljop
-o9S8k5vAjBuw7Wz7qxvB
-=4wH5
------END PGP SIGNATURE-----
-
---Sig_/8cI5J1yeKnqAf3pkmUVg2T/--
+-- Chase
