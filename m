@@ -1,71 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751679Ab2AFFRh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 00:17:37 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51417 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab2AFFRg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 00:17:36 -0500
-Date: Fri, 6 Jan 2012 13:27:51 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng <dongas86@gmail.com>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>
-Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Message-ID: <20120106052748.GA4790@S2101-09.ap.freescale.net>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
- <1324402840-32451-3-git-send-email-b29396@freescale.com>
- <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
- <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751679Ab2AFF4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 00:56:12 -0500
+Received: from mga01.intel.com ([192.55.52.88]:61911 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751102Ab2AFF4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 00:56:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104094870"
+Subject: Re: [PATCH 1/2] dmaengine: Fix status handling in imx-dma.
+From: Vinod Koul <vinod.koul@intel.com>
+To: Javier Martin <javier.martin@vista-silicon.com>
+Cc: linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        s.hauer@pengutronix.de, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
+References: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Jan 2012 11:26:29 +0530
+Message-ID: <1325829389.1540.95.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 05:05:46PM -0800, Stephen Warren wrote:
-> I'm confused because the node has properties for function name and
-> group name which make sense to define the mux setting for that group.
-> However, I'm not sure what the grp-pins/num-pins/grp-mux/num-mux
-> properties are for; if those properties define the available mux options
-> and for the group and set of pins included in the group, I think the node
-> is representing too many things in one place. I'd expect to see:
+On Mon, 2012-01-02 at 13:18 +0100, Javier Martin wrote:
+> Status must only be changed to DMA_IN_PROGRESS
+> when the DMA transfer has really begun.
 > 
-> a) Either data in the pinctrl driver
+> However, since this driver lacks of support for
+> multiple descriptors a new flag has to be introduced
+> to avoid the prepare function be called multiple times.
+Thanks this is the right approach to fix this driver
 
-For imx, I'm against this.
+But this will obviously break any users of this driver as they need to
+call the right APIs now :D
 
-> or separate DT nodes to define each
-> available pin group, mux function, etc.; the definition of what the SoC
-> itself can do.
-
-This works for me.  But we do not necessarily need to enumerate all
-the possible groups from the beginning.  Instead, we can add the groups
-incrementally.
-
-Regards,
-Shawn
-
+Sacha: can you check this patch and see which users of this driver will
+break. we need those fixes to go along this patch as well
 > 
-> b) The configuration of each pin group that's used by the particular board.
-> All that's relevant here is the mux selection for each pin groups; things
-> like which pins are included in each group are defined by the SoC not the
-> board and hence wouldn't be included in a per-board node.
+> Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+> ---
+>  drivers/dma/imx-dma.c |   22 +++++++++++++++-------
+>  1 files changed, 15 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> index d99f71c..9a0ac14 100644
+> --- a/drivers/dma/imx-dma.c
+> +++ b/drivers/dma/imx-dma.c
+> @@ -43,6 +43,7 @@ struct imxdma_channel {
+>  	enum dma_status			status;
+>  	int				dma_request;
+>  	struct scatterlist		*sg_list;
+> +	bool				prepared;
+>  };
+>  
+>  #define MAX_DMA_CHANNELS 8
+> @@ -72,6 +73,7 @@ static void imxdma_irq_handler(int channel, void *data)
+>  
+>  	imxdmac->status = DMA_SUCCESS;
+>  	imxdma_handle(imxdmac);
+> +	imxdmac->prepared = false;
+>  }
+>  
+>  static void imxdma_err_handler(int channel, void *data, int error)
+> @@ -80,6 +82,7 @@ static void imxdma_err_handler(int channel, void *data, int error)
+>  
+>  	imxdmac->status = DMA_ERROR;
+>  	imxdma_handle(imxdmac);
+> +	imxdmac->prepared = false;
+>  }
+>  
+>  static void imxdma_progression(int channel, void *data,
+> @@ -89,6 +92,7 @@ static void imxdma_progression(int channel, void *data,
+>  
+>  	imxdmac->status = DMA_SUCCESS;
+>  	imxdma_handle(imxdmac);
+> +	imxdmac->prepared = false;
+>  }
+>  
+>  static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> @@ -103,6 +107,7 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+>  	case DMA_TERMINATE_ALL:
+>  		imxdmac->status = DMA_ERROR;
+>  		imx_dma_disable(imxdmac->imxdma_channel);
+> +		imxdmac->prepared = false;
+>  		return 0;
+>  	case DMA_SLAVE_CONFIG:
+>  		if (dmaengine_cfg->direction == DMA_FROM_DEVICE) {
+> @@ -204,7 +209,7 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
+>  	imxdmac->desc.flags = DMA_CTRL_ACK;
+>  
+>  	imxdmac->status = DMA_SUCCESS;
+> -
+> +	imxdmac->prepared = false;
+>  	return 0;
+>  }
+>  
+> @@ -230,11 +235,9 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+>  	int i, ret, dma_length = 0;
+>  	unsigned int dmamode;
+>  
+> -	if (imxdmac->status == DMA_IN_PROGRESS)
+> +	if (imxdmac->prepared)
+>  		return NULL;
+>  
+> -	imxdmac->status = DMA_IN_PROGRESS;
+> -
+>  	for_each_sg(sgl, sg, sg_len, i) {
+>  		dma_length += sg->length;
+>  	}
+> @@ -264,6 +267,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+>  	if (ret)
+>  		return NULL;
+>  
+> +	imxdmac->prepared = true;
+> +
+>  	return &imxdmac->desc;
+>  }
+>  
+> @@ -280,9 +285,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+>  	dev_dbg(imxdma->dev, "%s channel: %d buf_len=%d period_len=%d\n",
+>  			__func__, imxdmac->channel, buf_len, period_len);
+>  
+> -	if (imxdmac->status == DMA_IN_PROGRESS)
+> +	if (imxdmac->prepared)
+>  		return NULL;
+> -	imxdmac->status = DMA_IN_PROGRESS;
+>  
+>  	ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
+>  			imxdma_progression);
+> @@ -325,14 +329,18 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+>  	if (ret)
+>  		return NULL;
+>  
+> +	imxdmac->prepared = true;
+> +
+>  	return &imxdmac->desc;
+>  }
+>  
+>  static void imxdma_issue_pending(struct dma_chan *chan)
+>  {
+>  	/*
+> -	 * Nothing to do. We only have a single descriptor
+> +	 * Only change status since we have a single descriptor
+>  	 */
+> +	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+> +	imxdmac->status = DMA_IN_PROGRESS;
+>  }
+>  
+>  static int __init imxdma_probe(struct platform_device *pdev)
+
+
+-- 
+~Vinod
+
