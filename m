@@ -1,87 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab2AFJDA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 04:03:00 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53714 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758274Ab2AFJC4 convert rfc822-to-8bit (ORCPT
+	id S933024Ab2AFJKq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 04:10:46 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61240 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757469Ab2AFJKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 04:02:56 -0500
+	Fri, 6 Jan 2012 04:10:41 -0500
+X-AuditID: 9c93016f-b7c8eae000000e9e-be-4f06ba7f03b7
+Message-ID: <4F06BA78.30606@lge.com>
+Date: Fri, 06 Jan 2012 18:10:16 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <NEXT-4f06aa69274cf6.26578607@nextmail.ru>
-References: <NEXT-4f06aa69274cf6.26578607@nextmail.ru>
-Date: Fri, 6 Jan 2012 14:32:55 +0530
-Message-ID: <CAD2nsn1-Oo=n8CY97sXW=kfsEeE2oknpXLayMtyxRA7VMMkHmQ@mail.gmail.com>
-Subject: Re: ath9k crash 3.2-rc7
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Shaohua Li <shaohua.li@intel.com>
+CC: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk, vgoyal@redhat.com, jmoyer@redhat.com
+Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
+References: <20120104065337.230911609@sli10-conroe.sh.intel.com>  <20120104071931.GB17026@dastard>  <1325746241.22361.503.camel@sli10-conroe> <1325826750.22361.533.camel@sli10-conroe>
+In-Reply-To: <1325826750.22361.533.camel@sli10-conroe>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/6 MR <g7af0ec1e3ea1e7b1@nextmail.ru>:
->  > >  > :) no problem. i hope for you can recreate the issue consistently ,
->  > >  > can you please test with the attached patch and another debug patch.
->  >>  > please let me know if there is no panic but there are warnings (or)
->  >if
->  > >  > there are no warnings (or) the issue still appears(also the trace
->  > >  > thanks) , also if you need any help
->  > > Should I apply the patch to Linux 3.2-rc7 or 3.2 release?
->  >Oh, I see. 3.2 release has this fix already. I will build it with
-> debugging
->  > patch and report warnings now.
+2012-01-06 PM 2:12, Shaohua Li wrote:
+> On Thu, 2012-01-05 at 14:50 +0800, Shaohua Li wrote:
+>> On Wed, 2012-01-04 at 18:19 +1100, Dave Chinner wrote:
+>>> On Wed, Jan 04, 2012 at 02:53:37PM +0800, Shaohua Li wrote:
+>>>> An IOPS based I/O scheduler
+>>>>
+>>>> Flash based storage has some different characteristics against rotate disk.
+>>>> 1. no I/O seek.
+>>>> 2. read and write I/O cost usually is much different.
+>>>> 3. Time which a request takes depends on request size.
+>>>> 4. High throughput and IOPS, low latency.
+>>>>
+>>>> CFQ iosched does well for rotate disk, for example fair dispatching, idle
+>>>> for sequential read. It also has optimization for flash based storage (for
+>>>> item 1 above), but overall it's not designed for flash based storage. It's
+>>>> a slice based algorithm. Since flash based storage request cost is very
+>>>> low, and drive has big queue_depth is quite popular now which makes
+>>>> dispatching cost even lower, CFQ's slice accounting (jiffy based)
+>>>> doesn't work well. CFQ doesn't consider above item 2&  3.
+>>>>
+>>>> FIOPS (Fair IOPS) ioscheduler is trying to fix the gaps. It's IOPS based, so
+>>>> only targets for drive without I/O seek. It's quite similar like CFQ, but
+>>>> the dispatch decision is made according to IOPS instead of slice.
+>>>>
+>>>> The algorithm is simple. Drive has a service tree, and each task lives in
+>>>> the tree. The key into the tree is called vios (virtual I/O). Every request
+>>>> has vios, which is calculated according to its ioprio, request size and so
+>>>> on. Task's vios is the sum of vios of all requests it dispatches. FIOPS
+>>>> always selects task with minimum vios in the service tree and let the task
+>>>> dispatch request. The dispatched request's vios is then added to the task's
+>>>> vios and the task is repositioned in the sevice tree.
+>>>>
+>>>> The series are orgnized as:
+>>>> Patch 1: separate CFQ's io context management code. FIOPS will use it too.
+>>>> Patch 2: The core FIOPS.
+>>>> Patch 3: request read/write vios scale. This demontrates how the vios scale.
+>>>>
+>>>> To make the code simple for easy view, some scale code isn't included here,
+>>>> some not implementated yet.
+>>>>
+>>>> TODO:
+>>>> 1. ioprio support (have patch already)
+>>>> 2. request size vios scale
+>>>> 3. cgroup support
+>>>> 4. tracing support
+>>>> 5. automatically select default iosched according to QUEUE_FLAG_NONROT.
+>>>>
+>>>> Comments and suggestions are welcome!
+>>>
+>>> Benchmark results?
+>> I didn't have data yet. The patches are still in earlier stage, I want
+>> to focus on the basic idea first.
+> since you asked, I tested in a 4 socket machine with 12 X25M SSD jbod,
+> fs is ext4.
 >
-> I have some unpleasant news: it looks like it takes slightly longer with the
-> fix, but the crash still managed to occur with 3.2 and I lack ESP to check
-> for warnings immediately before that. I thought that 8 hours is enough
-> testing, heh. It simply took 9 and a half under nigh-ideal conditions
-> (stable signal from fixed AP with notebook also steadily in one place).
+> workload		percentage change with fiops against cfq
+> fio_sync_read_4k        -2
+> fio_mediaplay_64k       0
+> fio_mediaplay_128k      0
+> fio_mediaplay_rr_64k    0
+> fio_sync_read_rr_4k     0
+> fio_sync_write_128k     0
+> fio_sync_write_64k      -1
+> fio_sync_write_4k       -2
+> fio_sync_write_64k_create       0
+> fio_sync_write_rr_64k_create    0
+> fio_sync_write_128k_create      0
+> fio_aio_randread_4k     -4
+> fio_aio_randread_64k    0
+> fio_aio_randwrite_4k    1
+> fio_aio_randwrite_64k   0
+> fio_aio_randrw_4k       -1
+> fio_aio_randrw_64k      0
+> fio_tpch        9
+> fio_tpcc        0
+> fio_mmap_randread_4k    -1
+> fio_mmap_randread_64k   1
+> fio_mmap_randread_1k    -8
+> fio_mmap_randwrite_4k   35
+> fio_mmap_randwrite_64k  22
+> fio_mmap_randwrite_1k   28
+> fio_mmap_randwrite_4k_halfbusy  24
+> fio_mmap_randrw_4k      23
+> fio_mmap_randrw_64k     4
+> fio_mmap_randrw_1k      22
+> fio_mmap_randrw_4k_halfbusy     35
+> fio_mmap_sync_read_4k   0
+> fio_mmap_sync_read_64k  -1
+> fio_mmap_sync_read_128k         -1
+> fio_mmap_sync_read_rr_64k       5
+> fio_mmap_sync_read_rr_4k        3
+>
+> The fio_mmap_randread_1k has regression against 3.2-rc7, but no
+> regression against 3.2-rc6 kernel, still checking why. The fiops has
+> improvement for read/write mixed workload. CFQ is known not good for
+> read/write mixed workload.
+>
+> Thanks,
+> Shaohua
+>
 
-:(  i had put those warnings to prevent the crash itself and what's causing it.
-may be i had missed that pos can be < 0 in addition to (pos > 37).
-i am just looking at those areas of code for some other issue. hope i
-can a find a fix
-for both of them
+Hi,
 
->
-> Good news is that I remembered to decrease console font size before the
-> crash. So now I could see that the long stack trace was just a decoy to
-> ensure that the first Oops scrolls too far up. I now have photos of the
-> first one, too.
->
-> Process: kworker/u:2 (pid: 1419, threadinfo ffff88013dc38000, task
-> ffff8800891020d0)
-> Stack:
->  ffff88013dc39c10 ffff880136111ae0 ffff880136110460 0000000000000040
->  ffff880136114000 0000000000000000 ffff88013dc39d20 ffffffffa0560a35
->  0000000000000001 0000000000000202 ffff8801361140f0 ffff88013ed3ea48
-> Call trace:
->  ath9k_config+0x115/0x780 [ath9k]
->  ? queue_work+0x1a/0x20
->  ? queue_delayed_work+0x25/0x30
->  ? ieee80211_queue_delayed_work+0x46/0x60 [mac80211]
->  ? ath9k_flush+0x155/0x1d0 [ath9k]
->  ieee80211_hw_config+0xe2/0x160 [mac80211]
->  ieee80211_scan_work+0x243/0x5c0 [mac80211]
->  ? __schedule+0x2d7/0x7b0
->  ? ieee80211_scan_rx+0x1c0/0x1c0 [mac80211]
->  process_one_work+0x111/0x390
->
-> Only after this happens "unable to complete kernel paging request" in
-> ath_update_survey_stats
->  worker_thread+0x162/0x340
->  ? manage_workers.clone.26+0x240/0x240
->  kthread+0x96/0xa0
->  kernel_thread_helper+0x4/0x10
->  ? kthread_worker_fn+0x190/0x190
->  ? gs_change+0x13/0x13
->
->
+Looks promising. :) Anyway what's your configuration for the test? Did 
+you use vios scaling based on IO direction and/or ioprio?
 
-
-
--- 
-shafi
+Thanks,
+Namhyung Kim
