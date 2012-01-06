@@ -1,47 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030288Ab2AFKjn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 05:39:43 -0500
-Received: from eastrmfepi106.cox.net ([68.230.241.202]:49159 "EHLO
-	eastrmfepi106.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030200Ab2AFKjm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 05:39:42 -0500
-X-Greylist: delayed 885 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jan 2012 05:39:41 EST
-X-CT-Class: Clean
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A02020B.4F06CBF3.00C3,ss=2,re=0.000,fgs=64
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=SrYs8rolcd1oag5W3dSszTvpo+kXKLnBw6FdA3lSvZA=
- c=1 sm=1 a=Dyoqhi_TatcA:10 a=wsLI3klv4O8A:10 a=n4GsQX9EldgA:10
- a=kkpj74WWH24A:10 a=Cfj4BQAnxiAA:10 a=79FJBTaEl08990sRVKebZw==:17
- a=Zk3OmFfbAAAA:8 a=FLL6SuQIBzq8CCcvFlIA:9 a=Ft8UYL4EG9YA:10 a=2MwLuNeQWPYA:10
- a=x46t9oslO7cA:10 a=thM3Zc55UQ6Gb11i:21 a=nquOak9stY0uQno8:21
- a=79FJBTaEl08990sRVKebZw==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; auth=pass (LOGIN) smtp.auth=gbenga1@cox.net
-Reply-To: <cchhtt@bitscn.net>
-From: "Chevron Texaco Award" <tx@cheron.com>
-Subject: Congratulation's Your Email Won !!
-Date: Fri, 6 Jan 2012 02:24:40 -0800
+	id S1030257Ab2AFKrG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 05:47:06 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:52654 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751Ab2AFKrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 05:47:03 -0500
+Date: Fri, 6 Jan 2012 10:46:58 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Greg KH <gregkh@suse.de>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
+ exist
+Message-ID: <20120106104658.GH27881@csn.ul.ie>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+ <1325499859-2262-8-git-send-email-gilad@benyossef.com>
+ <4F033EC9.4050909@gmail.com>
+ <20120105142017.GA27881@csn.ul.ie>
+ <20120105144011.GU11810@n2100.arm.linux.org.uk>
+ <20120105161739.GD27881@csn.ul.ie>
+ <20120105163529.GA11810@n2100.arm.linux.org.uk>
+ <20120105183504.GF2393@linux.vnet.ibm.com>
+ <20120105222116.GF27881@csn.ul.ie>
+ <4F068F53.50402@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20120106102452.CJXJ25070.eastrmfepo203.cox.net@eastrmimpo306.cox.net>
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4F068F53.50402@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your email emerged in the on-going Chevron/Texaco Award that was held January 5th 2012, and you are to claim the sum of
-$750,000.00 usd, which means you are one of our (5) lucky winner's, Winning ticket number: (CHTX-210-11-38LSD). send the
-following info for funds release.1.Full Names 2. Address 3. Country/State 4. phone  5. Sex: 6. Age 7. Occupation.
-CONTACT AGENT
-Name: Rev Patrick Hanks
-pathanks001@live.com
-with regards Anna Rose.Promotion Announcer
+On Fri, Jan 06, 2012 at 11:36:11AM +0530, Srivatsa S. Bhat wrote:
+> On 01/06/2012 03:51 AM, Mel Gorman wrote:
+> 
+> > (Adding Greg to cc to see if he recalls seeing issues with sysfs dentry
+> > suffering from recursive locking recently)
+> > 
+> > On Thu, Jan 05, 2012 at 10:35:04AM -0800, Paul E. McKenney wrote:
+> >> On Thu, Jan 05, 2012 at 04:35:29PM +0000, Russell King - ARM Linux wrote:
+> >>> On Thu, Jan 05, 2012 at 04:17:39PM +0000, Mel Gorman wrote:
+> >>>> Link please?
+> >>>
+> >>> Forwarded, as its still in my mailbox.
+> >>>
+> >>>> I'm including a patch below under development that is
+> >>>> intended to only cope with the page allocator case under heavy memory
+> >>>> pressure. Currently it does not pass testing because eventually RCU
+> >>>> gets stalled with the following trace
+> >>>>
+> >>>> [ 1817.176001]  [<ffffffff810214d7>] arch_trigger_all_cpu_backtrace+0x87/0xa0
+> >>>> [ 1817.176001]  [<ffffffff810c4779>] __rcu_pending+0x149/0x260
+> >>>> [ 1817.176001]  [<ffffffff810c48ef>] rcu_check_callbacks+0x5f/0x110
+> >>>> [ 1817.176001]  [<ffffffff81068d7f>] update_process_times+0x3f/0x80
+> >>>> [ 1817.176001]  [<ffffffff8108c4eb>] tick_sched_timer+0x5b/0xc0
+> >>>> [ 1817.176001]  [<ffffffff8107f28e>] __run_hrtimer+0xbe/0x1a0
+> >>>> [ 1817.176001]  [<ffffffff8107f581>] hrtimer_interrupt+0xc1/0x1e0
+> >>>> [ 1817.176001]  [<ffffffff81020ef3>] smp_apic_timer_interrupt+0x63/0xa0
+> >>>> [ 1817.176001]  [<ffffffff81449073>] apic_timer_interrupt+0x13/0x20
+> >>>> [ 1817.176001]  [<ffffffff8116c135>] vfsmount_lock_local_lock+0x25/0x30
+> >>>> [ 1817.176001]  [<ffffffff8115c855>] path_init+0x2d5/0x370
+> >>>> [ 1817.176001]  [<ffffffff8115eecd>] path_lookupat+0x2d/0x620
+> >>>> [ 1817.176001]  [<ffffffff8115f4ef>] do_path_lookup+0x2f/0xd0
+> >>>> [ 1817.176001]  [<ffffffff811602af>] user_path_at_empty+0x9f/0xd0
+> >>>> [ 1817.176001]  [<ffffffff81154e7b>] vfs_fstatat+0x4b/0x90
+> >>>> [ 1817.176001]  [<ffffffff81154f4f>] sys_newlstat+0x1f/0x50
+> >>>> [ 1817.176001]  [<ffffffff81448692>] system_call_fastpath+0x16/0x1b
+> >>>>
+> >>>> It might be a separate bug, don't know for sure.
+> >>
+> > 
+> > I rebased the patch on top of 3.2 and tested again with a bunch of
+> > debugging options set (PROVE_RCU, PROVE_LOCKING etc). Same results. CPU
+> > hotplug is a lot more reliable and less likely to hang but eventually
+> > gets into trouble.
+> > 
+> 
+> I was running some CPU hotplug stress tests recently and found it to be
+> problematic too. Mel, I have some logs from those tests which appear very
+> relevant to the "IPI to offline CPU" issue that has been discussed in this
+> thread.
+> 
+> Kernel: 3.2-rc7
+> Here is the log: 
+> (Unfortunately I couldn't capture the log intact, due to some annoying
+> serial console issues, but I hope this log is good enough to analyze.)
+>   
+
+Ok, it looks vaguely similar to what I'm seeing. I think I spotted
+the sysfs problem as well and am testing a series. I'll add you to
+the cc if it passes tests locally.
+
+Thanks.
+
+-- 
+Mel Gorman
+SUSE Labs
