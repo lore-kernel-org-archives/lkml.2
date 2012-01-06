@@ -1,82 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553Ab2AFGrf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 01:47:35 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:34541 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932115Ab2AFGrJ (ORCPT
+	id S1752468Ab2AFGrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 01:47:01 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:64674 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab2AFGrA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 01:47:09 -0500
-Message-ID: <4F0698D8.3000300@tao.ma>
-Date: Fri, 06 Jan 2012 14:46:48 +0800
-From: Tao Ma <tm@tao.ma>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Fri, 6 Jan 2012 01:47:00 -0500
 MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: do not drain pagevecs for mlock
-References: <1325226961-4271-1-git-send-email-tm@tao.ma> <CAHGf_=qOGy3MQgiFyfeG82+gbDXTBT5KQjgR7JqMfQ7e7RSGpA@mail.gmail.com> <4EFD7AE3.8020403@tao.ma> <CAHGf_=pODc6fLGJAEZWzQtUd6fj6v=fV9n6UTwysqRR1SwY++A@mail.gmail.com> <4EFD8832.6010905@tao.ma> <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <4F069120.8060300@tao.ma> <CAHGf_=qhKbVCeUe+y8Hmb=ke-f417K5EYFo=j4ZODVGwewgh6A@mail.gmail.com> <4F06951E.7050605@tao.ma> <4F06959D.2070100@gmail.com>
-In-Reply-To: <4F06959D.2070100@gmail.com>
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
+References: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
+Date: Thu, 5 Jan 2012 22:46:58 -0800
+Message-ID: <CAOesGMiMervHeVZeTitC20QScGhHOL2nqnmZTBRc17s-K1OhZA@mail.gmail.com>
+Subject: Re: [PATCH] backlight: lcd: add driver for raster-type lcd's with
+ gpio controlled panel reset
+From: Olof Johansson <olof@lixom.net>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rpurdie@rpsys.net, linux-samsung-soc@vger.kernel.org,
+        grant.likely@secretlab.ca, rob.herring@calxeda.com,
+        kgene.kim@samsung.com, jg1.han@samsung.com,
+        broonie@opensource.wolfsonmicro.com, kyungmin.park@samsung.com,
+        cbou@mail.ru, kwangwoo.lee@gmail.com, augulis.darius@gmail.com,
+        ben-linux@fluff.org, lars@metafoo.de, patches@linaro.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2012 02:33 PM, KOSAKI Motohiro wrote:
-> (1/6/12 1:30 AM), Tao Ma wrote:
->> On 01/06/2012 02:18 PM, KOSAKI Motohiro wrote:
->>> 2012/1/6 Tao Ma<tm@tao.ma>:
->>>> Hi Kosaki,
->>>> On 12/30/2011 06:07 PM, KOSAKI Motohiro wrote:
->>>>>>> Because your test program is too artificial. 20sec/100000times =
->>>>>>> 200usec. And your
->>>>>>> program repeat mlock and munlock the exact same address. so, yes, if
->>>>>>> lru_add_drain_all() is removed, it become near no-op. but it's
->>>>>>> worthless comparision.
->>>>>>> none of any practical program does such strange mlock usage.
->>>>>> yes, I should say it is artificial. But mlock did cause the
->>>>>> problem in
->>>>>> our product system and perf shows that the mlock uses the system time
->>>>>> much more than others. That's the reason we created this program
->>>>>> to test
->>>>>> whether mlock really sucks. And we compared the result with
->>>>>> rhel5(2.6.18) which runs much much faster.
->>>>>>
->>>>>> And from the commit log you described, we can remove
->>>>>> lru_add_drain_all
->>>>>> safely here, so why add it? At least removing it makes mlock much
->>>>>> faster
->>>>>> compared to the vanilla kernel.
->>>>>
->>>>> If we remove it, we lose to a test way of mlock. "Memlocked" field of
->>>>> /proc/meminfo
->>>>> show inaccurate number very easily. So, if 200usec is no avoidable,
->>>>> I'll ack you.
->>>>> But I'm not convinced yet.
->>>> Do you find something new for this?
->>>
->>> No.
->>>
->>> Or more exactly, 200usec is my calculation mistake. your program call
->>> mlock
->>> 3 times per each iteration. so, correct cost is 66usec.
->> yes, so mlock can do 15000/s, it is even slower than the whole i/o time
->> for some not very fast ssd disk and I don't think it is endurable. I
->> guess we should remove it, right? Or you have another other suggestion
->> that I can try for it?
-> 
-> read whole thread.
-I have read the whole thread, and you just described that the test case
-is artificial and there is no suggestion or patch about how to resolve
-it. As I have said that it is very time-consuming and with more cpu
-cores, the more penalty, and an i/o time for a ssd can be faster than
-it. So do you think 66 usec is OK for a memory operation?
+Hi,
 
-Thanks
-Tao
+This looks much better than the previous approach. Some comments on
+the binding below.
+
+On Thu, Jan 5, 2012 at 7:42 AM, Thomas Abraham
+<thomas.abraham@linaro.org> wrote:
+
+> diff --git a/Documentation/devicetree/bindings/lcd/lcd-pwrctrl.txt b/Documentation/devicetree/bindings/lcd/lcd-pwrctrl.txt
+> new file mode 100644
+> index 0000000..941e2ff
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/lcd/lcd-pwrctrl.txt
+> @@ -0,0 +1,39 @@
+> +* Power controller for simple lcd panels
+> +
+> +Some LCD panels provide a simple control interface for the host system. The
+> +control mechanism would include a nRESET line connected to a gpio of the host
+> +system and a Vcc supply line which the host can optionally be controlled using
+> +a voltage regulator. Such simple panels do not support serial command
+> +interface (such as i2c or spi) or memory-mapped-io interface.
+> +
+> +Required properties:
+> +- compatible: should be 'lcd,powerctrl'
+
+The convention for names is "vendor,product", so it would be better to
+name this something like "lcd-powercontrol"
+
+> +- gpios: The GPIO number of the host system used to control the nRESET line.
+> +  The format of the gpio specifier depends on the gpio controller of the
+> +  host system.
+> +
+> +Optional properties:
+> +- lcd,pwrctrl-nreset-gpio-invert: When the nRESET line is asserted low, the
+> +  lcd panel is reset and stays in reset mode as long as the nRESET line is
+> +  asserted low. This is the default behaviour of most lcd panels. If a lcd
+> +  panel requires the nRESET line to be asserted high for panel reset, then
+> +  this property is used.
+> +- lcd,pwrctrl-min-uV: If a regulator controls the Vcc voltage of the lcd panel,
+> +  this property specifies the minimum voltage the regulator should supply.
+> +  The value of this property should in in micro-volts.
+> +- lcd,pwrctrl-max-uV: If a regulator controls the Vcc voltage of the lcd panel,
+> +  this property specifies the maximum voltage the regulator should limit to
+> +  on the Vcc line. The value of this property should in in micro-volts.
+> +- vcc-lcd-supply: phandle of the regulator that controls the vcc supply to
+> +  the lcd panel.
+
+The above names are somewhat inconsistent. Why abbreviate powercontrol
+in different ways between compatible and properties, for example.
+
+Also, since there's no vendor to prefix with, it might just be easier
+to avoid the prefix alltogether, or use a <word>-<property> prefix
+instead, such as:
+
+lcd-reset-gpios
+lcd-reset-active-low   (some platforms can specify polarity in the
+gpio specifier, so I'm not sure if this is needed?
+lcd-power-min-uV
+lcd-power-max-uV
+lcd-power-supply
+
+> +
+> +Example:
+> +
+> +       lcd_pwrctrl {
+> +               compatible = "lcd,powerctrl";
+> +               gpios = <&gpe0 4 1 0 0>;
+> +               lcd,pwrctrl-nreset-gpio-invert;
+> +               lcd,pwrctrl-min-uV = <2500000>;
+> +               lcd,pwrctrl-max-uV = <3300000>;
+> +               lcd-vcc-supply - <&regulator7>;
+> +       };
+
+
+[...]
+> +
+> +#ifdef CONFIG_OF
+> +static void __devinit lcd_pwrctrl_parse_dt(struct device *dev,
+> +                                       struct lcd_pwrctrl_data *pdata)
+> +{
+> +       struct device_node *np = dev->of_node;
+> +
+> +       pdata->gpio = of_get_gpio(np, 0);
+> +       if (of_get_property(np, "lcd,pwrctrl-nreset-gpio-invert", NULL))
+> +               pdata->invert = true;
+> +       of_property_read_u32(np, "lcd,pwrctrl-min-uV", &pdata->min_uV);
+> +       of_property_read_u32(np, "lcd,pwrctrl-max-uV", &pdata->max_uV);
+> +}
+> +#endif
+> +
+> +static int __devinit lcd_pwrctrl_probe(struct platform_device *pdev)
+> +{
+> +       struct lcd_pwrctrl *lp;
+> +       struct lcd_pwrctrl_data *pdata = pdev->dev.platform_data;
+> +       struct device *dev = &pdev->dev;
+> +       int err;
+> +
+> +#ifdef CONFIG_OF
+> +       if (dev->of_node) {
+> +               pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +               if (!pdata) {
+> +                       dev_err(dev, "memory allocation for pdata failed\n");
+> +                       return -ENOMEM;
+> +               }
+> +               lcd_pwrctrl_parse_dt(dev, pdata);
+> +       }
+> +#endif
+
+The usual way of handling this is by checking if pdata is NULL, and if
+so, call lcd_pwrctrl_fill_pdata() that returns an allocated pdata
+structure (and check pdata for NULL again). That can also be done by
+doing a stub that returns NULL and not use ifdef in the C code.
+
+[...]
+
+> diff --git a/include/video/lcd_pwrctrl.h b/include/video/lcd_pwrctrl.h
+> new file mode 100644
+> index 0000000..75b6ce2
+> --- /dev/null
+> +++ b/include/video/lcd_pwrctrl.h
+> @@ -0,0 +1,30 @@
+> +/*
+> + * Simple lcd panel power control driver.
+> + *
+> + * Copyright (c) 2011-2012 Samsung Electronics Co., Ltd.
+> + * Copyright (c) 2011-2012 Linaro Ltd.
+> + *
+> + * This driver is derived from platform-lcd.h which was written by
+> + * Ben Dooks <ben@simtec.co.uk>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> +*/
+> +
+> +/**
+> + * struct lcd_pwrctrl_data - platform data for lcd_pwrctrl driver.
+> + * @gpio: GPIO number of the host system that connects to nRESET line.
+> + * @invert: True, if output of gpio connected to nRESET should be inverted.
+> + * @min_uV: Minimum required voltage output from the regulator. The voltage
+> + *   should be specified in micro-volts.
+> + * @max_uV: Maximum acceptable voltage output from the regulator. The voltage
+> + *   should be specified in micro-volts.
+> + */
+> +struct lcd_pwrctrl_data {
+> +       int             gpio;
+> +       bool            invert;
+> +       int             min_uV;
+> +       int             max_uV;
+> +};
+
+If this is a pure open firmware driver, then there is no need to
+export this, you can just keep it internal to the C file.
