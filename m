@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759139Ab2AFVga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 16:36:30 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55640 "EHLO
+	id S1759201Ab2AFVio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 16:38:44 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:60755 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758055Ab2AFVg3 (ORCPT
+	with ESMTP id S1751714Ab2AFVim convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 16:36:29 -0500
-Message-ID: <1325892968.4847.4.camel@lappy>
-Subject: Re: Boot regression caused by commit 6829a048
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: linux@razik.name, Trond.Myklebust@netapp.com,
-        Pekka Enberg <penberg@kernel.org>,
-        linux-nfs <linux-nfs@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sat, 07 Jan 2012 01:36:08 +0200
-In-Reply-To: <5A327123-1097-474C-A7F6-7C29BB71FCEE@oracle.com>
-References: <1325871176.4629.35.camel@lappy>
-	 <5A327123-1097-474C-A7F6-7C29BB71FCEE@oracle.com>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Jan 2012 16:38:42 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120106201126.GA7239@kroah.com>
+References: <20120106201126.GA7239@kroah.com>
+Date: Fri, 6 Jan 2012 22:38:41 +0100
+X-Google-Sender-Auth: MJOi9ctyDJ8dquCRAi8WGlR-4Xw
+Message-ID: <CAMuHMdVdTcJFePA2tf-jqnLGW_2i7rJLqAX521SM+rz0YzXJNg@mail.gmail.com>
+Subject: Re: [GIT PATCH] driver core merge for 3.3
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+        Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 13:29 -0500, Chuck Lever wrote:
-> On Jan 6, 2012, at 12:32 PM, Sasha Levin wrote:
-> 
-> > Hi all,
-> > 
-> > I've noticed a boot regression caused by commit 6829a048 ("NFS: Retry
-> > mounting NFSROOT") which has increased boot time by 95 seconds.
-> > 
-> > The scenario is as follows:
-> > - A virtual guest running under the KVM tool.
-> > - Guest is using kernel automatic IP DHCP configuration ("ip=dhcp").
-> > - Guest is booting from a 9p device (which is not detected as block,
-> > and gets mounted after NFS tries to do its mounts).
-> > - No NFS server at all, no NFS parameters passed to the guest kernel.
-> > 
-> > Under this scenario, theres an additional 95 second delay before NFS
-> > fails and tries to boot using 9p:
-> > 
-> > [...]
-> > [    6.505269] md: autorun ...
-> > [    6.506954] md: ... autorun DONE.
-> > [  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
-> > [  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
-> > [...]
-> > 
-> > This probably happens since the NFS server isn't configured, so the
-> > bootserver is automatically assumed to be the DHCP server, and with the
-> > commit above we won't simply fail immediately when the NFS code fails
-> > connecting to it.
-> > 
-> > I'm not quite sure about the correct solution for this. While I can
-> > forcefully disable NFS, is it really the right solution? Should we be
-> > retrying a NFS server even if one wasn't specifically set?
-> 
-> What DHCP options are passed to the client?  You can specify the "nfsrootdebug" boot command line option to explore this a little more.
+On Fri, Jan 6, 2012 at 21:11, Greg KH <gregkh@suse.de> wrote:
+> Ben Hutchings (1):
+>      topology: Provide CPU topology in sysfs in !SMP configurations
 
-This is what came out:
+FWIW, as reported before, I can confirm that 3.2.0-next-20120106 crashes
+on m68k during boot:
 
-[    5.220654] NFS: nfs mount opts='vers=2,udp,rsize=4096,wsize=4096,nolock,addr=0.0.0.0'
-[    5.226382] NFS:   parsing nfs mount option 'vers=2'
-[    5.227707] NFS:   parsing nfs mount option 'udp'
-[    5.228781] NFS:   parsing nfs mount option 'rsize=4096'
-[    5.230307] NFS:   parsing nfs mount option 'wsize=4096'
-[    5.231537] NFS:   parsing nfs mount option 'nolock'
-[    5.232834] NFS:   parsing nfs mount option 'addr=0.0.0.0'
-[    5.234069] NFS: mount program didn't pass remote address
+Console: switching to colour frame buffer device 80x30
+fb0: frame buffer device, using 304K of video memory
+Non-volatile memory driver v1.3
+Unable to handle kernel NULL pointer dereference at virtual address 00000020
+Oops: 00000000
+Modules linked in:
+PC: [<000c3f72>] internal_create_group+0x20/0x1ba
+SR: 2304  SP: 00c07f10  a2: 00c05c00
+d0: 00000000    d1: fffff24b    d2: 00000000    d3: 00000000
+d4: 00000000    d5: 002f0a28    a0: 00000008    a1: 002e306e
+Process swapper (pid: 1, task=00c05c00)
+Frame format=7 eff addr=00000020 ssw=0505 faddr=00000020
+wb 1 stat/addr/data: 0000 00000000 00000000
+wb 2 stat/addr/data: 0000 00000000 00000000
+wb 3 stat/addr/data: 0000 00000020 00000000
+push data: 00000000 00000000 00000000 00000000
+Stack from 00c07f78:
+        00000000 00000000 00000000 00000000 00000000 0033d5f0 0033641e 00326632
+        00000000 002e1ff8 000c4130 00000008 00000000 002f0a28 00336436 00000008
+        002f0a28 00000000 0000210c 00000000 00000000 00000000 00000000 00000000
+        00000000 0033d5f0 00002008 00326632 0031dae2 0033641e 0031da66 000249b6
+        00002f04 00000000
+Call Trace: [<0033641e>] topology_sysfs_init+0x0/0x1e
+ [<00326632>] __alloc_bootmem+0x0/0x1a
+ [<000c4130>] sysfs_create_group+0xe/0x14
+ [<00336436>] topology_sysfs_init+0x18/0x1e
+ [<0000210c>] do_one_initcall+0x104/0x19a
+ [<00002008>] do_one_initcall+0x0/0x19a
+ [<00326632>] __alloc_bootmem+0x0/0x1a
+ [<0031dae2>] kernel_init+0x7c/0x11c
+ [<0033641e>] topology_sysfs_init+0x0/0x1e
+ [<0031da66>] kernel_init+0x0/0x11c
+ [<000249b6>] printk+0x0/0x1a
+ [<00002f04>] kernel_thread+0x3a/0x4e
 
-> Typically ip= is used specifically with NFSROOT.  You might review Documentation/filesystems/nfs/nfsroot.txt to see if some combination of boot command line options gives more desirable behavior.
+Code: 2a2e 0010 4a86 6700 0162 4a84 660a 2046 <4aa8> 0018 6700 0154
+4a84 6600 0122 2045 2010 6700 0128 486e fffc 2f00 2f06 61ff
+Disabling lock debugging due to kernel taint
+Kernel panic - not syncing: Attempted to kill init!
 
-Within nfsroot.txt, it says I should specify "root=/dev/nfs" so that
-nfsroot would be used. Why do we try mounting nfsroot if I specifically
-specify something else under "root="?
+Reverting the above commit (ccbc60d3e19a1b6ae66ca0d89b3da02dde62088b)
+fixes it.
 
+So to preserve bisectability, you may want to drop this ommit until the
+UP-only archs have been fixed.
 
--- 
+Gr{oetje,eeting}s,
 
-Sasha.
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
