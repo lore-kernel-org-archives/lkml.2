@@ -1,90 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030427Ab2AFPv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 10:51:29 -0500
-Received: from smtp.eu.citrix.com ([62.200.22.115]:39111 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1030357Ab2AFPv1 (ORCPT
+	id S1030440Ab2AFP6H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 10:58:07 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:33505 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030385Ab2AFP6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 10:51:27 -0500
-X-IronPort-AV: E=Sophos;i="4.71,468,1320624000"; 
-   d="scan'208";a="9868155"
-Subject: Re: [Xen-devel] [PATCH 4/5] xen/pciback: Expand the warning message
- to include domain id.
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Jan Beulich <JBeulich@suse.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>
-Date: Fri, 6 Jan 2012 15:51:25 +0000
-In-Reply-To: <20120106150338.GB5855@phenom.dumpdata.com>
-References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com>
-	 <1325724403-29642-5-git-send-email-konrad.wilk@oracle.com>
-	 <4F06C101020000780006AC32@nat28.tlf.novell.com>
-	 <20120106150338.GB5855@phenom.dumpdata.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.3- 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1325865086.25206.512.camel@zakaz.uk.xensource.com>
+	Fri, 6 Jan 2012 10:58:05 -0500
+Date: Fri, 6 Jan 2012 13:57:50 -0200
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
+Message-ID: <20120106155750.GA3536@oc1711230544.ibm.com>
+References: <ed54708d-990e-4c8f-8057-50a70f93d3d8@default>
+ <20120105170523.GA19022@oc1711230544.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105170523.GA19022@oc1711230544.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12010615-9254-0000-0000-000007BFC84A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 15:03 +0000, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jan 06, 2012 at 08:38:09AM +0000, Jan Beulich wrote:
-> > >>> On 05.01.12 at 01:46, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > > When a PCI device is transferred to another domain and it is still
-> > > in usage (from the internal perspective), mention which other
-> > > domain is using it to aid in debugging.
-> > > 
-> > > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > > ---
-> > >  drivers/xen/xen-pciback/xenbus.c |    6 ++++--
-> > >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-> > > index 474d52e..fa130bd 100644
-> > > --- a/drivers/xen/xen-pciback/xenbus.c
-> > > +++ b/drivers/xen/xen-pciback/xenbus.c
-> > > @@ -243,8 +243,10 @@ static int xen_pcibk_export_device(struct 
-> > > xen_pcibk_device *pdev,
-> > >  	dev_dbg(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
-> > >  	if (xen_register_device_domain_owner(dev,
-> > >  					     pdev->xdev->otherend_id) != 0) {
-> > > -		dev_err(&dev->dev, "device has been assigned to another " \
-> > > -			"domain! Over-writting the ownership, but beware.\n");
-> > > +		int other_domain = xen_find_device_domain_owner(dev);
-> > > +		dev_err(&dev->dev, "device has been assigned to %d " \
-> > > +			"domain! Over-writting the ownership, but beware.\n",
-> > > +			other_domain);
+On Thu, Jan 05, 2012 at 03:05:24PM -0200, Thadeu Lima de Souza Cascardo wrote:
+> > ----- Original Message -----
+> > From: cascardo@linux.vnet.ibm.com
+> > To: venkat.x.venkatsubra@oracle.com
+> > Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org, cascardo@linux.vnet.ibm.com, dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+> > Sent: Wednesday, January 4, 2012 4:03:42 PM GMT -06:00 US/Canada Central
+> > Subject: [PATCH] rds_rdma: don't assume infiniband device is PCI
 > > 
-> > As you're touching this anyway, how about fixing the other minor
-> > issues with it too? E.g.
+> > RDS code assumes that the struct ib_device dma_device member, which is a
+> > pointer, points to a struct device embedded in a struct pci_dev.
 > > 
-> > 		dev_err(&dev->dev, "Device appears to be assigned to dom%d!"
-> > 			" Overwriting the ownership, but beware.\n",
-> > 			xen_find_device_domain_owner(dev));
+> > This is not the case for ehca, for example, which is a OF driver, and
+> > makes dma_device point to a struct device embedded in a struct
+> > platform_device.
 > > 
-> > (a native English speaker may want to comment the "but beware"
-> > part - it reads odd for me).
+> > This will make the system crash when rds_rdma is loaded in a system
+> > with ehca, since it will try to access the bus member of a non-existent
+> > struct pci_dev.
+> > 
+> > The only reason rds_rdma uses the struct pci_dev is to get the NUMA node
+> > the device is attached to. Using dev_to_node for that is much better,
+> > since it won't assume which bus the infiniband is attached to.
+> > 
+> > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> > Cc: dledford@redhat.com
+> > Cc: Jes.Sorensen@redhat.com
+> > Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+> > Cc: rds-devel@oss.oracle.com
+> > ---
+> >  net/rds/ib.h |    3 +--
+> >  1 files changed, 1 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/net/rds/ib.h b/net/rds/ib.h
+> > index edfaaaf..8d2b3d5 100644
+> > --- a/net/rds/ib.h
+> > +++ b/net/rds/ib.h
+> > @@ -186,8 +186,7 @@ struct rds_ib_device {
+> >  	struct work_struct	free_work;
+> >  };
+> >  
+> > -#define pcidev_to_node(pcidev) pcibus_to_node(pcidev->bus)
+> > -#define ibdev_to_node(ibdev) pcidev_to_node(to_pci_dev(ibdev->dma_device))
+> > +#define ibdev_to_node(ibdev) dev_to_node(ibdev->dma_device)
+> >  #define rdsibdev_to_node(rdsibdev) ibdev_to_node(rdsibdev->dev)
+> >  
+> >  /* bits for i_ack_flags */
+> > -- 
+> > 1.7.4.4
+> > 
 > 
-> Hm, lets ask the English speakers. Ian?
+> On Thu, Jan 05, 2012 at 08:56:34AM -0800, Venkat Venkatsubra wrote:
+> > Hi Cascardo,
+> > 
+> > Your changes look good to me.
+> > But our latest code doesn't use this rdsibdev_to_node macro anywhere.
+> > Checking with the people in my group who know the history of the NUMA feature.
+> > Trying to find out if the call to kzalloc_node() can be replaced by kzalloc().
+> > In which case this macro can be removed.
+> > 
+> > I will keep you posted.
+> > 
+> > Venkat
+> > 
+> 
+> Hi, Venkat.
+> 
+> Do you have any public tree where we can track the last changes in RDS?
+> Note that I have changed ibsdev_to_node, which rdsibdev_to_node makes
+> use of. Anyway, replacing kzalloc_node with kzalloc has crossed my mind,
+> but since I was not sure if this would affect latency of RDS in any use
+> cases, I kept that and used a better function to get the node from the
+> device. And we have dev_to_node since 2.6.20, so it should not be a
+> problem to use it.
+> 
+> If possible, keep everyone copied and avoid top posting.
+> 
+> Regards.
+> Cascardo.
 
-I think you underestimate a native speakers ability to mangle a
-language. Especially this one ;-)
+Just to make it clean, ibdev_to_node is used in Linus' tree and
+next/master as of today and this patch fixes a real oops. I should have
+probably added the stack trace in the log message. For completion, here
+it is, running 3.2.0-rc7-00039-g89307ba:
 
-Anyway, I think it's unnecessary, so you may as well drop it and just
-have:
+NET: Registered protocol family 21
+Registered RDS/iwarp transport
+Unable to handle kernel paging request for data at address 0x00000088
+Faulting instruction address: 0xc0000000000336d0
+cpu 0x6: Vector: 300 (Data Access) at [c0000000ddd837e0]
+    pc: c0000000000336d0: .pcibus_to_node+0x0/0x10
+    lr: d000000004590de0: .rds_ib_add_one+0x100/0x360 [rds_rdma]
+    sp: c0000000ddd83a60
+   msr: 8000000000009032
+   dar: 88
+ dsisr: 40000000
+  current = 0xc0000000ee6c0000
+  paca    = 0xc000000006c32d00
+    pid   = 8574, comm = modprobe
+enter ? for help
+[link register   ] d000000004590de0 .rds_ib_add_one+0x100/0x360
+[rds_rdma]
+[c0000000ddd83a60] d000000004590d88 .rds_ib_add_one+0xa8/0x360
+[rds_rdma] (unreliable)
+[c0000000ddd83b10] d000000003195240 .ib_register_client+0xc0/0x120
+[ib_core]
+[c0000000ddd83bb0] d00000000459074c .rds_ib_init+0x2c/0xf0 [rds_rdma]
+[c0000000ddd83c30] d000000004590144 .rds_rdma_init+0xe4/0x180 [rds_rdma]
+[c0000000ddd83cd0] c00000000000aa54 .do_one_initcall+0x64/0x1e0
+[c0000000ddd83d90] c0000000000d359c .SyS_init_module+0xcc/0x220
+[c0000000ddd83e30] c0000000000097e4 syscall_exit+0x0/0x40
+--- Exception: c00 (System Call) at 00000fff7dc3d3d8
+SP (fffe87eeeb0) is in userspace
 
- 		dev_err(&dev->dev, "Device appears to be assigned to dom%d!"
- 			" Overwriting the ownership.\n",
- 			xen_find_device_domain_owner(dev));
-
-I suppose you might want "Overriding ownership to dom%d".
-
-Ian.
+Regards.
+Cascardo.
 
