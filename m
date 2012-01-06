@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab2AFRzL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 12:55:11 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59989 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758900Ab2AFRzJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 12:55:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAGTjWtB3PjWDfaunXjF-KQwKYg-bPgrn-8N=8iwL0EPvviXMuw@mail.gmail.com>
-References: <20120104225223.18184.1537.stgit@mike2.sea.corp.google.com>
- <20120104225237.18184.71853.stgit@mike2.sea.corp.google.com>
- <87y5tnat2g.fsf@rustcorp.com.au> <CAGTjWtB3PjWDfaunXjF-KQwKYg-bPgrn-8N=8iwL0EPvviXMuw@mail.gmail.com>
-From: Mike Waychison <mikew@google.com>
-Date: Fri, 6 Jan 2012 09:54:46 -0800
-Message-ID: <CAGTjWtBbLtm47kozBC2fdwGYKsOooQec0W9PwUEAF58mYDioaQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v1 2/2] virtio_net: Don't disable napi on low memory.
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1030427Ab2AFR4n (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 12:56:43 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46060 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758300Ab2AFR4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 12:56:41 -0500
+Subject: Re: [PATCH] kprobe: fix a memory leak in function
+ pre_handler_kretprobe()
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+In-Reply-To: <4F07261A.6080403@gmail.com>
+References: <4F07261A.6080403@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Jan 2012 09:56:01 -0800
+Message-ID: <1325872561.3351.10.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+x-cbid: 12010617-9360-0000-0000-0000022CA2D3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 6:46 PM, Mike Waychison <mikew@google.com> wrote:
-> On Wed, Jan 4, 2012 at 4:31 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> 4) You use the skb data for the linked list; use the skb head's list.
+On Sat, 2012-01-07 at 00:49 +0800, Jiang Liu wrote:
+> From: Jiang Liu<liuj97@gmail.com>
+> 
+> In function pre_handler_kretprobe(), the allocated kretprobe_instance object will
+> be leaked if the entry_handler callback returns non-zero. This may cause all the
+> preallocated kretprobe_instance objects exhausted. This issue could be reproduced
+> by changing samples/kprobes/kretprobe_example.c to probe "mutex_unlock". And the
+> fix is straight forward, just put the allocated kretprobe_instance object back
+> onto the free_instances list.
+> 
+> Signed-off-by: Jiang Liu<liuj97@gmail.com>
+> Cc: Hien Nguyen<hien@us.ibm.com>
+> Cc: Jim Keniston<jkenisto@us.ibm.com>
+> Cc: Prasanna S Panchamukhi<prasanna@in.ibm.com>
 
-What did you mean by this?  I was under the impression that the ->next
-and ->prev fields in sk_buff were the first two elements specifically
-so that the pointer could be treated as a list_head.  If it's the cast
-in particular that you have an objection with, I can easily change
-this to a singly linked list threaded through ->next if that's
-cleaner.
+Acked-by: Jim Keniston <jkenisto@us.ibm.com>
 
->>
->> Instead, here's how I think it should be done:
-...
->
-> This sounds reasonable to me.  I'll see what I can muster together this week.
->
+BTW, Prasanna is no longer at IBM, and Hien's address is
+hienqngu@us.ibm.com .  Ananth (cc-ed) is probably IBM's best kprobes
+reviewer.
 
-So I started implementing it the way you were mentioning, and ran into
-a problem with the original patchset.
+> ---
+>   kprobes.c |    6 +++++-
+>   1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1660,8 +1660,12 @@
+>                  ri->rp = rp;
+>                  ri->task = current;
+> 
+> -               if (rp->entry_handler&&  rp->entry_handler(ri, regs))
+> +               if (rp->entry_handler&&  rp->entry_handler(ri, regs)) {
+> +                       spin_lock_irqsave(&rp->lock, flags);
+> +                       hlist_add_head(&ri->hlist,&rp->free_instances);
+> +                       spin_unlock_irqrestore(&rp->lock, flags);
+>                          return 0;
+> +               }
+> 
+>                  arch_prepare_kretprobe(ri, regs);
+> 
+> 
 
-Currently the "mergeable" and "big" receive buffers use a private page
-free list (virtnet_info->pages) which has no synchronization itself.
-This means that the batched version can't use get_a_page() and
-give_pages() as is, which reduces the need to re-use the same alloc
-halves that I've split.   Alternatives I can think of at this point:
 
-- pass in a flag to the allocators like "bool is_serial" that is true
-if we are serializing with napi, (which determines if we can much with
-vi->pages)
-or
-- not use the same allocators for the "mergeable" and "big" paths.
-The mergeable allocator in the non-serialized case reduces to
-alloc_page(), while the big allocator looks like a copy and paste that
-uses alloc_page instead of get_a_page().
-
-Preferences?  I'll code one of the two up and see what it looks like.
