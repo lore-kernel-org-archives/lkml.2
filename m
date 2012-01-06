@@ -1,63 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176Ab2AFUmj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 15:42:39 -0500
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47260 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759166Ab2AFUmi (ORCPT
+	id S1759186Ab2AFUnH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 15:43:07 -0500
+Received: from numidia.opendz.org ([98.142.220.152]:47194 "EHLO
+	numidia.opendz.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759062Ab2AFUnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 15:42:38 -0500
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Jan Beulich <JBeulich@suse.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
-Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
-In-Reply-To: Your message of "Thu, 05 Jan 2012 14:04:30 GMT."
-             <4F05BBFE020000780006A983@nat28.tlf.novell.com>
-From: Valdis.Kletnieks@vt.edu
-References: <4F05BBFE020000780006A983@nat28.tlf.novell.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1325882419_3358P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Fri, 06 Jan 2012 15:40:19 -0500
-Message-ID: <73464.1325882419@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020208.4F075C39.0012,ss=1,re=0.000,fgs=0,
-	ip=0.0.0.0,
-	so=2011-07-25 19:15:43,
-	dmn=2011-05-27 18:58:46,
-	mode=single engine
-X-Junkmail-IWF: false
+	Fri, 6 Jan 2012 15:43:04 -0500
+Date: Fri, 6 Jan 2012 21:46:01 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: linux-next: manual merge of the vfs tree with the ext4 tree
+Message-ID: <20120106204601.GA26305@dztty>
+References: <20120106135442.1720766a6c1510abf51b2aff@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120106135442.1720766a6c1510abf51b2aff@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1325882419_3358P
-Content-Type: text/plain; charset=us-ascii
+Hello,
 
-On Thu, 05 Jan 2012 14:04:30 GMT, Jan Beulich said:
-> Forever these two functions have been limited to deal with at most 4G
-> at a time. While I cannot point out an in-tree user that would require
-> larger sizes, it is now the second time that within our Xen kernel we got
-> bitten by that limitation.
+(Cc'ed Jan Kara).
 
-Wow.  Second time?  What the heck is the Xen kernel *doing* that it's
-trying to do over 4G in a single memset/memcpy?
+On Fri, Jan 06, 2012 at 01:54:42PM +1100, Stephen Rothwell wrote:
+> Hi Al,
+> 
+> Today's linux-next merge of the vfs tree got a conflict in
+> fs/ext4/ioctl.c between commits 2a415f129806 ("ext4: add missing
+> ext4_resize_end on error paths") and 22cdfca56418 ("ext4: remove unneeded
+> file_remove_suid() from ext4_ioctl()") from the ext4 tree and commit
+There is also another commit from ext4 involved:
+commit ce06c5fa14f1a ("ext{3,4}: Fix potential race when setversion ioctl
+updates inode) by Jan Kara.
 
---==_Exmh_1325882419_3358P
-Content-Type: application/pgp-signature
+All these ext4 commits are fine.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> a561be7100cd ("switch a bunch of places to mnt_want_write_file()") from
+> the vfs tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc fs/ext4/ioctl.c
+> index f2c335b,d37b3bb..0000000
+> --- a/fs/ext4/ioctl.c
+> +++ b/fs/ext4/ioctl.c
+> @@@ -173,11 -170,8 +173,11 @@@ flags_out
+>   			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
+>   		}
+>   		ext4_journal_stop(handle);
+>  +
+>  +unlock_out:
+>  +		mutex_unlock(&inode->i_mutex);
+This is the code related to commit: ce06c5fa14f1a
 
-iD8DBQFPB1wzcC3lWbTT17ARAm+UAJ9GQJ0ceZku5tRPaVvpdzm868jlAACg0bRm
-qSN5cBkWQwEi8Q907Byhn+Q=
-=U3eQ
------END PGP SIGNATURE-----
+Thanks for the fix.
 
---==_Exmh_1325882419_3358P--
+>   setversion_out:
+> - 		mnt_drop_write(filp->f_path.mnt);
+> + 		mnt_drop_write_file(filp);
+>   		return err;
+>   	}
+>   	case EXT4_IOC_GROUP_EXTEND: {
+> @@@ -197,13 -189,12 +197,13 @@@
+>   			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
+>   			ext4_msg(sb, KERN_ERR,
+>   				 "Online resizing not supported with bigalloc");
+>  -			return -EOPNOTSUPP;
+>  +			err = -EOPNOTSUPP;
+>  +			goto group_extend_out;
+>   		}
+>   
+> - 		err = mnt_want_write(filp->f_path.mnt);
+> + 		err = mnt_want_write_file(filp);
+>   		if (err)
+>  -			return err;
+>  +			goto group_extend_out;
+>   
+>   		err = ext4_group_extend(sb, EXT4_SB(sb)->s_es, n_blocks_count);
+>   		if (EXT4_SB(sb)->s_journal) {
+> @@@ -213,10 -204,9 +213,10 @@@
+>   		}
+>   		if (err == 0)
+>   			err = err2;
+>  +
+> - 		mnt_drop_write(filp->f_path.mnt);
+> + 		mnt_drop_write_file(filp);
+>  +group_extend_out:
+>   		ext4_resize_end(sb);
+>  -
+>   		return err;
+>   	}
+>   
+> @@@ -256,7 -246,9 +256,7 @@@
+>   
+>   		err = ext4_move_extents(filp, donor_filp, me.orig_start,
+>   					me.donor_start, me.len, &me.moved_len);
+> - 		mnt_drop_write(filp->f_path.mnt);
+> + 		mnt_drop_write_file(filp);
+>  -		if (me.moved_len > 0)
+>  -			file_remove_suid(donor_filp);
+>   
+>   		if (copy_to_user((struct move_extent __user *)arg,
+>   				 &me, sizeof(me)))
+> @@@ -284,13 -274,12 +284,13 @@@ mext_out
+>   			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
+>   			ext4_msg(sb, KERN_ERR,
+>   				 "Online resizing not supported with bigalloc");
+>  -			return -EOPNOTSUPP;
+>  +			err = -EOPNOTSUPP;
+>  +			goto group_add_out;
+>   		}
+>   
+> - 		err = mnt_want_write(filp->f_path.mnt);
+> + 		err = mnt_want_write_file(filp);
+>   		if (err)
+>  -			return err;
+>  +			goto group_add_out;
+>   
+>   		err = ext4_group_add(sb, &input);
+>   		if (EXT4_SB(sb)->s_journal) {
+> @@@ -300,10 -289,9 +300,10 @@@
+>   		}
+>   		if (err == 0)
+>   			err = err2;
+>  +
+> - 		mnt_drop_write(filp->f_path.mnt);
+> + 		mnt_drop_write_file(filp);
+>  +group_add_out:
+>   		ext4_resize_end(sb);
+>  -
+>   		return err;
+>   	}
+>   
 
+
+
+-- 
+tixxdz
+http://opendz.org
