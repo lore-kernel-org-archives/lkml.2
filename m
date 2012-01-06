@@ -1,175 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab2AFCVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 21:21:14 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42596 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758446Ab2AFCVL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 21:21:11 -0500
+	id S1758541Ab2AFCW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 21:22:27 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:63951 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758252Ab2AFCW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 21:22:26 -0500
+Message-ID: <4F065B6F.6060506@cn.fujitsu.com>
+Date: Fri, 06 Jan 2012 10:24:47 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20120105184604.GA11065@atrey.karlin.mff.cuni.cz>
-References: <1322208422-12346-1-git-send-email-Barry.Song@csr.com>
- <CAGsJ_4ziRj1oEhmMYjc6yJvS2FHYn+uRWmSaggnJQQjqi=B6gw@mail.gmail.com> <20120105184604.GA11065@atrey.karlin.mff.cuni.cz>
-From: Barry Song <21cnbao@gmail.com>
-Date: Fri, 6 Jan 2012 10:20:49 +0800
-Message-ID: <CAGsJ_4ypEKZLXf0KU81=dRADcxesxKVyqg0UnEKGaxthNMZQ-g@mail.gmail.com>
-Subject: Re: [PATCH v2] PM: HIBERNATION: skip the swap size check if the
- snapshot image size is anticipative
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Barry Song <Barry.Song@csr.com>, rjw@sisk.pl,
-        linux-pm@lists.linux-foundation.org, workgroup.linux@csr.com,
-        Xiangzhen Ye <Xiangzhen.Ye@csr.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Barry Song <Baohua.Song@csr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: fix to allow mounting a hierarchy by name
+References: <4EF9291D.7030208@cn.fujitsu.com> <20111227163535.GA17712@google.com> <4EFAB2E2.4040008@cn.fujitsu.com> <20111228163631.GN17712@google.com> <4EFBD55E.5030106@cn.fujitsu.com> <20111229162313.GD3516@google.com> <4EFD531C.50300@cn.fujitsu.com> <20120105174507.GC18486@google.com>
+In-Reply-To: <20120105174507.GC18486@google.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-06 10:21:28,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2012-01-06 10:21:29,
+	Serialize complete at 2012-01-06 10:21:29
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/6 Pavel Machek <pavel@ucw.cz>:
-> Hi!
->
-> Is the check even useful these days? Should we remove it altogether?
-
-i think we can let users or distributions decide whether it is useful.
-On PC, disk space is not an issue, people might run many applications
-while doing hibernation, so snapshot is much big. an early check will
-improve user experience because people don't need to wait a long time
-and find space is not enough.
-for embedded system, SoC solutions can know whether the space is
-enough since they know what are running while doing hibernation, so
-they can skip the check by setting the flag in sysfs.
-that is why i had this patch sent.
->
->                                               Pavel
->
->
->> Pavel ,Rafael, any feedback?
->> -barry
+Tejun Heo wrote:
+> Hello,
+> 
+> On Fri, Dec 30, 2011 at 01:58:52PM +0800, Li Zefan wrote:
+>> Normal filesystems can have multi mount points, and an fs instance
+>> is identified by device name, but cgroupfs ignores device name like
+>> other pseudo filesystems. Instead a set of subsystems is used, so
+>> to mount the same cgroupfs instance in different mount points, we
+>> can do this:
 >>
->> 2011/11/25 Barry Song <Barry.Song@csr.com>:
->> > From: Barry Song <baohua.song@csr.com>
->> >
->> > Current swsusp requires swap partitions even larger than real saved pages
->> > based on the worst compression ratio:
->> > but for an embedded system, which has limited storage space, then it might
->> > can't give the large partition to save snapshot.
->> > In the another way, some embedded systems can definitely know the most size
->> > needed for snapshot since they run some specific application lists.
->> > So this patch provides the possibility for users to tell kernel even
->> > the system has a little snapshot partition, but it is still enough.
->> > For example, if the system need to save 120MB memory, origin swsusp will require
->> > a 130MB partition to save snapshot. but if users know 30MB is enough for them(
->> > compressed image will be less than 30MB), they just make a 30MB partition by
->> > echo 0 > /sys/power/check_swap_size
->> >
->> > Signed-off-by: Barry Song <Baohua.Song@csr.com>
->> > Cc: Xiangzhen Ye <Xiangzhen.Ye@csr.com>
->> > ---
->> >  -v2:drop swap_enough bootargs and use /sys/power/check_swap_size node
->> >
->> >  Documentation/power/interface.txt |    5 +++++
->> >  kernel/power/hibernate.c          |   22 ++++++++++++++++++++++
->> >  kernel/power/power.h              |    2 ++
->> >  kernel/power/swap.c               |    9 +++++++++
->> >  4 files changed, 38 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/Documentation/power/interface.txt b/Documentation/power/interface.txt
->> > index c537834..5e205f0 100644
->> > --- a/Documentation/power/interface.txt
->> > +++ b/Documentation/power/interface.txt
->> > @@ -47,6 +47,11 @@ Writing to this file will accept one of
->> >        'testproc'
->> >        'test'
->> >
->> > +/sys/power/check_swap_size controls whether we can skip checking the swap
->> > +partition size by worst compression ratio. If users know the swap partition
->> > +is enough for compressed snapshot, write 0 to /sys/power/check_swap_size.
->> > +It is useful for an embedded system with known running softwares.
->> > +
->> >  /sys/power/image_size controls the size of the image created by
->> >  the suspend-to-disk mechanism.  It can be written a string
->> >  representing a non-negative integer that will be used as an upper
->> > diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
->> > index 1c53f7f..5552473 100644
->> > --- a/kernel/power/hibernate.c
->> > +++ b/kernel/power/hibernate.c
->> > @@ -1024,11 +1024,33 @@ static ssize_t reserved_size_store(struct kobject *kobj,
->> >
->> >  power_attr(reserved_size);
->> >
->> > +static ssize_t check_swap_size_show(struct kobject *kobj, struct kobj_attribute *attr,
->> > +                              char *buf)
->> > +{
->> > +       return sprintf(buf, "%d\n", check_swap_size);
->> > +}
->> > +
->> > +static ssize_t check_swap_size_store(struct kobject *kobj, struct kobj_attribute *attr,
->> > +                               const char *buf, size_t n)
->> > +{
->> > +       int check_size;
->> > +
->> > +       if (sscanf(buf, "%d", &check_size) == 1) {
->> > +               check_swap_size = check_size;
->> > +               return n;
->> > +       }
->> > +
->> > +       return -EINVAL;
->> > +}
->> > +
->> > +power_attr(check_swap_size);
->> > +
->> >  static struct attribute * g[] = {
->> >        &disk_attr.attr,
->> >        &resume_attr.attr,
->> >        &image_size_attr.attr,
->> >        &reserved_size_attr.attr,
->> > +       &check_swap_size_attr.attr,
->> >        NULL,
->> >  };
->> >
->> > diff --git a/kernel/power/power.h b/kernel/power/power.h
->> > index 23a2db1..4f0fa78 100644
->> > --- a/kernel/power/power.h
->> > +++ b/kernel/power/power.h
->> > @@ -74,6 +74,8 @@ static struct kobj_attribute _name##_attr = { \
->> >
->> >  /* Preferred image size in bytes (default 500 MB) */
->> >  extern unsigned long image_size;
->> > +/* If 0, skip checking whether the swap size is enough for compressed snapshot */
->> > +extern int check_swap_size;
->> >  /* Size of memory reserved for drivers (default SPARE_PAGES x PAGE_SIZE) */
->> >  extern unsigned long reserved_size;
->> >  extern int in_suspend;
->> > diff --git a/kernel/power/swap.c b/kernel/power/swap.c
->> > index 11a594c..db90195 100644
->> > --- a/kernel/power/swap.c
->> > +++ b/kernel/power/swap.c
->> > @@ -37,6 +37,12 @@
->> >  #define HIBERNATE_SIG  "S1SUSPEND"
->> >
->> >  /*
->> > + * if users know swap partitions are enough for compressed snapshots,
->> > + * echo 0 > /sys/power/check_swap_size
->> > + */
->> > +int check_swap_size = 1;
->> > +
->> > +/*
->> >  *     The swap map is a data structure used for keeping track of each page
->> >  *     written to a swap partition.  It consists of many swap_map_page
->> >  *     structures that contain each an array of MAP_PAGE_ENTRIES swap entries.
->> > @@ -772,6 +778,9 @@ static int enough_swap(unsigned int nr_pages, unsigned int flags)
->> >        unsigned int free_swap = count_swap_pages(root_swap, 1);
->> >        unsigned int required;
->> >
->> > +       if (!check_swap_size)
->> > +               return 1;
->> > +
->> >        pr_debug("PM: Free swap pages: %u\n", free_swap);
->> >
->> >        required = PAGES_FOR_IO + ((flags & SF_NOCOMPRESS_MODE) ?
->> > --
->> > 1.7.1
->
--barry
+>> 	# mount -t cgroup -o cpuset xxx /cgroup1
+>> 	# mount -t cgroup -o cpuset xxx /cgroup2
+>>
+>> Now we have the "none" option, so a cgroupfs can have no subsystems
+>> bound to it, and we allow multi instances of such cgroupfs, so we
+>> have to assign names to each instance:
+>>
+>> 	# mount -t cgroup -o none,name=hier1 xxx /cgroup1
+>> 	# mount -t cgroup -o none,name=hier2 xxx /cgroup2
+>>
+>> Then we want to also mount "hier1" in another mount point, we can't
+>> do this:
+>>
+>> 	# mount -t cgroup -o none xxx /mnt
+>>
+>> because we have two different instances with "none" subsystem. So
+>> we specify its name:
+>>
+>> 	# mount -t cgroup -o none,name=hier1 xxx /mnt
+>>
+>> Hope I have made things clear to you?
+> 
+> mount --bind?  It's not exactly the same thing but I don't think the
+> differences would matter for cgroup.
+
+There's a corner case where "mount --bind" can't be used:
+
+	# mount -t cgroup -o none,name=hier1 xxx /mnt
+	# mkdir /mnt/tmp
+	# umount /mnt
+
+Since there's a sub-cgroup in it, umount won't destroy the hierarchy,
+but "hide" it, so the name=xxx is necessary to re-mount it.
+
+> Also, what's the use case for
+> mounting the same cgroup directory multiple times?  Why is that
+> necessary?  Is it useful for some namespace-savvy setup?
+> 
+
+I don't have a use case in real life. It was made so at the very
+beginning of cgroup, and we should't break it without strong reasons.
+We can mount other pseudo filesystems like procfs, sysfs and debugfs
+multiple times, right?
