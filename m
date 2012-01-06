@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030448Ab2AFXBd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 18:01:33 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65430 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab2AFXBb (ORCPT
+	id S1758740Ab2AFXJl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 18:09:41 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60586 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab2AFXJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 18:01:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <4F063DD6.5050403@xenotime.net>
-References: <20120105191218.42825638a431bc1aba4879de@canb.auug.org.au> <4F063DD6.5050403@xenotime.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Jan 2012 15:01:09 -0800
-X-Google-Sender-Auth: vATc64Ek_LQtAAfwM0kmr49fqgM
-Message-ID: <CA+55aFx7vzez6C5M6EmZPDmkHig-mY=p64vZWWmWWe-nmxH4=w@mail.gmail.com>
-Subject: Re: [PATCH -next] fs: fix fs/fs-writeback.c build error
-To: Randy Dunlap <rdunlap@xenotime.net>, Wu Fengguang <fengguang.wu@intel.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Jan 2012 18:09:39 -0500
+X-Authority-Analysis: v=2.0 cv=I83ntacg c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5Kkf9dAxP3YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=wcSRNVWAP18JcTYqjYUA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1325891377.7642.17.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH] recordmcount: Fix handling of elf64 big-endian objects.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
+Date: Fri, 06 Jan 2012 18:09:37 -0500
+In-Reply-To: <4F075CAE.2040709@gmail.com>
+References: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>
+	 <1324350542.5916.48.camel@gandalf.stny.rr.com> <4F075CAE.2040709@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 4:18 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->
-> In linux-next, fs/fs-writeback.c no longer #includes <linux/buffer_head.h>,
-> which #included <linux/pagemap.h>, so add that latter header file to
-> <linux/writeback.h> to fix the build error:
->
-> fs/fs-writeback.c:510:11: error: 'PAGE_CACHE_SHIFT' undeclared (first use in this function)
+On Fri, 2012-01-06 at 12:42 -0800, David Daney wrote:
 
-I would actually suggest:
+> Any more feedback on this patch?  Should I look for it to appear in 3.3?
 
- - move the whole MIN_WRITEBACK_PAGES #define from the header file to
-fs/writeback.c (why expose such a random #define to outside users that
-have nothing to do with it?)
+OK, I tested it and then I noticed that mainline doesn't have
+"HAVE_C_RECORDMCOUNT" set. Is that going in the PPC tree? I added that
+to arch/powerpc/Kconfig, and did see the bug you saw. After adding your
+patch, I did a diff of the available_filter_functions and had this:
 
- - make sure that fs/fs-writeback.c has that pagemap.h #include.
+> .elf_core_extra_phdrs
+> .elf_core_write_extra_phdrs
+> .elf_core_write_extra_data
+> .elf_core_extra_data_size
 
-There's no reason why <linux/writeback.h> should include filemap.h per
-se, and there is no reason why it should expose some internal chunking
-#define to anybody else.
+These 4 functions were added after doing the change. Weird.
 
-Wu?
+Anyway, I'll run the change through my normal tests and then push it
+out.
 
-                  Linus
+Thanks!
+
+-- Steve
+
+
