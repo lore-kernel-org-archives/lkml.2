@@ -1,100 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab2AFJlv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 04:41:51 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:53812 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754930Ab2AFJlt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 04:41:49 -0500
+	id S933147Ab2AFJpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 04:45:51 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43533 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757762Ab2AFJpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 04:45:47 -0500
+Date: Fri, 6 Jan 2012 10:43:40 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>,
+        Federica Teodori <federica.teodori@googlemail.com>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
+Message-ID: <20120106094339.GA9990@elte.hu>
+References: <20120104201800.GA2587@www.outflux.net>
+ <20120105091704.GB3249@elte.hu>
+ <CAGXu5jJ=D1pKCZ8=1-WGkm0witNEH9Ux01+1BJyZKC_DAX00aA@mail.gmail.com>
+ <20120106073635.GC14188@elte.hu>
+ <20120106012120.32c3f370.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20120104065337.230911609@sli10-conroe.sh.intel.com>
-References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
-From: Zhu Yanhai <zhu.yanhai@gmail.com>
-Date: Fri, 6 Jan 2012 17:41:27 +0800
-Message-ID: <CAC8teKXs7YQSzcC151B0PRQpz0Uu9=L1mC9VfOxx-Hxc5g2SCA@mail.gmail.com>
-Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, vgoyal@redhat.com,
-        jmoyer@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120106012120.32c3f370.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-2012/1/4 Shaohua Li <shaohua.li@intel.com>:
-> An IOPS based I/O scheduler
->
-> Flash based storage has some different characteristics against rotate disk.
-> 1. no I/O seek.
-> 2. read and write I/O cost usually is much different.
-> 3. Time which a request takes depends on request size.
-> 4. High throughput and IOPS, low latency.
->
-> CFQ iosched does well for rotate disk, for example fair dispatching, idle
-> for sequential read. It also has optimization for flash based storage (for
-> item 1 above), but overall it's not designed for flash based storage. It's
-> a slice based algorithm. Since flash based storage request cost is very
-> low, and drive has big queue_depth is quite popular now which makes
-> dispatching cost even lower, CFQ's slice accounting (jiffy based)
-> doesn't work well. CFQ doesn't consider above item 2 & 3.
->
-> FIOPS (Fair IOPS) ioscheduler is trying to fix the gaps. It's IOPS based, so
-> only targets for drive without I/O seek. It's quite similar like CFQ, but
-> the dispatch decision is made according to IOPS instead of slice.
->
-> The algorithm is simple. Drive has a service tree, and each task lives in
-> the tree. The key into the tree is called vios (virtual I/O). Every request
-> has vios, which is calculated according to its ioprio, request size and so
-> on. Task's vios is the sum of vios of all requests it dispatches. FIOPS
-> always selects task with minimum vios in the service tree and let the task
-> dispatch request. The dispatched request's vios is then added to the task's
-> vios and the task is repositioned in the sevice tree.
->
-> The series are orgnized as:
-> Patch 1: separate CFQ's io context management code. FIOPS will use it too.
-> Patch 2: The core FIOPS.
-> Patch 3: request read/write vios scale. This demontrates how the vios scale.
->
-> To make the code simple for easy view, some scale code isn't included here,
-> some not implementated yet.
->
-> TODO:
-> 1. ioprio support (have patch already)
-> 2. request size vios scale
-> 3. cgroup support
-> 4. tracing support
-> 5. automatically select default iosched according to QUEUE_FLAG_NONROT.
+* Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Actually most RAID cards we have ever seen report the wrong value for
-this flag, including LSI's 1078E, 9260/9265, HBA cards, etc. So it may
-needs a human-being to setup it correctly to make this adaptive code
-work.
-Also there is a much more complicated scenario ahead :) that's the
-hybrid storage. E.g, one or two SSD mixed with several SAS disks, or
-one expensive FusionIO's ioDrive mixed with several SAS disks, powered
-by Facebook's Flashcache. AFAIK there is not any IO bandwidth control
-solution for such things. However such setups are really very popular
-these days.
-I'm going to take some tests with these code against the real workload
-this month, hopefully we can get more ideas, and of course the
-feedback data.
+> > +config PROTECTED_STICKY_SYMLINKS
+> > +	bool "Protect symlink following in sticky world-writable directories"
+> > +	default y
+> > +	help
+> > +	  A long-standing class of security issues is the symlink-based
+> > +	  time-of-check-time-of-use race, most commonly seen in
+> > +	  world-writable directories like /tmp. The common method of
+> > +	  exploitation of this flaw is to cross privilege boundaries
+> > +	  when following a given symlink (i.e. a root process follows
+> > +	  a malicious symlink belonging to another user).
+> > +
+> > +	  Enabling this solves the problem by permitting symlinks to be
+> > +	  followed only when outside a sticky world-writable directory,
+> > +	  or when the uid of the symlink and follower match, or when
+> > +	  the directory and symlink owners match.
+> 
+> This is all quite misleading.  One would expect that 
+> CONFIG_PROTECTED_STICKY_SYMLINKS turns the entire feature on 
+> or off permanently.  ie, it controls whether the code is 
+> generated into vmlinux in the usual fashion.  But it's not 
+> that at all - the user gets the feature whether or not he 
+> wants it, and this variable only sets the initial value.
+> 
+> Why are we forcing the user to have the feature if he doesn't 
+> want it, btw?
 
---
+Basing on the (not yet fully confirmed) assertion that no apps 
+are broken by this change but exploits, I'd argue that this is 
+actually the sane and correct semantics for symlinks - i.e. we 
+want this to be the default Linux behavior - not just a 
+'feature'.
+
+That way the configuration knobs are compat settings in essence 
+- in case some app cares.
+
+If people disagree and want it default off and as a separate 
+feature then it has to be modularized out some more. There's 
+notable silence from VFS folks on all this so Kees made an 
+educated guess. It might be wrong.
+
+> And we appear to be enabling the feature if CONFIG_PROC_FS=n, 
+> which might not be terribly useful?
+
+It can still be useful if it's default on - just cannot be 
+turned off via /proc/sys/, right?
+
+The combination that is not so useful is when it's off and 
+there's !PROC_FS. If it's a compat feature then i wouldnt bother 
+about it. If it's a separated out modular feature in a separate 
+.c file then it can all be properly shaped via Kconfig 
+dependencies.
+
 Thanks,
-Zhu Yanhai
-Taobao Inc.
 
->
-> Comments and suggestions are welcome!
->
-> Thanks,
-> Shaohua
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	Ingo
