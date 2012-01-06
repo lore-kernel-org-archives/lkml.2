@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab2AFHM4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 02:12:56 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51107 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab2AFHMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 02:12:54 -0500
-Date: Fri, 6 Jan 2012 08:10:37 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Nick Bowler <nbowler@elliptictech.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
-Message-ID: <20120106071037.GA14188@elte.hu>
-References: <20120104201800.GA2587@www.outflux.net>
- <20120105143008.GA31728@elliptictech.com>
- <CAGXu5jLYhxOK8u-H8mhTvHBzvkRi8d-=zTeginjukDMEFri-0Q@mail.gmail.com>
- <20120105200810.GA3826@elliptictech.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120105200810.GA3826@elliptictech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S1753327Ab2AFHN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 02:13:59 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:16152 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751235Ab2AFHN5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 02:13:57 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-8a-4f069f33908b
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, "'Greg KH'" <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Russell King'" <rmk@arm.linux.org.uk>,
+        "'Kay Sievers'" <kay.sievers@vrfy.org>
+References: <20120106175717.5c39c7f62d73889e29e9b764@canb.auug.org.au>
+In-reply-to: <20120106175717.5c39c7f62d73889e29e9b764@canb.auug.org.au>
+Subject: RE: linux-next: manual merge of the driver-core tree with the arm tree
+Date: Fri, 06 Jan 2012 16:13:53 +0900
+Message-id: <031901cccc42$bf84a1b0$3e8de510$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczMQHIHp3M9/Zz3RVmFiJc2fC2rMgAAaTrA
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Nick Bowler <nbowler@elliptictech.com> wrote:
-
-> > >> +config PROTECTED_STICKY_SYMLINKS
-> > >> +     bool "Protect symlink following in sticky world-writable directories"
-> > >> +     default y
-> > > [...]
-> > >
-> > > Why do we need a config option for this?  What's wrong 
-> > > with just using the sysctl?
-> > 
-> > This way the sysctl can configured directly without needing 
-> > to have a distro add a new item to sysctl.conf.
+Stephen Rothwell wrote:
 > 
-> This seems totally pointless to me. [...]
-
-It's how we add new features typically. From a distro's POV 
-.config's are a lot more durable than system specific 
-sysctl.conf's.
-
-User can of course still override via the sysctl.conf, but the 
-kernel (and the distro) wants to provide a sane default that 
-does not depend on userspace settings.
-
-Also, there are people who test new kernels but don't want to 
-change the underlying distro. Twiddling such .config values is 
-quite straightforward for them.
-
-> [...]  There are tons of sysctls that don't have Kconfig 
-> options: what makes this one special?
-
-Those are old mistakes we want to forget about.
-
-> > > Why have you made this option "default y", when enabling 
-> > > it clearly makes user-visible changes to kernel behaviour?
-> > 
-> > Ingo specifically asked me to make it "default y".
+> Hi Greg,
 > 
-> But this is a brand new feature that changes longstanding 
-> behaviour of various syscalls.  Making it default to enabled 
-> is rather mean to users (since it will tend to get enabled by 
-> "oldconfig") and seems almost guaranteed to cause regressions.
+> Today's linux-next merge of the driver-core tree got a conflict in
+> arch/arm/mach-s5pv210/common.c between commit 1f34f0e2fb86 ("ARM: 7252/1:
+> restart: S5PV210: use new restart hook") from the arm tree and commit
+> 4a858cfc9af8 ("arm: convert sysdev_class to a regular subsystem") from
+> the driver-core tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/mach-s5pv210/common.c
+> index 2622b8a,28e71ef..0000000
+> --- a/arch/arm/mach-s5pv210/common.c
+> +++ b/arch/arm/mach-s5pv210/common.c
+> @@@ -231,38 -185,20 +232,38 @@@ static struct device s5pv210_dev =
+> 
+>   static int __init s5pv210_core_init(void)
+>   {
+> - 	return sysdev_class_register(&s5pv210_sysclass);
+> + 	return subsys_system_register(&s5pv210_subsys, NULL);
+>   }
+>  -
+>   core_initcall(s5pv210_core_init);
+> 
+>   int __init s5pv210_init(void)
+>   {
+>   	printk(KERN_INFO "S5PV210: Initializing architecture\n");
+> - 	return sysdev_register(&s5pv210_sysdev);
+> ++	return device_register(&s5pv210_dev);
+>  +}
+> 
+>  -	/* set idle function */
+>  -	pm_idle = s5pv210_idle;
+>  +static struct s3c24xx_uart_clksrc s5pv210_serial_clocks[] = {
+>  +	[0] = {
+>  +		.name		= "pclk",
+>  +		.divisor	= 1,
+>  +		.min_baud	= 0,
+>  +		.max_baud	= 0,
+>  +	},
+>  +};
+> 
+Hi,
 
-The changelog of the feature (which feature has been in use for 
-years in various [admittedly smaller] distros) says that it does 
-not break apps.
+Well, above is removed by commit afba7f91 ("ARM: SAMSUNG: remove struct
+'s3c24xx_uart_clksrc' and all uses of it"). But I'm not sure we don't need
+to add it for current conflicts between driver-core and arm tree because the
+commit afba7f91 is in arm-soc tree.
 
-Worth a try: it will be very easy to flip it back if it causes a 
-regression - but we'd like it to have at least *some* testing in 
-the merge window to see whether there *is* some broken (or not 
-so broken) app that relies on the current semantics.
+>  -	/* set sw_reset function */
+>  -	s5p_reset_hook = s5pv210_sw_reset;
+>  +/* uart registration process */
+> 
+>  -	return device_register(&s5pv210_dev);
+>  +void __init s5pv210_init_uarts(struct s3c2410_uartcfg *cfg, int no)
+>  +{
+>  +	struct s3c2410_uartcfg *tcfg = cfg;
+>  +	u32 ucnt;
+>  +
+>  +	for (ucnt = 0; ucnt < no; ucnt++, tcfg++) {
+>  +		if (!tcfg->clocks) {
+>  +			tcfg->clocks = s5pv210_serial_clocks;
+>  +			tcfg->clocks_size =
+ARRAY_SIZE(s5pv210_serial_clocks);
+>  +		}
+>  +	}
+>  +
 
-Thanks,
+Same as above.
 
-	Ingo
+>  +	s3c24xx_init_uartdevs("s5pv210-uart", s5p_uart_resources, cfg, no);
+>   }
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
