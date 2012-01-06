@@ -1,77 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933075Ab2AFAI0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 19:08:26 -0500
+	id S933101Ab2AFAIx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 19:08:53 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:53709 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932235Ab2AFAIZ (ORCPT
+	with ESMTP id S932235Ab2AFAIv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 19:08:25 -0500
-Message-ID: <4F063B75.8020207@lwfinger.net>
-Date: Thu, 05 Jan 2012 18:08:21 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111220 Thunderbird/9.0
+	Thu, 5 Jan 2012 19:08:51 -0500
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>, netdev@vger.kernel.org,
-        gwingerde@gmail.com, davem@davemloft.net, bhutchings@solarflare.com,
-        greg@kroah.com, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] drivers: misc: Remove MISC_DEVICES config option
-References: <1325796541-11402-1-git-send-email-festevam@gmail.com> <4F0635FE.6050507@xenotime.net>
-In-Reply-To: <4F0635FE.6050507@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120105221817.GA4498@elliptictech.com>
+References: <20120104201800.GA2587@www.outflux.net>
+	<20120105143008.GA31728@elliptictech.com>
+	<CAGXu5jLYhxOK8u-H8mhTvHBzvkRi8d-=zTeginjukDMEFri-0Q@mail.gmail.com>
+	<20120105200810.GA3826@elliptictech.com>
+	<CAGXu5jKe_qpQ9yG4f0J_94WNKYy_qdDNdVW4v74ZivwO4Xy0Rg@mail.gmail.com>
+	<20120105221817.GA4498@elliptictech.com>
+Date: Thu, 5 Jan 2012 16:08:51 -0800
+X-Google-Sender-Auth: FtXUddMH8xnyOxqSqtFwTAdVECY
+Message-ID: <CAGXu5j++E2o+HajzdZdxvJ2cxw3aSLX6gHvXZnzKW56ZyuwjeQ@mail.gmail.com>
+Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
+From: Kees Cook <keescook@chromium.org>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>,
+        Federica Teodori <federica.teodori@googlemail.com>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fabio,
+On Thu, Jan 5, 2012 at 2:18 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> On 2012-01-05 12:55 -0800, Kees Cook wrote:
+>> On Thu, Jan 5, 2012 at 12:08 PM, Nick Bowler <nbowler@elliptictech.com> wrote:
+>> > On 2012-01-05 11:34 -0800, Kees Cook wrote:
+>> >> On Thu, Jan 5, 2012 at 6:30 AM, Nick Bowler <nbowler@elliptictech.com> wrote:
+>> >> > On 2012-01-04 12:18 -0800, Kees Cook wrote:
+>> >> >> diff --git a/fs/Kconfig b/fs/Kconfig
+>> >> >> index 5f4c45d..26ede24 100644
+>> >> >> --- a/fs/Kconfig
+>> >> >> +++ b/fs/Kconfig
+>> >> >> @@ -278,3 +278,19 @@ source "fs/nls/Kconfig"
+>> >> >>  source "fs/dlm/Kconfig"
+>> >> >>
+>> >> >>  endmenu
+>> >> >> +
+>> >> >> +config PROTECTED_STICKY_SYMLINKS
+>> >> >> +     bool "Protect symlink following in sticky world-writable directories"
+>> >> >> +     default y
+>> >> > [...]
+>> >> >
+>> >> > Why do we need a config option for this?  What's wrong with just using
+>> >> > the sysctl?
+>> >>
+>> >> This way the sysctl can configured directly without needing to have a
+>> >> distro add a new item to sysctl.conf.
+>> >
+>> > This seems totally pointless to me.  There are tons of sysctls that
+>> > don't have Kconfig options: what makes this one special?
+>>
+>> Most are system tuning; this is directly related to vulnerability
+>> mitigation. Besides, I like having CONFIGs for sysctls because then I
+>> can build my kernel the way I want it without having to worry about
+>> tweaking my userspace sysctl.conf file, or run newer kernels on older
+>> userspaces, etc etc.
+>
+> I agree that having kconfig knobs for sysctls may be convenient for some
+> users.  But every kconfig option we add requires the user to make a
+> decision before building their kernel.  In this case, this decision is
+> a waste of time because the option doesn't really affect the kernel in a
+> meaningful way: either choice can be easily changed from userspace after
+> booting.  A similar argument could be applied to almost any sysctl, and
+> we could add hundreds of new Kconfig options to control their default
+> values.  The result would be untenable.
+>
+> Perhaps what we need instead is a way to set arbitrary sysctls from the
+> kernel command line.  This could easily be done by an initramfs, and not
+> require any changes to the kernel at all.
 
-Does this patch fix your problem?
+At present, I answer to Ingo and Al. I have no strong opinion on this
+area of the patch. Ingo requested it be this way, so I'm leaving it.
+:)
 
-Larry
+>> >> > Why have you made this option "default y", when enabling it clearly
+>> >> > makes user-visible changes to kernel behaviour?
+>> >>
+>> >> Ingo specifically asked me to make it "default y".
+>> >
+>> > But this is a brand new feature that changes longstanding behaviour of
+>> > various syscalls.  Making it default to enabled is rather mean to users
+>> > (since it will tend to get enabled by "oldconfig") and seems almost
+>> > guaranteed to cause regressions.
+>>
+>> I couldn't disagree more. There has been zero evidence of this change
+>> causing anything but regressions in _attacks_.
+>
+> We have absolutely no idea what applications people are running that
+> will be affected by this change.  Of course there's no evidence of
+> breakage, because affected users (if any) have not had a single chance
+> to try this new feature out: it's not in the kernel yet.
 
-Index: wireless-testing-new/drivers/misc/Kconfig
-===================================================================
---- wireless-testing-new.orig/drivers/misc/Kconfig
-+++ wireless-testing-new/drivers/misc/Kconfig
-@@ -10,6 +10,17 @@ config SENSORS_LIS3LV02D
-         select INPUT_POLLDEV
-         default n
+Ubuntu has been running with this restriction since Oct 2010. I've
+seen 0 reports of this causing a regression. Openwall and grsecurity
+have had this restriction for way longer without problem too.
 
-+# This selection is used by several wireless devices, and placing it outside
-+# the MISC_DEVICES conditional allows those drivers to be built no matter
-+# the MISC_DEVICES value.
-+config EEPROM_93CX6
-+       tristate "EEPROM 93CX6 support"
-+       help
-+         This is a driver for the EEPROM chipsets 93c46 and 93c66.
-+         The driver supports both read as well as write commands.
-+
-+         If unsure, say N.
-+
-  menuconfig MISC_DEVICES
-         bool "Misc devices"
-         ---help---
-Index: wireless-testing-new/drivers/misc/eeprom/Kconfig
-===================================================================
---- wireless-testing-new.orig/drivers/misc/eeprom/Kconfig
-+++ wireless-testing-new/drivers/misc/eeprom/Kconfig
-@@ -62,14 +62,6 @@ config EEPROM_MAX6875
-           will be called max6875.
+>> If anything, I think there should be no CONFIG and no sysctl, and it
+>> should be entirely non-optional. But since this patch needs consensus,
+>> I have provided knobs to control it. This is the way of security
+>> features. For example, years back I added a knob for /proc/$pid/maps
+>> protection being optional (and defaulted it to insecure because of
+>> people's fear of regression), and eventually it changed to
+>> secure-by-default, and then the knob went away completely because it
+>> didn't actually cause problems.
+>
+> The process you describe above for /proc/$pid/maps is the right way to
+> change kernel behaviour while mitigating the risk of regressions.  With
+> this patch, you've skipped all those important steps!
 
+Like I said, I'm trying to keep the VFS maintainers happy. My original
+patch had the default as 0 -- which was following my original
+conservative approach.
 
--config EEPROM_93CX6
--       tristate "EEPROM 93CX6 support"
--       help
--         This is a driver for the EEPROM chipsets 93c46 and 93c66.
--         The driver supports both read as well as write commands.
--
--         If unsure, say N.
--
-  config EEPROM_93XX46
-         tristate "Microwire EEPROM 93XX46 support"
-         depends on SPI && SYSFS
+-Kees
 
-
+-- 
+Kees Cook
+ChromeOS Security
