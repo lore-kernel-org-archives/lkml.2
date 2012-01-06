@@ -1,143 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933101Ab2AFIQU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 03:16:20 -0500
-Received: from mailx.hitachi.co.jp ([133.145.228.49]:63529 "EHLO
-	mailx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab2AFIQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 03:16:19 -0500
-X-AuditID: b753bd60-98d93ba000007b1b-ea-4f06ad4a793f
-X-AuditID: b753bd60-98d93ba000007b1b-ea-4f06ad4a793f
-Message-ID: <4F06AD22.3090806@hitachi.com>
-Date: Fri, 06 Jan 2012 17:13:22 +0900
-From: Hiraku TOYOOKA <hiraku.toyooka.gu@hitachi.com>
-User-Agent: Thunderbird 2.0.0.19 (Windows/20081209)
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: trace: multiple ring buffers
-References: <4EF054B4.7050308@hitachi.com> <1324399529.2926.14.camel@fedora>
-In-Reply-To: <1324399529.2926.14.camel@fedora>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S933108Ab2AFIRj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 03:17:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932909Ab2AFIRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 03:17:37 -0500
+Message-ID: <1325837842.9815.33.camel@cr0>
+Subject: Re: linux-next: manual merge of the kmap_atomic tree with the
+ staging tree
+From: Cong Wang <amwang@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>, Greg KH <greg@kroah.com>
+Date: Fri, 06 Jan 2012 16:17:22 +0800
+In-Reply-To: <20120106184055.3669727def69e424cd98690d@canb.auug.org.au>
+References: <20120106184055.3669727def69e424cd98690d@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Steven,
+On Fri, 2012-01-06 at 18:40 +1100, Stephen Rothwell wrote:
+> Hi Cong,
+> 
+> Today's linux-next merge of the kmap_atomic tree got conflicts in
+> drivers/net/hyperv/netvsc_drv.c and drivers/net/hyperv/rndis_filter.c
+> between commit 453263421f88 ("net/hyperv: Remove unnecessary kmap_atomic
+> in netvsc driver") from the staging tree and commit e91cd643d15d ("hv:
+> remove the second argument of k[un]map_atomic()") from the kmap_atomic
+> tree.
+> 
+> The former removed the code modified by the latter, so I did that.
 
-Thank you for your reply.
+This makes sense for me.
 
- >> Multiple buffer support makes these really easy. I'm sure that other users wish
- >> to use it. Of course, it will introduce some complexities to ftrace code.
- >
- > Not really. I've always Nack'd the making of the global_ops non-static
- > for this very reason. The events may need some work, but nothing too
- > hard.
-
-You mentioned the global_trace instead of the global_ops, didn't you?
-
- > Yeah, basically I figured we create another directory inside the
- > debugfs/tracing directory. Maybe call it sub_buffers or something.
- > Inside this directory we could have:
- >
- > create_buffer - a file that you echo a name into to create a new buffer,
- > then a directory with that name will appear in this directory.
- >
- > echo foobar > debugfs/tracing/sub_buffers/create
- >
- > ls debugfs/tracing/sub_buffers/foobar
- >
- > buffer_size_kb current_tracer events set_ftrace_filter ...
- >
- > basically the new directory foobar will be a copy of the debugfs/tracing
- > directory with a few things possibly missing. Then each of these will be
- > agnostic to the main tracer.
-
-Thank you for telling me your idea. I think this interface is nice. I'll try to
-realize it.
-
-Best regards,
-Hiraku Toyooka
+Thanks for fixing it!
 
 
-Steven Rostedt wrote:
-> Hi Hiraku,
-> 
-> Note, it is usually best to contact me at rostedt@goodmis.org (Cc'd) as
-> I don't always check this email. I especially don't check it when
-> traveling, and on holidays (like next week).
-> 
-> On Tue, 2011-12-20 at 18:26 +0900, Hiraku TOYOOKA wrote:
->> Hello, Steven,
->> I'm researching RAS features for real-time systems.
->>
->> I'm interested in the multiple ring buffer support on ftrace because of
->> following reasons.
-> 
-> Yep, that has been requested before.
-> 
->> * To preserve particular events such as error or fault over a long time. These
->> events are useful for failure analysis. But these events could be lost when
->> other trace events are generated in large quantities in one buffer. If there is
->> only one buffer, we have to prepare one big buffer so that the particular events
->> are not overwritten by other events. It wastes memory as a result.
->>
->> * To use the same trace events for different purposes. For example, I'd like to
->> collect trace events and detect performance degradation (using sched_switch
->> event, etc.), while running flight recorder for failure analysis.
->>
->> Multiple buffer support makes these really easy. I'm sure that other users wish
->> to use it. Of course, it will introduce some complexities to ftrace code.
-> 
-> Not really. I've always Nack'd the making of the global_ops non-static
-> for this very reason. The events may need some work, but nothing too
-> hard.
-> 
->> So, I'd like to implement following the features on ftrace.
->>
->> * A mechanism to increase buffers on demand
->> * A mechanism to change destination buffer(s) of each trace event via debugfs
->>
->> I have heard from Masami that you have some ideas of multiple buffers. If so,
->> could you tell me the ideas? I'd like to cooperate with you to develop multiple
->> buffers.
-> 
-> Yeah, basically I figured we create another directory inside the
-> debugfs/tracing directory. Maybe call it sub_buffers or something.
-> Inside this directory we could have:
-> 
-> create_buffer - a file that you echo a name into to create a new buffer,
-> then a directory with that name will appear in this directory.
-> 
-> echo foobar > debugfs/tracing/sub_buffers/create
-> 
-> ls debugfs/tracing/sub_buffers/foobar
-> 
-> buffer_size_kb current_tracer events set_ftrace_filter ...
-> 
-> basically the new directory foobar will be a copy of the debugfs/tracing
-> directory with a few things possibly missing. Then each of these will be
-> agnostic to the main tracer.
-> 
-> This was my idea, and I can think of a few issues that will come up, but
-> nothing that would be a show-stopper.
-> 
-> -- Steve
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
--- 
-Hiraku TOYOOKA
-Linux Technology Center
-Yokohama Research Laboratory
-Hitachi Ltd.
