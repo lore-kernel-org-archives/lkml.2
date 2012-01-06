@@ -1,32 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933124Ab2AFJL7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 04:11:59 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:54751 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932445Ab2AFJL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 04:11:57 -0500
-From: Maarten Vanraes <maarten.vanraes@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: OOM notifications revisited
-Date: Fri, 6 Jan 2012 10:11:52 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.33.7-desktop-2mnb; KDE/4.4.5; x86_64; ; )
+	id S933127Ab2AFJNo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 04:13:44 -0500
+Received: from solca.med.ec ([200.105.240.90]:43798 "EHLO mail.solca.med.ec"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932445Ab2AFJNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 04:13:40 -0500
+X-Greylist: delayed 1445 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jan 2012 04:13:40 EST
+Message-ID: <50004.41.71.147.245.1325840107.squirrel@mail.solca.med.ec>
+Date: Fri, 6 Jan 2012 03:55:07 -0500 (ECT)
+Subject: Webmaster Powiadomienie Code #04KV6f0
+From: "Webmaster Upgrading Department" <info@webmaster.pl>
+Reply-To: customercarewebdept40@w.cn
+User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201061011.52255.maarten.vanraes@gmail.com>
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18628.006
+X-TM-AS-Result: No--1.774-4.5-31-10
+X-imss-scan-details: No--1.774-4.5-31-10
+X-TM-AS-User-Approved-Sender: No
+X-TMASE-MatchedRID: Q6QF7or1Ap7oEmtXXZT7KgDPuhU4P53KI9yVcHNDU7Z4cj3zcdxHt4o9
+	JDEyKOWGe7nQjwn391uLSHl2wluIWVCnpnvgOFGXgxsfzkNRlfKltRcNkC3a6RkBcDGzbZwbt0T
+	fTryqxQi3AXhx3VgvxY3XZ9GLfO7WHp/xox1y/dwxSB/Jyvs6EWVcLxtnLW0onNs1CBxaaWVz/7
+	mmIg7apa+uf5/vyEbyRXiaEKR5pZ9pY2iUG1DXBsMdhJlZhFQKT2jcE+1/SHZ+3BndfXUhXQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Drogi użytkowniku konto e-mail,
 
-revisiting https://lkml.org/lkml/2007/10/18/368 ...
 
-All the memories in the world won't help alleviate this problem...
+       Ten komunikat jest od poczty centrum wiadomości do wszystkich
+właścicieli kont webmail. W pierwszym kwartale 2012 r. Obecnie jest
+przeprowadzenie usługi aktualizacji do naszej bazy danych i e-mail
+centrum konta. Jesteśmy usunięcie wszystkich niewykorzystanych
+konto poczty internetowej, aby utworzyć więcej miejsca dla nowych
+kont.
 
-is there anyone having any sort of start wrt to this problem?
+ Aby zapobiec koncie od usuwania i Aby kontynuować korzystanie z naszych
+usług, które są wymagane do aktualizacji i potwierdzenia konta webmail.
 
-*bump*
+
+ Aby zakończyć potwierdzenia konta za pierwszy kwartał 2012 r., Jesteś
+odpowiedzieć na tę wiadomość natychmiast i wprowadź dane swojego konta w
+wymienionych poniżej.
+
+
+Potwierdzenie informacji o koncie
+Nazwa użytkownika: ..................
+E-mail Login ..............
+Hasło: ..................
+Potwierdź hasło :............
+Data urodzenia: ...............
+
+
+Zostanie wysłany nowy potwierdzenie hasło alfanumeryczne tak, że tylko
+będzie jest ważne w tym okresie i może być zmieniony po zakończeniu
+procesu.
+
+Dziękujemy za zrozumienie.
+Webmaster Upgrading Department
+
+Prawa autorskie 2012 - Komunikacja Webmail - Wszelkie prawa zastrzeżone.
+
