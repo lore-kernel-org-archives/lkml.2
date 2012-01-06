@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758800Ab2AFQYB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 11:24:01 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:38495 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157Ab2AFQYA (ORCPT
+	id S1758805Ab2AFQdm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 11:33:42 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:33124 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751022Ab2AFQdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 11:24:00 -0500
-Message-ID: <4F072073.4040808@canonical.com>
-Date: Fri, 06 Jan 2012 08:25:23 -0800
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Fri, 6 Jan 2012 11:33:41 -0500
+Date: Fri, 6 Jan 2012 08:33:33 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Namhyung Kim <namhyung.kim@lge.com>
+Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
+        dhsharp@google.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCHSET RESEND] ioblame: statistical IO analyzer
+Message-ID: <20120106163333.GI6276@google.com>
+References: <1325806974-23486-1-git-send-email-tj@kernel.org>
+ <4F06B814.2000006@lge.com>
+ <20120106160235.GH6276@google.com>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the
- MT slot state
-References: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
-In-Reply-To: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120106160235.GH6276@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2012 07:16 AM, Henrik Rydberg wrote:
-> This patch adds the ability to extract the MT slot state sequentially
-> via EVIOCGABS. The slot parameter is first selected by calling
-> EVIOCSABS with ABS_MT_SLOT as argument, followed by a set of EVIOCGABS
-> calls. The slot selection is local to the evdev client handler, and
-> does not affect the actual input state.
-> 
-> Cc: Chase Douglas <chase.douglas@canonical.com>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Hi Dmitry,
-> 
-> the first version of this patch was sent a long time ago (May 2010),
-> but was put on hold due to a lack of usecases. Now, it seems such a
-> case has arrived, in the X server (evdev). Some MT events may be much
-> less frequent than others (ABS_MT_ORIENTATION, for example), resulting
-> in wrong touch values being assumed after, say, an X restart.
-> 
-> I am not 100% in favor of this patch myself. Perhaps there should be a
-> more explicit mechanism for selecting slots, for instance.
-> 
-> The patch has been tested against both 3.2 and 3.1 stable.
+Hello, again.
 
-To bolster the claim, I have been working on the X multitouch
-implementation and a library on top of it, utouch-frame. I wrote a test
-case that expects the proper sequence and values of events that
-propagate from the kernel to the X input module, through utouch-frame.
-It was during this testing that I noticed issues that could occur if we
-don't know the current values of axes in each slot.
+On Fri, Jan 06, 2012 at 08:02:35AM -0800, Tejun Heo wrote:
+> Hmmm... originally, I had variable length data structure there but now
+> it's fixed so exposing them using tracepoint shouldn't be too
+> difficult and could actually be better (previously it didn't really
+> fit TP and ringbuffer should be used directly).  Yeah, that's a
+> thought.  Generating a TP event per IO shouldn't be taxing and it
+> would give much better visibility to userland and we can drop the
+> whole statics configuration and stuff.  Enticing.  I'll think more
+> about it.
 
-This patch does what is says, so I'm happy to review it positively
-as-is. It doesn't require a new ioctl, which is a good thing :).
+The more I think about it, the better it seems.  I ended up putting
+the statistics gathering inside the kernel mostly because the
+information I had at IO completion wasn't too fit to export to
+userland verbatim, but while iterating the implementation those parts
+got chopped (it was necessary for statistics too anyway) and now it
+seems I can just replace the whole thing with a single tracepoint and
+drop the whole configurable statistics stuff along with act and its
+reclaiming, and silly _bin interface.  That's just sweeet.  Someohw I
+completely missed the transition of the information available at IO
+completion.
 
-Reviewed-by: Chase Douglas <chase.douglas@canonical.com>
+I might be missing something important but will give it a shot and, if
+it goes as expected, post updated series soon.
+
+Thanks a lot for bringing it up. :)
+
+-- 
+tejun
