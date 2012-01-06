@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758540Ab2AFCRM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 21:17:12 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59995 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757762Ab2AFCRK (ORCPT
+	id S1758561Ab2AFCRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 21:17:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60363 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758530Ab2AFCRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 21:17:10 -0500
-Date: Fri, 6 Jan 2012 06:17:05 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Heiko =?utf-8?Q?St=C3=BCbner?= <heiko@sntech.de>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Vasily Khoruzhick <anarsoul@gmail.com>, linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [PATCH] s3c_adc_battery: average over more than one adc sample
-Message-ID: <20120106021705.GC21540@oksana.dev.rtsoft.ru>
-References: <201112291252.08563.heiko@sntech.de>
+	Thu, 5 Jan 2012 21:17:12 -0500
+Date: Thu, 5 Jan 2012 18:17:07 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Jens Axboe <axboe@kernel.dk>, Shaohua Li <shaohua.li@intel.com>,
+        Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, x86@kernel.org
+Subject: [PATCH block:for-3.3/core] cfq: merged request shouldn't jump to a
+ different cfqq
+Message-ID: <20120106021707.GA6276@google.com>
+References: <20111228211918.GA3516@google.com>
+ <20120103173500.GB31746@google.com>
+ <20120103175922.GC31746@google.com>
+ <20120103200906.GG31746@google.com>
+ <4F03631C.8080501@kernel.dk>
+ <20120103221301.GH31746@google.com>
+ <20120103223505.GI31746@google.com>
+ <20120105012445.GP31746@google.com>
+ <alpine.LSU.2.00.1201051026090.2009@eggly.anvils>
+ <20120105183842.GF18486@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201112291252.08563.heiko@sntech.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120105183842.GF18486@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 29, 2011 at 12:52:07PM +0100, Heiko Stübner wrote:
-> Some sources for adc battery information provide only inaccurate results
-> where the read value differs from the real value with positive and negative
-> offsets. For such sources it can be more accurate to collect two or more
-> value sample and use the average of all collected values.
-> 
-> This patch adds pdata options volt_samples, current_samples and
-> backup_volt_samples to specifiy the number of samples to collect,
-> reads the specified number of samples and calculates the average of those.
-> For unset sample-number-values a default of 1 is assumed.
-> 
-> Signed-off-by: Heiko Stuebner <heiko@sntech.de>
-> ---
+When two requests are merged, if the absorbed request is older than
+the absorbing one, cfq_merged_requests() tries to reposition it in the
+cfqq->fifo list by list_move()'ing the absorbing request to the
+absorbed one before removing it.
 
-Applied, thanks!
+This works if both requests are on the same cfqq but nothing
+guarantees that and the code ends up moving the merged request to a
+different cfqq's fifo list without adjusting the rest.  This leads to
+the following failures.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+* A request may be on the fifo list of a cfqq without holding
+  reference to it and the cfqq can be freed before requst is finished.
+  Among other things, this triggers list debug warning and slab debug
+  use-after-free warning.
+
+* As a request can be on the wrong fifo queue, it may be issued and
+  completed before its cfqq is scheduled.  If the cfqq didn't have
+  other requests on it, it would be empty by the time it's dispatched
+  triggering BUG_ON() in cfq_dispatch_request().
+
+Fix it by making cfq_merged_requests() scan the absorbing request's
+fifo list for the correct slot and move there instead.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Hugh Dickins <hughd@google.com>
+Cc: stable@vger.kernel.org
+---
+It survived my testing long enough and I'm relatively confident this
+should fix the crash but I might have gotten the scanning wrong, so
+please pay extra attention there.
+
+I suspect we just didn't have enough backward request-request merges
+before the recent plug merge updates to trigger this bug.
+
+Thanks.
+
+ block/cfq-iosched.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 163263d..a235cf3 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1663,8 +1663,15 @@ cfq_merged_requests(struct request_queue *q, struct request *rq,
+ 	 */
+ 	if (!list_empty(&rq->queuelist) && !list_empty(&next->queuelist) &&
+ 	    time_before(rq_fifo_time(next), rq_fifo_time(rq))) {
+-		list_move(&rq->queuelist, &next->queuelist);
++		struct request *pos = rq;
++
+ 		rq_set_fifo_time(rq, rq_fifo_time(next));
++
++		list_for_each_entry_continue_reverse(pos, &cfqq->fifo, queuelist)
++			if (time_before_eq(rq_fifo_time(pos), rq_fifo_time(rq)))
++				break;
++		if (rq != pos)
++			list_move(&rq->queuelist, &pos->queuelist);
+ 	}
+ 
+ 	if (cfqq->next_rq == next)
