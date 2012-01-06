@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751082Ab2AFFEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 00:04:21 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:42022 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750762Ab2AFFEU (ORCPT
+	id S1751552Ab2AFFF4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 00:05:56 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:49352 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750901Ab2AFFFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 00:04:20 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=RjEml0hsJoprBq_ynEcA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325826259.12696.66.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Fri, 06 Jan 2012 00:04:19 -0500
-In-Reply-To: <20120101180949.GA25066@elte.hu>
-References: <20111221123624.193898256@goodmis.org>
-	 <20120101180949.GA25066@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 6 Jan 2012 00:05:53 -0500
+X-Sasl-enc: JKPhyN91YhpxeQkim9flDtCbGbcly5gY4Mh+Lt9tTuRT 1325826352
+Date: Thu, 5 Jan 2012 21:05:38 -0800
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dimitri Sivanich <sivanich@sgi.com>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-ID: <20120106050538.GC7633@kroah.com>
+References: <20120105182949.e35b2430b915b50e4bb9bc04@canb.auug.org.au>
+ <20120105155233.0d367bc3.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105155233.0d367bc3.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-01-01 at 19:09 +0100, Ingo Molnar wrote:
+On Thu, Jan 05, 2012 at 03:52:33PM -0800, Andrew Morton wrote:
+> On Thu, 5 Jan 2012 18:29:49 +1100
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> 
+> > Hi Andrew,
+> > 
+> > After merging the akpm tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> > 
+> > kernel/time/tick-sched.c:874:7: warning: 'struct sysdev_attribute' declared inside parameter list [enabled by default]
+> >
+> > ...
+> >
+> > Caused by commit 629d589817da ("tick-sched: add specific do_timer_cpu
+> > value for nohz off mode") interacting with the removal of sysdevs in the
+> > driver-core tree.  This patch will need reworking for that.
+> > 
+> > I have reverted that commit for today.
+> 
+> Bah.  I dropped it.
+> 
+> I must say, this week was a maximally inappropriate time to merge all this
+> sysdev stuff into linux-next.
 
-> Hm, i'm seeing spontaneous reboot crashes with these commits 
-> applied. The reboots just happen out of the blue during an 
-> allyesconfig bootup (config attached), and they happen at
-> random places.
+It was merged the week before christmas, there was a fun vacation break
+in there, and a "build warning turns to error" problem with the powerpc
+tree that we missed which caused it to be dropped from linux-next for a
+few days, which all combined to hit you now.
 
-Do you have any other configs that cause these crashes. One with less
-options set. The config you have which is pretty much an allyesconfig
-takes me 15 minutes to compile.
+Sorry about that, a fallout of the time of the year.  It had been a
+while since Kay and I had bothered a bunch of people, it was about time :)
 
-Thanks,
-
-
--- Steve
-
-
+greg k-h
