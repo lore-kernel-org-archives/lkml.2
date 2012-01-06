@@ -1,90 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752176Ab2AFGVa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 01:21:30 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51862 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751497Ab2AFGV2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 01:21:28 -0500
-Date: Fri, 6 Jan 2012 11:44:07 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v8 3.2.0-rc5 1/9] uprobes: Install and remove
- breakpoints.
-Message-ID: <20120106061407.GC14946@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
- <20111216122808.2085.76986.sendpatchset@srdronam.in.ibm.com>
- <1325695788.2697.3.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1325695788.2697.3.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12010606-5518-0000-0000-000001602F46
+	id S1752383Ab2AFGZh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 01:25:37 -0500
+Received: from lo.gmane.org ([80.91.229.12]:42935 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750727Ab2AFGZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 01:25:36 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "Alexander E. Patrakov" <patrakov@gmail.com>
+Subject: Re: Revoking filesystems [was Re: Sysfs attributes racing with
+ unregistration]
+Date: Fri, 6 Jan 2012 12:25:15 +0600
+Message-ID: <20120106122515.60e7a9aa@home>
+References: <m1ehvecf23.fsf@fess.ebiederm.org>
+	<Pine.LNX.4.44L0.1201051133490.1434-100000@iolanthe.rowland.org>
+	<20120105182752.GC26382@thunk.org>
+	<20120105183602.GE18486@google.com>
+	<20120105192822.GD26382@thunk.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 31.162.102.54
+In-Reply-To: <20120105192822.GD26382@thunk.org>
+X-Newsreader: Claws Mail 3.7.10 (GTK+ 2.24.5; i686-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-01-04 17:49:48]:
+Ted Ts'o <tytso@mit.edu> wrote:
 
-> On Fri, 2011-12-16 at 17:58 +0530, Srikar Dronamraju wrote:
-> > +static void __unregister_uprobe(struct uprobe *uprobe)
-> > +{
-> > +       if (!register_for_each_vma(uprobe, false))
-> > +               delete_uprobe(uprobe);
-> > +
-> > +       /* TODO : cant unregister? schedule a worker thread */
-> > +} 
+> On Thu, Jan 05, 2012 at 10:36:02AM -0800, Tejun Heo wrote:
+> > Hello, Ted.
+> > 
+> > On Thu, Jan 05, 2012 at 01:27:52PM -0500, Ted Ts'o wrote:
+> > > So it's really more of a filesystem force-umount method.  I could
+> > > imagine that this could also be used to extend the functionality
+> > > of umount(2) so that the MNT_FORCE flag could be used with
+> > > non-NFS file systems as well as NFS file systems.
+> > 
+> > I think these are two separate mechanisms.  Filesystems need to be
+> > able to handle IO errors no matter what and underlying device going
+> > away is the same situation.  There's no reason to mix that with
+> > force unmount.  That's a separate feature and whether to force
+> > unmount filesystem on device removal or permanent failure is a
+> > policy decision which belongs to userland - ie. if such behavior is
+> > desired, it should be implemented via udev/udisk instead of hard
+> > coded logic in kernel.
 > 
-> I was about to suggest we merge it, but we really can't with a hole that
-> size..
+> I think it's needless complexity to loop this into userspace.  If the
+> block device is gone, it's *gone*.  What else could userspace do with
+> this information that block device has disappeared?  Right now, once
+> gone, it's never coming back.  Even if the luser plugs the USB device
+> back in, it's going to be coming back as a new block device node.
 > 
+> So we might as well automatically forcibly unmount the file system at
+> this point.  I can imagine sending an optional notification that such
+> a thing has happened, perhaps via a netlink socket, but why not have
+> the kernel do the right thing automatically?
 
-On failure of unregister due to low memory condition:
-	- uprobe is left in the rbtree.  So subsequent probe hits can
-	  still refer the nodes.
++1, but with a different motivation. It just has to be done in the
+kernel, because the userspace does not have all the needed information
+to do it properly. Here are some testcases to think of, but, honestly,
+I have tested only the first one and consider that it is sufficient to
+prove my point.
 
-	- UPROBES_RUN_HANDLER flag still gets reset unconditionally. So
-	  handlers will not run on subsequent probe hits that correspond
-	  to this uprobe.
+Testcase 1: lazy unmount in progress. Plug in your USB flash drive,
+mount it (or let it be automounted, say, in /media/DEVICE), open two
+shells. In the first one, cd /media/DEVICE, and, after that, in the
+second one, umount -l /media/DEVICE. Now look at /proc/mounts in the
+second shell - there is no trace of your flash drive, so how would your
+userspace guess that /media/DEVICE has to be force-unmounted if you
+unplug the device now?
 
-	- consumers for the uprobe is NULL, so mmap_uprobe will not
-	  insert new breakpoints which correspond to this uprobe until
-	  or unless another consumer gets added for the same probe.
+Testcase 2: mount namespaces. Same issue - are you going to traverse
+all of /proc/???/mounts files, unscalably?
 
-	- If a new consumer gets added for this probe, we reuse the
-	  uprobe struct.
-	
-So in the highly unlikely case of uprobes not being able to unregister
-cleanly because of low memory conditions, existing tasks that have this
-probe in their address space will incur an extra cost of handling
-exceptions.
+Testcase 3 (unsure): a filesystem bind-mounted several times on
+different directories. What is the correct order of unmounting?
 
-However scheduling a kworker thread (or removing the underlying
-breakpoint if we detect the probe doesnt have UPROBES_RUN_HANDLER flag
-set) will reduce this overhead. 
+OTOH, I won't be surprised if anyone finds a case that clearly shows
+that it cannot be done correctly in the kernel, either (and actually
+want you to think about it). In that case, we are screwed :( Here are
+some ideas for someone else to investigate if they are a problem:
 
-Since we are looking at an extra overhead and no change in behaviour,
-should this be a reason to stop merging this feature?
+1) Strange DM mappings on top of the device (LUKS?)
+2) Something else mounted in /media/DEVICE/somedir - what to do with it?
 
 -- 
-Thanks and Regards
-Srikar
+Alexander E. Patrakov
 
