@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab2AFQxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 11:53:53 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751648Ab2AFQxw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 11:53:52 -0500
-Message-ID: <4F072717.8090006@redhat.com>
-Date: Fri, 06 Jan 2012 11:53:43 -0500
-From: Don Dutile <ddutile@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110927 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
+	id S1758842Ab2AFQ7S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 11:59:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34353 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758790Ab2AFQ7R convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 11:59:17 -0500
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
-Subject: Re: [Xen-devel] [PATCH 2/5] xen/pciback: Support pci_reset_function,
- aka FLR or D3 support.
-References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com> <1325724403-29642-3-git-send-email-konrad.wilk@oracle.com> <1325759051.25206.361.camel@zakaz.uk.xensource.com> <4F05F2EA.5030502@redhat.com> <20120105213423.GC5180@phenom.dumpdata.com>
-In-Reply-To: <20120105213423.GC5180@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120105140846.GA32342@elte.hu>
+References: <20120105140846.GA32342@elte.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Jan 2012 08:58:55 -0800
+X-Google-Sender-Auth: UkEgnKH_Xba3Z7g8zdPEKD6jmtE
+Message-ID: <CA+55aFwNzNSd2B57XYLC5r9sg=+GD=dP-UPZQDxmLXyLODS6+w@mail.gmail.com>
+Subject: Re: [GIT PULL] scheduler changes for v3.3
+To: Ingo Molnar <mingo@elte.hu>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andreas Schwab <schwab@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2012 04:34 PM, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jan 05, 2012 at 01:58:50PM -0500, Don Dutile wrote:
->> On 01/05/2012 05:24 AM, Ian Campbell wrote:
->>> On Thu, 2012-01-05 at 00:46 +0000, Konrad Rzeszutek Wilk wrote:
->>>> We use the __pci_reset_function_locked to perform the action.
->>>> Also on attaching ("bind") and detaching ("unbind") we save and
->>>> restore the configuration states. When the device is disconnected
->>> >from a guest we use the "pci_reset_function" to also reset the
->>>> device before being passed to another guest.
->>>
->>> Currently I thought the toolstack was supposed to do the reset (by
->>> writing to the reset node in sysfs) as it was (de)assigning devices
->>> to/from guests. That's not to say that there isn't an argument for
->>> preferring to do it kernels side but it would be interesting to make
->>> that argument explicitly.
->>>
->>> I guess the toolstack doesn't currently save/restore the configuration
->>> state, could it though? I guess the state is all available in sysfs. On
->> pci_reset_function() saves the config state before doing a fcn-level reset.
->>
->> the libvirt toolstack handles the unbind/reset/bind functionality
->> and is used by kvm for it's device assignment.
+On Thu, Jan 5, 2012 at 6:08 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> The KVM assigned PCI module does the call as well via the ioctls when
-> assigning/de-assigning the PCI device. Look in 'kvm_free_assigned_device'
-> and in 'kvm_vm_ioctl_assign_device'.
+> Please pull the latest sched-core-for-linus git tree from:
 >
-> Is that what you mean by the unbind/reset/bind functionality - the ioctl
-> call?
->
-It's done in both places (libvirt & kvm-ioctl).
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-core-for-linus
 
+Ugh. So I got conflicts on this one.  Big deal, fix them up.
+
+But as I was fixing them up, I hit two problems that I wanted people
+to take a look at:
+
+ - some of the code was utter crap. Look at my fixup for
+include/asm-generic/cputime.h, for example. Notice how I had to change
+__msecs to __usec, and notice the bogus semicolons that I removed?
+
+   This came in through commit 648616343cdb ("[S390] cputime: add
+sparse checking and cleanup") which is also mis-named: it's not
+S390-specific. Martin, please take a look.
+
+ - I did not do the right thing for the "usecs_to_cputime64()" fixup.
+Please take a look at commit 34845636a184 ("procfs: do not confuse
+jiffies with cputime64_t") which introduced that "usecs_to_cputime64()
+thing, and which clashes badly with the sparse cleanups.
+
+And by "clashes badly", I mean it. The sparse cleanups added a lot of
+casts between the types, which means that the mindless
+
+    +#define usecs_to_cputime64(us)         usecs_to_cputime(us)
+
+introduced by that commit 34845636a184 is now likely *wrong*, because
+"usecs_to_cputime()" now explicitly casts to a non-64-bit cputime_t.
+
+It may have been wrong before too, but at least on 64-bit
+architectures it didn't really matter. Now the sparse fixes have made
+"cputime64_t" a separate type that will complain about casting, so it
+not only casts the type to a (potentially different and wrong size),
+but it also breaks the sparse checks.
+
+I tried to fix up the ones that caused actual conflicts (due to
+changes nearby, like the ones in asm-generic), but the ones that
+didn't actually cause conflicts (powerpc and s390) I left alone.
+
+Guys, can you take a look? Also double-check my resolve of the
+set_cpu_sd_state_idle() call in kernel/time/tick-sched.c, please. I've
+pushed it out, and it seems to work for me, but...
+
+                                 Linus
