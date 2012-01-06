@@ -1,112 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758794Ab2AFQUE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 11:20:04 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62574 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab2AFQUC (ORCPT
+	id S1758797Ab2AFQVg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 11:21:36 -0500
+Received: from smtp151.dfw.emailsrvr.com ([67.192.241.151]:45885 "EHLO
+	smtp151.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157Ab2AFQVf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 11:20:02 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Broken ioctl error returns (was Re: [PATCH 2/3] block: fail SCSI passthrough ioctls on partition devices)
-Date: Fri, 6 Jan 2012 16:19:43 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
-Cc: Paolo Bonzini <pbonzini@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-media@vger.kernel.org, Willy Tarreau <w@1wt.eu>,
-        linux-kernel@vger.kernel.org, security@kernel.org, pmatouse@redhat.com,
-        agk@redhat.com, jbottomley@parallels.com, mchristi@redhat.com,
-        msnitzer@redhat.com, Christoph Hellwig <hch@lst.de>
-References: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
-In-Reply-To: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com>
+	Fri, 6 Jan 2012 11:21:35 -0500
+X-Greylist: delayed 373 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jan 2012 11:21:35 EST
+Message-ID: <4F071E19.60108@calxeda.com>
+Date: Fri, 06 Jan 2012 10:15:21 -0600
+From: Mark Langsdorf <mark.langsdorf@calxeda.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+CC: Dave Jones <davej@redhat.com>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] powernow-k8: Update copyright, maintainer and documentation
+ information
+References: <20120106145500.GI24451@alberich.amd.com> <20120106145933.GL24451@alberich.amd.com>
+In-Reply-To: <20120106145933.GL24451@alberich.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201061619.43584.arnd@arndb.de>
-X-Provags-ID: V02:K0:QSn9jwXnGX9iY6oGdQ16zV+CVFFq8hYmid/xf9a4I6P
- VXco/40Eg0emP0YsSAy1pEHysnbrEKBGfLX+LAC2byQIf7Yapw
- 7vEKatPfPA5Dx+KLwK1ZkeqFBCOlf77JcPZegX+I9wjua3gH3k
- HpRBwUD3IkJv9lynht4Hig91HlGAyIZsnjYbUFLtZxH4iMgMIh
- aNsjTeOdnlsJBEvWO7uILRKxFawQ+T/hYsSJil2pKoizVaQzBh
- NTKXEi3gL31Kw6lW6fp8Eo25uXX1jje7M5NCTfJaAW7MIo6yHS
- CTJ9cNhyDjyRjIKseLruSSDLlew8XdJBdr1xHSdhIEM/Q61+GU
- Ff/KaPT6dLqJ6w8JI0ps=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 05 January 2012, Linus Torvalds wrote:
+On 01/06/2012 08:59 AM, Andreas Herrmann wrote:
+> 
+> Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+> ---
+>  drivers/cpufreq/powernow-k8.c |   17 ++++++++++-------
+>  1 files changed, 10 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+> index ad683ec..8f9b2ce 100644
+> --- a/drivers/cpufreq/powernow-k8.c
+> +++ b/drivers/cpufreq/powernow-k8.c
+> @@ -1,10 +1,11 @@
+>  /*
+> - *   (c) 2003-2010 Advanced Micro Devices, Inc.
+> + *   (c) 2003-2012 Advanced Micro Devices, Inc.
+>   *  Your use of this code is subject to the terms and conditions of the
+>   *  GNU general public license version 2. See "COPYING" or
+>   *  http://www.gnu.org/licenses/gpl.html
+>   *
+> - *  Support : mark.langsdorf@amd.com
+> + *  Maintainer:
+> + *  Andreas Herrmann <andreas.herrmann3@amd.com>
+>   *
+>   *  Based on the powernow-k7.c module written by Dave Jones.
+>   *  (C) 2003 Dave Jones on behalf of SuSE Labs
+> @@ -16,12 +17,14 @@
+>   *  Valuable input gratefully received from Dave Jones, Pavel Machek,
+>   *  Dominik Brodowski, Jacob Shin, and others.
+>   *  Originally developed by Paul Devriendt.
+> - *  Processor information obtained from Chapter 9 (Power and Thermal Management)
+> - *  of the "BIOS and Kernel Developer's Guide for the AMD Athlon 64 and AMD
+> - *  Opteron Processors" available for download from www.amd.com
+>   *
+> - *  Tables for specific CPUs can be inferred from
+> - *     http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/30430.pdf
+> + *  Processor information obtained from Chapter 9 (Power and Thermal
+> + *  Management) of the "BIOS and Kernel Developer's Guide (BKDG) for
+> + *  the AMD Athlon 64 and AMD Opteron Processors" and section "2.x
+> + *  Power Management" in BKDGs for newer AMD CPU families.
+> + *
+> + *  Tables for specific CPUs can be inferred from AMD's processor
+> + *  power and thermal data sheets, (e.g. 30417.pdf, 30430.pdf, 43375.pdf)
+>   */
+>  
+>  #include <linux/kernel.h>
 
-> And finally, ENOIOCTLCMD is a way to say ENOTTY in a sane manner, and
-> will now be turned into ENOTTY for the user space return (not EINVAL -
-> I have no idea where that idiocy came from, but it's clearly confused,
-> although it's also clearly very old).
+Acked-by: Mark Langsdorf <mark.langsdorf@calxeda.com>
 
-To give some background here: While I did a lot of changes to the
-compat ioctl code over the years, I never touched the EINVAL/ENOTTY
-logic out of fear of breaking things further. Your patch is probably
-the right answer here and we should have done it long ago.
-
-> This fixes the core files I noticed. It removes the insane
-> complaints from the compat_ioctl() (which would complain if you
-> returned ENOIOCTLCMD after an ioctl translation - the reason that is
-> totally insane is that somebody might use an ioctl on the wrong kind
-> of file descriptor, so even if it was translated perfectly fine,
-> ENOIOCTLCMD is a perfectly fine error return and shouldn't cause
-> warnings - and that allows us to remove stupid crap from the socket
-> ioctl code).
-
-Now this behavior was entirely intentional. ENOIOCTLCMD was introduced
-explicitly so we could tell the difference between compat_ioctl handlers
-saying "I don't know how to translate this but common code might know"
-(ENOIOCTLCMD) and "I know that this is not a valid command code here"
-(ENOTTY plus whatever a broken driver might return).
-
-The distinction is used in two places:
-
-1. To let device drivers return early from fops->compat_ioctl when
-they want to avoid the overhead from searching the COMPATIBLE_IOCTL()
-table and from the (formerly large) switch statement in do_ioctl_trans(),
-or when they want to make sure that the common translation is not
-called. We have some really tricky bits in the socket code where
-the crazy SIOCDEVPRIVATE needs to be handled specially by some drivers
-while the majority can use the default siocdevprivate_ioctl() function.
-
-2. To return from do_ioctl_trans() when we know that there is no
-translation for the command number, so that the we can write a warning
-to the console (which you have now removed). This was initially more
-useful back when do_ioctl_trans() knew about practically all command
-numbers, but we have gradually moved all handlers into device drivers
-where they belong, and that has caused the problem that we get warnings
-whenever a user attempts an ioctl on a device that does not handle the
-command even when all the correct devices that support the command also
-have a compat handler. The common way we handle those is to add an
-IGNORE_IOCTL() entry for a command that repeatedly shows up in logs
-that way and is known to be handled correctly.
-
-I used to have patches to completely remove the remains of do_ioctl_trans()
-that can be resurrected if that helps, but it's mostly an independent
-issue.
-
-While I agree that the existing compat_ioctl_error() method was somewhat
-broken, I'd like to keep having a way to get some indication from
-drivers that are missing ioctl translations. Ideally, we would move
-all of fs/compat_ioctl.c into drivers and then just warn when we register
-some file_operations on a 64 bit machine that have an ioctl but no
-compat_ioctl function, but that would be a large amount of work.
-
-For a simpler solution, we could keep the old warning message, but change
-the logic from
-
-(.compat_ioctl == NULL || .compat_ioctl() == -ENOIOCTL) && (no generic handler)
-
-to
-
-(.ioctl != NULL && .compat_ioctl == NULL) && (no generic handler).
-
-and then fix the warnings we see by adding appropriate .compat_ioctl
-functions.
-
-	Arnd
+formerly mark.langsdorf@amd.com
