@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758602Ab2AFDaU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 22:30:20 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38641 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758399Ab2AFDaR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 22:30:17 -0500
-Date: Thu, 5 Jan 2012 19:30:12 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Jens Axboe <axboe@kernel.dk>, Hugh Dickins <hughd@google.com>,
-        Shaohua Li <shaohua.li@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-Subject: Re: [PATCH block:for-3.3/core] cfq: merged request shouldn't jump
- to a different cfqq
-Message-ID: <20120106033012.GE6276@google.com>
-References: <4F03631C.8080501@kernel.dk>
- <20120103221301.GH31746@google.com>
- <20120103223505.GI31746@google.com>
- <20120105012445.GP31746@google.com>
- <alpine.LSU.2.00.1201051026090.2009@eggly.anvils>
- <20120105183842.GF18486@google.com>
- <20120106021707.GA6276@google.com>
- <20120106023638.GC6276@google.com>
- <1325819655.22361.513.camel@sli10-conroe>
- <20120106030406.GD6276@google.com>
+	id S1758610Ab2AFDdn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 22:33:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758442Ab2AFDdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 22:33:42 -0500
+Date: Fri, 6 Jan 2012 11:35:55 +0800
+From: Dave Young <dyoung@redhat.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org, jmoyer@redhat.com
+Subject: [PATCH] loop: zero fill bio instead of return -EIO for partial read
+Message-ID: <20120106033555.GA27916@darkstar.nay.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120106030406.GD6276@google.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ummmm... I've been looking at the code and currently I think the best
-option is yank out plug merging for this merge window.
+commit 8268f5a7415d914fc855a86aa2284ac819dc6b2e trying to fix the loop device
+partial read information leak problem. But it changed the semantics of read
+behavior. When we read beyond the end of the device we should get 0 bytes,
+which is normal behavior, we should not just return -EIO
 
-Bypassing rqhash for request merging doesn't seem like a good idea.
-rqhash itself is, at this point, redundant and the limitation that it
-can only find requests by the ending sectors lead to weird designs.
-The single ->last_merge was okay but the recursive back merging is
-just ugly.  What it should be doing is trying back merge and then
-front merge once for each request insertion as the usual merge path
-does.
+Instead of return -EIO, zero out the bio to avoid information leak in case of
+partail read. 
 
-We can't do attempt_back/front_merge() for INSERT_MERGE at this point
-because elv_latter/former_request() only works for requests which are
-already on elevator and, unfortunately, putting a request onto cfq may
-kick the queue directly and the request might already be gone by the
-time we try to merge it.
+Signed-off-by: Dave Young <dyoung@redhat.com>
+---
+ drivers/block/loop.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-For this merge window, I think we better just disable INSERT_MERGE.
-
-A mid-term solution could be changing elevator interface such that
-elevator_add_req_fn() doesn't kick the queue directly but notify
-elevator core that the queue needs kicking via return value, so that
-merging can happen before kicking the queue.  Note that there's a
-caveat here.  Merging might make kicking unnecessary or wrong.
-
-Better solution would be changing elevator merge logic so that it has
-"give me request closest to this offset" interface and then use
-prev/next from there to find out merge candidates for both bio-rq and
-rq-rq merges and just kill rqhash.
-
-Thanks.
-
--- 
-tejun
+--- linux-2.6.orig/drivers/block/loop.c	2012-01-06 11:19:48.000000000 +0800
++++ linux-2.6/drivers/block/loop.c	2012-01-06 11:20:18.842630580 +0800
+@@ -357,14 +357,14 @@ lo_direct_splice_actor(struct pipe_inode
+ 	return __splice_from_pipe(pipe, sd, lo_splice_actor);
+ }
+ 
+-static int
++static ssize_t
+ do_lo_receive(struct loop_device *lo,
+ 	      struct bio_vec *bvec, int bsize, loff_t pos)
+ {
+ 	struct lo_read_data cookie;
+ 	struct splice_desc sd;
+ 	struct file *file;
+-	long retval;
++	ssize_t retval;
+ 
+ 	cookie.lo = lo;
+ 	cookie.page = bvec->bv_page;
+@@ -380,26 +380,28 @@ do_lo_receive(struct loop_device *lo,
+ 	file = lo->lo_backing_file;
+ 	retval = splice_direct_to_actor(file, &sd, lo_direct_splice_actor);
+ 
+-	if (retval < 0)
+-		return retval;
+-	if (retval != bvec->bv_len)
+-		return -EIO;
+-	return 0;
++	return retval;
+ }
+ 
+ static int
+ lo_receive(struct loop_device *lo, struct bio *bio, int bsize, loff_t pos)
+ {
+ 	struct bio_vec *bvec;
+-	int i, ret = 0;
++	ssize_t s;
++	int i;
+ 
+ 	bio_for_each_segment(bvec, bio, i) {
+-		ret = do_lo_receive(lo, bvec, bsize, pos);
+-		if (ret < 0)
++		s = do_lo_receive(lo, bvec, bsize, pos);
++		if (s < 0)
++			return s;
++
++		if (s != bvec->bv_len) {
++			zero_fill_bio(bio);
+ 			break;
++		}
+ 		pos += bvec->bv_len;
+ 	}
+-	return ret;
++	return 0;
+ }
+ 
+ static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
