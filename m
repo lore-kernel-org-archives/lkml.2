@@ -1,121 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030350Ab2AFO7w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 09:59:52 -0500
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:48132 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758734Ab2AFO7t (ORCPT
+	id S1030363Ab2AFPAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 10:00:19 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43414 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030334Ab2AFPAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 09:59:49 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjdfACULB09V5qrvPGdsb2JhbABDiVaicRkBAQEBNzKCIC8TAQ8YgQIKGhOHfLZRE4t+BI0yjTOMWA
-X-IronPort-AV: E=Sophos;i="4.71,468,1320620400"; 
-   d="scan'208";a="247745103"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Chase Douglas <chase.douglas@canonical.com>
-Subject: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the MT slot state
-Date: Fri,  6 Jan 2012 16:16:59 +0100
-Message-Id: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.7.8.1
+	Fri, 6 Jan 2012 10:00:17 -0500
+MIME-Version: 1.0
+Date: Fri, 6 Jan 2012 16:00:14 +0100
+Message-ID: <CAC-4XGse6sey51J==QtTNq+zHdGBjbj40WLDOjmh50zUCv+T7g@mail.gmail.com>
+Subject: Optimizing Filesystem Seek (AKA Combat Filesystem Aging)
+From: Ulrik Mikaelsson <ulrik.mikaelsson@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the ability to extract the MT slot state sequentially
-via EVIOCGABS. The slot parameter is first selected by calling
-EVIOCSABS with ABS_MT_SLOT as argument, followed by a set of EVIOCGABS
-calls. The slot selection is local to the evdev client handler, and
-does not affect the actual input state.
+I've many times noticed how my frequently used systems tend to get
+slower overtime, especially with regards to filesystem access.
+Reinstalls usually fixes the problem, but it's IMHO the _WRONG_ way to
+go.
 
-Cc: Chase Douglas <chase.douglas@canonical.com>
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
-Hi Dmitry,
+My assumption is that, when the system is first installed, all files
+in the system are more or less populated in the order they are going
+to be accessed. This reduces the drive-seek when applications are
+subsequently accessing the files. Over time, system upgrades, package
+updates and general disk-activity reduces the coherency on-disk
+between related files, increasing the number of seek-operations
+required for the same access patterns.
 
-the first version of this patch was sent a long time ago (May 2010),
-but was put on hold due to a lack of usecases. Now, it seems such a
-case has arrived, in the X server (evdev). Some MT events may be much
-less frequent than others (ABS_MT_ORIENTATION, for example), resulting
-in wrong touch values being assumed after, say, an X restart.
+Curious about the problem, I set up a little experiment testing
+FS-aging effects on boot-time, and want to share the results:
 
-I am not 100% in favor of this patch myself. Perhaps there should be a
-more explicit mechanism for selecting slots, for instance.
+NOTE: I'm not subscribed, so please explicitly CC me in any responses
+if you want me to see them quickly.
 
-The patch has been tested against both 3.2 and 3.1 stable.
+=== Test-setup and execution ===
 
-Cheers,
-Henrik
+ * I used Ubuntu 11.10 as a test-system on a dedicated disk under a
+virtual machine.
+ * The disk used was a WD Raptor 10k RPM, which already has good
+seeking performance and should not show worse than average numbers.
+ * I used KVM, and before each trial, I triggered /proc/../drop_caches
+in the host to avoid the host caching blocks giving faulty results.
+ * I deliberately used a very small filesystem (4GB) in order for it
+to have less free space and age more quickly.
+ * I used the default FS for the distro, ext4.
+ * For all tests, the same partition on disk was used.
+ * I clocked it manually using a stop-watch, and each timing was
+performed 3 times.
+ * Auto-login was used to show boottime from KVM-bios until all icons
+popped up on the desktop.
 
- drivers/input/evdev.c |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
+ * Aging was simulated, by letting the guest OS continuously perform
+reinstalls of random packages in random order, for ~4 hours.
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 4cf2534..4878e63 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -20,7 +20,7 @@
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/init.h>
--#include <linux/input.h>
-+#include <linux/input/mt.h>
- #include <linux/major.h>
- #include <linux/device.h>
- #include "input-compat.h"
-@@ -46,6 +46,7 @@ struct evdev_client {
- 	struct fasync_struct *fasync;
- 	struct evdev *evdev;
- 	struct list_head node;
-+	int mt_slot;		/* used to extract MT events via EVIOC */
- 	unsigned int bufsize;
- 	struct input_event buffer[];
- };
-@@ -621,6 +622,16 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
- 	return input_set_keycode(dev, &ke);
- }
- 
-+static int evdev_get_abs_value(const struct evdev_client *client,
-+			       const struct input_dev *dev, unsigned int code)
-+{
-+	if (code == ABS_MT_SLOT)
-+		return client->mt_slot;
-+	if (dev->mt && input_is_mt_axis(code))
-+		return input_mt_get_value(&dev->mt[client->mt_slot], code);
-+	return dev->absinfo[code].value;
-+}
-+
- static long evdev_do_ioctl(struct file *file, unsigned int cmd,
- 			   void __user *p, int compat_mode)
- {
-@@ -757,6 +768,7 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
- 
- 			t = _IOC_NR(cmd) & ABS_MAX;
- 			abs = dev->absinfo[t];
-+			abs.value = evdev_get_abs_value(client, dev, t);
- 
- 			if (copy_to_user(p, &abs, min_t(size_t,
- 					size, sizeof(struct input_absinfo))))
-@@ -782,9 +794,12 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
- 			if (size < sizeof(struct input_absinfo))
- 				abs.resolution = 0;
- 
--			/* We can't change number of reserved MT slots */
--			if (t == ABS_MT_SLOT)
--				return -EINVAL;
-+			/* Set the MT slot to return through EVIOCGABS */
-+			if (t == ABS_MT_SLOT) {
-+				if (abs.value >= 0 && abs.value < dev->mtsize)
-+					client->mt_slot = abs.value;
-+				return 0;
-+			}
- 
- 			/*
- 			 * Take event lock to ensure that we are not
--- 
-1.7.8.1
+ * After aging, I tried two forms of filesystem rejuvenation. In both
+cases I simply created a new filesystem, but changed the order files
+were copied to the new filesystem.
+   1. Files were simply copied in alphabetic order.
+   2. The order was profiled during a previous boot using, a small
+background fanotify listener.
 
+=== Resulting Boot-times ===
+(Including a bootchart of each)
+
+Fresh updated install: http://imagebin.org/192118
+31.0s
+30.6s
+30.3s
+
+After simulated aging: http://imagebin.org/192119
+$ age.sh # For four hours
+38.2s
+38.7s
+38.7s
+
+After FS-recreate: http://imagebin.org/192120
+$ optimg.sh bootlab/degraded.img /dev/sdd1 < /dev/null
+31.1s
+31.0s
+30.9s
+
+After optimization: http://imagebin.org/192122
+$ optimg.sh bootlab/degraded.img /dev/sdd1 < bootlab/profile-results
+28.6s
+26.7s
+27.7s
+
+Worth mentioning, I watched the bootchart for all tests, and all boots
+started with a 6 second inactivity in both disk and cpu. Also, there
+were long periods of without disk-requests during the boot. For
+reference, the IO-intensive duration of the boot between the aged
+filesystem, and the optimized version, went down from ~17 seconds to
+~6.5s, with similar improvements in consistent disk-throughput.
+
+=== Conclusions ===
+ * As expected, the filesystem populated in order of boot-usage far
+outperformed the degraded filesystem.
+ * It also outperformed the fresh install, by a significant margin
+(especially when only considering the IO-intensive part of the boot.)
+ * The package dependency-order used during a fresh install (to my
+surprise) doesn't seem to be any better than alphabetical order.
+
+=== Future Work ===
+ * Re-testing required.
+  - I've created a git repo at https://github.com/rawler/fsopt with
+the utils I've created for these tests. If you're up for it:
+    1. Install a new base-distro and perform your timings
+    2. Age it. The age.sh script can be used for debian-based distro.
+Perform timings.
+    3. Install the profiling/watcher into initramfs, and update grub
+to run with fsopt in cmdline.
+    4. Rejuvenate the filesystem using optimization/optimg.sh (you'll
+need extra disk somewhere to create a new similarily sized filesystem)
+    5. Post results here, (and please CC me)
+
+  - Repeat for different filesystems on different machines.
+  - Repeat on an SSD disk to see if there are any effects (positive or negative)
+    # Even though SSD:s doesn't suffer from seek, a high coherence
+between related files could mean less blocks/sectors has to be read
+still giving a small performance improvement
+    # There is a theory that fragmented filesystems are good for SSD:s
+due to their parallel internal storage units. However, in modern SSD:s
+there is also an sophisticated processor remapping logical blocks to
+physical blocks. I'm not sure fragmentation in the logical blocks are
+any advantage.
+  - The test should be repeated with different disk-based filesystems.
+(BTRFS, XFS)?
+
+ * Is ureadahead even useful, if the files are organized in good
+order? Looking at the bootcharts, it seems while certainly improving
+I/O during it's reading, it is also creating a time-barrier when
+CPU-intensive tasks aren't run in parallel with disk.
+ * I believe the effects might be larger if using a larger
+file-system, since I/O-cache might be less useful, and the disk-arm
+moving over a larger active area increasing seek time.
+
+ * Completely re-creating the filesystem aren't viable in real life.
+(Assuming a reliable improvement can be repeated in more conditions,)
+The VFS should offer some kind of API for letting a user-space daemon
+monitor file-access patterns, and optimize the in-kernel filesystems
+accordingly, similar to live-defragmentation.
+  - I've seen some work in e4defrag indicating improvements in keeping
+related inodes close together. I haven't got it working, and I don't
+know if it's applicable here.
+ * Booting is hardly the only time many small files are read. A daemon
+should be implemented that can listen in the background, collect
+profiling data, and apply to disk at suitable times, such as during
+screensaver, or manually triggered.
+
+What do you think?
