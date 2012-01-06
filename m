@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758697Ab2AFNEe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 08:04:34 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:52181 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab2AFND7 convert rfc822-to-8bit (ORCPT
+	id S1754292Ab2AFN2L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 08:28:11 -0500
+Received: from mx1.vsecurity.com ([209.67.252.12]:49806 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090Ab2AFN2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 08:03:59 -0500
-Message-ID: <1325854981.2442.25.camel@twins>
-Subject: Re: [RFC PATCH 0/9] Remove useless on_each_cpu return value
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Date: Fri, 06 Jan 2012 14:03:01 +0100
-In-Reply-To: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
-References: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Fri, 6 Jan 2012 08:28:09 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Jan 2012 08:28:09 EST
+Message-ID: <1325856086.17441.27.camel@osiris>
+Subject: [PATCH] score: fix off-by-one index into syscall table
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: liqin.chen@sunplusct.com, lennox.wu@gmail.com
+Cc: linux-kernel@vger.kernel.org, security@kernel.org
+Date: Fri, 06 Jan 2012 08:21:26 -0500
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 16:19 +0200, Gilad Ben-Yossef wrote:
-> on_each_cpu() returns as its own return value the return value of 
-> smp_call_function(). smp_call_function() in turn returns a hard 
-> coded value of zero.
-> 
-> Some callers to on_each_cpu() waste cycles and bloat code space
-> by checking the return value to on_each_cpu(), probably for 
-> historical reasons.
+If the provided system call number is equal to __NR_syscalls, the
+current check will pass and a function pointer just after the system
+call table may be called, since sys_call_table is an array with total
+size __NR_syscalls.  Whether or not this is a security bug depends on
+what the compiler puts immediately after the system call table.  It's
+likely that this won't do anything bad because there is an additional
+NULL check on the syscall entry, but if there happens to be a non-NULL
+value immediately after the system call table, this may result in local
+privilege escalation.
 
-hysterical raisins,, yumm! :-)
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: stable@kernel.org
+Cc: security@kernel.org
+---
+ arch/score/kernel/entry.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> This patch set refactors callers to not test on_each_cpu()
-> (fixed) return value and then refactors on_each_cpu to
-> return void to avoid confusing future users.
-> 
+diff --git a/arch/score/kernel/entry.S b/arch/score/kernel/entry.S
+index 577abba..83bb960 100644
+--- a/arch/score/kernel/entry.S
++++ b/arch/score/kernel/entry.S
+@@ -408,7 +408,7 @@ ENTRY(handle_sys)
+ 	sw	r9, [r0, PT_EPC]
+ 
+ 	cmpi.c	r27, __NR_syscalls 	# check syscall number
+-	bgtu	illegal_syscall
++	bgeu	illegal_syscall
+ 
+ 	slli	r8, r27, 2		# get syscall routine
+ 	la	r11, sys_call_table
 
-Seems sane enough, fwiw:
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
