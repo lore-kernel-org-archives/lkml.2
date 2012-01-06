@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758781Ab2AFO7m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 09:59:42 -0500
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:43262 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758734Ab2AFO7l (ORCPT
+	id S1030350Ab2AFO7w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 09:59:52 -0500
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:48132 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758734Ab2AFO7t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 09:59:41 -0500
-X-SpamScore: -4
-X-BigFish: VPS-4(zz8d0Izz1202hzz8275bh8275dh5eeeKz2dh668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LXDTN6-02-5ZH-02
-X-M-MSG: 
-Date: Fri, 6 Jan 2012 15:59:33 +0100
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Dave Jones <davej@redhat.com>
-CC: <cpufreq@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/3] powernow-k8: Update copyright, maintainer and
- documentation information
-Message-ID: <20120106145933.GL24451@alberich.amd.com>
-References: <20120106145500.GI24451@alberich.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120106145500.GI24451@alberich.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Fri, 6 Jan 2012 09:59:49 -0500
+X-SENDER-IP: [85.230.170.239]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AjdfACULB09V5qrvPGdsb2JhbABDiVaicRkBAQEBNzKCIC8TAQ8YgQIKGhOHfLZRE4t+BI0yjTOMWA
+X-IronPort-AV: E=Sophos;i="4.71,468,1320620400"; 
+   d="scan'208";a="247745103"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Chase Douglas <chase.douglas@canonical.com>
+Subject: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the MT slot state
+Date: Fri,  6 Jan 2012 16:16:59 +0100
+Message-Id: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch adds the ability to extract the MT slot state sequentially
+via EVIOCGABS. The slot parameter is first selected by calling
+EVIOCSABS with ABS_MT_SLOT as argument, followed by a set of EVIOCGABS
+calls. The slot selection is local to the evdev client handler, and
+does not affect the actual input state.
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/cpufreq/powernow-k8.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+Hi Dmitry,
 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index ad683ec..8f9b2ce 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1,10 +1,11 @@
- /*
-- *   (c) 2003-2010 Advanced Micro Devices, Inc.
-+ *   (c) 2003-2012 Advanced Micro Devices, Inc.
-  *  Your use of this code is subject to the terms and conditions of the
-  *  GNU general public license version 2. See "COPYING" or
-  *  http://www.gnu.org/licenses/gpl.html
-  *
-- *  Support : mark.langsdorf@amd.com
-+ *  Maintainer:
-+ *  Andreas Herrmann <andreas.herrmann3@amd.com>
-  *
-  *  Based on the powernow-k7.c module written by Dave Jones.
-  *  (C) 2003 Dave Jones on behalf of SuSE Labs
-@@ -16,12 +17,14 @@
-  *  Valuable input gratefully received from Dave Jones, Pavel Machek,
-  *  Dominik Brodowski, Jacob Shin, and others.
-  *  Originally developed by Paul Devriendt.
-- *  Processor information obtained from Chapter 9 (Power and Thermal Management)
-- *  of the "BIOS and Kernel Developer's Guide for the AMD Athlon 64 and AMD
-- *  Opteron Processors" available for download from www.amd.com
-  *
-- *  Tables for specific CPUs can be inferred from
-- *     http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/30430.pdf
-+ *  Processor information obtained from Chapter 9 (Power and Thermal
-+ *  Management) of the "BIOS and Kernel Developer's Guide (BKDG) for
-+ *  the AMD Athlon 64 and AMD Opteron Processors" and section "2.x
-+ *  Power Management" in BKDGs for newer AMD CPU families.
-+ *
-+ *  Tables for specific CPUs can be inferred from AMD's processor
-+ *  power and thermal data sheets, (e.g. 30417.pdf, 30430.pdf, 43375.pdf)
-  */
+the first version of this patch was sent a long time ago (May 2010),
+but was put on hold due to a lack of usecases. Now, it seems such a
+case has arrived, in the X server (evdev). Some MT events may be much
+less frequent than others (ABS_MT_ORIENTATION, for example), resulting
+in wrong touch values being assumed after, say, an X restart.
+
+I am not 100% in favor of this patch myself. Perhaps there should be a
+more explicit mechanism for selecting slots, for instance.
+
+The patch has been tested against both 3.2 and 3.1 stable.
+
+Cheers,
+Henrik
+
+ drivers/input/evdev.c |   23 +++++++++++++++++++----
+ 1 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index 4cf2534..4878e63 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -20,7 +20,7 @@
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+-#include <linux/input.h>
++#include <linux/input/mt.h>
+ #include <linux/major.h>
+ #include <linux/device.h>
+ #include "input-compat.h"
+@@ -46,6 +46,7 @@ struct evdev_client {
+ 	struct fasync_struct *fasync;
+ 	struct evdev *evdev;
+ 	struct list_head node;
++	int mt_slot;		/* used to extract MT events via EVIOC */
+ 	unsigned int bufsize;
+ 	struct input_event buffer[];
+ };
+@@ -621,6 +622,16 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
+ 	return input_set_keycode(dev, &ke);
+ }
  
- #include <linux/kernel.h>
++static int evdev_get_abs_value(const struct evdev_client *client,
++			       const struct input_dev *dev, unsigned int code)
++{
++	if (code == ABS_MT_SLOT)
++		return client->mt_slot;
++	if (dev->mt && input_is_mt_axis(code))
++		return input_mt_get_value(&dev->mt[client->mt_slot], code);
++	return dev->absinfo[code].value;
++}
++
+ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ 			   void __user *p, int compat_mode)
+ {
+@@ -757,6 +768,7 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ 
+ 			t = _IOC_NR(cmd) & ABS_MAX;
+ 			abs = dev->absinfo[t];
++			abs.value = evdev_get_abs_value(client, dev, t);
+ 
+ 			if (copy_to_user(p, &abs, min_t(size_t,
+ 					size, sizeof(struct input_absinfo))))
+@@ -782,9 +794,12 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+ 			if (size < sizeof(struct input_absinfo))
+ 				abs.resolution = 0;
+ 
+-			/* We can't change number of reserved MT slots */
+-			if (t == ABS_MT_SLOT)
+-				return -EINVAL;
++			/* Set the MT slot to return through EVIOCGABS */
++			if (t == ABS_MT_SLOT) {
++				if (abs.value >= 0 && abs.value < dev->mtsize)
++					client->mt_slot = abs.value;
++				return 0;
++			}
+ 
+ 			/*
+ 			 * Take event lock to ensure that we are not
 -- 
 1.7.8.1
-
-
-
 
