@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030477Ab2AFTVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 14:21:33 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:22499 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758875Ab2AFTVb (ORCPT
+	id S1030518Ab2AFTVk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 14:21:40 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:32918 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1030482Ab2AFTVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 14:21:31 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6581"; a="152883503"
-From: David Brown <davidb@codeaurora.org>
-To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH] ARM: msm: vreg is a module and so needs module.h
-Date: Fri,  6 Jan 2012 11:21:24 -0800
-Message-Id: <1325877684-14095-1-git-send-email-davidb@codeaurora.org>
-X-Mailer: git-send-email 1.7.7.3
+	Fri, 6 Jan 2012 14:21:37 -0500
+X-Sasl-enc: kjvmMHfAMOhT8kuu1VATwfJeOpVIAwp12rPqvqch00be 1325877696
+Date: Fri, 6 Jan 2012 11:20:02 -0800
+From: "'Greg KH'" <greg@kroah.com>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Nicolas Pitre'" <nicolas.pitre@linaro.org>,
+        "'Russell King'" <rmk@arm.linux.org.uk>,
+        "'Kay Sievers'" <kay.sievers@vrfy.org>
+Subject: Re: linux-next: manual merge of the driver-core tree with the arm
+ tree
+Message-ID: <20120106192002.GA24244@kroah.com>
+References: <20120106175227.07a7240920f3ccd95c27b9a7@canb.auug.org.au>
+ <031201cccc41$f24aa320$d6dfe960$%kim@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <031201cccc41$f24aa320$d6dfe960$%kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MSM7201 vreg appears to have gotten missed in the module.h
-cleanup.
+On Fri, Jan 06, 2012 at 04:08:09PM +0900, Kukjin Kim wrote:
+> Stephen Rothwell wrote:
+> > 
+> > Hi Greg,
+> > 
+> > Today's linux-next merge of the driver-core tree got a conflict in
+> > arch/arm/mach-s5pc100/common.c between commit 109ac862f737 ("ARM:
+> > mach-s5pc100: use standard arch_idle()") from the arm tree and commit
+> > 4a858cfc9af8 ("arm: convert sysdev_class to a regular subsystem") from
+> > the driver-core tree.
+> > 
+> > I fixed it up (see below) and can carry the fix as necessary.
+> > 
+> > --
+> > Cheers,
+> > Stephen Rothwell                    sfr@canb.auug.org.au
+> > 
+> > diff --cc arch/arm/mach-s5pc100/common.c
+> > index 4659fb9,af52c09..0000000
+> > --- a/arch/arm/mach-s5pc100/common.c
+> > +++ b/arch/arm/mach-s5pc100/common.c
+> > @@@ -194,27 -154,17 +195,27 @@@ static struct device s5pc100_dev =
+> > 
+> >   static int __init s5pc100_core_init(void)
+> >   {
+> > - 	return sysdev_class_register(&s5pc100_sysclass);
+> > + 	return subsys_system_register(&s5pc100_subsys, NULL);
+> >   }
+> >  -
+> >   core_initcall(s5pc100_core_init);
+> > 
+> >   int __init s5pc100_init(void)
+> >   {
+> >   	printk(KERN_INFO "S5PC100: Initializing architecture\n");
+> > - 	return sysdev_register(&s5pc100_sysdev);
+> > ++	return device_register(&s5pc100_sys);
+> 
+> Hi Greg,
+> 
+> Should be 'return device_register(&s5pc100_dev);'?
+> 
+> Greg,
+> Following should be fixed in your driver-core/driver-core-next.
+> (I informed that but maybe you missed)
 
-Signed-off-by: David Brown <davidb@codeaurora.org>
----
- arch/arm/mach-msm/vreg.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Sorry, I missed this patch.  I'll apply it and take the above merge fix
+as well.
 
-diff --git a/arch/arm/mach-msm/vreg.c b/arch/arm/mach-msm/vreg.c
-index a9103bc..bd66ed0 100644
---- a/arch/arm/mach-msm/vreg.c
-+++ b/arch/arm/mach-msm/vreg.c
-@@ -19,6 +19,7 @@
- #include <linux/device.h>
- #include <linux/init.h>
- #include <linux/debugfs.h>
-+#include <linux/module.h>
- #include <linux/string.h>
- #include <mach/vreg.h>
- 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+greg k-h
