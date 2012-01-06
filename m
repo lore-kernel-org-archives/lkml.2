@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751235Ab2AFFFw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 00:05:52 -0500
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:37820 "EHLO
+	id S1751497Ab2AFFGU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 00:06:20 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:34864 "EHLO
 	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750894Ab2AFFFu (ORCPT
+	by vger.kernel.org with ESMTP id S1750948Ab2AFFFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 00:05:50 -0500
-X-Sasl-enc: /1UxXgMb67fuUYO0ttniEXhaQh8oWt87BVsmPFcdcqsJ 1325826349
-Date: Thu, 5 Jan 2012 21:03:55 -0800
+	Fri, 6 Jan 2012 00:05:51 -0500
+X-Sasl-enc: 1jqpBn1bGAHGG4x0ayPA7ii4Zoiy+PFPToMW15dsNX0A 1325826350
+Date: Thu, 5 Jan 2012 21:04:28 -0800
 From: Greg KH <greg@kroah.com>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: netdev@vger.kernel.org, gwingerde@gmail.com, larry.finger@lwfinger.net,
-        davem@davemloft.net, bhutchings@solarflare.com, arnd@arndb.de,
-        linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] drivers: misc: Remove MISC_DEVICES config option
-Message-ID: <20120106050355.GA7633@kroah.com>
-References: <1325796541-11402-1-git-send-email-festevam@gmail.com>
- <20120105223933.GA10268@kroah.com>
- <CAOMZO5BQhcxViN3KnjhzF9hL1w04egkmb9njc7sDUB0GFdgBog@mail.gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+        Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Subject: Re: linux-next: build failure after merge of the akpm tree
+Message-ID: <20120106050428.GB7633@kroah.com>
+References: <20120105182937.58ec59c2fa2bc34e9e48542a@canb.auug.org.au>
+ <20120105231958.GA15643@kroah.com>
+ <20120105154515.6e40fadf.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMZO5BQhcxViN3KnjhzF9hL1w04egkmb9njc7sDUB0GFdgBog@mail.gmail.com>
+In-Reply-To: <20120105154515.6e40fadf.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 11:18:28PM -0200, Fabio Estevam wrote:
-> On Thu, Jan 5, 2012 at 8:39 PM, Greg KH <greg@kroah.com> wrote:
+On Thu, Jan 05, 2012 at 03:45:15PM -0800, Andrew Morton wrote:
+> On Thu, 5 Jan 2012 15:19:58 -0800
+> Greg KH <greg@kroah.com> wrote:
 > 
-> > Are you sure that this isn't getting confused with the
-> > drivers/char/misc.c interface instead of the "throw a bunch of randome
-> > drivers into drivers/misc/" issue?
+> > On Thu, Jan 05, 2012 at 06:29:37PM +1100, Stephen Rothwell wrote:
+> > > Hi Andrew,
+> > > 
+> > > After merging the akpm tree, today's linux-next build (powerpc
+> > > ppc64_defconfig) failed like this:
+> > > 
+> > > drivers/base/memory.c: In function 'memory_block_change_state':
+> > > drivers/base/memory.c:306:22: error: 'struct memory_block' has no member named 'sysdev'
+> > > drivers/base/memory.c:309:22: error: 'struct memory_block' has no member named 'sysdev'
+> > > 
+> > > Caused by commit 2691cc121386 ("kdump: add udev events for memory
+> > > online/offline") interacting with commit 10fbcf4c6cb1 ("convert 'memory'
+> > > sysdev_class to a regular subsystem") from the driver-core tree.
+> > 
+> > I can't recall this kdump patch coming through before, have I seen it?
 > 
-> Sorry, I am not aware of this issue.
+> I carefully added you to the Nov 22 commit email cc list :(
 > 
-> > Why would anything ever want to select MISC_DEVICES?  What happens if
-> > you just remove that select line from the Kconfig?
+> > creating new uevents is not something to be done lightly, has this been
+> > tested with the existing userspace tools to make sure it doesn't cause
+> > problems?
 > 
-> Yes, I don´t understand the point of allowing the selection MISC_DEVICES.
-> 
-> IMHO it is potential for causing dependency issues.
+> Seems to be covered in the changelog:
 
-Then remove that selection.  Nothing should be depending on a misc
-driver, if it is, then that implies that this is more than just a "misc"
-driver, and it should be moved elsewhere.
-
-thanks,
+Ah, thanks, sorry, I had forgotten about that one.  It looks good,
+nevermind...
 
 greg k-h
