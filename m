@@ -1,192 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030562Ab2AFVK3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 16:10:29 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43224 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759171Ab2AFVK1 (ORCPT
+	id S1030590Ab2AFVKx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 16:10:53 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54389 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1030511Ab2AFVKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 16:10:27 -0500
-Date: Fri, 6 Jan 2012 13:10:11 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: [PATCH 1/2] SHM_UNLOCK: fix long unpreemptible section
-Message-ID: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	Fri, 6 Jan 2012 16:10:51 -0500
+Date: Fri, 6 Jan 2012 21:10:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Greg KH <greg@kroah.com>, Frank Mandarino <fmandarino@endrelia.com>,
+        Liam Girdwood <lrg@ti.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Public ridicule due to sound/soc/soc-core.c abuse of the
+	driver model
+Message-ID: <20120106211027.GA17842@n2100.arm.linux.org.uk>
+References: <20120106194052.GA7781@kroah.com> <20120106201458.GF2893@opensource.wolfsonmicro.com> <20120106205036.GB13857@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120106205036.GB13857@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-scan_mapping_unevictable_pages() is used to make SysV SHM_LOCKed pages
-evictable again once the shared memory is unlocked.  It does this with
-pagevec_lookup()s across the whole object (which might occupy most of
-memory), and takes 300ms to unlock 7GB here.  A cond_resched() every
-PAGEVEC_SIZE pages would be good.
+On Fri, Jan 06, 2012 at 08:50:36PM +0000, Russell King - ARM Linux wrote:
+> I also disagree with your statement - I think it's quite simple to fix:
+> 
+> 1. Change to using a flag to indicate whether the struct device is
+>    registered rather than ac97->dev.bus.
 
-However, KOSAKI-san points out that this is called under shmem.c's
-info->lock, and it's also under shm.c's shm_lock(), both spinlocks.
-There is no strong reason for that: we need to take these pages off
-the unevictable list soonish, but those locks are not required for it.
+Looking at this deeper, you already have such a flag.  It's called
+codec->ac97_registered:
 
-So move the call to scan_mapping_unevictable_pages() from shmem.c's
-unlock handling up to shm.c's unlock handling.  Remove the recently
-added barrier, not needed now we have spin_unlock() before the scan.
+                ret = soc_ac97_dev_register(rtd->codec);
+                if (ret < 0) {
+                        printk(KERN_ERR "asoc: AC97 device register failed\n");
+                        return ret;
+                }
 
-Use get_file(), with subsequent fput(), to make sure we have a
-reference to mapping throughout scan_mapping_unevictable_pages():
-that's something that was previously guaranteed by the shm_lock().
+                rtd->codec->ac97_registered = 1;
 
-Remove shmctl's lru_add_drain_all(): we don't fault in pages at
-SHM_LOCK time, and we lazily discover them to be Unevictable later,
-so it serves no purpose for SHM_LOCK; and serves no purpose for
-SHM_UNLOCK, since pages still on pagevec are not marked Unevictable.
+static void soc_unregister_ac97_dai_link(struct snd_soc_codec *codec)
+{
+        if (codec->ac97_registered) {
+                soc_ac97_dev_unregister(codec);
+                codec->ac97_registered = 0;
+        }
+}
 
-The original code avoided redundant rescans by checking VM_LOCKED
-flag at its level: now avoid them by checking shp's SHM_LOCKED.
+and soc_ac97_dev_{un,}register() do this:
 
-The original code called scan_mapping_unevictable_pages() on a
-locked area at shm_destroy() time: perhaps we once had accounting
-cross-checks which required that, but not now, so skip the overhead
-and just let inode eviction deal with them.
+static int soc_ac97_dev_unregister(struct snd_soc_codec *codec)
+{
+        if (codec->ac97->dev.bus)
+                device_unregister(&codec->ac97->dev);
+        return 0;
+}
 
-Put check_move_unevictable_page() and scan_mapping_unevictable_pages()
-under CONFIG_SHMEM (with stub for the TINY case when ramfs is used),
-more as comment than to save space; comment them used for SHM_UNLOCK.
+static int soc_ac97_dev_register(struct snd_soc_codec *codec)
+{
+        int err;
 
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Cc: stable@vger.kernel.org [back to 2.6.32 but will need respins]
----
-This version of the patch spun to apply on top of mmotm.
+        codec->ac97->dev.bus = &ac97_bus_type;
+...
+        err = device_register(&codec->ac97->dev);
+        if (err < 0) {
+...
+                codec->ac97->dev.bus = NULL;
+                return err;
+        }
+        return 0;
+}
 
- ipc/shm.c   |   37 ++++++++++++++++++++++---------------
- mm/shmem.c  |    7 -------
- mm/vmscan.c |   12 +++++++++++-
- 3 files changed, 33 insertions(+), 23 deletions(-)
 
---- mmotm.orig/ipc/shm.c	2012-01-06 10:04:54.000000000 -0800
-+++ mmotm/ipc/shm.c	2012-01-06 10:06:13.937943603 -0800
-@@ -870,9 +870,7 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 	case SHM_LOCK:
- 	case SHM_UNLOCK:
- 	{
--		struct file *uninitialized_var(shm_file);
--
--		lru_add_drain_all();  /* drain pagevecs to lru lists */
-+		struct file *shm_file;
- 
- 		shp = shm_lock_check(ns, shmid);
- 		if (IS_ERR(shp)) {
-@@ -895,22 +893,31 @@ SYSCALL_DEFINE3(shmctl, int, shmid, int,
- 		err = security_shm_shmctl(shp, cmd);
- 		if (err)
- 			goto out_unlock;
--		
--		if(cmd==SHM_LOCK) {
-+
-+		shm_file = shp->shm_file;
-+		if (is_file_hugepages(shm_file))
-+			goto out_unlock;
-+
-+		if (cmd == SHM_LOCK) {
- 			struct user_struct *user = current_user();
--			if (!is_file_hugepages(shp->shm_file)) {
--				err = shmem_lock(shp->shm_file, 1, user);
--				if (!err && !(shp->shm_perm.mode & SHM_LOCKED)){
--					shp->shm_perm.mode |= SHM_LOCKED;
--					shp->mlock_user = user;
--				}
-+			err = shmem_lock(shm_file, 1, user);
-+			if (!err && !(shp->shm_perm.mode & SHM_LOCKED)) {
-+				shp->shm_perm.mode |= SHM_LOCKED;
-+				shp->mlock_user = user;
- 			}
--		} else if (!is_file_hugepages(shp->shm_file)) {
--			shmem_lock(shp->shm_file, 0, shp->mlock_user);
--			shp->shm_perm.mode &= ~SHM_LOCKED;
--			shp->mlock_user = NULL;
-+			goto out_unlock;
- 		}
-+
-+		/* SHM_UNLOCK */
-+		if (!(shp->shm_perm.mode & SHM_LOCKED))
-+			goto out_unlock;
-+		shmem_lock(shm_file, 0, shp->mlock_user);
-+		shp->shm_perm.mode &= ~SHM_LOCKED;
-+		shp->mlock_user = NULL;
-+		get_file(shm_file);
- 		shm_unlock(shp);
-+		scan_mapping_unevictable_pages(shm_file->f_mapping);
-+		fput(shm_file);
- 		goto out;
- 	}
- 	case IPC_RMID:
---- mmotm.orig/mm/shmem.c	2012-01-06 10:05:00.000000000 -0800
-+++ mmotm/mm/shmem.c	2012-01-06 10:08:05.505947516 -0800
-@@ -1068,13 +1068,6 @@ int shmem_lock(struct file *file, int lo
- 		user_shm_unlock(inode->i_size, user);
- 		info->flags &= ~VM_LOCKED;
- 		mapping_clear_unevictable(file->f_mapping);
--		/*
--		 * Ensure that a racing putback_lru_page() can see
--		 * the pages of this mapping are evictable when we
--		 * skip them due to !PageLRU during the scan.
--		 */
--		smp_mb__after_clear_bit();
--		scan_mapping_unevictable_pages(file->f_mapping);
- 	}
- 	retval = 0;
- 
---- mmotm.orig/mm/vmscan.c	2012-01-06 10:04:54.000000000 -0800
-+++ mmotm/mm/vmscan.c	2012-01-06 10:06:13.941943604 -0800
-@@ -3499,6 +3499,7 @@ int page_evictable(struct page *page, st
- 	return 1;
+So, dev.bus is really duplicating what ac97_registered is doing and nothing
+more, and I'd suggest that the very first patch cleaning up this buggy code
+is to get rid of this duplication:
+
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index a25fa63..961f980 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -452,8 +452,7 @@ static inline void soc_cleanup_card_debugfs(struct snd_soc_card *card)
+ /* unregister ac97 codec */
+ static int soc_ac97_dev_unregister(struct snd_soc_codec *codec)
+ {
+-	if (codec->ac97->dev.bus)
+-		device_unregister(&codec->ac97->dev);
++	device_unregister(&codec->ac97->dev);
+ 	return 0;
  }
  
-+#ifdef CONFIG_SHMEM
- /**
-  * check_move_unevictable_page - check page for evictability and move to appropriate zone lru list
-  * @page: page to check evictability and move to appropriate lru list
-@@ -3509,6 +3510,8 @@ int page_evictable(struct page *page, st
-  *
-  * Restrictions: zone->lru_lock must be held, page must be on LRU and must
-  * have PageUnevictable set.
-+ *
-+ * This function is only used for SysV IPC SHM_UNLOCK.
-  */
- static void check_move_unevictable_page(struct page *page, struct zone *zone)
- {
-@@ -3545,6 +3548,8 @@ retry:
-  *
-  * Scan all pages in mapping.  Check unevictable pages for
-  * evictability and move them to the appropriate zone lru list.
-+ *
-+ * This function is only used for SysV IPC SHM_UNLOCK.
-  */
- void scan_mapping_unevictable_pages(struct address_space *mapping)
- {
-@@ -3590,9 +3595,14 @@ void scan_mapping_unevictable_pages(stru
- 		pagevec_release(&pvec);
- 
- 		count_vm_events(UNEVICTABLE_PGSCANNED, pg_scanned);
-+		cond_resched();
+@@ -474,7 +473,6 @@ static int soc_ac97_dev_register(struct snd_soc_codec *codec)
+ 	err = device_register(&codec->ac97->dev);
+ 	if (err < 0) {
+ 		snd_printk(KERN_ERR "Can't register ac97 bus\n");
+-		codec->ac97->dev.bus = NULL;
+ 		return err;
  	}
--
+ 	return 0;
+
+Second patch would be to make soc_ac97_dev_unregister return type void -
+it's pointless to have a function which always returns 0 and its return
+value is never checked at its solitary call site.
+
+Overall, it should look something like this (untested):
+
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index a25fa63..090b89e 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -448,33 +448,34 @@ static inline void soc_cleanup_card_debugfs(struct snd_soc_card *card)
  }
-+#else
-+void scan_mapping_unevictable_pages(struct address_space *mapping)
+ #endif
+ 
++/* stop no dev release warning */
++static void soc_ac97_device_release(struct device *dev)
 +{
++	struct snd_ac97 *ac97 = container_of(dev, snd_ac97, dev);
++
++	kfree(ac97);
 +}
-+#endif /* CONFIG_SHMEM */
- 
- static void warn_scan_unevictable_pages(void)
++
+ #ifdef CONFIG_SND_SOC_AC97_BUS
+ /* unregister ac97 codec */
+ static int soc_ac97_dev_unregister(struct snd_soc_codec *codec)
  {
+-	if (codec->ac97->dev.bus)
+-		device_unregister(&codec->ac97->dev);
++	device_del(&codec->ac97->dev);
+ 	return 0;
+ }
+ 
+-/* stop no dev release warning */
+-static void soc_ac97_device_release(struct device *dev){}
+-
+ /* register ac97 codec to bus */
+ static int soc_ac97_dev_register(struct snd_soc_codec *codec)
+ {
+ 	int err;
+ 
+ 	codec->ac97->dev.bus = &ac97_bus_type;
+-	codec->ac97->dev.parent = codec->card->dev;
+-	codec->ac97->dev.release = soc_ac97_device_release;
+ 
+ 	dev_set_name(&codec->ac97->dev, "%d-%d:%s",
+ 		     codec->card->snd_card->number, 0, codec->name);
+-	err = device_register(&codec->ac97->dev);
++	err = device_add(&codec->ac97->dev);
+ 	if (err < 0) {
+ 		snd_printk(KERN_ERR "Can't register ac97 bus\n");
+-		codec->ac97->dev.bus = NULL;
+ 		return err;
+ 	}
+ 	return 0;
+@@ -1748,9 +1749,13 @@ int snd_soc_new_ac97_codec(struct snd_soc_codec *codec,
+ 		return -ENOMEM;
+ 	}
+ 
++	device_initialize(&codec->ac97->dev);
++	codec->ac97->dev.parent = codec->card->dev;
++	codec->ac97->dev.release = soc_ac97_device_release;
++
+ 	codec->ac97->bus = kzalloc(sizeof(struct snd_ac97_bus), GFP_KERNEL);
+ 	if (codec->ac97->bus == NULL) {
+-		kfree(codec->ac97);
++		device_put(&codec->ac97->dev);
+ 		codec->ac97 = NULL;
+ 		mutex_unlock(&codec->mutex);
+ 		return -ENOMEM;
+@@ -1783,7 +1788,7 @@ void snd_soc_free_ac97_codec(struct snd_soc_codec *codec)
+ 	soc_unregister_ac97_dai_link(codec);
+ #endif
+ 	kfree(codec->ac97->bus);
+-	kfree(codec->ac97);
++	device_put(&codec->ac97->dev);
+ 	codec->ac97 = NULL;
+ 	codec->ac97_created = 0;
+ 	mutex_unlock(&codec->mutex);
+
