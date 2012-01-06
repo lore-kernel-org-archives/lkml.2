@@ -1,68 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135Ab2AFJYi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 04:24:38 -0500
-Received: from solca.med.ec ([200.105.240.90]:35560 "EHLO mail.solca.med.ec"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932445Ab2AFJYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 04:24:35 -0500
-Message-ID: <50315.41.138.190.20.1325842297.squirrel@mail.solca.med.ec>
-Date: Fri, 6 Jan 2012 04:31:37 -0500 (ECT)
-Subject: Webmaster Powiadomienie Code #04KV6f0
-From: "Webmaster Upgrading Department" <info@webmaster.pl>
-Reply-To: customercarewebdept40@w.cn
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+	id S1758574Ab2AFJh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 04:37:59 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56833 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754930Ab2AFJh4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 04:37:56 -0500
+Date: Fri, 6 Jan 2012 10:37:52 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Javier Martin <javier.martin@vista-silicon.com>,
+        linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] dmaengine: Fix status handling in imx-dma.
+Message-ID: <20120106093752.GH5446@pengutronix.de>
+References: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
+ <1325829389.1540.95.camel@vkoul-udesk3>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18628.006
-X-TM-AS-Result: No--1.774-4.5-31-10
-X-imss-scan-details: No--1.774-4.5-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-MatchedRID: Q6QF7or1Ap7oEmtXXZT7KgDPuhU4P53KI9yVcHNDU7Z4cj3zcdxHt4o9
-	JDEyKOWGe7nQjwn391uLSHl2wluIWVCnpnvgOFGXgxsfzkNRlfKltRcNkC3a6RkBcDGzbZwbt0T
-	fTryqxQi3AXhx3VgvxY3XZ9GLfO7WHp/xox1y/dwxSB/Jyvs6EWVcLxtnLW0onNs1CBxaaWVz/7
-	mmIg7apa+uf5/vyEbyRXiaEKR5pZ9pY2iUG1DXBsMdhJlZhFQKT2jcE+1/SHZ+3BndfXUhXQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325829389.1540.95.camel@vkoul-udesk3>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:24:51 up 54 days, 17:11, 21 users,  load average: 0.74, 1.87,
+ 1.67
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drogi użytkowniku konto e-mail,
+On Fri, Jan 06, 2012 at 11:26:29AM +0530, Vinod Koul wrote:
+> On Mon, 2012-01-02 at 13:18 +0100, Javier Martin wrote:
+> > Status must only be changed to DMA_IN_PROGRESS
+> > when the DMA transfer has really begun.
+> > 
+> > However, since this driver lacks of support for
+> > multiple descriptors a new flag has to be introduced
+> > to avoid the prepare function be called multiple times.
+> Thanks this is the right approach to fix this driver
+> 
+> But this will obviously break any users of this driver as they need to
+> call the right APIs now :D
+> 
+> Sacha: can you check this patch and see which users of this driver will
+> break. we need those fixes to go along this patch as well
 
+Which users should break? I just tried with the mxcmmc driver and this
+one does not break.
 
-       Ten komunikat jest od poczty centrum wiadomości do wszystkich
-właścicieli kont webmail. W pierwszym kwartale 2012 r. Obecnie jest
-przeprowadzenie usługi aktualizacji do naszej bazy danych i e-mail
-centrum konta. Jesteśmy usunięcie wszystkich niewykorzystanych
-konto poczty internetowej, aby utworzyć więcej miejsca dla nowych
-kont.
+I do not really understand this patch anyway. It changes imxdmac->status
+to a write-only variable and introduces a imxdmac->prepared variable
+with the same meaning. This patch is a complicated no-op.
 
- Aby zapobiec koncie od usuwania i Aby kontynuować korzystanie z naszych
-usług, które są wymagane do aktualizacji i potwierdzenia konta webmail.
+What was the original problem? The fact that we used a enum dma_status
+with the wrong semantics? In that case I suggest to simply replace this
+variable. All we need to track is that we do not enter
+imxdma_prep_slave_sg with an already running transfer.
 
+Sascha
 
- Aby zakończyć potwierdzenia konta za pierwszy kwartał 2012 r., Jesteś
-odpowiedzieć na tę wiadomość natychmiast i wprowadź dane swojego konta w
-wymienionych poniżej.
+> > 
+> > Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
+> > ---
+> >  drivers/dma/imx-dma.c |   22 +++++++++++++++-------
+> >  1 files changed, 15 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> > index d99f71c..9a0ac14 100644
+> > --- a/drivers/dma/imx-dma.c
+> > +++ b/drivers/dma/imx-dma.c
+> > @@ -43,6 +43,7 @@ struct imxdma_channel {
+> >  	enum dma_status			status;
+> >  	int				dma_request;
+> >  	struct scatterlist		*sg_list;
+> > +	bool				prepared;
+> >  };
+> >  
+> >  #define MAX_DMA_CHANNELS 8
+> > @@ -72,6 +73,7 @@ static void imxdma_irq_handler(int channel, void *data)
+> >  
+> >  	imxdmac->status = DMA_SUCCESS;
+> >  	imxdma_handle(imxdmac);
+> > +	imxdmac->prepared = false;
+> >  }
+> >  
+> >  static void imxdma_err_handler(int channel, void *data, int error)
+> > @@ -80,6 +82,7 @@ static void imxdma_err_handler(int channel, void *data, int error)
+> >  
+> >  	imxdmac->status = DMA_ERROR;
+> >  	imxdma_handle(imxdmac);
+> > +	imxdmac->prepared = false;
+> >  }
+> >  
+> >  static void imxdma_progression(int channel, void *data,
+> > @@ -89,6 +92,7 @@ static void imxdma_progression(int channel, void *data,
+> >  
+> >  	imxdmac->status = DMA_SUCCESS;
+> >  	imxdma_handle(imxdmac);
+> > +	imxdmac->prepared = false;
+> >  }
+> >  
+> >  static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> > @@ -103,6 +107,7 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> >  	case DMA_TERMINATE_ALL:
+> >  		imxdmac->status = DMA_ERROR;
+> >  		imx_dma_disable(imxdmac->imxdma_channel);
+> > +		imxdmac->prepared = false;
+> >  		return 0;
+> >  	case DMA_SLAVE_CONFIG:
+> >  		if (dmaengine_cfg->direction == DMA_FROM_DEVICE) {
+> > @@ -204,7 +209,7 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
+> >  	imxdmac->desc.flags = DMA_CTRL_ACK;
+> >  
+> >  	imxdmac->status = DMA_SUCCESS;
+> > -
+> > +	imxdmac->prepared = false;
+> >  	return 0;
+> >  }
+> >  
+> > @@ -230,11 +235,9 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+> >  	int i, ret, dma_length = 0;
+> >  	unsigned int dmamode;
+> >  
+> > -	if (imxdmac->status == DMA_IN_PROGRESS)
+> > +	if (imxdmac->prepared)
+> >  		return NULL;
+> >  
+> > -	imxdmac->status = DMA_IN_PROGRESS;
+> > -
+> >  	for_each_sg(sgl, sg, sg_len, i) {
+> >  		dma_length += sg->length;
+> >  	}
+> > @@ -264,6 +267,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
+> >  	if (ret)
+> >  		return NULL;
+> >  
+> > +	imxdmac->prepared = true;
+> > +
+> >  	return &imxdmac->desc;
+> >  }
+> >  
+> > @@ -280,9 +285,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+> >  	dev_dbg(imxdma->dev, "%s channel: %d buf_len=%d period_len=%d\n",
+> >  			__func__, imxdmac->channel, buf_len, period_len);
+> >  
+> > -	if (imxdmac->status == DMA_IN_PROGRESS)
+> > +	if (imxdmac->prepared)
+> >  		return NULL;
+> > -	imxdmac->status = DMA_IN_PROGRESS;
+> >  
+> >  	ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
+> >  			imxdma_progression);
+> > @@ -325,14 +329,18 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
+> >  	if (ret)
+> >  		return NULL;
+> >  
+> > +	imxdmac->prepared = true;
+> > +
+> >  	return &imxdmac->desc;
+> >  }
+> >  
+> >  static void imxdma_issue_pending(struct dma_chan *chan)
+> >  {
+> >  	/*
+> > -	 * Nothing to do. We only have a single descriptor
+> > +	 * Only change status since we have a single descriptor
+> >  	 */
+> > +	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
+> > +	imxdmac->status = DMA_IN_PROGRESS;
+> >  }
+> >  
+> >  static int __init imxdma_probe(struct platform_device *pdev)
+> 
+> 
+> -- 
+> ~Vinod
+> 
+> 
 
-
-Potwierdzenie informacji o koncie
-Nazwa użytkownika: ..................
-E-mail Login ..............
-Hasło: ..................
-Potwierdź hasło :............
-Data urodzenia: ...............
-
-
-Zostanie wysłany nowy potwierdzenie hasło alfanumeryczne tak, że tylko
-będzie jest ważne w tym okresie i może być zmieniony po zakończeniu
-procesu.
-
-Dziękujemy za zrozumienie.
-Webmaster Upgrading Department
-
-Prawa autorskie 2012 - Komunikacja Webmail - Wszelkie prawa zastrzeżone.
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
