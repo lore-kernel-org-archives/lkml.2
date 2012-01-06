@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab2AFOnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 09:43:00 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:48351 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758741Ab2AFOm7 (ORCPT
+	id S1030340Ab2AFOub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 09:50:31 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52533 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075Ab2AFOua convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 09:42:59 -0500
-Date: Fri, 6 Jan 2012 09:42:58 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
-In-Reply-To: <20120105231731.GA15539@kroah.com>
-Message-ID: <Pine.LNX.4.44L0.1201060940430.1326-100000@iolanthe.rowland.org>
+	Fri, 6 Jan 2012 09:50:30 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <NEXT-4f07092f473990.86346967@nextmail.ru>
+References: <NEXT-4f07092f473990.86346967@nextmail.ru>
+Date: Fri, 6 Jan 2012 20:20:29 +0530
+Message-ID: <CAD2nsn1xf17MRwCfX26VhfOuXLuwMAsPkvGPBnMz51U=G8E+gw@mail.gmail.com>
+Subject: Re: ath9k crash 3.2-rc7
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Jan 2012, Greg KH wrote:
+2012/1/6 MR <g7af0ec1e3ea1e7b1@nextmail.ru>:
+>  > >  > can a find a fix
+>  > >  > for both of them
+>  > >
+>  > > I am building kernel with pos<0 check added...
+>  >
+>  > thanks!  if it does not works, i have only one more idea(a patch
+>  > which removes some suspicious code which abuses a pointer any way that
+>  > has to be fixed properly ). otherwise i need to recreate the issue and
+>  > capture the stack trace completely, put debug prints. i ran an
+>  > overnight test but was unable to recreate the issue. later today AN  i
+>  > got a crash accidentally but only once, after that never.
+>
+> What is a complete stack trace? Maybe I can configure console in some way and
+> get the needed information.
 
-> > If Greg confirms that there's nothing with registering the usb driver 
-> > before the usb_serial driver, I can fix the usb-serial code easily.
-> > 
-> > Greg, do you know offhand whether this will break anything?  It really 
-> > seems like the right thing to do, because the usb_serial driver uses 
-> > the usb driver but not vice versa.
-> 
-> Hm, there was a reason I ordered the way I did, as I remember having to
-> go fix up a number of drivers that did it in the reverse order.  Give me
-> a day or so to dig it up and figure out what is going on here, and to
-> review this thread.
+just want to make sure , if we get the EIP and the exact line.
+ath9k_config+0x115/0x780  points to ath_update_survey_stats
 
-Well, the one obvious problem, if one isn't careful about it, is that
-serial devices present before the module is loaded won't bind properly.  
-The usb driver will get probed before the usb_serial driver is
-registered, and the probe will fail.
+>
+>
 
-I can fix that easily enough by calling driver_attach() for the usb
-driver after all the usb_serial drivers are registered.
-
-Alan Stern
-
+-- 
+shafi
