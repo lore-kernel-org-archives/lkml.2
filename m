@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300Ab2AFWG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 17:06:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58449 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758810Ab2AFWG1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 17:06:27 -0500
-Date: Fri, 6 Jan 2012 14:06:25 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: David Rientjes <rientjes@google.com>, Paul Menage <paul@paulmenage.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [resubmit] Re: [patch-final] Re: patch] cpusets, cgroups:
- disallow attaching kthreadd
-Message-Id: <20120106140625.f5447039.akpm@linux-foundation.org>
-In-Reply-To: <1323232617.5057.50.camel@marge.simson.net>
-References: <1316758874.7393.2.camel@marge.simson.net>
-	<alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
-	<1316770936.6641.11.camel@marge.simson.net>
-	<1316775204.7562.9.camel@marge.simson.net>
-	<alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
-	<1316788392.6544.33.camel@marge.simson.net>
-	<1318224892.6161.45.camel@marge.simson.net>
-	<1318233815.6527.5.camel@marge.simson.net>
-	<1318925436.9641.23.camel@marge.simson.net>
-	<CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com>
-	<1319001860.6222.34.camel@marge.simson.net>
-	<alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
-	<alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
-	<20111206144721.7b1d473d.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1112061547530.15884@chino.kir.corp.google.com>
-	<1323227914.5057.10.camel@marge.simson.net>
-	<1323232617.5057.50.camel@marge.simson.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759283Ab2AFWNp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 17:13:45 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:38905 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759227Ab2AFWNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 17:13:43 -0500
+Date: Fri, 6 Jan 2012 14:07:10 -0800
+From: Kees Cook <keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        linux-security-module@vger.kernel.org
+Subject: [PATCH] audit: no leading space in audit_log_d_path prefix
+Message-ID: <20120106220710.GA20444@www.outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 07 Dec 2011 05:36:57 +0100
-Mike Galbraith <efault@gmx.de> wrote:
+audit_log_d_path() injects an additional space before the prefix,
+which serves no purpose and doesn't mix well with other audit_log*()
+functions that do not sneak extra characters into the log.
 
-> cpusets, cgroups: disallow attaching kthreadd
-> 
-> Allowing kthreadd to be moved to a non-root group makes no sense, it being
-> a global resource, and needlessly leads unsuspecting users toward trouble.
-> 
-> 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
-> allocated is not schedulable.  Simple user error, but harmful to the box.
-> 
-> 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
-> rendering the cpuset immortal.
-> 
-> Save the user some unexpected trouble, just say no.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ kernel/audit.c       |    2 +-
+ kernel/auditsc.c     |    4 ++--
+ security/lsm_audit.c |    4 ++--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-Someone's been screwing around in linux-next during the merge window. 
-afacit some patch which was previously there has magically disappeared.
-That killed your patch - the original version of the
-kernel/sched/core.c chagne applies to the new linux-next but the
-kernel/cpuset.c part is all wrecked.
-
-There's been a lot of screwing around this time.  There were a large
-number of rejects merging current linux-next onto current mainline this
-morning due to conflicting changes in tools/perf/.
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 09fae26..9149149 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1422,7 +1422,7 @@ void audit_log_d_path(struct audit_buffer *ab, const char *prefix,
+ 	char *p, *pathname;
+ 
+ 	if (prefix)
+-		audit_log_format(ab, " %s", prefix);
++		audit_log_format(ab, "%s", prefix);
+ 
+ 	/* We will allow 11 spaces for ' (deleted)' to be appended */
+ 	pathname = kmalloc(PATH_MAX+11, ab->gfp_mask);
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 47b7fc1..c9b1af5 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -975,7 +975,7 @@ static void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk
+ 		while (vma) {
+ 			if ((vma->vm_flags & VM_EXECUTABLE) &&
+ 			    vma->vm_file) {
+-				audit_log_d_path(ab, "exe=",
++				audit_log_d_path(ab, " exe=",
+ 						 &vma->vm_file->f_path);
+ 				break;
+ 			}
+@@ -1489,7 +1489,7 @@ static void audit_log_exit(struct audit_context *context, struct task_struct *ts
+ 			case 0:
+ 				/* name was specified as a relative path and the
+ 				 * directory component is the cwd */
+-				audit_log_d_path(ab, "name=", &context->pwd);
++				audit_log_d_path(ab, " name=", &context->pwd);
+ 				break;
+ 			default:
+ 				/* log the name's directory component */
+diff --git a/security/lsm_audit.c b/security/lsm_audit.c
+index 893af8a..db7bf14 100644
+--- a/security/lsm_audit.c
++++ b/security/lsm_audit.c
+@@ -231,7 +231,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 	case LSM_AUDIT_DATA_PATH: {
+ 		struct inode *inode;
+ 
+-		audit_log_d_path(ab, "path=", &a->u.path);
++		audit_log_d_path(ab, " path=", &a->u.path);
+ 
+ 		inode = a->u.path.dentry->d_inode;
+ 		if (inode)
+@@ -314,7 +314,7 @@ static void dump_common_audit_data(struct audit_buffer *ab,
+ 						.dentry = u->dentry,
+ 						.mnt = u->mnt
+ 					};
+-					audit_log_d_path(ab, "path=", &path);
++					audit_log_d_path(ab, " path=", &path);
+ 					break;
+ 				}
+ 				if (!u->addr)
+-- 
+1.7.0.4
 
