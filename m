@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759152Ab2AFUm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 15:42:27 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:37452 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752928Ab2AFUmZ (ORCPT
+	id S1759176Ab2AFUmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 15:42:39 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:47260 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759166Ab2AFUmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 15:42:25 -0500
-Message-ID: <4F075CAE.2040709@gmail.com>
-Date: Fri, 06 Jan 2012 12:42:22 -0800
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, David Daney <david.daney@cavium.com>
-Subject: Re: [PATCH] recordmcount: Fix handling of elf64 big-endian objects.
-References: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com> <1324350542.5916.48.camel@gandalf.stny.rr.com>
-In-Reply-To: <1324350542.5916.48.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Fri, 6 Jan 2012 15:42:38 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Jan Beulich <JBeulich@suse.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org
+Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
+In-Reply-To: Your message of "Thu, 05 Jan 2012 14:04:30 GMT."
+             <4F05BBFE020000780006A983@nat28.tlf.novell.com>
+From: Valdis.Kletnieks@vt.edu
+References: <4F05BBFE020000780006A983@nat28.tlf.novell.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1325882419_3358P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Fri, 06 Jan 2012 15:40:19 -0500
+Message-ID: <73464.1325882419@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020208.4F075C39.0012,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2011 07:09 PM, Steven Rostedt wrote:
-> On Mon, 2011-12-19 at 17:42 -0800, David Daney wrote:
->> From: David Daney<david.daney@cavium.com>
->>
->> In ELF64, the sh_flags field is 64-bits wide.  recordmcount was
->> erroneously treating it as a 32-bit wide field.  For little endian
->> objects this works because the flags of interest (SHF_EXECINSTR)
->> reside in the lower 32 bits of the word, and you get the same result
->> with either a 32-bit or 64-bit read.  Big endian objects on the
->> other hand do not work at all with this error.
->>
->> The fix:  Correctly treat sh_flags as 64-bits wide in elf64 objects.
->>
->> The symptom I observed was that my
->> __start_mcount_loc..__stop_mcount_loc was empty even though ftrace
->> function tracing was enabled.
->>
->
-> OUCH!
->
-> This looks like something that needs to go to stable. Let me play with
-> this on my PPC64 tomorrow.
->
+--==_Exmh_1325882419_3358P
+Content-Type: text/plain; charset=us-ascii
 
-Hi Steven,
+On Thu, 05 Jan 2012 14:04:30 GMT, Jan Beulich said:
+> Forever these two functions have been limited to deal with at most 4G
+> at a time. While I cannot point out an in-tree user that would require
+> larger sizes, it is now the second time that within our Xen kernel we got
+> bitten by that limitation.
 
-Any more feedback on this patch?  Should I look for it to appear in 3.3?
+Wow.  Second time?  What the heck is the Xen kernel *doing* that it's
+trying to do over 4G in a single memset/memcpy?
 
-Thanks,
-David Daney
+--==_Exmh_1325882419_3358P
+Content-Type: application/pgp-signature
 
-> Thanks!
->
-> -- Steve
->
->> Signed-off-by: David Daney<david.daney@cavium.com>
->> ---
->>   scripts/recordmcount.h |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
->> index f40a6af6..54e35c1 100644
->> --- a/scripts/recordmcount.h
->> +++ b/scripts/recordmcount.h
->> @@ -462,7 +462,7 @@ __has_rel_mcount(Elf_Shdr const *const relhdr,  /* is SHT_REL or SHT_RELA */
->>   		succeed_file();
->>   	}
->>   	if (w(txthdr->sh_type) != SHT_PROGBITS ||
->> -	    !(w(txthdr->sh_flags)&  SHF_EXECINSTR))
->> +	    !(_w(txthdr->sh_flags)&  SHF_EXECINSTR))
->>   		return NULL;
->>   	return txtname;
->>   }
->
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFPB1wzcC3lWbTT17ARAm+UAJ9GQJ0ceZku5tRPaVvpdzm868jlAACg0bRm
+qSN5cBkWQwEi8Q907Byhn+Q=
+=U3eQ
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1325882419_3358P--
 
