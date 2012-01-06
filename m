@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758964Ab2AFTsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 14:48:19 -0500
-Received: from smtprelay-b21.telenor.se ([195.54.99.212]:43264 "EHLO
-	smtprelay-b21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758810Ab2AFTsS (ORCPT
+	id S1758981Ab2AFTxs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 14:53:48 -0500
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:59223 "EHLO
+	out5-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756423Ab2AFTxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 14:48:18 -0500
-X-SENDER-IP: [85.230.170.239]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Au5VAONOB09V5qrvPGdsb2JhbABDiVaiahkBAQEBNzKBcgEBBAE6HCMQCANGFCUKGogNArY8E4sbYwSNModUhV+MWA
-X-IronPort-AV: E=Sophos;i="4.71,469,1320620400"; 
-   d="scan'208";a="247797487"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Fri, 6 Jan 2012 20:48:15 +0100
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Input: evdev - Add EVIOC mechanism to extract the MT
- slot state
-Message-ID: <20120106194815.GA3116@polaris.bitmath.org>
-References: <1325863019-2242-1-git-send-email-rydberg@euromail.se>
- <CAN+gG=FUEH851Um4Lco0avqdE2Eup3Jo79Ti4T7XhxT=PO6WeQ@mail.gmail.com>
- <20120106181845.GA22653@core.coreip.homeip.net>
- <20120106185544.GB2795@polaris.bitmath.org>
- <20120106191835.GA2998@polaris.bitmath.org>
- <4F074CAE.7010205@canonical.com>
+	Fri, 6 Jan 2012 14:53:46 -0500
+X-Sasl-enc: Av7NBrVIVxTZn2ISyq47+WGqNF+md+AkinbrwyFMdz18 1325879625
+Date: Fri, 6 Jan 2012 11:53:32 -0800
+From: Greg KH <greg@kroah.com>
+To: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
+Cc: Breno Leitao <brenohl@br.ibm.com>, Zac Storer <zac.3.14159@gmail.com>,
+        leitao@linux.vnet.ibm.com, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 29/29] Drivers: tty: serial: jsm: jsm_tty: fixed a brace
+ coding style issue
+Message-ID: <20120106195332.GA10814@kroah.com>
+References: <1321596182-11031-1-git-send-email-zac.3.14159@gmail.com>
+ <4EC66C07.9020009@br.ibm.com>
+ <4F073CF3.70604@linux.vnet.ibm.com>
+ <4F074F89.6060300@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F074CAE.7010205@canonical.com>
+In-Reply-To: <4F074F89.6060300@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Ok, maybe not to so easy after all, which probably answers my own
-> > question. Looks like a EVIOCGMTSLOT, taking both slot and event code
-> > as argument, would be the cleaner route to take. Another ioctl, how do we
-> > feel about that?
+On Fri, Jan 06, 2012 at 05:46:17PM -0200, Lucas Kannebley Tavares wrote:
+> On 01/06/2012 04:26 PM, Lucas Kannebley Tavares wrote:
+> >On 11/18/2011 12:30 PM, Breno Leitao wrote:
+> >>On 11/18/2011 03:03 AM, Zac Storer wrote:
+> >>>Fixed a brace coding style issue.
+> >>>
+> >>>Signed-off-by: Zac Storer<zac.3.14159@gmail.com>
+> >>Acked-by: Breno Leitao<brenohl@br.ibm.com>
+> >Acked-by: Lucas Kannebley Tavares<lucaskt@linux.vnet.ibm.com>
+> >
 > 
-> What's the problem with userspace locking?
+> Adding Alan and Greg so they can catch this up on their trees.
 
-The idea was to get by without it.
+Catch what up with what?
 
-Regarding ioctls, it does not seem realizable due to ioctl number
-exhaustion. A sysfs interface for all EV_ABS and per-slot MT values
-could be a more future-proof alternative.
+What patch is this?  Where is it?  Why wasn't it sent to me in the first
+place?
 
-Henrik
+Also note, the merge window for new patches to be sent to subsystem
+maintainers has been over for a week or so now, all of of the
+maintainers are now busy merging stuff with Linus, so trivial stuff like
+this is going to have to wait a few weeks at the earliest before it can
+start to be queued up.
+
+thanks,
+
+greg k-h
