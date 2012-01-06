@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758886Ab2AFRhn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 12:37:43 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57820 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758813Ab2AFRhl (ORCPT
+	id S1758892Ab2AFRiw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 12:38:52 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:58843 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758867Ab2AFRiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 12:37:41 -0500
-Date: Fri, 6 Jan 2012 09:37:36 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Switch per cpu partial page support off for debugging
-In-Reply-To: <alpine.DEB.2.00.1112141908410.27595@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1201060934550.10460@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1111230923260.16544@router.home> <alpine.LFD.2.02.1112120915030.2555@tux.localdomain> <alpine.DEB.2.00.1112141908410.27595@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 6 Jan 2012 12:38:51 -0500
+Subject: [PATCH 1/3] mm: add rss counters consistency check
+To: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Date: Fri, 06 Jan 2012 21:38:27 +0400
+Message-ID: <20120106173827.11700.74305.stgit@zurg>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Dec 2011, David Rientjes wrote:
+This patch warn about non-zero rss counters at final mmdrop.
 
-> > > Eric saw an issue with accounting of slabs during validation. Its not
-> > > possible to determine accurately how many per cpu partial slabs exist at
-> > > any time so this switches off per cpu partial pages during debug.
-> > > 
-> > > Subject: Switch per cpu partial page support off for debugging
-> > > 
-> > > Otherwise we have accounting issues.
-> > > 
-> > > Signed-off-by: Christoph Lameter <cl@linux.com>
-> > > 
-> > > 
-> > > ---
-> > > mm/slub.c |    4 +++-
-> > > 1 file changed, 3 insertions(+), 1 deletion(-)
-> > > 
-> > > Index: linux-2.6/mm/slub.c
-> > > ===================================================================
-> > > --- linux-2.6.orig/mm/slub.c	2011-11-22 11:57:21.000000000 -0600
-> > > +++ linux-2.6/mm/slub.c	2011-11-22 11:57:55.000000000 -0600
-> > > @@ -3027,7 +3027,9 @@ static int kmem_cache_open(struct kmem_c
-> > > 	 *    per node list when we run out of per cpu objects. We only fetch
-> > > 50%
-> > > 	 *    to keep some capacity around for frees.
-> > > 	 */
-> > > -	if (s->size >= PAGE_SIZE)
-> > > +	if (kmem_cache_debug(s))
-> > > +		s->cpu_partial = 0;
-> > > +	else if (s->size >= PAGE_SIZE)
-> > > 		s->cpu_partial = 2;
-> > > 	else if (s->size >= 1024)
-> > > 		s->cpu_partial = 6;
-> 
-> I think this deserves a comment since it's not clear why it's being done 
-> neither in the code or by the changelog.  Also, you'd want a check for 
-> kmem_cache_debug() when storing to /sys/kernel/slab/cache/cpu_partial as 
-> well, otherwise this could easily be broken from userspace again.  (It 
-> also seems like Documentation/ABI/testing/sysfs-kernel-slab got left out 
-> of an update when that was added, too.)
-> 
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ kernel/fork.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
 
-This patch is merged in slab/urgent without any changes from my comment 
-above; since userspace can alter cpu_partial directly via 
-/sys/kernel/slab/cache/cpu_partial which would reintroduce the 
-"accounting issues", shouldn't that return -EINVAL when debug is enabled?
+diff --git a/kernel/fork.c b/kernel/fork.c
+index da4a6a1..67a79dd 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -507,6 +507,23 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	return NULL;
+ }
+ 
++static void check_mm(struct mm_struct *mm)
++{
++	int i;
++
++	for (i = 0; i < NR_MM_COUNTERS; i++) {
++		long x = atomic_long_read(&mm->rss_stat.count[i]);
++
++		if (unlikely(x))
++			printk(KERN_ALERT "BUG: Bad rss-counter state "
++					  "mm:%p idx:%d val:%ld\n", mm, i, x);
++	}
++
++#ifdef CONFIG_TRANSPARENT_HUGEPAGE
++	VM_BUG_ON(mm->pmd_huge_pte);
++#endif
++}
++
+ /*
+  * Allocate and initialize an mm_struct.
+  */
+@@ -534,9 +551,7 @@ void __mmdrop(struct mm_struct *mm)
+ 	mm_free_pgd(mm);
+ 	destroy_context(mm);
+ 	mmu_notifier_mm_destroy(mm);
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-	VM_BUG_ON(mm->pmd_huge_pte);
+-#endif
++	check_mm(mm);
+ 	free_mm(mm);
+ }
+ EXPORT_SYMBOL_GPL(__mmdrop);
+
