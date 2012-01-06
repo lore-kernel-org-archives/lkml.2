@@ -1,97 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893Ab2AFGfz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 01:35:55 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:50391 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751447Ab2AFGfx (ORCPT
+	id S932553Ab2AFGrf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 01:47:35 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:34541 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932115Ab2AFGrJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 01:35:53 -0500
-Date: Thu, 5 Jan 2012 22:35:46 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Christopher Heiny <cheiny@synaptics.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Input <linux-input@vger.kernel.org>,
-        Joerie de Gram <j.de.gram@gmail.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: Re: [RFC PATCH 1/11] input: RMI4 public header file and
- documentation.
-Message-ID: <20120106063546.GA10447@core.coreip.homeip.net>
-References: <1324519802-23894-1-git-send-email-cheiny@synaptics.com>
- <1324519802-23894-2-git-send-email-cheiny@synaptics.com>
+	Fri, 6 Jan 2012 01:47:09 -0500
+Message-ID: <4F0698D8.3000300@tao.ma>
+Date: Fri, 06 Jan 2012 14:46:48 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1324519802-23894-2-git-send-email-cheiny@synaptics.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: do not drain pagevecs for mlock
+References: <1325226961-4271-1-git-send-email-tm@tao.ma> <CAHGf_=qOGy3MQgiFyfeG82+gbDXTBT5KQjgR7JqMfQ7e7RSGpA@mail.gmail.com> <4EFD7AE3.8020403@tao.ma> <CAHGf_=pODc6fLGJAEZWzQtUd6fj6v=fV9n6UTwysqRR1SwY++A@mail.gmail.com> <4EFD8832.6010905@tao.ma> <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <4F069120.8060300@tao.ma> <CAHGf_=qhKbVCeUe+y8Hmb=ke-f417K5EYFo=j4ZODVGwewgh6A@mail.gmail.com> <4F06951E.7050605@tao.ma> <4F06959D.2070100@gmail.com>
+In-Reply-To: <4F06959D.2070100@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 21, 2011 at 06:09:52PM -0800, Christopher Heiny wrote:
-> +
-> +/* Helper fn to convert a byte array representing a short in the RMI
-> + * endian-ness to a short in the native processor's specific endianness.
-> + * We don't use ntohs/htons here because, well, we're not dealing with
-> + * a pair of shorts. And casting dest to short* wouldn't work, because
-> + * that would imply knowing the byte order of short in the first place.
-> + */
-> +static inline void batohs(unsigned short *dest, unsigned char *src)
-> +{
-> +	*dest = src[1] * 0x100 + src[0];
-> +}
-> +
-> +/* Helper function to convert a short (in host processor endianess) to
-> + * a byte array in the RMI endianess for shorts.  See above comment for
-> + * why we dont us htons or something like that.
-> + */
-> +static inline void hstoba(unsigned char *dest, unsigned short src)
-> +{
-> +	dest[0] = src % 0x100;
-> +	dest[1] = src / 0x100;
-> +}
+On 01/06/2012 02:33 PM, KOSAKI Motohiro wrote:
+> (1/6/12 1:30 AM), Tao Ma wrote:
+>> On 01/06/2012 02:18 PM, KOSAKI Motohiro wrote:
+>>> 2012/1/6 Tao Ma<tm@tao.ma>:
+>>>> Hi Kosaki,
+>>>> On 12/30/2011 06:07 PM, KOSAKI Motohiro wrote:
+>>>>>>> Because your test program is too artificial. 20sec/100000times =
+>>>>>>> 200usec. And your
+>>>>>>> program repeat mlock and munlock the exact same address. so, yes, if
+>>>>>>> lru_add_drain_all() is removed, it become near no-op. but it's
+>>>>>>> worthless comparision.
+>>>>>>> none of any practical program does such strange mlock usage.
+>>>>>> yes, I should say it is artificial. But mlock did cause the
+>>>>>> problem in
+>>>>>> our product system and perf shows that the mlock uses the system time
+>>>>>> much more than others. That's the reason we created this program
+>>>>>> to test
+>>>>>> whether mlock really sucks. And we compared the result with
+>>>>>> rhel5(2.6.18) which runs much much faster.
+>>>>>>
+>>>>>> And from the commit log you described, we can remove
+>>>>>> lru_add_drain_all
+>>>>>> safely here, so why add it? At least removing it makes mlock much
+>>>>>> faster
+>>>>>> compared to the vanilla kernel.
+>>>>>
+>>>>> If we remove it, we lose to a test way of mlock. "Memlocked" field of
+>>>>> /proc/meminfo
+>>>>> show inaccurate number very easily. So, if 200usec is no avoidable,
+>>>>> I'll ack you.
+>>>>> But I'm not convinced yet.
+>>>> Do you find something new for this?
+>>>
+>>> No.
+>>>
+>>> Or more exactly, 200usec is my calculation mistake. your program call
+>>> mlock
+>>> 3 times per each iteration. so, correct cost is 66usec.
+>> yes, so mlock can do 15000/s, it is even slower than the whole i/o time
+>> for some not very fast ssd disk and I don't think it is endurable. I
+>> guess we should remove it, right? Or you have another other suggestion
+>> that I can try for it?
+> 
+> read whole thread.
+I have read the whole thread, and you just described that the test case
+is artificial and there is no suggestion or patch about how to resolve
+it. As I have said that it is very time-consuming and with more cpu
+cores, the more penalty, and an i/o time for a ssd can be faster than
+it. So do you think 66 usec is OK for a memory operation?
 
-We have nice set of be/le16_to_cpu and cpu_to_be/le16 helpers that do
-just that and in much more efficient way.
-
-> +
-> +/* Utility routine to handle writes to read-only attributes.  Hopefully
-> + * this will never happen, but if the user does something stupid, we don't
-> + * want to accept it quietly (which is what can happen if you just put NULL
-> + * for the attribute's store function).
-> + */
-> +static inline ssize_t rmi_store_error(struct device *dev,
-> +			struct device_attribute *attr,
-> +			const char *buf, size_t count)
-> +{
-> +	dev_warn(dev,
-> +		 "RMI4 WARNING: Attempt to write %d characters to read-only "
-> +		 "attribute %s.", count, attr->attr.name);
-> +	return -EPERM;
-> +}
-> +
-> +/* Utility routine to handle reads of write-only attributes.  Hopefully
-> + * this will never happen, but if the user does something stupid, we don't
-> + * want to accept it quietly (which is what can happen if you just put NULL
-> + * for the attribute's show function).
-> + */
-> +static inline ssize_t rmi_show_error(struct device *dev,
-> +		       struct device_attribute *attr,
-> +		       char *buf)
-> +{
-> +	dev_warn(dev,
-> +		 "RMI4 WARNING: Attempt to read from write-only attribute %s.",
-> +		 attr->attr.name);
-> +	return -EPERM;
-> +}
-
-Although these methods are not needed, a general comment nonetheless: do
-not put in header files and mark inline functions which address is taken
-and used elsewhere.
-
-Thanks.
-
--- 
-Dmitry
+Thanks
+Tao
