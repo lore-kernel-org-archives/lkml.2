@@ -1,47 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758451Ab2AFBrx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 20:47:53 -0500
-Received: from one.firstfloor.org ([213.235.205.2]:46721 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758438Ab2AFBrw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 20:47:52 -0500
-Date: Fri, 6 Jan 2012 02:47:48 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Jan Beulich <JBeulich@suse.com>,
-        mingo@elte.hu, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: x86-64: memset()/memcpy() not fully standards compliant
-Message-ID: <20120106014748.GS11715@one.firstfloor.org>
-References: <4F05BBFE020000780006A983@nat28.tlf.novell.com> <20120105182846.GQ11715@one.firstfloor.org> <4F0630CC.7050001@zytor.com>
-Mime-Version: 1.0
+	id S1758446Ab2AFBuc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 20:50:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43630 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756482Ab2AFBu3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 20:50:29 -0500
+Date: Fri, 6 Jan 2012 02:50:26 +0100
+From: Jan Kara <jack@suse.cz>
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [PATCH v2 3/7] VFS: Fix s_umount thaw/write deadlock
+Message-ID: <20120106015026.GF3790@quack.suse.cz>
+References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
+ <1323367477-21685-4-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F0630CC.7050001@zytor.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1323367477-21685-4-git-send-email-kamal@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 03:22:52PM -0800, H. Peter Anvin wrote:
-> On 01/05/2012 10:28 AM, Andi Kleen wrote:
-> >>
-> >> Otherwise, is there any rationale for this sort of lurking bug?
-> > 
-> > Most (all?) of the CPUs I cared about when writing that code had 
-> > bugs with string instructions and >4GB.
-> > 
+  Hello,
+
+On Thu 08-12-11 10:04:33, Kamal Mostafa wrote:
+> From: Valerie Aurora <val@vaaconsulting.com>
 > 
-> Is that still true, and do we even use string instructions still on
-> those old CPUs?  Jan's fixes don't introduce any additional delays in
-> the non-string-instruction paths.
+> File system freeze/thaw require the superblock's s_umount lock.
+> However, we write to the file system while holding the s_umount lock
+> in several places (e.g., writeback and quotas).  Any of these can
+> block on a frozen file system while holding s_umount, preventing any
+> later thaw from occurring, since thaw requires s_umount.
+> 
+> The solution is to add a check, vfs_is_frozen(), to all code paths
+> that write while holding sb->s_umount and return without writing if it
+> is true.
+  Mikulas Patocka correctly pointed out (in thread starting by
+https://lkml.org/lkml/2011/11/25/169) that skipping frozen filesystem is
+currently actually wrong for filesystems such as ext2. These filesystems
+cannot stop modifications from happening and thus sync must not skip them
+even when they are marked as frozen. That complicates the solution of the
+deadlock you observe.
 
-Yes various of the CPUs with bugs used string instructions.
+Another issue is that even with ext4 current freezing code can leave dirty
+data on frozen filesystem. Consider the following race:
+  Thread 1				  Thread 2
+freeze_super()				__generic_file_aio_write()
+  ...					  vfs_check_frozen(sb)
+  sb->s_frozen = SB_FREEZE_WRITE;	  ...
+  sync_filesystem(sb);
+					  now we go and write to the fs
+  sb->s_frozen = SB_FREEZE_TRANS;
 
-Don't know the state on current CPUs.
+Your patches would just hide this race (which I can actually trigger rather
+easily in my testing).
 
-Both string and non string instructions are used on modern CPUs,
-so making any of that slower is not a good idea.
+Above two issues make me think more about how to really avoid having any
+dirty bits set on frozen filesystem. Then we shouldn't need this patch at
+all. The trouble is that race like above can really happen with any
+operation modifying the filesystem so it's not really easy to fix. I'll
+write email about that tomorrow...
 
--Andi
+								Honza
+
+> BugLink: https://bugs.launchpad.net/bugs/897421
+> Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
+> Cc: Kamal Mostafa <kamal@canonical.com>
+> Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+> [kamal@canonical.com: minor changes; patch restructure]
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> ---
+>  fs/fs-writeback.c  |    8 ++++++++
+>  fs/quota/quota.c   |   21 ++++++++++++++++++++-
+>  fs/super.c         |    8 ++++++++
+>  fs/sync.c          |    4 ++--
+>  include/linux/fs.h |    7 ++++++-
+>  5 files changed, 44 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> index 73c3992..eee01cd 100644
+> --- a/fs/fs-writeback.c
+> +++ b/fs/fs-writeback.c
+> @@ -554,6 +554,14 @@ static long writeback_sb_inodes(struct super_block *sb,
+>  	while (!list_empty(&wb->b_io)) {
+>  		struct inode *inode = wb_inode(wb->b_io.prev);
+>  
+> +		if (inode->i_sb == sb && vfs_is_frozen(sb)) {
+> +			/*
+> +			 * Inode is on a frozen superblock; skip it for now.
+> +			 */
+> +			redirty_tail(inode, wb);
+> +			continue;
+> +		}
+> +
+>  		if (inode->i_sb != sb) {
+>  			if (work->sb) {
+>  				/*
+> diff --git a/fs/quota/quota.c b/fs/quota/quota.c
+> index 35f4b0e..1d770f2 100644
+> --- a/fs/quota/quota.c
+> +++ b/fs/quota/quota.c
+> @@ -47,7 +47,7 @@ static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
+>  
+>  static void quota_sync_one(struct super_block *sb, void *arg)
+>  {
+> -	if (sb->s_qcop && sb->s_qcop->quota_sync)
+> +	if (sb->s_qcop && sb->s_qcop->quota_sync && !vfs_is_frozen(sb))
+>  		sb->s_qcop->quota_sync(sb, *(int *)arg, 1);
+>  }
+>  
+> @@ -368,8 +368,27 @@ SYSCALL_DEFINE4(quotactl, unsigned int, cmd, const char __user *, special,
+>  		goto out;
+>  	}
+>  
+> +	/*
+> +	 * If the fs is frozen, only allow read-only quota subcmds.
+> +	 */
+> +	if (vfs_is_frozen(sb)) {
+> +		switch (cmd) {
+> +			case Q_GETFMT:
+> +			case Q_GETINFO:
+> +			case Q_XGETQSTAT:
+> +				ret = 0;
+> +				break;
+> +			default:
+> +				ret = -EBUSY;
+> +				break;
+> +		}
+> +		if ( ret != 0 )
+> +		    goto out_drop_super;
+> +	}
+> +
+>  	ret = do_quotactl(sb, type, cmds, id, addr, pathp);
+>  
+> +out_drop_super:
+>  	drop_super(sb);
+>  out:
+>  	if (pathp && !IS_ERR(pathp))
+> diff --git a/fs/super.c b/fs/super.c
+> index afd0f1a..5629d06 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -526,6 +526,10 @@ void sync_supers(void)
+>   *
+>   *	Scans the superblock list and calls given function, passing it
+>   *	locked superblock and given argument.
+> + *
+> + *	Note: If @f is going to write to the file system, it must first
+> + *	check if the file system is frozen (via vfs_is_frozen(sb)) and
+> + *	refuse to write if so.
+>   */
+>  void iterate_supers(void (*f)(struct super_block *, void *), void *arg)
+>  {
+> @@ -595,6 +599,10 @@ EXPORT_SYMBOL(iterate_supers_type);
+>   *	
+>   *	Scans the superblock list and finds the superblock of the file system
+>   *	mounted on the device given. %NULL is returned if no match is found.
+> + *
+> + *	Note: If caller is going to write to the superblock, it must first
+> + *	check if the file system is frozen (via vfs_is_frozen(sb)) and
+> + *	refuse to write if so.
+>   */
+>  
+>  struct super_block *get_super(struct block_device *bdev)
+> diff --git a/fs/sync.c b/fs/sync.c
+> index 101b8ef..e8166db 100644
+> --- a/fs/sync.c
+> +++ b/fs/sync.c
+> @@ -68,7 +68,7 @@ int sync_filesystem(struct super_block *sb)
+>  	/*
+>  	 * No point in syncing out anything if the filesystem is read-only.
+>  	 */
+> -	if (sb->s_flags & MS_RDONLY)
+> +	if ((sb->s_flags & MS_RDONLY) || vfs_is_frozen(sb))
+>  		return 0;
+>  
+>  	ret = __sync_filesystem(sb, 0);
+> @@ -80,7 +80,7 @@ EXPORT_SYMBOL_GPL(sync_filesystem);
+>  
+>  static void sync_one_sb(struct super_block *sb, void *arg)
+>  {
+> -	if (!(sb->s_flags & MS_RDONLY))
+> +	if (!(sb->s_flags & MS_RDONLY) && !vfs_is_frozen(sb))
+>  		__sync_filesystem(sb, *(int *)arg);
+>  }
+>  /*
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 019dc55..ec33b4c 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1490,7 +1490,7 @@ extern void prune_dcache_sb(struct super_block *sb, int nr_to_scan);
+>  extern struct timespec current_fs_time(struct super_block *sb);
+>  
+>  /*
+> - * Snapshotting support.
+> + * Snapshotting support.  See freeze_super() for documentation.
+>   */
+>  enum {
+>  	SB_UNFROZEN = 0,
+> @@ -1501,6 +1501,11 @@ enum {
+>  #define vfs_check_frozen(sb, level) \
+>  	wait_event((sb)->s_wait_unfrozen, ((sb)->s_frozen < (level)))
+>  
+> +static inline int vfs_is_frozen(struct super_block *sb)
+> +{
+> +	return sb->s_frozen == SB_FREEZE_TRANS;
+> +}
+> +
+>  /*
+>   * until VFS tracks user namespaces for inodes, just make all files
+>   * belong to init_user_ns
+> -- 
+> 1.7.5.4
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
