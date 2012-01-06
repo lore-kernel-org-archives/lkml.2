@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab2AFLPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 06:15:50 -0500
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:47032 "EHLO e1.ny.us.ibm.com"
+	id S933190Ab2AFLS0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 06:18:26 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:41609 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758477Ab2AFLPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 06:15:49 -0500
-Date: Fri, 6 Jan 2012 16:38:24 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH v8 3.2.0-rc5 1/9] uprobes: Install and remove
- breakpoints.
-Message-ID: <20120106110824.GD14946@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
- <20111216122808.2085.76986.sendpatchset@srdronam.in.ibm.com>
- <1325695788.2697.3.camel@twins>
- <20120106061407.GC14946@linux.vnet.ibm.com>
- <1325847461.2442.4.camel@twins>
+	id S1758477Ab2AFLSY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 06:18:24 -0500
+Date: Fri, 6 Jan 2012 12:16:06 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Rik van Riel <riel@redhat.com>,
+        Federica Teodori <federica.teodori@googlemail.com>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2012.1] fs: symlink restrictions on sticky directories
+Message-ID: <20120106111606.GA11892@elte.hu>
+References: <20120104201800.GA2587@www.outflux.net>
+ <20120105091704.GB3249@elte.hu>
+ <CAGXu5jJ=D1pKCZ8=1-WGkm0witNEH9Ux01+1BJyZKC_DAX00aA@mail.gmail.com>
+ <20120106073635.GC14188@elte.hu>
+ <20120106012120.32c3f370.akpm@linux-foundation.org>
+ <20120106094339.GA9990@elte.hu>
+ <20120106015808.1655d1c9.akpm@linux-foundation.org>
+ <20120106100520.GA7962@elte.hu>
+ <20120106023358.76374f2c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325847461.2442.4.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12010611-6078-0000-0000-0000066B0F88
+In-Reply-To: <20120106023358.76374f2c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-01-06 11:57:41]:
 
-> On Fri, 2012-01-06 at 11:44 +0530, Srikar Dronamraju wrote:
-> >         - consumers for the uprobe is NULL, so mmap_uprobe will not
-> >           insert new breakpoints which correspond to this uprobe until
-> >           or unless another consumer gets added for the same probe.
+* Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Fri, 6 Jan 2012 11:05:20 +0100 Ingo Molnar <mingo@elte.hu> wrote:
+> 
+> > * Andrew Morton <akpm@linux-foundation.org> wrote:
 > > 
-> >         - If a new consumer gets added for this probe, we reuse the
-> >           uprobe struct.
+> > > Maybe true for a general purpose computer, but someone who 
+> > > is making a single-purpose device such as a digital TV or 
+> > > a wifi router won't want it.
+> > 
+> > That's the case for 99% of the features and semantics we 
+> > have: by definition a single-purpose device uses only a 
+> > small sub-set of an infinite purpose OS, right?
+> > 
+> > Still we only modularize semantics out if they easily fit 
+> > into some existing plug-in/module concept, if the feature is 
+> > arguably oddball that a sizable portion of people want to 
+> > disable, or if it makes notable sense for size reasons. To 
+> > me it looked distinctly silly to complicate things for such 
+> > a small piece of code.
 > 
-> Ok, and when we install a new 'first' consumer we'll again try and
-> install all breakpoints ignoring those that were already there?
+> We're talking tens or hundreds of millions of machines for 
+> which the patch is a straightforward speed and space 
+> regression.  Fixing this needs just a little Kconfig twiddling 
+> and a #else clause.  We may as well do it.
+
+No strong objections from me.
+
+> > I doubt Kees would mind modularizing it, but it would be nice to 
+> > get VFS maintainer feedback in the:
+> > 
+> >    { 'you are crazy, over my dead body' ... 'cool, merge it' }
+> > 
+> > continuous spectrum of possible answers.
 > 
+> Well yes.  We'll get there.
+> 
+> Alas, I've become rather slack in my maintainer patchbombing 
+> in the past year or two.  It's just boring and depressing to 
+> spray patches at maintainers and have 90% or more of them 
+> simply ignored. [...]
 
-Yes, We install breakpoints as if its the first time a probe has been
-requested to be installed, including setting the UPROBES_RUN_HANDLER
-flag.
+How about just sending it to Linus after the first ignored patch 
+[perhaps marked in a special way, to make Linus aware of the 
+out-of-band nature of the patches], instead of buffering them 
+indefinitely and increasing your overhead all around?
 
-We do check if existing breakpoints are around during the actual
-insertion, in which case install_breakpoint() will return -EEXIST.
-However register assumes EEXIST to be non-fatal, and continues as if its
-successful.
+We'll no doubt regret some of those patches going upstream, but 
+that's OK i think, this is an exception mechanism.
 
--- 
-Thanks and Regards
-Srikar
+> [...] I'm sitting on 45 such patches at present so I suppose I 
+> should get off my tail and do a respray.
 
+(If I missed any then let me know.)
+
+Thanks,
+
+	Ingo
