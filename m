@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab2AFEE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Jan 2012 23:04:29 -0500
-Received: from mga09.intel.com ([134.134.136.24]:57481 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758616Ab2AFEE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Jan 2012 23:04:27 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="95052800"
-Subject: Re: [PATCH block:for-3.3/core] block: disable
- ELEVATOR_INSERT_SORT_MERGE
-From: Shaohua Li <shaohua.li@intel.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, x86@kernel.org
-In-Reply-To: <20120106035247.GF6276@google.com>
-References: <20120103221301.GH31746@google.com>
-	 <20120103223505.GI31746@google.com> <20120105012445.GP31746@google.com>
-	 <alpine.LSU.2.00.1201051026090.2009@eggly.anvils>
-	 <20120105183842.GF18486@google.com> <20120106021707.GA6276@google.com>
-	 <20120106023638.GC6276@google.com>
-	 <1325819655.22361.513.camel@sli10-conroe>
-	 <20120106030406.GD6276@google.com> <20120106033012.GE6276@google.com>
-	 <20120106035247.GF6276@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Jan 2012 12:19:05 +0800
-Message-ID: <1325823545.22361.526.camel@sli10-conroe>
+	id S1758634Ab2AFELD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Jan 2012 23:11:03 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:57733 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab2AFELB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Jan 2012 23:11:01 -0500
+Date: Fri, 6 Jan 2012 15:10:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: linux-next: manual merge of the input tree with the rr tree
+Message-Id: <20120106151051.451028e2a161f9b1b6d40535@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__6_Jan_2012_15_10_51_+1100_=+DQ42.D5a6eruEb"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-05 at 19:52 -0800, Tejun Heo wrote:
-> 5e84ea3a9c "block: attempt to merge with existing requests on plug
-> flush" added support for merging requests on plug flush and 274193224c
-> "block: recursive merge requests" added recursive merging.
-> 
-> Because these mergings happen before the request is inserted on the
-> elevator, the usual elv_latter/former_request() can't be used to
-> locate merge candidates.  It instead used bio merging mechanism -
-> last_merge hint and rqhash; unfortunately, this means that the
-> elevator doesn't have a say in which are allowed to merge and which
-> aren't.
-> 
-> For cfq, this resulted in merges across different cfqq's which led to
-> crashes as requests jump between different cfqq's unexpectedly.
-> 
-> Proper solution would be improving merge mechanism such that we can
-> always query elevator to find out merge candidates and remove rqhash;
-> however, the merge window is already upon us.  Disable
-> INSERT_SORT_MERGE for now.
-> 
-> For detailed discussion of the bug:
-> 
->  http://thread.gmane.org/gmane.linux.kernel.next/20064/focus=20159
-> 
-this is overkill. when plug is added, we found huge performance
-regression, that's why we add INSERT_SORT_MERGE.
+--Signature=_Fri__6_Jan_2012_15_10_51_+1100_=+DQ42.D5a6eruEb
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Shaohua
+Hi Dmitry,
 
+Today's linux-next merge of the input tree got a conflict in
+drivers/input/touchscreen/ucb1400_ts.c between commit 8c2e30fe02e2
+("module_param: make bool parameters really bool (drivers & misc)") from
+the rr tree and commit c899afedf168 ("Input: ucb1400_ts - convert to
+threaded IRQ") from the input tree.
+
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/input/touchscreen/ucb1400_ts.c
+index 056eea9,d2b5753..0000000
+--- a/drivers/input/touchscreen/ucb1400_ts.c
++++ b/drivers/input/touchscreen/ucb1400_ts.c
+@@@ -25,12 -26,11 +26,11 @@@
+  #include <linux/input.h>
+  #include <linux/device.h>
+  #include <linux/interrupt.h>
+- #include <linux/suspend.h>
+- #include <linux/kthread.h>
+- #include <linux/freezer.h>
+  #include <linux/ucb1400.h>
+ =20
++ #define UCB1400_TS_POLL_PERIOD	10 /* ms */
++=20
+ -static int adcsync;
+ +static bool adcsync;
+  static int ts_delay =3D 55; /* us */
+  static int ts_delay_pressure;	/* us */
+ =20
+
+--Signature=_Fri__6_Jan_2012_15_10_51_+1100_=+DQ42.D5a6eruEb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPBnRLAAoJEECxmPOUX5FEVuwQAIofL9/Wybsxgi0k9hzD1KHM
+jk/cIKvBGeRgbezJ7TRNWNA7NXjDWaPWOEEAsLPbZRi2hJGkVEIFzB3brxWv4clJ
+5e/kMjWeGsEy7R+cb/YHd+yfEFEOYvZl2MMdE3PPPUMWaC6YIGXqobA/1WyTXcGG
+UIqUm4IWTIpGSMQZ/aimsh/dAyw7gdEkkEuu4afp9xbGw2QnYhc+HMqyFbxWr+9K
+iEX88mH6NOrz4fSzEZmRGZOJdQIboXDGbPmL93uYwcAlLYDUsWzf+pXbrSJrJh5I
+JF/Ljk4rtzEYbhLqNsMd3HrajqvxjemQXOijGfM6oIxnJ/mzwAWfAbi9CocNz3vm
+f/yNzpsvZjrMK+y9qSXAXkq3zswTZAFhuq7DlOD0Bd3EZ1wnGrGNaxtWNXYTdOuw
+UxayS0xiwbB8HBG3XfHu7XArkpb3/v7lKQMPBmG6dturvpFm7h0lrSgZBW+fF8Jh
+1Wmwb2004Nusap4laQVGWl9ybvZw8EDHBGKJxAvWFyRbASJajlMpMlUQ6EGuF7L3
+3Y8L0kJpgeZD/jqEWvHVOjdt0qouxQTzpcvcFAt4bUCN6ToTUpVlkR2o0nGlAEp0
+9u+Qfv2eERdTTXqmGiGyADT1gwAqWtcl7d7ugzv2aSpQoN9DhjXTIxALlzONjPxj
+TVa0ragBb79JsrF+49f0
+=Jdha
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__6_Jan_2012_15_10_51_+1100_=+DQ42.D5a6eruEb--
