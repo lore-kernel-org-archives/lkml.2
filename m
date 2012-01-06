@@ -1,193 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758574Ab2AFJh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 04:37:59 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56833 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754930Ab2AFJh4 (ORCPT
+	id S1758620Ab2AFJlv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 04:41:51 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:53812 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754930Ab2AFJlt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 04:37:56 -0500
-Date: Fri, 6 Jan 2012 10:37:52 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Javier Martin <javier.martin@vista-silicon.com>,
-        linux-kernel@vger.kernel.org, dan.j.williams@intel.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] dmaengine: Fix status handling in imx-dma.
-Message-ID: <20120106093752.GH5446@pengutronix.de>
-References: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
- <1325829389.1540.95.camel@vkoul-udesk3>
+	Fri, 6 Jan 2012 04:41:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325829389.1540.95.camel@vkoul-udesk3>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:24:51 up 54 days, 17:11, 21 users,  load average: 0.74, 1.87,
- 1.67
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20120104065337.230911609@sli10-conroe.sh.intel.com>
+References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
+From: Zhu Yanhai <zhu.yanhai@gmail.com>
+Date: Fri, 6 Jan 2012 17:41:27 +0800
+Message-ID: <CAC8teKXs7YQSzcC151B0PRQpz0Uu9=L1mC9VfOxx-Hxc5g2SCA@mail.gmail.com>
+Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, vgoyal@redhat.com,
+        jmoyer@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 06, 2012 at 11:26:29AM +0530, Vinod Koul wrote:
-> On Mon, 2012-01-02 at 13:18 +0100, Javier Martin wrote:
-> > Status must only be changed to DMA_IN_PROGRESS
-> > when the DMA transfer has really begun.
-> > 
-> > However, since this driver lacks of support for
-> > multiple descriptors a new flag has to be introduced
-> > to avoid the prepare function be called multiple times.
-> Thanks this is the right approach to fix this driver
-> 
-> But this will obviously break any users of this driver as they need to
-> call the right APIs now :D
-> 
-> Sacha: can you check this patch and see which users of this driver will
-> break. we need those fixes to go along this patch as well
+Hi,
 
-Which users should break? I just tried with the mxcmmc driver and this
-one does not break.
+2012/1/4 Shaohua Li <shaohua.li@intel.com>:
+> An IOPS based I/O scheduler
+>
+> Flash based storage has some different characteristics against rotate disk.
+> 1. no I/O seek.
+> 2. read and write I/O cost usually is much different.
+> 3. Time which a request takes depends on request size.
+> 4. High throughput and IOPS, low latency.
+>
+> CFQ iosched does well for rotate disk, for example fair dispatching, idle
+> for sequential read. It also has optimization for flash based storage (for
+> item 1 above), but overall it's not designed for flash based storage. It's
+> a slice based algorithm. Since flash based storage request cost is very
+> low, and drive has big queue_depth is quite popular now which makes
+> dispatching cost even lower, CFQ's slice accounting (jiffy based)
+> doesn't work well. CFQ doesn't consider above item 2 & 3.
+>
+> FIOPS (Fair IOPS) ioscheduler is trying to fix the gaps. It's IOPS based, so
+> only targets for drive without I/O seek. It's quite similar like CFQ, but
+> the dispatch decision is made according to IOPS instead of slice.
+>
+> The algorithm is simple. Drive has a service tree, and each task lives in
+> the tree. The key into the tree is called vios (virtual I/O). Every request
+> has vios, which is calculated according to its ioprio, request size and so
+> on. Task's vios is the sum of vios of all requests it dispatches. FIOPS
+> always selects task with minimum vios in the service tree and let the task
+> dispatch request. The dispatched request's vios is then added to the task's
+> vios and the task is repositioned in the sevice tree.
+>
+> The series are orgnized as:
+> Patch 1: separate CFQ's io context management code. FIOPS will use it too.
+> Patch 2: The core FIOPS.
+> Patch 3: request read/write vios scale. This demontrates how the vios scale.
+>
+> To make the code simple for easy view, some scale code isn't included here,
+> some not implementated yet.
+>
+> TODO:
+> 1. ioprio support (have patch already)
+> 2. request size vios scale
+> 3. cgroup support
+> 4. tracing support
+> 5. automatically select default iosched according to QUEUE_FLAG_NONROT.
 
-I do not really understand this patch anyway. It changes imxdmac->status
-to a write-only variable and introduces a imxdmac->prepared variable
-with the same meaning. This patch is a complicated no-op.
+Actually most RAID cards we have ever seen report the wrong value for
+this flag, including LSI's 1078E, 9260/9265, HBA cards, etc. So it may
+needs a human-being to setup it correctly to make this adaptive code
+work.
+Also there is a much more complicated scenario ahead :) that's the
+hybrid storage. E.g, one or two SSD mixed with several SAS disks, or
+one expensive FusionIO's ioDrive mixed with several SAS disks, powered
+by Facebook's Flashcache. AFAIK there is not any IO bandwidth control
+solution for such things. However such setups are really very popular
+these days.
+I'm going to take some tests with these code against the real workload
+this month, hopefully we can get more ideas, and of course the
+feedback data.
 
-What was the original problem? The fact that we used a enum dma_status
-with the wrong semantics? In that case I suggest to simply replace this
-variable. All we need to track is that we do not enter
-imxdma_prep_slave_sg with an already running transfer.
+--
+Thanks,
+Zhu Yanhai
+Taobao Inc.
 
-Sascha
-
-> > 
-> > Signed-off-by: Javier Martin <javier.martin@vista-silicon.com>
-> > ---
-> >  drivers/dma/imx-dma.c |   22 +++++++++++++++-------
-> >  1 files changed, 15 insertions(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> > index d99f71c..9a0ac14 100644
-> > --- a/drivers/dma/imx-dma.c
-> > +++ b/drivers/dma/imx-dma.c
-> > @@ -43,6 +43,7 @@ struct imxdma_channel {
-> >  	enum dma_status			status;
-> >  	int				dma_request;
-> >  	struct scatterlist		*sg_list;
-> > +	bool				prepared;
-> >  };
-> >  
-> >  #define MAX_DMA_CHANNELS 8
-> > @@ -72,6 +73,7 @@ static void imxdma_irq_handler(int channel, void *data)
-> >  
-> >  	imxdmac->status = DMA_SUCCESS;
-> >  	imxdma_handle(imxdmac);
-> > +	imxdmac->prepared = false;
-> >  }
-> >  
-> >  static void imxdma_err_handler(int channel, void *data, int error)
-> > @@ -80,6 +82,7 @@ static void imxdma_err_handler(int channel, void *data, int error)
-> >  
-> >  	imxdmac->status = DMA_ERROR;
-> >  	imxdma_handle(imxdmac);
-> > +	imxdmac->prepared = false;
-> >  }
-> >  
-> >  static void imxdma_progression(int channel, void *data,
-> > @@ -89,6 +92,7 @@ static void imxdma_progression(int channel, void *data,
-> >  
-> >  	imxdmac->status = DMA_SUCCESS;
-> >  	imxdma_handle(imxdmac);
-> > +	imxdmac->prepared = false;
-> >  }
-> >  
-> >  static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-> > @@ -103,6 +107,7 @@ static int imxdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-> >  	case DMA_TERMINATE_ALL:
-> >  		imxdmac->status = DMA_ERROR;
-> >  		imx_dma_disable(imxdmac->imxdma_channel);
-> > +		imxdmac->prepared = false;
-> >  		return 0;
-> >  	case DMA_SLAVE_CONFIG:
-> >  		if (dmaengine_cfg->direction == DMA_FROM_DEVICE) {
-> > @@ -204,7 +209,7 @@ static int imxdma_alloc_chan_resources(struct dma_chan *chan)
-> >  	imxdmac->desc.flags = DMA_CTRL_ACK;
-> >  
-> >  	imxdmac->status = DMA_SUCCESS;
-> > -
-> > +	imxdmac->prepared = false;
-> >  	return 0;
-> >  }
-> >  
-> > @@ -230,11 +235,9 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
-> >  	int i, ret, dma_length = 0;
-> >  	unsigned int dmamode;
-> >  
-> > -	if (imxdmac->status == DMA_IN_PROGRESS)
-> > +	if (imxdmac->prepared)
-> >  		return NULL;
-> >  
-> > -	imxdmac->status = DMA_IN_PROGRESS;
-> > -
-> >  	for_each_sg(sgl, sg, sg_len, i) {
-> >  		dma_length += sg->length;
-> >  	}
-> > @@ -264,6 +267,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_slave_sg(
-> >  	if (ret)
-> >  		return NULL;
-> >  
-> > +	imxdmac->prepared = true;
-> > +
-> >  	return &imxdmac->desc;
-> >  }
-> >  
-> > @@ -280,9 +285,8 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
-> >  	dev_dbg(imxdma->dev, "%s channel: %d buf_len=%d period_len=%d\n",
-> >  			__func__, imxdmac->channel, buf_len, period_len);
-> >  
-> > -	if (imxdmac->status == DMA_IN_PROGRESS)
-> > +	if (imxdmac->prepared)
-> >  		return NULL;
-> > -	imxdmac->status = DMA_IN_PROGRESS;
-> >  
-> >  	ret = imx_dma_setup_progression_handler(imxdmac->imxdma_channel,
-> >  			imxdma_progression);
-> > @@ -325,14 +329,18 @@ static struct dma_async_tx_descriptor *imxdma_prep_dma_cyclic(
-> >  	if (ret)
-> >  		return NULL;
-> >  
-> > +	imxdmac->prepared = true;
-> > +
-> >  	return &imxdmac->desc;
-> >  }
-> >  
-> >  static void imxdma_issue_pending(struct dma_chan *chan)
-> >  {
-> >  	/*
-> > -	 * Nothing to do. We only have a single descriptor
-> > +	 * Only change status since we have a single descriptor
-> >  	 */
-> > +	struct imxdma_channel *imxdmac = to_imxdma_chan(chan);
-> > +	imxdmac->status = DMA_IN_PROGRESS;
-> >  }
-> >  
-> >  static int __init imxdma_probe(struct platform_device *pdev)
-> 
-> 
-> -- 
-> ~Vinod
-> 
-> 
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+>
+> Comments and suggestions are welcome!
+>
+> Thanks,
+> Shaohua
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
