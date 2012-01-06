@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758716Ab2AFOZN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 09:25:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50116 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab2AFOZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 09:25:12 -0500
-Date: Fri, 6 Jan 2012 15:19:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Yasunori Goto <y-goto@jp.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special
-	condition
-Message-ID: <20120106141915.GA21150@redhat.com>
-References: <20120106192256.AB15.E1E9C6FF@jp.fujitsu.com> <1325847671.2442.7.camel@twins> <20120106210108.AB18.E1E9C6FF@jp.fujitsu.com> <1325853838.2442.18.camel@twins> <20120106141258.GB19462@redhat.com>
+	id S1758722Ab2AFO1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 09:27:37 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:35810 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754292Ab2AFO1g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 09:27:36 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120106141258.GB19462@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAHFgRy8GUhyBZonZ_3c2=COxnCJ9DhX6EiaKe3JpMWaSpYJWWw@mail.gmail.com>
+References: <CAHFgRy8GUhyBZonZ_3c2=COxnCJ9DhX6EiaKe3JpMWaSpYJWWw@mail.gmail.com>
+Date: Fri, 6 Jan 2012 09:27:35 -0500
+Message-ID: <CA+5PVA61GC=JjiB3BcujC0ZKbgFjgbm5QzLLxES2gLkBMCA2eQ@mail.gmail.com>
+Subject: Re: panic - init: io.c:1312: Unhandled error from nih_io_destroy: Bad
+ file descriptor
+From: Josh Boyer <jwboyer@gmail.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06, Oleg Nesterov wrote:
+On Thu, Jan 5, 2012 at 6:10 PM, Miles Lane <miles.lane@gmail.com> wrote:
+> Suddenly, all my kernels are failing to boot.  These include ones from
+> Ubuntu 12.04 and my Linus' GIT kernels.  Any suggestions for what
+> might be broken?  Is it possible for me to fix this?
 >
-> But this makes me worry. We are doing a lot of things after
-> exit_mm(). In particular we take tasklist_lock in exit_notify()
-> and then do_exit() takes task_lock(). But every unlock + lock
-> implies mb(). So how it was possible to hit this bug???
+> init: log.c:291: Assertion failed in log_io_error_handler: err->number == EIR
+> init: Caught abort, core dumped
+> init: io.c:1312: Unhandled error from nih_io_destroy: Bad file descriptor
+> init: Caught abort. core dumped
 
-Damn. please ignore me.
+Those are error messages from Upstart, not the kernel.  It seems to
+have some kind of internal issue and exits.  Since it's PID 1, it
+panics the kernel because init can't exit.
 
-Somehow I forgot that _there is no_ spin_unlock_wait() in the
-current code ;)
+You might want to see if you updated upstart or libnih recently and
+downgrade if so.
 
-Oleg.
-
+josh
