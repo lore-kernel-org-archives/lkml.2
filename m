@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758842Ab2AFQ7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 11:59:18 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34353 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758790Ab2AFQ7R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 11:59:17 -0500
+	id S1758857Ab2AFQ7r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 11:59:47 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:42990 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758845Ab2AFQ7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 11:59:45 -0500
+Message-ID: <4F072843.6050306@ti.com>
+Date: Fri, 6 Jan 2012 17:58:43 +0100
+From: "Cousson, Benoit" <b-cousson@ti.com>
+Organization: Texas Instruments
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <20120105140846.GA32342@elte.hu>
-References: <20120105140846.GA32342@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Jan 2012 08:58:55 -0800
-X-Google-Sender-Auth: UkEgnKH_Xba3Z7g8zdPEKD6jmtE
-Message-ID: <CA+55aFwNzNSd2B57XYLC5r9sg=+GD=dP-UPZQDxmLXyLODS6+w@mail.gmail.com>
-Subject: Re: [GIT PULL] scheduler changes for v3.3
-To: Ingo Molnar <mingo@elte.hu>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andreas Schwab <schwab@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: <devicetree-discuss@lists.ozlabs.org>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Walker <dwalker@fifo99.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        David Brown <davidb@codeaurora.org>,
+        "open list:ARM/QUALCOMM MSM..." <linux-arm-msm@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Barry Song <baohua.song@csr.com>, Thomas Gleixner <tglx@linutronix.de>,
+        open list:
+	OMAP SUPPORT <linux-omap@vger.kernel.org>,
+        Andrew Victor <linux@maxim.org.za>,
+        "open list:ARM/ATMEL AT91RM9..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Richard Zhao <richard.zhao@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        David Woodhouse <dwmw2@infradead.org>, ;
+Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
+	CC:	;
+			^-missing semicolon to end mail group, extraneous tokens in mailbox, missing end of mailbox
+Subject: Re: [PATCH] irqdomain: Initialize number of IRQs for simple domains
+References: <1325860112-22051-1-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1325860112-22051-1-git-send-email-thierry.reding@avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 6:08 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Please pull the latest sched-core-for-linus git tree from:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-core-for-linus
+Hi Thierry,
 
-Ugh. So I got conflicts on this one.  Big deal, fix them up.
+On 1/6/2012 3:28 PM, Thierry Reding wrote:
+> The irq_domain_add() function needs the number of interrupts in the
+> domain to properly initialize them. In addition the allocated domain
+> is now returned by the irq_domain_{add,generate}_simple() helpers.
 
-But as I was fixing them up, I hit two problems that I wanted people
-to take a look at:
+[...]
 
- - some of the code was utter crap. Look at my fixup for
-include/asm-generic/cputime.h, for example. Notice how I had to change
-__msecs to __usec, and notice the bogus semicolons that I removed?
+> diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+> index d587560..bf67781 100644
+> --- a/arch/arm/mach-omap2/board-generic.c
+> +++ b/arch/arm/mach-omap2/board-generic.c
+> @@ -66,8 +66,11 @@ static struct of_device_id intc_match[] __initdata = {
+>   static void __init omap_generic_init(void)
+>   {
+>   	struct device_node *node = of_find_matching_node(NULL, intc_match);
+> -	if (node)
+> -		irq_domain_add_simple(node, 0);
+> +	if (node) {
+> +		struct irq_domain *domain;
+> +		domain = irq_domain_add_simple(node, 0, INTCPS_NR_IRQS);
 
-   This came in through commit 648616343cdb ("[S390] cputime: add
-sparse checking and cleanup") which is also mis-named: it's not
-S390-specific. Martin, please take a look.
+The number of interrupts will depend on the OMAP generation. That one is 
+just valid for the 3430 INTC controller.
+Since the previous code was using zero, I guess that using 0 there 
+should be fine.
 
- - I did not do the right thing for the "usecs_to_cputime64()" fixup.
-Please take a look at commit 34845636a184 ("procfs: do not confuse
-jiffies with cputime64_t") which introduced that "usecs_to_cputime64()
-thing, and which clashes badly with the sparse cleanups.
+Moreover, that piece of code should not exist anymore on 3.3 if the 
+series I sent last month to leverage Rob's DT interrupt init is merged [1].
 
-And by "clashes badly", I mean it. The sparse cleanups added a lot of
-casts between the types, which means that the mindless
+I've just ping Rob and Grant on that series to get a status.
 
-    +#define usecs_to_cputime64(us)         usecs_to_cputime(us)
+Regards,
+Benoit
 
-introduced by that commit 34845636a184 is now likely *wrong*, because
-"usecs_to_cputime()" now explicitly casts to a non-64-bit cputime_t.
 
-It may have been wrong before too, but at least on 64-bit
-architectures it didn't really matter. Now the sparse fixes have made
-"cputime64_t" a separate type that will complain about casting, so it
-not only casts the type to a (potentially different and wrong size),
-but it also breaks the sparse checks.
-
-I tried to fix up the ones that caused actual conflicts (due to
-changes nearby, like the ones in asm-generic), but the ones that
-didn't actually cause conflicts (powerpc and s390) I left alone.
-
-Guys, can you take a look? Also double-check my resolve of the
-set_cpu_sd_state_idle() call in kernel/time/tick-sched.c, please. I've
-pushed it out, and it seems to work for me, but...
-
-                                 Linus
+[1] http://www.spinics.net/lists/linux-omap/msg62124.html
