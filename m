@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759570Ab2AGIdx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:33:53 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37625 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754738Ab2AGI2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754724Ab2AGI2p (ORCPT <rfc822;w@1wt.eu>);
 	Sat, 7 Jan 2012 03:28:45 -0500
-Subject: [PATCH 07/23] ext4: Calculate and verify checksums for inode bitmaps
+Received: from e38.co.us.ibm.com ([32.97.110.159]:48553 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752561Ab2AGI2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:28:32 -0500
+Subject: [PATCH 05/23] ext4: Calculate and verify superblock checksum
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -19,199 +20,263 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:28:39 -0800
-Message-ID: <20120107082838.21970.79533.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 07 Jan 2012 00:28:26 -0800
+Message-ID: <20120107082826.21970.33859.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-7182-0000-0000-000000814C62
+x-cbid: 12010708-5518-0000-0000-0000016564C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compute and verify the checksum of the inode bitmap; the checkum is stored in
-the block group descriptor.
+Calculate and verify the superblock checksum.  Since the UUID and block group
+number are embedded in each copy of the superblock, we need only checksum the
+entire block.  Refactor some of the code to eliminate open-coding of the
+checksum update call.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/bitmap.c |   39 +++++++++++++++++++++++++++++++++++++++
- fs/ext4/ext4.h   |   13 +++++++++++++
- fs/ext4/ialloc.c |   30 +++++++++++++++++++++++++++---
- 3 files changed, 79 insertions(+), 3 deletions(-)
+ fs/ext4/ext4.h      |   10 ++++++++++
+ fs/ext4/ext4_jbd2.c |    9 ++++++++-
+ fs/ext4/ext4_jbd2.h |    7 +++++--
+ fs/ext4/inode.c     |    3 +--
+ fs/ext4/namei.c     |    4 ++--
+ fs/ext4/resize.c    |    6 +++++-
+ fs/ext4/super.c     |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ 7 files changed, 78 insertions(+), 8 deletions(-)
 
 
-diff --git a/fs/ext4/bitmap.c b/fs/ext4/bitmap.c
-index fa3af81..0ae4a01 100644
---- a/fs/ext4/bitmap.c
-+++ b/fs/ext4/bitmap.c
-@@ -29,3 +29,42 @@ unsigned int ext4_count_free(struct buffer_head *map, unsigned int numchars)
- 
- #endif  /*  EXT4FS_DEBUG  */
- 
-+int ext4_inode_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
-+				  struct ext4_group_desc *gdp,
-+				  struct buffer_head *bh, int sz)
-+{
-+	__u32 hi;
-+	__u32 provided, calculated;
-+	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	provided = le16_to_cpu(gdp->bg_inode_bitmap_csum_lo);
-+	calculated = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)bh->b_data, sz);
-+	if (sbi->s_desc_size >= EXT4_BG_INODE_BITMAP_CSUM_HI_END) {
-+		hi = le16_to_cpu(gdp->bg_inode_bitmap_csum_hi);
-+		provided |= (hi << 16);
-+	} else
-+		calculated &= 0xFFFF;
-+
-+	return provided == calculated;
-+}
-+
-+void ext4_inode_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
-+				struct ext4_group_desc *gdp,
-+				struct buffer_head *bh, int sz)
-+{
-+	__u32 csum;
-+	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return;
-+
-+	csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)bh->b_data, sz);
-+	gdp->bg_inode_bitmap_csum_lo = cpu_to_le16(csum & 0xFFFF);
-+	if (sbi->s_desc_size >= EXT4_BG_INODE_BITMAP_CSUM_HI_END)
-+		gdp->bg_inode_bitmap_csum_hi = cpu_to_le16(csum >> 16);
-+}
 diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 57c1e39..4bb9fb3 100644
+index a6de0d2..9d1504e 100644
 --- a/fs/ext4/ext4.h
 +++ b/fs/ext4/ext4.h
-@@ -308,6 +308,13 @@ struct ext4_group_desc
- 	__u32   bg_reserved;
+@@ -1263,6 +1263,9 @@ struct ext4_sb_info {
+ 
+ 	/* Reference to checksum algorithm driver via cryptoapi */
+ 	struct crypto_shash *s_chksum_driver;
++
++	/* Precomputed FS UUID checksum for seeding other checksums */
++	__u32 s_csum_seed;
  };
  
-+#define EXT4_BG_INODE_BITMAP_CSUM_HI_END	\
-+	(offsetof(struct ext4_group_desc, bg_inode_bitmap_csum_hi) + \
-+	 sizeof(__le16))
-+#define EXT4_BG_BLOCK_BITMAP_CSUM_HI_END	\
-+	(offsetof(struct ext4_group_desc, bg_block_bitmap_csum_hi) + \
-+	 sizeof(__le16))
+ static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+@@ -1976,6 +1979,10 @@ extern int ext4_group_extend(struct super_block *sb,
+ 				ext4_fsblk_t n_blocks_count);
+ 
+ /* super.c */
++extern int ext4_superblock_csum_verify(struct super_block *sb,
++				       struct ext4_super_block *es);
++extern void ext4_superblock_csum_set(struct super_block *sb,
++				     struct ext4_super_block *es);
+ extern void *ext4_kvmalloc(size_t size, gfp_t flags);
+ extern void *ext4_kvzalloc(size_t size, gfp_t flags);
+ extern void ext4_kvfree(void *ptr);
+@@ -2251,6 +2258,9 @@ static inline void ext4_unlock_group(struct super_block *sb,
+ 
+ static inline void ext4_mark_super_dirty(struct super_block *sb)
+ {
++	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
 +
- /*
-  * Structure of a flex block group info
-  */
-@@ -1815,6 +1822,12 @@ struct mmpd_data {
- 
- /* bitmap.c */
- extern unsigned int ext4_count_free(struct buffer_head *, unsigned);
-+void ext4_inode_bitmap_csum_set(struct super_block *sb, ext4_group_t group,
-+				struct ext4_group_desc *gdp,
-+				struct buffer_head *bh, int sz);
-+int ext4_inode_bitmap_csum_verify(struct super_block *sb, ext4_group_t group,
-+				  struct ext4_group_desc *gdp,
-+				  struct buffer_head *bh, int sz);
- 
- /* balloc.c */
- extern unsigned int ext4_block_group(struct super_block *sb,
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 9884fa1..59e3644 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -82,12 +82,17 @@ static unsigned ext4_init_inode_bitmap(struct super_block *sb,
- 		ext4_free_inodes_set(sb, gdp, 0);
- 		ext4_itable_unused_set(sb, gdp, 0);
- 		memset(bh->b_data, 0xff, sb->s_blocksize);
-+		ext4_inode_bitmap_csum_set(sb, block_group, gdp, bh,
-+					   EXT4_INODES_PER_GROUP(sb) / 8);
- 		return 0;
- 	}
- 
- 	memset(bh->b_data, 0, (EXT4_INODES_PER_GROUP(sb) + 7) / 8);
- 	ext4_mark_bitmap_end(EXT4_INODES_PER_GROUP(sb), sb->s_blocksize * 8,
- 			bh->b_data);
-+	ext4_inode_bitmap_csum_set(sb, block_group, gdp, bh,
-+				   EXT4_INODES_PER_GROUP(sb) / 8);
-+	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
- 
- 	return EXT4_INODES_PER_GROUP(sb);
++	ext4_superblock_csum_set(sb, es);
+ 	if (EXT4_SB(sb)->s_journal == NULL)
+ 		sb->s_dirt =1;
  }
-@@ -118,12 +123,12 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
- 		return NULL;
- 	}
- 	if (bitmap_uptodate(bh))
--		return bh;
-+		goto verify;
- 
- 	lock_buffer(bh);
- 	if (bitmap_uptodate(bh)) {
- 		unlock_buffer(bh);
--		return bh;
-+		goto verify;
- 	}
- 
- 	ext4_lock_group(sb, block_group);
-@@ -131,6 +136,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
- 		ext4_init_inode_bitmap(sb, bh, block_group, desc);
- 		set_bitmap_uptodate(bh);
- 		set_buffer_uptodate(bh);
-+		set_buffer_verified(bh);
- 		ext4_unlock_group(sb, block_group);
- 		unlock_buffer(bh);
- 		return bh;
-@@ -144,7 +150,7 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
- 		 */
- 		set_bitmap_uptodate(bh);
- 		unlock_buffer(bh);
--		return bh;
-+		goto verify;
- 	}
- 	/*
- 	 * submit the buffer_head for read. We can
-@@ -161,6 +167,20 @@ ext4_read_inode_bitmap(struct super_block *sb, ext4_group_t block_group)
- 			    block_group, bitmap_blk);
- 		return NULL;
- 	}
-+
-+verify:
-+	ext4_lock_group(sb, block_group);
-+	if (!buffer_verified(bh) &&
-+	    !ext4_inode_bitmap_csum_verify(sb, block_group, desc, bh,
-+					   EXT4_INODES_PER_GROUP(sb) / 8)) {
-+		ext4_unlock_group(sb, block_group);
-+		put_bh(bh);
-+		ext4_error(sb, "Corrupt inode bitmap - block_group = %u, "
-+			   "inode_bitmap = %llu", block_group, bitmap_blk);
-+		return NULL;
-+	}
-+	ext4_unlock_group(sb, block_group);
-+	set_buffer_verified(bh);
- 	return bh;
+diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
+index aca1790..90f7c2e 100644
+--- a/fs/ext4/ext4_jbd2.c
++++ b/fs/ext4/ext4_jbd2.c
+@@ -138,16 +138,23 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
  }
  
-@@ -265,6 +285,8 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
- 		ext4_used_dirs_set(sb, gdp, count);
- 		percpu_counter_dec(&sbi->s_dirs_counter);
- 	}
-+	ext4_inode_bitmap_csum_set(sb, block_group, gdp, bitmap_bh,
-+				   EXT4_INODES_PER_GROUP(sb) / 8);
- 	gdp->bg_checksum = ext4_group_desc_csum(sbi, block_group, gdp);
- 	ext4_unlock_group(sb, block_group);
+ int __ext4_handle_dirty_super(const char *where, unsigned int line,
+-			      handle_t *handle, struct super_block *sb)
++			      handle_t *handle, struct super_block *sb,
++			      int now)
+ {
+ 	struct buffer_head *bh = EXT4_SB(sb)->s_sbh;
+ 	int err = 0;
  
-@@ -673,6 +695,8 @@ static int ext4_claim_inode(struct super_block *sb,
- 			atomic_inc(&sbi->s_flex_groups[f].used_dirs);
+ 	if (ext4_handle_valid(handle)) {
++		ext4_superblock_csum_set(sb,
++				(struct ext4_super_block *)bh->b_data);
+ 		err = jbd2_journal_dirty_metadata(handle, bh);
+ 		if (err)
+ 			ext4_journal_abort_handle(where, line, __func__,
+ 						  bh, handle, err);
++	} else if (now) {
++		ext4_superblock_csum_set(sb,
++				(struct ext4_super_block *)bh->b_data);
++		mark_buffer_dirty(bh);
+ 	} else
+ 		sb->s_dirt = 1;
+ 	return err;
+diff --git a/fs/ext4/ext4_jbd2.h b/fs/ext4/ext4_jbd2.h
+index 5802fa1..ed9b78d 100644
+--- a/fs/ext4/ext4_jbd2.h
++++ b/fs/ext4/ext4_jbd2.h
+@@ -141,7 +141,8 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
+ 				 struct buffer_head *bh);
+ 
+ int __ext4_handle_dirty_super(const char *where, unsigned int line,
+-			      handle_t *handle, struct super_block *sb);
++			      handle_t *handle, struct super_block *sb,
++			      int now);
+ 
+ #define ext4_journal_get_write_access(handle, bh) \
+ 	__ext4_journal_get_write_access(__func__, __LINE__, (handle), (bh))
+@@ -153,8 +154,10 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
+ #define ext4_handle_dirty_metadata(handle, inode, bh) \
+ 	__ext4_handle_dirty_metadata(__func__, __LINE__, (handle), (inode), \
+ 				     (bh))
++#define ext4_handle_dirty_super_now(handle, sb) \
++	__ext4_handle_dirty_super(__func__, __LINE__, (handle), (sb), 1)
+ #define ext4_handle_dirty_super(handle, sb) \
+-	__ext4_handle_dirty_super(__func__, __LINE__, (handle), (sb))
++	__ext4_handle_dirty_super(__func__, __LINE__, (handle), (sb), 0)
+ 
+ handle_t *ext4_journal_start_sb(struct super_block *sb, int nblocks);
+ int __ext4_journal_stop(const char *where, unsigned int line, handle_t *handle);
+diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+index 92655fd..07cd63d 100644
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -4044,8 +4044,7 @@ static int ext4_do_update_inode(handle_t *handle,
+ 					EXT4_FEATURE_RO_COMPAT_LARGE_FILE);
+ 			sb->s_dirt = 1;
+ 			ext4_handle_sync(handle);
+-			err = ext4_handle_dirty_metadata(handle, NULL,
+-					EXT4_SB(sb)->s_sbh);
++			err = ext4_handle_dirty_super_now(handle, sb);
  		}
  	}
-+	ext4_inode_bitmap_csum_set(sb, group, gdp, inode_bitmap_bh,
-+				   EXT4_INODES_PER_GROUP(sb) / 8);
- 	gdp->bg_checksum = ext4_group_desc_csum(sbi, group, gdp);
- err_ret:
- 	ext4_unlock_group(sb, group);
+ 	raw_inode->i_generation = cpu_to_le32(inode->i_generation);
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index c10ae34..ebfc499 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -2021,7 +2021,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
+ 	/* Insert this inode at the head of the on-disk orphan list... */
+ 	NEXT_ORPHAN(inode) = le32_to_cpu(EXT4_SB(sb)->s_es->s_last_orphan);
+ 	EXT4_SB(sb)->s_es->s_last_orphan = cpu_to_le32(inode->i_ino);
+-	err = ext4_handle_dirty_metadata(handle, NULL, EXT4_SB(sb)->s_sbh);
++	err = ext4_handle_dirty_super_now(handle, sb);
+ 	rc = ext4_mark_iloc_dirty(handle, inode, &iloc);
+ 	if (!err)
+ 		err = rc;
+@@ -2094,7 +2094,7 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
+ 		if (err)
+ 			goto out_brelse;
+ 		sbi->s_es->s_last_orphan = cpu_to_le32(ino_next);
+-		err = ext4_handle_dirty_metadata(handle, NULL, sbi->s_sbh);
++		err = ext4_handle_dirty_super_now(handle, inode->i_sb);
+ 	} else {
+ 		struct ext4_iloc iloc2;
+ 		struct inode *i_prev =
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 996780a..c33b72a 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -511,7 +511,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
+ 	ext4_kvfree(o_group_desc);
+ 
+ 	le16_add_cpu(&es->s_reserved_gdt_blocks, -1);
+-	err = ext4_handle_dirty_metadata(handle, NULL, EXT4_SB(sb)->s_sbh);
++	err = ext4_handle_dirty_super_now(handle, sb);
+ 	if (err)
+ 		ext4_std_error(sb, err);
+ 
+@@ -682,6 +682,8 @@ static void update_backups(struct super_block *sb,
+ 		goto exit_err;
+ 	}
+ 
++	ext4_superblock_csum_set(sb, (struct ext4_super_block *)data);
++
+ 	while ((group = ext4_list_backups(sb, &three, &five, &seven)) < last) {
+ 		struct buffer_head *bh;
+ 
+@@ -925,6 +927,8 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
+ 	/* Update the global fs size fields */
+ 	sbi->s_groups_count++;
+ 
++	ext4_superblock_csum_set(sb,
++				 (struct ext4_super_block *)primary->b_data);
+ 	err = ext4_handle_dirty_metadata(handle, NULL, primary);
+ 	if (unlikely(err)) {
+ 		ext4_std_error(sb, err);
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 58c697f..99bee03 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -121,6 +121,38 @@ static int ext4_verify_csum_type(struct super_block *sb,
+ 	return es->s_checksum_type == EXT4_CRC32C_CHKSUM;
+ }
+ 
++static __le32 ext4_superblock_csum(struct super_block *sb,
++				   struct ext4_super_block *es)
++{
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
++	int offset = offsetof(struct ext4_super_block, s_checksum);
++	__u32 csum;
++
++	csum = ext4_chksum(sbi, ~0, (char *)es, offset);
++
++	return cpu_to_le32(csum);
++}
++
++int ext4_superblock_csum_verify(struct super_block *sb,
++				struct ext4_super_block *es)
++{
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
++				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return 1;
++
++	return es->s_checksum == ext4_superblock_csum(sb, es);
++}
++
++void ext4_superblock_csum_set(struct super_block *sb,
++			      struct ext4_super_block *es)
++{
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return;
++
++	es->s_checksum = ext4_superblock_csum(sb, es);
++}
++
+ void *ext4_kvmalloc(size_t size, gfp_t flags)
+ {
+ 	void *ret;
+@@ -3213,6 +3245,20 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		}
+ 	}
+ 
++	/* Check superblock checksum */
++	if (!ext4_superblock_csum_verify(sb, es)) {
++		ext4_msg(sb, KERN_ERR, "VFS: Found ext4 filesystem with "
++			 "invalid superblock checksum.  Run e2fsck?");
++		silent = 1;
++		goto cantfind_ext4;
++	}
++
++	/* Precompute checksum seed for all metadata */
++	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
++			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		sbi->s_csum_seed = ext4_chksum(sbi, ~0, es->s_uuid,
++					       sizeof(es->s_uuid));
++
+ 	/* Set defaults before we parse the mount options */
+ 	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
+ 	set_opt(sb, INIT_INODE_TABLE);
+@@ -4218,6 +4264,7 @@ static int ext4_commit_super(struct super_block *sb, int sync)
+ 				&EXT4_SB(sb)->s_freeinodes_counter));
+ 	sb->s_dirt = 0;
+ 	BUFFER_TRACE(sbh, "marking dirty");
++	ext4_superblock_csum_set(sb, es);
+ 	mark_buffer_dirty(sbh);
+ 	if (sync) {
+ 		error = sync_dirty_buffer(sbh);
 
