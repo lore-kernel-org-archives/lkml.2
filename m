@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759404Ab2AGCHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 21:07:48 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:45440 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759355Ab2AGCHr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 21:07:47 -0500
-Date: Fri, 06 Jan 2012 18:07:45 -0800 (PST)
-Message-Id: <20120106.180745.694506225640408539.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFwbykuZ30i2qrdAbX=PzRC5jtOYuAk8s8j47OP7qDSM8g@mail.gmail.com>
-References: <CA+55aFyk6QJib8UCtK_gWzidr8Ti1utJgHg359fkq=+GY8hbnw@mail.gmail.com>
-	<20120106.175028.1076280359661712542.davem@davemloft.net>
-	<CA+55aFwbykuZ30i2qrdAbX=PzRC5jtOYuAk8s8j47OP7qDSM8g@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1759425Ab2AGCIL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 21:08:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:49958 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759355Ab2AGCII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 21:08:08 -0500
+Message-ID: <4F07A8E3.7010105@redhat.com>
+Date: Sat, 07 Jan 2012 00:07:31 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Paolo Bonzini <pbonzini@redhat.com>, linux-media@vger.kernel.org,
+        Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
+        security@kernel.org, pmatouse@redhat.com, agk@redhat.com,
+        jbottomley@parallels.com, mchristi@redhat.com, msnitzer@redhat.com,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: Broken ioctl error returns (was Re: [PATCH 2/3] block: fail SCSI
+ passthrough ioctls on partition devices)
+References: <CA+55aFyzqCVwpuRNOt8a=fdoDq_khsbSHBs6cT=TLuzQ7ixwgg@mail.gmail.com> <4F05DFF0.3000809@infradead.org> <CA+55aFyDJ5PJ75R_bSaV5KCpLANmNwCjCA=mYj4g+H+35NQSNQ@mail.gmail.com> <4F05F57A.2070007@infradead.org>
+In-Reply-To: <4F05F57A.2070007@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 06 Jan 2012 18:07:46 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Jan 2012 17:55:13 -0800
-
-> Look, I have a *recent* distro (up-to-date F16) and the tool that is
-> mentioned (ss) doesn't actually use the new feature even when compiled
-> in.
+On 05-01-2012 17:09, Mauro Carvalho Chehab wrote:
+> On 05-01-2012 15:47, Linus Torvalds wrote:
+ 
+>> Can you test the patch with some media capture apps (preferably with
+>> the obvious fix for the problem that Paulo already pointed out -
+>> although that won't actually matter until some block driver starts
+>> using ENOIOCTLCMD there, so even the unfixed patch should mostly work
+>> for testing)?
 > 
-> So it doesn't "replace" anything, and buys normal people nothing at all.
-> 
-> Some day, maybe. Today? No. It's pure baggage. It shouldn't be "default y".
+> Sure. I'm currently traveling, so I have just my "first aids kit" of devices
+> but they should be enough for testing it. I'll return you as soon as I finish
+> compiling the kernel on this slow 4 years-old notebook and run some
+> tests with the usual applications.
 
-Oh I see.
+I did a quick test today: didn't notice any regressions with the usual
+applications.
 
-Ok, we can take away those default Kconfig tags for the UDP and AF_UNIX
-bits, no problem.
+Regards,
+Mauro
