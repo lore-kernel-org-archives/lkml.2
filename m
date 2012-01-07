@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab2AGSMf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 13:12:35 -0500
-Received: from smtp.mail.umich.edu ([141.211.14.81]:59151 "EHLO
-	hackers.mr.itd.umich.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2AGSMe (ORCPT
+	id S1753123Ab2AGSRO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 13:17:14 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:49897 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692Ab2AGSRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 13:12:34 -0500
-Date: Sat, 7 Jan 2012 13:12:21 -0500
-From: Jim Rees <rees@umich.edu>
-To: Chuck Lever <chuck.lever@oracle.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>, linux@razik.name,
-        Trond.Myklebust@netapp.com, penberg@kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfs: Don't try mounting device as nfs root unless type
- fully matches
-Message-ID: <20120107181221.GA3777@umich.edu>
-References: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
- <5FF522E0-132E-4A6A-A40F-5CCD08AF800A@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5FF522E0-132E-4A6A-A40F-5CCD08AF800A@oracle.com>
+	Sat, 7 Jan 2012 13:17:12 -0500
+Date: Sat, 07 Jan 2012 10:17:02 -0800 (PST)
+Message-Id: <20120107.101702.971636020211532236.davem@davemloft.net>
+To: glommer@parallels.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        cgroups@vger.kernel.org, gthelen@google.com,
+        kamezawa.hiroyu@jp.fujitsu.com, chavey@google.com
+Subject: Re: [PATCH] net: fix sock_clone reference mismatch with tcp
+ memcontrol
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1325830599-11857-1-git-send-email-glommer@parallels.com>
+References: <1325830599-11857-1-git-send-email-glommer@parallels.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 07 Jan 2012 10:17:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chuck Lever wrote:
+From: Glauber Costa <glommer@parallels.com>
+Date: Fri,  6 Jan 2012 10:16:39 +0400
 
-  On Jan 7, 2012, at 4:12 AM, Sasha Levin wrote:
-  
-  > Currently, we'll try mounting any device who's major device number is
-  > UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
-  > as 9p devices) but it wouldn't cause any issues since mounting the device
-  > as NFS would fail quickly and the code proceeded to doing the proper mount:
-  > 
-  > 	[  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
-  > 	[  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
-  > 
-  > Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
-  > mounting NFS root, which means that now we don't immediately fail and instead
-  > it takes an additional 90+ seconds until we stop retrying.
-  > 
-  > This meant that it would take an additional 90 seconds to boot when we're not
-  > using a device type which gets detected in order before NFS.
-  
-  The long timeouts are kind of irrelevant, in my view.  The real problem is
-  that NFS was tried at all in this case.  That behavior was not introduced
-  by 6829a058.
+> Sockets can also be created through sock_clone. Because it copies
+> all data in the sock structure, it also copies the memcg-related pointer,
+> and all should be fine. However, since we now use reference counts in
+> socket creation, we are left with some sockets that have no reference
+> counts. It matters when we destroy them, since it leads to a mismatch.
+> 
+> Signed-off-by: Glauber Costa <glommer@parallels.com>
 
-The comment does imply that 6829a048 introduced a bug, but that's not true.
-It uncovered a bug that was there before.
-
-I would change the part about "now we don't immediately fail."  It didn't
-immediately fail before, but the timeout was short enough that you wouldn't
-notice it.
+Applied, thanks.
