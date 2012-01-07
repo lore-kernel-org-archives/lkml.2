@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751562Ab2AGIWU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:22:20 -0500
-Received: from mail2.gnudd.com ([213.203.150.91]:62462 "EHLO mail.gnudd.com"
+	id S1751812Ab2AGI2D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:28:03 -0500
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:51713 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894Ab2AGIWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:22:19 -0500
-Date: Sat, 7 Jan 2012 09:22:12 +0100
-From: Alessandro Rubini <rubini@gnudd.com>
-To: joe@perches.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] x86: initial support for sta2x11
-Message-ID: <20120107082212.GA18254@mail.gnudd.com>
+	id S1751224Ab2AGI2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:28:00 -0500
+Subject: [PATCH v2.3 00/23] ext4: Add metadata checksumming
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Sat, 07 Jan 2012 00:27:52 -0800
+Message-ID: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: GnuDD, Device Drivers, Embedded Systems, Courses
-In-Reply-To: <1325894723.12292.13.camel@joe2Laptop>
-References: <1325894723.12292.13.camel@joe2Laptop>
-    <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
-  <1446410617.668.1325893939253.JavaMail.mail@webmail05>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12010708-3534-0000-0000-0000044E1CEA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> trivia:
+Hi all,
 
-Thanks.
+This patchset adds crc32c checksums to most of the ext4 metadata objects.  A
+full design document is on the ext4 wiki[1] but I will summarize that document here.
 
-> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+As much as we wish our storage hardware was totally reliable, it is still
+quite possible for data to be corrupted on disk, corrupted during transfer over
+a wire, or written to the wrong places.  To protect against this sort of
+non-hostile corruption, it is desirable to store checksums of metadata objects
+on the filesystem to prevent broken metadata from shredding the filesystem.
 
-Ok.
+The crc32c polynomial was chosen for its improved error detection capabilities
+over crc32 and crc16, and because of its hardware acceleration on current and
+upcoming Intel and Sparc chips.
 
-> typo: s/subordindate/subordinate/
+Each type of metadata object has been retrofitted to store a checksum as follows:
 
-argh!
+- The superblock stores a crc32c of itself.
+- Each inode stores crc32c(fs_uuid + inode_num + inode_gen + inode +
+  slack_space_after_inode)
+- Block and inode bitmaps each get their own crc32c(fs_uuid + group_num +
+  bitmap), stored in the block group descriptor.
+- Each extent tree block stores a crc32c(fs_uuid + inode_num + inode_gen +
+  extent_entries) in unused space at the end of the block.
+- Each directory leaf block has an unused-looking directory entry big enough to
+  store a crc32c(fs_uuid + inode_num + inode_gen + block) at the end of the
+  block.
+- Each directory htree block is shortened to contain a crc32c(fs_uuid +
+  inode_num + inode_gen + block) at the end of the block.
+- Extended attribute blocks store crc32c(fs_uuid + id + ea_block) in the
+  header, where id is, depending on the refcount, either the inode_num and
+  inode_gen; or the block number.
+- MMP blocks store crc32c(fs_uuid + mmpblock) at the end of the MMP block.
+- Block groups can now use crc32c instead of crc16.
+- The journal now has a v2 checksum feature flag.
+- crc32c(j_uuid + block) checksums have been inserted into descriptor blocks,
+  commit blocks, revoke blocks, and the journal superblock.
+- Each block tag in a descriptor block has a checksum of the related data block.
 
-> It's probably not necessary to prefix with "sta2x11: "
+The patchset for e2fsprogs will be sent under separate cover only to linux-ext4
+as it is quite lengthy (~51 patches).
 
-fine.
+As far as performance impact goes, I see nearly no change with a standard mail
+server ffsb simulation.  On a test that involves only file creation and
+deletion and extent tree modifications, I see a drop of about 50 percent with
+the current kernel crc32c implementation; this improves to a drop of about 20
+percent with the enclosed crc32c implementation.  However, given that metadata
+is usually a small fraction of total IO, it doesn't seem like the cost of
+enabling this feature is unreasonable.
 
-> 
->> +			 size);
->> +		if (swiotlb_late_init_with_default_size(size))
->> +			dev_emerg(&pdev->dev, "%s: init swiotlb(%i) failed\n",
->> +				  __func__, size);
-> 
-> or __func__
+There are a few unresolved issues:
 
-I don't understand. No size? Or you typoed and meant pr_fmt defined above?
+- I haven't fixed it up to checksum the exclude bitmap yet.  I'll probably
+  submit that as an add-on to the snapshot patchset.
 
->> +	uint32_t v[2]; /* used as a string... */
-> 
-> less than pretty.
+- Using the journal commit hooks to delay crc32c calculation until dirty
+  buffers are actually being written to disk.
 
-Sure. But it's informative. Do you prefer a union? I don't want to
-do be/le stuff as it's irrelevant. But I can't read 1 byte at a time
-nor use a pointer there.
+- Interaction with online resize code.  Yongqiang seems to be in the process of
+  rewriting this not to use custom metadata block write functions, but I haven't
+  looked at it very closely yet.
 
-thanks, will resend
+Please have a look at the design document and patches, and please feel free to
+suggest any changes.
 
-/alessandro
+v2: Checksum the MMP block, store the checksum type in the superblock, include
+the inode generation in file checksums, and finally solve the problem of limited
+space in block groups by splitting the checksum into two halves.
+
+v2.1: Checksum the reserved parts of the htree tail structure.  Fix some flag
+handling bugs with the mb cache init routine wherein bitmaps could fail to be
+checksummed at read time.
+
+v2.2: Reincorporate the FS UUID in the bitmap checksum calcuations.  Move all
+disk layout changes to the front and the feature flag enablement to the end of
+the patch set.  Fail journal recovery if revoke block fails checksum.
+
+v2.3: Update the design document URL, and various minor naming cleanups.
+
+This patchset has been tested on 3.2.0-rc7 on x64, i386, ppc64, and ppc32.  The
+patches seems to work fine on all four platforms.
+
+--D
+
+[1] https://ext4.wiki.kernel.org/articles/e/x/t/Ext4_Metadata_Checksums_4d24.html
+
