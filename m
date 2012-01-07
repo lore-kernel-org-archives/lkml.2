@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753252Ab2AGSn5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 13:43:57 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:48780 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab2AGSn4 convert rfc822-to-8bit (ORCPT
+	id S1753278Ab2AGSyr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 13:54:47 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:6806 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752752Ab2AGSyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 13:43:56 -0500
-Date: Sat, 7 Jan 2012 19:43:48 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andreas Schwab <schwab@linux-m68k.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] scheduler changes for v3.3
-Message-ID: <20120107194348.77b42573@de.ibm.com>
-In-Reply-To: <CA+55aFwNzNSd2B57XYLC5r9sg=+GD=dP-UPZQDxmLXyLODS6+w@mail.gmail.com>
-References: <20120105140846.GA32342@elte.hu>
-	<CA+55aFwNzNSd2B57XYLC5r9sg=+GD=dP-UPZQDxmLXyLODS6+w@mail.gmail.com>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-x-cbid: 12010718-0542-0000-0000-00000097E41E
+	Sat, 7 Jan 2012 13:54:45 -0500
+X-IronPort-AV: E=McAfee;i="5400,1158,6582"; a="150793031"
+Date: Sat, 7 Jan 2012 10:54:43 -0800
+From: David Brown <davidb@codeaurora.org>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Ravi Kumar V <kumarrav@codeaurora.org>, vinod.koul@intel.com,
+        dan.j.williams@intel.com, arnd@arndb.de, linux-arch@vger.kernel.org,
+        bryanh@codeaurora.org, linux@arm.linux.org.uk, tsoni@qualcomm.com,
+        johlstei@qualcomm.com, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 2/2] msm: DMAEngine: Add DMAEngine driver based on old
+ MSM DMA APIs
+Message-ID: <20120107185443.GA19216@codeaurora.org>
+References: <1325854052-21402-1-git-send-email-kumarrav@codeaurora.org>
+ <1325854052-21402-3-git-send-email-kumarrav@codeaurora.org>
+ <1325901569.10425.14.camel@m0nster>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325901569.10425.14.camel@m0nster>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Jan 2012 08:58:55 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Fri, Jan 06, 2012 at 05:59:29PM -0800, Daniel Walker wrote:
 
-> On Thu, Jan 5, 2012 at 6:08 AM, Ingo Molnar <mingo@elte.hu> wrote:
-> >
-> > Please pull the latest sched-core-for-linus git tree from:
-> >
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-core-for-linus
+> > diff --git a/drivers/dma/msm-dma.c b/drivers/dma/msm-dma.c
+> > new file mode 100644
+> > index 0000000..51d9a2b
+> > --- /dev/null
+> > +++ b/drivers/dma/msm-dma.c
+> > ...
+> > +static void msm_chan_desc_cleanup(struct msm_dma_chan *chan)
+> > +{
+> > +	struct msm_dma_desc_sw *desc, *_desc;
+> > +	unsigned long flags;
+> > +
+> > +	dev_dbg(chan->dev, "Cleaning completed descriptor of channel %d\n",
+> > +							chan->chan_id);
+> > +	spin_lock_irqsave(&chan->lock, flags);
+> > +
+> > +	list_for_each_entry_safe(desc, _desc, &chan->active_list, node) {
+> > +		dma_async_tx_callback callback;
+> > +		void *callback_param;
+> > +
+> > +		if (msm_dma_desc_status(chan, desc) == DMA_IN_PROGRESS)
+> > +			break;
+> > +
+> > +		/* Remove from the list of running transactions */
+> > +		list_del(&desc->node);
+> > +
+> > +		/* Run the link descriptor callback function */
+> > +		callback = desc->async_tx.callback;
+> > +		callback_param = desc->async_tx.callback_param;
+> > +		if (callback) {
+> > +			spin_unlock_irqrestore(&chan->lock, flags);
+> > +			callback(callback_param);
 > 
-> Ugh. So I got conflicts on this one.  Big deal, fix them up.
-> 
-> But as I was fixing them up, I hit two problems that I wanted people
-> to take a look at:
-> 
->  - some of the code was utter crap. Look at my fixup for
-> include/asm-generic/cputime.h, for example. Notice how I had to change
-> __msecs to __usec, and notice the bogus semicolons that I removed?
+> Are you sure unlocking here is safe? at_hdmac.c holds the lock the
+> entire time, and fsldma.c deletes the entire list, then runs the
+> operations.
 
-Yes, the semicolons had been crap and the parameter name suboptimal.
+Good catch.
 
->    This came in through commit 648616343cdb ("[S390] cputime: add
-> sparse checking and cleanup") which is also mis-named: it's not
-> S390-specific. Martin, please take a look.
+According to a comment in at_hdmac.c, it is safe to hold the lock
+while calling the callbacks, so that's probably the easiest solution.
+I suspect that you've got something in another driver expecting the
+lock to be released, and that might have to be changed.
 
-Yeah, I had that patch in the s390 tree before it got moved to a tip tree.
-I tend to tag everything in my tree with [S390].
- 
->  - I did not do the right thing for the "usecs_to_cputime64()" fixup.
-> Please take a look at commit 34845636a184 ("procfs: do not confuse
-> jiffies with cputime64_t") which introduced that "usecs_to_cputime64()
-> thing, and which clashes badly with the sparse cleanups.
+I do think the way fsldma.c does it is cleaner, though, since it
+allows the lock to be released for longer periods of times.
 
-There had been some fallout from the two changes.
- 
-> And by "clashes badly", I mean it. The sparse cleanups added a lot of
-> casts between the types, which means that the mindless
-> 
->     +#define usecs_to_cputime64(us)         usecs_to_cputime(us)
-> 
-> introduced by that commit 34845636a184 is now likely *wrong*, because
-> "usecs_to_cputime()" now explicitly casts to a non-64-bit cputime_t.
+In either case, it can't be releasing a lock in the middle of a loop
+like this.
 
-Surprisingly sparse does not give a warning if the base type of two
-__nowarn types is the same. All three VIRT_CPU_ACCOUNTING architectures
-use u64 or unsigned long long for cputime_t and cputime64_t. It does
-work but I agree that an explicit cast to cputime64_t would be better.
+David
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
