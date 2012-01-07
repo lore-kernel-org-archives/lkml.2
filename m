@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755Ab2AGGoz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 01:44:55 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:58035 "EHLO
+	id S1752025Ab2AGGsV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 01:48:21 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:42740 "EHLO
 	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751224Ab2AGGox (ORCPT
+	with ESMTP id S1751224Ab2AGGsT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 01:44:53 -0500
-Date: Sat, 7 Jan 2012 17:44:34 +1100
+	Sat, 7 Jan 2012 01:48:19 -0500
+Date: Sat, 7 Jan 2012 17:48:06 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>
-Subject: Re: linux-next: manual merge of the vfs tree with the v9fs tree
-Message-Id: <20120107174434.ed579c80d0371c0b81135aeb@canb.auug.org.au>
-In-Reply-To: <CAFkjPTndww2mu16gCa9cn7V=0t0wvYgPQ1wQGz0q0B=Fk6xQbA@mail.gmail.com>
-References: <20120106134658.7589dec177541808dad20eb9@canb.auug.org.au>
-	<CAFkjPTndww2mu16gCa9cn7V=0t0wvYgPQ1wQGz0q0B=Fk6xQbA@mail.gmail.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hui Wang <jason77.wang@gmail.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-Id: <20120107174806.723b1d9c2f7ddbe74a491591@canb.auug.org.au>
+In-Reply-To: <20120107054829.GF4790@S2101-09.ap.freescale.net>
+References: <20120106120345.8157a839b1c924315d728eea@canb.auug.org.au>
+	<20120107054829.GF4790@S2101-09.ap.freescale.net>
 X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA256";
- boundary="Signature=_Sat__7_Jan_2012_17_44_34_+1100_ar4I1rO810V3s2pg"
+ boundary="Signature=_Sat__7_Jan_2012_17_48_06_+1100_oVfdZH3YCkrpmYZD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__7_Jan_2012_17_44_34_+1100_ar4I1rO810V3s2pg
-Content-Type: text/plain; charset=US-ASCII
+--Signature=_Sat__7_Jan_2012_17_48_06_+1100_oVfdZH3YCkrpmYZD
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Eric,
+Hi Shawn,
 
-On Fri, 6 Jan 2012 22:38:57 -0600 Eric Van Hensbergen <ericvh@gmail.com> wr=
-ote:
+On Sat, 7 Jan 2012 13:48:31 +0800 Shawn Guo <shawn.guo@linaro.org> wrote:
 >
-> What's typically the right process for me to prep the merge for Linus?
-> Should I pull Al's patchset and then apply mine on top of it so I can
-> merge your merge fix or just have my for-linus tree based on his
-> current working merge (which I assume has Al's by now).  Just a bit
-> confused because rebasing was discouraged last merge window -- but not
-> sure how to deal with the conflict without a rebase....
+> On Fri, Jan 06, 2012 at 12:03:45PM +1100, Stephen Rothwell wrote:
+> >=20
+> > Today's linux-next merge of the arm-soc tree got a conflict in
+> > arch/arm/mach-imx/mm-imx5.c between commit 9bdd46257ab3 ("ARM: plat-mxc:
+> > hook special idle handlers to arm_pm_idle") from the arm tree and commit
+> > 010dc8af8f28 ("ARM: mx5: use generic irq chip pm interface for pm
+> > functions on") from the arm-soc tree.
+> >=20
+> > I fixed it up (I think - see below) and can carry the fix as necessary.
+>=20
+> When I was testing this fix on next-20120106, I spotted another compile
+> error from this file.
+>=20
+>   CC      arch/arm/mach-imx/mm-imx5.o
+> arch/arm/mach-imx/mm-imx5.c:58:24: error: redefinition of =E2=80=98mx50_i=
+o_desc=E2=80=99
+> arch/arm/mach-imx/mm-imx5.c:48:24: note: previous definition of =E2=80=98=
+mx50_io_desc=E2=80=99 was here
+> arch/arm/mach-imx/mm-imx5.c:48:24: warning: =E2=80=98mx50_io_desc=E2=80=
+=99 defined but not used
+>=20
+> The fix could just be removing the duplication.
 
-Just warn Linus that there will be a conflict with Al's stuff.  You could
-supply him with the patch I gave you just for good measure, but he is
-good (better then me) at fixing merge conflicts and will ping you if he
-has doubts.
-
-i.e. don't rebase or even bother doing the merge yourself.  Just ask him
-to pull what was in linux-next.
+Yeah, sometimes (I think it has happened to me about 3 times over the
+last 2.5 years) both sides of a merge will insert the same function and
+git does not notice (they are to far apart or the context is not unique)
+and inserts them both as part of the automatic merge.
 
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Sat__7_Jan_2012_17_44_34_+1100_ar4I1rO810V3s2pg
+--Signature=_Sat__7_Jan_2012_17_48_06_+1100_oVfdZH3YCkrpmYZD
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQIcBAEBCAAGBQJPB+nSAAoJEECxmPOUX5FEGacP/RlkOGv42lpymblKKuxSfDia
-6MVJ3U81BNqKxmejjmZRT5XxdfKzJL7SFxtXZhD6LmYaaY900GcQFNwX1hs//yxc
-SwdbYKCBhD2xT09LDBNDatclHCSegde+izIscS0BBGr8BP5g68iT5QxPjQMJduey
-BIQPQ/wq9i5LMhauTHAkEUCbu8/R/+a8i05klgA99tqi6uUYJ2eyhM6G+A7+DLab
-54M3RLqz0iZePjlc9jHZt6Mq8eI1LGnJCWco6+nzrV1Ncpz8Q4u0jr01Bp3oV+We
-Cn5BRMiBPly3N7D8nskGMml1YH6Zkg0aVRW2mUo+pKE2mnPJxm8iqM8rA4f+GFYC
-lVn2s1nstUdLospY8pT/C+UjdF84GeF/Bkw7PZyG5/f5x7TKlVNwnKE68UbgAAmh
-7Eek/Jd4DJ6BC0yZlG/XAi3sF8r6nYgC6dPkdv++vAciNPC1DoHnUVKMHX+HR3/w
-+0Kx3k8o+lcB70dvO6ZT9ErRXcxiOIPbPE8jFwdrcvwnpUpWxUEWSrLu0cDmZKDl
-Wjzcj+4dSbc6oPc0AjMEGm1uV+bnM5GJTG1lPVgdADqYv7fGZXIAVuBLzFvOzYlG
-YnLQIrpIsuQb9MQyk+ArYzBveDd/s4JKSxj9RGoovBiIbAfqfskP265TdzDMUpnY
-enU5U7yiNyV5smdsUBDS
-=K9Rg
+iQIcBAEBCAAGBQJPB+qmAAoJEECxmPOUX5FEGLMQAIsOD2e0QUYmf2E2pytA4xme
+Wvuz/XvU32VWnbMptMdXgrNedn4CfW5fvTBb1T4XUM4R0yfn9w0h8er8bbyNYoCl
+qWgM0Y7twr78z3V8qNmefKWEX2XBfreiefRZka/1y8moOwl7MHUKbcBHp1jUb1ef
+SnJ1wFL48Knva1dtbj5Lvgj38nM0RUrSVMX8EwCKBVQABuu26PPqpDLJrJ8dsVQP
++5SSBCQ0czKkx1/YetP9KN6oFeLBmRK+NXwxuCXQCiaHVPVSZLOOl2m7QXO7eC+j
+PB0E5QiyF8hOliTmPDZDx2/wv9S6zA9zs5aIdN7sRB1VdlIO4jX3nbvlcwX8SHR0
+6kc3uVObo8ppDI1F55h3ZpCYsI7rQvdl8l3h4N2Q1Fh0Gi+Cr0kqYLZhdlqg+dlO
+xQJgFG8axl/fDossglwp9lmOeU08J1TM7YBsvAoR6BPuzH487TGbMNqrMAFnGHAu
+QfQlGXNzcnH8yafQvpGmrlcLAJ3HhkcWuyswu9Vta6IRbpck1N41W/RcoaooQTmz
+3VT5dEN15ty7cdLYVIK4tALom5BecCBjfeocbkXgVIMBpNV99gA6ibFA3BR6X91k
+orXAYmzYlf+6oUImvLwBisRPI2n4hy1fY1QbLgP6Hzdg1MIKBUukgZ5wQ7Jtco//
+fYTvu44WNg1xpSc1HQa9
+=AA58
 -----END PGP SIGNATURE-----
 
---Signature=_Sat__7_Jan_2012_17_44_34_+1100_ar4I1rO810V3s2pg--
+--Signature=_Sat__7_Jan_2012_17_48_06_+1100_oVfdZH3YCkrpmYZD--
