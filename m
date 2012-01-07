@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534Ab2AGQwM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 11:52:12 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:55535 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab2AGQwK (ORCPT
+	id S1752392Ab2AGQ54 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 11:57:56 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:35818 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab2AGQ5y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 11:52:10 -0500
-Date: Sat, 7 Jan 2012 08:52:01 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
- exist
-Message-ID: <20120107165201.GA23939@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
- <1325499859-2262-8-git-send-email-gilad@benyossef.com>
- <4F033EC9.4050909@gmail.com>
- <20120105142017.GA27881@csn.ul.ie>
- <20120105144011.GU11810@n2100.arm.linux.org.uk>
- <20120105161739.GD27881@csn.ul.ie>
-MIME-Version: 1.0
+	Sat, 7 Jan 2012 11:57:54 -0500
+Subject: Re: [PATCH] nfs: Don't try mounting device as nfs root unless type fully matches
+Mime-Version: 1.0 (Apple Message framework v1251.1)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105161739.GD27881@csn.ul.ie>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010716-4242-0000-0000-00000075A751
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
+Date: Sat, 7 Jan 2012 11:57:42 -0500
+Cc: linux@razik.name, Trond.Myklebust@netapp.com, penberg@kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <5FF522E0-132E-4A6A-A40F-5CCD08AF800A@oracle.com>
+References: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4F08798D.0003,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 04:17:39PM +0000, Mel Gorman wrote:
-> On Thu, Jan 05, 2012 at 02:40:11PM +0000, Russell King - ARM Linux wrote:
-> > On Thu, Jan 05, 2012 at 02:20:17PM +0000, Mel Gorman wrote:
+Hi-
 
-[ . . . ]
+On Jan 7, 2012, at 4:12 AM, Sasha Levin wrote:
 
-> > I've been chasing that patch and getting no replies what so
-> > ever from folk like Peter, Thomas and Ingo.
-> > 
-> > The problem affects all IPI-raising functions, which mask with
-> > cpu_online_mask directly.
+> Currently, we'll try mounting any device who's major device number is
+> UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
+> as 9p devices) but it wouldn't cause any issues since mounting the device
+> as NFS would fail quickly and the code proceeded to doing the proper mount:
 > 
-> Actually, in one sense I'm glad to hear it because from my brief
-> poking around, I was having trouble understanding why we were always
-> safe from sending IPIs to CPUs in the process of being offlined.
+> 	[  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
+> 	[  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
+> 
+> Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
+> mounting NFS root, which means that now we don't immediately fail and instead
+> it takes an additional 90+ seconds until we stop retrying.
+> 
+> This meant that it would take an additional 90 seconds to boot when we're not
+> using a device type which gets detected in order before NFS.
 
-The trick is to disable preemption (not interrupts!) across the IPI, which
-prevents CPU-hotplug's stop_machine() from running.  You also have to
-have checked that the CPU is online within this same preemption-disabled
-section of code.  This means that the outgoing CPU has to accept IPIs
-even after its CPU_DOWN_PREPARE notifier has been called -- right up
-to the stop_machine() call to take_cpu_down().
+The long timeouts are kind of irrelevant, in my view.  The real problem is that NFS was tried at all in this case.  That behavior was not introduced by 6829a058.
 
-							Thanx, Paul
+> This patch modifies the NFS type check to require device type to be
+> 'Root_NFS' instead of requiring the device to have an UNNAMED_MAJOR major.
+> This makes boot process cleaner since we now won't go through the NFS mounting
+> code at all when the device isn't an NFS root ("/dev/nfs").
+
+Agreed.  I like this approach.
+
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> ---
+> init/do_mounts.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/init/do_mounts.c b/init/do_mounts.c
+> index 06225d2..da76f2c 100644
+> --- a/init/do_mounts.c
+> +++ b/init/do_mounts.c
+> @@ -475,7 +475,7 @@ void __init change_floppy(char *fmt, ...)
+> void __init mount_root(void)
+> {
+> #ifdef CONFIG_ROOT_NFS
+> -	if (MAJOR(ROOT_DEV) == UNNAMED_MAJOR) {
+> +	if (ROOT_DEV == Root_NFS) {
+> 		if (mount_nfs_root())
+> 			return;
+> 
+> -- 
+> 1.7.8.2
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
 
