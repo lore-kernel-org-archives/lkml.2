@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab2AGQHI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 11:07:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59821 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751395Ab2AGQHG (ORCPT
+	id S1752313Ab2AGQOE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 11:14:04 -0500
+Received: from lennier.cc.vt.edu ([198.82.162.213]:60473 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab2AGQOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 11:07:06 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=mpMdnlmFKti1S5SNY1DT+A==:17 a=TRgVYD6ZyiEA:10 a=Cp4j2ZIZoM4A:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=pGLkceISAAAA:8 a=yQdBAQUQAAAA:8 a=VwQbUJbxAAAA:8 a=M4Y_NfsQnDJY0BWQaAIA:9 a=CjuIK1q_8ugA:10 a=jTbnE2AvvFoA:10 a=MSl-tDqOz04A:10 a=IcxpeKGZWnEA:10 a=mpMdnlmFKti1S5SNY1DT+A==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 65.28.92.85
-Date: Sat, 07 Jan 2012 10:07:03 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        dario.lucia@gmail.com, post@rolandgruber.de
-Subject: [PATCH] staging: r8712u: Add two new Sitecom UsB IDs
-Message-ID: <4f086da7.iqSQ3kcASBfpUO2p%Larry.Finger@lwfinger.net>
-User-Agent: Heirloom mailx 12.5 7/5/10
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sat, 7 Jan 2012 11:14:02 -0500
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Lennart Poettering <lennart@poettering.net>
+Subject: Re: [PATCH] prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple process supervision
+In-Reply-To: Your message of "Sat, 07 Jan 2012 16:56:37 +0100."
+             <1325951797.860.10.camel@mop>
+From: Valdis.Kletnieks@vt.edu
+References: <1325951797.860.10.camel@mop>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1325952830_3358P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Sat, 07 Jan 2012 11:13:50 -0500
+Message-ID: <124669.1325952830@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A02020B.4F086F42.00B8,ss=1,re=0.000,fgs=0,
+	ip=0.0.0.0,
+	so=2011-07-25 19:15:43,
+	dmn=2011-05-27 18:58:46,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add USB IDs for Sitecom WLA-2000 v1.001 WLAN, and SITECOM WLA-1000 V1 001 WLAN
+--==_Exmh_1325952830_3358P
+Content-Type: text/plain; charset=us-ascii
 
-Reported-and-tested-by: Roland Gruber <post@rolandgruber.de>
-Reported-and-tested-by: Dario Lucia <dario.lucia@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Stable <stable@vger.kernel.org>
----
+On Sat, 07 Jan 2012 16:56:37 +0100, Kay Sievers said:
+> Resending this, it got lost last year's September.
+>
+> We still need it to properly implement init-like service managers.
 
-Greg,
+> From: Lennart Poettering <lennart@poettering.net>
+> Subject: prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple process supervision
 
-The 0df6:005d modification was submitted Dec. 11, 2011, but appears to have
-fallen through some crack. I am, therefore, resubmitting it. The 0df6:005b
-ID is new.
+> Users of this will be the systemd per-user instance, which provides
+> init-like functionality for the user's login session and D-Bus, which
+> activates bus services on-demand. Both need init-like capabilities
+> to be able to properly keep track of the services they start.
 
-Thanks,
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -552,6 +552,18 @@ struct signal_struct {
+>  	int			group_stop_count;
+>  	unsigned int		flags; /* see SIGNAL_* flags below */
+>
+> +	/*
+> +	 * PR_SET_CHILD_SUBREAPER marks a process, like a service
+> +	 * manager, to re-parent orphan (double-forking) child processes
+> +	 * to this process instead of 'init'. The service manager is
+> +	 * able to receive SIGCHLD signals and is able to investigate
+> +	 * the process until it calls wait(). All children of this
+> +	 * process will inherit a flag if they should look for a
+> +	 * child_subreaper process at exit.
+> +	 */
+> +	unsigned int		is_child_subreaper:1;
+> +	unsigned int		has_child_subreaper:1;
 
-Larry
----
+Is there someplace we can stick these two fields where they won't expand the
+signal_struct?  Can we stick them in signal_struct->flags instead? Looks like we've
+only burned 3 bits of that unsigned int.  Yes, I know that would complicate the
+prctl get/set code.
 
- drivers/staging/rtl8712/usb_intf.c |    2 ++
- 1 file changed, 2 insertions(+)
----
+> +		/* find the first ancestor marked as child_subreaper */
+> +		for (reaper = father->real_parent;
+> +		     reaper != &init_task;
+> +		     reaper = reaper->real_parent) {
 
-Index: staging/drivers/staging/rtl8712/usb_intf.c
-===================================================================
---- staging.orig/drivers/staging/rtl8712/usb_intf.c
-+++ staging/drivers/staging/rtl8712/usb_intf.c
-@@ -89,6 +89,8 @@ static struct usb_device_id rtl871x_usb_
- 	{USB_DEVICE(0x0DF6, 0x0045)},
- 	{USB_DEVICE(0x0DF6, 0x0059)}, /* 11n mode disable */
- 	{USB_DEVICE(0x0DF6, 0x004B)},
-+	{USB_DEVICE(0x0DF6, 0x005B)},
-+	{USB_DEVICE(0x0DF6, 0x005D)},
- 	{USB_DEVICE(0x0DF6, 0x0063)},
- 	/* Sweex */
- 	{USB_DEVICE(0x177F, 0x0154)},
+I admit being insufficiently caffienated - does this DTRT in a PID namespace? That
+&init_task looks fishy to me...
+
+--==_Exmh_1325952830_3358P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFPCG8+cC3lWbTT17ARAhyrAKCNwfDCNUxFQtYhv1lo+iQ+5t6VKwCeOZVJ
+J/EwKQmWA9rRuX7K1xsqlI8=
+=BAGu
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1325952830_3358P--
+
