@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751239Ab2AGFiL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 00:38:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51464 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967Ab2AGFiK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 00:38:10 -0500
-Date: Sat, 7 Jan 2012 13:48:31 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Hui Wang <jason77.wang@gmail.com>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>
-Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
-Message-ID: <20120107054829.GF4790@S2101-09.ap.freescale.net>
-References: <20120106120345.8157a839b1c924315d728eea@canb.auug.org.au>
+	id S1751293Ab2AGFuv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 00:50:51 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:39262 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850Ab2AGFuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 00:50:50 -0500
+Subject: [PATCH v5.3 00/14] crc32c: Add faster algorithm and self-test code
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Theodore Tso <tytso@mit.edu>,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Bob Pearson <rpearson@systemfabricworks.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        linux-crypto <linux-crypto@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
+Date: Fri, 06 Jan 2012 21:50:42 -0800
+Message-ID: <20120107055042.31315.63119.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120106120345.8157a839b1c924315d728eea@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+x-cbid: 12010705-1976-0000-0000-00000941E438
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 06, 2012 at 12:03:45PM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the arm-soc tree got a conflict in
-> arch/arm/mach-imx/mm-imx5.c between commit 9bdd46257ab3 ("ARM: plat-mxc:
-> hook special idle handlers to arm_pm_idle") from the arm tree and commit
-> 010dc8af8f28 ("ARM: mx5: use generic irq chip pm interface for pm
-> functions on") from the arm-soc tree.
-> 
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+Hi all,
 
-Hi Stephen,
+This patchset (re)uses Bob Pearson's crc32 slice-by-8 code to stamp out a
+software crc32c implementation.  It removes the crc32c implementation in
+crypto/ in favor of using the stamped-out one in lib/.  There is also a change
+to Kconfig so that the kernel builder can pick an implementation best suited
+for the hardware.
 
-When I was testing this fix on next-20120106, I spotted another compile
-error from this file.
+The motivation for this patchset is that I am working on adding full metadata
+checksumming to ext4.  As far as performance impact of adding checksumming
+goes, I see nearly no change with a standard mail server ffsb simulation.  On a
+test that involves only file creation and deletion and extent tree writes, I
+see a drop of about 50 pcercent with the current kernel crc32c implementation;
+this improves to a drop of about 20 percent with the enclosed crc32c code.
 
-  CC      arch/arm/mach-imx/mm-imx5.o
-arch/arm/mach-imx/mm-imx5.c:58:24: error: redefinition of ‘mx50_io_desc’
-arch/arm/mach-imx/mm-imx5.c:48:24: note: previous definition of ‘mx50_io_desc’ was here
-arch/arm/mach-imx/mm-imx5.c:48:24: warning: ‘mx50_io_desc’ defined but not used
+When metadata is usually a small fraction of total IO, this new implementation
+doesn't help much because metadata is usually a small fraction of total IO.
+However, when we are doing IO that is almost all metadata (such as rm -rf'ing a
+tree), then this patch speeds up the operation substantially.
 
-The fix could just be removing the duplication.
+Incidentally, given that iscsi, sctp, and btrfs also use crc32c, this patchset
+should improve their speed as well.  I have not yet quantified that, however.
+This latest submission combines Bob's patches from late August 2011 with mine
+so that they can be one coherent patch set.  Please excuse my inability to
+combine some of the patches; I've been advised to leave Bob's patches alone and
+build atop them instead. :/
 
--- 
-Regards,
-Shawn
+Since the last posting, I've also collected some crc32c test results on a bunch
+of different x86/powerpc/sparc platforms.  The results can be viewed here:
+http://goo.gl/sgt3i ; the "crc32-kern-le" and "crc32c" columns describe the
+performance of the kernel's current crc32 and crc32c software implementations.
+The "crc32c-by8-le" column shows crc32c performance with this patchset applied.
+I expect crc32 performance to be roughly the same.
 
+The two _boost columns at the right side of the spreadsheet shows how much
+faster the new implementation is over the old one.  As you can see, crc32 rises
+substantially, and crc32c experiences a huge increase.
 
-8<----
-@@ -53,16 +54,6 @@ static struct map_desc mx50_io_desc[] __initdata = {
- };
+Since this patch has been out for review for several weeks now without
+objections, can this go into 3.3, please?
 
- /*
-- * Define the MX50 memory map.
-- */
--static struct map_desc mx50_io_desc[] __initdata = {
--       imx_map_entry(MX50, TZIC, MT_DEVICE),
--       imx_map_entry(MX50, SPBA0, MT_DEVICE),
--       imx_map_entry(MX50, AIPS1, MT_DEVICE),
--       imx_map_entry(MX50, AIPS2, MT_DEVICE),
--};
--
--/*
+v2: Use the crypto testmgr api for self-test.
+v3: Get rid of the -be version, which had no users.
+v4: Allow kernel builder a choice of speed vs. space optimization.
+v5: Reuse lib/crc32 for crc32c as well, and make crypto/crc32c use lib/crc32.c.
+v5.1: Include Bob Pearson's patches in submission request.
+v5.2: Fix changelogs for Bob's patches per akpm request.
+v5.3: Fix from header bug in patch mail generation scripts.
+
+--D
+
