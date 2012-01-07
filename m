@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab2AGBdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 20:33:03 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60570 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758920Ab2AGBdB (ORCPT
+	id S1759392Ab2AGBfE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 20:35:04 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:54492 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759124Ab2AGBfB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 20:33:01 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Date: Sat, 07 Jan 2012 10:31:00 +0900
-From: Yasunori Goto <y-goto@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
-        Linux Kernel ML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20120106141258.GB19462@redhat.com>
-References: <1325853838.2442.18.camel@twins> <20120106141258.GB19462@redhat.com>
-Message-Id: <20120107103059.BF5F.E1E9C6FF@jp.fujitsu.com>
+	Fri, 6 Jan 2012 20:35:01 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.56.05 [ja]
+In-Reply-To: <20120105.192833.760673635385506638.davem@davemloft.net>
+References: <20120105.192833.760673635385506638.davem@davemloft.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Jan 2012 17:34:39 -0800
+X-Google-Sender-Auth: EkMPrL9fiaUm6xGu0LkYtbvqkaI
+Message-ID: <CA+55aFyk6QJib8UCtK_gWzidr8Ti1utJgHg359fkq=+GY8hbnw@mail.gmail.com>
+Subject: Re: [GIT] Networking
+To: David Miller <davem@davemloft.net>
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 01/06, Peter Zijlstra wrote:
-> >
-> > On Fri, 2012-01-06 at 21:01 +0900, Yasunori Goto wrote:
-> >
-> > > Do you mean the following patch?
-> >
-> > Yes, something like that. At that point ->state should be TASK_RUNNING
-> > (since we are after all running). The unlock_wait() will synchronize
-> > against any in-progress ttwu() while its fast path is a non-atomic
-> > compare. Any ttwu after this will bail since it will either observe
-> > TASK_RUNNING or TASK_DEAD, neither are a state it will act upon.
-> >
-> > Now the only question that remains is if we need the full memory barrier
-> > or if we can get away with less.
-> >
-> > I guess the mb separates the write to ->state (setting TASK_RUNNING)
-> > from the read of ->pi_lock. The remote CPU must see the TASK_RUNNING,
-> > and we must see ->pi_lock taken if it is.
-> 
-> Yes, I think we need the full mb, STORE vs LOAD.
-> 
-> > > --- linux-3.2-rc7.orig/kernel/exit.c
-> > > +++ linux-3.2-rc7/kernel/exit.c
-> > > @@ -1038,6 +1038,10 @@ NORET_TYPE void do_exit(long code)
-> > >
-> > >  	preempt_disable();
-> > >  	exit_rcu();
-> > > +
-> > > +	smp_mb();
-> > > +	raw_spin_unlock_wait(&tsk->pi_lock);
-> > > +
-> > >  	/* causes final put_task_struct in finish_task_switch(). */
-> > >  	tsk->state = TASK_DEAD;
-> 
-> Interesting. Initially I thought this is wrong and we should do
-> 
-> 	raw_spin_unlock_wait(pi_lock);
-> 
-> 	mb();
-> 
-> 	tsk->state = TASK_DEAD;
-> 
-> This "obviously" serializes LOAD(pi_lock) and STORE(state).
-> 
-> But when I re-read your explanation above I think you are right,
-> mb() before unlock_wait() should work too, just it refers to
-> state = RUNNING in the past.
+On Thu, Jan 5, 2012 at 4:28 PM, David Miller <davem@davemloft.net> wrote:
+>
+> Netlink socket dumping is now supported for UDP and AF_UNIX sockets
+> thanks to Pavel Emelyanov.
 
-Ok. Thansk for your agreement.
-I'll test this patch.
+.. and this is such a magically important feature that it has to be
+enabled by default?
 
+It's something that has never been supported before, how did it
+suddenly become 'default y' after twenty years of not even being an
+issue?
 
--- 
-Yasunori Goto 
+It's a disease, I tell you, to think that new features are important.
+Stop it. Tell people you take patches from to stop it. If we haven't
+needed them before, they sure as hell aren't suddenly "Say Yes if you
+don't know" material.
 
+Please fix this, but more importantly, please try to fix *people*. So
+I don't have to always react to the stupid new "default y" options.
 
+                              Linus
