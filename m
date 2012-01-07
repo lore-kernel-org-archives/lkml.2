@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759196Ab2AGDvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 22:51:51 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:52310 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2AGDvu (ORCPT
+	id S1759413Ab2AGET1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 23:19:27 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59931 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751832Ab2AGET0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 22:51:50 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-d3-4f07c154cc29
-From: Chanho Park <chanho61.park@samsung.com>
-To: "'Stephen Warren'" <swarren@nvidia.com>,
-        "'Linus Walleij'" <linus.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org
-References: <1325882311-7504-1-git-send-email-swarren@nvidia.com>
-In-reply-to: <1325882311-7504-1-git-send-email-swarren@nvidia.com>
-Subject: RE: [PATCH] pinctrl: Fix pinconf_pins_show iteration
-Date: Sat, 07 Jan 2012 12:51:48 +0900
-Message-id: <008001ccccef$ae75fd80$0b61f880$%park@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczMsy1pFDMe4ehoSReqdFxD0USZUgAO9Nqw
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 6 Jan 2012 23:19:26 -0500
+MIME-Version: 1.0
+X-Originating-IP: [71.233.110.244]
+In-Reply-To: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+References: <bug-41722-5003@https.bugzilla.kernel.org/> <201109062222.p86MMlK9023363@demeter2.kernel.org>
+ <CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com> <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+From: Edward Donovan <edward.donovan@numble.net>
+Date: Fri, 6 Jan 2012 23:19:04 -0500
+X-Google-Sender-Auth: 7MA45h4eIwCZCRpJc4KlRNaFJD8
+Message-ID: <CADdbW+HvKQRFJgcofZCjJrTtaPDpDhcw4UStuhyTUe1aKnD2JQ@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        bugzilla-daemon@bugzilla.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Stephen Warren [mailto:swarren@nvidia.com]
-> Sent: Saturday, January 07, 2012 5:39 AM
-> To: Linus Walleij
-> Cc: linux-kernel@vger.kernel.org; Chanho Park; Stephen Warren
-> Subject: [PATCH] pinctrl: Fix pinconf_pins_show iteration
-> 
-> Commit 706e852 "pinctrl: correct a offset while enumerating pins"
-> modified the variable used by pinconf_pin_show()'s for loop, but didn't
-> update the for loop test expression.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  drivers/pinctrl/pinconf.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/pinctrl/pinconf.c b/drivers/pinctrl/pinconf.c
-> index 1259872..1892a37 100644
-> --- a/drivers/pinctrl/pinconf.c
-> +++ b/drivers/pinctrl/pinconf.c
-> @@ -236,7 +236,7 @@ static int pinconf_pins_show(struct seq_file *s,
-> void *what)
->  	seq_puts(s, "Format: pin (name): pinmux setting array\n");
-> 
->  	/* The pin number can be retrived from the pin controller
-> descriptor */
-> -	for (i = 0; pin < pctldev->desc->npins; i++) {
-> +	for (i = 0; i < pctldev->desc->npins; i++) {
->  		struct pin_desc *desc;
-> 
->  		pin = pctldev->desc->pins[i].number;
-> --
-> 1.7.0.4
+On Fri, Jan 6, 2012 at 8:50 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> 2012/1/6 Rogério Brito <rbrito@ime.usp.br>:
+>>
+>> For the record, *some* description of the problem is at:
+>>
+>> * https://bugzilla.kernel.org/show_bug.cgi?id=41132
+>
+> This one looks very much like the thing that Edward Donovan fixed
+> fairly recently in commit 52553ddffad7 ("genirq: fix regression in
+> irqfixup, irqpoll")
+>
+> So that should be fixed in 3.2 (and it's marked for stable, so I think
+> it's in the latest stable kernels too)
 
-Oh, I missed it.
-Thank you for refining it.
+Yessir, as of 3.0.13 and 3.1.5.  Rogério - for all the users I've
+heard from, the 2.6.39 IRQ regressions are fixed now.  I'll be
+interested to know if any IRQ handled by 2.6.38 isn't handled now, but
+I expect it will be.  I'm sorry if that isn't enough for this laptop,
+though -
 
-Best Regards,
-Chanho Park
-
+Ed
