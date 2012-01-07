@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759385Ab2AGBu0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 20:50:26 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:47585 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759343Ab2AGBuW (ORCPT
+	id S1759409Ab2AGBug (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 20:50:36 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:45352 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759389Ab2AGBue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 20:50:22 -0500
-Message-ID: <4F07B291.4040608@xenotime.net>
-Date: Fri, 06 Jan 2012 18:48:49 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Wim Van Sebroeck <wim@iguana.be>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Marc Vertes <marc.vertes@sigfox.com>, linux-watchdog@vger.kernel.org
-Subject: Re: linux-next: Tree for Dec 28 (via_wdt)
-References: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au> <4EFB5BF2.3020600@xenotime.net> <20111228175751.GA14460@infomag.iguana.be>
-In-Reply-To: <20111228175751.GA14460@infomag.iguana.be>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 6 Jan 2012 20:50:34 -0500
+Date: Fri, 06 Jan 2012 17:50:28 -0800 (PST)
+Message-Id: <20120106.175028.1076280359661712542.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CA+55aFyk6QJib8UCtK_gWzidr8Ti1utJgHg359fkq=+GY8hbnw@mail.gmail.com>
+References: <20120105.192833.760673635385506638.davem@davemloft.net>
+	<CA+55aFyk6QJib8UCtK_gWzidr8Ti1utJgHg359fkq=+GY8hbnw@mail.gmail.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 06 Jan 2012 17:50:31 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2011 09:57 AM, Wim Van Sebroeck wrote:
-> Hi Randi,
-> 
->> via_wdt needs a MODULE_LICENSE():
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Jan 2012 17:34:39 -0800
+
+> On Thu, Jan 5, 2012 at 4:28 PM, David Miller <davem@davemloft.net> wrote:
 >>
->> WARNING: modpost: missing MODULE_LICENSE() in drivers/watchdog/via_wdt.o
->> see include/linux/module.h for more information
+>> Netlink socket dumping is now supported for UDP and AF_UNIX sockets
+>> thanks to Pavel Emelyanov.
 > 
-> Fixed.
+> .. and this is such a magically important feature that it has to be
+> enabled by default?
+> 
+> It's something that has never been supported before, how did it
+> suddenly become 'default y' after twenty years of not even being an
+> issue?
 
-Not yet in linux-next ??
+Netlink socket dumping has been enabled on every kernel for the past
+10 years.  It's just been made to work for things other than TCP
+and DCCP.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+It replaces the crappy and hard to scale procfs socket listing junk,
+which doesn't even provide a way to filter requests.
