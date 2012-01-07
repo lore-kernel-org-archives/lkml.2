@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab2AGTvw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 14:51:52 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64557 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753259Ab2AGTvv (ORCPT
+	id S1752538Ab2AGUJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 15:09:58 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:50315 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971Ab2AGUJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 14:51:51 -0500
-Date: Sat, 7 Jan 2012 20:51:39 +0100
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Kumar Sundararajan <kumar@fb.com>, Arun Sharma <asharma@fb.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC 0/2] ABI for clock_gettime_ns
-Message-ID: <20120107195139.GA19677@netboy.at.omicron.at>
-References: <cover.1323739287.git.luto@amacapital.net>
- <20111213032406.GA9604@netboy.at.omicron.at>
- <1323747782.4078.144.camel@work-vm>
- <20111214072058.GA2180@netboy.at.omicron.at>
- <1323879832.6805.24.camel@work-vm>
- <20111214182121.GA2465@netboy.at.omicron.at>
- <1323889023.6805.61.camel@work-vm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1323889023.6805.61.camel@work-vm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 7 Jan 2012 15:09:57 -0500
+Date: Sat, 07 Jan 2012 12:09:47 -0800 (PST)
+Message-Id: <20120107.120947.1387951434734479835.davem@davemloft.net>
+To: cesarb@cesarb.net
+Cc: florian@openwrt.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] r6040: fix typo in use of MCR0 register bits
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1325949197-10143-1-git-send-email-cesarb@cesarb.net>
+References: <1325949197-10143-1-git-send-email-cesarb@cesarb.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 07 Jan 2012 12:09:51 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 14, 2011 at 10:57:03AM -0800, john stultz wrote:
-> On Wed, 2011-12-14 at 19:21 +0100, Richard Cochran wrote:
-> > - System clock represents TAI
-> > - Table of {threshold; offset} values, read mostly, rarely updated
-> > - Table has index pointing to next event
-> > 
-> > Get time becomes:
-> > 
-> > 1. read system time
-> > 2. test threshold
-> > 3. apply correction
-> 
-> Again, this seems relatively reasonable. But the difficulty in changing
-> system clock to be TAI is getting the table initialized and updated on
-> legacy systems that don't have the userland support added. 
-> 
-> I'd suggest starting with adding the threshold check and leap-second
-> correction in the getnstimeofday() path, and then see how performance is
-> impacted. 
-> 
-> That would let us improve leapsecond handling and get a sense of the
-> performance impact prior to reworking the kernel internals to be TAI.
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+Date: Sat,  7 Jan 2012 13:13:17 -0200
 
-BTW, another leap second is coming this summer, and another chance to
-test the kernel leap second handling.
+> Commit 4e16d6ebd65b4f2c4e3f780b4c5704beef64019c (r6040: define more MCR0
+> register bits) added #define values for MCR0 register bits and converted
+> uses of hardcoded magic values to uses of these defines.
+> 
+> However, one of the conversions looks suspicious:
+> 
+>  #define MCR0		0x00	/* Control register 0 */
+> +#define  MCR0_RCVEN	0x0002	/* Receive enable */
+> +#define  MCR0_XMTEN	0x1000	/* Transmission enable */
+> 
+>  	/* Init RDC private data */
+> -	lp->mcr0 = 0x1002;
+> +	lp->mcr0 = MCR0_XMTEN | MCR0;
+> 
+> I believe what was meant here was MCR0_XMTEN | MCR0_RCVEN, which makes
+> sense and matches the original values.
+> 
+> Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
 
-It will also be a good day to simply avoid any time measurements, turn
-off your computer, and boot up again the next day.
-
-Richard
+Good catch, applied, thanks a lot.
