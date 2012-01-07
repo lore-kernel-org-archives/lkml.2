@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759503Ab2AGIbw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:31:52 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:59671 "EHLO e6.ny.us.ibm.com"
+	id S1759455Ab2AGIcX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:32:23 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:52838 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242Ab2AGIbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:31:16 -0500
-Subject: [PATCH 23/23] ext4/jbd2: Add metadata checksumming to the list of
-	supported features
+	id S1759477Ab2AGIaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:30:20 -0500
+Subject: [PATCH 15/23] jbd2: Change disk layout for metadata checksumming
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,65 +19,104 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:30:27 -0800
-Message-ID: <20120107083027.21970.16976.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 07 Jan 2012 00:29:32 -0800
+Message-ID: <20120107082932.21970.56787.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-1976-0000-0000-000009426989
+x-cbid: 12010708-6078-0000-0000-00000673DDE0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Activate the metadata checksumming feature by adding it to ext4 and jbd2's
-lists of supported features.
+Define flags and allocate space in on-disk journal structures to support
+checksumming of journal metadata.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4.h       |    6 ++++--
- include/linux/jbd2.h |    3 ++-
- 2 files changed, 6 insertions(+), 3 deletions(-)
+ include/linux/jbd2.h |   28 +++++++++++++++++++++++++++-
+ 1 files changed, 27 insertions(+), 1 deletions(-)
 
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 325bae0..af756bc 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -1461,7 +1461,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- 					 EXT4_FEATURE_INCOMPAT_EXTENTS| \
- 					 EXT4_FEATURE_INCOMPAT_64BIT| \
- 					 EXT4_FEATURE_INCOMPAT_FLEX_BG| \
--					 EXT4_FEATURE_INCOMPAT_MMP)
-+					 EXT4_FEATURE_INCOMPAT_MMP| \
-+					 EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM)
- #define EXT4_FEATURE_RO_COMPAT_SUPP	(EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER| \
- 					 EXT4_FEATURE_RO_COMPAT_LARGE_FILE| \
- 					 EXT4_FEATURE_RO_COMPAT_GDT_CSUM| \
-@@ -1469,7 +1470,8 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
- 					 EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE | \
- 					 EXT4_FEATURE_RO_COMPAT_BTREE_DIR |\
- 					 EXT4_FEATURE_RO_COMPAT_HUGE_FILE |\
--					 EXT4_FEATURE_RO_COMPAT_BIGALLOC)
-+					 EXT4_FEATURE_RO_COMPAT_BIGALLOC |\
-+					 EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)
- 
- /*
-  * Default values for user and/or group using reserved blocks
 diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-index 51d4a0b..b1c5857 100644
+index 2092ea2..ecd9b45 100644
 --- a/include/linux/jbd2.h
 +++ b/include/linux/jbd2.h
-@@ -296,7 +296,8 @@ typedef struct journal_superblock_s
- #define JBD2_KNOWN_ROCOMPAT_FEATURES	0
- #define JBD2_KNOWN_INCOMPAT_FEATURES	(JBD2_FEATURE_INCOMPAT_REVOKE | \
- 					JBD2_FEATURE_INCOMPAT_64BIT | \
--					JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)
-+					JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT | \
-+					JBD2_FEATURE_INCOMPAT_CSUM_V2)
+@@ -147,12 +147,24 @@ typedef struct journal_header_s
+ #define JBD2_CRC32_CHKSUM   1
+ #define JBD2_MD5_CHKSUM     2
+ #define JBD2_SHA1_CHKSUM    3
++#define JBD2_CRC32C_CHKSUM  4
  
- #ifdef __KERNEL__
+ #define JBD2_CRC32_CHKSUM_SIZE 4
  
+ #define JBD2_CHECKSUM_BYTES (32 / sizeof(u32))
+ /*
+  * Commit block header for storing transactional checksums:
++ *
++ * NOTE: If FEATURE_COMPAT_CHECKSUM (checksum v1) is set, the h_chksum*
++ * fields are used to store a checksum of the descriptor and data blocks.
++ *
++ * If FEATURE_INCOMPAT_CSUM_V2 (checksum v2) is set, then the h_chksum
++ * field is used to store crc32c(uuid+commit_block).  Each journal metadata
++ * block gets its own checksum, and data block checksums are stored in
++ * journal_block_tag (in the descriptor).  The other h_chksum* fields are
++ * not used.
++ *
++ * Checksum v1 and v2 are mutually exclusive features.
+  */
+ struct commit_header {
+ 	__be32		h_magic;
+@@ -177,11 +189,17 @@ typedef struct journal_block_tag_s
+ 	__be32		t_blocknr;	/* The on-disk block number */
+ 	__be32		t_flags;	/* See below */
+ 	__be32		t_blocknr_high; /* most-significant high 32bits. */
++	__be32		t_checksum;	/* crc32c(uuid+seq+block) */
+ } journal_block_tag_t;
+ 
+ #define JBD2_TAG_SIZE32 (offsetof(journal_block_tag_t, t_blocknr_high))
+ #define JBD2_TAG_SIZE64 (sizeof(journal_block_tag_t))
+ 
++/* Tail of descriptor block, for checksumming */
++struct jbd2_journal_block_tail {
++	__be32		t_checksum;	/* crc32c(uuid+descr_block) */
++};
++
+ /*
+  * The revoke descriptor: used on disk to describe a series of blocks to
+  * be revoked from the log
+@@ -192,6 +210,10 @@ typedef struct jbd2_journal_revoke_header_s
+ 	__be32		 r_count;	/* Count of bytes used in the block */
+ } jbd2_journal_revoke_header_t;
+ 
++/* Tail of revoke block, for checksumming */
++struct jbd2_journal_revoke_tail {
++	__be32		r_checksum;	/* crc32c(uuid+revoke_block) */
++};
+ 
+ /* Definitions for the journal tag flags word: */
+ #define JBD2_FLAG_ESCAPE		1	/* on-disk block is escaped */
+@@ -241,7 +263,10 @@ typedef struct journal_superblock_s
+ 	__be32	s_max_trans_data;	/* Limit of data blocks per trans. */
+ 
+ /* 0x0050 */
+-	__u32	s_padding[44];
++	__u8	s_checksum_type;	/* checksum type */
++	__u8	s_padding2[3];
++	__u32	s_padding[42];
++	__be32	s_checksum;		/* crc32c(superblock) */
+ 
+ /* 0x0100 */
+ 	__u8	s_users[16*48];		/* ids of all fs'es sharing the log */
+@@ -263,6 +288,7 @@ typedef struct journal_superblock_s
+ #define JBD2_FEATURE_INCOMPAT_REVOKE		0x00000001
+ #define JBD2_FEATURE_INCOMPAT_64BIT		0x00000002
+ #define JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT	0x00000004
++#define JBD2_FEATURE_INCOMPAT_CSUM_V2		0x00000008
+ 
+ /* Features known to this kernel version: */
+ #define JBD2_KNOWN_COMPAT_FEATURES	JBD2_FEATURE_COMPAT_CHECKSUM
 
