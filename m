@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261Ab2AGFwL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 00:52:11 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:59520 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759472Ab2AGFwC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 00:52:02 -0500
-Subject: [PATCH 11/14] crc32: Bolt on crc32c
+	id S1759441Ab2AGFvn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 00:51:43 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:51794 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753030Ab2AGFvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 00:51:39 -0500
+Subject: [PATCH 01/14] crc32: removed two instances of trailing whitespaces
 To: Andrew Morton <akpm@linux-foundation.org>,
         Herbert Xu <herbert@gondor.hengli.com.au>,
         "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,301 +19,56 @@ Cc: Theodore Tso <tytso@mit.edu>,
         linux-crypto <linux-crypto@vger.kernel.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Date: Fri, 06 Jan 2012 21:51:56 -0800
-Message-ID: <20120107055156.31315.26489.stgit@elm3c44.beaverton.ibm.com>
+Date: Fri, 06 Jan 2012 21:50:49 -0800
+Message-ID: <20120107055049.31315.93731.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107055042.31315.63119.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107055042.31315.63119.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010705-7282-0000-0000-00000572AF14
+x-cbid: 12010705-9360-0000-0000-000002307C56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reuse the existing crc32 code to stamp out a crc32c implementation.
+	- remove trailing whitespace from lib/crc32.c
+	- remove trailing whitespace from lib/crc32defs.h
 
+From: Bob Pearson <rpearson@systemfabricworks.com>
+Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
+[djwong@us.ibm.com: changelog tweaks]
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- include/linux/crc32.h |    2 ++
- lib/Kconfig           |    8 +++---
- lib/crc32.c           |   62 +++++++++++++++++++++++++++++++------------------
- lib/crc32defs.h       |    7 ++++++
- lib/gen_crc32table.c  |   35 ++++++++++++++++++++++------
- 5 files changed, 80 insertions(+), 34 deletions(-)
+ lib/crc32.c     |    2 +-
+ lib/crc32defs.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
 
-diff --git a/include/linux/crc32.h b/include/linux/crc32.h
-index 391a259..68267b6 100644
---- a/include/linux/crc32.h
-+++ b/include/linux/crc32.h
-@@ -11,6 +11,8 @@
- extern u32  crc32_le(u32 crc, unsigned char const *p, size_t len);
- extern u32  crc32_be(u32 crc, unsigned char const *p, size_t len);
- 
-+extern u32  __crc32c_le(u32 crc, unsigned char const *p, size_t len);
-+
- #define crc32(seed, data, length)  crc32_le(seed, (unsigned char const *)(data), length)
- 
- /*
-diff --git a/lib/Kconfig b/lib/Kconfig
-index 2bc5834..cfddafc 100644
---- a/lib/Kconfig
-+++ b/lib/Kconfig
-@@ -51,14 +51,14 @@ config CRC_ITU_T
- 	  functions require M here.
- 
- config CRC32
--	tristate "CRC32 functions"
-+	tristate "CRC32/CRC32c functions"
- 	default y
- 	select BITREVERSE
- 	help
- 	  This option is provided for the case where no in-kernel-tree
--	  modules require CRC32 functions, but a module built outside the
--	  kernel tree does. Such modules that use library CRC32 functions
--	  require M here.
-+	  modules require CRC32/CRC32c functions, but a module built outside
-+	  the kernel tree does. Such modules that use library CRC32/CRC32c
-+	  functions require M here.
- 
- config CRC32_SELFTEST
- 	bool "CRC32 perform self test on init"
 diff --git a/lib/crc32.c b/lib/crc32.c
-index d56516d..8df9561 100644
+index a6e633a..23b08ba 100644
 --- a/lib/crc32.c
 +++ b/lib/crc32.c
-@@ -46,7 +46,7 @@
- #include "crc32table.h"
- 
- MODULE_AUTHOR("Matt Domsch <Matt_Domsch@dell.com>");
--MODULE_DESCRIPTION("Ethernet CRC32 calculations");
-+MODULE_DESCRIPTION("Various CRC32 calculations");
- MODULE_LICENSE("GPL");
- 
- #if CRC_LE_BITS > 8 || CRC_BE_BITS > 8
-@@ -135,46 +135,57 @@ crc32_body(u32 crc, unsigned char const *buf, size_t len, const u32 (*tab)[256])
-  * @p: pointer to buffer over which CRC is run
-  * @len: length of buffer @p
-  */
--u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
-+static inline u32 __pure crc32_le_generic(u32 crc, unsigned char const *p,
-+					  size_t len, const u32 (*tab)[256],
-+					  u32 polynomial)
- {
- #if CRC_LE_BITS == 1
- 	int i;
- 	while (len--) {
- 		crc ^= *p++;
- 		for (i = 0; i < 8; i++)
--			crc = (crc >> 1) ^ ((crc & 1) ? CRCPOLY_LE : 0);
-+			crc = (crc >> 1) ^ ((crc & 1) ? polynomial : 0);
- 	}
- # elif CRC_LE_BITS == 2
- 	while (len--) {
- 		crc ^= *p++;
--		crc = (crc >> 2) ^ crc32table_le[0][crc & 3];
--		crc = (crc >> 2) ^ crc32table_le[0][crc & 3];
--		crc = (crc >> 2) ^ crc32table_le[0][crc & 3];
--		crc = (crc >> 2) ^ crc32table_le[0][crc & 3];
-+		crc = (crc >> 2) ^ tab[0][crc & 3];
-+		crc = (crc >> 2) ^ tab[0][crc & 3];
-+		crc = (crc >> 2) ^ tab[0][crc & 3];
-+		crc = (crc >> 2) ^ tab[0][crc & 3];
- 	}
- # elif CRC_LE_BITS == 4
- 	while (len--) {
- 		crc ^= *p++;
--		crc = (crc >> 4) ^ crc32table_le[0][crc & 15];
--		crc = (crc >> 4) ^ crc32table_le[0][crc & 15];
-+		crc = (crc >> 4) ^ tab[0][crc & 15];
-+		crc = (crc >> 4) ^ tab[0][crc & 15];
- 	}
- # elif CRC_LE_BITS == 8
- 	/* aka Sarwate algorithm */
- 	while (len--) {
- 		crc ^= *p++;
--		crc = (crc >> 8) ^ crc32table_le[0][crc & 255];
-+		crc = (crc >> 8) ^ tab[0][crc & 255];
- 	}
- # else
--	const u32      (*tab)[] = crc32table_le;
--
- 	crc = (__force u32) __cpu_to_le32(crc);
- 	crc = crc32_body(crc, p, len, tab);
- 	crc = __le32_to_cpu((__force __le32)crc);
- #endif
- 	return crc;
- }
-+
-+u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_le_generic(crc, p, len, crc32table_le, CRCPOLY_LE);
-+}
- EXPORT_SYMBOL(crc32_le);
- 
-+u32 __pure __crc32c_le(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_le_generic(crc, p, len, crc32ctable_le, CRC32C_POLY_LE);
-+}
-+EXPORT_SYMBOL(__crc32c_le);
-+
- /**
-  * crc32_be() - Calculate bitwise big-endian Ethernet AUTODIN II CRC32
-  * @crc: seed value for computation.  ~0 for Ethernet, sometimes 0 for
-@@ -182,7 +193,9 @@ EXPORT_SYMBOL(crc32_le);
-  * @p: pointer to buffer over which CRC is run
-  * @len: length of buffer @p
-  */
--u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
-+static inline u32 __pure crc32_be_generic(u32 crc, unsigned char const *p,
-+					  size_t len, const u32 (*tab)[256],
-+					  u32 polynomial)
- {
- #if CRC_BE_BITS == 1
- 	int i;
-@@ -190,37 +203,40 @@ u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
- 		crc ^= *p++ << 24;
- 		for (i = 0; i < 8; i++)
- 			crc =
--			    (crc << 1) ^ ((crc & 0x80000000) ? CRCPOLY_BE :
-+			    (crc << 1) ^ ((crc & 0x80000000) ? polynomial :
- 					  0);
- 	}
- # elif CRC_BE_BITS == 2
- 	while (len--) {
- 		crc ^= *p++ << 24;
--		crc = (crc << 2) ^ crc32table_be[0][crc >> 30];
--		crc = (crc << 2) ^ crc32table_be[0][crc >> 30];
--		crc = (crc << 2) ^ crc32table_be[0][crc >> 30];
--		crc = (crc << 2) ^ crc32table_be[0][crc >> 30];
-+		crc = (crc << 2) ^ tab[0][crc >> 30];
-+		crc = (crc << 2) ^ tab[0][crc >> 30];
-+		crc = (crc << 2) ^ tab[0][crc >> 30];
-+		crc = (crc << 2) ^ tab[0][crc >> 30];
- 	}
- # elif CRC_BE_BITS == 4
- 	while (len--) {
- 		crc ^= *p++ << 24;
--		crc = (crc << 4) ^ crc32table_be[0][crc >> 28];
--		crc = (crc << 4) ^ crc32table_be[0][crc >> 28];
-+		crc = (crc << 4) ^ tab[0][crc >> 28];
-+		crc = (crc << 4) ^ tab[0][crc >> 28];
- 	}
- # elif CRC_BE_BITS == 8
- 	while (len--) {
- 		crc ^= *p++ << 24;
--		crc = (crc << 8) ^ crc32table_be[0][crc >> 24];
-+		crc = (crc << 8) ^ tab[0][crc >> 24];
- 	}
- # else
--	const u32      (*tab)[] = crc32table_be;
--
- 	crc = (__force u32) __cpu_to_be32(crc);
- 	crc = crc32_body(crc, p, len, tab);
- 	crc = __be32_to_cpu((__force __be32)crc);
- # endif
- 	return crc;
- }
-+
-+u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
-+{
-+	return crc32_be_generic(crc, p, len, crc32table_be, CRCPOLY_BE);
-+}
- EXPORT_SYMBOL(crc32_be);
- 
- #ifdef CONFIG_CRC32_SELFTEST
+@@ -316,7 +316,7 @@ EXPORT_SYMBOL(crc32_be);
+  * in the correct multiple to subtract, we can shift a byte at a time.
+  * This produces a 40-bit (rather than a 33-bit) intermediate remainder,
+  * but again the multiple of the polynomial to subtract depends only on
+- * the high bits, the high 8 bits in this case.  
++ * the high bits, the high 8 bits in this case.
+  *
+  * The multiple we need in that case is the low 32 bits of a 40-bit
+  * value whose high 8 bits are given, and which is a multiple of the
 diff --git a/lib/crc32defs.h b/lib/crc32defs.h
-index 8181592..6fd1917 100644
+index 9b6773d..f5a5401 100644
 --- a/lib/crc32defs.h
 +++ b/lib/crc32defs.h
-@@ -7,6 +7,13 @@
- #define CRCPOLY_BE 0x04c11db7
+@@ -8,7 +8,7 @@
  
- /*
-+ * This is the CRC32c polynomial, as outlined by Castagnoli.
-+ * x^32+x^28+x^27+x^26+x^25+x^23+x^22+x^20+x^19+x^18+x^14+x^13+x^11+x^10+x^9+
-+ * x^8+x^6+x^0
-+ */
-+#define CRC32C_POLY_LE 0x82F63B78
-+
-+/*
-  * How many bits at a time to use.  Valid values are 1, 2, 4, 8, 32 and 64.
-  * For less performance-sensitive, use 4 or 8 to save table size.
-  * For larger systems choose same as CPU architecture as default.
-diff --git a/lib/gen_crc32table.c b/lib/gen_crc32table.c
-index 0d9edd1..8f8d543 100644
---- a/lib/gen_crc32table.c
-+++ b/lib/gen_crc32table.c
-@@ -23,6 +23,7 @@
- 
- static uint32_t crc32table_le[LE_TABLE_ROWS][256];
- static uint32_t crc32table_be[BE_TABLE_ROWS][256];
-+static uint32_t crc32ctable_le[LE_TABLE_ROWS][256];
- 
- /**
-  * crc32init_le() - allocate and initialize LE table data
-@@ -31,27 +32,38 @@ static uint32_t crc32table_be[BE_TABLE_ROWS][256];
-  * fact that crctable[i^j] = crctable[i] ^ crctable[j].
-  *
-  */
--static void crc32init_le(void)
-+static void crc32init_le_generic(const uint32_t polynomial,
-+				 uint32_t (*tab)[256])
- {
- 	unsigned i, j;
- 	uint32_t crc = 1;
- 
--	crc32table_le[0][0] = 0;
-+	tab[0][0] = 0;
- 
- 	for (i = LE_TABLE_SIZE >> 1; i; i >>= 1) {
--		crc = (crc >> 1) ^ ((crc & 1) ? CRCPOLY_LE : 0);
-+		crc = (crc >> 1) ^ ((crc & 1) ? polynomial : 0);
- 		for (j = 0; j < LE_TABLE_SIZE; j += 2 * i)
--			crc32table_le[0][i + j] = crc ^ crc32table_le[0][j];
-+			tab[0][i + j] = crc ^ tab[0][j];
- 	}
- 	for (i = 0; i < LE_TABLE_SIZE; i++) {
--		crc = crc32table_le[0][i];
-+		crc = tab[0][i];
- 		for (j = 1; j < LE_TABLE_ROWS; j++) {
--			crc = crc32table_le[0][crc & 0xff] ^ (crc >> 8);
--			crc32table_le[j][i] = crc;
-+			crc = tab[0][crc & 0xff] ^ (crc >> 8);
-+			tab[j][i] = crc;
- 		}
- 	}
- }
- 
-+static void crc32init_le(void)
-+{
-+	crc32init_le_generic(CRCPOLY_LE, crc32table_le);
-+}
-+
-+static void crc32cinit_le(void)
-+{
-+	crc32init_le_generic(CRC32C_POLY_LE, crc32ctable_le);
-+}
-+
- /**
-  * crc32init_be() - allocate and initialize BE table data
-  */
-@@ -114,6 +126,15 @@ int main(int argc, char** argv)
- 			     BE_TABLE_SIZE, "tobe");
- 		printf("};\n");
- 	}
-+	if (CRC_LE_BITS > 1) {
-+		crc32cinit_le();
-+		printf("static const u32 __cacheline_aligned "
-+		       "crc32ctable_le[%d][%d] = {",
-+		       LE_TABLE_ROWS, LE_TABLE_SIZE);
-+		output_table(crc32ctable_le, LE_TABLE_ROWS,
-+			     LE_TABLE_SIZE, "tole");
-+		printf("};\n");
-+	}
- 
- 	return 0;
- }
+ /* How many bits at a time to use.  Requires a table of 4<<CRC_xx_BITS bytes. */
+ /* For less performance-sensitive, use 4 */
+-#ifndef CRC_LE_BITS 
++#ifndef CRC_LE_BITS
+ # define CRC_LE_BITS 8
+ #endif
+ #ifndef CRC_BE_BITS
 
