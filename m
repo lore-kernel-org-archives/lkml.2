@@ -1,34 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab2AGM1S (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 07:27:18 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:41064 "EHLO mx3.mail.elte.hu"
+	id S1752486Ab2AGMf7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 07:35:59 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58229 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734Ab2AGM1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 07:27:17 -0500
-Date: Sat, 7 Jan 2012 13:25:11 +0100
+	id S1750930Ab2AGMf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 07:35:58 -0500
+Date: Sat, 7 Jan 2012 13:33:47 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-Message-ID: <20120107122511.GB28462@elte.hu>
-References: <20120101180949.GA25066@elte.hu>
- <20120102105856.GA6661@elte.hu>
- <20120102134856.GA32673@elte.hu>
- <1325635373.12696.4.camel@gandalf.stny.rr.com>
- <1325635922.12696.8.camel@gandalf.stny.rr.com>
- <1325653301.12696.20.camel@gandalf.stny.rr.com>
- <20120104141107.GA24770@elte.hu>
- <1325696759.12696.24.camel@gandalf.stny.rr.com>
- <20120105091916.GA22598@elte.hu>
- <1325764011.12696.38.camel@gandalf.stny.rr.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/syscall changes for v3.3
+Message-ID: <20120107123347.GA18966@elte.hu>
+References: <20120105152918.GA12838@elte.hu>
+ <20120106230526.088cb77546022ecda34aaae5@canb.auug.org.au>
+ <4F077FA8.7060100@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1325764011.12696.38.camel@gandalf.stny.rr.com>
+In-Reply-To: <4F077FA8.7060100@zytor.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -43,21 +36,25 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-> > I'm also seeing build failures with certain configs:
-> > 
-> > kernel/trace/trace_stack.c:387:3: error: implicit declaration of function ‘ftrace_set_early_filter’ 
-> > [-Werror=implicit-function-declaration]
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
 > 
-> Hmm, your right. It depends on dyn_ftrace to be configured. 
-> Strange that my tests didn't catch that as I thought one of my 
-> tests compiles with static ftrace. I'll have to look into why 
-> my test didn't catch that. I'll send a fix later today.
+> On 01/06/2012 04:05 AM, Stephen Rothwell wrote:
+> > 
+> > HPA has a pending fix for this patch as it causes warnings on
+> > PowerPC at least.  The idea was to move this include of
+> > asm/asm-offsets.h into asm/ftrace.h so it only affects x86.
+> > 
+> 
+> Sorry... have been in baby mode for the past week, but yes, I 
+> think it only causes warnings and it's a trivial fix.
 
-Hm, i cannot re-test this tree with general randconfig until it 
-keeps failing the build. I'll test the NMI bits, to be able to 
-exclude those.
+Lets delay this tree nevertheless, the warnings seem numerous 
+and annoying (and they've been reported), right?
+
+Linus, please don't pull it for now.
 
 Thanks,
 
