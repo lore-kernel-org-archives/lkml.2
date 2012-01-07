@@ -1,92 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab2AGFzj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 00:55:39 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:46910 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751964Ab2AGFv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 00:51:29 -0500
-Subject: [PATCH 06/14] crc32: Fix mixing of endian-specific types
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Theodore Tso <tytso@mit.edu>,
-        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-        Bob Pearson <rpearson@systemfabricworks.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        linux-crypto <linux-crypto@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4@vger.kernel.org
-Date: Fri, 06 Jan 2012 21:51:21 -0800
-Message-ID: <20120107055121.31315.48442.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20120107055042.31315.63119.stgit@elm3c44.beaverton.ibm.com>
-References: <20120107055042.31315.63119.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1751557Ab2AGGei (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 01:34:38 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:37718 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751077Ab2AGGeh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 01:34:37 -0500
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1839bpp4/w3Wb/y39+ILo4VN33N5ezZhoBpePOudn
+	EVBIqzV6PYRchR
+Subject: Re: [resubmit] Re: [patch-final] Re: patch] cpusets, cgroups:
+ disallow attaching kthreadd
+From: Mike Galbraith <efault@gmx.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Paul Menage <paul@paulmenage.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tejun Heo <htejun@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20120106140625.f5447039.akpm@linux-foundation.org>
+References: <1316758874.7393.2.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230204270.29350@chino.kir.corp.google.com>
+	 <1316770936.6641.11.camel@marge.simson.net>
+	 <1316775204.7562.9.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1109230619410.666@chino.kir.corp.google.com>
+	 <1316788392.6544.33.camel@marge.simson.net>
+	 <1318224892.6161.45.camel@marge.simson.net>
+	 <1318233815.6527.5.camel@marge.simson.net>
+	 <1318925436.9641.23.camel@marge.simson.net>
+	 <CALdu-PDurd4-_jpkhHJ9VuripesWGfUA+Mi8PoyRjJsmxdRqLw@mail.gmail.com>
+	 <1319001860.6222.34.camel@marge.simson.net>
+	 <alpine.DEB.2.00.1110261326550.23111@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1111101251070.21036@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1112061212510.28251@chino.kir.corp.google.com>
+	 <20111206144721.7b1d473d.akpm@linux-foundation.org>
+	 <alpine.DEB.2.00.1112061547530.15884@chino.kir.corp.google.com>
+	 <1323227914.5057.10.camel@marge.simson.net>
+	 <1323232617.5057.50.camel@marge.simson.net>
+	 <20120106140625.f5447039.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 07 Jan 2012 07:34:17 +0100
+Message-ID: <1325918057.6514.17.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010705-5112-0000-0000-000003CDDEBF
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-crc32.c in its original version freely mixed u32, __le32 and __be32 types
-which caused warnings from sparse with __CHECK_ENDIAN__.
-This patch fixes these by forcing the types to u32.
+On Fri, 2012-01-06 at 14:06 -0800, Andrew Morton wrote:
+> On Wed, 07 Dec 2011 05:36:57 +0100
+> Mike Galbraith <efault@gmx.de> wrote:
+> 
+> > cpusets, cgroups: disallow attaching kthreadd
+> > 
+> > Allowing kthreadd to be moved to a non-root group makes no sense, it being
+> > a global resource, and needlessly leads unsuspecting users toward trouble.
+> > 
+> > 1. An RT workqueue worker thread spawned in a task group with no rt_runtime
+> > allocated is not schedulable.  Simple user error, but harmful to the box.
+> > 
+> > 2. A worker thread which acquires PF_THREAD_BOUND can never leave a cpuset,
+> > rendering the cpuset immortal.
+> > 
+> > Save the user some unexpected trouble, just say no.
+> 
+> Someone's been screwing around in linux-next during the merge window. 
+> afacit some patch which was previously there has magically disappeared.
+> That killed your patch - the original version of the
+> kernel/sched/core.c chagne applies to the new linux-next but the
+> kernel/cpuset.c part is all wrecked.
 
-From: Bob Pearson <rpearson@systemfabricworks.com>
-Signed-off-by: Bob Pearson <rpearson@systemfabricworks.com>
-[djwong@us.ibm.com: Minor changelog tweaks]
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- lib/crc32.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+Hm, what to do...
 
+I can't get to mmotm to see what's there, but fresh pulled linux-next
+has it as 904655b9, and looked ok. (?)  The only thing I can think to do
+is post it as just plugged into fresh pulled master and hope that helps
+turn little floundering guppy right side up again.
 
-diff --git a/lib/crc32.c b/lib/crc32.c
-index 2a87ea2..ff6bb9a 100644
---- a/lib/crc32.c
-+++ b/lib/crc32.c
-@@ -28,13 +28,13 @@
- #include "crc32defs.h"
+From: Mike Galbraith <efault@gmx.de>
+
+cpusets, cgroups: disallow attaching kthreadd
+
+Allowing kthreadd to be moved to a non-root group makes no sense, it being
+a global resource, and needlessly leads unsuspecting users toward trouble.
+
+1. An RT workqueue worker thread spawned in a task group with no
+   rt_runtime allocated is not schedulable.  Simple user error, but
+   harmful to the box.
+
+2. A worker thread which acquires PF_THREAD_BOUND can never leave a
+   cpuset, rendering the cpuset immortal.
+
+Save the user some unexpected trouble, just say no.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: David Rientjes <rientjes@google.com>
+Acked-by: Paul Menage <paul@paulmenage.org>
+Cc: Tejun Heo <htejun@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 0b1712d..cf438f3 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -59,6 +59,7 @@
+ #include <linux/mutex.h>
+ #include <linux/workqueue.h>
+ #include <linux/cgroup.h>
++#include <linux/kthread.h>
  
- #if CRC_LE_BITS == 8
--# define tole(x) __constant_cpu_to_le32(x)
-+# define tole(x) (__force u32) __constant_cpu_to_le32(x)
- #else
- # define tole(x) (x)
- #endif
+ /*
+  * Workqueue for cpuset related tasks.
+@@ -1404,9 +1405,10 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
+ 	 * set of allowed nodes is unnecessary.  Thus, cpusets are not
+ 	 * applicable for such threads.  This prevents checking for success of
+ 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+-	 * be changed.
++	 * be changed.  We also disallow attaching kthreadd, to prevent a child
++	 * from becoming trapped should it later acquire PF_THREAD_BOUND.
+ 	 */
+-	if (tsk->flags & PF_THREAD_BOUND)
++	if (tsk->flags & PF_THREAD_BOUND || tsk == kthreadd_task)
+ 		return -EINVAL;
  
- #if CRC_BE_BITS == 8
--# define tobe(x) __constant_cpu_to_be32(x)
-+# define tobe(x) (__force u32) __constant_cpu_to_be32(x)
- #else
- # define tobe(x) (x)
- #endif
-@@ -128,9 +128,9 @@ u32 __pure crc32_le(u32 crc, unsigned char const *p, size_t len)
- # elif CRC_LE_BITS == 8
- 	const u32      (*tab)[] = crc32table_le;
+ 	return 0;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 4dbfd04..165d610 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -71,6 +71,7 @@
+ #include <linux/ftrace.h>
+ #include <linux/slab.h>
+ #include <linux/init_task.h>
++#include <linux/kthread.h>
  
--	crc = __cpu_to_le32(crc);
-+	crc = (__force u32) __cpu_to_le32(crc);
- 	crc = crc32_body(crc, p, len, tab);
--	crc = __le32_to_cpu(crc);
-+	crc = __le32_to_cpu((__force __le32)crc);
+ #include <asm/tlb.h>
+ #include <asm/irq_regs.h>
+@@ -7576,6 +7577,15 @@ cpu_cgroup_can_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+ 	if (tsk->sched_class != &fair_sched_class)
+ 		return -EINVAL;
  #endif
- 	return crc;
++	/*
++	 * kthreadd can fork workers for an RT workqueue in a cgroup
++	 * which may or may not have rt_runtime allocated.  Just say no,
++	 * as attaching a global resource to a non-root group  doesn't
++	 * make any sense anyway.
++	 */
++	if (tsk == kthreadd_task)
++		return -EINVAL;
++
+ 	return 0;
  }
-@@ -171,9 +171,9 @@ u32 __pure crc32_be(u32 crc, unsigned char const *p, size_t len)
- # elif CRC_BE_BITS == 8
- 	const u32      (*tab)[] = crc32table_be;
  
--	crc = __cpu_to_be32(crc);
-+	crc = (__force u32) __cpu_to_be32(crc);
- 	crc = crc32_body(crc, p, len, tab);
--	crc = __be32_to_cpu(crc);
-+	crc = __be32_to_cpu((__force __be32)crc);
- # endif
- 	return crc;
- }
+
 
