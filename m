@@ -1,90 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2AGQ54 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 11:57:56 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:35818 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750795Ab2AGQ5y convert rfc822-to-8bit (ORCPT
+	id S1752572Ab2AGRDu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 12:03:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:52994 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab2AGRDs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 11:57:54 -0500
-Subject: Re: [PATCH] nfs: Don't try mounting device as nfs root unless type fully matches
-Mime-Version: 1.0 (Apple Message framework v1251.1)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
-Date: Sat, 7 Jan 2012 11:57:42 -0500
-Cc: linux@razik.name, Trond.Myklebust@netapp.com, penberg@kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5FF522E0-132E-4A6A-A40F-5CCD08AF800A@oracle.com>
-References: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-X-Mailer: Apple Mail (2.1251.1)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4F08798D.0003,ss=1,re=0.000,fgs=0
+	Sat, 7 Jan 2012 12:03:48 -0500
+Message-ID: <1325955818.2442.29.camel@twins>
+Subject: Re: [PATCH] perf_events: proposed fix for broken intr throttling
+ (v2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, mingo@elte.hu,
+        asharma@fb.com, vince@deater.net, wcohen@redhat.com
+Date: Sat, 07 Jan 2012 18:03:38 +0100
+In-Reply-To: <20120106181912.GA5564@quad>
+References: <20120106181912.GA5564@quad>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi-
+On Fri, 2012-01-06 at 19:19 +0100, Stephane Eranian wrote:
+> The throttling mechanism REQUIRES that the hwc->interrupts counter be reset
+> at EACH timer tick. 
 
-On Jan 7, 2012, at 4:12 AM, Sasha Levin wrote:
+Just to be contrary.. :-)
 
-> Currently, we'll try mounting any device who's major device number is
-> UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
-> as 9p devices) but it wouldn't cause any issues since mounting the device
-> as NFS would fail quickly and the code proceeded to doing the proper mount:
-> 
-> 	[  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
-> 	[  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
-> 
-> Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
-> mounting NFS root, which means that now we don't immediately fail and instead
-> it takes an additional 90+ seconds until we stop retrying.
-> 
-> This meant that it would take an additional 90 seconds to boot when we're not
-> using a device type which gets detected in order before NFS.
+---
+ include/linux/perf_event.h |    1 +
+ kernel/events/core.c       |   76 +++++++++++++++++++++++++++++++-------------
+ 2 files changed, 55 insertions(+), 22 deletions(-)
 
-The long timeouts are kind of irrelevant, in my view.  The real problem is that NFS was tried at all in this case.  That behavior was not introduced by 6829a058.
-
-> This patch modifies the NFS type check to require device type to be
-> 'Root_NFS' instead of requiring the device to have an UNNAMED_MAJOR major.
-> This makes boot process cleaner since we now won't go through the NFS mounting
-> code at all when the device isn't an NFS root ("/dev/nfs").
-
-Agreed.  I like this approach.
-
-> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> ---
-> init/do_mounts.c |    2 +-
-> 1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/init/do_mounts.c b/init/do_mounts.c
-> index 06225d2..da76f2c 100644
-> --- a/init/do_mounts.c
-> +++ b/init/do_mounts.c
-> @@ -475,7 +475,7 @@ void __init change_floppy(char *fmt, ...)
-> void __init mount_root(void)
-> {
-> #ifdef CONFIG_ROOT_NFS
-> -	if (MAJOR(ROOT_DEV) == UNNAMED_MAJOR) {
-> +	if (ROOT_DEV == Root_NFS) {
-> 		if (mount_nfs_root())
-> 			return;
-> 
-> -- 
-> 1.7.8.2
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
--- 
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0b91db2..29dedf4 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -589,6 +589,7 @@ struct hw_perf_event {
+ 	u64				sample_period;
+ 	u64				last_period;
+ 	local64_t			period_left;
++	u64				interrupts_seq;
+ 	u64				interrupts;
+ 
+ 	u64				freq_time_stamp;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 91fb68a..693e1ce 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -2325,11 +2325,14 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ 	}
+ }
+ 
++static DEFINE_PER_CPU(int, perf_throttled_count);
++static DEFINE_PER_CPU(u64, perf_throttled_seq);
++
+ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ {
+ 	struct perf_event *event;
+ 	struct hw_perf_event *hwc;
+-	u64 interrupts, now;
++	u64 now;
+ 	s64 delta;
+ 
+ 	if (!ctx->nr_freq)
+@@ -2342,22 +2345,11 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+ 		if (!event_filter_match(event))
+ 			continue;
+ 
+-		hwc = &event->hw;
+-
+-		interrupts = hwc->interrupts;
+-		hwc->interrupts = 0;
+-
+-		/*
+-		 * unthrottle events on the tick
+-		 */
+-		if (interrupts == MAX_INTERRUPTS) {
+-			perf_log_throttle(event, 1);
+-			event->pmu->start(event, 0);
+-		}
+-
+ 		if (!event->attr.freq || !event->attr.sample_freq)
+ 			continue;
+ 
++		hwc = &event->hw;
++
+ 		event->pmu->read(event);
+ 		now = local64_read(&event->count);
+ 		delta = now - hwc->freq_count_stamp;
+@@ -2441,14 +2433,45 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+ 		list_del_init(&cpuctx->rotation_list);
+ }
+ 
++static void perf_unthrottle_context(struct perf_event_context *ctx)
++{
++	raw_spin_lock(&ctx->lock);
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
++		if (event->state != PERF_EVENT_STATE_ACTIVE)
++			continue;
++
++		if (!event_filter_match(event))
++			continue;
++
++		if (event->hw.interrupts == MAX_INTERRUPTS) {
++			perf_log_throttle(event, 1);
++			event->pmu->start(event, 0);
++		}
++	}
++	raw_spin_unlock(&ctx->lock);
++}
++
+ void perf_event_task_tick(void)
+ {
+ 	struct list_head *head = &__get_cpu_var(rotation_list);
+ 	struct perf_cpu_context *cpuctx, *tmp;
++	int throttle;
+ 
+ 	WARN_ON(!irqs_disabled());
+ 
++	__this_cpu_inc(perf_throttled_seq);
++	throttled = __this_cpu_xchg(perf_throttled_count, 0);
++
+ 	list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
++		if (throttled) {
++			struct perf_event_context *ctx;
++
++			perf_unthrottle_context(&cpuctx->ctx);
++			ctx = cpuctx->task_ctx;
++			if (ctx)
++				perf_unthrottle_context(ctx);
++		}
++
+ 		if (cpuctx->jiffies_interval == 1 ||
+ 				!(jiffies % cpuctx->jiffies_interval))
+ 			perf_rotate_context(cpuctx);
+@@ -4514,6 +4537,7 @@ static int __perf_event_overflow(struct perf_event *event,
+ {
+ 	int events = atomic_read(&event->event_limit);
+ 	struct hw_perf_event *hwc = &event->hw;
++	u64 seq;
+ 	int ret = 0;
+ 
+ 	/*
+@@ -4523,14 +4547,22 @@ static int __perf_event_overflow(struct perf_event *event,
+ 	if (unlikely(!is_sampling_event(event)))
+ 		return 0;
+ 
+-	if (unlikely(hwc->interrupts >= max_samples_per_tick)) {
+-		if (throttle) {
+-			hwc->interrupts = MAX_INTERRUPTS;
+-			perf_log_throttle(event, 0);
+-			ret = 1;
+-		}
+-	} else
+-		hwc->interrupts++;
++	seq = ACCESS_ONCE(__this_cpu_read(perf_throttled_seq));
++
++	if (seq != hwc->interrupts_seq) {
++		hwc->interrupts_seq = seq;
++		hwc->interrupts = 1;
++	} else {
++		if (unlikely(hwc->interrupts >= max_samples_per_tick)) {
++			if (throttle) {
++				__this_cpu_inc(perf_throttled_count);
++				hwc->interrupts = MAX_INTERRUPTS;
++				perf_log_throttle(event, 0);
++				ret = 1;
++			}
++		} else
++			hwc->interrupts++;
++	}
+ 
+ 	if (event->attr.freq) {
+ 		u64 now = perf_clock();
 
