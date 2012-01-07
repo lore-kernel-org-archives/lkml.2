@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab2AGINl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:13:41 -0500
-Received: from mga02.intel.com ([134.134.136.20]:50425 "EHLO mga02.intel.com"
+	id S1751562Ab2AGIWU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:22:20 -0500
+Received: from mail2.gnudd.com ([213.203.150.91]:62462 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750894Ab2AGINk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:13:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="95488405"
-Subject: Re: [PATCH 1/2] dmaengine: Fix status handling in imx-dma.
-From: Vinod Koul <vinod.koul@intel.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: dan.j.williams@intel.com, Javier Martin <javier.martin@vista-silicon.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20120106124311.GJ5446@pengutronix.de>
-References: <1325506706-10028-1-git-send-email-javier.martin@vista-silicon.com>
-	 <1325829389.1540.95.camel@vkoul-udesk3>
-	 <20120106093752.GH5446@pengutronix.de>
-	 <1325848224.1540.102.camel@vkoul-udesk3>
-	 <20120106124311.GJ5446@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 Jan 2012 13:44:00 +0530
-Message-ID: <1325924040.1540.104.camel@vkoul-udesk3>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1750894Ab2AGIWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:22:19 -0500
+Date: Sat, 7 Jan 2012 09:22:12 +0100
+From: Alessandro Rubini <rubini@gnudd.com>
+To: joe@perches.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] x86: initial support for sta2x11
+Message-ID: <20120107082212.GA18254@mail.gnudd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <1325894723.12292.13.camel@joe2Laptop>
+References: <1325894723.12292.13.camel@joe2Laptop>
+    <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
+  <1446410617.668.1325893939253.JavaMail.mail@webmail05>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-01-06 at 13:43 +0100, Sascha Hauer wrote:
-> On Fri, Jan 06, 2012 at 04:40:24PM +0530, Vinod Koul wrote:
-> The transfer is not started in prepare but in imxdmac->desc.tx_submit
+> trivia:
+
+Thanks.
+
+> #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
+Ok.
+
+> typo: s/subordindate/subordinate/
+
+argh!
+
+> It's probably not necessary to prefix with "sta2x11: "
+
+fine.
+
 > 
-Well that's incorrect as well. It should be done in issue_pending
+>> +			 size);
+>> +		if (swiotlb_late_init_with_default_size(size))
+>> +			dev_emerg(&pdev->dev, "%s: init swiotlb(%i) failed\n",
+>> +				  __func__, size);
+> 
+> or __func__
 
-Care to fix this up?
+I don't understand. No size? Or you typoed and meant pr_fmt defined above?
 
--- 
-~Vinod
+>> +	uint32_t v[2]; /* used as a string... */
+> 
+> less than pretty.
 
+Sure. But it's informative. Do you prefer a union? I don't want to
+do be/le stuff as it's irrelevant. But I can't read 1 byte at a time
+nor use a pointer there.
+
+thanks, will resend
+
+/alessandro
