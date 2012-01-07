@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089Ab2AGKA6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 05:00:58 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:33654 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab2AGKA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 05:00:56 -0500
-Date: Sat, 7 Jan 2012 11:00:39 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: linux-i2c@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] i2c-dev: Use memdup_user
-Message-ID: <20120107110039.6b4142f0@endymion.delvare>
-In-Reply-To: <1313223430.16820.14.camel@localhost.localdomain>
-References: <1313223430.16820.14.camel@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755494Ab2AGKGB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 05:06:01 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:32921 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751006Ab2AGKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 05:06:00 -0500
+Message-ID: <1325930757.14763.4.camel@joe2Laptop>
+Subject: Re: [PATCH 4/6] x86: initial support for sta2x11
+From: Joe Perches <joe@perches.com>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Sat, 07 Jan 2012 02:05:57 -0800
+In-Reply-To: <20120107082212.GA18254@mail.gnudd.com>
+References: <1325894723.12292.13.camel@joe2Laptop>
+	 <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
+	 <1446410617.668.1325893939253.JavaMail.mail@webmail05>
+	 <20120107082212.GA18254@mail.gnudd.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Sat, 2012-01-07 at 09:22 +0100, Alessandro Rubini wrote:
+> > or __func__
+> I don't understand. No size? Or you typoed and meant pr_fmt defined above?
 
-Sorry for the late reply.
+I meant that outputting __func__ (in this case
+sta2x11_new_instance) doesn't gain much useful
+information and generally isn't necessary.
 
-On Sat, 13 Aug 2011 10:17:06 +0200, Thomas Meyer wrote:
-> From: Thomas Meyer <thomas@m3y3r.de>
-> 
->  Use kmemdup_user rather than duplicating its implementation
->  This is a little bit restricted to reduce false positives
-> 
->  The semantic patch that makes this output is available
->  in scripts/coccinelle/api/memdup_user.cocci.
-> 
->  More information about semantic patching is available at
->  http://coccinelle.lip6.fr/
-> 
-> Signed-off-by: Thomas Meyer <thomas@m3y3r.de>
+> >> +	uint32_t v[2]; /* used as a string... */
+> > less than pretty.
+> Sure. But it's informative. Do you prefer a union?
 
-Applied, thanks.
+Not really.
 
--- 
-Jean Delvare
+
