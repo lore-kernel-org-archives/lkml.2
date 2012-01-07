@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759506Ab2AGIa2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:30:28 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:53328 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759497Ab2AGIaX (ORCPT
+	id S1759479Ab2AGIam (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:30:42 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:60747 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754889Ab2AGIad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:30:23 -0500
-Subject: [PATCH 21/23] jbd2: Checksum commit blocks
+	Sat, 7 Jan 2012 03:30:33 -0500
+Subject: [PATCH 19/23] jbd2: Checksum revocation blocks
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,114 +20,127 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:30:13 -0800
-Message-ID: <20120107083013.21970.86136.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 07 Jan 2012 00:30:00 -0800
+Message-ID: <20120107083000.21970.8437.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-4242-0000-0000-00000075429E
+x-cbid: 12010708-3352-0000-0000-000001C5EA52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify the checksum of commit blocks.  In checksum v2, deprecate
-most of the checksum v1 commit block checksum fields, since each block has its
-own checksum.
+Compute and verify revoke blocks inside the journal.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/jbd2/commit.c   |   19 +++++++++++++++++++
- fs/jbd2/recovery.c |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 50 insertions(+), 0 deletions(-)
+ fs/jbd2/recovery.c |   22 ++++++++++++++++++++++
+ fs/jbd2/revoke.c   |   27 ++++++++++++++++++++++++++-
+ 2 files changed, 48 insertions(+), 1 deletions(-)
 
 
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index fab143a..ccf0b6f 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -86,6 +86,24 @@ nope:
- 	__brelse(bh);
- }
- 
-+static void jbd2_commit_block_csum_set(journal_t *j,
-+				       struct journal_head *descriptor)
-+{
-+	struct commit_header *h;
-+	__u32 csum;
-+
-+	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		return;
-+
-+	h = (struct commit_header *)(jh2bh(descriptor)->b_data);
-+	h->h_chksum_type = 0;
-+	h->h_chksum_size = 0;
-+	h->h_chksum[0] = 0;
-+	csum = jbd2_chksum(j, j->j_csum_seed, jh2bh(descriptor)->b_data,
-+			   j->j_blocksize);
-+	h->h_chksum[0] = cpu_to_be32(csum);
-+}
-+
- /*
-  * Done it all: now submit the commit record.  We should have
-  * cleaned up our previous buffers by now, so if we are in abort
-@@ -129,6 +147,7 @@ static int journal_submit_commit_record(journal_t *journal,
- 		tmp->h_chksum_size 	= JBD2_CRC32_CHKSUM_SIZE;
- 		tmp->h_chksum[0] 	= cpu_to_be32(crc32_sum);
- 	}
-+	jbd2_commit_block_csum_set(journal, descriptor);
- 
- 	JBUFFER_TRACE(descriptor, "submit commit block");
- 	lock_buffer(bh);
 diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
-index 513006b..a757d8d 100644
+index da6d7ba..bfc52cd 100644
 --- a/fs/jbd2/recovery.c
 +++ b/fs/jbd2/recovery.c
-@@ -372,6 +372,24 @@ static int calc_chksums(journal_t *journal, struct buffer_head *bh,
- 	return 0;
+@@ -703,6 +703,25 @@ static int do_one_pass(journal_t *journal,
+ 	return err;
  }
  
-+static int jbd2_commit_block_csum_verify(journal_t *j, void *buf)
++static int jbd2_revoke_block_csum_verify(journal_t *j,
++					 void *buf)
 +{
-+	struct commit_header *h;
++	struct jbd2_journal_revoke_tail *tail;
 +	__u32 provided, calculated;
 +
 +	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
 +		return 1;
 +
-+	h = buf;
-+	provided = h->h_chksum[0];
-+	h->h_chksum[0] = 0;
++	tail = (struct jbd2_journal_revoke_tail *)(buf + j->j_blocksize -
++			sizeof(struct jbd2_journal_revoke_tail));
++	provided = tail->r_checksum;
++	tail->r_checksum = 0;
 +	calculated = jbd2_chksum(j, j->j_csum_seed, buf, j->j_blocksize);
-+	h->h_chksum[0] = provided;
++	tail->r_checksum = provided;
 +
 +	provided = be32_to_cpu(provided);
 +	return provided == calculated;
 +}
+ 
+ /* Scan a revoke record, marking all blocks mentioned as revoked. */
+ 
+@@ -717,6 +736,9 @@ static int scan_revoke_records(journal_t *journal, struct buffer_head *bh,
+ 	offset = sizeof(jbd2_journal_revoke_header_t);
+ 	max = be32_to_cpu(header->r_count);
+ 
++	if (!jbd2_revoke_block_csum_verify(journal, header))
++		return -EINVAL;
 +
- static int do_one_pass(journal_t *journal,
- 			struct recovery_info *info, enum passtype pass)
+ 	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_64BIT))
+ 		record_len = 8;
+ 
+diff --git a/fs/jbd2/revoke.c b/fs/jbd2/revoke.c
+index 69fd935..a197ba5 100644
+--- a/fs/jbd2/revoke.c
++++ b/fs/jbd2/revoke.c
+@@ -548,6 +548,7 @@ static void write_one_revoke_record(journal_t *journal,
+ 				    struct jbd2_revoke_record_s *record,
+ 				    int write_op)
  {
-@@ -682,6 +700,19 @@ static int do_one_pass(journal_t *journal,
- 				}
- 				crc32_sum = ~0;
- 			}
-+			if (pass == PASS_SCAN &&
-+			    !jbd2_commit_block_csum_verify(journal,
-+							   bh->b_data)) {
-+				info->end_transaction = next_commit_ID;
++	int csum_size = 0;
+ 	struct journal_head *descriptor;
+ 	int offset;
+ 	journal_header_t *header;
+@@ -562,9 +563,13 @@ static void write_one_revoke_record(journal_t *journal,
+ 	descriptor = *descriptorp;
+ 	offset = *offsetp;
+ 
++	/* Do we need to leave space at the end for a checksum? */
++	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		csum_size = sizeof(struct jbd2_journal_revoke_tail);
 +
-+				if (!JBD2_HAS_INCOMPAT_FEATURE(journal,
-+				     JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)) {
-+					journal->j_failed_commit =
-+						next_commit_ID;
-+					brelse(bh);
-+					break;
-+				}
-+			}
- 			brelse(bh);
- 			next_commit_ID++;
- 			continue;
+ 	/* Make sure we have a descriptor with space left for the record */
+ 	if (descriptor) {
+-		if (offset == journal->j_blocksize) {
++		if (offset >= journal->j_blocksize - csum_size) {
+ 			flush_descriptor(journal, descriptor, offset, write_op);
+ 			descriptor = NULL;
+ 		}
+@@ -601,6 +606,24 @@ static void write_one_revoke_record(journal_t *journal,
+ 	*offsetp = offset;
+ }
+ 
++static void jbd2_revoke_csum_set(journal_t *j,
++				 struct journal_head *descriptor)
++{
++	struct jbd2_journal_revoke_tail *tail;
++	__u32 csum;
++
++	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
++		return;
++
++	tail = (struct jbd2_journal_revoke_tail *)
++			(jh2bh(descriptor)->b_data + j->j_blocksize -
++			sizeof(struct jbd2_journal_revoke_tail));
++	tail->r_checksum = 0;
++	csum = jbd2_chksum(j, j->j_csum_seed, jh2bh(descriptor)->b_data,
++			   j->j_blocksize);
++	tail->r_checksum = cpu_to_be32(csum);
++}
++
+ /*
+  * Flush a revoke descriptor out to the journal.  If we are aborting,
+  * this is a noop; otherwise we are generating a buffer which needs to
+@@ -622,6 +645,8 @@ static void flush_descriptor(journal_t *journal,
+ 
+ 	header = (jbd2_journal_revoke_header_t *) jh2bh(descriptor)->b_data;
+ 	header->r_count = cpu_to_be32(offset);
++	jbd2_revoke_csum_set(journal, descriptor);
++
+ 	set_buffer_jwrite(bh);
+ 	BUFFER_TRACE(bh, "write");
+ 	set_buffer_dirty(bh);
 
