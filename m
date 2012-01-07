@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab2AGJAm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 04:00:42 -0500
-Received: from claw.goop.org ([74.207.240.146]:57293 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab2AGJAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 04:00:40 -0500
-Message-ID: <4F0809B5.9000105@goop.org>
-Date: Sat, 07 Jan 2012 20:00:37 +1100
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the battery tree
-References: <20120105144042.4e03850089cce56a7e9312e4@canb.auug.org.au> <20120105152536.GB28629@oksana.dev.rtsoft.ru>
-In-Reply-To: <20120105152536.GB28629@oksana.dev.rtsoft.ru>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755101Ab2AGJMT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 04:12:19 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44504 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2AGJMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 04:12:15 -0500
+From: Sasha Levin <levinsasha928@gmail.com>
+To: chuck.lever@oracle.com, linux@razik.name, Trond.Myklebust@netapp.com
+Cc: penberg@kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: [PATCH] nfs: Don't try mounting device as nfs root unless type fully matches
+Date: Sat,  7 Jan 2012 11:12:03 +0200
+Message-Id: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
+X-Mailer: git-send-email 1.7.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2012 02:25 AM, Anton Vorontsov wrote:
-> On Thu, Jan 05, 2012 at 02:40:42PM +1100, Stephen Rothwell wrote:
->> Hi Anton,
->>
->> After merging the battery tree, today's linux-next build (x86_64
->> allmodconfig) failed like this:
->>
->> ERROR: "sysfs_create_link_nowarn" [drivers/power/power_supply.ko] undefined!
->>
->> Caused by commit 8351665195ce ("power_supply: allow a power supply to
->> explicitly point to powered device").  That symbol is not exported to
->> modules.
->>
->> I have used the battery tree from next-20120104 for today.
-> Thanks for catching this, Stephen!
->
-> I wonder why do we need to use _nowarn variant?..
->
-> Something tells me that we actually want a warning.
->
-> Jeremy, are you OK with the patch down below?
+Currently, we'll try mounting any device who's major device number is
+UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
+as 9p devices) but it wouldn't cause any issues since mounting the device
+as NFS would fail quickly and the code proceeded to doing the proper mount:
 
-Yep, that's fine.
+	[  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
+	[  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
 
-    J
+Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
+mounting NFS root, which means that now we don't immediately fail and instead
+it takes an additional 90+ seconds until we stop retrying.
 
->
-> - - - -
-> From: Anton Vorontsov <cbouatmailru@gmail.com>
-> Subject: power_supply: Drop usage of nowarn variant of sysfs_create_link()
->
-> The function is not exported to modules, plus we do want to catch anyone
-> who tries to create complex hierarchy (in that case we'd need to change
-> 'powers' symlink to a directory, probably under a different name to not
-> break ABI).
->
-> This patch fixes the following build error:
->
->  ERROR: "sysfs_create_link_nowarn" [drivers/power/power_supply.ko] undefined!
->
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> ---
->  drivers/power/power_supply_core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
-> index b10c121..47f4e11 100644
-> --- a/drivers/power/power_supply_core.c
-> +++ b/drivers/power/power_supply_core.c
-> @@ -149,7 +149,7 @@ EXPORT_SYMBOL_GPL(power_supply_get_by_name);
->  
->  int power_supply_powers(struct power_supply *psy, struct device *dev)
->  {
-> -	return sysfs_create_link_nowarn(&psy->dev->kobj, &dev->kobj, "powers");
-> +	return sysfs_create_link(&psy->dev->kobj, &dev->kobj, "powers");
->  }
->  EXPORT_SYMBOL_GPL(power_supply_powers);
->  
+This meant that it would take an additional 90 seconds to boot when we're not
+using a device type which gets detected in order before NFS.
+
+This patch modifies the NFS type check to require device type to be
+'Root_NFS' instead of requiring the device to have an UNNAMED_MAJOR major.
+This makes boot process cleaner since we now won't go through the NFS mounting
+code at all when the device isn't an NFS root ("/dev/nfs").
+
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+---
+ init/do_mounts.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 06225d2..da76f2c 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -475,7 +475,7 @@ void __init change_floppy(char *fmt, ...)
+ void __init mount_root(void)
+ {
+ #ifdef CONFIG_ROOT_NFS
+-	if (MAJOR(ROOT_DEV) == UNNAMED_MAJOR) {
++	if (ROOT_DEV == Root_NFS) {
+ 		if (mount_nfs_root())
+ 			return;
+ 
+-- 
+1.7.8.2
 
