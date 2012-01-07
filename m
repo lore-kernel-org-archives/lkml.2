@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759493Ab2AGIaV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:30:21 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:59533 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224Ab2AGIaO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:30:14 -0500
-Subject: [PATCH 20/23] jbd2: Checksum descriptor blocks
+	id S1759506Ab2AGIa2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:30:28 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:53328 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759497Ab2AGIaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:30:23 -0500
+Subject: [PATCH 21/23] jbd2: Checksum commit blocks
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -19,160 +20,114 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:30:07 -0800
-Message-ID: <20120107083007.21970.32652.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 07 Jan 2012 00:30:13 -0800
+Message-ID: <20120107083013.21970.86136.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-1976-0000-0000-000009426927
+x-cbid: 12010708-4242-0000-0000-00000075429E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify a checksum of each descriptor block.
+Calculate and verify the checksum of commit blocks.  In checksum v2, deprecate
+most of the checksum v1 commit block checksum fields, since each block has its
+own checksum.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/jbd2/commit.c   |   26 ++++++++++++++++++++++++--
- fs/jbd2/recovery.c |   37 ++++++++++++++++++++++++++++++++++++-
- 2 files changed, 60 insertions(+), 3 deletions(-)
+ fs/jbd2/commit.c   |   19 +++++++++++++++++++
+ fs/jbd2/recovery.c |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 50 insertions(+), 0 deletions(-)
 
 
 diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 68d704d..fab143a 100644
+index fab143a..ccf0b6f 100644
 --- a/fs/jbd2/commit.c
 +++ b/fs/jbd2/commit.c
-@@ -302,6 +302,24 @@ static void write_tag_block(int tag_bytes, journal_block_tag_t *tag,
- 		tag->t_blocknr_high = cpu_to_be32((block >> 31) >> 1);
+@@ -86,6 +86,24 @@ nope:
+ 	__brelse(bh);
  }
  
-+static void jbd2_descr_block_csum_set(journal_t *j,
-+				      struct journal_head *descriptor)
++static void jbd2_commit_block_csum_set(journal_t *j,
++				       struct journal_head *descriptor)
 +{
-+	struct jbd2_journal_block_tail *tail;
++	struct commit_header *h;
 +	__u32 csum;
 +
 +	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
 +		return;
 +
-+	tail = (struct jbd2_journal_block_tail *)
-+			(jh2bh(descriptor)->b_data + j->j_blocksize -
-+			sizeof(struct jbd2_journal_block_tail));
-+	tail->t_checksum = 0;
++	h = (struct commit_header *)(jh2bh(descriptor)->b_data);
++	h->h_chksum_type = 0;
++	h->h_chksum_size = 0;
++	h->h_chksum[0] = 0;
 +	csum = jbd2_chksum(j, j->j_csum_seed, jh2bh(descriptor)->b_data,
 +			   j->j_blocksize);
-+	tail->t_checksum = cpu_to_be32(csum);
++	h->h_chksum[0] = cpu_to_be32(csum);
 +}
 +
  /*
-  * jbd2_journal_commit_transaction
-  *
-@@ -331,6 +349,10 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 	struct buffer_head *cbh = NULL; /* For transactional checksums */
- 	__u32 crc32_sum = ~0;
- 	struct blk_plug plug;
-+	int csum_size = 0;
-+
-+	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		csum_size = sizeof(struct jbd2_journal_block_tail);
+  * Done it all: now submit the commit record.  We should have
+  * cleaned up our previous buffers by now, so if we are in abort
+@@ -129,6 +147,7 @@ static int journal_submit_commit_record(journal_t *journal,
+ 		tmp->h_chksum_size 	= JBD2_CRC32_CHKSUM_SIZE;
+ 		tmp->h_chksum[0] 	= cpu_to_be32(crc32_sum);
+ 	}
++	jbd2_commit_block_csum_set(journal, descriptor);
  
- 	/*
- 	 * First job: lock down the current transaction and wait for
-@@ -623,7 +645,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 
- 		if (bufs == journal->j_wbufsize ||
- 		    commit_transaction->t_buffers == NULL ||
--		    space_left < tag_bytes + 16) {
-+		    space_left < tag_bytes + 16 + csum_size) {
- 
- 			jbd_debug(4, "JBD2: Submit %d IOs\n", bufs);
- 
-@@ -632,7 +654,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
-                            the last tag we set up. */
- 
- 			tag->t_flags |= cpu_to_be32(JBD2_FLAG_LAST_TAG);
--
-+			jbd2_descr_block_csum_set(journal, descriptor);
- start_journal_io:
- 			for (i = 0; i < bufs; i++) {
- 				struct buffer_head *bh = wbuf[i];
+ 	JBUFFER_TRACE(descriptor, "submit commit block");
+ 	lock_buffer(bh);
 diff --git a/fs/jbd2/recovery.c b/fs/jbd2/recovery.c
-index bfc52cd..513006b 100644
+index 513006b..a757d8d 100644
 --- a/fs/jbd2/recovery.c
 +++ b/fs/jbd2/recovery.c
-@@ -173,6 +173,25 @@ static int jread(struct buffer_head **bhp, journal_t *journal,
+@@ -372,6 +372,24 @@ static int calc_chksums(journal_t *journal, struct buffer_head *bh,
  	return 0;
  }
  
-+static int jbd2_descr_block_csum_verify(journal_t *j,
-+					void *buf)
++static int jbd2_commit_block_csum_verify(journal_t *j, void *buf)
 +{
-+	struct jbd2_journal_block_tail *tail;
++	struct commit_header *h;
 +	__u32 provided, calculated;
 +
 +	if (!JBD2_HAS_INCOMPAT_FEATURE(j, JBD2_FEATURE_INCOMPAT_CSUM_V2))
 +		return 1;
 +
-+	tail = (struct jbd2_journal_block_tail *)(buf + j->j_blocksize -
-+			sizeof(struct jbd2_journal_block_tail));
-+	provided = tail->t_checksum;
-+	tail->t_checksum = 0;
++	h = buf;
++	provided = h->h_chksum[0];
++	h->h_chksum[0] = 0;
 +	calculated = jbd2_chksum(j, j->j_csum_seed, buf, j->j_blocksize);
-+	tail->t_checksum = provided;
++	h->h_chksum[0] = provided;
 +
 +	provided = be32_to_cpu(provided);
 +	return provided == calculated;
 +}
- 
- /*
-  * Count the number of in-use tags in a journal descriptor block.
-@@ -185,6 +204,9 @@ static int count_tags(journal_t *journal, struct buffer_head *bh)
- 	int			nr = 0, size = journal->j_blocksize;
- 	int			tag_bytes = journal_tag_bytes(journal);
- 
-+	if (JBD2_HAS_INCOMPAT_FEATURE(journal, JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+		size -= sizeof(struct jbd2_journal_block_tail);
 +
- 	tagp = &bh->b_data[sizeof(journal_header_t)];
- 
- 	while ((tagp - bh->b_data + tag_bytes) <= size) {
-@@ -363,6 +385,7 @@ static int do_one_pass(journal_t *journal,
- 	int			blocktype;
- 	int			tag_bytes = journal_tag_bytes(journal);
- 	__u32			crc32_sum = ~0; /* Transactional Checksums */
-+	int			descr_csum_size = 0;
- 
- 	/*
- 	 * First thing is to establish what we expect to find in the log
-@@ -448,6 +471,18 @@ static int do_one_pass(journal_t *journal,
- 
- 		switch(blocktype) {
- 		case JBD2_DESCRIPTOR_BLOCK:
-+			/* Verify checksum first */
-+			if (JBD2_HAS_INCOMPAT_FEATURE(journal,
-+					JBD2_FEATURE_INCOMPAT_CSUM_V2))
-+				descr_csum_size =
-+					sizeof(struct jbd2_journal_block_tail);
-+			if (descr_csum_size > 0 &&
-+			    !jbd2_descr_block_csum_verify(journal,
-+							  bh->b_data)) {
-+				err = -EIO;
-+				goto failed;
+ static int do_one_pass(journal_t *journal,
+ 			struct recovery_info *info, enum passtype pass)
+ {
+@@ -682,6 +700,19 @@ static int do_one_pass(journal_t *journal,
+ 				}
+ 				crc32_sum = ~0;
+ 			}
++			if (pass == PASS_SCAN &&
++			    !jbd2_commit_block_csum_verify(journal,
++							   bh->b_data)) {
++				info->end_transaction = next_commit_ID;
++
++				if (!JBD2_HAS_INCOMPAT_FEATURE(journal,
++				     JBD2_FEATURE_INCOMPAT_ASYNC_COMMIT)) {
++					journal->j_failed_commit =
++						next_commit_ID;
++					brelse(bh);
++					break;
++				}
 +			}
-+
- 			/* If it is a valid descriptor block, replay it
- 			 * in pass REPLAY; if journal_checksums enabled, then
- 			 * calculate checksums in PASS_SCAN, otherwise,
-@@ -478,7 +513,7 @@ static int do_one_pass(journal_t *journal,
- 
- 			tagp = &bh->b_data[sizeof(journal_header_t)];
- 			while ((tagp - bh->b_data + tag_bytes)
--			       <= journal->j_blocksize) {
-+			       <= journal->j_blocksize - descr_csum_size) {
- 				unsigned long io_block;
- 
- 				tag = (journal_block_tag_t *) tagp;
+ 			brelse(bh);
+ 			next_commit_ID++;
+ 			continue;
 
