@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab2AGI2p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:28:45 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:48553 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab2AGI2c (ORCPT
+	id S1754516Ab2AGI2n (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:28:43 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42410 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752232Ab2AGI2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:28:32 -0500
-Subject: [PATCH 05/23] ext4: Calculate and verify superblock checksum
+	Sat, 7 Jan 2012 03:28:25 -0500
+Subject: [PATCH 04/23] ext4: Only call out to crc32c if necessary
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,263 +20,130 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:28:26 -0800
-Message-ID: <20120107082826.21970.33859.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 07 Jan 2012 00:28:19 -0800
+Message-ID: <20120107082819.21970.3299.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-5518-0000-0000-0000016564C7
+x-cbid: 12010708-2398-0000-0000-0000033A5DDF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calculate and verify the superblock checksum.  Since the UUID and block group
-number are embedded in each copy of the superblock, we need only checksum the
-entire block.  Refactor some of the code to eliminate open-coding of the
-checksum update call.
+Only obtain a reference to the cryptoapi and crc32c if we happen to mount a
+filesystem with metadata checksumming enabled.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4.h      |   10 ++++++++++
- fs/ext4/ext4_jbd2.c |    9 ++++++++-
- fs/ext4/ext4_jbd2.h |    7 +++++--
- fs/ext4/inode.c     |    3 +--
- fs/ext4/namei.c     |    4 ++--
- fs/ext4/resize.c    |    6 +++++-
- fs/ext4/super.c     |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 78 insertions(+), 8 deletions(-)
+ fs/ext4/Kconfig |    2 ++
+ fs/ext4/ext4.h  |   23 +++++++++++++++++++++++
+ fs/ext4/super.c |   16 ++++++++++++++++
+ 3 files changed, 41 insertions(+), 0 deletions(-)
 
 
+diff --git a/fs/ext4/Kconfig b/fs/ext4/Kconfig
+index 9ed1bb1..c22f170 100644
+--- a/fs/ext4/Kconfig
++++ b/fs/ext4/Kconfig
+@@ -2,6 +2,8 @@ config EXT4_FS
+ 	tristate "The Extended 4 (ext4) filesystem"
+ 	select JBD2
+ 	select CRC16
++	select CRYPTO
++	select CRYPTO_CRC32C
+ 	help
+ 	  This is the next generation of the ext3 filesystem.
+ 
 diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index a6de0d2..9d1504e 100644
+index f85fb34..a6de0d2 100644
 --- a/fs/ext4/ext4.h
 +++ b/fs/ext4/ext4.h
-@@ -1263,6 +1263,9 @@ struct ext4_sb_info {
+@@ -29,6 +29,7 @@
+ #include <linux/wait.h>
+ #include <linux/blockgroup_lock.h>
+ #include <linux/percpu_counter.h>
++#include <crypto/hash.h>
+ #ifdef __KERNEL__
+ #include <linux/compat.h>
+ #endif
+@@ -1259,6 +1260,9 @@ struct ext4_sb_info {
  
- 	/* Reference to checksum algorithm driver via cryptoapi */
- 	struct crypto_shash *s_chksum_driver;
+ 	/* record the last minlen when FITRIM is called. */
+ 	atomic_t s_last_trim_minblks;
 +
-+	/* Precomputed FS UUID checksum for seeding other checksums */
-+	__u32 s_csum_seed;
++	/* Reference to checksum algorithm driver via cryptoapi */
++	struct crypto_shash *s_chksum_driver;
  };
  
  static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
-@@ -1976,6 +1979,10 @@ extern int ext4_group_extend(struct super_block *sb,
- 				ext4_fsblk_t n_blocks_count);
+@@ -1614,6 +1618,25 @@ static inline __le16 ext4_rec_len_to_disk(unsigned len, unsigned blocksize)
+ #define DX_HASH_HALF_MD4_UNSIGNED	4
+ #define DX_HASH_TEA_UNSIGNED		5
  
- /* super.c */
-+extern int ext4_superblock_csum_verify(struct super_block *sb,
-+				       struct ext4_super_block *es);
-+extern void ext4_superblock_csum_set(struct super_block *sb,
-+				     struct ext4_super_block *es);
- extern void *ext4_kvmalloc(size_t size, gfp_t flags);
- extern void *ext4_kvzalloc(size_t size, gfp_t flags);
- extern void ext4_kvfree(void *ptr);
-@@ -2251,6 +2258,9 @@ static inline void ext4_unlock_group(struct super_block *sb,
- 
- static inline void ext4_mark_super_dirty(struct super_block *sb)
- {
-+	struct ext4_super_block *es = EXT4_SB(sb)->s_es;
++static inline u32 ext4_chksum(struct ext4_sb_info *sbi, u32 crc,
++			      const void *address, unsigned int length)
++{
++	struct {
++		struct shash_desc shash;
++		char ctx[crypto_shash_descsize(sbi->s_chksum_driver)];
++	} desc;
++	int err;
 +
-+	ext4_superblock_csum_set(sb, es);
- 	if (EXT4_SB(sb)->s_journal == NULL)
- 		sb->s_dirt =1;
- }
-diff --git a/fs/ext4/ext4_jbd2.c b/fs/ext4/ext4_jbd2.c
-index aca1790..90f7c2e 100644
---- a/fs/ext4/ext4_jbd2.c
-+++ b/fs/ext4/ext4_jbd2.c
-@@ -138,16 +138,23 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
- }
- 
- int __ext4_handle_dirty_super(const char *where, unsigned int line,
--			      handle_t *handle, struct super_block *sb)
-+			      handle_t *handle, struct super_block *sb,
-+			      int now)
- {
- 	struct buffer_head *bh = EXT4_SB(sb)->s_sbh;
- 	int err = 0;
- 
- 	if (ext4_handle_valid(handle)) {
-+		ext4_superblock_csum_set(sb,
-+				(struct ext4_super_block *)bh->b_data);
- 		err = jbd2_journal_dirty_metadata(handle, bh);
- 		if (err)
- 			ext4_journal_abort_handle(where, line, __func__,
- 						  bh, handle, err);
-+	} else if (now) {
-+		ext4_superblock_csum_set(sb,
-+				(struct ext4_super_block *)bh->b_data);
-+		mark_buffer_dirty(bh);
- 	} else
- 		sb->s_dirt = 1;
- 	return err;
-diff --git a/fs/ext4/ext4_jbd2.h b/fs/ext4/ext4_jbd2.h
-index 5802fa1..ed9b78d 100644
---- a/fs/ext4/ext4_jbd2.h
-+++ b/fs/ext4/ext4_jbd2.h
-@@ -141,7 +141,8 @@ int __ext4_handle_dirty_metadata(const char *where, unsigned int line,
- 				 struct buffer_head *bh);
- 
- int __ext4_handle_dirty_super(const char *where, unsigned int line,
--			      handle_t *handle, struct super_block *sb);
-+			      handle_t *handle, struct super_block *sb,
-+			      int now);
- 
- #define ext4_journal_get_write_access(handle, bh) \
- 	__ext4_journal_get_write_access(__func__, __LINE__, (handle), (bh))
-@@ -153,8 +154,10 @@ int __ext4_handle_dirty_super(const char *where, unsigned int line,
- #define ext4_handle_dirty_metadata(handle, inode, bh) \
- 	__ext4_handle_dirty_metadata(__func__, __LINE__, (handle), (inode), \
- 				     (bh))
-+#define ext4_handle_dirty_super_now(handle, sb) \
-+	__ext4_handle_dirty_super(__func__, __LINE__, (handle), (sb), 1)
- #define ext4_handle_dirty_super(handle, sb) \
--	__ext4_handle_dirty_super(__func__, __LINE__, (handle), (sb))
-+	__ext4_handle_dirty_super(__func__, __LINE__, (handle), (sb), 0)
- 
- handle_t *ext4_journal_start_sb(struct super_block *sb, int nblocks);
- int __ext4_journal_stop(const char *where, unsigned int line, handle_t *handle);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 92655fd..07cd63d 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -4044,8 +4044,7 @@ static int ext4_do_update_inode(handle_t *handle,
- 					EXT4_FEATURE_RO_COMPAT_LARGE_FILE);
- 			sb->s_dirt = 1;
- 			ext4_handle_sync(handle);
--			err = ext4_handle_dirty_metadata(handle, NULL,
--					EXT4_SB(sb)->s_sbh);
-+			err = ext4_handle_dirty_super_now(handle, sb);
- 		}
- 	}
- 	raw_inode->i_generation = cpu_to_le32(inode->i_generation);
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index c10ae34..ebfc499 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2021,7 +2021,7 @@ int ext4_orphan_add(handle_t *handle, struct inode *inode)
- 	/* Insert this inode at the head of the on-disk orphan list... */
- 	NEXT_ORPHAN(inode) = le32_to_cpu(EXT4_SB(sb)->s_es->s_last_orphan);
- 	EXT4_SB(sb)->s_es->s_last_orphan = cpu_to_le32(inode->i_ino);
--	err = ext4_handle_dirty_metadata(handle, NULL, EXT4_SB(sb)->s_sbh);
-+	err = ext4_handle_dirty_super_now(handle, sb);
- 	rc = ext4_mark_iloc_dirty(handle, inode, &iloc);
- 	if (!err)
- 		err = rc;
-@@ -2094,7 +2094,7 @@ int ext4_orphan_del(handle_t *handle, struct inode *inode)
- 		if (err)
- 			goto out_brelse;
- 		sbi->s_es->s_last_orphan = cpu_to_le32(ino_next);
--		err = ext4_handle_dirty_metadata(handle, NULL, sbi->s_sbh);
-+		err = ext4_handle_dirty_super_now(handle, inode->i_sb);
- 	} else {
- 		struct ext4_iloc iloc2;
- 		struct inode *i_prev =
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 996780a..c33b72a 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -511,7 +511,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
- 	ext4_kvfree(o_group_desc);
- 
- 	le16_add_cpu(&es->s_reserved_gdt_blocks, -1);
--	err = ext4_handle_dirty_metadata(handle, NULL, EXT4_SB(sb)->s_sbh);
-+	err = ext4_handle_dirty_super_now(handle, sb);
- 	if (err)
- 		ext4_std_error(sb, err);
- 
-@@ -682,6 +682,8 @@ static void update_backups(struct super_block *sb,
- 		goto exit_err;
- 	}
- 
-+	ext4_superblock_csum_set(sb, (struct ext4_super_block *)data);
++	desc.shash.tfm = sbi->s_chksum_driver;
++	desc.shash.flags = 0;
++	*(u32 *)desc.ctx = crc;
 +
- 	while ((group = ext4_list_backups(sb, &three, &five, &seven)) < last) {
- 		struct buffer_head *bh;
++	err = crypto_shash_update(&desc.shash, address, length);
++	BUG_ON(err);
++
++	return *(u32 *)desc.ctx;
++}
++
+ #ifdef __KERNEL__
  
-@@ -925,6 +927,8 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
- 	/* Update the global fs size fields */
- 	sbi->s_groups_count++;
- 
-+	ext4_superblock_csum_set(sb,
-+				 (struct ext4_super_block *)primary->b_data);
- 	err = ext4_handle_dirty_metadata(handle, NULL, primary);
- 	if (unlikely(err)) {
- 		ext4_std_error(sb, err);
+ /* hash info structure used by the directory hash */
 diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 58c697f..99bee03 100644
+index de9f78c..58c697f 100644
 --- a/fs/ext4/super.c
 +++ b/fs/ext4/super.c
-@@ -121,6 +121,38 @@ static int ext4_verify_csum_type(struct super_block *sb,
- 	return es->s_checksum_type == EXT4_CRC32C_CHKSUM;
+@@ -887,6 +887,8 @@ static void ext4_put_super(struct super_block *sb)
+ 	unlock_super(sb);
+ 	kobject_put(&sbi->s_kobj);
+ 	wait_for_completion(&sbi->s_kobj_unregister);
++	if (sbi->s_chksum_driver)
++		crypto_free_shash(sbi->s_chksum_driver);
+ 	kfree(sbi->s_blockgroup_lock);
+ 	kfree(sbi);
  }
- 
-+static __le32 ext4_superblock_csum(struct super_block *sb,
-+				   struct ext4_super_block *es)
-+{
-+	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+	int offset = offsetof(struct ext4_super_block, s_checksum);
-+	__u32 csum;
-+
-+	csum = ext4_chksum(sbi, ~0, (char *)es, offset);
-+
-+	return cpu_to_le32(csum);
-+}
-+
-+int ext4_superblock_csum_verify(struct super_block *sb,
-+				struct ext4_super_block *es)
-+{
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	return es->s_checksum == ext4_superblock_csum(sb, es);
-+}
-+
-+void ext4_superblock_csum_set(struct super_block *sb,
-+			      struct ext4_super_block *es)
-+{
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return;
-+
-+	es->s_checksum = ext4_superblock_csum(sb, es);
-+}
-+
- void *ext4_kvmalloc(size_t size, gfp_t flags)
- {
- 	void *ret;
-@@ -3213,6 +3245,20 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		}
+@@ -3199,6 +3201,18 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
+ 		goto cantfind_ext4;
  	}
  
-+	/* Check superblock checksum */
-+	if (!ext4_superblock_csum_verify(sb, es)) {
-+		ext4_msg(sb, KERN_ERR, "VFS: Found ext4 filesystem with "
-+			 "invalid superblock checksum.  Run e2fsck?");
-+		silent = 1;
-+		goto cantfind_ext4;
-+	}
-+
-+	/* Precompute checksum seed for all metadata */
++	/* Load the checksum driver */
 +	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+			EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		sbi->s_csum_seed = ext4_chksum(sbi, ~0, es->s_uuid,
-+					       sizeof(es->s_uuid));
++				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
++		sbi->s_chksum_driver = crypto_alloc_shash("crc32c", 0, 0);
++		if (IS_ERR(sbi->s_chksum_driver)) {
++			ext4_msg(sb, KERN_ERR, "Cannot load crc32c driver.");
++			ret = PTR_ERR(sbi->s_chksum_driver);
++			sbi->s_chksum_driver = NULL;
++			goto failed_mount;
++		}
++	}
 +
  	/* Set defaults before we parse the mount options */
  	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
  	set_opt(sb, INIT_INODE_TABLE);
-@@ -4218,6 +4264,7 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 				&EXT4_SB(sb)->s_freeinodes_counter));
- 	sb->s_dirt = 0;
- 	BUFFER_TRACE(sbh, "marking dirty");
-+	ext4_superblock_csum_set(sb, es);
- 	mark_buffer_dirty(sbh);
- 	if (sync) {
- 		error = sync_dirty_buffer(sbh);
+@@ -3879,6 +3893,8 @@ failed_mount2:
+ 		brelse(sbi->s_group_desc[i]);
+ 	ext4_kvfree(sbi->s_group_desc);
+ failed_mount:
++	if (sbi->s_chksum_driver)
++		crypto_free_shash(sbi->s_chksum_driver);
+ 	if (sbi->s_proc) {
+ 		remove_proc_entry(sb->s_id, ext4_proc_root);
+ 	}
 
