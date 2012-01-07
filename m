@@ -1,159 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab2AGI2i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:28:38 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:48861 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab2AGI2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:28:06 -0500
-Subject: [PATCH 01/23] ext4: Create a new BH_Verified flag to avoid
-	unnecessary metadata validation
-To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Sunil Mushran <sunil.mushran@oracle.com>,
-        Martin K Petersen <martin.petersen@oracle.com>,
-        Greg Freemyer <greg.freemyer@gmail.com>,
-        Amir Goldstein <amir73il@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
-        Joel Becker <jlbec@evilplan.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:27:59 -0800
-Message-ID: <20120107082759.21970.86022.stgit@elm3c44.beaverton.ibm.com>
-In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
-References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1754328Ab2AGI7W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:59:22 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:61205 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2AGI7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:59:20 -0500
+Message-ID: <1325926751.4847.8.camel@lappy>
+Subject: Re: Boot regression caused by commit 6829a048
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: chuck.lever@oracle.com, linux@razik.name,
+        Pekka Enberg <penberg@kernel.org>,
+        linux-nfs <linux-nfs@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sat, 07 Jan 2012 10:59:11 +0200
+In-Reply-To: <1325891801.11799.5.camel@lade.trondhjem.org>
+References: <1325871176.4629.35.camel@lappy>
+	 <1325874404.32470.6.camel@lade.trondhjem.org>
+	 <1325892770.4847.1.camel@lappy>
+	 <1325891801.11799.5.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-9360-0000-0000-00000230D735
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create a new BH_Verified flag to indicate that we've verified all the data in a
-buffer_head for correctness.  This allows us to bypass expensive verification
-steps when they are not necessary without missing them when they are.
+On Fri, 2012-01-06 at 18:16 -0500, Trond Myklebust wrote:
+> A simple fix would be either:
+> 
+> A) skip the root=/dev/root.
 
-v2: The later jbd2 metadata checksumming patches need a BH_Verified flag for
-journal metadata, so put the flag in jbd2.h so that both drivers can share the
-same bit.
+"/dev/root" is actually the name of the 9p device, I can't omit that part since then 9p won't boot.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
----
- fs/ext4/extents.c          |   35 ++++++++++++++++++++++++++---------
- include/linux/jbd_common.h |    2 ++
- 2 files changed, 28 insertions(+), 9 deletions(-)
+> B) change mount_root to also test MINOR(ROOT_DEV), which should equal
+> 255 if ROOT_DEV==Root_NFS 
 
+I'll simply check if ROOT_DEV==Root_NFS then.
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 607b155..148f89f 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -396,6 +396,26 @@ int ext4_ext_check_inode(struct inode *inode)
- 	return ext4_ext_check(inode, ext_inode_hdr(inode), ext_depth(inode));
- }
- 
-+static int __ext4_ext_check_block(const char *function, unsigned int line,
-+				  struct inode *inode,
-+				  struct ext4_extent_header *eh,
-+				  int depth,
-+				  struct buffer_head *bh)
-+{
-+	int ret;
-+
-+	if (buffer_verified(bh))
-+		return 0;
-+	ret = ext4_ext_check(inode, eh, depth);
-+	if (ret)
-+		return ret;
-+	set_buffer_verified(bh);
-+	return ret;
-+}
-+
-+#define ext4_ext_check_block(inode, eh, depth, bh)	\
-+	__ext4_ext_check_block(__func__, __LINE__, inode, eh, depth, bh)
-+
- #ifdef EXT_DEBUG
- static void ext4_ext_show_path(struct inode *inode, struct ext4_ext_path *path)
- {
-@@ -652,8 +672,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 	i = depth;
- 	/* walk through the tree */
- 	while (i) {
--		int need_to_validate = 0;
--
- 		ext_debug("depth %d: num %d, max %d\n",
- 			  ppos, le16_to_cpu(eh->eh_entries), le16_to_cpu(eh->eh_max));
- 
-@@ -672,8 +690,6 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 				put_bh(bh);
- 				goto err;
- 			}
--			/* validate the extent entries */
--			need_to_validate = 1;
- 		}
- 		eh = ext_block_hdr(bh);
- 		ppos++;
-@@ -687,7 +703,7 @@ ext4_ext_find_extent(struct inode *inode, ext4_lblk_t block,
- 		path[ppos].p_hdr = eh;
- 		i--;
- 
--		if (need_to_validate && ext4_ext_check(inode, eh, i))
-+		if (ext4_ext_check_block(inode, eh, i, bh))
- 			goto err;
- 	}
- 
-@@ -1328,7 +1344,8 @@ got_index:
- 			return -EIO;
- 		eh = ext_block_hdr(bh);
- 		/* subtract from p_depth to get proper eh_depth */
--		if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
-+		if (ext4_ext_check_block(inode, eh,
-+					 path->p_depth - depth, bh)) {
- 			put_bh(bh);
- 			return -EIO;
- 		}
-@@ -1341,7 +1358,7 @@ got_index:
- 	if (bh == NULL)
- 		return -EIO;
- 	eh = ext_block_hdr(bh);
--	if (ext4_ext_check(inode, eh, path->p_depth - depth)) {
-+	if (ext4_ext_check_block(inode, eh, path->p_depth - depth, bh)) {
- 		put_bh(bh);
- 		return -EIO;
- 	}
-@@ -2572,8 +2589,8 @@ again:
- 				err = -EIO;
- 				break;
- 			}
--			if (ext4_ext_check(inode, ext_block_hdr(bh),
--							depth - i - 1)) {
-+			if (ext4_ext_check_block(inode, ext_block_hdr(bh),
-+							depth - i - 1, bh)) {
- 				err = -EIO;
- 				break;
- 			}
-diff --git a/include/linux/jbd_common.h b/include/linux/jbd_common.h
-index 6230f85..6133679 100644
---- a/include/linux/jbd_common.h
-+++ b/include/linux/jbd_common.h
-@@ -12,6 +12,7 @@ enum jbd_state_bits {
- 	BH_State,		/* Pins most journal_head state */
- 	BH_JournalHead,		/* Pins bh->b_private and jh->b_bh */
- 	BH_Unshadow,		/* Dummy bit, for BJ_Shadow wakeup filtering */
-+	BH_Verified,		/* Metadata block has been verified ok */
- 	BH_JBDPrivateStart,	/* First bit available for private use by FS */
- };
- 
-@@ -24,6 +25,7 @@ TAS_BUFFER_FNS(Revoked, revoked)
- BUFFER_FNS(RevokeValid, revokevalid)
- TAS_BUFFER_FNS(RevokeValid, revokevalid)
- BUFFER_FNS(Freed, freed)
-+BUFFER_FNS(Verified, verified)
- 
- static inline struct buffer_head *jh2bh(struct journal_head *jh)
- {
+-- 
+
+Sasha.
 
