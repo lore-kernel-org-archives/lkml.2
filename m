@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759409Ab2AGBug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 20:50:36 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:45352 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759389Ab2AGBue (ORCPT
+	id S1759421Ab2AGBui (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 20:50:38 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:57460 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759343Ab2AGBud convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 20:50:34 -0500
-Date: Fri, 06 Jan 2012 17:50:28 -0800 (PST)
-Message-Id: <20120106.175028.1076280359661712542.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CA+55aFyk6QJib8UCtK_gWzidr8Ti1utJgHg359fkq=+GY8hbnw@mail.gmail.com>
-References: <20120105.192833.760673635385506638.davem@davemloft.net>
-	<CA+55aFyk6QJib8UCtK_gWzidr8Ti1utJgHg359fkq=+GY8hbnw@mail.gmail.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 06 Jan 2012 17:50:31 -0800 (PST)
+	Fri, 6 Jan 2012 20:50:33 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
+References: <bug-41722-5003@https.bugzilla.kernel.org/> <201109062222.p86MMlK9023363@demeter2.kernel.org>
+ <CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Jan 2012 17:50:11 -0800
+X-Google-Sender-Auth: e4y5eVBx1JzfuwAhemTSEsIex78
+Message-ID: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: bugzilla-daemon@bugzilla.kernel.org,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Jan 2012 17:34:39 -0800
+2012/1/6 Rogério Brito <rbrito@ime.usp.br>:
+>
+> For the record, *some* description of the problem is at:
+>
+> * https://bugzilla.kernel.org/show_bug.cgi?id=41132
 
-> On Thu, Jan 5, 2012 at 4:28 PM, David Miller <davem@davemloft.net> wrote:
->>
->> Netlink socket dumping is now supported for UDP and AF_UNIX sockets
->> thanks to Pavel Emelyanov.
-> 
-> .. and this is such a magically important feature that it has to be
-> enabled by default?
-> 
-> It's something that has never been supported before, how did it
-> suddenly become 'default y' after twenty years of not even being an
-> issue?
+This one looks very much like the thing that Edward Donovan fixed
+fairly recently in commit 52553ddffad7 ("genirq: fix regression in
+irqfixup, irqpoll")
 
-Netlink socket dumping has been enabled on every kernel for the past
-10 years.  It's just been made to work for things other than TCP
-and DCCP.
+So that should be fixed in 3.2 (and it's marked for stable, so I think
+it's in the latest stable kernels too)
 
-It replaces the crappy and hard to scale procfs socket listing junk,
-which doesn't even provide a way to filter requests.
+> * https://bugzilla.kernel.org/show_bug.cgi?id=41722
+
+That, however, looks totally insane. I don't even have a clue where to
+begin. I take it that it works with "acpi=off", and don't have a clue
+about what might go wrong with ACPI enabled.
+
+                       Linus
