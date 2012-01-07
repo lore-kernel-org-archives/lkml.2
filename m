@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab2AGKGB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 05:06:01 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:32921 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751006Ab2AGKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 05:06:00 -0500
-Message-ID: <1325930757.14763.4.camel@joe2Laptop>
-Subject: Re: [PATCH 4/6] x86: initial support for sta2x11
-From: Joe Perches <joe@perches.com>
-To: Alessandro Rubini <rubini@gnudd.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Sat, 07 Jan 2012 02:05:57 -0800
-In-Reply-To: <20120107082212.GA18254@mail.gnudd.com>
-References: <1325894723.12292.13.camel@joe2Laptop>
-	 <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
-	 <1446410617.668.1325893939253.JavaMail.mail@webmail05>
-	 <20120107082212.GA18254@mail.gnudd.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1755619Ab2AGKUj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 05:20:39 -0500
+Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:63425 "EHLO
+	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751006Ab2AGKUh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 05:20:37 -0500
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAMUaCE9R8tOI/2dsb2JhbABDrEGBBoFyAQEEATocIxAIAw44FCUDIYgNArYBE4t+BJUIiR+JHA
+Date: Sat, 7 Jan 2012 11:20:34 +0100
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Marc Vertes <marc.vertes@sigfox.com>, linux-watchdog@vger.kernel.org
+Subject: Re: linux-next: Tree for Dec 28 (via_wdt)
+Message-ID: <20120107102034.GI23376@infomag.iguana.be>
+References: <20111228201806.d6de27fa2dbd9e3a3b7a2603@canb.auug.org.au> <4EFB5BF2.3020600@xenotime.net> <20111228175751.GA14460@infomag.iguana.be> <4F07B291.4040608@xenotime.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F07B291.4040608@xenotime.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-01-07 at 09:22 +0100, Alessandro Rubini wrote:
-> > or __func__
-> I don't understand. No size? Or you typoed and meant pr_fmt defined above?
+Hi Randy,
 
-I meant that outputting __func__ (in this case
-sta2x11_new_instance) doesn't gain much useful
-information and generally isn't necessary.
+> >> via_wdt needs a MODULE_LICENSE():
+> >>
+> >> WARNING: modpost: missing MODULE_LICENSE() in drivers/watchdog/via_wdt.o
+> >> see include/linux/module.h for more information
+> > 
+> > Fixed.
+> 
+> Not yet in linux-next ??
 
-> >> +	uint32_t v[2]; /* used as a string... */
-> > less than pretty.
-> Sure. But it's informative. Do you prefer a union?
+I noticed it yesterday afternoon also. So I "re-fixed" (and double-checked) it yesterday in the afternoon.
+So will be in linux-next with the next pull.
 
-Not really.
-
+Kind regards,
+Wim.
 
