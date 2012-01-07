@@ -1,41 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab2AGSRO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 13:17:14 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:49897 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab2AGSRM (ORCPT
+	id S1753156Ab2AGSXf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 13:23:35 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50150 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab2AGSXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 13:17:12 -0500
-Date: Sat, 07 Jan 2012 10:17:02 -0800 (PST)
-Message-Id: <20120107.101702.971636020211532236.davem@davemloft.net>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org, gthelen@google.com,
-        kamezawa.hiroyu@jp.fujitsu.com, chavey@google.com
-Subject: Re: [PATCH] net: fix sock_clone reference mismatch with tcp
- memcontrol
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1325830599-11857-1-git-send-email-glommer@parallels.com>
-References: <1325830599-11857-1-git-send-email-glommer@parallels.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 07 Jan 2012 10:17:04 -0800 (PST)
+	Sat, 7 Jan 2012 13:23:34 -0500
+Date: Sat, 7 Jan 2012 18:23:19 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgene.kim@samsung.com, lars@metafoo.de, kwangwoo.lee@gmail.com,
+        patches@linaro.org, jg1.han@samsung.com, rob.herring@calxeda.com,
+        grant.likely@secretlab.ca, cbou@mail.ru, kyungmin.park@samsung.com,
+        linux-samsung-soc@vger.kernel.org, rpurdie@rpsys.net,
+        ben-linux@fluff.org, broonie@opensource.wolfsonmicro.com,
+        augulis.darius@gmail.com
+Subject: Re: [PATCH] backlight: lcd: add driver for raster-type lcd's with
+	gpio controlled panel reset
+Message-ID: <20120107182319.GA13181@n2100.arm.linux.org.uk>
+References: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
-Date: Fri,  6 Jan 2012 10:16:39 +0400
+On Thu, Jan 05, 2012 at 09:12:26PM +0530, Thomas Abraham wrote:
+> Add a lcd panel driver for simple raster-type lcd's which uses a gpio
+> controlled panel reset. The driver controls the nRESET line of the panel
+> using a gpio connected from the host system. The Vcc supply to the panel
+> is (optionally) controlled using a voltage regulator. This driver excludes
+> support for lcd panels that use a serial command interface or direct
+> memory mapped IO interface.
 
-> Sockets can also be created through sock_clone. Because it copies
-> all data in the sock structure, it also copies the memcg-related pointer,
-> and all should be fine. However, since we now use reference counts in
-> socket creation, we are left with some sockets that have no reference
-> counts. It matters when we destroy them, since it leads to a mismatch.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
+I'm trying to work out what kind of LCD panel this is for.  I assume
+not the panels which would be connected to a SoC, which have a parallel
+interface to a frame buffer device (LCD controller)?
 
-Applied, thanks.
+If this is for these kinds of LCD panels, how are you handling the
+timing required for active panels - some of which must not be powered
+up without the LCD controller first being setup and enabled, and must
+be powered down before the LCD controller is disabled.
+
+I've seen this requirement with panels connected to ARM Ltd's development
+boards, and also some SoCs.
