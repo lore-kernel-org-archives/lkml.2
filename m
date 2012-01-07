@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab2AGI2n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:28:43 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:42410 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752232Ab2AGI2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:28:25 -0500
-Subject: [PATCH 04/23] ext4: Only call out to crc32c if necessary
+	id S1754097Ab2AGI2l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:28:41 -0500
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:50427 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752042Ab2AGI2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:28:14 -0500
+Subject: [PATCH 02/23] ext4: Change on-disk layout to support extended
+	metadata checksumming
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,130 +20,228 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:28:19 -0800
-Message-ID: <20120107082819.21970.3299.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 07 Jan 2012 00:28:06 -0800
+Message-ID: <20120107082806.21970.61658.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-2398-0000-0000-0000033A5DDF
+x-cbid: 12010708-1976-0000-0000-0000094267A0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only obtain a reference to the cryptoapi and crc32c if we happen to mount a
-filesystem with metadata checksumming enabled.
+Define flags and change structure definitions to allow checksumming of ext4
+metadata.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/Kconfig |    2 ++
- fs/ext4/ext4.h  |   23 +++++++++++++++++++++++
- fs/ext4/super.c |   16 ++++++++++++++++
- 3 files changed, 41 insertions(+), 0 deletions(-)
+ fs/ext4/ext4.h         |   43 +++++++++++++++++++++++++++++++++++--------
+ fs/ext4/ext4_extents.h |   13 +++++++++++++
+ fs/ext4/namei.c        |    8 ++++++++
+ fs/ext4/xattr.h        |    4 +++-
+ 4 files changed, 59 insertions(+), 9 deletions(-)
 
 
-diff --git a/fs/ext4/Kconfig b/fs/ext4/Kconfig
-index 9ed1bb1..c22f170 100644
---- a/fs/ext4/Kconfig
-+++ b/fs/ext4/Kconfig
-@@ -2,6 +2,8 @@ config EXT4_FS
- 	tristate "The Extended 4 (ext4) filesystem"
- 	select JBD2
- 	select CRC16
-+	select CRYPTO
-+	select CRYPTO_CRC32C
- 	help
- 	  This is the next generation of the ext3 filesystem.
- 
 diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index f85fb34..a6de0d2 100644
+index 5b0e26a..f85fb34 100644
 --- a/fs/ext4/ext4.h
 +++ b/fs/ext4/ext4.h
-@@ -29,6 +29,7 @@
- #include <linux/wait.h>
- #include <linux/blockgroup_lock.h>
- #include <linux/percpu_counter.h>
-+#include <crypto/hash.h>
- #ifdef __KERNEL__
- #include <linux/compat.h>
- #endif
-@@ -1259,6 +1260,9 @@ struct ext4_sb_info {
- 
- 	/* record the last minlen when FITRIM is called. */
- 	atomic_t s_last_trim_minblks;
-+
-+	/* Reference to checksum algorithm driver via cryptoapi */
-+	struct crypto_shash *s_chksum_driver;
+@@ -289,7 +289,9 @@ struct ext4_group_desc
+ 	__le16	bg_free_inodes_count_lo;/* Free inodes count */
+ 	__le16	bg_used_dirs_count_lo;	/* Directories count */
+ 	__le16	bg_flags;		/* EXT4_BG_flags (INODE_UNINIT, etc) */
+-	__u32	bg_reserved[2];		/* Likely block/inode bitmap checksum */
++	__le32  bg_exclude_bitmap_lo;   /* Exclude bitmap for snapshots */
++	__le16  bg_block_bitmap_csum_lo;/* crc32c(s_uuid+grp_num+bbitmap) LE */
++	__le16  bg_inode_bitmap_csum_lo;/* crc32c(s_uuid+grp_num+ibitmap) LE */
+ 	__le16  bg_itable_unused_lo;	/* Unused inodes count */
+ 	__le16  bg_checksum;		/* crc16(sb_uuid+group+desc) */
+ 	__le32	bg_block_bitmap_hi;	/* Blocks bitmap block MSB */
+@@ -299,7 +301,10 @@ struct ext4_group_desc
+ 	__le16	bg_free_inodes_count_hi;/* Free inodes count MSB */
+ 	__le16	bg_used_dirs_count_hi;	/* Directories count MSB */
+ 	__le16  bg_itable_unused_hi;    /* Unused inodes count MSB */
+-	__u32	bg_reserved2[3];
++	__le32  bg_exclude_bitmap_hi;   /* Exclude bitmap block MSB */
++	__le16  bg_block_bitmap_csum_hi;/* crc32c(s_uuid+grp_num+bbitmap) BE */
++	__le16  bg_inode_bitmap_csum_hi;/* crc32c(s_uuid+grp_num+ibitmap) BE */
++	__u32   bg_reserved;
  };
  
- static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
-@@ -1614,6 +1618,25 @@ static inline __le16 ext4_rec_len_to_disk(unsigned len, unsigned blocksize)
- #define DX_HASH_HALF_MD4_UNSIGNED	4
- #define DX_HASH_TEA_UNSIGNED		5
+ /*
+@@ -632,7 +637,8 @@ struct ext4_inode {
+ 			__le16	l_i_file_acl_high;
+ 			__le16	l_i_uid_high;	/* these 2 fields */
+ 			__le16	l_i_gid_high;	/* were reserved2[0] */
+-			__u32	l_i_reserved2;
++			__le16	l_i_checksum_lo;/* crc32c(uuid+inum+inode) LE */
++			__le16	l_i_reserved;
+ 		} linux2;
+ 		struct {
+ 			__le16	h_i_reserved1;	/* Obsoleted fragment number/size which are removed in ext4 */
+@@ -648,7 +654,7 @@ struct ext4_inode {
+ 		} masix2;
+ 	} osd2;				/* OS dependent 2 */
+ 	__le16	i_extra_isize;
+-	__le16	i_pad1;
++	__le16	i_checksum_hi;	/* crc32c(uuid+inum+inode) BE */
+ 	__le32  i_ctime_extra;  /* extra Change time      (nsec << 2 | epoch) */
+ 	__le32  i_mtime_extra;  /* extra Modification time(nsec << 2 | epoch) */
+ 	__le32  i_atime_extra;  /* extra Access time      (nsec << 2 | epoch) */
+@@ -750,7 +756,7 @@ do {									       \
+ #define i_gid_low	i_gid
+ #define i_uid_high	osd2.linux2.l_i_uid_high
+ #define i_gid_high	osd2.linux2.l_i_gid_high
+-#define i_reserved2	osd2.linux2.l_i_reserved2
++#define i_checksum_lo	osd2.linux2.l_i_checksum_lo
  
-+static inline u32 ext4_chksum(struct ext4_sb_info *sbi, u32 crc,
-+			      const void *address, unsigned int length)
-+{
-+	struct {
-+		struct shash_desc shash;
-+		char ctx[crypto_shash_descsize(sbi->s_chksum_driver)];
-+	} desc;
-+	int err;
-+
-+	desc.shash.tfm = sbi->s_chksum_driver;
-+	desc.shash.flags = 0;
-+	*(u32 *)desc.ctx = crc;
-+
-+	err = crypto_shash_update(&desc.shash, address, length);
-+	BUG_ON(err);
-+
-+	return *(u32 *)desc.ctx;
-+}
-+
- #ifdef __KERNEL__
+ #elif defined(__GNU__)
  
- /* hash info structure used by the directory hash */
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index de9f78c..58c697f 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -887,6 +887,8 @@ static void ext4_put_super(struct super_block *sb)
- 	unlock_super(sb);
- 	kobject_put(&sbi->s_kobj);
- 	wait_for_completion(&sbi->s_kobj_unregister);
-+	if (sbi->s_chksum_driver)
-+		crypto_free_shash(sbi->s_chksum_driver);
- 	kfree(sbi->s_blockgroup_lock);
- 	kfree(sbi);
- }
-@@ -3199,6 +3201,18 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 		goto cantfind_ext4;
- 	}
+@@ -982,6 +988,9 @@ extern void ext4_set_bits(void *bm, int cur, int len);
+ #define EXT4_ERRORS_PANIC		3	/* Panic */
+ #define EXT4_ERRORS_DEFAULT		EXT4_ERRORS_CONTINUE
  
-+	/* Load the checksum driver */
-+	if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
-+		sbi->s_chksum_driver = crypto_alloc_shash("crc32c", 0, 0);
-+		if (IS_ERR(sbi->s_chksum_driver)) {
-+			ext4_msg(sb, KERN_ERR, "Cannot load crc32c driver.");
-+			ret = PTR_ERR(sbi->s_chksum_driver);
-+			sbi->s_chksum_driver = NULL;
-+			goto failed_mount;
-+		}
-+	}
++/* Metadata checksum algorithm codes */
++#define EXT4_CRC32C_CHKSUM		1
 +
- 	/* Set defaults before we parse the mount options */
- 	def_mount_opts = le32_to_cpu(es->s_default_mount_opts);
- 	set_opt(sb, INIT_INODE_TABLE);
-@@ -3879,6 +3893,8 @@ failed_mount2:
- 		brelse(sbi->s_group_desc[i]);
- 	ext4_kvfree(sbi->s_group_desc);
- failed_mount:
-+	if (sbi->s_chksum_driver)
-+		crypto_free_shash(sbi->s_chksum_driver);
- 	if (sbi->s_proc) {
- 		remove_proc_entry(sb->s_id, ext4_proc_root);
- 	}
+ /*
+  * Structure of the super block
+  */
+@@ -1068,7 +1077,7 @@ struct ext4_super_block {
+ 	__le64  s_mmp_block;            /* Block for multi-mount protection */
+ 	__le32  s_raid_stripe_width;    /* blocks on all data disks (N*stride)*/
+ 	__u8	s_log_groups_per_flex;  /* FLEX_BG group size */
+-	__u8	s_reserved_char_pad;
++	__u8	s_checksum_type;	/* metadata checksum algorithm used */
+ 	__le16  s_reserved_pad;
+ 	__le64	s_kbytes_written;	/* nr of lifetime kilobytes written */
+ 	__le32	s_snapshot_inum;	/* Inode number of active snapshot */
+@@ -1094,7 +1103,8 @@ struct ext4_super_block {
+ 	__le32	s_usr_quota_inum;	/* inode for tracking user quota */
+ 	__le32	s_grp_quota_inum;	/* inode for tracking group quota */
+ 	__le32	s_overhead_clusters;	/* overhead blocks/clusters in fs */
+-	__le32  s_reserved[109];        /* Padding to the end of the block */
++	__le32	s_reserved[108];	/* Padding to the end of the block */
++	__le32	s_checksum;		/* crc32c(superblock) */
+ };
+ 
+ #define EXT4_S_ERR_LEN (EXT4_S_ERR_END - EXT4_S_ERR_START)
+@@ -1397,6 +1407,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ #define EXT4_FEATURE_RO_COMPAT_EXTRA_ISIZE	0x0040
+ #define EXT4_FEATURE_RO_COMPAT_QUOTA		0x0100
+ #define EXT4_FEATURE_RO_COMPAT_BIGALLOC		0x0200
++#define EXT4_FEATURE_RO_COMPAT_METADATA_CSUM	0x0400
+ 
+ #define EXT4_FEATURE_INCOMPAT_COMPRESSION	0x0001
+ #define EXT4_FEATURE_INCOMPAT_FILETYPE		0x0002
+@@ -1409,6 +1420,7 @@ static inline void ext4_clear_state_flags(struct ext4_inode_info *ei)
+ #define EXT4_FEATURE_INCOMPAT_FLEX_BG		0x0200
+ #define EXT4_FEATURE_INCOMPAT_EA_INODE		0x0400 /* EA in inode */
+ #define EXT4_FEATURE_INCOMPAT_DIRDATA		0x1000 /* data in dirent */
++#define EXT4_FEATURE_INCOMPAT_BG_USE_META_CSUM	0x2000
+ 
+ #define EXT2_FEATURE_COMPAT_SUPP	EXT4_FEATURE_COMPAT_EXT_ATTR
+ #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT4_FEATURE_INCOMPAT_FILETYPE| \
+@@ -1506,6 +1518,18 @@ struct ext4_dir_entry_2 {
+ };
+ 
+ /*
++ * This is a bogus directory entry at the end of each leaf block that
++ * records checksums.
++ */
++struct ext4_dir_entry_tail {
++	__le32	det_reserved_zero1;	/* Pretend to be unused */
++	__le16	det_rec_len;		/* 12 */
++	__u8	det_reserved_zero2;	/* Zero name length */
++	__u8	det_reserved_ft;	/* 0xDE, fake file type */
++	__le32	det_checksum;		/* crc32c(uuid+inum+dirblock) */
++};
++
++/*
+  * Ext4 directory file types.  Only the low 3 bits are used.  The
+  * other bits are reserved for now.
+  */
+@@ -1520,6 +1544,8 @@ struct ext4_dir_entry_2 {
+ 
+ #define EXT4_FT_MAX		8
+ 
++#define EXT4_FT_DIR_CSUM	0xDE
++
+ /*
+  * EXT4_DIR_PAD defines the directory entries boundaries
+  *
+@@ -1716,7 +1742,8 @@ struct mmp_struct {
+ 	__le16	mmp_check_interval;
+ 
+ 	__le16	mmp_pad1;
+-	__le32	mmp_pad2[227];
++	__le32	mmp_pad2[226];
++	__le32	mmp_checksum;		/* crc32c(uuid+mmp_block) */
+ };
+ 
+ /* arguments passed to the mmp thread */
+diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
+index a52db3a..5c7fbad 100644
+--- a/fs/ext4/ext4_extents.h
++++ b/fs/ext4/ext4_extents.h
+@@ -63,9 +63,22 @@
+  * ext4_inode has i_block array (60 bytes total).
+  * The first 12 bytes store ext4_extent_header;
+  * the remainder stores an array of ext4_extent.
++ * For non-inode extent blocks, ext4_extent_tail
++ * follows the array.
+  */
+ 
+ /*
++ * This is the extent tail on-disk structure.
++ * All other extent structures are 12 bytes long.  It turns out that
++ * block_size % 12 >= 4 for at least all powers of 2 greater than 512, which
++ * covers all valid ext4 block sizes.  Therefore, this tail structure can be
++ * crammed into the end of the block without having to rebalance the tree.
++ */
++struct ext4_extent_tail {
++	__le32	et_checksum;	/* crc32c(uuid+inum+extent_block) */
++};
++
++/*
+  * This is the extent on-disk structure.
+  * It's used at the bottom of the tree.
+  */
+diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
+index aa4c782..c10ae34 100644
+--- a/fs/ext4/namei.c
++++ b/fs/ext4/namei.c
+@@ -145,6 +145,14 @@ struct dx_map_entry
+ 	u16 size;
+ };
+ 
++/*
++ * This goes at the end of each htree block.
++ */
++struct dx_tail {
++	u32 dt_reserved;
++	__le32 dt_checksum;	/* crc32c(uuid+inum+dirblock) */
++};
++
+ static inline ext4_lblk_t dx_get_block(struct dx_entry *entry);
+ static void dx_set_block(struct dx_entry *entry, ext4_lblk_t value);
+ static inline unsigned dx_get_hash(struct dx_entry *entry);
+diff --git a/fs/ext4/xattr.h b/fs/ext4/xattr.h
+index 25b7387..91f31ca 100644
+--- a/fs/ext4/xattr.h
++++ b/fs/ext4/xattr.h
+@@ -27,7 +27,9 @@ struct ext4_xattr_header {
+ 	__le32	h_refcount;	/* reference count */
+ 	__le32	h_blocks;	/* number of disk blocks used */
+ 	__le32	h_hash;		/* hash value of all attributes */
+-	__u32	h_reserved[4];	/* zero right now */
++	__le32	h_checksum;	/* crc32c(uuid+id+xattrblock) */
++				/* id = inum if refcount=1, blknum otherwise */
++	__u32	h_reserved[3];	/* zero right now */
+ };
+ 
+ struct ext4_xattr_ibody_header {
 
