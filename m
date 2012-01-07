@@ -1,569 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759418Ab2AGCzT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 21:55:19 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56322 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759377Ab2AGCzS (ORCPT
+	id S1759418Ab2AGDM0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 22:12:26 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43246 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759048Ab2AGDMY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 21:55:18 -0500
-From: Liu Ping Fan <kernelfans@gmail.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, aliguori@us.ibm.com,
-        gleb@redhat.com, mtosatti@redhat.com, xiaoguangrong.eric@gmail.com,
-        jan.kiszka@web.de, yoshikawa.takuya@oss.ntt.co.jp
-Subject: [PATCH v7] kvm: make vcpu life cycle separated from kvm instance
-Date: Sat,  7 Jan 2012 10:55:01 +0800
-Message-Id: <1325904901-10317-1-git-send-email-kernelfans@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1324091975-20930-1-git-send-email-kernelfans@gmail.com>
-References: <1324091975-20930-1-git-send-email-kernelfans@gmail.com>
+	Fri, 6 Jan 2012 22:12:24 -0500
+MIME-Version: 1.0
+In-Reply-To: <20090428202259.ede11021.akpm@linux-foundation.org>
+References: <49F2D0B1.6030800@t-online.de>
+	<20090428202259.ede11021.akpm@linux-foundation.org>
+Date: Fri, 6 Jan 2012 19:12:23 -0800
+X-Google-Sender-Auth: aDOTogYCRiQTkuSo52k-RIKxk_w
+Message-ID: <CANcMJZCVeC8FS0hptZ3+_Wu7E9vMqxoQOZ5ejVivJ1diiXh1NA@mail.gmail.com>
+Subject: Re: 2.6.30-rc3, forcedeth: no net
+From: john stultz <johnstul@us.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Harald Dunkel <harald.dunkel@t-online.de>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev@vger.kernel.org, Ayaz Abdulla <aabdulla@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
+On Tue, Apr 28, 2009 at 8:22 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> (cc's added)
+> On Sat, 25 Apr 2009 10:58:25 +0200 Harald Dunkel <harald.dunkel@t-online.de> wrote:
+>
+>> There is a problem with forcedeth: The initialization on my
+>> machine takes several minutes. This exceeds the usual wait
+>> loop of dhcpcd. Using a static IP address doesn't help, either.
+>> IP address and so on are set correctly, but there is still
+>> no net.
+>>
+>> I could reproduce this with 2.6.29.1 and 2.6.30-rc3. For
+>> testing I had reverted cb52deba12f27af90a46d2f8667a64888118a888
+>> ("power down phy when interface is down"), but this did not help.
+>> It was a wild guess, anyway.
+>>
+>> /var/log/messages:
+>> :
+>> :
+>> Apr 25 10:29:53 elmer kernel: [    5.796093] forcedeth: Reverse Engineered nForce ethernet driver. Version 0.64.
+>> Apr 25 10:29:53 elmer kernel: [    5.908812] ACPI: PCI Interrupt Link [LMAC] enabled at IRQ 22
+>> Apr 25 10:29:53 elmer kernel: [    5.944151] forcedeth 0000:00:0a.0: PCI INT A -> Link[LMAC] -> GSI 22 (level, low) -> IRQ 22
+>> Apr 25 10:29:53 elmer kernel: [    6.056607] forcedeth 0000:00:0a.0: ifname eth0, PHY OUI 0x732 @ 1, addr 00:22:68:62:c1:8d
+>> Apr 25 10:29:53 elmer kernel: [    6.075176] usbcore: registered new interface driver usbfs
+>> Apr 25 10:29:53 elmer kernel: [    6.154910] forcedeth 0000:00:0a.0: highdma csum pwrctl gbit lnktim msi desc-v3
+>> :
+>> :
+>> Apr 25 10:29:54 elmer kernel: [   22.422017] eth0: no link during initialization.
+>> Apr 25 10:29:54 elmer kernel: [   24.774868] eth0: link up.
+>> Apr 25 10:29:54 elmer kernel: [   24.780817] eth0: link down.
+>> Apr 25 10:29:54 elmer kernel: [   31.401174] eth0: link up.
+>> Apr 25 10:29:54 elmer kernel: [   33.169139] eth0: link down.
+>> Apr 25 10:29:54 elmer kernel: [   38.006407] eth0: link up.
+>> Apr 25 10:29:54 elmer kernel: [   38.011970] eth0: link down.
+>> Apr 25 10:31:58 elmer kernel: [  216.027643] eth0: link up.
+>> :
+>>
+>> lspci:
+>> 00:0a.0 Ethernet controller: nVidia Corporation MCP79 Ethernet (rev b1)
+>>         Subsystem: Acer Incorporated [ALI] Device 0222
+>>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+>>         Status: Cap+ 66MHz+ UDF- FastB2B+ ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>         Latency: 0 (250ns min, 5000ns max)
+>>         Interrupt: pin A routed to IRQ 22
+>>         Region 0: Memory at fae7d000 (32-bit, non-prefetchable) [size=4K]
+>>         Region 1: I/O ports at d080 [size=8]
+>>         Region 2: Memory at fae7e800 (32-bit, non-prefetchable) [size=256]
+>>         Region 3: Memory at fae7e400 (32-bit, non-prefetchable) [size=16]
+>>         Capabilities: [44] Power Management version 2
+>>                 Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0+,D1+,D2+,D3hot+,D3cold+)
+>>                 Status: D0 PME-Enable+ DSel=0 DScale=0 PME-
+>>         Kernel driver in use: forcedeth
+>>
+>> The machine is an Acer Aspire Revo.
+>>
 
-Currently, vcpu will be destructed only after kvm instance is
-destroyed. This result to vcpu keep idle in kernel, but can not
-be freed when it is unplugged in guest.
+Just FYI, I burned the day chasing a very similar issue on an Acer
+Aspire Revo (R1600).  After being a fine test machine for a few years,
+all of a sudden the link would seem to go down when booting custom
+kernels.  Running. ifconfig eth0 down; ifconfig eth0 up would fix it,
+as would unplugging and re-plugging in the cable.  Once it got into
+this state, changing kernel versions wouldn't matter. No link at
+bootup.
 
-Change this to vcpu's destruction before kvm instance, so vcpu MUST
-and CAN be destroyed before kvm instance. By this way, we can remove
-vcpu when guest does not need it any longer.
+The only odd bit was the distro kernel (Ubuntu 11.10 3.0.0 based)
+would usually work (although not always). I suspect this has to do
+with some sort of timing issue, as the distro kernel uses modules and
+my kernels are statically linked.
 
-TODO: push changes to other archs besides x86.
+In the past, this had happened once before, and disconnecting the
+power to the system for a bit, and then reconnecting it seemed to
+resolve it. Unfortunately that didn't work this time.
 
-Signed-off-by: Liu Ping Fan <pingfank@linux.vnet.ibm.com>
----
-Changelog: v6->v7
--Remove kvm->srcu_vcpus, and resort to kvm->srcu for it is helpless 
- to perfermence after measurement.
--Rename kvm_vcpu_zap to kvm_vcpu_destruct and so on.
+Anyway, after trying numerous kernels and config changes trying to
+narrow things down, I ended up flashing the BIOS (from P01-A1 to
+P01-A4L_A) and the issue went away.
 
- arch/x86/kvm/i8254.c     |   10 +++--
- arch/x86/kvm/i8259.c     |   17 +++++--
- arch/x86/kvm/x86.c       |   53 +++++++++++------------
- include/linux/kvm_host.h |   19 +++-----
- virt/kvm/irq_comm.c      |    6 ++-
- virt/kvm/kvm_main.c      |  105 ++++++++++++++++++++++++++++++++++-----------
- 6 files changed, 134 insertions(+), 76 deletions(-)
+Anyway, googling on this shows tons of similar strange behavior with
+forcedeth, so I wanted to post what worked for me.  And while it may
+just be some old BIOS/firmware bug, the odd behavior between distro
+kernels and my own makes me suspect there's some sort of timing race
+with the current driver when the network adapter gets into this
+strange state.
 
-diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
-index d68f99d..a737fb6 100644
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -289,9 +289,8 @@ static void pit_do_work(struct work_struct *work)
- 	struct kvm_pit *pit = container_of(work, struct kvm_pit, expired);
- 	struct kvm *kvm = pit->kvm;
- 	struct kvm_vcpu *vcpu;
--	int i;
- 	struct kvm_kpit_state *ps = &pit->pit_state;
--	int inject = 0;
-+	int idx, inject = 0;
- 
- 	/* Try to inject pending interrupts when
- 	 * last one has been acked.
-@@ -315,9 +314,12 @@ static void pit_do_work(struct work_struct *work)
- 		 * LVT0 to NMI delivery. Other PIC interrupts are just sent to
- 		 * VCPU0, and only if its LVT0 is in EXTINT mode.
- 		 */
--		if (kvm->arch.vapics_in_nmi_mode > 0)
--			kvm_for_each_vcpu(i, vcpu, kvm)
-+		if (kvm->arch.vapics_in_nmi_mode > 0) {
-+			idx = srcu_read_lock(&kvm->srcu);
-+			kvm_for_each_vcpu(vcpu, kvm)
- 				kvm_apic_nmi_wd_deliver(vcpu);
-+			srcu_read_unlock(&kvm->srcu, idx);
-+		}
- 	}
- }
- 
-diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-index b6a7353..fc0fd76 100644
---- a/arch/x86/kvm/i8259.c
-+++ b/arch/x86/kvm/i8259.c
-@@ -50,25 +50,29 @@ static void pic_unlock(struct kvm_pic *s)
- {
- 	bool wakeup = s->wakeup_needed;
- 	struct kvm_vcpu *vcpu, *found = NULL;
--	int i;
-+	struct kvm *kvm = s->kvm;
-+	int idx;
- 
- 	s->wakeup_needed = false;
- 
- 	spin_unlock(&s->lock);
- 
- 	if (wakeup) {
--		kvm_for_each_vcpu(i, vcpu, s->kvm) {
-+		idx = srcu_read_lock(&kvm->srcu);
-+		kvm_for_each_vcpu(vcpu, kvm)
- 			if (kvm_apic_accept_pic_intr(vcpu)) {
- 				found = vcpu;
- 				break;
- 			}
--		}
- 
--		if (!found)
-+		if (!found) {
-+			srcu_read_unlock(&kvm->srcu, idx);
- 			return;
-+		}
- 
- 		kvm_make_request(KVM_REQ_EVENT, found);
- 		kvm_vcpu_kick(found);
-+		srcu_read_unlock(&kvm->srcu, idx);
- 	}
- }
- 
-@@ -265,6 +269,7 @@ void kvm_pic_reset(struct kvm_kpic_state *s)
- 	int irq, i;
- 	struct kvm_vcpu *vcpu;
- 	u8 irr = s->irr, isr = s->imr;
-+	struct kvm *kvm = s->pics_state->kvm;
- 	bool found = false;
- 
- 	s->last_irr = 0;
-@@ -282,11 +287,13 @@ void kvm_pic_reset(struct kvm_kpic_state *s)
- 	s->special_fully_nested_mode = 0;
- 	s->init4 = 0;
- 
--	kvm_for_each_vcpu(i, vcpu, s->pics_state->kvm)
-+	i = srcu_read_lock(&kvm->srcu);
-+	kvm_for_each_vcpu(vcpu, kvm)
- 		if (kvm_apic_accept_pic_intr(vcpu)) {
- 			found = true;
- 			break;
- 		}
-+	srcu_read_unlock(&kvm->srcu, i);
- 
- 
- 	if (!found)
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 1171def..c14892f 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1786,14 +1786,20 @@ static int get_msr_hyperv_pw(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- static int get_msr_hyperv(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- {
- 	u64 data = 0;
-+	int idx;
- 
- 	switch (msr) {
- 	case HV_X64_MSR_VP_INDEX: {
--		int r;
-+		int r = 0;
- 		struct kvm_vcpu *v;
--		kvm_for_each_vcpu(r, v, vcpu->kvm)
-+		struct kvm *kvm = vcpu->kvm;
-+		idx = srcu_read_lock(&kvm->srcu);
-+		kvm_for_each_vcpu(v, vcpu->kvm) {
- 			if (v == vcpu)
- 				data = r;
-+			r++;
-+		}
-+		srcu_read_unlock(&kvm->srcu, idx);
- 		break;
- 	}
- 	case HV_X64_MSR_EOI:
-@@ -4538,7 +4544,7 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
- 	struct cpufreq_freqs *freq = data;
- 	struct kvm *kvm;
- 	struct kvm_vcpu *vcpu;
--	int i, send_ipi = 0;
-+	int idx, send_ipi = 0;
- 
- 	/*
- 	 * We allow guests to temporarily run on slowing clocks,
-@@ -4588,13 +4594,16 @@ static int kvmclock_cpufreq_notifier(struct notifier_block *nb, unsigned long va
- 
- 	raw_spin_lock(&kvm_lock);
- 	list_for_each_entry(kvm, &vm_list, vm_list) {
--		kvm_for_each_vcpu(i, vcpu, kvm) {
-+		idx = srcu_read_lock(&kvm->srcu);
-+		kvm_for_each_vcpu(vcpu, kvm) {
- 			if (vcpu->cpu != freq->cpu)
- 				continue;
- 			kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
- 			if (vcpu->cpu != smp_processor_id())
- 				send_ipi = 1;
- 		}
-+		srcu_read_unlock(&kvm->srcu, idx);
-+
- 	}
- 	raw_spin_unlock(&kvm_lock);
- 
-@@ -5881,13 +5890,17 @@ int kvm_arch_hardware_enable(void *garbage)
- {
- 	struct kvm *kvm;
- 	struct kvm_vcpu *vcpu;
--	int i;
-+	int idx;
- 
- 	kvm_shared_msr_cpu_online();
--	list_for_each_entry(kvm, &vm_list, vm_list)
--		kvm_for_each_vcpu(i, vcpu, kvm)
-+	list_for_each_entry(kvm, &vm_list, vm_list) {
-+		idx = srcu_read_lock(&kvm->srcu);
-+		kvm_for_each_vcpu(vcpu, kvm) {
- 			if (vcpu->cpu == smp_processor_id())
- 				kvm_make_request(KVM_REQ_CLOCK_UPDATE, vcpu);
-+		}
-+		srcu_read_unlock(&kvm->srcu, idx);
-+	}
- 	return kvm_x86_ops->hardware_enable(garbage);
- }
- 
-@@ -6006,27 +6019,14 @@ static void kvm_unload_vcpu_mmu(struct kvm_vcpu *vcpu)
- 	vcpu_put(vcpu);
- }
- 
--static void kvm_free_vcpus(struct kvm *kvm)
-+void kvm_arch_vcpu_destruct(struct kvm_vcpu *vcpu)
- {
--	unsigned int i;
--	struct kvm_vcpu *vcpu;
--
--	/*
--	 * Unpin any mmu pages first.
--	 */
--	kvm_for_each_vcpu(i, vcpu, kvm) {
--		kvm_clear_async_pf_completion_queue(vcpu);
--		kvm_unload_vcpu_mmu(vcpu);
--	}
--	kvm_for_each_vcpu(i, vcpu, kvm)
--		kvm_arch_vcpu_free(vcpu);
--
--	mutex_lock(&kvm->lock);
--	for (i = 0; i < atomic_read(&kvm->online_vcpus); i++)
--		kvm->vcpus[i] = NULL;
-+	struct kvm *kvm = vcpu->kvm;
- 
--	atomic_set(&kvm->online_vcpus, 0);
--	mutex_unlock(&kvm->lock);
-+	kvm_clear_async_pf_completion_queue(vcpu);
-+	kvm_unload_vcpu_mmu(vcpu);
-+	kvm_arch_vcpu_free(vcpu);
-+	kvm_put_kvm(kvm);
- }
- 
- void kvm_arch_sync_events(struct kvm *kvm)
-@@ -6040,7 +6040,6 @@ void kvm_arch_destroy_vm(struct kvm *kvm)
- 	kvm_iommu_unmap_guest(kvm);
- 	kfree(kvm->arch.vpic);
- 	kfree(kvm->arch.vioapic);
--	kvm_free_vcpus(kvm);
- 	if (kvm->arch.apic_access_page)
- 		put_page(kvm->arch.apic_access_page);
- 	if (kvm->arch.ept_identity_pagetable)
-diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-index 900c763..8c93de9 100644
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -117,6 +117,7 @@ enum {
- 
- struct kvm_vcpu {
- 	struct kvm *kvm;
-+	struct list_head list;
- #ifdef CONFIG_PREEMPT_NOTIFIERS
- 	struct preempt_notifier preempt_notifier;
- #endif
-@@ -251,12 +252,13 @@ struct kvm {
- 	struct mm_struct *mm; /* userspace tied to this vm */
- 	struct kvm_memslots *memslots;
- 	struct srcu_struct srcu;
-+
- #ifdef CONFIG_KVM_APIC_ARCHITECTURE
- 	u32 bsp_vcpu_id;
- #endif
--	struct kvm_vcpu *vcpus[KVM_MAX_VCPUS];
-+	struct list_head vcpus;
- 	atomic_t online_vcpus;
--	int last_boosted_vcpu;
-+	int last_boosted_vcpu_id;
- 	struct list_head vm_list;
- 	struct mutex lock;
- 	struct kvm_io_bus *buses[KVM_NR_BUSES];
-@@ -303,17 +305,10 @@ struct kvm {
- #define kvm_printf(kvm, fmt ...) printk(KERN_DEBUG fmt)
- #define vcpu_printf(vcpu, fmt...) kvm_printf(vcpu->kvm, fmt)
- 
--static inline struct kvm_vcpu *kvm_get_vcpu(struct kvm *kvm, int i)
--{
--	smp_rmb();
--	return kvm->vcpus[i];
--}
-+void kvm_arch_vcpu_destruct(struct kvm_vcpu *vcpu);
- 
--#define kvm_for_each_vcpu(idx, vcpup, kvm) \
--	for (idx = 0; \
--	     idx < atomic_read(&kvm->online_vcpus) && \
--	     (vcpup = kvm_get_vcpu(kvm, idx)) != NULL; \
--	     idx++)
-+#define kvm_for_each_vcpu(vcpu, kvm) \
-+	list_for_each_entry_rcu(vcpu, &kvm->vcpus, list)
- 
- #define kvm_for_each_memslot(memslot, slots)	\
- 	for (memslot = &slots->memslots[0];	\
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index 9f614b4..15138a8 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -81,14 +81,15 @@ inline static bool kvm_is_dm_lowest_prio(struct kvm_lapic_irq *irq)
- int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
- 		struct kvm_lapic_irq *irq)
- {
--	int i, r = -1;
-+	int idx, r = -1;
- 	struct kvm_vcpu *vcpu, *lowest = NULL;
- 
- 	if (irq->dest_mode == 0 && irq->dest_id == 0xff &&
- 			kvm_is_dm_lowest_prio(irq))
- 		printk(KERN_INFO "kvm: apic: phys broadcast and lowest prio\n");
- 
--	kvm_for_each_vcpu(i, vcpu, kvm) {
-+	idx = srcu_read_lock(&kvm->srcu);
-+	kvm_for_each_vcpu(vcpu, kvm) {
- 		if (!kvm_apic_present(vcpu))
- 			continue;
- 
-@@ -111,6 +112,7 @@ int kvm_irq_delivery_to_apic(struct kvm *kvm, struct kvm_lapic *src,
- 	if (lowest)
- 		r = kvm_apic_set_irq(lowest, irq);
- 
-+	srcu_read_unlock(&kvm->srcu, idx);
- 	return r;
- }
- 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 7287bf5..db3782b 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -171,7 +171,7 @@ static void ack_flush(void *_completed)
- 
- static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
- {
--	int i, cpu, me;
-+	int cpu, me, idx;
- 	cpumask_var_t cpus;
- 	bool called = true;
- 	struct kvm_vcpu *vcpu;
-@@ -179,7 +179,8 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
- 	zalloc_cpumask_var(&cpus, GFP_ATOMIC);
- 
- 	me = get_cpu();
--	kvm_for_each_vcpu(i, vcpu, kvm) {
-+	idx = srcu_read_lock(&kvm->srcu);
-+	kvm_for_each_vcpu(vcpu, kvm) {
- 		kvm_make_request(req, vcpu);
- 		cpu = vcpu->cpu;
- 
-@@ -190,12 +191,15 @@ static bool make_all_cpus_request(struct kvm *kvm, unsigned int req)
- 		      kvm_vcpu_exiting_guest_mode(vcpu) != OUTSIDE_GUEST_MODE)
- 			cpumask_set_cpu(cpu, cpus);
- 	}
-+	srcu_read_unlock(&kvm->srcu, idx);
-+
- 	if (unlikely(cpus == NULL))
- 		smp_call_function_many(cpu_online_mask, ack_flush, NULL, 1);
- 	else if (!cpumask_empty(cpus))
- 		smp_call_function_many(cpus, ack_flush, NULL, 1);
- 	else
- 		called = false;
-+
- 	put_cpu();
- 	free_cpumask_var(cpus);
- 	return called;
-@@ -500,6 +504,7 @@ static struct kvm *kvm_create_vm(void)
- 	raw_spin_lock(&kvm_lock);
- 	list_add(&kvm->vm_list, &vm_list);
- 	raw_spin_unlock(&kvm_lock);
-+	INIT_LIST_HEAD(&kvm->vcpus);
- 
- 	return kvm;
- 
-@@ -1593,11 +1598,9 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- {
- 	struct kvm *kvm = me->kvm;
- 	struct kvm_vcpu *vcpu;
--	int last_boosted_vcpu = me->kvm->last_boosted_vcpu;
--	int yielded = 0;
--	int pass;
--	int i;
--
-+	struct task_struct *task = NULL;
-+	struct pid *pid;
-+	int pass, firststart, lastone, yielded, idx;
- 	/*
- 	 * We boost the priority of a VCPU that is runnable but not
- 	 * currently running, because it got preempted by something
-@@ -1605,15 +1608,26 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 	 * VCPU is holding the lock that we need and will release it.
- 	 * We approximate round-robin by starting at the last boosted VCPU.
- 	 */
--	for (pass = 0; pass < 2 && !yielded; pass++) {
--		kvm_for_each_vcpu(i, vcpu, kvm) {
--			struct task_struct *task = NULL;
--			struct pid *pid;
--			if (!pass && i < last_boosted_vcpu) {
--				i = last_boosted_vcpu;
-+	for (pass = 0, firststart = 0; pass < 2 && !yielded; pass++) {
-+
-+		idx = srcu_read_lock(&kvm->srcu);
-+		kvm_for_each_vcpu(vcpu, kvm) {
-+			if (kvm->last_boosted_vcpu_id < 0 && !pass) {
-+				pass = 1;
-+				break;
-+			}
-+			if (!pass && !firststart &&
-+			    vcpu->vcpu_id != kvm->last_boosted_vcpu_id) {
-+				continue;
-+			} else if (!pass && !firststart) {
-+				firststart = 1;
- 				continue;
--			} else if (pass && i > last_boosted_vcpu)
-+			} else if (pass && !lastone) {
-+				if (vcpu->vcpu_id == kvm->last_boosted_vcpu_id)
-+					lastone = 1;
-+			} else if (pass && lastone)
- 				break;
-+
- 			if (vcpu == me)
- 				continue;
- 			if (waitqueue_active(&vcpu->wq))
-@@ -1629,15 +1643,20 @@ void kvm_vcpu_on_spin(struct kvm_vcpu *me)
- 				put_task_struct(task);
- 				continue;
- 			}
-+
- 			if (yield_to(task, 1)) {
- 				put_task_struct(task);
--				kvm->last_boosted_vcpu = i;
-+				mutex_lock(&kvm->lock);
-+				kvm->last_boosted_vcpu_id = vcpu->vcpu_id;
-+				mutex_unlock(&kvm->lock);
- 				yielded = 1;
- 				break;
- 			}
- 			put_task_struct(task);
- 		}
-+		srcu_read_unlock(&kvm->srcu, idx);
- 	}
-+
- }
- EXPORT_SYMBOL_GPL(kvm_vcpu_on_spin);
- 
-@@ -1673,11 +1692,30 @@ static int kvm_vcpu_mmap(struct file *file, struct vm_area_struct *vma)
- 	return 0;
- }
- 
-+static void kvm_vcpu_destruct(struct kvm_vcpu *vcpu)
-+{
-+	kvm_arch_vcpu_destruct(vcpu);
-+}
-+
- static int kvm_vcpu_release(struct inode *inode, struct file *filp)
- {
- 	struct kvm_vcpu *vcpu = filp->private_data;
-+	struct kvm *kvm = vcpu->kvm;
-+	filp->private_data = NULL;
-+
-+	mutex_lock(&kvm->lock);
-+	list_del_rcu(&vcpu->list);
-+	atomic_dec(&kvm->online_vcpus);
-+	mutex_unlock(&kvm->lock);
-+	synchronize_srcu_expedited(&kvm->srcu);
- 
--	kvm_put_kvm(vcpu->kvm);
-+	mutex_lock(&kvm->lock);
-+	if (kvm->last_boosted_vcpu_id == vcpu->vcpu_id)
-+		kvm->last_boosted_vcpu_id = -1;
-+	mutex_unlock(&kvm->lock);
-+
-+	/*vcpu is out of list,drop it safely*/
-+	kvm_vcpu_destruct(vcpu);
- 	return 0;
- }
- 
-@@ -1699,15 +1737,25 @@ static int create_vcpu_fd(struct kvm_vcpu *vcpu)
- 	return anon_inode_getfd("kvm-vcpu", &kvm_vcpu_fops, vcpu, O_RDWR);
- }
- 
-+static struct kvm_vcpu *kvm_vcpu_create(struct kvm *kvm, u32 id)
-+{
-+	struct kvm_vcpu *vcpu;
-+	vcpu = kvm_arch_vcpu_create(kvm, id);
-+	if (IS_ERR(vcpu))
-+		return vcpu;
-+	INIT_LIST_HEAD(&vcpu->list);
-+	return vcpu;
-+}
-+
- /*
-  * Creates some virtual cpus.  Good luck creating more than one.
-  */
- static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- {
--	int r;
-+	int r, idx;
- 	struct kvm_vcpu *vcpu, *v;
- 
--	vcpu = kvm_arch_vcpu_create(kvm, id);
-+	vcpu = kvm_vcpu_create(kvm, id);
- 	if (IS_ERR(vcpu))
- 		return PTR_ERR(vcpu);
- 
-@@ -1723,13 +1771,15 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- 		goto unlock_vcpu_destroy;
- 	}
- 
--	kvm_for_each_vcpu(r, v, kvm)
-+	idx = srcu_read_lock(&kvm->srcu);
-+	kvm_for_each_vcpu(v, kvm) {
- 		if (v->vcpu_id == id) {
- 			r = -EEXIST;
-+			srcu_read_unlock(&kvm->srcu, idx);
- 			goto unlock_vcpu_destroy;
- 		}
--
--	BUG_ON(kvm->vcpus[atomic_read(&kvm->online_vcpus)]);
-+	}
-+	srcu_read_unlock(&kvm->srcu, idx);
- 
- 	/* Now it's all set up, let userspace reach it */
- 	kvm_get_kvm(kvm);
-@@ -1739,8 +1789,8 @@ static int kvm_vm_ioctl_create_vcpu(struct kvm *kvm, u32 id)
- 		goto unlock_vcpu_destroy;
- 	}
- 
--	kvm->vcpus[atomic_read(&kvm->online_vcpus)] = vcpu;
--	smp_wmb();
-+	/*Protected by kvm->lock*/
-+	list_add_rcu(&vcpu->list, &kvm->vcpus);
- 	atomic_inc(&kvm->online_vcpus);
- 
- 	mutex_unlock(&kvm->lock);
-@@ -2635,13 +2685,16 @@ static int vcpu_stat_get(void *_offset, u64 *val)
- 	unsigned offset = (long)_offset;
- 	struct kvm *kvm;
- 	struct kvm_vcpu *vcpu;
--	int i;
-+	int idx;
- 
- 	*val = 0;
- 	raw_spin_lock(&kvm_lock);
--	list_for_each_entry(kvm, &vm_list, vm_list)
--		kvm_for_each_vcpu(i, vcpu, kvm)
-+	list_for_each_entry(kvm, &vm_list, vm_list) {
-+		idx = srcu_read_lock(&kvm->srcu);
-+		kvm_for_each_vcpu(vcpu, kvm)
- 			*val += *(u32 *)((void *)vcpu + offset);
-+		srcu_read_unlock(&kvm->srcu, idx);
-+	}
- 
- 	raw_spin_unlock(&kvm_lock);
- 	return 0;
--- 
-1.7.4.4
-
+thanks
+-john
