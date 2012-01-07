@@ -1,97 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab2AGBbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 20:31:13 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:36631 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759094Ab2AGBbL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 20:31:11 -0500
+	id S1759336Ab2AGBdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 20:33:03 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60570 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758920Ab2AGBdB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Jan 2012 20:33:01 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
+Date: Sat, 07 Jan 2012 10:31:00 +0900
+From: Yasunori Goto <y-goto@jp.fujitsu.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [BUG] TASK_DEAD task is able to be woken up in special condition
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki <kosaki.motohiro@jp.fujitsu.com>,
+        Linux Kernel ML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120106141258.GB19462@redhat.com>
+References: <1325853838.2442.18.camel@twins> <20120106141258.GB19462@redhat.com>
+Message-Id: <20120107103059.BF5F.E1E9C6FF@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <201109062222.p86MMlK9023363@demeter2.kernel.org>
-References: <bug-41722-5003@https.bugzilla.kernel.org/>
-	<201109062222.p86MMlK9023363@demeter2.kernel.org>
-Date: Fri, 6 Jan 2012 23:31:10 -0200
-X-Google-Sender-Auth: n1XJIZmOboIFrPb5Z21jz5oCC20
-Message-ID: <CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
-To: bugzilla-daemon@bugzilla.kernel.org
-Cc: Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.56.05 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Bjorn and others,
+> On 01/06, Peter Zijlstra wrote:
+> >
+> > On Fri, 2012-01-06 at 21:01 +0900, Yasunori Goto wrote:
+> >
+> > > Do you mean the following patch?
+> >
+> > Yes, something like that. At that point ->state should be TASK_RUNNING
+> > (since we are after all running). The unlock_wait() will synchronize
+> > against any in-progress ttwu() while its fast path is a non-atomic
+> > compare. Any ttwu after this will bail since it will either observe
+> > TASK_RUNNING or TASK_DEAD, neither are a state it will act upon.
+> >
+> > Now the only question that remains is if we need the full memory barrier
+> > or if we can get away with less.
+> >
+> > I guess the mb separates the write to ->state (setting TASK_RUNNING)
+> > from the read of ->pi_lock. The remote CPU must see the TASK_RUNNING,
+> > and we must see ->pi_lock taken if it is.
+> 
+> Yes, I think we need the full mb, STORE vs LOAD.
+> 
+> > > --- linux-3.2-rc7.orig/kernel/exit.c
+> > > +++ linux-3.2-rc7/kernel/exit.c
+> > > @@ -1038,6 +1038,10 @@ NORET_TYPE void do_exit(long code)
+> > >
+> > >  	preempt_disable();
+> > >  	exit_rcu();
+> > > +
+> > > +	smp_mb();
+> > > +	raw_spin_unlock_wait(&tsk->pi_lock);
+> > > +
+> > >  	/* causes final put_task_struct in finish_task_switch(). */
+> > >  	tsk->state = TASK_DEAD;
+> 
+> Interesting. Initially I thought this is wrong and we should do
+> 
+> 	raw_spin_unlock_wait(pi_lock);
+> 
+> 	mb();
+> 
+> 	tsk->state = TASK_DEAD;
+> 
+> This "obviously" serializes LOAD(pi_lock) and STORE(state).
+> 
+> But when I re-read your explanation above I think you are right,
+> mb() before unlock_wait() should work too, just it refers to
+> state = RUNNING in the past.
 
-Now that bugzilla is up, I think that I can resume testing things on
-that problematic notebook that I mentioned in earlier e-mails, so that
-mom (in CC) can use her notebook with Linux.
-
-For the record, *some* description of the problem is at:
-
-* https://bugzilla.kernel.org/show_bug.cgi?id=41132
-* https://bugzilla.kernel.org/show_bug.cgi?id=41722
-
-The first one is a regression that I bisected, while the second one
-seems to be a bit harder to understand for a layman like me.
-
-Of couse, I can summarize what I found and what I didn't.
-
-Sorry for the top-posting, but it is here to keep the context of the
-previous message.
-
-Thanks,
-Rogério Brito.
-
-On Tue, Sep 6, 2011 at 19:22,  <bugzilla-daemon@bugzilla.kernel.org> wrote:
->
->
->
->
->
-> --- Comment #15 from Rogério Brito <rbrito@ime.usp.br>  2011-09-06 22:22:44 ---
-> Dear Bjorn,
->
-> Sorry for not responding promptly but I had some family members with health
-> problems. Things are settling right now and I think that I can be faster now.
->
-> (In reply to comment #14)
->> So it looks like 2.4.27 doesn't even try to enable ACPI mode, and 2.6.8 hangs
->> the same way as 3.1.0-rc3.
->
-> Yes, exactly.
->
->> Can you try 2.6.28?  If that doesn't boot, try the Ubuntu 9.04 kernel, which
->> was reported to boot on your machine/BIOS.
->
-> Unfortunately, I tried to boot with that version of the Ubuntu live CD and it
-> crashed the same way. I may try it once again, paying more attention if it
-> behaves differently in any kind of way, though.
->
-> Oh, talking about PCI and ACPI failing, could you take a look at issue #41132
-> to see if you can help with another machine that stopped working after a commit
-> that I bisected?
->
->
-> Thanks,
->
-> Rogério Brito.
->
-> --
-> Configure bugmail: https://bugzilla.kernel.org/userprefs.cgi?tab=email
-> ------- You are receiving this mail because: -------
-> You are on the CC list for the bug.
-
+Ok. Thansk for your agreement.
+I'll test this patch.
 
 
 -- 
-Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
-http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
-DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
+Yasunori Goto 
+
+
