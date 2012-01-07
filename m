@@ -1,53 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759413Ab2AGET1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Jan 2012 23:19:27 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59931 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab2AGET0 convert rfc822-to-8bit (ORCPT
+	id S1759444Ab2AGEeW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Jan 2012 23:34:22 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:59428 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751934Ab2AGEeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Jan 2012 23:19:26 -0500
+	Fri, 6 Jan 2012 23:34:21 -0500
+Date: Sat, 7 Jan 2012 12:44:42 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Hui Wang <jason77.wang@gmail.com>,
+        Russell King <rmk@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: Re: linux-next: manual merge of the arm-soc tree with the arm tree
+Message-ID: <20120107044439.GE4790@S2101-09.ap.freescale.net>
+References: <20120106120345.8157a839b1c924315d728eea@canb.auug.org.au>
 MIME-Version: 1.0
-X-Originating-IP: [71.233.110.244]
-In-Reply-To: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-References: <bug-41722-5003@https.bugzilla.kernel.org/> <201109062222.p86MMlK9023363@demeter2.kernel.org>
- <CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com> <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-From: Edward Donovan <edward.donovan@numble.net>
-Date: Fri, 6 Jan 2012 23:19:04 -0500
-X-Google-Sender-Auth: 7MA45h4eIwCZCRpJc4KlRNaFJD8
-Message-ID: <CADdbW+HvKQRFJgcofZCjJrTtaPDpDhcw4UStuhyTUe1aKnD2JQ@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        bugzilla-daemon@bugzilla.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20120106120345.8157a839b1c924315d728eea@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 6, 2012 at 8:50 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> 2012/1/6 Rogério Brito <rbrito@ime.usp.br>:
->>
->> For the record, *some* description of the problem is at:
->>
->> * https://bugzilla.kernel.org/show_bug.cgi?id=41132
->
-> This one looks very much like the thing that Edward Donovan fixed
-> fairly recently in commit 52553ddffad7 ("genirq: fix regression in
-> irqfixup, irqpoll")
->
-> So that should be fixed in 3.2 (and it's marked for stable, so I think
-> it's in the latest stable kernels too)
+Hi Stephen,
 
-Yessir, as of 3.0.13 and 3.1.5.  Rogério - for all the users I've
-heard from, the 2.6.39 IRQ regressions are fixed now.  I'll be
-interested to know if any IRQ handled by 2.6.38 isn't handled now, but
-I expect it will be.  I'm sorry if that isn't enough for this laptop,
-though -
+On Fri, Jan 06, 2012 at 12:03:45PM +1100, Stephen Rothwell wrote:
+> diff --cc arch/arm/mach-imx/mm-imx5.c
+> index 65139a6,bc17dfe..0000000
+> --- a/arch/arm/mach-imx/mm-imx5.c
+> +++ b/arch/arm/mach-imx/mm-imx5.c
+> @@@ -21,9 -22,27 +22,24 @@@
+>   #include <mach/devices-common.h>
+>   #include <mach/iomux-v3.h>
+>   
+> + static struct clk *gpc_dvfs_clk;
+> + 
+>   static void imx5_idle(void)
+>   {
+>  -	if (!need_resched()) {
+>  -		/* gpc clock is needed for SRPG */
+>  -		if (gpc_dvfs_clk == NULL) {
+>  -			gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
+>  -			if (IS_ERR(gpc_dvfs_clk))
+>  -				goto err0;
+>  -		}
+>  -		clk_enable(gpc_dvfs_clk);
+>  -		mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+>  -		if (tzic_enable_wake())
+>  -			goto err1;
+>  -		cpu_do_idle();
+>  -err1:
+>  -		clk_disable(gpc_dvfs_clk);
+> ++	/* gpc clock is needed for SRPG */
+> ++	if (gpc_dvfs_clk == NULL) {
+> ++		gpc_dvfs_clk = clk_get(NULL, "gpc_dvfs");
+> ++		if (IS_ERR(gpc_dvfs_clk))
+> ++			goto err0;
+> + 	}
+> ++	clk_enable(gpc_dvfs_clk);
+>  +	mx5_cpu_lp_set(WAIT_UNCLOCKED_POWER_OFF);
+> ++	if (tzic_enable_wake())
+> ++		goto err1;
+> ++	cpu_do_idle();
+> ++err1:
+> ++	clk_disable(gpc_dvfs_clk);
+> + err0:
+>  -	local_irq_enable();
 
-Ed
+This results in a compile error.
+
+  CC      arch/arm/mach-imx/mm-imx5.o
+arch/arm/mach-imx/mm-imx5.c: In function â€˜imx5_idleâ€™:
+arch/arm/mach-imx/mm-imx5.c:42:1: error: label at end of compound statement
+
+Regards,
+Shawn
+
+>   }
+>   
+>   /*
