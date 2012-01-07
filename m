@@ -1,141 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565Ab2AGWcK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 17:32:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59177 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab2AGWcI (ORCPT
+	id S1751979Ab2AGXLM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 18:11:12 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:42740 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751521Ab2AGXLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 17:32:08 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=QcgJSxWpgi8A:10 a=5SG0PmZfjMsA:10 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=oK-48iVQegJeGT75RskA:9 a=QEXdDO2ut3YA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=Wi4mVlzzk5fJWgKPNsYA:9 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1325975521.7642.22.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 00/16] [GIT PULL] tracing: fixes/cleanups, no
- stop-machine, update stack tracer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Date: Sat, 07 Jan 2012 17:32:01 -0500
-In-Reply-To: <20120107122511.GB28462@elte.hu>
-References: <20120101180949.GA25066@elte.hu> <20120102105856.GA6661@elte.hu>
-	 <20120102134856.GA32673@elte.hu>
-	 <1325635373.12696.4.camel@gandalf.stny.rr.com>
-	 <1325635922.12696.8.camel@gandalf.stny.rr.com>
-	 <1325653301.12696.20.camel@gandalf.stny.rr.com>
-	 <20120104141107.GA24770@elte.hu>
-	 <1325696759.12696.24.camel@gandalf.stny.rr.com>
-	 <20120105091916.GA22598@elte.hu>
-	 <1325764011.12696.38.camel@gandalf.stny.rr.com>
-	 <20120107122511.GB28462@elte.hu>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-OxVmYmpigA/EOWO80d93"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
+	Sat, 7 Jan 2012 18:11:11 -0500
+MIME-Version: 1.0
+In-Reply-To: <1325955818.2442.29.camel@twins>
+References: <20120106181912.GA5564@quad>
+	<1325955818.2442.29.camel@twins>
+Date: Sun, 8 Jan 2012 00:11:08 +0100
+Message-ID: <CABPqkBSmDHHJsSQo8hhe0a9zxr+YX1yWNr3hZoWEU-OShu7=wA@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: proposed fix for broken intr throttling (v2)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, mingo@elte.hu,
+        asharma@fb.com, vince@deater.net, wcohen@redhat.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q07NBnW8031170
 
+On Sat, Jan 7, 2012 at 6:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2012-01-06 at 19:19 +0100, Stephane Eranian wrote:
+>> The throttling mechanism REQUIRES that the hwc->interrupts counter be reset
+>> at EACH timer tick.
+>
+> Just to be contrary.. :-)
+>
+I'll look into that one. But at first glance, it does not address the issue
+of adjusting the period at each timer tick. Only multiplexing (rotation) should
+happen at the multiplier rate.
 
---=-OxVmYmpigA/EOWO80d93
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Sat, 2012-01-07 at 13:25 +0100, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
->=20
-> > > I'm also seeing build failures with certain configs:
-> > >=20
-> > > kernel/trace/trace_stack.c:387:3: error: implicit declaration of func=
-tion =E2=80=98ftrace_set_early_filter=E2=80=99=20
-> > > [-Werror=3Dimplicit-function-declaration]
-> >=20
-> > Hmm, your right. It depends on dyn_ftrace to be configured.=20
-> > Strange that my tests didn't catch that as I thought one of my=20
-> > tests compiles with static ftrace. I'll have to look into why=20
-> > my test didn't catch that. I'll send a fix later today.
->=20
-> Hm, i cannot re-test this tree with general randconfig until it=20
-> keeps failing the build. I'll test the NMI bits, to be able to=20
-> exclude those.
-
-
-Ingo,
-
-I updated the branch by adding the below patch that fixes the bug. You
-can apply this and then run your tests again.
-
-Thanks!
-
-Please pull the latest tip/perf/core tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
-tip/perf/core
-
-Head SHA1: 96de37b62ca525cd77d2e85aea1472846ee31c4d
-
-
-Steven Rostedt (1):
-      tracing: Fix compile error when static ftrace is enabled
-
-----
- include/linux/ftrace.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
----------------------------
-commit 96de37b62ca525cd77d2e85aea1472846ee31c4d
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Sat Jan 7 17:26:49 2012 -0500
-
-    tracing: Fix compile error when static ftrace is enabled
-   =20
-    The stack tracer uses the call ftrace_set_early_filter() function
-    to allow the stack tracer to pick its own functions on boot.
-    But this function is not defined if dynamic ftrace is not set.
-    This causes a compiler error when stack tracer is enabled and
-    dynamic ftrace is not.
-   =20
-    Reported-by: Ingo Molnar <mingo@elte.hu>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 41df6f5..028e26f 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -339,6 +339,7 @@ static inline int ftrace_text_reserved(void *start, voi=
-d *end)
-  * functions may still be called. Use a macro instead of inline.
-  */
- #define ftrace_regex_open(ops, flag, inod, file) ({ -ENODEV; })
-+#define ftrace_set_early_filter(ops, buf, enable) do { } while (0)
-=20
- static inline ssize_t ftrace_filter_write(struct file *file, const char __=
-user *ubuf,
- 			    size_t cnt, loff_t *ppos) { return -ENODEV; }
-
-
---=-OxVmYmpigA/EOWO80d93
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPCMfhAAoJEIy3vGnGbaoA+EYP/jjZ6VRXGFM4czrMTfVPR+Au
-LVrD7Q5fWpYY5utJoIubJ3h8qyr8E/f8oMDPV4wjUq64EAip0C1cfpGn7qkQL4jZ
-jz8IZoZqdM8h937XOSXH9uxUZEpEowmrl0osHNYMh/1t5pD7R/a3dvm8WZaqtNfq
-oS8dUwCDWI4ADv1znwuLKbuOxkWZxSUWXTwFrvzT1+zNdqWLNcyTbuQgLsjFvUO3
-KahHXvJnICk1lLnTlLBNqgC0xZyj5B0YgXTWqLrrK0wcqFA/RG+00pHZaZaqtVGc
-SQL4RvcCUvEA2jtJBXFrccKqMsWRUvEGeU5lEptgtHaZYyWn97NFYHNCw/YqPYYP
-H6VM5XqjNWKx6/dr9Z6AKOXDkQYZlT9sFYjJsv2TqOUeuLqt4St4UznnG6E1P79w
-oV4NbL7y66vzavW+mV0ITdy6x9NNneXMLaRtMqJmPBcmgL81xCZquV6GKY5E7nwN
-n7yd3C5smv8U/iM0fmu/Xfmw626UyEjtnUZ1+toCcpYiu6cUWpUkg1N9yY8G4Hh+
-/Pv2lzR5iaWIWJhmsceo1+RyhwMX4ZcCnioJLtvBZ07X2SwWepfVHh8qmptHB4YS
-K+/QQthQAAVBinIe19vnRMHNQK3fCLHjclWzf2Y4EJjlrAASA/Eu1dh/mM1E4Jif
-q50HGDPY1+4iZxtFfHdK
-=/ioI
------END PGP SIGNATURE-----
-
---=-OxVmYmpigA/EOWO80d93--
-
+> ---
+>  include/linux/perf_event.h |    1 +
+>  kernel/events/core.c       |   76 +++++++++++++++++++++++++++++++-------------
+>  2 files changed, 55 insertions(+), 22 deletions(-)
+>
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 0b91db2..29dedf4 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -589,6 +589,7 @@ struct hw_perf_event {
+>        u64                             sample_period;
+>        u64                             last_period;
+>        local64_t                       period_left;
+> +       u64                             interrupts_seq;
+>        u64                             interrupts;
+>
+>        u64                             freq_time_stamp;
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index 91fb68a..693e1ce 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -2325,11 +2325,14 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+>        }
+>  }
+>
+> +static DEFINE_PER_CPU(int, perf_throttled_count);
+> +static DEFINE_PER_CPU(u64, perf_throttled_seq);
+> +
+>  static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+>  {
+>        struct perf_event *event;
+>        struct hw_perf_event *hwc;
+> -       u64 interrupts, now;
+> +       u64 now;
+>        s64 delta;
+>
+>        if (!ctx->nr_freq)
+> @@ -2342,22 +2345,11 @@ static void perf_ctx_adjust_freq(struct perf_event_context *ctx, u64 period)
+>                if (!event_filter_match(event))
+>                        continue;
+>
+> -               hwc = &event->hw;
+> -
+> -               interrupts = hwc->interrupts;
+> -               hwc->interrupts = 0;
+> -
+> -               /*
+> -                * unthrottle events on the tick
+> -                */
+> -               if (interrupts == MAX_INTERRUPTS) {
+> -                       perf_log_throttle(event, 1);
+> -                       event->pmu->start(event, 0);
+> -               }
+> -
+>                if (!event->attr.freq || !event->attr.sample_freq)
+>                        continue;
+>
+> +               hwc = &event->hw;
+> +
+>                event->pmu->read(event);
+>                now = local64_read(&event->count);
+>                delta = now - hwc->freq_count_stamp;
+> @@ -2441,14 +2433,45 @@ static void perf_rotate_context(struct perf_cpu_context *cpuctx)
+>                list_del_init(&cpuctx->rotation_list);
+>  }
+>
+> +static void perf_unthrottle_context(struct perf_event_context *ctx)
+> +{
+> +       raw_spin_lock(&ctx->lock);
+> +       list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
+> +               if (event->state != PERF_EVENT_STATE_ACTIVE)
+> +                       continue;
+> +
+> +               if (!event_filter_match(event))
+> +                       continue;
+> +
+> +               if (event->hw.interrupts == MAX_INTERRUPTS) {
+> +                       perf_log_throttle(event, 1);
+> +                       event->pmu->start(event, 0);
+> +               }
+> +       }
+> +       raw_spin_unlock(&ctx->lock);
+> +}
+> +
+>  void perf_event_task_tick(void)
+>  {
+>        struct list_head *head = &__get_cpu_var(rotation_list);
+>        struct perf_cpu_context *cpuctx, *tmp;
+> +       int throttle;
+>
+>        WARN_ON(!irqs_disabled());
+>
+> +       __this_cpu_inc(perf_throttled_seq);
+> +       throttled = __this_cpu_xchg(perf_throttled_count, 0);
+> +
+>        list_for_each_entry_safe(cpuctx, tmp, head, rotation_list) {
+> +               if (throttled) {
+> +                       struct perf_event_context *ctx;
+> +
+> +                       perf_unthrottle_context(&cpuctx->ctx);
+> +                       ctx = cpuctx->task_ctx;
+> +                       if (ctx)
+> +                               perf_unthrottle_context(ctx);
+> +               }
+> +
+>                if (cpuctx->jiffies_interval == 1 ||
+>                                !(jiffies % cpuctx->jiffies_interval))
+>                        perf_rotate_context(cpuctx);
+> @@ -4514,6 +4537,7 @@ static int __perf_event_overflow(struct perf_event *event,
+>  {
+>        int events = atomic_read(&event->event_limit);
+>        struct hw_perf_event *hwc = &event->hw;
+> +       u64 seq;
+>        int ret = 0;
+>
+>        /*
+> @@ -4523,14 +4547,22 @@ static int __perf_event_overflow(struct perf_event *event,
+>        if (unlikely(!is_sampling_event(event)))
+>                return 0;
+>
+> -       if (unlikely(hwc->interrupts >= max_samples_per_tick)) {
+> -               if (throttle) {
+> -                       hwc->interrupts = MAX_INTERRUPTS;
+> -                       perf_log_throttle(event, 0);
+> -                       ret = 1;
+> -               }
+> -       } else
+> -               hwc->interrupts++;
+> +       seq = ACCESS_ONCE(__this_cpu_read(perf_throttled_seq));
+> +
+> +       if (seq != hwc->interrupts_seq) {
+> +               hwc->interrupts_seq = seq;
+> +               hwc->interrupts = 1;
+> +       } else {
+> +               if (unlikely(hwc->interrupts >= max_samples_per_tick)) {
+> +                       if (throttle) {
+> +                               __this_cpu_inc(perf_throttled_count);
+> +                               hwc->interrupts = MAX_INTERRUPTS;
+> +                               perf_log_throttle(event, 0);
+> +                               ret = 1;
+> +                       }
+> +               } else
+> +                       hwc->interrupts++;
+> +       }
+>
+>        if (event->attr.freq) {
+>                u64 now = perf_clock();
+>
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
