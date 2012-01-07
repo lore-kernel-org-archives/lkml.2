@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab2AGIaT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:30:19 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:46698 "EHLO
+	id S1759554Ab2AGIdH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:33:07 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46692 "EHLO
 	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759120Ab2AGI36 (ORCPT
+	with ESMTP id S1759034Ab2AGI35 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:29:58 -0500
-Subject: [PATCH 14/23] ext4: Add checksums to the MMP block
+	Sat, 7 Jan 2012 03:29:57 -0500
+Subject: [PATCH 12/23] ext4: Calculate and verify checksums of extended
+	attribute blocks
 To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
         "Darrick J. Wong" <djwong@us.ibm.com>
 From: "Darrick J. Wong" <djwong@us.ibm.com>
@@ -20,128 +21,195 @@ Cc: Sunil Mushran <sunil.mushran@oracle.com>,
         Joel Becker <jlbec@evilplan.org>,
         linux-fsdevel <linux-fsdevel@vger.kernel.org>,
         linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
-Date: Sat, 07 Jan 2012 00:29:26 -0800
-Message-ID: <20120107082926.21970.91132.stgit@elm3c44.beaverton.ibm.com>
+Date: Sat, 07 Jan 2012 00:29:13 -0800
+Message-ID: <20120107082913.21970.73474.stgit@elm3c44.beaverton.ibm.com>
 In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12010708-3270-0000-0000-0000030C7B72
+x-cbid: 12010708-3270-0000-0000-0000030C7B5C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compute and verify a checksum for the MMP block.
+Calculate and verify the checksums of extended attribute blocks.  This only
+applies to separate EA blocks that are pointed to by inode->i_file_acl (i.e.
+external EA blocks); the checksum lives in the EA header.
 
 Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
 ---
- fs/ext4/ext4.h |    3 +++
- fs/ext4/mmp.c  |   44 +++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 42 insertions(+), 5 deletions(-)
+ fs/ext4/xattr.c |   87 ++++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 files changed, 73 insertions(+), 14 deletions(-)
 
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index e24386f..325bae0 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -2378,6 +2378,9 @@ extern int ext4_bio_write_page(struct ext4_io_submit *io,
+diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
+index 93a00d8..51d314b 100644
+--- a/fs/ext4/xattr.c
++++ b/fs/ext4/xattr.c
+@@ -122,6 +122,58 @@ const struct xattr_handler *ext4_xattr_handlers[] = {
+ 	NULL
+ };
  
- /* mmp.c */
- extern int ext4_multi_mount_protect(struct super_block *, ext4_fsblk_t);
-+extern void ext4_mmp_csum_set(struct super_block *sb, struct mmp_struct *mmp);
-+extern int ext4_mmp_csum_verify(struct super_block *sb,
-+				struct mmp_struct *mmp);
- 
- /* BH_Uninit flag: blocks are allocated but uninitialized on disk */
- enum ext4_state_bits {
-diff --git a/fs/ext4/mmp.c b/fs/ext4/mmp.c
-index 7ea4ba4..142e9d7 100644
---- a/fs/ext4/mmp.c
-+++ b/fs/ext4/mmp.c
-@@ -6,12 +6,45 @@
- 
- #include "ext4.h"
- 
-+/* Checksumming functions */
-+static __u32 ext4_mmp_csum(struct super_block *sb, struct mmp_struct *mmp)
++static __le32 ext4_xattr_block_csum(struct inode *inode,
++				    sector_t block_nr,
++				    struct ext4_xattr_header *hdr)
 +{
-+	struct ext4_sb_info *sbi = EXT4_SB(sb);
-+	int offset = offsetof(struct mmp_struct, mmp_checksum);
-+	__u32 csum;
++	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	__u32 csum, old;
 +
-+	csum = ext4_chksum(sbi, sbi->s_csum_seed, (char *)mmp, offset);
-+
++	old = hdr->h_checksum;
++	hdr->h_checksum = 0;
++	if (le32_to_cpu(hdr->h_refcount) != 1) {
++		block_nr = cpu_to_le64(block_nr);
++		csum = ext4_chksum(sbi, sbi->s_csum_seed, (__u8 *)&block_nr,
++				   sizeof(block_nr));
++	} else
++		csum = ei->i_csum_seed;
++	csum = ext4_chksum(sbi, csum, (__u8 *)hdr,
++			   EXT4_BLOCK_SIZE(inode->i_sb));
++	hdr->h_checksum = old;
 +	return cpu_to_le32(csum);
 +}
 +
-+int ext4_mmp_csum_verify(struct super_block *sb, struct mmp_struct *mmp)
++static int ext4_xattr_block_csum_verify(struct inode *inode,
++					sector_t block_nr,
++					struct ext4_xattr_header *hdr)
 +{
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
-+		return 1;
-+
-+	return mmp->mmp_checksum == ext4_mmp_csum(sb, mmp);
++	if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM) &&
++	    (hdr->h_checksum != ext4_xattr_block_csum(inode, block_nr, hdr)))
++		return 0;
++	return 1;
 +}
 +
-+void ext4_mmp_csum_set(struct super_block *sb, struct mmp_struct *mmp)
++static void ext4_xattr_block_csum_set(struct inode *inode,
++				      sector_t block_nr,
++				      struct ext4_xattr_header *hdr)
 +{
-+	if (!EXT4_HAS_RO_COMPAT_FEATURE(sb,
-+				       EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
 +		return;
 +
-+	mmp->mmp_checksum = ext4_mmp_csum(sb, mmp);
++	hdr->h_checksum = ext4_xattr_block_csum(inode, block_nr, hdr);
 +}
 +
- /*
-  * Write the MMP block using WRITE_SYNC to try to get the block on-disk
-  * faster.
-  */
--static int write_mmp_block(struct buffer_head *bh)
-+static int write_mmp_block(struct super_block *sb, struct buffer_head *bh)
- {
-+	struct mmp_struct *mmp = (struct mmp_struct *)(bh->b_data);
++static inline int ext4_handle_dirty_xattr_block(handle_t *handle,
++						struct inode *inode,
++						struct buffer_head *bh)
++{
++	ext4_xattr_block_csum_set(inode, bh->b_blocknr, BHDR(bh));
++	return ext4_handle_dirty_metadata(handle, inode, bh);
++}
 +
-+	ext4_mmp_csum_set(sb, mmp);
- 	mark_buffer_dirty(bh);
- 	lock_buffer(bh);
- 	bh->b_end_io = end_buffer_write_sync;
-@@ -59,7 +92,8 @@ static int read_mmp_block(struct super_block *sb, struct buffer_head **bh,
- 	}
+ static inline const struct xattr_handler *
+ ext4_xattr_handler(int name_index)
+ {
+@@ -156,14 +208,21 @@ ext4_xattr_check_names(struct ext4_xattr_entry *entry, void *end)
+ }
  
- 	mmp = (struct mmp_struct *)((*bh)->b_data);
--	if (le32_to_cpu(mmp->mmp_magic) != EXT4_MMP_MAGIC)
-+	if (le32_to_cpu(mmp->mmp_magic) != EXT4_MMP_MAGIC ||
-+	    !ext4_mmp_csum_verify(sb, mmp))
- 		return -EINVAL;
+ static inline int
+-ext4_xattr_check_block(struct buffer_head *bh)
++ext4_xattr_check_block(struct inode *inode, struct buffer_head *bh)
+ {
+ 	int error;
  
- 	return 0;
-@@ -120,7 +154,7 @@ static int kmmpd(void *data)
- 		mmp->mmp_time = cpu_to_le64(get_seconds());
- 		last_update_time = jiffies;
++	if (buffer_verified(bh))
++		return 0;
++
+ 	if (BHDR(bh)->h_magic != cpu_to_le32(EXT4_XATTR_MAGIC) ||
+ 	    BHDR(bh)->h_blocks != cpu_to_le32(1))
+ 		return -EIO;
++	if (!ext4_xattr_block_csum_verify(inode, bh->b_blocknr, BHDR(bh)))
++		return -EIO;
+ 	error = ext4_xattr_check_names(BFIRST(bh), bh->b_data + bh->b_size);
++	if (!error)
++		set_buffer_verified(bh);
+ 	return error;
+ }
  
--		retval = write_mmp_block(bh);
-+		retval = write_mmp_block(sb, bh);
- 		/*
- 		 * Don't spew too many error messages. Print one every
- 		 * (s_mmp_update_interval * 60) seconds.
-@@ -200,7 +234,7 @@ static int kmmpd(void *data)
- 	mmp->mmp_seq = cpu_to_le32(EXT4_MMP_SEQ_CLEAN);
- 	mmp->mmp_time = cpu_to_le64(get_seconds());
- 
--	retval = write_mmp_block(bh);
-+	retval = write_mmp_block(sb, bh);
- 
- failed:
- 	kfree(data);
-@@ -299,7 +333,7 @@ skip:
- 	seq = mmp_new_seq();
- 	mmp->mmp_seq = cpu_to_le32(seq);
- 
--	retval = write_mmp_block(bh);
-+	retval = write_mmp_block(sb, bh);
- 	if (retval)
- 		goto failed;
- 
+@@ -226,7 +285,7 @@ ext4_xattr_block_get(struct inode *inode, int name_index, const char *name,
+ 		goto cleanup;
+ 	ea_bdebug(bh, "b_count=%d, refcount=%d",
+ 		atomic_read(&(bh->b_count)), le32_to_cpu(BHDR(bh)->h_refcount));
+-	if (ext4_xattr_check_block(bh)) {
++	if (ext4_xattr_check_block(inode, bh)) {
+ bad_block:
+ 		EXT4_ERROR_INODE(inode, "bad block %llu",
+ 				 EXT4_I(inode)->i_file_acl);
+@@ -370,7 +429,7 @@ ext4_xattr_block_list(struct dentry *dentry, char *buffer, size_t buffer_size)
+ 		goto cleanup;
+ 	ea_bdebug(bh, "b_count=%d, refcount=%d",
+ 		atomic_read(&(bh->b_count)), le32_to_cpu(BHDR(bh)->h_refcount));
+-	if (ext4_xattr_check_block(bh)) {
++	if (ext4_xattr_check_block(inode, bh)) {
+ 		EXT4_ERROR_INODE(inode, "bad block %llu",
+ 				 EXT4_I(inode)->i_file_acl);
+ 		error = -EIO;
+@@ -489,7 +548,7 @@ ext4_xattr_release_block(handle_t *handle, struct inode *inode,
+ 				 EXT4_FREE_BLOCKS_FORGET);
+ 	} else {
+ 		le32_add_cpu(&BHDR(bh)->h_refcount, -1);
+-		error = ext4_handle_dirty_metadata(handle, inode, bh);
++		error = ext4_handle_dirty_xattr_block(handle, inode, bh);
+ 		if (IS_SYNC(inode))
+ 			ext4_handle_sync(handle);
+ 		dquot_free_block(inode, 1);
+@@ -662,7 +721,7 @@ ext4_xattr_block_find(struct inode *inode, struct ext4_xattr_info *i,
+ 		ea_bdebug(bs->bh, "b_count=%d, refcount=%d",
+ 			atomic_read(&(bs->bh->b_count)),
+ 			le32_to_cpu(BHDR(bs->bh)->h_refcount));
+-		if (ext4_xattr_check_block(bs->bh)) {
++		if (ext4_xattr_check_block(inode, bs->bh)) {
+ 			EXT4_ERROR_INODE(inode, "bad block %llu",
+ 					 EXT4_I(inode)->i_file_acl);
+ 			error = -EIO;
+@@ -725,9 +784,9 @@ ext4_xattr_block_set(handle_t *handle, struct inode *inode,
+ 			if (error == -EIO)
+ 				goto bad_block;
+ 			if (!error)
+-				error = ext4_handle_dirty_metadata(handle,
+-								   inode,
+-								   bs->bh);
++				error = ext4_handle_dirty_xattr_block(handle,
++								      inode,
++								      bs->bh);
+ 			if (error)
+ 				goto cleanup;
+ 			goto inserted;
+@@ -796,9 +855,9 @@ inserted:
+ 				ea_bdebug(new_bh, "reusing; refcount now=%d",
+ 					le32_to_cpu(BHDR(new_bh)->h_refcount));
+ 				unlock_buffer(new_bh);
+-				error = ext4_handle_dirty_metadata(handle,
+-								   inode,
+-								   new_bh);
++				error = ext4_handle_dirty_xattr_block(handle,
++								      inode,
++								      new_bh);
+ 				if (error)
+ 					goto cleanup_dquot;
+ 			}
+@@ -854,8 +913,8 @@ getblk_failed:
+ 			set_buffer_uptodate(new_bh);
+ 			unlock_buffer(new_bh);
+ 			ext4_xattr_cache_insert(new_bh);
+-			error = ext4_handle_dirty_metadata(handle,
+-							   inode, new_bh);
++			error = ext4_handle_dirty_xattr_block(handle,
++							      inode, new_bh);
+ 			if (error)
+ 				goto cleanup;
+ 		}
+@@ -1192,7 +1251,7 @@ retry:
+ 		error = -EIO;
+ 		if (!bh)
+ 			goto cleanup;
+-		if (ext4_xattr_check_block(bh)) {
++		if (ext4_xattr_check_block(inode, bh)) {
+ 			EXT4_ERROR_INODE(inode, "bad block %llu",
+ 					 EXT4_I(inode)->i_file_acl);
+ 			error = -EIO;
 
