@@ -1,74 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab2AGI2r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 03:28:47 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59244 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab2AGI2i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 03:28:38 -0500
-Message-ID: <4F08022C.1020208@gmail.com>
-Date: Sat, 07 Jan 2012 03:28:28 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S1755282Ab2AGI3F (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 03:29:05 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:41087 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754991Ab2AGI27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 03:28:59 -0500
+Subject: [PATCH 09/23] ext4: Verify and calculate checksums for extent tree
+	blocks
+To: Andreas Dilger <adilger.kernel@dilger.ca>, Theodore Tso <tytso@mit.edu>,
+        "Darrick J. Wong" <djwong@us.ibm.com>
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Sunil Mushran <sunil.mushran@oracle.com>,
+        Martin K Petersen <martin.petersen@oracle.com>,
+        Greg Freemyer <greg.freemyer@gmail.com>,
+        Amir Goldstein <amir73il@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Mingming Cao <cmm@us.ibm.com>,
+        Joel Becker <jlbec@evilplan.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Coly Li <colyli@gmail.com>
+Date: Sat, 07 Jan 2012 00:28:53 -0800
+Message-ID: <20120107082853.21970.2536.stgit@elm3c44.beaverton.ibm.com>
+In-Reply-To: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
+References: <20120107082751.21970.84856.stgit@elm3c44.beaverton.ibm.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] SHM_UNLOCK: fix long unpreemptible section
-References: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils>
-In-Reply-To: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+x-cbid: 12010708-6078-0000-0000-00000673DD72
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1/6/12 4:10 PM), Hugh Dickins wrote:
-> scan_mapping_unevictable_pages() is used to make SysV SHM_LOCKed pages
-> evictable again once the shared memory is unlocked.  It does this with
-> pagevec_lookup()s across the whole object (which might occupy most of
-> memory), and takes 300ms to unlock 7GB here.  A cond_resched() every
-> PAGEVEC_SIZE pages would be good.
->
-> However, KOSAKI-san points out that this is called under shmem.c's
-> info->lock, and it's also under shm.c's shm_lock(), both spinlocks.
-> There is no strong reason for that: we need to take these pages off
-> the unevictable list soonish, but those locks are not required for it.
->
-> So move the call to scan_mapping_unevictable_pages() from shmem.c's
-> unlock handling up to shm.c's unlock handling.  Remove the recently
-> added barrier, not needed now we have spin_unlock() before the scan.
->
-> Use get_file(), with subsequent fput(), to make sure we have a
-> reference to mapping throughout scan_mapping_unevictable_pages():
-> that's something that was previously guaranteed by the shm_lock().
->
-> Remove shmctl's lru_add_drain_all(): we don't fault in pages at
-> SHM_LOCK time, and we lazily discover them to be Unevictable later,
-> so it serves no purpose for SHM_LOCK; and serves no purpose for
-> SHM_UNLOCK, since pages still on pagevec are not marked Unevictable.
->
-> The original code avoided redundant rescans by checking VM_LOCKED
-> flag at its level: now avoid them by checking shp's SHM_LOCKED.
->
-> The original code called scan_mapping_unevictable_pages() on a
-> locked area at shm_destroy() time: perhaps we once had accounting
-> cross-checks which required that, but not now, so skip the overhead
-> and just let inode eviction deal with them.
->
-> Put check_move_unevictable_page() and scan_mapping_unevictable_pages()
-> under CONFIG_SHMEM (with stub for the TINY case when ramfs is used),
-> more as comment than to save space; comment them used for SHM_UNLOCK.
->
-> Signed-off-by: Hugh Dickins<hughd@google.com>
-> Cc: stable@vger.kernel.org [back to 2.6.32 but will need respins]
+Calculate and verify the checksum for each extent tree block.  The checksum is
+located in the space immediately after the last possible ext4_extent in the
+block.  The space is is typically the last 4-8 bytes in the block.
 
-Looks completely make sense.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+---
+ fs/ext4/ext4_extents.h |   11 +++++++++++
+ fs/ext4/extents.c      |   50 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 0 deletions(-)
+
+
+diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
+index 5c7fbad..7514176 100644
+--- a/fs/ext4/ext4_extents.h
++++ b/fs/ext4/ext4_extents.h
+@@ -114,6 +114,17 @@ struct ext4_extent_header {
+ 
+ #define EXT4_EXT_MAGIC		cpu_to_le16(0xf30a)
+ 
++#define EXT4_EXTENT_TAIL_OFFSET(hdr) \
++	(sizeof(struct ext4_extent_header) + \
++	 (sizeof(struct ext4_extent) * le16_to_cpu((hdr)->eh_max)))
++
++static inline struct ext4_extent_tail *
++find_ext4_extent_tail(struct ext4_extent_header *eh)
++{
++	return (struct ext4_extent_tail *)(((void *)eh) +
++					   EXT4_EXTENT_TAIL_OFFSET(eh));
++}
++
+ /*
+  * Array of ext4_ext_path contains path to some extent.
+  * Creation/lookup routines use it for traversal/splitting/etc.
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index 148f89f..c501980 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -45,6 +45,46 @@
+ 
+ #include <trace/events/ext4.h>
+ 
++static __le32 ext4_extent_block_csum(struct inode *inode,
++				     struct ext4_extent_header *eh)
++{
++	struct ext4_inode_info *ei = EXT4_I(inode);
++	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
++	__u32 csum;
++
++	csum = ext4_chksum(sbi, ei->i_csum_seed, (__u8 *)eh,
++			   EXT4_EXTENT_TAIL_OFFSET(eh));
++	return cpu_to_le32(csum);
++}
++
++static int ext4_extent_block_csum_verify(struct inode *inode,
++					 struct ext4_extent_header *eh)
++{
++	struct ext4_extent_tail *et;
++
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return 1;
++
++	et = find_ext4_extent_tail(eh);
++	if (et->et_checksum != ext4_extent_block_csum(inode, eh))
++		return 0;
++	return 1;
++}
++
++static void ext4_extent_block_csum_set(struct inode *inode,
++				       struct ext4_extent_header *eh)
++{
++	struct ext4_extent_tail *et;
++
++	if (!EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
++		EXT4_FEATURE_RO_COMPAT_METADATA_CSUM))
++		return;
++
++	et = find_ext4_extent_tail(eh);
++	et->et_checksum = ext4_extent_block_csum(inode, eh);
++}
++
+ static int ext4_split_extent(handle_t *handle,
+ 				struct inode *inode,
+ 				struct ext4_ext_path *path,
+@@ -103,6 +143,7 @@ static int __ext4_ext_dirty(const char *where, unsigned int line,
+ {
+ 	int err;
+ 	if (path->p_bh) {
++		ext4_extent_block_csum_set(inode, ext_block_hdr(path->p_bh));
+ 		/* path points to block */
+ 		err = __ext4_handle_dirty_metadata(where, line, handle,
+ 						   inode, path->p_bh);
+@@ -375,6 +416,12 @@ static int __ext4_ext_check(const char *function, unsigned int line,
+ 		error_msg = "invalid extent entries";
+ 		goto corrupted;
+ 	}
++	/* Verify checksum on non-root extent tree nodes */
++	if (ext_depth(inode) != depth &&
++	    !ext4_extent_block_csum_verify(inode, eh)) {
++		error_msg = "extent tree corrupted";
++		goto corrupted;
++	}
+ 	return 0;
+ 
+ corrupted:
+@@ -914,6 +961,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
+ 		le16_add_cpu(&neh->eh_entries, m);
+ 	}
+ 
++	ext4_extent_block_csum_set(inode, neh);
+ 	set_buffer_uptodate(bh);
+ 	unlock_buffer(bh);
+ 
+@@ -992,6 +1040,7 @@ static int ext4_ext_split(handle_t *handle, struct inode *inode,
+ 				sizeof(struct ext4_extent_idx) * m);
+ 			le16_add_cpu(&neh->eh_entries, m);
+ 		}
++		ext4_extent_block_csum_set(inode, neh);
+ 		set_buffer_uptodate(bh);
+ 		unlock_buffer(bh);
+ 
+@@ -1089,6 +1138,7 @@ static int ext4_ext_grow_indepth(handle_t *handle, struct inode *inode,
+ 	else
+ 		neh->eh_max = cpu_to_le16(ext4_ext_space_block(inode, 0));
+ 	neh->eh_magic = EXT4_EXT_MAGIC;
++	ext4_extent_block_csum_set(inode, neh);
+ 	set_buffer_uptodate(bh);
+ 	unlock_buffer(bh);
+ 
 
