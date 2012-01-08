@@ -1,93 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab2AHEll (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 23:41:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:37196 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751089Ab2AHElj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 23:41:39 -0500
-Date: Sat, 7 Jan 2012 20:39:01 -0800
-From: tip-bot for Jan Beulich <JBeulich@suse.com>
-Message-ID: <tip-426932909093e4e7729777a0e2beed4b54911361@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, jbeulich@suse.com,
-        akpm@linux-foundation.org, JBeulich@suse.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        JBeulich@suse.com, jbeulich@suse.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <4F05D9F9020000780006AA0D@nat28.tlf.novell.com>
-References: <4F05D9F9020000780006AA0D@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/asm] x86-64: Slightly shorten copy_page()
-Git-Commit-ID: 426932909093e4e7729777a0e2beed4b54911361
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751606Ab2AHF4g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 00:56:36 -0500
+Received: from claw.goop.org ([74.207.240.146]:57887 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751406Ab2AHF4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 00:56:35 -0500
+Message-ID: <4F09300D.8010608@goop.org>
+Date: Sun, 08 Jan 2012 16:56:29 +1100
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 07 Jan 2012 20:39:09 -0800 (PST)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [GIT] HID
+References: <alpine.LNX.2.00.1201052218200.24984@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1201052218200.24984@pobox.suse.cz>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  426932909093e4e7729777a0e2beed4b54911361
-Gitweb:     http://git.kernel.org/tip/426932909093e4e7729777a0e2beed4b54911361
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 5 Jan 2012 16:12:25 +0000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 6 Jan 2012 12:25:37 +0100
+On 01/06/2012 08:39 AM, Jiri Kosina wrote:
+> Jeremy Fitzhardinge (3):
+>       HID: debugfs: decode Generic Device Controls Usage Page
+>       HID: hid-input: add support for HID devices reporting Battery Strength
+>       HID: hid-input: fix compile for !HID_BATTERY_STRENGTH
 
-x86-64: Slightly shorten copy_page()
+Unfortunately it looks like you picked up the old version of these
+patches, which will work on my BT mouse, but fail on some Apple
+devices.  I'll post an update in an hour or two.
 
-%r13 got saved and restored without ever getting touched, so
-there's no need to do so.
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/4F05D9F9020000780006AA0D@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/lib/copy_page_64.S |   12 ++++--------
- 1 files changed, 4 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/lib/copy_page_64.S b/arch/x86/lib/copy_page_64.S
-index 01c805b..6b34d04 100644
---- a/arch/x86/lib/copy_page_64.S
-+++ b/arch/x86/lib/copy_page_64.S
-@@ -20,14 +20,12 @@ ENDPROC(copy_page_c)
- 
- ENTRY(copy_page)
- 	CFI_STARTPROC
--	subq	$3*8,%rsp
--	CFI_ADJUST_CFA_OFFSET 3*8
-+	subq	$2*8,%rsp
-+	CFI_ADJUST_CFA_OFFSET 2*8
- 	movq	%rbx,(%rsp)
- 	CFI_REL_OFFSET rbx, 0
- 	movq	%r12,1*8(%rsp)
- 	CFI_REL_OFFSET r12, 1*8
--	movq	%r13,2*8(%rsp)
--	CFI_REL_OFFSET r13, 2*8
- 
- 	movl	$(4096/64)-5,%ecx
- 	.p2align 4
-@@ -91,10 +89,8 @@ ENTRY(copy_page)
- 	CFI_RESTORE rbx
- 	movq	1*8(%rsp),%r12
- 	CFI_RESTORE r12
--	movq	2*8(%rsp),%r13
--	CFI_RESTORE r13
--	addq	$3*8,%rsp
--	CFI_ADJUST_CFA_OFFSET -3*8
-+	addq	$2*8,%rsp
-+	CFI_ADJUST_CFA_OFFSET -2*8
- 	ret
- .Lcopy_page_end:
- 	CFI_ENDPROC
+    J
