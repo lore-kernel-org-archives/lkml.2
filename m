@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753637Ab2AHNdY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 08:33:24 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40459 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2AHNdU (ORCPT
+	id S1753792Ab2AHNdo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 08:33:44 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:57563 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753690Ab2AHNdl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 08:33:20 -0500
+	Sun, 8 Jan 2012 08:33:41 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
-        Michal Nazarewicz <mina86@mina86.com>, David Airlie <airlied@linux.ie>,
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>, David Airlie <airlied@linux.ie>,
         dri-devel@lists.freedesktop.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
@@ -28,43 +27,25 @@ Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org
-Subject: [RFC PATCH v2 0/9] Remove useless on_each_cpu return value
-Date: Sun,  8 Jan 2012 15:32:20 +0200
-Message-Id: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
+Subject: [RFC PATCH v2 8/9] smp: refactor on_each_cpu to void returning func
+Date: Sun,  8 Jan 2012 15:32:28 +0200
+Message-Id: <1326029549-2794-9-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
+References: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on_each_cpu() returns as its own return value the return value of
-smp_call_function(). smp_call_function() in turn returns a hard
-coded value of zero.
+on_each_cpu returns the retunr value of smp_call_function
+which is hard coded to 0.
 
-Some callers to on_each_cpu() waste cycles and bloat code space
-by checking the return value to on_each_cpu(), probably for
-historical reasons.
-
-This patch set refactors callers to not test on_each_cpu()
-(fixed) return value and then refactors on_each_cpu to
-return void to avoid confusing future users.
-
-In other words, this patch aims to delete 18 source code lines
-while not changing any functionality :-)
-
-I tested as best as I could the x86 changes and compiled some
-of the others, but I don't have access to all the needed hardware
-for testing. Reviewers and testers welcome!
-
-The only change from the first version is the addition of a 
-proper Signed-off-by line.
-
-This patch set is also available on branch on_each_cpu_ret_v2
-at git://github.com/gby/linux.git
+Refactor on_each_cpu to a void function and the few callers
+that check the return value to save compares and branches.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-CC: Michal Nazarewicz <mina86@mina86.com>
 CC: David Airlie <airlied@linux.ie>
 CC: dri-devel@lists.freedesktop.org
 CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -89,28 +70,63 @@ CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 CC: Russell King <linux@arm.linux.org.uk>
 CC: linux-arm-kernel@lists.infradead.org
+---
+ include/linux/smp.h |    7 +++----
+ kernel/smp.c        |    6 ++----
+ 2 files changed, 5 insertions(+), 8 deletions(-)
 
-
-Gilad Ben-Yossef (9):
-  arm: avoid using on_each_cpu hard coded ret value
-  ia64: avoid using on_each_cpu hard coded ret value
-  x86: avoid using on_each_cpu hard coded ret value
-  alpha: avoid using on_each_cpu hard coded ret value
-  ppc: avoid using on_each_cpu hard coded ret value
-  agp: avoid using on_each_cpu hard coded ret value
-  drm: avoid using on_each_cpu hard coded ret value
-  smp: refactor on_each_cpu to void returning func
-  x86: refactor wbinvd_on_all_cpus to void function
-
- arch/alpha/kernel/smp.c      |    7 ++-----
- arch/arm/kernel/perf_event.c |    2 +-
- arch/ia64/kernel/perfmon.c   |   12 ++----------
- arch/powerpc/kernel/rtas.c   |    3 +--
- arch/x86/include/asm/smp.h   |    5 ++---
- arch/x86/lib/cache-smp.c     |    4 ++--
- drivers/char/agp/generic.c   |    3 +--
- drivers/gpu/drm/drm_cache.c  |    3 +--
- include/linux/smp.h          |    7 +++----
- kernel/smp.c                 |    6 ++----
- 10 files changed, 17 insertions(+), 35 deletions(-)
+diff --git a/include/linux/smp.h b/include/linux/smp.h
+index 8cc38d3..050ddd4 100644
+--- a/include/linux/smp.h
++++ b/include/linux/smp.h
+@@ -99,7 +99,7 @@ static inline void call_function_init(void) { }
+ /*
+  * Call a function on all processors
+  */
+-int on_each_cpu(smp_call_func_t func, void *info, int wait);
++void on_each_cpu(smp_call_func_t func, void *info, int wait);
+ 
+ /*
+  * Mark the boot cpu "online" so that it can call console drivers in
+@@ -126,12 +126,11 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
+ #define smp_call_function(func, info, wait) \
+ 			(up_smp_call_function(func, info))
+ #define on_each_cpu(func,info,wait)		\
+-	({					\
++	{					\
+ 		local_irq_disable();		\
+ 		func(info);			\
+ 		local_irq_enable();		\
+-		0;				\
+-	})
++	}
+ static inline void smp_send_reschedule(int cpu) { }
+ #define num_booting_cpus()			1
+ #define smp_prepare_boot_cpu()			do {} while (0)
+diff --git a/kernel/smp.c b/kernel/smp.c
+index db197d6..f66a1b2 100644
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -687,17 +687,15 @@ void __init smp_init(void)
+  * early_boot_irqs_disabled is set.  Use local_irq_save/restore() instead
+  * of local_irq_disable/enable().
+  */
+-int on_each_cpu(void (*func) (void *info), void *info, int wait)
++void on_each_cpu(void (*func) (void *info), void *info, int wait)
+ {
+ 	unsigned long flags;
+-	int ret = 0;
+ 
+ 	preempt_disable();
+-	ret = smp_call_function(func, info, wait);
++	smp_call_function(func, info, wait);
+ 	local_irq_save(flags);
+ 	func(info);
+ 	local_irq_restore(flags);
+ 	preempt_enable();
+-	return ret;
+ }
+ EXPORT_SYMBOL(on_each_cpu);
+-- 
+1.7.0.4
 
