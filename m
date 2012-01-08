@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2AHXYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 18:24:09 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36581 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754603Ab2AHXYH convert rfc822-to-8bit (ORCPT
+	id S1754836Ab2AHX3r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 18:29:47 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:54327 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645Ab2AHX3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 18:24:07 -0500
+	Sun, 8 Jan 2012 18:29:46 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+Subject: Re: [Linux-uvc-devel] 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
+Date: Mon, 9 Jan 2012 00:30:09 +0100
+User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.4; x86_64; ; )
+Cc: linux-uvc-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com> <201201031605.31117.laurent.pinchart@ideasonboard.com> <CAO9zADzfwLsqXnWQXD9hJXXBtQ+32RZGJcuaaDTbzdbZ1c2G2g@mail.gmail.com>
+In-Reply-To: <CAO9zADzfwLsqXnWQXD9hJXXBtQ+32RZGJcuaaDTbzdbZ1c2G2g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120105152035.GA11286@elte.hu>
-References: <20120105152035.GA11286@elte.hu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 8 Jan 2012 15:23:43 -0800
-X-Google-Sender-Auth: ym84S_C1kAeC8QyI_PK1M1m_lEc
-Message-ID: <CA+55aFw1emj7YRyp9Z_cH9y-M3BV--X8JPvk+E4jQzMTRCeymQ@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/platform changes for v3.3
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201090030.09960.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 7:20 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> Please pull the latest x86-platform-for-linus git tree from:
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-platform-for-linus
+Hi Justin,
 
-Ingo, there's something *seriously* wrong with your pull requests.
-This is now the third totally buggered pull request I encounter.
+On Tuesday 03 January 2012 17:18:03 Justin Piszcz wrote:
 
-This one is also just some stale crap from six months ago with TS-5500
-GPIO support etc.
+[snip]
 
-Please. Go back and double-check every single pull request you wrote
-for me that I haven't merged yet. In fact, just in case, check the
-ones I merged too, just to make sure that I merged what you really
-intended me to merge, and not some stale crap. Because you clearly
-haven't checked what's actually on the tree on kernel.org.
+> > Could you please send me the complete lsusb -v output for the device ?
+> > I'll then add it to the supported devices list.
+> 
+> Certainly, see below:
+> 
+> Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
 
-And while at it, I'd suggest you make your pull request script
-actually verify the tree you are asking me to pull, so that this
-doesn't continue to happen.
+[snip]
 
-                         Linus
+Thank you. Could you please also tell me which laptop the camera can be found 
+in ?
+
+-- 
+Regards,
+
+Laurent Pinchart
