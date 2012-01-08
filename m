@@ -1,179 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab2AHOos (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 09:44:48 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39178 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753695Ab2AHOop (ORCPT
+	id S1753777Ab2AHOuT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 09:50:19 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:60546 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644Ab2AHOuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 09:44:45 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h63h)
-X-Spam-TCS-SCL: 2:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Richard Zhao <richard.zhao@linaro.org>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
-        <kernel@pengutronix.de>, <eric.miao@linaro.org>, <patches@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>
-Subject: [PATCH v4 2/2] dma/imx-sdma: convert _raw_readl/_raw_writel to readl/writel
-Date: Sun, 8 Jan 2012 22:44:22 +0800
-Message-ID: <1326033862-25351-3-git-send-email-richard.zhao@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
-References: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+	Sun, 8 Jan 2012 09:50:18 -0500
+Subject: Re: [ERROR] perf build failure on current tip:perf/core
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120108140318.GA15654@elte.hu>
+References: <1325950949.1486.20.camel@leonhard>
+	 <20120108090018.GB7168@elte.hu> <1326015664.1486.10.camel@leonhard>
+	 <20120108113426.GB26516@elte.hu> <87r4zaz88t.fsf@gmail.com>
+	 <20120108140318.GA15654@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 08 Jan 2012 23:50:08 +0900
+Message-ID: <1326034208.1508.15.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-readl/writel is more genric. And if CONFIG_ARM_DMA_MEM_BUFFERABLE,
-they includes necessary memory barriers.
+2012-01-08 (Sun), 15:03 +0100, Ingo Molnar wrote:
+> * Namhyung Kim <namhyung@gmail.com> wrote:
+> 
+> > >>   $ map pwrite
+> > >>   The program 'map' is currently not installed.  You can install it by
+> > >> typing:
+> > >>   sudo apt-get install sgt-puzzles
+> > >> 
+> > >> I don't think this is the package what you said. Anyway quick grep'ing
+> > >> pwrite tells me it's in the unistd.h:
+> > >> 
+> > >>   $ grep pwrite /usr/include/unistd.h
+> > >>   extern ssize_t pwrite (int __fd, __const void *__buf, size_t __n,
+> > >>   extern ssize_t __REDIRECT (pwrite, (int __fd, __const void *__buf,
+> > >> 			     pwrite64) __wur;
+> > >>   #   define pwrite pwrite64
+> > >
+> > > There's multiple definitions there, and we get lost somehow - as 
+> > > unistd.h is included:
+> > >
+> > >   ~/tip/tools/perf> grep -n unistd.h util/trace-event-info.c
+> > >   34:#include <unistd.h>
+> > >
+> > > Thanks,
+> > >
+> > > 	Ingo
+> > 
+> > This is the content of my /usr/include/unistd.h:
+> > 
+> > #ifdef __USE_UNIX98
+> > # ifndef __USE_FILE_OFFSET64
+> > extern ssize_t pread (int __fd, void *__buf, size_t __nbytes,
+> > 		      __off_t __offset) __wur;
+> > extern ssize_t pwrite (int __fd, __const void *__buf, size_t __n,
+> > 		       __off_t __offset) __wur;
+> > # else
+> > #  ifdef __REDIRECT
+> > extern ssize_t __REDIRECT (pread, (int __fd, void *__buf, size_t __nbytes,
+> > 				   __off64_t __offset),
+> > 			   pread64) __wur;
+> > extern ssize_t __REDIRECT (pwrite, (int __fd, __const void *__buf,
+> > 				    size_t __nbytes, __off64_t __offset),
+> > 			   pwrite64) __wur;
+> > #  else
+> > #   define pread pread64
+> > #   define pwrite pwrite64
+> > #  endif
+> > # endif
+> > 
+> > # ifdef __USE_LARGEFILE64
+> > extern ssize_t pread64 (int __fd, void *__buf, size_t __nbytes,
+> > 			__off64_t __offset) __wur;
+> > extern ssize_t pwrite64 (int __fd, __const void *__buf, size_t __n,
+> > 			 __off64_t __offset) __wur;
+> > # endif
+> > #endif
+> > 
+> > I think all of pread/write functions are properly defined here:
+> > 
+> >   $ echo '#include <unistd.h>' | \
+> >   > gcc -xc -E -dM -D_GNU_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 - | \
+> >   > grep -e UNIX98 -e LARGEFILE64 -e FILE_OFFSET
+> >   #define __ILP32_OFFBIG_CFLAGS "-m32 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+> >   #define _LARGEFILE64_SOURCE 1
+> >   #define __USE_UNIX98 1
+> >   #define __USE_LARGEFILE64 1
+> >   #define _FILE_OFFSET_BITS 64
+> >   #define __USE_FILE_OFFSET64 1
+> 
+> So which preprocessor branch within unistd.h does it get into on 
+> your system and why isnt there a pwrite()/pwrite64() prototype 
+> once it goes along that path?
+> 
+> You could try an ugly approach and edit your unistd.h and put in 
+> debug lines like this:
+> 
+> #warn got here: __LINE__
+> 
+> and thus see which branch it really gets into.
+> 
+> (save a backup copy of unistd.h first ;-)
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
----
- drivers/dma/imx-sdma.c |   44 ++++++++++++++++++++++----------------------
- 1 files changed, 22 insertions(+), 22 deletions(-)
+Hi, Ingo
 
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index c2bc4f1..2cc96c4 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -368,9 +368,9 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
- 	if (event_override && mcu_override && dsp_override)
- 		return -EINVAL;
- 
--	evt = __raw_readl(sdma->regs + SDMA_H_EVTOVR);
--	mcu = __raw_readl(sdma->regs + SDMA_H_HOSTOVR);
--	dsp = __raw_readl(sdma->regs + SDMA_H_DSPOVR);
-+	evt = readl(sdma->regs + SDMA_H_EVTOVR);
-+	mcu = readl(sdma->regs + SDMA_H_HOSTOVR);
-+	dsp = readl(sdma->regs + SDMA_H_DSPOVR);
- 
- 	if (dsp_override)
- 		dsp &= ~(1 << channel);
-@@ -387,16 +387,16 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
- 	else
- 		mcu |= (1 << channel);
- 
--	__raw_writel(evt, sdma->regs + SDMA_H_EVTOVR);
--	__raw_writel(mcu, sdma->regs + SDMA_H_HOSTOVR);
--	__raw_writel(dsp, sdma->regs + SDMA_H_DSPOVR);
-+	writel(evt, sdma->regs + SDMA_H_EVTOVR);
-+	writel(mcu, sdma->regs + SDMA_H_HOSTOVR);
-+	writel(dsp, sdma->regs + SDMA_H_DSPOVR);
- 
- 	return 0;
- }
- 
- static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
- {
--	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
-+	writel(1 << channel, sdma->regs + SDMA_H_START);
- }
- 
- /*
-@@ -460,9 +460,9 @@ static void sdma_event_enable(struct sdma_channel *sdmac, unsigned int event)
- 	u32 val;
- 	u32 chnenbl = chnenbl_ofs(sdma, event);
- 
--	val = __raw_readl(sdma->regs + chnenbl);
-+	val = readl(sdma->regs + chnenbl);
- 	val |= (1 << channel);
--	__raw_writel(val, sdma->regs + chnenbl);
-+	writel(val, sdma->regs + chnenbl);
- }
- 
- static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
-@@ -472,9 +472,9 @@ static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
- 	u32 chnenbl = chnenbl_ofs(sdma, event);
- 	u32 val;
- 
--	val = __raw_readl(sdma->regs + chnenbl);
-+	val = readl(sdma->regs + chnenbl);
- 	val &= ~(1 << channel);
--	__raw_writel(val, sdma->regs + chnenbl);
-+	writel(val, sdma->regs + chnenbl);
- }
- 
- static void sdma_handle_channel_loop(struct sdma_channel *sdmac)
-@@ -552,8 +552,8 @@ static irqreturn_t sdma_int_handler(int irq, void *dev_id)
- 	struct sdma_engine *sdma = dev_id;
- 	u32 stat;
- 
--	stat = __raw_readl(sdma->regs + SDMA_H_INTR);
--	__raw_writel(stat, sdma->regs + SDMA_H_INTR);
-+	stat = readl(sdma->regs + SDMA_H_INTR);
-+	writel(stat, sdma->regs + SDMA_H_INTR);
- 
- 	while (stat) {
- 		int channel = fls(stat) - 1;
-@@ -707,7 +707,7 @@ static void sdma_disable_channel(struct sdma_channel *sdmac)
- 	struct sdma_engine *sdma = sdmac->sdma;
- 	int channel = sdmac->channel;
- 
--	__raw_writel(1 << channel, sdma->regs + SDMA_H_STATSTOP);
-+	writel(1 << channel, sdma->regs + SDMA_H_STATSTOP);
- 	sdmac->status = DMA_ERROR;
- }
- 
-@@ -780,7 +780,7 @@ static int sdma_set_channel_priority(struct sdma_channel *sdmac,
- 		return -EINVAL;
- 	}
- 
--	__raw_writel(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
-+	writel(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
- 
- 	return 0;
- }
-@@ -1228,7 +1228,7 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 	clk_enable(sdma->clk);
- 
- 	/* Be sure SDMA has not started yet */
--	__raw_writel(0, sdma->regs + SDMA_H_C0PTR);
-+	writel(0, sdma->regs + SDMA_H_C0PTR);
- 
- 	sdma->channel_control = dma_alloc_coherent(NULL,
- 			MAX_DMA_CHANNELS * sizeof (struct sdma_channel_control) +
-@@ -1251,11 +1251,11 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 
- 	/* disable all channels */
- 	for (i = 0; i < sdma->num_events; i++)
--		__raw_writel(0, sdma->regs + chnenbl_ofs(sdma, i));
-+		writel(0, sdma->regs + chnenbl_ofs(sdma, i));
- 
- 	/* All channels have priority 0 */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++)
--		__raw_writel(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
-+		writel(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
- 
- 	ret = sdma_request_channel(&sdma->channel[0]);
- 	if (ret)
-@@ -1264,16 +1264,16 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 	sdma_config_ownership(&sdma->channel[0], false, true, false);
- 
- 	/* Set Command Channel (Channel Zero) */
--	__raw_writel(0x4050, sdma->regs + SDMA_CHN0ADDR);
-+	writel(0x4050, sdma->regs + SDMA_CHN0ADDR);
- 
- 	/* Set bits of CONFIG register but with static context switching */
- 	/* FIXME: Check whether to set ACR bit depending on clock ratios */
--	__raw_writel(0, sdma->regs + SDMA_H_CONFIG);
-+	writel(0, sdma->regs + SDMA_H_CONFIG);
- 
--	__raw_writel(ccb_phys, sdma->regs + SDMA_H_C0PTR);
-+	writel(ccb_phys, sdma->regs + SDMA_H_C0PTR);
- 
- 	/* Set bits of CONFIG register with given context switching mode */
--	__raw_writel(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
-+	writel(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
- 
- 	/* Initializes channel's priorities */
- 	sdma_set_channel_priority(&sdma->channel[0], 7);
+Putting the debug lines told me __USE_UNIX98 is not defined for the
+file. It's because ctype.h gets included without _GNU_SOURCE and then it
+includes feature.h AFAICS. Encompassing ctype.h with #define/#undef
+_GNU_SOURCE or just adding __USE_UNIX98 before unistd.h makes the file
+compiled, but it seems like an improper solution. What is the right way?
+
+Thanks.
+
 -- 
-1.7.5.4
+Regards,
+Namhyung Kim
 
 
