@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754653Ab2AHVog (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 16:44:36 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17308 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754504Ab2AHVof (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 16:44:35 -0500
-Date: Sun, 8 Jan 2012 22:44:29 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
+	id S1754641Ab2AHVra (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 16:47:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:41180 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754505Ab2AHVr3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 16:47:29 -0500
+Date: Mon, 9 Jan 2012 08:47:17 +1100
+From: NeilBrown <neilb@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Subject: [PATCH] audit: always follow va_copy() with va_end()
-In-Reply-To: <alpine.LNX.2.00.1201082228280.24030@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1201082241350.24030@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1201082028140.24030@swampdragon.chaosbits.net> <CA+55aFwO9Wtq=NEpMskW-2wrWZAGh-C6VBXENA3LtFOk=tUwgQ@mail.gmail.com> <alpine.LNX.2.00.1201082228280.24030@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Cc: linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PULL REQUEST] md for 3.3
+Message-ID: <20120109084717.714ef3f6@notabene.brown>
+In-Reply-To: <CA+55aFw1H_eEaSrVgPSTK1GuQvadc-q5yCkRBgszZq4DZFq7Kw@mail.gmail.com>
+References: <20120105150319.375211fd@notabene.brown>
+	<CA+55aFw1H_eEaSrVgPSTK1GuQvadc-q5yCkRBgszZq4DZFq7Kw@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/NWCzPVvJWu5EZeKtO8bMd0Q"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A call to va_copy() should always be followed by a call to va_end() in the
-same function.  In kernel/autit.c::audit_log_vformat() this is not always
-done.  This patch makes sure va_end() is always called.
+--Sig_/NWCzPVvJWu5EZeKtO8bMd0Q
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
----
- kernel/audit.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+On Sun, 8 Jan 2012 13:33:39 -0800 Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 09fae26..2c1d6ab 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1260,12 +1260,13 @@ static void audit_log_vformat(struct audit_buffer *ab, const char *fmt,
- 		avail = audit_expand(ab,
- 			max_t(unsigned, AUDIT_BUFSIZ, 1+len-avail));
- 		if (!avail)
--			goto out;
-+			goto out_va_end;
- 		len = vsnprintf(skb_tail_pointer(skb), avail, fmt, args2);
- 	}
--	va_end(args2);
- 	if (len > 0)
- 		skb_put(skb, len);
-+out_va_end:
-+	va_end(args2);
- out:
- 	return;
- }
--- 
-1.7.8.1
+> On Wed, Jan 4, 2012 at 8:03 PM, NeilBrown <neilb@suse.de> wrote:
+> >
+> > are available in the git repository at:
+> >
+> > =C2=A0git://neil.brown.name/md/ md-3.3
+>=20
+> Hmm. Nice signed tag, but your key isn't signed by anybody I know, so
+> that part is a bit pointless. Any chance of getting it signed by more
+> people?
+>=20
+>                       Linus
 
+Will you be at linux.conf.au ??
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Whether or not, I was planning to use that event to gather some signatures.
 
+Thanks,
+NeilBrown
+
+--Sig_/NWCzPVvJWu5EZeKtO8bMd0Q
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTwoO5Tnsnt1WYoG5AQKb4w//avsrh+/x1FG4rWPGQyYJkPFpy3EX4N9O
+c+gZySb68PAjiD0R6653n+Vy6hIhG9P4mtJSEIs5sOjaWeTjPK17OrvDI3DYtDt+
+bbbb+rL+1Ao8Vlf5mD4pG/veEyHzYw8O5bM5mAE4V201OuVWEcJLq19zkZZCWtQl
+BPAUieM1pSll8fhFfwQV8ujYjbaggx4dNhd3US1MXC6qnypvOGREKi0m/Plo/hNp
+EXZLgF0jlvXaQzUP7q8w1Z0Su3JLOrUXBhRlEMMhg01MX/rR46Jrm+G6Q2+i3pDg
+B1MLfJKAx+p+1rBBnlCZaChbxqmPvNWKfA3vi92LCFn7jDY8l5ETYYRAGNABbd5h
+4jGLW58iUEVSnfkge4nLbosoHKYNaZHa5HyqD0/JpD9kA3f6FUA9Afg75R6WADq6
+YUgeGhUcY7mljwMQ8xvBCcfyoZciGvxgiD2ax4Ism2Psem18lst6BG0i7z8jiY61
+bG5hImq/gJUPt7xKl29DE+uverFMcX6/cS/wWUXcm3iiRcA9atikPmZtNq5n0fR+
+w43wYV9xlmRHbxCDJoWksRix+9fxBYbcnpF//SEZj2TlHxIfTWgY8skkbgKLmfY6
+BgCSb8aZZMkOJkvA3dnMv+vI9r5RORtJAtyRa09ocbr8vhpw6KWFCygSQO8IKeZL
+hCAhN2xSnm8=
+=hxl0
+-----END PGP SIGNATURE-----
+
+--Sig_/NWCzPVvJWu5EZeKtO8bMd0Q--
