@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab2AHVXX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 16:23:23 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:17073 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754528Ab2AHVXW (ORCPT
+	id S1754609Ab2AHV0f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 16:26:35 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55784 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2AHV0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 16:23:22 -0500
-Date: Sun, 8 Jan 2012 22:23:16 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-cc: "David S. Miller" <davem@davemloft.net>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Jesse Brandeburg <jesse.brandeburg@intel.com>,
-        Bruce Allan <bruce.w.allan@intel.com>, linux-kernel@vger.kernel.org
-Subject: Intel ixgbe: uninitialized variable use in ixgbe_non_sfp_link_config()
-Message-ID: <alpine.LNX.2.00.1201082221550.24030@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 8 Jan 2012 16:26:34 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.LNX.2.00.1201082028140.24030@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201082028140.24030@swampdragon.chaosbits.net>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 8 Jan 2012 13:26:12 -0800
+X-Google-Sender-Auth: eJm6LmgAh9f-7iA5QHc3cGh9_mo
+Message-ID: <CA+55aFwO9Wtq=NEpMskW-2wrWZAGh-C6VBXENA3LtFOk=tUwgQ@mail.gmail.com>
+Subject: Re: Please merge two small bug fix patches from linux-next
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi (sorry about the duplicate, I messed up the LKML addr. on the first mail)
+On Sun, Jan 8, 2012 at 11:51 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+>
+> Below are two patches that have been in linux-next for ages (via akpm's
+> tree). They are prette simple, straight-up, bug fixes. They have been
+> submitted to maintainers multiple times over (IIRC at least the past
+> year), but for some reason the maintainers seem uninterested in picking
+> them up (or even responding to them).
+> There has been no negative comments at all to them while they have been in
+> -next.
+> I'd really appreciate it if they could get merged.
+>
+> I've just pulled them out of the current linux-next and applied them on
+> top of your tree - that's what is below.
 
-In ixgbe_non_sfp_link_config(), the variable 'negotiation' is declared
-without initializer and unless we take the true branch in the 'if
-((!autoneg) && (hw->mac.ops.get_link_capabilities))' statement it will
-remain uninitialized when it is subsequently read in the 'ret =
-hw->mac.ops.setup_link(hw, autoneg, negotiation, link_up)' statement.
+So where are they? Git tree or what?
 
-The test of 'ret' after the 'if ((!autoneg) &&
-(hw->mac.ops.get_link_capabilities))' statement also looks fairly
-pointless if we do not take the true branch, since then 'ret' will not
-have been changed since the previous identical test.
+And if you want me to apply them as patches, please send them as
+proper individual patches instead of askng me to "merge" them.
 
-The correct fix escapes me since I don't really know this code (and don't 
-plan to spend the time to get to know it), but I thought I'd just report 
-what I had noticed and then someone else can hopefully come up with a good 
-fix :-)
+And they seem to have Andrew's sign-off, so I'd have expected them to
+come through Andew. What's up?
 
-
-PS. Please CC me on replies.
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+                      Linus
