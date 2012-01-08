@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab2AHCmS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 21:42:18 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:51112 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab2AHCmR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 21:42:17 -0500
-Date: Sat, 7 Jan 2012 21:40:29 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: tj@kernel.org, linux-kernel@vger.kernel.org
-Subject: Compile errors on 32-bit build due to
- d4bbf7e7759afc172e2bfbc5c416324590049cdd
-Message-ID: <20120108024029.GA17214@phenom.dumpdata.com>
+	id S1753401Ab2AHDa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 22:30:29 -0500
+Received: from nm28-vm0.bullet.mail.ne1.yahoo.com ([98.138.91.22]:32566 "HELO
+	nm28-vm0.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751178Ab2AHDa2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 22:30:28 -0500
+X-Greylist: delayed 415 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Jan 2012 22:30:28 EST
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 817280.3463.bm@omp1011.mail.ne1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=TeC8MvePB3sE7VWsKjOGlhNHOMMUvWuzjctrBY1wMtF4f9d4uGmOYyj57Kt7kHUUNy8v1rqMraMDW6q3sJygUQC2LO18xlft84TVdmib/BjQncHn7XI1kKTHK6X4j8dj6O/qeB/TF3Ej17EhKsmjsNLx0h2IofuqNtlVqnrLVnI=;
+X-YMail-OSG: 0PZlYGwVM1l.YmFQs5vZYmF1kQxHdyO26axgL_ASTc_OQcf
+ 8VN10rEuo6SnOa9Ywvgg9g4oedjAD5CBoX92d.vMMhE52JpOWktoWp0NSJRD
+ FSig2TU4ykfIwfukoG2EcBCbl6gkjXw5yIFLCf.Y_DyTvt45mNheRbH5rurC
+ lGDOlW.TVBUZvrkYNrEPyoyVR6JEyMppjAriW0EnE30SklCy7piWHZ8Hsb9X
+ WenOY2QvE4GpnfEyDSyyMxysureaC30lJaWpR6Jrj.eR1AVo6hnpS4kBbT6H
+ _.4W3HY2bvc_ePsuJzQKJuryjrJRkNTZ1jxF1AHH3IiFnvhUa6BWxp5x_oQe
+ PVVX95S_NzssG1z0MscZXjljFNdag7yDpTk921ydi7mm_SyD0oCULeZWKAYe
+ Ti1hVxv2a5s0s.lUDmNoAxg1FmOVGNBmtRjz0caaZpyDLSl6xGPFOQW_KAvk
+ -
+X-Mailer: YahooMailWebService/0.8.115.331698
+Message-ID: <1325993012.29526.YahooMailNeo@web38004.mail.mud.yahoo.com>
+Date: Sat, 7 Jan 2012 19:23:32 -0800 (PST)
+From: Shantanu Goel <sgoel01@yahoo.com>
+Reply-To: Shantanu Goel <sgoel01@yahoo.com>
+Subject: [PATCH] ext4: Fix up range_end offset in range cyclic writeback
+To: Kernel <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F090286.0051,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Tejun
 
-Your patch titled " Merge branch 'master' into x86/memblock" breaks compilation
-under 32-bit with CONFIG_XEN=y.
 
-/home/konrad/linux-linus/arch/x86/xen/mmu.c: In function â€˜xen_setup_kernel_pagetableâ€™:
-/home/konrad/linux-linus/arch/x86/xen/mmu.c:1855: error: expected â€˜;â€™ before â€˜)â€™ token
-/home/konrad/linux-linus/arch/x86/xen/mmu.c:1855: error: expected statement before â€˜)â€™ token
+Hi,
 
-Looking at merge it looks like you added an extra ')'?
+The patch below fixes the range_end calculation which should be a byte offset and not a page index.  Also, the patch updates the `end' index as well when looping again in range cyclic mode.
 
-This patch below fixes it, which I was thinking to attach it to my tree that I will
-send on Monday to Linus.
+Signed-off-by: Shantanu Goel <sgoel01@yahoo.com>
 
->From 18ae9edebde83ef358e997e319868d664fb2ddb8 Mon Sep 17 00:00:00 2001
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date: Sat, 7 Jan 2012 21:27:38 -0500
-Subject: [PATCH] xen/mmu: Fix compile errors introduced by x86/memblock mismerge.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-The git commit d4bbf7e7759afc172e2bfbc5c416324590049cdd
-"Merge branch 'master' into x86/memblock" mismerged the 32-bit
-section causing:
-
-arch/x86/xen/mmu.c: In function â€˜xen_setup_kernel_pagetableâ€™:
-arch/x86/xen/mmu.c:1855: error: expected â€˜;â€™ before â€˜)â€™ token
-arch/x86/xen/mmu.c:1855: error: expected statement before â€˜)â€™ token
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/xen/mmu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index f4bf8aa..58a0e46 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1852,7 +1852,7 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
- 	xen_write_cr3(__pa(initial_page_table));
- 
- 	memblock_reserve(__pa(xen_start_info->pt_base),
--			 xen_start_info->nr_pt_frames * PAGE_SIZE));
-+			 xen_start_info->nr_pt_frames * PAGE_SIZE);
- 
- 	return initial_page_table;
- }
--- 
-1.7.7.3
-
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2324,9 +2324,10 @@ retry:
+        blk_finish_plug(&plug);
+        if (!io_done && !cycled) {
+                cycled = 1;
++               end = index - 1;
+                index = 0;
+-               wbc->range_start = index << PAGE_CACHE_SHIFT;
+-               wbc->range_end  = mapping->writeback_index - 1;
++               wbc->range_start = 0;
++               wbc->range_end  = ((loff_t)(end + 1) << PAGE_CACHE_SHIFT) - 1;
+                goto retry;
+        }
