@@ -1,293 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab2AHMvl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 07:51:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17817 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751388Ab2AHMvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 07:51:40 -0500
-Message-ID: <4F099156.20700@redhat.com>
-Date: Sun, 08 Jan 2012 14:51:34 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1753528Ab2AHMwV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 07:52:21 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35384 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753419Ab2AHMwT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 07:52:19 -0500
+Date: Sun, 8 Jan 2012 20:51:59 +0800
+From: Richard Zhao <richard.zhao@linaro.org>
+To: Shawn Guo <shawn.guo@linaro.org>
+Cc: Stephen Warren <swarren@nvidia.com>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        Dong Aisheng-B29396 <B29396@freescale.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Dong Aisheng <dongas86@gmail.com>
+Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Message-ID: <20120108125156.GB2203@richard-laptop>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+ <1324402840-32451-3-git-send-email-b29396@freescale.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
+ <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
+ <20120107135445.GI4790@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] KVM updates for the 3.3 merge window
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120107135445.GI4790@S2101-09.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
-
-  git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/3.3
-
-to receive the KVM updates for the 3.3 cycle.  Changes include a virtual
-PMU available for guests, an MMU/MMIO speedup, more cpuid feature
-whitelisting, and cleanups.
-
-The branch contains tip/perf, which you've already merged, so much of
-the diffstat below won't appear once you've merged it.
-
-
-Alex,Shi (1):
-      KVM: use this_cpu_xxx replace percpu_xxx funcs
-
-Alexander Graf (2):
-      KVM: Fix whitespace in kvm_para.h
-      KVM: PPC: Whitespace fix for kvm.h
-
-Avi Kivity (10):
-      KVM: Move cpuid code to new file
-      KVM: Document KVM_NMI
-      Merge remote-tracking branch 'tip/perf/core' into kvm-updates/3.3
-      KVM: Make KVM_INTEL depend on CPU_SUP_INTEL
-      KVM: Expose kvm_lapic_local_deliver()
-      KVM: Add generic RDPMC support
-      KVM: SVM: Intercept RDPMC
-      KVM: VMX: Intercept RDPMC
-      KVM: x86 emulator: fix RDPMC privilege check
-      KVM: x86 emulator: implement RDPMC (0F 33)
-
-Chris Wright (2):
-      KVM guest: remove KVM guest pv mmu support
-      KVM: MMU: remove KVM host pv mmu support
-
-Dan Carpenter (1):
-      KVM: make checks stricter in coalesced_mmio_in_range()
-
-Eric B Munson (1):
-      KVM: Fix include dependency for mmu_notifier
-
-Gleb Natapov (4):
-      KVM: VMX: remove unneeded vmx_load_host_state() calls.
-      KVM: drop bsp_vcpu pointer from kvm struct
-      KVM: Expose a version 2 architectural PMU to a guests
-      KVM: Expose the architectural performance monitoring CPUID leaf
-
-Hamo (1):
-      KVM: ensure that debugfs entries have been created
-
-Jan Kiszka (5):
-      KVM: x86: Simplify kvm timer handler
-      KVM: MMU: Drop unused return value of
-kvm_mmu_remove_some_alloc_mmu_pages
-      KVM: x86 emulator: Remove set-but-unused cr4 from check_cr_write
-      KVM: x86: Do not rely on implicit inclusions
-      KVM: x86: Consolidate PIT legacy test
-
-Julian Stecklina (1):
-      KVM: Allow aligned byte and word writes to IOAPIC registers.
-
-Liu, Jinsong (1):
-      KVM: expose latest Intel cpu new features (BMI1/BMI2/FMA/AVX2) to
-guest
-
-Nadav Har'El (2):
-      KVM: nVMX: Add KVM_REQ_IMMEDIATE_EXIT
-      KVM: nVMX: Fix warning-causing idt-vectoring-info behavior
-
-Nishanth Aravamudan (1):
-      KVM: PPC: annotate kvm_rma_init as __init
-
-Sasha Levin (3):
-      KVM: Refactor and simplify kvm_dev_ioctl_get_supported_cpuid
-      KVM: Use kmemdup() instead of kmalloc/memcpy
-      KVM: Use memdup_user instead of kmalloc/copy_from_user
-
-Takuya Yoshikawa (15):
-      KVM: MMU: Clean up BUG_ON() conditions in rmap_write_protect()
-      KVM: MMU: Split gfn_to_rmap() into two functions
-      KVM: Count the number of dirty pages for dirty logging
-      KVM: Optimize dirty logging by rmap_write_protect()
-      KVM: x86 emulator: Use opcode::execute for IN/OUT
-      KVM: x86 emulator: Use opcode::execute for BT family
-      KVM: x86 emulator: Use opcode::execute for CALL
-      KVM: x86 emulator: Use opcode::execute for MOV to cr/dr
-      KVM: x86 emulator: Use opcode::execute for WRMSR/RDMSR
-      KVM: x86 emulator: Use opcode::execute for CMPXCHG
-      KVM: x86 emulator: Use opcode::execute for BSF/BSR
-      KVM: x86 emulator: Use opcode::execute for INS/OUTS from/to port in DX
-      KVM: x86 emulator: Use opcode::execute for Group 1A instruction
-      KVM: x86 emulator: Use opcode::execute for Group 4/5 instructions
-      KVM: x86 emulator: Use opcode::execute for Group 9 instruction
-
-Thomas Meyer (1):
-      KVM: Use kmemdup rather than duplicating its implementation
-
-Xiao Guangrong (24):
-      KVM: MMU: avoid pte_list_desc running out in kvm_mmu_pte_write
-      KVM: x86: tag the instructions which are used to write page table
-      KVM: x86: retry non-page-table writing instructions
-      KVM: x86: cleanup port-in/port-out emulated
-      KVM: MMU: do not mark accessed bit on pte write path
-      KVM: MMU: cleanup FNAME(invlpg)
-      KVM: MMU: fast prefetch spte on invlpg path
-      KVM: MMU: remove unnecessary kvm_mmu_free_some_pages
-      KVM: MMU: split kvm_mmu_pte_write function
-      KVM: MMU: fix detecting misaligned accessed
-      KVM: MMU: improve write flooding detected
-      KVM: introduce KVM_MEM_SLOTS_NUM macro
-      KVM: introduce update_memslots function
-      KVM: introduce kvm_for_each_memslot macro
-      KVM: introduce id_to_memslot function
-      KVM: sort memslots by its size and use line search
-      KVM: introduce a table to map slot id to index in memslots array
-      KVM: IA64: fix struct redefinition
-      jump-label: export jump_label_inc/jump_label_dec
-      KVM: MMU: audit: replace mmu audit tracepoint with jump-label
-      KVM: x86: remove the dead code of KVM_EXIT_HYPERCALL
-      KVM: MMU: move the relevant mmu code to mmu.c
-      KVM: MMU: remove oos_shadow parameter
-      KVM: MMU: audit: inline audit function
-
- Documentation/feature-removal-schedule.txt         |    9 -
- Documentation/kernel-parameters.txt                |    6 +-
- Documentation/trace/events.txt                     |    2 -
- Documentation/virtual/kvm/api.txt                  |   25 +
- arch/Kconfig                                       |    4 +
- arch/ia64/kvm/kvm-ia64.c                           |   12 +-
- arch/powerpc/include/asm/kvm.h                     |    4 +-
- arch/powerpc/kvm/book3s.c                          |    2 +-
- arch/powerpc/kvm/book3s_hv_builtin.c               |    2 +-
- arch/x86/include/asm/cpufeature.h                  |    3 +
- arch/x86/include/asm/insn.h                        |    7 +
- arch/x86/include/asm/kvm_emulate.h                 |    2 +
- arch/x86/include/asm/kvm_host.h                    |   90 ++-
- arch/x86/include/asm/perf_event.h                  |   29 +
- arch/x86/kernel/cpu/perf_event.c                   |  254 ++++--
- arch/x86/kernel/cpu/perf_event.h                   |   51 +-
- arch/x86/kernel/cpu/perf_event_amd.c               |    2 +-
- arch/x86/kernel/cpu/perf_event_intel.c             |   72 ++-
- arch/x86/kernel/jump_label.c                       |    2 +-
- arch/x86/kernel/kvm.c                              |  181 ----
- arch/x86/kvm/Kconfig                               |    3 +
- arch/x86/kvm/Makefile                              |    2 +-
- arch/x86/kvm/cpuid.c                               |  670 +++++++++++++
- arch/x86/kvm/cpuid.h                               |   46 +
- arch/x86/kvm/emulate.c                             |  436 +++++----
- arch/x86/kvm/i8254.c                               |   10 +-
- arch/x86/kvm/i8259.c                               |   24 +-
- arch/x86/kvm/lapic.c                               |    3 +-
- arch/x86/kvm/lapic.h                               |    1 +
- arch/x86/kvm/mmu.c                                 |  545 +++++-------
- arch/x86/kvm/mmu_audit.c                           |   29 +-
- arch/x86/kvm/mmutrace.h                            |   19 -
- arch/x86/kvm/paging_tmpl.h                         |   86 +-
- arch/x86/kvm/pmu.c                                 |  533 +++++++++++
- arch/x86/kvm/svm.c                                 |   15 +
- arch/x86/kvm/timer.c                               |   26 +-
- arch/x86/kvm/vmx.c                                 |   45 +-
- arch/x86/kvm/x86.c                                 | 1001
-+++++---------------
- arch/x86/kvm/x86.h                                 |    5 +-
- arch/x86/lib/inat.c                                |    9 +-
- arch/x86/lib/insn.c                                |    4 +-
- arch/x86/lib/x86-opcode-map.txt                    |  606 +++++++------
- arch/x86/oprofile/Makefile                         |    3 +-
- arch/x86/oprofile/init.c                           |   30 +-
- arch/x86/oprofile/nmi_int.c                        |   27 +-
- arch/x86/oprofile/nmi_timer_int.c                  |   50 -
- arch/x86/tools/Makefile                            |   11 +-
- arch/x86/tools/gen-insn-attr-x86.awk               |   21 +-
- arch/x86/tools/insn_sanity.c                       |  275 ++++++
- drivers/oprofile/nmi_timer_int.c                   |  173 ++++
- drivers/oprofile/oprof.c                           |   30 +-
- drivers/oprofile/oprof.h                           |    9 +
- drivers/oprofile/timer_int.c                       |   30 +-
- include/linux/bitops.h                             |   10 +-
- include/linux/jump_label.h                         |   27 +
- include/linux/kvm_host.h                           |   39 +-
- include/linux/kvm_para.h                           |    1 -
- include/linux/perf_event.h                         |    7 +-
- kernel/events/Makefile                             |    2 +-
- kernel/events/callchain.c                          |  191 ++++
- kernel/events/core.c                               |  296 +-----
- kernel/events/internal.h                           |   39 +-
- kernel/jump_label.c                                |   51 +-
- kernel/lockdep.c                                   |   30 +-
- kernel/trace/trace.c                               |  105 ++-
- kernel/trace/trace.h                               |    2 +
- kernel/trace/trace_events_filter.c                 |   26 +-
- kernel/trace/trace_irqsoff.c                       |   13 +-
- kernel/trace/trace_output.c                        |   16 +-
- kernel/trace/trace_sched_wakeup.c                  |   13 +-
- tools/perf/Documentation/perf-annotate.txt         |    2 +-
- tools/perf/Documentation/perf-report.txt           |    4 +-
- tools/perf/Documentation/perf-script.txt           |    7 +-
- tools/perf/Documentation/perf-test.txt             |    8 +-
- tools/perf/Makefile                                |    1 +
- tools/perf/builtin-annotate.c                      |  133 ++--
- tools/perf/builtin-diff.c                          |   21 +-
- tools/perf/builtin-inject.c                        |  118 ++-
- tools/perf/builtin-kmem.c                          |   14 +-
- tools/perf/builtin-lock.c                          |   10 +-
- tools/perf/builtin-probe.c                         |    1 -
- tools/perf/builtin-record.c                        |  585 +++++-------
- tools/perf/builtin-report.c                        |  225 +++--
- tools/perf/builtin-sched.c                         |  198 ++--
- tools/perf/builtin-script.c                        |   50 +-
- tools/perf/builtin-stat.c                          |   43 +-
- tools/perf/builtin-test.c                          |  418 ++++++++-
- tools/perf/builtin-timechart.c                     |   34 +-
- tools/perf/builtin-top.c                           |  557 ++++++------
- tools/perf/perf.c                                  |   33 +-
- tools/perf/perf.h                                  |   23 +
- tools/perf/util/annotate.c                         |    6 +-
- tools/perf/util/annotate.h                         |    5 +-
- tools/perf/util/build-id.c                         |   26 +-
- tools/perf/util/build-id.h                         |    2 +-
- tools/perf/util/callchain.h                        |    3 +
- tools/perf/util/cgroup.c                           |   15 +-
- tools/perf/util/debugfs.c                          |   35 +-
- tools/perf/util/debugfs.h                          |   31 +-
- tools/perf/util/event.c                            |  243 +++--
- tools/perf/util/event.h                            |   65 +-
- tools/perf/util/evlist.c                           |  293 ++++++-
- tools/perf/util/evlist.h                           |   43 +-
- tools/perf/util/evsel.c                            |   70 ++
- tools/perf/util/evsel.h                            |    8 +
- tools/perf/util/header.c                           |   75 +-
- tools/perf/util/header.h                           |   45 +-
- tools/perf/util/hist.h                             |    3 +-
- tools/perf/util/map.c                              |    4 +
- tools/perf/util/map.h                              |   19 +
- tools/perf/util/parse-events.c                     |   28 +-
- tools/perf/util/parse-events.h                     |    1 -
- tools/perf/util/probe-finder.h                     |    1 -
- .../perf/util/scripting-engines/trace-event-perl.c |    4 +-
- .../util/scripting-engines/trace-event-python.c    |    4 +-
- tools/perf/util/session.c                          |  326 ++++---
- tools/perf/util/session.h                          |   62 +-
- tools/perf/util/setup.py                           |    3 +-
- tools/perf/util/symbol.h                           |    1 +
- tools/perf/util/thread.c                           |    6 +-
- tools/perf/util/thread.h                           |   14 +-
- tools/perf/util/tool.h                             |   50 +
- tools/perf/util/top.h                              |   20 +-
- tools/perf/util/trace-event-info.c                 |   28 +-
- tools/perf/util/trace-event-scripting.c            |    2 +-
- tools/perf/util/trace-event.h                      |    8 +-
- tools/perf/util/ui/browsers/annotate.c             |   16 +-
- tools/perf/util/ui/browsers/hists.c                |    2 +-
- tools/perf/util/ui/progress.c                      |    3 +
- virt/kvm/coalesced_mmio.c                          |   12 +-
- virt/kvm/ioapic.c                                  |   17 +-
- virt/kvm/iommu.c                                   |   17 +-
- virt/kvm/kvm_main.c                                |  204 +++--
- 133 files changed, 6568 insertions(+), 4141 deletions(-)
- create mode 100644 arch/x86/kvm/cpuid.c
- create mode 100644 arch/x86/kvm/cpuid.h
- create mode 100644 arch/x86/kvm/pmu.c
- delete mode 100644 arch/x86/oprofile/nmi_timer_int.c
- create mode 100644 arch/x86/tools/insn_sanity.c
- create mode 100644 drivers/oprofile/nmi_timer_int.c
- create mode 100644 kernel/events/callchain.c
- create mode 100644 tools/perf/util/tool.h
-
--- 
-error compiling committee.c: too many arguments to function
-
+On Sat, Jan 07, 2012 at 09:54:48PM +0800, Shawn Guo wrote:
+> On Fri, Jan 06, 2012 at 10:03:07AM -0800, Stephen Warren wrote:
+> > I see now.
+> > 
+> > I'd definitely be inclined to drop the num-pins and num-mux properties;
+> > The values are just len(grp-pins)/4. You can still check that
+> > len(grp-pins)==len(grp-mux) if you want to catch typos etc.
+Maybe add a function of_u32_array_size? There' other drivers that need
+to get array size.
+> > 
+> +1
+> 
+> > So, this does appear to be conflating the two things: The definition of
+> > what pins are in a pingroup, and the mux function for a particular
+> > setting of that pingroup. I think you need separate nodes for this.
+> > 
+> At least for imx, we do not have mux function setting for pingroup.
+> Instead, it only applies to individual pin.
+I think it depends on function definition of pinmux driver. For the
+imx example patch, it's one-to-one.
+> 
+> > Without separate nodes, there will eventually be a lot of duplication.
+> > A made-up example of the same uart4grp allowing either of two functions
+> > uart3, uart4 to be muxed out onto it:
+> > 
+> > aips-bus@02000000 { /* AIPS1 */
+> > 	iomuxc@020e0000 {
+> > 		pinctrl_uart4_3: uart4@option_3 {
+> > 			func-name = "uart3";
+> > 			grp-name = "uart4grp";
+> 
+> With phandle in dts reflecting the mapping, neither func-name nor
+> grp-name should be needed, and both can just be dropped, IMO.
+Maybe map-name can be dropped too if dev-name uses phandle.
+> 
+> > 			grp-pins = <107 108>;
+> > 			num-pins = <2>;
+> > 			grp-mux = <3 3>;
+> > 			num-mux = <2>;
+> > 		};
+> > 		pinctrl_uart4_4: uart4@option_4 {
+> > 			func-name = "uart4";
+> > 			grp-name = "uart4grp";
+> > 			grp-pins = <107 108>;
+> > 			num-pins = <2>;
+> > 			grp-mux = <3 3>;
+> > 			num-mux = <2>;
+> > 		};
+> > 	}
+> > };
+> > 
+> > Now I understand that initially you aren't going to type out the complete
+> > list of every available option into imx6q.dtsi because it's probably huge,
+> > but the binding does need to allow you to do so without duplicating a lot
+> > of data, because eventually you'll get boards that use a larger and larger
+> > subset of all the options, so the number you need to represent at once in
+> > imx6q.dtsi will grow.
+If we don't want to lose flexibity, the pin group number will be huge
+than you think. For example, 16bit display interface, has two alternatives
+for every pin. The group number will be 2^16.
+> > 
+> > So I think you need to model the IMX pinmux controller's bindings more on
+> > how the pinctrl subsystem represents objects; separate definitions of pins,
+> > groups of pins, functions, and board settings. Something more like:
+> > 
+> > imx6q.dtsi:
+> > 
+> > aips-bus@02000000 { /* AIPS1 */
+> > 	iomuxc@020e0000 {
+> > 		/* FIXME: Perhaps need pin nodes here to name them too */
+> 
+> No, it's been listed in imx pinctrl driver.
+> 
+> > 
+> > 		/* A node per group of pins. Each lists the group name, and
+> > 		 * the list of pins in the group */
+> > 		foogrp: group@100 {
+> > 			grp-name = "foogrp";
+> > 			grp-pins = <100 101>;
+> > 		};
+> > 		bargrp: group@102 {
+> > 			grp-name = "bargrp";
+> > 			grp-pins = <102 103>;
+> > 		};
+> > 		bazgrp: group@104 {
+> > 			grp-name = "bargrp";
+> > 			grp-pins = <104 105>;
+> > 		};
+> 
+> I agree that we should define pingroups in <soc>.dtsi, but the mux
+> setting needs to be under the pingroup node too.  See comment below ...
+> 
+> > 		/* A node per function that can be muxed onto pin groups,
+> > 		 * each listing the function name, the set of groups it can
+> > 		 * be muxed onto, and the mux selector value to program into
+> > 		 * the groups' mux control register to select it */
+> > 		uart3func: func@0 {
+> > 			func-name = "uart3";
+> > 			/* Length of locations and mux-value must match */
+> > 			locations = <&foogrp &bargrp>;
+> > 			mux-value = <0 4>;
+> 
+> This can be easily broken for imx.  As the mux setting applies to
+> individual pin rather than pingroup, it's very valid for foogrp to
+> have pin 100 muxed on mode 0 while pin 101 on mode 1.  That said,
+> it's not necessarily true that we always have all the pins in
+> particular pingroup muxed on the same setting for given function.
+right.
+> 
+> > 		};
+> > 		uart4func: func@1 {
+> > 			func-name = "uart4";
+> > 			locations = <&bargrp &bazgrp>;
+> > 			mux-value = <6 3>;
+> > 		};
+> 
+> I prefer to have function node defined in <board>.dtsi, since it's
+> all about defining phandle to the correct pingroup, which should be
+> decided by board design.
+group and function are one-to-one mapped for imx. So if you put function
+in board dts, why not put pin group there too?
+> 
+> > 	}
+> > };
+> > 
+> > Or, instead of separate locations and mux-value properties with matching
+> > lengths, perhaps a node for each location:
+> > 
+> > 		uart3func: func@0 {
+> > 			func-name = "uart3";
+> > 			location@0 {
+> > 				location = <&foogrp>;
+> > 				mux-value = <0>;
+> > 			};
+> > 			location@1 {
+> > 				location = <&bargrp>;
+> > 				mux-value = <4>;
+> > 			};
+> > 		};
+> > 
+> > That's more long-winded, but might be more easily extensible if we need
+> > to add more properties later.
+> > 
+> > Now in the board's .dts file, you need to specify for each device the
+> > list of pinmux groups the device needs to use, and the function to
+> > select for each group. Perhaps something like:
+> > 
+> > board.dts:
+> > 
+> > usdhc@0219c000 { /* uSDHC4 */
+> >         fsl,card-wired;
+> >         status = "okay";
+> >         pinmux = <&foogrp &uart3func &bazgrp &uart4func>;
+> > };
+> > 
+> > I haven't convinced myself that's actually a good binding, but I think
+> > it does represent the data required for muxing. Some potential issues
+> > as before:
+> > 
+> > * Do we need to add flags to each entry in the list; GPIO/interrupt do?
+> > 
+> What's that for right now?  I guess we can add it later when we see
+> the need.
+> 
+> > * Should "pinmux" be a node, and the configuration of each group be a
+> > separate sub-node, so we can add more properties to each "table" entry
+> > in the future, e.g. pin config parameters?
+> > 
+> I do not think it's necessary. 'pinctrl' phandle works perfectly fine
+> to me at least for now.  How pinconf support should be added into
+> pinctrl subsystem is still up in the air to me.
+> 
+> > * For Tegra, I elected to put the definitions of pins, groups, and
+> > functions into the driver rather than in the device tree.
+> 
+> IMO, we do not want to do this for imx, as I'm scared of the size
+> of Tegra pinctrl patches.  If we go this way for imx, we will have
+> even bigger patches.
+> 
+> > This avoids
+> > parsing a heck of a lot of data from device tree. That means there isn't
+> > any per-function node that can be referred to by phandle. Does it make
+> > sense to refer to groups and functions by string name or integer ID
+> > instead of phandle? Perhaps:
+> > 
+> > usdhc@0219c000 { /* uSDHC4 */
+> > 	fsl,card-wired;
+> > 	status = "okay";
+> > 	pinmux = {
+> > 		group@0 {
+> > 			group = "foo";
+> > 			function = "uart3";
+> > 			/* You could add pin config options here too */
+> > 		};
+> > 		group@1 {
+> > 			group = "baz";
+> > 			function = "uart4";
+> > 		};
+> > 	};
+> > };
+> > 
+> > I guess referring to things by name isn't that idiomatic for device tree.
+> > Using integers here would be fine too, so long as dtc gets support for
+> > named constants:
+> > 
+> > imx6q.dtsi:
+> > 
+> > /define/ IMX_PINGRP_FOO 0
+> > /define/ IMX_PINGRP_BAR 1
+> > /define/ IMX_PINGRP_BAZ 2
+> > /define/ IMX_PINFUNC_UART3 0
+> > /define/ IMX_PINFUNC_UART4 1
+> > ...
+> > 
+> > board .dts:
+> > 
+> > usdhc@0219c000 { /* uSDHC4 */
+> > 	fsl,card-wired;
+> > 	status = "okay";
+> > 	pinmux = {
+> > 		group@0 {
+> > 			group = <IMX_PINGRP_FOO>;
+> > 			function = <IMX_PINFUNC_UART3>;
+> > 			/* You could add pin config options here too */
+> > 		};
+> > 		group@1 {
+> > 			group = <IMX_PINGRP_BAZ>;
+> > 			function = <IMX_PINFUNC_UART4>;
+> > 		};
+> > 	};
+> > };
+> > 
+> Doing this does not change the fact that this is bound with Linux
+> driver details.  That said, if the indexing of either pingrp array
+> or pinfunc array changes in the driver, the binding is broken.
+> 
+> -- 
+> Regards,
+> Shawn
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
