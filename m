@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab2AHX3r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 18:29:47 -0500
-Received: from perceval.ideasonboard.com ([95.142.166.194]:54327 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645Ab2AHX3q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 18:29:46 -0500
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Justin Piszcz <jpiszcz@lucidpixels.com>
-Subject: Re: [Linux-uvc-devel] 3.1.5: uvcvideo: Failed to resubmit video URB (-27).
-Date: Mon, 9 Jan 2012 00:30:09 +0100
-User-Agent: KMail/1.13.7 (Linux/3.0.3-gentoo; KDE/4.7.4; x86_64; ; )
-Cc: linux-uvc-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-References: <CAO9zADw7ofMLeE3yCQ+uCe=6EzZY=SWtqMDhsi_ggbPhWVfTKg@mail.gmail.com> <201201031605.31117.laurent.pinchart@ideasonboard.com> <CAO9zADzfwLsqXnWQXD9hJXXBtQ+32RZGJcuaaDTbzdbZ1c2G2g@mail.gmail.com>
-In-Reply-To: <CAO9zADzfwLsqXnWQXD9hJXXBtQ+32RZGJcuaaDTbzdbZ1c2G2g@mail.gmail.com>
+	id S1754851Ab2AHXc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 18:32:29 -0500
+Received: from mga11.intel.com ([192.55.52.93]:21434 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754603Ab2AHXc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 18:32:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="104876649"
+Date: Mon, 9 Jan 2012 00:38:20 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: "Cousson, Benoit" <b-cousson@ti.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, rob.herring@calxeda.com,
+        tony@atomide.com, linux-omap@vger.kernel.org,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org, linux-i2c@vger.kernel.org,
+        ben-linux@fluff.org, Balaji T K <balajitk@ti.com>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH v4 03/12] mfd: twl-core: Add initial DT support for
+ twl4030/twl6030
+Message-ID: <20120108233820.GH13679@sortiz-mobl>
+References: <1324565806-31142-1-git-send-email-b-cousson@ti.com>
+ <1324565806-31142-4-git-send-email-b-cousson@ti.com>
+ <20120102090454.GO18381@ponder.secretlab.ca>
+ <4F030C2D.3000808@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201090030.09960.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F030C2D.3000808@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Justin,
+Hi Benoit,
 
-On Tuesday 03 January 2012 17:18:03 Justin Piszcz wrote:
-
-[snip]
-
-> > Could you please send me the complete lsusb -v output for the device ?
-> > I'll then add it to the supported devices list.
+On Tue, Jan 03, 2012 at 03:09:49PM +0100, Cousson, Benoit wrote:
+> On 1/2/2012 10:04 AM, Grant Likely wrote:
+> > On Thu, Dec 22, 2011 at 03:56:37PM +0100, Benoit Cousson wrote:
+> >> Add initial device-tree support for twl familly chips.
+> >> The current version is missing the regulator entries due
+> >> to the lack of DT regulator bindings for the moment.
+> >> Only the simple sub-modules that do not depend on
+> >> platform_data information can be initialized properly.
+> >>
+> >> Add irqdomain support.
+> >>
+> >> Add documentation for the Texas Instruments TWL Integrated Chip.
+> >>
+> >> Signed-off-by: Benoit Cousson<b-cousson@ti.com>
+> >> Cc: Balaji T K<balajitk@ti.com>
+> >> Cc: Graeme Gregory<gg@slimlogic.co.uk>
+> >> Cc: Samuel Ortiz<sameo@linux.intel.com>
+> >> ---
+> >> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> >> index f1391c2..f0de088 100644
+> >> --- a/drivers/mfd/Kconfig
+> >> +++ b/drivers/mfd/Kconfig
+> >> @@ -200,6 +200,7 @@ config MENELAUS
+> >>   config TWL4030_CORE
+> >>   	bool "Texas Instruments TWL4030/TWL5030/TWL6030/TPS659x0 Support"
+> >>   	depends on I2C=y&&  GENERIC_HARDIRQS
+> >> +	select IRQ_DOMAIN
+> > 
+> > As discussed on linux-next, this breaks powerpc.  Drivers cannot select
+> > IRQ_DOMAIN, it can only be selected by architectures.  Drivers must depend
+> > on it instead.
 > 
-> Certainly, see below:
+> OK, good to know. The previous version was already breaking non-ARM platform because the IRQ_DOMAIN was not defined, hence this update.
+> I was able to check that this patch was fixing at least x86... but did not have any way to check the PPC build.
 > 
-> Bus 002 Device 004: ID 0402:9665 ALi Corp. Gateway Webcam
+> To be honest, I did not fully understand that this flag was there because some arch does not support IRQ domain yet and thus it should be selected at arch level.
+> 
+> Samuel,
+> Here is the updated version, and hopefully the last one, including Grant's fix.
+> 
+Thanks, I applied it now.
 
-[snip]
-
-Thank you. Could you please also tell me which laptop the camera can be found 
-in ?
+Cheers,
+Samuel.
 
 -- 
-Regards,
-
-Laurent Pinchart
+Intel Open Source Technology Centre
+http://oss.intel.com/
