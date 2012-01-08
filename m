@@ -1,35 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753792Ab2AHNdo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 08:33:44 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57563 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753690Ab2AHNdl (ORCPT
+	id S1753733Ab2AHNdy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 08:33:54 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40459 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753748Ab2AHNdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 08:33:41 -0500
+	Sun, 8 Jan 2012 08:33:43 -0500
 From: Gilad Ben-Yossef <gilad@benyossef.com>
 To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>, David Airlie <airlied@linux.ie>,
-        dri-devel@lists.freedesktop.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+Cc: Gilad Ben-Yossef <gilad@benyossef.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: [RFC PATCH v2 8/9] smp: refactor on_each_cpu to void returning func
-Date: Sun,  8 Jan 2012 15:32:28 +0200
-Message-Id: <1326029549-2794-9-git-send-email-gilad@benyossef.com>
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [RFC PATCH v2 9/9] x86: refactor wbinvd_on_all_cpus to void function
+Date: Sun,  8 Jan 2012 15:32:29 +0200
+Message-Id: <1326029549-2794-10-git-send-email-gilad@benyossef.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
 References: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
@@ -37,96 +22,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on_each_cpu returns the retunr value of smp_call_function
-which is hard coded to 0.
+wbvind_on_all_cpus returns the value from on_each_cpu as return
+value.
 
-Refactor on_each_cpu to a void function and the few callers
-that check the return value to save compares and branches.
+on_each_cpu always returns a hard coded zero value and none of
+the callers to wbinvd_on_all_cpu check for its return value
+so we might as well just drop it.
 
 Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
 Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-CC: David Airlie <airlied@linux.ie>
-CC: dri-devel@lists.freedesktop.org
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <rob.herring@calxeda.com>
-CC: linuxppc-dev@lists.ozlabs.org
-CC: devicetree-discuss@lists.ozlabs.org
-CC: Richard Henderson <rth@twiddle.net>
-CC: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-CC: Matt Turner <mattst88@gmail.com>
-CC: linux-alpha@vger.kernel.org
 CC: Thomas Gleixner <tglx@linutronix.de>
 CC: Ingo Molnar <mingo@redhat.com>
 CC: "H. Peter Anvin" <hpa@zytor.com>
 CC: x86@kernel.org
-CC: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-ia64@vger.kernel.org
-CC: Will Deacon <will.deacon@arm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org
 ---
- include/linux/smp.h |    7 +++----
- kernel/smp.c        |    6 ++----
- 2 files changed, 5 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/smp.h |    5 ++---
+ arch/x86/lib/cache-smp.c   |    3 +--
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/smp.h b/include/linux/smp.h
-index 8cc38d3..050ddd4 100644
---- a/include/linux/smp.h
-+++ b/include/linux/smp.h
-@@ -99,7 +99,7 @@ static inline void call_function_init(void) { }
- /*
-  * Call a function on all processors
-  */
--int on_each_cpu(smp_call_func_t func, void *info, int wait);
-+void on_each_cpu(smp_call_func_t func, void *info, int wait);
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index 73b11bc..989e4a8 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -158,7 +158,7 @@ void native_cpu_die(unsigned int cpu);
+ void native_play_dead(void);
+ void play_dead_common(void);
+ void wbinvd_on_cpu(int cpu);
+-int wbinvd_on_all_cpus(void);
++void wbinvd_on_all_cpus(void);
  
- /*
-  * Mark the boot cpu "online" so that it can call console drivers in
-@@ -126,12 +126,11 @@ static inline int up_smp_call_function(smp_call_func_t func, void *info)
- #define smp_call_function(func, info, wait) \
- 			(up_smp_call_function(func, info))
- #define on_each_cpu(func,info,wait)		\
--	({					\
-+	{					\
- 		local_irq_disable();		\
- 		func(info);			\
- 		local_irq_enable();		\
--		0;				\
--	})
-+	}
- static inline void smp_send_reschedule(int cpu) { }
- #define num_booting_cpus()			1
- #define smp_prepare_boot_cpu()			do {} while (0)
-diff --git a/kernel/smp.c b/kernel/smp.c
-index db197d6..f66a1b2 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -687,17 +687,15 @@ void __init smp_init(void)
-  * early_boot_irqs_disabled is set.  Use local_irq_save/restore() instead
-  * of local_irq_disable/enable().
-  */
--int on_each_cpu(void (*func) (void *info), void *info, int wait)
-+void on_each_cpu(void (*func) (void *info), void *info, int wait)
- {
- 	unsigned long flags;
--	int ret = 0;
- 
- 	preempt_disable();
--	ret = smp_call_function(func, info, wait);
-+	smp_call_function(func, info, wait);
- 	local_irq_save(flags);
- 	func(info);
- 	local_irq_restore(flags);
- 	preempt_enable();
--	return ret;
+ void native_send_call_func_ipi(const struct cpumask *mask);
+ void native_send_call_func_single_ipi(int cpu);
+@@ -173,10 +173,9 @@ static inline int num_booting_cpus(void)
  }
- EXPORT_SYMBOL(on_each_cpu);
+ #else /* !CONFIG_SMP */
+ #define wbinvd_on_cpu(cpu)     wbinvd()
+-static inline int wbinvd_on_all_cpus(void)
++static inline void wbinvd_on_all_cpus(void)
+ {
+ 	wbinvd();
+-	return 0;
+ }
+ #endif /* CONFIG_SMP */
+ 
+diff --git a/arch/x86/lib/cache-smp.c b/arch/x86/lib/cache-smp.c
+index 760f7e1..db2eee1 100644
+--- a/arch/x86/lib/cache-smp.c
++++ b/arch/x86/lib/cache-smp.c
+@@ -12,9 +12,8 @@ void wbinvd_on_cpu(int cpu)
+ }
+ EXPORT_SYMBOL(wbinvd_on_cpu);
+ 
+-int wbinvd_on_all_cpus(void)
++void wbinvd_on_all_cpus(void)
+ {
+ 	on_each_cpu(__wbinvd, NULL, 1);
+-	return 0;
+ }
+ EXPORT_SYMBOL(wbinvd_on_all_cpus);
 -- 
 1.7.0.4
 
