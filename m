@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab2AHQM1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 11:12:27 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44463 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab2AHQMZ (ORCPT
+	id S1754143Ab2AHQNI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 11:13:08 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:36017 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab2AHQNG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 11:12:25 -0500
-Date: Sun, 8 Jan 2012 16:12:12 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [RFC PATCH v2 1/9] arm: avoid using on_each_cpu hard coded ret
-	value
-Message-ID: <20120108161212.GD21765@n2100.arm.linux.org.uk>
-References: <1326029549-2794-1-git-send-email-gilad@benyossef.com> <1326029549-2794-2-git-send-email-gilad@benyossef.com>
+	Sun, 8 Jan 2012 11:13:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326029549-2794-2-git-send-email-gilad@benyossef.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Originating-IP: [79.181.26.205]
+In-Reply-To: <4F01B187.7060008@redhat.com>
+References: <1321960128-15191-1-git-send-email-gilad@benyossef.com>
+	<1321960128-15191-5-git-send-email-gilad@benyossef.com>
+	<alpine.LFD.2.02.1111230822270.1773@tux.localdomain>
+	<4F00547A.9090204@redhat.com>
+	<CAOtvUMcCzK=tNkHudOrzxjdGkdkZPt02krO8QYRGjyXm+cvRSw@mail.gmail.com>
+	<4F008ECA.5040703@redhat.com>
+	<CAOtvUMfWKpXaR6Ph1ZN6g0QhgmZtbcf=hMSgtkD-1pLpkzSuNA@mail.gmail.com>
+	<4F01B187.7060008@redhat.com>
+Date: Sun, 8 Jan 2012 18:13:05 +0200
+Message-ID: <CAOtvUMcnjfLxQW7iGKWbPJ=MVhBWdyAyeVJB0sCDb-phkXOx-g@mail.gmail.com>
+Subject: Re: [PATCH v4 4/5] slub: Only IPI CPUs that have per cpu obj to flush
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Matt Mackall <mpm@selenic.com>, Sasha Levin <levinsasha928@gmail.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        apkm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 08, 2012 at 03:32:21PM +0200, Gilad Ben-Yossef wrote:
-> on_each_cpu always returns a hard coded return code of zero.
-> 
-> Removing all tests based on this return value saves run time
-> cycles for compares and code bloat for branches.
-> 
-> Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-> CC: Will Deacon <will.deacon@arm.com>
-> CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> CC: Paul Mackerras <paulus@samba.org>
-> CC: Ingo Molnar <mingo@elte.hu>
-> CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> CC: Russell King <linux@arm.linux.org.uk>
+On Mon, Jan 2, 2012 at 3:30 PM, Avi Kivity <avi@redhat.com> wrote:
+> On 01/02/2012 01:59 PM, Gilad Ben-Yossef wrote:
+>> On Sun, Jan 1, 2012 at 6:50 PM, Avi Kivity <avi@redhat.com> wrote:
+>> > On 01/01/2012 06:12 PM, Gilad Ben-Yossef wrote:
+>> >> >
+>> >> > Since this seems to be a common pattern, how about:
+>> >> >
+>> >> >   zalloc_cpumask_var_or_all_online_cpus(&cpus, GFTP_ATOMIC);
+>> >> >   ...
+>> >> >   free_cpumask_var(cpus);
+>> >> >
+>> >> > The long-named function at the top of the block either returns a newly
+>> >> > allocated zeroed cpumask, or a static cpumask with all online cpus set.
+>> >> > The code in the middle is only allowed to set bits in the cpumask
+>> >> > (should be the common usage).  free_cpumask_var() needs to check whether
+>> >> > the freed object is the static variable.
+>> >>
+>> >> Thanks for the feedback and advice! I totally agree the repeating
+>> >> pattern needs abstracting.
+>> >>
+>> >> I ended up chosing to try a different abstraction though - basically a wrapper
+>> >> on_each_cpu_cond that gets a predicate function to run per CPU to
+>> >> build the mask
+>> >> to send the IPI to. It seems cleaner to me not having to mess with
+>> >> free_cpumask_var
+>> >> and it abstracts more of the general pattern.
+>> >>
+>> >
+>> > This converts the algorithm to O(NR_CPUS) from a potentially lower
+>> > complexity algorithm.  Also, the existing algorithm may not like to be
+>> > driven by cpu number.  Both are true for kvm.
+>> >
+>>
+>> Right, I was only thinking on my own uses, which are O(NR_CPUS) by nature.
+>>
+>> I wonder if it would be better to create a safe_cpumask_var type with
+>> its own alloc function
+>> free and and sset_cpu function but no clear_cpu function so that the
+>> compiler will catch
+>> cases of trying to clear bits off of such a cpumask?
+>>
+>> It seems safer and also makes handling the free function easier.
+>>
+>> Does that makes sense or am I over engineering it? :-)
+>
+> It makes sense.  Depends on the number of call sites, really.  If there
+> are several, consolidation helps, also makes it easier to further refactor.
 
-Reviewed-by: Russell King <rmk+kernel@arm.linux.org.uk>
+As Andrew pointed out code that usually calls just the CPU you wanted but
+sometime (under memory pressure) might call other CPUs is a problem
+waiting to happen, so I took his advice and re factored to use
+smp_call_function_single to IPI each CPU individually in case of alloc failure.
 
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Rob Herring <rob.herring@calxeda.com>
-> CC: linux-arm-kernel@lists.infradead.org
-> CC: devicetree-discuss@lists.ozlabs.org
-> ---
->  arch/arm/kernel/perf_event.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-> index 5bb91bf..6e9acb7 100644
-> --- a/arch/arm/kernel/perf_event.c
-> +++ b/arch/arm/kernel/perf_event.c
-> @@ -616,7 +616,7 @@ static int __init
->  cpu_pmu_reset(void)
->  {
->  	if (cpu_pmu && cpu_pmu->reset)
-> -		return on_each_cpu(cpu_pmu->reset, NULL, 1);
-> +		on_each_cpu(cpu_pmu->reset, NULL, 1);
+I don't know if that applied to the KVM use case. I'm guessing it
+probably doesn't
+from what you wrote here.
 
-There's not much to review here...
+Cheers,
+Gilad
 
-Thanks.
+>
+> --
+> error compiling committee.c: too many arguments to function
+>
 
->  	return 0;
->  }
->  arch_initcall(cpu_pmu_reset);
-> -- 
-> 1.7.0.4
-> 
+
+
+-- 
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
