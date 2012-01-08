@@ -1,68 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab2AHNf1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 08:35:27 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:57563 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488Ab2AHNdW (ORCPT
+	id S1753632Ab2AHNkh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 08:40:37 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:42780 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab2AHNkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 08:33:22 -0500
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: linux-kernel@vger.kernel.org
-Cc: Gilad Ben-Yossef <gilad@benyossef.com>, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [RFC PATCH v2 1/9] arm: avoid using on_each_cpu hard coded ret value
-Date: Sun,  8 Jan 2012 15:32:21 +0200
-Message-Id: <1326029549-2794-2-git-send-email-gilad@benyossef.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
-References: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
+	Sun, 8 Jan 2012 08:40:35 -0500
+Date: Sun, 8 Jan 2012 14:40:29 +0100
+From: Seth Forshee <seth.forshee@canonical.com>
+To: Corentin Chary <corentin.chary@gmail.com>
+Cc: Corentin Chary <corentincj@iksaif.net>,
+        platform-driver-x86@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        linux-kernel@vger.kernel.org, Andrzej Prochyra <andrzej@prochyra.name>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        David Herrmann <dh.herrmann@googlemail.com>,
+        Richard =?utf-8?Q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
+        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
+Message-ID: <20120108134029.GA7708@ubuntu-mba>
+Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
+	Corentin Chary <corentincj@iksaif.net>,
+	platform-driver-x86@vger.kernel.org,
+	Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
+	Andrzej Prochyra <andrzej@prochyra.name>,
+	Matthew Garrett <mjg59@srcf.ucam.org>,
+	David Herrmann <dh.herrmann@googlemail.com>,
+	Richard =?utf-8?Q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
+	Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
+References: <20120105150832.GA25386@ubuntu-macmini>
+ <1325945558-4661-1-git-send-email-corentincj@iksaif.net>
+ <20120108104630.GA4354@ubuntu-mba>
+ <CAHR064h287UFd4bBnWCJz61qw-wZBYRrF=5FKAmFg8YwaWN1Zw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHR064h287UFd4bBnWCJz61qw-wZBYRrF=5FKAmFg8YwaWN1Zw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on_each_cpu always returns a hard coded return code of zero.
+On Sun, Jan 08, 2012 at 01:36:45PM +0100, Corentin Chary wrote:
+> On Sun, Jan 8, 2012 at 11:46 AM, Seth Forshee
+> <seth.forshee@canonical.com> wrote:
+> > On Sat, Jan 07, 2012 at 03:12:38PM +0100, Corentin Chary wrote:
+> >> On these laptops, the ACPI video is not functional, and very unlikely
+> >> to be fixed by the vendor. Note that intel_backlight works for some
+> >> of these laptops, and the backlight from samsung-laptop always work.
+> >>
+> >> The good news is that newer laptops have functional ACPI video device
+> >> and won't end up growing this list.
+> >>
+> >> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
+> >> ---
+> >>
+> >> Could the concerned people test this patch and check that it correctly
+> >> disable the acpi_video backlight ?
+> >>
+> >>  drivers/acpi/video_detect.c |   40 ++++++++++++++++++++++++++++++++++++++++
+> >>  1 files changed, 40 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
+> >> index 45d8097..376bce2 100644
+> >> --- a/drivers/acpi/video_detect.c
+> >> +++ b/drivers/acpi/video_detect.c
+> >> @@ -132,6 +132,44 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
+> >>       return AE_OK;
+> >>  }
+> >>
+> >> +/* Force to use vendor driver when the ACPI device is known to be
+> >> + * buggy */
+> >> +static int video_detect_force_vendor(const struct dmi_system_id *d)
+> >> +{
+> >> +     acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
+> >> +     return 0;
+> >> +}
+> >> +
+> >> +static struct dmi_system_id video_detect_dmi_table[] = {
+> >> +     {
+> >> +      .callback = video_detect_force_vendor,
+> >> +      .ident = "N150P",
+> >> +      .matches = {
+> >> +             DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> >> +             DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
+> >> +             DMI_MATCH(DMI_BOARD_NAME, "N150P"),
+> >> +             },
+> >> +     },
+> >> +     {
+> >> +      .callback = video_detect_force_vendor,
+> >> +      .ident = "N145P/N250P/N260P",
+> >> +      .matches = {
+> >> +             DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> >> +             DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
+> >> +             DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
+> >> +             },
+> >> +     },
+> >> +     {
+> >> +      .callback = video_detect_force_vendor,
+> >> +      .ident = "N150/N210/N220",
+> >> +      .matches = {
+> >> +             DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
+> >> +             DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
+> >> +             DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
+> >> +             },
+> >> +     },
+> >> +};
+> >> +
+> >
+> > I don't see NF110/NF210/NF310 in this list. Was that an oversight?
+> 
+> Ooops. Could you add it and try the patch, then send me lines you added ?
+> Thanks,
 
-Removing all tests based on this return value saves run time
-cycles for compares and code bloat for branches.
-
-Signed-off-by: Gilad Ben-Yossef <gilad@benyossef.com>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Reviewed-by: Michal Nazarewicz <mina86@mina86.com>
-CC: Will Deacon <will.deacon@arm.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Mackerras <paulus@samba.org>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Grant Likely <grant.likely@secretlab.ca>
-CC: Rob Herring <rob.herring@calxeda.com>
-CC: linux-arm-kernel@lists.infradead.org
-CC: devicetree-discuss@lists.ozlabs.org
----
- arch/arm/kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index 5bb91bf..6e9acb7 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -616,7 +616,7 @@ static int __init
- cpu_pmu_reset(void)
- {
- 	if (cpu_pmu && cpu_pmu->reset)
--		return on_each_cpu(cpu_pmu->reset, NULL, 1);
-+		on_each_cpu(cpu_pmu->reset, NULL, 1);
- 	return 0;
- }
- arch_initcall(cpu_pmu_reset);
--- 
-1.7.0.4
-
+Sure, but it won't be until next week. I'm travelling this week and
+don't have the machine with me.
