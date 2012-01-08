@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab2AHVQe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 16:16:34 -0500
-Received: from ip-213-220-200-171.net.upcbroadband.cz ([213.220.200.171]:61717
-	"EHLO emu.suse.cz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754492Ab2AHVQd (ORCPT
+	id S1754593Ab2AHVXX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 16:23:23 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17073 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab2AHVXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 16:16:33 -0500
-X-Greylist: delayed 601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Jan 2012 16:16:33 EST
-From: Michal Marek <mmarek@suse.cz>
-To: linux-kbuild@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] kbuild: Fix comment in Makefile.lib
-Date: Sun,  8 Jan 2012 22:08:05 +0100
-Message-Id: <1326056885-6226-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.7
+	Sun, 8 Jan 2012 16:23:22 -0500
+Date: Sun, 8 Jan 2012 22:23:16 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
+cc: "David S. Miller" <davem@davemloft.net>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Bruce Allan <bruce.w.allan@intel.com>, linux-kernel@vger.kernel.org
+Subject: Intel ixgbe: uninitialized variable use in ixgbe_non_sfp_link_config()
+Message-ID: <alpine.LNX.2.00.1201082221550.24030@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KBUILD_MODNAME is not defined for files that are linked into multiple
-modules, and trying to change reality to match documentation would
-result in all sorts of trouble. E.g. options for built-in modules would
-be called either foo_bar.param, foo.param, or bar.param, depending on
-the configuration. So just change the comment.
+Hi (sorry about the duplicate, I messed up the LKML addr. on the first mail)
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- scripts/Makefile.lib |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+In ixgbe_non_sfp_link_config(), the variable 'negotiation' is declared
+without initializer and unless we take the true branch in the 'if
+((!autoneg) && (hw->mac.ops.get_link_capabilities))' statement it will
+remain uninitialized when it is subsequently read in the 'ret =
+hw->mac.ops.setup_link(hw, autoneg, negotiation, link_up)' statement.
 
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index 5d986d9..2ce2e21 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -93,9 +93,9 @@ obj-dirs	:= $(addprefix $(obj)/,$(obj-dirs))
- # already
- # $(modname_flags) #defines KBUILD_MODNAME as the name of the module it will 
- # end up in (or would, if it gets compiled in)
--# Note: It's possible that one object gets potentially linked into more
--#       than one module. In that case KBUILD_MODNAME will be set to foo_bar,
--#       where foo and bar are the name of the modules.
-+# Note: Files that end up in two or more modules are compiled without the
-+#       KBUILD_MODNAME definition. The reason is that any made-up name would
-+#       differ in different configs.
- name-fix = $(subst $(comma),_,$(subst -,_,$1))
- basename_flags = -D"KBUILD_BASENAME=KBUILD_STR($(call name-fix,$(basetarget)))"
- modname_flags  = $(if $(filter 1,$(words $(modname))),\
+The test of 'ret' after the 'if ((!autoneg) &&
+(hw->mac.ops.get_link_capabilities))' statement also looks fairly
+pointless if we do not take the true branch, since then 'ret' will not
+have been changed since the previous identical test.
+
+The correct fix escapes me since I don't really know this code (and don't 
+plan to spend the time to get to know it), but I thought I'd just report 
+what I had noticed and then someone else can hopefully come up with a good 
+fix :-)
+
+
+PS. Please CC me on replies.
+
 -- 
-1.7.7
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
