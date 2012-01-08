@@ -1,277 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2AHCdp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 21:33:45 -0500
-Received: from wega.rz.tu-ilmenau.de ([141.24.4.159]:36644 "EHLO
-	wega.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753094Ab2AHCdo (ORCPT
+	id S1752913Ab2AHCmS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 21:42:18 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:51112 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab2AHCmR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 21:33:44 -0500
-Message-ID: <4F09001D.1050701@tu-ilmenau.de>
-Date: Sun, 08 Jan 2012 03:31:57 +0100
-From: =?ISO-8859-1?Q?Stephan_B=E4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
-Reply-To: stephan.baerwolf@tu-ilmenau.de
-Organization: TU-Ilmenau
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111201 Thunderbird/8.0
+	Sat, 7 Jan 2012 21:42:17 -0500
+Date: Sat, 7 Jan 2012 21:40:29 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: tj@kernel.org, linux-kernel@vger.kernel.org
+Subject: Compile errors on 32-bit build due to
+ d4bbf7e7759afc172e2bfbc5c416324590049cdd
+Message-ID: <20120108024029.GA17214@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: KVM guest-kernel panics double fault
-References: <4EFBC973.1040905@tu-ilmenau.de> <4EFC3B17.1040601@redhat.com>
-In-Reply-To: <4EFC3B17.1040601@redhat.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: multipart/mixed;
- boundary="------------050604050405060605030704"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090208.4F090286.0051,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050604050405060605030704
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Hey Tejun
 
-Hello, it is me again...
+Your patch titled " Merge branch 'master' into x86/memblock" breaks compilation
+under 32-bit with CONFIG_XEN=y.
 
-I improved the patch, so it is now working on bases of guest's pretends.
-(For AMD and INTEL CPUs)
-If anybody needs it, I can also publish my test-VM - just ask me...
+/home/konrad/linux-linus/arch/x86/xen/mmu.c: In function ‘xen_setup_kernel_pagetable’:
+/home/konrad/linux-linus/arch/x86/xen/mmu.c:1855: error: expected ‘;’ before ‘)’ token
+/home/konrad/linux-linus/arch/x86/xen/mmu.c:1855: error: expected statement before ‘)’ token
 
-On 12/29/11 11:04, Avi Kivity wrote:
-> The PROT32 check should be qualifed by a checking the the guest cpuid
-> vendor is not AMD.  Otherwise a guest that was migrated from an AMD host
-> to an Intel host (this is what this emulation was written for in the
-> first place) will #UD unexpectedly.
->
-There are strange AMDs out there, where also again legacy-mode
-syscalls are not available - or even syscall at all is not available.
-The implemented (according to doku) tests should now cover all
-cases.
+Looking at merge it looks like you added an extra ')'?
 
-I also think I ovserved some strange behaviour according to cpuid after
-migration (change from Intel to AMD - see picture:
-http://matrixstorm.com/software/linux/kvm/20111229/cpuidmagic.jpg )
-But it is possible it is "only" an qemu-kvm (0.14.1-r2) bug ...
+This patch below fixes it, which I was thinking to attach it to my tree that I will
+send on Monday to Linus.
 
-The patch I wrote is against 3.2, but I always tested with linux 3.1.7.
-Hopfully it solve the problems to your satisfaction this time.
+>From 18ae9edebde83ef358e997e319868d664fb2ddb8 Mon Sep 17 00:00:00 2001
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date: Sat, 7 Jan 2012 21:27:38 -0500
+Subject: [PATCH] xen/mmu: Fix compile errors introduced by x86/memblock mismerge.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
+The git commit d4bbf7e7759afc172e2bfbc5c416324590049cdd
+"Merge branch 'master' into x86/memblock" mismerged the 32-bit
+section causing:
 
-regards Stephan
+arch/x86/xen/mmu.c: In function ‘xen_setup_kernel_pagetable’:
+arch/x86/xen/mmu.c:1855: error: expected ‘;’ before ‘)’ token
+arch/x86/xen/mmu.c:1855: error: expected statement before ‘)’ token
 
---------------050604050405060605030704
-Content-Type: text/x-patch;
- name="0001-KVM-move-emul_to_vcpu-makro-to-headerfile.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-KVM-move-emul_to_vcpu-makro-to-headerfile.patch"
-
->From 904c45acea67d5b18796a2d97bce54097bd440fe Mon Sep 17 00:00:00 2001
-From: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-Date: Sat, 7 Jan 2012 20:20:43 +0000
-Subject: [PATCH 1/2] KVM: move "emul_to_vcpu"-makro to headerfile
-
-In order to take advantage of "emul_to_vpu" in other
-C-files, this makro has been moved to the headerfile.
-
-Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/kvm/x86.c |    3 ---
- arch/x86/kvm/x86.h |    3 +++
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/xen/mmu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 4c938da..ac949ba 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -64,9 +64,6 @@
- #define KVM_MAX_MCE_BANKS 32
- #define KVM_MCE_CAP_SUPPORTED (MCG_CTL_P | MCG_SER_P)
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index f4bf8aa..58a0e46 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1852,7 +1852,7 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+ 	xen_write_cr3(__pa(initial_page_table));
  
--#define emul_to_vcpu(ctxt) \
--	container_of(ctxt, struct kvm_vcpu, arch.emulate_ctxt)
--
- /* EFER defaults:
-  * - enable syscall per default because its emulated by KVM
-  * - enable LME and LMA per default on 64 bit KVM
-diff --git a/arch/x86/kvm/x86.h b/arch/x86/kvm/x86.h
-index d36fe23..644c843 100644
---- a/arch/x86/kvm/x86.h
-+++ b/arch/x86/kvm/x86.h
-@@ -4,6 +4,9 @@
- #include <linux/kvm_host.h>
- #include "kvm_cache_regs.h"
+ 	memblock_reserve(__pa(xen_start_info->pt_base),
+-			 xen_start_info->nr_pt_frames * PAGE_SIZE));
++			 xen_start_info->nr_pt_frames * PAGE_SIZE);
  
-+#define emul_to_vcpu(ctxt) \
-+	container_of(ctxt, struct kvm_vcpu, arch.emulate_ctxt)
-+
- static inline void kvm_clear_exception_queue(struct kvm_vcpu *vcpu)
- {
- 	vcpu->arch.exception.pending = false;
+ 	return initial_page_table;
+ }
 -- 
-1.7.3.4
+1.7.7.3
 
-
---------------050604050405060605030704
-Content-Type: text/x-patch;
- name="0002-KVM-fix-missing-illegal-instruction-trap-in-protecte.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0002-KVM-fix-missing-illegal-instruction-trap-in-protecte.pa";
- filename*1="tch"
-
->From 027d609f885c1f7d46afc0f68eab33c006fa57c6 Mon Sep 17 00:00:00 2001
-From: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
-Date: Sun, 8 Jan 2012 02:03:47 +0000
-Subject: [PATCH 2/2] KVM: fix missing "illegal instruction"-trap in protected modes
-
-On hosts without this patch, 32bit guests will crash
-(and 64bit guests may behave in a wrong way) for
-example by simply executing following nasm-demo-application:
-
-	[bits 32]
-	global _start
-	SECTION .text
-	_start: syscall
-
-(I tested it with winxp and linux - both always crashed)
-
-	Disassembly of section .text:
-
-	00000000 <_start>:
-	   0:   0f 05                   syscall
-
-The reason seems a missing "invalid opcode"-trap (int6) for the
-syscall opcode "0f05", which is not available on Intel CPUs
-within non-longmodes, as also on some AMD CPUs within legacy-mode.
-(depending on CPU vendor, MSR_EFER and cpuid)
-
-Because previous mentioned OSs may not engage corresponding
-syscall target-registers (STAR, LSTAR, CSTAR), they remain
-NULL and (non trapping) syscalls are leading to multiple
-faults and finally crashs.
-
-Depending on the architecture (AMD or Intel) pretended by
-guests, various checks according to vendor's documentation
-are implemented to overcome the current issue and behave
-like the CPUs physical counterparts.
-
-(Therefore using Intel's "Intel 64 and IA-32 Architecture Software
-Developers Manual" http://www.intel.com/content/dam/doc/manual/
-64-ia-32-architectures-software-developer-manual-325462.pdf
-and AMD's "AMD64 Architecture Programmer's Manual Volume 3:
-General-Purpose and System Instructions"
-http://support.amd.com/us/Processor_TechDocs/APM_V3_24594.pdf )
-
-Screenshots of an i686 testing VM (CORE i5 host) before
-and after applying this patch are available under:
-
-http://matrixstorm.com/software/linux/kvm/20111229/before.jpg
-http://matrixstorm.com/software/linux/kvm/20111229/after.jpg
-
-Signed-off-by: Stephan Baerwolf <stephan.baerwolf@tu-ilmenau.de>
----
- arch/x86/include/asm/kvm_emulate.h |   15 +++++++++
- arch/x86/kvm/emulate.c             |   57 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 72 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_emulate.h b/arch/x86/include/asm/kvm_emulate.h
-index a026507..2a86ff9 100644
---- a/arch/x86/include/asm/kvm_emulate.h
-+++ b/arch/x86/include/asm/kvm_emulate.h
-@@ -297,6 +297,21 @@ struct x86_emulate_ctxt {
- #define X86EMUL_MODE_PROT     (X86EMUL_MODE_PROT16|X86EMUL_MODE_PROT32| \
- 			       X86EMUL_MODE_PROT64)
- 
-+/* CPUID vendors */
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx 0x68747541
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx 0x444d4163
-+#define X86EMUL_CPUID_VENDOR_AuthenticAMD_edx 0x69746e65
-+
-+#define X86EMUL_CPUID_VENDOR_AMDisbetter_ebx 0x69444d41
-+#define X86EMUL_CPUID_VENDOR_AMDisbetter_ecx 0x21726574
-+#define X86EMUL_CPUID_VENDOR_AMDisbetter_edx 0x74656273
-+
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_ebx 0x756e6547
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_ecx 0x6c65746e
-+#define X86EMUL_CPUID_VENDOR_GenuineIntel_edx 0x49656e69
-+
-+
-+
- enum x86_intercept_stage {
- 	X86_ICTP_NONE = 0,   /* Allow zero-init to not match anything */
- 	X86_ICPT_PRE_EXCEPT,
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index f1e3be1..78edb66 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1891,6 +1891,63 @@ static int em_syscall(struct x86_emulate_ctxt *ctxt)
- 		return emulate_ud(ctxt);
- 
- 	ops->get_msr(ctxt, MSR_EFER, &efer);
-+	// check - if guestOS is aware of syscall (0x0f05)
-+	if ((efer & EFER_SCE) == 0) return emulate_ud(ctxt);
-+	else {
-+	  // ok, at this point it becomes vendor-specific
-+	  // so first get us an cpuid
-+	  struct kvm_cpuid_entry2 *vendor;
-+
-+	  // eax = 0x00000000, ebx = 0x00000000 ==> cpu-vendor
-+	  vendor = kvm_find_cpuid_entry(emul_to_vcpu(ctxt), 0, 0);
-+
-+	  if (likely(vendor)) {
-+	    // AMD (AuthenticAMD)/(AMDisbetter!)
-+	    if ((vendor->ebx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ebx &&
-+	         vendor->ecx==X86EMUL_CPUID_VENDOR_AuthenticAMD_ecx &&
-+	         vendor->edx==X86EMUL_CPUID_VENDOR_AuthenticAMD_edx) ||
-+	        (vendor->ebx==X86EMUL_CPUID_VENDOR_AMDisbetter_ebx &&
-+	         vendor->ecx==X86EMUL_CPUID_VENDOR_AMDisbetter_ecx &&
-+	         vendor->edx==X86EMUL_CPUID_VENDOR_AMDisbetter_edx)) {
-+
-+	          // if cpu is not in longmode...
-+	          // ...check edx bit11 of cpuid 0x80000001
-+		  if (ctxt->mode != X86EMUL_MODE_PROT64) {
-+	            vendor= kvm_find_cpuid_entry(emul_to_vcpu(ctxt), 0x80000001, 0);
-+	            if (likely(vendor)) {
-+	             if (unlikely(((vendor->edx >> 11) & 0x1) == 0)) return emulate_ud(ctxt);
-+	            } else return emulate_ud(ctxt); // assuming there is no bit 11
-+	          }
-+	          goto __em_syscall_vendor_processed;
-+	    } // end "AMD"
-+
-+	    // Intel (GenuineIntel)
-+	    // remarks: Intel CPUs only support "syscall" in 64bit longmode
-+	    //          Also an 64bit guest within an 32bit compat-app running
-+	    //          will #UD !!
-+	    //          While this behaviour can be fixed (by emulating) into
-+	    //          an AMD response - CPUs of AMD can't behave like Intel
-+	    //          because without an hardware-raised #UD there is no
-+	    //          call into emulation-mode (see x86_emulate_instruction(...)) !
-+	    // TODO: make AMD-behaviour configurable
-+	    if (vendor->ebx==X86EMUL_CPUID_VENDOR_GenuineIntel_ebx &&
-+	        vendor->ecx==X86EMUL_CPUID_VENDOR_GenuineIntel_ecx &&
-+	        vendor->edx==X86EMUL_CPUID_VENDOR_GenuineIntel_edx) {
-+	          if (ctxt->mode != X86EMUL_MODE_PROT64) return emulate_ud(ctxt);
-+	          goto __em_syscall_vendor_processed;
-+	    } // end "Intel"
-+	  } //end "likely(vendor)"
-+
-+	  // default:	  
-+	  // this code wasn't able to process vendor
-+	  // so apply  Intels stricter rules...
-+	  pr_unimpl(emul_to_vcpu(ctxt), "unknown vendor of cpu - assuming intel\n");
-+	  if (ctxt->mode != X86EMUL_MODE_PROT64) return emulate_ud(ctxt);
-+
-+	 __em_syscall_vendor_processed:
-+	 vendor=NULL;
-+	}
-+
- 	setup_syscalls_segments(ctxt, &cs, &ss);
- 
- 	ops->get_msr(ctxt, MSR_STAR, &msr_data);
--- 
-1.7.3.4
-
-
---------------050604050405060605030704--
