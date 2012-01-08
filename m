@@ -1,67 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab2AHArN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 19:47:13 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:43904 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752242Ab2AHArM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 19:47:12 -0500
-Date: Sat, 7 Jan 2012 16:45:02 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jonathan Nieder <jrnieder@gmail.com>
-CC: Arnaud Patard <arnaud.patard@rtp-net.org>, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Roman Mamedov <rm@romanrm.ru>, Manuel Roeder <manuel_roeder@gmx.de>,
-        Michael Ott <michael@king-coder.de>,
-        Rodolfo Giometti <giometti@linux.it>,
-        Mauro Barella <mbarella@vds-it.com>
-Subject: Re: [2.6.37 -> 2.6.38 regression] "mv64xxx: I2C bus locked, block:
- 1, time_left: 0" every few seconds
-Message-ID: <20120108004502.GA20549@ericsson.com>
-References: <20120101042401.4bef017e@natsu>
- <20120101073255.GA2402@elie.hsd1.il.comcast.net>
+	id S1752702Ab2AHAzz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 19:55:55 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:57056 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab2AHAzy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 19:55:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120101073255.GA2402@elie.hsd1.il.comcast.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
+References: <bug-41722-5003@https.bugzilla.kernel.org/>
+	<201109062222.p86MMlK9023363@demeter2.kernel.org>
+	<CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
+Date: Sat, 7 Jan 2012 22:55:53 -0200
+Message-ID: <CAF3stZzkxaazf+ttutFrX18nxt5VEiSABm3atnzJ76e2qt2pQg@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: =?ISO-8859-1?Q?M=E1rcia_Brito?= <mcbrito@gmail.com>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: bugzilla-daemon@bugzilla.kernel.org,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 01, 2012 at 01:32:55AM -0600, Jonathan Nieder wrote:
-> Hi,
-> 
-> Roman Mamedov wrote[1]:
-> 
-> > This bug is still present for me in the latest kernel version in
-> > Debian testing (3.1.6).
-> >
-> > The last properly working kernel version seems to be:
-> [...]
-> > And the problem occurs since:
-> [...]
-> 
-> Thanks.  Arnaud, any hints?  To summarize:
-> 
->  - Michael Ott reported with Debian kernel 2.6.38-3 (which is closely
->    based on stable v2.6.38.2):
-> 
-> 	syslog tell me every few seconds:
-> 	i2c i2c-0: mv64xxx: I2C bus locked, block: 1, time_left: 0
-> 
->  - Manuel Roeder reported the same and found that upstream v2.6.38
->    triggers the problem and v2.6.37.6 does not.
-> 
->  - Roman Mamedov finds the bug present in Debian 3.1.6-1 (which
->    is closely based on stable v3.1.6) and Debian 2.6.37-2 (based on
->    stable v2.6.37.2) but not Debian 2.6.37-1 (based on mainline
->    v2.6.37).
-> 
-> The regression range described above seems a little inconsistent to
-> me, so maybe there's something more going on.
-> 
-Points to commit eda6bee6c7e67b5bd17bdbced0926f5687f686d5 (i2c-mv64xxx: send repeated START
-between messages in xfer). Maybe you can back it out and see if it makes a difference.
+Dear sirs
+I greatly appreciate the interest in helping me get my notebook using linux
+I was surprised by the commitment of you to help
+forever grateful
+Marcia
 
-Guenter
+Em 6 de janeiro de 2012 23:31, Rogério Brito <rbrito@ime.usp.br> escreveu:
+> Hi, Bjorn and others,
+>
+> Now that bugzilla is up, I think that I can resume testing things on
+> that problematic notebook that I mentioned in earlier e-mails, so that
+> mom (in CC) can use her notebook with Linux.
+>
+> For the record, *some* description of the problem is at:
+>
+> * https://bugzilla.kernel.org/show_bug.cgi?id=41132
+> * https://bugzilla.kernel.org/show_bug.cgi?id=41722
+>
+> The first one is a regression that I bisected, while the second one
+> seems to be a bit harder to understand for a layman like me.
+>
+> Of couse, I can summarize what I found and what I didn't.
+>
+> Sorry for the top-posting, but it is here to keep the context of the
+> previous message.
+>
+> Thanks,
+> Rogério Brito.
+>
+> On Tue, Sep 6, 2011 at 19:22,  <bugzilla-daemon@bugzilla.kernel.org> wrote:
+>>
+>>
+>>
+>>
+>>
+>> --- Comment #15 from Rogério Brito <rbrito@ime.usp.br>  2011-09-06 22:22:44 ---
+>> Dear Bjorn,
+>>
+>> Sorry for not responding promptly but I had some family members with health
+>> problems. Things are settling right now and I think that I can be faster now.
+>>
+>> (In reply to comment #14)
+>>> So it looks like 2.4.27 doesn't even try to enable ACPI mode, and 2.6.8 hangs
+>>> the same way as 3.1.0-rc3.
+>>
+>> Yes, exactly.
+>>
+>>> Can you try 2.6.28?  If that doesn't boot, try the Ubuntu 9.04 kernel, which
+>>> was reported to boot on your machine/BIOS.
+>>
+>> Unfortunately, I tried to boot with that version of the Ubuntu live CD and it
+>> crashed the same way. I may try it once again, paying more attention if it
+>> behaves differently in any kind of way, though.
+>>
+>> Oh, talking about PCI and ACPI failing, could you take a look at issue #41132
+>> to see if you can help with another machine that stopped working after a commit
+>> that I bisected?
+>>
+>>
+>> Thanks,
+>>
+>> Rogério Brito.
+>>
+>> --
+>> Configure bugmail: https://bugzilla.kernel.org/userprefs.cgi?tab=email
+>> ------- You are receiving this mail because: -------
+>> You are on the CC list for the bug.
+>
+>
+>
+> --
+> Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+> http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+> DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
