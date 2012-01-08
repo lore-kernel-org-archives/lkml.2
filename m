@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab2AHPtW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 10:49:22 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:49037 "EHLO
+	id S1753955Ab2AHPzd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 10:55:33 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39552 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753754Ab2AHPtV (ORCPT
+	with ESMTP id S1752727Ab2AHPzc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 10:49:21 -0500
-Subject: Re: [PATCH] perf tools: Fix compile error on x86_64 Ubuntu
+	Sun, 8 Jan 2012 10:55:32 -0500
 From: Namhyung Kim <namhyung@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
-In-Reply-To: <20120108153237.GA11891@elte.hu>
-References: <20120108150012.GA7570@elte.hu>
-	 <1326035430-7621-1-git-send-email-namhyung@gmail.com>
-	 <20120108151207.GA26660@infradead.org>  <20120108153237.GA11891@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jan 2012 00:49:14 +0900
-Message-ID: <1326037754.1947.9.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] perf top: Use active evsel for non-sample events on old kernel
+Date: Mon,  9 Jan 2012 00:55:23 +0900
+Message-Id: <1326038125-2929-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.8.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-01-08 (일), 16:32 +0100, Ingo Molnar: 
-> * Arnaldo Carvalho de Melo <acme@ghostprotocols.net> wrote:
-> 
-> > Em Mon, Jan 09, 2012 at 12:10:30AM +0900, Namhyung Kim escreveu:
-> > > ctype.h is not needed here and it breaks build on some system
-> > > (at least 64bit Ubuntu 10.04) like below. Just get rid of it.
-> > 
-> > Thanks, applying it together with your previous patchset.
-> 
-> Note that there are other ctype.h inclusions elsewhere as well, 
-> which should be considered for removal as well.
-> 
-> Thanks,
-> 
-> 	Ingo
+If multiple events are specified on old kernel,
+perf_evlist__id2evsel() returns NULL for non-sampling events
+since the sample.id doesn't contain valid value, and it triggers
+assert below. If only one event is given, the function returns
+the evsel regardless of sample.id, this is why most case cause
+no problem on old kernel.
 
-Hi,
+Fix it by using active evsel.
 
-I'll look into them as well later.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ tools/perf/builtin-top.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-Thanks.
-
-
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index d89dec90103e..2c9fa1e48854 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -762,6 +762,14 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
+ 		}
+ 
+ 		evsel = perf_evlist__id2evsel(session->evlist, sample.id);
++		if (evsel == NULL && !session->sample_id_all &&
++		    event->header.type != PERF_RECORD_SAMPLE) {
++			/*
++			 * Old kernel, no sample_id_all field.
++			 * Just use active evsel.
++			 */
++			evsel = top->sym_evsel;
++		}
+ 		assert(evsel != NULL);
+ 
+ 		origin = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
 -- 
-Regards,
-Namhyung Kim
-
-
+1.7.8.2
 
