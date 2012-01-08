@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab2AHQV7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 11:21:59 -0500
-Received: from mailout-de.gmx.net ([213.165.64.22]:45108 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753889Ab2AHQV6 convert rfc822-to-8bit (ORCPT
+	id S1754139Ab2AHQZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 11:25:27 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33922 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753972Ab2AHQZZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 11:21:58 -0500
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX196O+JmSoZ6OzbkD7VyuusOGIXMu12enm2Hj36tn0
-	DmxWoiqUOdD2g5
-From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
-To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: unmet direct dependencies in v3.2-3023-g02550d6
-Date: Sun, 8 Jan 2012 17:21:47 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0; KDE/4.7.4; i686; ; )
+	Sun, 8 Jan 2012 11:25:25 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+X-Originating-IP: [79.181.26.205]
+In-Reply-To: <20120108161212.GD21765@n2100.arm.linux.org.uk>
+References: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
+	<1326029549-2794-2-git-send-email-gilad@benyossef.com>
+	<20120108161212.GD21765@n2100.arm.linux.org.uk>
+Date: Sun, 8 Jan 2012 18:25:24 +0200
+Message-ID: <CAOtvUMddvPVQTaUQAmGOgx9Wz18ewVWG5nRouYaDuFWe13pX4g@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 1/9] arm: avoid using on_each_cpu hard coded ret value
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201201081721.47441.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sun, Jan 8, 2012 at 6:12 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
 
-a "make randconfig" gives :
+<SNIP>
 
-warning: (HAVE_TEXT_POKE_SMP) selects STOP_MACHINE which has unmet direct dependencies (SMP && MODULE_UNLOAD || HOTPLUG_CPU)
+>> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+>> index 5bb91bf..6e9acb7 100644
+>> --- a/arch/arm/kernel/perf_event.c
+>> +++ b/arch/arm/kernel/perf_event.c
+>> @@ -616,7 +616,7 @@ static int __init
+>>  cpu_pmu_reset(void)
+>>  {
+>>       if (cpu_pmu && cpu_pmu->reset)
+>> -             return on_each_cpu(cpu_pmu->reset, NULL, 1);
+>> +             on_each_cpu(cpu_pmu->reset, NULL, 1);
+>
+> There's not much to review here...
 
-warning: (IWM && WIMAX_IWMC3200_SDIO) selects IWMC3200TOP which has unmet direct dependencies (MISC_DEVICES && MMC && 
-EXPERIMENTAL)
+Oh, I've introduced fatal bugs with less... :-)
 
-warning: (MEDIA_TUNER) selects MEDIA_TUNER_TEA5761 which has unmet direct dependencies (MEDIA_SUPPORT && VIDEO_MEDIA && I2C && 
-EXPERIMENTAL)
-
-
-for the current git tree - are these issues already known ?
+Thanks for the review.
+Gilad
 
 
 -- 
-MfG/Sincerely
-Toralf FÃ¶rster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
