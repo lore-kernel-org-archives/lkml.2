@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440Ab2AHLvR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 06:51:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39232 "EHLO
+	id S1753472Ab2AHLv0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 06:51:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39237 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751114Ab2AHLvQ (ORCPT
+	with ESMTP id S1751814Ab2AHLvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 06:51:16 -0500
-Date: Sun, 8 Jan 2012 03:50:23 -0800
-From: tip-bot for Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Message-ID: <tip-cc5a91e972212aea022ff86b2c11d3e84d552bf5@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, sebastian@breakpoint.cc, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, sebastian@breakpoint.cc, mingo@elte.hu
-In-Reply-To: <1324128938-17553-1-git-send-email-sebastian@breakpoint.cc>
-References: <1324128938-17553-1-git-send-email-sebastian@breakpoint.cc>
+	Sun, 8 Jan 2012 06:51:23 -0500
+Date: Sun, 8 Jan 2012 03:51:09 -0800
+From: tip-bot for David Daney <david.daney@cavium.com>
+Message-ID: <tip-2e885057b7f75035f0b85e02f737891482815a81@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        rostedt@goodmis.org, david.daney@cavium.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org, david.daney@cavium.com, tglx@linutronix.de
+In-Reply-To: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>
+References: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add const.
- h to MANIFEST to make perf-tar-src-pkg work again
-Git-Commit-ID: cc5a91e972212aea022ff86b2c11d3e84d552bf5
+Subject: [tip:perf/core] recordmcount:
+  Fix handling of elf64 big-endian objects.
+Git-Commit-ID: 2e885057b7f75035f0b85e02f737891482815a81
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -30,40 +28,52 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 08 Jan 2012 03:50:29 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 08 Jan 2012 03:51:15 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cc5a91e972212aea022ff86b2c11d3e84d552bf5
-Gitweb:     http://git.kernel.org/tip/cc5a91e972212aea022ff86b2c11d3e84d552bf5
-Author:     Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-AuthorDate: Sat, 17 Dec 2011 14:35:37 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 6 Jan 2012 15:52:18 -0200
+Commit-ID:  2e885057b7f75035f0b85e02f737891482815a81
+Gitweb:     http://git.kernel.org/tip/2e885057b7f75035f0b85e02f737891482815a81
+Author:     David Daney <david.daney@cavium.com>
+AuthorDate: Mon, 19 Dec 2011 17:42:42 -0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Fri, 6 Jan 2012 17:06:42 -0500
 
-perf tools: Add const.h to MANIFEST to make perf-tar-src-pkg work again
+recordmcount: Fix handling of elf64 big-endian objects.
 
-Fixes:
-|make: *** No rule to make target `../../include/linux/const.h', needed by `builtin-annotate.o'.  Stop.
+In ELF64, the sh_flags field is 64-bits wide.  recordmcount was
+erroneously treating it as a 32-bit wide field.  For little endian
+objects this works because the flags of interest (SHF_EXECINSTR)
+reside in the lower 32 bits of the word, and you get the same result
+with either a 32-bit or 64-bit read.  Big endian objects on the
+other hand do not work at all with this error.
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1324128938-17553-1-git-send-email-sebastian@breakpoint.cc
-Signed-off-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+The fix:  Correctly treat sh_flags as 64-bits wide in elf64 objects.
+
+The symptom I observed was that my
+__start_mcount_loc..__stop_mcount_loc was empty even though ftrace
+function tracing was enabled.
+
+Link: http://lkml.kernel.org/r/1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com
+
+Cc: stable@kernel.org # 3.0+
+Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/perf/MANIFEST |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ scripts/recordmcount.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index c12659d..1078c5f 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -1,4 +1,5 @@
- tools/perf
-+include/linux/const.h
- include/linux/perf_event.h
- include/linux/rbtree.h
- include/linux/list.h
+diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
+index f40a6af6..54e35c1 100644
+--- a/scripts/recordmcount.h
++++ b/scripts/recordmcount.h
+@@ -462,7 +462,7 @@ __has_rel_mcount(Elf_Shdr const *const relhdr,  /* is SHT_REL or SHT_RELA */
+ 		succeed_file();
+ 	}
+ 	if (w(txthdr->sh_type) != SHT_PROGBITS ||
+-	    !(w(txthdr->sh_flags) & SHF_EXECINSTR))
++	    !(_w(txthdr->sh_flags) & SHF_EXECINSTR))
+ 		return NULL;
+ 	return txtname;
+ }
