@@ -1,91 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754863Ab2AHXuu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 18:50:50 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:46202 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754748Ab2AHXus (ORCPT
+	id S1754886Ab2AHXxU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 18:53:20 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:53974 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754738Ab2AHXxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 18:50:48 -0500
-Date: Sun, 8 Jan 2012 23:50:40 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <mszeredi@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Subject: Re: [git pull] vfs pile 1
-Message-ID: <20120108235039.GQ23916@ZenIV.linux.org.uk>
-References: <20120105022318.GG23916@ZenIV.linux.org.uk>
- <CA+55aFw+7xvfP3NCr5p2Ma--UTb7zT+QQxtjCn3V2SU_g3LUdA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFw+7xvfP3NCr5p2Ma--UTb7zT+QQxtjCn3V2SU_g3LUdA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 8 Jan 2012 18:53:19 -0500
+Date: Mon, 9 Jan 2012 10:53:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+Subject: linux-next: manual merge of the arm tree with Linus' tree
+Message-Id: <20120109105309.27dfc8afcc8db0e16e2021e0@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jan_2012_10_53_09_+1100_._UwIXbLi3gWfFHT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 08, 2012 at 03:04:30PM -0800, Linus Torvalds wrote:
-> Hmm.
-> 
-> Al, Miklos, I just triggered the new inc_link() warning three times in
-> very close succession by just doing a simple
-> 
->               perf record -f -e cycles:pp make -j
-> 
-> (I don't think the "perf record" part was actually required or
-> relevant, although it may have been instrumental in triggering just
-> the right timing)
-> 
-> This was in a fully built tree, I'm just checking
-> 
-> The warning trace looks like this:
-> 
->   [ 6933.446125] ------------[ cut here ]------------
->   [ 6933.446131] WARNING: at fs/inode.c:349 inc_nlink+0x30/0x40()
->   [ 6933.446133] Hardware name: System Product Name
->   [ 6933.446135] Pid: 22955, comm: perf Not tainted
-> 3.2.0-03190-g972b2c719990 #72
->   [ 6933.446137] Call Trace:
->   [ 6933.446143]  [<ffffffff8102ee15>] warn_slowpath_common+0x75/0xb0
->   [ 6933.446145]  [<ffffffff8102ef15>] warn_slowpath_null+0x15/0x20
->   [ 6933.446147]  [<ffffffff810f1450>] inc_nlink+0x30/0x40
->   [ 6933.446151]  [<ffffffff8116f333>] ext4_symlink+0x113/0x2c0
->   [ 6933.446154]  [<ffffffff810e7b01>] vfs_symlink+0xa1/0xf0
->   [ 6933.446157]  [<ffffffff810e7c03>] sys_symlinkat+0xb3/0xd0
->   [ 6933.446159]  [<ffffffff810e7c31>] sys_symlink+0x11/0x20
->   [ 6933.446162]  [<ffffffff816916a2>] system_call_fastpath+0x16/0x1b
->   [ 6933.446164] ---[ end trace 550d4b2eb6b8fbc9 ]---
-> 
-> and the three warnings all triggered within 2/100th of a second of
-> that one (the last one had a timestamp of 6933.465678), so they are
-> probably all related to the same thing happening.
+--Signature=_Mon__9_Jan_2012_10_53_09_+1100_._UwIXbLi3gWfFHT
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-WTF is ext4_symlink() doing in case of long symlinks?  Look:
-                drop_nlink(inode);
-                err = ext4_orphan_add(handle, inode);
-                ext4_journal_stop(handle);
-[write symlink body]
-                inc_nlink(inode);
-                err = ext4_orphan_del(handle, inode);
-oh, I see...  The comment above that re deadlocks and inability to do that
-in a single transaction ;-/
+Hi Russell,
 
-OK, try this; that's equivalent to what they are doing and will not WARN_ON();
-I hadn't checked other filesystems for similar tricks yet, so this has a good
-chance of being incomplete.
+Today's linux-next merge of the arm tree got a conflict in
+arch/arm/mach-s5pv210/common.c between commit 7affca3537d7 ("Merge branch
+'driver-core-next' of
+git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core") from
+Linus' tree and commit 58329cb3171f ("ARM: mach-s5pv210: use standard
+arch_idle()") from the arm tree.
 
-diff --git a/fs/ext4/namei.c b/fs/ext4/namei.c
-index 86edc45..2043f48 100644
---- a/fs/ext4/namei.c
-+++ b/fs/ext4/namei.c
-@@ -2315,7 +2315,7 @@ retry:
- 			err = PTR_ERR(handle);
- 			goto err_drop_inode;
- 		}
--		inc_nlink(inode);
-+		set_nlink(inode, 1);
- 		err = ext4_orphan_del(handle, inode);
- 		if (err) {
- 			ext4_journal_stop(handle);
+I fixed it up (see below) and can carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/mach-s5pv210/common.c
+index 0ec3933,2622b8a..0000000
+--- a/arch/arm/mach-s5pv210/common.c
++++ b/arch/arm/mach-s5pv210/common.c
+@@@ -247,11 -238,7 +239,7 @@@ core_initcall(s5pv210_core_init)
+  int __init s5pv210_init(void)
+  {
+  	printk(KERN_INFO "S5PV210: Initializing architecture\n");
+-=20
+- 	/* set idle function */
+- 	pm_idle =3D s5pv210_idle;
+-=20
+ -	return sysdev_register(&s5pv210_sysdev);
+ +	return device_register(&s5pv210_dev);
+  }
+ =20
+  static struct s3c24xx_uart_clksrc s5pv210_serial_clocks[] =3D {
+
+--Signature=_Mon__9_Jan_2012_10_53_09_+1100_._UwIXbLi3gWfFHT
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPCixlAAoJEECxmPOUX5FEBfwP/0VCoQUaXoII0YvKT7Qe0BqY
+gT0ZLmT5fvFwUzAG+cTkr/VLhuj1dfVhtlfI5Vzh1p0BL8zmblTiQ/UmRsQDn3JL
+Qy8XEGdb6QJe/vmiGqJ2KV/YnsVV9R+OGvf5Pkl7pBxcra+V6Vt4hr6xZPAWoU1K
+Pe6enUSt/WQfnjsizXgKMkLUrqoGv7Ed7jLTdVY7rMnIBu5An6c5YEam1oornL/S
+0mPy6f+gRdE18silgti1KVXYk1O8QbhF8GkSxtDJyNG7B1ya7GA45kbYWntZYYb5
+Qi9SlCesdXUT0/e7PXBxIBBXtGGbCl/5jhtwzPZ8f0B63tKnQTNQCdMaVZAGlKdG
+YThMVGEnnjDp+btAAhZmnfjDJ/aG00JW6f2VgNWfiHYTYMayERVU+RzkUq6n05Kp
+yedZudV+yFHQL2N9+NI3650lGoiPd6oOAOc/IQ8AQykjhbfgS8y1XmR3AaObjJPn
+aj9udr0eOH2i9XdCM+r0X1Ud7PRcPpyf/m4UHz26PT9UBxwAYZGd/cZ+fQ6MxHe2
+Ox231w+j1RbyzkG2ApAC9GQNKBizqNACT5+t6OGmCOmtHv+rB9L9LVFtFB7MQTQg
+aogqKWDpTiYm4d1xyJ6Wg0MS0B4grnrMLafSDx6l6PiyoHPhXdj+fi90nHQYUo3+
+GFFbIBMHlCjMp58kBXrD
+=kyzL
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__9_Jan_2012_10_53_09_+1100_._UwIXbLi3gWfFHT--
