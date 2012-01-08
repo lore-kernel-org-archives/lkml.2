@@ -1,142 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab2AHSJv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 13:09:51 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:34185
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753740Ab2AHSJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 13:09:50 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: [PATCH 1/1] drivers: hv: Get rid of some unnecessary code
-Date: Sun,  8 Jan 2012 10:12:18 -0800
-Message-Id: <1326046338-23033-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1754359Ab2AHSNS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 13:13:18 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:47151 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619Ab2AHSNR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 13:13:17 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [PATCH 0/4] sysfs:  Reduce the size of sysfs_dirent
+References: <m1aa6pky2r.fsf@fess.ebiederm.org>
+	<m1sjjwggz0.fsf@fess.ebiederm.org> <20120108175645.GC29499@suse.de>
+Date: Sun, 08 Jan 2012 10:15:31 -0800
+In-Reply-To: <20120108175645.GC29499@suse.de> (Greg KH's message of "Sun, 8
+	Jan 2012 09:56:45 -0800")
+Message-ID: <m1wr9283i4.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1/NjrsfTW4rmCdubK4v7jVVcFUjmOK9+7E=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code unnecessarily limits the number of offers we handle.
-Get rid of this limitation. As part of this cleanup, also get rid of an
-unused define - MAX_MSG_TYPES.
+Greg KH <gregkh@suse.de> writes:
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/hv/channel_mgmt.c |   87 ---------------------------------------------
- 1 files changed, 0 insertions(+), 87 deletions(-)
+> On Tue, Jan 03, 2012 at 09:43:47PM -0800, Eric W. Biederman wrote:
+>> ebiederm@xmission.com (Eric W. Biederman) writes:
+>> 
+>> > After throwing rb_trees at the problem sysfs_dirent increased in size by
+>> > 6 pointers, or 48 bytes.    Since the point of having struct
+>> > sysfs_dirent is to keep the size down increasing in size that much seems
+>> > unfortunate.
+>> >
+>> > The following patches attack this problem and if I have counted right
+>> > reduce the size of sysfs_dirent by 4 pointers on 64bit.  Not quite
+>> > where we were but reducing sysfs_dirent by 32bytes to 104 bytes is
+>> > an improvement.
+>> 
+>> Greg did you see these patches for reducing the sysfs memory size
+>> regression in 3.2?
+>
+> Ok, due to the holidays, these ended up missing the 3.3 merge window,
+> I'll queue them up for 3.4.
 
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index 36484db..9ffbfc5 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -37,81 +37,6 @@ struct vmbus_channel_message_table_entry {
- 	void (*message_handler)(struct vmbus_channel_message_header *msg);
- };
- 
--#define MAX_MSG_TYPES                    4
--#define MAX_NUM_DEVICE_CLASSES_SUPPORTED 8
--
--static const uuid_le
--	supported_device_classes[MAX_NUM_DEVICE_CLASSES_SUPPORTED] = {
--	/* {ba6163d9-04a1-4d29-b605-72e2ffb1dc7f} */
--	/* Storage - SCSI */
--	{
--		.b  = {
--			0xd9, 0x63, 0x61, 0xba, 0xa1, 0x04, 0x29, 0x4d,
--			0xb6, 0x05, 0x72, 0xe2, 0xff, 0xb1, 0xdc, 0x7f
--		}
--	},
--
--	/* {F8615163-DF3E-46c5-913F-F2D2F965ED0E} */
--	/* Network */
--	{
--		.b = {
--			0x63, 0x51, 0x61, 0xF8, 0x3E, 0xDF, 0xc5, 0x46,
--			0x91, 0x3F, 0xF2, 0xD2, 0xF9, 0x65, 0xED, 0x0E
--		}
--	},
--
--	/* {CFA8B69E-5B4A-4cc0-B98B-8BA1A1F3F95A} */
--	/* Input */
--	{
--		.b = {
--			0x9E, 0xB6, 0xA8, 0xCF, 0x4A, 0x5B, 0xc0, 0x4c,
--			0xB9, 0x8B, 0x8B, 0xA1, 0xA1, 0xF3, 0xF9, 0x5A
--		}
--	},
--
--	/* {32412632-86cb-44a2-9b5c-50d1417354f5} */
--	/* IDE */
--	{
--		.b = {
--			0x32, 0x26, 0x41, 0x32, 0xcb, 0x86, 0xa2, 0x44,
--			0x9b, 0x5c, 0x50, 0xd1, 0x41, 0x73, 0x54, 0xf5
--		}
--	},
--	/* 0E0B6031-5213-4934-818B-38D90CED39DB */
--	/* Shutdown */
--	{
--		.b = {
--			0x31, 0x60, 0x0B, 0X0E, 0x13, 0x52, 0x34, 0x49,
--			0x81, 0x8B, 0x38, 0XD9, 0x0C, 0xED, 0x39, 0xDB
--		}
--	},
--	/* {9527E630-D0AE-497b-ADCE-E80AB0175CAF} */
--	/* TimeSync */
--	{
--		.b = {
--			0x30, 0xe6, 0x27, 0x95, 0xae, 0xd0, 0x7b, 0x49,
--			0xad, 0xce, 0xe8, 0x0a, 0xb0, 0x17, 0x5c, 0xaf
--		}
--	},
--	/* {57164f39-9115-4e78-ab55-382f3bd5422d} */
--	/* Heartbeat */
--	{
--		.b = {
--			0x39, 0x4f, 0x16, 0x57, 0x15, 0x91, 0x78, 0x4e,
--			0xab, 0x55, 0x38, 0x2f, 0x3b, 0xd5, 0x42, 0x2d
--		}
--	},
--	/* {A9A0F4E7-5A45-4d96-B827-8A841E8C03E6} */
--	/* KVP */
--	{
--		.b = {
--			0xe7, 0xf4, 0xa0, 0xa9, 0x45, 0x5a, 0x96, 0x4d,
--			0xb8, 0x27, 0x8a, 0x84, 0x1e, 0x8c, 0x3,  0xe6
--	}
--	},
--
--};
--
- 
- /**
-  * vmbus_prep_negotiate_resp() - Create default response for Hyper-V Negotiate message
-@@ -321,20 +246,8 @@ static void vmbus_onoffer(struct vmbus_channel_message_header *hdr)
- 	struct vmbus_channel *newchannel;
- 	uuid_le *guidtype;
- 	uuid_le *guidinstance;
--	int i;
--	int fsupported = 0;
- 
- 	offer = (struct vmbus_channel_offer_channel *)hdr;
--	for (i = 0; i < MAX_NUM_DEVICE_CLASSES_SUPPORTED; i++) {
--		if (!uuid_le_cmp(offer->offer.if_type,
--				supported_device_classes[i])) {
--			fsupported = 1;
--			break;
--		}
--	}
--
--	if (!fsupported)
--		return;
- 
- 	guidtype = &offer->offer.if_type;
- 	guidinstance = &offer->offer.if_instance;
--- 
-1.7.4.1
+Thanks.
 
+Eric
