@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751535Ab2AHDzd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 22:55:33 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:57574 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab2AHDzc (ORCPT
+	id S1751553Ab2AHEkN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 23:40:13 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37180 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751089Ab2AHEkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 22:55:32 -0500
-Message-ID: <1325994892.5482.10.camel@ThinkPad-T61>
-Subject: Re: [PATCH v2 powerpc] fix unpaired __trace_hcall_entry and
- __trace_hcall_exit
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        PowerPC email list <linuxppc-dev@lists.ozlabs.org>,
-        Anton Blanchard <anton@samba.org>
-Date: Sun, 08 Jan 2012 11:54:52 +0800
-In-Reply-To: <1325552057.23910.5.camel@pasglop>
-References: <1324260407.3006.17.camel@ThinkPad-T61>
-	 <1325552057.23910.5.camel@pasglop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-x-cbid: 12010717-0260-0000-0000-000000585538
+	Sat, 7 Jan 2012 23:40:11 -0500
+Date: Sat, 7 Jan 2012 20:39:48 -0800
+From: tip-bot for Don Zickus <dzickus@redhat.com>
+Message-ID: <tip-e58d429209105e698e9d0357481d62b37fe9a7dd@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinghai@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, torvalds@linux-foundation.org, tglx@linutronix.de,
+        dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <1325866671-9797-1-git-send-email-dzickus@redhat.com>
+References: <1325866671-9797-1-git-send-email-dzickus@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/debug] x86, reboot: Fix typo in nmi reboot path
+Git-Commit-ID: e58d429209105e698e9d0357481d62b37fe9a7dd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sat, 07 Jan 2012 20:39:53 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-03 at 11:54 +1100, Benjamin Herrenschmidt wrote:
-> On Mon, 2011-12-19 at 10:06 +0800, Li Zhong wrote:
-> > Unpaired calling of __trace_hcall_entry and __trace_hcall_exit could
-> > cause incorrect preempt count. And it might happen as the global
-> > variable hcall_tracepoint_refcount is checked separately before calling
-> > them. 
-> > 
-> > I don't know much about the powerpc arch. But the idea here is to store
-> > the hcall_tracepoint_refcount locally, so __trace_hcall_entry and
-> > __trace_hcall_exit will be called or not called in pair by checking the
-> > same value. 
-> 
-> Can you re-use an existing spot in the stack frame rather than adding
-> this entry ? There's plenty of unused spots :-) For example the link
-> editor doubleword is never going to be used in that function, we could
-> hijack it safely. It would make the patch (and the code) simpler.
-> 
-> Cheers,
-> Ben.
+Commit-ID:  e58d429209105e698e9d0357481d62b37fe9a7dd
+Gitweb:     http://git.kernel.org/tip/e58d429209105e698e9d0357481d62b37fe9a7dd
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Fri, 6 Jan 2012 11:17:51 -0500
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 7 Jan 2012 12:19:37 +0100
 
-Hi Ben, 
+x86, reboot: Fix typo in nmi reboot path
 
-Thank you for the suggestion. Below is the updated version, much less
-code changes :) Would you please help review again to see whether my
-understanding is correct? 
+It was brought to my attention that my x86 change to use NMI in
+the reboot path broke Intel Nehalem and Westmere boxes when
+using kexec.
 
-Thanks,
-Zhong
+I realized I had mistyped the if statement in commit
+3603a2512f9e69dc87914ba922eb4a0812b21cd6 and stuck the ')' in
+the wrong spot.  Putting it in the right spot fixes kexec again.
 
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Doh.
+
+Reported-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Link: http://lkml.kernel.org/r/1325866671-9797-1-git-send-email-dzickus@redhat.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/powerpc/platforms/pseries/hvCall.S |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ arch/x86/kernel/smp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/platforms/pseries/hvCall.S
-b/arch/powerpc/platforms/pseries/hvCall.S
-index fd05fde..3ce73d0 100644
---- a/arch/powerpc/platforms/pseries/hvCall.S
-+++ b/arch/powerpc/platforms/pseries/hvCall.S
-@@ -36,6 +36,7 @@ BEGIN_FTR_SECTION;						\
- 	b	1f;						\
- END_FTR_SECTION(0, 1);						\
- 	ld      r12,hcall_tracepoint_refcount@toc(r2);		\
-+	std	r12,32(r1);					\
- 	cmpdi	r12,0;						\
- 	beq+	1f;						\
- 	mflr	r0;						\
-@@ -74,7 +75,7 @@ END_FTR_SECTION(0, 1);						\
- BEGIN_FTR_SECTION;						\
- 	b	1f;						\
- END_FTR_SECTION(0, 1);						\
--	ld      r12,hcall_tracepoint_refcount@toc(r2);		\
-+	ld      r12,32(r1);					\
- 	cmpdi	r12,0;						\
- 	beq+	1f;						\
- 	mflr	r0;						\
--- 
-1.7.5.4
-
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 113acda..66c74f4 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -176,7 +176,7 @@ static void native_nmi_stop_other_cpus(int wait)
+ 	 */
+ 	if (num_online_cpus() > 1) {
+ 		/* did someone beat us here? */
+-		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id() != -1))
++		if (atomic_cmpxchg(&stopping_cpu, -1, safe_smp_processor_id()) != -1)
+ 			return;
+ 
+ 		if (register_nmi_handler(NMI_LOCAL, smp_stop_nmi_callback,
