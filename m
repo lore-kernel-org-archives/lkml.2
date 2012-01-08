@@ -1,82 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab2AHQCf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 11:02:35 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42956 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab2AHQCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 11:02:33 -0500
-Date: Sun, 8 Jan 2012 17:02:17 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, arnaldo.melo@gmail.com
-Subject: Re: [GIT PULL 0/9] perf/core fixes and improvements
-Message-ID: <20120108160217.GA5454@elte.hu>
-References: <1326037339-31125-1-git-send-email-acme@infradead.org>
+	id S1754006Ab2AHQB5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 11:01:57 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:63423 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753754Ab2AHQBz convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 11:01:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326037339-31125-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+X-Originating-IP: [79.181.26.205]
+In-Reply-To: <20120105155445.GC27881@csn.ul.ie>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+	<1325499859-2262-8-git-send-email-gilad@benyossef.com>
+	<20120105155445.GC27881@csn.ul.ie>
+Date: Sun, 8 Jan 2012 18:01:54 +0200
+Message-ID: <CAOtvUMezyvi1icpxo6YC5apJU-LZ5ns-RSeaL1q3CYw34AULFQ@mail.gmail.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they exist
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 5, 2012 at 5:54 PM, Mel Gorman <mel@csn.ul.ie> wrote:
+>
+> On Mon, Jan 02, 2012 at 12:24:18PM +0200, Gilad Ben-Yossef wrote:
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-> Hi Ingo,
-> 
->         Please consider pulling.
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> The following changes since commit b9f616bbf4a917398aa09db89efbdf9a204e80dc:
-> 
->   Merge branch 'perf/core' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/core (2012-01-08 12:36:18 +0100)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux perf/core
-> 
-> for you to fetch changes up to 172d1b0b73256551f100fc00c69e356d047103f5:
-> 
->   perf tools: Fix compile error on x86_64 Ubuntu (2012-01-08 13:34:55 -0200)
-> 
-> ----------------------------------------------------------------
-> Namhyung Kim (9):
->       perf script: Add missing closedir() calls
->       perf test: Change type of '-v' option to INCR
->       perf top: Add error message for EMFILE
->       perf kmem: Add missing closedir() calls
->       perf kmem: Fix a memory leak
->       perf annotate: Fix usage string
->       perf annotate: Get rid of field_sep check
->       perf report: Fix --stdio output alignment when --showcpuutilization used
->       perf tools: Fix compile error on x86_64 Ubuntu
-> 
->  tools/perf/builtin-annotate.c      |    7 +------
->  tools/perf/builtin-kmem.c          |    3 +++
->  tools/perf/builtin-script.c        |    4 ++++
->  tools/perf/builtin-test.c          |    2 +-
->  tools/perf/builtin-top.c           |    4 ++++
->  tools/perf/util/hist.c             |   34 ++++++++++++++++++----------------
->  tools/perf/util/trace-event-info.c |    1 -
->  7 files changed, 31 insertions(+), 24 deletions(-)
+>
+> > Tested by running "hackbench 400" on a 4 CPU x86 otherwise
+> > idle VM and observing the difference between the number
+> > of direct reclaim attempts that end up in drain_all_pages()
+> > and those were more then 1/2 of the online CPU had any
+> > per-cpu page in them, using the vmstat counters introduced
+> > in the next patch in the series and using proc/interrupts.
+> >
+> > In the test sceanrio, this saved around 500 global IPIs.
+> > After trigerring an OOM:
+> >
+> > $ cat /proc/vmstat
+> > ...
+> > pcp_global_drain 627
+> > pcp_global_ipi_saved 578
+> >
+>
+> This isn't 99% savings as you claim earlier but they are still great.
+>
 
-Pulled, thanks Arnaldo!
+You are right of course, more like 92%. I did  see test runs where the %
+was 99% (which is were the 99% number came from) .I never saw it drop
+below 90% for the specified  test load.
 
-	Ingo
+I modified the description to read 90%+. I guess that is good enough.
+
+> Thanks for doing the stats. Just to be clear, I didn't expect these
+> stats to be merged, nor do I want them to. I wanted to be sure the patch
+> was really behaving as advertised.
+>
+> Acked-by: Mel Gorman <mgorman@suse.de>
+>
+Of course, my pleasure and thanks for the review.
+>
+>
+> > +     for_each_online_cpu(cpu)
+> > +             for_each_populated_zone(zone) {
+> > +                     pcp = per_cpu_ptr(zone->pageset, cpu);
+> > +                     if (pcp->pcp.count)
+> > +                             cpumask_set_cpu(cpu, cpus_with_pcps);
+> > +                     else
+> > +                             cpumask_clear_cpu(cpu, cpus_with_pcps);
+> > +             }
+> > +     on_each_cpu_mask(cpus_with_pcps, drain_local_pages, NULL, 1);
+>
+> As a heads-up, I'm looking at a candidate CPU hotplug patch that almost
+> certainly will collide with this patch. If/when I get it fixed, I'll be
+> sure to CC you so we can figure out what order the patches need to go
+> in. Ordinarily it wouldn't matter but if this really is a CPU hotplug
+> fix, it might also be a -stable candidate so it would need to go in
+> before your patches.
+
+
+No problem. I'm sending v6 right now because of unrelated changes Andrew M.
+asked for. I'll be happy to re-base on top of CPU hotplug fixes later.
+
+Thanks,
+Gilad
+
+
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
