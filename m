@@ -1,150 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab2AHWQU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 17:16:20 -0500
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:1099 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754555Ab2AHWQT (ORCPT
+	id S1754703Ab2AHWVq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 17:21:46 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:17631 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754555Ab2AHWVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 17:16:19 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAMsSCk95LbVq/2dsb2JhbABCrESBBoFyAQEFOhweBRAIAxguFCUDIRO8bBOLG2MElQiSTg
-Date: Mon, 9 Jan 2012 09:16:15 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, vgoyal@redhat.com,
-        jmoyer@redhat.com
-Subject: Re: [RFC 0/3]block: An IOPS based ioscheduler
-Message-ID: <20120108221615.GA4198@dastard>
-References: <20120104065337.230911609@sli10-conroe.sh.intel.com>
- <20120104071931.GB17026@dastard>
- <1325746241.22361.503.camel@sli10-conroe>
- <1325826750.22361.533.camel@sli10-conroe>
+	Sun, 8 Jan 2012 17:21:45 -0500
+Date: Sun, 8 Jan 2012 23:21:39 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Joe Perches <joe@perches.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
+Subject: Re: Please merge two small bug fix patches from linux-next
+In-Reply-To: <1326058974.5372.4.camel@joe2Laptop>
+Message-ID: <alpine.LNX.2.00.1201082319560.24030@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201082028140.24030@swampdragon.chaosbits.net>  <CA+55aFwO9Wtq=NEpMskW-2wrWZAGh-C6VBXENA3LtFOk=tUwgQ@mail.gmail.com> <1326058974.5372.4.camel@joe2Laptop>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325826750.22361.533.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 06, 2012 at 01:12:29PM +0800, Shaohua Li wrote:
-> On Thu, 2012-01-05 at 14:50 +0800, Shaohua Li wrote:
-> > On Wed, 2012-01-04 at 18:19 +1100, Dave Chinner wrote:
-> > > On Wed, Jan 04, 2012 at 02:53:37PM +0800, Shaohua Li wrote:
-> > > > An IOPS based I/O scheduler
-> > > > 
-> > > > Flash based storage has some different characteristics against rotate disk.
-> > > > 1. no I/O seek.
-> > > > 2. read and write I/O cost usually is much different.
-> > > > 3. Time which a request takes depends on request size.
-> > > > 4. High throughput and IOPS, low latency.
-> > > > 
-> > > > CFQ iosched does well for rotate disk, for example fair dispatching, idle
-> > > > for sequential read. It also has optimization for flash based storage (for
-> > > > item 1 above), but overall it's not designed for flash based storage. It's
-> > > > a slice based algorithm. Since flash based storage request cost is very
-> > > > low, and drive has big queue_depth is quite popular now which makes
-> > > > dispatching cost even lower, CFQ's slice accounting (jiffy based)
-> > > > doesn't work well. CFQ doesn't consider above item 2 & 3.
-> > > > 
-> > > > FIOPS (Fair IOPS) ioscheduler is trying to fix the gaps. It's IOPS based, so
-> > > > only targets for drive without I/O seek. It's quite similar like CFQ, but
-> > > > the dispatch decision is made according to IOPS instead of slice.
-> > > > 
-> > > > The algorithm is simple. Drive has a service tree, and each task lives in
-> > > > the tree. The key into the tree is called vios (virtual I/O). Every request
-> > > > has vios, which is calculated according to its ioprio, request size and so
-> > > > on. Task's vios is the sum of vios of all requests it dispatches. FIOPS
-> > > > always selects task with minimum vios in the service tree and let the task
-> > > > dispatch request. The dispatched request's vios is then added to the task's
-> > > > vios and the task is repositioned in the sevice tree.
-> > > > 
-> > > > The series are orgnized as:
-> > > > Patch 1: separate CFQ's io context management code. FIOPS will use it too.
-> > > > Patch 2: The core FIOPS.
-> > > > Patch 3: request read/write vios scale. This demontrates how the vios scale.
-> > > > 
-> > > > To make the code simple for easy view, some scale code isn't included here,
-> > > > some not implementated yet.
-> > > > 
-> > > > TODO:
-> > > > 1. ioprio support (have patch already)
-> > > > 2. request size vios scale
-> > > > 3. cgroup support
-> > > > 4. tracing support
-> > > > 5. automatically select default iosched according to QUEUE_FLAG_NONROT.
-> > > > 
-> > > > Comments and suggestions are welcome!
-> > > 
-> > > Benchmark results?
-> > I didn't have data yet. The patches are still in earlier stage, I want
-> > to focus on the basic idea first.
-> since you asked, I tested in a 4 socket machine with 12 X25M SSD jbod,
-> fs is ext4.
+On Sun, 8 Jan 2012, Joe Perches wrote:
+
+> On Sun, 2012-01-08 at 13:26 -0800, Linus Torvalds wrote:
+> > On Sun, Jan 8, 2012 at 11:51 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+> > > Below are two patches that have been in linux-next for ages (via akpm's
+> > > tree). They are prette simple, straight-up, bug fixes. They have been
+> > > submitted to maintainers multiple times over (IIRC at least the past
+> > > year), but for some reason the maintainers seem uninterested in picking
+> > > them up (or even responding to them).
+> []
+> > they seem to have Andrew's sign-off, so I'd have expected them to
+> > come through Andew. What's up?
 > 
-> workload		percentage change with fiops against cfq
-> fio_sync_read_4k        -2
-> fio_mediaplay_64k       0
-> fio_mediaplay_128k      0
-> fio_mediaplay_rr_64k    0
-> fio_sync_read_rr_4k     0
-> fio_sync_write_128k     0
-> fio_sync_write_64k      -1
-> fio_sync_write_4k       -2
-> fio_sync_write_64k_create       0
-> fio_sync_write_rr_64k_create    0
-> fio_sync_write_128k_create      0
-> fio_aio_randread_4k     -4
-> fio_aio_randread_64k    0
-> fio_aio_randwrite_4k    1
-> fio_aio_randwrite_64k   0
-> fio_aio_randrw_4k       -1
-> fio_aio_randrw_64k      0
-> fio_tpch        9
-> fio_tpcc        0
-> fio_mmap_randread_4k    -1
-> fio_mmap_randread_64k   1
-> fio_mmap_randread_1k    -8
-> fio_mmap_randwrite_4k   35
-> fio_mmap_randwrite_64k  22
-> fio_mmap_randwrite_1k   28
-> fio_mmap_randwrite_4k_halfbusy  24
-> fio_mmap_randrw_4k      23
-> fio_mmap_randrw_64k     4
-> fio_mmap_randrw_1k      22
-> fio_mmap_randrw_4k_halfbusy     35
-> fio_mmap_sync_read_4k   0
-> fio_mmap_sync_read_64k  -1
-> fio_mmap_sync_read_128k         -1
-> fio_mmap_sync_read_rr_64k       5
-> fio_mmap_sync_read_rr_4k        3
+> >From my perspective, the issue lies with James'
+> apparent desire to keep scsi tree changes as close
+> to zero as possible.
 > 
-> The fio_mmap_randread_1k has regression against 3.2-rc7, but no
-> regression against 3.2-rc6 kernel, still checking why. The fiops has
-> improvement for read/write mixed workload. CFQ is known not good for
-> read/write mixed workload.
+> Many obvious corrections to scsi defects have gone
+> unapplied.
+> 
 
-Numbers like this are meaningless without knowing what the hardware
-capability is and how the numbers compare to that raw capability.
-They tell me only mmap based random write improves in
-performance, and only one specific type of random write improves,
-not all types.
+I have to agree. It's actually gotten to the point that I personally 
+completely avoid/ignore scsi code when looking for stuff to fix/improve 
+since I don't expect to be able to get the patches merged anyway..
 
-That raises more questions that it answers: why do AIO based random
-writes not go any faster? Is that because even with CFQ, AIO based
-random writes saturate the device?  i.e. is AIO based IO that much
-faster than mmap based IO that there is no scope for improvement on
-your hardware?
 
-You need to present raw numbers and give us some idea of how close
-those numbers are to raw hardware capability for us to have any idea
-what improvements these numbers actually demonstrate.
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
