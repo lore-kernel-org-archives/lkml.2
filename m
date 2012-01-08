@@ -1,36 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab2AHF4g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 00:56:36 -0500
-Received: from claw.goop.org ([74.207.240.146]:57887 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab2AHF4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 00:56:35 -0500
-Message-ID: <4F09300D.8010608@goop.org>
-Date: Sun, 08 Jan 2012 16:56:29 +1100
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+	id S1751599Ab2AHHFG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 02:05:06 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:48040 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751027Ab2AHHFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 02:05:05 -0500
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [GIT] HID
-References: <alpine.LNX.2.00.1201052218200.24984@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1201052218200.24984@pobox.suse.cz>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Date: Sun, 8 Jan 2012 15:05:03 +0800
+Message-ID: <CAJd=RBAqzawZ=jEFt7TrZgU0gaejMkfiBxzH7Y19qqNnsZrJGw@mail.gmail.com>
+Subject: [PATCH] mm: vmscan: fix setting reclaim mode
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-mm@kvack.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2012 08:39 AM, Jiri Kosina wrote:
-> Jeremy Fitzhardinge (3):
->       HID: debugfs: decode Generic Device Controls Usage Page
->       HID: hid-input: add support for HID devices reporting Battery Strength
->       HID: hid-input: fix compile for !HID_BATTERY_STRENGTH
+The check for under memory pressure is corrected, then lumpy reclaim or
+reclaim/compaction could be avoided either when for order-O reclaim or
+when free pages are already low enough.
 
-Unfortunately it looks like you picked up the old version of these
-patches, which will work on my BT mouse, but fail on some Apple
-devices.  I'll post an update in an hour or two.
 
-    J
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+
+--- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
++++ b/mm/vmscan.c	Sun Jan  8 13:22:12 2012
+@@ -365,8 +365,7 @@ out:
+ 	return ret;
+ }
+
+-static void set_reclaim_mode(int priority, struct scan_control *sc,
+-				   bool sync)
++static void set_reclaim_mode(int priority, struct scan_control *sc, bool sync)
+ {
+ 	reclaim_mode_t syncmode = sync ? RECLAIM_MODE_SYNC : RECLAIM_MODE_ASYNC;
+
+@@ -381,13 +380,12 @@ static void set_reclaim_mode(int priorit
+ 		sc->reclaim_mode = RECLAIM_MODE_LUMPYRECLAIM;
+
+ 	/*
+-	 * Avoid using lumpy reclaim or reclaim/compaction if possible by
+-	 * restricting when its set to either costly allocations or when
+-	 * under memory pressure
++	 * Avoid lumpy reclaim or reclaim/compaction either
++	 * when for order-O reclaim or when under memory pressure
+ 	 */
+ 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+ 		sc->reclaim_mode |= syncmode;
+-	else if (sc->order && priority < DEF_PRIORITY - 2)
++	else if (sc->order && priority >= DEF_PRIORITY - 2)
+ 		sc->reclaim_mode |= syncmode;
+ 	else
+ 		sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
