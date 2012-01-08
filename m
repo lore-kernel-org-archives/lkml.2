@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab2AHPzd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 10:55:33 -0500
+	id S1754028Ab2AHPzj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 10:55:39 -0500
 Received: from mail-iy0-f174.google.com ([209.85.210.174]:39552 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752727Ab2AHPzc (ORCPT
+	with ESMTP id S1753972Ab2AHPze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 10:55:32 -0500
+	Sun, 8 Jan 2012 10:55:34 -0500
 From: Namhyung Kim <namhyung@gmail.com>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] perf top: Use active evsel for non-sample events on old kernel
-Date: Mon,  9 Jan 2012 00:55:23 +0900
-Message-Id: <1326038125-2929-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 2/3] perf record: Add error message for EMFILE
+Date: Mon,  9 Jan 2012 00:55:24 +0900
+Message-Id: <1326038125-2929-2-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.8.2
+In-Reply-To: <1326038125-2929-1-git-send-email-namhyung@gmail.com>
+References: <1326038125-2929-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If multiple events are specified on old kernel,
-perf_evlist__id2evsel() returns NULL for non-sampling events
-since the sample.id doesn't contain valid value, and it triggers
-assert below. If only one event is given, the function returns
-the evsel regardless of sample.id, this is why most case cause
-no problem on old kernel.
-
-Fix it by using active evsel.
+When a user tries to open so many events, perf_event_oen syscall
+may fail with EMFILE. Provide an advice for that case.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- tools/perf/builtin-top.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ tools/perf/builtin-record.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index d89dec90103e..2c9fa1e48854 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -762,6 +762,14 @@ static void perf_top__mmap_read_idx(struct perf_top *top, int idx)
- 		}
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 0abfb18b911f..d47b8277ca78 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -248,6 +248,10 @@ try_again:
+ 				ui__warning("The %s event is not supported.\n",
+ 					    event_name(pos));
+ 				exit(EXIT_FAILURE);
++			} else if (err == EMFILE) {
++				ui__warning("Too many events are opened.\n"
++					    "Try again after reducing the number of events.\n");
++				exit(EXIT_FAILURE);
+ 			}
  
- 		evsel = perf_evlist__id2evsel(session->evlist, sample.id);
-+		if (evsel == NULL && !session->sample_id_all &&
-+		    event->header.type != PERF_RECORD_SAMPLE) {
-+			/*
-+			 * Old kernel, no sample_id_all field.
-+			 * Just use active evsel.
-+			 */
-+			evsel = top->sym_evsel;
-+		}
- 		assert(evsel != NULL);
- 
- 		origin = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
+ 			printf("\n");
 -- 
 1.7.8.2
 
