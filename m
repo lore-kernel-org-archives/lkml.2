@@ -1,139 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2AHTve (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 14:51:34 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14334 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752296Ab2AHTvd (ORCPT
+	id S1754523Ab2AHUsX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 15:48:23 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:44437
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754044Ab2AHUsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 14:51:33 -0500
-Date: Sun, 8 Jan 2012 20:51:26 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Subject: Please merge two small bug fix patches from linux-next
-Message-ID: <alpine.LNX.2.00.1201082028140.24030@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 8 Jan 2012 15:48:21 -0500
+Date: Sun, 8 Jan 2012 21:48:12 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <576535019.20120108214812@eikelenboom.it>
+To: John Stultz <john.stultz@linaro.org>
+CC: Stefan Bader <stefan.bader@canonical.com>, NeilBrown <neilb@suse.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>
+Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable to handle kernel NULL pointer dereference at 0000000000000598  1.478005] IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
+In-Reply-To: <1325882475.2290.106.camel@work-vm>
+References: <1599287628.20120103171351@eikelenboom.it> <20120103190754.GA27651@phenom.dumpdata.com> <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown> <1325638380.3037.69.camel@work-vm> <4F040B25.1080405@canonical.com> <4F04452C.7020209@canonical.com> <4F045E8F.6010003@canonical.com> <1325882475.2290.106.camel@work-vm>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus
 
-Below are two patches that have been in linux-next for ages (via akpm's 
-tree). They are prette simple, straight-up, bug fixes. They have been 
-submitted to maintainers multiple times over (IIRC at least the past 
-year), but for some reason the maintainers seem uninterested in picking 
-them up (or even responding to them).
-There has been no negative comments at all to them while they have been in 
--next.
-I'd really appreciate it if they could get merged.
+Friday, January 6, 2012, 9:41:15 PM, you wrote:
 
-I've just pulled them out of the current linux-next and applied them on 
-top of your tree - that's what is below.
+> On Wed, 2012-01-04 at 15:13 +0100, Stefan Bader wrote:
+>> On 04.01.2012 13:25, Stefan Bader wrote:
+>> > On 04.01.2012 09:17, Stefan Bader wrote:
+>> >> On 04.01.2012 01:53, John Stultz wrote:
+>> >>> On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
+>> >>>> On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org> wrote:
+>> >>>>> >From the stack trace, we've kicked off a rtc_timer_do_work, probably
+>> >>>>> from the rtc_initialize_alarm() schedule_work call added in Neil's
+>> >>>>> patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm ->
+>> >>>>> cmos_rq_disable -> cmos_checkintr -> rtc_update_irq -> schedule_work.
+>> >>
+>> >> Sorry, I was off for the evening a while after sending this out. And I just
+>> >> started, so a few thing I will be doing later but have not yet had time.
+>> >>
+>> >> Over night I had still be thinking on this and maybe one important fact I had
+>> >> been ignoring. This really has only been observed on paravirt guests on Xen as
+>> >> far as I know. And one thing that I should have pointed out is that
+>> >>
+>> >> [    0.792634] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
+>> >> [    0.792725] rtc_cmos: probe of rtc_cmos failed with error -38
+>> >>
+>> >> So first the registration is done and the first line is the last thing printed
+>> >> in the registration function. Then, and that line always comes after, the probe,
+>> >> which looks like being done asynchronously, detects that the rtc is not
+>> >> implemented. I would assume that this causes the rtc to be unregistered again
+>> >> and that is probably the point where, under the right circumstances, the worker
+>> >> triggered by the initialize alarm is trying to set another alarm. Probably while
+>> >> some of the elements of the structure started to be torn down. I need to check
+>> >> on that code path, yet. So right now its more a guess.
+>> >>
+>> >>>>>
+>> >>>>> So, what it looks to me is that in cmos_checkintr, we grab the cmos->rtc
+>> >>>>> and pass that along. Unfortunately, since the cmos->rtc value isn't set
+>> >>>>> until after rtc_device_register() returns its null at that point. So
+>> >>>>> your patch isn't really fixing the issue, but just reducing the race
+>> >>>>> window for the second cpu to schedule the work.
+>> >>>>>
+>> >>>>> Sigh. I'd guess dropping the schedule_work call from
+>> >>>>> rtc_initialize_alarm() is the right approach (see below). When reviewing
+>> >>>>> Neil's patch it seemed like a good idea there, but it seems off to me
+>> >>>>> now.
+>> >>>>>
+>> >>>>> Neil, any thoughts on the following? Can you expand on the condition you
+>> >>>>> were worried about in around that call?
+>> >>>>
+>> >>>> If you set an alarm in the future, then shutdown and boot again after that
+>> >>>> time, then you will end up with a timer_queue node which is in the past.
+>> >>>
+>> >>> Thanks for explaining this again.
+>> >>>
+>> >>> Hrm. It seems the easy answer is to simply not add alarms that are in
+>> >>> the past.  Further, I'm a bit perplexed, as if they are in the past, the
+>> >>> enabled flag shouldn't be set.   __rtc_read_alarm() does check the
+>> >>> current time, so maybe we can make sure we don't return old values? I
+>> >>> guess I assumed __rtc_read_alarm() avoided returning stale values, but
+>> >>> apparently not.
+>> >>>
+>> >>>> When this happens the queue gets stuck.  That entry-in-the-past won't get
+>> >>>> removed until and interrupt happens and an interrupt won't happen because the
+>> >>>> RTC only triggers an interrupt when the alarm is "now".
+>> >>>>
+>> >>>> So you'll find that e.g. "hwclock" will always tell you that 'select' timed
+>> >>>> out.
+>> >>>>
+>> >>>> So we force the interrupt work to happen at the start just in case.
+>> >>>
+>> >>> Unfortunately its too early. 
+>> >>>
+>> >>>> Did you see my proposed patch which converted those calls to do the work
+>> >>>> in-process rather than passing it to a worker-thread?  I think that is a
+>> >>>> clean fix.
+>> >>>
+>> >>> I don't think I saw it today. Was it from before the holidays?
+>> >>>
+>> >>
+>> >> I fear I caused a bit of confusion there. Neil responded to my initial mail
+>> >> which was done as a reply to the mail announcing this patch for stable (which
+>> >> just was the first thread I could get hold of).
+>> >> I will try Neil's patch as well. And in parallel try to see whether the theory I
+>> >> had this night makes sense. If it does, then it is only indirectly that the work
+>> >> is scheduled too early. In that case just the teardown needs to make sure that
+>> >> no work is being run while removal. Well, maybe the question is whether there
+>> >> should be a delay in running the irq work until the device really, really is
+>> >> completely set up... But that sounds a bit more complicated.
+>> > 
+>> > By now I tried Neil's proposed patch and unfortunately that makes things rather
+>> > worse. I also played around with the idea of the unregistration race. Maybe
+>> > there also is one (that cancel_work_sync should be called before unregistering
+>> > the device) but definitely it is not what happens at least in the one CPU case.
+>> > I added some more printk's and the crash happens before even the rtc core class
+>> > has been fully registered. And no unregister is call has been made either.
+>> > 
+>> > Which may point to execution of the irq worker (including a schedule_work)
+>> > before the rtc-cmos parts are finished... Would explain why moving the
+>> > initialize call further down does at least narrow the window for it to happen...
+>> > The only thing I do not understand then is why that seems only to happen on Xen
+>> > guests...
+>> > 
+>> 
+>> Darn, guess I understand now... So cmos-rtc will call rtc_device_register from
+>> within do_cmos_probe and set cmos_rtc.rtc with the pointer that
+>> rtc_device_register returns.
+>> But when having rtc_initialize_alarm being called earlier in
+>> rtc_device_register, and that queues the work, there is a chance it will fire
+>> even before that function returns.
+>> And then cmos_checkintr will dereference the null pointer still stored in
+>> cmos_rtc.rtc for calling rtc_update_irq...
 
+> Hey Stefan, Konrad, Sander, Neil,
+>         Thanks again for the bug reporting and sorry for the earlier trouble.
+> So after the problematic patch was reverted for 3.2, I worked with Neil
+> to try to address the issue in a better way. It looks like its working
+> for Neil, so I was wondering if any of you could look over and maybe
+> give the following tree a whirl:
+>         git://git.linaro.org/people/jstultz/linux.git dev/rtc-fixups
 
+> The shortlog is here:
+> http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/dev/rtc-fixups
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Thu, 22 Dec 2011 16:03:46 +1100
-Subject: drivers/scsi/aacraid/commctrl.c: fix mem leak in aac_send_raw_srb()
+> If this avoids the issue for you, and no one sees any other problems,
+> I'll queue these for 3.3
 
-We leak in drivers/scsi/aacraid/commctrl.c::aac_send_raw_srb() :
+> thanks
+> -john
 
-We allocate memory:
-        ...
-                        struct user_sgmap* usg;
-                        usg = kmalloc(actual_fibsize - sizeof(struct aac_srb)
-                          + sizeof(struct sgmap), GFP_KERNEL);
-and then neglect to free it:
-        ...
-                        for (i = 0; i < usg->count; i++) {
-                                u64 addr;
-                                void* p;
-                                if (usg->sg[i].count >
-                                    ((dev->adapter_info.options &
-                                     AAC_OPT_NEW_COMM) ?
-                                      (dev->scsi_host_ptr->max_sectors << 9) :
-                                      65536)) {
-                                        rcode = -EINVAL;
-                                        goto cleanup;
-        ... this 'goto' makes 'usg' go out of scope and leak the memory we
-            allocated.
-            Other exits properly kfree(usg), it's just here it is neglected.
+Boots both with single as with multiple CPU Xen guests
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
- drivers/scsi/aacraid/commctrl.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
 
-diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
-index 8a0b330..0bd38da 100644
---- a/drivers/scsi/aacraid/commctrl.c
-+++ b/drivers/scsi/aacraid/commctrl.c
-@@ -650,6 +650,7 @@ static int aac_send_raw_srb(struct aac_dev* dev, void __user * arg)
- 				     AAC_OPT_NEW_COMM) ?
- 				      (dev->scsi_host_ptr->max_sectors << 9) :
- 				      65536)) {
-+					kfree(usg);
- 					rcode = -EINVAL;
- 					goto cleanup;
- 				}
--- 
-1.7.8.1
+thanks,
 
-
-
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Thu, 22 Dec 2011 16:04:13 +1100
-Subject: audit: always follow va_copy() with va_end()
-
-A call to va_copy() should always be followed by a call to va_end() in the
-same function.  In kernel/autit.c::audit_log_vformat() this is not always
-done.  This patch makes sure va_end() is always called.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Jesper Juhl <jj@codesealer.com>
----
- kernel/audit.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 09fae26..2c1d6ab 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1260,12 +1260,13 @@ static void audit_log_vformat(struct audit_buffer *ab, const char *fmt,
- 		avail = audit_expand(ab,
- 			max_t(unsigned, AUDIT_BUFSIZ, 1+len-avail));
- 		if (!avail)
--			goto out;
-+			goto out_va_end;
- 		len = vsnprintf(skb_tail_pointer(skb), avail, fmt, args2);
- 	}
--	va_end(args2);
- 	if (len > 0)
- 		skb_put(skb, len);
-+out_va_end:
-+	va_end(args2);
- out:
- 	return;
- }
--- 
-1.7.8.1
-
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+--
+Sander
 
