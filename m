@@ -1,118 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab2AHNkh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 08:40:37 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42780 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753530Ab2AHNkf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 08:40:35 -0500
-Date: Sun, 8 Jan 2012 14:40:29 +0100
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: Corentin Chary <corentincj@iksaif.net>,
-        platform-driver-x86@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org, Andrzej Prochyra <andrzej@prochyra.name>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Richard =?utf-8?Q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
-Message-ID: <20120108134029.GA7708@ubuntu-mba>
-Mail-Followup-To: Corentin Chary <corentin.chary@gmail.com>,
-	Corentin Chary <corentincj@iksaif.net>,
-	platform-driver-x86@vger.kernel.org,
-	Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
-	Andrzej Prochyra <andrzej@prochyra.name>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	David Herrmann <dh.herrmann@googlemail.com>,
-	Richard =?utf-8?Q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
-	Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-References: <20120105150832.GA25386@ubuntu-macmini>
- <1325945558-4661-1-git-send-email-corentincj@iksaif.net>
- <20120108104630.GA4354@ubuntu-mba>
- <CAHR064h287UFd4bBnWCJz61qw-wZBYRrF=5FKAmFg8YwaWN1Zw@mail.gmail.com>
+	id S1753573Ab2AHNyY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 08:54:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53406 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752257Ab2AHNyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 08:54:23 -0500
+Message-ID: <4F09A006.8080104@redhat.com>
+Date: Sun, 08 Jan 2012 21:54:14 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAHR064h287UFd4bBnWCJz61qw-wZBYRrF=5FKAmFg8YwaWN1Zw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] loop: zero fill bio instead of return -EIO for partial
+ read
+References: <20120106033555.GA27916@darkstar.nay.redhat.com> <x49hb08prfn.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49hb08prfn.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 08, 2012 at 01:36:45PM +0100, Corentin Chary wrote:
-> On Sun, Jan 8, 2012 at 11:46 AM, Seth Forshee
-> <seth.forshee@canonical.com> wrote:
-> > On Sat, Jan 07, 2012 at 03:12:38PM +0100, Corentin Chary wrote:
-> >> On these laptops, the ACPI video is not functional, and very unlikely
-> >> to be fixed by the vendor. Note that intel_backlight works for some
-> >> of these laptops, and the backlight from samsung-laptop always work.
-> >>
-> >> The good news is that newer laptops have functional ACPI video device
-> >> and won't end up growing this list.
-> >>
-> >> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-> >> ---
-> >>
-> >> Could the concerned people test this patch and check that it correctly
-> >> disable the acpi_video backlight ?
-> >>
-> >>  drivers/acpi/video_detect.c |   40 ++++++++++++++++++++++++++++++++++++++++
-> >>  1 files changed, 40 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-> >> index 45d8097..376bce2 100644
-> >> --- a/drivers/acpi/video_detect.c
-> >> +++ b/drivers/acpi/video_detect.c
-> >> @@ -132,6 +132,44 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
-> >>       return AE_OK;
-> >>  }
-> >>
-> >> +/* Force to use vendor driver when the ACPI device is known to be
-> >> + * buggy */
-> >> +static int video_detect_force_vendor(const struct dmi_system_id *d)
-> >> +{
-> >> +     acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
-> >> +     return 0;
-> >> +}
-> >> +
-> >> +static struct dmi_system_id video_detect_dmi_table[] = {
-> >> +     {
-> >> +      .callback = video_detect_force_vendor,
-> >> +      .ident = "N150P",
-> >> +      .matches = {
-> >> +             DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> >> +             DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
-> >> +             DMI_MATCH(DMI_BOARD_NAME, "N150P"),
-> >> +             },
-> >> +     },
-> >> +     {
-> >> +      .callback = video_detect_force_vendor,
-> >> +      .ident = "N145P/N250P/N260P",
-> >> +      .matches = {
-> >> +             DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> >> +             DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-> >> +             DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-> >> +             },
-> >> +     },
-> >> +     {
-> >> +      .callback = video_detect_force_vendor,
-> >> +      .ident = "N150/N210/N220",
-> >> +      .matches = {
-> >> +             DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> >> +             DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-> >> +             DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-> >> +             },
-> >> +     },
-> >> +};
-> >> +
-> >
-> > I don't see NF110/NF210/NF310 in this list. Was that an oversight?
-> 
-> Ooops. Could you add it and try the patch, then send me lines you added ?
-> Thanks,
+On 01/07/2012 03:22 AM, Jeff Moyer wrote:
 
-Sure, but it won't be until next week. I'm travelling this week and
-don't have the machine with me.
+> Dave Young <dyoung@redhat.com> writes:
+> 
+>> commit 8268f5a7415d914fc855a86aa2284ac819dc6b2e trying to fix the loop device
+>> partial read information leak problem. But it changed the semantics of read
+>> behavior. When we read beyond the end of the device we should get 0 bytes,
+>> which is normal behavior, we should not just return -EIO
+>>
+>> Instead of return -EIO, zero out the bio to avoid information leak in case of
+>> partail read. 
+> 
+> I tested the patch with a program which patterns the loop device,
+> truncates the backing file, and then performs preads from various
+> offsets within the loop device, validates the return values and inspects
+> the contents.  With this patch, everything works as expected.
+
+
+Many thanks for review and test
+
+> 
+> By the way, truncating the backing file for a loop device is insane.
+> Why would you do that?  Also, if you really want all of the data gone,
+> you'll have to flush the contents of the buffer cache for the loop
+> device first.  It's quite the head scratcher the first time you truncate
+> a file, wait a few seconds, and then witness the file size grow.  ;-)
+
+
+I think nobody will intend to do that, but random operations could cause
+this happen..
+
+> 
+> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+> 
+>>
+>> Signed-off-by: Dave Young <dyoung@redhat.com>
+>> ---
+>>  drivers/block/loop.c |   24 +++++++++++++-----------
+>>  1 file changed, 13 insertions(+), 11 deletions(-)
+>>
+>> --- linux-2.6.orig/drivers/block/loop.c	2012-01-06 11:19:48.000000000 +0800
+>> +++ linux-2.6/drivers/block/loop.c	2012-01-06 11:20:18.842630580 +0800
+>> @@ -357,14 +357,14 @@ lo_direct_splice_actor(struct pipe_inode
+>>  	return __splice_from_pipe(pipe, sd, lo_splice_actor);
+>>  }
+>>  
+>> -static int
+>> +static ssize_t
+>>  do_lo_receive(struct loop_device *lo,
+>>  	      struct bio_vec *bvec, int bsize, loff_t pos)
+>>  {
+>>  	struct lo_read_data cookie;
+>>  	struct splice_desc sd;
+>>  	struct file *file;
+>> -	long retval;
+>> +	ssize_t retval;
+>>  
+>>  	cookie.lo = lo;
+>>  	cookie.page = bvec->bv_page;
+>> @@ -380,26 +380,28 @@ do_lo_receive(struct loop_device *lo,
+>>  	file = lo->lo_backing_file;
+>>  	retval = splice_direct_to_actor(file, &sd, lo_direct_splice_actor);
+>>  
+>> -	if (retval < 0)
+>> -		return retval;
+>> -	if (retval != bvec->bv_len)
+>> -		return -EIO;
+>> -	return 0;
+>> +	return retval;
+>>  }
+>>  
+>>  static int
+>>  lo_receive(struct loop_device *lo, struct bio *bio, int bsize, loff_t pos)
+>>  {
+>>  	struct bio_vec *bvec;
+>> -	int i, ret = 0;
+>> +	ssize_t s;
+>> +	int i;
+>>  
+>>  	bio_for_each_segment(bvec, bio, i) {
+>> -		ret = do_lo_receive(lo, bvec, bsize, pos);
+>> -		if (ret < 0)
+>> +		s = do_lo_receive(lo, bvec, bsize, pos);
+>> +		if (s < 0)
+>> +			return s;
+>> +
+>> +		if (s != bvec->bv_len) {
+>> +			zero_fill_bio(bio);
+>>  			break;
+>> +		}
+>>  		pos += bvec->bv_len;
+>>  	}
+>> -	return ret;
+>> +	return 0;
+>>  }
+>>  
+>>  static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
+
+
+
+-- 
+Thanks
+Dave
