@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab2AHJJU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 04:09:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38232 "EHLO mx2.suse.de"
+	id S1752282Ab2AHJKV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 04:10:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38242 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751727Ab2AHJJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 04:09:16 -0500
-Date: Sun, 08 Jan 2012 10:09:11 +0100
-Message-ID: <s5hehvamuh4.wl%tiwai@suse.de>
+	id S1751727Ab2AHJKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 04:10:18 -0500
+Date: Sun, 08 Jan 2012 10:10:17 +0100
+Message-ID: <s5hd3aumufa.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Jaroslav Kysela <perex@perex.cz>, Clemens Ladisch <clemens@ladisch.de>,
-        Daniel Mack <zonque@gmail.com>, Wolfgang Breyha <wbreyha@gmx.net>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ALSA: usb-audio: fix possible hang and overflow in parse_uac2_sample_rate_range()
-In-Reply-To: <1325698749-5353-1-git-send-email-xi.wang@gmail.com>
-References: <1325698749-5353-1-git-send-email-xi.wang@gmail.com>
+To: "Artem S. Tashkinov" <t.artem@lycos.com>
+Cc: linux-kernel@vger.kernel.org, perex@perex.cz, alsa-devel@alsa-project.org
+Subject: Re: ALSA regression in recent kernels: Intel HDA/ALC892 sound glitches
+In-Reply-To: <1253360187.305758.1325762980205.JavaMail.mail@webmail07>
+References: <1253360187.305758.1325762980205.JavaMail.mail@webmail07>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.3
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -25,77 +23,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Wed,  4 Jan 2012 12:39:09 -0500,
-Xi Wang wrote:
+At Thu, 5 Jan 2012 11:29:40 +0000 (GMT),
+Artem S. Tashkinov wrote:
 > 
-> A malicious USB device may feed in carefully crafted min/max/res values,
-> so that the inner loop in parse_uac2_sample_rate_range() could run for
-> a long time or even never terminate, e.g., given max = INT_MAX.
+> Hello,
 > 
-> Also nr_rates could be a large integer, which causes an integer overflow
-> in the subsequent call to kmalloc() in parse_audio_format_rates_v2().
-> Thus, kmalloc() would allocate a smaller buffer than expected, leading
-> to a memory corruption.
-> 
-> To exploit the two vulnerabilities, an attacker needs physical access
-> to the machine to plug in a malicious USB device.
-> 
-> This patch makes two changes.
-> 
-> 1) The type of "rate" is changed to unsigned int, so that the loop could
->    stop once "rate" is larger than INT_MAX.
-> 
-> 2) Limit nr_rates to avoid overflow.
-> 
-> Signed-off-by: Xi Wang <xi.wang@gmail.com>
+> Since kernel 3.0.11 I have quite terrible sound artifacts - random pops, clicks and
+> short pauses (~500ms). Linux kernel 3.0.0 is *bug free*. So, some some of patches in
+> kernel *3.0.11* broke the driver, the bug is, of course, present in kernels 3.1 and 3.2.
 
-Thanks for the patch.
-As of now, I have little time to evaluate, so I might have missed
-something, but I wonder whether 
-
-		/* avoid overflow */
-		if (nr_rates == KMALLOC_MAX_SIZE / sizeof(int))
-			break;
-
-is the best way to check.  This looks ugly to me.
-If we need to limit the number of rates, better to define some proper
-numbers as the upper limit.  And then, it should warn, not only
-breaking loop.
-
-Anyway I'll check this tomorrow in more details.
+Could you give alsa-info.sh output to check more details?
+Also, any chance to identify which 3.0.x release breaks the things?
 
 
 thanks,
 
 Takashi
-
-> ---
->  sound/usb/format.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/usb/format.c b/sound/usb/format.c
-> index 89421d1..a99de67 100644
-> --- a/sound/usb/format.c
-> +++ b/sound/usb/format.c
-> @@ -226,7 +226,7 @@ static int parse_uac2_sample_rate_range(struct audioformat *fp, int nr_triplets,
->  		int min = combine_quad(&data[2 + 12 * i]);
->  		int max = combine_quad(&data[6 + 12 * i]);
->  		int res = combine_quad(&data[10 + 12 * i]);
-> -		int rate;
-> +		unsigned int rate;
->  
->  		if ((max < 0) || (min < 0) || (res < 0) || (max < min))
->  			continue;
-> @@ -253,6 +253,9 @@ static int parse_uac2_sample_rate_range(struct audioformat *fp, int nr_triplets,
->  			fp->rates |= snd_pcm_rate_to_rate_bit(rate);
->  
->  			nr_rates++;
-> +			/* avoid overflow */
-> +			if (nr_rates == KMALLOC_MAX_SIZE / sizeof(int))
-> +				break;
->  
->  			/* avoid endless loop */
->  			if (res == 0)
-> -- 
-> 1.7.5.4
-> 
