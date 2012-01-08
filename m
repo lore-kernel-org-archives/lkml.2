@@ -1,432 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2AHJZO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 04:25:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38525 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab2AHJZC (ORCPT
+	id S1752386Ab2AHJlM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 04:41:12 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:46487 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab2AHJlK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 04:25:02 -0500
-Date: Sun, 8 Jan 2012 01:24:44 -0800
-From: tip-bot for Tejun Heo <tj@kernel.org>
-Message-ID: <tip-38b78eb855409a05f9d370228bec1955e6878e08@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, tj@kernel.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tj@kernel.org, tglx@linutronix.de
-In-Reply-To: <1323988305-1469-2-git-send-email-tj@kernel.org>
-References: <1323988305-1469-2-git-send-email-tj@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Factorize filter creation
-Git-Commit-ID: 38b78eb855409a05f9d370228bec1955e6878e08
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
+	Sun, 8 Jan 2012 04:41:10 -0500
+Subject: Re: [ERROR] perf build failure on current tip:perf/core
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120108090018.GB7168@elte.hu>
+References: <1325950949.1486.20.camel@leonhard>
+	 <20120108090018.GB7168@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 08 Jan 2012 18:41:04 +0900
+Message-ID: <1326015664.1486.10.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 08 Jan 2012 01:24:50 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  38b78eb855409a05f9d370228bec1955e6878e08
-Gitweb:     http://git.kernel.org/tip/38b78eb855409a05f9d370228bec1955e6878e08
-Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Thu, 15 Dec 2011 14:31:35 -0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Wed, 21 Dec 2011 07:27:02 -0500
+2012-01-08 (일), 10:00 +0100, Ingo Molnar:
+> * Namhyung Kim <namhyung@gmail.com> wrote:
+> 
+> > Hi,
+> > 
+> > When I tried to build perf, I was faced with following error:
+> > 
+> >     CC util/trace-event-info.o
+> > cc1: warnings being treated as errors
+> > util/trace-event-info.c: In function ‘record_file’:
+> > util/trace-event-info.c:192: error: implicit declaration of function
+> > ‘pwrite’
+> > util/trace-event-info.c:192: error: nested extern declaration of
+> > ‘pwrite’
+> > make: *** [util/trace-event-info.o] Error 1
+> > 
+> > The code I tried was latest tip:perf/core - 9e183426bfb5 ("perf kvm: Fix
+> > copy & paste error in description") and code in mainline (v3.2) doesn't
+> > have this problem. Looking at the code, I couldn't find any clue to
+> > this. Any idea?
+> > 
+> > FYI, my system is Ubuntu 10.04 on x86_64. gcc version is 4.4.3:
+> 
+> Which header does pwrite() belong to on that system - what does 
+> 'map pwrite' say? It ought to be unistd.h, which is directly 
+> included in util/trace-event-info.c.
+> 
+> My guess is that it might be related to:
+> 
+> tools/perf/Makefile:ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+> 
+> Which introduces pwrite64() and defines pwrite() to them.
+> 
+> Does the patch below help? It's only a workaround really as 
+> pwrite() ought to exist ... Also, i have only tested this on 
+> 64-bit.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+> diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
+> index ac6830d..ba8b024 100644
+> --- a/tools/perf/util/trace-event-info.c
+> +++ b/tools/perf/util/trace-event-info.c
+> @@ -189,7 +189,7 @@ static void record_file(const char *file, size_t hdr_sz)
+>  	if (bigendian())
+>  		sizep += sizeof(u64) - hdr_sz;
+>  
+> -	if (hdr_sz && pwrite(output_fd, sizep, hdr_sz, hdr_pos) < 0)
+> +	if (hdr_sz && pwrite64(output_fd, sizep, hdr_sz, hdr_pos) < 0)
+>  		die("writing to %s", output_file);
+>  }
+>  
 
-tracing: Factorize filter creation
+Hello,
 
-There are four places where new filter for a given filter string is
-created, which involves several different steps.  This patch factors
-those steps into create_[system_]filter() functions which in turn make
-use of create_filter_{start|finish}() for common parts.
+Unfortunately, above patch doesn't work for my system:
 
-The only functional change is that if replace_filter_string() is
-requested and fails, creation fails without any side effect instead of
-being ignored.
+      CC util/trace-event-info.o
+  cc1: warnings being treated as errors
+  util/trace-event-info.c: In function ‘record_file’:
+  util/trace-event-info.c:192: error: implicit declaration of function
+‘pwrite64’
+  util/trace-event-info.c:192: error: nested extern declaration of
+‘pwrite64’
 
-Note that system filter is now installed after the processing is
-complete which makes freeing before and then restoring filter string
-on error unncessary.
+And 'map pwrite' on terminal says:
 
--v2: Rebased to resolve conflict with 49aa29513e and updated both
-     create_filter() functions to always set *filterp instead of
-     requiring the caller to clear it to %NULL on entry.
+  $ map pwrite
+  The program 'map' is currently not installed.  You can install it by
+typing:
+  sudo apt-get install sgt-puzzles
 
-Link: http://lkml.kernel.org/r/1323988305-1469-2-git-send-email-tj@kernel.org
+I don't think this is the package what you said. Anyway quick grep'ing
+pwrite tells me it's in the unistd.h:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_events_filter.c |  283 ++++++++++++++++++------------------
- 1 files changed, 142 insertions(+), 141 deletions(-)
+  $ grep pwrite /usr/include/unistd.h
+  extern ssize_t pwrite (int __fd, __const void *__buf, size_t __n,
+  extern ssize_t __REDIRECT (pwrite, (int __fd, __const void *__buf,
+			     pwrite64) __wur;
+  #   define pwrite pwrite64
 
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index f04cc31..24aee71 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -1738,11 +1738,121 @@ static int replace_system_preds(struct event_subsystem *system,
- 	return -ENOMEM;
- }
- 
-+static int create_filter_start(char *filter_str, bool set_str,
-+			       struct filter_parse_state **psp,
-+			       struct event_filter **filterp)
-+{
-+	struct event_filter *filter;
-+	struct filter_parse_state *ps = NULL;
-+	int err = 0;
-+
-+	WARN_ON_ONCE(*psp || *filterp);
-+
-+	/* allocate everything, and if any fails, free all and fail */
-+	filter = __alloc_filter();
-+	if (filter && set_str)
-+		err = replace_filter_string(filter, filter_str);
-+
-+	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
-+
-+	if (!filter || !ps || err) {
-+		kfree(ps);
-+		__free_filter(filter);
-+		return -ENOMEM;
-+	}
-+
-+	/* we're committed to creating a new filter */
-+	*filterp = filter;
-+	*psp = ps;
-+
-+	parse_init(ps, filter_ops, filter_str);
-+	err = filter_parse(ps);
-+	if (err && set_str)
-+		append_filter_err(ps, filter);
-+	return err;
-+}
-+
-+static void create_filter_finish(struct filter_parse_state *ps)
-+{
-+	if (ps) {
-+		filter_opstack_clear(ps);
-+		postfix_clear(ps);
-+		kfree(ps);
-+	}
-+}
-+
-+/**
-+ * create_filter - create a filter for a ftrace_event_call
-+ * @call: ftrace_event_call to create a filter for
-+ * @filter_str: filter string
-+ * @set_str: remember @filter_str and enable detailed error in filter
-+ * @filterp: out param for created filter (always updated on return)
-+ *
-+ * Creates a filter for @call with @filter_str.  If @set_str is %true,
-+ * @filter_str is copied and recorded in the new filter.
-+ *
-+ * On success, returns 0 and *@filterp points to the new filter.  On
-+ * failure, returns -errno and *@filterp may point to %NULL or to a new
-+ * filter.  In the latter case, the returned filter contains error
-+ * information if @set_str is %true and the caller is responsible for
-+ * freeing it.
-+ */
-+static int create_filter(struct ftrace_event_call *call,
-+			 char *filter_str, bool set_str,
-+			 struct event_filter **filterp)
-+{
-+	struct event_filter *filter = NULL;
-+	struct filter_parse_state *ps = NULL;
-+	int err;
-+
-+	err = create_filter_start(filter_str, set_str, &ps, &filter);
-+	if (!err) {
-+		err = replace_preds(call, filter, ps, filter_str, false);
-+		if (err && set_str)
-+			append_filter_err(ps, filter);
-+	}
-+	create_filter_finish(ps);
-+
-+	*filterp = filter;
-+	return err;
-+}
-+
-+/**
-+ * create_system_filter - create a filter for an event_subsystem
-+ * @system: event_subsystem to create a filter for
-+ * @filter_str: filter string
-+ * @filterp: out param for created filter (always updated on return)
-+ *
-+ * Identical to create_filter() except that it creates a subsystem filter
-+ * and always remembers @filter_str.
-+ */
-+static int create_system_filter(struct event_subsystem *system,
-+				char *filter_str, struct event_filter **filterp)
-+{
-+	struct event_filter *filter = NULL;
-+	struct filter_parse_state *ps = NULL;
-+	int err;
-+
-+	err = create_filter_start(filter_str, true, &ps, &filter);
-+	if (!err) {
-+		err = replace_system_preds(system, ps, filter_str);
-+		if (!err) {
-+			/* System filters just show a default message */
-+			kfree(filter->filter_string);
-+			filter->filter_string = NULL;
-+		} else {
-+			append_filter_err(ps, filter);
-+		}
-+	}
-+	create_filter_finish(ps);
-+
-+	*filterp = filter;
-+	return err;
-+}
-+
- int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- {
--	struct filter_parse_state *ps;
- 	struct event_filter *filter;
--	struct event_filter *tmp;
- 	int err = 0;
- 
- 	mutex_lock(&event_mutex);
-@@ -1759,49 +1869,30 @@ int apply_event_filter(struct ftrace_event_call *call, char *filter_string)
- 		goto out_unlock;
- 	}
- 
--	err = -ENOMEM;
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto out_unlock;
--
--	filter = __alloc_filter();
--	if (!filter) {
--		kfree(ps);
--		goto out_unlock;
--	}
--
--	replace_filter_string(filter, filter_string);
--
--	parse_init(ps, filter_ops, filter_string);
--	err = filter_parse(ps);
--	if (err) {
--		append_filter_err(ps, filter);
--		goto out;
--	}
-+	err = create_filter(call, filter_string, true, &filter);
- 
--	err = replace_preds(call, filter, ps, filter_string, false);
--	if (err) {
--		filter_disable(call);
--		append_filter_err(ps, filter);
--	} else
--		call->flags |= TRACE_EVENT_FL_FILTERED;
--out:
- 	/*
- 	 * Always swap the call filter with the new filter
- 	 * even if there was an error. If there was an error
- 	 * in the filter, we disable the filter and show the error
- 	 * string
- 	 */
--	tmp = call->filter;
--	rcu_assign_pointer(call->filter, filter);
--	if (tmp) {
--		/* Make sure the call is done with the filter */
--		synchronize_sched();
--		__free_filter(tmp);
-+	if (filter) {
-+		struct event_filter *tmp = call->filter;
-+
-+		if (!err)
-+			call->flags |= TRACE_EVENT_FL_FILTERED;
-+		else
-+			filter_disable(call);
-+
-+		rcu_assign_pointer(call->filter, filter);
-+
-+		if (tmp) {
-+			/* Make sure the call is done with the filter */
-+			synchronize_sched();
-+			__free_filter(tmp);
-+		}
- 	}
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
- out_unlock:
- 	mutex_unlock(&event_mutex);
- 
-@@ -1811,7 +1902,6 @@ out_unlock:
- int apply_subsystem_event_filter(struct event_subsystem *system,
- 				 char *filter_string)
- {
--	struct filter_parse_state *ps;
- 	struct event_filter *filter;
- 	int err = 0;
- 
-@@ -1835,48 +1925,19 @@ int apply_subsystem_event_filter(struct event_subsystem *system,
- 		goto out_unlock;
- 	}
- 
--	err = -ENOMEM;
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto out_unlock;
--
--	filter = __alloc_filter();
--	if (!filter)
--		goto out;
--
--	/* System filters just show a default message */
--	kfree(filter->filter_string);
--	filter->filter_string = NULL;
--
--	/*
--	 * No event actually uses the system filter
--	 * we can free it without synchronize_sched().
--	 */
--	__free_filter(system->filter);
--	system->filter = filter;
--
--	parse_init(ps, filter_ops, filter_string);
--	err = filter_parse(ps);
--	if (err)
--		goto err_filter;
--
--	err = replace_system_preds(system, ps, filter_string);
--	if (err)
--		goto err_filter;
--
--out:
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
-+	err = create_system_filter(system, filter_string, &filter);
-+	if (filter) {
-+		/*
-+		 * No event actually uses the system filter
-+		 * we can free it without synchronize_sched().
-+		 */
-+		__free_filter(system->filter);
-+		system->filter = filter;
-+	}
- out_unlock:
- 	mutex_unlock(&event_mutex);
- 
- 	return err;
--
--err_filter:
--	replace_filter_string(filter, filter_string);
--	append_filter_err(ps, system->filter);
--	goto out;
- }
- 
- #ifdef CONFIG_PERF_EVENTS
-@@ -1894,7 +1955,6 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- {
- 	int err;
- 	struct event_filter *filter;
--	struct filter_parse_state *ps;
- 	struct ftrace_event_call *call;
- 
- 	mutex_lock(&event_mutex);
-@@ -1909,33 +1969,10 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	if (event->filter)
- 		goto out_unlock;
- 
--	filter = __alloc_filter();
--	if (!filter) {
--		err = PTR_ERR(filter);
--		goto out_unlock;
--	}
--
--	err = -ENOMEM;
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto free_filter;
--
--	parse_init(ps, filter_ops, filter_str);
--	err = filter_parse(ps);
--	if (err)
--		goto free_ps;
--
--	err = replace_preds(call, filter, ps, filter_str, false);
-+	err = create_filter(call, filter_str, false, &filter);
- 	if (!err)
- 		event->filter = filter;
--
--free_ps:
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
--
--free_filter:
--	if (err)
-+	else
- 		__free_filter(filter);
- 
- out_unlock:
-@@ -1954,43 +1991,6 @@ out_unlock:
- #define CREATE_TRACE_POINTS
- #include "trace_events_filter_test.h"
- 
--static int test_get_filter(char *filter_str, struct ftrace_event_call *call,
--			   struct event_filter **pfilter)
--{
--	struct event_filter *filter;
--	struct filter_parse_state *ps;
--	int err = -ENOMEM;
--
--	filter = __alloc_filter();
--	if (!filter)
--		goto out;
--
--	ps = kzalloc(sizeof(*ps), GFP_KERNEL);
--	if (!ps)
--		goto free_filter;
--
--	parse_init(ps, filter_ops, filter_str);
--	err = filter_parse(ps);
--	if (err)
--		goto free_ps;
--
--	err = replace_preds(call, filter, ps, filter_str, false);
--	if (!err)
--		*pfilter = filter;
--
-- free_ps:
--	filter_opstack_clear(ps);
--	postfix_clear(ps);
--	kfree(ps);
--
-- free_filter:
--	if (err)
--		__free_filter(filter);
--
-- out:
--	return err;
--}
--
- #define DATA_REC(m, va, vb, vc, vd, ve, vf, vg, vh, nvisit) \
- { \
- 	.filter = FILTER, \
-@@ -2109,12 +2109,13 @@ static __init int ftrace_test_event_filter(void)
- 		struct test_filter_data_t *d = &test_filter_data[i];
- 		int err;
- 
--		err = test_get_filter(d->filter, &event_ftrace_test_filter,
--				      &filter);
-+		err = create_filter(&event_ftrace_test_filter, d->filter,
-+				    false, &filter);
- 		if (err) {
- 			printk(KERN_INFO
- 			       "Failed to get filter for '%s', err %d\n",
- 			       d->filter, err);
-+			__free_filter(filter);
- 			break;
- 		}
- 
+Thanks.
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
