@@ -1,123 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2AHODd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 09:03:33 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47354 "EHLO mx3.mail.elte.hu"
+	id S1753429Ab2AHOFk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 09:05:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab2AHODb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 09:03:31 -0500
-Date: Sun, 8 Jan 2012 15:03:19 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
-Subject: Re: [ERROR] perf build failure on current tip:perf/core
-Message-ID: <20120108140318.GA15654@elte.hu>
-References: <1325950949.1486.20.camel@leonhard>
- <20120108090018.GB7168@elte.hu>
- <1326015664.1486.10.camel@leonhard>
- <20120108113426.GB26516@elte.hu>
- <87r4zaz88t.fsf@gmail.com>
+	id S1750917Ab2AHOFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 09:05:39 -0500
+Message-ID: <4F09A2A0.1060801@redhat.com>
+Date: Sun, 08 Jan 2012 16:05:20 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87r4zaz88t.fsf@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Nadav Amit <nadav.amit@gmail.com>
+CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: fix mov immediate emulation for 64-bit operands
+References: <1325967346-12539-1-git-send-email-namit@cs.technion.ac.il> <E0EE2EE9-96C1-4354-BDCE-19E3AF2C0F30@gmail.com> <4F08AA3C.9090306@zytor.com> <C814BCA3-145A-410F-8F4F-CE5617DDB1A2@gmail.com> <20120108102657.9a5dd6534ea4ae829073ff6e@gmail.com> <CAKLkAJ4=eT7TdZoOkQKMnhmrESq5kvCQL3Mw52a35gu2yWsNgw@mail.gmail.com>
+In-Reply-To: <CAKLkAJ4=eT7TdZoOkQKMnhmrESq5kvCQL3Mw52a35gu2yWsNgw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Namhyung Kim <namhyung@gmail.com> wrote:
-
-> >>   $ map pwrite
-> >>   The program 'map' is currently not installed.  You can install it by
-> >> typing:
-> >>   sudo apt-get install sgt-puzzles
-> >> 
-> >> I don't think this is the package what you said. Anyway quick grep'ing
-> >> pwrite tells me it's in the unistd.h:
-> >> 
-> >>   $ grep pwrite /usr/include/unistd.h
-> >>   extern ssize_t pwrite (int __fd, __const void *__buf, size_t __n,
-> >>   extern ssize_t __REDIRECT (pwrite, (int __fd, __const void *__buf,
-> >> 			     pwrite64) __wur;
-> >>   #   define pwrite pwrite64
+On 01/08/2012 10:47 AM, Nadav Amit wrote:
+> On Sun, Jan 8, 2012 at 3:26 AM, Takuya Yoshikawa
+> <takuya.yoshikawa@gmail.com> wrote:
+> > Hi,
 > >
-> > There's multiple definitions there, and we get lost somehow - as 
-> > unistd.h is included:
+> > Nadav Amit <nadav.amit@gmail.com> wrote:
+> >> On Jan 7, 2012, at 10:25 PM, H. Peter Anvin wrote:
+> >>
+> >> > On 01/07/2012 12:21 PM, Nadav Amit wrote:
+> >> >> MOV immediate instruction (opcodes 0xB8-0xBF) may take 64-bit operand.
+> >> >> The previous emulation implementation assumes the operand is no longer than 32.
+> >> >>
+> >> >> Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
+> >> >
+> >> > There are exactly two such instructions: MOV immediate (B8-BF) and MOV
+> >> > moff (A0-A3); you may want to check the latter too.
+> >> >
+> >> >     -hpa
+> >> >
+> >>
+> >> These instructions (A0-A3) seem to be already covered by the decode_abs function.
 > >
-> >   ~/tip/tools/perf> grep -n unistd.h util/trace-event-info.c
-> >   34:#include <unistd.h>
+> > Like these how about introducing a new flag and change the following entries in the
+> > decode table to indicate possible 64bit immediate:
 > >
-> > Thanks,
+> >        /* 0xB8 - 0xBF */
+> >        X8(I(DstReg | SrcImm | Mov, em_mov)),
 > >
-> > 	Ingo
-> 
-> This is the content of my /usr/include/unistd.h:
-> 
-> #ifdef __USE_UNIX98
-> # ifndef __USE_FILE_OFFSET64
-> extern ssize_t pread (int __fd, void *__buf, size_t __nbytes,
-> 		      __off_t __offset) __wur;
-> extern ssize_t pwrite (int __fd, __const void *__buf, size_t __n,
-> 		       __off_t __offset) __wur;
-> # else
-> #  ifdef __REDIRECT
-> extern ssize_t __REDIRECT (pread, (int __fd, void *__buf, size_t __nbytes,
-> 				   __off64_t __offset),
-> 			   pread64) __wur;
-> extern ssize_t __REDIRECT (pwrite, (int __fd, __const void *__buf,
-> 				    size_t __nbytes, __off64_t __offset),
-> 			   pwrite64) __wur;
-> #  else
-> #   define pread pread64
-> #   define pwrite pwrite64
-> #  endif
-> # endif
-> 
-> # ifdef __USE_LARGEFILE64
-> extern ssize_t pread64 (int __fd, void *__buf, size_t __nbytes,
-> 			__off64_t __offset) __wur;
-> extern ssize_t pwrite64 (int __fd, __const void *__buf, size_t __n,
-> 			 __off64_t __offset) __wur;
-> # endif
-> #endif
-> 
-> I think all of pread/write functions are properly defined here:
-> 
->   $ echo '#include <unistd.h>' | \
->   > gcc -xc -E -dM -D_GNU_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 - | \
->   > grep -e UNIX98 -e LARGEFILE64 -e FILE_OFFSET
->   #define __ILP32_OFFBIG_CFLAGS "-m32 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
->   #define _LARGEFILE64_SOURCE 1
->   #define __USE_UNIX98 1
->   #define __USE_LARGEFILE64 1
->   #define _FILE_OFFSET_BITS 64
->   #define __USE_FILE_OFFSET64 1
+> > Checking the opcode byte at the operand decoding stage, like below, does not look nice:
+> >        (IMO so better ask Avi)
+> >
+> > +       if (size == 8 && ((ctxt->b & 0xF8) != 0xB8 || ctxt->twobyte))
+> >                size = 4;
+> >
+>
+> I agree. I remembered these flags are expensive (from the time flags
+> were set in u32).
+> I guess I can add OpImm64.
+> Another less preferable alternative is to add a misc. flag or reuse
+> another flag.
+>
+> Avi, please acknowledge adding OpImm64.
 
-So which preprocessor branch within unistd.h does it get into on 
-your system and why isnt there a pwrite()/pwrite64() prototype 
-once it goes along that path?
+Yes, OpImm64 is the cleanest IMO.  Note it doesn't even cost us a bit.
 
-You could try an ugly approach and edit your unistd.h and put in 
-debug lines like this:
+-- 
+error compiling committee.c: too many arguments to function
 
-#warn got here: __LINE__
-
-and thus see which branch it really gets into.
-
-(save a backup copy of unistd.h first ;-)
-
-Thanks,
-
-	Ingo
