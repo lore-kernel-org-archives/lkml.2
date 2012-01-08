@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab2AHOpK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 09:45:10 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:58413
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753777Ab2AHOom (ORCPT
+	id S1753855Ab2AHOos (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 09:44:48 -0500
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39178 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753695Ab2AHOop (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 09:44:42 -0500
+	Sun, 8 Jan 2012 09:44:45 -0500
 X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VS0(zzzz1202hzz8275dhz2dh87h2a8h668h839h63h)
+X-Spam-TCS-SCL: 2:0
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-FB-DOMAIN-IP-MATCH: fail
 From: Richard Zhao <richard.zhao@linaro.org>
@@ -17,9 +17,9 @@ To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
         <kernel@pengutronix.de>, <eric.miao@linaro.org>, <patches@linaro.org>,
         Richard Zhao <richard.zhao@linaro.org>
-Subject: [PATCH v4 1/2] dma/imx-sdma: let sdma_run_channel call sdma_enable_channel
-Date: Sun, 8 Jan 2012 22:44:21 +0800
-Message-ID: <1326033862-25351-2-git-send-email-richard.zhao@linaro.org>
+Subject: [PATCH v4 2/2] dma/imx-sdma: convert _raw_readl/_raw_writel to readl/writel
+Date: Sun, 8 Jan 2012 22:44:22 +0800
+Message-ID: <1326033862-25351-3-git-send-email-richard.zhao@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
 References: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
@@ -30,51 +30,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let all enable channel code call sdma_enable_channel.
+readl/writel is more genric. And if CONFIG_ARM_DMA_MEM_BUFFERABLE,
+they includes necessary memory barriers.
 
 Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
 ---
- drivers/dma/imx-sdma.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/dma/imx-sdma.c |   44 ++++++++++++++++++++++----------------------
+ 1 files changed, 22 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index f59fd8f..c2bc4f1 100644
+index c2bc4f1..2cc96c4 100644
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
-@@ -394,6 +394,11 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+@@ -368,9 +368,9 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+ 	if (event_override && mcu_override && dsp_override)
+ 		return -EINVAL;
+ 
+-	evt = __raw_readl(sdma->regs + SDMA_H_EVTOVR);
+-	mcu = __raw_readl(sdma->regs + SDMA_H_HOSTOVR);
+-	dsp = __raw_readl(sdma->regs + SDMA_H_DSPOVR);
++	evt = readl(sdma->regs + SDMA_H_EVTOVR);
++	mcu = readl(sdma->regs + SDMA_H_HOSTOVR);
++	dsp = readl(sdma->regs + SDMA_H_DSPOVR);
+ 
+ 	if (dsp_override)
+ 		dsp &= ~(1 << channel);
+@@ -387,16 +387,16 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+ 	else
+ 		mcu |= (1 << channel);
+ 
+-	__raw_writel(evt, sdma->regs + SDMA_H_EVTOVR);
+-	__raw_writel(mcu, sdma->regs + SDMA_H_HOSTOVR);
+-	__raw_writel(dsp, sdma->regs + SDMA_H_DSPOVR);
++	writel(evt, sdma->regs + SDMA_H_EVTOVR);
++	writel(mcu, sdma->regs + SDMA_H_HOSTOVR);
++	writel(dsp, sdma->regs + SDMA_H_DSPOVR);
+ 
  	return 0;
  }
  
-+static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
-+{
-+	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
-+}
-+
- /*
-  * sdma_run_channel - run a channel and wait till it's done
-  */
-@@ -405,7 +410,7 @@ static int sdma_run_channel(struct sdma_channel *sdmac)
- 
- 	init_completion(&sdmac->done);
- 
+ static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
+ {
 -	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
-+	sdma_enable_channel(sdma, channel);
- 
- 	ret = wait_for_completion_timeout(&sdmac->done, HZ);
- 
-@@ -811,11 +816,6 @@ out:
- 	return ret;
++	writel(1 << channel, sdma->regs + SDMA_H_START);
  }
  
--static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
--{
--	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
--}
--
- static dma_cookie_t sdma_assign_cookie(struct sdma_channel *sdmac)
- {
- 	dma_cookie_t cookie = sdmac->chan.cookie;
+ /*
+@@ -460,9 +460,9 @@ static void sdma_event_enable(struct sdma_channel *sdmac, unsigned int event)
+ 	u32 val;
+ 	u32 chnenbl = chnenbl_ofs(sdma, event);
+ 
+-	val = __raw_readl(sdma->regs + chnenbl);
++	val = readl(sdma->regs + chnenbl);
+ 	val |= (1 << channel);
+-	__raw_writel(val, sdma->regs + chnenbl);
++	writel(val, sdma->regs + chnenbl);
+ }
+ 
+ static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
+@@ -472,9 +472,9 @@ static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
+ 	u32 chnenbl = chnenbl_ofs(sdma, event);
+ 	u32 val;
+ 
+-	val = __raw_readl(sdma->regs + chnenbl);
++	val = readl(sdma->regs + chnenbl);
+ 	val &= ~(1 << channel);
+-	__raw_writel(val, sdma->regs + chnenbl);
++	writel(val, sdma->regs + chnenbl);
+ }
+ 
+ static void sdma_handle_channel_loop(struct sdma_channel *sdmac)
+@@ -552,8 +552,8 @@ static irqreturn_t sdma_int_handler(int irq, void *dev_id)
+ 	struct sdma_engine *sdma = dev_id;
+ 	u32 stat;
+ 
+-	stat = __raw_readl(sdma->regs + SDMA_H_INTR);
+-	__raw_writel(stat, sdma->regs + SDMA_H_INTR);
++	stat = readl(sdma->regs + SDMA_H_INTR);
++	writel(stat, sdma->regs + SDMA_H_INTR);
+ 
+ 	while (stat) {
+ 		int channel = fls(stat) - 1;
+@@ -707,7 +707,7 @@ static void sdma_disable_channel(struct sdma_channel *sdmac)
+ 	struct sdma_engine *sdma = sdmac->sdma;
+ 	int channel = sdmac->channel;
+ 
+-	__raw_writel(1 << channel, sdma->regs + SDMA_H_STATSTOP);
++	writel(1 << channel, sdma->regs + SDMA_H_STATSTOP);
+ 	sdmac->status = DMA_ERROR;
+ }
+ 
+@@ -780,7 +780,7 @@ static int sdma_set_channel_priority(struct sdma_channel *sdmac,
+ 		return -EINVAL;
+ 	}
+ 
+-	__raw_writel(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
++	writel(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
+ 
+ 	return 0;
+ }
+@@ -1228,7 +1228,7 @@ static int __init sdma_init(struct sdma_engine *sdma)
+ 	clk_enable(sdma->clk);
+ 
+ 	/* Be sure SDMA has not started yet */
+-	__raw_writel(0, sdma->regs + SDMA_H_C0PTR);
++	writel(0, sdma->regs + SDMA_H_C0PTR);
+ 
+ 	sdma->channel_control = dma_alloc_coherent(NULL,
+ 			MAX_DMA_CHANNELS * sizeof (struct sdma_channel_control) +
+@@ -1251,11 +1251,11 @@ static int __init sdma_init(struct sdma_engine *sdma)
+ 
+ 	/* disable all channels */
+ 	for (i = 0; i < sdma->num_events; i++)
+-		__raw_writel(0, sdma->regs + chnenbl_ofs(sdma, i));
++		writel(0, sdma->regs + chnenbl_ofs(sdma, i));
+ 
+ 	/* All channels have priority 0 */
+ 	for (i = 0; i < MAX_DMA_CHANNELS; i++)
+-		__raw_writel(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
++		writel(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
+ 
+ 	ret = sdma_request_channel(&sdma->channel[0]);
+ 	if (ret)
+@@ -1264,16 +1264,16 @@ static int __init sdma_init(struct sdma_engine *sdma)
+ 	sdma_config_ownership(&sdma->channel[0], false, true, false);
+ 
+ 	/* Set Command Channel (Channel Zero) */
+-	__raw_writel(0x4050, sdma->regs + SDMA_CHN0ADDR);
++	writel(0x4050, sdma->regs + SDMA_CHN0ADDR);
+ 
+ 	/* Set bits of CONFIG register but with static context switching */
+ 	/* FIXME: Check whether to set ACR bit depending on clock ratios */
+-	__raw_writel(0, sdma->regs + SDMA_H_CONFIG);
++	writel(0, sdma->regs + SDMA_H_CONFIG);
+ 
+-	__raw_writel(ccb_phys, sdma->regs + SDMA_H_C0PTR);
++	writel(ccb_phys, sdma->regs + SDMA_H_C0PTR);
+ 
+ 	/* Set bits of CONFIG register with given context switching mode */
+-	__raw_writel(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
++	writel(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
+ 
+ 	/* Initializes channel's priorities */
+ 	sdma_set_channel_priority(&sdma->channel[0], 7);
 -- 
 1.7.5.4
 
