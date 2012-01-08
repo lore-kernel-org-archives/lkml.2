@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab2AHQJH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 11:09:07 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:55758 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab2AHQJE convert rfc822-to-8bit (ORCPT
+	id S1754112Ab2AHQKO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 11:10:14 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58810 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968Ab2AHQKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 11:09:04 -0500
+	Sun, 8 Jan 2012 11:10:11 -0500
 MIME-Version: 1.0
 X-Originating-IP: [79.181.26.205]
-In-Reply-To: <20120103143417.7cbea589.akpm@linux-foundation.org>
-References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
-	<1325499859-2262-5-git-send-email-gilad@benyossef.com>
-	<20120103143417.7cbea589.akpm@linux-foundation.org>
-Date: Sun, 8 Jan 2012 18:09:03 +0200
-Message-ID: <CAOtvUMdY3ZST0Pb+tbec1WSfPgOQtAZQtc6ZMs16U5pBriomXA@mail.gmail.com>
-Subject: Re: [PATCH v5 4/8] smp: Add func to IPI cpus based on parameter func
+In-Reply-To: <1325854981.2442.25.camel@twins>
+References: <1325600353-10895-1-git-send-email-gilad@benyossef.com>
+	<1325854981.2442.25.camel@twins>
+Date: Sun, 8 Jan 2012 18:10:09 +0200
+Message-ID: <CAOtvUMe0pXKTrJGhkc=OFvqYS1R_PXU9qbSAP8Ld5U7NhFvCSw@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/9] Remove useless on_each_cpu return value
 From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <mina86@mina86.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 12:34 AM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Mon,  2 Jan 2012 12:24:15 +0200
-> Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+On Fri, Jan 6, 2012 at 3:03 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2012-01-03 at 16:19 +0200, Gilad Ben-Yossef wrote:
+>> on_each_cpu() returns as its own return value the return value of
+>> smp_call_function(). smp_call_function() in turn returns a hard
+>> coded value of zero.
+>>
+>> Some callers to on_each_cpu() waste cycles and bloat code space
+>> by checking the return value to on_each_cpu(), probably for
+>> historical reasons.
 >
->> Add the on_each_cpu_required() function that wraps on_each_cpu_mask()
->> and calculates the cpumask of cpus to IPI by calling a function supplied
->> as a parameter in order to determine whether to IPI each specific cpu.
+> hysterical raisins,, yumm! :-)
 >
-> The name is actually "on_each_cpu_cond".
-
-Oopss... I started out with on_each_cpu_required as a name and switched but
-missed the description. Thanks for pointing it out.
-
-<SNIP>
-
->> + * Call a function on each processor for which the supplied function
->> + * cond_func returns a positive value. This may include the local
->> + * processor, optionally waiting for all the required CPUs to finish.
->> + * The function may be called on all online CPUs without running the
->> + * cond_func function in extreme circumstance (memory allocation
->> + * failure condition when CONFIG_CPUMASK_OFFSTACK=y)
->> + * All the limitations specified in smp_call_function_many apply.
->> + */
->> +void on_each_cpu_cond(int (*cond_func) (int cpu, void *info),
->> +                     void (*func)(void *), void *info, bool wait)
->> +{
->> +     cpumask_var_t cpus;
->> +     int cpu;
->> +
->> +     if (likely(zalloc_cpumask_var(&cpus, GFP_ATOMIC))) {
->> +             for_each_online_cpu(cpu)
->> +                     if (cond_func(cpu, info))
->> +                             cpumask_set_cpu(cpu, cpus);
->> +             on_each_cpu_mask(cpus, func, info, wait);
->> +             free_cpumask_var(cpus);
->> +     } else
->> +             on_each_cpu(func, info, wait);
->> +}
->> +EXPORT_SYMBOL(on_each_cpu_cond);
+>> This patch set refactors callers to not test on_each_cpu()
+>> (fixed) return value and then refactors on_each_cpu to
+>> return void to avoid confusing future users.
+>>
 >
-> If zalloc_cpumask_var() fails, can we not fall back to
+> Seems sane enough, fwiw:
 >
->                for_each_online_cpu(cpu)
->                        if (cond_func(cpu, info))
->                                smp_call_function_single(...);
->
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Indeed we can and probably should :-)
+Thanks for the review :-)
 
-I'll send out v6 with this and other fixes momentarily.
+I just sent out a V2. No changes except I've added the needed signed-off-by.
 
-Thanks,
 Gilad
+
 
 -- 
 Gilad Ben-Yossef
