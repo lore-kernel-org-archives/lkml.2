@@ -1,104 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab2AHKqg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 05:46:36 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:42546 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab2AHKqe (ORCPT
+	id S1752829Ab2AHKyJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 05:54:09 -0500
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:40257 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab2AHKyH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 05:46:34 -0500
-Date: Sun, 8 Jan 2012 11:46:30 +0100
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Corentin Chary <corentincj@iksaif.net>
-Cc: platform-driver-x86@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org, Andrzej Prochyra <andrzej@prochyra.name>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        David Herrmann <dh.herrmann@googlemail.com>,
-        Richard =?utf-8?Q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
-        Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
-Message-ID: <20120108104630.GA4354@ubuntu-mba>
-Mail-Followup-To: Corentin Chary <corentincj@iksaif.net>,
-	platform-driver-x86@vger.kernel.org,
-	Zhang Rui <rui.zhang@intel.com>, linux-kernel@vger.kernel.org,
-	Andrzej Prochyra <andrzej@prochyra.name>,
-	Matthew Garrett <mjg59@srcf.ucam.org>,
-	David Herrmann <dh.herrmann@googlemail.com>,
-	Richard =?utf-8?Q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
-	Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org
-References: <20120105150832.GA25386@ubuntu-macmini>
- <1325945558-4661-1-git-send-email-corentincj@iksaif.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325945558-4661-1-git-send-email-corentincj@iksaif.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 8 Jan 2012 05:54:07 -0500
+Subject: Re: Switch per cpu partial page support off for debugging
+From: Pekka Enberg <penberg@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Christoph Lameter <cl@linux.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.DEB.2.00.1201060934550.10460@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1111230923260.16544@router.home>
+	 <alpine.LFD.2.02.1112120915030.2555@tux.localdomain>
+	 <alpine.DEB.2.00.1112141908410.27595@chino.kir.corp.google.com>
+	 <alpine.DEB.2.00.1201060934550.10460@chino.kir.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Sun, 08 Jan 2012 12:54:01 +0200
+Message-ID: <1326020041.32105.3.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 07, 2012 at 03:12:38PM +0100, Corentin Chary wrote:
-> On these laptops, the ACPI video is not functional, and very unlikely
-> to be fixed by the vendor. Note that intel_backlight works for some
-> of these laptops, and the backlight from samsung-laptop always work.
+On Fri, 2012-01-06 at 09:37 -0800, David Rientjes wrote:
+> On Wed, 14 Dec 2011, David Rientjes wrote:
 > 
-> The good news is that newer laptops have functional ACPI video device
-> and won't end up growing this list.
+> > > > Eric saw an issue with accounting of slabs during validation. Its not
+> > > > possible to determine accurately how many per cpu partial slabs exist at
+> > > > any time so this switches off per cpu partial pages during debug.
+> > > > 
+> > > > Subject: Switch per cpu partial page support off for debugging
+> > > > 
+> > > > Otherwise we have accounting issues.
+> > > > 
+> > > > Signed-off-by: Christoph Lameter <cl@linux.com>
+> > > > 
+> > > > 
+> > > > ---
+> > > > mm/slub.c |    4 +++-
+> > > > 1 file changed, 3 insertions(+), 1 deletion(-)
+> > > > 
+> > > > Index: linux-2.6/mm/slub.c
+> > > > ===================================================================
+> > > > --- linux-2.6.orig/mm/slub.c	2011-11-22 11:57:21.000000000 -0600
+> > > > +++ linux-2.6/mm/slub.c	2011-11-22 11:57:55.000000000 -0600
+> > > > @@ -3027,7 +3027,9 @@ static int kmem_cache_open(struct kmem_c
+> > > > 	 *    per node list when we run out of per cpu objects. We only fetch
+> > > > 50%
+> > > > 	 *    to keep some capacity around for frees.
+> > > > 	 */
+> > > > -	if (s->size >= PAGE_SIZE)
+> > > > +	if (kmem_cache_debug(s))
+> > > > +		s->cpu_partial = 0;
+> > > > +	else if (s->size >= PAGE_SIZE)
+> > > > 		s->cpu_partial = 2;
+> > > > 	else if (s->size >= 1024)
+> > > > 		s->cpu_partial = 6;
+> > 
+> > I think this deserves a comment since it's not clear why it's being done 
+> > neither in the code or by the changelog.  Also, you'd want a check for 
+> > kmem_cache_debug() when storing to /sys/kernel/slab/cache/cpu_partial as 
+> > well, otherwise this could easily be broken from userspace again.  (It 
+> > also seems like Documentation/ABI/testing/sysfs-kernel-slab got left out 
+> > of an update when that was added, too.)
+> > 
 > 
-> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-> ---
-> 
-> Could the concerned people test this patch and check that it correctly
-> disable the acpi_video backlight ?
-> 
->  drivers/acpi/video_detect.c |   40 ++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 40 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-> index 45d8097..376bce2 100644
-> --- a/drivers/acpi/video_detect.c
-> +++ b/drivers/acpi/video_detect.c
-> @@ -132,6 +132,44 @@ find_video(acpi_handle handle, u32 lvl, void *context, void **rv)
->  	return AE_OK;
->  }
->  
-> +/* Force to use vendor driver when the ACPI device is known to be
-> + * buggy */
-> +static int video_detect_force_vendor(const struct dmi_system_id *d)
-> +{
-> +	acpi_video_support |= ACPI_VIDEO_BACKLIGHT_DMI_VENDOR;
-> +	return 0;
-> +}
-> +
-> +static struct dmi_system_id video_detect_dmi_table[] = {
-> +	{
-> +	 .callback = video_detect_force_vendor,
-> +	 .ident = "N150P",
-> +	 .matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> +		DMI_MATCH(DMI_PRODUCT_NAME, "N150P"),
-> +		DMI_MATCH(DMI_BOARD_NAME, "N150P"),
-> +		},
-> +	},
-> +	{
-> +	 .callback = video_detect_force_vendor,
-> +	 .ident = "N145P/N250P/N260P",
-> +	 .matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> +		DMI_MATCH(DMI_PRODUCT_NAME, "N145P/N250P/N260P"),
-> +		DMI_MATCH(DMI_BOARD_NAME, "N145P/N250P/N260P"),
-> +		},
-> +	},
-> +	{
-> +	 .callback = video_detect_force_vendor,
-> +	 .ident = "N150/N210/N220",
-> +	 .matches = {
-> +		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
-> +		DMI_MATCH(DMI_PRODUCT_NAME, "N150/N210/N220"),
-> +		DMI_MATCH(DMI_BOARD_NAME, "N150/N210/N220"),
-> +		},
-> +	},
-> +};
-> +
+> This patch is merged in slab/urgent without any changes from my comment 
+> above; since userspace can alter cpu_partial directly via 
+> /sys/kernel/slab/cache/cpu_partial which would reintroduce the 
+> "accounting issues", shouldn't that return -EINVAL when debug is enabled?
 
-I don't see NF110/NF210/NF310 in this list. Was that an oversight?
+I think I applied the patch before your comments. EINVAL sounds
+reasonable to me. Christoph?
+
+			Pekka
+
