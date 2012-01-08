@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab2AHLv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 06:51:26 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39237 "EHLO
+	id S1753451Ab2AHLwT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 06:52:19 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39248 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab2AHLvX (ORCPT
+	with ESMTP id S1751114Ab2AHLwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 06:51:23 -0500
-Date: Sun, 8 Jan 2012 03:51:09 -0800
-From: tip-bot for David Daney <david.daney@cavium.com>
-Message-ID: <tip-2e885057b7f75035f0b85e02f737891482815a81@git.kernel.org>
+	Sun, 8 Jan 2012 06:52:18 -0500
+Date: Sun, 8 Jan 2012 03:51:56 -0800
+From: tip-bot for Jack Steiner <steiner@sgi.com>
+Message-ID: <tip-da517a08ac5913cd80ce3507cddd00f2a091b13c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, david.daney@cavium.com, tglx@linutronix.de
+        steiner@sgi.com, stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, david.daney@cavium.com, tglx@linutronix.de
-In-Reply-To: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>
-References: <1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com>
+        steiner@sgi.com, stable@kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20120106191900.GA19772@sgi.com>
+References: <20120106191900.GA19772@sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] recordmcount:
-  Fix handling of elf64 big-endian objects.
-Git-Commit-ID: 2e885057b7f75035f0b85e02f737891482815a81
+Subject: [tip:x86/urgent] x86, UV:
+  Update Boot messages for SGI UV2 platform
+Git-Commit-ID: da517a08ac5913cd80ce3507cddd00f2a091b13c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -28,52 +28,51 @@ MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 08 Jan 2012 03:51:15 -0800 (PST)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 08 Jan 2012 03:52:02 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2e885057b7f75035f0b85e02f737891482815a81
-Gitweb:     http://git.kernel.org/tip/2e885057b7f75035f0b85e02f737891482815a81
-Author:     David Daney <david.daney@cavium.com>
-AuthorDate: Mon, 19 Dec 2011 17:42:42 -0800
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Fri, 6 Jan 2012 17:06:42 -0500
+Commit-ID:  da517a08ac5913cd80ce3507cddd00f2a091b13c
+Gitweb:     http://git.kernel.org/tip/da517a08ac5913cd80ce3507cddd00f2a091b13c
+Author:     Jack Steiner <steiner@sgi.com>
+AuthorDate: Fri, 6 Jan 2012 13:19:00 -0600
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 8 Jan 2012 12:35:44 +0100
 
-recordmcount: Fix handling of elf64 big-endian objects.
+x86, UV: Update Boot messages for SGI UV2 platform
 
-In ELF64, the sh_flags field is 64-bits wide.  recordmcount was
-erroneously treating it as a 32-bit wide field.  For little endian
-objects this works because the flags of interest (SHF_EXECINSTR)
-reside in the lower 32 bits of the word, and you get the same result
-with either a 32-bit or 64-bit read.  Big endian objects on the
-other hand do not work at all with this error.
+SGI UV systems print a message during boot:
 
-The fix:  Correctly treat sh_flags as 64-bits wide in elf64 objects.
+	UV: Found <num> blades
 
-The symptom I observed was that my
-__start_mcount_loc..__stop_mcount_loc was empty even though ftrace
-function tracing was enabled.
+Due to packaging changes, the blade count is not accurate for
+on the next generation of the platform. This patch corrects the
+count.
 
-Link: http://lkml.kernel.org/r/1324345362-12230-1-git-send-email-ddaney.cavm@gmail.com
-
-Cc: stable@kernel.org # 3.0+
-Signed-off-by: David Daney <david.daney@cavium.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+Cc: <stable@kernel.org>
+Link: http://lkml.kernel.org/r/20120106191900.GA19772@sgi.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- scripts/recordmcount.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/apic/x2apic_uv_x.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/scripts/recordmcount.h b/scripts/recordmcount.h
-index f40a6af6..54e35c1 100644
---- a/scripts/recordmcount.h
-+++ b/scripts/recordmcount.h
-@@ -462,7 +462,7 @@ __has_rel_mcount(Elf_Shdr const *const relhdr,  /* is SHT_REL or SHT_RELA */
- 		succeed_file();
- 	}
- 	if (w(txthdr->sh_type) != SHT_PROGBITS ||
--	    !(w(txthdr->sh_flags) & SHF_EXECINSTR))
-+	    !(_w(txthdr->sh_flags) & SHF_EXECINSTR))
- 		return NULL;
- 	return txtname;
- }
+diff --git a/arch/x86/kernel/apic/x2apic_uv_x.c b/arch/x86/kernel/apic/x2apic_uv_x.c
+index 9d59bba..79b05b8 100644
+--- a/arch/x86/kernel/apic/x2apic_uv_x.c
++++ b/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -769,7 +769,12 @@ void __init uv_system_init(void)
+ 	for(i = 0; i < UVH_NODE_PRESENT_TABLE_DEPTH; i++)
+ 		uv_possible_blades +=
+ 		  hweight64(uv_read_local_mmr( UVH_NODE_PRESENT_TABLE + i * 8));
+-	printk(KERN_DEBUG "UV: Found %d blades\n", uv_num_possible_blades());
++
++	/* uv_num_possible_blades() is really the hub count */
++	printk(KERN_INFO "UV: Found %d blades, %d hubs\n",
++			is_uv1_hub() ? uv_num_possible_blades() :
++			(uv_num_possible_blades() + 1) / 2,
++			uv_num_possible_blades());
+ 
+ 	bytes = sizeof(struct uv_blade_info) * uv_num_possible_blades();
+ 	uv_blade_info = kzalloc(bytes, GFP_KERNEL);
