@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab2AHRxq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 12:53:46 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44864 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753417Ab2AHRxl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 12:53:41 -0500
+	id S1754267Ab2AHR57 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 12:57:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33562 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751660Ab2AHR56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 12:57:58 -0500
+Date: Sun, 8 Jan 2012 09:56:45 -0800
+From: Greg KH <gregkh@suse.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: [PATCH 0/4] sysfs:  Reduce the size of sysfs_dirent
+Message-ID: <20120108175645.GC29499@suse.de>
+References: <m1aa6pky2r.fsf@fess.ebiederm.org>
+ <m1sjjwggz0.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <20120108114407.GA22056@parisc-linux.org>
-References: <20120107185548.GA30748@outflux.net>
-	<20120108114407.GA22056@parisc-linux.org>
-Date: Sun, 8 Jan 2012 09:53:38 -0800
-X-Google-Sender-Auth: 7sJAC8V7-mmyQP5rSvJwTKbXetQ
-Message-ID: <CAGXu5j+ttzBowrrBNXYqtDaQ66C1GUD10dR0oVLiaDxwa5+X3g@mail.gmail.com>
-Subject: Re: [PATCH v2012.2] fs: symlink restrictions on sticky directories
-From: Kees Cook <keescook@chromium.org>
-To: Matthew Wilcox <matthew@wil.cx>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Rik van Riel <riel@redhat.com>,
-        Federica Teodori <federica.teodori@googlemail.com>,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        Dan Rosenberg <drosenberg@vsecurity.com>, linux-doc@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, kernel-hardening@lists.openwall.com
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1sjjwggz0.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 8, 2012 at 3:44 AM, Matthew Wilcox <matthew@wil.cx> wrote:
-> On Sat, Jan 07, 2012 at 10:55:48AM -0800, Kees Cook wrote:
->> v2012.2:
->>  - Change sysctl mode to 0600, suggested by Ingo Molnar.
->>  - Rework CONFIG logic to split code from default behavior.
->>  - Renamed sysctl to have a "sysctl_" prefix, suggested by Andrew Morton.
->
-> All the sysctl / CONFIG logic seems very complex.  Why not make it
-> a module parameter instead?  It can be easily changed at boot time
-> (specify kernel.insecure_symlinks=1 on the kernel command line) and,
-> with a mode of 0600, can be modified at runtime too.
+On Tue, Jan 03, 2012 at 09:43:47PM -0800, Eric W. Biederman wrote:
+> ebiederm@xmission.com (Eric W. Biederman) writes:
+> 
+> > After throwing rb_trees at the problem sysfs_dirent increased in size by
+> > 6 pointers, or 48 bytes.    Since the point of having struct
+> > sysfs_dirent is to keep the size down increasing in size that much seems
+> > unfortunate.
+> >
+> > The following patches attack this problem and if I have counted right
+> > reduce the size of sysfs_dirent by 4 pointers on 64bit.  Not quite
+> > where we were but reducing sysfs_dirent by 32bytes to 104 bytes is
+> > an improvement.
+> 
+> Greg did you see these patches for reducing the sysfs memory size
+> regression in 3.2?
 
-Well, I'll still need a CONFIG for the code itself, and the normal way
-to tweak kernel operation is via sysctls, so I'd rather not switch to
-cmdline options.
+Ok, due to the holidays, these ended up missing the 3.3 merge window,
+I'll queue them up for 3.4.
 
--Kees
+thanks,
 
--- 
-Kees Cook
-ChromeOS Security
+greg k-h
