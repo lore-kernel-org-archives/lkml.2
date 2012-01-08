@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab2AHXLE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 18:11:04 -0500
-Received: from mga03.intel.com ([143.182.124.21]:11563 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754602Ab2AHXLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 18:11:02 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="54494681"
-Date: Mon, 9 Jan 2012 00:16:57 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Sangbeom Kim <sbkim73@samsung.com>
-Cc: lrg@ti.com, broonie@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] regulator: Add S5M8767A regulator driver
-Message-ID: <20120108231657.GD13679@sortiz-mobl>
-References: <1325225153-32389-1-git-send-email-sbkim73@samsung.com>
+	id S1754782Ab2AHXOD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 18:14:03 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:35139 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754602Ab2AHXOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 18:14:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325225153-32389-1-git-send-email-sbkim73@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1201082319560.24030@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1201082028140.24030@swampdragon.chaosbits.net>
+	<CA+55aFwO9Wtq=NEpMskW-2wrWZAGh-C6VBXENA3LtFOk=tUwgQ@mail.gmail.com>
+	<1326058974.5372.4.camel@joe2Laptop>
+	<alpine.LNX.2.00.1201082319560.24030@swampdragon.chaosbits.net>
+Date: Sun, 8 Jan 2012 15:14:01 -0800
+Message-ID: <CAHLZz13J2KxsumzG9hvAgWXObX=TwNL3Kf218bNtFWSuA0ggyg@mail.gmail.com>
+Subject: Re: Please merge two small bug fix patches from linux-next
+From: Harvey Harrison <harvey.harrison@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: Joe Perches <joe@perches.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sangbeom, Mark,
+On Sun, Jan 8, 2012 at 2:21 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> On Sun, 8 Jan 2012, Joe Perches wrote:
+>
+>> On Sun, 2012-01-08 at 13:26 -0800, Linus Torvalds wrote:
+>> > On Sun, Jan 8, 2012 at 11:51 AM, Jesper Juhl <jj@chaosbits.net> wrote:
+>> > > Below are two patches that have been in linux-next for ages (via akpm's
+>> > > tree). They are prette simple, straight-up, bug fixes. They have been
+>> > > submitted to maintainers multiple times over (IIRC at least the past
+>> > > year), but for some reason the maintainers seem uninterested in picking
+>> > > them up (or even responding to them).
+>> []
+>> > they seem to have Andrew's sign-off, so I'd have expected them to
+>> > come through Andew. What's up?
+>>
+>> >From my perspective, the issue lies with James'
+>> apparent desire to keep scsi tree changes as close
+>> to zero as possible.
+>>
+>> Many obvious corrections to scsi defects have gone
+>> unapplied.
+>>
+>
+> I have to agree. It's actually gotten to the point that I personally
+> completely avoid/ignore scsi code when looking for stuff to fix/improve
+> since I don't expect to be able to get the patches merged anyway..
+>
 
-On Fri, Dec 30, 2011 at 03:05:53PM +0900, Sangbeom Kim wrote:
-> S5M8767A is a cost-effective PMIC which is designed for mobile applications.
-> It includes high efficient 9 Buck converters, 28 LDOs.
-> Especially, S5M8767A is optimized for Multi-core SOCs.
-> And during DVFS operation, S5M8767A output stable voltage.
-> This patch implement regulator driver for S5M8767A.
-> 
-> Signed-off-by: Sangbeom Kim <sbkim73@samsung.com>
-> ---
->  Changes since v3:
->  As Mark Brown comments
->  - Modify return value for get_voltage_sel
->  - Romove h/w access routine in the set_voltage_time_sel
->  - Replace kzalloc with devm_kzalloc
-Mark, are you ok with this one ? As it depends on the previous MFD patches,
-I'll have to take it through the MFD tree.
+Basically the same experience here trying to submit sparse annotations
+or patched using the get_unaligned_*
+functions instead of explicit byte-shifting.
 
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Harvey
