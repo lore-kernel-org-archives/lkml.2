@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139Ab2AHQZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 11:25:27 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:33922 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753972Ab2AHQZZ convert rfc822-to-8bit (ORCPT
+	id S1754176Ab2AHQ1U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 11:27:20 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52956 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab2AHQ1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 11:25:25 -0500
+	Sun, 8 Jan 2012 11:27:19 -0500
+From: Namhyung Kim <namhyung@gmail.com>
+To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Cc: <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH][trace-cmd] blk plugin: replace BLK_TC_BARRIER with BLK_TC_FLUSH/BLK_TC_FUA
+References: <1326028761-25209-1-git-send-email-stefanha@linux.vnet.ibm.com>
+Date: Mon, 09 Jan 2012 01:27:12 +0900
+In-Reply-To: <1326028761-25209-1-git-send-email-stefanha@linux.vnet.ibm.com>
+	(Stefan Hajnoczi's message of "Sun, 8 Jan 2012 13:19:21 +0000")
+Message-ID: <874nw6xiqn.fsf@gmail.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-X-Originating-IP: [79.181.26.205]
-In-Reply-To: <20120108161212.GD21765@n2100.arm.linux.org.uk>
-References: <1326029549-2794-1-git-send-email-gilad@benyossef.com>
-	<1326029549-2794-2-git-send-email-gilad@benyossef.com>
-	<20120108161212.GD21765@n2100.arm.linux.org.uk>
-Date: Sun, 8 Jan 2012 18:25:24 +0200
-Message-ID: <CAOtvUMddvPVQTaUQAmGOgx9Wz18ewVWG5nRouYaDuFWe13pX4g@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 1/9] arm: avoid using on_each_cpu hard coded ret value
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 8, 2012 at 6:12 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+Stefan Hajnoczi <stefanha@linux.vnet.ibm.com> wrote:
 
-<SNIP>
-
->> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
->> index 5bb91bf..6e9acb7 100644
->> --- a/arch/arm/kernel/perf_event.c
->> +++ b/arch/arm/kernel/perf_event.c
->> @@ -616,7 +616,7 @@ static int __init
->>  cpu_pmu_reset(void)
->>  {
->>       if (cpu_pmu && cpu_pmu->reset)
->> -             return on_each_cpu(cpu_pmu->reset, NULL, 1);
->> +             on_each_cpu(cpu_pmu->reset, NULL, 1);
+> The BLK_TC_BARRIER flag was dropped in Linux commit c09c47caedc in
+> August 2011.  The blk plugin fails to build against recent kernel
+> headers.  Since no flag bits were left, the new BLK_TC_FLUSH flag reused
+> the BLK_TC_BARRIER bit.  The new BLK_TC_FUA flag was also added.
 >
-> There's not much to review here...
+> This patch updates fill_rwbs() to reflect the new
+> BLK_TC_FLUSH/BLK_TC_FUA flags.  This allows plugin_blk.c to build
+> successfully on recent kernels.  The drawback is that this breaks the
+> build for pre-c09c47caedc kernel headers.
+>
+> Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+> ---
+> There is an alternative version of this patch with a build test in the Makefile
+> so that we know whether to use BLK_TC_BARRIER or BLK_TC_FLUSH/BLK_TC_FUA.  That
+> would support both old and new kernel headers using a HAVE_BLK_TC_FLUSH #ifdef.
+>
+> I wasn't able to find the right makefile shell escaping magic to get the
+> build-test function to work.  If anyone knows how to test a snippet like the
+> following, then that would be nicer:
+>
+>   #include <linux/blktrace_api.h>
+>   int main(void) { return BLK_TC_FLUSH; }
+>
 
-Oh, I've introduced fatal bugs with less... :-)
+Hi,
 
-Thanks for the review.
-Gilad
+The perf uses following code for that:
 
+# try-cc
+# Usage: option = $(call try-cc, source-to-build, cc-options)
+try-cc = $(shell sh -c						  \
+	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
+	 echo "$(1)" |						  \
+	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
+	 rm -f "$$TMP"')
 
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+Thanks,
+Namhyung Kim
