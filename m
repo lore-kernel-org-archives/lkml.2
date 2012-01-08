@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752881Ab2AHB1F (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 20:27:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64250 "EHLO
+	id S1752504Ab2AHBgF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 20:36:05 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:56714 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752504Ab2AHB1D (ORCPT
+	with ESMTP id S1750782Ab2AHBgD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 20:27:03 -0500
-Date: Sun, 8 Jan 2012 10:26:57 +0900
-From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-To: Nadav Amit <nadav.amit@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: fix mov immediate emulation for 64-bit operands
-Message-Id: <20120108102657.9a5dd6534ea4ae829073ff6e@gmail.com>
-In-Reply-To: <C814BCA3-145A-410F-8F4F-CE5617DDB1A2@gmail.com>
-References: <1325967346-12539-1-git-send-email-namit@cs.technion.ac.il>
-	<E0EE2EE9-96C1-4354-BDCE-19E3AF2C0F30@gmail.com>
-	<4F08AA3C.9090306@zytor.com>
-	<C814BCA3-145A-410F-8F4F-CE5617DDB1A2@gmail.com>
-X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 7 Jan 2012 20:36:03 -0500
+Message-ID: <1325986552.4442.0.camel@phoenix>
+Subject: [PATCH] i2c: convert gpio-i2cmux to use module_platform_driver()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Korsgaard <peter.korsgaard@barco.com>,
+        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org
+Date: Sun, 08 Jan 2012 09:35:52 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch converts gpio-i2cmux to use the module_platform_driver() macro which
+makes the code smaller and a bit simpler.
 
-Nadav Amit <nadav.amit@gmail.com> wrote: 
-> On Jan 7, 2012, at 10:25 PM, H. Peter Anvin wrote:
-> 
-> > On 01/07/2012 12:21 PM, Nadav Amit wrote:
-> >> MOV immediate instruction (opcodes 0xB8-0xBF) may take 64-bit operand.
-> >> The previous emulation implementation assumes the operand is no longer than 32.
-> >> 
-> >> Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
-> > 
-> > There are exactly two such instructions: MOV immediate (B8-BF) and MOV
-> > moff (A0-A3); you may want to check the latter too.
-> > 
-> > 	-hpa
-> > 
-> 
-> These instructions (A0-A3) seem to be already covered by the decode_abs function.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/i2c/muxes/gpio-i2cmux.c |   13 +------------
+ 1 files changed, 1 insertions(+), 12 deletions(-)
 
-Like these how about introducing a new flag and change the following entries in the
-decode table to indicate possible 64bit immediate:
+diff --git a/drivers/i2c/muxes/gpio-i2cmux.c b/drivers/i2c/muxes/gpio-i2cmux.c
+index 7b6ce62..e5fa695 100644
+--- a/drivers/i2c/muxes/gpio-i2cmux.c
++++ b/drivers/i2c/muxes/gpio-i2cmux.c
+@@ -165,18 +165,7 @@ static struct platform_driver gpiomux_driver = {
+ 	},
+ };
+ 
+-static int __init gpiomux_init(void)
+-{
+-	return platform_driver_register(&gpiomux_driver);
+-}
+-
+-static void __exit gpiomux_exit(void)
+-{
+-	platform_driver_unregister(&gpiomux_driver);
+-}
+-
+-module_init(gpiomux_init);
+-module_exit(gpiomux_exit);
++module_platform_driver(gpiomux_driver);
+ 
+ MODULE_DESCRIPTION("GPIO-based I2C multiplexer driver");
+ MODULE_AUTHOR("Peter Korsgaard <peter.korsgaard@barco.com>");
+-- 
+1.7.5.4
 
-	/* 0xB8 - 0xBF */
-	X8(I(DstReg | SrcImm | Mov, em_mov)),	
 
-Checking the opcode byte at the operand decoding stage, like below, does not look nice:
-	(IMO so better ask Avi)
 
-+	if (size == 8 && ((ctxt->b & 0xF8) != 0xB8 || ctxt->twobyte))
-		size = 4;
-
-I am now cleaning up x86_decode_insn() to make each decoding stage clearer.
-
-	Takuya
