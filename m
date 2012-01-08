@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752504Ab2AHBgF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Jan 2012 20:36:05 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56714 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab2AHBgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Jan 2012 20:36:03 -0500
-Message-ID: <1325986552.4442.0.camel@phoenix>
-Subject: [PATCH] i2c: convert gpio-i2cmux to use module_platform_driver()
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Korsgaard <peter.korsgaard@barco.com>,
-        "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org
-Date: Sun, 08 Jan 2012 09:35:52 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753031Ab2AHCdK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Jan 2012 21:33:10 -0500
+Received: from mga14.intel.com ([143.182.124.37]:38189 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752721Ab2AHCdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Jan 2012 21:33:07 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="93506946"
+Date: Sun, 8 Jan 2012 10:33:05 +0800
+From: Wu Fengguang <wfg@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: =?utf-8?B?0JjQu9GM0Y8g0KLRg9C80LDQudC60LjQvQ==?= 
+	<librarian_rus@yahoo.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: A regression in recent 3.2 kernel: bdi_dirty_limit() divide
+ error
+Message-ID: <20120108023305.GA5074@localhost>
+References: <1325884395.57034.YahooMailClassic@web161605.mail.bf1.yahoo.com>
+ <20120107145645.GA4997@localhost>
+ <1325954125.2442.27.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325954125.2442.27.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts gpio-i2cmux to use the module_platform_driver() macro which
-makes the code smaller and a bit simpler.
+On Sat, Jan 07, 2012 at 05:35:25PM +0100, Peter Zijlstra wrote:
+> On Sat, 2012-01-07 at 22:56 +0800, Wu Fengguang wrote:
+> > Subject: 
+> > Date: Sat Jan 07 22:50:45 CST 2012
+> > 
+> > The uninitilized shift may lead to denominator=0 in
+> > prop_fraction_percpu() and divide error in bdi_dirty_limit().
+> 
+> I'm not seeing how, only proc_change_shift() can change ->index, and it
+> does that after it writes ->pg[index]->shift.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/i2c/muxes/gpio-i2cmux.c |   13 +------------
- 1 files changed, 1 insertions(+), 12 deletions(-)
+Then I lose the clue why bdi_dirty_limit() will divide error at all.
 
-diff --git a/drivers/i2c/muxes/gpio-i2cmux.c b/drivers/i2c/muxes/gpio-i2cmux.c
-index 7b6ce62..e5fa695 100644
---- a/drivers/i2c/muxes/gpio-i2cmux.c
-+++ b/drivers/i2c/muxes/gpio-i2cmux.c
-@@ -165,18 +165,7 @@ static struct platform_driver gpiomux_driver = {
- 	},
- };
- 
--static int __init gpiomux_init(void)
--{
--	return platform_driver_register(&gpiomux_driver);
--}
--
--static void __exit gpiomux_exit(void)
--{
--	platform_driver_unregister(&gpiomux_driver);
--}
--
--module_init(gpiomux_init);
--module_exit(gpiomux_exit);
-+module_platform_driver(gpiomux_driver);
- 
- MODULE_DESCRIPTION("GPIO-based I2C multiplexer driver");
- MODULE_AUTHOR("Peter Korsgaard <peter.korsgaard@barco.com>");
--- 
-1.7.5.4
+prop_change_shift() does
 
+        change ->pg[index]->shift
+        smp_wmb()
+        change ->index
 
+Will the read side prop_fraction_percpu() need some read memory barrier?
 
+Thanks,
+Fengguang
