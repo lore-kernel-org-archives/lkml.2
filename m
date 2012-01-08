@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835Ab2AHIrw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 03:47:52 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:48286 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288Ab2AHIru convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 03:47:50 -0500
+	id S1751933Ab2AHIvG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 03:51:06 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:43994 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751437Ab2AHIvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 03:51:04 -0500
+Date: Sun, 8 Jan 2012 09:48:44 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 0/6 v3] [GIT PULL] x86: Workaround for NMI iret woes
+Message-ID: <20120108084844.GA7168@elte.hu>
+References: <20111222031357.120841629@goodmis.org>
 MIME-Version: 1.0
-In-Reply-To: <20120108102657.9a5dd6534ea4ae829073ff6e@gmail.com>
-References: <1325967346-12539-1-git-send-email-namit@cs.technion.ac.il>
-	<E0EE2EE9-96C1-4354-BDCE-19E3AF2C0F30@gmail.com>
-	<4F08AA3C.9090306@zytor.com>
-	<C814BCA3-145A-410F-8F4F-CE5617DDB1A2@gmail.com>
-	<20120108102657.9a5dd6534ea4ae829073ff6e@gmail.com>
-Date: Sun, 8 Jan 2012 10:47:49 +0200
-Message-ID: <CAKLkAJ4=eT7TdZoOkQKMnhmrESq5kvCQL3Mw52a35gu2yWsNgw@mail.gmail.com>
-Subject: Re: [PATCH] KVM: fix mov immediate emulation for 64-bit operands
-From: Nadav Amit <nadav.amit@gmail.com>
-To: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20111222031357.120841629@goodmis.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 8, 2012 at 3:26 AM, Takuya Yoshikawa
-<takuya.yoshikawa@gmail.com> wrote:
-> Hi,
->
-> Nadav Amit <nadav.amit@gmail.com> wrote:
->> On Jan 7, 2012, at 10:25 PM, H. Peter Anvin wrote:
->>
->> > On 01/07/2012 12:21 PM, Nadav Amit wrote:
->> >> MOV immediate instruction (opcodes 0xB8-0xBF) may take 64-bit operand.
->> >> The previous emulation implementation assumes the operand is no longer than 32.
->> >>
->> >> Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
->> >
->> > There are exactly two such instructions: MOV immediate (B8-BF) and MOV
->> > moff (A0-A3); you may want to check the latter too.
->> >
->> >     -hpa
->> >
->>
->> These instructions (A0-A3) seem to be already covered by the decode_abs function.
->
-> Like these how about introducing a new flag and change the following entries in the
-> decode table to indicate possible 64bit immediate:
->
->        /* 0xB8 - 0xBF */
->        X8(I(DstReg | SrcImm | Mov, em_mov)),
->
-> Checking the opcode byte at the operand decoding stage, like below, does not look nice:
->        (IMO so better ask Avi)
->
-> +       if (size == 8 && ((ctxt->b & 0xF8) != 0xB8 || ctxt->twobyte))
->                size = 4;
->
 
-I agree. I remembered these flags are expensive (from the time flags
-were set in u32).
-I guess I can add OpImm64.
-Another less preferable alternative is to add a misc. flag or reuse
-another flag.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Avi, please acknowledge adding OpImm64.
+> 
+> Ingo,
+> 
+> I updated the patches to reflect your comments and ran them through
+> all my tests again. Below is the full diff between v2 and v3.
+> 
+> I renamed nmi_preprocess() and nmi_postprocess() to
+> nmi_nesting_preprocess() and nmi_nesting_postprocess() to at least
+> note that this has to do with nmi nesting. I also commented the
+> fact that i386 may loop back to the preprocess.
+> 
+> I had to move the debug_usage functions to debugreg.h, because
+> smp.h includes processor.h where making the inc/dec inline
+> caused include header issues.
+> 
+> -- Steve
+> 
+> Please pull the latest tip/x86/core-3 tree, which can be found at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+> tip/x86/core-3
+> 
+> Head SHA1: 42181186ad4db986fcaa40ca95c6e407e9e79372
+> 
+> 
+> Linus Torvalds (1):
+>       x86: Do not schedule while still in NMI context
+> 
+> Steven Rostedt (5):
+>       x86: Document the NMI handler about not using paranoid_exit
+>       x86: Add workaround to NMI iret woes
+>       x86: Keep current stack in NMI breakpoints
+>       x86: Allow NMIs to hit breakpoints in i386
+>       x86: Add counter when debug stack is used with interrupts enabled
+> 
+> ----
+>  arch/x86/include/asm/debugreg.h |   22 ++++
+>  arch/x86/include/asm/desc.h     |   12 ++
+>  arch/x86/kernel/cpu/common.c    |   24 +++++
+>  arch/x86/kernel/entry_64.S      |  218 +++++++++++++++++++++++++++++++++------
+>  arch/x86/kernel/head_64.S       |    4 +
+>  arch/x86/kernel/nmi.c           |  102 ++++++++++++++++++
+>  arch/x86/kernel/traps.c         |   20 ++++
+>  7 files changed, 369 insertions(+), 33 deletions(-)
 
-Regards,
-Nadav
+Pulled, thanks a lot Steve! I've ran 500 randconfig iterations 
+and these bits seem fine.
+
+Thanks,
+
+	Ingo
