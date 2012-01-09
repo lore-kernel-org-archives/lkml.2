@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988Ab2AILcf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 06:32:35 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:53384 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753675Ab2AILce (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 06:32:34 -0500
-Date: Mon, 9 Jan 2012 16:54:27 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH v8 3.2.0-rc5 9/9] perf: perf interface for uprobes
-Message-ID: <20120109112427.GB10189@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com>
- <20111216122951.2085.95511.sendpatchset@srdronam.in.ibm.com>
- <4F06D22D.9060906@hitachi.com>
+	id S1754348Ab2AILfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 06:35:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2098 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753732Ab2AILfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 06:35:01 -0500
+Date: Mon, 9 Jan 2012 09:30:05 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/8] KVM: MMU: set the dirty bit for the upper shadow page
+Message-ID: <20120109113005.GB5255@amt.cnet>
+References: <4EEB19AF.5070501@linux.vnet.ibm.com>
+ <4EEB1A00.8090707@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4F06D22D.9060906@hitachi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-x-cbid: 12010911-5518-0000-0000-0000016C3372
+In-Reply-To: <4EEB1A00.8090707@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 16, 2011 at 06:14:24PM +0800, Xiao Guangrong wrote:
+> Upper page do not need to be tracked the status bit, it is safe to set the
+> dirty and let cpu to happily prefetch it
 > 
-> > +
-> > +static int convert_to_perf_probe_point(struct probe_trace_point *tp,
-> > +					struct perf_probe_point *pp)
-> > +{
-> > +	pp->function = strdup(tp->symbol);
-> > +	if (pp->function == NULL)
-> > +		return -ENOMEM;
-> > +	pp->offset = tp->offset;
-> > +	pp->retprobe = tp->retprobe;
-> > +
-> > +	return 0;
-> > +}
-> 
-> This function could be used in kprobe_convert_to_perf_probe() too.
-> In that case, it will be separated as a cleanup from this.
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/mmu.c |   13 +++++--------
+>  1 files changed, 5 insertions(+), 8 deletions(-)
 
-Do you really want this in a separate patch, since it doesnt make too
-much sense without the uprobes code.
-
--- 
-Thanks and Regards
-Srikar
+Dirty bit is ignored in non-leaf pagetable entries.
 
