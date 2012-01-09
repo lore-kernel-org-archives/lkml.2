@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab2AIWVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:21:46 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57184 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab2AIWVp (ORCPT
+	id S1755878Ab2AIWWX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:22:23 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:36680 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab2AIWWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:21:45 -0500
-Date: Mon, 9 Jan 2012 22:22:34 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Phillip Susi <psusi@cfl.rr.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: Multiple consoles
-Message-ID: <20120109222234.6d34a7ad@pyramind.ukuu.org.uk>
-In-Reply-To: <4F0B5808.2010900@cfl.rr.com>
-References: <4F0B5808.2010900@cfl.rr.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Mon, 9 Jan 2012 17:22:22 -0500
+Date: Mon, 09 Jan 2012 14:22:20 -0800 (PST)
+Message-Id: <20120109.142220.2296949606301841005.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 09 Jan 2012 14:22:21 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> It occurred to me that there ought to be an entirely separate set of 
-> virtual consoles bound to the second seat, and the second X server ought 
-> to run on one of those vcs.  Or of course, you could choose to log into 
-> the console and not bother with X.
 
-X can do it without consoles.
+Just some cleanups and removal of unused code from Sam Ravnborg.
 
-> Looking at drivers/tty/vt/vt.c, it appears that it was written assuming 
-> that there is just one linux console.  It appears to use global 
-> variables for keeping track of which vc is active, etc, rather than 
-> creating one or more console devices, and store the vc multiplexing 
-> information in those devices.  So to fix this, vt.c and keyboard.c would 
-> need significantly refactored to remove the global variables and create 
-> a console device to bind vcs, keyboards, and displays to, and then you 
-> could create a second one if you wanted.
+Nothing earth shattering.
 
-Yes - in theory (you'd also have to sort out some of the passing of
-variables around so that the code knew which 'console group' it belonged
-to.
+Please pull, thanks a lot.
 
-> Does this make sense or am I missing something?
+The following changes since commit 6b3da11b3c36fdafce3a72e0e90d6c4e99e9aad5:
 
-It makes sense but it's one of a set of three problems with the tty/vt
-layer IMHO
+  Merge branch 'for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2012-01-09 13:08:28 -0800)
 
-- A vt/tty is linked to a framebuffer of some sort, so you can't just
-  create abstract ones plumbed into arbitary objects. Really the vt
-  emulator ought to be separate from the consoles. 
+are available in the git repository at:
 
-- You can only have one set of vts
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next.git master
 
-- The locking needs a rework, particularly the handling of crashes where
-  sometimes we deadlock on the oops reporting.
+Sam Ravnborg (7):
+      sparc32: drop unused atomic24 support
+      sparc32: drop useless preprocessor conditional in atomic_32.h
+      apbuart: fix section mismatch warning
+      sparc32: support atomic64_t
+      sparc32: enable different preemptions models
+      sparc32: fix PAGE_SIZE definition
+      sparc32: remove unused file: include/asm/pgtsun4.h
 
-and the framebuffer layer has some problems with locking and mode setting,
-with hotplug, and with a complete inability to handle scatter-gather
-backed consoles.
-
-Alan
+ arch/sparc/Kconfig                      |    3 +-
+ arch/sparc/include/asm/atomic_32.h      |  104 +-------------------
+ arch/sparc/include/asm/page_32.h        |   10 +--
+ arch/sparc/include/asm/pgtsun4.h        |  171 -------------------------------
+ arch/sparc/include/asm/thread_info_32.h |    2 +-
+ arch/sparc/lib/atomic_32.S              |   55 ----------
+ arch/sparc/lib/ksyms.c                  |    6 -
+ drivers/tty/serial/apbuart.c            |    4 +-
+ 8 files changed, 8 insertions(+), 347 deletions(-)
+ delete mode 100644 arch/sparc/include/asm/pgtsun4.h
