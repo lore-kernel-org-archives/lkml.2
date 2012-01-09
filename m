@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab2AIV1G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 16:27:06 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:33477 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754932Ab2AIV1F (ORCPT
+	id S1755700Ab2AIVaU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 16:30:20 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:15447 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab2AIVaS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 16:27:05 -0500
-Date: Mon, 9 Jan 2012 21:26:55 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
-        akpm@linux-foundation.org
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-Message-ID: <20120109212654.GY23916@ZenIV.linux.org.uk>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
- <20120109171639.GA9359@infradead.org>
- <20120109173010.GX23916@ZenIV.linux.org.uk>
- <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
- <20120109205907.GE4198@dastard>
+	Mon, 9 Jan 2012 16:30:18 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 09 Jan 2012 13:30:08 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 9 Jan 2012 13:30:05 -0800
+Subject: RE: [RESEND PATCH v2 0/3] Tegra30 clockframework
+Thread-Topic: [RESEND PATCH v2 0/3] Tegra30 clockframework
+Thread-Index: AczO5FGAJ/ubvfjHTHqsN2lMHLf45wAMN6aw
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A286@HQMAIL01.nvidia.com>
+References: <1326123315-32670-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1326123315-32670-1-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120109205907.GE4198@dastard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 07:59:07AM +1100, Dave Chinner wrote:
-> > Comments?
+Peter De Schrijver wrote at Monday, January 09, 2012 8:35 AM:
+> This patchset introduces the tegra30 clockframework. Clocks which require
+> voltage scaling are not included in this version. The implementation doesn't
+> use the generic clock code yet. It's the intention to move to it, once the
+> semantics are fully clarified.
 > 
-> Looks OK to me.
+> ---
+> 
+> Changes in v2:
+>  * Fix parent clocks for TWD. This makes the SMP configuration booting again.
 
-OK, grabbed.  And there's *more* fixes for obvious shite - by now I'm
-really sick and tired of what people are doing with failure exits;
-this morning catch just from looking through d_alloc_root() callers:
-	isofs - inode leak
-	ext4 - dentry leak + completely bogus handling of ext4_mb_init()
-failure (stuff that hadn't been allocated gets freed, stuff that was
-allocated isn't)
-	ceph - d_alloc_root() can fail.  NULL pointer derefs galore...
-)
+Peter,
 
-Frankly, d_alloc_root() had been a bad API; it should've been doing
-iput() on allocation failure.  I've added a trivial helper in the
-local tree (d_make_root(inode) - same as d_alloc_root(inode) and do
-iput(inode) if result turns out to be NULL).  Looks like *all* callers
-of d_alloc_root() either turn out to be buggy or trivially convert to
-d_make_root().  With a lot of boilerplate crap removed...
+This version seems to still boot as well as without these patches.
 
-Hell knows...  Originally I thought about leaving both side-by-side, but
-it really starts looking as if there's no reason to keep d_alloc_root()
-at all...  I still have a couple of callers to check, though.
+I hacked some AUXDATA into board-dt-tegra30.c in an attempt to get SDHCI
+working, but found that:
+
+a) sdhci_add_host() fails due to:
+
+mmc0: Hardware doesn't specify timeout clock frequency.
+
+I haven't investigated why this happens.
+
+b) More directly related to these patches, when sdhci_add_host() fails,
+sdhci_tegra_probe() calls clk_disable() and clk_put() on its clock. One
+of these hangs somehow. I assume that's a bug in this clock patch?
+
+A couple of I2C devices did end up probing OK with these patches plus
+AUXDATA, although I doubt any I2C accesses were actually performed.
+
+-- 
+nvpublic
+
