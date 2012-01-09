@@ -1,37 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755390Ab2AIIz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 03:55:29 -0500
-Received: from merlin.infradead.org ([205.233.59.134]:50765 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755135Ab2AIIz2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 03:55:28 -0500
-Message-ID: <1326099318.2442.39.camel@twins>
-Subject: Re: [PATCH] perf_events: proposed fix for broken intr throttling
- (v2)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, gleb@redhat.com, mingo@elte.hu,
-        asharma@fb.com, vince@deater.net, wcohen@redhat.com
-Date: Mon, 09 Jan 2012 09:55:18 +0100
-In-Reply-To: <CABPqkBSmDHHJsSQo8hhe0a9zxr+YX1yWNr3hZoWEU-OShu7=wA@mail.gmail.com>
-References: <20120106181912.GA5564@quad> <1325955818.2442.29.camel@twins>
-	 <CABPqkBSmDHHJsSQo8hhe0a9zxr+YX1yWNr3hZoWEU-OShu7=wA@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1755458Ab2AIJCa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 04:02:30 -0500
+Received: from mga14.intel.com ([143.182.124.37]:21897 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467Ab2AIJCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 04:02:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="54604640"
+Date: Mon, 9 Jan 2012 10:08:21 +0100
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, lrg@ti.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] regulator: Add S5M8767A regulator driver
+Message-ID: <20120109090821.GK13679@sortiz-mobl>
+References: <1325225153-32389-1-git-send-email-sbkim73@samsung.com>
+ <20120108231657.GD13679@sortiz-mobl>
+ <20120109064703.GT29065@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120109064703.GT29065@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-01-08 at 00:11 +0100, Stephane Eranian wrote:
-> I'll look into that one. But at first glance, it does not address the issue
-> of adjusting the period at each timer tick. Only multiplexing (rotation) should
-> happen at the multiplier rate.
+On Sun, Jan 08, 2012 at 10:47:04PM -0800, Mark Brown wrote:
+> On Mon, Jan 09, 2012 at 12:16:57AM +0100, Samuel Ortiz wrote:
+> 
+> > Mark, are you ok with this one ? As it depends on the previous MFD patches,
+> > I'll have to take it through the MFD tree.
+> 
+> I've not reviwed it yet and there should be no dependency on the MFD
+> tree so no need to merge it via that - the fact that there's a Kconfig
+> dependency on the MFD means that the two can get merged in any order.
+Not only a Kconfig dependency, but also the regulator driver including some of
+the headers defined in the mfd patch:
 
-Correct, it only pokes at the throttle stuff. For the freq stuff we can
-remain using the nr_freq count to see if we need the iteration.
++#include <linux/mfd/s5m87xx/s5m-core.h>
++#include <linux/mfd/s5m87xx/s5m-pmic.h>
 
-But yeah, I think that separation you did makes sense.
+So, both need to get merged at the same time.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
