@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755541Ab2AIH3i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 02:29:38 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:46121 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486Ab2AIH3g (ORCPT
+	id S1755563Ab2AIHaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 02:30:35 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33175 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755502Ab2AIHad convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 02:29:36 -0500
-Date: Sun, 8 Jan 2012 23:29:11 -0800
-From: tip-bot for Namhyung Kim <namhyung@gmail.com>
-Message-ID: <tip-172d1b0b73256551f100fc00c69e356d047103f5@git.kernel.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        joerg.roedel@amd.com, namhyung@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, joerg.roedel@amd.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, namhyung@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <1326035430-7621-1-git-send-email-namhyung@gmail.com>
-References: <1326035430-7621-1-git-send-email-namhyung@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Fix compile error on x86_64 Ubuntu
-Git-Commit-ID: 172d1b0b73256551f100fc00c69e356d047103f5
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Mon, 9 Jan 2012 02:30:33 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Sun, 08 Jan 2012 23:29:17 -0800 (PST)
+In-Reply-To: <NEXT-4f0a91b3e9c7f4.40986810@nextmail.ru>
+References: <NEXT-4f0a91b3e9c7f4.40986810@nextmail.ru>
+Date: Mon, 9 Jan 2012 13:00:32 +0530
+Message-ID: <CAD2nsn07EaAVzx-=fk1iupxfwZQc-n4O+pq41ceqCJWWDF8fxw@mail.gmail.com>
+Subject: Re: ath9k crash 3.2-rc7
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  172d1b0b73256551f100fc00c69e356d047103f5
-Gitweb:     http://git.kernel.org/tip/172d1b0b73256551f100fc00c69e356d047103f5
-Author:     Namhyung Kim <namhyung@gmail.com>
-AuthorDate: Mon, 9 Jan 2012 00:10:30 +0900
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Sun, 8 Jan 2012 13:34:55 -0200
+2012/1/9 MR <g7af0ec1e3ea1e7b1@nextmail.ru>:
+>
+>  > > Around 23 hours have elapsed.
+>  > >
+>  >> WiFi seems to be working 100% of time. It is always at least lightly
+>  >loaded.
+>
+> 45h - all OK.
+>
+>  > great and thanks a lot for testing!
+>
+> Doesn't really require _doing_ anything except building patched kernels. And
+> it is in my best interest to test the driver for the WiFi card I use...
+>
+>  > rather than removing the suspicious code
+>  > this is properly fixed by us with this patch.
+>  > http://marc.info/?l=linux-wireless&m=132595161516806&w=2
+>
+> Ah, I saw the message and wondered whether it is the fix I needed and what
+> patches should I apply.
+>
+> So, I am building 3.2 with two patches: over/under-flow catcher (pity that
+> it seems to be on a multiple-times-per-second codepath and just leaving the
+> checks there for everyone is suboptimal) and allegedely proper fix. Both
+> applied OK with a small offset.
 
-perf tools: Fix compile error on x86_64 Ubuntu
+as per our assumption, we should not see those over/underflow errors,
+with the patch
+above mentioned. please let us know if you hit upon this warnings,
+even after the proper fix.
 
-The ctype.h include is not needed here and it breaks build on some systems (at
-least 64bit Ubuntu 10.04) like below. Just get rid of it.
 
-    CC util/trace-event-info.o
-cc1: warnings being treated as errors
-util/trace-event-info.c: In function â€˜record_fileâ€™:
-util/trace-event-info.c:192: error: implicit declaration of function â€˜pwriteâ€™
-util/trace-event-info.c:192: error: nested extern declaration of â€˜pwriteâ€™
-make: *** [util/trace-event-info.o] Error 1
+>
+>
+>
 
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1326035430-7621-1-git-send-email-namhyung@gmail.com
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/trace-event-info.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/util/trace-event-info.c b/tools/perf/util/trace-event-info.c
-index ac6830d..fc22cf5 100644
---- a/tools/perf/util/trace-event-info.c
-+++ b/tools/perf/util/trace-event-info.c
-@@ -18,7 +18,6 @@
-  *
-  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  */
--#include <ctype.h>
- #include "util.h"
- #include <dirent.h>
- #include <mntent.h>
+-- 
+shafi
