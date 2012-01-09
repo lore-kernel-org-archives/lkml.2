@@ -1,269 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab2AIKVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 05:21:34 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:64110 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2AIKVd (ORCPT
+	id S1753385Ab2AIKZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 05:25:27 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:44331 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab2AIKZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 05:21:33 -0500
-Message-ID: <4F0AC06C.3000502@gmail.com>
-Date: Mon, 09 Jan 2012 11:24:44 +0100
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Reply-To: christian.gmeiner@gmail.com
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Mon, 9 Jan 2012 05:25:26 -0500
+Date: Mon, 9 Jan 2012 11:27:26 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: InKi Dae <daeinki@gmail.com>
+Cc: Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+        linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+        jesse.barker@linaro.org, m.szyprowski@samsung.com, rob@ti.com,
+        t.stanislaws@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>,
+        daniel@ffwll.ch
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+Message-ID: <20120109102726.GD3723@phenom.ffwll.local>
+Mail-Followup-To: InKi Dae <daeinki@gmail.com>,
+	Sumit Semwal <sumit.semwal@ti.com>, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+	linaro-mm-sig@lists.linaro.org, dri-devel@lists.freedesktop.org,
+	linux-media@vger.kernel.org, linux@arm.linux.org.uk, arnd@arndb.de,
+	jesse.barker@linaro.org, m.szyprowski@samsung.com, rob@ti.com,
+	t.stanislaws@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+ <1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
+ <CAAQKjZPFh6666JKc-XJfKYePQ_F0MNF6FkY=zKypWb52VVX3YQ@mail.gmail.com>
+ <20120109081030.GA3723@phenom.ffwll.local>
+ <CAAQKjZMEsuib18RYE7OvZPUqhKnvrZ8i3+EMuZSXr9KPVygo_Q@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, lars@metafoo.de
-CC: bigeasy@linutronix.de, rpurdie@rpsys.net
-Subject: [PATCH v2] add led driver for Bachmann's ot200
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAQKjZMEsuib18RYE7OvZPUqhKnvrZ8i3+EMuZSXr9KPVygo_Q@mail.gmail.com>
+X-Operating-System: Linux phenom 3.2.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de 
-<mailto:bigeasy@linutronix.de>>
-Date: Mon, 9 Jan 2012 10:09:50 +0100
-Subject: [PATCH v2] add led driver for Bachmann's ot200
+On Mon, Jan 09, 2012 at 07:10:25PM +0900, InKi Dae wrote:
+> 2012/1/9 Daniel Vetter <daniel@ffwll.ch>:
+> > On Mon, Jan 09, 2012 at 03:20:48PM +0900, InKi Dae wrote:
+> >> I has test dmabuf based drm gem module for exynos and I found one problem.
+> >> you can refer to this test repository:
+> >> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/exynos-drm-dmabuf
+> >>
+> >> at this repository, I added some exception codes for resource release
+> >> in addition to Dave's patch sets.
+> >>
+> >> let's suppose we use dmabuf based vb2 and drm gem with physically
+> >> continuous memory(no IOMMU) and we try to share allocated buffer
+> >> between them(v4l2 and drm driver).
+> >>
+> >> 1. request memory allocation through drm gem interface.
+> >> 2. request DRM_SET_PRIME ioctl with the gem handle to get a fd to the
+> >> gem object.
+> >> - internally, private gem based dmabuf moudle calls drm_buf_export()
+> >> to register allocated gem object to fd.
+> >> 3. request qbuf with the fd(got from 2) and DMABUF type to set the
+> >> buffer to v4l2 based device.
+> >> - internally, vb2 plug in module gets a buffer to the fd and then
+> >> calls dmabuf->ops->map_dmabuf() callback to get the sg table
+> >> containing physical memory info to the gem object. and then the
+> >> physical memory info would be copied to vb2_xx_buf object.
+> >> for DMABUF feature for v4l2 and videobuf2 framework, you can refer to
+> >> this repository:
+> >> git://github.com/robclark/kernel-omap4.git drmplane-dmabuf
+> >>
+> >> after that, if v4l2 driver want to release vb2_xx_buf object with
+> >> allocated memory region by user request, how should we do?. refcount
+> >> to vb2_xx_buf is dependent on videobuf2 framework. so when vb2_xx_buf
+> >> object is released videobuf2 framework don't know who is using the
+> >> physical memory region. so this physical memory region is released and
+> >> when drm driver tries to access the region or to release it also, a
+> >> problem would be induced.
+> >>
+> >> for this problem, I added get_shared_cnt() callback to dma-buf.h but
+> >> I'm not sure that this is good way. maybe there may be better way.
+> >> if there is any missing point, please let me know.
+> >
+> > The dma_buf object needs to hold a reference on the underlying
+> > (necessarily reference-counted) buffer object when the exporter creates
+> > the dma_buf handle. This reference should then get dropped in the
+> > exporters dma_buf->ops->release() function, which is only getting called
+> > when the last reference to the dma_buf disappears.
+> >
+> 
+> when the exporter creates the dma_buf handle(for example, gem -> fd),
+> I think the refcount of gem object should be increased at this point,
+> and decreased by dma_buf->ops->release() again because when the
+> dma_buf is created and dma_buf_export() is called, this dma_buf refers
+> to the gem object one time. and in case of inporter(fd -> gem),
+> file->f_count of the dma_buf is increased and then when this gem
+> object is released by user request such as drm close or
+> drn_gem_close_ioctl, dma_buf_put() should be called by
+> dma_buf->ops->detach() to decrease file->f_count again because the gem
+> object refers to the dma_buf. for this, you can refer to my test
+> repository I mentioned above. but the problem is that when a buffer is
+> released by one side, another can't know whether the buffer already
+> was released or not.
 
-This patch adds support for leds on Bachmann's ot200 visualisation device.
-The device has three leds on the back panel (led_err, led_init and led_run)
-and can handle up to seven leds on the front panel.
+Nope, dma_buf_put should not be called by ->detach. The importer gets his
+reference when importing the dma_buf and needs to drop that reference
+himself when it's done using the buffer by calling dma_buf_put (i.e. after
+the last ->detach call). I think adding separate reference counting to
+->attach and ->detach is a waste of time and only papers over buggy
+importers.
 
-The driver was written by Linutronix on behalf of
-Bachmann electronic GmbH.
+Additionally the importer does _not_ control the lifetime of an dma_buf
+object and it's underlying backing storage. It hence may _never_ free the
+backing storage itself, that's the job of the exporter.
 
-Changes in v2:
-- *incorporated* feedback from Andrew Morton and Lars-Peter Clausen
+With that cleared up, referencing the exporters underlying buffer object
+from the dma_buf will just do the right thing.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de 
-<mailto:bigeasy@linutronix.de>>
-Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com 
-<mailto:christian.gmeiner@gmail.com>>
----
-  drivers/leds/Kconfig      |    7 ++
-  drivers/leds/Makefile     |    1 +
-  drivers/leds/leds-ot200.c |  177 
-+++++++++++++++++++++++++++++++++++++++++++++
-  3 files changed, 185 insertions(+), 0 deletions(-)
-  create mode 100644 drivers/leds/leds-ot200.c
+> note : in case of sharing a buffer between v4l2 and drm driver, the
+> memory info would be copied vb2_xx_buf to xx_gem or xx_gem to
+> vb2_xx_buf through sg table. in this case, only memory info is used to
+> share, not some objects.
 
-diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
-index ff203a4..71cb89b 100644
---- a/drivers/leds/Kconfig
-+++ b/drivers/leds/Kconfig
-@@ -387,6 +387,13 @@ config LEDS_RENESAS_TPU
-        pin function. The latter to support brightness control.
-        Brightness control is supported but hardware blinking is not.
+Hm, maybe I need to take a look at the currently proposed v4l dma_buf
+patches ;-) atm I don't have an idea what exactly you're talking about.
 
-+config LEDS_OT200
-+    tristate "LED support for the Bachmann OT200"
-+    depends on LEDS_CLASS
-+    help
-+      This option enables support for the LEDs on the Bachmann OT200.
-+      Say Y to enable LEDs on the Bachmann OT200.
-+
-  config LEDS_TRIGGERS
-      bool "LED Trigger support"
-      depends on LEDS_CLASS
-diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
-index e4f6bf5..0814d42 100644
---- a/drivers/leds/Makefile
-+++ b/drivers/leds/Makefile
-@@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)            += leds-ns2.o
-  obj-$(CONFIG_LEDS_NETXBIG)        += leds-netxbig.o
-  obj-$(CONFIG_LEDS_ASIC3)        += leds-asic3.o
-  obj-$(CONFIG_LEDS_RENESAS_TPU)        += leds-renesas-tpu.o
-+obj-$(CONFIG_LEDS_OT200)        += leds-ot200.o
-
-  # LED SPI Drivers
-  obj-$(CONFIG_LEDS_DAC124S085)        += leds-dac124s085.o
-diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
-new file mode 100644
-index 0000000..4d000ac
---- /dev/null
-+++ b/drivers/leds/leds-ot200.c
-@@ -0,0 +1,177 @@
-+/*
-+ * Bachmann ot200 leds driver.
-+ *
-+ * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-+ *         Christian Gmeiner <christian.gmeiner@gmail.com>
-+ *
-+ * License: GPL as published by the FSF.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/leds.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+
-+
-+struct ot200_led {
-+    struct led_classdev cdev;
-+    const char *name;
-+    unsigned long port;
-+    u8 mask;
-+};
-+
-+/*
-+ * The device has three leds on the back panel (led_err, led_init and 
-led_run)
-+ * and can handle up to seven leds on the front panel.
-+ */
-+
-+static struct ot200_led leds[] = {
-+    {
-+        .name = "led_run",
-+        .port = 0x5a,
-+        .mask = BIT(0),
-+    },
-+    {
-+        .name = "led_init",
-+        .port = 0x5a,
-+        .mask = BIT(1),
-+    },
-+    {
-+        .name = "led_err",
-+        .port = 0x5a,
-+        .mask = BIT(2),
-+    },
-+    {
-+        .name = "led_1",
-+        .port = 0x49,
-+        .mask = BIT(7),
-+    },
-+    {
-+        .name = "led_2",
-+        .port = 0x49,
-+        .mask = BIT(6),
-+    },
-+    {
-+        .name = "led_3",
-+        .port = 0x49,
-+        .mask = BIT(5),
-+    },
-+    {
-+        .name = "led_4",
-+        .port = 0x49,
-+        .mask = BIT(4),
-+    },
-+    {
-+        .name = "led_5",
-+        .port = 0x49,
-+        .mask = BIT(3),
-+    },
-+    {
-+        .name = "led_6",
-+        .port = 0x49,
-+        .mask = BIT(2),
-+    },
-+    {
-+        .name = "led_7",
-+        .port = 0x49,
-+        .mask = BIT(1),
-+    }
-+};
-+
-+static DEFINE_SPINLOCK(value_lock);
-+
-+/*
-+ * we need to store the current led states, as it is not
-+ * possible to read the current led state via inb().
-+ */
-+static u8 leds_back;
-+static u8 leds_front;
-+
-+static void ot200_led_brightness_set(struct led_classdev *led_cdev,
-+        enum led_brightness value)
-+{
-+    struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
-+    u8 *val;
-+    unsigned long flags;
-+
-+    spin_lock_irqsave(&value_lock, flags);
-+
-+    if (led->port == 0x49)
-+        val = &leds_front;
-+    else if (led->port == 0x5a)
-+        val = &leds_back;
-+    else
-+        BUG();
-+
-+    if (value == LED_OFF)
-+        *val &= ~led->mask;
-+    else
-+        *val |= led->mask;
-+
-+    outb(*val, led->port);
-+    spin_unlock_irqrestore(&value_lock, flags);
-+}
-+
-+static int __devinit ot200_led_probe(struct platform_device *pdev)
-+{
-+    int i;
-+    int ret;
-+
-+    for (i = 0; i < ARRAY_SIZE(leds); i++) {
-+
-+        leds[i].cdev.name = leds[i].name;
-+        leds[i].cdev.default_trigger = NULL;
-+        leds[i].cdev.blink_set = NULL;
-+        leds[i].cdev.brightness_set = ot200_led_brightness_set;
-+
-+        ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
-+        if (ret < 0)
-+            goto err;
-+
-+        dev_set_drvdata(leds[i].cdev.dev, &leds[i]);
-+    }
-+
-+    platform_set_drvdata(pdev, leds);
-+
-+    outb(0x0, 0x49);    /* turn off all front leds */
-+    outb(0x2, 0x5a);    /* turn on init led */
-+    leds_front = 0;
-+    leds_back = BIT(1);
-+
-+    return 0;
-+
-+err:
-+    for (i = i - 1; i >= 0; i--)
-+        led_classdev_unregister(&leds[i].cdev);
-+
-+    return ret;
-+}
-+
-+static int __devexit ot200_led_remove(struct platform_device *pdev)
-+{
-+    int i;
-+
-+    for (i = 0; i < ARRAY_SIZE(leds); i++)
-+        led_classdev_unregister(&leds[i].cdev);
-+
-+    return 0;
-+}
-+
-+static struct platform_driver ot200_led_driver = {
-+    .probe        = ot200_led_probe,
-+    .remove        = __devexit_p(ot200_led_remove),
-+    .driver        = {
-+        .name    = "leds-ot200",
-+        .owner    = THIS_MODULE,
-+    },
-+};
-+
-+module_platform_driver(ot200_led_driver);
-+
-+MODULE_AUTHOR("Sebastian A. Siewior <bigeasy@linutronix.de>");
-+MODULE_DESCRIPTION("ot200 LED driver");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:leds-ot200");
+Yours, Daniel
 -- 
-1.7.5.4
-
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
