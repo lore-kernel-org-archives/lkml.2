@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933385Ab2AIUOr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 15:14:47 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:51140 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933292Ab2AIUOp convert rfc822-to-8bit (ORCPT
+	id S933414Ab2AIUPQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 15:15:16 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60664 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933375Ab2AIUPO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 15:14:45 -0500
+	Mon, 9 Jan 2012 15:15:14 -0500
+X-Sasl-enc: V1WJXNmeubdHfUWygLmvSlg3x3yA6hxdZwxu97P5jbAm 1326140113
+Date: Mon, 9 Jan 2012 12:11:10 -0800
+From: Greg KH <greg@kroah.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Frank Mandarino <fmandarino@endrelia.com>, Liam Girdwood <lrg@ti.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: Re: Public ridicule due to sound/soc/soc-core.c abuse of the driver
+ model
+Message-ID: <20120109201110.GA8377@kroah.com>
+References: <20120106194052.GA7781@kroah.com>
+ <20120106201458.GF2893@opensource.wolfsonmicro.com>
+ <20120106205036.GB13857@n2100.arm.linux.org.uk>
+ <20120106234135.GH2893@opensource.wolfsonmicro.com>
+ <20120106234445.GC13857@n2100.arm.linux.org.uk>
+ <20120106234923.GI2893@opensource.wolfsonmicro.com>
+ <20120109095125.GG21765@n2100.arm.linux.org.uk>
+ <20120109195211.GA30766@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-In-Reply-To: <1326056146.13595.315.camel@deadeye>
-References: <1326055714.13595.309.camel@deadeye>
-	<1326056146.13595.315.camel@deadeye>
-Date: Mon, 9 Jan 2012 21:14:44 +0100
-X-Google-Sender-Auth: AyqK8hVjpnKiqYD6Vm8ks-FeAY4
-Message-ID: <CAMuHMdWM128G+TK+Y=FQ_Hhw7XTrYyDERCDN1MrknXDmbOofcA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpu: Register a generic CPU device on architectures
- that currently do not
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120109195211.GA30766@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 8, 2012 at 21:55, Ben Hutchings <ben@decadent.org.uk> wrote:
-> frv, h8300, microblaze, openrisc, score and xtensa currently do not
+On Mon, Jan 09, 2012 at 07:52:13PM +0000, Mark Brown wrote:
+> On Mon, Jan 09, 2012 at 09:51:25AM +0000, Russell King - ARM Linux wrote:
+> 
+> > Anything which helps reduce the abuses of the driver model is a plus -
+> > it helps remove the possibility of kernel oopses.
+> 
+> Trying to make any sort of modification to code this fragile is risky,
+> especially during what's supposed to be a stabalization phase (which is
+> what Greg is requesting).  It just seems completely irresponsible for
+> something that isn't actually a practical problem.
 
-m68k is also handled in your patch.
-um is still missing.
+I find it hard to believe that ignoring the driver model is not a
+"practical" problem :)
 
-> register a CPU device.  Add the config option GENERIC_CPU_DEVICES which
-> causes a generic CPU device to be registered for each present CPU, and
-> make all these architectures select it.
->
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+For details as to why this is a problem, please see the kobject.txt
+file.
 
-Thanks!
-On m68k, it works on its own or combined with "[PATCH 1/2] topology:
-Check for missing CPU devices."
+Please fix this up, as you have seen, people end up cutting-and-pasting
+bad code.
 
-It adds
-
-/sys/devices/system/cpu/cpu0
-|-- subsystem -> ../../../../bus/cpu
-|-- topology
-|   |-- core_id
-|   |-- core_siblings
-|   |-- core_siblings_list
-|   |-- physical_package_id
-|   |-- thread_siblings
-|   `-- thread_siblings_list
-`-- uevent
-
-and
-
-/sys/bus/cpu/devices/cpu0 -> ../../../devices/system/cpu/cpu0
-
-Tested-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+greg k-h
