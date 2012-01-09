@@ -1,130 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab2AICv0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 21:51:26 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:37963
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755267Ab2AICvX (ORCPT
+	id S1755302Ab2AICwz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 21:52:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53128 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751467Ab2AICwx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 21:51:23 -0500
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275dhz2ei87h2a8h668h839h)
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPV:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Bob Liu <lliubbo@gmail.com>
-To: <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, <uclinux-dist-devel@blackfin.uclinux.org>,
-        <vapier@gentoo.org>, <sonic.zhang@analog.com>,
-        Bob Liu <lliubbo@gmail.com>
-Subject: [GIT PULL] blackfin changes for v3.3
-Date: Mon, 9 Jan 2012 10:51:31 +0800
-Message-ID: <1326077491-10800-1-git-send-email-lliubbo@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-MIME-Version: 1.0
-Content-Type: text/plain
+	Sun, 8 Jan 2012 21:52:53 -0500
+Message-ID: <1326077566.4097.7.camel@deadeye>
+Subject: Re: [PATCH 1/2] topology: Check for missing CPU devices
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: richard -rw- weinberger <richard.weinberger@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
+        Thorsten Glaser <tg@mirbsd.de>,
+        Debian kernel team <debian-kernel@lists.debian.org>,
+        linux-m68k@vger.kernel.org, debian-68k@lists.debian.org
+Date: Mon, 09 Jan 2012 02:52:46 +0000
+In-Reply-To: <CA+55aFwVnLE-DLRzS8G=8NxQZjF5M_O4kgrPoX+AOOEH-OZgog@mail.gmail.com>
+References: <1326055714.13595.309.camel@deadeye>
+	 <CA+55aFwwnJPpVY++Vgr6p3s47YjdYWV3sgLZzvCtiJp6DEu78Q@mail.gmail.com>
+	 <CAFLxGvwJWrSRSNxHE620XZkc4w0ayzeqqxZOR1efkh1V+VBO1w@mail.gmail.com>
+	 <CA+55aFwVnLE-DLRzS8G=8NxQZjF5M_O4kgrPoX+AOOEH-OZgog@mail.gmail.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-RKEqcBw08P14vBh4EUOt"
+X-Mailer: Evolution 3.2.2-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi linus,
 
-Please pull blackfin changes for v3.3.
-Most are board related bugfix and code clean.
+--=-RKEqcBw08P14vBh4EUOt
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The following changes since commit a0e86bd4252519321b0d102dc4ed90557aa7bee9:
-  Jesper Juhl (1):
-        audit: always follow va_copy() with va_end()
+On Sun, 2012-01-08 at 17:29 -0800, Linus Torvalds wrote:
+> On Sun, Jan 8, 2012 at 5:06 PM, richard -rw- weinberger
+> <richard.weinberger@gmail.com> wrote:
+> > On Mon, Jan 9, 2012 at 1:18 AM, Linus Torvalds
+> > <torvalds@linux-foundation.org> wrote:
+> >> Ok, both of the patches look sane to me, but it would really be nice
+> >> to hear from somebody with the actual affected architectures, and get
+> >> a tested-by.
+> >
+> > UML is affected:
+> > https://lkml.org/lkml/2012/1/8/186
+> >
+> > I wasted an hour finding out why it is crashing.
+> > Instead of testing kernels I really should read more LKML. ;-)
+>=20
+> Hmm.
+>=20
+> Ben - how about that
+>=20
+>   static DEFINE_PER_CPU(struct cpu, cpu_devices);
+>=20
+> approach that Richard uses in his patch, instead of the kcalloc?
 
-are available in the git repository at:
+That seems perfectly good.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lliubbo/blackfin.git for-linus
+> And
+> clearly UM should also do that CONFIG_GENERIC_CPU_DEVICES thing with
+> your patch.
+>
+> Richard - does Ben's patch work for  you too if you just add "select
+> GENERIC_CPU_DEVICES" in the UM Kconfig too (Kconfig.common, probably)?
 
-Aaron Wu (1):
-      blackfin: i2c-lcd: change default clock rate
+Sorry, I meant to cover UM as well but I couldn't see how its Kconfig
+files were organised.
 
-Bob Liu (7):
-      blackfin: bf533-stamp: fix ad1836 name
-      blackfin: bf533-stamp: add missed patches for new asoc driver
-      blackfin: smp: add suspend and wakeup irq flags
-      blackfin: smp: cleanup smp code
-      blackfin: time-ts: rm unused func broadcast_timer_setup()
-      blackfin: bf537: add capture support
-      blackfin: bf561: add adv7183 capture support
+Ben.
 
-Scott Jiang (3):
-      blackfin: config: update def config for all boards
-      blackfin: bf537: change num_chipselect for spi-sport
-      blackfin: bf548: add capture support
+--=20
+Ben Hutchings
+Life is what happens to you while you're busy making other plans.
+                                                               - John Lenno=
+n
 
-Sonic Zhang (2):
-      blackfin: config: update macro SPI_BFIN in board file
-      blackfin: serial: bfin-uart: remove unused field
+--=-RKEqcBw08P14vBh4EUOt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Steven Miao (3):
-      blackfin: smp: fix msg queue overflow issue
-      bf54x: get mem size: missing break in switch
-      blackfin: mac: dsa: add vlan mask in board file
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
- arch/blackfin/configs/BF518F-EZBRD_defconfig      |    2 +-
- arch/blackfin/configs/BF526-EZBRD_defconfig       |    2 +-
- arch/blackfin/configs/BF527-AD7160-EVAL_defconfig |    2 +-
- arch/blackfin/configs/BF527-EZKIT-V2_defconfig    |    2 +-
- arch/blackfin/configs/BF527-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF533-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF533-STAMP_defconfig       |    2 +-
- arch/blackfin/configs/BF537-STAMP_defconfig       |    2 +-
- arch/blackfin/configs/BF538-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF548-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BF561-ACVILON_defconfig     |    2 +-
- arch/blackfin/configs/BF561-EZKIT-SMP_defconfig   |    2 +-
- arch/blackfin/configs/BF561-EZKIT_defconfig       |    2 +-
- arch/blackfin/configs/BlackStamp_defconfig        |    2 +-
- arch/blackfin/configs/CM-BF527_defconfig          |    2 +-
- arch/blackfin/configs/CM-BF533_defconfig          |    2 +-
- arch/blackfin/configs/CM-BF537E_defconfig         |    2 +-
- arch/blackfin/configs/CM-BF537U_defconfig         |    2 +-
- arch/blackfin/configs/CM-BF548_defconfig          |    2 +-
- arch/blackfin/configs/CM-BF561_defconfig          |    2 +-
- arch/blackfin/configs/DNP5370_defconfig           |    2 +-
- arch/blackfin/configs/H8606_defconfig             |    2 +-
- arch/blackfin/configs/IP0X_defconfig              |    2 +-
- arch/blackfin/configs/PNAV-10_defconfig           |    2 +-
- arch/blackfin/configs/SRV1_defconfig              |    2 +-
- arch/blackfin/configs/TCM-BF518_defconfig         |    2 +-
- arch/blackfin/configs/TCM-BF537_defconfig         |    2 +-
- arch/blackfin/include/asm/bfin_serial.h           |    3 -
- arch/blackfin/include/asm/cpu.h                   |    3 +
- arch/blackfin/include/asm/smp.h                   |    5 +-
- arch/blackfin/kernel/setup.c                      |   16 ++-
- arch/blackfin/kernel/time-ts.c                    |    8 +-
- arch/blackfin/mach-bf518/boards/ezbrd.c           |   10 +-
- arch/blackfin/mach-bf518/boards/tcm-bf518.c       |    4 +-
- arch/blackfin/mach-bf527/boards/ad7160eval.c      |    4 +-
- arch/blackfin/mach-bf527/boards/cm_bf527.c        |    4 +-
- arch/blackfin/mach-bf527/boards/ezbrd.c           |    4 +-
- arch/blackfin/mach-bf527/boards/ezkit.c           |    4 +-
- arch/blackfin/mach-bf527/boards/tll6527m.c        |    4 +-
- arch/blackfin/mach-bf533/boards/H8606.c           |    6 +-
- arch/blackfin/mach-bf533/boards/blackstamp.c      |    4 +-
- arch/blackfin/mach-bf533/boards/cm_bf533.c        |    6 +-
- arch/blackfin/mach-bf533/boards/ezkit.c           |    4 +-
- arch/blackfin/mach-bf533/boards/ip0x.c            |    4 +-
- arch/blackfin/mach-bf533/boards/stamp.c           |  179 +++++++++++++++++++--
- arch/blackfin/mach-bf537/boards/cm_bf537e.c       |    6 +-
- arch/blackfin/mach-bf537/boards/cm_bf537u.c       |    6 +-
- arch/blackfin/mach-bf537/boards/dnp5370.c         |    4 +-
- arch/blackfin/mach-bf537/boards/minotaur.c        |    6 +-
- arch/blackfin/mach-bf537/boards/pnav10.c          |    6 +-
- arch/blackfin/mach-bf537/boards/stamp.c           |   78 +++++++++-
- arch/blackfin/mach-bf537/boards/tcm_bf537.c       |    6 +-
- arch/blackfin/mach-bf538/boards/ezkit.c           |    6 +-
- arch/blackfin/mach-bf548/boards/cm_bf548.c        |    6 +-
- arch/blackfin/mach-bf548/boards/ezkit.c           |   73 ++++++++-
- arch/blackfin/mach-bf561/boards/acvilon.c         |    4 +-
- arch/blackfin/mach-bf561/boards/cm_bf561.c        |    6 +-
- arch/blackfin/mach-bf561/boards/ezkit.c           |  101 +++++++++++-
- arch/blackfin/mach-bf561/include/mach/pll.h       |    4 +-
- arch/blackfin/mach-bf561/smp.c                    |    5 +-
- arch/blackfin/mach-common/smp.c                   |   61 +++++--
- 61 files changed, 570 insertions(+), 134 deletions(-)
+iQIVAwUATwpWfue/yOyVhhEJAQrmtw/+NgIHg4M4/jyGZhq8suuOotDLW1rp4ZOT
+KFPFwhmJ0O5t6aEbhkmBBWdf/NnkMMGGTolRuWNkieppSKcESJOBHoF+34eD79L6
+oz4oOlaVU/z90S+Gw98/dZEktD9PnOfBr8bF4bNsh2AWPadwqeIRRhatwzk0PUHE
+dyiKbW6KdtlTSiUmnmknJ9OyVkB+tTqp9eKTU0BknMCMSNRclJZcbrWsviipBMMh
+N9/HlWaC0Vljn3E5HKM7VZ5segN1ktbMu8NWTDTpFXT0Cr1f3pOD1sXz3IH0l5Ii
+S0+YLK2ubJRiRFAHseyS9y6qlsB9W5CGJdo+VDkFDJfQ/K8YRu4kcwqmSNbcceaI
+wWoyJAt5xgTHClomLde36IkN01JX/WQ6e1Jd6V72HrRtZjO/jeT3c0wXS3W06+BP
+N2itvaSBSJxlZ9JZ5hWSuCz5MwcqMqoV76mg1t2I8f0WmQZtuZbGsHQ8/gFEL9Lk
+fpTBEPlQuS8QoRfX/SatZwMypfUcy67P/Nhui+2TyBCrGyotBGqBHn3LJGW/40D+
+QA/XECv/umgpXLhEgB8w5GX4NmEiR9QUQtWwoQKN3DszlmIWLS00X9l+nFP5Zcj/
+kdXhhiFQVEZdBFYkasJ/il4AcqxeWmBOuS0/Q3KwDa02i180w7Sr1J7EaHMLKitH
+7gY3lWpxHo8=
+=t+UK
+-----END PGP SIGNATURE-----
 
+--=-RKEqcBw08P14vBh4EUOt--
