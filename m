@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab2AIQNd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:13:33 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43439 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932153Ab2AIQNc convert rfc822-to-8bit (ORCPT
+	id S932279Ab2AIQPB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:15:01 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49811 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932170Ab2AIQO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:13:32 -0500
-Message-ID: <1326125597.2442.90.camel@twins>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-From: Peter Zijlstra <peterz@infradead.org>
-To: svaidy@linux.vnet.ibm.com
-Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com, len.brown@intel.com,
-        anhua.xu@intel.com, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Paul Turner <pjt@google.com>
-Date: Mon, 09 Jan 2012 17:13:17 +0100
-In-Reply-To: <20120109160317.GA29142@dirshya.in.ibm.com>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
-	 <1326103578.2442.50.camel@twins> <1326104915.2442.53.camel@twins>
-	 <20120109110025.GA7988@dirshya.in.ibm.com> <1326119707.2442.77.camel@twins>
-	 <20120109160317.GA29142@dirshya.in.ibm.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Mon, 9 Jan 2012 11:14:59 -0500
+Date: Mon, 9 Jan 2012 08:14:57 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Krystian Garbaciak <dd.diasemi@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: drivers/regulator/core.c: Fixes mapping inside
+ regulator_mode_to_status() and makes it returning -EINVAL on invalid input.
+Message-ID: <20120109161456.GC2974@opensource.wolfsonmicro.com>
+References: <1326111140.22107.9.camel@sw-eng-lt-dc-vm2>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326111140.22107.9.camel@sw-eng-lt-dc-vm2>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-09 at 21:33 +0530, Vaidyanathan Srinivasan wrote:
-
-> Yes, based on the architecture and topology, we do have two sweet
-> spots for power vs performance trade offs.  The first level should be
-> to reduce power savings with marginal performance impact and second
-> one will be to go for the most aggressive power savings.
-
-Colour me unconvinced, cache heavy workloads will suffer greatly from
-your 1.
-
-> The first one should generally be recommended as default to have
-> a right balance between performance and power savings, while the
-> second one should be used for reducing power consumption on
-> unimportant workloads or under certain constraints.
+On Mon, Jan 09, 2012 at 12:12:20PM +0000, Krystian Garbaciak wrote:
+> Minor fix that makes the function working correctly with
+> REGULATOR_MODE_STANDBY as parameter.
+> Also, on invalid input (bad mode), it is better to return -EINVAL,
+> instead of meaningless 0 value (which actually is interpreted as
+> REGULATOR_STATUS_OFF).
 > 
-> Some example policies:
-> 
-> sched_powersavings=1:
-> 
->         Enable consolidation at MC level
-> 
-> sched_powersavings=2:
-> 
->         Enable aggressive consolidation at MC level and SMT level if
->         available. In case arch can benefit from cross node
->         consolidation, then enable it.
+> --- 
 
-You fail for mentioning MC/SMT..
+As I previously said you need to follow the patch submission process in
+SubmittingPatches.  Here you need to:
 
-> Having the above simple split in policy will enable wide adoption
-> where the first level can be a recommended default.  Having just
-> a boolean enable/disable will mean the end-user will have to decide
-> when to turn on and later off for best workload experience.
+ - Sign off your patch.  Without this your patch cannot be applied.
+ - Send the patches to the maintainers (not just one of them) and the
+   list.
 
-Picking one of two states is too hard, hence we given them one of three
-states to pick from.. How does that make sense?
+You should also make an effort to use subject lines for your patch that
+match up with what the rest of the subsystem is doing.
 
-> Just similar to cpufreq policy of performance, ondemand and powersave.
-> They have their unique use cases and this design choice helps us ship
-> ondemand as default.
+>  	default:
+> -		return 0;
+> +		return -EINVAL;
 
-You fail for thinking having multiple cpufreq governors is a good thing.
-The result is that they all suck.
+This behaviour is deliberate.
