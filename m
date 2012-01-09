@@ -1,87 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755574Ab2AIHdM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 02:33:12 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3855 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755502Ab2AIHdK convert rfc822-to-8bit (ORCPT
+	id S1755583Ab2AIHea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 02:34:30 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:47381 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755512Ab2AIHe2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 02:33:10 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Sun, 08 Jan 2012 23:33:09 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Laxman Dewangan <ldewangan.com@nvidia.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Date: Mon, 9 Jan 2012 13:03:06 +0530
-Subject: RE: [PATCH V1] TPS62360: Add tps62360 regulator driver
-Thread-Topic: [PATCH V1] TPS62360: Add tps62360 regulator driver
-Thread-Index: AczOnfswNwmfcPjTTamHp+8tmvMaUgAAfn3A
-Message-ID: <96C9D994977DD0439FB6D3FE3B13DD907DBDABA9B6@BGMAIL01.nvidia.com>
-References: <1325668818-1096-1-git-send-email-ldewangan@nvidia.com>
- <20120105062919.GI11867@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9E9B@BGMAIL01.nvidia.com>
- <20120106185755.GC2893@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBD3AA0DE@BGMAIL01.nvidia.com>
- <20120107191047.GA3590@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBD3AA0E4@BGMAIL01.nvidia.com>
- <20120108165819.GB29065@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBDABA9A3@BGMAIL01.nvidia.com>
- <20120109071128.GA22134@opensource.wolfsonmicro.com>
-In-Reply-To: <20120109071128.GA22134@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Mon, 9 Jan 2012 02:34:28 -0500
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <1326092955.24116.131.camel@linux-s257.site>
+References: <CAHR064jAJkQCd_Tsrx7NHe_RbaBbNcX4sMwy=zkZCZNUNo=fAw@mail.gmail.com>
+	<1326092955.24116.131.camel@linux-s257.site>
+Date: Mon, 9 Jan 2012 08:34:26 +0100
+Message-ID: <CAHR064juCt90x_4bqSE2FqRxO+4759Sh4_L54eKopP_UJpap9Q@mail.gmail.com>
+Subject: Re: Handling special keys in platform drivers
+From: Corentin Chary <corentin.chary@gmail.com>
+To: joeyli <jlee@suse.com>
+Cc: platform-driver-x86@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, linux-input@vger.kernel.org,
+        GLin@suse.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 9, 2012 at 8:09 AM, joeyli <jlee@suse.com> wrote:
+> Hi Corentin,
+>
+> 於 一，2012-01-09 於 07:24 +0100，Corentin Chary 提到：
+>> Hi,
+>>
+>> Some of the platform drivers in platform/x86/ (and probably other) are
+>> relaying keys to userspace and are also controlling the device
+>> associated to these key. A simple example is screen brightness,
+>> keyboard backlight or rfkill.
+>>
+>> In this case the driver send a key to userspace, userspace has to
+>> handle this key and control the right device.
+>>
+>> Most of the time, this job is done by:
+>> - ACPI scripts (legacy)
+>> - DE (gnome-power-manager, kde's solid)
+>>
+>> The real problem is that for keyboard backlight to work, it needs DE
+>> cooperation, and only gnome as implemented that right now, and other
+>> (except KDE) will probably neither have the resources to handle all
+>> the possible keys correctly. And of course, who should handle the keys
+>> when there is no DE running at all ?
+>>
+>> So I was wondering if we could introduce an "auto" mode for this
+>> drivers. For example, with this mode enabled, asus-wmi would filter
+>> the keys and control keyboard backlight directly (and rfkill/screen
+>> brightness ?).
+>>
+>> What do you think about it ?
+>>
+>> Thanks,
+>>
+>
+> For backlight,
+> I think control backlight in platform driver is generally no problem,
+> but need careful don't keep/change brightness level if BIOS also keep a
+> variable reflect to brightness level.
 
-> On Monday, January 09, 2012 12:41 PM, Mark Brown wrote
-> > In my design, the voltage vary from 900mV to the 1300mV in increment of
-> > 50mV. In this case, the voltage change request is 900, 950, 1000, 1050,
-> > 1100, 1150, 1200, 1250, 1300.
-> > I would like to have entry like
-> > 900-950->vsel0
-> > 950-1000>vsel1,
-> > 1000-1050->vsel2
-> > 1050-1100->vsel3
-> > 1100-1150->vsel0
-> > 1150-1200->vsel1
-> > 1200-1250->vsel2
-> > 1250->1300->vsel3
-> 
-> Why?  I'm not sure I understand this.  You're asking the regulator to
-> output ranges not voltages and you're setting multiple overlapping
-> ranges for each VSEL.
+Hum, for screen brightness, try to start without any desktop
+environment on a laptop where the keys don't control the BIOS and only
+send input events, and you won't be able to change the screen
+brightness.
 
-If I fix the voltage with each VSEL then only 4 voltages will be
-possible but I want to have more than 4 different output.
-How do I achieve this?
+This is actually worse for keyboard backlight since only gnome support it.
 
-> 
-> > Based on voltage increment requirements for a given application, this
-> > table can be tune more. Now if client request for voltage setting for
-> > range of 1000-1050, I will select the VSET1 for configuration, similarly
-> > for 1100-1150, VSET0 will be the configuration register.
-> 
-> This just seems like it makes the driver configuration much more
-> complex and restricts the ability of the system to adapt itself to
-> what's happening at runtime.
-> 
-> What I'd expect to see is nothing but the GPIOs and their default state
-> (since sadly we can't read back from output GPIOs with gpiolib) being
-> specified.
+> Another question is when the "auto" mode disable? Does it possible
+> disable it from user space?
 
-I did not understand it correctly. Can you please elaborate how can we
-pass the voltage with corresponding vsel?
-I want to have around 10 different voltages at output.
+Probably only a module parameter. And disabled by default.
 
+> Currently, like rfkill-input can disabled by ioctl from user space, e.g.
+> urfkill daemon will disable rfkill-input by ioctl when it launched.
+>
+>
+> For rfkill,
+> I am not prefer allow platform driver direct control rfkill.
+
+Yeah rfkill was just an example, of such interaction, but your right
+rfkill support is currently pretty good.
+
+> that might more complex because already have the follow components
+> involve to it when function key pressed:
+>        BIOS/EC (ODM backup behavior)
+>        rfkill-input
+>        wireless/bluetooth drivers
+>        user space daemon/applications (e.g. NetworkManager, urfkill...)
+>
+> Then, will platform driver also involve to rfkill control?
+>
+> We already have rfkill-input in kernel to control rfkill state, if need
+> more flexible policy control on rfkill key, put policy logic in user
+> space will be better.
+> e.g. User can setup rfkill policy by account.
+
+
+
+-- 
+Corentin Chary
+http://xf.iksaif.net
