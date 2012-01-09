@@ -1,238 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932753Ab2AIRad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 12:30:33 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:55012 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932429Ab2AIRab (ORCPT
+	id S1751876Ab2AIRfM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 12:35:12 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:49628 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751147Ab2AIRfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 12:30:31 -0500
-Message-ID: <1326130228.18456.11.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [patch 1/2]scsi: scsi_run_queue() doesn't use local list to
- handle starved sdev
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@infradead.org>,
-        "Ted Ts'o" <tytso@mit.edu>, "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "Darrick J. Wong" <djwong@us.ibm.com>
-Date: Mon, 09 Jan 2012 11:30:28 -0600
-In-Reply-To: <1326094267.22361.556.camel@sli10-conroe>
-References: <1324523412.22361.471.camel@sli10-conroe>
-	 <1324578449.9709.15.camel@dabdike.int.hansenpartnership.com>
-	 <1324600851.22361.475.camel@sli10-conroe>
-	 <1324603045.9282.2.camel@dabdike.cust.hotspot.t-mobile.com>
-	 <1324605214.22361.490.camel@sli10-conroe>
-	 <1326094267.22361.556.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 9 Jan 2012 12:35:10 -0500
+Date: Mon, 9 Jan 2012 12:35:09 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Joerg Roedel <joerg.roedel@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Michael Buesch <m@bues.ch>
+cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Incorrect uses of get_driver()/put_driver()
+In-Reply-To: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-09 at 15:31 +0800, Shaohua Li wrote:
-> On Fri, 2011-12-23 at 09:53 +0800, Shaohua Li wrote:
-> > On Thu, 2011-12-22 at 19:17 -0600, James Bottomley wrote:
-> > > On Fri, 2011-12-23 at 08:40 +0800, Shaohua Li wrote:
-> > > > On Thu, 2011-12-22 at 18:27 +0000, James Bottomley wrote:
-> > > > > On Thu, 2011-12-22 at 11:10 +0800, Shaohua Li wrote:
-> > > > > > scsi_run_queue() picks off all sdev from host starved_list to a local list,
-> > > > > > then handle them. If there are multiple threads running scsi_run_queue(),
-> > > > > > the starved_list will get messed. This is quite common, because request
-> > > > > > rq_affinity is on by default.
-> > > > > > 
-> > > > > > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> > > > > > ---
-> > > > > >  drivers/scsi/scsi_lib.c |   21 ++++++++++++++-------
-> > > > > >  1 file changed, 14 insertions(+), 7 deletions(-)
-> > > > > > 
-> > > > > > Index: linux/drivers/scsi/scsi_lib.c
-> > > > > > ===================================================================
-> > > > > > --- linux.orig/drivers/scsi/scsi_lib.c	2011-12-21 16:56:23.000000000 +0800
-> > > > > > +++ linux/drivers/scsi/scsi_lib.c	2011-12-22 09:33:09.000000000 +0800
-> > > > > > @@ -401,9 +401,8 @@ static inline int scsi_host_is_busy(stru
-> > > > > >   */
-> > > > > >  static void scsi_run_queue(struct request_queue *q)
-> > > > > >  {
-> > > > > > -	struct scsi_device *sdev = q->queuedata;
-> > > > > > +	struct scsi_device *sdev = q->queuedata, *head_sdev = NULL;
-> > > > > >  	struct Scsi_Host *shost;
-> > > > > > -	LIST_HEAD(starved_list);
-> > > > > >  	unsigned long flags;
-> > > > > >  
-> > > > > >  	/* if the device is dead, sdev will be NULL, so no queue to run */
-> > > > > > @@ -415,9 +414,8 @@ static void scsi_run_queue(struct reques
-> > > > > >  		scsi_single_lun_run(sdev);
-> > > > > >  
-> > > > > >  	spin_lock_irqsave(shost->host_lock, flags);
-> > > > > > -	list_splice_init(&shost->starved_list, &starved_list);
-> > > > > >  
-> > > > > > -	while (!list_empty(&starved_list)) {
-> > > > > > +	while (!list_empty(&shost->starved_list)) {
-> > > > > 
-> > > > > The original reason for working from a copy instead of the original list
-> > > > > was that the device can end up back on the starved list because of a
-> > > > > variety of conditions in the HBA and so this would cause the loop not to
-> > > > > exit, so this piece of the patch doesn't look right to me.
-> > > > +               /*
-> > > > +                * the head sdev is no longer starved and removed from the
-> > > > +                * starved list, select a new sdev as head.
-> > > > +                */
-> > > > +               if (head_sdev == sdev && list_empty(&sdev->starved_entry))
-> > > > +                       head_sdev = NULL;
-> > > > I had this in the loop, which is to guarantee the loop will exit if a
-> > > > device is removed from the starved list.
-> > > 
-> > > And the non-head sdevs? which can also get put back onto the list
-> > yes, it will be put back to the list tail. Note we always handle the
-> > head sdev first. move the cursor of list iterating to next dev and next,
-> > we will hit head_sdev == sdev eventually, then the loop exit. or the
-> > cursor isn't moving, which means we have scsi_host_is_busy(). in both
-> > cases, the loop will exit.
-> > 
-> > > What's the reason for not just traversing the list once using list
-> > > splice?
-> > > 
-> > > Basically, the changelog doesn't seem to explain what you're doing and
-> > > the logic looks flawed.
-> > The main reason is we have multiple CPU trying to get the list to its
-> > local list and then handle it, then putback unprocessed entries back. we
-> > have multiple cpu handles blk softirq, because request rq_affinity is on
-> > default. And the putback always happen, because scsi_run_queue is called
-> > after every request finish. When it's called, scsi_host has just one
-> > free slot. The in-coordination of multiple threads handle of the starved
-> > list will mess the list. I observed dev which doesn't get chance to
-> > dispatch request is put to starved list tail, while dev which dispatches
-> > request is still at head. eg, this will cause unfairness. This means
-> > some devices will get starved.
-> James,
-> can you take a look at it? the two patches give 12% improvement in a
-> simple file creation workload. I updated the patch log.
+The get_driver() and put_driver() routines in the device core are not
+documented well, and what they really do is quite different from what
+people might think they do.  In particular, get_driver() does not
+prevent a driver from being unregistered or unloaded -- the API which 
+comes closest to doing that is try_module_get().
 
-The exit criteria still don't look right to me.
+In fact, get_driver() and put_driver() are pretty much useless for
+normal purposes, and Dmitry and I have been discussing getting rid of
+them entirely.  But first we need to make sure that doing so won't mess
+anything up.
 
-given two devices on the starved list, s1 and s2.  First loop around
-head_sdev is s1, we run the queue and it gets put back.  Now we loop to
-s2.  as we drop the lock to run the queue, a competing thread gets in,
-runs the starved loop and s1 gets removed.  We run s2, it gets put back,
-but we don't see s1 is gone (since the sdev we're processing is s2 and
-the check head_sdev == sdev fails) and it remains our head_sdev.  The
-result is a loop until s2 gets removed, which would be highly
-undesirable.
+The purpose of this email is to check with the maintainers of the
+various drivers that seem to be using these routines in questionable
+ways, to make sure nothing will go wrong.  Here are the places we have 
+identified:
 
-The problem essentially is that you're using local variables to track
-what you've made a global list, so any other list manipulation external
-to your local variables is invisible to you.  You can fix this by
-checking list_empty(&head_sdev->starved_list) instead, but this will
-still lead to running the starved list up to twice as much as we would
-have previously.
+lib/dma-debug.c:173:  drv = get_driver(dev->driver);
+lib/dma-debug.c:188:  put_driver(drv);
 
-It strikes me that a far better (and certainly easier to follow logic)
-is to split the queue up for CPU affinity.  So the first pass instead of
-splicing everything, it just takes all the unaffine requests plus all
-those affine to that CPU, but leaves all those whose affinities don't
-match the CPU on the global list (for any competing thread, which must
-necessarily be on a different CPU, to process).
+Joerg, these calls don't seem to do anything, as far as I can tell.  
+Is there any reason to keep them?
 
-James
+drivers/pci/xen-pcifront.c:596:       if (get_driver(&pdrv->driver)) {
+drivers/pci/xen-pcifront.c:626:               put_driver(&pdrv->driver);
 
-> Thanks,
-> Shaohua
-> 
-> Subject: scsi: scsi_run_queue() doesn't use local list to handle starved sdev
-> 
-> scsi_run_queue() picks off all sdev from host starved_list to a local list,
-> then handle them, and putback unprocessed entries back. we have multiple cpu
-> handles blk softirq, because request rq_affinity is on by default. And the
-> putback always happen, because scsi_run_queue() is called after every request
-> finish. When it's called, scsi_host has just one free slot. The in-coordination
-> of multiple threads handle of the starved list will mess the list. I observed
-> dev which doesn't get chance to dispatch request is put to starved list tail,
-> while dev which dispatches request successfully is still at head. This will
-> cause unfairness, which means some devices will get starved.
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> ---
->  drivers/scsi/scsi_lib.c |   25 +++++++++++++++----------
->  1 file changed, 15 insertions(+), 10 deletions(-)
-> 
-> Index: linux/drivers/scsi/scsi_lib.c
-> ===================================================================
-> --- linux.orig/drivers/scsi/scsi_lib.c	2011-12-23 10:21:22.000000000 +0800
-> +++ linux/drivers/scsi/scsi_lib.c	2012-01-09 15:14:53.000000000 +0800
-> @@ -401,9 +401,8 @@ static inline int scsi_host_is_busy(stru
->   */
->  static void scsi_run_queue(struct request_queue *q)
->  {
-> -	struct scsi_device *sdev = q->queuedata;
-> +	struct scsi_device *sdev = q->queuedata, *head_sdev = NULL;
->  	struct Scsi_Host *shost;
-> -	LIST_HEAD(starved_list);
->  	unsigned long flags;
->  
->  	/* if the device is dead, sdev will be NULL, so no queue to run */
-> @@ -415,9 +414,8 @@ static void scsi_run_queue(struct reques
->  		scsi_single_lun_run(sdev);
->  
->  	spin_lock_irqsave(shost->host_lock, flags);
-> -	list_splice_init(&shost->starved_list, &starved_list);
->  
-> -	while (!list_empty(&starved_list)) {
-> +	while (!list_empty(&shost->starved_list)) {
->  		/*
->  		 * As long as shost is accepting commands and we have
->  		 * starved queues, call blk_run_queue. scsi_request_fn
-> @@ -431,8 +429,13 @@ static void scsi_run_queue(struct reques
->  		if (scsi_host_is_busy(shost))
->  			break;
->  
-> -		sdev = list_entry(starved_list.next,
-> +		sdev = list_entry(shost->starved_list.next,
->  				  struct scsi_device, starved_entry);
-> +		if (sdev == head_sdev)
-> +			break;
-> +		if (!head_sdev)
-> +			head_sdev = sdev;
-> +
->  		list_del_init(&sdev->starved_entry);
->  		if (scsi_target_is_busy(scsi_target(sdev))) {
->  			list_move_tail(&sdev->starved_entry,
-> @@ -445,9 +448,13 @@ static void scsi_run_queue(struct reques
->  		__blk_run_queue(sdev->request_queue);
->  		spin_unlock(sdev->request_queue->queue_lock);
->  		spin_lock(shost->host_lock);
-> +		/*
-> +		 * the head sdev is no longer starved and removed from the
-> +		 * starved list, select a new sdev as head.
-> +		 */
-> +		if (head_sdev == sdev && list_empty(&sdev->starved_entry))
-> +			head_sdev = NULL;
->  	}
-> -	/* put any unprocessed entries back */
-> -	list_splice(&starved_list, &shost->starved_list);
->  	spin_unlock_irqrestore(shost->host_lock, flags);
->  
->  	blk_run_queue(q);
-> @@ -1316,9 +1323,7 @@ static inline int scsi_target_queue_read
->  	}
->  
->  	if (scsi_target_is_busy(starget)) {
-> -		if (list_empty(&sdev->starved_entry))
-> -			list_add_tail(&sdev->starved_entry,
-> -				      &shost->starved_list);
-> +		list_move_tail(&sdev->starved_entry, &shost->starved_list);
->  		return 0;
->  	}
->  
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Konrad, these calls don't seem to do anything either.
 
+drivers/s390/cio/device.c:1681:       drv = get_driver(&cdrv->driver);
+drivers/s390/cio/device.c:1687:       put_driver(drv);
+
+Martin, these calls seem to be useless.  The calls in ccwgroup.c are 
+definitely useless; there's no reason to take a reference to a driver 
+while it's being unregistered, since it can't go away until the 
+unregistration is finished.
+
+drivers/ssb/main.c:146:               get_driver(&drv->drv);
+drivers/ssb/main.c:153:               put_driver(&drv->drv);
+
+Michael, these are part of ssb_driver_get() and ssb_driver_put(), used
+in ssb_devices_freeze() and ssb_devices_thaw().  They don't currently
+do anything, but it looks as if they are meant to prevent the driver
+from being unloaded.  Should they be replaced with try_module_get()?  
+Or would it be good enough to call device_attach() in 
+ssb_devices_thaw()?
+
+Alan Stern
 
