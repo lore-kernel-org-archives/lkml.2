@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab2AIHsA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 02:48:00 -0500
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:32860 "EHLO e2.ny.us.ibm.com"
+	id S1755632Ab2AIHvM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 02:51:12 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:38790 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755537Ab2AIHr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 02:47:59 -0500
-Date: Mon, 9 Jan 2012 13:18:00 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: lkml <linux-kernel@vger.kernel.org>, stable@kernel.org
-Cc: Jim Keniston <jkenisto@us.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH] kprobes: initialize before using a hlist
-Message-ID: <20120109074800.GC20666@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-x-cbid: 12010907-5112-0000-0000-000003DAAA03
+	id S1755438Ab2AIHvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 02:51:10 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
+Subject: [PATCH] drivers/staging/omapdrm/omap_fbdev.c: move free after uses
+Date: Mon,  9 Jan 2012 08:51:03 +0100
+Message-Id: <1326095463-8545-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+From: Julia Lawall <julia@diku.dk>
 
-Commit ef53d9c5e introduced a bug where we can potentially leak
-kretprobe_instances since we initialize a hlist head after having
-used it.
+Move the free after the final uses.
 
-Initialize the hlist head before using it.
+The semantic patch that makes this report is available
+in scripts/coccinelle/free/kfree.cocci.
 
-Reported by: Jim Keniston <jkenisto@us.ibm.com>
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-CC: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: <stable@kernel.org>
+More information about semantic patching is available at
+http://coccinelle.lip6.fr/
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- kernel/kprobes.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/omapdrm/omap_fbdev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-3.2/kernel/kprobes.c
-===================================================================
---- linux-3.2.orig/kernel/kprobes.c
-+++ linux-3.2/kernel/kprobes.c
-@@ -1077,6 +1077,7 @@ void __kprobes kprobe_flush_task(struct 
- 		/* Early boot.  kretprobe_table_locks not yet initialized. */
- 		return;
+diff --git a/drivers/staging/omapdrm/omap_fbdev.c b/drivers/staging/omapdrm/omap_fbdev.c
+index 093ae2f..c64b87c 100644
+--- a/drivers/staging/omapdrm/omap_fbdev.c
++++ b/drivers/staging/omapdrm/omap_fbdev.c
+@@ -362,11 +362,11 @@ void omap_fbdev_free(struct drm_device *dev)
  
-+	INIT_HLIST_HEAD(&empty_rp);
- 	hash = hash_ptr(tk, KPROBE_HASH_BITS);
- 	head = &kretprobe_inst_table[hash];
- 	kretprobe_table_lock(hash, &flags);
-@@ -1085,7 +1086,6 @@ void __kprobes kprobe_flush_task(struct 
- 			recycle_rp_inst(ri, &empty_rp);
- 	}
- 	kretprobe_table_unlock(hash, &flags);
--	INIT_HLIST_HEAD(&empty_rp);
- 	hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
- 		hlist_del(&ri->hlist);
- 		kfree(ri);
+ 	fbdev = to_omap_fbdev(priv->fbdev);
+ 
+-	kfree(fbdev);
+-
+ 	/* this will free the backing object */
+ 	if (fbdev->fb)
+ 		fbdev->fb->funcs->destroy(fbdev->fb);
+ 
++	kfree(fbdev);
++
+ 	priv->fbdev = NULL;
+ }
 
