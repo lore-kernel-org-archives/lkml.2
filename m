@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab2AIHLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 02:11:53 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50370 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754529Ab2AIHLv (ORCPT
+	id S1755445Ab2AIHMi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 02:12:38 -0500
+Received: from ozlabs.org ([203.10.76.45]:42720 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754462Ab2AIHMf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 02:11:51 -0500
-Date: Sun, 8 Jan 2012 23:11:29 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Laxman Dewangan <ldewangan.com@nvidia.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH V1] TPS62360: Add tps62360 regulator driver
-Message-ID: <20120109071128.GA22134@opensource.wolfsonmicro.com>
-References: <1325668818-1096-1-git-send-email-ldewangan@nvidia.com>
- <20120105062919.GI11867@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9E9B@BGMAIL01.nvidia.com>
- <20120106185755.GC2893@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBD3AA0DE@BGMAIL01.nvidia.com>
- <20120107191047.GA3590@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBD3AA0E4@BGMAIL01.nvidia.com>
- <20120108165819.GB29065@opensource.wolfsonmicro.com>
- <96C9D994977DD0439FB6D3FE3B13DD907DBDABA9A3@BGMAIL01.nvidia.com>
+	Mon, 9 Jan 2012 02:12:35 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH 12/15] module_param: make bool parameters really bool (drivers & misc)
+In-Reply-To: <CAMuHMdVYhVnxuvhThpeqcaazkSJQJBtrwrxwJc0=y_hV_7PsNg@mail.gmail.com>
+References: <87ehw6sesk.fsf@rustcorp.com.au> <CAMuHMdVYhVnxuvhThpeqcaazkSJQJBtrwrxwJc0=y_hV_7PsNg@mail.gmail.com>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Mon, 09 Jan 2012 16:56:36 +1030
+Message-ID: <87ehv99ysj.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <96C9D994977DD0439FB6D3FE3B13DD907DBDABA9A3@BGMAIL01.nvidia.com>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 12:34:25PM +0530, Laxman Dewangan wrote:
+On Fri, 6 Jan 2012 13:31:40 +0100, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> Hi Rusty,
+> 
+> On Thu, Dec 15, 2011 at 04:18, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > diff --git a/drivers/block/paride/bpck6.c b/drivers/block/paride/bpck6.c
+> > --- a/drivers/block/paride/bpck6.c
+> > +++ b/drivers/block/paride/bpck6.c
+> > @@ -21,7 +21,7 @@
+> >
+> >
+> >  /* PARAMETERS */
+> > -static int verbose; /* set this to 1 to see debugging messages and whatnot */
+> > +static bool verbose; /* set this to 1 to see debugging messages and whatnot */
+> 
+> "bool" doesn't exist at this point, cfr.
+> 
+> http://kisskb.ellerman.id.au/kisskb/buildresult/5325550/
+> http://kisskb.ellerman.id.au/kisskb/buildresult/5325257/
+> 
+> Any chance this is going to be fixed before it's sucked in Linus'
+> tree?
 
-> In my design, the voltage vary from 900mV to the 1300mV in increment of
-> 50mV. In this case, the voltage change request is 900, 950, 1000, 1050,
-> 1100, 1150, 1200, 1250, 1300.
-> I would like to have entry like
-> 900-950->vsel0
-> 950-1000>vsel1,
-> 1000-1050->vsel2
-> 1050-1100->vsel3
-> 1100-1150->vsel0
-> 1150-1200->vsel1
-> 1200-1250->vsel2
-> 1250->1300->vsel3
+Of course, done (moved declaration and comment below #includes).
 
-Why?  I'm not sure I understand this.  You're asking the regulator to
-output ranges not voltages and you're setting multiple overlapping
-ranges for each VSEL.
-
-> Based on voltage increment requirements for a given application, this
-> table can be tune more. Now if client request for voltage setting for
-> range of 1000-1050, I will select the VSET1 for configuration, similarly
-> for 1100-1150, VSET0 will be the configuration register.
-
-This just seems like it makes the driver configuration much more
-complex and restricts the ability of the system to adapt itself to
-what's happening at runtime.
-
-What I'd expect to see is nothing but the GPIOs and their default state
-(since sadly we can't read back from output GPIOs with gpiolib) being
-specified.
+Thanks!
+Rusty.
