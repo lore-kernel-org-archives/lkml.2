@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932893Ab2AITMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 14:12:10 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51549 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751371Ab2AITMJ convert rfc822-to-8bit (ORCPT
+	id S932953Ab2AITSg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 14:18:36 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52184 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932851Ab2AITSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 14:12:09 -0500
-References: <1326121523-28634-2-git-send-email-jeff.dagenais@gmail.com> <1326127820-29682-1-git-send-email-jeff.dagenais@gmail.com>
-In-Reply-To: <1326127820-29682-1-git-send-email-jeff.dagenais@gmail.com>
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=iso-8859-1
-Message-Id: <AC457995-782F-4A2E-B97C-55B6C30A8373@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Cc: linux-kernel@vger.kernel.org, michael.hennerich@analog.com,
-        grant.likely@secretlab.ca
-From: Jean-Francois Dagenais <jeff.dagenais@gmail.com>
-Subject: Re: [PATCH 1/2] input: adp5588 - add support for gpio names
-Date: Mon, 9 Jan 2012 14:16:55 -0500
-To: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <jeff.dagenais@gmail.com>
-X-Mailer: Apple Mail (2.1084)
+	Mon, 9 Jan 2012 14:18:35 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120109190450.GA26390@infradead.org>
+References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
+ <20120109173010.GX23916@ZenIV.linux.org.uk> <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+ <CA+55aFxRroO0KAz8qbhz_2vDc=bc-C2b0ux0tdFfQhBGMnqRzQ@mail.gmail.com> <20120109190450.GA26390@infradead.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Jan 2012 11:18:13 -0800
+X-Google-Sender-Auth: wcrHgcZOOQOr2H07absMgzFQYdA
+Message-ID: <CA+55aFweg+A0GmEZM=tTHfMPqT_=7ioq3FBFMefsTgcxEgaXYA@mail.gmail.com>
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Miklos Szeredi <miklos@szeredi.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mgorman@suse.de, gregkh@suse.de, akpm@linux-foundation.org,
+        david@fromorbit.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, disregard. Bad "reply-to", wrong destination. Will resend.
+On Mon, Jan 9, 2012 at 11:04 AM, Christoph Hellwig <hch@infradead.org> wrote:
+>
+> After Dave's patch select_parent isolates dentries that are going to
+> be dropped directly to an on-stack list instead of abusing the LRU.
+>
+> With that scheme the trylock and retry loop in __shrink_dcache_sb
+> goes away completely for this caller.
 
-On Jan 9, 2012, at 11:50, Jean-François Dagenais wrote:
+Yes, but it still exists for the prune_dcache_sb() case.
 
-> 
-> Signed-off-by: Jean-François Dagenais <jeff.dagenais@gmail.com>
-> Acked-by: Michael Hennerich <michael.hennerich@analog.com>
-> ---
-> drivers/input/keyboard/adp5588-keys.c |    1 +
-> include/linux/i2c/adp5588.h           |    1 +
-> 2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/keyboard/adp5588-keys.c b/drivers/input/keyboard/adp5588-keys.c
-> index e34eeb8..6412ced 100644
-> --- a/drivers/input/keyboard/adp5588-keys.c
-> +++ b/drivers/input/keyboard/adp5588-keys.c
-> @@ -197,6 +197,7 @@ static int __devinit adp5588_gpio_add(struct adp5588_kpad *kpad)
-> 	kpad->gc.base = gpio_data->gpio_start;
-> 	kpad->gc.label = kpad->client->name;
-> 	kpad->gc.owner = THIS_MODULE;
-> +	kpad->gc.names = gpio_data->names;
-> 
-> 	mutex_init(&kpad->gpio_lock);
-> 
-> diff --git a/include/linux/i2c/adp5588.h b/include/linux/i2c/adp5588.h
-> index cec17cf..d8341cb 100644
-> --- a/include/linux/i2c/adp5588.h
-> +++ b/include/linux/i2c/adp5588.h
-> @@ -157,6 +157,7 @@ struct i2c_client; /* forward declaration */
-> 
-> struct adp5588_gpio_platform_data {
-> 	int gpio_start;		/* GPIO Chip base # */
-> +	const char *const *names;
-> 	unsigned irq_base;	/* interrupt base # */
-> 	unsigned pullup_dis_mask; /* Pull-Up Disable Mask */
-> 	int	(*setup)(struct i2c_client *client,
-> -- 
-> 1.7.8.2
-> 
+So prune_dcache_sb() puts random dentries on its own private lists,
+and drops the lru_lock (and the dentry lock).
 
+In the meantime, what protects us from select_parent() finding those
+*same* dentries, and doing
+
+    dentry_lru_move_list(dentry, dispose);
+
+which - despite the name - moves the dentry not from the lru list, but
+from the prune_dcache_sb local list to the select_parent() local
+list..
+
+Hmm. I guess the endless "move back-and-forth" thing is gone, but the
+random "move from one private list to another" makes me worry about
+the confusion.
+
+But I guess we don't care - the same thing is going to happen to the
+dentry regardless of which of the local lists it is on.
+
+And in any case, I think Dave's patch looks like a nice cleanup. Does
+it work for people in that forward-ported-alone version I sent out?
+
+And Miklos, does it fix your test-case? Because if so, I think Dave's
+patch is nicer, and avoids adding a new state bit by just cleaning
+things up in general.
+
+                        Linus
