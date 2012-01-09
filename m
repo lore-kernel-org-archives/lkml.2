@@ -1,218 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949Ab2AIIJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 03:09:28 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56585 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751457Ab2AIIJ0 (ORCPT
+	id S1753550Ab2AIILF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 03:11:05 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:53800 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab2AIILE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 03:09:26 -0500
-Date: Mon, 9 Jan 2012 00:08:07 -0800
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: NeilBrown <neilb@suse.de>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>, MyungJoo Ham <myungjoo.ham@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Grant Likely <grant.likely@secretlab.ca>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] Multithread initcalls to auto-resolve ordering
- issues.
-Message-ID: <20120109080806.GH22134@opensource.wolfsonmicro.com>
-References: <20120109112113.07882ed9@notabene.brown>
- <20120109040802.GG29065@opensource.wolfsonmicro.com>
- <20120109161058.6834da0d@notabene.brown>
- <20120109062231.GM29065@opensource.wolfsonmicro.com>
- <20120109182800.3086fd84@notabene.brown>
+	Mon, 9 Jan 2012 03:11:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120109182800.3086fd84@notabene.brown>
-X-Cookie: You have a truly strong individuality.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120109081030.GA3723@phenom.ffwll.local>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+	<1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
+	<CAAQKjZPFh6666JKc-XJfKYePQ_F0MNF6FkY=zKypWb52VVX3YQ@mail.gmail.com>
+	<20120109081030.GA3723@phenom.ffwll.local>
+Date: Mon, 9 Jan 2012 08:11:03 +0000
+Message-ID: <CAPM=9twA_LRL_L88fF1010dQVAx4OY_pydPky_8qpGkAD5fOqg@mail.gmail.com>
+Subject: Re: [Linaro-mm-sig] [RFC v2 1/2] dma-buf: Introduce dma buffer
+ sharing mechanism
+From: Dave Airlie <airlied@gmail.com>
+To: InKi Dae <daeinki@gmail.com>, Sumit Semwal <sumit.semwal@ti.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de, jesse.barker@linaro.org,
+        m.szyprowski@samsung.com, rob@ti.com, t.stanislaws@samsung.com,
+        Sumit Semwal <sumit.semwal@linaro.org>
+Cc: daniel@ffwll.ch
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 06:28:00PM +1100, NeilBrown wrote:
-> On Sun, 8 Jan 2012 22:22:31 -0800 Mark Brown
-> > On Mon, Jan 09, 2012 at 04:10:58PM +1100, NeilBrown wrote:
+On Mon, Jan 9, 2012 at 8:10 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Mon, Jan 09, 2012 at 03:20:48PM +0900, InKi Dae wrote:
+>> I has test dmabuf based drm gem module for exynos and I found one problem.
+>> you can refer to this test repository:
+>> http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/exynos-drm-dmabuf
+>>
+>> at this repository, I added some exception codes for resource release
+>> in addition to Dave's patch sets.
+>>
+>> let's suppose we use dmabuf based vb2 and drm gem with physically
+>> continuous memory(no IOMMU) and we try to share allocated buffer
+>> between them(v4l2 and drm driver).
+>>
+>> 1. request memory allocation through drm gem interface.
+>> 2. request DRM_SET_PRIME ioctl with the gem handle to get a fd to the
+>> gem object.
+>> - internally, private gem based dmabuf moudle calls drm_buf_export()
+>> to register allocated gem object to fd.
+>> 3. request qbuf with the fd(got from 2) and DMABUF type to set the
+>> buffer to v4l2 based device.
+>> - internally, vb2 plug in module gets a buffer to the fd and then
+>> calls dmabuf->ops->map_dmabuf() callback to get the sg table
+>> containing physical memory info to the gem object. and then the
+>> physical memory info would be copied to vb2_xx_buf object.
+>> for DMABUF feature for v4l2 and videobuf2 framework, you can refer to
+>> this repository:
+>> git://github.com/robclark/kernel-omap4.git drmplane-dmabuf
+>>
+>> after that, if v4l2 driver want to release vb2_xx_buf object with
+>> allocated memory region by user request, how should we do?. refcount
+>> to vb2_xx_buf is dependent on videobuf2 framework. so when vb2_xx_buf
+>> object is released videobuf2 framework don't know who is using the
+>> physical memory region. so this physical memory region is released and
+>> when drm driver tries to access the region or to release it also, a
+>> problem would be induced.
+>>
+>> for this problem, I added get_shared_cnt() callback to dma-buf.h but
+>> I'm not sure that this is good way. maybe there may be better way.
+>> if there is any missing point, please let me know.
+>
+> The dma_buf object needs to hold a reference on the underlying
+> (necessarily reference-counted) buffer object when the exporter creates
+> the dma_buf handle. This reference should then get dropped in the
+> exporters dma_buf->ops->release() function, which is only getting called
+> when the last reference to the dma_buf disappears.
+>
+> If this doesn't work like that currently, we have a bug, and exporting the
+> reference count or something similar can't fix that.
+>
+> Yours, Daniel
+>
+> PS: Please cut down the original mail when replying, otherwise it's pretty
+> hard to find your response ;-)
 
-> > So, my general inclination is that given the choice between parallel and
-> > serial solutions I'll prefer the serial solution on the basis that it's
-> > most likely going to be easier to think about and less prone to getting
-> > messed up.
+And also the importer needs to realise it doesn't own the pages in the
+sg_table and when its freeing its backing memory it shouldn't free
+those pages. So for GEM objects we have to keep track if we allocated
+the pages or we got them from an dma buf.
 
-> Surely anyone doing kernel work needs to be able to understand parallel
-> solutions at least enough to place locks in appropriate places ???
-
-You'd expect people to be able to work it out but there's no sense in
-doing something hard if something easy works just as well - concurrency
-can bring problems with things like reproducibility which make life
-harder than it might otherwise be.
-
-> I thought about doing a serial retry solution the error from the ->probe
-> function doesn't percolate all the way up the the initcall.
-> In particular, when a driver is registered driver_attach is called for each
-> unattached device on the bus.  This is done in __driver_attach which discard
-> the error return from driver_probe_device().
-
-There's code for doing the retries floating around, Grant Likely was
-working on it initially then someone from Linaro picked it up and I'm
-not sure what happened.
-
-> > > Completely agree.  I think the key simplification would be for each resource
-> > > to have a simple textual name.  Then you could write more common
-> > > infrastructure.
-
-> > That's pretty much the case already for most things - the cannonical
-> > thing is to look up by (struct device, string).  Squashing everything
-> > into a single flat namespace is painful as completely unrelated bits of
-> > the system easily collide with each other.  GPIO and IRQ are the only
-> > holdouts I can think of in this area.
-
-> I don't see (struct device, string) being used at all.
-
-> Regulator used (devicename, string).  It seems that it used to use (struct
-> device, string) but that is deprecated.
-
-The things doing the requesting use the struct device.  The things doing
-the mapping use the device name.  The two are equivalent, it's just that
-it's hard to write a struct device for many buses prior to probe().
-
-> So strings seem simple.  Each different resource type would be a different
-> name space of course.
-
-It's really not that helpful, it's got the same issues as numbers do as
-soon as you get two devices of the same type or just two devices using a
-common name (lots of devices have clock inputs called CLK or whatever).
-
-> If a particular resource wanted to encourage "devicename-usagetype" that
-> would be fine, but requiring "devicename" to be present would be a problem for
-> resources (like some IRQs) which are shared between devices...  though I
-> guess regulators are shared between devices....  Do we really need the extra
-> level of indirection provided by regulator_consumer_supply?  I presume there
-> is a good reason.
-
-If we don't do this we have to go through every single driver that wants
-to use the API adding platform data where there might've been none
-before.  This winds up being a lot more code all round (same as for the
-clock API and so on).
-
-> > > or should return -EAGAIN?    There is certainly precedent for that sort of
-> > > control.
-> > > Or is there something else you think might be needed?
-
-> > I can see a driver wanting something like "either A or B".
-
-> I think you agree with me.  'A' is non-blocking lookup that can fail.
-> 'B' is blocking lookup.  That is what I suggested above.
-
-No...
-
-> But when would it ever be safe for a driver to ask for A?  How would it know
-> if it isn't available yet it never will be?
-
-...due to this you want the driver to block on (A || B) and not try A
-then prefer B as you suggest.
-
-> > > I first tried B but found that devices often ask for regulators that will
-> > > never appear, so that didn't work.
-
-> > That should be extremely rare, you're probably working with broken
-> > drivers.  The only case I'm aware of is MMC and frankly the way it uses
-> > of regulators is more than a little dodgy.
-
-> Yes, MMC is exactly the case I am aware of.  If this usage is "wrong" then I
-> guess it needs to be "fixed" before we can proceed.
-
-The general idea is to use regulators unconditionally, and there's also
-some issues with the use of regulator_get_exclusive() which isn't
-actually what's required.
-
-> > > So I went for C which I agree is a little inelegant and I now see doesn't
-> > > handle cases where some dependencies may or may exist depending on the
-> > > current hardware.
-
-> > The latter bit is the real killer - you need to know right at the start
-> > of boot what you're going to find when you start the system.  An
-> > approach that relies on that but does require us to do work to set it up
-> > doesn't seem especially useful.
-
-> I must admit that I find this possibility perplexing.
-> I can certainly imagine individual independent devices that may or may not
-> exists (USB things etc) but there are no dependencies there to worry about.
-
-That's not the case for USB, you often get soldered down USB devices
-that have GPIOs and things.
-
-> But if we find a device, and we know that it depends on some resource, and
-> that resource is never going to be available - then is there really anything
-> useful that can be done?
-> Wouldn't it be correct to fail the boot ??
-
-You're missing the point.  If we're enumerating the system at runtime
-(for example, by reading ID information from the hardware) then there
-may be substantial parts of the system that we don't know the expected
-layout and connections of until some point during the boot.  This means
-that we can't construct a list of the resources we know are going to
-appear early in init and give it to the core as we're going to discover
-resources during the boot.
-
-> > > 'E' would be ideal in some sense, but could result in some rather complex
-> > > code that never gets tested.  Maybe with good design and infrastructure it
-> > > could be made to work. 'C' might be a useful step towards that.
-
-> > To a good approximation that's what both the retry based approach and
-> > threading approaches do.
-
-> I disagree.  My "E" was "provide partial functionality until the resource
-> becomes available, then provide more full functionality".  The retry and
-> threading are "provide no functionality until the resource is available" and
-> I would say that is a difference of kind, not just of degree.
-
-Oh, that seems a bit silly and for many resources would be no different
-to just providing no functionality anyway as things like powering the
-device on tend to be fairly fundamental.
-
-> > > It is the name of a regulator...
-
-> > This is not guaranteed to be unique.
-
-> Well, it is whatever is expected in .supply_regulator in 'struct
-> regulator_init_data'.  That's not a name??
-
-It might just be empty, and the overwhelming majority of regulators will
-not supply other regulators and can be called anything that amuses the
-system integrator for all the API cares.  The string might also be
-satisfied from somewhere else, there's a fallback tree.
-
-> Do we really need uniform resource naming so we can use common code, or can
-> we proceed with multiple ad-hoc source lookup schemes (like I provided) and
-> then encourage subsystems to move towards a standard?  The former would risk
-> never making progress.
-
-We only have two schemes that exist right now in the APIs you've looked
-at (plus at least ASoC and whatever V4L does), we certainly shouldn't be
-open coding this in individual subsystems.
-
-> Is single-threading really worth all the churn deep inside the drivers/base
-> code that is would probably require?
-
-I don't see why it'd require much churn to be honest - the patches that
-I looked at weren't that invasive, basically just shove devices that
-fail with a particular code into a retry list and iterate through it
-whenever it seems useful to do so.
-
-> Is mmc's use of regulators a problem that can be fixed, or a reasonable if
-> baroque use of available interfaces and something we should just live with?
-
-There are fixes needed, it's already caused problems for some systems I
-believe and there's certainly breakage with things like the OMAP hsmmc
-driver abuse of the API.
+Dave.
