@@ -1,198 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab2AIP3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 10:29:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22793 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755683Ab2AIP3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 10:29:10 -0500
-Date: Mon, 9 Jan 2012 16:28:55 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: acme@redhat.com, mingo@elte.hu, paulus@samba.org,
-        cjashfor@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: new syntax for perf event
-Message-ID: <20120109152855.GA1597@m.brq.redhat.com>
-References: <1323963039-7602-1-git-send-email-jolsa@redhat.com>
- <1323963039-7602-2-git-send-email-jolsa@redhat.com>
- <1324044159.18942.104.camel@twins>
- <1324044196.18942.105.camel@twins>
- <20111220103154.GA1861@m.brq.redhat.com>
- <1324378070.24621.32.camel@twins>
- <1324380648.24621.49.camel@twins>
- <1324381161.24621.53.camel@twins>
- <20111221161613.GA1659@m.brq.redhat.com>
- <1325772656.2697.57.camel@twins>
+	id S932165Ab2AIPd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 10:33:59 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13614 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab2AIPd5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 10:33:57 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Mon, 09 Jan 2012 07:33:57 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: "open list:TEGRA SUPPORT" <linux-tegra@vger.kernel.org>,
+        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: [RESEND PATCH v2 1/3] ARM: tegra: add support for new clock framework features
+Date: Mon, 9 Jan 2012 17:33:39 +0200
+Message-ID: <1326123224-32522-2-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1326123224-32522-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1326123224-32522-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1325772656.2697.57.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 05, 2012 at 03:10:56PM +0100, Peter Zijlstra wrote:
-> On Wed, 2011-12-21 at 17:16 +0100, Jiri Olsa wrote:
-> > grammar
-> 
-> yacc/bison notation it seems.. lemme get the rules for that.
-> 
-> > -------
-> > events:
-> >                 event_mod ',' event_mod | event_mod
-> 
-> events = event_mod, {',' , event_mod};
-> 
-> would be the EBNF variant for allowing inf repetition, not sure how to
-> express that, it seems to want a recursive rule which I'm not sure I
-> see. The way I read your thing it only allows 1 or 2 events.
+Add support for new clock framework features implemented in tegra30.
 
-aargh, sure we want more than 2 events ;)
-should have been something like:
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/clock.c            |   22 ++++++++++++++++++++++
+ arch/arm/mach-tegra/clock.h            |   14 ++++++++++++++
+ arch/arm/mach-tegra/include/mach/clk.h |   10 ++++++++++
+ 3 files changed, 46 insertions(+), 0 deletions(-)
 
-events: events ',' event_mod | event_mod
+diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
+index 8337068..8dad8d1 100644
+--- a/arch/arm/mach-tegra/clock.c
++++ b/arch/arm/mach-tegra/clock.c
+@@ -399,6 +399,28 @@ void tegra_periph_reset_assert(struct clk *c)
+ }
+ EXPORT_SYMBOL(tegra_periph_reset_assert);
+ 
++/* Several extended clock configuration bits (e.g., clock routing, clock
++ * phase control) are included in PLL and peripheral clock source
++ * registers. */
++int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting)
++{
++	int ret = 0;
++	unsigned long flags;
++
++	spin_lock_irqsave(&c->spinlock, flags);
++
++	if (!c->ops || !c->ops->clk_cfg_ex) {
++		ret = -ENOSYS;
++		goto out;
++	}
++	ret = c->ops->clk_cfg_ex(c, p, setting);
++
++out:
++	spin_unlock_irqrestore(&c->spinlock, flags);
++
++	return ret;
++}
++
+ #ifdef CONFIG_DEBUG_FS
+ 
+ static int __clk_lock_all_spinlocks(void)
+diff --git a/arch/arm/mach-tegra/clock.h b/arch/arm/mach-tegra/clock.h
+index 5c44106..18f8b85 100644
+--- a/arch/arm/mach-tegra/clock.h
++++ b/arch/arm/mach-tegra/clock.h
+@@ -24,6 +24,8 @@
+ #include <linux/list.h>
+ #include <linux/spinlock.h>
+ 
++#include <mach/clk.h>
++
+ #define DIV_BUS			(1 << 0)
+ #define DIV_U71			(1 << 1)
+ #define DIV_U71_FIXED		(1 << 2)
+@@ -39,7 +41,16 @@
+ #define PERIPH_MANUAL_RESET	(1 << 12)
+ #define PLL_ALT_MISC_REG	(1 << 13)
+ #define PLLU			(1 << 14)
++#define PLLX                    (1 << 15)
++#define MUX_PWM                 (1 << 16)
++#define MUX8                    (1 << 17)
++#define DIV_U71_UART            (1 << 18)
++#define MUX_CLK_OUT             (1 << 19)
++#define PLLM                    (1 << 20)
++#define DIV_U71_INT             (1 << 21)
++#define DIV_U71_IDLE            (1 << 22)
+ #define ENABLE_ON_INIT		(1 << 28)
++#define PERIPH_ON_APB           (1 << 29)
+ 
+ struct clk;
+ 
+@@ -65,6 +76,8 @@ struct clk_ops {
+ 	int		(*set_rate)(struct clk *, unsigned long);
+ 	long		(*round_rate)(struct clk *, unsigned long);
+ 	void		(*reset)(struct clk *, bool);
++	int		(*clk_cfg_ex)(struct clk *,
++				enum tegra_clk_ex_param, u32);
+ };
+ 
+ enum clk_state {
+@@ -114,6 +127,7 @@ struct clk {
+ 			unsigned long			vco_max;
+ 			const struct clk_pll_freq_table	*freq_table;
+ 			int				lock_delay;
++			unsigned long			fixed_rate;
+ 		} pll;
+ 		struct {
+ 			u32				sel;
+diff --git a/arch/arm/mach-tegra/include/mach/clk.h b/arch/arm/mach-tegra/include/mach/clk.h
+index fc3ecb6..d97e403 100644
+--- a/arch/arm/mach-tegra/include/mach/clk.h
++++ b/arch/arm/mach-tegra/include/mach/clk.h
+@@ -22,10 +22,20 @@
+ 
+ struct clk;
+ 
++enum tegra_clk_ex_param {
++	TEGRA_CLK_VI_INP_SEL,
++	TEGRA_CLK_DTV_INVERT,
++	TEGRA_CLK_NAND_PAD_DIV2_ENB,
++	TEGRA_CLK_PLLD_CSI_OUT_ENB,
++	TEGRA_CLK_PLLD_DSI_OUT_ENB,
++	TEGRA_CLK_PLLD_MIPI_MUX_SEL,
++};
++
+ void tegra_periph_reset_deassert(struct clk *c);
+ void tegra_periph_reset_assert(struct clk *c);
+ 
+ unsigned long clk_get_rate_all_locked(struct clk *c);
+ void tegra2_sdmmc_tap_delay(struct clk *c, int delay);
++int tegra_clk_cfg_ex(struct clk *c, enum tegra_clk_ex_param p, u32 setting);
+ 
+ #endif
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
 
-
-> 
-> > 
-> > event_mod:
-> >                 event | event ':' modifier
-> 
-> 
-> event_mod = event, [':' , modifier];
-> 
-> Would be the EBNF thing, and I think your rule does indeed match that.
-> 
-> > event:
-> >                 event_symbol |
-> >                 event_cache |
-> >                 'cpu' '/' event_cpu |
-> >                 'tracepoint' '/' event_tracepoint
-> >                 'breakpoint' '/' event_breakpoint
-> 
-> I think I'd like to see something like:
-> 
-> event   = pmu, '/', event_config 
-> 	| event_symbol | event_cache;
-> 
-> pmu = ? ls /sys/bus/event_source/devices ?;
-
-ok
-
-
-> (* maybe add some aliasses like you suggest *)
-> 
-> event_config = (event_predef | event_term), {',', event_term};
-> 
-> event_predef = ? special name -> raw mapping read from somewhere ?;
-> 
-> event_term = event_sym, '=', value;
-> 
-> event_sym = "config" | "config1" | "config2"
-> 	  | ? contents of /sys/bus/event_source/devices/$pmu/format ?;
-
-anyone working on the 'format' stuff? ;) I guess thats the place,
-where we can stay with hardcoded config[12] so far.. right?
-
-
-> 
-> value = integer | hexint;
-> 
-> 
-> > event_symbol:
-> >                 cpu-cycles|cycles
-> >                 stalled-cycles-frontend|idle-cycles-frontend
-> >                 stalled-cycles-backend|idle-cycles-backend
-> >                 instructions
-> >                 cache-references
-> >                 cache-misses
-> >                 branch-instructions|branches
-> >                 branch-misses
-> >                 bus-cycles
-> >                 cpu-clock
-> >                 task-clock
-> >                 page-faults|faults
-> >                 minor-faults
-> >                 major-faults
-> >                 context-switches|cs
-> >                 cpu-migrations|migrations
-> >                 alignment-faults
-> >                 emulation-faults
-> > 
-> > event_cache:
-> >                 cache_type
-> >                 cache_type '-' cache_result_op
-> >                 cache_type '-' cache_result_op '-' cache_result_op
-> 
-> I'd write that as:
-> 
-> event_cache = cache_type, '-', cache_mod, ['-', cache_xs];
-> 
-> cache_type = cache_l1d | cache_l1i | cache_llc 
-> 	   | cache_dtlb | cache_itlb
-> 	   | cache_branch | cache_node;
-> 
-> cache_mod = cache_load | cache_store | cache_prefetch;
-> 
-> cache_xs = cache_accesses | cache_misses;
-> 
-> cache_l1d = "L1-dcache" | ... ;
-
-ok
-
-
-> 
-> etc..
-> 
-> 
-> > event_cpu:
-> >                 'raw'    ',' event_cpu_def
-> >                 'hw'     ',' event_cpu_def
-> >                 'cache'  ',' event_cpu_def
-> 
-> I think these are superfluous and we could deduce them from the actual
-> event_term's used. Something using "config" will be a raw event etc..
-
-ok
-
-
-> 
-> > 
-> > event_cpu_def:
-> >                 event_cpu_ass ',' event_cpu_ass |
-> >                 event_cpu_ass
-> > 
-> > event_cpu_ass:
-> >                 event_cpu_elem '=' value
-> 
-> Hehehe, you said 'ass', hehe.
-eh.. you're seeing things ;) just best fitting abbrev..
-
-
-> 
-> 
-> > event_tracepoint:
-> >                 system ':' tracepoint
-> > 
-> > event_breakpoint:
-> >                 addr ':' type
-> 
-> Right, something like that.
-> 
-> > 
-> > modifier:
-> >                 [ukhp]{1,4} 
-> 
-> I think you need at least 5, or you can write it like:
-> 
-> modifier = ['u'], ['k'], ['h'], [3*'p'];
-> 
-> Also, I think we grew a few more modifiers with some of the perf kvm
-> guest muck.
-
-yep, I'll update it..
-I'll prepare another patch version including above changes
-
-thanks,
-jirka
