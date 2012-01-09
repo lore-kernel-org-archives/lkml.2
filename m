@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab2AIWh3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:37:29 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42259 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755880Ab2AIWh1 (ORCPT
+	id S933470Ab2AIWhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:37:42 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36945 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933355Ab2AIWhj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:37:27 -0500
-Date: Mon, 9 Jan 2012 22:37:25 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ashish Jangam <ashish.jangam@kpitcummins.com>
-Cc: linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
-        arnd@arndb.de, sameo@linux.intel.com,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>
-Subject: Re: [PATCH 02/06] MFD: DA9052/53 MFD core module v9 Added ADC
-	support
-Message-ID: <20120109223725.GG30766@opensource.wolfsonmicro.com>
-References: <1326098770.3542.31.camel@dhruva>
+	Mon, 9 Jan 2012 17:37:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326098770.3542.31.camel@dhruva>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1326147171-13752-6-git-send-email-arnd@arndb.de>
+References: <1326147171-13752-1-git-send-email-arnd@arndb.de> <1326147171-13752-6-git-send-email-arnd@arndb.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Jan 2012 14:37:17 -0800
+X-Google-Sender-Auth: ZAmy-hVaE9cN__p05LLJHYNKanE
+Message-ID: <CA+55aFyaOnJhrZOFnRiShH9kTeGEG8O8m9spvKF=c36QzjSvBA@mail.gmail.com>
+Subject: Re: [GIT PULL 05/11] SoC-level changes for tegra and omap
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 02:16:10PM +0530, Ashish Jangam wrote:
-> Re-submitting the patch.
+On Mon, Jan 9, 2012 at 2:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+>  58 files changed, 1967 insertions(+), 818 deletions(-)
 
-This is patch 2/6 - where are patches 1 and 3-6?
+Hmm. You don't seem to use the "detect renames" flag -M when you
+create these, so the end result doesn't match mine.
 
-> +	/* Channel gets activated on enabling the Conversion bit */
-> +	mux_sel = chan_mux[channel] | DA9052_ADC_MAN_MAN_CONV;
-> +
-> +	if (da9052->auxadc_active) {
-> +		ret = -EBUSY;
-> +		goto err;
-> +	}
-> +
-> +	/* Enqueue the request */
-> +	list_add(&req->list, &da9052->auxadc_pending);
+With -M, it looks like this:
 
-Maintaining a list of outstanding requests seems a bit odd if it's only
-possible to have a single active request at any one time.
+ 54 files changed, 1399 insertions(+), 250 deletions(-)
 
-> +
-> +	ret = da9052_reg_write(da9052, DA9052_ADC_MAN_REG, mux_sel);
-> +	if (ret < 0)
-> +		goto err;
-> +
-> +	da9052->auxadc_active = channel;
-> +
-> +	mutex_unlock(&da9052->auxadc_lock);
-> +
-> +	/* Wait for an interrupt */
-> +	wait_for_completion_timeout(&req->done, msecs_to_jiffies(500));
-> +
-> +	mutex_lock(&da9052->auxadc_lock);
+because it sees these:
 
-With only one request being possible at once just not dropping the mutex
-seems like the easiest approach - it'll mean that userspace doesn't need
-to worry about -EBUSY and you could save all the allocation, deallocation
-and list management.  As things stand I expect userspace will run into
-errors sometimes.
+  rename arch/arm/mach-tegra/{board-dt.c => board-dt-tegra20.c} (91%)
+  rename arch/arm/mach-tegra/include/mach/{pinmux-t2.h =>
+pinmux-tegra20.h} (96%)
+  rename arch/arm/mach-tegra/{pinmux-t2-tables.c =>
+pinmux-tegra20-tables.c} (95%)
+  rename arch/arm/plat-omap/include/plat/{ti816x.h => ti81xx.h} (60%)
+
+Please do use -M, because it ends up making diffstats *so* much more
+readable when there are renames (instead of big delete-create diffs,
+you get a small diffstat that actually is much more relevant to what
+happened).
+
+                     Linus
