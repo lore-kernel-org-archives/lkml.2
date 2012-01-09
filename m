@@ -1,50 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933586Ab2AIXxM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 18:53:12 -0500
-Received: from mga09.intel.com ([134.134.136.24]:61135 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932158Ab2AIXxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 18:53:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="94583776"
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Youquan Song <youquan.song@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
-In-Reply-To: <20120110055856.GA23741@linux-youquan.bj.intel.com>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
-	 <1326103578.2442.50.camel@twins>
-	 <20120110001445.GA20542@linux-youquan.bj.intel.com>
-	 <1326107156.2442.59.camel@twins>
-	 <20120110055856.GA23741@linux-youquan.bj.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel
-Date: Mon, 09 Jan 2012 15:52:43 -0800
-Message-ID: <1326153163.2366.7.camel@sbsiddha-mobl2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S933589Ab2AIX4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 18:56:53 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41585 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932158Ab2AIX4w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 18:56:52 -0500
+Date: Mon, 9 Jan 2012 15:56:36 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] SHM_UNLOCK: fix Unevictable pages stranded after
+ swap
+In-Reply-To: <4F0B73AC.7000504@gmail.com>
+Message-ID: <alpine.LSU.2.00.1201091546450.1778@eggly.anvils>
+References: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils> <alpine.LSU.2.00.1201061310340.12082@eggly.anvils> <4F0B5146.6090200@gmail.com> <alpine.LSU.2.00.1201091342300.1272@eggly.anvils> <4F0B73AC.7000504@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 00:58 -0500, Youquan Song wrote:
-> Thanks Peter! Here is the patch. 
+On Mon, 9 Jan 2012, KOSAKI Motohiro wrote:
+> (1/9/12 5:25 PM), Hugh Dickins wrote:
+> > On Mon, 9 Jan 2012, KOSAKI Motohiro wrote:
+> > 
+> > > PG_mlocked operation is not protected by LRU lock. So, I think we
+> > 
+> > Right.  But I don't see that I've made a significant change there.
+> > 
+> > I may be being lazy, and rushing back to answer you, without giving
+> > constructive thought to what the precise race is that you see, and
+> > how we might fix it.  If the case you have in mind is easy for you
+> > to describe in detail, please do so; but don't hesitate to tell me
+> > to my own work for myself!
+> 
+> Bah! I was moron. I now think your code is right.
+> 
+> spin_lock(lru_lock)
+> if (page_evictable(page))
+> 	blah blah blah
+> spin_unlock(lru_lock)
+> 
+> is always safe. Counter part should have following code and
+> waiting spin_lock(lru_lock) in isolate_lru_page().
+> 
+>                 if (!isolate_lru_page(page))
+>                         putback_lru_page(page);
+> 
+> then, even if check_move_unevictable_pages() observed wrong page status,
+> putback_lru_page() should put back the page into right lru.
+> 
+> I'm very sorry for annoying you.
 
-Youquan, As far as I know both the
-sched_smt_power_savings/sched_mc_power_savings are broken for atleast an
-year.
+Far from it, thank you again for giving it serious thought.
 
-Have you checked the state of 'sched_mc_power_savings' to see if it is
-working or gets addressed with your proposed patches?
+I am not going to pretend to have thought down these paths myself,
+not recently - I was just relying on not changing the behaviour.
+But I am reassured to know that you have worked through it again
+and are now satisfied.
 
-thanks,
-suresh
+> 
+> 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
+Thank you.
+
+> 
+> Probably, page_evictable() might be needed some additional comments. But
+> I have no idea what comment clearly explain this complex rule.....
+
+I don't know any language that can make it clear: when forced to,
+one just has to think through it back and forth by oneself; and
+even then, it's so quickly forgotten.
+
+Hugh
