@@ -1,67 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab2AINZf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 08:25:35 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41656 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab2AINZe convert rfc822-to-8bit (ORCPT
+	id S1754920Ab2AIN0s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 08:26:48 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:45498 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160Ab2AIN0q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 08:25:34 -0500
+	Mon, 9 Jan 2012 08:26:46 -0500
+Message-ID: <4F0AEB0D.4050403@canonical.com>
+Date: Mon, 09 Jan 2012 14:26:37 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <20120109115143.GL21765@n2100.arm.linux.org.uk>
-References: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
- <1326033862-25351-3-git-send-email-richard.zhao@linaro.org> <20120109115143.GL21765@n2100.arm.linux.org.uk>
-From: Eric Miao <eric.miao@linaro.org>
-Date: Mon, 9 Jan 2012 21:25:12 +0800
-X-Google-Sender-Auth: Ld5OuKImKvYJ_bpsE_GX1OpBEjU
-Message-ID: <CAMPhdO84p=0D3KrrFnwup4igoh4oNWXOCbW+BOkoRiC8m=JnmQ@mail.gmail.com>
-Subject: Re: [PATCH v4 2/2] dma/imx-sdma: convert _raw_readl/_raw_writel to readl/writel
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Richard Zhao <richard.zhao@linaro.org>, patches@linaro.org,
-        vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, dan.j.williams@intel.com, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org
+To: John Stultz <john.stultz@linaro.org>
+CC: NeilBrown <neilb@suse.de>, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>, rjw@sisk.pl,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: Regression: ONE CPU fails bootup at Re: [3.2.0-RC7] BUG: unable
+ to handle kernel NULL pointer dereference at 0000000000000598  1.478005]
+ IP: [<ffffffff8107a6c4>] queue_work_on+0x4/0x30
+References: <1599287628.20120103171351@eikelenboom.it>  <20120103190754.GA27651@phenom.dumpdata.com>  <1325632188.3037.59.camel@work-vm> <20120104113155.27bf6e46@notabene.brown>  <1325638380.3037.69.camel@work-vm> <4F040B25.1080405@canonical.com>  <4F04452C.7020209@canonical.com> <4F045E8F.6010003@canonical.com> <1325882475.2290.106.camel@work-vm>
+In-Reply-To: <1325882475.2290.106.camel@work-vm>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 7:51 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sun, Jan 08, 2012 at 10:44:22PM +0800, Richard Zhao wrote:
->> readl/writel is more genric. And if CONFIG_ARM_DMA_MEM_BUFFERABLE,
->> they includes necessary memory barriers.
->
-> In a DMA engine driver, you need to use the barrier accessors when:
->
-> 1. You finally enable the DMA engine to perform a transfer.
->   The included barrier ensures that writes to the descriptors are visible
->   to the DMA engine.
->
-> 2. You read from a status register before examining the descriptors.
->   This ensures that the descriptor accesses won't be ordered before the
->   status register read.
->
-> Provided other accesses are within the same 1K region, the remainder of
-> them do not have to be the strictly ordered accessors, and you can use
-> the _relaxed variants (but only in ARM specific drivers.)
+On 06.01.2012 21:41, John Stultz wrote:
+> On Wed, 2012-01-04 at 15:13 +0100, Stefan Bader wrote:
+>> On 04.01.2012 13:25, Stefan Bader wrote:
+>>> On 04.01.2012 09:17, Stefan Bader wrote:
+>>>> On 04.01.2012 01:53, John Stultz wrote:
+>>>>> On Wed, 2012-01-04 at 11:31 +1100, NeilBrown wrote:
+>>>>>> On Tue, 03 Jan 2012 15:09:48 -0800 John Stultz <john.stultz@linaro.org> wrote:
+>>>>>>> >From the stack trace, we've kicked off a rtc_timer_do_work, probably
+>>>>>>> from the rtc_initialize_alarm() schedule_work call added in Neil's
+>>>>>>> patch.  From there, we call __rtc_set_alarm -> cmos_set_alarm ->
+>>>>>>> cmos_rq_disable -> cmos_checkintr -> rtc_update_irq -> schedule_work.
+>>>>
+>>>> Sorry, I was off for the evening a while after sending this out. And I just
+>>>> started, so a few thing I will be doing later but have not yet had time.
+>>>>
+>>>> Over night I had still be thinking on this and maybe one important fact I had
+>>>> been ignoring. This really has only been observed on paravirt guests on Xen as
+>>>> far as I know. And one thing that I should have pointed out is that
+>>>>
+>>>> [    0.792634] rtc_cmos rtc_cmos: rtc core: registered rtc_cmos as rtc0
+>>>> [    0.792725] rtc_cmos: probe of rtc_cmos failed with error -38
+>>>>
+>>>> So first the registration is done and the first line is the last thing printed
+>>>> in the registration function. Then, and that line always comes after, the probe,
+>>>> which looks like being done asynchronously, detects that the rtc is not
+>>>> implemented. I would assume that this causes the rtc to be unregistered again
+>>>> and that is probably the point where, under the right circumstances, the worker
+>>>> triggered by the initialize alarm is trying to set another alarm. Probably while
+>>>> some of the elements of the structure started to be torn down. I need to check
+>>>> on that code path, yet. So right now its more a guess.
+>>>>
+>>>>>>>
+>>>>>>> So, what it looks to me is that in cmos_checkintr, we grab the cmos->rtc
+>>>>>>> and pass that along. Unfortunately, since the cmos->rtc value isn't set
+>>>>>>> until after rtc_device_register() returns its null at that point. So
+>>>>>>> your patch isn't really fixing the issue, but just reducing the race
+>>>>>>> window for the second cpu to schedule the work.
+>>>>>>>
+>>>>>>> Sigh. I'd guess dropping the schedule_work call from
+>>>>>>> rtc_initialize_alarm() is the right approach (see below). When reviewing
+>>>>>>> Neil's patch it seemed like a good idea there, but it seems off to me
+>>>>>>> now.
+>>>>>>>
+>>>>>>> Neil, any thoughts on the following? Can you expand on the condition you
+>>>>>>> were worried about in around that call?
+>>>>>>
+>>>>>> If you set an alarm in the future, then shutdown and boot again after that
+>>>>>> time, then you will end up with a timer_queue node which is in the past.
+>>>>>
+>>>>> Thanks for explaining this again.
+>>>>>
+>>>>> Hrm. It seems the easy answer is to simply not add alarms that are in
+>>>>> the past.  Further, I'm a bit perplexed, as if they are in the past, the
+>>>>> enabled flag shouldn't be set.   __rtc_read_alarm() does check the
+>>>>> current time, so maybe we can make sure we don't return old values? I
+>>>>> guess I assumed __rtc_read_alarm() avoided returning stale values, but
+>>>>> apparently not.
+>>>>>
+>>>>>> When this happens the queue gets stuck.  That entry-in-the-past won't get
+>>>>>> removed until and interrupt happens and an interrupt won't happen because the
+>>>>>> RTC only triggers an interrupt when the alarm is "now".
+>>>>>>
+>>>>>> So you'll find that e.g. "hwclock" will always tell you that 'select' timed
+>>>>>> out.
+>>>>>>
+>>>>>> So we force the interrupt work to happen at the start just in case.
+>>>>>
+>>>>> Unfortunately its too early. 
+>>>>>
+>>>>>> Did you see my proposed patch which converted those calls to do the work
+>>>>>> in-process rather than passing it to a worker-thread?  I think that is a
+>>>>>> clean fix.
+>>>>>
+>>>>> I don't think I saw it today. Was it from before the holidays?
+>>>>>
+>>>>
+>>>> I fear I caused a bit of confusion there. Neil responded to my initial mail
+>>>> which was done as a reply to the mail announcing this patch for stable (which
+>>>> just was the first thread I could get hold of).
+>>>> I will try Neil's patch as well. And in parallel try to see whether the theory I
+>>>> had this night makes sense. If it does, then it is only indirectly that the work
+>>>> is scheduled too early. In that case just the teardown needs to make sure that
+>>>> no work is being run while removal. Well, maybe the question is whether there
+>>>> should be a delay in running the irq work until the device really, really is
+>>>> completely set up... But that sounds a bit more complicated.
+>>>
+>>> By now I tried Neil's proposed patch and unfortunately that makes things rather
+>>> worse. I also played around with the idea of the unregistration race. Maybe
+>>> there also is one (that cancel_work_sync should be called before unregistering
+>>> the device) but definitely it is not what happens at least in the one CPU case.
+>>> I added some more printk's and the crash happens before even the rtc core class
+>>> has been fully registered. And no unregister is call has been made either.
+>>>
+>>> Which may point to execution of the irq worker (including a schedule_work)
+>>> before the rtc-cmos parts are finished... Would explain why moving the
+>>> initialize call further down does at least narrow the window for it to happen...
+>>> The only thing I do not understand then is why that seems only to happen on Xen
+>>> guests...
+>>>
+>>
+>> Darn, guess I understand now... So cmos-rtc will call rtc_device_register from
+>> within do_cmos_probe and set cmos_rtc.rtc with the pointer that
+>> rtc_device_register returns.
+>> But when having rtc_initialize_alarm being called earlier in
+>> rtc_device_register, and that queues the work, there is a chance it will fire
+>> even before that function returns.
+>> And then cmos_checkintr will dereference the null pointer still stored in
+>> cmos_rtc.rtc for calling rtc_update_irq...
+> 
+> Hey Stefan, Konrad, Sander, Neil,
+> 	Thanks again for the bug reporting and sorry for the earlier trouble.
+> So after the problematic patch was reverted for 3.2, I worked with Neil
+> to try to address the issue in a better way. It looks like its working
+> for Neil, so I was wondering if any of you could look over and maybe
+> give the following tree a whirl:
+> 	git://git.linaro.org/people/jstultz/linux.git dev/rtc-fixups
+> 
 
-Russell,
+Had a go with the patches applied with one HVM setup and two PVM setups (one and
+4 vcpus) and have not seen any bad side effects.
 
-Does this also mean when endian conversion is not necessary, the __raw_*
-version will be better here? Or generally the _relaxed variants are more
-recommended as endian conversion will be optimized away anyway with
-these AMBA accesses as both sides are little-endian?
+Tested-by: Stefan Bader <stefan.bader@canonical.com>
 
->
-> So, if your DMA engine has a control register, and a descriptor pointer
-> register, you can write the descriptor pointer register with a
-> writel_relaxed().  When you write the control register to enable the
-> transfer, use writel() to ensure there's a barrier so the descriptors
-> are visible.
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> The shortlog is here:
+> http://git.linaro.org/gitweb?p=people/jstultz/linux.git;a=shortlog;h=refs/heads/dev/rtc-fixups
+> 
+> If this avoids the issue for you, and no one sees any other problems,
+> I'll queue these for 3.3
+> 
+> thanks
+> -john
+> 
+
