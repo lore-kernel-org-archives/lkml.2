@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755892Ab2AIWXR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:23:17 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36698 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755793Ab2AIWXQ (ORCPT
+	id S932953Ab2AIWXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:23:21 -0500
+Received: from mailin.studentenwerk.mhn.de ([141.84.225.229]:36917 "EHLO
+	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755793Ab2AIWXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:23:16 -0500
-Date: Mon, 09 Jan 2012 14:21:04 -0800 (PST)
-Message-Id: <20120109.142104.622129906887115582.davem@davemloft.net>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, sfr@canb.auug.org.au, greg@kroah.com,
-        kay.sievers@vrfy.org, akpm@linux-foundation.org, fweisbec@gmail.com,
-        mingo@redhat.com, linux-next@vger.kernel.org,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH] tracing/mm: Move include of trace/events/kmem.h out of
- header into slab.c
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1326147342.7642.41.camel@gandalf.stny.rr.com>
-References: <1326147342.7642.41.camel@gandalf.stny.rr.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 09 Jan 2012 14:21:05 -0800 (PST)
+	Mon, 9 Jan 2012 17:23:19 -0500
+X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jan 2012 17:23:19 EST
+From: Wolfgang Walter <wolfgang.walter@stwm.de>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: Re: [GIT PULL] Please pull NFS client bugfixes and cleanups
+Date: Mon, 9 Jan 2012 23:15:27 +0100
+User-Agent: KMail/1.13.7 (Linux/3.2.0-ei+6.4; KDE/4.6.5; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1326142671.9041.1.camel@lade.trondhjem.org>
+In-Reply-To: <1326142671.9041.1.camel@lade.trondhjem.org>
+Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201201092315.28230.wolfgang.walter@stwm.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
-Date: Mon, 09 Jan 2012 17:15:42 -0500
+On Monday 09 January 2012, Trond Myklebust wrote:
+> Hi Linus,
+> 
+> Please pull from the "nfs-for-3.3" branch of the repository at
+> 
+>    git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git nfs-
+for-3.3
+> 
+> This will update the following files through the appended changesets.
+> 
+>   Cheers,
+>     Trond
+> 
+> 
+> commit 074b1d12fe2500d7d453902f9266e6674b30d84c
+> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Date:   Mon Jan 9 13:46:26 2012 -0500
+> 
+>     NFSv4: Change the default setting of the nfs4_disable_idmapping 
+parameter
+>     
+>     Now that the use of numeric uids/gids is officially sanctioned in
+>     RFC3530bis, it is time to change the default here to 'enabled'.
+>     
+>     By doing so, we ensure that NFSv4 copies the behaviour of NFSv3 when 
+we're
+>     using the default AUTH_SYS authentication (i.e. when the client uses the
+>     numeric uids/gids as authentication tokens), so that when new files are
+>     created, they will appear to have the correct user/group.
+>     It also fixes a number of backward compatibility issues when migrating
+>     from NFSv3 to NFSv4 on a platform where the server uses different 
+uid/gid
+>     mappings than the client.
+>     
+>     Note also that this setting has been successfully tested against servers
+>     that do not support numeric uids/gids at several Connectathon/Bakeathon
+>     events at this point, and the fall back to using string names/groups has
+>     been shown to work well in all those test cases.
+>     
+>     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> 
 
-> Including trace/events/*.h TRACE_EVENT() macro headers in other headers
-> can cause strange side effects if another trace/event/*.h header
-> includes that header. Having trace/events/kmem.h inside slab_def.h
-> caused a compile error in sparc64 when changes were done to some header
-> files. Moving the kmem.h trace header out of slab.h and into slab.c
-> fixes the problem.
-> 
-> Note, both slub.c and slob.c already include the trace/events/kmem.h
-> file. Only slab.c had it missing.
-> 
-> Link: http://lkml.kernel.org/r/20120105190405.1e3191fb5a43b2a0f1655e1f@canb.auug.org.au
-> 
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Does this mean that one has to modify all one's clients to get the old 
+behaviour?
+
+I'm not sure if this is a really good idea. I don't see the advantage. This 
+will break a lot of existing installations when upgrading to >=3.3. And 
+someone migrating from NFSv3 to NFSv4 has to give some thoughts to it anyway.
+
+
+Regards,
+-- 
+Wolfgang Walter
+Studentenwerk München
+Anstalt des öffentlichen Rechts
