@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab2AIQuW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:50:22 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47545 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433Ab2AIQuU (ORCPT
+	id S932589Ab2AIQuS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:50:18 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55042 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932452Ab2AIQuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:50:20 -0500
+	Mon, 9 Jan 2012 11:50:14 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@infradead.org,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu
-Subject: [PATCH 10/13] perf_events: add hook to flush branch_stack on context switch (v3)
-Date: Mon,  9 Jan 2012 17:49:18 +0100
-Message-Id: <1326127761-2723-11-git-send-email-eranian@google.com>
+Subject: [PATCH 08/13] perf_events: add LBR software filter support for Intel X86 (v3)
+Date: Mon,  9 Jan 2012 17:49:16 +0100
+Message-Id: <1326127761-2723-9-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1326127761-2723-1-git-send-email-eranian@google.com>
 References: <1326127761-2723-1-git-send-email-eranian@google.com>
@@ -22,293 +22,492 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With branch stack sampling, it is possible to filter by priv levels.
-In system-wide mode, that means it is possible to capture only user
-level branches. The builtin SW LBR filter needs to disassemble code
-based on LBR captured addresses. For that, it needs to know the task
-the addresses are associated with. Because of context switches, the
-content of the branch stack buffer may contain addresses from
-different tasks.
+This patch adds an internal sofware filter to complement
+the (optional) LBR hardware filter.
 
-We need a hook on context switch to either flush the branch stack
-or save it. This patch adds a new hook in struct pmu which is called
-during context switches. The hook is called only when necessary.
-That is when a system-wide context has, at least, one event which
-uses PERF_SAMPLE_BRANCH_STACK. The hook is never called for per-thread
-context.
+The software filter is necessary:
+- as a substitute when there is no HW LBR filter (e.g., Atom, Core)
+- to complement HW LBR filter in case of errata (e.g., Nehalem/Westmere)
+- to provide finer grain filtering (e.g., all processors)
 
-In this version, the Intel X86 code simply flushes (reset) the LBR
-on context switches (fill with zeroes). Those zeroed branches are
-then filtered out by the SW filter.
+Sometimes, the LBR HW filter cannot distinguish between two types
+of branches. For instance, to capture syscall as CALLS, it is necessary
+to enable the LBR_FAR filter which will also capture JMP instructions.
+Thus, a second pass is necessary to filter those out, this is what the
+SW filter can do.
+
+The SW filter is built on top of the internal x86 disassembler. It
+is a best effort filter especially for user level code. It is subject
+to the availability of the text page of the program.
+
+The SW filter is enabled on all Intel X86 processors. It is bypassed
+when the user is capturing all branches at all priv levels.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.c       |   21 +++++---
- arch/x86/kernel/cpu/perf_event.h       |    1 +
- arch/x86/kernel/cpu/perf_event_intel.c |   13 +++++
- include/linux/perf_event.h             |    9 +++-
- kernel/events/core.c                   |   85 ++++++++++++++++++++++++++++++++
- 5 files changed, 121 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h           |   12 +
+ arch/x86/kernel/cpu/perf_event_intel_ds.c  |   12 +-
+ arch/x86/kernel/cpu/perf_event_intel_lbr.c |  322 +++++++++++++++++++++++++++-
+ 3 files changed, 326 insertions(+), 20 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 710ec93..01ce138 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1633,25 +1633,32 @@ static const struct attribute_group *x86_pmu_attr_groups[] = {
- 	NULL,
- };
- 
-+static void x86_pmu_flush_branch_stack(void)
-+{
-+	if (x86_pmu.flush_branch_stack)
-+		x86_pmu.flush_branch_stack();
-+}
-+
- static struct pmu pmu = {
--	.pmu_enable	= x86_pmu_enable,
--	.pmu_disable	= x86_pmu_disable,
-+	.pmu_enable		= x86_pmu_enable,
-+	.pmu_disable		= x86_pmu_disable,
- 
- 	.attr_groups	= x86_pmu_attr_groups,
- 
- 	.event_init	= x86_pmu_event_init,
- 
--	.add		= x86_pmu_add,
--	.del		= x86_pmu_del,
--	.start		= x86_pmu_start,
--	.stop		= x86_pmu_stop,
--	.read		= x86_pmu_read,
-+	.add			= x86_pmu_add,
-+	.del			= x86_pmu_del,
-+	.start			= x86_pmu_start,
-+	.stop			= x86_pmu_stop,
-+	.read			= x86_pmu_read,
- 
- 	.start_txn	= x86_pmu_start_txn,
- 	.cancel_txn	= x86_pmu_cancel_txn,
- 	.commit_txn	= x86_pmu_commit_txn,
- 
- 	.event_idx	= x86_pmu_event_idx,
-+	.flush_branch_stack	= x86_pmu_flush_branch_stack,
- };
- 
- void perf_update_user_clock(struct perf_event_mmap_page *userpg, u64 now)
 diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index d038cd1..fce4f5d 100644
+index 776fb5a..d038cd1 100644
 --- a/arch/x86/kernel/cpu/perf_event.h
 +++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -322,6 +322,7 @@ struct x86_pmu {
- 	void		(*cpu_starting)(int cpu);
- 	void		(*cpu_dying)(int cpu);
- 	void		(*cpu_dead)(int cpu);
-+	void		(*flush_branch_stack)(void);
+@@ -132,6 +132,7 @@ struct cpu_hw_events {
+ 	struct perf_branch_stack	lbr_stack;
+ 	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
+ 	struct er_account		*lbr_sel;
++	u64				br_sel;
  
  	/*
- 	 * Intel Arch Perfmon v2+
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 7cc1e2d..6627089 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1539,6 +1539,18 @@ static void intel_pmu_cpu_dying(int cpu)
- 	fini_debug_store_on_cpu(cpu);
- }
+ 	 * Intel host/guest exclude bits
+@@ -455,6 +456,17 @@ extern struct event_constraint emptyconstraint;
  
-+static void intel_pmu_flush_branch_stack(void)
+ extern struct event_constraint unconstrained;
+ 
++static inline bool kernel_ip(unsigned long ip)
 +{
-+	/*
-+	 * Intel LBR does not tag entries with the
-+	 * PID of the current task, then we need to
-+	 * flush it on ctxsw
-+	 * For now, we simply reset it
-+	 */
-+	if (x86_pmu.lbr_nr)
-+		intel_pmu_lbr_reset();
++#ifdef CONFIG_X86_32
++	return ip > PAGE_OFFSET;
++#else
++	return (long)ip < 0;
++#endif
 +}
 +
- static __initconst const struct x86_pmu intel_pmu = {
- 	.name			= "Intel",
- 	.handle_irq		= intel_pmu_handle_irq,
-@@ -1566,6 +1578,7 @@ static __initconst const struct x86_pmu intel_pmu = {
- 	.cpu_starting		= intel_pmu_cpu_starting,
- 	.cpu_dying		= intel_pmu_cpu_dying,
- 	.guest_get_msrs		= intel_guest_get_msrs,
-+	.flush_branch_stack	= intel_pmu_flush_branch_stack,
- };
- 
- static __init void intel_clovertown_quirk(void)
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 84bd6a6..5cda9b9 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -743,6 +743,11 @@ struct pmu {
- 	 * if no implementation is provided it will default to: event->hw.idx + 1.
- 	 */
- 	int (*event_idx)		(struct perf_event *event); /*optional */
++int intel_pmu_setup_lbr_filter(struct perf_event *event);
 +
-+	/*
-+	 * flush branch stack on context-switches (needed in cpu-wide mode)
-+	 */
-+	void (*flush_branch_stack)	(void);
- };
+ #ifdef CONFIG_CPU_SUP_AMD
  
- /**
-@@ -973,7 +978,8 @@ struct perf_event_context {
- 	u64				parent_gen;
- 	u64				generation;
- 	int				pin_count;
--	int				nr_cgroups; /* cgroup events present */
-+	int				nr_cgroups;	 /* cgroup evts */
-+	int				nr_branch_stack; /* branch_stack evt */
- 	struct rcu_head			rcu_head;
- };
+ int amd_pmu_init(void);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 04c71ea..db0aa19 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -3,6 +3,7 @@
+ #include <linux/slab.h>
  
-@@ -1038,6 +1044,7 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr,
- extern u64 perf_event_read_value(struct perf_event *event,
- 				 u64 *enabled, u64 *running);
+ #include <asm/perf_event.h>
++#include <asm/insn.h>
  
-+
- struct perf_sample_data {
- 	u64				type;
+ #include "perf_event.h"
  
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 36d1a63..29018fe 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -130,6 +130,7 @@ enum event_type_t {
-  */
- struct jump_label_key_deferred perf_sched_events __read_mostly;
- static DEFINE_PER_CPU(atomic_t, perf_cgroup_events);
-+static DEFINE_PER_CPU(atomic_t, perf_branch_stack_events);
- 
- static atomic_t nr_mmap_events __read_mostly;
- static atomic_t nr_comm_events __read_mostly;
-@@ -881,6 +882,9 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 	if (is_cgroup_event(event))
- 		ctx->nr_cgroups++;
- 
-+	if (has_branch_stack(event))
-+		ctx->nr_branch_stack++;
-+
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
- 	if (!ctx->nr_events)
- 		perf_pmu_rotate_start(ctx->pmu);
-@@ -1020,6 +1024,9 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 			cpuctx->cgrp = NULL;
- 	}
- 
-+	if (has_branch_stack(event))
-+		ctx->nr_branch_stack--;
-+
- 	ctx->nr_events--;
- 	if (event->attr.inherit_stat)
- 		ctx->nr_stat--;
-@@ -2195,6 +2202,66 @@ static void perf_event_context_sched_in(struct perf_event_context *ctx,
+@@ -470,17 +471,6 @@ void intel_pmu_pebs_disable_all(void)
+ 		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
  }
  
+-#include <asm/insn.h>
+-
+-static inline bool kernel_ip(unsigned long ip)
+-{
+-#ifdef CONFIG_X86_32
+-	return ip > PAGE_OFFSET;
+-#else
+-	return (long)ip < 0;
+-#endif
+-}
+-
+ static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
+ {
+ 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+index 84712b1..99e4011 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
+@@ -3,6 +3,7 @@
+ 
+ #include <asm/perf_event.h>
+ #include <asm/msr.h>
++#include <asm/insn.h>
+ 
+ #include "perf_event.h"
+ 
+@@ -60,6 +61,53 @@ enum {
+ 	     (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
+ 
  /*
-+ * When sampling the branck stack in system-wide, it may be necessary
-+ * to flush the stack on context switch. This happens when the branch
-+ * stack does not tag its entries with the pid of the current task.
-+ * Otherwise it becomes impossible to associate a branch entry with a
-+ * task. This ambiguity is more likely to appear when the branch stack
-+ * supports priv level filtering and the user sets it to monitor only
-+ * at the user level (which could be a useful measurement in system-wide
-+ * mode). In that case, the risk is high of having a branch stack with
-+ * branch from multiple tasks. Flushing may mean dropping the existing
-+ * entries or stashing them somewhere in the PMU specific code layer.
-+ *
-+ * This function provides the context switch callback to the lower code
-+ * layer. It is invoked ONLY when there is at least one system-wide context
-+ * with at least one active event using taken branch sampling.
++ * X86 control flow change classification
++ * X86 control flow changes include branches, interrupts, traps, faults
 + */
-+static void perf_branch_stack_sched_in(struct task_struct *prev,
-+				       struct task_struct *task)
-+{
-+	struct perf_cpu_context *cpuctx;
-+	struct pmu *pmu;
-+	unsigned long flags;
++enum {
++	X86_BR_NONE     = 0,      /* unknown */
 +
-+	/* no need to flush branch stack if not changing task */
-+	if (prev == task)
-+		return;
++	X86_BR_USER     = 1 << 0, /* branch target is user */
++	X86_BR_KERNEL   = 1 << 1, /* branch target is kernel */
 +
-+	local_irq_save(flags);
++	X86_BR_CALL     = 1 << 2, /* call */
++	X86_BR_RET      = 1 << 3, /* return */
++	X86_BR_SYSCALL  = 1 << 4, /* syscall */
++	X86_BR_SYSRET   = 1 << 5, /* syscall return */
++	X86_BR_INT      = 1 << 6, /* sw interrupt */
++	X86_BR_IRET     = 1 << 7, /* return from interrupt */
++	X86_BR_JCC      = 1 << 8, /* conditional */
++	X86_BR_JMP      = 1 << 9, /* jump */
++	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
++	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
++};
 +
-+	rcu_read_lock();
++#define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
 +
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		cpuctx = this_cpu_ptr(pmu->pmu_cpu_context);
++#define X86_BR_ANY       \
++	(X86_BR_CALL    |\
++	 X86_BR_RET     |\
++	 X86_BR_SYSCALL |\
++	 X86_BR_SYSRET  |\
++	 X86_BR_INT     |\
++	 X86_BR_IRET    |\
++	 X86_BR_JCC     |\
++	 X86_BR_JMP	 |\
++	 X86_BR_IRQ	 |\
++	 X86_BR_IND_CALL)
 +
-+		/*
-+		 * check if the context has at least one
-+		 * event using PERF_SAMPLE_BRANCH_STACK
-+		 */
-+		if (cpuctx->ctx.nr_branch_stack > 0
-+		    && pmu->flush_branch_stack) {
++#define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
 +
-+			pmu = cpuctx->ctx.pmu;
++#define X86_BR_ANY_CALL		 \
++	(X86_BR_CALL		|\
++	 X86_BR_IND_CALL	|\
++	 X86_BR_SYSCALL		|\
++	 X86_BR_IRQ		|\
++	 X86_BR_INT)
 +
-+			perf_ctx_lock(cpuctx, cpuctx->task_ctx);
++static void intel_pmu_lbr_filter(struct cpu_hw_events *cpuc);
 +
-+			perf_pmu_disable(pmu);
++/*
+  * We only support LBR implementations that have FREEZE_LBRS_ON_PMI
+  * otherwise it becomes near impossible to get a reliable stack.
+  */
+@@ -132,6 +180,7 @@ void intel_pmu_lbr_enable(struct perf_event *event)
+ 		intel_pmu_lbr_reset();
+ 		cpuc->lbr_context = event->ctx;
+ 	}
++	cpuc->br_sel = event->hw.branch_reg.reg;
+ 
+ 	cpuc->lbr_users++;
+ }
+@@ -253,6 +302,45 @@ void intel_pmu_lbr_read(void)
+ 		intel_pmu_lbr_read_32(cpuc);
+ 	else
+ 		intel_pmu_lbr_read_64(cpuc);
 +
-+			pmu->flush_branch_stack();
-+
-+			perf_pmu_enable(pmu);
-+
-+			perf_ctx_unlock(cpuctx, cpuctx->task_ctx);
-+		}
-+	}
-+
-+	rcu_read_unlock();
-+
-+	local_irq_restore(flags);
++	intel_pmu_lbr_filter(cpuc);
 +}
 +
 +/*
-  * Called from scheduler to add the events of the current task
-  * with interrupts disabled.
-  *
-@@ -2225,6 +2292,10 @@ void __perf_event_task_sched_in(struct task_struct *prev,
- 	 */
- 	if (atomic_read(&__get_cpu_var(perf_cgroup_events)))
- 		perf_cgroup_sched_in(prev, task);
++ * SW filter is used:
++ * - in case there is no HW filter
++ * - in case the HW filter has errata or limitations
++ */
++static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
++{
++	u64 br_type = event->attr.branch_sample_type;
++	int mask = 0;
 +
-+	/* check for system-wide branch_stack events */
-+	if (atomic_read(&__get_cpu_var(perf_branch_stack_events)))
-+		perf_branch_stack_sched_in(prev, task);
++	if (br_type & PERF_SAMPLE_BRANCH_USER)
++		mask |= X86_BR_USER;
++
++	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
++		mask |= X86_BR_KERNEL;
++
++	if (br_type & PERF_SAMPLE_BRANCH_ANY) {
++		mask |= X86_BR_ANY;
++		goto done;
++	}
++
++	if (br_type & PERF_SAMPLE_BRANCH_ANY_CALL)
++		mask |= X86_BR_ANY_CALL;
++
++	if (br_type & PERF_SAMPLE_BRANCH_ANY_RETURN)
++		mask |= X86_BR_RET | X86_BR_IRET | X86_BR_SYSRET;
++
++	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
++		mask |= X86_BR_IND_CALL;
++done:
++	/*
++	 * stash actual user request into reg, it may
++	 * be used by fixup code for some CPU
++   */
++	event->hw.branch_reg.reg = mask;
  }
  
- static u64 perf_calculate_period(struct perf_event *event, u64 nsec, u64 count)
-@@ -2761,6 +2832,14 @@ static void free_event(struct perf_event *event)
- 			atomic_dec(&per_cpu(perf_cgroup_events, event->cpu));
- 			jump_label_dec_deferred(&perf_sched_events);
- 		}
+ /*
+@@ -288,9 +376,9 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
+ 	return 0;
+ }
+ 
+-static int intel_pmu_setup_lbr_filter(struct perf_event *event)
++int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ {
+-	u64 br_type = event->attr.branch_sample_type;
++	int ret = 0;
+ 
+ 	/*
+ 	 * no LBR on this PMU
+@@ -299,15 +387,210 @@ static int intel_pmu_setup_lbr_filter(struct perf_event *event)
+ 		return -EOPNOTSUPP;
+ 
+ 	/*
+-	 * if no LBR HW filter, users can only
+-	 * capture all branches
++	 * setup SW LBR filter
+ 	 */
+-	if (!x86_pmu.lbr_sel_map) {
+-		if (br_type != PERF_SAMPLE_BRANCH_ALL)
+-			return -EOPNOTSUPP;
+-		return 0;
++	intel_pmu_setup_sw_lbr_filter(event);
 +
-+		if (has_branch_stack(event)) {
-+			jump_label_dec_deferred(&perf_sched_events);
-+			/* is system-wide event */
-+			if (!(event->attach_state & PERF_ATTACH_TASK))
-+				atomic_dec(&per_cpu(perf_branch_stack_events,
-+						    event->cpu));
++	/*
++	 * setup HW LBR filter, if any
++	 */
++	if (x86_pmu.lbr_sel_map)
++		ret = intel_pmu_setup_hw_lbr_filter(event);
++
++	return ret;
++}
++
++/*
++ * return the type of control flow change at address "from"
++ * intruction is not necessarily a branch (in case of interrupt).
++ *
++ * The branch type returned also includes the priv level of the
++ * target of the control flow change (X86_BR_USER, X86_BR_KERNEL).
++ *
++ * If a branch type is unknown OR the instruction cannot be
++ * decoded (e.g., text page not present), then X86_BR_NONE is
++ * returned.
++ */
++static int branch_type(unsigned long from, unsigned long to)
++{
++	struct insn insn;
++	void *addr;
++	int bytes, size = MAX_INSN_SIZE;
++	int ret = X86_BR_NONE;
++	int ext, to_plm, from_plm;
++	u8 buf[MAX_INSN_SIZE];
++	int is64 = 0;
++
++	to_plm = kernel_ip(to) ? X86_BR_KERNEL : X86_BR_USER;
++	from_plm = kernel_ip(from) ? X86_BR_KERNEL : X86_BR_USER;
++
++	/*
++	 * maybe zero if lbr did not fill up after a reset by the time
++	 * we get a PMU interrupt
++	 */
++	if (from == 0 || to == 0)
++		return X86_BR_NONE;
++
++	if (from_plm == X86_BR_USER) {
++		/*
++		 * can happen if measuring at the user level only
++		 * and we interrupt in a kernel thread, e.g., idle.
++		 */
++		if (!current->mm)
++			return X86_BR_NONE;
++
++		/* may fail if text not present */
++		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
++		if (bytes != size)
++			return X86_BR_NONE;
++
++		addr = buf;
++	} else
++		addr = (void *)from;
++
++	/*
++	 * decoder needs to know the ABI especially
++	 * on 64-bit systems running 32-bit apps
++	 */
++#ifdef CONFIG_X86_64
++	is64 = kernel_ip((unsigned long)addr) || !test_thread_flag(TIF_IA32);
++#endif
++	insn_init(&insn, addr, is64);
++	insn_get_opcode(&insn);
++
++	switch (insn.opcode.bytes[0]) {
++	case 0xf:
++		switch (insn.opcode.bytes[1]) {
++		case 0x05: /* syscall */
++		case 0x34: /* sysenter */
++			ret = X86_BR_SYSCALL;
++			break;
++		case 0x07: /* sysret */
++		case 0x35: /* sysexit */
++			ret = X86_BR_SYSRET;
++			break;
++		case 0x80 ... 0x8f: /* conditional */
++			ret = X86_BR_JCC;
++			break;
++		default:
++			ret = X86_BR_NONE;
 +		}
- 	}
- 
- 	if (event->rb) {
-@@ -5880,6 +5959,12 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 				return ERR_PTR(err);
- 			}
- 		}
-+		if (has_branch_stack(event)) {
-+			jump_label_inc(&perf_sched_events.key);
-+			if (!(event->attach_state & PERF_ATTACH_TASK))
-+				atomic_inc(&per_cpu(perf_branch_stack_events,
-+						    event->cpu));
++		break;
++	case 0x70 ... 0x7f: /* conditional */
++		ret = X86_BR_JCC;
++		break;
++	case 0xc2: /* near ret */
++	case 0xc3: /* near ret */
++	case 0xca: /* far ret */
++	case 0xcb: /* far ret */
++		ret = X86_BR_RET;
++		break;
++	case 0xcf: /* iret */
++		ret = X86_BR_IRET;
++		break;
++	case 0xcc ... 0xce: /* int */
++		ret = X86_BR_INT;
++		break;
++	case 0xe8: /* call near rel */
++	case 0x9a: /* call far absolute */
++		ret = X86_BR_CALL;
++		break;
++	case 0xe0 ... 0xe3: /* loop jmp */
++		ret = X86_BR_JCC;
++		break;
++	case 0xe9 ... 0xeb: /* jmp */
++		ret = X86_BR_JMP;
++		break;
++	case 0xff: /* call near absolute, call far absolute ind */
++		insn_get_modrm(&insn);
++		ext = (insn.modrm.bytes[0] >> 3) & 0x7;
++		switch (ext) {
++		case 2: /* near ind call */
++		case 3: /* far ind call */
++			ret = X86_BR_IND_CALL;
++			break;
++		case 4:
++		case 5:
++			ret = X86_BR_JMP;
++			break;
 +		}
++		break;
++	default:
++		ret = X86_BR_NONE;
++	}
++	/*
++	 * interrupts, traps, faults (and thus ring transition) may
++	 * occur on any instructions. Thus, to classify them correctly,
++	 * we need to first look at the from and to priv levels. If they
++	 * are different and to is in the kernel, then it indicates
++	 * a ring transition. If the from instruction is not a ring
++	 * transition instr (syscall, systenter, int), then it means
++	 * it was a irq, trap or fault.
++	 *
++	 * we have no way of detecting kernel to kernel faults.
++	 */
++	if (from_plm == X86_BR_USER && to_plm == X86_BR_KERNEL
++	    && ret != X86_BR_SYSCALL && ret != X86_BR_INT)
++		ret = X86_BR_IRQ;
++
++	/*
++	 * branch priv level determined by target as
++	 * is done by HW when LBR_SELECT is implemented
++	 */
++	if (ret != X86_BR_NONE)
++		ret |= to_plm;
++
++	return ret;
++}
++
++/*
++ * implement actual branch filter based on user demand.
++ * Hardware may not exactly satisfy that request, thus
++ * we need to inspect opcodes. Mismatched branches are
++ * discarded. Therefore, the number of branches returned
++ * in PERF_SAMPLE_BRANCH_STACK sample may vary.
++ */
++static void
++intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
++{
++	u64 from, to;
++	int br_sel = cpuc->br_sel;
++	int i, j, type;
++	bool compress = false;
++
++	/* if sampling all branches, then nothing to filter */
++	if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
++		return;
++
++	for (i = 0; i < cpuc->lbr_stack.nr; i++) {
++
++		from = cpuc->lbr_entries[i].from;
++		to = cpuc->lbr_entries[i].to;
++
++		type = branch_type(from, to);
++
++		/* if type does not correspond, then discard */
++		if (type == X86_BR_NONE || (br_sel & type) != type) {
++			cpuc->lbr_entries[i].from = 0;
++			compress = true;
++		}
++	}
++
++	if (!compress)
++		return;
++
++	/* remove all entries with from=0 */
++	for (i = 0; i < cpuc->lbr_stack.nr; ) {
++		if (!cpuc->lbr_entries[i].from) {
++			j = i;
++			while (++j < cpuc->lbr_stack.nr)
++				cpuc->lbr_entries[j-1] = cpuc->lbr_entries[j];
++			cpuc->lbr_stack.nr--;
++			if (!cpuc->lbr_entries[i].from)
++				continue;
++		}
++		i++;
  	}
+-	return intel_pmu_setup_hw_lbr_filter(event);
+ }
  
- 	return event;
+ /*
+@@ -348,6 +631,10 @@ void intel_pmu_lbr_init_core(void)
+ 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
+ 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - compensate for lack of HW filter
++	 */
+ 	pr_cont("4-deep LBR, ");
+ }
+ 
+@@ -362,6 +649,13 @@ void intel_pmu_lbr_init_nhm(void)
+ 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
+ 	x86_pmu.lbr_sel_map  = nhm_lbr_sel_map;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - workaround LBR_SEL errata (see above)
++	 * - support syscall, sysret capture.
++	 *   That requires LBR_FAR but that means far
++	 *   jmp need to be filtered out
++	 */
+ 	pr_cont("16-deep LBR, ");
+ }
+ 
+@@ -376,6 +670,12 @@ void intel_pmu_lbr_init_snb(void)
+ 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
+ 	x86_pmu.lbr_sel_map  = snb_lbr_sel_map;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - support syscall, sysret capture.
++	 *   That requires LBR_FAR but that means far
++	 *   jmp need to be filtered out
++	 */
+ 	pr_cont("16-deep LBR, ");
+ }
+ 
+@@ -397,5 +697,9 @@ void intel_pmu_lbr_init_atom(void)
+ 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
+ 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+ 
++	/*
++	 * SW branch filter usage:
++	 * - compensate for lack of HW filter
++	 */
+ 	pr_cont("8-deep LBR, ");
+ }
 -- 
 1.7.1
 
