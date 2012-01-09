@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab2AIBt5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 20:49:57 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60476 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755093Ab2AIBtz (ORCPT
+	id S1755260Ab2AIBzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 20:55:43 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:54914 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab2AIBzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 20:49:55 -0500
-Date: Sun, 8 Jan 2012 17:49:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
-        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
-        dsharp@google.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] block: block_bio_complete tracepoint was missing
-Message-ID: <20120109014949.GA16360@mtj.dyndns.org>
-References: <1325806974-23486-1-git-send-email-tj@kernel.org>
- <1325806974-23486-4-git-send-email-tj@kernel.org>
- <4F0A431E.3090106@lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0A431E.3090106@lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 8 Jan 2012 20:55:42 -0500
+Date: Mon, 9 Jan 2012 12:55:31 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Axel Lin <axel.lin@gmail.com>
+Subject: linux-next: build warning after merge of the sound-asoc tree
+Message-Id: <20120109125531.dbcac0481adb6376fb7e9ca1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jan_2012_12_55_31_+1100_eFFWKWBK8eN0bjDw"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Mon__9_Jan_2012_12_55_31_+1100_eFFWKWBK8eN0bjDw
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Mon, Jan 09, 2012 at 10:30:06AM +0900, Namhyung Kim wrote:
-> Just adding the TP unconditionally will produce duplicated (in some
-> sense) reports about the completion. For example, normal request
-> based IO reports whole request completion prior to its bio's, and
-> further
+Hi all,
 
-Request and bio completions are separate events.  There's nothing
-wrong with reporting them separately.  In fact, I think they should be
-reported separately.
+After merging the sound-asoc tree, today's linux-next build (powerpc
+ppc64_defconfig and x86_64 allmodconfig) produced this warning:
 
->, some of nested block IO handling routines - bounced bio and
-> btrfs with compression, etc - call bio_endio() more than once. Also
-> there are cases that bio fails before it's enqueued for some reason.
+drivers/misc/Kconfig:212:error: recursive dependency detected!
+drivers/misc/Kconfig:212:	symbol ATMEL_SSC is selected by SND_ATMEL_SOC_SSC
+sound/soc/atmel/Kconfig:9:	symbol SND_ATMEL_SOC_SSC is selected by SND_AT91=
+_SOC_SAM9G20_WM8731
+sound/soc/atmel/Kconfig:18:	symbol SND_AT91_SOC_SAM9G20_WM8731 depends on A=
+TMEL_SSC
 
-They are actually separate bio's being completed.  I don't think
-trying to put extra semantics on TP itself is a good idea.  In
-general, TP signals that such event happened with sufficient
-information and it's the consumers' responsibility to make sense of
-what's going on.  BIO_CLONED/BOUNCED are there.
+Probably introduced by commit 739be96ab837 ("ASoC: Fix build dependency
+for SND_ATMEL_SOC_SSC").
 
-> I have no idea about the ioblame can deal with all of such corner
-> cases. However it might confuse blktrace somewhat, I guess.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Unless someone is doing memcpy() on bio's, ioblame should be okay.  It
-only considers bio's which went through actual submission.
+--Signature=_Mon__9_Jan_2012_12_55_31_+1100_eFFWKWBK8eN0bjDw
+Content-Type: application/pgp-signature
 
-> I already posted similar patch a couple of weeks ago, but didn't
-> receive a comment yet. [1] Please take a look this too :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-I'll reply there but don't think imposing such extra logic on TP is a
-good idea.
+iQIcBAEBCAAGBQJPCkkTAAoJEECxmPOUX5FEU54P/3VbQWqD5fxIF4Nkn/C2Gygl
+L5LMOMqAL53u1fb0VzjHChkCijYbM4+xMXgMozYHs6mGqtyyC+1cjO/sZNZtl6CS
+XpXNt5RihMDE1zxyLHYdhbRm+Itry3sn40ZT4ikw3VPKWFTxhOdNh6DpVHHlM56V
+TbrTYvp5agegd57I8Mm6I6m6Llha8EXR1k/D/BkATgOXd/GkimjeHt4MoNvVm+YA
+vCL7VqaelxxE5t0M6nGLlIhKaRRcXuJvEurnpbyzjsCT+TXhOYY/oyML+00eEVgp
+2tOnlgblgknS7sLkFT0KGx4zRCYZ7StO3nsY0UYoP1dgDhyMJlOiQu48+zXm4ilk
+8w76uSZwtRphCQ+MGFm0ijvyOm07QFRDtz9AqEh3jmuBb4LhuTrQVMRWTwmD+sqO
+rd625FNa6lt4nVbI49aHO0e83TsCRI8Mk9HJ4EKP2m/dOYE3WYMvvtBmiy2PLpue
+LkJawkc7bN1YcXWgVEWA23kaXGDj29Jl7iV2tZn4kzcsjYaeGx8gjoVLp7ShJ00J
+h7nM3bLdmhXfKu7ixtftUq+abTEeiixfmMaLhNr7VCs4D8zRaFQ1/K0HMbavQm5/
+mDTKfpbGM7x6rCHeL50Liptrxjc6lPyd2lSPdVhEY7fEensY2A/DJZMwzwOK4K1j
+EHe871EfvfxCvHDFRqSp
+=giaY
+-----END PGP SIGNATURE-----
 
-> After a quick glance, the ioblame seems to carry all IO accounting
-> info through the first bio in the request. If so, why don't you use
-> the request structure for that?
-
-Because there are bio based drivers which don't use requests at all.
-
-Thanks.
-
---
-tejun
+--Signature=_Mon__9_Jan_2012_12_55_31_+1100_eFFWKWBK8eN0bjDw--
