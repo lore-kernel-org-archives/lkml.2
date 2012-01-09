@@ -1,23 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab2AIJdN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 04:33:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46610 "EHLO
+	id S1752485Ab2AIJeJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 04:34:09 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46649 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab2AIJdL (ORCPT
+	with ESMTP id S1752375Ab2AIJeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 04:33:11 -0500
+	Mon, 9 Jan 2012 04:34:05 -0500
+Date: Mon, 9 Jan 2012 10:33:58 +0100
 From: Sascha Hauer <s.hauer@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Vinod Koul <vinod.koul@intel.com>,
-        Javier Martin <javier.martin@vista-silicon.com>,
-        linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: [PATCH] fix starting of transfers in i.MX dma drivers
-Date: Mon,  9 Jan 2012 10:32:46 +0100
-Message-Id: <1326101570-3716-1-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: git-send-email 1.7.7.3
+To: Richard Zhao <richard.zhao@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dan.j.williams@intel.com, vinod.koul@intel.com, shawn.guo@linaro.org,
+        kernel@pengutronix.de, eric.miao@linaro.org, patches@linaro.org
+Subject: Re: [PATCH v4 0/2] mx-sdma: memory barrier fix
+Message-ID: <20120109093358.GN5446@pengutronix.de>
+References: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:33:30 up 57 days, 17:20, 25 users,  load average: 0.00, 0.04,
+ 0.24
+User-Agent: Mutt/1.5.21 (2010-09-15)
 X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
 X-SA-Exim-Mail-From: sha@pengutronix.de
 X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
@@ -26,25 +36,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the start of transfers from tx_submit to issue_pending
-for the i.MX dma drivers as requested by Vinoud here:
+On Sun, Jan 08, 2012 at 10:44:20PM +0800, Richard Zhao wrote:
+> Changes in v4:
+>  - convert all _raw_readl/_raw_writel to readl/writel.
+> 
+> Changes in v3:
+>  - use writel instead of explicitly call wmb.
+> 
+> Changes in v2:
+>  - add "let sdma_run_channel call sdma_enable_channel"
 
-https://lkml.org/lkml/2012/1/7/23
+Both
 
-This requires the users (mxcmmc and i.MX sound) to be fixed first.
-So Chris, Mark, given your Ack I would suggest to send this via
-Vinouds DMA tree.
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
 
 Sascha
 
-Sascha Hauer (4):
-      mmc: mxcmmc: add missing dma_async_issue_pending
-      ASoC: i.MX: Add missing dma_async_issue_pending
-      dma: imx-dma: start transfer in issue_pending
-      dma: imx-sdma: start transfer in issue_pending
 
- drivers/dma/imx-dma.c           |    9 ++++-----
- drivers/dma/imx-sdma.c          |   11 +++++------
- drivers/mmc/host/mxcmmc.c       |    1 +
- sound/soc/imx/imx-pcm-dma-mx2.c |    1 +
- 4 files changed, 11 insertions(+), 11 deletions(-)
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
