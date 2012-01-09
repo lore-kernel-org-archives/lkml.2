@@ -1,92 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932538Ab2AIQxi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:53:38 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52766 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234Ab2AIQt4 (ORCPT
+	id S932454Ab2AIRBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 12:01:51 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:49613 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932263Ab2AIRBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:49:56 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@infradead.org,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu
-Subject: [PATCH 02/13] perf_events: add Intel LBR MSR definitions (v3)
-Date: Mon,  9 Jan 2012 17:49:10 +0100
-Message-Id: <1326127761-2723-3-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1326127761-2723-1-git-send-email-eranian@google.com>
-References: <1326127761-2723-1-git-send-email-eranian@google.com>
+	Mon, 9 Jan 2012 12:01:50 -0500
+Date: Mon, 9 Jan 2012 12:01:49 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
+In-Reply-To: <20120109165053.GA15083@core.coreip.homeip.net>
+Message-ID: <Pine.LNX.4.44L0.1201091156500.1541-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the LBR definitions for NHM/WSM/SNB and Core.
-It also adds the definitions for the architected LBR MSR:
-LBR_SELECT, LBRT_TOS.
+On Mon, 9 Jan 2012, Dmitry Torokhov wrote:
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- arch/x86/include/asm/msr-index.h           |    7 +++++++
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |   18 +++++++++---------
- 2 files changed, 16 insertions(+), 9 deletions(-)
+> > > drivers/ssb/main.c seems like needs some protection but does it
+> > > incorrectly as we do not wait for drivers to drop all references before
+> > > unloading modules.
+> > 
+> > Possibly it needs to be replaced with try_module_get.  I'll send out an 
+> > email to the maintainers of these drivers to see what they think.
+> 
+> No, I am not that try_module_get() [alone] is quite what is needed, as
+> strictly speaking driver lifetime does not need to be the same as module
+> lifetime. But maybe I am just splitting hair as all drivers are
+> statically initialized and are tied to their modules...
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index a6962d9..ccb8059 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -56,6 +56,13 @@
- #define MSR_OFFCORE_RSP_0		0x000001a6
- #define MSR_OFFCORE_RSP_1		0x000001a7
- 
-+#define MSR_LBR_SELECT			0x000001c8
-+#define MSR_LBR_TOS			0x000001c9
-+#define MSR_LBR_NHM_FROM		0x00000680
-+#define MSR_LBR_NHM_TO			0x000006c0
-+#define MSR_LBR_CORE_FROM		0x00000040
-+#define MSR_LBR_CORE_TO			0x00000060
-+
- #define MSR_IA32_PEBS_ENABLE		0x000003f1
- #define MSR_IA32_DS_AREA		0x00000600
- #define MSR_IA32_PERF_CAPABILITIES	0x00000345
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index c3f8100..e14431f 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -205,23 +205,23 @@ void intel_pmu_lbr_read(void)
- void intel_pmu_lbr_init_core(void)
- {
- 	x86_pmu.lbr_nr     = 4;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x40;
--	x86_pmu.lbr_to     = 0x60;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
- }
- 
- void intel_pmu_lbr_init_nhm(void)
- {
- 	x86_pmu.lbr_nr     = 16;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x680;
--	x86_pmu.lbr_to     = 0x6c0;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_NHM_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_NHM_TO;
- }
- 
- void intel_pmu_lbr_init_atom(void)
- {
- 	x86_pmu.lbr_nr	   = 8;
--	x86_pmu.lbr_tos    = 0x01c9;
--	x86_pmu.lbr_from   = 0x40;
--	x86_pmu.lbr_to     = 0x60;
-+	x86_pmu.lbr_tos    = MSR_LBR_TOS;
-+	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
-+	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
- }
--- 
-1.7.1
+In theory you're right; what matters is when the driver is registered
+and unregistered.  (And in fact, although the driver structs are indeed
+statically initialized, there also is a struct driver_private part
+which doesn't get allocated or initialized until the driver is
+registered.)
+
+However, I don't know of any drivers that are unregistered before their
+module is unloaded.  We could add an API to the driver core for this
+(i.e., to block a driver from being unregistered), but there doesn't
+seem to be any real point.
+
+Alan Stern
 
