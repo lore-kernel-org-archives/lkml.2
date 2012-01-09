@@ -1,183 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab2AIHhx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 02:37:53 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49663 "EHLO
+	id S1755581Ab2AIHjL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 02:39:11 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:49668 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753475Ab2AIHhv (ORCPT
+	by vger.kernel.org with ESMTP id S1754537Ab2AIHjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 02:37:51 -0500
-Date: Sun, 8 Jan 2012 23:37:28 -0800
+	Mon, 9 Jan 2012 02:39:09 -0500
+Date: Sun, 8 Jan 2012 23:39:00 -0800
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Regulator updates for 3.3
-Message-ID: <20120109073727.GF22134@opensource.wolfsonmicro.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: Laxman Dewangan <ldewangan.com@nvidia.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH V1] TPS62360: Add tps62360 regulator driver
+Message-ID: <20120109073859.GG22134@opensource.wolfsonmicro.com>
+References: <20120105062919.GI11867@opensource.wolfsonmicro.com>
+ <96C9D994977DD0439FB6D3FE3B13DD907DBD3A9E9B@BGMAIL01.nvidia.com>
+ <20120106185755.GC2893@opensource.wolfsonmicro.com>
+ <96C9D994977DD0439FB6D3FE3B13DD907DBD3AA0DE@BGMAIL01.nvidia.com>
+ <20120107191047.GA3590@opensource.wolfsonmicro.com>
+ <96C9D994977DD0439FB6D3FE3B13DD907DBD3AA0E4@BGMAIL01.nvidia.com>
+ <20120108165819.GB29065@opensource.wolfsonmicro.com>
+ <96C9D994977DD0439FB6D3FE3B13DD907DBDABA9A3@BGMAIL01.nvidia.com>
+ <20120109071128.GA22134@opensource.wolfsonmicro.com>
+ <96C9D994977DD0439FB6D3FE3B13DD907DBDABA9B6@BGMAIL01.nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <96C9D994977DD0439FB6D3FE3B13DD907DBDABA9B6@BGMAIL01.nvidia.com>
 X-Cookie: You have a truly strong individuality.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from the tree below to merge regulator API updates for
-version 3.3  The major update here is the addition of device tree
-support by Rajendra Nayak, and we also have a new driver for the
-regulators on the DA9052 PMIC.  Otherwise most of the changes are
-bug fixes and cleanups of one form or another.
+On Mon, Jan 09, 2012 at 01:03:06PM +0530, Laxman Dewangan wrote:
+> > On Monday, January 09, 2012 12:41 PM, Mark Brown wrote
 
-The following changes since commit caca6a03d365883564885f2c1da3e88dcf65d139:
+> > Why?  I'm not sure I understand this.  You're asking the regulator to
+> > output ranges not voltages and you're setting multiple overlapping
+> > ranges for each VSEL.
 
-  Linux 3.2-rc3 (2011-11-23 20:20:28 -0800)
+> If I fix the voltage with each VSEL then only 4 voltages will be
+> possible but I want to have more than 4 different output.
+> How do I achieve this?
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git for-linus
+The driver can decide what voltages to set - like I said in a previous
+mail it could use something like LRU to decide which slot to use, or
+perhaps be clever with the upper end of the range it was given.
 
-Ashish Jangam (2):
-      regulator: DA9052/53 Regulator support
-      regulator: Replace kzalloc with devm_kzalloc and if-else with a switch-case for da9052-regulator
+> > What I'd expect to see is nothing but the GPIOs and their default state
+> > (since sadly we can't read back from output GPIOs with gpiolib) being
+> > specified.
 
-Axel Lin (10):
-      regulator: export of_get_regulator_init_data
-      regulator: Checking return value of of_get_regulator_init_data
-      regulator: Staticise of_get_fixed_voltage_config()
-      regulator: Avoid potential NULL dereference in reg_fixed_voltage_probe()
-      regulator: aat2870: Fix the logic of checking if no id is matched in aat2870_get_regulator
-      regulator: aat2870: Remove a redundant bitwise and operation
-      regulator: Convert virtual and userspace regulator consumer drivers to use module_platform_driver()
-      regulator: da9052: Staticize non-exported symbols
-      regulator: Fix the error handling if create_regulator fails
-      regulator: Fix checking return value of create_regulator
+> I did not understand it correctly. Can you please elaborate how can we
+> pass the voltage with corresponding vsel?
 
-Donggeun Kim (1):
-      regulator: add regulator_bulk_force_disable function
-
-Fabio Estevam (2):
-      regulator: mc13783: Convert to devm_kzalloc()
-      regulator: mc13892: Convert to devm_kzalloc()
-
-Jonghwan Choi (2):
-      regulator: Use regmap_read/write(), regmap_update_bits functions directly
-      regulator: max8649 Convert max8649 to use regmap api
-
-Kevin Liu (1):
-      regulator: max8925: fix enabled/disabled judgement mistake
-
-Kyle Manna (2):
-      regulator: TPS65910: Move regulator defs to header
-      regulator: TPS65910: Create an array for init data
-
-Laxman Dewangan (1):
-      regulator: Enable supply regulator if child rail is enabled.
-
-Lothar Waﬂmann (1):
-      regulator: fix use after free bug
-
-Mark Brown (16):
-      regulator: Don't report zero volts for the fixed voltage regulator
-      regulator: Don't create voltage sysfs entries if we can't read voltage
-      Merge branch 'for-linus' of git://git.kernel.org/.../broonie/regulator into regulator-next
-      Merge remote-tracking branch 'regulator/topic/dt' into regulator-next
-      Merge remote-tracking branch 'regulator/topic/dt' into regulator-next
-      Merge remote-tracking branch 'regulator/topic/dt' into regulator-next
-      Merge remote-tracking branch 'regulator/topic/dt' into regulator-next
-      Merge remote-tracking branch 'regulator/for-linus' into regulator-next
-      Merge remote-tracking branch 'regulator/for-linus' into regulator-next
-      Merge remote-tracking branches 'regulator/topic/dt' and 'regulator/for-linus' into regulator-next
-      regulator: Allow regulators to register with no init_data
-      regulator: If a single voltage is set with device tree then set apply_uV
-      Merge branch 'topic/dt' of git://git.kernel.org/.../broonie/regulator into regulator-next
-      regulator: Update da9052-regulator for DT changes
-      regulator: Convert wm831x regulator drivers to devm_kzalloc()
-      regulator: Export regulator_is_supported_voltage()
-
-MyungJoo Ham (1):
-      regulator: add regulator_force_disable() definition for !CONFIG_REGULATOR
-
-Rajendra Nayak (6):
-      regulator: helper routine to extract regulator_init_data
-      regulator: adapt fixed regulator driver to dt
-      regulator: pass additional of_node to regulator_register()
-      regulator: map consumer regulator based on device tree
-      regulator: Fix compile break due to missing arguments to regulator_register
-      regulator: Fix regulator_register() API signature in Documentation
-
-Richard Zhao (2):
-      regulator: pass regulator_register of_node in fixed voltage driver
-      regulator: set constraints.apply_uV to 0 in of_get_fixed_voltage_config
-
-Shawn Guo (4):
-      regulator: fix label names used in device tree bindings
-      regulator: pass device_node to of_get_regulator_init_data()
-      regulator: mc13892: remove the unnecessary prefix from regulator name
-      regulator: mc13892: add device tree probe support
-
-Tero Kristo (1):
-      regulator: twl: fix twl4030 support for smps regulators
-
- .../bindings/regulator/fixed-regulator.txt         |   29 +
- .../devicetree/bindings/regulator/regulator.txt    |   54 ++
- Documentation/power/regulator/regulator.txt        |    2 +-
- drivers/regulator/88pm8607.c                       |    2 +-
- drivers/regulator/Kconfig                          |    8 +
- drivers/regulator/Makefile                         |    2 +
- drivers/regulator/aat2870-regulator.c              |    6 +-
- drivers/regulator/ab3100.c                         |    2 +-
- drivers/regulator/ab8500.c                         |    2 +-
- drivers/regulator/ad5398.c                         |    2 +-
- drivers/regulator/bq24022.c                        |    2 +-
- drivers/regulator/core.c                           |  180 +++++--
- drivers/regulator/da903x.c                         |    2 +-
- drivers/regulator/da9052-regulator.c               |  606 ++++++++++++++++++++
- drivers/regulator/db8500-prcmu.c                   |    2 +-
- drivers/regulator/dummy.c                          |    2 +-
- drivers/regulator/fixed.c                          |   85 +++-
- drivers/regulator/gpio-regulator.c                 |    2 +-
- drivers/regulator/isl6271a-regulator.c             |    2 +-
- drivers/regulator/lp3971.c                         |    2 +-
- drivers/regulator/lp3972.c                         |    2 +-
- drivers/regulator/max1586.c                        |    2 +-
- drivers/regulator/max8649.c                        |  157 ++----
- drivers/regulator/max8660.c                        |    2 +-
- drivers/regulator/max8925-regulator.c              |   35 +-
- drivers/regulator/max8952.c                        |    2 +-
- drivers/regulator/max8997.c                        |    2 +-
- drivers/regulator/max8998.c                        |    2 +-
- drivers/regulator/mc13783-regulator.c              |    7 +-
- drivers/regulator/mc13892-regulator.c              |   47 ++-
- drivers/regulator/mc13xxx-regulator-core.c         |   57 ++
- drivers/regulator/mc13xxx.h                        |   26 +-
- drivers/regulator/of_regulator.c                   |   87 +++
- drivers/regulator/pcap-regulator.c                 |    2 +-
- drivers/regulator/pcf50633-regulator.c             |    2 +-
- drivers/regulator/tps6105x-regulator.c             |    3 +-
- drivers/regulator/tps65023-regulator.c             |   89 ++--
- drivers/regulator/tps6507x-regulator.c             |    2 +-
- drivers/regulator/tps6524x-regulator.c             |    2 +-
- drivers/regulator/tps6586x-regulator.c             |    2 +-
- drivers/regulator/tps65910-regulator.c             |   39 +-
- drivers/regulator/tps65912-regulator.c             |    2 +-
- drivers/regulator/twl-regulator.c                  |   48 ++-
- drivers/regulator/userspace-consumer.c             |   13 +-
- drivers/regulator/virtual.c                        |   12 +-
- drivers/regulator/wm831x-dcdc.c                    |   18 +-
- drivers/regulator/wm831x-isink.c                   |    7 +-
- drivers/regulator/wm831x-ldo.c                     |   18 +-
- drivers/regulator/wm8350-regulator.c               |    2 +-
- drivers/regulator/wm8400-regulator.c               |    2 +-
- drivers/regulator/wm8994-regulator.c               |    2 +-
- include/linux/mfd/mc13xxx.h                        |    1 +
- include/linux/mfd/tps65910.h                       |   30 +-
- include/linux/regulator/consumer.h                 |   13 +
- include/linux/regulator/driver.h                   |    4 +-
- include/linux/regulator/of_regulator.h             |   22 +
- sound/soc/codecs/sgtl5000.c                        |    2 +-
- 57 files changed, 1414 insertions(+), 345 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/fixed-regulator.txt
- create mode 100644 Documentation/devicetree/bindings/regulator/regulator.txt
- create mode 100644 drivers/regulator/da9052-regulator.c
- create mode 100644 drivers/regulator/of_regulator.c
- create mode 100644 include/linux/regulator/of_regulator.h
+For bootstrapping you can just read the values back.
