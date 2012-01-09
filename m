@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab2AIC5K (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 21:57:10 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53163 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751615Ab2AIC5H (ORCPT
+	id S1755355Ab2AIC5r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 21:57:47 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:59763 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751615Ab2AIC5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 21:57:07 -0500
-Message-ID: <1326077816.4097.8.camel@deadeye>
-Subject: Re: [PATCH 1/2] topology: Check for missing CPU devices
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
-        Thorsten Glaser <tg@mirbsd.de>,
-        Debian kernel team <debian-kernel@lists.debian.org>,
-        linux-m68k@vger.kernel.org, debian-68k@lists.debian.org
-Date: Mon, 09 Jan 2012 02:56:56 +0000
-In-Reply-To: <1326077272.4097.3.camel@deadeye>
-References: <1326055714.13595.309.camel@deadeye>
-	 <CA+55aFwwnJPpVY++Vgr6p3s47YjdYWV3sgLZzvCtiJp6DEu78Q@mail.gmail.com>
-	 <1326077272.4097.3.camel@deadeye>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-+EUPP7btfq7dAMkEb70R"
-X-Mailer: Evolution 3.2.2-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 8 Jan 2012 21:57:46 -0500
+X-AuditID: 9c930197-b7ba0ae00000500f-16-4f0a57a79884
+Message-ID: <4F0A57A7.4070508@lge.com>
+Date: Mon, 09 Jan 2012 11:57:43 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] block: introduce BIO_IN_FLIGHT flag
+References: <1324996113-1837-1-git-send-email-namhyung@gmail.com> <1324996113-1837-2-git-send-email-namhyung@gmail.com> <20120109015628.GB16360@mtj.dyndns.org>
+In-Reply-To: <20120109015628.GB16360@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2012-01-09 10:56 AM, Tejun Heo wrote:
+> On Tue, Dec 27, 2011 at 11:28:32PM +0900, Namhyung Kim wrote:
+>> BIO_IN_FLIGHT flag is used for tracing block I/O completion.
+>> This patch fixes tracing bio-based devices - except DM which
+>> inserts completion tracepoint explicitly - that could not be
+>> traced such event using blktrace.
+>>
+>> It won't affect tracing normal (request-based) disk devices
+>> and nested bio handling paths.
+>>
+>> Signed-off-by: Namhyung Kim<namhyung@gmail.com>
+>> ---
+>>   block/blk-core.c          |    5 +++++
+>>   fs/bio.c                  |    7 +++++++
+>>   include/linux/blk_types.h |    1 +
+>>   3 files changed, 13 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/block/blk-core.c b/block/blk-core.c
+>> index 1b4fd93af2c0..f61310323954 100644
+>> --- a/block/blk-core.c
+>> +++ b/block/blk-core.c
+>> @@ -165,6 +165,9 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
+>>   	if (unlikely(rq->cmd_flags&  REQ_QUIET))
+>>   		set_bit(BIO_QUIET,&bio->bi_flags);
+>>
+>> +	/* completion event was already reported in blk_update_request */
+>> +	clear_bit(BIO_IN_FLIGHT,&bio->bi_flags);
+>> +
+>>   	bio->bi_size -= nbytes;
+>>   	bio->bi_sector += (nbytes>>  9);
+>>
+>> @@ -1662,6 +1665,8 @@ void generic_make_request(struct bio *bio)
+> p>   	do {
+>>   		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
+>>
+>> +		set_bit(BIO_IN_FLIGHT,&bio->bi_flags);
+>> +
+>>   		q->make_request_fn(q, bio);
+>>
+>>   		bio = bio_list_pop(current->bio_list);
+>> diff --git a/fs/bio.c b/fs/bio.c
+>> index b1fe82cf88cf..10fb7a1d74ba 100644
+>> --- a/fs/bio.c
+>> +++ b/fs/bio.c
+>> @@ -1447,6 +1447,13 @@ void bio_endio(struct bio *bio, int error)
+>>   	else if (!test_bit(BIO_UPTODATE,&bio->bi_flags))
+>>   		error = -EIO;
+>>
+>> +	if (test_bit(BIO_IN_FLIGHT,&bio->bi_flags)) {
+>> +		struct request_queue *q = bdev_get_queue(bio->bi_bdev);
+>> +
+>> +		trace_block_bio_complete(q, bio, error);
+>> +		clear_bit(BIO_IN_FLIGHT,&bio->bi_flags);
+>> +	}
+>
+> This really should be filtered from the consumer side.  Not on TP
+> itself.  Doing it like this makes the TP useless for other consumers
+> and adds unnecessary flag and operations on it even when the TP is not
+> in use.  Why not just trigger the TP on boi_endio() and let blktrace
+> probe filter out bounced or cloned completions?
 
---=-+EUPP7btfq7dAMkEb70R
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I understand your concerns. However, the blktrace cannot get 
+bio->bi_flags info in its current form AFAIK. Doing it will require 
+extending struct blk_io_trace and it'll cause a compatibility issue,
+I guess.
 
-On Mon, 2012-01-09 at 02:47 +0000, Ben Hutchings wrote:
-> On Sun, 2012-01-08 at 16:18 -0800, Linus Torvalds wrote:
-> > Ok, both of the patches look sane to me, but it would really be nice
-> > to hear from somebody with the actual affected architectures, and get
-> > a tested-by.
-> >=20
-> > Testing it on hacked-up x86 sounds fine, but doesn't quite have the
-> > same kind of "yes, this fixes the actual problem" feel to it.
->=20
-> Indeed.
->=20
-> > Also, can you clarify: does the second patch make the first patch just
-> > an "irrelevant safety net", or are there possible callers of
-> > topology_add_dev() that could cause problems? I'm just wondering
-> > whether maybe the safety net ends up then possibly hiding some future
-> > bug where we (once more) don't register a cpu and then never really
-> > notice?
-> [...]
->=20
-> driver_init() doesn't check that cpu_dev_init() - or any of the other
-> functions it calls - is successful.  So in theory at least we could boot
-> and still have no CPU devices after the first patch.
+Anyway I think the needs of tracing bio based drivers are growing so 
+it'd be great the blktrace supports it as well. Also as we've run out of 
+act_mask bits, it might be needed a room for extending.
 
-I mean to say that we could have no CPU devices after the *second*
-patch.  So the first patch is an extra defence against that.  (Though we
-could just as well panic if register_cpu() fails at boot time.)
+But before proceeding, I'd like to listen comments/advices from people. 
+Jens?
 
-Ben.
-
---=20
-Ben Hutchings
-Life is what happens to you while you're busy making other plans.
-                                                               - John Lenno=
-n
-
---=-+EUPP7btfq7dAMkEb70R
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATwpXeOe/yOyVhhEJAQqv4hAAmxz39WA7VeE51w9F4/nGB63uYn4aZHMc
-GwMczr/JTSE8gL4mmedOY4My7bUEN+l3u+DW6jYqK3FJnNOlSFw7NTHQOkcz/AYW
-75sLGGkjRZvwTu/kvOUsuCVRPmyvXkBoLA+r0GYAg3sreauiMOTo+GqygocODi+l
-szS/VgMpXyPZIsd8JNXsXKIFUtl+MbF1s/h8YInQmGif9yJ95dBdH7VLawoPjzPE
-FH+94hLBPlw9gu0GsmjI5nv+oxqs9qFtK3KPXrqa7DXORK/pMmfg6RfN/Sd59e8S
-XcPOr4XS/1+w8Vqo6bEklcH030HnrDl9LyKYDjdL4sGirQMzWgrkB1cWMt/xe8jR
-3RnRJA9DKJDz7Q5Bw/nnZwev/fwYHlubmwrfnroQ4Is0ggxpqzXggQPY8WLlsYaa
-+36CXjdJN89qGBXej3dm6b3G9QHjIgJUL5bp3n5ZD0iiW/7LiZKUqoIWL7vGgg3U
-852yhTojZFPGG0RxJ+cX7ifhz2Gdsymv8hRJXiGRiapWT5tgWcwGbEB/7T2uDu1I
-V7jaP8WXGMLO7M6dMmkJ8QrIkqIpKsLpSfF0M6NQ6/vzIqYuqTiX7rBT4heH7/k7
-HoY8OMDLZ6wMKlq162d02sWtOY4fEGLM+3SD9hHVAVRsf+H9K3plfKuBA6q/H63H
-TBWwomoaQ48=
-=olQq
------END PGP SIGNATURE-----
-
---=-+EUPP7btfq7dAMkEb70R--
+Thanks,
+Namhyung Kim
