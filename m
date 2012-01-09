@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab2AIT6s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 14:58:48 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:54971 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933081Ab2AIT6r (ORCPT
+	id S933355Ab2AIUHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 15:07:37 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34767 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933137Ab2AIUHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 14:58:47 -0500
-Message-ID: <4F0B54A0.20905@xenotime.net>
-Date: Mon, 09 Jan 2012 12:57:04 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 9 Jan 2012 15:07:36 -0500
+Date: Mon, 9 Jan 2012 20:07:34 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: dd diasemi <dd.diasemi@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: drivers/regulator/core.c: Fixes mapping inside
+	regulator_mode_to_status() and makes it returning -EINVAL on
+	invalid input.
+Message-ID: <20120109200734.GB30766@opensource.wolfsonmicro.com>
+References: <1326111140.22107.9.camel@sw-eng-lt-dc-vm2> <20120109161456.GC2974@opensource.wolfsonmicro.com> <CAEqHmAte=rvhjGUEdMgNQKfvPxSVTFR5TfWy13VPEhZj0T53KQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@suse.de>, alsa-devel@alsa-project.org
-Subject: Re: linux-next: Tree for Jan 9 (sound/soc vs. drivers/misc)
-References: <20120109170457.4465dfc66a0eace4a2230fef@canb.auug.org.au>
-In-Reply-To: <20120109170457.4465dfc66a0eace4a2230fef@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAEqHmAte=rvhjGUEdMgNQKfvPxSVTFR5TfWy13VPEhZj0T53KQ@mail.gmail.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2012 10:04 PM, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Changes since 20120106:
-> 
-> This tree is still broken for sparc64 defconfig (at least).
+On Mon, Jan 09, 2012 at 07:20:50PM +0000, dd diasemi wrote:
+> On Mon, Jan 9, 2012 at 4:14 PM, Mark Brown
 
+> >>       default:
+> >> -             return 0;
+> >> +             return -EINVAL;
 
-AFAICT, all builds (on X86_32 or X86_64) have this kconfig warning:
+> > This behaviour is deliberate.
 
-drivers/misc/Kconfig:212:error: recursive dependency detected!
-drivers/misc/Kconfig:212:	symbol ATMEL_SSC is selected by SND_ATMEL_SOC_SSC
-sound/soc/atmel/Kconfig:9:	symbol SND_ATMEL_SOC_SSC is selected by SND_AT91_SOC_SAM9G20_WM8731
-sound/soc/atmel/Kconfig:18:	symbol SND_AT91_SOC_SAM9G20_WM8731 depends on ATMEL_SSC
+> For this moment, the only usage is in one file in
+> wm831x_aldo_get_status() and wm831x_gp_ldo_get_status():
+> 	ret = wm831x_aldo_get_mode(rdev);
+> 	if (ret < 0)
+> 		return ret;
+> 	else
+> 		return regulator_mode_to_status(ret);
 
+> The usage mistreats the signed value 'ret' as wm831x_aldo_get_mode()
+> always returns 0 on communication error. It effects in response as if
+> the regulator was off.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> If that behaviour is deliberate, I would suggest to make it explicit:
+>  	default:
+> -		return 0;
+> +		return REGULATOR_STATUS_OFF;
+
+That's not the deliberate behaviour, the deliberate behaviour is to
+return no mode if we didn't find one.
