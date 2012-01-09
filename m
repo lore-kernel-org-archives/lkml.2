@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589Ab2AIQuS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:50:18 -0500
+	id S932634Ab2AIQu3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:50:29 -0500
 Received: from mail-ww0-f44.google.com ([74.125.82.44]:55042 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452Ab2AIQuO (ORCPT
+	with ESMTP id S932433Ab2AIQuX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:50:14 -0500
+	Mon, 9 Jan 2012 11:50:23 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, acme@infradead.org,
         robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
         asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu
-Subject: [PATCH 08/13] perf_events: add LBR software filter support for Intel X86 (v3)
-Date: Mon,  9 Jan 2012 17:49:16 +0100
-Message-Id: <1326127761-2723-9-git-send-email-eranian@google.com>
+Subject: [PATCH 11/13] perf: add code to support PERF_SAMPLE_BRANCH_STACK (v3)
+Date: Mon,  9 Jan 2012 17:49:19 +0100
+Message-Id: <1326127761-2723-12-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1326127761-2723-1-git-send-email-eranian@google.com>
 References: <1326127761-2723-1-git-send-email-eranian@google.com>
@@ -22,492 +22,890 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an internal sofware filter to complement
-the (optional) LBR hardware filter.
+From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 
-The software filter is necessary:
-- as a substitute when there is no HW LBR filter (e.g., Atom, Core)
-- to complement HW LBR filter in case of errata (e.g., Nehalem/Westmere)
-- to provide finer grain filtering (e.g., all processors)
+This patch adds:
+- ability to parse samples with PERF_SAMPLE_BRANCH_STACK
+- sort on branches
+- build histograms on branches
 
-Sometimes, the LBR HW filter cannot distinguish between two types
-of branches. For instance, to capture syscall as CALLS, it is necessary
-to enable the LBR_FAR filter which will also capture JMP instructions.
-Thus, a second pass is necessary to filter those out, this is what the
-SW filter can do.
-
-The SW filter is built on top of the internal x86 disassembler. It
-is a best effort filter especially for user level code. It is subject
-to the availability of the text page of the program.
-
-The SW filter is enabled on all Intel X86 processors. It is bypassed
-when the user is capturing all branches at all priv levels.
-
+Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- arch/x86/kernel/cpu/perf_event.h           |   12 +
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |   12 +-
- arch/x86/kernel/cpu/perf_event_intel_lbr.c |  322 +++++++++++++++++++++++++++-
- 3 files changed, 326 insertions(+), 20 deletions(-)
+ tools/perf/perf.h          |   17 ++
+ tools/perf/util/annotate.c |    2 +-
+ tools/perf/util/event.h    |    1 +
+ tools/perf/util/evsel.c    |   10 ++
+ tools/perf/util/hist.c     |   93 +++++++++---
+ tools/perf/util/hist.h     |    7 +
+ tools/perf/util/session.c  |   72 +++++++++
+ tools/perf/util/session.h  |    4 +
+ tools/perf/util/sort.c     |  361 +++++++++++++++++++++++++++++++++-----------
+ tools/perf/util/sort.h     |    5 +
+ tools/perf/util/symbol.h   |   13 ++
+ 11 files changed, 474 insertions(+), 111 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
-index 776fb5a..d038cd1 100644
---- a/arch/x86/kernel/cpu/perf_event.h
-+++ b/arch/x86/kernel/cpu/perf_event.h
-@@ -132,6 +132,7 @@ struct cpu_hw_events {
- 	struct perf_branch_stack	lbr_stack;
- 	struct perf_branch_entry	lbr_entries[MAX_LBR_ENTRIES];
- 	struct er_account		*lbr_sel;
-+	u64				br_sel;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 64f8bee..513617c 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -180,6 +180,23 @@ struct ip_callchain {
+ 	u64 ips[0];
+ };
  
- 	/*
- 	 * Intel host/guest exclude bits
-@@ -455,6 +456,17 @@ extern struct event_constraint emptyconstraint;
- 
- extern struct event_constraint unconstrained;
- 
-+static inline bool kernel_ip(unsigned long ip)
-+{
-+#ifdef CONFIG_X86_32
-+	return ip > PAGE_OFFSET;
-+#else
-+	return (long)ip < 0;
-+#endif
-+}
-+
-+int intel_pmu_setup_lbr_filter(struct perf_event *event);
-+
- #ifdef CONFIG_CPU_SUP_AMD
- 
- int amd_pmu_init(void);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 04c71ea..db0aa19 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -3,6 +3,7 @@
- #include <linux/slab.h>
- 
- #include <asm/perf_event.h>
-+#include <asm/insn.h>
- 
- #include "perf_event.h"
- 
-@@ -470,17 +471,6 @@ void intel_pmu_pebs_disable_all(void)
- 		wrmsrl(MSR_IA32_PEBS_ENABLE, 0);
- }
- 
--#include <asm/insn.h>
--
--static inline bool kernel_ip(unsigned long ip)
--{
--#ifdef CONFIG_X86_32
--	return ip > PAGE_OFFSET;
--#else
--	return (long)ip < 0;
--#endif
--}
--
- static int intel_pmu_pebs_fixup_ip(struct pt_regs *regs)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_lbr.c b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-index 84712b1..99e4011 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_lbr.c
-@@ -3,6 +3,7 @@
- 
- #include <asm/perf_event.h>
- #include <asm/msr.h>
-+#include <asm/insn.h>
- 
- #include "perf_event.h"
- 
-@@ -60,6 +61,53 @@ enum {
- 	     (x) < PERF_SAMPLE_BRANCH_MAX; (x) <<= 1)
- 
- /*
-+ * X86 control flow change classification
-+ * X86 control flow changes include branches, interrupts, traps, faults
-+ */
-+enum {
-+	X86_BR_NONE     = 0,      /* unknown */
-+
-+	X86_BR_USER     = 1 << 0, /* branch target is user */
-+	X86_BR_KERNEL   = 1 << 1, /* branch target is kernel */
-+
-+	X86_BR_CALL     = 1 << 2, /* call */
-+	X86_BR_RET      = 1 << 3, /* return */
-+	X86_BR_SYSCALL  = 1 << 4, /* syscall */
-+	X86_BR_SYSRET   = 1 << 5, /* syscall return */
-+	X86_BR_INT      = 1 << 6, /* sw interrupt */
-+	X86_BR_IRET     = 1 << 7, /* return from interrupt */
-+	X86_BR_JCC      = 1 << 8, /* conditional */
-+	X86_BR_JMP      = 1 << 9, /* jump */
-+	X86_BR_IRQ      = 1 << 10,/* hw interrupt or trap or fault */
-+	X86_BR_IND_CALL = 1 << 11,/* indirect calls */
++struct branch_flags {
++	u64 mispred:1;
++	u64 predicted:1;
++	u64 reserved:62;
 +};
 +
-+#define X86_BR_PLM (X86_BR_USER | X86_BR_KERNEL)
++struct branch_entry {
++	u64				from;
++	u64				to;
++	struct branch_flags flags;
++};
 +
-+#define X86_BR_ANY       \
-+	(X86_BR_CALL    |\
-+	 X86_BR_RET     |\
-+	 X86_BR_SYSCALL |\
-+	 X86_BR_SYSRET  |\
-+	 X86_BR_INT     |\
-+	 X86_BR_IRET    |\
-+	 X86_BR_JCC     |\
-+	 X86_BR_JMP	 |\
-+	 X86_BR_IRQ	 |\
-+	 X86_BR_IND_CALL)
++struct branch_stack {
++	u64				nr;
++	struct branch_entry	entries[0];
++};
 +
-+#define X86_BR_ALL (X86_BR_PLM | X86_BR_ANY)
-+
-+#define X86_BR_ANY_CALL		 \
-+	(X86_BR_CALL		|\
-+	 X86_BR_IND_CALL	|\
-+	 X86_BR_SYSCALL		|\
-+	 X86_BR_IRQ		|\
-+	 X86_BR_INT)
-+
-+static void intel_pmu_lbr_filter(struct cpu_hw_events *cpuc);
-+
-+/*
-  * We only support LBR implementations that have FREEZE_LBRS_ON_PMI
-  * otherwise it becomes near impossible to get a reliable stack.
-  */
-@@ -132,6 +180,7 @@ void intel_pmu_lbr_enable(struct perf_event *event)
- 		intel_pmu_lbr_reset();
- 		cpuc->lbr_context = event->ctx;
+ extern bool perf_host, perf_guest;
+ extern const char perf_version_string[];
+ 
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 011ed26..8248d80 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
+ 
+ 	pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
+ 
+-	if (addr >= sym->end)
++	if (addr >= sym->end || addr < sym->start)
+ 		return 0;
+ 
+ 	offset = addr - sym->start;
+diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
+index cbdeaad..1b19728 100644
+--- a/tools/perf/util/event.h
++++ b/tools/perf/util/event.h
+@@ -81,6 +81,7 @@ struct perf_sample {
+ 	u32 raw_size;
+ 	void *raw_data;
+ 	struct ip_callchain *callchain;
++	struct branch_stack *branch_stack;
+ };
+ 
+ #define BUILD_ID_SIZE 20
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 667f3b7..472fc8c 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -575,6 +575,16 @@ int perf_event__parse_sample(const union perf_event *event, u64 type,
+ 		data->raw_data = (void *) pdata;
  	}
-+	cpuc->br_sel = event->hw.branch_reg.reg;
  
- 	cpuc->lbr_users++;
- }
-@@ -253,6 +302,45 @@ void intel_pmu_lbr_read(void)
- 		intel_pmu_lbr_read_32(cpuc);
- 	else
- 		intel_pmu_lbr_read_64(cpuc);
++	if (type & PERF_SAMPLE_BRANCH_STACK) {
++		u64 sz;
 +
-+	intel_pmu_lbr_filter(cpuc);
-+}
++		data->branch_stack = (struct branch_stack *)array;
++		array++; /* nr */
 +
-+/*
-+ * SW filter is used:
-+ * - in case there is no HW filter
-+ * - in case the HW filter has errata or limitations
-+ */
-+static void intel_pmu_setup_sw_lbr_filter(struct perf_event *event)
-+{
-+	u64 br_type = event->attr.branch_sample_type;
-+	int mask = 0;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_USER)
-+		mask |= X86_BR_USER;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_KERNEL)
-+		mask |= X86_BR_KERNEL;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_ANY) {
-+		mask |= X86_BR_ANY;
-+		goto done;
++		sz = data->branch_stack->nr * sizeof(struct branch_entry);
++		sz /= sizeof(uint64_t);
++		array += sz;
 +	}
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_ANY_CALL)
-+		mask |= X86_BR_ANY_CALL;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_ANY_RETURN)
-+		mask |= X86_BR_RET | X86_BR_IRET | X86_BR_SYSRET;
-+
-+	if (br_type & PERF_SAMPLE_BRANCH_IND_CALL)
-+		mask |= X86_BR_IND_CALL;
-+done:
-+	/*
-+	 * stash actual user request into reg, it may
-+	 * be used by fixup code for some CPU
-+   */
-+	event->hw.branch_reg.reg = mask;
- }
- 
- /*
-@@ -288,9 +376,9 @@ static int intel_pmu_setup_hw_lbr_filter(struct perf_event *event)
  	return 0;
  }
  
--static int intel_pmu_setup_lbr_filter(struct perf_event *event)
-+int intel_pmu_setup_lbr_filter(struct perf_event *event)
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 6f505d1..66f9936 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -54,9 +54,11 @@ static void hists__calc_col_len(struct hists *hists, struct hist_entry *h)
  {
--	u64 br_type = event->attr.branch_sample_type;
-+	int ret = 0;
+ 	u16 len;
  
- 	/*
- 	 * no LBR on this PMU
-@@ -299,15 +387,210 @@ static int intel_pmu_setup_lbr_filter(struct perf_event *event)
- 		return -EOPNOTSUPP;
+-	if (h->ms.sym)
+-		hists__new_col_len(hists, HISTC_SYMBOL, h->ms.sym->namelen);
+-	else {
++	if (h->ms.sym) {
++		int n = (int)h->ms.sym->namelen + 4;
++		int symlen = max(n, BITS_PER_LONG / 4 + 6);
++		hists__new_col_len(hists, HISTC_SYMBOL, symlen);
++	} else {
+ 		const unsigned int unresolved_col_width = BITS_PER_LONG / 4;
  
- 	/*
--	 * if no LBR HW filter, users can only
--	 * capture all branches
-+	 * setup SW LBR filter
- 	 */
--	if (!x86_pmu.lbr_sel_map) {
--		if (br_type != PERF_SAMPLE_BRANCH_ALL)
--			return -EOPNOTSUPP;
--		return 0;
-+	intel_pmu_setup_sw_lbr_filter(event);
-+
-+	/*
-+	 * setup HW LBR filter, if any
-+	 */
-+	if (x86_pmu.lbr_sel_map)
-+		ret = intel_pmu_setup_hw_lbr_filter(event);
-+
-+	return ret;
-+}
-+
-+/*
-+ * return the type of control flow change at address "from"
-+ * intruction is not necessarily a branch (in case of interrupt).
-+ *
-+ * The branch type returned also includes the priv level of the
-+ * target of the control flow change (X86_BR_USER, X86_BR_KERNEL).
-+ *
-+ * If a branch type is unknown OR the instruction cannot be
-+ * decoded (e.g., text page not present), then X86_BR_NONE is
-+ * returned.
-+ */
-+static int branch_type(unsigned long from, unsigned long to)
-+{
-+	struct insn insn;
-+	void *addr;
-+	int bytes, size = MAX_INSN_SIZE;
-+	int ret = X86_BR_NONE;
-+	int ext, to_plm, from_plm;
-+	u8 buf[MAX_INSN_SIZE];
-+	int is64 = 0;
-+
-+	to_plm = kernel_ip(to) ? X86_BR_KERNEL : X86_BR_USER;
-+	from_plm = kernel_ip(from) ? X86_BR_KERNEL : X86_BR_USER;
-+
-+	/*
-+	 * maybe zero if lbr did not fill up after a reset by the time
-+	 * we get a PMU interrupt
-+	 */
-+	if (from == 0 || to == 0)
-+		return X86_BR_NONE;
-+
-+	if (from_plm == X86_BR_USER) {
-+		/*
-+		 * can happen if measuring at the user level only
-+		 * and we interrupt in a kernel thread, e.g., idle.
-+		 */
-+		if (!current->mm)
-+			return X86_BR_NONE;
-+
-+		/* may fail if text not present */
-+		bytes = copy_from_user_nmi(buf, (void __user *)from, size);
-+		if (bytes != size)
-+			return X86_BR_NONE;
-+
-+		addr = buf;
-+	} else
-+		addr = (void *)from;
-+
-+	/*
-+	 * decoder needs to know the ABI especially
-+	 * on 64-bit systems running 32-bit apps
-+	 */
-+#ifdef CONFIG_X86_64
-+	is64 = kernel_ip((unsigned long)addr) || !test_thread_flag(TIF_IA32);
-+#endif
-+	insn_init(&insn, addr, is64);
-+	insn_get_opcode(&insn);
-+
-+	switch (insn.opcode.bytes[0]) {
-+	case 0xf:
-+		switch (insn.opcode.bytes[1]) {
-+		case 0x05: /* syscall */
-+		case 0x34: /* sysenter */
-+			ret = X86_BR_SYSCALL;
-+			break;
-+		case 0x07: /* sysret */
-+		case 0x35: /* sysexit */
-+			ret = X86_BR_SYSRET;
-+			break;
-+		case 0x80 ... 0x8f: /* conditional */
-+			ret = X86_BR_JCC;
-+			break;
-+		default:
-+			ret = X86_BR_NONE;
-+		}
-+		break;
-+	case 0x70 ... 0x7f: /* conditional */
-+		ret = X86_BR_JCC;
-+		break;
-+	case 0xc2: /* near ret */
-+	case 0xc3: /* near ret */
-+	case 0xca: /* far ret */
-+	case 0xcb: /* far ret */
-+		ret = X86_BR_RET;
-+		break;
-+	case 0xcf: /* iret */
-+		ret = X86_BR_IRET;
-+		break;
-+	case 0xcc ... 0xce: /* int */
-+		ret = X86_BR_INT;
-+		break;
-+	case 0xe8: /* call near rel */
-+	case 0x9a: /* call far absolute */
-+		ret = X86_BR_CALL;
-+		break;
-+	case 0xe0 ... 0xe3: /* loop jmp */
-+		ret = X86_BR_JCC;
-+		break;
-+	case 0xe9 ... 0xeb: /* jmp */
-+		ret = X86_BR_JMP;
-+		break;
-+	case 0xff: /* call near absolute, call far absolute ind */
-+		insn_get_modrm(&insn);
-+		ext = (insn.modrm.bytes[0] >> 3) & 0x7;
-+		switch (ext) {
-+		case 2: /* near ind call */
-+		case 3: /* far ind call */
-+			ret = X86_BR_IND_CALL;
-+			break;
-+		case 4:
-+		case 5:
-+			ret = X86_BR_JMP;
-+			break;
-+		}
-+		break;
-+	default:
-+		ret = X86_BR_NONE;
-+	}
-+	/*
-+	 * interrupts, traps, faults (and thus ring transition) may
-+	 * occur on any instructions. Thus, to classify them correctly,
-+	 * we need to first look at the from and to priv levels. If they
-+	 * are different and to is in the kernel, then it indicates
-+	 * a ring transition. If the from instruction is not a ring
-+	 * transition instr (syscall, systenter, int), then it means
-+	 * it was a irq, trap or fault.
-+	 *
-+	 * we have no way of detecting kernel to kernel faults.
-+	 */
-+	if (from_plm == X86_BR_USER && to_plm == X86_BR_KERNEL
-+	    && ret != X86_BR_SYSCALL && ret != X86_BR_INT)
-+		ret = X86_BR_IRQ;
-+
-+	/*
-+	 * branch priv level determined by target as
-+	 * is done by HW when LBR_SELECT is implemented
-+	 */
-+	if (ret != X86_BR_NONE)
-+		ret |= to_plm;
-+
-+	return ret;
-+}
-+
-+/*
-+ * implement actual branch filter based on user demand.
-+ * Hardware may not exactly satisfy that request, thus
-+ * we need to inspect opcodes. Mismatched branches are
-+ * discarded. Therefore, the number of branches returned
-+ * in PERF_SAMPLE_BRANCH_STACK sample may vary.
-+ */
-+static void
-+intel_pmu_lbr_filter(struct cpu_hw_events *cpuc)
-+{
-+	u64 from, to;
-+	int br_sel = cpuc->br_sel;
-+	int i, j, type;
-+	bool compress = false;
-+
-+	/* if sampling all branches, then nothing to filter */
-+	if ((br_sel & X86_BR_ALL) == X86_BR_ALL)
-+		return;
-+
-+	for (i = 0; i < cpuc->lbr_stack.nr; i++) {
-+
-+		from = cpuc->lbr_entries[i].from;
-+		to = cpuc->lbr_entries[i].to;
-+
-+		type = branch_type(from, to);
-+
-+		/* if type does not correspond, then discard */
-+		if (type == X86_BR_NONE || (br_sel & type) != type) {
-+			cpuc->lbr_entries[i].from = 0;
-+			compress = true;
-+		}
-+	}
-+
-+	if (!compress)
-+		return;
-+
-+	/* remove all entries with from=0 */
-+	for (i = 0; i < cpuc->lbr_stack.nr; ) {
-+		if (!cpuc->lbr_entries[i].from) {
-+			j = i;
-+			while (++j < cpuc->lbr_stack.nr)
-+				cpuc->lbr_entries[j-1] = cpuc->lbr_entries[j];
-+			cpuc->lbr_stack.nr--;
-+			if (!cpuc->lbr_entries[i].from)
-+				continue;
-+		}
-+		i++;
- 	}
--	return intel_pmu_setup_hw_lbr_filter(event);
+ 		if (hists__col_len(hists, HISTC_DSO) < unresolved_col_width &&
+@@ -195,26 +197,14 @@ static u8 symbol__parent_filter(const struct symbol *parent)
+ 	return 0;
  }
+ 
+-struct hist_entry *__hists__add_entry(struct hists *hists,
++static struct hist_entry *add_hist_entry(struct hists *hists,
++				      struct hist_entry *entry,
+ 				      struct addr_location *al,
+-				      struct symbol *sym_parent, u64 period)
++				      u64 period)
+ {
+ 	struct rb_node **p;
+ 	struct rb_node *parent = NULL;
+ 	struct hist_entry *he;
+-	struct hist_entry entry = {
+-		.thread	= al->thread,
+-		.ms = {
+-			.map	= al->map,
+-			.sym	= al->sym,
+-		},
+-		.cpu	= al->cpu,
+-		.ip	= al->addr,
+-		.level	= al->level,
+-		.period	= period,
+-		.parent = sym_parent,
+-		.filtered = symbol__parent_filter(sym_parent),
+-	};
+ 	int cmp;
+ 
+ 	pthread_mutex_lock(&hists->lock);
+@@ -225,7 +215,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 		parent = *p;
+ 		he = rb_entry(parent, struct hist_entry, rb_node_in);
+ 
+-		cmp = hist_entry__cmp(&entry, he);
++		cmp = hist_entry__cmp(entry, he);
+ 
+ 		if (!cmp) {
+ 			he->period += period;
+@@ -239,7 +229,7 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 			p = &(*p)->rb_right;
+ 	}
+ 
+-	he = hist_entry__new(&entry);
++	he = hist_entry__new(entry);
+ 	if (!he)
+ 		goto out_unlock;
+ 
+@@ -252,6 +242,69 @@ struct hist_entry *__hists__add_entry(struct hists *hists,
+ 	return he;
+ }
+ 
++struct hist_entry *__hists__add_branch_entry(struct hists *self,
++					     struct addr_location *al,
++					     struct symbol *sym_parent,
++					     struct branch_info *bi,
++					     u64 period){
++	struct hist_entry entry = {
++		.thread	= al->thread,
++		.ms = {
++			.map	= bi->to.map,
++			.sym	= bi->to.sym,
++		},
++		.cpu	= al->cpu,
++		.ip	= bi->to.addr,
++		.level	= al->level,
++		.period	= period,
++		.parent = sym_parent,
++		.filtered = symbol__parent_filter(sym_parent),
++		.branch_info = bi,
++	};
++	struct hist_entry *he;
++
++	he = add_hist_entry(self, &entry, al, period);
++	if (!he)
++		return NULL;
++
++	/*
++	 * in branch mode, we do not display al->sym, al->addr
++	 * but instead what is in branch_info. The addresses and
++	 * symbols there may need wider columns, so make sure they
++	 * are taken into account.
++	 *
++	 * hists__calc_col_len() tracks the max column width, so
++	 * we need to call it for both the from and to addresses
++	 */
++	entry.ip     = bi->from.addr;
++	entry.ms.map = bi->from.map;
++	entry.ms.sym = bi->from.sym;
++	hists__calc_col_len(self, &entry);
++
++	return he;
++}
++
++struct hist_entry *__hists__add_entry(struct hists *self,
++				      struct addr_location *al,
++				      struct symbol *sym_parent, u64 period)
++{
++	struct hist_entry entry = {
++		.thread	= al->thread,
++		.ms = {
++			.map	= al->map,
++			.sym	= al->sym,
++		},
++		.cpu	= al->cpu,
++		.ip	= al->addr,
++		.level	= al->level,
++		.period	= period,
++		.parent = sym_parent,
++		.filtered = symbol__parent_filter(sym_parent),
++	};
++
++	return add_hist_entry(self, &entry, al, period);
++}
++
+ int64_t
+ hist_entry__cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index f55f0a8..f277e7b 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -41,6 +41,7 @@ enum hist_column {
+ 	HISTC_COMM,
+ 	HISTC_PARENT,
+ 	HISTC_CPU,
++	HISTC_MISPREDICT,
+ 	HISTC_NR_COLS, /* Last entry */
+ };
+ 
+@@ -72,6 +73,12 @@ int hist_entry__snprintf(struct hist_entry *self, char *bf, size_t size,
+ 			 struct hists *hists);
+ void hist_entry__free(struct hist_entry *);
+ 
++struct hist_entry *__hists__add_branch_entry(struct hists *self,
++					     struct addr_location *al,
++					     struct symbol *sym_parent,
++					     struct branch_info* bi,
++					     u64 period);
++
+ void hists__output_resort(struct hists *self);
+ void hists__output_resort_threaded(struct hists *hists);
+ void hists__collapse_resort(struct hists *self);
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b5ca255..6643224 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -229,6 +229,63 @@ static bool symbol__match_parent_regex(struct symbol *sym)
+ 	return 0;
+ }
+ 
++static const u8 cpumodes[] = {
++	PERF_RECORD_MISC_USER,
++	PERF_RECORD_MISC_KERNEL,
++	PERF_RECORD_MISC_GUEST_USER,
++	PERF_RECORD_MISC_GUEST_KERNEL
++};
++#define NCPUMODES (sizeof(cpumodes)/sizeof(u8))
++
++static void ip__resolve_ams(struct machine *self, struct thread *thread,
++			    struct addr_map_symbol *ams,
++			    u64 ip)
++{
++	struct addr_location al;
++	size_t i;
++	u8 m;
++
++	memset(&al, 0, sizeof(al));
++
++	for (i = 0; i < NCPUMODES; i++) {
++		m = cpumodes[i];
++		/*
++		 * we cannot use the header.misc hint to determine whether a
++		 * branch stack address is user, kernel, guest, hypervisor.
++		 * Branches may straddle the kernel/user/hypervisor boundaries.
++		 * Thus, we have to try * consecutively until we find a match
++		 * or else, the symbol is unknown
++		 */
++		thread__find_addr_location(thread, self, m, MAP__FUNCTION,
++				ip, &al, NULL);
++		if (al.sym)
++			goto found;
++	}
++found:
++	ams->addr = ip;
++	ams->sym = al.sym;
++	ams->map = al.map;
++}
++
++struct branch_info *perf_session__resolve_bstack(struct machine *self,
++						 struct thread *thr,
++						 struct branch_stack *bs)
++{
++	struct branch_info *bi;
++	unsigned int i;
++
++	bi = calloc(bs->nr, sizeof(struct branch_info));
++	if (!bi)
++		return NULL;
++
++	for (i = 0; i < bs->nr; i++) {
++		ip__resolve_ams(self, thr, &bi[i].to, bs->entries[i].to);
++		ip__resolve_ams(self, thr, &bi[i].from, bs->entries[i].from);
++		bi[i].flags = bs->entries[i].flags;
++	}
++	return bi;
++}
++
+ int machine__resolve_callchain(struct machine *self, struct perf_evsel *evsel,
+ 			       struct thread *thread,
+ 			       struct ip_callchain *chain,
+@@ -697,6 +754,18 @@ static void callchain__printf(struct perf_sample *sample)
+ 		       i, sample->callchain->ips[i]);
+ }
+ 
++static void branch_stack__printf(struct perf_sample *sample)
++{
++	uint64_t i;
++
++	printf("... branch stack: nr:%" PRIu64 "\n", sample->branch_stack->nr);
++
++	for (i = 0; i < sample->branch_stack->nr; i++)
++		printf("..... %2"PRIu64": %016" PRIx64 " -> %016" PRIx64 "\n",
++			i, sample->branch_stack->entries[i].from,
++			sample->branch_stack->entries[i].to);
++}
++
+ static void perf_session__print_tstamp(struct perf_session *session,
+ 				       union perf_event *event,
+ 				       struct perf_sample *sample)
+@@ -744,6 +813,9 @@ static void dump_sample(struct perf_session *session, union perf_event *event,
+ 
+ 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN)
+ 		callchain__printf(sample);
++
++	if (session->sample_type & PERF_SAMPLE_BRANCH_STACK)
++		branch_stack__printf(sample);
+ }
+ 
+ static struct machine *
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index 37bc383..f407338 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -73,6 +73,10 @@ int perf_session__resolve_callchain(struct perf_session *self, struct perf_evsel
+ 				    struct ip_callchain *chain,
+ 				    struct symbol **parent);
+ 
++struct branch_info *perf_session__resolve_bstack(struct machine *self,
++						 struct thread *thread,
++						 struct branch_stack *bs);
++
+ bool perf_session__has_traces(struct perf_session *self, const char *msg);
+ 
+ void mem_bswap_64(void *src, int byte_size);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 16da30d..4c7fe4e 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -8,6 +8,7 @@ const char	default_sort_order[] = "comm,dso,symbol";
+ const char	*sort_order = default_sort_order;
+ int		sort__need_collapse = 0;
+ int		sort__has_parent = 0;
++bool		sort__branch_mode;
+ 
+ enum sort_type	sort__first_dimension;
+ 
+@@ -94,6 +95,26 @@ static int hist_entry__comm_snprintf(struct hist_entry *self, char *bf,
+ 	return repsep_snprintf(bf, size, "%*s", width, self->thread->comm);
+ }
+ 
++static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
++{
++	struct dso *dso_l = map_l ? map_l->dso : NULL;
++	struct dso *dso_r = map_r ? map_r->dso : NULL;
++	const char *dso_name_l, *dso_name_r;
++
++	if (!dso_l || !dso_r)
++		return cmp_null(dso_l, dso_r);
++
++	if (verbose) {
++		dso_name_l = dso_l->long_name;
++		dso_name_r = dso_r->long_name;
++	} else {
++		dso_name_l = dso_l->short_name;
++		dso_name_r = dso_r->short_name;
++	}
++
++	return strcmp(dso_name_l, dso_name_r);
++}
++
+ struct sort_entry sort_comm = {
+ 	.se_header	= "Command",
+ 	.se_cmp		= sort__comm_cmp,
+@@ -107,36 +128,74 @@ struct sort_entry sort_comm = {
+ static int64_t
+ sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+-	struct dso *dso_l = left->ms.map ? left->ms.map->dso : NULL;
+-	struct dso *dso_r = right->ms.map ? right->ms.map->dso : NULL;
+-	const char *dso_name_l, *dso_name_r;
++	return _sort__dso_cmp(left->ms.map, right->ms.map);
++}
+ 
+-	if (!dso_l || !dso_r)
+-		return cmp_null(dso_l, dso_r);
+ 
+-	if (verbose) {
+-		dso_name_l = dso_l->long_name;
+-		dso_name_r = dso_r->long_name;
+-	} else {
+-		dso_name_l = dso_l->short_name;
+-		dso_name_r = dso_r->short_name;
++static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
++			      u64 ip_l, u64 ip_r)
++{
++	if (!sym_l || !sym_r)
++		return cmp_null(sym_l, sym_r);
++
++	if (sym_l == sym_r)
++		return 0;
++
++	if (sym_l)
++		ip_l = sym_l->start;
++	if (sym_r)
++		ip_r = sym_r->start;
++
++	return (int64_t)(ip_r - ip_l);
++}
++
++static int _hist_entry__dso_snprintf(struct map *map, char *bf,
++				     size_t size, unsigned int width)
++{
++	if (map && map->dso) {
++		const char *dso_name = !verbose ? map->dso->short_name :
++			map->dso->long_name;
++		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
+ 	}
+ 
+-	return strcmp(dso_name_l, dso_name_r);
++	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
+ }
+ 
+ static int hist_entry__dso_snprintf(struct hist_entry *self, char *bf,
+ 				    size_t size, unsigned int width)
+ {
+-	if (self->ms.map && self->ms.map->dso) {
+-		const char *dso_name = !verbose ? self->ms.map->dso->short_name :
+-						  self->ms.map->dso->long_name;
+-		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
++	return _hist_entry__dso_snprintf(self->ms.map, bf, size, width);
++}
++
++static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
++				     u64 ip, char level, char *bf, size_t size,
++				     unsigned int width __used)
++{
++	size_t ret = 0;
++
++	if (verbose) {
++		char o = map ? dso__symtab_origin(map->dso) : '!';
++		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
++				       BITS_PER_LONG / 4, ip, o);
+ 	}
+ 
+-	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
++	ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", level);
++	if (sym)
++		ret += repsep_snprintf(bf + ret, size - ret, "%-*s",
++				       width - ret,
++				       sym->name);
++	else {
++		size_t len = BITS_PER_LONG / 4;
++		ret += repsep_snprintf(bf + ret, size - ret, "%-#.*llx",
++				       len, ip);
++		ret += repsep_snprintf(bf + ret, size - ret, "%-*s",
++				       width - ret, "");
++	}
++
++	return ret;
+ }
+ 
++
+ struct sort_entry sort_dso = {
+ 	.se_header	= "Shared Object",
+ 	.se_cmp		= sort__dso_cmp,
+@@ -144,8 +203,14 @@ struct sort_entry sort_dso = {
+ 	.se_width_idx	= HISTC_DSO,
+ };
+ 
+-/* --sort symbol */
++static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width __used)
++{
++	return _hist_entry__sym_snprintf(self->ms.map, self->ms.sym, self->ip,
++					 self->level, bf, size, width);
++}
+ 
++/* --sort symbol */
+ static int64_t
+ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ {
+@@ -154,40 +219,10 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	if (!left->ms.sym && !right->ms.sym)
+ 		return right->level - left->level;
+ 
+-	if (!left->ms.sym || !right->ms.sym)
+-		return cmp_null(left->ms.sym, right->ms.sym);
+-
+-	if (left->ms.sym == right->ms.sym)
+-		return 0;
+-
+ 	ip_l = left->ms.sym->start;
+ 	ip_r = right->ms.sym->start;
+ 
+-	return (int64_t)(ip_r - ip_l);
+-}
+-
+-static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
+-				    size_t size, unsigned int width __used)
+-{
+-	size_t ret = 0;
+-
+-	if (verbose) {
+-		char o = self->ms.map ? dso__symtab_origin(self->ms.map->dso) : '!';
+-		ret += repsep_snprintf(bf, size, "%-#*llx %c ",
+-				       BITS_PER_LONG / 4, self->ip, o);
+-	}
+-
+-	if (!sort_dso.elide)
+-		ret += repsep_snprintf(bf + ret, size - ret, "[%c] ", self->level);
+-
+-	if (self->ms.sym)
+-		ret += repsep_snprintf(bf + ret, size - ret, "%s",
+-				       self->ms.sym->name);
+-	else
+-		ret += repsep_snprintf(bf + ret, size - ret, "%-#*llx",
+-				       BITS_PER_LONG / 4, self->ip);
+-
+-	return ret;
++	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
+ }
+ 
+ struct sort_entry sort_sym = {
+@@ -246,6 +281,134 @@ struct sort_entry sort_cpu = {
+ 	.se_width_idx	= HISTC_CPU,
+ };
+ 
++static int64_t
++sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return _sort__dso_cmp(left->branch_info->from.map,
++			      right->branch_info->from.map);
++}
++
++static int hist_entry__dso_from_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width)
++{
++	return _hist_entry__dso_snprintf(self->branch_info->from.map,
++					 bf, size, width);
++}
++
++struct sort_entry sort_dso_from = {
++	.se_header	= "Source Shared Object",
++	.se_cmp		= sort__dso_from_cmp,
++	.se_snprintf	= hist_entry__dso_from_snprintf,
++	.se_width_idx	= HISTC_DSO,
++};
++
++static int64_t
++sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	return _sort__dso_cmp(left->branch_info->to.map,
++		              right->branch_info->to.map);
++}
++
++static int hist_entry__dso_to_snprintf(struct hist_entry *self, char *bf,
++				       size_t size, unsigned int width)
++{
++	return _hist_entry__dso_snprintf(self->branch_info->to.map,
++					 bf, size, width);
++}
++
++static int64_t
++sort__sym_from_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	struct addr_map_symbol *from_l = &left->branch_info->from;
++	struct addr_map_symbol *from_r = &right->branch_info->from;
++
++	if (!from_l->sym && !from_r->sym)
++		return right->level - left->level;
++
++	return _sort__sym_cmp(from_l->sym, from_r->sym, from_l->addr,
++			     from_r->addr);
++}
++
++static int64_t
++sort__sym_to_cmp(struct hist_entry *left, struct hist_entry *right)
++{
++	struct addr_map_symbol *to_l = &left->branch_info->to;
++	struct addr_map_symbol *to_r = &right->branch_info->to;
++
++	if (!to_l->sym && !to_r->sym)
++		return right->level - left->level;
++
++	return _sort__sym_cmp(to_l->sym, to_r->sym, to_l->addr, to_r->addr);
++}
++
++static int hist_entry__sym_from_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width __used)
++{
++	struct addr_map_symbol *from = &self->branch_info->from;
++	return _hist_entry__sym_snprintf(from->map, from->sym, from->addr,
++					 self->level, bf, size, width);
++
++}
++
++static int hist_entry__sym_to_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width __used)
++{
++	struct addr_map_symbol *to = &self->branch_info->to;
++	return _hist_entry__sym_snprintf(to->map, to->sym, to->addr,
++					 self->level, bf, size, width);
++
++}
++
++struct sort_entry sort_dso_to = {
++	.se_header	= "Target Shared Object",
++	.se_cmp		= sort__dso_to_cmp,
++	.se_snprintf	= hist_entry__dso_to_snprintf,
++	.se_width_idx	= HISTC_DSO,
++};
++
++struct sort_entry sort_sym_from = {
++	.se_header	= "Source Symbol",
++	.se_cmp		= sort__sym_from_cmp,
++	.se_snprintf	= hist_entry__sym_from_snprintf,
++	.se_width_idx	= HISTC_SYMBOL,
++};
++
++struct sort_entry sort_sym_to = {
++	.se_header	= "Target Symbol",
++	.se_cmp		= sort__sym_to_cmp,
++	.se_snprintf	= hist_entry__sym_to_snprintf,
++	.se_width_idx	= HISTC_SYMBOL,
++};
++
++static int64_t
++sort__mispredict_cmp(struct hist_entry *left, struct hist_entry *right){
++	const unsigned char mp = left->branch_info->flags.mispred !=
++					right->branch_info->flags.mispred;
++	const unsigned char p = left->branch_info->flags.predicted !=
++					right->branch_info->flags.predicted;
++
++	return mp || p;
++}
++
++static int hist_entry__mispredict_snprintf(struct hist_entry *self, char *bf,
++				    size_t size, unsigned int width){
++	static const char *out = "N/A";
++
++	if (self->branch_info->flags.predicted)
++		out = "N";
++	else if (self->branch_info->flags.mispred)
++		out = "Y";
++
++	return repsep_snprintf(bf, size, "%-*s", width, out);
++}
++
++struct sort_entry sort_mispredict = {
++	.se_header	= "Branch Mispredicted",
++	.se_cmp		= sort__mispredict_cmp,
++	.se_snprintf	= hist_entry__mispredict_snprintf,
++	.se_width_idx	= HISTC_MISPREDICT,
++};
++
+ struct sort_dimension {
+ 	const char		*name;
+ 	struct sort_entry	*entry;
+@@ -253,14 +416,59 @@ struct sort_dimension {
+ };
+ 
+ static struct sort_dimension sort_dimensions[] = {
+-	{ .name = "pid",	.entry = &sort_thread,	},
+-	{ .name = "comm",	.entry = &sort_comm,	},
+-	{ .name = "dso",	.entry = &sort_dso,	},
+-	{ .name = "symbol",	.entry = &sort_sym,	},
+-	{ .name = "parent",	.entry = &sort_parent,	},
+-	{ .name = "cpu",	.entry = &sort_cpu,	},
++	{ .name = "pid",	.entry = &sort_thread,			},
++	{ .name = "comm",	.entry = &sort_comm,			},
++	{ .name = "dso",	.entry = &sort_dso,			},
++	{ .name = "dso_from",	.entry = &sort_dso_from,.taken = true	},
++	{ .name = "dso_to",	.entry = &sort_dso_to,	.taken = true	},
++	{ .name = "symbol",	.entry = &sort_sym,			},
++	{ .name = "symbol_from",.entry = &sort_sym_from,.taken = true	},
++	{ .name = "symbol_to",	.entry = &sort_sym_to,	.taken = true	},
++	{ .name = "parent",	.entry = &sort_parent,			},
++	{ .name = "cpu",	.entry = &sort_cpu,			},
++	{ .name = "mispredict", .entry = &sort_mispredict, },
+ };
+ 
++static int _sort_dimension__add(struct sort_dimension *sd)
++{
++	if (sd->entry->se_collapse)
++		sort__need_collapse = 1;
++
++	if (sd->entry == &sort_parent) {
++		int ret = regcomp(&parent_regex, parent_pattern, REG_EXTENDED);
++		if (ret) {
++			char err[BUFSIZ];
++
++			regerror(ret, &parent_regex, err, sizeof(err));
++			pr_err("Invalid regex: %s\n%s", parent_pattern, err);
++			return -EINVAL;
++		}
++		sort__has_parent = 1;
++	}
++
++	if (list_empty(&hist_entry__sort_list)) {
++		if (!strcmp(sd->name, "pid"))
++			sort__first_dimension = SORT_PID;
++		else if (!strcmp(sd->name, "comm"))
++			sort__first_dimension = SORT_COMM;
++		else if (!strcmp(sd->name, "dso"))
++			sort__first_dimension = SORT_DSO;
++		else if (!strcmp(sd->name, "symbol"))
++			sort__first_dimension = SORT_SYM;
++		else if (!strcmp(sd->name, "parent"))
++			sort__first_dimension = SORT_PARENT;
++		else if (!strcmp(sd->name, "cpu"))
++			sort__first_dimension = SORT_CPU;
++		else if (!strcmp(sd->name, "mispredict"))
++			sort__first_dimension = SORT_MISPREDICTED;
++	}
++
++	list_add_tail(&sd->entry->list, &hist_entry__sort_list);
++	sd->taken = 1;
++
++	return 0;
++}
++
+ int sort_dimension__add(const char *tok)
+ {
+ 	unsigned int i;
+@@ -271,48 +479,21 @@ int sort_dimension__add(const char *tok)
+ 		if (strncasecmp(tok, sd->name, strlen(tok)))
+ 			continue;
+ 
+-		if (sd->entry == &sort_parent) {
+-			int ret = regcomp(&parent_regex, parent_pattern, REG_EXTENDED);
+-			if (ret) {
+-				char err[BUFSIZ];
+-
+-				regerror(ret, &parent_regex, err, sizeof(err));
+-				pr_err("Invalid regex: %s\n%s", parent_pattern, err);
+-				return -EINVAL;
+-			}
+-			sort__has_parent = 1;
+-		}
+-
+ 		if (sd->taken)
+ 			return 0;
+ 
+-		if (sd->entry->se_collapse)
+-			sort__need_collapse = 1;
+-
+-		if (list_empty(&hist_entry__sort_list)) {
+-			if (!strcmp(sd->name, "pid"))
+-				sort__first_dimension = SORT_PID;
+-			else if (!strcmp(sd->name, "comm"))
+-				sort__first_dimension = SORT_COMM;
+-			else if (!strcmp(sd->name, "dso"))
+-				sort__first_dimension = SORT_DSO;
+-			else if (!strcmp(sd->name, "symbol"))
+-				sort__first_dimension = SORT_SYM;
+-			else if (!strcmp(sd->name, "parent"))
+-				sort__first_dimension = SORT_PARENT;
+-			else if (!strcmp(sd->name, "cpu"))
+-				sort__first_dimension = SORT_CPU;
+-		}
+-
+-		list_add_tail(&sd->entry->list, &hist_entry__sort_list);
+-		sd->taken = 1;
+ 
+-		return 0;
++		if (sort__branch_mode && (sd->entry == &sort_dso ||
++					sd->entry == &sort_sym)){
++			int err = _sort_dimension__add(sd + 1);
++			return err ?: _sort_dimension__add(sd + 2);
++		} else if (sd->entry == &sort_mispredict && !sort__branch_mode)
++			break;
++		else
++			return _sort_dimension__add(sd);
+ 	}
+-
+ 	return -ESRCH;
+ }
+-
+ void setup_sorting(const char * const usagestr[], const struct option *opts)
+ {
+ 	char *tmp, *tok, *str = strdup(sort_order);
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 3f67ae3..effcae1 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -31,11 +31,14 @@ extern const char *parent_pattern;
+ extern const char default_sort_order[];
+ extern int sort__need_collapse;
+ extern int sort__has_parent;
++extern bool sort__branch_mode;
+ extern char *field_sep;
+ extern struct sort_entry sort_comm;
+ extern struct sort_entry sort_dso;
+ extern struct sort_entry sort_sym;
+ extern struct sort_entry sort_parent;
++extern struct sort_entry sort_lbr_dso;
++extern struct sort_entry sort_lbr_sym;
+ extern enum sort_type sort__first_dimension;
+ 
+ /**
+@@ -72,6 +75,7 @@ struct hist_entry {
+ 		struct hist_entry *pair;
+ 		struct rb_root	  sorted_chain;
+ 	};
++	struct branch_info	*branch_info;
+ 	struct callchain_root	callchain[0];
+ };
+ 
+@@ -82,6 +86,7 @@ enum sort_type {
+ 	SORT_SYM,
+ 	SORT_PARENT,
+ 	SORT_CPU,
++	SORT_MISPREDICTED,
+ };
  
  /*
-@@ -348,6 +631,10 @@ void intel_pmu_lbr_init_core(void)
- 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 123c2e1..6297e88 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -5,6 +5,7 @@
+ #include <stdbool.h>
+ #include <stdint.h>
+ #include "map.h"
++#include "../perf.h"
+ #include <linux/list.h>
+ #include <linux/rbtree.h>
+ #include <stdio.h>
+@@ -119,6 +120,18 @@ struct map_symbol {
+ 	bool	      has_children;
+ };
  
-+	/*
-+	 * SW branch filter usage:
-+	 * - compensate for lack of HW filter
-+	 */
- 	pr_cont("4-deep LBR, ");
- }
- 
-@@ -362,6 +649,13 @@ void intel_pmu_lbr_init_nhm(void)
- 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
- 	x86_pmu.lbr_sel_map  = nhm_lbr_sel_map;
- 
-+	/*
-+	 * SW branch filter usage:
-+	 * - workaround LBR_SEL errata (see above)
-+	 * - support syscall, sysret capture.
-+	 *   That requires LBR_FAR but that means far
-+	 *   jmp need to be filtered out
-+	 */
- 	pr_cont("16-deep LBR, ");
- }
- 
-@@ -376,6 +670,12 @@ void intel_pmu_lbr_init_snb(void)
- 	x86_pmu.lbr_sel_mask = LBR_SEL_MASK;
- 	x86_pmu.lbr_sel_map  = snb_lbr_sel_map;
- 
-+	/*
-+	 * SW branch filter usage:
-+	 * - support syscall, sysret capture.
-+	 *   That requires LBR_FAR but that means far
-+	 *   jmp need to be filtered out
-+	 */
- 	pr_cont("16-deep LBR, ");
- }
- 
-@@ -397,5 +697,9 @@ void intel_pmu_lbr_init_atom(void)
- 	x86_pmu.lbr_from   = MSR_LBR_CORE_FROM;
- 	x86_pmu.lbr_to     = MSR_LBR_CORE_TO;
- 
-+	/*
-+	 * SW branch filter usage:
-+	 * - compensate for lack of HW filter
-+	 */
- 	pr_cont("8-deep LBR, ");
- }
++struct addr_map_symbol {
++	struct map    *map;
++	struct symbol *sym;
++	u64	      addr;
++};
++
++struct branch_info {
++	struct addr_map_symbol from;
++	struct addr_map_symbol to;
++	struct branch_flags flags;
++};
++
+ struct addr_location {
+ 	struct thread *thread;
+ 	struct map    *map;
 -- 
 1.7.1
 
