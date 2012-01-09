@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932773Ab2AIWHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:07:40 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42944 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566Ab2AIWHj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:07:39 -0500
+	id S932589Ab2AIWLA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:11:00 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54784 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755101Ab2AIWK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 17:10:58 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: Build error at drivers/base/power/domain_governor.c when PM_RUNTIME is not set
+Date: Mon, 9 Jan 2012 23:14:20 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        linux-samsung-soc@vger.kernel.org
+References: <018a01ccce67$a6eee850$f4ccb8f0$%kim@samsung.com>
+In-Reply-To: <018a01ccce67$a6eee850$f4ccb8f0$%kim@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <4F0B5808.2010900@cfl.rr.com>
-References: <4F0B5808.2010900@cfl.rr.com>
-Date: Mon, 9 Jan 2012 23:07:37 +0100
-X-Google-Sender-Auth: _JmSsub-78_W4Xrljp-zqm6yzBQ
-Message-ID: <CAMuHMdUgScMhtoXonKeJmN1+jJQt_JT0V6Tk--yB-Z8q49rmHg@mail.gmail.com>
-Subject: Re: Multiple consoles
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Phillip Susi <psusi@cfl.rr.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        James Simmons <jsimmons@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201092314.20561.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 22:11, Phillip Susi <psusi@cfl.rr.com> wrote:
-> I was considering some questions I read about setting up a multi-seat system
-> where you have two separate sets of displays, keyboards, mice, and X
-> servers.  The problem someone noticed is that if you run the second X server
-> on tty8, then you have to switch the console to tty8 to activate it, which
-> disables the primary X server.
->
-> It occurred to me that there ought to be an entirely separate set of virtual
-> consoles bound to the second seat, and the second X server ought to run on
-> one of those vcs.  Or of course, you could choose to log into the console
-> and not bother with X.
->
-> Looking at drivers/tty/vt/vt.c, it appears that it was written assuming that
-> there is just one linux console.  It appears to use global variables for
-> keeping track of which vc is active, etc, rather than creating one or more
-> console devices, and store the vc multiplexing information in those devices.
->  So to fix this, vt.c and keyboard.c would need significantly refactored to
-> remove the global variables and create a console device to bind vcs,
-> keyboards, and displays to, and then you could create a second one if you
-> wanted.
->
-> Does this make sense or am I missing something?
+On Monday, January 09, 2012, Kukjin Kim wrote:
+> Hi Rafael,
+> 
+> This is just reporting of build error.
+> 
+> Current mainline happens build error at drivers/base/power/domain_governor.c
+> file like following when CONFIG_PM_RUNTIME is not set. For example, it
+> happens with s3c6400_defconfig now.
+> 
+> drivers/base/power/domain_governor.c: In function 'default_stop_ok':
+> drivers/base/power/domain_governor.c:25: error: 'struct dev_pm_info' has no
+> member named 'max_time_suspended_ns'
+> drivers/base/power/domain_governor.c:29: error: 'struct dev_pm_info' has no
+> member named 'max_time_suspended_ns'
+> drivers/base/power/domain_governor.c: In function 'default_power_down_ok':
+> drivers/base/power/domain_governor.c:94: error: 'struct dev_pm_info' has no
+> member named 'max_time_suspended_ns'
+> drivers/base/power/domain_governor.c:98: error: 'struct dev_pm_info' has no
+> member named 'max_time_suspended_ns'
+> drivers/base/power/domain_governor.c:100: error: 'struct dev_pm_info' has no
+> member named 'suspend_time'
 
-The linux-console project tried to fix this (CC James added).
+The appended patch fixes the problem for me, can you please test it?
 
-Gr{oetje,eeting}s,
+Rafael
 
-                        Geert
+---
+ drivers/base/power/domain_governor.c |   24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Index: linux/drivers/base/power/domain_governor.c
+===================================================================
+--- linux.orig/drivers/base/power/domain_governor.c
++++ linux/drivers/base/power/domain_governor.c
+@@ -12,6 +12,8 @@
+ #include <linux/pm_qos.h>
+ #include <linux/hrtimer.h>
+ 
++#ifdef CONFIG_PM_RUNTIME
++
+ /**
+  * default_stop_ok - Default PM domain governor routine for stopping devices.
+  * @dev: Device to check.
+@@ -137,16 +139,28 @@ static bool default_power_down_ok(struct
+ 	return true;
+ }
+ 
+-struct dev_power_governor simple_qos_governor = {
+-	.stop_ok = default_stop_ok,
+-	.power_down_ok = default_power_down_ok,
+-};
+-
+ static bool always_on_power_down_ok(struct dev_pm_domain *domain)
+ {
+ 	return false;
+ }
+ 
++#else /* !CONFIG_PM_RUNTIME */
++
++bool default_stop_ok(struct device *dev)
++{
++	return false;
++}
++
++#define default_power_down_ok	NULL
++#define always_on_power_down_ok	NULL
++
++#endif /* !CONFIG_PM_RUNTIME */
++
++struct dev_power_governor simple_qos_governor = {
++	.stop_ok = default_stop_ok,
++	.power_down_ok = default_power_down_ok,
++};
++
+ /**
+  * pm_genpd_gov_always_on - A governor implementing an always-on policy
+  */
