@@ -1,121 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab2AIRFu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 12:05:50 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41070 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab2AIRFt (ORCPT
+	id S932581Ab2AIRGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 12:06:03 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:43445 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab2AIRGB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 12:05:49 -0500
-Date: Mon, 9 Jan 2012 22:35:21 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com, len.brown@intel.com,
-        anhua.xu@intel.com, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-Message-ID: <20120109170521.GB29142@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
- <1326103578.2442.50.camel@twins>
- <1326104915.2442.53.camel@twins>
- <20120109110025.GA7988@dirshya.in.ibm.com>
- <1326119707.2442.77.camel@twins>
- <20120109160317.GA29142@dirshya.in.ibm.com>
- <1326125597.2442.90.camel@twins>
+	Mon, 9 Jan 2012 12:06:01 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
+        hch@infradead.org, akpm@linux-foundation.org
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
+	<CA+55aFy-XiMR6XCudvjbPV8Q0cyDxy+iB_BnDxYOJTnskCkw9A@mail.gmail.com>
+Date: Mon, 09 Jan 2012 18:05:32 +0100
+In-Reply-To: <CA+55aFy-XiMR6XCudvjbPV8Q0cyDxy+iB_BnDxYOJTnskCkw9A@mail.gmail.com>
+	(Linus Torvalds's message of "Mon, 9 Jan 2012 08:43:32 -0800")
+Message-ID: <877h10957n.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1326125597.2442.90.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12010917-2000-0000-0000-000005FA6B16
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2012-01-09 17:13:17]:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-> On Mon, 2012-01-09 at 21:33 +0530, Vaidyanathan Srinivasan wrote:
-> 
-> > Yes, based on the architecture and topology, we do have two sweet
-> > spots for power vs performance trade offs.  The first level should be
-> > to reduce power savings with marginal performance impact and second
-> > one will be to go for the most aggressive power savings.
-> 
-> Colour me unconvinced, cache heavy workloads will suffer greatly from
-> your 1.
+> On Mon, Jan 9, 2012 at 2:58 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>>
+>> This patch adds a new dentry flag that is set when the dentry is removed
+>> from the lru and put on the list being processed by
+>> shrink_dentry_list().  The flag is cleared in dentry_lru_del() which is
+>> called if the dentry gets a new reference just before it's pruned.
+>>
+>> Thoughts?
+>
+> Looks reasonable. Were you actually able to reproduce the hang, or how
+> did you notice?
 
-Certain workloads will get hit heavily by '1', so default choice of
-'1' is bad for this case. However many general workloads could give
-good power savings with marginal performance loss.  For those general
-cases, we could keep '1' as default.
+We got a bug report from a partner about hang during reboot.  It's
+actually quite easily reproducible with:
 
-> > The first one should generally be recommended as default to have
-> > a right balance between performance and power savings, while the
-> > second one should be used for reducing power consumption on
-> > unimportant workloads or under certain constraints.
-> > 
-> > Some example policies:
-> > 
-> > sched_powersavings=1:
-> > 
-> >         Enable consolidation at MC level
-> > 
-> > sched_powersavings=2:
-> > 
-> >         Enable aggressive consolidation at MC level and SMT level if
-> >         available. In case arch can benefit from cross node
-> >         consolidation, then enable it.
-> 
-> You fail for mentioning MC/SMT..
+while true; do
+        echo -bond0 > /sys/class/net/bonding_masters
+        echo +bond0 > /sys/class/net/bonding_masters
+        echo -bond1 > /sys/class/net/bonding_masters
+        echo +bond1 > /sys/class/net/bonding_masters
+done
 
-My point was that SMT thread level consolidation comes with larger
-performance loss compared to core level.  We need not expose this
-settings to end user, but kernel can choose 'what' to enable at '2'
-based on architecture/topology.
+That reliably triggers the soft lookup detector for several machines
+that we tested.  It's rather timing sensitive though, because turning on
+DEBUG_SPINLOCK makes it go away.
 
-> > Having the above simple split in policy will enable wide adoption
-> > where the first level can be a recommended default.  Having just
-> > a boolean enable/disable will mean the end-user will have to decide
-> > when to turn on and later off for best workload experience.
-> 
-> Picking one of two states is too hard, hence we given them one of three
-> states to pick from.. How does that make sense?
+I had to add printks to see what's going on, because it wasn't obvious
+from the stack traces and crash dumps.
 
-Ok, I am suggesting that having three states will allow the user to
-decide 'once' and leave the setting, rather than keep changing the
-settings between enable/disable.
-
-I am suggesting that designing powersavings=1 as a good default will
-make the adoption simple.  On the other hand, only having
-power_savings=enable would mean users will have to decide 'when' to
-enable based on some policy, since leaving it enabled could affect
-overall performance significantly.
-
-> > Just similar to cpufreq policy of performance, ondemand and powersave.
-> > They have their unique use cases and this design choice helps us ship
-> > ondemand as default.
-> 
-> You fail for thinking having multiple cpufreq governors is a good thing.
-> The result is that they all suck.
-
-Majority of the users are served by the good default 'ondemand'
-governor that has good powersavings without affecting performance
-a lot.  If we just had performance and powersave governors, we will
-have to choose 'performance' as default and design a method to choose
-powersave only when utilization is low.
-
-I agree with you that we do have too many cpufreq governors and
-tunables than required.  But a good default covers most use cases,
-leaving the rest for corner cases and workload specific tunings.  On
-modern systems, cpuidle states and scheduling policy becomes
-a significant power savings tradeoffs and hence we will need the
-flexibility.
-
---Vaidy
-
-
+Thanks,
+Miklos
