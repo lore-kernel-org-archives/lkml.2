@@ -1,86 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab2AIWXV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:23:21 -0500
-Received: from mailin.studentenwerk.mhn.de ([141.84.225.229]:36917 "EHLO
-	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755793Ab2AIWXT (ORCPT
+	id S933020Ab2AIWZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:25:27 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58271 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755853Ab2AIWZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:23:19 -0500
-X-Greylist: delayed 469 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jan 2012 17:23:19 EST
-From: Wolfgang Walter <wolfgang.walter@stwm.de>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes and cleanups
-Date: Mon, 9 Jan 2012 23:15:27 +0100
-User-Agent: KMail/1.13.7 (Linux/3.2.0-ei+6.4; KDE/4.6.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1326142671.9041.1.camel@lade.trondhjem.org>
-In-Reply-To: <1326142671.9041.1.camel@lade.trondhjem.org>
-Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
+	Mon, 9 Jan 2012 17:25:26 -0500
+Date: Mon, 9 Jan 2012 14:25:06 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Michel Lespinasse <walken@google.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 2/2] SHM_UNLOCK: fix Unevictable pages stranded after
+ swap
+In-Reply-To: <4F0B5146.6090200@gmail.com>
+Message-ID: <alpine.LSU.2.00.1201091342300.1272@eggly.anvils>
+References: <alpine.LSU.2.00.1201061303320.12082@eggly.anvils> <alpine.LSU.2.00.1201061310340.12082@eggly.anvils> <4F0B5146.6090200@gmail.com>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201201092315.28230.wolfgang.walter@stwm.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 January 2012, Trond Myklebust wrote:
-> Hi Linus,
-> 
-> Please pull from the "nfs-for-3.3" branch of the repository at
-> 
->    git pull git://git.linux-nfs.org/projects/trondmy/linux-nfs.git nfs-
-for-3.3
-> 
-> This will update the following files through the appended changesets.
-> 
->   Cheers,
->     Trond
-> 
-> 
-> commit 074b1d12fe2500d7d453902f9266e6674b30d84c
-> Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-> Date:   Mon Jan 9 13:46:26 2012 -0500
-> 
->     NFSv4: Change the default setting of the nfs4_disable_idmapping 
-parameter
->     
->     Now that the use of numeric uids/gids is officially sanctioned in
->     RFC3530bis, it is time to change the default here to 'enabled'.
->     
->     By doing so, we ensure that NFSv4 copies the behaviour of NFSv3 when 
-we're
->     using the default AUTH_SYS authentication (i.e. when the client uses the
->     numeric uids/gids as authentication tokens), so that when new files are
->     created, they will appear to have the correct user/group.
->     It also fixes a number of backward compatibility issues when migrating
->     from NFSv3 to NFSv4 on a platform where the server uses different 
-uid/gid
->     mappings than the client.
->     
->     Note also that this setting has been successfully tested against servers
->     that do not support numeric uids/gids at several Connectathon/Bakeathon
->     events at this point, and the fall back to using string names/groups has
->     been shown to work well in all those test cases.
->     
->     Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> 
+On Mon, 9 Jan 2012, KOSAKI Motohiro wrote:
+> 2012/1/6 Hugh Dickins <hughd@google.com>:
 
+[ check_move_unevictable_page(s) ]
 
-Does this mean that one has to modify all one's clients to get the old 
-behaviour?
+> > 
+> > Leave out the "rotate unevictable list" block: that's a leftover
+> > from when this was used for /proc/sys/vm/scan_unevictable_pages,
+> > whose flawed handling involved looking at pages at tail of LRU.
+> > 
+> > Was there significance to the sequence first ClearPageUnevictable,
+> > then test page_evictable, then SetPageUnevictable here?  I think
+> > not, we're under LRU lock, and have no barriers between those.
+> 
+> If I understand correctly, this is not exactly correct. Because of,
 
-I'm not sure if this is a really good idea. I don't see the advantage. This 
-will break a lot of existing installations when upgrading to >=3.3. And 
-someone migrating from NFSv3 to NFSv4 has to give some thoughts to it anyway.
+Thank you for giving it serious thought:
+such races are hard work to think about.
 
+> PG_mlocked operation is not protected by LRU lock. So, I think we
 
-Regards,
--- 
-Wolfgang Walter
-Studentenwerk München
-Anstalt des öffentlichen Rechts
+Right.  But I don't see that I've made a significant change there.
+
+I may be being lazy, and rushing back to answer you, without giving
+constructive thought to what the precise race is that you see, and
+how we might fix it.  If the case you have in mind is easy for you
+to describe in detail, please do so; but don't hesitate to tell me
+to my own work for myself!
+
+Since the original code didn't have any barriers in it (in the
+!page_evictable path, in the global case: I think that's true of the
+memcg case also, but that is more complicated), how did it differ from
+
+retry:
+	if (page_evictable)
+		blah blah blah;
+	else if (page_evictable)
+		goto retry;
+
+which could be made even "safer" ;) if it were replaced by
+
+retry:
+	if (page_evictable)
+		blah blah blah;
+	else if (page_evictable)
+		goto retry;
+	else if (page_evictable)
+		goto retry;
+
+putback_lru_page() goes through similar doubts as to whether it's made
+the right decision ("Oh, did I leave the oven on?"), but it does contain
+an explicit smp_mb() and comment.
+
+I am being lazy, I haven't even stopped to convince myself that that
+smp_mb() is correctly placed (I'm not saying it isn't, I just haven't
+done the thinking).
+
+> have three choice.
+> 
+> 1) check_move_unevictable_pages() aimed retry logic and put pages back
+>    into correct lru.
+
+I think we'd need more than just the old retry.
+
+> 2) check_move_unevictable_pages() unconditionally move the pages into
+>    evictable lru, and vmacan put them back into correct lru later.
+
+That's a good thought: these are all pages which we allowed to be found
+Unevictable lazily in the first place, so why should be so anxious to
+assign them right now.  Ah, but if they are still unevictable, then it's
+because they're Mlocked, and we do make much more effort to account the
+Mlocked pages right.  We'd probably best keep on trying.
+
+> 3) To protect PG_mlock operation by lru lock.
+
+Surely not if we can avoid it.  Certainly not to bolster my cleanup.
+
+> 
+> other parts looks fine to me.
+
+Thanks,
+Hugh
