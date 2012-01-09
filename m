@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755340Ab2AICRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 21:17:16 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:31033 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755142Ab2AICRP (ORCPT
+	id S1752117Ab2AICW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 21:22:57 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:46719 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab2AICW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 21:17:15 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dh2a8h668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Mon, 9 Jan 2012 10:17:03 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Richard Zhao <richard.zhao@linaro.org>, <linus.walleij@stericsson.com>,
-        <s.hauer@pengutronix.de>, <w.sang@pengutronix.de>,
-        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
-        <grant.likely@secretlab.ca>, <shawn.guo@freescale.com>,
-        <kernel@pengutronix.de>, <cjb@laptop.org>,
-        Dong Aisheng <b29396@freescale.com>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3 3/5] pinctrl: imx: add pinctrl imx driver
-Message-ID: <20120109021702.GV2414@b20223-02.ap.freescale.net>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
- <1324402840-32451-4-git-send-email-b29396@freescale.com>
- <20120108130542.GC2203@richard-laptop>
- <20120109020848.GF1835@S2101-09.ap.freescale.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120109020848.GF1835@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+	Sun, 8 Jan 2012 21:22:56 -0500
+Date: Mon, 9 Jan 2012 13:22:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: linux-next: manual merge of the vfs tree with Linus' tree
+Message-Id: <20120109132246.d1b8bb0dc4c16b04d9a326ea@canb.auug.org.au>
+In-Reply-To: <CA+55aFyYR=66K721tVF3NgLg-MyFsVuy6kewJJBXaS1GVd+wXQ@mail.gmail.com>
+References: <20120109121133.76f5b7c4a4780954c4562244@canb.auug.org.au>
+	<CA+55aFyYR=66K721tVF3NgLg-MyFsVuy6kewJJBXaS1GVd+wXQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jan_2012_13_22_46_+1100_E=JgbY9BS2aG.l8+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 10:08:51AM +0800, Shawn Guo wrote:
-> On Sun, Jan 08, 2012 at 09:05:44PM +0800, Richard Zhao wrote:
-> > > +enum imx_imx53_pinctrl_pads {
-> > > +	MX53_GPIO_19 = 0,
-> > > +	MX53_KEY_COL0 = 1,
-> > > +	MX53_KEY_ROW0 = 2,
-> > > +	MX53_KEY_COL1 = 3,
-> > > +	MX53_KEY_ROW1 = 4,
-> > > +	MX53_KEY_COL2 = 5,
-> > > +	MX53_KEY_ROW2 = 6,
-> > ...
-> > Why not describe it in dts and make this file generic for imx?
-> > One node for one pad,
-> 
-> Doing this will bloat the device tree dramatically.  Actually I had
-> a patch doing so before the pinctrl subsystem was born, but it
-> concerned Grant a lot for that reason and thus died.
-are you against describing pad in dts or one node per pad?
-one node per pad is just a tip to extend pad property, to support
-other features (pinconf in your word).
-> 
-> > it'll be easy to extend pad properties. You know
-> > the pad may set pull up/down, open drain, drive strenth, daisy chain etc.
-> > The features have to be supported, to make your model usefull.
-> > 
-> As Aisheng mentioned, the pinconf support will be added later.
-I expect pinconf come together, and get a ready-to-use patch series.
+--Signature=_Mon__9_Jan_2012_13_22_46_+1100_E=JgbY9BS2aG.l8+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks
-Richard
-> 
-> -- 
-> Regards,
-> Shawn
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+On Sun, 8 Jan 2012 17:32:14 -0800 Linus Torvalds <torvalds@linux-foundation=
+.org> wrote:
+>
+> On Sun, Jan 8, 2012 at 5:11 PM, Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+> >
+> > Then again ... it looks like the vfs tree has other changes to the btrfs
+> > code so that I need the version from the vfs tree, not Linus' tree ...
+>=20
+> The btrfs changes (at lest most of them) will come through the btrfs
+> tree, that's one of the reasons the vfs tree got re-built, afaik.
 
+That's fine, but maybe we should consider getting the btrfs tree into
+linux-next ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__9_Jan_2012_13_22_46_+1100_E=JgbY9BS2aG.l8+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPCk92AAoJEECxmPOUX5FEh7oQAKaC9DAY617n5u57Yez0VFmb
+HAxnX6i/iw8JAx3Z9PbcsASV7DIlR8N1jsiyMnq5voClAa36e3jl13M3PnRyydIN
+UI65OIY64kOz5OEMIbfrhLKaEcfEAXTuWu/3zgvsfpDSqHKmrNGmqfxLiYp3FJa/
+iAqU0AQ6rhB8BnoClSBMnc1wEO91Fgz3pd4m5BqWD1YYW87IyUZxs9c8uhIp0IOF
+dMghlSyphLxm/ndnkGoOqwZEzVgYUDzLoPvZXZZowZORqUfJZTlscxBQ4e4fWid5
+I8/vnzJO3fEez4ovUozd8T7RByMZKGUe8sUw5C/De0L2KX2N8PsZdNikTOTsJetz
+HmVh9a6clrDdhymsS1xyIAJjNmUFkq9bJ+2oGgKS3gaS35a9Lj8tOLFEbPzhHjjZ
+bG8L+DCf6jPCkvc/U43wkxo9i/xjr/n/qhcig1eSPfpDlYw6dVUG6qziaryd4vqY
+FfReEPi21MS2Ry0Ac2TH9K11X4ENskH13UnHBu1JiPtkgHj8lzL/CtvZatcb9qGy
+nc7SO555cS934GDx3IVJjRy4Ow2HXnklDHNa1cBAN0mZBlh5PQu2LflPMUOGMzTJ
+qreo38ZOGsKH5KKzeLi8sV8a4Yx/YBBXpwfYpVrplR/LMSTT7LbFPCmnP7EfzTt1
+OaEDcR1XzlzEzBFgNkTR
+=iP1T
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__9_Jan_2012_13_22_46_+1100_E=JgbY9BS2aG.l8+--
