@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932397Ab2AIQl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:41:59 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:45819 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932178Ab2AIQlz (ORCPT
+	id S932384Ab2AIQn5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:43:57 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35756 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178Ab2AIQn4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:41:55 -0500
-Date: Mon, 9 Jan 2012 08:41:48 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] block: introduce BIO_IN_FLIGHT flag
-Message-ID: <20120109164148.GB21732@google.com>
-References: <1324996113-1837-1-git-send-email-namhyung@gmail.com>
- <1324996113-1837-2-git-send-email-namhyung@gmail.com>
- <20120109015628.GB16360@mtj.dyndns.org>
- <4F0A57A7.4070508@lge.com>
+	Mon, 9 Jan 2012 11:43:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0A57A7.4070508@lge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
+References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Jan 2012 08:43:32 -0800
+X-Google-Sender-Auth: jP37BvLWsWU8yoa82sam7AZ6FbU
+Message-ID: <CA+55aFy-XiMR6XCudvjbPV8Q0cyDxy+iB_BnDxYOJTnskCkw9A@mail.gmail.com>
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
+        hch@infradead.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, Jan 9, 2012 at 2:58 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+> This patch adds a new dentry flag that is set when the dentry is removed
+> from the lru and put on the list being processed by
+> shrink_dentry_list().  The flag is cleared in dentry_lru_del() which is
+> called if the dentry gets a new reference just before it's pruned.
+>
+> Thoughts?
 
-On Mon, Jan 09, 2012 at 11:57:43AM +0900, Namhyung Kim wrote:
-> I understand your concerns. However, the blktrace cannot get
-> bio->bi_flags info in its current form AFAIK. Doing it will require
-> extending struct blk_io_trace and it'll cause a compatibility issue,
-> I guess.
+Looks reasonable. Were you actually able to reproduce the hang, or how
+did you notice?
 
-Umm?  Why can't blk_add_trace_bio_complete() look at the flags (or
-whatever other states) to decide to fire off BLK_TA_COMPLETE or not?
-What's the difference?  No userland visible change is necessary at
-all.  Just make blktrace.c do the right thing.  Am I missing
-something?
+Al, comments?
 
-Thanks.
-
--- 
-tejun
+                           Linus
