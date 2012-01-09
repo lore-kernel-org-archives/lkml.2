@@ -1,66 +1,269 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753227Ab2AIKUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 05:20:53 -0500
-Received: from smtp.nokia.com ([147.243.1.48]:30182 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752142Ab2AIKUw convert rfc822-to-8bit (ORCPT
+	id S1753334Ab2AIKVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 05:21:34 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:64110 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab2AIKVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 05:20:52 -0500
-From: <leonid.moiseichuk@nokia.com>
-To: <rientjes@google.com>
-CC: <gregkh@suse.de>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <cesarb@cesarb.net>, <kamezawa.hiroyu@jp.fujitsu.com>,
-        <emunson@mgebm.net>, <penberg@kernel.org>, <aarcange@redhat.com>,
-        <riel@redhat.com>, <mel@csn.ul.ie>, <dima@android.com>,
-        <rebecca@android.com>, <san@google.com>, <akpm@linux-foundation.org>,
-        <vesa.jaaskelainen@nokia.com>
-Subject: RE: [PATCH 3.2.0-rc1 3/3] Used Memory Meter pseudo-device module
-Thread-Topic: [PATCH 3.2.0-rc1 3/3] Used Memory Meter pseudo-device module
-Thread-Index: AQHMyxrzw3V52zxEQkmaiNpKEK9QnpYDzM3g///5tgCAABJ9kA==
-Date: Mon, 9 Jan 2012 10:19:30 +0000
-Message-ID: <84FF21A720B0874AA94B46D76DB9826904554B81@008-AM1MPN1-003.mgdnok.nokia.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
- <ed78895aa673d2e5886e95c3e3eae38cc6661eda.1325696593.git.leonid.moiseichuk@nokia.com>
- <20120104195521.GA19181@suse.de>
- <84FF21A720B0874AA94B46D76DB9826904554AFD@008-AM1MPN1-003.mgdnok.nokia.com>
- <alpine.DEB.2.00.1201090203470.8480@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1201090203470.8480@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.23.171]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Jan 2012 05:21:33 -0500
+Message-ID: <4F0AC06C.3000502@gmail.com>
+Date: Mon, 09 Jan 2012 11:24:44 +0100
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Reply-To: christian.gmeiner@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-X-OriginalArrivalTime: 09 Jan 2012 10:19:37.0352 (UTC) FILETIME=[30B73880:01CCCEB8]
-X-Nokia-AV: Clean
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, lars@metafoo.de
+CC: bigeasy@linutronix.de, rpurdie@rpsys.net
+Subject: [PATCH v2] add led driver for Bachmann's ot200
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: ext David Rientjes [mailto:rientjes@google.com]
-> Sent: 09 January, 2012 12:09
-...
-> 
-> I'm not sure why you need to detect low memory thresholds if you're not
-> interested in using the memory controller, why not just use the oom killer
-> delay that I suggested earlier and allow userspace to respond to conditions
-> when you are known to failed reclaim and require that something be killed?
+ From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de 
+<mailto:bigeasy@linutronix.de>>
+Date: Mon, 9 Jan 2012 10:09:50 +0100
+Subject: [PATCH v2] add led driver for Bachmann's ot200
 
-As I understand that is required to turn on memcg and memcg is a thing I try to avoid.
+This patch adds support for leds on Bachmann's ot200 visualisation device.
+The device has three leds on the back panel (led_err, led_init and led_run)
+and can handle up to seven leds on the front panel.
 
-> > 1.7. David Rientjes
-> > > This is just a side-note but as this information is meant to be
-> > > consumed by userspace you have the option of hooking into the
-> > > mm_page_alloc tracepoint. You get the same information about how
-> > > many pages are allocated or freed. I accept that it will probably be a bit
-> slower but on the plus side it'll be backwards compatible and you don't need
-> a kernel patch for it.
-> >
-> 
-> I didn't write that.
+The driver was written by Linutronix on behalf of
+Bachmann electronic GmbH.
 
-Sorry, it was Mel Gorman. Copy-paste problem.
+Changes in v2:
+- *incorporated* feedback from Andrew Morton and Lars-Peter Clausen
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de 
+<mailto:bigeasy@linutronix.de>>
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com 
+<mailto:christian.gmeiner@gmail.com>>
+---
+  drivers/leds/Kconfig      |    7 ++
+  drivers/leds/Makefile     |    1 +
+  drivers/leds/leds-ot200.c |  177 
++++++++++++++++++++++++++++++++++++++++++++++
+  3 files changed, 185 insertions(+), 0 deletions(-)
+  create mode 100644 drivers/leds/leds-ot200.c
+
+diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+index ff203a4..71cb89b 100644
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@ -387,6 +387,13 @@ config LEDS_RENESAS_TPU
+        pin function. The latter to support brightness control.
+        Brightness control is supported but hardware blinking is not.
+
++config LEDS_OT200
++    tristate "LED support for the Bachmann OT200"
++    depends on LEDS_CLASS
++    help
++      This option enables support for the LEDs on the Bachmann OT200.
++      Say Y to enable LEDs on the Bachmann OT200.
++
+  config LEDS_TRIGGERS
+      bool "LED Trigger support"
+      depends on LEDS_CLASS
+diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+index e4f6bf5..0814d42 100644
+--- a/drivers/leds/Makefile
++++ b/drivers/leds/Makefile
+@@ -43,6 +43,7 @@ obj-$(CONFIG_LEDS_NS2)            += leds-ns2.o
+  obj-$(CONFIG_LEDS_NETXBIG)        += leds-netxbig.o
+  obj-$(CONFIG_LEDS_ASIC3)        += leds-asic3.o
+  obj-$(CONFIG_LEDS_RENESAS_TPU)        += leds-renesas-tpu.o
++obj-$(CONFIG_LEDS_OT200)        += leds-ot200.o
+
+  # LED SPI Drivers
+  obj-$(CONFIG_LEDS_DAC124S085)        += leds-dac124s085.o
+diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+new file mode 100644
+index 0000000..4d000ac
+--- /dev/null
++++ b/drivers/leds/leds-ot200.c
+@@ -0,0 +1,177 @@
++/*
++ * Bachmann ot200 leds driver.
++ *
++ * Author: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
++ *         Christian Gmeiner <christian.gmeiner@gmail.com>
++ *
++ * License: GPL as published by the FSF.
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/slab.h>
++#include <linux/leds.h>
++#include <linux/io.h>
++#include <linux/module.h>
++
++
++struct ot200_led {
++    struct led_classdev cdev;
++    const char *name;
++    unsigned long port;
++    u8 mask;
++};
++
++/*
++ * The device has three leds on the back panel (led_err, led_init and 
+led_run)
++ * and can handle up to seven leds on the front panel.
++ */
++
++static struct ot200_led leds[] = {
++    {
++        .name = "led_run",
++        .port = 0x5a,
++        .mask = BIT(0),
++    },
++    {
++        .name = "led_init",
++        .port = 0x5a,
++        .mask = BIT(1),
++    },
++    {
++        .name = "led_err",
++        .port = 0x5a,
++        .mask = BIT(2),
++    },
++    {
++        .name = "led_1",
++        .port = 0x49,
++        .mask = BIT(7),
++    },
++    {
++        .name = "led_2",
++        .port = 0x49,
++        .mask = BIT(6),
++    },
++    {
++        .name = "led_3",
++        .port = 0x49,
++        .mask = BIT(5),
++    },
++    {
++        .name = "led_4",
++        .port = 0x49,
++        .mask = BIT(4),
++    },
++    {
++        .name = "led_5",
++        .port = 0x49,
++        .mask = BIT(3),
++    },
++    {
++        .name = "led_6",
++        .port = 0x49,
++        .mask = BIT(2),
++    },
++    {
++        .name = "led_7",
++        .port = 0x49,
++        .mask = BIT(1),
++    }
++};
++
++static DEFINE_SPINLOCK(value_lock);
++
++/*
++ * we need to store the current led states, as it is not
++ * possible to read the current led state via inb().
++ */
++static u8 leds_back;
++static u8 leds_front;
++
++static void ot200_led_brightness_set(struct led_classdev *led_cdev,
++        enum led_brightness value)
++{
++    struct ot200_led *led = container_of(led_cdev, struct ot200_led, cdev);
++    u8 *val;
++    unsigned long flags;
++
++    spin_lock_irqsave(&value_lock, flags);
++
++    if (led->port == 0x49)
++        val = &leds_front;
++    else if (led->port == 0x5a)
++        val = &leds_back;
++    else
++        BUG();
++
++    if (value == LED_OFF)
++        *val &= ~led->mask;
++    else
++        *val |= led->mask;
++
++    outb(*val, led->port);
++    spin_unlock_irqrestore(&value_lock, flags);
++}
++
++static int __devinit ot200_led_probe(struct platform_device *pdev)
++{
++    int i;
++    int ret;
++
++    for (i = 0; i < ARRAY_SIZE(leds); i++) {
++
++        leds[i].cdev.name = leds[i].name;
++        leds[i].cdev.default_trigger = NULL;
++        leds[i].cdev.blink_set = NULL;
++        leds[i].cdev.brightness_set = ot200_led_brightness_set;
++
++        ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
++        if (ret < 0)
++            goto err;
++
++        dev_set_drvdata(leds[i].cdev.dev, &leds[i]);
++    }
++
++    platform_set_drvdata(pdev, leds);
++
++    outb(0x0, 0x49);    /* turn off all front leds */
++    outb(0x2, 0x5a);    /* turn on init led */
++    leds_front = 0;
++    leds_back = BIT(1);
++
++    return 0;
++
++err:
++    for (i = i - 1; i >= 0; i--)
++        led_classdev_unregister(&leds[i].cdev);
++
++    return ret;
++}
++
++static int __devexit ot200_led_remove(struct platform_device *pdev)
++{
++    int i;
++
++    for (i = 0; i < ARRAY_SIZE(leds); i++)
++        led_classdev_unregister(&leds[i].cdev);
++
++    return 0;
++}
++
++static struct platform_driver ot200_led_driver = {
++    .probe        = ot200_led_probe,
++    .remove        = __devexit_p(ot200_led_remove),
++    .driver        = {
++        .name    = "leds-ot200",
++        .owner    = THIS_MODULE,
++    },
++};
++
++module_platform_driver(ot200_led_driver);
++
++MODULE_AUTHOR("Sebastian A. Siewior <bigeasy@linutronix.de>");
++MODULE_DESCRIPTION("ot200 LED driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:leds-ot200");
+-- 
+1.7.5.4
+
