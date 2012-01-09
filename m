@@ -1,193 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754443Ab2AICXI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 21:23:08 -0500
-Received: from tundra.namei.org ([65.99.196.166]:59909 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750995Ab2AICXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 21:23:05 -0500
-Date: Mon, 9 Jan 2012 13:22:59 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT] Security subsystem updates for 3.3
-Message-ID: <alpine.LRH.2.00.1201091252220.18816@tundra.namei.org>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754018Ab2AICdd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 21:33:33 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57627 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521Ab2AICdc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 21:33:32 -0500
+X-AuditID: 9c930197-b7c0dae000006c54-02-4f0a51f7006c
+Message-ID: <4F0A51F7.9040206@lge.com>
+Date: Mon, 09 Jan 2012 11:33:27 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: Namhyung Kim <namhyung.kim@lge.com>, axboe@kernel.dk, mingo@redhat.com,
+        rostedt@goodmis.org, fweisbec@gmail.com, teravest@google.com,
+        slavapestov@google.com, ctalbott@google.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/11] block: block_bio_complete tracepoint was missing
+References: <1325806974-23486-1-git-send-email-tj@kernel.org> <1325806974-23486-4-git-send-email-tj@kernel.org> <4F0A431E.3090106@lge.com> <20120109014949.GA16360@mtj.dyndns.org>
+In-Reply-To: <20120109014949.GA16360@mtj.dyndns.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The most significant change here is the addition of the digital signature 
-verification API, for use by IMA, EVM and module loading.  The rest is 
-general maintenance.
+Hi,
 
-Please pull.
+2012-01-09 10:49 AM, Tejun Heo wrote:
+> Hello,
+>
+> On Mon, Jan 09, 2012 at 10:30:06AM +0900, Namhyung Kim wrote:
+>> Just adding the TP unconditionally will produce duplicated (in some
+>> sense) reports about the completion. For example, normal request
+>> based IO reports whole request completion prior to its bio's, and
+>> further
+>
+> Request and bio completions are separate events.  There's nothing
+> wrong with reporting them separately.  In fact, I think they should be
+> reported separately.
+>
+>> , some of nested block IO handling routines - bounced bio and
+>> btrfs with compression, etc - call bio_endio() more than once. Also
+>> there are cases that bio fails before it's enqueued for some reason.
+>
+> They are actually separate bio's being completed.  I don't think
+> trying to put extra semantics on TP itself is a good idea.  In
+> general, TP signals that such event happened with sufficient
+> information and it's the consumers' responsibility to make sense of
+> what's going on.  BIO_CLONED/BOUNCED are there.
+
+I see.
 
 
-The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
-  Linus Torvalds (1):
-        Linux 3.2
+>> I have no idea about the ioblame can deal with all of such corner
+>> cases. However it might confuse blktrace somewhat, I guess.
+>
+> Unless someone is doing memcpy() on bio's, ioblame should be okay.  It
+> only considers bio's which went through actual submission.
+>
+>> I already posted similar patch a couple of weeks ago, but didn't
+>> receive a comment yet. [1] Please take a look this too :)
+>
+> I'll reply there but don't think imposing such extra logic on TP is a
+> good idea.
 
-are available in the git repository at:
+I'll reply on that thread too. :)
 
-  git://selinuxproject.org/~jmorris/linux-security for-linus
 
-Andrew Morton (1):
-      include/linux/security.h: fix security_inode_init_security() arg
+>> After a quick glance, the ioblame seems to carry all IO accounting
+>> info through the first bio in the request. If so, why don't you use
+>> the request structure for that?
+>
+> Because there are bio based drivers which don't use requests at all.
 
-Andy Shevchenko (1):
-      selinuxfs: remove custom hex_to_bin()
+What I thought for such drivers was dynamic allocation in their 
+->make_request_fn, but because we don't have a block_bio_issue TP, 
+Nevermind. :)
 
-Dan Carpenter (1):
-      mpi/mpi-mpow: NULL dereference on allocation failure
 
-David Howells (1):
-      KEYS: Give key types their own lockdep class for key->sem
-
-Dmitry Kasatkin (10):
-      crypto: GnuPG based MPI lib - source files (part 1)
-      crypto: GnuPG based MPI lib - header files (part 2)
-      crypto: GnuPG based MPI lib - make files (part 3)
-      crypto: GnuPG based MPI lib - additional sources (part 4)
-      crypto: digital signature verification support
-      integrity: digital signature verification using multiple keyrings
-      evm: digital signature verification support
-      digsig: build dependency fix
-      evm: key must be set once during initialization
-      evm: prevent racing during tfm allocation
-
-Greg Kroah-Hartman (1):
-      Security: tomoyo: add .gitignore file
-
-James Morris (4):
-      Merge branch 'master'; commit 'v3.2-rc2' into next
-      Merge branch 'for-james' of git://github.com/srajiv/tpm into next
-      Merge branch 'next-evm-digsig' of git://git.kernel.org/.../kasatkin/linux-digsig into next
-      Merge branch 'next' into for-linus
-
-Kees Cook (4):
-      Documentation: clarify the purpose of LSMs
-      apparmor: add missing rcu_dereference()
-      tomoyo: add missing rcu_dereference()
-      security: update security_file_mmap() docs
-
-Rajiv Andrade (4):
-      TPM: Use vendor specific function for status probe
-      TPM: Export wait_for_stat for other vendor specific drivers
-      TPM: NSC and TIS drivers X86 dependency fix
-      TPM: fix transmit_cmd error logic
-
-Roberto Sassu (2):
-      ima: free duplicate measurement memory
-      ima: fix invalid memory reference
-
-Rusty Russell (1):
-      apparmor: fix module parameter handling
-
-Stefan Berger (5):
-      tpm: Have tpm_get_timeouts return an error code
-      tpm: Cleanup tpm_continue_selftest
-      tpm: Introduce function to poll for result of self test
-      tpm_tis: Check return code from getting timeouts/durations
-      tpm_tis: add delay after aborting command
-
-Thomas Meyer (1):
-      selinux: Casting (void *) value returned by kmalloc is useless
-
- Documentation/digsig.txt               |   96 ++
- Documentation/security/00-INDEX        |    2 +
- Documentation/security/LSM.txt         |   34 +
- Documentation/security/credentials.txt |    6 +-
- drivers/char/tpm/Kconfig               |    2 +
- drivers/char/tpm/tpm.c                 |  137 +++-
- drivers/char/tpm/tpm.h                 |    9 +-
- drivers/char/tpm/tpm_tis.c             |   84 +--
- include/linux/digsig.h                 |   64 ++
- include/linux/key-type.h               |    1 +
- include/linux/mpi.h                    |  146 ++++
- include/linux/security.h               |    4 +-
- lib/Kconfig                            |   25 +
- lib/Makefile                           |    3 +
- lib/digsig.c                           |  284 ++++++
- lib/mpi/Makefile                       |   32 +
- lib/mpi/generic_mpi-asm-defs.h         |    4 +
- lib/mpi/generic_mpih-add1.c            |   61 ++
- lib/mpi/generic_mpih-lshift.c          |   63 ++
- lib/mpi/generic_mpih-mul1.c            |   57 ++
- lib/mpi/generic_mpih-mul2.c            |   60 ++
- lib/mpi/generic_mpih-mul3.c            |   61 ++
- lib/mpi/generic_mpih-rshift.c          |   63 ++
- lib/mpi/generic_mpih-sub1.c            |   60 ++
- lib/mpi/longlong.h                     | 1478 ++++++++++++++++++++++++++++++++
- lib/mpi/mpi-add.c                      |  234 +++++
- lib/mpi/mpi-bit.c                      |  236 +++++
- lib/mpi/mpi-cmp.c                      |   68 ++
- lib/mpi/mpi-div.c                      |  333 +++++++
- lib/mpi/mpi-gcd.c                      |   59 ++
- lib/mpi/mpi-inline.c                   |   31 +
- lib/mpi/mpi-inline.h                   |  122 +++
- lib/mpi/mpi-internal.h                 |  261 ++++++
- lib/mpi/mpi-inv.c                      |  187 ++++
- lib/mpi/mpi-mpow.c                     |  134 +++
- lib/mpi/mpi-mul.c                      |  194 +++++
- lib/mpi/mpi-pow.c                      |  323 +++++++
- lib/mpi/mpi-scan.c                     |  136 +++
- lib/mpi/mpicoder.c                     |  365 ++++++++
- lib/mpi/mpih-cmp.c                     |   56 ++
- lib/mpi/mpih-div.c                     |  541 ++++++++++++
- lib/mpi/mpih-mul.c                     |  527 ++++++++++++
- lib/mpi/mpiutil.c                      |  208 +++++
- security/apparmor/audit.c              |    2 +-
- security/apparmor/lsm.c                |    6 +-
- security/integrity/Kconfig             |   14 +
- security/integrity/Makefile            |    1 +
- security/integrity/digsig.c            |   48 +
- security/integrity/evm/evm.h           |   12 +
- security/integrity/evm/evm_crypto.c    |   76 ++-
- security/integrity/evm/evm_main.c      |   94 ++-
- security/integrity/ima/ima_api.c       |    4 +-
- security/integrity/ima/ima_queue.c     |   17 +-
- security/integrity/integrity.h         |   21 +
- security/keys/key.c                    |    3 +
- security/selinux/selinuxfs.c           |   14 +-
- security/selinux/ss/conditional.c      |    2 +-
- security/tomoyo/.gitignore             |    2 +
- security/tomoyo/common.h               |    2 +-
- 59 files changed, 7026 insertions(+), 143 deletions(-)
- create mode 100644 Documentation/digsig.txt
- create mode 100644 Documentation/security/LSM.txt
- create mode 100644 include/linux/digsig.h
- create mode 100644 include/linux/mpi.h
- create mode 100644 lib/digsig.c
- create mode 100644 lib/mpi/Makefile
- create mode 100644 lib/mpi/generic_mpi-asm-defs.h
- create mode 100644 lib/mpi/generic_mpih-add1.c
- create mode 100644 lib/mpi/generic_mpih-lshift.c
- create mode 100644 lib/mpi/generic_mpih-mul1.c
- create mode 100644 lib/mpi/generic_mpih-mul2.c
- create mode 100644 lib/mpi/generic_mpih-mul3.c
- create mode 100644 lib/mpi/generic_mpih-rshift.c
- create mode 100644 lib/mpi/generic_mpih-sub1.c
- create mode 100644 lib/mpi/longlong.h
- create mode 100644 lib/mpi/mpi-add.c
- create mode 100644 lib/mpi/mpi-bit.c
- create mode 100644 lib/mpi/mpi-cmp.c
- create mode 100644 lib/mpi/mpi-div.c
- create mode 100644 lib/mpi/mpi-gcd.c
- create mode 100644 lib/mpi/mpi-inline.c
- create mode 100644 lib/mpi/mpi-inline.h
- create mode 100644 lib/mpi/mpi-internal.h
- create mode 100644 lib/mpi/mpi-inv.c
- create mode 100644 lib/mpi/mpi-mpow.c
- create mode 100644 lib/mpi/mpi-mul.c
- create mode 100644 lib/mpi/mpi-pow.c
- create mode 100644 lib/mpi/mpi-scan.c
- create mode 100644 lib/mpi/mpicoder.c
- create mode 100644 lib/mpi/mpih-cmp.c
- create mode 100644 lib/mpi/mpih-div.c
- create mode 100644 lib/mpi/mpih-mul.c
- create mode 100644 lib/mpi/mpiutil.c
- create mode 100644 security/integrity/digsig.c
- create mode 100644 security/tomoyo/.gitignore
+Thanks,
+Namhyung Kim
