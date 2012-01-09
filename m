@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755632Ab2AIHvM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 02:51:12 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:38790 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab2AIHvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 02:51:10 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>
-Subject: [PATCH] drivers/staging/omapdrm/omap_fbdev.c: move free after uses
-Date: Mon,  9 Jan 2012 08:51:03 +0100
-Message-Id: <1326095463-8545-1-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
+	id S1755041Ab2AIH5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 02:57:10 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65194 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab2AIH5I convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 02:57:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <NEXT-4f0a99de7f4ef4.35302262@nextmail.ru>
+References: <NEXT-4f0a99de7f4ef4.35302262@nextmail.ru>
+Date: Mon, 9 Jan 2012 13:27:07 +0530
+Message-ID: <CAD2nsn2MH7yXWZML5byD1_RW1d0E2Q2rhmnOBHei5iUVPU_ukA@mail.gmail.com>
+Subject: Re: ath9k crash 3.2-rc7
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+2012/1/9 MR <g7af0ec1e3ea1e7b1@nextmail.ru>:
+>  >> So, I am building 3.2 with two patches: over/under-flow catcher (pity
+>  >that
+>  >> it seems to be on a multiple-times-per-second codepath and just leaving
+>  >the
+>  > > checks there for everyone is suboptimal) and allegedely proper fix. Both
+>  > > applied OK with a small offset.
+>  >
+>  > as per our assumption, we should not see those over/underflow errors,
+>  > with the patch
+>  > above mentioned. please let us know if you hit upon this warnings,
+>  > even after the proper fix.
+>
+> In my experience (and as I understand the situation) if garbage is writen to
+> the "chan", it is caught by the check and device is dead-until-reboot anyway.
+> On 3.0, even without checks device was dead-until-reboot, but no crash
+> happened. All these checks do is converting "panic" to "WiFi broken" for 3.2.
+>
 
-Move the free after the final uses.
+true those checks are to confirm that 'chan' is corrupted and the
+patch is to fix it.
 
-The semantic patch that makes this report is available
-in scripts/coccinelle/free/kfree.cocci.
-
-More information about semantic patching is available at
-http://coccinelle.lip6.fr/
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/staging/omapdrm/omap_fbdev.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/omapdrm/omap_fbdev.c b/drivers/staging/omapdrm/omap_fbdev.c
-index 093ae2f..c64b87c 100644
---- a/drivers/staging/omapdrm/omap_fbdev.c
-+++ b/drivers/staging/omapdrm/omap_fbdev.c
-@@ -362,11 +362,11 @@ void omap_fbdev_free(struct drm_device *dev)
- 
- 	fbdev = to_omap_fbdev(priv->fbdev);
- 
--	kfree(fbdev);
--
- 	/* this will free the backing object */
- 	if (fbdev->fb)
- 		fbdev->fb->funcs->destroy(fbdev->fb);
- 
-+	kfree(fbdev);
-+
- 	priv->fbdev = NULL;
- }
-
+-- 
+shafi
