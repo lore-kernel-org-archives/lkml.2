@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932146Ab2AIPNi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 10:13:38 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:40542 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683Ab2AIPNT (ORCPT
+	id S932140Ab2AIPNx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 10:13:53 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:5477 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755620Ab2AIPMm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 10:13:19 -0500
-Date: Mon, 9 Jan 2012 10:11:24 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jan Beulich <JBeulich@suse.com>
-Subject: Re: [Xen-devel] [PATCH 4/5] xen/pciback: Expand the warning message
- to include domain id.
-Message-ID: <20120109151124.GE25563@phenom.dumpdata.com>
-References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com>
- <1325724403-29642-5-git-send-email-konrad.wilk@oracle.com>
- <4F06C101020000780006AC32@nat28.tlf.novell.com>
- <20120106150338.GB5855@phenom.dumpdata.com>
- <1325865086.25206.512.camel@zakaz.uk.xensource.com>
- <20120106160011.GD6125@phenom.dumpdata.com>
- <20120106221927.GA10248@phenom.dumpdata.com>
- <1326102657.17210.11.camel@zakaz.uk.xensource.com>
+	Mon, 9 Jan 2012 10:12:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 09 Jan 2012 07:12:39 -0800
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: "open list:TEGRA SUPPORT" <linux-tegra@vger.kernel.org>,
+        "open list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 3/3] arm/tegra: enable tegra30 clock framework
+Date: Mon, 9 Jan 2012 17:12:14 +0200
+Message-ID: <1326121937-32054-5-git-send-email-pdeschrijver@nvidia.com>
+X-Mailer: git-send-email 1.7.7.rc0.72.g4b5ea.dirty
+In-Reply-To: <1326121937-32054-1-git-send-email-pdeschrijver@nvidia.com>
+References: <1326121937-32054-1-git-send-email-pdeschrijver@nvidia.com>
+X-NVConfidentiality: public
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326102657.17210.11.camel@zakaz.uk.xensource.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090205.4F0B0409.008B,ss=1,re=0.000,fgs=0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 09:50:57AM +0000, Ian Campbell wrote:
-> On Fri, 2012-01-06 at 22:19 +0000, Konrad Rzeszutek Wilk wrote:
-> > > > I suppose you might want "Overriding ownership to dom%d".
-> > > 
-> > > OK. To the point and potentially can fit in 80 lines :-).
-> > 
-> > how about this?
-> > > 
-> > From a3d4a80cdfd4274016522572148a89260b3f3de6 Mon Sep 17 00:00:00 2001
-> > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > Date: Wed, 4 Jan 2012 14:16:45 -0500
-> > Subject: [PATCH] xen/pciback: Expand the warning message to include domain
-> >  id.
-> > 
-> > When a PCI device is transferred to another domain and it is still
-> > in usage (from the internal perspective), mention which other
-> > domain is using it to aid in debugging.
-> > 
-> > [v2: Truncate the verbose message per Jan Beulich suggestion]
-> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> > ---
-> >  drivers/xen/xen-pciback/xenbus.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
-> > index 474d52e..2405a24 100644
-> > --- a/drivers/xen/xen-pciback/xenbus.c
-> > +++ b/drivers/xen/xen-pciback/xenbus.c
-> > @@ -243,8 +243,8 @@ static int xen_pcibk_export_device(struct xen_pcibk_device *pdev,
-> >  	dev_dbg(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
-> >  	if (xen_register_device_domain_owner(dev,
-> >  					     pdev->xdev->otherend_id) != 0) {
-> > -		dev_err(&dev->dev, "device has been assigned to another " \
-> > -			"domain! Over-writting the ownership, but beware.\n");
-> > +		dev_err(&dev->dev, "Overriding ownership to dom%d.\n",
-> > +			xen_find_device_domain_owner(dev));
-> 
-> That sounds like you are going to be assigning the ownership to that
-> dom, but xen_find_device_domain_owner so aren't you actually steeling
-> ownership from that domain?
+Signed-off-by: Peter De Schrijver <pdeschrijver@nvidia.com>
+---
+ arch/arm/mach-tegra/Makefile |    1 +
+ arch/arm/mach-tegra/clock.h  |    1 +
+ arch/arm/mach-tegra/common.c |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
 
-Duh! I will do s/to/from/
+diff --git a/arch/arm/mach-tegra/Makefile b/arch/arm/mach-tegra/Makefile
+index e8de030..8628421 100644
+--- a/arch/arm/mach-tegra/Makefile
++++ b/arch/arm/mach-tegra/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= powergate.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)         += tegra2_clocks.o
+ obj-$(CONFIG_ARCH_TEGRA_2x_SOC)		+= tegra2_emc.o
+ obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= board-dt-tegra30.o
++obj-$(CONFIG_ARCH_TEGRA_3x_SOC)		+= tegra30_clocks.o
+ obj-$(CONFIG_SMP)                       += platsmp.o localtimer.o headsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)               += hotplug.o
+ obj-$(CONFIG_TEGRA_SYSTEM_DMA)		+= dma.o
+diff --git a/arch/arm/mach-tegra/clock.h b/arch/arm/mach-tegra/clock.h
+index 18f8b85..bc30065 100644
+--- a/arch/arm/mach-tegra/clock.h
++++ b/arch/arm/mach-tegra/clock.h
+@@ -160,6 +160,7 @@ struct tegra_clk_init_table {
+ };
+ 
+ void tegra2_init_clocks(void);
++void tegra30_init_clocks(void);
+ void clk_init(struct clk *clk);
+ struct clk *tegra_get_clock_by_name(const char *name);
+ int clk_reparent(struct clk *c, struct clk *parent);
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 9f1bd0c..109bdc0 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -123,6 +123,7 @@ void __init tegra20_init_early(void)
+ #ifdef CONFIG_ARCH_TEGRA_3x_SOC
+ void __init tegra30_init_early(void)
+ {
++	tegra30_init_clocks();
+ 	tegra_init_cache(0x441, 0x551);
+ }
+ #endif
+-- 
+1.7.7.rc0.72.g4b5ea.dirty
+
