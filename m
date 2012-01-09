@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932953Ab2AITSg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 14:18:36 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52184 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932851Ab2AITSf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 14:18:35 -0500
+	id S932989Ab2AITUy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 14:20:54 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:36743 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932851Ab2AITUx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 14:20:53 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120109190450.GA26390@infradead.org>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
- <20120109173010.GX23916@ZenIV.linux.org.uk> <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
- <CA+55aFxRroO0KAz8qbhz_2vDc=bc-C2b0ux0tdFfQhBGMnqRzQ@mail.gmail.com> <20120109190450.GA26390@infradead.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 Jan 2012 11:18:13 -0800
-X-Google-Sender-Auth: wcrHgcZOOQOr2H07absMgzFQYdA
-Message-ID: <CA+55aFweg+A0GmEZM=tTHfMPqT_=7ioq3FBFMefsTgcxEgaXYA@mail.gmail.com>
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Miklos Szeredi <miklos@szeredi.hu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mgorman@suse.de, gregkh@suse.de, akpm@linux-foundation.org,
-        david@fromorbit.com
+In-Reply-To: <20120109161456.GC2974@opensource.wolfsonmicro.com>
+References: <1326111140.22107.9.camel@sw-eng-lt-dc-vm2>
+	<20120109161456.GC2974@opensource.wolfsonmicro.com>
+Date: Mon, 9 Jan 2012 19:20:50 +0000
+Message-ID: <CAEqHmAte=rvhjGUEdMgNQKfvPxSVTFR5TfWy13VPEhZj0T53KQ@mail.gmail.com>
+Subject: Re: drivers/regulator/core.c: Fixes mapping inside
+ regulator_mode_to_status() and makes it returning -EINVAL on invalid input.
+From: dd diasemi <dd.diasemi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 11:04 AM, Christoph Hellwig <hch@infradead.org> wrote:
+On Mon, Jan 9, 2012 at 4:14 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Jan 09, 2012 at 12:12:20PM +0000, Krystian Garbaciak wrote:
+>> Minor fix that makes the function working correctly with
+>> REGULATOR_MODE_STANDBY as parameter.
+>> Also, on invalid input (bad mode), it is better to return -EINVAL,
+>> instead of meaningless 0 value (which actually is interpreted as
+>> REGULATOR_STATUS_OFF).
+>>
+>> ---
 >
-> After Dave's patch select_parent isolates dentries that are going to
-> be dropped directly to an on-stack list instead of abusing the LRU.
+>>       default:
+>> -             return 0;
+>> +             return -EINVAL;
 >
-> With that scheme the trylock and retry loop in __shrink_dcache_sb
-> goes away completely for this caller.
+> This behaviour is deliberate.
 
-Yes, but it still exists for the prune_dcache_sb() case.
+For this moment, the only usage is in one file in
+wm831x_aldo_get_status() and wm831x_gp_ldo_get_status():
+	ret = wm831x_aldo_get_mode(rdev);
+	if (ret < 0)
+		return ret;
+	else
+		return regulator_mode_to_status(ret);
 
-So prune_dcache_sb() puts random dentries on its own private lists,
-and drops the lru_lock (and the dentry lock).
+The usage mistreats the signed value 'ret' as wm831x_aldo_get_mode()
+always returns 0 on communication error. It effects in response as if
+the regulator was off.
 
-In the meantime, what protects us from select_parent() finding those
-*same* dentries, and doing
-
-    dentry_lru_move_list(dentry, dispose);
-
-which - despite the name - moves the dentry not from the lru list, but
-from the prune_dcache_sb local list to the select_parent() local
-list..
-
-Hmm. I guess the endless "move back-and-forth" thing is gone, but the
-random "move from one private list to another" makes me worry about
-the confusion.
-
-But I guess we don't care - the same thing is going to happen to the
-dentry regardless of which of the local lists it is on.
-
-And in any case, I think Dave's patch looks like a nice cleanup. Does
-it work for people in that forward-ported-alone version I sent out?
-
-And Miklos, does it fix your test-case? Because if so, I think Dave's
-patch is nicer, and avoids adding a new state bit by just cleaning
-things up in general.
-
-                        Linus
+If that behaviour is deliberate, I would suggest to make it explicit:
+ 	default:
+-		return 0;
++		return REGULATOR_STATUS_OFF;
