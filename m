@@ -1,127 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab2AINlX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 08:41:23 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:40410 "EHLO zene.cmpxchg.org"
+	id S1755089Ab2AINz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 08:55:56 -0500
+Received: from mga14.intel.com ([143.182.124.37]:56806 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab2AINlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 08:41:19 -0500
-Date: Mon, 9 Jan 2012 14:41:08 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>
-Subject: Re: [RESEND, PATCH 6/6] memcg: cleanup memcg_check_events()
-Message-ID: <20120109134108.GF3588@cmpxchg.org>
-References: <1325883472-5614-1-git-send-email-kirill@shutemov.name>
- <1325883472-5614-6-git-send-email-kirill@shutemov.name>
+	id S1752726Ab2AINzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 08:55:54 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="93866121"
+Date: Mon, 9 Jan 2012 21:17:17 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Keith Packard <keithp@keithp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Michal Marek <mmarek@suse.com>,
+        "intel-gfx@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>
+Subject: [PATCH] drm/i915: set AUD_CONFIG N_value_index for DisplayPort
+Message-ID: <20120109131717.GA4713@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1325883472-5614-6-git-send-email-kirill@shutemov.name>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 06, 2012 at 10:57:52PM +0200, Kirill A. Shutemov wrote:
-> From: "Kirill A. Shutemov" <kirill@shutemov.name>
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
->  mm/memcontrol.c |   42 ++++++++++++++++++++++++------------------
->  1 files changed, 24 insertions(+), 18 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 2eddcb5..0a13afa 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -108,11 +108,12 @@ enum mem_cgroup_events_index {
->   * than using jiffies etc. to handle periodic memcg event.
->   */
->  enum mem_cgroup_events_target {
-> -	MEM_CGROUP_TARGET_THRESH,
-> -	MEM_CGROUP_TARGET_SOFTLIMIT,
-> -	MEM_CGROUP_TARGET_NUMAINFO,
-> -	MEM_CGROUP_NTARGETS,
-> +	MEM_CGROUP_TARGET_THRESH	= BIT(1),
-> +	MEM_CGROUP_TARGET_SOFTLIMIT	= BIT(2),
-> +	MEM_CGROUP_TARGET_NUMAINFO	= BIT(3),
->  };
-> +#define MEM_CGROUP_NTARGETS 3
+It should be programmed to "0" for HDMI or "1" for DisplayPort.
 
-That really asks for the next guy forgetting to increase the number
-when adding another bit.
+This enables DisplayPort audio for
 
-> @@ -734,7 +735,7 @@ static unsigned long mem_cgroup_nr_lru_pages(struct mem_cgroup *memcg,
->  	return total;
->  }
->  
-> -static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
-> +static int mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
->  				       enum mem_cgroup_events_target target)
->  {
->  	unsigned long val, next;
-> @@ -757,9 +758,9 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
->  			break;
->  		}
->  		__this_cpu_write(memcg->stat->targets[target], next);
-> -		return true;
-> +		return target;
->  	}
-> -	return false;
-> +	return 0;
+- HP EliteBook 8460p
+  (whose BIOS does not set the N_value_index bit for us)
 
-Really weird interface - I'll return what you passed in, or zero...?
+- DisplayPort monitor hot plugged after boot
+  (otherwise most BIOS will fill the N_value_index bit for us)
 
-> @@ -768,29 +769,34 @@ static bool mem_cgroup_event_ratelimit(struct mem_cgroup *memcg,
->   */
->  static void memcg_check_events(struct mem_cgroup *memcg, struct page *page)
->  {
-> +	int flags;
-> +
->  	preempt_disable();
-> -	/* threshold event is triggered in finer grain than soft limit */
-> -	if (unlikely(mem_cgroup_event_ratelimit(memcg,
-> -						MEM_CGROUP_TARGET_THRESH))) {
-> -		bool do_softlimit, do_numainfo;
-> +	flags = mem_cgroup_event_ratelimit(memcg, MEM_CGROUP_TARGET_THRESH);
->  
-> -		do_softlimit = mem_cgroup_event_ratelimit(memcg,
-> +	/*
-> +	 * Threshold event is triggered in finer grain than soft limit
-> +	 * and numainfo
-> +	 */
-> +	if (unlikely(flags)) {
-> +		flags |= mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_SOFTLIMIT);
->  #if MAX_NUMNODES > 1
-> -		do_numainfo = mem_cgroup_event_ratelimit(memcg,
-> +		flags |= mem_cgroup_event_ratelimit(memcg,
->  						MEM_CGROUP_TARGET_NUMAINFO);
->  #endif
-> -		preempt_enable();
-> +	}
-> +	preempt_enable();
->  
-> +	if (unlikely(flags)) {
->  		mem_cgroup_threshold(memcg);
-> -		if (unlikely(do_softlimit))
-> +		if (unlikely(flags & MEM_CGROUP_TARGET_SOFTLIMIT))
->  			mem_cgroup_update_tree(memcg, page);
->  #if MAX_NUMNODES > 1
-> -		if (unlikely(do_numainfo))
-> +		if (unlikely(flags & MEM_CGROUP_TARGET_NUMAINFO))
->  			atomic_inc(&memcg->numainfo_events);
->  #endif
-> -	} else
-> -		preempt_enable();
-> +	}
->  }
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ drivers/gpu/drm/i915/i915_reg.h      |    3 +++
+ drivers/gpu/drm/i915/intel_display.c |    5 +++++
+ 2 files changed, 8 insertions(+)
 
-I'm about to remove the soft limit part of this code, so we'll be able
-to condense this back into a single #if block again, anyway.
-
-I would much prefer having the extra #if in the code over this patch
-just to silence the warning for now.
+--- linux.orig/drivers/gpu/drm/i915/i915_reg.h	2012-01-06 15:00:55.000000000 +0800
++++ linux/drivers/gpu/drm/i915/i915_reg.h	2012-01-06 15:04:10.000000000 +0800
+@@ -3582,4 +3582,7 @@
+ #define CPT_AUD_CNTL_ST_A		0xE50B4
+ #define CPT_AUD_CNTRL_ST2		0xE50C0
+ 
++#define IBX_AUD_CONFIG_A		0xe2000
++#define CPT_AUD_CONFIG_A		0xe5000
++
+ #endif /* _I915_REG_H_ */
+--- linux.orig/drivers/gpu/drm/i915/intel_display.c	2012-01-06 15:05:47.000000000 +0800
++++ linux/drivers/gpu/drm/i915/intel_display.c	2012-01-06 16:07:59.000000000 +0800
+@@ -5908,15 +5908,18 @@ static void ironlake_write_eld(struct dr
+ 	uint32_t i;
+ 	int len;
+ 	int hdmiw_hdmiedid;
++	int aud_config;
+ 	int aud_cntl_st;
+ 	int aud_cntrl_st2;
+ 
+ 	if (HAS_PCH_IBX(connector->dev)) {
+ 		hdmiw_hdmiedid = IBX_HDMIW_HDMIEDID_A;
++		aud_config = IBX_AUD_CONFIG_A;
+ 		aud_cntl_st = IBX_AUD_CNTL_ST_A;
+ 		aud_cntrl_st2 = IBX_AUD_CNTL_ST2;
+ 	} else {
+ 		hdmiw_hdmiedid = CPT_HDMIW_HDMIEDID_A;
++		aud_config = CPT_AUD_CONFIG_A;
+ 		aud_cntl_st = CPT_AUD_CNTL_ST_A;
+ 		aud_cntrl_st2 = CPT_AUD_CNTRL_ST2;
+ 	}
+@@ -5924,6 +5927,7 @@ static void ironlake_write_eld(struct dr
+ 	i = to_intel_crtc(crtc)->pipe;
+ 	hdmiw_hdmiedid += i * 0x100;
+ 	aud_cntl_st += i * 0x100;
++	aud_config += i * 0x100;
+ 
+ 	DRM_DEBUG_DRIVER("ELD on pipe %c\n", pipe_name(i));
+ 
+@@ -5943,6 +5947,7 @@ static void ironlake_write_eld(struct dr
+ 	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
+ 		DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
+ 		eld[5] |= (1 << 2);	/* Conn_Type, 0x1 = DisplayPort */
++		I915_WRITE(aud_config, 1 << 29); /* N value index, 0x1 = DP */
+ 	}
+ 
+ 	if (intel_eld_uptodate(connector,
