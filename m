@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323Ab2AIQfd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:35:33 -0500
-Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:46722 "HELO
-	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932304Ab2AIQfc (ORCPT
+	id S932334Ab2AIQhh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:37:37 -0500
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54631 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932290Ab2AIQhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:35:32 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 5UdmmloVM1n3OuhOsHkJRnK4UyE3UnA8MDca8E7eMA.mzWC
- .A_4eBBYQKhwyduXkvTC64BdO1LCPCNDxCGgym_eu9ZYOFdPbrceRNdz.rRI
- 7pK0XAo0wVaiETHRM5pSdxx4jVj3WPb9LS1nXDXJVY6ffJkZJdCu73Iwda_Y
- 6KlkCUIcylzUejyhAzSSHmtgtbcTtr76M4r_oDgSnvk9DryyqxNEnHxafoOt
- mdWb1Y2Ggs29uIvehQnAauAzuriQ1zNRByGBw4TNfG8XFxEAo8OYpHfkiZrC
- M.zl12BXsRtTc2WrGO_6qu7cXuEiPkvGuILdDb5JD7Xk05uFPIkENL.NCL05
- L7kxCwljdQvbmuGE4yJEBC87cVyQLT2Hnl.X1etPzW7jQRFESjfx1_gjm5ve
- XaPh1VjgcQvjumIZVmCSOlQ--
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Mon, 9 Jan 2012 10:35:26 -0600 (CST)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Gilad Ben-Yossef <gilad@benyossef.com>
-cc: linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.org>
-Subject: Re: [PATCH v6 7/8] mm: only IPI CPUs to drain local pages if they
- exist
-In-Reply-To: <1326040026-7285-8-git-send-email-gilad@benyossef.com>
-Message-ID: <alpine.DEB.2.00.1201091034390.31395@router.home>
-References: <y> <1326040026-7285-8-git-send-email-gilad@benyossef.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 9 Jan 2012 11:37:35 -0500
+From: =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <jeff.dagenais@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: michael.hennerich@analog.com, grant.likely@secretlab.ca,
+        =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <jeff.dagenais@gmail.com>
+Subject: [RESEND PATCH 2/2] gpio: adp5588 - get value from data out when dir out
+Date: Mon,  9 Jan 2012 11:37:10 -0500
+Message-Id: <1326127030-29453-1-git-send-email-jeff.dagenais@gmail.com>
+X-Mailer: git-send-email 1.7.8.2
+In-Reply-To: <1326121523-28634-2-git-send-email-jeff.dagenais@gmail.com>
+References: <1326121523-28634-2-git-send-email-jeff.dagenais@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 Jan 2012, Gilad Ben-Yossef wrote:
+As discussed here: http://ez.analog.com/message/35852,
+the 5587 revC and 5588 revB spec sheets contain a mistake
+in the GPIO_DAT_STATx register description.
 
-> @@ -67,6 +67,14 @@ DEFINE_PER_CPU(int, numa_node);
->  EXPORT_PER_CPU_SYMBOL(numa_node);
->  #endif
->
-> +/*
-> + * A global cpumask of CPUs with per-cpu pages that gets
-> + * recomputed on each drain. We use a global cpumask
-> + * here to avoid allocation on direct reclaim code path
-> + * for CONFIG_CPUMASK_OFFSTACK=y
-> + */
-> +static cpumask_var_t cpus_with_pcps;
+According to R.Shnell at ADI, as well as my own
+observations, it should read:
+"GPIO data status (shows GPIO state when read for inputs)".
 
-Move the static definition into drain_all_pages()?
+This commit changes the get value function accordingly.
 
-> +
->  #ifdef CONFIG_HAVE_MEMORYLESS_NODES
->  /*
->   * N.B., Do NOT reference the '_numa_mem_' per cpu variable directly.
-> @@ -1097,7 +1105,19 @@ void drain_local_pages(void *arg)
->   */
->  void drain_all_pages(void)
->  {
-> -	on_each_cpu(drain_local_pages, NULL, 1);
-> +	int cpu;
-> +	struct per_cpu_pageset *pcp;
-> +	struct zone *zone;
-> +
-> +	for_each_online_cpu(cpu)
-> +		for_each_populated_zone(zone) {
-> +			pcp = per_cpu_ptr(zone->pageset, cpu);
-> +			if (pcp->pcp.count)
-> +				cpumask_set_cpu(cpu, cpus_with_pcps);
-> +			else
-> +				cpumask_clear_cpu(cpu, cpus_with_pcps);
-> +		}
-> +	on_each_cpu_mask(cpus_with_pcps, drain_local_pages, NULL, 1);
->  }
->
->  #ifdef CONFIG_HIBERNATION
-> @@ -3601,6 +3621,10 @@ static void setup_zone_pageset(struct zone *zone)
->  void __init setup_per_cpu_pageset(void)
->  {
->  	struct zone *zone;
-> +	int ret;
-> +
-> +	ret = zalloc_cpumask_var(&cpus_with_pcps, GFP_KERNEL);
-> +	BUG_ON(!ret);
->
->  	for_each_populated_zone(zone)
->  		setup_zone_pageset(zone);
->
+Follows a similar patch for adp5588-keys.
+
+Signed-off-by: Jean-François Dagenais <jeff.dagenais@gmail.com>
+Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+---
+ drivers/gpio/gpio-adp5588.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpio/gpio-adp5588.c b/drivers/gpio/gpio-adp5588.c
+index 3122713..293ddb6 100644
+--- a/drivers/gpio/gpio-adp5588.c
++++ b/drivers/gpio/gpio-adp5588.c
+@@ -65,11 +65,23 @@ static int adp5588_gpio_write(struct i2c_client *client, u8 reg, u8 val)
+ 
+ static int adp5588_gpio_get_value(struct gpio_chip *chip, unsigned off)
+ {
++	unsigned bank, bit;
+ 	struct adp5588_gpio *dev =
+ 	    container_of(chip, struct adp5588_gpio, gpio_chip);
+ 
++	bank = ADP5588_BANK(off);
++	bit = ADP5588_BIT(off);
++
++	mutex_lock(&dev->lock);
++	if (dev->dir[bank] & bit) {
++		int result = !!(dev->dat_out[bank] & bit);
++		mutex_unlock(&dev->lock);
++		return result;
++	}
++	mutex_unlock(&dev->lock);
++
+ 	return !!(adp5588_gpio_read(dev->client,
+-		  GPIO_DAT_STAT1 + ADP5588_BANK(off)) & ADP5588_BIT(off));
++		  GPIO_DAT_STAT1 + bank) & bit);
+ }
+ 
+ static void adp5588_gpio_set_value(struct gpio_chip *chip,
+-- 
+1.7.8.2
+
