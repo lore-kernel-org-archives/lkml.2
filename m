@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab2AIRlz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 12:41:55 -0500
-Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:55512 "HELO
-	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752530Ab2AIRlx (ORCPT
+	id S932363Ab2AIRyl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 12:54:41 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:61651 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2AIRyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 12:41:53 -0500
-Message-ID: <4F0B348A.3070708@xenotime.net>
-Date: Mon, 09 Jan 2012 10:40:10 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 9 Jan 2012 12:54:40 -0500
+Date: Mon, 9 Jan 2012 12:52:48 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: tj@kernel.org
+Subject: [GIT PULL] (xen) stable/for-linus-fixes-3.3 for 3.3-rc0 (bug in
+ 3.3-rc0)
+Message-ID: <20120109175248.GA32536@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Jon Masters <jcm@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: [PATCH] modules: sysfs - export: taint, address, size
-References: <1325951076.860.2.camel@mop> <871ur99vzf.fsf@rustcorp.com.au> <CAPXgP12rUUYfRy6QB5Z4Rwdday3hNHubCsSRY4gMDYuQGs3oJg@mail.gmail.com>
-In-Reply-To: <CAPXgP12rUUYfRy6QB5Z4Rwdday3hNHubCsSRY4gMDYuQGs3oJg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090201.4F0B29DC.0078,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2012 04:44 AM, Kay Sievers wrote:
-> On Mon, Jan 9, 2012 at 08:27, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> On Sat, 07 Jan 2012 16:44:36 +0100, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> 
->>> Recent tools do not use /proc to retrieve module information. A few values
->>> are currently missing from sysfs.
->>
->> Well, strace says lsmod still does.  Is libkmod doing something
->> different?
-> 
-> Yes, kmod used /sys only.
-> 
-> There is current code to read the size, to provide the 'lsmod' output,
-> but that will be removed.
-> 
->> Should we be deprecating /proc/modules?
-> 
-> In the longer run, yes.
 
-Deprecate it for udev?  OK.
-what about other users of it?
+--r5Pyd7+fXNt84Ff3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> We still aim for leaving everything that isn't process- or
-> namespace-related (which, with some stretch is always process-related)
-> alone, and use /sys for it.
+Hey Linus,
+
+Please git pull the following git branch:
+
+git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stabl=
+e/for-linus-fixes-3.3
+
+which has one compile fix on top of d4bbf7e7759afc172e2bfbc5c416324590049cdd
+(which was merged in your 3.3 tree on Friday), the git commit is:
+Tejun Heo (1):
+  Merge branch 'master' into x86/memblock
 
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+One simple mismerge where an extra ')' was left.
+
+ arch/x86/xen/mmu.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+Konrad Rzeszutek Wilk (1):
+      xen/mmu: Fix compile errors introduced by x86/memblock mismerge.
+
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index f4bf8aa..58a0e46 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -1852,7 +1852,7 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
+ 	xen_write_cr3(__pa(initial_page_table));
+=20
+ 	memblock_reserve(__pa(xen_start_info->pt_base),
+-			 xen_start_info->nr_pt_frames * PAGE_SIZE));
++			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+=20
+ 	return initial_page_table;
+ }
+
+--r5Pyd7+fXNt84Ff3
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJPCylmAAoJEFjIrFwIi8fJhTgH/jwmKkl6gqigavtqvJiXjvyA
+15Ff5DbGgHGmvXu7V46oHW+dcE5Abl1s8HDu2bkJXUfbNfmnNjnA3C2SIQzDoGhN
+Q4492wWY9VYHJCNnxmRlX3EvpVFt2WAotpJeGhtKiyAWOVRG+O6g3Cc2wl0S5BRW
+2puIQsbqwkG6SjSljmbE92HdV5QxZQKlXF0r/LTE/4FI8Qb2lk0tLeSDolmCub/K
+SFyKBHJhsCW8vbivPUakn6ClDHn+fkupKh0Phnyd035XKEmh+6+sX37Mc0q6ANRe
++R4u/kTD2joOUOGgmzjGsOv8j5u2MxTto0p887011IQUfjSEYuO4oxe7ZqX2i+I=
+=H5rN
+-----END PGP SIGNATURE-----
+
+--r5Pyd7+fXNt84Ff3--
