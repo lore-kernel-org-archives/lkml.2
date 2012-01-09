@@ -1,108 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab2AIMpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 07:45:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50068 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab2AIMpO convert rfc822-to-8bit (ORCPT
+	id S1754108Ab2AIMuV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 07:50:21 -0500
+Received: from smtp-out-233.synserver.de ([212.40.185.233]:1029 "EHLO
+	smtp-out-233.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996Ab2AIMuU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 07:45:14 -0500
+	Mon, 9 Jan 2012 07:50:20 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 20731
+Message-ID: <4F0AE2BF.6080605@metafoo.de>
+Date: Mon, 09 Jan 2012 13:51:11 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111114 Iceowl/1.0b2 Icedove/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <871ur99vzf.fsf@rustcorp.com.au>
-References: <1325951076.860.2.camel@mop> <871ur99vzf.fsf@rustcorp.com.au>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Mon, 9 Jan 2012 13:44:52 +0100
-Message-ID: <CAPXgP12rUUYfRy6QB5Z4Rwdday3hNHubCsSRY4gMDYuQGs3oJg@mail.gmail.com>
-Subject: Re: [PATCH] modules: sysfs - export: taint, address, size
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Jon Masters <jcm@redhat.com>, linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: christian.gmeiner@gmail.com
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        bigeasy@linutronix.de, rpurdie@rpsys.net
+Subject: Re: [PATCH v2] add led driver for Bachmann's ot200
+References: <4F0AC06C.3000502@gmail.com>
+In-Reply-To: <4F0AC06C.3000502@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 08:27, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Sat, 07 Jan 2012 16:44:36 +0100, Kay Sievers <kay.sievers@vrfy.org> wrote:
+On 01/09/2012 11:24 AM, Christian Gmeiner wrote:
+> From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
+> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de
+> <mailto:bigeasy@linutronix.de>>
+> Date: Mon, 9 Jan 2012 10:09:50 +0100
+> Subject: [PATCH v2] add led driver for Bachmann's ot200
+> 
+> This patch adds support for leds on Bachmann's ot200 visualisation device.
+> The device has three leds on the back panel (led_err, led_init and led_run)
+> and can handle up to seven leds on the front panel.
+> 
+> The driver was written by Linutronix on behalf of
+> Bachmann electronic GmbH.
+> 
+> Changes in v2:
+> - *incorporated* feedback from Andrew Morton and Lars-Peter Clausen
+> 
 
->> Recent tools do not use /proc to retrieve module information. A few values
->> are currently missing from sysfs.
->
-> Well, strace says lsmod still does.  Is libkmod doing something
-> different?
+looks good to me except some minor style issues and the <mailto:...> tags.
 
-Yes, kmod used /sys only.
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de
+> <mailto:bigeasy@linutronix.de>>
+> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com
+> <mailto:christian.gmeiner@gmail.com>>
+> ---
+> [...]
+> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+> new file mode 100644
+> index 0000000..4d000ac
+> --- /dev/null
+> +++ b/drivers/leds/leds-ot200.c
+> @@ -0,0 +1,177 @@
+> [...]
+> +
+> +static int __devinit ot200_led_probe(struct platform_device *pdev)
+> +{
+> +    int i;
+> +    int ret;
+> +
+> +    for (i = 0; i < ARRAY_SIZE(leds); i++) {
+> +
+> +        leds[i].cdev.name = leds[i].name;
+> +        leds[i].cdev.default_trigger = NULL;
+> +        leds[i].cdev.blink_set = NULL;
 
-There is current code to read the size, to provide the 'lsmod' output,
-but that will be removed.
+No need to initialize to NULL.
 
-> Should we be deprecating /proc/modules?
+> +        leds[i].cdev.brightness_set = ot200_led_brightness_set;
+> +
+> +        ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
+> +        if (ret < 0)
+> +            goto err;
+> +
+> +        dev_set_drvdata(leds[i].cdev.dev, &leds[i]);
 
-In the longer run, yes.
+Neither this ...
 
-We still aim for leaving everything that isn't process- or
-namespace-related (which, with some stretch is always process-related)
-alone, and use /sys for it.
+> +    }
+> +
+> +    platform_set_drvdata(pdev, leds);
 
->> +static size_t module_flags_taint(struct module *mod, char *buf)
->> +{
->> +     size_t l = 0;
->> +
->> +     if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
->> +             buf[l++] = 'P';
->> +     else if (mod->taints & (1 << TAINT_OOT_MODULE))
->> +             buf[l++] = 'O';
->> +     if (mod->taints & (1 << TAINT_FORCED_MODULE))
->> +             buf[l++] = 'F';
->> +     if (mod->taints & (1 << TAINT_CRAP))
->> +             buf[l++] = 'C';
->> +     /*
->> +      * TAINT_FORCED_RMMOD: could be added.
->> +      * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
->> +      * apply to modules.
->> +      */
->> +     return l;
->> +}
->
-> The else here is weird.  Shouldn't we leave the exclusion elsewhere?
+nor this is ever used.
 
-You mean the 'else if ... TAINT_OOT_MODULE'?  It's a one-to-one copy
-of the current code, which just moved up a bit.
+> +
+> +    outb(0x0, 0x49);    /* turn off all front leds */
+> +    outb(0x2, 0x5a);    /* turn on init led */
+> +    leds_front = 0;
+> +    leds_back = BIT(1);
 
-Disconnect the two flags form each other?
+Maybe initialize leds_front and leds_back first and pass it to outb.
 
->> +static ssize_t show_address(struct module_attribute *mattr,
->> +                         struct module_kobject *mk, char *buffer)
->> +{
->> +     return sprintf(buffer, "0x%pK\n", mk->mod->module_core);
->> +}
->> +
->> +struct module_attribute module_address =
->> +     __ATTR(address, 0444, show_address, NULL);
->> +
->> +static ssize_t show_size(struct module_attribute *mattr,
->> +                     struct module_kobject *mk, char *buffer)
->> +{
->> +     return sprintf(buffer, "%u\n", mk->mod->init_size + mk->mod->core_size);
->> +}
->> +
->> +struct module_attribute module_size =
->> +     __ATTR(size, 0444, show_size, NULL);
->
-> This copies a past mistake, and is definitely wrong.  Either expose both
-> pointers and sizes, or don't include init_size here.  Sure, it'll
-> normally be 0, but if not it's confusing...
-
-Ah, good to know, mod->init_size is 0 for all modules here, so we
-should just drop mod->init_size and maybe name the 'size' attribute to
-'coresize'?
-
-> But the bigger question is: Why are we exposing these sizes?
-> /proc/modules did since 2.2, or before, but that doesn't make it the
-> best option...
-
-Good question, I doubt it is too useful, it's just that 'lsmod' shows
-it, so we wanted to show too.
-
-Kay
+> +
+> +    return 0;
+> +
+> +err:
+> +    for (i = i - 1; i >= 0; i--)
+> +        led_classdev_unregister(&leds[i].cdev);
+> +
+> +    return ret;
+> +}
+> +
