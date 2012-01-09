@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933343Ab2AIXFa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 18:05:30 -0500
-Received: from bues.ch ([80.190.117.144]:46792 "EHLO bues.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755537Ab2AIXF3 convert rfc822-to-8bit (ORCPT
+	id S933440Ab2AIXHi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 18:07:38 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37784 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932589Ab2AIXHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 18:05:29 -0500
-Date: Tue, 10 Jan 2012 00:05:19 +0100
-From: Michael =?UTF-8?B?QsO8c2No?= <m@bues.ch>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Incorrect uses of get_driver()/put_driver()
-Message-ID: <20120110000519.3d17e64e@milhouse>
-In-Reply-To: <Pine.LNX.4.44L0.1201091520360.1541-100000@iolanthe.rowland.org>
-References: <20120109210733.17ae0983@milhouse>
-	<Pine.LNX.4.44L0.1201091520360.1541-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 9 Jan 2012 18:07:37 -0500
+X-Sasl-enc: JjhM+KKHPB+VbhiHjPQfwg0aL8hghhLtIMomJba0l47N 1326150456
+Date: Mon, 9 Jan 2012 15:07:28 -0800
+From: Greg KH <greg@kroah.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Subject: Re: [PATCH] modules: sysfs - export: taint, address, size
+Message-ID: <20120109230728.GA11732@kroah.com>
+References: <1325951076.860.2.camel@mop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325951076.860.2.camel@mop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jan 2012 17:44:24 -0500 (EST)
-Alan Stern <stern@rowland.harvard.edu> wrote:
-
-> On Mon, 9 Jan 2012, Michael Büsch wrote:
+On Sat, Jan 07, 2012 at 04:44:36PM +0100, Kay Sievers wrote:
+> From: Kay Sievers <kay.sievers@vrfy.org>
+> Subject: modules: sysfs - export taint, address, size
 > 
-> > On Mon, 9 Jan 2012 14:48:15 -0500 (EST)
-> > Alan Stern <stern@rowland.harvard.edu> wrote:
-> > 
-> > > Maybe you want to call device_lock(&sdev->dev) here?  It will prevent
-> > > the driver from being unbound (and therefore from being unloaded), and
-> > > it's likely that sdrv's remove and probe routines expect to be called
-> > > with this lock held, because that's what the device core does.  The
-> > > drawback is that holding the lock prevents other things from happening
-> > > as well, like unregistering sdev.
-> > > 
-> > > Alternatively, we can simply remove ssb_driver_get/put.
-> > 
-> > I think in practice it doesn't matter. This function is only
-> > used in the rare case where the EEPROM on the board is written.
+> Recent tools do not use /proc to retrieve module information. A few values
+> are currently missing from sysfs.
 > 
-> Okay, then we can just remove those calls and not worry about it for
-> now, right?
+> Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+> Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+> ---
+>  kernel/module.c |   89 +++++++++++++++++++++++++++++++++++++++-----------------
 
-This would be acceptable.
+You forgot the Documentation/ABI/ update as well :)
 
--- 
-Greetings, Michael.
