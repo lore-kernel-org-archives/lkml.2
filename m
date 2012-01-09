@@ -1,343 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753305Ab2AIGSK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 01:18:10 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:51386 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752142Ab2AIGSI (ORCPT
+	id S1753331Ab2AIGUh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 01:20:37 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:52064 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872Ab2AIGUg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 01:18:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120109015625.GE1835@S2101-09.ap.freescale.net>
-References: <1324402840-32451-3-git-send-email-b29396@freescale.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
-	<7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
-	<CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
-	<7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
-	<20120107135445.GI4790@S2101-09.ap.freescale.net>
-	<20120108125156.GB2203@richard-laptop>
-	<20120109015625.GE1835@S2101-09.ap.freescale.net>
-Date: Sun, 8 Jan 2012 22:18:06 -0800
-X-Google-Sender-Auth: c6X3MRV4gbuEbjheAwTRZmPiXSc
-Message-ID: <CAPnjgZ1LL7g_s1e+Pe-XN27yTNL4SCZvm6swJ_zX=ZULQirOxQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux mappings
-From: Simon Glass <sjg@chromium.org>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Richard Zhao <richard.zhao@linaro.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Dong Aisheng <dongas86@gmail.com>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 9 Jan 2012 01:20:36 -0500
+Date: Mon, 9 Jan 2012 17:20:16 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-Id: <20120109172016.2496b94ce207c5f7f750a1ea@canb.auug.org.au>
+In-Reply-To: <20120109165950.53933c3050416bd242acff76@canb.auug.org.au>
+References: <20120105190405.1e3191fb5a43b2a0f1655e1f@canb.auug.org.au>
+	<20120105160448.dc482ef6.akpm@linux-foundation.org>
+	<20120109165950.53933c3050416bd242acff76@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[snip lots of discussion]
-
-Someone copied me on this so I feel I can sneak in with a response. I
-have read this entire thread and implemented Tegra pinmux in U-boot,
-but not much else on the topic so have limited understanding,
-particular of the kernel pinmux setup, unfortunately. Sorry if I have
-the wrong end of the stick on some of this, but I hope my comments are
-useful.
-
-1. Symbolic names
-
-> Stephen said:
-> It's a real pity that dtc doesn't have a way of doing named integer
-> constants, so this could be re-written as e.g.:
-> SoC .dtsi file:
-> /define/ TEGRA_MUX_FUNC_SD4 234
-
-IMO this is essential for pinmux. Stephen has already done a patch
-which implements this feature. The alternative is bindings with lots
-of arbitrary numbers - lots of errors, lots of confusion, lots of
-pain. He has asked a few times on the device-tree list for this
-feature to be accepted. I believe it should be, and pinmux brough in
-with that in mind. Turning symbols into numbers is the role of the
-device tree compiler I think.
-
-If Stephen's proposed grammar needs tweaking that is fine, but I think
-we are pushing the limits of a pure numerical representation here.
-
-
-2. Stephen also said:
-
-> We also need to consider compatibility and extensibility. A DT binding
-> is an ABI between the kernel and whatever is providing it, and so we
-> need to be able to maintain and extend it in a compatible fashion, just
-> like the user-space syscall ABI. Now it's true that the .dts files are
-> currently part of the kernel source tree and can be rev'd in sync with
-> kernel changes, but that may not always be the case moving forward.
+On Mon, 9 Jan 2012 16:59:50 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
 >
-> In other words, taking a board with an old device tree embedded into
-> Flash and running a new kernel using that device tree should work just
-> like running the original kernel did.
+> On Thu, 5 Jan 2012 16:04:48 -0800 Andrew Morton <akpm@linux-foundation.or=
+g> wrote:
+> >
+> > On Thu, 5 Jan 2012 19:04:05 +1100
+> > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >=20
+> > > After merging the final tree, today's linux-next build (sparc64 defco=
+nfig)
+> > > failed like this:
+> > >=20
+> > > In file included from include/trace/ftrace.h:567:0,
+> > >                  from include/trace/define_trace.h:86,
+> > >                  from include/trace/events/power.h:240,
+> > >                  from kernel/trace/power-traces.c:14:
+> > > include/trace/events/kmem.h: In function 'ftrace_test_probe_kmalloc':
+> > > include/trace/events/kmem.h:45:1: error: implicit declaration of func=
+tion 'check_trace_callback_type_kmalloc' [-Werror=3Dimplicit-function-decla=
+ration]
+> > > include/trace/events/kmem.h: In function 'ftrace_test_probe_kmem_cach=
+e_alloc':
+> > >
+> > > ...
+> > >
+> > > include/trace/events/kmem.h:267:1: error: implicit declaration of fun=
+ction 'check_trace_callback_type_mm_page_alloc_extfrag' [-Werror=3Dimplicit=
+-function-declaration]
+> > > In file included from include/trace/ftrace.h:774:0,
+> > >                  from include/trace/define_trace.h:86,
+> > >                  from include/trace/events/power.h:240,
+> > >                  from kernel/trace/power-traces.c:14:
+> > > include/trace/events/kmem.h: In function 'perf_test_probe_mm_page_pcp=
+u_drain':
+> > > include/trace/events/kmem.h:256:1: error: implicit declaration of fun=
+ction 'check_trace_callback_type_mm_page_pcpu_drain' [-Werror=3Dimplicit-fu=
+nction-declaration]
+> > >=20
+> > > I have no idea what has gone wrong here, but I did not get this error
+> > > yesterday.  The only thing that touched include/trace/events/kmem.h is
+> > > patch "mm-tracepoint: rename page-free events" from the akpm tree, but
+> > > that was there yesterday as well and doesn't look suspicious.
+> >=20
+> > Yes, it's not due to anything in the akpm tree.  Tracing stuff blew up.
+> >=20
+> > > I just have to leave things broken for today in the hope that someone
+> > > figures something out.  This does not affect my X86_64 allmodconfig b=
+uild
+> > > or my PowerPC builds (including an allyesconfig build).
+> >=20
+> > It fails with sparc64 defconfig but succeeds with sparc64 allmodconfig.
+> > Some config-dependent thing.  3.2 is OK, so it's something in -next.
+> >=20
+> > It could be that some far-off sparc64 Kconfig change is newly
+> > triggering this. =20
+> >=20
+> > I suppose I could get off my ass and actually work out why it broke,
+> > but the tracing code is too icky.
+>=20
+> This failure is now in Linus' tree.  I am not sure when it got there.
 
-While this is true we should remember that SOCs will change and
-evolve, and we don't actually need a device tree for a Tegra 2 (say)
-to be able to boot a Tegra 3 kernel. So each time we create a new SOC
-in a family, we have the opportunity to update the fdt, potentially in
-an incompatible way, since we know that the old boot loader and new
-kernel are incompatible anyway.
+Bisected down to:
 
-Anyway we are looking at pinmux from a 2012 view of how SOCs do
-things. We can't predict what things will look like in the future. The
-device tree format is great for making things extensible, but there is
-an efficiency cost also.
+8a25a2fd126c621f44f3aeaef80d51f00fc11639 is the first bad commit
+commit 8a25a2fd126c621f44f3aeaef80d51f00fc11639
+Author: Kay Sievers <kay.sievers@vrfy.org>
+Date:   Wed Dec 21 14:29:42 2011 -0800
 
-Backwards compatibility can create a lot of problems with newer
-designs, so I don't think we should be slaves to it. We are backwards
-compatible because it aids understanding, is necessary for kernels to
-run across different boards, etc., not just for its own sake. If in
-the future we decide that the approach agreed now no longer servers
-the purpose and has too much baggage, we can change it. Similar things
-happen in the rest of the kernel.
+    cpu: convert 'cpu' and 'machinecheck' sysdev_class to a regular subsyst=
+em
+   =20
+    This moves the 'cpu sysdev_class' over to a regular 'cpu' subsystem
+    and converts the devices to regular devices. The sysdev drivers are
+    implemented as subsystem interfaces now.
+   =20
+    After all sysdev classes are ported to regular driver core entities, the
+    sysdev implementation will be entirely removed from the kernel.
+   =20
+    Userspace relies on events and generic sysfs subsystem infrastructure
+    from sysdev devices, which are made available with this conversion.
+   =20
+    Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
+    Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
+    Cc: Tony Luck <tony.luck@intel.com>
+    Cc: Fenghua Yu <fenghua.yu@intel.com>
+    Cc: Arnd Bergmann <arnd@arndb.de>
+    Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+    Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+    Cc: Paul Mundt <lethal@linux-sh.org>
+    Cc: "David S. Miller" <davem@davemloft.net>
+    Cc: Chris Metcalf <cmetcalf@tilera.com>
+    Cc: Thomas Gleixner <tglx@linutronix.de>
+    Cc: Ingo Molnar <mingo@redhat.com>
+    Cc: "H. Peter Anvin" <hpa@zytor.com>
+    Cc: Borislav Petkov <bp@amd64.org>
+    Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
+    Cc: Len Brown <lenb@kernel.org>
+    Cc: Zhang Rui <rui.zhang@intel.com>
+    Cc: Dave Jones <davej@redhat.com>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Russell King <rmk+kernel@arm.linux.org.uk>
+    Cc: Andrew Morton <akpm@linux-foundation.org>
+    Cc: Arjan van de Ven <arjan@linux.intel.com>
+    Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+    Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+    Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Also IMO updating the kernel without the device tree doesn't make a
-huge amount of sense. Why not just update both? Really to me the
-device tree is almost like static data for the kernel. It is a worthy
-goal to keep it as static as possible, but if it changes I don' t
-think it is the end of civilisation.
+:040000 040000 9f2bf9fd8c5aded0a2ee73e897384dcf751c7be3 e0a42f67ed44979aa64=
+b2be4c6de265832e940ca M	arch
+:040000 040000 f910621f42e19d9d023350ef0dc29e82d1dc9087 513187817d23d20eccb=
+d12fae6d54ab46f6224a3 M	drivers
+:040000 040000 1e4d8217d84d59840615679ff4c28b04bb6ff635 296baef04fc04321aba=
+25b5bdbc8e7210765e7b8 M	include
+:040000 040000 65e9478a4ef764542a61132c53378ef89d8677ba 671ac443ad56c84707d=
+80c84eee9e3902fc5edea M	kernel
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-3. Efficiency
+--Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY
+Content-Type: application/pgp-signature
 
-There has been talk about using strings to link things. IMO this is
-inefficient and slow compared to integers and device trees already
-have phandles. Some platforms will care more than others, but if the
-reason for using strings is that the device tree format does not
-support symbolic representation of integers, then see 1 above.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBCAAGBQJPCocgAAoJEECxmPOUX5FEH1MQAKDVkDqvrtj3rWX4J0QwWobO
+huL4ScBFAFhEzGdmkn21LzJAgKlyD/ZOkOgb+PwbvKEQt/3i/fKKc4FZwmZd3e8j
+65XI5AF/rP8EVeZ5v+AkaAzmk0PWSyOji+Da4oKgQa/pqEmHGoEPNzhgEyzHAzKW
+JTwDgiZNawpOpB3mGZna+BgifLRV8NQP/paGlvE+PTuwu9MxRMh4tbeQcAbKGfca
+uktM3za/e8S7EPDYN4SlIk+M4/7woMJIieIxqYmOjE/ipD35NJIwd9ma3LR82S41
+6Y6ha0XVkc2rR2BEg4vEE0dUPMSpfT2G53A8LH83XIUwYPj9BqD66u4HcPpYDlIG
+F16GXk174rTLqHVu7jhrJ4imE8Yu5A6WGkw2pkKZUnHv20qPstTMqqM5hMIPuFMt
+8ZxMhXHqZKmj8TJebDmPXKkhUVC6ME9fb5XJQR5OEBWqfOZOL2QJfK/y+VhpFi5n
+tGSRfx1MJX+imhtcKNp19/o2avStFLI1OUizxLDDg+3lh27VjnxABTvuNiO2SETO
+rl6LEyzq6UYOWs9UQYWTGRAeU8bGHNeWqWK4zDZG5+ufrm+mPbgZEVktfwRPO9Ks
+KJ+StrrgfoRci9pRG7BO5PtD5wtqkMi+ML+SB86JkLAysVmKp8hVC5DjWmb4MlUa
+mPcjib7OxrG6DIXPbHmr
+=dEh+
+-----END PGP SIGNATURE-----
 
-4. Who bears the pain?
-
-There is a lot of complexity in pinmux - if we continue to split the
-device tree into an SOC file and a board file then we should think
-about which one bears the brunt of the complexity. IMO it should be
-the SOC file. The SOC file is written by very clever engineers working
-for the SOC vendor. They are motivated to get their SOC working
-properly and for it to be easy for customers to access the glorious
-ground-breaking feature therein. On the other hand, the board file (to
-the extent it is not just copied from the vendor's example) is put
-together by people with little knowledge of the SOC, limited time to
-do the work and minimal interest in the wonders of the device tree
-structure.
-
-With this in mind I think the pinmux complexity should mostly be in
-the SOC file. This includes the selection of valid pinmux options.
-After all, despite the many possible ways that functions could be
-brought out of the chip, only a certain few ways typically make sense.
-For example, an SDMMC peripheral needs clock and command pins - unless
-these are connected then nothing with work. Similarly there is no
-sense in having two data[0] pins brought out for the same SDMMC port.
-
-In fact the SOC vendor generally has a good idea about the different
-options and mostly there are a small number of useful ones. So why
-don't we just enumerate these in the SOC file and let the board select
-what it wants in a single setting?
-
-
-5. Start at the top: function mux
-
-I propose adding a new level at the top, a function mux. This
-basically routes functions to one of 2-3 predefined options. So UART1
-can come out on 3 different sets of pins, SDMMC2 on two sets, etc.
-These are recommended from the vendor and in common use (e.g. on
-reference designs), so should be easy to use.
-
-Below the function mux is the group mux. Here we specify a list of pin
-groups and which function each group is assigned to. Together these
-2-3 groups join to give us the pins that the function mux needs.
-
-Below the pin groups are the pins. Some SOCs will have only one pin
-per group, some will have a group mux that really just moves entire
-functions around.
-
-IMO the top level belongs with the board file. If the board designer
-wants to depart from common options they can suffer the pain of
-dropping down to the group level.
-
-So at the board level it would be nice to do something like this:
-
-sdhci@c8000400 {
-	funcmux = <&sdmmc3-funcmux 0 0>;  /* funcmux phandle, config option, flags */
-};
-
-which means that we want this SDMMC port to use configuration 0 (out
-of perhaps 2-3 recommended options the SOC provides for bringing out
-this SDMMC function) and that there are no special flags required. Or:
-
-emmc: sdhci@c8000600 {
-	funcmux = <&sdmmc4-funcmux 1 OPT_SDMMC_8BIT>;
-}
-
-which means for this port we want to use configuration 1 with 8-bit wide data.
-
-Something like this is easy for the board files to deal with. It fits
-with the way reference designs are done (selecting from a few
-options). It allows flags to specify different options like 4-bit or
-8-bit wide SDMMC which can affect what pinmux groups are affected.
-
-Some boot loaders might even implement things only at the funcmux
-level, with hard-coded configuration of the actual pin groups in
-static data in their code, without reference to the device tree. This
-might allow them to operate with a vastly truncated device tree. They
-might be very motivated to do this if the full device tree consists of
-20KB of strings :-)
-
-
-6. Groups
-
-Already done in the discussion prior to this email:
-
-uart4func: func@1 {
-       func-name = "uart4";
-       locations = <&bargrp &bazgrp>;
-       mux-value = <6 3>;
-};
-
-but how above adding a flag cell and putting the locations and values
-into the same property, like:
-
-uart4func: func@1 {
-       func-name = "uart4";
-       locations = <&bargrp 6 0>
-		<&bazgrp 3 SOME_FLAG>;
-};
-
-
-So the SDMMC example might have three options for SDMMC4: a 4-bit one,
-and two 8-bit ones (changing 'locations' to 'groups'):
-
-sdmmc4-funcmux : sdmmc4_funcmux@0 {
-	setting@0 {
-		config = <0>;
-		option = <OPT_SDMMC_8BIT>;
-		groups = <&pingrp-atc FUNC_SDIO4 0> /* clk, cmd, data 1, 3, 5, 7 */
-			<&pingrp-atd FUNC_SDIO4 0>; /* data 0, 2, 4, 6 */
-	};
-
-	setting@1 {
-		config = <1>;
-		option = <0>;
-		groups = <&pingrp-atb FUNC_SDIO4 0>  /* clock, command */
-			<&pingrp-gma FUNC_SDIO4 0>; /* data[3:0] */
-	};
-
-	setting@2 {
-		config = <1>;
-		option = <OPT_SDMMC_8BIT>;
-		groups = <&pingrp-atb FUNC_SDIO4 0>  /* clock, command */
-			<&pingrp-gma FUNC_SDIO4 0> /* data[3:0] */
-			<&pingrp-gme FUNC_SDIO4 0>; /* data [7:4] */
-	};
-};
-
-The 'config' property refers to the second cell of the reference in
-the funcmux. The option property refers to the third cell. Essentially
-the vendor is recommending three possible options for SDMMC4 and the
-board can choose which one it likes.
-
-The disadvantage is that the last two share the pingrp-atb setting,
-and the last just adds an extra group, but no matter. It is easy to
-understand.
-
-A related problem is that the options must each be enumerated. Maybe
-that doesn't matter either for the moment.
-
-Then for the groups, again already done above, but I am less clear on
-the exact binding that is arrived at above. Something like this?
-
-pingrp-atb: pingrp_atb@0 {
-	locations = <&pin-i02 &pin-t07>;
-	control = <&pinmux 0>;
-	/* 4 options available, numbered 0 to 3 */
-	functions = <FUNC_IDE   FUNC_NAND   FUNC_GMI   FUNC_SDIO4>;
-	/* do we want to specify what the flags do here? I assume they are
-           globally understood by the pinmux system rather than specific to
-	   each group */
-};
-
-pingrp-atd: pingrp_atd@0 {
-	locations = <&pin-h01 &pin-h02 &pin-h03 &pin-h04>;
-	control = <&pinmux 3>;  /* 3 is the pinmux controller's ID for the atd group */
-	/* 4 options available, numbered 0 to 3 */
-	functions = <FUNC_IDE   FUNC_NAND   FUNC_GMI   FUNC_SDIO4>;
-};
-
-
-(It is probably obvious, but FUNC_SDIO4 is not just the value 3. It
-might be 21 - the pinmux code searches the list of 4 options for
-FUNC_SDIO4. The position it finds it in this case is 3, so that is the
-value written to &pinmux)
-
-
-7. Pins
-
-At this level I'm not sure if a device tree representation adds much.
-Maybe connect the GPIOs?
-
-pin-i02: pin_i02@0 {
-	name = "i02";
-	gpio = <&gpio 66>;
-};
-
-pin-t07: pin_t07@0 {
-	name = "t07";
-	gpio = <&gpio 167>;
-};
-
-
-8. Flexibility
-
-Someone asked how to deal with an LCD output with 16 bits each of
-which can be on two pins. Know you of such an SOC? If so, then it is
-still possible that the SOC would provide a few basic 'common' options
-at the funcmux level. But board designers may have to steel themselves
-and dive into the the pingroup level.
-
-Where an SOC has no groups but only pins, then perhaps the funcmux can
-still be provided, but uses a 'pins' property instead of 'groups':
-
-sdmmc4-funcmux : sdmmc4_funcmux@0 {
-        ...
-	setting@2 {
-		config = <1>;
-		option = <OPT_SDMMC_8BIT>;
-		pins = <&pin-i02 FUNC_SDIO4 0>  /* clock */
-			<&pin-t07 FUNC_SDIO4 0>  /* command */
-			<&pin-a00 FUNC_SDIO4 0>  /* data[0] */
-			<&pin-a01 FUNC_SDIO4 0>  /* data[1] */
-			<&pin-a02 FUNC_SDIO4 0>  /* data[2] */
-			<&pin-a03 FUNC_SDIO4 0>;  /* data[3] */
-			<&pin-a04 FUNC_SDIO4 0>;  /* data[4] */
-			<&pin-a05 FUNC_SDIO4 0>;  /* data[5] */
-			<&pin-a06 FUNC_SDIO4 0>;  /* data[6] */
-			<&pin-a07 FUNC_SDIO4 0>;  /* data[7] */
-	};
-};
-
-IMO this sort of thing makes it even more desirable to have a
-high-level pinmux feature in the device tree. Again, the board
-designer can dive into pins by defining his own custom funcmux-level
-things, so no flexibility is lost.
-
-Regards,
-Simon
+--Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY--
