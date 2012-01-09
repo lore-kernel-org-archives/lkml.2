@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932203Ab2AIVlx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 16:41:53 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38708 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932071Ab2AIVlv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 16:41:51 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5mlinyXLCh8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=rOUgymgbAAAA:8 a=DEoM-CAtu6HczL6noSAA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326145304.7642.40.camel@gandalf.stny.rr.com>
-Subject: Re: linux-next: build failure after merge of the final tree
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Miller <davem@davemloft.net>
-Cc: sfr@canb.auug.org.au, akpm@linux-foundation.org, fweisbec@gmail.com,
-        mingo@redhat.com, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Date: Mon, 09 Jan 2012 16:41:44 -0500
-In-Reply-To: <20120109.133512.1450319978863849902.davem@davemloft.net>
-References: <20120105190405.1e3191fb5a43b2a0f1655e1f@canb.auug.org.au>
-	 <20120105160448.dc482ef6.akpm@linux-foundation.org>
-	 <20120109165950.53933c3050416bd242acff76@canb.auug.org.au>
-	 <20120109.133512.1450319978863849902.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	id S932309Ab2AIVnN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 16:43:13 -0500
+Received: from ogre.sisk.pl ([217.79.144.158]:54733 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932109Ab2AIVnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 16:43:12 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Barry Song <21cnbao@gmail.com>
+Subject: Re: [PATCH v2] PM: HIBERNATION: skip the swap size check if the snapshot image size is anticipative
+Date: Mon, 9 Jan 2012 22:46:34 +0100
+User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
+Cc: Pavel Machek <pavel@ucw.cz>, Barry Song <Barry.Song@csr.com>,
+        linux-pm@lists.linux-foundation.org, workgroup.linux@csr.com,
+        Xiangzhen Ye <Xiangzhen.Ye@csr.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Barry Song <Baohua.Song@csr.com>
+References: <1322208422-12346-1-git-send-email-Barry.Song@csr.com> <201201082231.44510.rjw@sisk.pl> <CAGsJ_4y+fQ14yDzD1FxtutD7b17KqK+voaywHAZuS0SXK5Z_xQ@mail.gmail.com>
+In-Reply-To: <CAGsJ_4y+fQ14yDzD1FxtutD7b17KqK+voaywHAZuS0SXK5Z_xQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Message-Id: <201201092246.35170.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-09 at 13:35 -0800, David Miller wrote:
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 9 Jan 2012 16:59:50 +1100
+On Monday, January 09, 2012, Barry Song wrote:
+> 2012/1/9 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Friday, January 06, 2012, Barry Song wrote:
+> >> 2012/1/6 Pavel Machek <pavel@ucw.cz>:
+> >> > Hi!
+> >> >
+> >> > Is the check even useful these days? Should we remove it altogether?
+> >>
+> >> i think we can let users or distributions decide whether it is useful.
+> >> On PC, disk space is not an issue, people might run many applications
+> >> while doing hibernation, so snapshot is much big. an early check will
+> >> improve user experience because people don't need to wait a long time
+> >> and find space is not enough.
+> >> for embedded system, SoC solutions can know whether the space is
+> >> enough since they know what are running while doing hibernation, so
+> >> they can skip the check by setting the flag in sysfs.
+> >> that is why i had this patch sent.
+> >
+> > I agree with Pavel that it's better to drop the check altogether.
+> >
+> > The sysfs switch you're adding doesn't seem to be very useful, as PC
+> > users won't touch it and whoever needs it to be 0, will always set it
+> > that way and won't change it afterwards.
 > 
-> >> > include/trace/events/kmem.h:267:1: error: implicit declaration of function 'check_trace_callback_type_mm_page_alloc_extfrag' [-Werror=implicit-function-declaration]
-> >> > In file included from include/trace/ftrace.h:774:0,
-> >> >                  from include/trace/define_trace.h:86,
-> >> >                  from include/trace/events/power.h:240,
-> >> >                  from kernel/trace/power-traces.c:14:
-> >> > include/trace/events/kmem.h: In function 'perf_test_probe_mm_page_pcpu_drain':
-> >> > include/trace/events/kmem.h:256:1: error: implicit declaration of function 'check_trace_callback_type_mm_page_pcpu_drain' [-Werror=implicit-function-declaration]
+> ok. if we don't have the check, in case swap partition is not enough,
+> writing failure will happen, system still can restore to normal
+> status:
 > 
-> I think the problem has to do with slab_def.h's explicit inclusion of
-> trace/kmem.h
+> for example, in the following test, only 27% data is written with a
+> small partition, "Restarting tasks ... done" will make system restore
+> to normal status.
 > 
-> If this somehow gets included while we are expanding define_trace.h, then
-> TRACE_SYSTEM will get redefined and screw up all of the includes that
-> define_trace.h is trying to perform for the sake of power.h
-> 
-> Other architectures probably hit slab_def.h via some earlier includes
-> and therefore don't hit this situation like Sparc does.
-> 
-> Adding an explicit <linux/slab.h> include to power-traces.c indeed fixes
-> the build.
+> [   11.2080 27%
+> [   11.403274] PM: Wrote uncompressed 34920 kbytes in 0.65 seconds (53.72 MB/s)
+> [   11.407649] PM: Wrote compressed 3500 kbytes in 0.65 seconds (5.38 MB/s)
+> [   11.447176] Restarting tasks ... done.
+> [   11.448801] ...
 
-Yeah, I have a patch that fixes the bug (removing the
-trace/events/kmem.h from slab.h). I'll be posting it as soon as it
-finishes my final tests.
+That's exactly correct.
 
--- Steve
-
-
+Thanks,
+Rafael
