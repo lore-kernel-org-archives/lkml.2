@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579Ab2AIXt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 18:49:56 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46337 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932158Ab2AIXtz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 18:49:55 -0500
-Message-ID: <4F0B7D1F.7040802@gmail.com>
-Date: Mon, 09 Jan 2012 18:49:51 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH -mm] make swapin readahead skip over holes
-References: <20120109181023.7c81d0be@annuminas.surriel.com>
-In-Reply-To: <20120109181023.7c81d0be@annuminas.surriel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933586Ab2AIXxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 18:53:12 -0500
+Received: from mga09.intel.com ([134.134.136.24]:61135 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932158Ab2AIXxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 18:53:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="94583776"
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Youquan Song <youquan.song@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
+In-Reply-To: <20120110055856.GA23741@linux-youquan.bj.intel.com>
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
+	 <1326103578.2442.50.camel@twins>
+	 <20120110001445.GA20542@linux-youquan.bj.intel.com>
+	 <1326107156.2442.59.camel@twins>
+	 <20120110055856.GA23741@linux-youquan.bj.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Intel
+Date: Mon, 09 Jan 2012 15:52:43 -0800
+Message-ID: <1326153163.2366.7.camel@sbsiddha-mobl2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1/9/12 6:10 PM), Rik van Riel wrote:
-> Ever since abandoning the virtual scan of processes, for scalability
-> reasons, swap space has been a little more fragmented than before.
-> This can lead to the situation where a large memory user is killed,
-> swap space ends up full of "holes" and swapin readahead is totally
-> ineffective.
->
-> On my home system, after killing a leaky firefox it took over an
-> hour to page just under 2GB of memory back in, slowing the virtual
-> machines down to a crawl.
->
-> This patch makes swapin readahead simply skip over holes, instead
-> of stopping at them.  This allows the system to swap things back in
-> at rates of several MB/second, instead of a few hundred kB/second.
+On Tue, 2012-01-10 at 00:58 -0500, Youquan Song wrote:
+> Thanks Peter! Here is the patch. 
 
-If I understand correctly, this patch have
+Youquan, As far as I know both the
+sched_smt_power_savings/sched_mc_power_savings are broken for atleast an
+year.
 
-Pros
-  - increase IO throughput
-Cons
-  - increase a risk to pick up unrelated swap entries by swap readahead
+Have you checked the state of 'sched_mc_power_savings' to see if it is
+working or gets addressed with your proposed patches?
 
+thanks,
+suresh
 
-The changelog explained former but doesn't explained latter. I'm a bit
-hesitate now.
