@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018Ab2AICdd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 21:33:33 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57627 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab2AICdc (ORCPT
+	id S1754932Ab2AICf6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 21:35:58 -0500
+Received: from mailout-de.gmx.net ([213.165.64.23]:51524 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751731Ab2AICf5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 21:33:32 -0500
-X-AuditID: 9c930197-b7c0dae000006c54-02-4f0a51f7006c
-Message-ID: <4F0A51F7.9040206@lge.com>
-Date: Mon, 09 Jan 2012 11:33:27 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Sun, 8 Jan 2012 21:35:57 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX19PS3BUcdtPa6M+UYX/DujAH1hYHp6Kp9/sGIF9Tv
+	VlZtfL/hhHN5qQ
+Message-ID: <4F0A5284.7080009@gmx.de>
+Date: Mon, 09 Jan 2012 02:35:48 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Namhyung Kim <namhyung.kim@lge.com>, axboe@kernel.dk, mingo@redhat.com,
-        rostedt@goodmis.org, fweisbec@gmail.com, teravest@google.com,
-        slavapestov@google.com, ctalbott@google.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/11] block: block_bio_complete tracepoint was missing
-References: <1325806974-23486-1-git-send-email-tj@kernel.org> <1325806974-23486-4-git-send-email-tj@kernel.org> <4F0A431E.3090106@lge.com> <20120109014949.GA16360@mtj.dyndns.org>
-In-Reply-To: <20120109014949.GA16360@mtj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-fbdev@vger.kernel.org
+Subject: Re: [PATCH 0/6] video: s3c-fb: Use runtime suspend while blanked
+References: <20111227141550.GA3331@opensource.wolfsonmicro.com>
+In-Reply-To: <20111227141550.GA3331@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 12/27/2011 02:15 PM, Mark Brown wrote:
+> This patch series (the first two of which I posted the other day)
+> improves the runtime power management in the s3c-fb driver by moving it
+> to keeping the device runtime suspended when the screen is powered down
+> by userspace.  This saves a trivial amount of power in the framebuffer
+> controller and allows the SoC core code to enter system wide idle
+> states which offer much more substantial gains.
+> 
+> Currently it's only lightly tested but it certainly seems to the right
+> thing for me.
 
-2012-01-09 10:49 AM, Tejun Heo wrote:
-> Hello,
->
-> On Mon, Jan 09, 2012 at 10:30:06AM +0900, Namhyung Kim wrote:
->> Just adding the TP unconditionally will produce duplicated (in some
->> sense) reports about the completion. For example, normal request
->> based IO reports whole request completion prior to its bio's, and
->> further
->
-> Request and bio completions are separate events.  There's nothing
-> wrong with reporting them separately.  In fact, I think they should be
-> reported separately.
->
->> , some of nested block IO handling routines - bounced bio and
->> btrfs with compression, etc - call bio_endio() more than once. Also
->> there are cases that bio fails before it's enqueued for some reason.
->
-> They are actually separate bio's being completed.  I don't think
-> trying to put extra semantics on TP itself is a good idea.  In
-> general, TP signals that such event happened with sufficient
-> information and it's the consumers' responsibility to make sense of
-> what's going on.  BIO_CLONED/BOUNCED are there.
-
-I see.
-
-
->> I have no idea about the ioblame can deal with all of such corner
->> cases. However it might confuse blktrace somewhat, I guess.
->
-> Unless someone is doing memcpy() on bio's, ioblame should be okay.  It
-> only considers bio's which went through actual submission.
->
->> I already posted similar patch a couple of weeks ago, but didn't
->> receive a comment yet. [1] Please take a look this too :)
->
-> I'll reply there but don't think imposing such extra logic on TP is a
-> good idea.
-
-I'll reply on that thread too. :)
-
-
->> After a quick glance, the ioblame seems to carry all IO accounting
->> info through the first bio in the request. If so, why don't you use
->> the request structure for that?
->
-> Because there are bio based drivers which don't use requests at all.
-
-What I thought for such drivers was dynamic allocation in their 
-->make_request_fn, but because we don't have a block_bio_issue TP, 
-Nevermind. :)
+Applied all 6 patches of this series.
 
 
 Thanks,
-Namhyung Kim
+
+Florian Tobias Schandinat
+
+> 
+> Mark Brown (6):
+>       video: s3c-fb: Make runtime PM functional again
+>       video: s3c-fb: Use s3c_fb_enable() to enable the framebuffer
+>       video: s3c-fb: Disable runtime PM in error paths from probe
+>       video: s3c-fb: Take a runtime PM reference when unblanked
+>       video: s3c-fb: Hold runtime PM references when touching registers
+>       video: s3c-fb: Don't keep device runtime active when open
+> 
+>  drivers/video/s3c-fb.c |  127 ++++++++++++++++++++++++++++++++++-------------
+>  1 files changed, 92 insertions(+), 35 deletions(-)
+> 
+> 
+
