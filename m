@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab2AIITs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 03:19:48 -0500
-Received: from www.linutronix.de ([62.245.132.108]:46406 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751466Ab2AIITr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 03:19:47 -0500
-Date: Mon, 9 Jan 2012 09:19:44 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86: convert to generic irq_domain
-Message-ID: <20120109081944.GB3121@linutronix.de>
-References: <1324099129-28832-1-git-send-email-robherring2@gmail.com>
- <20111219144940.GI20801@linutronix.de>
- <4EFDD740.5080303@gmail.com>
+	id S1754808Ab2AIIUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 03:20:01 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45178 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754536Ab2AIIT7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 03:19:59 -0500
+Date: Mon, 9 Jan 2012 13:50:02 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: Jim Keniston <jkenisto@us.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        stable@vger.kernel.org
+Subject: [PATCH][RESEND] kprobes: initialize before using a hlist
+Message-ID: <20120109082001.GE20666@in.ibm.com>
+Reply-To: ananth@in.ibm.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4EFDD740.5080303@gmail.com>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.17 (2007-11-01)
+x-cbid: 12010908-5806-0000-0000-00001132DB8C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rob Herring | 2011-12-30 09:22:40 [-0600]:
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
->Any update on testing this?
+Commit ef53d9c5e introduced a bug where we can potentially leak
+kretprobe_instances since we initialize a hlist head after having
+used it.
 
-Just got back from vacation, will do this soon.
+Initialize the hlist head before using it.
 
->
->Rob
+(Resent with correct email ID for -stable)
 
-Sebastian
+Reported by: Jim Keniston <jkenisto@us.ibm.com>
+Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: <stable@vger.kernel.org>
+---
+ kernel/kprobes.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-3.2/kernel/kprobes.c
+===================================================================
+--- linux-3.2.orig/kernel/kprobes.c
++++ linux-3.2/kernel/kprobes.c
+@@ -1077,6 +1077,7 @@ void __kprobes kprobe_flush_task(struct 
+ 		/* Early boot.  kretprobe_table_locks not yet initialized. */
+ 		return;
+ 
++	INIT_HLIST_HEAD(&empty_rp);
+ 	hash = hash_ptr(tk, KPROBE_HASH_BITS);
+ 	head = &kretprobe_inst_table[hash];
+ 	kretprobe_table_lock(hash, &flags);
+@@ -1085,7 +1086,6 @@ void __kprobes kprobe_flush_task(struct 
+ 			recycle_rp_inst(ri, &empty_rp);
+ 	}
+ 	kretprobe_table_unlock(hash, &flags);
+-	INIT_HLIST_HEAD(&empty_rp);
+ 	hlist_for_each_entry_safe(ri, node, tmp, &empty_rp, hlist) {
+ 		hlist_del(&ri->hlist);
+ 		kfree(ri);
+
