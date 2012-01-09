@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab2AIVWk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 16:22:40 -0500
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:59916 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754848Ab2AIVWi (ORCPT
+	id S1755630Ab2AIV1G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 16:27:06 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:33477 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab2AIV1F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 16:22:38 -0500
-Message-ID: <4F0B6845.4080503@xenotime.net>
-Date: Mon, 09 Jan 2012 14:20:53 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Mon, 9 Jan 2012 16:27:05 -0500
+Date: Mon, 9 Jan 2012 21:26:55 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
+        akpm@linux-foundation.org
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+Message-ID: <20120109212654.GY23916@ZenIV.linux.org.uk>
+References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
+ <20120109171639.GA9359@infradead.org>
+ <20120109173010.GX23916@ZenIV.linux.org.uk>
+ <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+ <20120109205907.GE4198@dastard>
 MIME-Version: 1.0
-To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] menuconfig: add Home and End keys support for
- inputbox
-References: <20120109113633.24486.69758.stgit@localhost6.localdomain6> <20120109113641.24486.95511.stgit@localhost6.localdomain6>
-In-Reply-To: <20120109113641.24486.95511.stgit@localhost6.localdomain6>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120109205907.GE4198@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2012 03:36 AM, Paulius Zaleckas wrote:
-> Makes long string editing easier.
+On Tue, Jan 10, 2012 at 07:59:07AM +1100, Dave Chinner wrote:
+> > Comments?
 > 
-> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+> Looks OK to me.
 
-Hi,
+OK, grabbed.  And there's *more* fixes for obvious shite - by now I'm
+really sick and tired of what people are doing with failure exits;
+this morning catch just from looking through d_alloc_root() callers:
+	isofs - inode leak
+	ext4 - dentry leak + completely bogus handling of ext4_mb_init()
+failure (stuff that hadn't been allocated gets freed, stuff that was
+allocated isn't)
+	ceph - d_alloc_root() can fail.  NULL pointer derefs galore...
+)
 
-Does "default hostname" in the "General setup" menu use an inputbox?
-If so, I can't get Home and End keys to work for it.
+Frankly, d_alloc_root() had been a bad API; it should've been doing
+iput() on allocation failure.  I've added a trivial helper in the
+local tree (d_make_root(inode) - same as d_alloc_root(inode) and do
+iput(inode) if result turns out to be NULL).  Looks like *all* callers
+of d_alloc_root() either turn out to be buggy or trivially convert to
+d_make_root().  With a lot of boilerplate crap removed...
 
-If not, please tell me a field that uses an inputbox so that I can test it.
-
-Thanks.
-
-> ---
-> 
->  scripts/kconfig/lxdialog/inputbox.c |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/kconfig/lxdialog/inputbox.c b/scripts/kconfig/lxdialog/inputbox.c
-> index 834eee9..0d9cacc 100644
-> --- a/scripts/kconfig/lxdialog/inputbox.c
-> +++ b/scripts/kconfig/lxdialog/inputbox.c
-> @@ -158,6 +158,16 @@ do_resize:
->  					goto redraw;
->  				}
->  				continue;
-> +			case KEY_HOME:
-> +				scroll = input_x = 0;
-> +				goto redraw;
-> +			case KEY_END:
-> +				if (len >= box_width) {
-> +					scroll = len - box_width + 1;
-> +					input_x = box_width - 1;
-> +				} else
-> +					input_x = len;
-> +				goto redraw;
->  			default:
->  				if (key < 0x100 && isprint(key)) {
->  					if (len < MAX_LEN) {
-> 
-> --
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Hell knows...  Originally I thought about leaving both side-by-side, but
+it really starts looking as if there's no reason to keep d_alloc_root()
+at all...  I still have a couple of callers to check, though.
