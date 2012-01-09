@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932975Ab2AITJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 14:09:43 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37307 "EHLO
+	id S932922Ab2AITJm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 14:09:42 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60845 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755844Ab2AITJd (ORCPT
+	by vger.kernel.org with ESMTP id S1755846Ab2AITJf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 14:09:33 -0500
-X-Sasl-enc: Z8m4PLne/OtBp4XpFxUIy6v4HwBjHPwvoyt3ztNhTroz 1326136171
-Date: Mon, 9 Jan 2012 11:09:00 -0800
+	Mon, 9 Jan 2012 14:09:35 -0500
+X-Sasl-enc: FYHQiGqy/jGlqLXXdlwwnjP0wjVZNkwT5/JIfhBTnUuD 1326136173
+Date: Mon, 9 Jan 2012 11:09:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
-Subject: [GIT PATCH] TTY/serial driver merge for 3.3
-Message-ID: <20120109190900.GC9440@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] big USB merge for 3.3
+Message-ID: <20120109190922.GD9440@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
@@ -24,16 +24,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the big tty/serial merge for 3.3.
+Here is the big USB merge for 3.3.
 
-Lots of good fixes and reworks by Jiri on the tty and serial drivers,
-resolving some nasty issues, and a number of driver updates as well.
+Nothing major, lots of driver updates, and USB 3 fixes/reworks making
+things better overall.
+
+Here are 4 tiny USB fixes for the 3.2 tree.  After this, I don't
+anticipate any more patches for 3.2 that I know of at the moment, which
+is good, as I'll be away from a computer all next week.
+
+There are a few changes outside of the drivers/usb/ area, but they were
+due to some UTF-8 conversion fixes, and acked by the relevant
+maintainers.
+
 Full details are in the shortlog below.
 
 Please pull from:
-	git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git tty-next
+	git.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb.git/ usb-next
 
-All of these patches have been in the -mm and -next trees for a while.
+All of these patches have been in the -next and -mm releases for a
+while.
 
 thanks,
 
@@ -41,168 +51,536 @@ greg k-h
 
 ------------
 
- Documentation/serial/driver                |    2 +-
- arch/powerpc/kernel/legacy_serial.c        |    3 +
- arch/x86/include/asm/mrst.h                |    2 +-
- arch/x86/kernel/early_printk.c             |    2 +-
- arch/x86/platform/mrst/early_printk_mrst.c |   16 +-
- drivers/parport/parport_ax88796.c          |   13 +-
- drivers/parport/parport_sunbpp.c           |   13 +-
- drivers/tty/n_hdlc.c                       |    6 +-
- drivers/tty/n_tty.c                        |    8 +-
- drivers/tty/pty.c                          |   26 +-
- drivers/tty/serial/8250.c                  |   98 ++---
- drivers/tty/serial/8250.h                  |   26 +
- drivers/tty/serial/8250_dw.c               |   12 +-
- drivers/tty/serial/8250_fsl.c              |   63 +++
- drivers/tty/serial/8250_pci.c              |   47 ++-
- drivers/tty/serial/Kconfig                 |   37 ++-
- drivers/tty/serial/Makefile                |    2 +
- drivers/tty/serial/atmel_serial.c          |   12 +-
- drivers/tty/serial/bfin_sport_uart.c       |   22 +-
- drivers/tty/serial/bfin_sport_uart.h       |    5 +-
- drivers/tty/serial/bfin_uart.c             |   83 ++--
- drivers/tty/serial/ifx6x60.c               |    1 -
- drivers/tty/serial/imx.c                   |  148 +++++-
- drivers/tty/serial/m32r_sio.c              |    7 +-
- drivers/tty/serial/max3100.c               |    1 -
- drivers/tty/serial/max3107-aava.c          |    1 -
- drivers/tty/serial/max3107.c               |    1 -
- drivers/tty/serial/mfd.c                   |   18 +-
- drivers/tty/serial/mrst_max3110.c          |    1 -
- drivers/tty/serial/msm_serial_hs.c         |   23 +-
- drivers/tty/serial/mxs-auart.c             |    5 +-
- drivers/tty/serial/omap-serial.c           |    2 +-
- drivers/tty/serial/pch_uart.c              |  160 ++++++-
- drivers/tty/serial/sc26xx.c                |   14 +-
- drivers/tty/serial/serial_core.c           |  325 +++++++-----
- drivers/tty/serial/serial_cs.c             |    8 +-
- drivers/tty/serial/sirfsoc_uart.c          |  783 ++++++++++++++++++++++++++++
- drivers/tty/serial/sirfsoc_uart.h          |  185 +++++++
- drivers/tty/serial/timbuart.c              |   15 +-
- drivers/tty/serial/vr41xx_siu.c            |   13 +-
- drivers/tty/tty_io.c                       |  309 +++++++-----
- drivers/tty/tty_ldisc.c                    |   22 +-
- drivers/tty/vt/consolemap.c                |    2 +-
- include/linux/serial_8250.h                |    5 +
- include/linux/serial_core.h                |  100 +---
- 45 files changed, 1989 insertions(+), 658 deletions(-)
- create mode 100644 drivers/tty/serial/8250_fsl.c
- create mode 100644 drivers/tty/serial/sirfsoc_uart.c
- create mode 100644 drivers/tty/serial/sirfsoc_uart.h
+ Documentation/ABI/testing/sysfs-bus-usb    |   25 +
+ Documentation/feature-removal-schedule.txt |   14 +
+ Documentation/kernel-parameters.txt        |    4 +
+ Documentation/usb/usbmon.txt               |   14 +-
+ arch/arm/mach-omap2/board-n8x0.c           |    2 +-
+ arch/arm/mach-s3c2416/mach-smdk2416.c      |    1 +
+ arch/arm/plat-samsung/devs.c               |    1 +
+ arch/arm/plat-samsung/include/plat/udc.h   |   15 +-
+ drivers/hv/hv_kvp.c                        |   10 +-
+ drivers/usb/Makefile                       |    3 +-
+ drivers/usb/c67x00/c67x00-drv.c            |   15 +-
+ drivers/usb/c67x00/c67x00-hcd.c            |    1 -
+ drivers/usb/class/cdc-acm.c                |  338 ++++++-----
+ drivers/usb/class/cdc-acm.h                |    1 +
+ drivers/usb/core/devio.c                   |  189 ++++--
+ drivers/usb/core/driver.c                  |   36 +-
+ drivers/usb/core/hcd-pci.c                 |    4 -
+ drivers/usb/core/hcd.c                     |   31 +-
+ drivers/usb/core/hub.c                     |   89 ++--
+ drivers/usb/core/quirks.c                  |    5 +-
+ drivers/usb/core/usb.h                     |   14 -
+ drivers/usb/dwc3/Kconfig                   |    5 +-
+ drivers/usb/dwc3/Makefile                  |    6 +-
+ drivers/usb/dwc3/core.c                    |  209 +++++-
+ drivers/usb/dwc3/core.h                    |   62 ++-
+ drivers/usb/dwc3/debugfs.c                 |   83 +++-
+ drivers/usb/dwc3/dwc3-omap.c               |   43 +-
+ drivers/usb/dwc3/dwc3-pci.c                |   51 +--
+ drivers/usb/dwc3/ep0.c                     |  160 ++++--
+ drivers/usb/dwc3/gadget.c                  |  440 +++++++++----
+ drivers/usb/dwc3/gadget.h                  |   29 +-
+ drivers/usb/dwc3/host.c                    |  102 +++
+ drivers/usb/dwc3/io.h                      |    2 +-
+ drivers/usb/gadget/Kconfig                 |   28 +-
+ drivers/usb/gadget/Makefile                |    2 +-
+ drivers/usb/gadget/amd5536udc.c            |    4 +-
+ drivers/usb/gadget/at91_udc.c              |    2 +-
+ drivers/usb/gadget/atmel_usba_udc.c        |    2 +-
+ drivers/usb/gadget/ci13xxx_udc.c           |   36 +-
+ drivers/usb/gadget/ci13xxx_udc.h           |    2 +-
+ drivers/usb/gadget/composite.c             |    8 +-
+ drivers/usb/gadget/dbgp.c                  |    2 +-
+ drivers/usb/gadget/dummy_hcd.c             |   15 +-
+ drivers/usb/gadget/epautoconf.c            |    6 +-
+ drivers/usb/gadget/f_fs.c                  |    2 +-
+ drivers/usb/gadget/f_mass_storage.c        |   60 +-
+ drivers/usb/gadget/file_storage.c          |   64 ++-
+ drivers/usb/gadget/fsl_qe_udc.c            |   19 +-
+ drivers/usb/gadget/fsl_udc_core.c          |    4 +-
+ drivers/usb/gadget/fusb300_udc.c           |    4 +-
+ drivers/usb/gadget/goku_udc.c              |    3 +-
+ drivers/usb/gadget/imx_udc.c               |    2 +-
+ drivers/usb/gadget/inode.c                 |    6 +-
+ drivers/usb/gadget/langwell_udc.c          |    2 +-
+ drivers/usb/gadget/m66592-udc.c            |    4 +-
+ drivers/usb/gadget/mv_udc.h                |    7 +-
+ drivers/usb/gadget/mv_udc_core.c           |  344 +++++-----
+ drivers/usb/gadget/net2272.c               |    4 +-
+ drivers/usb/gadget/net2280.c               |    4 +-
+ drivers/usb/gadget/omap_udc.c              |    3 +-
+ drivers/usb/gadget/pch_udc.c               |    4 +-
+ drivers/usb/gadget/printer.c               |    6 +-
+ drivers/usb/gadget/pxa25x_udc.c            |    2 +-
+ drivers/usb/gadget/pxa27x_udc.c            |    2 +-
+ drivers/usb/gadget/r8a66597-udc.c          |    4 +-
+ drivers/usb/gadget/s3c-hsotg.c             |   17 +-
+ drivers/usb/gadget/s3c-hsudc.c             |  136 ++--
+ drivers/usb/gadget/s3c2410_udc.c           |    4 +-
+ drivers/usb/gadget/udc-core.c              |   26 +-
+ drivers/usb/gadget/usbstring.c             |   73 +--
+ drivers/usb/host/Kconfig                   |    9 +
+ drivers/usb/host/ehci-au1xxx.c             |    1 +
+ drivers/usb/host/ehci-hcd.c                |   69 ++-
+ drivers/usb/host/ehci-mv.c                 |  391 ++++++++++++
+ drivers/usb/host/ehci-octeon.c             |    2 +
+ drivers/usb/host/ehci-omap.c               |    2 +
+ drivers/usb/host/ehci-ps3.c                |   30 +
+ drivers/usb/host/ehci-pxa168.c             |    2 +-
+ drivers/usb/host/ehci-q.c                  |   13 +-
+ drivers/usb/host/ehci-s5p.c                |    4 +-
+ drivers/usb/host/ehci-vt8500.c             |    2 +
+ drivers/usb/host/ehci-w90x900.c            |    2 +
+ drivers/usb/host/ehci-xls.c                |    2 +-
+ drivers/usb/host/fhci-hcd.c                |   12 +-
+ drivers/usb/host/fsl-mph-dr-of.c           |   12 +-
+ drivers/usb/host/hwa-hc.c                  |    1 -
+ drivers/usb/host/imx21-hcd.c               |   13 +-
+ drivers/usb/host/isp1760-hcd.c             |   74 +--
+ drivers/usb/host/isp1760-if.c              |   19 +-
+ drivers/usb/host/ohci-au1xxx.c             |    5 +-
+ drivers/usb/host/ohci-dbg.c                |   18 +-
+ drivers/usb/host/ohci-ep93xx.c             |    2 -
+ drivers/usb/host/ohci-hcd.c                |   28 +-
+ drivers/usb/host/ohci-hub.c                |    7 +-
+ drivers/usb/host/ohci-omap.c               |    1 -
+ drivers/usb/host/ohci-pci.c                |    5 +-
+ drivers/usb/host/ohci-pxa27x.c             |    2 -
+ drivers/usb/host/ohci-q.c                  |    8 +-
+ drivers/usb/host/ohci-s3c2410.c            |   55 ++-
+ drivers/usb/host/ohci-sh.c                 |    1 -
+ drivers/usb/host/ohci-sm501.c              |    1 -
+ drivers/usb/host/ohci-spear.c              |    1 -
+ drivers/usb/host/ohci-tmio.c               |    3 -
+ drivers/usb/host/ohci-xls.c                |    2 +-
+ drivers/usb/host/ohci.h                    |   14 +-
+ drivers/usb/host/oxu210hp-hcd.c            |   19 +-
+ drivers/usb/host/uhci-q.c                  |    2 +-
+ drivers/usb/host/whci/qset.c               |    4 +-
+ drivers/usb/host/xhci-hub.c                |   18 +-
+ drivers/usb/host/xhci-mem.c                |   14 -
+ drivers/usb/host/xhci-ring.c               |  113 +---
+ drivers/usb/host/xhci.c                    |   31 +-
+ drivers/usb/host/xhci.h                    |    3 +-
+ drivers/usb/misc/isight_firmware.c         |    6 +-
+ drivers/usb/misc/usbtest.c                 |    1 -
+ drivers/usb/musb/Kconfig                   |   61 +-
+ drivers/usb/musb/Makefile                  |   26 +-
+ drivers/usb/musb/musb_core.c               |    8 +-
+ drivers/usb/musb/musb_core.h               |    4 +-
+ drivers/usb/musb/musb_debug.h              |    4 +-
+ drivers/usb/musb/musb_debugfs.c            |    8 -
+ drivers/usb/musb/musb_gadget.c             |    6 +-
+ drivers/usb/musb/musb_gadget_ep0.c         |    1 -
+ drivers/usb/musb/musb_io.h                 |    2 +-
+ drivers/usb/musb/omap2430.c                |   61 +-
+ drivers/usb/musb/tusb6010.c                |    1 +
+ drivers/usb/musb/ux500_dma.c               |   39 +-
+ drivers/usb/otg/Kconfig                    |   32 +-
+ drivers/usb/otg/Makefile                   |    1 +
+ drivers/usb/otg/fsl_otg.c                  |   13 +-
+ drivers/usb/otg/mv_otg.c                   |  957 ++++++++++++++++++++++++++++
+ drivers/usb/otg/mv_otg.h                   |  165 +++++
+ drivers/usb/renesas_usbhs/common.c         |   52 +-
+ drivers/usb/renesas_usbhs/common.h         |    9 +-
+ drivers/usb/renesas_usbhs/fifo.c           |    9 +-
+ drivers/usb/renesas_usbhs/fifo.h           |    3 +-
+ drivers/usb/renesas_usbhs/mod.c            |    4 +-
+ drivers/usb/renesas_usbhs/mod_gadget.c     |  195 +++++--
+ drivers/usb/renesas_usbhs/mod_host.c       |  952 +++++++++++++++++-----------
+ drivers/usb/renesas_usbhs/pipe.c           |   31 +-
+ drivers/usb/renesas_usbhs/pipe.h           |    1 +
+ drivers/usb/serial/ChangeLog.history       |  730 ---------------------
+ drivers/usb/serial/belkin_sa.c             |   43 --
+ drivers/usb/serial/ch341.c                 |    3 +-
+ drivers/usb/serial/cp210x.c                |   59 +-
+ drivers/usb/serial/cyberjack.c             |   33 +-
+ drivers/usb/serial/cypress_m8.c            |   29 -
+ drivers/usb/serial/digi_acceleport.c       |  227 +-------
+ drivers/usb/serial/ftdi_sio.c              |    4 +
+ drivers/usb/serial/garmin_gps.c            |    9 -
+ drivers/usb/serial/generic.c               |   83 ++-
+ drivers/usb/serial/io_edgeport.c           |    3 -
+ drivers/usb/serial/io_ti.c                 |   28 +-
+ drivers/usb/serial/ipaq.c                  |   34 -
+ drivers/usb/serial/ir-usb.c                |   32 -
+ drivers/usb/serial/iuu_phoenix.c           |    3 +-
+ drivers/usb/serial/keyspan.c               |   90 ---
+ drivers/usb/serial/keyspan_pda.c           |   66 +--
+ drivers/usb/serial/kobil_sct.c             |   25 -
+ drivers/usb/serial/mct_u232.c              |   46 --
+ drivers/usb/serial/mos7720.c               |   18 -
+ drivers/usb/serial/mos7840.c               |    4 -
+ drivers/usb/serial/omninet.c               |   51 +--
+ drivers/usb/serial/opticon.c               |    1 -
+ drivers/usb/serial/option.c                |    5 +
+ drivers/usb/serial/oti6858.c               |   23 +-
+ drivers/usb/serial/pl2303.c                |   17 +-
+ drivers/usb/serial/sierra.c                |    1 -
+ drivers/usb/serial/symbolserial.c          |    1 -
+ drivers/usb/serial/ti_usb_3410_5052.c      |   13 +-
+ drivers/usb/serial/usb-serial.c            |   98 ++--
+ drivers/usb/serial/usb_debug.c             |   13 +-
+ drivers/usb/serial/whiteheat.c             |   58 --
+ drivers/usb/storage/alauda.c               |    2 +-
+ drivers/usb/storage/cypress_atacb.c        |    2 +-
+ drivers/usb/storage/datafab.c              |    2 +-
+ drivers/usb/storage/ene_ub6250.c           |   12 +-
+ drivers/usb/storage/freecom.c              |    2 +-
+ drivers/usb/storage/isd200.c               |    2 +-
+ drivers/usb/storage/jumpshot.c             |    2 +-
+ drivers/usb/storage/karma.c                |    2 +-
+ drivers/usb/storage/onetouch.c             |    2 +-
+ drivers/usb/storage/realtek_cr.c           |   14 +-
+ drivers/usb/storage/sddr09.c               |    2 +-
+ drivers/usb/storage/sddr55.c               |    2 +-
+ drivers/usb/storage/shuttle_usbat.c        |    2 +-
+ drivers/usb/storage/usb.c                  |    1 +
+ drivers/usb/usb-skeleton.c                 |   40 +-
+ drivers/usb/wusbcore/Kconfig               |    1 +
+ drivers/usb/wusbcore/security.c            |    2 +-
+ drivers/uwb/est.c                          |    2 +-
+ fs/fat/namei_vfat.c                        |    3 +-
+ fs/nls/nls_base.c                          |   73 ++-
+ include/linux/nls.h                        |    5 +-
+ include/linux/platform_data/mv_usb.h       |   18 +-
+ include/linux/platform_data/s3c-hsudc.h    |   34 +
+ include/linux/usb.h                        |   14 +
+ include/linux/usb/ch11.h                   |   31 +-
+ include/linux/usb/ch9.h                    |   20 +-
+ include/linux/usb/gadget.h                 |   26 +-
+ include/linux/usb/hcd.h                    |    2 -
+ include/linux/usb/renesas_usbhs.h          |   10 +-
+ include/linux/usb/serial.h                 |   11 +-
+ 203 files changed, 4979 insertions(+), 3798 deletions(-)
+ create mode 100644 drivers/usb/dwc3/host.c
+ create mode 100644 drivers/usb/host/ehci-mv.c
+ create mode 100644 drivers/usb/otg/mv_otg.c
+ create mode 100644 drivers/usb/otg/mv_otg.h
+ delete mode 100644 drivers/usb/serial/ChangeLog.history
+ create mode 100644 include/linux/platform_data/s3c-hsudc.h
 
 ---------------
 
-Alexander Stein (1):
-      drivers/tty/serial/pch_uart.c: add console support
+Alan Stern (9):
+      USB: Remove the SAW_IRQ hcd flag
+      OHCI: remove uses of hcd->state
+      NLS: improve UTF8 -> UTF16 string conversion routine
+      USB: remove homegrown UTF conversion routine for gadgets
+      USB: unify some error pathways in usbfs
+      USB: change the memory limits in usbfs URB submission
+      USB: make the usbfs memory limit configurable
+      NLS: raname "maxlen" to "maxout" in UTF conversion routines
+      USB: update documentation for usbmon
 
-Axel Lin (2):
-      parport: convert drivers/parport/* to use module_platform_driver()
-      TTY: serial: convert drivers/tty/serial/* to use module_platform_driver()
+Aman Deep (2):
+      xHCI: Adding #define values used for hub descriptor
+      USB: Adding #define in hub_configure() and hcd.c file
 
-Claudio Scordino (1):
-      atmel_serial: fix spinlock lockup in RS485 code
+Andrew Worsley (1):
+      USB: serial: ftdi_sio: Handle the old_termios == 0 case e.g. uart_resume_port()
 
-Dan Williams (2):
-      serial/8250_pci: setup-quirk workaround for the kt serial controller
-      serial/8250_pci: init-quirk msi support for kt serial controller
+Arnd Bergmann (2):
+      usb: musb: use a Kconfig choice to pick the right DMA method
+      usb: musb: allow building USB_MUSB_TUSB6010 as a module
 
-Dave Young (1):
-      tty_ldisc: remove unnecessary negative return check for wait_event_timeout
+Arvid Brodin (2):
+      usb/isp1760: Simpler queue head list code.
+      usb/isp1760: Fix race condition memory leak
 
-Dirk Behme (1):
-      imx: Add save/restore functions for UART control regs
+Axel Lin (1):
+      usb: convert drivers/usb/* to use module_platform_driver()
 
-Eric Miao (1):
-      tty: serial: imx: move del_timer_sync() to avoid potential deadlock
+Clemens Ladisch (1):
+      usb: fix number of mapped SG DMA entries
+
+Dan Carpenter (1):
+      usb: renesas_usbhs: silence a gcc warning
+
+Dave Martin (1):
+      USB: isp1760: Fix endianness-sensitivity in of_isp1760_probe()
+
+Davidlohr Bueso (1):
+      USB: remove BKL comments
 
 Fabio Estevam (1):
-      tty: serial: imx: Allow UART to be a source for wakeup
+      drivers: usb: wusbcore: Fix dependency for USB_WUSB
 
-Ilya Zykov (1):
-      tty: n_hdlc not atomic use tty->flags.
+Felipe Balbi (47):
+      usb: storage: alauda: fix sparse warnings
+      usb: storage: cypress: fix sparse warning
+      usb: storage: datafab: fix sparse warning
+      usb: storage: ene_ub6250: fix sparse warnings
+      usb: storage: freecom: fix sparse warning
+      usb: storage: isd200: fix sparse warning
+      usb: storage: jumpshot: fix sparse warning
+      usb: storage: karma: fix sparse warning
+      usb: storage: onetouch: fix sparse warning
+      usb: storagE: realtek_cr: fix sparse warnings
+      usb: storage: sddr09: fix sparse warning
+      usb: storage: sddr55: fix sparse warning
+      usb: storage: shuttle_usbat: fix sparse warning
+      usb: dwc3: gadget: don't disable endpoints on exit
+      usb: dwc3: allow forcing a maximum speed
+      usb: dwc3: calculate number of event buffers dynamically
+      usb: dwc3: fetch mode of operation from HW
+      usb: dwc3: add xHCI Host support
+      usb: dwc3: always compile gadget side too
+      usb: dwc3: move gadget prototypes to core.h
+      usb: dwc3: depend on both Host and Gadget stacks
+      usb: dwc3: ep0: SetAddress() won't be issued while Configured
+      usb: dwc3: debugfs: add support for changing port mode
+      usb: dwc3: ep0: handle unexpected XferNotReady events
+      usb: dwc3: move dwc3 device ID bitmap to core.c
+      usb: dwc3: omap: add multiple instances support to OMAP
+      usb: dwc3: core: drop DWC3_EVENT_BUFFERS_MAX
+      usb: dwc3: fix few coding style problems
+      usb: dwc3: fix sparse errors
+      usb: dwc3: workaround: U1/U2 -> U0 transiton
+      usb: dwc3: workaround: missing USB3 Reset event
+      usb: dwc3: workaround: missing disconnect event
+      usb: dwc3: omap: move to module_platform_driver
+      usb: dwc3: ep0: fix GetStatus handling (again)
+      usb: dwc3: gadget: fix stream enable bit
+      usb: dwc3: ep0: fix for possible early delayed_status
+      usb: musb: headers cleanup
+      usb: musb: drop ARCH dependency
+      usb: musb: omap2430: fix compile warning
+      usb: dwc3: gadget: move us to Default State after reset
+      usb: renesas: pipe: convert a long if into a XOR operation
+      usb: gadget: introduce support for sg lists
+      usb: dwc3: gadget: re-factor dwc3_prepare_trbs()
+      usb: dwc3: gadget: don't return anything on prepare trbs
+      usb: dwc3: gadget: don't force 'LST' always
+      usb: dwc3: gadget: add support for SG lists
+      usb: ch9: fix up MaxStreams helper
 
-Jiri Slaby (19):
-      TTY: move pgrp killing
-      TTY: extract /dev/tty handling from tty_open
-      TTY: extract driver lookup from tty_open
-      TTY: coalesce fail paths in tty_open
-      TTY: move tty_lookup_driver to switch-cases
-      TTY: move debug checking out of tty_release
-      TTY: open/release, cleanup printks
-      TTY: serial, cleanup include file
-      TTY: serial, cleanup atmel_set_ldisc
-      TTY: serial, switch closing_wait and close_delay to jiffies
-      TTY: serial, use tty_port_close_start helper
-      TTY: serial, document few functions
-      TTY: serial, do not touch tty->alt_speed
-      TTY: serial, inline uart_get
-      TTY: serial, define uart_port_activate/shutdown
-      TTY: serial, fill uart_port_shutdown
-      TTY: serial, extract uart_port_startup
-      TTY: pty, cleanup the pty counting
-      TTY: ldisc, remove some unneeded includes
+Felipe Contreras (8):
+      usb: musb: fix pm_runtime mismatch
+      usb: musb: trivial cleanup
+      usb: musb: remove a bit of indentation
+      musb: omap2430: avoid pm_runtime_disable()
+      usb: musb: trivial Kconfig cleanups
+      usb: musb: cleanup kconfig
+      usb: otg: trivial cleanups
+      usb: gadget: remove useless depends on Kconfig
 
-Lars-Peter Clausen (1):
-      TTY: Remove redundant spi driver bus initialization
+Geoff Levand (4):
+      usb: Remove ehci_reset call from ehci_run
+      usb: PS3 EHCI HC reset work-around
+      usb: Fix PS3 EHCI suspend
+      usb: PS3 EHCI QH read work-around
 
-Maciej Szmigiero (1):
-      serial: fix serial_cs I/O windows for Argosy RS-COM 2P
+Greg Kroah-Hartman (1):
+      USB: isight: fix kernel bug when loading firmware
 
-Mayank Rana (2):
-      msm_serial_hs: Fix type inconsistency for tx and rx command_ptr_ptr
-      msm_serial_hs: Fix spinlock recursion in handling CTS
+Hans de Goede (1):
+      xhci: Properly handle COMP_2ND_BW_ERR
 
-Mika Westerberg (1):
-      serial, mfd: don't hardcode the console
+Havard Skinnemoen (2):
+      USB: cdc-acm: Fix potential deadlock (lockdep warning)
+      usb: cdc-acm: Kill ACM_READY() macro completely
 
-Paul Gortmaker (8):
-      serial: move struct uart_8250_port from 8250.c to 8250.h
-      serial: clean up parameter passing for 8250 Rx IRQ handling
-      serial: export the key functions for an 8250 IRQ handler
-      serial: make 8250 timeout use the specified IRQ handler
-      serial: manually inline serial8250_handle_port
-      serial: add irq handler for Freescale 16550 errata.
-      serial: make FSL errata depend on 8250_CONSOLE, not just 8250
-      serial: driver for m32 arch should not have DEC alpha errata
+Heiko Stübner (8):
+      usb: gadget: s3c-hsudc: move platform_data struct to global header
+      usb: gadget: s3c-hsudc: add __devinit to probe function
+      usb: gadget: s3c-hsudc: add missing otg_put_transceiver in probe
+      usb: gadget: s3c-hsudc: move device registration to probe
+      usb: gadget: s3c-hsudc: use udc_start and udc_stop functions
+      usb: gadget: s3c-hsudc: Add regulator handling
+      usb: gadget: s3c-hsudc: use release_mem_region instead of release_resource
+      usb: gadget: s3c-hsudc: remove the_controller global
 
-Rong Wang (1):
-      UART: add CSR SiRFprimaII SoC on-chip uart drivers
+Hema HK (1):
+      usb: musb: omap2+: save and restore OTG_INTERFSEL
 
-Saleem Abdulrasool (1):
-      imx: add polled io uart methods
+Huajun Li (1):
+      usb: usb-storage doesn't support dynamic id currently, the patch disables the feature to fix an oops
 
-Shubhrajyoti D (2):
-      serial: OMAP2+: UART: Make the SERIAL_OMAP depend on ARCH_OMAP2PLUS
-      OMAP: UART: fix the return type of check_modem_status
+Janne Snabb (1):
+      usb: option: add ZD Incorporated HSPA modem
 
-Sonic Zhang (8):
-      serial: bfin-uart: Request CTS GPIO PIN when the serial device starts up.
-      serial: bfin-uart: Add tty ASYNC_CTS_FLOW flag to do CTS flow control.
-      serial: bfin-uart: remove redundant CTS check for hardware CTS control.
-      tty: bfin-sport-uart: Rx interrupt is not called always with irq disabled.
-      serial: bfin-sport-uart: Request CTS GPIO PIN when the sport emulated serial device starts up.
-      serial: bfin-sport-uart: Add tty ASYNC_CTS_FLOW flag to do CTS flow control.
-      serial: bfin-uart: Enable hardware automatic CTS only when CTS pin is available.
-      serial: bfin-uart: Remove ASYNC_CTS_FLOW flag for hardware automatic CTS.
+Jayachandran C (1):
+      usb: Netlogic: Use CPU_XLR in place of NLM_XLR
 
-Thorsten Wißmann (1):
-      drivers/tty: Remove unneeded spaces
+Jingoo Han (2):
+      USB: ehci-s5p: remove unnecessary header includes
+      USB: ohci-s3c2410: add PM support
 
-Uwe Kleine-König (6):
-      serial/imx: propagate error of platform_driver_register in init routine
-      serial/mxs-auart: only wake up tty layer once
-      serial: use DIV_ROUND_CLOSEST instead of open coding it
-      serial/documentation: fix documented name of DCD cpp symbol
-      serial/imx: propagate error from of_alias_get_id instead of using -ENODEV
-      serial/imx: let probing fail for the dt case without a valid alias
+Johan Hovold (27):
+      USB: serial: remove changelogs and old todo entries
+      USB: omninet: fix write_room
+      USB: omninet: clean up write-urb busy handling
+      USB: cyberjack: clean up write-urb busy handling
+      USB: keyspan_pda: clean up write-urb busy handling
+      USB: serial: remove write_urb_busy field from usb_serial_port
+      USB: mos7720: remove incorrect read-urb check
+      USB: mos7720: remove unused code
+      USB: serial: remove unnecessary reinitialisations of urb->dev
+      USB: serial: remove unnecessary reinitialisations of urb fields
+      USB: serial: remove unnecessary bulk-urb re-fills
+      USB: serial: reuse generic write urb and bulk-out buffer
+      USB: usb_debug: fix indentation
+      USB: usb_debug: use process_read_urb
+      USB: pl2303: return errors from usb_submit_urb in open
+      USB: pl2302: clean up error handling in open
+      USB: pl2303: use usb_serial_generic_open
+      USB: serial: add support for multiple read urbs
+      USB: move usb_translate_errors to linux/usb.h
+      USB: serial: do not forward USB specific errors in open
+      USB: ch341: forward USB errors to USB serial core
+      USB: cp210x: forward USB errors to USB serial core
+      USB: iuu_phoenix: forward USB errors to USB serial core
+      USB: oti6858: remove dead code
+      USB: oti6858: forward USB errors to USB serial core
+      USB: serial: fix whitespace issues
+      USB: serial: do not forward USB specific errors in write
 
-Wolfram Sang (1):
-      serial: 8250: replace hardcoded 0xbf with #define
+Josua Dietze (1):
+      USB: Add optional match for interface class to dynamic ID facility
 
-Yegor Yefremov (1):
-      serial: add support for 400 and 800 v3 series Titan cards
+Julia Lawall (3):
+      drivers/usb/host/isp1760-if.c: introduce missing kfree
+      drivers/usb/dwc3/dwc3-pci.c: introduce missing kfree
+      drivers/usb/class/cdc-acm.c: clear dangling pointer
 
-Zeng Zhaoming (1):
-      tty: Fix memory leak in virtual console when enable unicode translation
+Kuninori Morimoto (40):
+      usb: gadget: renesas_usbhs: remove usbhs_sys_hispeed_ctrl()
+      usb: gadget: renesas_usbhs: remove usbhs_sys_usb_ctrl()
+      usb: gadget: renesas_usbhs: tidyup usbhs_sys_clock_ctrl() was local function
+      usb: gadget: renesas_usbhs: tidyup mod_host request variable name
+      usb: gadget: renesas_usbhs: tidyup the unit of detection_delay
+      usb: gadget: renesas_usbhs: add platform power control function
+      usb: gadget: renesas_usbhs: unified callback function
+      usb: gadget: renesas_usbhs: drop dependency for mod_gadget
+      usb: gadget: renesas_usbhs: cleanup complicated ureq alloc/free
+      usb: gadget: renesas_usbhs: usbhsh_ureq_alloc/free() care urb->hcpriv
+      usb: gadget: renesas_usbhs: modify function name of usbhs_set_device_xx()
+      usb: gadget: renesas_usbhs: cleanup usbhs_endpoint_disable()
+      usb: gadget: renesas_usbhs: usbhs_set_device_config() care upphub/hubport
+      usb: gadget: renesas_usbhs: remove usbhsh_request list
+      usb: gadget: renesas_usbhs: check device0 status when alloc
+      usb: gadget: renesas_usbhs: adds spin lock area on mod_host
+      usb: gadget: renesas_usbhs: cleanup usbhsh_endpoint_xxx()
+      usb: gadget: renesas_usbhs: parameter cleanup for usbhsh_xx_queue_push()
+      usb: gadget: renesas_usbhs: parameter cleanup for usbhsh_endpoint_xx()
+      usb: gadget: renesas_usbhs: parameter cleanup for usbhsh_device_xx()
+      usb: renesas_usbhs: remove superfluous usbhs_lock from recip handler
+      usb: renesas_usbhs: add usbhs_pipe_is_stall()
+      usb: renesas_usbhs: add basic USB_REQ_SET_FEATURE support
+      usb: renesas_usbhs: add basic USB_REQ_GET_STATUS support
+      usb: renesas_usbhs: send packet in necessary timing.
+      usb: renesas_usbhs: call usbhsg_queue_pop() when pipe disable.
+      usb: renesas_usbhs: add test-mode support
+      usb: renesas_usbhs: remove the_controller_link
+      usb: renesas_usbhs: add lost error value when enqueue
+      usb: renesas_usbhs: pop packet when urb dequeued
+      usb: renesas_usbhs: modify device attach method
+      usb: renesas_usbhs: add usbhsh_endpoint_detach_all() for error case
+      usb: renesas_usbhs: add usbhs_pipe_attach() method
+      usb: renesas_usbhs: care pipe sequence
+      usb: renesas_usbhs: disable attch irq after device attached
+      usb: renesas_usbhs: add usbhsh_is_running()
+      usb: renesas_usbhs: care usb_hcd_giveback_urb() status
+      usb: renesas_usbhs: add force packet remove method
+      usb: renesas_usbhs: show error reason on usbhsh_urb_enqueu()
+      usb: renesas_usbhs: tidyup for smatch warnings
+
+Malte Schröder (1):
+      USB: Add USB-ID for Multiplex RC serial adapter to cp210x.c
+
+Marc Kleine-Budde (2):
+      USB: ci13xxx_udc: make suspend and resume in gadget driver optional
+      USB: ci13xxx_udc: handle controllers with less than 16 EPs
+
+Michal Nazarewicz (2):
+      usb: gadget: replace usb_gadget::is_dualspeed with max_speed
+      usb: gadget: rename usb_gadget_driver::speed to max_speed
+
+Ming Lei (2):
+      USB: usb-skeleton.c: fix open/disconnect race
+      USB: usb-skeleton.c: cleanup open_count
+
+Neil Zhang (12):
+      USB: OTG should be linked before Host
+      usb: gadget: mv_udc: add otg relative code
+      usb: gadget: mv_udc: disable ISR when stopped
+      usb: gadget: mv_udc: refine the clock relative code
+      usb: gadget: mv_udc: refine suspend/resume function
+      usb: gadget: mv_udc: replace some debug info
+      usb: gadget: mv_udc: fix readl error
+      usb: gadget: mv_udc: rewrite queue_dtd according to spec
+      usb: gadget: mv_udc: fix bug in ep_dequeue
+      usb: gadget: mv_udc: drop ARCH dependency
+      USB: OTG: add Marvell usb OTG driver support
+      USB: EHCI: Add Marvell Host Controller driver
+
+Oliver Neukum (2):
+      USB: add quirk for another camera
+      USB: remove dead code from suspend/resume path
+
+Per Forlin (1):
+      usb: musb: ux500: optimize DMA callback routine
+
+Qinglin Ye (1):
+      USB: Remove the duplicate definition of HUB_SET_DEPTH
+
+Roland Koebler (1):
+      USB: serial: cp210x.c: add mark/space parity
+
+Sarah Sharp (11):
+      usbfs: Fix oops related to user namespace conversion.
+      Trivial: xhci: Fix copy-paste error.
+      xhci: Remove scary warnings about transfer issues.
+      xhci: Remove warnings about MSI and MSI-X capabilities.
+      xhci: Remove useless sg-list debugging.
+      xhci: Remove debugging for individual transfers.
+      xhci: Remove debugging about toggling cycle bits.
+      xhci: Remove debugging about ring structure allocation.
+      xhci: Be less verbose during URB cancellation.
+      xhci: Better debugging for critical host errors.
+      xhci: Clean up 32-bit build warnings.
+
+Sebastian Andrzej Siewior (14):
+      usb: dwc3: add a platform device alias
+      usb: dwc3: debugfs: hold the lock in during mode change
+      usb: dwc3: host: remove unused includes
+      usb: dwc3: reset pending status flag in error case
+      usb: dwc3: remove special status request handling in ep0
+      usb: dwc3: ep0: use proper endianess in SetFeature for wIndex
+      usb: dwc3: ep0: don't use ep0in for transfers
+      usb: dwc3: use a helper function for operation mode setting
+      usb: dwc3: move generic dwc3 code from gadget into core
+      usb: dwc3: ep0: push ep0state into xfernotready processing
+      usb: dwc3: ep0: handle delayed_status again
+      usb: dwc3: gadget: return early in dwc3_cleanup_done_reqs()
+      usb: dwc3: use correct hwparam register for power mgm check
+      usb: dwc3: ep0: use dwc3_request for ep0 requsts instead of usb_request
+
+Tanmay Upadhyay (1):
+      USB: pxa168: Fix compilation error
+
+Thomas Meyer (6):
+      USB: Realtek cr: Use kmemdup rather than duplicating its implementation
+      usb: OHCI/EHCI-XLS: Use resource_size v3
+      usb: gadget: renesas_usbhs: Use kcalloc instead of kzalloc to allocate array
+      USB: wusb: Use kcalloc instead of kzalloc to allocate array
+      uwb: Use kcalloc instead of kzalloc to allocate array
+      usb: gadget: Use kcalloc instead of kzalloc to allocate array
+
+Vikram Pandita (3):
+      USB: ehci: report Data Buffer Error in debug mode
+      usb: musb: omap2+: fix context api's
+      usb: musb: fix pm_runtime calls while atomic
+
+Vladimir Zapolskiy (1):
+      usb: musb: remove extern qualifier from musb_debug.h header
+
+Yu Xu (1):
+      usb: gadget: enlarge maxburst bit width.
+
+Yuping Luo (1):
+      usb: gadget: mass_storage: support multi-luns with different logic block size
 
