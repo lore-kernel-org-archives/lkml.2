@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752485Ab2AIJeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 04:34:09 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46649 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375Ab2AIJeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 04:34:05 -0500
-Date: Mon, 9 Jan 2012 10:33:58 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Richard Zhao <richard.zhao@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dan.j.williams@intel.com, vinod.koul@intel.com, shawn.guo@linaro.org,
-        kernel@pengutronix.de, eric.miao@linaro.org, patches@linaro.org
-Subject: Re: [PATCH v4 0/2] mx-sdma: memory barrier fix
-Message-ID: <20120109093358.GN5446@pengutronix.de>
-References: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:33:30 up 57 days, 17:20, 25 users,  load average: 0.00, 0.04,
- 0.24
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1752353Ab2AIJlB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 04:41:01 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:36961 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751153Ab2AIJk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 04:40:58 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Bing Zhao <bzhao@marvell.com>
+Cc: kernel-janitors@vger.kernel.org,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 4/4] drivers/net/wireless/mwifiex/scan.c: convert GFP_KERNEL to GFP_ATOMIC
+Date: Mon,  9 Jan 2012 10:40:50 +0100
+Message-Id: <1326102050-30265-4-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 08, 2012 at 10:44:20PM +0800, Richard Zhao wrote:
-> Changes in v4:
->  - convert all _raw_readl/_raw_writel to readl/writel.
-> 
-> Changes in v3:
->  - use writel instead of explicitly call wmb.
-> 
-> Changes in v2:
->  - add "let sdma_run_channel call sdma_enable_channel"
+From: Julia Lawall <julia.lawall@lip6.fr>
 
-Both
+The function is called with locks held and thus should not use GFP_KERNEL.
 
-Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+The semantic patch that makes this report is available
+in scripts/coccinelle/locks/call_kern.cocci.
 
-Sascha
+More information about semantic patching is available at
+http://coccinelle.lip6.fr/
 
+Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+---
+ drivers/net/wireless/mwifiex/scan.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+index 6396d33..98f1ca9 100644
+--- a/drivers/net/wireless/mwifiex/scan.c
++++ b/drivers/net/wireless/mwifiex/scan.c
+@@ -2001,7 +2001,7 @@ mwifiex_save_curr_bcn(struct mwifiex_private *priv)
+ 
+ 		kfree(priv->curr_bcn_buf);
+ 		priv->curr_bcn_buf = kmalloc(curr_bss->beacon_buf_size,
+-						GFP_KERNEL);
++						GFP_ATOMIC);
+ 		if (!priv->curr_bcn_buf) {
+ 			dev_err(priv->adapter->dev,
+ 					"failed to alloc curr_bcn_buf\n");
+
