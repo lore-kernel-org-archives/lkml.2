@@ -1,61 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933330Ab2AIWeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:34:17 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:54636 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755880Ab2AIWeO (ORCPT
+	id S933343Ab2AIWh3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:37:29 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42259 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755880Ab2AIWh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:34:14 -0500
-X-Originating-IP: 217.70.178.148
-X-Originating-IP: 86.186.9.152
-From: Andrzej Prochyra <andrzej@prochyra.name>
-To: David Herrmann <dh.herrmann@googlemail.com>
-Cc: Corentin Chary <corentincj@iksaif.net>,
-        platform-driver-x86@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-        Richard =?utf-8?Q?Sch=C3=BCtz?= <r.schtz@t-online.de>,
-        Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
-References: <20120105150832.GA25386@ubuntu-macmini>
-	<1325945558-4661-1-git-send-email-corentincj@iksaif.net>
-	<CANq1E4QGahjrxm5B59HGnrfO3LP4kV6bc27BKQDvnJ4HBKAFMg@mail.gmail.com>
-Date: Mon, 09 Jan 2012 22:34:06 +0000
-In-Reply-To: <CANq1E4QGahjrxm5B59HGnrfO3LP4kV6bc27BKQDvnJ4HBKAFMg@mail.gmail.com>
-	(David Herrmann's message of "Mon, 9 Jan 2012 17:39:43 +0100")
-Message-ID: <878vlgjyjl.fsf@prochyra.name>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Mon, 9 Jan 2012 17:37:27 -0500
+Date: Mon, 9 Jan 2012 22:37:25 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <ashish.jangam@kpitcummins.com>
+Cc: linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
+        arnd@arndb.de, sameo@linux.intel.com,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>
+Subject: Re: [PATCH 02/06] MFD: DA9052/53 MFD core module v9 Added ADC
+	support
+Message-ID: <20120109223725.GG30766@opensource.wolfsonmicro.com>
+References: <1326098770.3542.31.camel@dhruva>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326098770.3542.31.camel@dhruva>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Herrmann <dh.herrmann@googlemail.com> writes:
-> On Sat, Jan 7, 2012 at 3:12 PM, Corentin Chary <corentincj@iksaif.net> wrote:
->> On these laptops, the ACPI video is not functional, and very unlikely
->> to be fixed by the vendor. Note that intel_backlight works for some
->> of these laptops, and the backlight from samsung-laptop always work.
->>
->> The good news is that newer laptops have functional ACPI video device
->> and won't end up growing this list.
->>
->> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
->> ---
->>
->> Could the concerned people test this patch and check that it correctly
->> disable the acpi_video backlight ?
->
-> Works like a charm on my N210 with linux-3.2. Feel free to add a:
-> Tested-by: David Herrmann <dh.herrmann@googlemail.com>
->
-> I will talk to the intel drm developers about the intel_backlight
-> issues as they don't seem related to this driver.
+On Mon, Jan 09, 2012 at 02:16:10PM +0530, Ashish Jangam wrote:
+> Re-submitting the patch.
 
-I can confirm on my N150 Plus.  Now only 'intel_backlight' is created
-and exhibits the aforementioned issues.
+This is patch 2/6 - where are patches 1 and 3-6?
 
--- 
-Andrzej Prochyra
-<andrzej@prochyra.name>
+> +	/* Channel gets activated on enabling the Conversion bit */
+> +	mux_sel = chan_mux[channel] | DA9052_ADC_MAN_MAN_CONV;
+> +
+> +	if (da9052->auxadc_active) {
+> +		ret = -EBUSY;
+> +		goto err;
+> +	}
+> +
+> +	/* Enqueue the request */
+> +	list_add(&req->list, &da9052->auxadc_pending);
+
+Maintaining a list of outstanding requests seems a bit odd if it's only
+possible to have a single active request at any one time.
+
+> +
+> +	ret = da9052_reg_write(da9052, DA9052_ADC_MAN_REG, mux_sel);
+> +	if (ret < 0)
+> +		goto err;
+> +
+> +	da9052->auxadc_active = channel;
+> +
+> +	mutex_unlock(&da9052->auxadc_lock);
+> +
+> +	/* Wait for an interrupt */
+> +	wait_for_completion_timeout(&req->done, msecs_to_jiffies(500));
+> +
+> +	mutex_lock(&da9052->auxadc_lock);
+
+With only one request being possible at once just not dropping the mutex
+seems like the easiest approach - it'll mean that userspace doesn't need
+to worry about -EBUSY and you could save all the allocation, deallocation
+and list management.  As things stand I expect userspace will run into
+errors sometimes.
