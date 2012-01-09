@@ -1,71 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab2AIMOc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 07:14:32 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50713 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754641Ab2AIMOa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 07:14:30 -0500
-Message-ID: <1326111265.30169.5.camel@lappy>
-Subject: Re: [PATCH] nfs: Don't try mounting device as nfs root unless type
- fully matches
-From: Sasha Levin <levinsasha928@gmail.com>
-To: Jim Rees <rees@umich.edu>
-Cc: Chuck Lever <chuck.lever@oracle.com>, linux@razik.name,
-        Trond.Myklebust@netapp.com, penberg@kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Mon, 09 Jan 2012 14:14:25 +0200
-In-Reply-To: <20120107181221.GA3777@umich.edu>
-References: <1325927523-30103-1-git-send-email-levinsasha928@gmail.com>
-	 <5FF522E0-132E-4A6A-A40F-5CCD08AF800A@oracle.com>
-	 <20120107181221.GA3777@umich.edu>
-Content-Type: text/plain; charset="us-ascii"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1754807Ab2AIMPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 07:15:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754188Ab2AIMPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 07:15:22 -0500
+Date: Mon, 9 Jan 2012 10:14:09 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Boris Ostrovsky <ostr@amd64.org>
+Cc: avi@redhat.com, Joerg.Roedel@amd.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, boris.ostrovsky@amd.com
+Subject: Re: [PATCH v2.1] KVM: SVM: Add support for AMD's OSVW feature in
+ guests
+Message-ID: <20120109121409.GE5255@amt.cnet>
+References: <1325866436-22553-1-git-send-email-ostr@amd64.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325866436-22553-1-git-send-email-ostr@amd64.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-01-07 at 13:12 -0500, Jim Rees wrote:
-> Chuck Lever wrote:
+On Fri, Jan 06, 2012 at 11:13:56AM -0500, Boris Ostrovsky wrote:
+> From: Boris Ostrovsky <boris.ostrovsky@amd.com>
 > 
->   On Jan 7, 2012, at 4:12 AM, Sasha Levin wrote:
->   
->   > Currently, we'll try mounting any device who's major device number is
->   > UNNAMED_MAJOR as NFS root. This would happen for non-NFS devices as well (such
->   > as 9p devices) but it wouldn't cause any issues since mounting the device
->   > as NFS would fail quickly and the code proceeded to doing the proper mount:
->   > 
->   > 	[  101.522716] VFS: Unable to mount root fs via NFS, trying floppy.
->   > 	[  101.534499] VFS: Mounted root (9p filesystem) on device 0:18.
->   > 
->   > Commit 6829a048 ("NFS: Retry mounting NFSROOT") has introduced retries when
->   > mounting NFS root, which means that now we don't immediately fail and instead
->   > it takes an additional 90+ seconds until we stop retrying.
->   > 
->   > This meant that it would take an additional 90 seconds to boot when we're not
->   > using a device type which gets detected in order before NFS.
->   
->   The long timeouts are kind of irrelevant, in my view.  The real problem is
->   that NFS was tried at all in this case.  That behavior was not introduced
->   by 6829a058.
+> In some cases guests should not provide workarounds for errata even when the
+> physical processor is affected. For example, because of erratum 400 on family
+> 10h processors a Linux guest will read an MSR (resulting in VMEXIT) before
+> going to idle in order to avoid getting stuck in a non-C0 state. This is not
+> necessary: HLT and IO instructions are intercepted and therefore there is no
+> reason for erratum 400 workaround in the guest.
 > 
-> The comment does imply that 6829a048 introduced a bug, but that's not true.
-> It uncovered a bug that was there before.
+> This patch allows us to present a guest with certain errata as fixed,
+> regardless of the state of actual hardware.
 > 
-> I would change the part about "now we don't immediately fail."  It didn't
-> immediately fail before, but the timeout was short enough that you wouldn't
-> notice it.
+> Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
 
-I tried to point out that 6829a048 changed the behavior which was
-described in the first paragraph, I didn't try to imply that 6829a048 is
-buggy on its own.
-
-I'm fine with changing the changelog to whatever will make it clearer.
-
--- 
-
-Sasha.
+Patch does not apply, please regenerate against
+git://git.kernel.org/pub/scm/virt/kvm/kvm.git master branch.
 
