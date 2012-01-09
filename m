@@ -1,90 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab2AIOE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 09:04:57 -0500
-Received: from mga01.intel.com ([192.55.52.88]:10801 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab2AIOE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 09:04:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="105070181"
-Message-ID: <1326118036.6755.101.camel@sauron.fi.intel.com>
-Subject: [GIT PULL] UBI/UBIFS changes for v3.3
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 09 Jan 2012 16:07:16 +0200
-Organization: Intel OTC
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-EbR7Ewg5EgJ6ZhUSB2dC"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+	id S1755302Ab2AIOF1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 09:05:27 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47370 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752249Ab2AIOFZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 09:05:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F0AE2BF.6080605@metafoo.de>
+References: <4F0AC06C.3000502@gmail.com> <4F0AE2BF.6080605@metafoo.de>
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Mon, 9 Jan 2012 15:05:02 +0100
+Message-ID: <CAH9NwWeO30KB8UiNNt4Ng9M9Q=cG0wHMkhEEH_m2nutYk7wCHg@mail.gmail.com>
+Subject: Re: [PATCH v2] add led driver for Bachmann's ot200
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        bigeasy@linutronix.de, rpurdie@rpsys.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-EbR7Ewg5EgJ6ZhUSB2dC
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-Hi Linus,
+2012/1/9 Lars-Peter Clausen <lars@metafoo.de>:
+> On 01/09/2012 11:24 AM, Christian Gmeiner wrote:
+>> From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
+>> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de
+>> <mailto:bigeasy@linutronix.de>>
+>> Date: Mon, 9 Jan 2012 10:09:50 +0100
+>> Subject: [PATCH v2] add led driver for Bachmann's ot200
+>>
+>> This patch adds support for leds on Bachmann's ot200 visualisation device.
+>> The device has three leds on the back panel (led_err, led_init and led_run)
+>> and can handle up to seven leds on the front panel.
+>>
+>> The driver was written by Linutronix on behalf of
+>> Bachmann electronic GmbH.
+>>
+>> Changes in v2:
+>> - *incorporated* feedback from Andrew Morton and Lars-Peter Clausen
+>>
+>
+> looks good to me except some minor style issues and the <mailto:...> tags.
+>
 
-please pull UBI and UBIFS changes for v3.3.
+I have switch to an other mail client now...
 
-The following changes since commit cfcfc9eca2bcbd26a8e206baeb005b055dbf8e37=
-:
+>
+>> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de
+>> <mailto:bigeasy@linutronix.de>>
+>> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com
+>> <mailto:christian.gmeiner@gmail.com>>
+>> ---
+>> [...]
+>> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
+>> new file mode 100644
+>> index 0000000..4d000ac
+>> --- /dev/null
+>> +++ b/drivers/leds/leds-ot200.c
+>> @@ -0,0 +1,177 @@
+>> [...]
+>> +
+>> +static int __devinit ot200_led_probe(struct platform_device *pdev)
+>> +{
+>> +    int i;
+>> +    int ret;
+>> +
+>> +    for (i = 0; i < ARRAY_SIZE(leds); i++) {
+>> +
+>> +        leds[i].cdev.name = leds[i].name;
+>> +        leds[i].cdev.default_trigger = NULL;
+>> +        leds[i].cdev.blink_set = NULL;
+>
+> No need to initialize to NULL.
 
-  Linux 3.2-rc2 (2011-11-15 15:02:59 -0200)
+okay
 
-are available in the git repository at:
-  git://git.infradead.org/ubifs-2.6.git linux-next
+>
+>> +        leds[i].cdev.brightness_set = ot200_led_brightness_set;
+>> +
+>> +        ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
+>> +        if (ret < 0)
+>> +            goto err;
+>> +
+>> +        dev_set_drvdata(leds[i].cdev.dev, &leds[i]);
+>
+> Neither this ...
+>
+>> +    }
+>> +
+>> +    platform_set_drvdata(pdev, leds);
+>
+> nor this is ever used.
 
-Artem Bityutskiy (1):
-      UBI: fix use-after-free on error path
+you are right
 
-Bhavesh Parekh (1):
-      UBI: fix missing scrub when there is a bit-flip
+>
+>> +
+>> +    outb(0x0, 0x49);    /* turn off all front leds */
+>> +    outb(0x2, 0x5a);    /* turn on init led */
+>> +    leds_front = 0;
+>> +    leds_back = BIT(1);
+>
+> Maybe initialize leds_front and leds_back first and pass it to outb.
+>
+>> +
+>> +    return 0;
+>> +
+>> +err:
+>> +    for (i = i - 1; i >= 0; i--)
+>> +        led_classdev_unregister(&leds[i].cdev);
+>> +
+>> +    return ret;
+>> +}
+>> +
 
-Thomas Meyer (1):
-      UBIFS: Use kmemdup rather than duplicating its implementation
+Hope v3 will make it :)
 
- drivers/mtd/ubi/eba.c |    6 ++++--
- drivers/mtd/ubi/ubi.h |    2 ++
- drivers/mtd/ubi/wl.c  |   12 ++++++++----
- fs/ubifs/lpt.c        |    6 ++----
- fs/ubifs/tnc.c        |    3 +--
- fs/ubifs/xattr.c      |    6 ++----
- 6 files changed, 19 insertions(+), 16 deletions(-)
-
---=20
-Best Regards,
-Artem Bityutskiy
-
---=-EbR7Ewg5EgJ6ZhUSB2dC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPCvSUAAoJECmIfjd9wqK0VjEP+QHyu+8Sb82nbZvsozUNmJRA
-A0hivGuZafARdRMiqZ/sTH11gdl0+n7AXNYjyCurlNSvxb1golbJt+P/H7GbZpFg
-Hf21M1iRM79sgwDtK/s6Z4SnAd4N4lJSy1Q1lpp6U8IZ783dVBtzjgV+Y9Bgh2ox
-CA/ZSOdL9YdkIDA82V/P+5NIqBAiNYPqXPa8m9G6oXwXF07qzeURPvOfsu53/ywm
-1qYT0yDWv6HdSYX8ZUflDu0dtk04dddxsx7slo/0p91kp02Z6WOoz6XTZUj5Qp7S
-iUO5VDUnKoub7cJ/JogzorBFjtJj2WctvDLOo/CBCctQQZJOE/kG6ApSy8uP6ErU
-t10z4KPzJGe0WkCLRha8fQBxW14KwXNNVSTE6oO4Z/OmQnWVtTDR7bUgfVfNADQ0
-4gnSybRiMmwBLOXyVbZqdgaR4Nc37qIqAYSZjddb4ut95bJwVp9iaAPa+CaYLFW+
-UKZnzTJqXQtSGZNNjVU5FTZ2jJE5/2OAe0jgYz93bgbYzBOf1FBLI2le75IYjAr4
-bmOK3AhMqyA5Z479ZcCJjyxrqmClR/jBUdIgedHKlJf7SDoWG8qxMUA1a1oZBLcw
-VkFzm6WJjCLAzlbWiR6AmC1QVw5ZI/J3RlCV2MEJJw24FD6jlTELIfq7HjV26wU8
-TDfigQkvwQo6F1iaTarM
-=rO+1
------END PGP SIGNATURE-----
-
---=-EbR7Ewg5EgJ6ZhUSB2dC--
-
+thanks
+--
+Christian Gmeiner, MSc
