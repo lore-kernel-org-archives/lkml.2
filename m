@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab2AIOMk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 09:12:40 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60222 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116Ab2AIOMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 09:12:39 -0500
-Date: Mon, 9 Jan 2012 14:12:14 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Eric Miao <eric.miao@linaro.org>
-Cc: Richard Zhao <richard.zhao@linaro.org>, patches@linaro.org,
-        vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, dan.j.williams@intel.com, shawn.guo@linaro.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4 2/2] dma/imx-sdma: convert _raw_readl/_raw_writel to
-	readl/writel
-Message-ID: <20120109141214.GP21765@n2100.arm.linux.org.uk>
-References: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org> <1326033862-25351-3-git-send-email-richard.zhao@linaro.org> <20120109115143.GL21765@n2100.arm.linux.org.uk> <CAMPhdO84p=0D3KrrFnwup4igoh4oNWXOCbW+BOkoRiC8m=JnmQ@mail.gmail.com>
+	id S1755369Ab2AIONO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 09:13:14 -0500
+Received: from mga02.intel.com ([134.134.136.20]:45259 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755116Ab2AIONL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 09:13:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="96084105"
+Message-ID: <4F0AF5F5.9080403@linux.intel.com>
+Date: Mon, 09 Jan 2012 06:13:09 -0800
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMPhdO84p=0D3KrrFnwup4igoh4oNWXOCbW+BOkoRiC8m=JnmQ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        suresh.b.siddha@intel.com, len.brown@intel.com, anhua.xu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>  <1326103578.2442.50.camel@twins> <1326104915.2442.53.camel@twins>
+In-Reply-To: <1326104915.2442.53.camel@twins>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 09:25:12PM +0800, Eric Miao wrote:
-> Does this also mean when endian conversion is not necessary, the __raw_*
-> version will be better here? Or generally the _relaxed variants are more
-> recommended as endian conversion will be optimized away anyway with
-> these AMBA accesses as both sides are little-endian?
+On 1/9/2012 2:28 AM, Peter Zijlstra wrote:
+> On Mon, 2012-01-09 at 11:06 +0100, Peter Zijlstra wrote:
+>> I'm >< close to committing a patch removing all the power_saving
+>> magic from the scheduler. 
+> 
+> Unless someone steps up that says they care about this crap and are
+> willing to clean it up this goes in...
+> 
 
-Useless endian conversions are always optimized away.  Here's the
-definitions:
+there is one legitimate choice to make in the scheduler, which is a real
+honest preference:
+the spread out versus "sort left" preference.
 
-If your CPU is operating in little endian mode, for 32-bit and 16-bit:
+that doesn't need 15 knobs, that needs one.
+I can totally buy that this might be easiest done by ripping out all
+existing stuff, and then doing something relatively simple
+(say, in the, "which CPU to run at" logic, a minor bias)
 
-#define __cpu_to_le32(x) ((__force __le32)(__u32)(x))
-#define __le32_to_cpu(x) ((__force __u32)(__le32)(x))
-#define __cpu_to_le16(x) ((__force __le16)(__u16)(x))
-#define __le16_to_cpu(x) ((__force __u16)(__le16)(x))
 
-So these are just casts to keep sparse happy and able to check this stuff.
-
-#define __cpu_to_be32(x) ((__force __be32)__swab32((x)))
-#define __be32_to_cpu(x) __swab32((__force __u32)(__be32)(x))
-#define __cpu_to_be16(x) ((__force __be16)__swab16((x)))
-#define __be16_to_cpu(x) __swab16((__force __u16)(__be16)(x))
-
-These do the endian conversion.
-
-If your CPU is running in big endian mode:
-
-#define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
-#define __le32_to_cpu(x) __swab32((__force __u32)(__le32)(x))
-#define __cpu_to_le16(x) ((__force __le16)__swab16((x)))
-#define __le16_to_cpu(x) __swab16((__force __u16)(__le16)(x))
-
-So these do the endian conversion, and:
-
-#define __cpu_to_be32(x) ((__force __be32)(__u32)(x))
-#define __be32_to_cpu(x) ((__force __u32)(__be32)(x))
-#define __cpu_to_be16(x) ((__force __be16)(__u16)(x))
-#define __be16_to_cpu(x) ((__force __u16)(__be16)(x))
-
-These are just casts.
