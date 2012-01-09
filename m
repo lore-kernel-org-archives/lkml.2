@@ -1,84 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab2AIEH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 23:07:59 -0500
-Received: from mga03.intel.com ([143.182.124.21]:49687 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755366Ab2AIEH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 23:07:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="93731715"
-Date: Mon, 9 Jan 2012 12:04:45 +0800
-From: Wu Fengguang <wfg@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: =?utf-8?B?0JjQu9GM0Y8g0KLRg9C80LDQudC60LjQvQ==?= 
-	<librarian_rus@yahoo.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: A regression in recent 3.2 kernel: bdi_dirty_limit() divide
- error
-Message-ID: <20120109040445.GB31049@localhost>
-References: <1325884395.57034.YahooMailClassic@web161605.mail.bf1.yahoo.com>
- <20120107145645.GA4997@localhost>
- <1325954125.2442.27.camel@twins>
- <20120108023305.GA5074@localhost>
- <1326017954.2442.35.camel@twins>
+	id S1755419Ab2AIEIz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 23:08:55 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41632 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755366Ab2AIEIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Jan 2012 23:08:54 -0500
+Date: Sun, 8 Jan 2012 20:08:02 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: NeilBrown <neilb@suse.de>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>, MyungJoo Ham <myungjoo.ham@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Grant Likely <grant.likely@secretlab.ca>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] Multithread initcalls to auto-resolve ordering
+ issues.
+Message-ID: <20120109040802.GG29065@opensource.wolfsonmicro.com>
+References: <20120109112113.07882ed9@notabene.brown>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="tjCHc7DPkfUGtrlw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326017954.2442.35.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120109112113.07882ed9@notabene.brown>
+X-Cookie: You will get what you deserve.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 09, 2012 at 11:21:13AM +1100, NeilBrown wrote:
 
---tjCHc7DPkfUGtrlw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+>   The solution I am proposing is to:
+>    1/ allow the 'request' functions which find and provide a resource to block
+>       until the resource is available
+>    2/ run the init calls in multiple threads so that when one blocks waiting
+>       for a resource, another starts up to run subsequent initcalls until
+>       the blocking call gets its resource and can complete.
 
-On Sun, Jan 08, 2012 at 11:19:14AM +0100, Peter Zijlstra wrote:
+It seems like the end result of this is very similar to the idea of
+retrying.  What are the advantages and disadvantages of the two
+approaches?  My first thought is that retrying is going to give more
+consistent results between boots but is probably going to take more work
+(depending on how much context switches end up costing).
 
-> But even then, we limit PROP_MAX_SHIFT to 3*BITS_PER_LONG/4, I don't
-> think that could ever overflow.
+Looking at what you've done to the regulators code wise this all looks
+rather more complicated than I'm entirely happy with - I'm having to
+think far too much about locking and concurrency - and this work is
+going to need to be duplicated in every subsystem that is affected.  I
+think if we're going to do this we'd need some common infrastructure to
+manage the actual waiting and waking to simplify implementation.
 
-do_div() only uses the lower 32 bit value of the 64 bit denominator,
-which may happen to be 0.
+It also seems like there's no control given to drivers, everything is
+done in the frameworks.  This means that drivers can't take decisions
+about what to do which seems like something that ought to be possible.
 
-The denominator is not really 64 bit, but limited by PROP_MAX_SHIFT =
-48 bit, however that upper limit looks not enough.
+I'd like to see some way of enumerating what's waiting for what to help
+people figure out what's going wrong when things fail.
 
-Ilya, would you help try the attached patch instead?
+>      In this sample code I have added a call
+>           regulator_has_full_constraints_listed()
+>      which not only assures that all constraints are known, but list
+>      them (array of pointers to regulator_init_data) so when a supply is
+>      requested the regulator code can see if it expected.
 
-Thanks,
-Fengguang
+This seems pretty restrictive to be honest.  It isn't going to work if
+we don't know which regulators are in the system before we start
+enumerating which isn't going to be possible when dealing with modular
+systems that we can enumerate at runtime.  It seems like we're taking
+most of the cost of fully ordering everything in data but still doing
+some things dynamically here.
 
---tjCHc7DPkfUGtrlw
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="proportion-max-shift.patch"
+It also seems inelegant in that we're having to pass all the constraints
+both via this and via the normal probe mechanism.  If we were going to
+do this we'd be better off changing the way that regulators find their
+constraints so they aren't passed in through the driver as it probes.
 
-Subject: 
-Date: Mon Jan 09 11:53:50 CST 2012
+> +static void regulator_wake_waiters(const char *devname, const char *id,
+> +	const char *reg)
 
+I've no idea what "const char *reg" is...
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/proportions.h |    4 ++++
- 1 file changed, 4 insertions(+)
+> +{
+> +	struct regulator_waiter *map;
+> +
+> +	list_for_each_entry(map, &waiters, list) {
+> +		if (map->reg) {
+> +			if (!reg)
+> +				continue;
+> +			if (strcmp(map->reg, reg) == 0)
+> +				wake_up(&map->queue);
+> +			continue;
+> +		}
+> +		if (reg)
+> +			continue;
 
---- linux.orig/include/linux/proportions.h	2012-01-09 11:51:19.000000000 +0800
-+++ linux/include/linux/proportions.h	2012-01-09 11:53:47.000000000 +0800
-@@ -81,7 +81,11 @@ void prop_inc_percpu(struct prop_descrip
-  * Limit the time part in order to ensure there are some bits left for the
-  * cycle counter and fraction multiply.
-  */
-+#if BITS_PER_LONG == 32
- #define PROP_MAX_SHIFT (3*BITS_PER_LONG/4)
-+#else
-+#define PROP_MAX_SHIFT (BITS_PER_LONG/2)
-+#endif
- 
- #define PROP_FRAC_SHIFT		(BITS_PER_LONG - PROP_MAX_SHIFT - 1)
- #define PROP_FRAC_BASE		(1UL << PROP_FRAC_SHIFT)
+...as a result I don't really know what this is intended to do.  It does
+seem like this and the second half of the function are two separate
+functions that have been joined together.
 
---tjCHc7DPkfUGtrlw--
+> +	if (regulator_supply_expected(devname, id)) {
+> +		/* wait for it to appear */
+> +		struct regulator_waiter w;
+> +		int status = 0;
+> +		DEFINE_WAIT(wait);
+> +		init_waitqueue_head(&w.queue);
+
+I rather suspect this is going be able to deadlock if a PMIC supplies
+itself (which is not unknown - use a high efficiency convertor to drop
+down the system supply to a lower voltage and then lower efficiency
+convertors to give a series of lower voltages, giving greater overall
+efficiency).  If the PMIC registers things in the wrong order then it'll
+never get as far as trying to register the parent regulator as the child
+regulator will block.  We'd need to create a thread per regulator being
+registered.  A similar issue applies with the retry based approach of
+course.
+
+> +		if (!found && regulator_expected(init_data->supply_regulator)) {
+> +			struct regulator_waiter w;
+> +			int status = 0;
+> +			DEFINE_WAIT(wait);
+> +			init_waitqueue_head(&w.queue);
+
+Seems like there's some code needs to be shared.
+
+> +static int regulator_expected(const char *reg)
+> +{
+> +	int i;
+> +
+> +	if (!init_data_list)
+> +		return 0;
+
+It looks like these tests for init_data_list are the wrong way around,
+if we don't know if we can fail then surely we always have to block on
+the off chance that the resource will appear?
+
+> +	for (i = 0; init_data_list[i]; i++) {
+> +		struct regulator_init_data *d = init_data_list[i];
+> +		if (d->constraints.name &&
+> +		    strcmp(d->constraints.name, reg) == 0)
+> +			return 1;
+
+This is really bad, the names in the constraints are optional and we
+should never rely on having them.  Note that we never look directly at
+the name in the bulk of the code.
