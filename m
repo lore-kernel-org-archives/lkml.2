@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab2AIB1e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 20:27:34 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:40048 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755130Ab2AIB1d (ORCPT
+	id S1755189Ab2AIB3m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 20:29:42 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57725 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755130Ab2AIB3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 20:27:33 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-b6-4f0a4283a66e
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: rmk+kernel@arm.linux.org.uk, "'Marc Zyngier'" <marc.zyngier@arm.com>,
-        "'Axel Lin'" <axel.lin@gmail.com>
-Subject: [PATCH] ARM: EXYNOS: Fix build error which was from common.c and old
- cpu.c
-Date: Mon, 09 Jan 2012 10:27:27 +0900
-Message-id: <01a001ccce6d$d9f3ea60$8ddbbf20$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczObdk1JgSyWZcbQxOVDyrdhzB7zQ==
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 8 Jan 2012 20:29:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAFLxGvwJWrSRSNxHE620XZkc4w0ayzeqqxZOR1efkh1V+VBO1w@mail.gmail.com>
+References: <1326055714.13595.309.camel@deadeye> <CA+55aFwwnJPpVY++Vgr6p3s47YjdYWV3sgLZzvCtiJp6DEu78Q@mail.gmail.com>
+ <CAFLxGvwJWrSRSNxHE620XZkc4w0ayzeqqxZOR1efkh1V+VBO1w@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 8 Jan 2012 17:29:18 -0800
+X-Google-Sender-Auth: kGn7v-JswOSMH321XN8qmD2PYCI
+Message-ID: <CA+55aFwVnLE-DLRzS8G=8NxQZjF5M_O4kgrPoX+AOOEH-OZgog@mail.gmail.com>
+Subject: Re: [PATCH 1/2] topology: Check for missing CPU devices
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Linux-Arch <linux-arch@vger.kernel.org>,
+        Thorsten Glaser <tg@mirbsd.de>,
+        Debian kernel team <debian-kernel@lists.debian.org>,
+        linux-m68k@vger.kernel.org, debian-68k@lists.debian.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes build error and wrong merge conflicts.
-arch/arm/mach-exynos/common.c: In function 'exynos4_gic_irq_fix_base':
-arch/arm/mach-exynos/common.c:393: error: dereferencing pointer to incomplete type
-arch/arm/mach-exynos/common.c:396: error: dereferencing pointer to incomplete type
+On Sun, Jan 8, 2012 at 5:06 PM, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Mon, Jan 9, 2012 at 1:18 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> Ok, both of the patches look sane to me, but it would really be nice
+>> to hear from somebody with the actual affected architectures, and get
+>> a tested-by.
+>
+> UML is affected:
+> https://lkml.org/lkml/2012/1/8/186
+>
+> I wasted an hour finding out why it is crashing.
+> Instead of testing kernels I really should read more LKML. ;-)
 
-Following A and B have been created from different base and the build
-error was casued in the process of merging and should be fixed in this
-merge window.
+Hmm.
 
-A. commit db0d4db ("ARM: gic: allow GIC to support non-banked setups"),
-  commit 4e44d2c ("ARM: exynos4: convert to CONFIG_MULTI_IRQ_HANDLER")
-  and commit 69676c3 ("ARM: exynos4: Fix build error due to
-  'gic_bank_offset' undeclared")
+Ben - how about that
 
-B. commit cc511b8 ("ARM: 7257/1: EXYNOS: introduce arch/arm/mach-exynos/
-  common.[ch]") introduced common.[ch]")
+  static DEFINE_PER_CPU(struct cpu, cpu_devices);
 
-Cc: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Axel Lin <axel.lin@gmail.com>
-Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
----
-Hi Russell,
+approach that Richard uses in his patch, instead of the kcalloc? And
+clearly UM should also do that CONFIG_GENERIC_CPU_DEVICES thing with
+your patch.
 
-This should be fixed, I'm sending this to patch system.
-If you're ok with this, please pick it up for this merge window.
+Richard - does Ben's patch work for  you too if you just add "select
+GENERIC_CPU_DEVICES" in the UM Kconfig too (Kconfig.common, probably)?
 
-Thanks.
-
- arch/arm/mach-exynos/common.c |   20 +++-----------------
- 1 files changed, 3 insertions(+), 17 deletions(-)
-
-diff --git a/arch/arm/mach-exynos/common.c b/arch/arm/mach-exynos/common.c
-index b6ac6ee..647c843 100644
---- a/arch/arm/mach-exynos/common.c
-+++ b/arch/arm/mach-exynos/common.c
-@@ -19,6 +19,7 @@
- #include <linux/serial_core.h>
- 
- #include <asm/proc-fns.h>
-+#include <asm/exception.h>
- #include <asm/hardware/cache-l2x0.h>
- #include <asm/hardware/gic.h>
- #include <asm/mach/map.h>
-@@ -43,8 +44,6 @@
- 
- #include "common.h"
- 
--unsigned int gic_bank_offset __read_mostly;
--
- static const char name_exynos4210[] = "EXYNOS4210";
- static const char name_exynos4212[] = "EXYNOS4212";
- static const char name_exynos4412[] = "EXYNOS4412";
-@@ -386,27 +385,14 @@ static void __init combiner_init(unsigned int combiner_nr, void __iomem *base,
- 	}
- }
- 
--static void exynos4_gic_irq_fix_base(struct irq_data *d)
--{
--	struct gic_chip_data *gic_data = irq_data_get_irq_chip_data(d);
--
--	gic_data->cpu_base = S5P_VA_GIC_CPU +
--			    (gic_bank_offset * smp_processor_id());
--
--	gic_data->dist_base = S5P_VA_GIC_DIST +
--			    (gic_bank_offset * smp_processor_id());
--}
--
- void __init exynos4_init_irq(void)
- {
- 	int irq;
-+	unsigned int gic_bank_offset;
- 
- 	gic_bank_offset = soc_is_exynos4412() ? 0x4000 : 0x8000;
- 
--	gic_init(0, IRQ_PPI(0), S5P_VA_GIC_DIST, S5P_VA_GIC_CPU);
--	gic_arch_extn.irq_eoi = exynos4_gic_irq_fix_base;
--	gic_arch_extn.irq_unmask = exynos4_gic_irq_fix_base;
--	gic_arch_extn.irq_mask = exynos4_gic_irq_fix_base;
-+	gic_init_bases(0, IRQ_PPI(0), S5P_VA_GIC_DIST, S5P_VA_GIC_CPU, gic_bank_offset);
- 
- 	for (irq = 0; irq < MAX_COMBINER_NR; irq++) {
- 
--- 
-1.7.1
-
+                      Linus
