@@ -1,58 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755443Ab2AIHQx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 02:16:53 -0500
-Received: from mga03.intel.com ([143.182.124.21]:32241 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754570Ab2AIHQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 02:16:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="54578776"
-Subject: Re: [patch v3]numa: add a sysctl to control interleave allocation
- granularity from each node to improve I/O performance
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Christoph Lameter <cl@linux.com>, lkml <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jens Axboe <axboe@kernel.dk>,
-        "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>,
-        David Rientjes <rientjes@google.com>
-In-Reply-To: <1323912471.22361.431.camel@sli10-conroe>
-References: <1323655125.22361.376.camel@sli10-conroe>
-	 <20111213190632.GA5830@tassilo.jf.intel.com>
-	 <alpine.DEB.2.00.1112131412320.27186@router.home>
-	 <20111213203856.GA6312@tassilo.jf.intel.com>
-	 <1323830027.22361.401.camel@sli10-conroe>
-	 <20111214175302.GA2600@alboin.jf.intel.com>
-	 <1323912471.22361.431.camel@sli10-conroe>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jan 2012 15:31:52 +0800
-Message-ID: <1326094312.22361.557.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755424Ab2AIHTp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 02:19:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55103 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753493Ab2AIHTn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 02:19:43 -0500
+Date: Sun, 8 Jan 2012 23:19:31 -0800
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: AnilKumar Ch <anilkumar@ti.com>
+Cc: sameo@linux.intel.com, lrg@ti.com, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org, nsekhar@ti.com
+Subject: Re: [PATCH V3 2/2] regulator: tps65217: Add tps65217 regulator driver
+Message-ID: <20120109071930.GC22134@opensource.wolfsonmicro.com>
+References: <1325670747-31429-1-git-send-email-anilkumar@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325670747-31429-1-git-send-email-anilkumar@ti.com>
+X-Cookie: You have a truly strong individuality.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-12-15 at 09:27 +0800, Shaohua Li wrote:
-> On Thu, 2011-12-15 at 01:53 +0800, Andi Kleen wrote:
-> > > That's what I want to avoid letting each apps to explicitly do it, it's
-> > > a lot of burden.
-> > 
-> > Usually apps that set NUMA policy can change it. Most don't anyways.
-> > If it's just a script with numactl it's easily changed.
-> Hmm, why should apps set different granularity? the granularity change
-> is to speed up I/O, which should have the same value for all apps.
-> 
-> > > That's true only workload with heavy I/O wants this. but I don't expect
-> > > it will harm other workloads.
-> > 
-> > How do you know?
-> I can't imagine how it could harm. Some arches can use big pages, big
-> granularity should already been tested for years.
-ping ...
+On Wed, Jan 04, 2012 at 03:22:27PM +0530, AnilKumar Ch wrote:
 
+This looks pretty good.  A couple of small issues.
 
+> +static int tps65217_vsel_to_uv_range1(unsigned int vsel)
+> +{
+> +	int uV = 0;
+> +
+> +	if (vsel > 15)
+> +		return -EINVAL;
+> +
+> +	if (vsel <= 2)
+> +		uV = vsel * 100000 + 1000000;
+> +	else if (vsel <= 6)
+> +		uV = (vsel - 2) * 50000 + 1200000;
+> +	else if (vsel <= 9)
+> +		uV = (vsel - 6) * 100000 + 1400000;
+> +	else if (vsel == 10)
+> +		uV = 2500000;
+> +	else if (vsel == 11)
+> +		uV = 2750000;
+> +	else if (vsel == 12)
+> +		uV = 2800000;
+> +	else if (vsel == 13)
+> +		uV = 3000000;
+> +	else if (vsel == 14)
+> +		uV = 3100000;
+> +	else
+> +		uV = 3300000;
+
+This looks like it should actually be a table - there's far too many
+irregular steps here.  The other regulators looked to be benefiting from
+the use of calculations.
+
+> +static int tps65217_pmic_dcdc_get_voltage(struct regulator_dev *dev)
+> +{
+> +	int ret;
+> +	struct tps65217 *tps = rdev_get_drvdata(dev);
+> +	unsigned int data, dcdc = rdev_get_id(dev);
+> +
+> +	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
+> +		return -EINVAL;
+> +
+> +	ret = tps65217_reg_read(tps, tps->info[dcdc]->set_vout_reg, &data);
+> +	if (ret)
+> +		return ret;
+> +
+> +	data &= tps->info[dcdc]->set_vout_mask;
+> +
+> +	ret = tps->info[dcdc]->tps_range(data);
+> +	if (ret < 0)
+> +		dev_err(&dev->dev, "Failed to get voltage\n");
+> +
+> +	return ret;
+
+It seems odd to implement this as a vanilla get_voltage()
+
+> +static int tps65217_pmic_dcdc_set_voltage(struct regulator_dev *dev,
+> +						unsigned selector)
+> +{
+
+but this as set_voltage_sel().  For non table based regulators plain
+set_voltage() usually makes a bit more sense as we don't have to iterate
+through the selectors looking for a match.
