@@ -1,269 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606Ab2AIJV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 04:21:28 -0500
-Received: from mga14.intel.com ([143.182.124.37]:14725 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab2AIJV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 04:21:26 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="93799338"
-From: Youquan Song <youquan.song@intel.com>
-To: linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org
-Cc: stable@vger.kernel.org, suresh.b.siddha@intel.com, arjan@linux.intel.com,
-        len.brown@intel.com, anhua.xu@intel.com, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>,
-        Youquan Song <youquan.song@intel.com>
-Subject: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-Date: Mon,  9 Jan 2012 16:56:07 +0800
-Message-Id: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
-X-Mailer: git-send-email 1.6.4.2
+	id S1751669Ab2AIJXd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 04:23:33 -0500
+Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:54886 "EHLO
+	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab2AIJXb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 04:23:31 -0500
+Date: Mon, 9 Jan 2012 10:23:20 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [GIT PULL] s390 patches for 3.3
+Message-ID: <20120109102320.4603fe5e@de.ibm.com>
+In-Reply-To: <20120109084728.612edbda@de.ibm.com>
+References: <20120107200122.5a78669d@de.ibm.com>
+ <CA+55aFy1F6vrLYZ-S+-jq0AiSVOQ15NoFosW3GmMbyKzYyjEqQ@mail.gmail.com>
+ <20120109084728.612edbda@de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+x-cbid: 12010909-2966-0000-0000-000002D34C94
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sched_smt_power_savings is totally broken at lastest linux and -tip tree.
+On Mon, 9 Jan 2012 08:47:28 +0100
+Martin Schwidefsky <schwidefsky@de.ibm.com> wrote:
 
-sched_smt_power_savings is set to 1, the scheduler tries to schedule processes
- on the least number of hyper-threads on a core as possible. In other words, 
-the process load is distributed such that all the hyper-threads in a core and 
-all the cores within the same processor are busy before the load is distributed
- to other hyper-threads and cores in another processor. 
+> On Sun, 8 Jan 2012 15:17:38 -0800
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 
+> > On Sat, Jan 7, 2012 at 11:01 AM, Martin Schwidefsky
+> > <schwidefsky@de.ibm.com> wrote:
+> > >
+> > > please pull from 'for-linus' branch of
+> > >
+> > >        git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+> > >
+> > > to receive the following updates:
+> > 
+> > Where did the diffstat go? I'm pretty sure you usually send it, and I
+> > really want diffstat (in addition to the shortlog) to verify pull
+> > requests..
+> 
+> From the merge window pulls I usually remove the patch itself. Seems like
+> I removed the diffstat as well. Once more with feeling:
+> 
+> please pull from 'for-linus' branch of
+> 
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/s390/linux.git for-linus
+> 
 
-Test On Intel Xeon machine with 2 physical CPUs and each CPU has 8 cores / 16 
-threads. physical CPU 0 includes cpu[0~7] and cpu[16~23]; while physical CPU 1
-includes cpu[8~15] and cpu[24~31].
+Crap, commit 83a24e32908476 "[S390] topology: get rid of ifdefs" now creates a
+non-trivial merge conflict with upstream. And commits 4baeb964d96d38df 
+"[S390] topology: cleanup z10 topology handling" and d68bddb7329a4d47
+"[S390] topology: increase poll frequency if change is anticipated" depend on
+83a24e32908476. I sorted it out in my local tree but I know that you don't
+like late rebases. This is how I fixed the conflict:
 
-At latest -tip tree:
-echo 1 > /sys/devices/system/cpu/sched_smt_power_savings
-./ebizzy -t 16 -S 100 &  sleep 10 ; cat /proc/sched_debug | grep -A 1 cpu# > tmp.log
-
-cpu#0, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#1, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#2, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#3, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#4, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#5, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#6, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#7, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#8, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#9, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#10, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#11, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#12, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#13, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#14, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#15, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#16, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#17, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#18, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#19, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#20, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#21, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#22, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#23, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#24, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#25, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#26, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#27, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#28, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#29, 2693.564 MHz
-  .nr_running                    : 0
---
-cpu#30, 2693.564 MHz
-  .nr_running                    : 1
---
-cpu#31, 2693.564 MHz
-  .nr_running                    : 1
-
->From above, we notice 16 threads are distributed among 2 physical CPUs.
-After apply the patch, 16 threads are only distributed at one physical CPU.
-In this case, we can notice 30% power saving.
-Following are the result after apply the patch:
-
-cpu#0, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#1, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#2, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#3, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#4, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#5, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#6, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#7, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#8, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#9, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#10, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#11, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#12, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#13, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#14, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#15, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#16, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#17, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#18, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#19, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#20, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#21, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#22, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#23, 2693.384 MHz
-  .nr_running                    : 1
---
-cpu#24, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#25, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#26, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#27, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#28, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#29, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#30, 2693.384 MHz
-  .nr_running                    : 0
---
-cpu#31, 2693.384 MHz
-  .nr_running                    : 1
-
-
-This patch will set SMT sibling power capability to SCHED_POWER_SCALE
-(1024) when sched_smt_power_savings set. So when there is possible do power
-saving during scheduling, scheduler will truly schedule processes as
-sched_smt_power_savings should do.
+diff -urpN linux/arch/s390/kernel/smp.c linux-s390/arch/s390/kernel/smp.c
+--- linux/arch/s390/kernel/smp.c	2012-01-09 10:16:34.000000000 +0100
++++ linux-s390/arch/s390/kernel/smp.c	2012-01-09 10:18:20.000000000 +0100
+@@ -926,42 +926,8 @@ out:
+ static DEVICE_ATTR(configure, 0644, cpu_configure_show, cpu_configure_store);
+ #endif /* CONFIG_HOTPLUG_CPU */
  
-
-Signed-off-by: Youquan Song <youquan.song@intel.com>
-Tested-by: Anhua Xu <anhua.xu@intel.com>
----
- kernel/sched/fair.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index a4d2b7a..5be1d43 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3715,6 +3715,9 @@ unsigned long default_scale_smt_power(struct sched_domain *sd, int cpu)
- 	unsigned long weight = sd->span_weight;
- 	unsigned long smt_gain = sd->smt_gain;
+-<<<<<<< HEAD
+-static ssize_t cpu_polarization_show(struct device *dev,
+-				     struct device_attribute *attr, char *buf)
+-{
+-	int cpu = dev->id;
+-	ssize_t count;
+-
+-	mutex_lock(&smp_cpu_state_mutex);
+-	switch (smp_cpu_polarization[cpu]) {
+-	case POLARIZATION_HRZ:
+-		count = sprintf(buf, "horizontal\n");
+-		break;
+-	case POLARIZATION_VL:
+-		count = sprintf(buf, "vertical:low\n");
+-		break;
+-	case POLARIZATION_VM:
+-		count = sprintf(buf, "vertical:medium\n");
+-		break;
+-	case POLARIZATION_VH:
+-		count = sprintf(buf, "vertical:high\n");
+-		break;
+-	default:
+-		count = sprintf(buf, "unknown\n");
+-		break;
+-	}
+-	mutex_unlock(&smp_cpu_state_mutex);
+-	return count;
+-}
+-static DEVICE_ATTR(polarization, 0444, cpu_polarization_show, NULL);
+-
+ static ssize_t show_cpu_address(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+-=======
+-static ssize_t show_cpu_address(struct sys_device *dev,
+-				struct sysdev_attribute *attr, char *buf)
+->>>>>>> FETCH_HEAD
+ {
+ 	return sprintf(buf, "%d\n", __cpu_logical_map[dev->id]);
+ }
+@@ -971,12 +937,7 @@ static struct attribute *cpu_common_attr
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	&dev_attr_configure.attr,
+ #endif
+-<<<<<<< HEAD
+ 	&dev_attr_address.attr,
+-	&dev_attr_polarization.attr,
+-=======
+-	&attr_address.attr,
+->>>>>>> FETCH_HEAD
+ 	NULL,
+ };
  
-+	if (sched_smt_power_savings)
-+		return SCHED_POWER_SCALE;
-+
- 	smt_gain /= weight;
+@@ -1162,51 +1123,7 @@ static ssize_t __ref rescan_store(struct
+ static DEVICE_ATTR(rescan, 0200, NULL, rescan_store);
+ #endif /* CONFIG_HOTPLUG_CPU */
  
- 	return smt_gain;
+-<<<<<<< HEAD
+-static ssize_t dispatching_show(struct device *dev,
+-				struct device_attribute *attr,
+-				char *buf)
+-{
+-	ssize_t count;
+-
+-	mutex_lock(&smp_cpu_state_mutex);
+-	count = sprintf(buf, "%d\n", cpu_management);
+-	mutex_unlock(&smp_cpu_state_mutex);
+-	return count;
+-}
+-
+-static ssize_t dispatching_store(struct device *dev,
+-				 struct device_attribute *attr,
+-				 const char *buf,
+-				 size_t count)
+-{
+-	int val, rc;
+-	char delim;
+-
+-	if (sscanf(buf, "%d %c", &val, &delim) != 1)
+-		return -EINVAL;
+-	if (val != 0 && val != 1)
+-		return -EINVAL;
+-	rc = 0;
+-	get_online_cpus();
+-	mutex_lock(&smp_cpu_state_mutex);
+-	if (cpu_management == val)
+-		goto out;
+-	rc = topology_set_cpu_management(val);
+-	if (!rc)
+-		cpu_management = val;
+-out:
+-	mutex_unlock(&smp_cpu_state_mutex);
+-	put_online_cpus();
+-	return rc ? rc : count;
+-}
+-static DEVICE_ATTR(dispatching, 0644, dispatching_show,
+-			 dispatching_store);
+-
+-static int __init topology_init(void)
+-=======
+ static int __init s390_smp_init(void)
+->>>>>>> FETCH_HEAD
+ {
+ 	int cpu, rc;
+ 
+@@ -1216,12 +1133,6 @@ static int __init s390_smp_init(void)
+ 	if (rc)
+ 		return rc;
+ #endif
+-<<<<<<< HEAD
+-	rc = device_create_file(cpu_subsys.dev_root, &dev_attr_dispatching);
+-	if (rc)
+-		return rc;
+-=======
+->>>>>>> FETCH_HEAD
+ 	for_each_present_cpu(cpu) {
+ 		rc = smp_add_present_cpu(cpu);
+ 		if (rc)
+diff -urpN linux/arch/s390/kernel/topology.c linux-s390/arch/s390/kernel/topology.c
+--- linux/arch/s390/kernel/topology.c	2012-01-09 10:16:34.000000000 +0100
++++ linux-s390/arch/s390/kernel/topology.c	2012-01-09 10:13:29.000000000 +0100
+@@ -366,8 +366,8 @@ void __init s390_init_cpu_topology(void)
+ 
+ static int cpu_management;
+ 
+-static ssize_t dispatching_show(struct sysdev_class *class,
+-				struct sysdev_class_attribute *attr,
++static ssize_t dispatching_show(struct device *dev,
++				struct device_attribute *attr,
+ 				char *buf)
+ {
+ 	ssize_t count;
+@@ -378,8 +378,8 @@ static ssize_t dispatching_show(struct s
+ 	return count;
+ }
+ 
+-static ssize_t dispatching_store(struct sysdev_class *dev,
+-				 struct sysdev_class_attribute *attr,
++static ssize_t dispatching_store(struct device *dev,
++				 struct device_attribute *attr,
+ 				 const char *buf,
+ 				 size_t count)
+ {
+@@ -405,11 +405,11 @@ out:
+ 	put_online_cpus();
+ 	return rc ? rc : count;
+ }
+-static SYSDEV_CLASS_ATTR(dispatching, 0644, dispatching_show,
++static DEVICE_ATTR(dispatching, 0644, dispatching_show,
+ 			 dispatching_store);
+ 
+-static ssize_t cpu_polarization_show(struct sys_device *dev,
+-				     struct sysdev_attribute *attr, char *buf)
++static ssize_t cpu_polarization_show(struct device *dev,
++				     struct device_attribute *attr, char *buf)
+ {
+ 	int cpu = dev->id;
+ 	ssize_t count;
+@@ -435,10 +435,10 @@ static ssize_t cpu_polarization_show(str
+ 	mutex_unlock(&smp_cpu_state_mutex);
+ 	return count;
+ }
+-static SYSDEV_ATTR(polarization, 0444, cpu_polarization_show, NULL);
++static DEVICE_ATTR(polarization, 0444, cpu_polarization_show, NULL);
+ 
+ static struct attribute *topology_cpu_attrs[] = {
+-	&attr_polarization.attr,
++	&dev_attr_polarization.attr,
+ 	NULL,
+ };
+ 
+@@ -448,7 +448,7 @@ static struct attribute_group topology_c
+ 
+ int topology_cpu_init(struct cpu *cpu)
+ {
+-	return sysfs_create_group(&cpu->sysdev.kobj, &topology_cpu_attr_group);
++	return sysfs_create_group(&cpu->dev.kobj, &topology_cpu_attr_group);
+ }
+ 
+ static int __init topology_init(void)
+@@ -460,6 +460,6 @@ static int __init topology_init(void)
+ 	set_topology_timer();
+ out:
+ 	update_cpu_core_map();
+-	return sysdev_class_create_file(&cpu_sysdev_class, &attr_dispatching);
++	return device_create_file(cpu_subsys.dev_root, &dev_attr_dispatching);
+ }
+ device_initcall(topology_init);
+
+
 -- 
-1.6.4.2
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
