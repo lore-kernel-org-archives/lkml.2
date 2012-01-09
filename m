@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab2AIQjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:39:17 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:44421 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932290Ab2AIQjP (ORCPT
+	id S932373Ab2AIQjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:39:46 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50476 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932266Ab2AIQjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:39:15 -0500
-Date: Mon, 9 Jan 2012 08:39:10 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Compile errors on 32-bit build due to
- d4bbf7e7759afc172e2bfbc5c416324590049cdd
-Message-ID: <20120109163910.GA21732@google.com>
-References: <20120108024029.GA17214@phenom.dumpdata.com>
+	Mon, 9 Jan 2012 11:39:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20120108024029.GA17214@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1325945558-4661-1-git-send-email-corentincj@iksaif.net>
+References: <20120105150832.GA25386@ubuntu-macmini>
+	<1325945558-4661-1-git-send-email-corentincj@iksaif.net>
+Date: Mon, 9 Jan 2012 17:39:43 +0100
+Message-ID: <CANq1E4QGahjrxm5B59HGnrfO3LP4kV6bc27BKQDvnJ4HBKAFMg@mail.gmail.com>
+Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
+From: David Herrmann <dh.herrmann@googlemail.com>
+To: Corentin Chary <corentincj@iksaif.net>
+Cc: platform-driver-x86@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
+        linux-kernel@vger.kernel.org, Andrzej Prochyra <andrzej@prochyra.name>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        =?ISO-8859-1?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>,
+        Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Konrad.
+Hi Corentin
 
-On Sat, Jan 07, 2012 at 09:40:29PM -0500, Konrad Rzeszutek Wilk wrote:
-> Hey Tejun
-> 
-> Your patch titled " Merge branch 'master' into x86/memblock" breaks compilation
-> under 32-bit with CONFIG_XEN=y.
-> 
-> /home/konrad/linux-linus/arch/x86/xen/mmu.c: In function ‘xen_setup_kernel_pagetable’:
-> /home/konrad/linux-linus/arch/x86/xen/mmu.c:1855: error: expected ‘;’ before ‘)’ token
-> /home/konrad/linux-linus/arch/x86/xen/mmu.c:1855: error: expected statement before ‘)’ token
-> 
-> Looking at merge it looks like you added an extra ')'?
-> 
-> This patch below fixes it, which I was thinking to attach it to my tree that I will
-> send on Monday to Linus.
-> 
-> From 18ae9edebde83ef358e997e319868d664fb2ddb8 Mon Sep 17 00:00:00 2001
-> From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Date: Sat, 7 Jan 2012 21:27:38 -0500
-> Subject: [PATCH] xen/mmu: Fix compile errors introduced by x86/memblock mismerge.
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=UTF-8
-> Content-Transfer-Encoding: 8bit
-> 
-> The git commit d4bbf7e7759afc172e2bfbc5c416324590049cdd
-> "Merge branch 'master' into x86/memblock" mismerged the 32-bit
-> section causing:
-> 
-> arch/x86/xen/mmu.c: In function ‘xen_setup_kernel_pagetable’:
-> arch/x86/xen/mmu.c:1855: error: expected ‘;’ before ‘)’ token
-> arch/x86/xen/mmu.c:1855: error: expected statement before ‘)’ token
-> 
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+On Sat, Jan 7, 2012 at 3:12 PM, Corentin Chary <corentincj@iksaif.net> wrote:
+> On these laptops, the ACPI video is not functional, and very unlikely
+> to be fixed by the vendor. Note that intel_backlight works for some
+> of these laptops, and the backlight from samsung-laptop always work.
+>
+> The good news is that newer laptops have functional ACPI video device
+> and won't end up growing this list.
+>
+> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 > ---
->  arch/x86/xen/mmu.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-> index f4bf8aa..58a0e46 100644
-> --- a/arch/x86/xen/mmu.c
-> +++ b/arch/x86/xen/mmu.c
-> @@ -1852,7 +1852,7 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
->  	xen_write_cr3(__pa(initial_page_table));
->  
->  	memblock_reserve(__pa(xen_start_info->pt_base),
-> -			 xen_start_info->nr_pt_frames * PAGE_SIZE));
-> +			 xen_start_info->nr_pt_frames * PAGE_SIZE);
+>
+> Could the concerned people test this patch and check that it correctly
+> disable the acpi_video backlight ?
 
-Oops, how did that get through?  Sorry about that.
+Works like a charm on my N210 with linux-3.2. Feel free to add a:
+Tested-by: David Herrmann <dh.herrmann@googlemail.com>
 
- Acked-by: Tejun Heo <tj@kernel.org>
+I will talk to the intel drm developers about the intel_backlight
+issues as they don't seem related to this driver.
 
-Thank you.
-
--- 
-tejun
+Thanks
+David
