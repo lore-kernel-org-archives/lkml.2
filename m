@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933538Ab2AIXhy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 18:37:54 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62837 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932164Ab2AIXhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 18:37:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105261099"
-Date: Tue, 10 Jan 2012 00:43:49 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, lrg@ti.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4] regulator: Add S5M8767A regulator driver
-Message-ID: <20120109234349.GM13679@sortiz-mobl>
-References: <1325225153-32389-1-git-send-email-sbkim73@samsung.com>
- <20120108231657.GD13679@sortiz-mobl>
- <20120109064703.GT29065@opensource.wolfsonmicro.com>
- <20120109090821.GK13679@sortiz-mobl>
- <20120109213721.GD30766@opensource.wolfsonmicro.com>
+	id S933565Ab2AIXro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 18:47:44 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:58751 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933525Ab2AIXrm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 18:47:42 -0500
+Date: Tue, 10 Jan 2012 02:43:59 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] block_dev: Suppress bdev_cache_init() kmemleak warninig V2
+Message-ID: <20120109234359.GA3127@swordfish>
+References: <20120109224436.GA3429@swordfish>
+ <20120109230316.GZ23916@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120109213721.GD30766@opensource.wolfsonmicro.com>
+In-Reply-To: <20120109230316.GZ23916@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 09:37:21PM +0000, Mark Brown wrote:
-> On Mon, Jan 09, 2012 at 10:08:21AM +0100, Samuel Ortiz wrote:
-> > On Sun, Jan 08, 2012 at 10:47:04PM -0800, Mark Brown wrote:
-> 
-> > > I've not reviwed it yet and there should be no dependency on the MFD
-> > > tree so no need to merge it via that - the fact that there's a Kconfig
-> > > dependency on the MFD means that the two can get merged in any order.
-> 
-> > Not only a Kconfig dependency, but also the regulator driver including some of
-> > the headers defined in the mfd patch:
-> 
-> > +#include <linux/mfd/s5m87xx/s5m-core.h>
-> > +#include <linux/mfd/s5m87xx/s5m-pmic.h>
-> 
-> > So, both need to get merged at the same time.
-> 
-> No, the point is that the Kconfig dependency means that the code
-> dependency isn't an issue 
-Right, I missed your point, sorry.
+block_dev: Suppress bdev_cache_init() kmemleak warninig
 
-Cheers,
-Samuel.
+Kmemleak reports the following warning in bdev_cache_init()
+[    0.003738] kmemleak: Object 0xffff880153035200 (size 256):
+[    0.003823] kmemleak:   comm "swapper/0", pid 0, jiffies 4294667299
+[    0.003909] kmemleak:   min_count = 1
+[    0.003988] kmemleak:   count = 0
+[    0.004066] kmemleak:   flags = 0x1
+[    0.004144] kmemleak:   checksum = 0
+[    0.004224] kmemleak:   backtrace:
+[    0.004303]      [<ffffffff814755ac>] kmemleak_alloc+0x21/0x3e
+[    0.004446]      [<ffffffff811100ba>] kmem_cache_alloc+0xca/0x1dc
+[    0.004592]      [<ffffffff811371b1>] alloc_vfsmnt+0x1f/0x198
+[    0.004736]      [<ffffffff811375c5>] vfs_kern_mount+0x36/0xd2
+[    0.004879]      [<ffffffff8113929a>] kern_mount_data+0x18/0x32
+[    0.005025]      [<ffffffff81ab9075>] bdev_cache_init+0x51/0x81
+[    0.005169]      [<ffffffff81ab8abf>] vfs_caches_init+0x101/0x10d
+[    0.005313]      [<ffffffff81a9bae3>] start_kernel+0x344/0x383
+[    0.005456]      [<ffffffff81a9b2a7>] x86_64_start_reservations+0xae/0xb2
+[    0.005602]      [<ffffffff81a9b3ad>] x86_64_start_kernel+0x102/0x111
+[    0.005747]      [<ffffffffffffffff>] 0xffffffffffffffff
+[    0.008653] kmemleak: Trying to color unknown object at 0xffff880153035220 as Grey
+[    0.008754] Pid: 0, comm: swapper/0 Not tainted 3.3.0-rc0-dbg-04200-g8180888-dirty #888
+[    0.008856] Call Trace:
+[    0.008934]  [<ffffffff81118704>] ? find_and_get_object+0x44/0x118
+[    0.009023]  [<ffffffff81118fe6>] paint_ptr+0x57/0x8f
+[    0.009109]  [<ffffffff81475935>] kmemleak_not_leak+0x23/0x42
+[    0.009195]  [<ffffffff81ab9096>] bdev_cache_init+0x72/0x81
+[    0.009282]  [<ffffffff81ab8abf>] vfs_caches_init+0x101/0x10d
+[    0.009368]  [<ffffffff81a9bae3>] start_kernel+0x344/0x383
+[    0.009466]  [<ffffffff81a9b2a7>] x86_64_start_reservations+0xae/0xb2
+[    0.009555]  [<ffffffff81a9b140>] ? early_idt_handlers+0x140/0x140
+[    0.009643]  [<ffffffff81a9b3ad>] x86_64_start_kernel+0x102/0x111
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+due to attempt to mark pointer to `struct vfsmount' as a gray object, which
+is embedded into `struct mount' returned from alloc_vfsmnt(). 
+
+Make `bd_mnt' static, avoiding need to tell kmemleak to mark it gray, as
+suggested by Al Viro.
+
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+
+---
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 69a5b6f..de3913b 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -521,7 +521,7 @@ static struct super_block *blockdev_superblock __read_mostly;
+ void __init bdev_cache_init(void)
+ {
+ 	int err;
+-	struct vfsmount *bd_mnt;
++	static struct vfsmount *bd_mnt;
+ 
+ 	bdev_cachep = kmem_cache_create("bdev_cache", sizeof(struct bdev_inode),
+ 			0, (SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT|
+@@ -533,12 +533,7 @@ void __init bdev_cache_init(void)
+ 	bd_mnt = kern_mount(&bd_type);
+ 	if (IS_ERR(bd_mnt))
+ 		panic("Cannot create bdev pseudo-fs");
+-	/*
+-	 * This vfsmount structure is only used to obtain the
+-	 * blockdev_superblock, so tell kmemleak not to report it.
+-	 */
+-	kmemleak_not_leak(bd_mnt);
+-	blockdev_superblock = bd_mnt->mnt_sb;	/* For writeback */
++	blockdev_superblock = bd_mnt->mnt_sb;   /* For writeback */
+ }
+ 
+ /*
+
+
