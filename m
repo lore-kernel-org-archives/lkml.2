@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755615Ab2AIPFk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 10:05:40 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:59854 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755504Ab2AIPFj (ORCPT
+	id S1755630Ab2AIPHa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 10:07:30 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43001 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755514Ab2AIPH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 10:05:39 -0500
+	Mon, 9 Jan 2012 10:07:29 -0500
 From: =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <jeff.dagenais@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: michael.hennerich@analog.com, grant.likely@secretlab.ca,
         =?UTF-8?q?Jean-Fran=C3=A7ois=20Dagenais?= <jeff.dagenais@gmail.com>
-Subject: [PATCH 1/2] input: adp5588-keys - get value from data out when dir out
-Date: Mon,  9 Jan 2012 10:05:22 -0500
-Message-Id: <1326121523-28634-1-git-send-email-jeff.dagenais@gmail.com>
+Subject: [PATCH 2/2] gpio: adp5588 - get value from data out when dir out
+Date: Mon,  9 Jan 2012 10:05:23 -0500
+Message-Id: <1326121523-28634-2-git-send-email-jeff.dagenais@gmail.com>
 X-Mailer: git-send-email 1.7.8.2
+In-Reply-To: <1326121523-28634-1-git-send-email-jeff.dagenais@gmail.com>
+References: <1326121523-28634-1-git-send-email-jeff.dagenais@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -32,32 +34,42 @@ observations, it should read:
 
 This commit changes the get value function accordingly.
 
-A similar patch for gpio-adp5588 follows.
+Follows a similar patch for adp5588-keys.
 
 Signed-off-by: Jean-François Dagenais <jeff.dagenais@gmail.com>
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
 ---
- drivers/input/keyboard/adp5588-keys.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/gpio/gpio-adp5588.c |   14 +++++++++++++-
+ 1 files changed, 13 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/input/keyboard/adp5588-keys.c b/drivers/input/keyboard/adp5588-keys.c
-index 6412ced..b7a0f1a 100644
---- a/drivers/input/keyboard/adp5588-keys.c
-+++ b/drivers/input/keyboard/adp5588-keys.c
-@@ -78,6 +78,13 @@ static int adp5588_gpio_get_value(struct gpio_chip *chip, unsigned off)
- 	unsigned int bank = ADP5588_BANK(kpad->gpiomap[off]);
- 	unsigned int bit = ADP5588_BIT(kpad->gpiomap[off]);
+diff --git a/drivers/gpio/gpio-adp5588.c b/drivers/gpio/gpio-adp5588.c
+index 3122713..293ddb6 100644
+--- a/drivers/gpio/gpio-adp5588.c
++++ b/drivers/gpio/gpio-adp5588.c
+@@ -65,11 +65,23 @@ static int adp5588_gpio_write(struct i2c_client *client, u8 reg, u8 val)
  
-+	mutex_lock(&kpad->gpio_lock);
-+	if (kpad->dir[bank] & bit) {
-+		int result = !!(kpad->dat_out[bank] & bit);
-+		mutex_unlock(&kpad->gpio_lock);
+ static int adp5588_gpio_get_value(struct gpio_chip *chip, unsigned off)
+ {
++	unsigned bank, bit;
+ 	struct adp5588_gpio *dev =
+ 	    container_of(chip, struct adp5588_gpio, gpio_chip);
+ 
++	bank = ADP5588_BANK(off);
++	bit = ADP5588_BIT(off);
++
++	mutex_lock(&dev->lock);
++	if (dev->dir[bank] & bit) {
++		int result = !!(dev->dat_out[bank] & bit);
++		mutex_unlock(&dev->lock);
 +		return result;
 +	}
-+	mutex_unlock(&kpad->gpio_lock);
- 	return !!(adp5588_read(kpad->client, GPIO_DAT_STAT1 + bank) & bit);
++	mutex_unlock(&dev->lock);
++
+ 	return !!(adp5588_gpio_read(dev->client,
+-		  GPIO_DAT_STAT1 + ADP5588_BANK(off)) & ADP5588_BIT(off));
++		  GPIO_DAT_STAT1 + bank) & bit);
  }
  
+ static void adp5588_gpio_set_value(struct gpio_chip *chip,
 -- 
 1.7.8.2
 
