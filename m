@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933525Ab2AIWyw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:54:52 -0500
-Received: from ozlabs.org ([203.10.76.45]:47272 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933412Ab2AIWyv convert rfc822-to-8bit (ORCPT
+	id S933534Ab2AIWz5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:55:57 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63181 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933483Ab2AIWz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:54:51 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Jon Masters <jcm@redhat.com>, linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: [PATCH] modules: sysfs - export: taint, address, size
-In-Reply-To: <CAPXgP12rUUYfRy6QB5Z4Rwdday3hNHubCsSRY4gMDYuQGs3oJg@mail.gmail.com>
-References: <1325951076.860.2.camel@mop> <871ur99vzf.fsf@rustcorp.com.au> <CAPXgP12rUUYfRy6QB5Z4Rwdday3hNHubCsSRY4gMDYuQGs3oJg@mail.gmail.com>
-User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
-Date: Tue, 10 Jan 2012 09:14:14 +1030
-Message-ID: <87zkdw7ayp.fsf@rustcorp.com.au>
+	Mon, 9 Jan 2012 17:55:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1326147171-13752-1-git-send-email-arnd@arndb.de>
+References: <1326147171-13752-1-git-send-email-arnd@arndb.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Jan 2012 14:55:34 -0800
+X-Google-Sender-Auth: RyhRlzE1nkz16YzG58-KY3rr7HM
+Message-ID: <CA+55aFzV5yRB9toW2efXWRKmYzKKRnLHd5FnF=As0vBgFb=OsQ@mail.gmail.com>
+Subject: Re: [GIT PULL 00/11] arm-soc changes
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jan 2012 13:44:52 +0100, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> On Mon, Jan 9, 2012 at 08:27, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> > The else here is weird.  Shouldn't we leave the exclusion elsewhere?
-> 
-> You mean the 'else if ... TAINT_OOT_MODULE'?  It's a one-to-one copy
-> of the current code, which just moved up a bit.
-> 
-> Disconnect the two flags form each other?
+On Mon, Jan 9, 2012 at 2:12 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>
+> For each branch "next/foo", there is also a signed tag "foo" on the
+> arm-soc git. Please pull whichever of these you prefer.
 
-Yes, I think so.
+So I pulled the tags, because not only do I then get the signature,
+but the merge message will automatically also end up containing your
+notes that you put in the tags. Which is a nice feature worth pointing
+out to people: when you send me pull-requests, you can add commentary
+that actually gets saved in the tag.
 
-> > This copies a past mistake, and is definitely wrong.  Either expose both
-> > pointers and sizes, or don't include init_size here.  Sure, it'll
-> > normally be 0, but if not it's confusing...
-> 
-> Ah, good to know, mod->init_size is 0 for all modules here, so we
-> should just drop mod->init_size and maybe name the 'size' attribute to
-> 'coresize'?
+So to give an example from Arnd's series, look at commit e8cbce976050
+in the current -git tree (just pushed out, since I did the merges just
+moments ago):
 
-If a module is still initializing, mod->init_size may well be non-zero.
-Let's rename it to coresize, and add initsize.
+  [torvalds@i5 linux]$ git show e8cbce976050
+  commit e8cbce976050a9f874a8b07012ddeb9b9eb59603
+  Merge: b3c37522928b 27fdb577435e
+  Author: Linus Torvalds <torvalds@linux-foundation.org>
+  Date:   Mon Jan 9 14:40:48 2012 -0800
 
-> > But the bigger question is: Why are we exposing these sizes?
-> > /proc/modules did since 2.2, or before, but that doesn't make it the
-> > best option...
-> 
-> Good question, I doubt it is too useful, it's just that 'lsmod' shows
-> it, so we wanted to show too.
+    Merge tag 'timer' of
+git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
 
-And breaking lsmod output might kill some scripts.  So it stays.
+    timer changes for msm
 
-Let's drop the address stuff though.
+    A very simple series. We used to have more churn in the timer
+    area, so this is kept separate. Will probably put this into the
+    drivers series next time.
 
-We can actually do something more radical: we could change the kernel to
-call modprobe to resolve unresolved symbols.  We already support
-symbol:<symbol> for symbol_request().
+    * tag 'timer' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc:
+      msm: timer: Use clockevents_config_and_register()
+      msm: timer: Setup interrupt after registering clockevent
+      msm: timer: Remove SoC specific #ifdefs
+      msm: timer: Remove msm_clocks[] and simplify code
+      msm: timer: Fix ONESHOT mode interrupts
+      msm: timer: Use GPT for clockevents and DGT for clocksource
+      msm: timer: Cleanup #includes and #defines
+      msm: timer: Tighten #ifdef for local timer support
 
-This means that modprobe still needs to maintain a sym->mod mapping
-(though I would argue depmod should be moved into the kernel source),
-but not any dependency mapping.
+where those "timer changes for msm" and the comment about a simple
+series were all from Arnd's tag.
 
-Thanks,
-Rusty.
+Now, you don't *have* to do these kinds of descriptions, and I do end
+up editing them if they look odd (eg Arnd saying "I" when the commit
+then ends up being mine), but I wanted to point it out because some
+submaintainers may end up enjoying the capability to add notes to the
+merge to explain things better.
+
+And Arnd, please do double-check that I didn't mess up any of the
+(pretty trivial) merge conflicts..
+
+                         Linus
