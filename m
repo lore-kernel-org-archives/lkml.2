@@ -1,72 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102Ab2AIFSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 00:18:12 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39364 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab2AIFSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 00:18:11 -0500
-Date: Mon, 9 Jan 2012 10:48:08 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Jim Keniston <jkenisto@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH] kprobe: fix a memory leak in function
-	pre_handler_kretprobe()
-Message-ID: <20120109051808.GA20666@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <4F07261A.6080403@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F07261A.6080403@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-x-cbid: 12010905-5806-0000-0000-00001132632B
+	id S1752605Ab2AIFi1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 00:38:27 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:38599 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab2AIFiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 00:38:25 -0500
+Date: Mon, 9 Jan 2012 16:38:12 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Glauber Costa <glommer@parallels.com>
+Subject: linux-next: build failure after merge of the final tree (net tree
+ related)
+Message-Id: <20120109163812.4cb695944ea9716953afbfc9@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__9_Jan_2012_16_38_12_+1100_GEAnf6bjRymC5xO5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 07, 2012 at 12:49:30AM +0800, Jiang Liu wrote:
-> From: Jiang Liu<liuj97@gmail.com>
->
-> In function pre_handler_kretprobe(), the allocated kretprobe_instance object will
-> be leaked if the entry_handler callback returns non-zero. This may cause all the
-> preallocated kretprobe_instance objects exhausted. This issue could be reproduced
-> by changing samples/kprobes/kretprobe_example.c to probe "mutex_unlock". And the
-> fix is straight forward, just put the allocated kretprobe_instance object back
-> onto the free_instances list.
->
-> Signed-off-by: Jiang Liu<liuj97@gmail.com>
-> Cc: Hien Nguyen<hien@us.ibm.com>
-> Cc: Jim Keniston<jkenisto@us.ibm.com>
-> Cc: Prasanna S Panchamukhi<prasanna@in.ibm.com>
+--Signature=_Mon__9_Jan_2012_16_38_12_+1100_GEAnf6bjRymC5xO5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the patch.
+Hi ,
 
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+After merging the final tree, today's linux-next build (powerpc
+allnoconfig) failed like this:
 
-> ---
->  kprobes.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
->
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1660,8 +1660,12 @@
->                 ri->rp = rp;
->                 ri->task = current;
->
-> -               if (rp->entry_handler&&  rp->entry_handler(ri, regs))
-> +               if (rp->entry_handler&&  rp->entry_handler(ri, regs)) {
-> +                       spin_lock_irqsave(&rp->lock, flags);
-> +                       hlist_add_head(&ri->hlist,&rp->free_instances);
-> +                       spin_unlock_irqrestore(&rp->lock, flags);
->                         return 0;
-> +               }
+In file included from include/linux/tcp.h:211:0,
+                 from include/linux/ipv6.h:221,
+                 from include/net/ipv6.h:16,
+                 from include/linux/sunrpc/clnt.h:26,
+                 from include/linux/nfs_fs.h:50,
+                 from init/do_mounts.c:20:
+include/net/sock.h: In function 'sk_update_clone':
+include/net/sock.h:1109:3: error: implicit declaration of function 'sock_up=
+date_memcg' [-Werror=3Dimplicit-function-declaration]
 
-Please fix up coding style issues and resend with acks from Jim and me.
-Please also cc stable@kernel.org so this gets included in the earlier
-kernels too.
+Caused by commit f3f511e1ce6f ("net: fix sock_clone reference mismatch
+with tcp memcontrol") from the net tree.  In this build, CONFIG_INET is not=
+ set.
 
-Ananth
+I applied the following patch for today:
 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 9 Jan 2012 16:33:16 +1100
+Subject: [PATCH] net: sk_update_clone is only used in net/core/sock.c
+
+so move it there.  Fixes build errors when CONFIG_INET is not defeined:
+
+In file included from include/linux/tcp.h:211:0,
+                 from include/linux/ipv6.h:221,
+                 from include/net/ipv6.h:16,
+                 from include/linux/sunrpc/clnt.h:26,
+                 from include/linux/nfs_fs.h:50,
+                 from init/do_mounts.c:20:
+include/net/sock.h: In function 'sk_update_clone':
+include/net/sock.h:1109:3: error: implicit declaration of function 'sock_up=
+date_memcg' [-Werror=3Dimplicit-function-declaration]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ include/net/sock.h |    6 ------
+ net/core/sock.c    |    6 ++++++
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 0ed65e3..bb972d2 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1103,12 +1103,6 @@ sk_sockets_allocated_read_positive(struct sock *sk)
+ 	return percpu_counter_sum_positive(prot->sockets_allocated);
+ }
+=20
+-static inline void sk_update_clone(const struct sock *sk, struct sock *new=
+sk)
+-{
+-	if (mem_cgroup_sockets_enabled && sk->sk_cgrp)
+-		sock_update_memcg(newsk);
+-}
+-
+ static inline int
+ proto_sockets_allocated_sum_positive(struct proto *prot)
+ {
+diff --git a/net/core/sock.c b/net/core/sock.c
+index e80b64f..c3ae73d 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -1272,6 +1272,12 @@ void sk_release_kernel(struct sock *sk)
+ }
+ EXPORT_SYMBOL(sk_release_kernel);
+=20
++static void sk_update_clone(const struct sock *sk, struct sock *newsk)
++{
++	if (mem_cgroup_sockets_enabled && sk->sk_cgrp)
++		sock_update_memcg(newsk);
++}
++
+ /**
+  *	sk_clone_lock - clone a socket, and lock its clone
+  *	@sk: the socket to clone
+--=20
+1.7.8.197.g73c6b
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__9_Jan_2012_16_38_12_+1100_GEAnf6bjRymC5xO5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPCn1EAAoJEECxmPOUX5FElWYP/jd3B2eza0Np7caCMJvwxdgl
+FydE7VUd5lalHoDDvTFgoBmg+OPO9IO3DtkLaIz3dThzuHGoM/HemD2rLXXmqinY
+BrJ0k3LEteafm2BMW7t255uNkwyPvaM3L9E9wqFfunnC8L8eB0GWpSbXKKmP3Vpz
+f6Jq0eCaIcPys478s8877ThFaSqQlVeMmPwv2KdWPOMHkvLTG8cDOD7/FhHVmeuY
+/VCF5NB/4TehxNq8GvvfMf+t54vFItZE9ZDs/mM7YqedVybNeU44zOQD4bAfDxI6
+fRH7f7Q8KRCCacqouHUUkxtOaMPMS83yNrZdDjxKUbPyoJAH77C8aqUgtQol6vtH
+n6RfVdr8XBiuFe3uTDMiM+jvnrQ8zjccyeC48AUDNa047vCbu6wzO16YzdMiebxQ
++4csXaniGMl6c57PGJ9uWxqbt2xzN7/OVxmOHGvXXrTkeL3dCWBXP5s346fJmpIG
+LZ4EdDh1ZFXqLYlPwX4EfWBSJSJ3N9rSTELRL5pMWvsGJN5mHDG67stDH38EyVMd
+UgYJow3o+Mf//ovU+QR96wdGQi1qrvALgzZPeBIagOW+9a4IEt9fMyYvNazwoAP3
+846vQDnCA9CdPHTCpUkiwWJUoLEnqbEzrNFnKCa1VtxKyb5yUfTB+QLRjIiqtYEv
+oNSZIuZy+XR8N6aKjO8+
+=Y/o7
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__9_Jan_2012_16_38_12_+1100_GEAnf6bjRymC5xO5--
