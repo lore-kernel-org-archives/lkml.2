@@ -1,273 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754433Ab2AILyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 06:54:22 -0500
-Received: from mx4-phx2.redhat.com ([209.132.183.25]:54974 "EHLO
-	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753691Ab2AILyU (ORCPT
+	id S1754079Ab2AIMFY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 07:05:24 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:59849 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230Ab2AIMFW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 06:54:20 -0500
-Date: Mon, 09 Jan 2012 06:54:19 -0500 (EST)
-From: Ramon de C Valle <rcvalle@redhat.com>
-Reply-To: Ramon de C Valle <rcvalle@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] New PT_GNU_COMPAT segment header extension
-Message-ID: <f298f914-2239-44e4-8aa1-a51282e7fac0@zmail15.collab.prod.int.phx2.redhat.com>
-In-Reply-To: <ae010933-d93f-4858-97c7-d5aeb3dd73bc@zmail15.collab.prod.int.phx2.redhat.com>
-Content-Type: multipart/mixed;
- boundary="=_951c9c28-a278-48f8-94c4-deceb08bd09d"
+	Mon, 9 Jan 2012 07:05:22 -0500
 MIME-Version: 1.0
-X-Originating-IP: [10.11.8.141]
-X-Mailer: Zimbra 7.1.2_GA_3268 (ZimbraWebClient - FF3.0 (Linux)/7.1.2_GA_3268)
+In-Reply-To: <1325059891-20540-1-git-send-email-tiejun.chen@windriver.com>
+References: <1325059891-20540-1-git-send-email-tiejun.chen@windriver.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Mon, 9 Jan 2012 12:05:01 +0000
+X-Google-Sender-Auth: J35c9yiKRYhtB3I5RDKmhvz7sjs
+Message-ID: <CAHkRjk5fuubEQaq2CD1cGE=W+Lf6svE6fN8KyDrY6=i3-=b_RA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] kmemleak/module: only scan the existed data section
+To: Tiejun Chen <tiejun.chen@windriver.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=_951c9c28-a278-48f8-94c4-deceb08bd09d
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+On 28 December 2011 08:11, Tiejun Chen <tiejun.chen@windriver.com> wrote:
+> We should only scan the sections containing data and it's size is not
+> zero as well.
+>
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> ---
+>  kernel/module.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 12cfa2b..0b93c30 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -2045,6 +2045,8 @@ static void kmemleak_load_module(struct module *mod, Elf_Ehdr *hdr,
+>                if (strncmp(secstrings + sechdrs[i].sh_name, ".data", 5) != 0
+>                    && strncmp(secstrings + sechdrs[i].sh_name, ".bss", 4) != 0)
+>                        continue;
+> +               if (sechdrs[i].sh_size == 0)
+> +                       continue;
+>
+>                kmemleak_scan_area((void *)sechdrs[i].sh_addr,
+>                                   sechdrs[i].sh_size, GFP_KERNEL);
 
-Hi,
-
-These patches introduces the PT_GNU_COMPAT segment header to indicate the
-kernel whether an ELF binary or a shared library needs to have all readable
-virtual memory mappings also executable (i.e. READ_IMPLIES_EXEC personality)
-and if necessary, it allows more compatibility modes to be implemented in
-the future.
-
-Currently, an binary that needs only executable stack have unnecessarily all
-readable virtual memory mappings also executable. This is because the kernel
-does not know if the PF_X flag set in the PT_GNU_STACK segment header of the
-binary indicates it needs only stack executable or all readable virtual
-memory mappings also executable. Consequently, the kernel sets the
-READ_IMPLIES_EXEC personality upon loading any binary with the PT_GNU_STACK
-segment header and the PF_X flag set.
-
-Furthermore, if the PT_GNU_STACK segment header with the PT_X flag is set in
-any of the shared libraries a binary is linked, the kernel does not know if
-the PF_X flag set in the PT_GNU_STACK segment header of the shared library
-indicates it needs only stack executable or all readable virtual memory
-mappings also executable either. Consequently, GCC sets the PT_GNU_STACK
-segment header with the PF_X flag set upon compiling any binary linked to a
-shared library with the PT_GNU_STACK segment header and the PF_X flag set.
-
-This can result in applications unnoticeably having not only the stack, but
-also all readable virtual memory mappings also executable. These patches
-returns the original meaning and purpose of the PT_GNU_STACK segment header.
-
->From the security standpoint, these binaries will rely upon lesser security
-extensions, such as heap consistency checking and others. Thus, improving
-the security of binaries that needs only the stack executable.
-
-These patches does not affect the current binaries that have the
-PT_GNU_STACK segment header, neither legacy binaries that most likely does
-not have this segment header either. For the existing binaries that
-necessarily need to have all readable virtual memory mappings also
-executable, the PT_GNU_STACK segment header can be easily converted to a
-PT_GNU_COMPAT segment header without recompilation.
-
-The following are important details about the changes made to the linker:
-
- * The PT_GNU_STACK and PT_GNU_COMPAT segment headers are mutually
-   exclusive.
- * The PT_GNU_STACK segment header has precedence over the PT_GNU_COMPAT
-   segment header.
- * The PT_GNU_COMPAT segment header IS NOT created by default.
- * The PT_GNU_STACK segment header IS ALWAYS created by default--which is
-   the original behaviour of the linker.
-
-These patches are completely non-intrusive. Over the time, once this
-compatibility mode is no longer needed, they can be removed with no
-subsequent effect.
-
+I would rather move this check to kmemleak.c. But why would it be
+needed? Performance? A zero-size area shouldn't be scanned anyway.
 
 -- 
-Ramon de C Valle / Red Hat Security Response Team
-
---=_951c9c28-a278-48f8-94c4-deceb08bd09d
-Content-Type: text/x-patch; name=binutils-2.22-elf-compat-pt-gnu-compat.patch
-Content-Disposition: attachment;
- filename=binutils-2.22-elf-compat-pt-gnu-compat.patch
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtd3VyTiBhL2JmZC9lbGYtYmZkLmggYi9iZmQvZWxmLWJmZC5oCi0tLSBhL2JmZC9lbGYt
-YmZkLmgJMjAxMS0wOC0xNiAyMTozOTozOC4wMDAwMDAwMDAgLTAzMDAKKysrIGIvYmZkL2VsZi1i
-ZmQuaAkyMDEyLTAxLTA3IDE5OjM0OjUzLjY0MzAwMDAxMiAtMDIwMApAQCAtMTYwMCw2ICsxNjAw
-LDkgQEAKICAgLyogU2VnbWVudCBmbGFncyBmb3IgdGhlIFBUX0dOVV9TVEFDSyBzZWdtZW50LiAg
-Ki8KICAgdW5zaWduZWQgaW50IHN0YWNrX2ZsYWdzOwogCisgIC8qIFNlZ21lbnQgZmxhZ3MgZm9y
-IHRoZSBQVF9HTlVfQ09NUEFUIHNlZ21lbnQuICAqLworICB1bnNpZ25lZCBpbnQgY29tcGF0X2Zs
-YWdzOworCiAgIC8qIFN5bWJvbCB2ZXJzaW9uIGRlZmluaXRpb25zIGluIGV4dGVybmFsIG9iamVj
-dHMuICAqLwogICBFbGZfSW50ZXJuYWxfVmVyZGVmICp2ZXJkZWY7CiAKZGlmZiAtd3VyTiBhL2Jm
-ZC9lbGYuYyBiL2JmZC9lbGYuYwotLS0gYS9iZmQvZWxmLmMJMjAxMS0wNy0wMyAxMDozNzowNi4w
-MDAwMDAwMDAgLTAzMDAKKysrIGIvYmZkL2VsZi5jCTIwMTItMDEtMDkgMDg6NTg6MDEuMjMwMDAw
-MDA5IC0wMjAwCkBAIC0xMTU4LDYgKzExNTgsNyBAQAogICAgIGNhc2UgUFRfR05VX0VIX0ZSQU1F
-OiBwdCA9ICJFSF9GUkFNRSI7IGJyZWFrOwogICAgIGNhc2UgUFRfR05VX1NUQUNLOiBwdCA9ICJT
-VEFDSyI7IGJyZWFrOwogICAgIGNhc2UgUFRfR05VX1JFTFJPOiBwdCA9ICJSRUxSTyI7IGJyZWFr
-OworICAgIGNhc2UgUFRfR05VX0NPTVBBVDogcHQgPSAiQ09NUEFUIjsgYnJlYWs7CiAgICAgZGVm
-YXVsdDogcHQgPSBOVUxMOyBicmVhazsKICAgICB9CiAgIHJldHVybiBwdDsKQEAgLTIxMTgsNiAr
-MjExOSw3IEBACiBzdGF0aWMgY29uc3Qgc3RydWN0IGJmZF9lbGZfc3BlY2lhbF9zZWN0aW9uIHNw
-ZWNpYWxfc2VjdGlvbnNfbltdID0KIHsKICAgeyBTVFJJTkdfQ09NTUFfTEVOICgiLm5vdGUuR05V
-LXN0YWNrIiksIDAsIFNIVF9QUk9HQklUUywgMCB9LAorICB7IFNUUklOR19DT01NQV9MRU4gKCIu
-bm90ZS5HTlUtY29tcGF0IiksMCwgU0hUX1BST0dCSVRTLCAwIH0sCiAgIHsgU1RSSU5HX0NPTU1B
-X0xFTiAoIi5ub3RlIiksICAgICAgICAgIC0xLCBTSFRfTk9URSwgICAgIDAgfSwKICAgeyBOVUxM
-LCAgICAgICAgICAgICAgICAgICAgMCwgICAgICAgICAgIDAsIDAsICAgICAgICAgICAgMCB9CiB9
-OwpAQCAtMjQ4NCw2ICsyNDg2LDkgQEAKICAgICBjYXNlIFBUX0dOVV9SRUxSTzoKICAgICAgIHJl
-dHVybiBfYmZkX2VsZl9tYWtlX3NlY3Rpb25fZnJvbV9waGRyIChhYmZkLCBoZHIsIGhkcl9pbmRl
-eCwgInJlbHJvIik7CiAKKyAgICBjYXNlIFBUX0dOVV9DT01QQVQ6CisgICAgICByZXR1cm4gX2Jm
-ZF9lbGZfbWFrZV9zZWN0aW9uX2Zyb21fcGhkciAoYWJmZCwgaGRyLCBoZHJfaW5kZXgsICJjb21w
-YXQiKTsKKwogICAgIGRlZmF1bHQ6CiAgICAgICAvKiBDaGVjayBmb3IgYW55IHByb2Nlc3Nvci1z
-cGVjaWZpYyBwcm9ncmFtIHNlZ21lbnQgdHlwZXMuICAqLwogICAgICAgYmVkID0gZ2V0X2VsZl9i
-YWNrZW5kX2RhdGEgKGFiZmQpOwpAQCAtMzU1OCw2ICszNTYzLDEyIEBACiAgICAgICArK3NlZ3M7
-CiAgICAgfQogCisgIGlmIChlbGZfdGRhdGEgKGFiZmQpLT5jb21wYXRfZmxhZ3MpCisgICAgewor
-ICAgICAgLyogV2UgbmVlZCBhIFBUX0dOVV9DT01QQVQgc2VnbWVudC4gICovCisgICAgICArK3Nl
-Z3M7CisgICAgfQorCiAgIGZvciAocyA9IGFiZmQtPnNlY3Rpb25zOyBzICE9IE5VTEw7IHMgPSBz
-LT5uZXh0KQogICAgIHsKICAgICAgIGlmICgocy0+ZmxhZ3MgJiBTRUNfTE9BRCkgIT0gMApAQCAt
-NDE2MCw2ICs0MTcxLDIxIEBACiAJICAgIH0KIAl9CiAKKyAgICAgIGlmIChlbGZfdGRhdGEgKGFi
-ZmQpLT5jb21wYXRfZmxhZ3MpCisJeworCSAgYW10ID0gc2l6ZW9mIChzdHJ1Y3QgZWxmX3NlZ21l
-bnRfbWFwKTsKKwkgIG0gPSAoc3RydWN0IGVsZl9zZWdtZW50X21hcCAqKSBiZmRfemFsbG9jIChh
-YmZkLCBhbXQpOworCSAgaWYgKG0gPT0gTlVMTCkKKwkgICAgZ290byBlcnJvcl9yZXR1cm47CisJ
-ICBtLT5uZXh0ID0gTlVMTDsKKwkgIG0tPnBfdHlwZSA9IFBUX0dOVV9DT01QQVQ7CisJICBtLT5w
-X2ZsYWdzID0gZWxmX3RkYXRhIChhYmZkKS0+Y29tcGF0X2ZsYWdzOworCSAgbS0+cF9mbGFnc192
-YWxpZCA9IDE7CisKKwkgICpwbSA9IG07CisJICBwbSA9ICZtLT5uZXh0OworCX0KKwogICAgICAg
-ZnJlZSAoc2VjdGlvbnMpOwogICAgICAgZWxmX3RkYXRhIChhYmZkKS0+c2VnbWVudF9tYXAgPSBt
-Zmlyc3Q7CiAgICAgfQpAQCAtNTQzNCw3ICs1NDYwLDggQEAKICAgICAgICA2LiBQVF9UTFMgc2Vn
-bWVudCBpbmNsdWRlcyBvbmx5IFNIRl9UTFMgc2VjdGlvbnMuCiAgICAgICAgNy4gU0hGX1RMUyBz
-ZWN0aW9ucyBhcmUgb25seSBpbiBQVF9UTFMgb3IgUFRfTE9BRCBzZWdtZW50cy4KICAgICAgICA4
-LiBQVF9EWU5BTUlDIHNob3VsZCBub3QgY29udGFpbiBlbXB0eSBzZWN0aW9ucyBhdCB0aGUgYmVn
-aW5uaW5nCi0JICAod2l0aCB0aGUgcG9zc2libGUgZXhjZXB0aW9uIG9mIC5keW5hbWljKS4gICov
-CisJICAod2l0aCB0aGUgcG9zc2libGUgZXhjZXB0aW9uIG9mIC5keW5hbWljKS4KKyAgICAgICA5
-LiBQVF9HTlVfQ09NUEFUIHNlZ21lbnRzIGRvIG5vdCBpbmNsdWRlIGFueSBzZWN0aW9ucy4gICov
-CiAjZGVmaW5lIElTX1NFQ1RJT05fSU5fSU5QVVRfU0VHTUVOVChzZWN0aW9uLCBzZWdtZW50LCBi
-ZWQpCQlcCiAgICgoKChzZWdtZW50LT5wX3BhZGRyCQkJCQkJCVwKICAgICAgID8gSVNfQ09OVEFJ
-TkVEX0JZX0xNQSAoc2VjdGlvbiwgc2VnbWVudCwgc2VnbWVudC0+cF9wYWRkcikJXApAQCAtNTQ0
-Miw2ICs1NDY5LDcgQEAKICAgICAgJiYgKHNlY3Rpb24tPmZsYWdzICYgU0VDX0FMTE9DKSAhPSAw
-KQkJCQlcCiAgICAgfHwgSVNfTk9URSAoc2VnbWVudCwgc2VjdGlvbikpCQkJCQlcCiAgICAmJiBz
-ZWdtZW50LT5wX3R5cGUgIT0gUFRfR05VX1NUQUNLCQkJCQlcCisgICAmJiBzZWdtZW50LT5wX3R5
-cGUgIT0gUFRfR05VX0NPTVBBVAkJCQkJXAogICAgJiYgKHNlZ21lbnQtPnBfdHlwZSAhPSBQVF9U
-TFMJCQkJCVwKICAgICAgICB8fCAoc2VjdGlvbi0+ZmxhZ3MgJiBTRUNfVEhSRUFEX0xPQ0FMKSkJ
-CQkJXAogICAgJiYgKHNlZ21lbnQtPnBfdHlwZSA9PSBQVF9MT0FECQkJCQlcCmRpZmYgLXd1ck4g
-YS9iZmQvZWxmbGluay5jIGIvYmZkL2VsZmxpbmsuYwotLS0gYS9iZmQvZWxmbGluay5jCTIwMTEt
-MTEtMjEgMDc6Mjk6MjYuMDAwMDAwMDAwIC0wMjAwCisrKyBiL2JmZC9lbGZsaW5rLmMJMjAxMi0w
-MS0wNyAxOTozNDo1My42OTMwMDAwMTAgLTAyMDAKQEAgLTU1MzUsNiArNTUzNSw4IEBACiAgICAg
-ZWxmX3RkYXRhIChvdXRwdXRfYmZkKS0+c3RhY2tfZmxhZ3MgPSBQRl9SIHwgUEZfVyB8IFBGX1g7
-CiAgIGVsc2UgaWYgKGluZm8tPm5vZXhlY3N0YWNrKQogICAgIGVsZl90ZGF0YSAob3V0cHV0X2Jm
-ZCktPnN0YWNrX2ZsYWdzID0gUEZfUiB8IFBGX1c7CisgIGVsc2UgaWYgKGluZm8tPmNvbXBhdCkK
-KyAgICBlbGZfdGRhdGEgKG91dHB1dF9iZmQpLT5jb21wYXRfZmxhZ3MgPSBQRl9SIHwgUEZfVyB8
-IFBGX1g7CiAgIGVsc2UKICAgICB7CiAgICAgICBiZmQgKmlucHV0b2JqOwpkaWZmIC13dXJOIGEv
-YmludXRpbHMvcmVhZGVsZi5jIGIvYmludXRpbHMvcmVhZGVsZi5jCi0tLSBhL2JpbnV0aWxzL3Jl
-YWRlbGYuYwkyMDExLTA5LTIxIDE3OjQ5OjEzLjAwMDAwMDAwMCAtMDMwMAorKysgYi9iaW51dGls
-cy9yZWFkZWxmLmMJMjAxMi0wMS0wNyAxOTozNDo1NC4wMjcwMDAwMTMgLTAyMDAKQEAgLTI3ODYs
-NiArMjc4Niw3IEBACiAJCQlyZXR1cm4gIkdOVV9FSF9GUkFNRSI7CiAgICAgY2FzZSBQVF9HTlVf
-U1RBQ0s6CXJldHVybiAiR05VX1NUQUNLIjsKICAgICBjYXNlIFBUX0dOVV9SRUxSTzogIHJldHVy
-biAiR05VX1JFTFJPIjsKKyAgICBjYXNlIFBUX0dOVV9DT01QQVQ6CXJldHVybiAiR05VX0NPTVBB
-VCI7CiAKICAgICBkZWZhdWx0OgogICAgICAgaWYgKChwX3R5cGUgPj0gUFRfTE9QUk9DKSAmJiAo
-cF90eXBlIDw9IFBUX0hJUFJPQykpCmRpZmYgLXd1ck4gYS9pbmNsdWRlL2JmZGxpbmsuaCBiL2lu
-Y2x1ZGUvYmZkbGluay5oCi0tLSBhL2luY2x1ZGUvYmZkbGluay5oCTIwMTEtMTEtMjEgMDc6Mjk6
-MzcuMDAwMDAwMDAwIC0wMjAwCisrKyBiL2luY2x1ZGUvYmZkbGluay5oCTIwMTItMDEtMDcgMTk6
-MzQ6NTQuNDAxMDAwMDA5IC0wMjAwCkBAIC0zOTUsNiArMzk1LDkgQEAKICAgICAgZmxhZ3MuICAq
-LwogICB1bnNpZ25lZCBpbnQgbm9leGVjc3RhY2s6IDE7CiAKKyAgLyogVFJVRSBpZiBQVF9HTlVf
-Q09NUEFUIHNlZ21lbnQgc2hvdWxkIGJlIGNyZWF0ZWQuICAqLworICB1bnNpZ25lZCBpbnQgY29t
-cGF0OiAxOworCiAgIC8qIFRSVUUgaWYgd2Ugd2FudCB0byBwcm9kdWNlZCBvcHRpbWl6ZWQgb3V0
-cHV0IGZpbGVzLiAgVGhpcyBtaWdodAogICAgICBuZWVkIG11Y2ggbW9yZSB0aW1lIGFuZCB0aGVy
-ZWZvcmUgbXVzdCBiZSBleHBsaWNpdGx5IHNlbGVjdGVkLiAgKi8KICAgdW5zaWduZWQgaW50IG9w
-dGltaXplOiAxOwpkaWZmIC13dXJOIGEvaW5jbHVkZS9lbGYvY29tbW9uLmggYi9pbmNsdWRlL2Vs
-Zi9jb21tb24uaAotLS0gYS9pbmNsdWRlL2VsZi9jb21tb24uaAkyMDExLTA3LTIyIDE3OjIyOjM2
-LjAwMDAwMDAwMCAtMDMwMAorKysgYi9pbmNsdWRlL2VsZi9jb21tb24uaAkyMDEyLTAxLTA3IDE5
-OjM0OjU0LjM4NzAwMDAwOSAtMDIwMApAQCAtNDMwLDYgKzQzMCw3IEBACiAjZGVmaW5lIFBUX1NV
-TldfRUhfRlJBTUUgUFRfR05VX0VIX0ZSQU1FICAgICAgLyogU29sYXJpcyB1c2VzIHRoZSBzYW1l
-IHZhbHVlICovCiAjZGVmaW5lIFBUX0dOVV9TVEFDSwkoUFRfTE9PUyArIDB4NDc0ZTU1MSkgLyog
-U3RhY2sgZmxhZ3MgKi8KICNkZWZpbmUgUFRfR05VX1JFTFJPCShQVF9MT09TICsgMHg0NzRlNTUy
-KSAvKiBSZWFkLW9ubHkgYWZ0ZXIgcmVsb2NhdGlvbiAqLworI2RlZmluZSBQVF9HTlVfQ09NUEFU
-CShQVF9MT09TICsgMHg0NzRlNTUzKSAvKiBHTlUgY29tcGF0aWJpbGl0eSBtb2RlIGZsYWdzICov
-CiAKIC8qIFByb2dyYW0gc2VnbWVudCBwZXJtaXNzaW9ucywgaW4gcHJvZ3JhbSBoZWFkZXIgcF9m
-bGFncyBmaWVsZC4gICovCiAKZGlmZiAtd3VyTiBhL2xkL2VtdWx0ZW1wbC9lbGYzMi5lbSBiL2xk
-L2VtdWx0ZW1wbC9lbGYzMi5lbQotLS0gYS9sZC9lbXVsdGVtcGwvZWxmMzIuZW0JMjAxMS0xMS0y
-MSAwNzoyOTozOS4wMDAwMDAwMDAgLTAyMDAKKysrIGIvbGQvZW11bHRlbXBsL2VsZjMyLmVtCTIw
-MTItMDEtMDcgMTk6MzQ6NTIuNjEyMDAwMDA5IC0wMjAwCkBAIC0yMjg1LDYgKzIyODUsMTAgQEAK
-IAkgIGxpbmtfaW5mby5ub2V4ZWNzdGFjayA9IFRSVUU7CiAJICBsaW5rX2luZm8uZXhlY3N0YWNr
-ID0gRkFMU0U7CiAJfQorICAgICAgZWxzZSBpZiAoc3RyY21wIChvcHRhcmcsICJlbmFibGVjb21w
-YXQiKSA9PSAwKQorCXsKKwkgIGxpbmtfaW5mby5jb21wYXQgPSBUUlVFOworCX0KIEVPRgogaWYg
-dGVzdCB4IiRHRU5FUkFURV9TSExJQl9TQ1JJUFQiID0geHllczsgdGhlbgogZnJhZ21lbnQgPDxF
-T0YKQEAgLTI0MDIsNiArMjQwNiw4IEBACiAgIC16IGRlZnMgICAgICAgICAgICAgICAgICAgICBS
-ZXBvcnQgdW5yZXNvbHZlZCBzeW1ib2xzIGluIG9iamVjdCBmaWxlcy5cbiIpKTsKICAgZnByaW50
-ZiAoZmlsZSwgXygiXAogICAteiBleGVjc3RhY2sgICAgICAgICAgICAgICAgTWFyayBleGVjdXRh
-YmxlIGFzIHJlcXVpcmluZyBleGVjdXRhYmxlIHN0YWNrXG4iKSk7CisgIGZwcmludGYgKGZpbGUs
-IF8oIlwKKyAgLXogZW5hYmxlY29tcGF0ICAgICAgICAgICAgIENyZWF0ZSBQVF9HTlVfQ09NUEFU
-IHByb2dyYW0gaGVhZGVyXG4iKSk7CiBFT0YKIAogaWYgdGVzdCB4IiRHRU5FUkFURV9TSExJQl9T
-Q1JJUFQiID0geHllczsgdGhlbgpkaWZmIC13dXJOIGEvbGQvbGRncmFtLnkgYi9sZC9sZGdyYW0u
-eQotLS0gYS9sZC9sZGdyYW0ueQkyMDExLTA3LTExIDEyOjAzOjA5LjAwMDAwMDAwMCAtMDMwMAor
-KysgYi9sZC9sZGdyYW0ueQkyMDEyLTAxLTA3IDE5OjM0OjUyLjYwMTAwMDAwOSAtMDIwMApAQCAt
-MTIxNSw2ICsxMjE1LDggQEAKIAkJCSAgICAkJCA9IGV4cF9pbnRvcCAoMHg2NDc0ZTU1MCk7CiAJ
-CQkgIGVsc2UgaWYgKHN0cmNtcCAocywgIlBUX0dOVV9TVEFDSyIpID09IDApCiAJCQkgICAgJCQg
-PSBleHBfaW50b3AgKDB4NjQ3NGU1NTEpOworCQkJICBlbHNlIGlmIChzdHJjbXAgKHMsICJQVF9H
-TlVfQ09NUEFUIikgPT0gMCkKKwkJCSAgICAkJCA9IGV4cF9pbnRvcCAoMHg2NDc0ZTU1Myk7CiAJ
-CQkgIGVsc2UKIAkJCSAgICB7CiAJCQkgICAgICBlaW5mbyAoXygiXAo=
-
---=_951c9c28-a278-48f8-94c4-deceb08bd09d
-Content-Type: text/x-patch; name=linux-3.2-elf-compat-pt-gnu-compat.patch
-Content-Disposition: attachment;
- filename=linux-3.2-elf-compat-pt-gnu-compat.patch
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtLWdpdCBhL2FyY2gveDg2L2luY2x1ZGUvYXNtL2VsZi5oIGIvYXJjaC94ODYvaW5jbHVk
-ZS9hc20vZWxmLmgKaW5kZXggNWY5NjJkZi4uNGNmYzYyNSAxMDA2NDQKLS0tIGEvYXJjaC94ODYv
-aW5jbHVkZS9hc20vZWxmLmgKKysrIGIvYXJjaC94ODYvaW5jbHVkZS9hc20vZWxmLmgKQEAgLTI1
-OSw4ICsyNTksOCBAQCBleHRlcm4gaW50IGZvcmNlX3BlcnNvbmFsaXR5MzI7CiAgKiBBbiBleGVj
-dXRhYmxlIGZvciB3aGljaCBlbGZfcmVhZF9pbXBsaWVzX2V4ZWMoKSByZXR1cm5zIFRSVUUgd2ls
-bAogICogaGF2ZSB0aGUgUkVBRF9JTVBMSUVTX0VYRUMgcGVyc29uYWxpdHkgZmxhZyBzZXQgYXV0
-b21hdGljYWxseS4KICAqLwotI2RlZmluZSBlbGZfcmVhZF9pbXBsaWVzX2V4ZWMoZXgsIGV4ZWN1
-dGFibGVfc3RhY2spCVwKLQkoZXhlY3V0YWJsZV9zdGFjayAhPSBFWFNUQUNLX0RJU0FCTEVfWCkK
-KyNkZWZpbmUgZWxmX3JlYWRfaW1wbGllc19leGVjKGV4LCBjb21wYXRfbW9kZSkJXAorCShjb21w
-YXRfbW9kZSA9PSBDT01QQVRfR05VX0NPTVBBVCkKIAogc3RydWN0IHRhc2tfc3RydWN0OwogCmRp
-ZmYgLS1naXQgYS9mcy9iaW5mbXRfZWxmLmMgYi9mcy9iaW5mbXRfZWxmLmMKaW5kZXggMjFhYzVl
-ZS4uMWQ5YzRkOCAxMDA2NDQKLS0tIGEvZnMvYmluZm10X2VsZi5jCisrKyBiL2ZzL2JpbmZtdF9l
-bGYuYwpAQCAtNTcyLDYgKzU3Miw3IEBAIHN0YXRpYyBpbnQgbG9hZF9lbGZfYmluYXJ5KHN0cnVj
-dCBsaW51eF9iaW5wcm0gKmJwcm0sIHN0cnVjdCBwdF9yZWdzICpyZWdzKQogCXVuc2lnbmVkIGxv
-bmcgc3RhcnRfY29kZSwgZW5kX2NvZGUsIHN0YXJ0X2RhdGEsIGVuZF9kYXRhOwogCXVuc2lnbmVk
-IGxvbmcgcmVsb2NfZnVuY19kZXNjIF9fbWF5YmVfdW51c2VkID0gMDsKIAlpbnQgZXhlY3V0YWJs
-ZV9zdGFjayA9IEVYU1RBQ0tfREVGQVVMVDsKKwlpbnQgY29tcGF0X21vZGUgPSBDT01QQVRfREVG
-QVVMVDsKIAl1bnNpZ25lZCBsb25nIGRlZl9mbGFncyA9IDA7CiAJc3RydWN0IHsKIAkJc3RydWN0
-IGVsZmhkciBlbGZfZXg7CkBAIC02OTQsNiArNjk1LDkgQEAgc3RhdGljIGludCBsb2FkX2VsZl9i
-aW5hcnkoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSwgc3RydWN0IHB0X3JlZ3MgKnJlZ3MpCiAJ
-CQkJZXhlY3V0YWJsZV9zdGFjayA9IEVYU1RBQ0tfRElTQUJMRV9YOwogCQkJYnJlYWs7CiAJCX0K
-KwkJZWxzZSBpZiAoZWxmX3BwbnQtPnBfdHlwZSA9PSBQVF9HTlVfQ09NUEFUKQorCQkJaWYgKGVs
-Zl9wcG50LT5wX2ZsYWdzICYgUEZfWCkKKwkJCQljb21wYXRfbW9kZSA9IENPTVBBVF9HTlVfQ09N
-UEFUOwogCiAJLyogU29tZSBzaW1wbGUgY29uc2lzdGVuY3kgY2hlY2tzIGZvciB0aGUgaW50ZXJw
-cmV0ZXIgKi8KIAlpZiAoZWxmX2ludGVycHJldGVyKSB7CkBAIC03MTgsNyArNzIyLDcgQEAgc3Rh
-dGljIGludCBsb2FkX2VsZl9iaW5hcnkoc3RydWN0IGxpbnV4X2JpbnBybSAqYnBybSwgc3RydWN0
-IHB0X3JlZ3MgKnJlZ3MpCiAJLyogRG8gdGhpcyBpbW1lZGlhdGVseSwgc2luY2UgU1RBQ0tfVE9Q
-IGFzIHVzZWQgaW4gc2V0dXBfYXJnX3BhZ2VzCiAJICAgbWF5IGRlcGVuZCBvbiB0aGUgcGVyc29u
-YWxpdHkuICAqLwogCVNFVF9QRVJTT05BTElUWShsb2MtPmVsZl9leCk7Ci0JaWYgKGVsZl9yZWFk
-X2ltcGxpZXNfZXhlYyhsb2MtPmVsZl9leCwgZXhlY3V0YWJsZV9zdGFjaykpCisJaWYgKGVsZl9y
-ZWFkX2ltcGxpZXNfZXhlYyhsb2MtPmVsZl9leCwgY29tcGF0X21vZGUpKQogCQljdXJyZW50LT5w
-ZXJzb25hbGl0eSB8PSBSRUFEX0lNUExJRVNfRVhFQzsKIAogCWlmICghKGN1cnJlbnQtPnBlcnNv
-bmFsaXR5ICYgQUREUl9OT19SQU5ET01JWkUpICYmIHJhbmRvbWl6ZV92YV9zcGFjZSkKZGlmZiAt
-LWdpdCBhL2luY2x1ZGUvbGludXgvYmluZm10cy5oIGIvaW5jbHVkZS9saW51eC9iaW5mbXRzLmgK
-aW5kZXggZmQ4OGEzOS4uMTM2NjkxOSAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9iaW5mbXRz
-LmgKKysrIGIvaW5jbHVkZS9saW51eC9iaW5mbXRzLmgKQEAgLTEyMyw2ICsxMjMsMTUgQEAgZXh0
-ZXJuIGludCBzdWlkX2R1bXBhYmxlOwogI2RlZmluZSBFWFNUQUNLX0RJU0FCTEVfWCAxCS8qIERp
-c2FibGUgZXhlY3V0YWJsZSBzdGFja3MgKi8KICNkZWZpbmUgRVhTVEFDS19FTkFCTEVfWCAgMgkv
-KiBFbmFibGUgZXhlY3V0YWJsZSBzdGFja3MgKi8KIAorLyogQ29tcGF0aWJpbGl0eSBtb2RlcyAq
-LworI2RlZmluZSBDT01QQVRfREVGQVVMVCAgICAwCS8qIERlZmF1bHQgY29tcGF0aWJpbGl0eSBt
-b2RlICovCisvKiBUaGUgdmFsdWUgb2YgQ09NUEFUX0dOVV9DT01QQVQgaXMgc2V0IHRvIHRoZSBz
-YW1lIGFzIHRoZSB2YWx1ZSBvZgorICogRVhTVEFDS19FTkFCTEVfWCBmb3IgYXJjaGl0ZWN0dXJl
-cyB0aGF0IHN0aWxsIGV4cGVjdCB0aGUgdmFsdWUgb2YKKyAqIHRoZSBleGVjdXRhYmxlX3N0YWNr
-IHZhcmlhYmxlIChhbHRob3VnaCBub3QgcmVjb21tZW5kZWQpCisgKiBpbiBlbGZfcmVhZF9pbXBs
-aWVzX2V4ZWMoKS4KKyAqLworI2RlZmluZSBDT01QQVRfR05VX0NPTVBBVCAyCS8qIEdOVSBjb21w
-YXRpYmlsaXR5IG1vZGUgKi8KKwogZXh0ZXJuIGludCBzZXR1cF9hcmdfcGFnZXMoc3RydWN0IGxp
-bnV4X2JpbnBybSAqIGJwcm0sCiAJCQkgICB1bnNpZ25lZCBsb25nIHN0YWNrX3RvcCwKIAkJCSAg
-IGludCBleGVjdXRhYmxlX3N0YWNrKTsKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvZWxmLmgg
-Yi9pbmNsdWRlL2xpbnV4L2VsZi5oCmluZGV4IDMxZjA1MDguLmEzMzY3NDAgMTAwNjQ0Ci0tLSBh
-L2luY2x1ZGUvbGludXgvZWxmLmgKKysrIGIvaW5jbHVkZS9saW51eC9lbGYuaApAQCAtMTMsNyAr
-MTMsNyBAQCBzdHJ1Y3QgZmlsZTsKICAgLyogRXhlY3V0YWJsZXMgZm9yIHdoaWNoIGVsZl9yZWFk
-X2ltcGxpZXNfZXhlYygpIHJldHVybnMgVFJVRSB3aWxsCiAgICAgIGhhdmUgdGhlIFJFQURfSU1Q
-TElFU19FWEVDIHBlcnNvbmFsaXR5IGZsYWcgc2V0IGF1dG9tYXRpY2FsbHkuCiAgICAgIE92ZXJy
-aWRlIGluIGFzbS9lbGYuaCBhcyBuZWVkZWQuICAqLwotIyBkZWZpbmUgZWxmX3JlYWRfaW1wbGll
-c19leGVjKGV4LCBoYXZlX3B0X2dudV9zdGFjaykJMAorIyBkZWZpbmUgZWxmX3JlYWRfaW1wbGll
-c19leGVjKGV4LCBjb21wYXRfbW9kZSkJMAogI2VuZGlmCiAKIC8qIDMyLWJpdCBFTEYgYmFzZSB0
-eXBlcy4gKi8KQEAgLTQ5LDYgKzQ5LDcgQEAgdHlwZWRlZiBfX3M2NAlFbGY2NF9TeHdvcmQ7CiAj
-ZGVmaW5lIFBUX0dOVV9FSF9GUkFNRQkJMHg2NDc0ZTU1MAogCiAjZGVmaW5lIFBUX0dOVV9TVEFD
-SwkoUFRfTE9PUyArIDB4NDc0ZTU1MSkKKyNkZWZpbmUgUFRfR05VX0NPTVBBVAkoUFRfTE9PUyAr
-IDB4NDc0ZTU1MykKIAogLyoKICAqIEV4dGVuZGVkIE51bWJlcmluZwo=
-
---=_951c9c28-a278-48f8-94c4-deceb08bd09d--
+Catalin
