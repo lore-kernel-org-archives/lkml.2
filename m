@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab2AICLN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Jan 2012 21:11:13 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:33081 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753052Ab2AICLL (ORCPT
+	id S1755330Ab2AICMM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Jan 2012 21:12:12 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48487 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab2AICML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Jan 2012 21:11:11 -0500
-Date: Mon, 9 Jan 2012 13:11:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ashish Jangam <ashish.jangam@kpitcummins.com>,
-        David Dajun Chen <dchen@diasemi.com>
-Subject: linux-next: build failure after merge of the battery tree
-Message-Id: <20120109131100.941810596c078b4b6f5740e8@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__9_Jan_2012_13_11_00_+1100_rVtmUsamD_=aXC27"
+	Sun, 8 Jan 2012 21:12:11 -0500
+Date: Mon, 9 Jan 2012 02:12:06 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <mszeredi@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Subject: Re: [git pull] vfs pile 1
+Message-ID: <20120109021206.GU23916@ZenIV.linux.org.uk>
+References: <20120105022318.GG23916@ZenIV.linux.org.uk>
+ <CA+55aFw+7xvfP3NCr5p2Ma--UTb7zT+QQxtjCn3V2SU_g3LUdA@mail.gmail.com>
+ <20120108235039.GQ23916@ZenIV.linux.org.uk>
+ <20120108235338.GR23916@ZenIV.linux.org.uk>
+ <CA+55aFzqfne7xs-M3qkZYs=wFmCJBL43AFcywRg3dc1S=8qK6A@mail.gmail.com>
+ <20120109002526.GS23916@ZenIV.linux.org.uk>
+ <CA+55aFyoUokxXEU7QDMxyXEss9Xp-XsY-cz1QPC442xZKcuXjg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyoUokxXEU7QDMxyXEss9Xp-XsY-cz1QPC442xZKcuXjg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__9_Jan_2012_13_11_00_+1100_rVtmUsamD_=aXC27
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jan 08, 2012 at 04:39:20PM -0800, Linus Torvalds wrote:
+> On Sun, Jan 8, 2012 at 4:25 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >
+> > Sure, will do. ?I have several more fixes in my tree right now (including
+> > such gems as double kfree() in devpts on mount failure ;-/), so I'll send
+> > a pull request in a couple of hours anyway. ?Would you be OK with having
+> > that patch in the same pile?
+> 
+> Sure, no problem.
 
-Hi Anton,
+OK, there we go, then...  This stuff is fixes-only; there'll be another
+pile with patches from various folks all over the last cycle.  Please,
+pull from the usual place -
+git://git.kernel.org:/pub/scm/linux/kernel/git/viro/vfs.git for-linus
 
-After merging the battery tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Shortlog:
+Al Viro (5):
+      functionfs: unfuck failure exits on mount
+      ... and the same for gadgetfs
+      devpts: fix double-free on mount failure
+      exofs: oops after late failure in mount
+      ext[34]: avoid i_nlink warnings triggered by drop_nlink/inc_nlink kludge in symlink()
 
-drivers/power/da9052-battery.c: In function 'da9052_bat_read_volt':
-drivers/power/da9052-battery.c:293:2: error: implicit declaration of functi=
-on 'da9052_adc_manual_read' [-Werror=3Dimplicit-function-declaration]
-drivers/power/da9052-battery.c: In function 'da9052_bat_check_presence':
-drivers/power/da9052-battery.c:306:2: error: implicit declaration of functi=
-on 'da9052_adc_read_temp' [-Werror=3Dimplicit-function-declaration]
-drivers/power/da9052-battery.c: In function 'da9052_determine_vc_tbl_index':
-drivers/power/da9052-battery.c:348:1: warning: control reaches end of non-v=
-oid function [-Wreturn-type]
-cc1: some warnings being treated as errors
+Diffstat:
+ drivers/usb/gadget/f_fs.c  |   31 +++++++++++--------------------
+ drivers/usb/gadget/inode.c |   26 +++++++++++---------------
+ fs/devpts/inode.c          |    4 +---
+ fs/exofs/super.c           |    2 ++
+ fs/ext3/namei.c            |    2 +-
+ fs/ext4/namei.c            |    2 +-
+ 6 files changed, 27 insertions(+), 40 deletions(-)
 
-Caused by commit ded7fc7b0550 ("power_supply: Add DA9052 battery driver").
-
-The commit message says "This driver depends on DA9052 MFD core dirver
-for definitions and methods".  That core is presumably still pending
-inclusion.
-
-I have used the battery tree from next-20120104 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__9_Jan_2012_13_11_00_+1100_rVtmUsamD_=aXC27
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPCky0AAoJEECxmPOUX5FEjdcP/1vajtSQ9x77dtF4vlOxlpCZ
-6JCwUlDCr/XD2NNdoP+HV3yRGkSADBfUjzyDsBDBeCSZ4EtK8NWLQpV8np3d7G/z
-DFz6w5JAEDtw7nOSoa7xn6zQZxoZIuOqLP0a3/3YAG5EkGn6sUZQ/imeeYI/4CvI
-8u7HkCbhZWug+AuuJinugWpqAvHRMCcqs/2MjlsoQ8EYgcy0xlds2c47qev3C/LB
-ZB1lfY1BZ4ybGv+Z2xltuxNqx/0u6m2jtuxy4ghm0YGrkHimZgJL1yYLWS1hil/q
-iIdmFX2JCrLhWh8o6pC7Dd24MUsd6GSYQTC/ay8p6VcXJep7uNaf5JuMxHhYyAOP
-BDIG8s/dcpnFFWGB57FjSFdr0TuSzvU5NhufXVTu91XBWe2vzmmiD1COBe94CUri
-Jfh87X/D4NlED2yTWfYeeUI1o2BlIwUFpjg7K8fvv2Mm0EAby9zNGyFAW5yDK/uc
-XwrjDh0G8KQb/VmDzmdybWxw2LihmoaqkgEbsJhjTgvUsejADnciO/g1ZUCnKfRv
-6fyvvPR+QyQQRfZbqa1UGMFBPDqLNpp62wXc3pAEzgzBHTggCNp/3ajSxPY2deQH
-CYKp72OuSPdJSM08WNNTY13LGWnq+BwBPMrrSOFF+p8CSNXmzIqY54LH7Tw6/vW2
-NW4KBC0QNLl04uyQAg2U
-=LrII
------END PGP SIGNATURE-----
-
---Signature=_Mon__9_Jan_2012_13_11_00_+1100_rVtmUsamD_=aXC27--
