@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932589Ab2AIWLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:11:00 -0500
-Received: from ogre.sisk.pl ([217.79.144.158]:54784 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755101Ab2AIWK6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:10:58 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: Build error at drivers/base/power/domain_governor.c when PM_RUNTIME is not set
-Date: Mon, 9 Jan 2012 23:14:20 +0100
-User-Agent: KMail/1.13.6 (Linux/3.2.0+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
-        linux-samsung-soc@vger.kernel.org
-References: <018a01ccce67$a6eee850$f4ccb8f0$%kim@samsung.com>
-In-Reply-To: <018a01ccce67$a6eee850$f4ccb8f0$%kim@samsung.com>
+	id S932650Ab2AIWN3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:13:29 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:50791 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796Ab2AIWN1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 17:13:27 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201092314.20561.rjw@sisk.pl>
+In-Reply-To: <4EEDFBCF.4040802@nod.at>
+References: <1321577067-26332-1-git-send-email-richard@nod.at>
+ <47D23AD8469A2B448F33C24BD7A39BD9108C7178@RTPMVEXC1-PRD.hq.netapp.com> <4EEDFBCF.4040802@nod.at>
+From: Mike Snitzer <snitzer@redhat.com>
+Date: Mon, 9 Jan 2012 17:13:05 -0500
+X-Google-Sender-Auth: vAlEzXbii_ywlfHQ7WhRoVjQeXY
+Message-ID: <CAMM=eLeXa7qLMyG+njL9yuYDkUAxTNLV5eHi+y_=X+1eDVwZ_g@mail.gmail.com>
+Subject: Re: [PATCH] scsi_dh_rdac: Fix error path
+To: Richard Weinberger <richard@nod.at>
+Cc: "Moger, Babu" <Babu.Moger@netapp.com>, JBottomley@parallels.com,
+        Somasundaram.Krishnasamy@lsi.com, yanling.qi@lsi.com,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 09, 2012, Kukjin Kim wrote:
-> Hi Rafael,
-> 
-> This is just reporting of build error.
-> 
-> Current mainline happens build error at drivers/base/power/domain_governor.c
-> file like following when CONFIG_PM_RUNTIME is not set. For example, it
-> happens with s3c6400_defconfig now.
-> 
-> drivers/base/power/domain_governor.c: In function 'default_stop_ok':
-> drivers/base/power/domain_governor.c:25: error: 'struct dev_pm_info' has no
-> member named 'max_time_suspended_ns'
-> drivers/base/power/domain_governor.c:29: error: 'struct dev_pm_info' has no
-> member named 'max_time_suspended_ns'
-> drivers/base/power/domain_governor.c: In function 'default_power_down_ok':
-> drivers/base/power/domain_governor.c:94: error: 'struct dev_pm_info' has no
-> member named 'max_time_suspended_ns'
-> drivers/base/power/domain_governor.c:98: error: 'struct dev_pm_info' has no
-> member named 'max_time_suspended_ns'
-> drivers/base/power/domain_governor.c:100: error: 'struct dev_pm_info' has no
-> member named 'suspend_time'
+On Sun, Dec 18, 2011 at 9:42 AM, Richard Weinberger <richard@nod.at> wrote:
+> Am 18.11.2011 15:34, schrieb Moger, Babu:
+>> Looks good to me..
+>>
+>>> -----Original Message-----
+>>> From: Richard Weinberger [mailto:richard@nod.at]
+>>> Sent: Thursday, November 17, 2011 6:44 PM
+>>> To: JBottomley@parallels.com
+>>> Cc: Moger, Babu; Somasundaram.Krishnasamy@lsi.com; yanling.qi@lsi.com;
+>>> linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; Richard
+>>> Weinberger
+>>> Subject: [PATCH] scsi_dh_rdac: Fix error path
+>>>
+>>> If create_singlethread_workqueue() failes, rdac_init should fail too.
+>>>
+>>> Signed-off-by: Richard Weinberger <richard@nod.at>
+>>> ---
+>>>  drivers/scsi/device_handler/scsi_dh_rdac.c |    2 ++
+>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/scsi/device_handler/scsi_dh_rdac.c
+>>> b/drivers/scsi/device_handler/scsi_dh_rdac.c
+>>> index 1d31279..2802394 100644
+>>> --- a/drivers/scsi/device_handler/scsi_dh_rdac.c
+>>> +++ b/drivers/scsi/device_handler/scsi_dh_rdac.c
+>>> @@ -934,6 +934,8 @@ static int __init rdac_init(void)
+>>>      if (!kmpath_rdacd) {
+>>>              scsi_unregister_device_handler(&rdac_dh);
+>>>              printk(KERN_ERR "kmpath_rdacd creation failed.\n");
+>>> +
+>>> +            r = -EINVAL;
+>>>      }
+>>>  done:
+>>>      return r;
+>>> --
+>>> 1.7.7.3
+>>
+>
+> James,
+>
+> can you please pickup this patch?
 
-The appended patch fixes the problem for me, can you please test it?
+James, was this the one that you said was overlooked?
 
-Rafael
+In any case, please apply, and for good measure:
 
----
- drivers/base/power/domain_governor.c |   24 +++++++++++++++++++-----
- 1 file changed, 19 insertions(+), 5 deletions(-)
-
-Index: linux/drivers/base/power/domain_governor.c
-===================================================================
---- linux.orig/drivers/base/power/domain_governor.c
-+++ linux/drivers/base/power/domain_governor.c
-@@ -12,6 +12,8 @@
- #include <linux/pm_qos.h>
- #include <linux/hrtimer.h>
- 
-+#ifdef CONFIG_PM_RUNTIME
-+
- /**
-  * default_stop_ok - Default PM domain governor routine for stopping devices.
-  * @dev: Device to check.
-@@ -137,16 +139,28 @@ static bool default_power_down_ok(struct
- 	return true;
- }
- 
--struct dev_power_governor simple_qos_governor = {
--	.stop_ok = default_stop_ok,
--	.power_down_ok = default_power_down_ok,
--};
--
- static bool always_on_power_down_ok(struct dev_pm_domain *domain)
- {
- 	return false;
- }
- 
-+#else /* !CONFIG_PM_RUNTIME */
-+
-+bool default_stop_ok(struct device *dev)
-+{
-+	return false;
-+}
-+
-+#define default_power_down_ok	NULL
-+#define always_on_power_down_ok	NULL
-+
-+#endif /* !CONFIG_PM_RUNTIME */
-+
-+struct dev_power_governor simple_qos_governor = {
-+	.stop_ok = default_stop_ok,
-+	.power_down_ok = default_power_down_ok,
-+};
-+
- /**
-  * pm_genpd_gov_always_on - A governor implementing an always-on policy
-  */
+Acked-by: Mike Snitzer <snitzer@redhat.com>
