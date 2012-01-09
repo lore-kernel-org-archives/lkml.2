@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363Ab2AIRyl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 12:54:41 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:61651 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab2AIRyk (ORCPT
+	id S1755808Ab2AIR5w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 12:57:52 -0500
+Received: from usmamail.tilera.com ([206.83.70.75]:24574 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab2AIR5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 12:54:40 -0500
-Date: Mon, 9 Jan 2012 12:52:48 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: tj@kernel.org
-Subject: [GIT PULL] (xen) stable/for-linus-fixes-3.3 for 3.3-rc0 (bug in
- 3.3-rc0)
-Message-ID: <20120109175248.GA32536@phenom.dumpdata.com>
+	Mon, 9 Jan 2012 12:57:51 -0500
+Message-ID: <4F0B2A9D.5020208@tilera.com>
+Date: Mon, 9 Jan 2012 12:57:49 -0500
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
-X-CT-RefId: str=0001.0A090201.4F0B29DC.0078,ss=1,re=0.000,fgs=0
+To: Gilad Ben-Yossef <gilad@benyossef.com>
+CC: <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.org>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>
+Subject: Re: [PATCH v6 0/8] Reduce cross CPU IPI interference
+References: <y> <1326040026-7285-1-git-send-email-gilad@benyossef.com>
+In-Reply-To: <1326040026-7285-1-git-send-email-gilad@benyossef.com>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 1/8/2012 11:26 AM, Gilad Ben-Yossef wrote:
+> We have lots of infrastructure in place to partition a multi-core systems
+> such that we have a group of CPUs that are dedicated to specific task:
+> cgroups, scheduler and interrupt affinity and cpuisol boot parameter.
+> Still, kernel code will some time interrupt all CPUs in the system via IPIs
+> for various needs. These IPIs are useful and cannot be avoided altogether,
+> but in certain cases it is possible to interrupt only specific CPUs that
+> have useful work to do and not the entire system.
+>
+> This patch set, inspired by discussions with Peter Zijlstra and Frederic
+> Weisbecker when testing the nohz task patch set, is a first stab at trying
+> to explore doing this by locating the places where such global IPI calls
+> are being made and turning a global IPI into an IPI for a specific group
+> of CPUs.  The purpose of the patch set is to get feedback if this is the
+> right way to go for dealing with this issue and indeed, if the issue is
+> even worth dealing with at all. Based on the feedback from this patch set
+> I plan to offer further patches that address similar issue in other code
+> paths.
+>
+> The patch creates an on_each_cpu_mask and on_each_cpu_conf infrastructure 
+> API (the former derived from existing arch specific versions in Tile and 
+> Arm) and and uses them to turn several global IPI invocation to per CPU 
+> group invocations.
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Hey Linus,
+(To be fair, mostly this acks the proposed infrastructure, and moving the
+functions out of the tile architecture and into the generic code; I not
+expert enough at slub or the invalidate_bh_lrus path to ack those changes,
+other than to say I like how they look.)
 
-Please git pull the following git branch:
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stabl=
-e/for-linus-fixes-3.3
-
-which has one compile fix on top of d4bbf7e7759afc172e2bfbc5c416324590049cdd
-(which was merged in your 3.3 tree on Friday), the git commit is:
-Tejun Heo (1):
-  Merge branch 'master' into x86/memblock
-
-
-One simple mismerge where an extra ')' was left.
-
- arch/x86/xen/mmu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-Konrad Rzeszutek Wilk (1):
-      xen/mmu: Fix compile errors introduced by x86/memblock mismerge.
-
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index f4bf8aa..58a0e46 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1852,7 +1852,7 @@ pgd_t * __init xen_setup_kernel_pagetable(pgd_t *pgd,
- 	xen_write_cr3(__pa(initial_page_table));
-=20
- 	memblock_reserve(__pa(xen_start_info->pt_base),
--			 xen_start_info->nr_pt_frames * PAGE_SIZE));
-+			 xen_start_info->nr_pt_frames * PAGE_SIZE);
-=20
- 	return initial_page_table;
- }
-
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJPCylmAAoJEFjIrFwIi8fJhTgH/jwmKkl6gqigavtqvJiXjvyA
-15Ff5DbGgHGmvXu7V46oHW+dcE5Abl1s8HDu2bkJXUfbNfmnNjnA3C2SIQzDoGhN
-Q4492wWY9VYHJCNnxmRlX3EvpVFt2WAotpJeGhtKiyAWOVRG+O6g3Cc2wl0S5BRW
-2puIQsbqwkG6SjSljmbE92HdV5QxZQKlXF0r/LTE/4FI8Qb2lk0tLeSDolmCub/K
-SFyKBHJhsCW8vbivPUakn6ClDHn+fkupKh0Phnyd035XKEmh+6+sX37Mc0q6ANRe
-+R4u/kTD2joOUOGgmzjGsOv8j5u2MxTto0p887011IQUfjSEYuO4oxe7ZqX2i+I=
-=H5rN
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
