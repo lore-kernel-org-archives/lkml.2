@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab2AIWWX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:22:23 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36680 "EHLO
+	id S1755892Ab2AIWXR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:23:17 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:36698 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab2AIWWW (ORCPT
+	with ESMTP id S1755793Ab2AIWXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:22:22 -0500
-Date: Mon, 09 Jan 2012 14:22:20 -0800 (PST)
-Message-Id: <20120109.142220.2296949606301841005.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
+	Mon, 9 Jan 2012 17:23:16 -0500
+Date: Mon, 09 Jan 2012 14:21:04 -0800 (PST)
+Message-Id: <20120109.142104.622129906887115582.davem@davemloft.net>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, sfr@canb.auug.org.au, greg@kroah.com,
+        kay.sievers@vrfy.org, akpm@linux-foundation.org, fweisbec@gmail.com,
+        mingo@redhat.com, linux-next@vger.kernel.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH] tracing/mm: Move include of trace/events/kmem.h out of
+ header into slab.c
 From: David Miller <davem@davemloft.net>
+In-Reply-To: <1326147342.7642.41.camel@gandalf.stny.rr.com>
+References: <1326147342.7642.41.camel@gandalf.stny.rr.com>
 X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 09 Jan 2012 14:22:21 -0800 (PST)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 09 Jan 2012 14:21:05 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Steven Rostedt <rostedt@goodmis.org>
+Date: Mon, 09 Jan 2012 17:15:42 -0500
 
-Just some cleanups and removal of unused code from Sam Ravnborg.
+> Including trace/events/*.h TRACE_EVENT() macro headers in other headers
+> can cause strange side effects if another trace/event/*.h header
+> includes that header. Having trace/events/kmem.h inside slab_def.h
+> caused a compile error in sparc64 when changes were done to some header
+> files. Moving the kmem.h trace header out of slab.h and into slab.c
+> fixes the problem.
+> 
+> Note, both slub.c and slob.c already include the trace/events/kmem.h
+> file. Only slab.c had it missing.
+> 
+> Link: http://lkml.kernel.org/r/20120105190405.1e3191fb5a43b2a0f1655e1f@canb.auug.org.au
+> 
+> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-Nothing earth shattering.
-
-Please pull, thanks a lot.
-
-The following changes since commit 6b3da11b3c36fdafce3a72e0e90d6c4e99e9aad5:
-
-  Merge branch 'for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2012-01-09 13:08:28 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc-next.git master
-
-Sam Ravnborg (7):
-      sparc32: drop unused atomic24 support
-      sparc32: drop useless preprocessor conditional in atomic_32.h
-      apbuart: fix section mismatch warning
-      sparc32: support atomic64_t
-      sparc32: enable different preemptions models
-      sparc32: fix PAGE_SIZE definition
-      sparc32: remove unused file: include/asm/pgtsun4.h
-
- arch/sparc/Kconfig                      |    3 +-
- arch/sparc/include/asm/atomic_32.h      |  104 +-------------------
- arch/sparc/include/asm/page_32.h        |   10 +--
- arch/sparc/include/asm/pgtsun4.h        |  171 -------------------------------
- arch/sparc/include/asm/thread_info_32.h |    2 +-
- arch/sparc/lib/atomic_32.S              |   55 ----------
- arch/sparc/lib/ksyms.c                  |    6 -
- drivers/tty/serial/apbuart.c            |    4 +-
- 8 files changed, 8 insertions(+), 347 deletions(-)
- delete mode 100644 arch/sparc/include/asm/pgtsun4.h
+Acked-by: David S. Miller <davem@davemloft.net>
