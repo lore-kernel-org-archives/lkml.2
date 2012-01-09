@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755813Ab2AIR77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 12:59:59 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:49096 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab2AIR76 (ORCPT
+	id S1755825Ab2AISAv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 13:00:51 -0500
+Received: from usindpps03.hds.com ([207.126.252.16]:49690 "EHLO
+	usindpps03.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755795Ab2AISAu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 12:59:58 -0500
-Date: Mon, 9 Jan 2012 12:48:36 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Joerg Roedel <joerg.roedel@amd.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Michael Buesch <m@bues.ch>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Incorrect uses of get_driver()/put_driver()
-Message-ID: <20120109174836.GA32181@phenom.dumpdata.com>
-References: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
- <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
+	Mon, 9 Jan 2012 13:00:50 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: Don Zickus <dzickus@redhat.com>, "Luck, Tony" <tony.luck@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Date: Mon, 9 Jan 2012 12:59:51 -0500
+Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
+ smp_send_stop()
+Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
+ below smp_send_stop()
+Thread-Index: AczL7TiFW1QjzB7DT26CmHrlIGrPywDCmPBw
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C5827BBD8@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
+ <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
+ <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
+ <20120105210123.GI5650@redhat.com>
+In-Reply-To: <20120105210123.GI5650@redhat.com>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: ja-JP, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4F0B28E1.0021,ss=1,re=0.000,fgs=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
+ definitions=main-1201090158
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 12:35:09PM -0500, Alan Stern wrote:
-> The get_driver() and put_driver() routines in the device core are not
-> documented well, and what they really do is quite different from what
-> people might think they do.  In particular, get_driver() does not
-> prevent a driver from being unregistered or unloaded -- the API which 
-> comes closest to doing that is try_module_get().
-> 
-> In fact, get_driver() and put_driver() are pretty much useless for
-> normal purposes, and Dmitry and I have been discussing getting rid of
-> them entirely.  But first we need to make sure that doing so won't mess
-> anything up.
-> 
-> The purpose of this email is to check with the maintainers of the
-> various drivers that seem to be using these routines in questionable
-> ways, to make sure nothing will go wrong.  Here are the places we have 
-> identified:
-> 
-> lib/dma-debug.c:173:  drv = get_driver(dev->driver);
-> lib/dma-debug.c:188:  put_driver(drv);
-> 
-> Joerg, these calls don't seem to do anything, as far as I can tell.  
-> Is there any reason to keep them?
-> 
-> drivers/pci/xen-pcifront.c:596:       if (get_driver(&pdrv->driver)) {
-> drivers/pci/xen-pcifront.c:626:               put_driver(&pdrv->driver);
-> 
-> Konrad, these calls don't seem to do anything either.
-> 
+>
+>I don't know how to prove something is hardened other than not seeing any
+>hangs or false reboots on in that piece of code.
+>
 
-Looks like they should be replaced with the try_module_get() equivalant
-for the 'struct pci_driver'? Is there such one?
+I don't know how we can prove reliability of smp_send_stop() of all archs as well.
+
+Another possible solution is replacing smp_send_stop() with 
+machine_crash_shutdown().
+This is a function call stopping other cpus reliably in panic situation
+so that kdump can work .
+But, I don't know whether it works in all archs.
+We need further discussion with Eric for checking this idea is feasible...
+
+
+I would like to go forward step by step rather than doing tough work at once.
+I think just moving kmsg_dump() below smp_send_stop() is a good start for improving pstore.
+
+Seiji
