@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489Ab2AIK5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 05:57:42 -0500
-Received: from mga01.intel.com ([192.55.52.88]:59989 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752050Ab2AIK5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 05:57:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="110208614"
-Date: Mon, 9 Jan 2012 19:14:45 -0500
-From: Youquan Song <youquan.song@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com, len.brown@intel.com,
-        anhua.xu@intel.com, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-Message-ID: <20120110001445.GA20542@linux-youquan.bj.intel.com>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com> <1326103578.2442.50.camel@twins>
+	id S1753510Ab2AIK71 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 05:59:27 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60523 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752050Ab2AIK7Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 05:59:25 -0500
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: viro@ZenIV.linux.org.uk
+Subject: [RFC PATCH] shrink_dcache_parent() deadlock
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mgorman@suse.de, gregkh@suse.de, hch@infradead.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org
+Date: Mon, 09 Jan 2012 11:58:54 +0100
+Message-ID: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326103578.2442.50.camel@twins>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Yes it is.. also that knob should die! Like i've been saying for way too
-> long. I'm >< close to committing a patch removing all the power_saving
-> magic from the scheduler.
-Sorry. I do not notice it.
-But currently in many real tests, the knob prove to save power in semi-idle system.
-They are useful in many user scenarios currently.
+Two (or more) concurrent calls of shrink_dcache_parent() on the same
+dentry with the right timing may cause shrink_dcache_parent() to loop
+forever.
 
-> That's the most convoluted way I've seen that stated in a while. What
-> you're saying is that all threads (of a socket) should be used before
-> spilling over to another socket.
-Only touch half. 
-Another half: in ideal, all threads in one core be used before spilling over to another
-core.
+Here's what appears to happen:
 
-> Hell no, that's completely the wrong thing to do. I think you want to
-> frob at the group_capacity computation in update_sg_lb_stats.
-> 
+1 - CPU0: select_parent(P) finds C and puts it on sb->s_dentry_lru, returns 1
 
-Yes. It also can do in the ways you said. 
-I have following testing code before which is changed in update_sg_lb_stats, 
-but there are more refresh code required for fix. 
-Fine, I will base your suggestion to develop another patch soon.
+2 - CPU0: __shrink_dcache_sb() moves C from sb->s_dentry_lru to tmp
 
-Thanks
--Youquan
+3 - CPU1: select_parent(P) locks P->d_lock
 
-@@ -3923,6 +3923,10 @@ static inline void update_sg_lb_stats(struct
-sched_domain *sd,
-                                                SCHED_POWER_SCALE);
-        if (!sgs->group_capacity)
-                sgs->group_capacity = fix_small_capacity(sd, group);
-+
-+       if (sched_smt_power_savings)
-+               sgs->group_capacity *= 2;
-+
-        sgs->group_weight = group->group_weight;
+4 - CPU0: shrink_dentry_list() locks C->d_lock
+    dentry_kill(C) tries to lock P->d_lock but fails, unlocks C->d_lock
 
-        if (sgs->group_capacity > sgs->sum_nr_running)
+5 - CPU1: select_parent(P) locks C->d_lock,
+          moves C from tmp to sb->s_dentry_lru, returns 1
 
+6 - CPU0: shrink_dentry_list() finds tmp empty, returns
+
+7 - Goto 2 with CPU0 and CPU1 switched
+
+
+So basically select_parent() steals the dentry from shrink_dentry_list()
+and thinks it found a new one, causing shrink_dentry_list() to think
+it's making progress and loop over and over.
+
+This was actually triggered by a combination of the bonding driver
+removing a directory in sysfs and a udev rule causing udev to do stat
+multiple times on the just removed directory.
+
+One fix would be to check all callers and prevent concurrent calls to
+shrink_dcache_parent().  But I think a better solution is to stop the
+stealing behavior.
+
+This patch adds a new dentry flag that is set when the dentry is removed
+from the lru and put on the list being processed by
+shrink_dentry_list().  The flag is cleared in dentry_lru_del() which is
+called if the dentry gets a new reference just before it's pruned.
+
+Thoughts?
+
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 89509b5..09805eb 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -242,6 +242,7 @@ static void dentry_lru_add(struct dentry *dentry)
+ static void __dentry_lru_del(struct dentry *dentry)
+ {
+ 	list_del_init(&dentry->d_lru);
++	dentry->d_flags &= ~DCACHE_SHRINK_LIST;
+ 	dentry->d_sb->s_nr_dentry_unused--;
+ 	dentry_stat.nr_unused--;
+ }
+@@ -807,6 +808,7 @@ relock:
+ 			spin_unlock(&dentry->d_lock);
+ 		} else {
+ 			list_move_tail(&dentry->d_lru, &tmp);
++			dentry->d_flags |= DCACHE_SHRINK_LIST;
+ 			spin_unlock(&dentry->d_lock);
+ 			if (!--count)
+ 				break;
+@@ -1117,11 +1119,11 @@ resume:
+ 		 * move only zero ref count dentries to the end 
+ 		 * of the unused list for prune_dcache
+ 		 */
+-		if (!dentry->d_count) {
++		if (dentry->d_count) {
++			dentry_lru_del(dentry);
++		} else if(!(dentry->d_flags & DCACHE_SHRINK_LIST)) {
+ 			dentry_lru_move_tail(dentry);
+ 			found++;
+-		} else {
+-			dentry_lru_del(dentry);
+ 		}
+ 
+ 		/*
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index ed9f74f..4eb8c80 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -203,6 +203,7 @@ struct dentry_operations {
+ 
+ #define DCACHE_CANT_MOUNT	0x0100
+ #define DCACHE_GENOCIDE		0x0200
++#define DCACHE_SHRINK_LIST	0x0400
+ 
+ #define DCACHE_NFSFS_RENAMED	0x1000
+      /* this dentry has been "silly renamed" and has to be deleted on the last
