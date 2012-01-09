@@ -1,156 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab2AISbZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 13:31:25 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34421 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932398Ab2AISbW (ORCPT
+	id S932756Ab2AISgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 13:36:48 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:62697 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755720Ab2AISgq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 13:31:22 -0500
+	Mon, 9 Jan 2012 13:36:46 -0500
+Date: Mon, 9 Jan 2012 13:34:14 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Michael Buesch <m@bues.ch>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Incorrect uses of get_driver()/put_driver()
+Message-ID: <20120109183414.GB1287@phenom.dumpdata.com>
+References: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
+ <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
+ <20120109174836.GA32181@phenom.dumpdata.com>
+ <20120109182045.GG15083@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <20120109173010.GX23916@ZenIV.linux.org.uk>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
- <20120109173010.GX23916@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 Jan 2012 10:30:59 -0800
-X-Google-Sender-Auth: QD2be7WJsb1HmKwvqrKHfbqi9E0
-Message-ID: <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>, Miklos Szeredi <miklos@szeredi.hu>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mgorman@suse.de, gregkh@suse.de, akpm@linux-foundation.org,
-        david@fromorbit.com
-Content-Type: multipart/mixed; boundary=e89a8f234bfbde916a04b61c9a84
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120109182045.GG15083@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090205.4F0B3392.00BE,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---e89a8f234bfbde916a04b61c9a84
-Content-Type: text/plain; charset=ISO-8859-1
+On Mon, Jan 09, 2012 at 10:20:45AM -0800, Dmitry Torokhov wrote:
+> On Mon, Jan 09, 2012 at 12:48:36PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Mon, Jan 09, 2012 at 12:35:09PM -0500, Alan Stern wrote:
+> > > The get_driver() and put_driver() routines in the device core are not
+> > > documented well, and what they really do is quite different from what
+> > > people might think they do.  In particular, get_driver() does not
+> > > prevent a driver from being unregistered or unloaded -- the API which 
+> > > comes closest to doing that is try_module_get().
+> > > 
+> > > In fact, get_driver() and put_driver() are pretty much useless for
+> > > normal purposes, and Dmitry and I have been discussing getting rid of
+> > > them entirely.  But first we need to make sure that doing so won't mess
+> > > anything up.
+> > > 
+> > > The purpose of this email is to check with the maintainers of the
+> > > various drivers that seem to be using these routines in questionable
+> > > ways, to make sure nothing will go wrong.  Here are the places we have 
+> > > identified:
+> > > 
+> > > lib/dma-debug.c:173:  drv = get_driver(dev->driver);
+> > > lib/dma-debug.c:188:  put_driver(drv);
+> > > 
+> > > Joerg, these calls don't seem to do anything, as far as I can tell.  
+> > > Is there any reason to keep them?
+> > > 
+> > > drivers/pci/xen-pcifront.c:596:       if (get_driver(&pdrv->driver)) {
+> > > drivers/pci/xen-pcifront.c:626:               put_driver(&pdrv->driver);
+> > > 
+> > > Konrad, these calls don't seem to do anything either.
+> > > 
+> > 
+> > Looks like they should be replaced with the try_module_get() equivalant
+> > for the 'struct pci_driver'? Is there such one?
+> 
+> You seem to need stronger guarantees that the driver simply present in
+> memory. You need to make sure that the driver you fetched is kept being
+> bound to the device for entire duration of pcifront_common_process().
 
-On Mon, Jan 9, 2012 at 9:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Resend would be nice; I can try to dig the series out and rebase it, but...
-
-Here's a TOTALLY UNTESTED rebase of just that single patch from Dave.
-
-I did not check if the rest of the series did something that this
-patch needs, so the patch may be entirely broken, but it does look
-sane on its own (ie I do not see anything obviously broken in it). So
-it still looks like a nice cleanup, but maybe I'm missing something
-subtle, and maybe the rest of Dave's series really is required.
-
-It compiles. That's all I'm going to say about my extensive testing.
-Which is also why I haven't added my sign-off to it.
-
-Comments?
-
-                                Linus
-
---e89a8f234bfbde916a04b61c9a84
-Content-Type: text/x-patch; charset=US-ASCII; name="dave.diff"
-Content-Disposition: attachment; filename="dave.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gx7tnidk0
-
-RnJvbTogRGF2ZSBDaGlubmVyIDxkYXZpZEBmcm9tb3JiaXQuY29tPgpTdWJqZWN0OiBbUEFUQ0gg
-MTEvMTNdIGRjYWNoZTogdXNlIGEgZGlzcG9zZSBsaXN0IGluIHNlbGVjdF9wYXJlbnQKRGF0ZTog
-CVR1ZSwgMjMgQXVnIDIwMTEgMTg6NTY6MjQgKzEwMDAKCnNlbGVjdF9wYXJlbnQgY3VycmVudGx5
-IGFidXNlcyB0aGUgZGVudHJ5IGNhY2hlIExSVSB0byBwcm92aWRlCmNsZWFudXAgZmVhdHVyZXMg
-Zm9yIGNoaWxkIGRlbnRyaWVzIHRoYXQgbmVlZCB0byBiZSBmcmVlZC4gSXQgbW92ZXMKdGhlbSB0
-byB0aGUgdGFpbCBvZiB0aGUgTFJVLCB0aGVuIHRlbGxzIHNocmlua19kY2FjaGVfcGFyZW50KCkg
-dG8KY2FsbHMgX19zaHJpbmtfZGNhY2hlX3NiIHRvIHVuY29uZGl0aW9uYWxseSBtb3ZlIHRoZW0g
-dG8gYSBkaXNwb3NlCmxpc3QgKGFzIERDQUNIRV9SRUZFUkVOQ0VEIGlzIGlnbm9yZWQpLiBfX3No
-cmlua19kY2FjaGVfc2IoKSBoYXMgdG8KcmVsb2NrIHRoZSBkZW50cmllcyB0byBtb3ZlIHRoZW0g
-b2ZmIHRoZSBMUlUgb250byB0aGUgZGlzcG9zZSBsaXN0LApidXQgb3RoZXJ3aXNlIGRvZXMgbm90
-IHRvdWNoIHRoZSBkZW50cmllcyB0aGF0IHNlbGVjdF9wYXJlbnQoKSBtb3ZlZAp0byB0aGUgdGFp
-bCBvZiB0aGUgTFJVLiBJdCB0aGVuIHBhc3NzZXMgdGhlIGRpc3Bvc2UgbGlzdCB0bwpzaHJpbmtf
-ZGVudHJ5X2xpc3QoKSB3aGljaCB0cmllcyB0byBmcmVlIHRoZSBkZW50cmllcy4KCklPV3MsIHRo
-ZSB1c2Ugb2YgX19zaHJpbmtfZGNhY2hlX3NiKCkgaXMgc3VwZXJmbHVvdXMgLSB3ZSBjYW4gYnVp
-bGQKZXhhY3RseSB0aGUgc2FtZSBsaXN0IG9mIGRlbnRyaWVzIGZvciBkaXNwb3NhbCBkaXJlY3Rs
-eSBpbgpzZWxlY3RfcGFyZW50KCkgYW5kIGNhbGwgc2hyaW5rX2RlbnRyeV9saXN0KCkgaW5zdGVh
-ZCBvZiBjYWxsaW5nCl9fc2hyaW5rX2RjYWNoZV9zYigpIHRvIGRvIHRoYXQuIFRoaXMgbWVhbnMg
-dGhhdCB3ZSBhdm9pZCBsb25nIGhvbGRzCm9uIHRoZSBscnUgbG9jayB3YWxraW5nIHRoZSBMUlUg
-bW92aW5nIGRlbnRyaWVzIHRvIHRoZSBkaXNwb3NlIGxpc3QKV2UgYWxzbyBhdm9pZCB0aGUgbmVl
-ZCB0byByZWxvY2sgZWFjaCBkZW50cnkganVzdCB0byBtb3ZlIGl0IG9mZiB0aGUKTFJVLCByZWR1
-Y2luZyB0aGUgbnVtZWJyIG9mIHRpbWVzIHdlIGxvY2sgZWFjaCBkZW50cnkgdG8gZGlzcG9zZSBv
-Zgp0aGVtIGluIHNocmlua19kY2FjaGVfcGFyZW50KCkgZnJvbSAzIHRvIDIgdGltZXMuCgpGdXJ0
-aGVyLCB3ZSByZW1vdmUgb25lIG9mIHRoZSB0d28gY2FsbGVycyBvZiBfX3Nocmlua19kY2FjaGVf
-c2IoKS4KVGhpcyBhbHNvIG1lYW5zIHRoYXQgX19zaHJpbmtfZGNhY2hlX3NiIGNhbiBiZSBtb3Zl
-ZCBpbnRvIGJhY2sgaW50bwpwcnVuZV9kY2FjaGVfc2IoKSBhbmQgd2Ugbm8gbG9uZ2VyIGhhdmUg
-dG8gaGFuZGxlIHJlZmVyZW5jZWQKZGVudHJpZXMgY29uZGl0aW9uYWxseSwgc2ltcGxpZnlpbmcg
-dGhlIGNvZGUuCgpTaWduZWQtb2ZmLWJ5OiBEYXZlIENoaW5uZXIgPGRjaGlubmVyQHJlZGhhdC5j
-b20+Ci0tLQogZnMvZGNhY2hlLmMgfCAgIDYzICsrKysrKysrKysrKysrKysrKystLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KIDEgZmlsZXMgY2hhbmdlZCwgMjEgaW5zZXJ0
-aW9ucygrKSwgNDIgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMvZGNhY2hlLmMgYi9mcy9k
-Y2FjaGUuYwppbmRleCA5NzkxYjFlN2VlZTQuLmIyMDlkNzNmOWE5OCAxMDA2NDQKLS0tIGEvZnMv
-ZGNhY2hlLmMKKysrIGIvZnMvZGNhY2hlLmMKQEAgLTI3NiwxNSArMjc2LDE1IEBAIHN0YXRpYyB2
-b2lkIGRlbnRyeV9scnVfcHJ1bmUoc3RydWN0IGRlbnRyeSAqZGVudHJ5KQogCX0KIH0KIAotc3Rh
-dGljIHZvaWQgZGVudHJ5X2xydV9tb3ZlX3RhaWwoc3RydWN0IGRlbnRyeSAqZGVudHJ5KQorc3Rh
-dGljIHZvaWQgZGVudHJ5X2xydV9tb3ZlX2xpc3Qoc3RydWN0IGRlbnRyeSAqZGVudHJ5LCBzdHJ1
-Y3QgbGlzdF9oZWFkICpsaXN0KQogewogCXNwaW5fbG9jaygmZGNhY2hlX2xydV9sb2NrKTsKIAlp
-ZiAobGlzdF9lbXB0eSgmZGVudHJ5LT5kX2xydSkpIHsKLQkJbGlzdF9hZGRfdGFpbCgmZGVudHJ5
-LT5kX2xydSwgJmRlbnRyeS0+ZF9zYi0+c19kZW50cnlfbHJ1KTsKKwkJbGlzdF9hZGRfdGFpbCgm
-ZGVudHJ5LT5kX2xydSwgbGlzdCk7CiAJCWRlbnRyeS0+ZF9zYi0+c19ucl9kZW50cnlfdW51c2Vk
-Kys7CiAJCWRlbnRyeV9zdGF0Lm5yX3VudXNlZCsrOwogCX0gZWxzZSB7Ci0JCWxpc3RfbW92ZV90
-YWlsKCZkZW50cnktPmRfbHJ1LCAmZGVudHJ5LT5kX3NiLT5zX2RlbnRyeV9scnUpOworCQlsaXN0
-X21vdmVfdGFpbCgmZGVudHJ5LT5kX2xydSwgbGlzdCk7CiAJfQogCXNwaW5fdW5sb2NrKCZkY2Fj
-aGVfbHJ1X2xvY2spOwogfQpAQCAtNzcwLDE0ICs3NzAsMTggQEAgc3RhdGljIHZvaWQgc2hyaW5r
-X2RlbnRyeV9saXN0KHN0cnVjdCBsaXN0X2hlYWQgKmxpc3QpCiB9CiAKIC8qKgotICogX19zaHJp
-bmtfZGNhY2hlX3NiIC0gc2hyaW5rIHRoZSBkZW50cnkgTFJVIG9uIGEgZ2l2ZW4gc3VwZXJibG9j
-awotICogQHNiOgkJc3VwZXJibG9jayB0byBzaHJpbmsgZGVudHJ5IExSVS4KLSAqIEBjb3VudDoJ
-bnVtYmVyIG9mIGVudHJpZXMgdG8gcHJ1bmUKLSAqIEBmbGFnczoJZmxhZ3MgdG8gY29udHJvbCB0
-aGUgZGVudHJ5IHByb2Nlc3NpbmcKKyAqIHBydW5lX2RjYWNoZV9zYiAtIHNocmluayB0aGUgZGNh
-Y2hlCisgKiBAc2I6IHN1cGVyYmxvY2sKKyAqIEBjb3VudDogbnVtYmVyIG9mIGVudHJpZXMgdG8g
-dHJ5IHRvIGZyZWUKKyAqCisgKiBBdHRlbXB0IHRvIHNocmluayB0aGUgc3VwZXJibG9jayBkY2Fj
-aGUgTFJVIGJ5IEBjb3VudCBlbnRyaWVzLiBUaGlzIGlzCisgKiBkb25lIHdoZW4gd2UgbmVlZCBt
-b3JlIG1lbW9yeSBhbiBjYWxsZWQgZnJvbSB0aGUgc3VwZXJibG9jayBzaHJpbmtlcgorICogZnVu
-Y3Rpb24uCiAgKgotICogSWYgZmxhZ3MgY29udGFpbnMgRENBQ0hFX1JFRkVSRU5DRUQgcmVmZXJl
-bmNlIGRlbnRyaWVzIHdpbGwgbm90IGJlIHBydW5lZC4KKyAqIFRoaXMgZnVuY3Rpb24gbWF5IGZh
-aWwgdG8gZnJlZSBhbnkgcmVzb3VyY2VzIGlmIGFsbCB0aGUgZGVudHJpZXMgYXJlIGluCisgKiB1
-c2UuCiAgKi8KLXN0YXRpYyB2b2lkIF9fc2hyaW5rX2RjYWNoZV9zYihzdHJ1Y3Qgc3VwZXJfYmxv
-Y2sgKnNiLCBpbnQgY291bnQsIGludCBmbGFncykKK3ZvaWQgcHJ1bmVfZGNhY2hlX3NiKHN0cnVj
-dCBzdXBlcl9ibG9jayAqc2IsIGludCBjb3VudCkKIHsKIAlzdHJ1Y3QgZGVudHJ5ICpkZW50cnk7
-CiAJTElTVF9IRUFEKHJlZmVyZW5jZWQpOwpAQCAtNzk2LDEzICs4MDAsNyBAQCByZWxvY2s6CiAJ
-CQlnb3RvIHJlbG9jazsKIAkJfQogCi0JCS8qCi0JCSAqIElmIHdlIGFyZSBob25vdXJpbmcgdGhl
-IERDQUNIRV9SRUZFUkVOQ0VEIGZsYWcgYW5kIHRoZQotCQkgKiBkZW50cnkgaGFzIHRoaXMgZmxh
-ZyBzZXQsIGRvbid0IGZyZWUgaXQuICBDbGVhciB0aGUgZmxhZwotCQkgKiBhbmQgcHV0IGl0IGJh
-Y2sgb24gdGhlIExSVS4KLQkJICovCi0JCWlmIChmbGFncyAmIERDQUNIRV9SRUZFUkVOQ0VEICYm
-Ci0JCQkJZGVudHJ5LT5kX2ZsYWdzICYgRENBQ0hFX1JFRkVSRU5DRUQpIHsKKwkJaWYgKGRlbnRy
-eS0+ZF9mbGFncyAmIERDQUNIRV9SRUZFUkVOQ0VEKSB7CiAJCQlkZW50cnktPmRfZmxhZ3MgJj0g
-fkRDQUNIRV9SRUZFUkVOQ0VEOwogCQkJbGlzdF9tb3ZlKCZkZW50cnktPmRfbHJ1LCAmcmVmZXJl
-bmNlZCk7CiAJCQlzcGluX3VubG9jaygmZGVudHJ5LT5kX2xvY2spOwpAQCAtODIyLDIzICs4MjAs
-NiBAQCByZWxvY2s6CiB9CiAKIC8qKgotICogcHJ1bmVfZGNhY2hlX3NiIC0gc2hyaW5rIHRoZSBk
-Y2FjaGUKLSAqIEBzYjogc3VwZXJibG9jawotICogQG5yX3RvX3NjYW46IG51bWJlciBvZiBlbnRy
-aWVzIHRvIHRyeSB0byBmcmVlCi0gKgotICogQXR0ZW1wdCB0byBzaHJpbmsgdGhlIHN1cGVyYmxv
-Y2sgZGNhY2hlIExSVSBieSBAbnJfdG9fc2NhbiBlbnRyaWVzLiBUaGlzIGlzCi0gKiBkb25lIHdo
-ZW4gd2UgbmVlZCBtb3JlIG1lbW9yeSBhbiBjYWxsZWQgZnJvbSB0aGUgc3VwZXJibG9jayBzaHJp
-bmtlcgotICogZnVuY3Rpb24uCi0gKgotICogVGhpcyBmdW5jdGlvbiBtYXkgZmFpbCB0byBmcmVl
-IGFueSByZXNvdXJjZXMgaWYgYWxsIHRoZSBkZW50cmllcyBhcmUgaW4KLSAqIHVzZS4KLSAqLwot
-dm9pZCBwcnVuZV9kY2FjaGVfc2Ioc3RydWN0IHN1cGVyX2Jsb2NrICpzYiwgaW50IG5yX3RvX3Nj
-YW4pCi17Ci0JX19zaHJpbmtfZGNhY2hlX3NiKHNiLCBucl90b19zY2FuLCBEQ0FDSEVfUkVGRVJF
-TkNFRCk7Ci19Ci0KLS8qKgogICogc2hyaW5rX2RjYWNoZV9zYiAtIHNocmluayBkY2FjaGUgZm9y
-IGEgc3VwZXJibG9jawogICogQHNiOiBzdXBlcmJsb2NrCiAgKgpAQCAtMTA5Miw3ICsxMDczLDcg
-QEAgRVhQT1JUX1NZTUJPTChoYXZlX3N1Ym1vdW50cyk7CiAgKiBkcm9wIHRoZSBsb2NrIGFuZCBy
-ZXR1cm4gZWFybHkgZHVlIHRvIGxhdGVuY3kKICAqIGNvbnN0cmFpbnRzLgogICovCi1zdGF0aWMg
-aW50IHNlbGVjdF9wYXJlbnQoc3RydWN0IGRlbnRyeSAqIHBhcmVudCkKK3N0YXRpYyBpbnQgc2Vs
-ZWN0X3BhcmVudChzdHJ1Y3QgZGVudHJ5ICpwYXJlbnQsIHN0cnVjdCBsaXN0X2hlYWQgKmRpc3Bv
-c2UpCiB7CiAJc3RydWN0IGRlbnRyeSAqdGhpc19wYXJlbnQ7CiAJc3RydWN0IGxpc3RfaGVhZCAq
-bmV4dDsKQEAgLTExMTQsMTIgKzEwOTUsMTEgQEAgcmVzdW1lOgogCiAJCXNwaW5fbG9ja19uZXN0
-ZWQoJmRlbnRyeS0+ZF9sb2NrLCBERU5UUllfRF9MT0NLX05FU1RFRCk7CiAKLQkJLyogCi0JCSAq
-IG1vdmUgb25seSB6ZXJvIHJlZiBjb3VudCBkZW50cmllcyB0byB0aGUgZW5kIAotCQkgKiBvZiB0
-aGUgdW51c2VkIGxpc3QgZm9yIHBydW5lX2RjYWNoZQorCQkvKgorCQkgKiBtb3ZlIG9ubHkgemVy
-byByZWYgY291bnQgZGVudHJpZXMgdG8gdGhlIGRpc3Bvc2UgbGlzdC4KIAkJICovCiAJCWlmICgh
-ZGVudHJ5LT5kX2NvdW50KSB7Ci0JCQlkZW50cnlfbHJ1X21vdmVfdGFpbChkZW50cnkpOworCQkJ
-ZGVudHJ5X2xydV9tb3ZlX2xpc3QoZGVudHJ5LCBkaXNwb3NlKTsKIAkJCWZvdW5kKys7CiAJCX0g
-ZWxzZSB7CiAJCQlkZW50cnlfbHJ1X2RlbChkZW50cnkpOwpAQCAtMTE4MSwxNCArMTE2MSwxMyBA
-QCByZW5hbWVfcmV0cnk6CiAgKgogICogUHJ1bmUgdGhlIGRjYWNoZSB0byByZW1vdmUgdW51c2Vk
-IGNoaWxkcmVuIG9mIHRoZSBwYXJlbnQgZGVudHJ5LgogICovCi0gCiB2b2lkIHNocmlua19kY2Fj
-aGVfcGFyZW50KHN0cnVjdCBkZW50cnkgKiBwYXJlbnQpCiB7Ci0Jc3RydWN0IHN1cGVyX2Jsb2Nr
-ICpzYiA9IHBhcmVudC0+ZF9zYjsKKwlMSVNUX0hFQUQoZGlzcG9zZSk7CiAJaW50IGZvdW5kOwog
-Ci0Jd2hpbGUgKChmb3VuZCA9IHNlbGVjdF9wYXJlbnQocGFyZW50KSkgIT0gMCkKLQkJX19zaHJp
-bmtfZGNhY2hlX3NiKHNiLCBmb3VuZCwgMCk7CisJd2hpbGUgKChmb3VuZCA9IHNlbGVjdF9wYXJl
-bnQocGFyZW50LCAmZGlzcG9zZSkpICE9IDApCisJCXNocmlua19kZW50cnlfbGlzdCgmZGlzcG9z
-ZSk7CiB9CiBFWFBPUlRfU1lNQk9MKHNocmlua19kY2FjaGVfcGFyZW50KTsKIAo=
---e89a8f234bfbde916a04b61c9a84--
+OK, any suggestions?
