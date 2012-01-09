@@ -1,69 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab2AIRWz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 12:22:55 -0500
-Received: from home.keithp.com ([63.227.221.253]:43754 "EHLO keithp.com"
+	id S932660Ab2AIRZy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 12:25:54 -0500
+Received: from gir.skynet.ie ([193.1.99.77]:39732 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932266Ab2AIRWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 12:22:54 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Michal Marek <mmarek@suse.com>,
-        "intel-gfx\@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>
-Subject: Re: [PATCH] drm/i915: set AUD_CONFIG N_value_index for DisplayPort
-In-Reply-To: <20120109131717.GA4713@localhost>
-References: <20120109131717.GA4713@localhost>
-User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Mon, 09 Jan 2012 09:22:47 -0800
-Message-ID: <86y5tgx02g.fsf@sumi.keithp.com>
+	id S932429Ab2AIRZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 12:25:52 -0500
+Date: Mon, 9 Jan 2012 17:25:48 +0000
+From: Mel Gorman <mel@csn.ul.ie>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Gilad Ben-Yossef <gilad@benyossef.com>, linux-kernel@vger.kernel.org,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH v5 7/8] mm: Only IPI CPUs to drain local pages if they
+ exist
+Message-ID: <20120109172548.GJ27881@csn.ul.ie>
+References: <1325499859-2262-1-git-send-email-gilad@benyossef.com>
+ <1325499859-2262-8-git-send-email-gilad@benyossef.com>
+ <4F033EC9.4050909@gmail.com>
+ <20120105142017.GA27881@csn.ul.ie>
+ <20120105144011.GU11810@n2100.arm.linux.org.uk>
+ <20120105161739.GD27881@csn.ul.ie>
+ <20120105140645.42498cdd.akpm@linux-foundation.org>
+ <20120105223106.GG27881@csn.ul.ie>
+ <20120105151919.37d64365.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120105151919.37d64365.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jan 05, 2012 at 03:19:19PM -0800, Andrew Morton wrote:
+> On Thu, 5 Jan 2012 22:31:06 +0000
+> Mel Gorman <mel@csn.ul.ie> wrote:
+> 
+> > On Thu, Jan 05, 2012 at 02:06:45PM -0800, Andrew Morton wrote:
+> > > On Thu, 5 Jan 2012 16:17:39 +0000
+> > > Mel Gorman <mel@csn.ul.ie> wrote:
+> > > 
+> > > > mm: page allocator: Guard against CPUs going offline while draining per-cpu page lists
+> > > > 
+> > > > While running a CPU hotplug stress test under memory pressure, I
+> > > > saw cases where under enough stress the machine would halt although
+> > > > it required a machine with 8 cores and plenty memory. I think the
+> > > > problems may be related.
+> > > 
+> > > When we first implemented them, the percpu pages in the page allocator
+> > > were of really really marginal benefit.  I didn't merge the patches at
+> > > all for several cycles, and it was eventually a 49/51 decision.
+> > > 
+> > > So I suggest that our approach to solving this particular problem
+> > > should be to nuke the whole thing, then see if that caused any
+> > > observeable problems.  If it did, can we solve those problems by means
+> > > other than bringing the dang things back?
+> > > 
+> > 
+> > Sounds drastic.
+> 
+> Wrong thinking ;)
+> 
 
-On Mon, 9 Jan 2012 21:17:17 +0800, Wu Fengguang <fengguang.wu@intel.com> wr=
-ote:
+:)
 
-> +#define IBX_AUD_CONFIG_A		0xe2000
-> +#define CPT_AUD_CONFIG_A		0xe5000
+> Simplifying the code should always be the initial proposal.  Adding
+> more complexity on top is the worst-case when-all-else-failed option. 
+> Yet we so often reach for that option first :(
+> 
 
-These register addresses match the docs.
+Enngghh, I really want to agree with you but reducing lock contention
+has been such an important goal for a long time that I am really loathe
+to just rip it out and hope for the best.
 
-> +		I915_WRITE(aud_config, 1 << 29); /* N value index, 0x1 =3D DP */
+> > It would be less controversial to replace this patch
+> > with a version that calls get_online_cpu() in drain_all_pages() but
+> > remove the call to drain_all_pages() call from the page allocator on
+> > the grounds it is not safe against CPU hotplug and to hell with the
+> > slightly elevated allocation failure rates and stalls. That would avoid
+> > the try_get_online_cpus() crappiness and be less complex.
+> 
+> If we can come up with a reasonably simple patch which improves or even
+> fixes the problem then I suppose there is some value in that, as it
+> provides users of earlier kernels with something to backport if they
+> hit problems.
+> 
 
-Please don't use constants here, instead add #defines for all of the
-bits in this new register, in case someone else needs to use the
-register later.
+I'm preparing a patch that is a simplier fix but not sending an IPI at
+all. There is also a sysfs fix that is necessary for tests to complete
+successfully. The details will be in the series.
 
-Do we also need to program the pixel clock values in this register?
+> But the social downside of that is that everyone would shuffle off
+> towards other bright and shiny things and we'd be stuck with more
+> complexity piled on top of dubiously beneficial code.
+> 
+> > If you really want to consider deleting the per-cpu allocator, maybe
+> > it could be a LSF/MM topic?
+> 
+> eek, spare me.
+> 
 
-=2D-=20
-keith.packard@intel.com
+It was worth a shot.
 
---=-=-=
-Content-Type: application/pgp-signature
+> Anyway, we couldn't discuss such a topic without data.  Such data would
+> be obtained by deleting the code and measuring the results.  Which is
+> what I just said ;)
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Crap. ok. I've added a TODO list to implement a patch that removes it.
+It is at a lower priority than removing lumpy reclaim though -
+eventally this TODO list will start shrinking. I'll need to put
+some thought into how it can be tested but even then I probably am
+not the best person to test it. I don't have regular access to a 2+
+socket machine to test NUMA effects for example.
 
-iQIVAwUBTwsiZzYtFsjWk68qAQhHbxAAnE5mKwlIYIECkcRHxJVVbocEUFJnXn+4
-e8c1iL14K4YoZBWDSUtoIeGtfezbcyAygPkXcb1lmdaxXvQRfxRRUhbx4AgaqVmK
-vmsLPvpcI/Y0E9ZCxLyLiEmmdjcahLrp+3ZEd0+zMsFRrm55mnif60om7B9hXs5K
-dRnLnKqN7FTygKeXg0OnnTJsJOPAZBIokDm08/x+Tyj950yC+JUWL++zI3MlZ1dU
-cZhqY+ueTUI56xqEWXUOnQjjc1NhQty3udLsfp+1F5kL9ujjf9sacYHKJjtZwdGX
-HJVMGnzVP7tolrEPfAmts3WZHFRg+5QqUHdfoIbvycUZsNIQsmqcy0un89yEHqgu
-HOb7imaKERiC/TqxvkHHY1IswTv76M13trR8wsOpTTv2HXwftxV6FgvpNlaEZ0UV
-p337qL0mAi1NPW2N4Xkz2CdMSVTIAtfRZOMhYF2T/pvISR0qPFruh93wWmlheJk+
-+U5GJDqe+aTsvRz/ToVY5+RHnV2AOH6Ou8PEjwV9O0pQVivgroi98UxIVB6RALx4
-+2onARq8SF2EmMaxuxbfDtZJC59ZEDAKpJVRXVTpGX+4Ry2it++e07WU4Rr2sElv
-MpWbJNt7iQdwUn047RVg9CVGy6HX9w3z3gQP3a2uPI5Yg7X6UQtJye3M2MdpuHa2
-/snw3aKZx9I=
-=+VEu
------END PGP SIGNATURE-----
---=-=-=--
+> > Personally I would be wary of deleting
+> > it but mostly because I lack regular access to the type of hardware
+> > to evaulate whether it was safe to remove or not. Minimally, removing
+> > the per-cpu allocator could make the zone lock very hot even though slub
+> > probably makes it very hot already.
+> 
+> Much of the testing of the initial code was done on mbligh's weirdass
+> NUMAq box: 32-way 386 NUMA which suffered really badly if there were
+> contention issues.  And even on that box, the code was marginal.  So
+> I'm hopeful that things will be similar on current machines.  Of
+> course, it's possible that calling patterns have changed in ways which
+> make the code more beneficial than it used to be.
+> 
+
+Core counts are also higher and some workloads might be more
+allocator intensive than they used to be - netperf and network-related
+allocations for socket receive might be a problem for example.
+
+> But this all ties into my proposal yesterday to remove
+> mm/swap.c:lru_*_pvecs.  Most or all of the heavy one-page-at-a-time
+> code can pretty easily be converted to operate on batches of pages. 
+>
+> Folowing on from that, it should be pretty simple to extend the
+> batching down into the page freeing.  Look at put_pages_list() and
+> weep.  And stuff like free_hot_cold_page_list() which could easily free
+> the pages directly whilebatching the locking.
+> 
+> Page freeing should be relatively straightforward.  Batching page
+> allocation is hard in some cases (anonymous pagefaults).
+> 
+
+Page faulting would certainly be hard to batch but it would only be
+really a big problem if they are intensive enough and on enough CPUs to
+cause zone lock contention that was a problem.
+
+> Please do note that the above suggestions are only needed if removing
+> the pcp lists causes a problem!  It may not.
+> 
+
+True.
+
+-- 
+Mel Gorman
+SUSE Labs
