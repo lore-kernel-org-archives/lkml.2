@@ -1,79 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab2AIQvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:51:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61874 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932312Ab2AIQvA (ORCPT
+	id S932650Ab2AIQve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:51:34 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52766 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932476Ab2AIQu0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:51:00 -0500
-Date: Mon, 9 Jan 2012 08:50:53 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
-Message-ID: <20120109165053.GA15083@core.coreip.homeip.net>
-References: <20120109084828.GE4049@core.coreip.homeip.net>
- <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 9 Jan 2012 11:50:26 -0500
+From: Stephane Eranian <eranian@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: peterz@infradead.org, mingo@elte.hu, acme@infradead.org,
+        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
+        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu
+Subject: [PATCH 12/13] perf: add support for sampling taken branch to perf record (v3)
+Date: Mon,  9 Jan 2012 17:49:20 +0100
+Message-Id: <1326127761-2723-13-git-send-email-eranian@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1326127761-2723-1-git-send-email-eranian@google.com>
+References: <1326127761-2723-1-git-send-email-eranian@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 11:37:57AM -0500, Alan Stern wrote:
-> On Mon, 9 Jan 2012, Dmitry Torokhov wrote:
-> 
-> > > I don't think any of those calls actually accomplish anything, but it's
-> > > hard to be certain.  Some of them appear to be futile attempts to
-> > > prevent the driver from being unregistered or unloaded, others are
-> > > there simply to drop the reference taken by driver_find().
-> > > 
-> > > In a few of them it's obvious that the driver can't be unregistered 
-> > > while the critical section runs, but in the others I can't tell.  On 
-> > > the other hand, if a critical section can race with unregistration 
-> > > then the code is buggy now.
-> > > 
-> > > What do you think?
-> > 
-> > I think we need to audit them and decide on case-by-case basis. For
-> > example drivers/s390/cio/device.c is completely nonsensical: it takes a
-> > reference on a driver that is passed as argument before calling
-> > driver_find_device(). But if passed driver was valid before we called
-> > get_driver it won't become any more valid afterwards and it should not
-> > disappear either.
-> > 
-> > drivers/s390/cio/ccwgroup.c - calls are useless;
-> > 
-> > Authors of drivers/net/phy/phy_device.c had their reservations:
-> > 
-> >         /* Make sure the driver is held.
-> >          * XXX -- Is this correct? */
-> >         drv = get_driver(phydev->dev.driver);
-> > 
-> > However it is in phydev_probe() and I hope our device core takes care of
-> > not destroying drivers in the middle of binding to a device.
-> 
-> Yes, it does.  That one looks like a misunderstanding.  It calls
-> get_driver during phy_probe and put_driver during phy_remove, which
-> accomplishes nothing.
-> 
-> > drivers/ssb/main.c seems like needs some protection but does it
-> > incorrectly as we do not wait for drivers to drop all references before
-> > unloading modules.
-> 
-> Possibly it needs to be replaced with try_module_get.  I'll send out an 
-> email to the maintainers of these drivers to see what they think.
+From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
 
-No, I am not that try_module_get() [alone] is quite what is needed, as
-strictly speaking driver lifetime does not need to be the same as module
-lifetime. But maybe I am just splitting hair as all drivers are
-statically initialized and are tied to their modules...
+This patch adds a new option to enable taken branch stack
+sampling, i.e., leverage the PERF_SAMPLE_BRANCH_STACK feature
+of perf_events.
 
+There is a new option to active this mode: -b.
+It is possible to pass a set of filters to select the type of
+branches to sample.
+
+The following filters are available:
+- any : any type of branches
+- any_call : any function call or system call
+- any_ret : any function return or system call return
+- any_ind : any indirect branch
+- u:  only when the branch target is at the user level
+- k: only when the branch target is in the kernel
+
+Filters can be combined by passing a comma separated list
+to the option:
+
+$ perf record -b any_call,u -e cycles:u branchy
+
+Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+---
+ tools/perf/Documentation/perf-record.txt |   18 ++++++++
+ tools/perf/builtin-record.c              |   69 ++++++++++++++++++++++++++++++
+ tools/perf/perf.h                        |    1 +
+ tools/perf/util/evsel.c                  |    4 ++
+ 4 files changed, 92 insertions(+), 0 deletions(-)
+
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 2937f7e..69068d0 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -148,6 +148,24 @@ an empty cgroup (monitor all the time) using, e.g., -G foo,,bar. Cgroups must ha
+ corresponding events, i.e., they always refer to events defined earlier on the command
+ line.
+ 
++-b::
++--branch-stack::
++Enable taken branch stack sampling. Each sample captures a series of consecutive
++taken branches. The number of branches captured with each sample depends on the
++underlying hardware, the type of branches of interested and the executed code.
++It is possible to filter the types of branches by enabling filters. The
++following filters are defined: any (any type of branches), any_call (any function
++call or system call), any_ret (any function return or system call return), any_ind
++(any indirect branch), u (only when the branch target is at the user level), k (only when
++the branch target is in the kernel). At least one of any, any_call, any_ret, any_ind
++must be provided. The privilege levels may be ommitted, in which case, the privilege
++levels of the associated event is applied to the branch filter. When sampling on multiple
++events, branch stack sampling is enabled for all the sampling events. The sampled branch
++type is the same for all events. The privilege levels are adjusted based on those of
++the associated event unless specified explicitly with this option. Note that taken
++branch sampling may not be available on all processors. The various filters must
++be specified as a comma separated list: -b any_ret,u,k
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 0abfb18..df79d23 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -636,6 +636,72 @@ static int __cmd_record(struct perf_record *rec, int argc, const char **argv)
+ 	return err;
+ }
+ 
++#define BRANCH_OPT(n, m) \
++	{ .name = n, .mode = (m) }
++
++#define BRANCH_END { .name = NULL }
++
++struct branch_mode {
++	const char *name;
++	int mode;
++};
++
++static const struct branch_mode branch_modes[]={
++	BRANCH_OPT("u", PERF_SAMPLE_BRANCH_USER),
++	BRANCH_OPT("k", PERF_SAMPLE_BRANCH_KERNEL),
++	BRANCH_OPT("any", PERF_SAMPLE_BRANCH_ANY),
++	BRANCH_OPT("any_call", PERF_SAMPLE_BRANCH_ANY_CALL),
++	BRANCH_OPT("any_ret", PERF_SAMPLE_BRANCH_ANY_RETURN),
++	BRANCH_OPT("ind_call", PERF_SAMPLE_BRANCH_IND_CALL),
++	BRANCH_END
++};
++
++static int
++parse_branch_stack(const struct option *opt, const char *str, int unset __used)
++{
++#define ONLY_PLM (PERF_SAMPLE_BRANCH_USER|PERF_SAMPLE_BRANCH_KERNEL)
++	uint64_t *mode = (uint64_t *)opt->value;
++	const struct branch_mode *br;
++	char *s, *os, *p;
++	int ret = -1;
++
++	*mode = 0;
++
++	/* because str is read-only */
++	s = os = strdup(str);
++	if (!s)
++		return -1;
++
++	for (;;) {
++		p = strchr(s, ',');
++		if (p)
++			*p = '\0';
++
++		for (br = branch_modes; br->name; br++) {
++			if (!strcasecmp(s, br->name))
++				break;
++		}
++		if (!br->name)
++			goto error;
++
++		*mode |= br->mode;
++
++		if (!p)
++			break;
++
++		s = p + 1;
++	}
++	ret = 0;
++
++	if ((*mode & ~ONLY_PLM) == 0) {
++		error("need at least one branch type with -b\n");
++		ret = -1;
++	}
++error:
++	free(os);
++	return ret;
++}
++
+ static const char * const record_usage[] = {
+ 	"perf record [<options>] [<command>]",
+ 	"perf record [<options>] -- <command> [<options>]",
+@@ -727,6 +793,9 @@ const struct option record_options[] = {
+ 	OPT_CALLBACK('G', "cgroup", &record.evlist, "name",
+ 		     "monitor event in cgroup name only",
+ 		     parse_cgroups),
++	OPT_CALLBACK('b', "branch stack", &record.opts.branch_stack, "branch mode mask",
++		     "branch stack sampling modes",
++		     parse_branch_stack),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 513617c..dec5b4c 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -221,6 +221,7 @@ struct perf_record_opts {
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+ 	unsigned int user_freq;
++	int	     branch_stack;
+ 	u64	     default_interval;
+ 	u64	     user_interval;
+ 	const char   *cpu_list;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 472fc8c..a65a53c 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -126,6 +126,10 @@ void perf_evsel__config(struct perf_evsel *evsel, struct perf_record_opts *opts)
+ 		attr->watermark = 0;
+ 		attr->wakeup_events = 1;
+ 	}
++	if (opts->branch_stack) {
++		attr->sample_type	|= PERF_SAMPLE_BRANCH_STACK;
++		attr->branch_sample_type = opts->branch_stack;
++	}
+ 
+ 	attr->mmap = track;
+ 	attr->comm = track;
 -- 
-Dmitry
+1.7.1
+
