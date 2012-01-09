@@ -1,185 +1,642 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab2AIGUh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 01:20:37 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:52064 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872Ab2AIGUg (ORCPT
+	id S1753055Ab2AIGUx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 01:20:53 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41722 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374Ab2AIGUu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 01:20:36 -0500
-Date: Mon, 9 Jan 2012 17:20:16 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20120109172016.2496b94ce207c5f7f750a1ea@canb.auug.org.au>
-In-Reply-To: <20120109165950.53933c3050416bd242acff76@canb.auug.org.au>
-References: <20120105190405.1e3191fb5a43b2a0f1655e1f@canb.auug.org.au>
-	<20120105160448.dc482ef6.akpm@linux-foundation.org>
-	<20120109165950.53933c3050416bd242acff76@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY"
+	Mon, 9 Jan 2012 01:20:50 -0500
+MIME-Version: 1.0
+In-Reply-To: <1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
+References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
+	<1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
+Date: Mon, 9 Jan 2012 15:20:48 +0900
+Message-ID: <CAAQKjZPFh6666JKc-XJfKYePQ_F0MNF6FkY=zKypWb52VVX3YQ@mail.gmail.com>
+Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
+From: InKi Dae <daeinki@gmail.com>
+To: Sumit Semwal <sumit.semwal@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        dri-devel@lists.freedesktop.org, linux-media@vger.kernel.org,
+        linux@arm.linux.org.uk, arnd@arndb.de, jesse.barker@linaro.org,
+        m.szyprowski@samsung.com, rob@ti.com, daniel@ffwll.ch,
+        t.stanislaws@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, 9 Jan 2012 16:59:50 +1100 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
+2011/12/2 Sumit Semwal <sumit.semwal@ti.com>:
+> This is the first step in defining a dma buffer sharing mechanism.
 >
-> On Thu, 5 Jan 2012 16:04:48 -0800 Andrew Morton <akpm@linux-foundation.or=
-g> wrote:
-> >
-> > On Thu, 5 Jan 2012 19:04:05 +1100
-> > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >=20
-> > > After merging the final tree, today's linux-next build (sparc64 defco=
-nfig)
-> > > failed like this:
-> > >=20
-> > > In file included from include/trace/ftrace.h:567:0,
-> > >                  from include/trace/define_trace.h:86,
-> > >                  from include/trace/events/power.h:240,
-> > >                  from kernel/trace/power-traces.c:14:
-> > > include/trace/events/kmem.h: In function 'ftrace_test_probe_kmalloc':
-> > > include/trace/events/kmem.h:45:1: error: implicit declaration of func=
-tion 'check_trace_callback_type_kmalloc' [-Werror=3Dimplicit-function-decla=
-ration]
-> > > include/trace/events/kmem.h: In function 'ftrace_test_probe_kmem_cach=
-e_alloc':
-> > >
-> > > ...
-> > >
-> > > include/trace/events/kmem.h:267:1: error: implicit declaration of fun=
-ction 'check_trace_callback_type_mm_page_alloc_extfrag' [-Werror=3Dimplicit=
--function-declaration]
-> > > In file included from include/trace/ftrace.h:774:0,
-> > >                  from include/trace/define_trace.h:86,
-> > >                  from include/trace/events/power.h:240,
-> > >                  from kernel/trace/power-traces.c:14:
-> > > include/trace/events/kmem.h: In function 'perf_test_probe_mm_page_pcp=
-u_drain':
-> > > include/trace/events/kmem.h:256:1: error: implicit declaration of fun=
-ction 'check_trace_callback_type_mm_page_pcpu_drain' [-Werror=3Dimplicit-fu=
-nction-declaration]
-> > >=20
-> > > I have no idea what has gone wrong here, but I did not get this error
-> > > yesterday.  The only thing that touched include/trace/events/kmem.h is
-> > > patch "mm-tracepoint: rename page-free events" from the akpm tree, but
-> > > that was there yesterday as well and doesn't look suspicious.
-> >=20
-> > Yes, it's not due to anything in the akpm tree.  Tracing stuff blew up.
-> >=20
-> > > I just have to leave things broken for today in the hope that someone
-> > > figures something out.  This does not affect my X86_64 allmodconfig b=
-uild
-> > > or my PowerPC builds (including an allyesconfig build).
-> >=20
-> > It fails with sparc64 defconfig but succeeds with sparc64 allmodconfig.
-> > Some config-dependent thing.  3.2 is OK, so it's something in -next.
-> >=20
-> > It could be that some far-off sparc64 Kconfig change is newly
-> > triggering this. =20
-> >=20
-> > I suppose I could get off my ass and actually work out why it broke,
-> > but the tracing code is too icky.
->=20
-> This failure is now in Linus' tree.  I am not sure when it got there.
+> A new buffer object dma_buf is added, with operations and API to allow easy
+> sharing of this buffer object across devices.
+>
+> The framework allows:
+> - different devices to 'attach' themselves to this buffer, to facilitate
+>  backing storage negotiation, using dma_buf_attach() API.
+> - association of a file pointer with each user-buffer and associated
+>   allocator-defined operations on that buffer. This operation is called the
+>   'export' operation.
+> - this exported buffer-object to be shared with the other entity by asking for
+>   its 'file-descriptor (fd)', and sharing the fd across.
+> - a received fd to get the buffer object back, where it can be accessed using
+>   the associated exporter-defined operations.
+> - the exporter and user to share the scatterlist using map_dma_buf and
+>   unmap_dma_buf operations.
+>
+> Atleast one 'attach()' call is required to be made prior to calling the
+> map_dma_buf() operation.
+>
+> Couple of building blocks in map_dma_buf() are added to ease introduction
+> of sync'ing across exporter and users, and late allocation by the exporter.
+>
+> *OPTIONALLY*: mmap() file operation is provided for the associated 'fd', as
+> wrapper over the optional allocator defined mmap(), to be used by devices
+> that might need one.
+>
+> More details are there in the documentation patch.
+>
+> This is based on design suggestions from many people at the mini-summits[1],
+> most notably from Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com> and
+> Daniel Vetter <daniel@ffwll.ch>.
+>
+> The implementation is inspired from proof-of-concept patch-set from
+> Tomasz Stanislawski <t.stanislaws@samsung.com>, who demonstrated buffer sharing
+> between two v4l2 devices. [2]
+>
+> [1]: https://wiki.linaro.org/OfficeofCTO/MemoryManagement
+> [2]: http://lwn.net/Articles/454389
+>
+> Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
+> Signed-off-by: Sumit Semwal <sumit.semwal@ti.com>
+> ---
+>  drivers/base/Kconfig    |   10 ++
+>  drivers/base/Makefile   |    1 +
+>  drivers/base/dma-buf.c  |  290 +++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/dma-buf.h |  176 ++++++++++++++++++++++++++++
+>  4 files changed, 477 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/base/dma-buf.c
+>  create mode 100644 include/linux/dma-buf.h
+>
+> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
+> index 21cf46f..07d8095 100644
+> --- a/drivers/base/Kconfig
+> +++ b/drivers/base/Kconfig
+> @@ -174,4 +174,14 @@ config SYS_HYPERVISOR
+>
+>  source "drivers/base/regmap/Kconfig"
+>
+> +config DMA_SHARED_BUFFER
+> +       bool "Buffer framework to be shared between drivers"
+> +       default n
+> +       depends on ANON_INODES
+> +       help
+> +         This option enables the framework for buffer-sharing between
+> +         multiple drivers. A buffer is associated with a file using driver
+> +         APIs extension; the file's descriptor can then be passed on to other
+> +         driver.
+> +
+>  endmenu
+> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+> index 99a375a..d0df046 100644
+> --- a/drivers/base/Makefile
+> +++ b/drivers/base/Makefile
+> @@ -8,6 +8,7 @@ obj-$(CONFIG_DEVTMPFS)  += devtmpfs.o
+>  obj-y                  += power/
+>  obj-$(CONFIG_HAS_DMA)  += dma-mapping.o
+>  obj-$(CONFIG_HAVE_GENERIC_DMA_COHERENT) += dma-coherent.o
+> +obj-$(CONFIG_DMA_SHARED_BUFFER) += dma-buf.o
+>  obj-$(CONFIG_ISA)      += isa.o
+>  obj-$(CONFIG_FW_LOADER)        += firmware_class.o
+>  obj-$(CONFIG_NUMA)     += node.o
+> diff --git a/drivers/base/dma-buf.c b/drivers/base/dma-buf.c
+> new file mode 100644
+> index 0000000..4b9005e
+> --- /dev/null
+> +++ b/drivers/base/dma-buf.c
+> @@ -0,0 +1,290 @@
+> +/*
+> + * Framework for buffer objects that can be shared across devices/subsystems.
+> + *
+> + * Copyright(C) 2011 Linaro Limited. All rights reserved.
+> + * Author: Sumit Semwal <sumit.semwal@ti.com>
+> + *
+> + * Many thanks to linaro-mm-sig list, and specially
+> + * Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com> and
+> + * Daniel Vetter <daniel@ffwll.ch> for their support in creation and
+> + * refining of this idea.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/fs.h>
+> +#include <linux/slab.h>
+> +#include <linux/dma-buf.h>
+> +#include <linux/anon_inodes.h>
+> +#include <linux/export.h>
+> +
+> +static inline int is_dma_buf_file(struct file *);
+> +
+> +static int dma_buf_mmap(struct file *file, struct vm_area_struct *vma)
+> +{
+> +       struct dma_buf *dmabuf;
+> +
+> +       if (!is_dma_buf_file(file))
+> +               return -EINVAL;
+> +
+> +       dmabuf = file->private_data;
+> +
+> +       if (!dmabuf->ops->mmap)
+> +               return -EINVAL;
+> +
+> +       return dmabuf->ops->mmap(dmabuf, vma);
+> +}
+> +
+> +static int dma_buf_release(struct inode *inode, struct file *file)
+> +{
+> +       struct dma_buf *dmabuf;
+> +
+> +       if (!is_dma_buf_file(file))
+> +               return -EINVAL;
+> +
+> +       dmabuf = file->private_data;
+> +
+> +       dmabuf->ops->release(dmabuf);
+> +       kfree(dmabuf);
+> +       return 0;
+> +}
+> +
+> +static const struct file_operations dma_buf_fops = {
+> +       .mmap           = dma_buf_mmap,
+> +       .release        = dma_buf_release,
+> +};
+> +
+> +/*
+> + * is_dma_buf_file - Check if struct file* is associated with dma_buf
+> + */
+> +static inline int is_dma_buf_file(struct file *file)
+> +{
+> +       return file->f_op == &dma_buf_fops;
+> +}
+> +
+> +/**
+> + * dma_buf_export - Creates a new dma_buf, and associates an anon file
+> + * with this buffer,so it can be exported.
+> + * Also connect the allocator specific data and ops to the buffer.
+> + *
+> + * @priv:      [in]    Attach private data of allocator to this buffer
+> + * @ops:       [in]    Attach allocator-defined dma buf ops to the new buffer.
+> + * @flags:     [in]    mode flags for the file.
+> + *
+> + * Returns, on success, a newly created dma_buf object, which wraps the
+> + * supplied private data and operations for dma_buf_ops. On failure to
+> + * allocate the dma_buf object, it can return NULL.
+> + *
+> + */
+> +struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops,
+> +                               int flags)
+> +{
+> +       struct dma_buf *dmabuf;
+> +       struct file *file;
+> +
+> +       BUG_ON(!priv || !ops);
+> +
+> +       dmabuf = kzalloc(sizeof(struct dma_buf), GFP_KERNEL);
+> +       if (dmabuf == NULL)
+> +               return dmabuf;
+> +
+> +       dmabuf->priv = priv;
+> +       dmabuf->ops = ops;
+> +
+> +       file = anon_inode_getfile("dmabuf", &dma_buf_fops, dmabuf, flags);
+> +
+> +       dmabuf->file = file;
+> +
+> +       mutex_init(&dmabuf->lock);
+> +       INIT_LIST_HEAD(&dmabuf->attachments);
+> +
+> +       return dmabuf;
+> +}
+> +EXPORT_SYMBOL(dma_buf_export);
+> +
+> +
+> +/**
+> + * dma_buf_fd - returns a file descriptor for the given dma_buf
+> + * @dmabuf:    [in]    pointer to dma_buf for which fd is required.
+> + *
+> + * On success, returns an associated 'fd'. Else, returns error.
+> + */
+> +int dma_buf_fd(struct dma_buf *dmabuf)
+> +{
+> +       int error, fd;
+> +
+> +       if (!dmabuf->file)
+> +               return -EINVAL;
+> +
+> +       error = get_unused_fd_flags(0);
+> +       if (error < 0)
+> +               return error;
+> +       fd = error;
+> +
+> +       fd_install(fd, dmabuf->file);
+> +
+> +       return fd;
+> +}
+> +EXPORT_SYMBOL(dma_buf_fd);
+> +
+> +/**
+> + * dma_buf_get - returns the dma_buf structure related to an fd
+> + * @fd:        [in]    fd associated with the dma_buf to be returned
+> + *
+> + * On success, returns the dma_buf structure associated with an fd; uses
+> + * file's refcounting done by fget to increase refcount. returns ERR_PTR
+> + * otherwise.
+> + */
+> +struct dma_buf *dma_buf_get(int fd)
+> +{
+> +       struct file *file;
+> +
+> +       file = fget(fd);
+> +
+> +       if (!file)
+> +               return ERR_PTR(-EBADF);
+> +
+> +       if (!is_dma_buf_file(file)) {
+> +               fput(file);
+> +               return ERR_PTR(-EINVAL);
+> +       }
+> +
+> +       return file->private_data;
+> +}
+> +EXPORT_SYMBOL(dma_buf_get);
+> +
+> +/**
+> + * dma_buf_put - decreases refcount of the buffer
+> + * @dmabuf:    [in]    buffer to reduce refcount of
+> + *
+> + * Uses file's refcounting done implicitly by fput()
+> + */
+> +void dma_buf_put(struct dma_buf *dmabuf)
+> +{
+> +       BUG_ON(!dmabuf->file);
+> +
+> +       fput(dmabuf->file);
+> +}
+> +EXPORT_SYMBOL(dma_buf_put);
+> +
+> +/**
+> + * dma_buf_attach - Add the device to dma_buf's attachments list; optionally,
+> + * calls attach() of dma_buf_ops to allow device-specific attach functionality
+> + * @dmabuf:    [in]    buffer to attach device to.
+> + * @dev:       [in]    device to be attached.
+> + *
+> + * Returns struct dma_buf_attachment * for this attachment; may return NULL.
+> + *
+> + */
+> +struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+> +                                               struct device *dev)
+> +{
+> +       struct dma_buf_attachment *attach;
+> +       int ret;
+> +
+> +       BUG_ON(!dmabuf || !dev);
+> +
+> +       attach = kzalloc(sizeof(struct dma_buf_attachment), GFP_KERNEL);
+> +       if (attach == NULL)
+> +               goto err_alloc;
+> +
+> +       mutex_lock(&dmabuf->lock);
+> +
+> +       attach->dev = dev;
+> +       attach->dmabuf = dmabuf;
+> +       if (dmabuf->ops->attach) {
+> +               ret = dmabuf->ops->attach(dmabuf, dev, attach);
+> +               if (!ret)
+> +                       goto err_attach;
+> +       }
+> +       list_add(&attach->node, &dmabuf->attachments);
+> +
+> +       mutex_unlock(&dmabuf->lock);
+> +
+> +err_alloc:
+> +       return attach;
+> +err_attach:
+> +       kfree(attach);
+> +       mutex_unlock(&dmabuf->lock);
+> +       return ERR_PTR(ret);
+> +}
+> +EXPORT_SYMBOL(dma_buf_attach);
+> +
+> +/**
+> + * dma_buf_detach - Remove the given attachment from dmabuf's attachments list;
+> + * optionally calls detach() of dma_buf_ops for device-specific detach
+> + * @dmabuf:    [in]    buffer to detach from.
+> + * @attach:    [in]    attachment to be detached; is free'd after this call.
+> + *
+> + */
+> +void dma_buf_detach(struct dma_buf *dmabuf, struct dma_buf_attachment *attach)
+> +{
+> +       BUG_ON(!dmabuf || !attach);
+> +
+> +       mutex_lock(&dmabuf->lock);
+> +       list_del(&attach->node);
+> +       if (dmabuf->ops->detach)
+> +               dmabuf->ops->detach(dmabuf, attach);
+> +
+> +       mutex_unlock(&dmabuf->lock);
+> +       kfree(attach);
+> +}
+> +EXPORT_SYMBOL(dma_buf_detach);
+> +
+> +/**
+> + * dma_buf_map_attachment - Returns the scatterlist table of the attachment;
+> + * mapped into _device_ address space. Is a wrapper for map_dma_buf() of the
+> + * dma_buf_ops.
+> + * @attach:    [in]    attachment whose scatterlist is to be returned
+> + * @direction: [in]    direction of DMA transfer
+> + *
+> + * Returns sg_table containing the scatterlist to be returned; may return NULL
+> + * or ERR_PTR.
+> + *
+> + */
+> +struct sg_table * dma_buf_map_attachment(struct dma_buf_attachment *attach,
+> +                                         enum dma_data_direction direction)
+> +{
+> +       struct sg_table *sg_table = ERR_PTR(-EINVAL);
+> +
+> +       BUG_ON(!attach || !attach->dmabuf);
+> +
+> +       mutex_lock(&attach->dmabuf->lock);
+> +       if (attach->dmabuf->ops->map_dma_buf)
+> +               sg_table = attach->dmabuf->ops->map_dma_buf(attach, direction);
+> +       mutex_unlock(&attach->dmabuf->lock);
+> +
+> +       return sg_table;
+> +}
+> +EXPORT_SYMBOL(dma_buf_map_attachment);
+> +
+> +/**
+> + * dma_buf_unmap_attachment - unmaps and decreases usecount of the buffer;might
+> + * deallocate the scatterlist associated. Is a wrapper for unmap_dma_buf() of
+> + * dma_buf_ops.
+> + * @attach:    [in]    attachment to unmap buffer from
+> + * @sg_table:  [in]    scatterlist info of the buffer to unmap
+> + *
+> + */
+> +void dma_buf_unmap_attachment(struct dma_buf_attachment *attach,
+> +                               struct sg_table *sg_table)
+> +{
+> +       BUG_ON(!attach || !attach->dmabuf || !sg_table);
+> +
+> +       mutex_lock(&attach->dmabuf->lock);
+> +       if (attach->dmabuf->ops->unmap_dma_buf)
+> +               attach->dmabuf->ops->unmap_dma_buf(attach, sg_table);
+> +       mutex_unlock(&attach->dmabuf->lock);
+> +
+> +}
+> +EXPORT_SYMBOL(dma_buf_unmap_attachment);
+> diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+> new file mode 100644
+> index 0000000..db4b384
+> --- /dev/null
+> +++ b/include/linux/dma-buf.h
+> @@ -0,0 +1,176 @@
+> +/*
+> + * Header file for dma buffer sharing framework.
+> + *
+> + * Copyright(C) 2011 Linaro Limited. All rights reserved.
+> + * Author: Sumit Semwal <sumit.semwal@ti.com>
+> + *
+> + * Many thanks to linaro-mm-sig list, and specially
+> + * Arnd Bergmann <arnd@arndb.de>, Rob Clark <rob@ti.com> and
+> + * Daniel Vetter <daniel@ffwll.ch> for their support in creation and
+> + * refining of this idea.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#ifndef __DMA_BUF_H__
+> +#define __DMA_BUF_H__
+> +
+> +#include <linux/file.h>
+> +#include <linux/err.h>
+> +#include <linux/device.h>
+> +#include <linux/scatterlist.h>
+> +#include <linux/list.h>
+> +#include <linux/dma-mapping.h>
+> +
+> +struct dma_buf;
+> +
+> +/**
+> + * struct dma_buf_attachment - holds device-buffer attachment data
+> + * @dmabuf: buffer for this attachment.
+> + * @dev: device attached to the buffer.
+> + * @node: list_head to allow manipulation of list of dma_buf_attachment.
+> + * @priv: exporter-specific attachment data.
+> + */
+> +struct dma_buf_attachment {
+> +       struct dma_buf *dmabuf;
+> +       struct device *dev;
+> +       struct list_head node;
+> +       void *priv;
+> +};
+> +
+> +/**
+> + * struct dma_buf_ops - operations possible on struct dma_buf
+> + * @attach: allows different devices to 'attach' themselves to the given
+> + *         buffer. It might return -EBUSY to signal that backing storage
+> + *         is already allocated and incompatible with the requirements
+> + *         of requesting device. [optional]
+> + * @detach: detach a given device from this buffer. [optional]
+> + * @map_dma_buf: returns list of scatter pages allocated, increases usecount
+> + *              of the buffer. Requires atleast one attach to be called
+> + *              before. Returned sg list should already be mapped into
+> + *              _device_ address space. This call may sleep.
+> + * @unmap_dma_buf: decreases usecount of buffer, might deallocate scatter
+> + *                pages.
+> + * @mmap: memory map this buffer - optional.
+> + * @release: release this buffer; to be called after the last dma_buf_put.
+> + * @sync_sg_for_cpu: sync the sg list for cpu.
+> + * @sync_sg_for_device: synch the sg list for device.
+> + */
+> +struct dma_buf_ops {
+> +       int (*attach)(struct dma_buf *, struct device *,
+> +                       struct dma_buf_attachment *);
+> +
+> +       void (*detach)(struct dma_buf *, struct dma_buf_attachment *);
+> +
+> +       /* For {map,unmap}_dma_buf below, any specific buffer attributes
+> +        * required should get added to device_dma_parameters accessible
+> +        * via dev->dma_params.
+> +        */
+> +       struct sg_table * (*map_dma_buf)(struct dma_buf_attachment *,
+> +                                               enum dma_data_direction);
+> +       void (*unmap_dma_buf)(struct dma_buf_attachment *,
+> +                                               struct sg_table *);
+> +       /* TODO: Add try_map_dma_buf version, to return immed with -EBUSY
+> +        * if the call would block.
+> +        */
 
-Bisected down to:
+I has test dmabuf based drm gem module for exynos and I found one problem.
+you can refer to this test repository:
+http://git.infradead.org/users/kmpark/linux-samsung/shortlog/refs/heads/exynos-drm-dmabuf
 
-8a25a2fd126c621f44f3aeaef80d51f00fc11639 is the first bad commit
-commit 8a25a2fd126c621f44f3aeaef80d51f00fc11639
-Author: Kay Sievers <kay.sievers@vrfy.org>
-Date:   Wed Dec 21 14:29:42 2011 -0800
+at this repository, I added some exception codes for resource release
+in addition to Dave's patch sets.
 
-    cpu: convert 'cpu' and 'machinecheck' sysdev_class to a regular subsyst=
-em
-   =20
-    This moves the 'cpu sysdev_class' over to a regular 'cpu' subsystem
-    and converts the devices to regular devices. The sysdev drivers are
-    implemented as subsystem interfaces now.
-   =20
-    After all sysdev classes are ported to regular driver core entities, the
-    sysdev implementation will be entirely removed from the kernel.
-   =20
-    Userspace relies on events and generic sysfs subsystem infrastructure
-    from sysdev devices, which are made available with this conversion.
-   =20
-    Cc: Haavard Skinnemoen <hskinnemoen@gmail.com>
-    Cc: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-    Cc: Tony Luck <tony.luck@intel.com>
-    Cc: Fenghua Yu <fenghua.yu@intel.com>
-    Cc: Arnd Bergmann <arnd@arndb.de>
-    Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-    Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-    Cc: Paul Mundt <lethal@linux-sh.org>
-    Cc: "David S. Miller" <davem@davemloft.net>
-    Cc: Chris Metcalf <cmetcalf@tilera.com>
-    Cc: Thomas Gleixner <tglx@linutronix.de>
-    Cc: Ingo Molnar <mingo@redhat.com>
-    Cc: "H. Peter Anvin" <hpa@zytor.com>
-    Cc: Borislav Petkov <bp@amd64.org>
-    Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-    Cc: Len Brown <lenb@kernel.org>
-    Cc: Zhang Rui <rui.zhang@intel.com>
-    Cc: Dave Jones <davej@redhat.com>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Russell King <rmk+kernel@arm.linux.org.uk>
-    Cc: Andrew Morton <akpm@linux-foundation.org>
-    Cc: Arjan van de Ven <arjan@linux.intel.com>
-    Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-    Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-    Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+let's suppose we use dmabuf based vb2 and drm gem with physically
+continuous memory(no IOMMU) and we try to share allocated buffer
+between them(v4l2 and drm driver).
 
-:040000 040000 9f2bf9fd8c5aded0a2ee73e897384dcf751c7be3 e0a42f67ed44979aa64=
-b2be4c6de265832e940ca M	arch
-:040000 040000 f910621f42e19d9d023350ef0dc29e82d1dc9087 513187817d23d20eccb=
-d12fae6d54ab46f6224a3 M	drivers
-:040000 040000 1e4d8217d84d59840615679ff4c28b04bb6ff635 296baef04fc04321aba=
-25b5bdbc8e7210765e7b8 M	include
-:040000 040000 65e9478a4ef764542a61132c53378ef89d8677ba 671ac443ad56c84707d=
-80c84eee9e3902fc5edea M	kernel
+1. request memory allocation through drm gem interface.
+2. request DRM_SET_PRIME ioctl with the gem handle to get a fd to the
+gem object.
+- internally, private gem based dmabuf moudle calls drm_buf_export()
+to register allocated gem object to fd.
+3. request qbuf with the fd(got from 2) and DMABUF type to set the
+buffer to v4l2 based device.
+- internally, vb2 plug in module gets a buffer to the fd and then
+calls dmabuf->ops->map_dmabuf() callback to get the sg table
+containing physical memory info to the gem object. and then the
+physical memory info would be copied to vb2_xx_buf object.
+for DMABUF feature for v4l2 and videobuf2 framework, you can refer to
+this repository:
+git://github.com/robclark/kernel-omap4.git drmplane-dmabuf
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+after that, if v4l2 driver want to release vb2_xx_buf object with
+allocated memory region by user request, how should we do?. refcount
+to vb2_xx_buf is dependent on videobuf2 framework. so when vb2_xx_buf
+object is released videobuf2 framework don't know who is using the
+physical memory region. so this physical memory region is released and
+when drm driver tries to access the region or to release it also, a
+problem would be induced.
 
---Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY
-Content-Type: application/pgp-signature
+for this problem, I added get_shared_cnt() callback to dma-buf.h but
+I'm not sure that this is good way. maybe there may be better way.
+if there is any missing point, please let me know.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Thanks.
 
-iQIcBAEBCAAGBQJPCocgAAoJEECxmPOUX5FEH1MQAKDVkDqvrtj3rWX4J0QwWobO
-huL4ScBFAFhEzGdmkn21LzJAgKlyD/ZOkOgb+PwbvKEQt/3i/fKKc4FZwmZd3e8j
-65XI5AF/rP8EVeZ5v+AkaAzmk0PWSyOji+Da4oKgQa/pqEmHGoEPNzhgEyzHAzKW
-JTwDgiZNawpOpB3mGZna+BgifLRV8NQP/paGlvE+PTuwu9MxRMh4tbeQcAbKGfca
-uktM3za/e8S7EPDYN4SlIk+M4/7woMJIieIxqYmOjE/ipD35NJIwd9ma3LR82S41
-6Y6ha0XVkc2rR2BEg4vEE0dUPMSpfT2G53A8LH83XIUwYPj9BqD66u4HcPpYDlIG
-F16GXk174rTLqHVu7jhrJ4imE8Yu5A6WGkw2pkKZUnHv20qPstTMqqM5hMIPuFMt
-8ZxMhXHqZKmj8TJebDmPXKkhUVC6ME9fb5XJQR5OEBWqfOZOL2QJfK/y+VhpFi5n
-tGSRfx1MJX+imhtcKNp19/o2avStFLI1OUizxLDDg+3lh27VjnxABTvuNiO2SETO
-rl6LEyzq6UYOWs9UQYWTGRAeU8bGHNeWqWK4zDZG5+ufrm+mPbgZEVktfwRPO9Ks
-KJ+StrrgfoRci9pRG7BO5PtD5wtqkMi+ML+SB86JkLAysVmKp8hVC5DjWmb4MlUa
-mPcjib7OxrG6DIXPbHmr
-=dEh+
------END PGP SIGNATURE-----
-
---Signature=_Mon__9_Jan_2012_17_20_16_+1100_WBH+HBD==Q.ikkTY--
+> +
+> +       /* allow mmap optionally for devices that need it */
+> +       int (*mmap)(struct dma_buf *, struct vm_area_struct *);
+> +       /* after final dma_buf_put() */
+> +       void (*release)(struct dma_buf *);
+> +
+> +       /* allow allocator to take care of cache ops */
+> +       void (*sync_sg_for_cpu) (struct dma_buf *, struct device *);
+> +       void (*sync_sg_for_device)(struct dma_buf *, struct device *);
+> +};
+> +
+> +/**
+> + * struct dma_buf - shared buffer object
+> + * @file: file pointer used for sharing buffers across, and for refcounting.
+> + * @attachments: list of dma_buf_attachment that denotes all devices attached.
+> + * @ops: dma_buf_ops associated with this buffer object
+> + * @priv: user specific private data
+> + */
+> +struct dma_buf {
+> +       size_t size;
+> +       struct file *file;
+> +       struct list_head attachments;
+> +       const struct dma_buf_ops *ops;
+> +       /* mutex to serialize list manipulation and other ops */
+> +       struct mutex lock;
+> +       void *priv;
+> +};
+> +
+> +#ifdef CONFIG_DMA_SHARED_BUFFER
+> +struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+> +                                                       struct device *dev);
+> +void dma_buf_detach(struct dma_buf *dmabuf,
+> +                               struct dma_buf_attachment *dmabuf_attach);
+> +struct dma_buf *dma_buf_export(void *priv, struct dma_buf_ops *ops, int flags);
+> +int dma_buf_fd(struct dma_buf *dmabuf);
+> +struct dma_buf *dma_buf_get(int fd);
+> +void dma_buf_put(struct dma_buf *dmabuf);
+> +
+> +struct sg_table * dma_buf_map_attachment(struct dma_buf_attachment *,
+> +                                        enum dma_data_direction);
+> +void dma_buf_unmap_attachment(struct dma_buf_attachment *, struct sg_table *);
+> +#else
+> +
+> +static inline struct dma_buf_attachment *dma_buf_attach(struct dma_buf *dmabuf,
+> +                                                       struct device *dev)
+> +{
+> +       return ERR_PTR(-ENODEV);
+> +}
+> +
+> +static inline void dma_buf_detach(struct dma_buf *dmabuf,
+> +                                 struct dma_buf_attachment *dmabuf_attach)
+> +{
+> +       return;
+> +}
+> +
+> +static inline struct dma_buf *dma_buf_export(void *priv,
+> +                                               struct dma_buf_ops *ops,
+> +                                               int flags)
+> +{
+> +       return ERR_PTR(-ENODEV);
+> +}
+> +
+> +static inline int dma_buf_fd(struct dma_buf *dmabuf)
+> +{
+> +       return -ENODEV;
+> +}
+> +
+> +static inline struct dma_buf *dma_buf_get(int fd)
+> +{
+> +       return ERR_PTR(-ENODEV);
+> +}
+> +
+> +static inline void dma_buf_put(struct dma_buf *dmabuf)
+> +{
+> +       return;
+> +}
+> +
+> +static inline struct sg_table * dma_buf_map_attachment(
+> +       struct dma_buf_attachment *, enum dma_data_direction)
+> +{
+> +       return ERR_PTR(-ENODEV);
+> +}
+> +
+> +static inline void dma_buf_unmap_attachment(struct dma_buf_attachment *,
+> +                                               struct sg_table *)
+> +{
+> +       return;
+> +}
+> +
+> +#endif /* CONFIG_DMA_SHARED_BUFFER */
+> +
+> +#endif /* __DMA_BUF_H__ */
+> --
+> 1.7.4.1
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Fight unfair telecom internet charges in Canada: sign http://stopthemeter.ca/
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
