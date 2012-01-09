@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755856Ab2AIU7N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 15:59:13 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:31267 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752605Ab2AIU7M (ORCPT
+	id S1755861Ab2AIVAA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 16:00:00 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:34142 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752605Ab2AIU77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 15:59:12 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJVTC095LbVq/2dsb2JhbABErFKBBoFyAQEEATocIwULCAMYLhQlAyETh3q2bxOLG2MElQeJH4kv
-Date: Tue, 10 Jan 2012 07:59:07 +1100
-From: Dave Chinner <david@fromorbit.com>
+	Mon, 9 Jan 2012 15:59:59 -0500
+X-Sasl-enc: 9mnQKfrdtvWXoojWW4bjBX/eNv+P0EEhIOgnrp+S5GNW 1326142798
+Date: Mon, 9 Jan 2012 12:59:53 -0800
+From: Greg KH <greg@kroah.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
-        akpm@linux-foundation.org
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-Message-ID: <20120109205907.GE4198@dastard>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
- <20120109171639.GA9359@infradead.org>
- <20120109173010.GX23916@ZenIV.linux.org.uk>
- <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org
+Subject: Re: [GIT PATCH] big staging merge for 3.3
+Message-ID: <20120109205953.GA9000@kroah.com>
+References: <20120109190827.GB9440@kroah.com>
+ <CA+55aFxjj0Bji2ivUPc7g5E0bz7Gft7a9uNbeDP4aQABhgTwng@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+In-Reply-To: <CA+55aFxjj0Bji2ivUPc7g5E0bz7Gft7a9uNbeDP4aQABhgTwng@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 10:30:59AM -0800, Linus Torvalds wrote:
-> On Mon, Jan 9, 2012 at 9:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+On Mon, Jan 09, 2012 at 12:17:15PM -0800, Linus Torvalds wrote:
+> On Mon, Jan 9, 2012 at 11:08 AM, Greg KH <greg@kroah.com> wrote:
 > >
-> > Resend would be nice; I can try to dig the series out and rebase it, but...
+> > Note, you will get a merge conflict in the
+> > drivers/staging/iio/adc/ad799x_core.c file, but it's pretty simple to
+> > resolve (just delete the module_init/exit calls, and keep the
+> > MODULE_ALIAS line).
 > 
-> Here's a TOTALLY UNTESTED rebase of just that single patch from Dave.
+> Are you sure about keeping the MODULE_ALIAS line?
 > 
-> I did not check if the rest of the series did something that this
-> patch needs, so the patch may be entirely broken, but it does look
-> sane on its own (ie I do not see anything obviously broken in it). So
-> it still looks like a nice cleanup, but maybe I'm missing something
-> subtle, and maybe the rest of Dave's series really is required.
+> It was removed by commit 55e4390cb04e ("staging:iio: Add missing
+> MODULE_DEVICE_TABLE and MODULE_ALIAS") which added the
+> MODULE_DEVICE_TABLE() line for that driver instead.
+> 
+> The natural merge would seem to be to remove that line too.
 
-Nothing else is required - that patch is a OK by itself as a bug
-fix/cleanup.
+Ugh, yes, you are right, that should be the correct thing to do.
 
-> It compiles. That's all I'm going to say about my extensive testing.
-> Which is also why I haven't added my sign-off to it.
-
-I did quite a bit of load and stress testing on the series back when
-I first posted it, so the dcache changes don't have any problems I
-know of.
-
-> Comments?
-
-Looks OK to me.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+greg k-h
