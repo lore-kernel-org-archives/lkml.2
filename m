@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933316Ab2AITmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 14:42:19 -0500
-Received: from jdl.com ([208.123.74.7]:35515 "EHLO jdl.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933288Ab2AITmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 14:42:11 -0500
-X-Greylist: delayed 2574 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jan 2012 14:42:10 EST
-Message-Id: <E1RkKQN-0000nM-2c@jdl.com>
-To: Stephen Warren <swarren@nvidia.com>
-cc: Michal Marek <mmarek@suse.cz>, David Gibson <david@gibson.dropbear.id.au>,
-        Jonas Bonn <jonas@southpole.se>, Michal Simek <monstr@monstr.eu>,
-        Russell King <linux@arm.linux.org.uk>, linux-c6x-dev@linux-c6x.org,
-        Arnd Bergmann <arnd@arndb.de>, Aurelien Jacquiot <a-jacquiot@ti.com>,
-        Devicetree Discuss <devicetree-discuss@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        microblaze-uclinux@itee.uq.edu.au, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Paul Mackerras <paulus@samba.org>, Mark Salter <msalter@redhat.com>,
-        linuxppc-dev@lists.ozlabs.org, linux@openrisc.net,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/2] dtc: Implement -d option to write out a dependency file
-In-reply-to: <1326134295-15547-1-git-send-email-swarren@nvidia.com>
-References: <1326134295-15547-1-git-send-email-swarren@nvidia.com>
-Comments: In-reply-to Stephen Warren <swarren@nvidia.com>
-   message dated "Mon, 09 Jan 2012 11:38:14 -0700."
-Date: Mon, 09 Jan 2012 12:58:27 -0600
-From: Jon Loeliger <jdl@jdl.com>
-X-Spam-Score: -1.9
+	id S933297Ab2AITsR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 14:48:17 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:49716 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933046Ab2AITsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 14:48:16 -0500
+Date: Mon, 9 Jan 2012 14:48:15 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Michael =?iso-8859-1?Q?B=FCsch?= <m@bues.ch>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Incorrect uses of get_driver()/put_driver()
+In-Reply-To: <20120109181449.GF15083@core.coreip.homeip.net>
+Message-ID: <Pine.LNX.4.44L0.1201091438010.1541-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This will allow callers to rebuild .dtb files when any of the /include/d
-> .dtsi files are modified, not just the top-level .dts file.
+On Mon, 9 Jan 2012, Dmitry Torokhov wrote:
+
+> On Mon, Jan 09, 2012 at 07:03:21PM +0100, Michael Büsch wrote:
+> > On Mon, 9 Jan 2012 12:35:09 -0500 (EST)
+> > Alan Stern <stern@rowland.harvard.edu> wrote:
+> > 
+> > > drivers/ssb/main.c:146:               get_driver(&drv->drv);
+> > > drivers/ssb/main.c:153:               put_driver(&drv->drv);
+> > > 
+> > > Michael, these are part of ssb_driver_get() and ssb_driver_put(), used
+> > > in ssb_devices_freeze() and ssb_devices_thaw().  They don't currently
+> > > do anything, but it looks as if they are meant to prevent the driver
+> > > from being unloaded.  Should they be replaced with try_module_get()?  
+> > > Or would it be good enough to call device_attach() in 
+> > > ssb_devices_thaw()?
+> > 
+> > Hm, It seems that this code is trying to pin the ssb_driver, so that
+> > it doesn't become invalid during the freeze period. So it most likely wants
+> > to protect against module unload and driver unbind here. Not sure
+> > if that actually works, though :/
+> > 
 > 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> This patch is against the Linux kernel's copy of dtc, but it applies to
-> upstream dtc with a couple of trivial conflicts. I can post a version for
-> upstream dtc as well if desired.
+> Not at all ;)
 
-If it does go upstream into Linux proper, we should
-definitely have it in the main DTC repository.
-So if you would, please send me a path that applies there.
+Maybe you want to call device_lock(&sdev->dev) here?  It will prevent
+the driver from being unbound (and therefore from being unloaded), and
+it's likely that sdrv's remove and probe routines expect to be called
+with this lock held, because that's what the device core does.  The
+drawback is that holding the lock prevents other things from happening
+as well, like unregistering sdev.
 
-Thanks,
-jdl
+Alternatively, we can simply remove ssb_driver_get/put.
+
+Alan Stern
 
