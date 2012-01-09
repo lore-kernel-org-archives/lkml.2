@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932121Ab2AIPNV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 10:13:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37018 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755704Ab2AIPM7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 10:12:59 -0500
-Date: Mon, 9 Jan 2012 16:07:01 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Kay Sievers <kay.sievers@vrfy.org>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>
-Subject: Re: [PATCH] prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow
-	simple process supervision
-Message-ID: <20120109150701.GB1777@redhat.com>
-References: <1325951797.860.10.camel@mop> <124669.1325952830@turing-police.cc.vt.edu>
+	id S932146Ab2AIPNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 10:13:38 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:40542 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab2AIPNT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 10:13:19 -0500
+Date: Mon, 9 Jan 2012 10:11:24 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: Re: [Xen-devel] [PATCH 4/5] xen/pciback: Expand the warning message
+ to include domain id.
+Message-ID: <20120109151124.GE25563@phenom.dumpdata.com>
+References: <1325724403-29642-1-git-send-email-konrad.wilk@oracle.com>
+ <1325724403-29642-5-git-send-email-konrad.wilk@oracle.com>
+ <4F06C101020000780006AC32@nat28.tlf.novell.com>
+ <20120106150338.GB5855@phenom.dumpdata.com>
+ <1325865086.25206.512.camel@zakaz.uk.xensource.com>
+ <20120106160011.GD6125@phenom.dumpdata.com>
+ <20120106221927.GA10248@phenom.dumpdata.com>
+ <1326102657.17210.11.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <124669.1325952830@turing-police.cc.vt.edu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1326102657.17210.11.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-CT-RefId: str=0001.0A090205.4F0B0409.008B,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07, Valdis.Kletnieks@vt.edu wrote:
->
-> On Sat, 07 Jan 2012 16:56:37 +0100, Kay Sievers said:
-> > Resending this, it got lost last year's September.
-> >
-> > We still need it to properly implement init-like service managers.
->
-> > From: Lennart Poettering <lennart@poettering.net>
-> > Subject: prctl: add PR_{SET,GET}_CHILD_SUBREAPER to allow simple process supervision
->
-> > Users of this will be the systemd per-user instance, which provides
-> > init-like functionality for the user's login session and D-Bus, which
-> > activates bus services on-demand. Both need init-like capabilities
-> > to be able to properly keep track of the services they start.
->
-> > --- a/include/linux/sched.h
-> > +++ b/include/linux/sched.h
-> > @@ -552,6 +552,18 @@ struct signal_struct {
-> >  	int			group_stop_count;
-> >  	unsigned int		flags; /* see SIGNAL_* flags below */
-> >
-> > +	/*
-> > +	 * PR_SET_CHILD_SUBREAPER marks a process, like a service
-> > +	 * manager, to re-parent orphan (double-forking) child processes
-> > +	 * to this process instead of 'init'. The service manager is
-> > +	 * able to receive SIGCHLD signals and is able to investigate
-> > +	 * the process until it calls wait(). All children of this
-> > +	 * process will inherit a flag if they should look for a
-> > +	 * child_subreaper process at exit.
-> > +	 */
-> > +	unsigned int		is_child_subreaper:1;
-> > +	unsigned int		has_child_subreaper:1;
->
-> Is there someplace we can stick these two fields where they won't expand the
-> signal_struct?  Can we stick them in signal_struct->flags instead?
+On Mon, Jan 09, 2012 at 09:50:57AM +0000, Ian Campbell wrote:
+> On Fri, 2012-01-06 at 22:19 +0000, Konrad Rzeszutek Wilk wrote:
+> > > > I suppose you might want "Overriding ownership to dom%d".
+> > > 
+> > > OK. To the point and potentially can fit in 80 lines :-).
+> > 
+> > how about this?
+> > > 
+> > From a3d4a80cdfd4274016522572148a89260b3f3de6 Mon Sep 17 00:00:00 2001
+> > From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > Date: Wed, 4 Jan 2012 14:16:45 -0500
+> > Subject: [PATCH] xen/pciback: Expand the warning message to include domain
+> >  id.
+> > 
+> > When a PCI device is transferred to another domain and it is still
+> > in usage (from the internal perspective), mention which other
+> > domain is using it to aid in debugging.
+> > 
+> > [v2: Truncate the verbose message per Jan Beulich suggestion]
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  drivers/xen/xen-pciback/xenbus.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/xen/xen-pciback/xenbus.c b/drivers/xen/xen-pciback/xenbus.c
+> > index 474d52e..2405a24 100644
+> > --- a/drivers/xen/xen-pciback/xenbus.c
+> > +++ b/drivers/xen/xen-pciback/xenbus.c
+> > @@ -243,8 +243,8 @@ static int xen_pcibk_export_device(struct xen_pcibk_device *pdev,
+> >  	dev_dbg(&dev->dev, "registering for %d\n", pdev->xdev->otherend_id);
+> >  	if (xen_register_device_domain_owner(dev,
+> >  					     pdev->xdev->otherend_id) != 0) {
+> > -		dev_err(&dev->dev, "device has been assigned to another " \
+> > -			"domain! Over-writting the ownership, but beware.\n");
+> > +		dev_err(&dev->dev, "Overriding ownership to dom%d.\n",
+> > +			xen_find_device_domain_owner(dev));
+> 
+> That sounds like you are going to be assigning the ownership to that
+> dom, but xen_find_device_domain_owner so aren't you actually steeling
+> ownership from that domain?
 
-Yes, it would be better to use signal_struct->flags. But we can't do this
-until we cleanup the usage of ->flags. For example, task_participate_group_stop
-simply does sig->flags = SIGNAL_STOP_STOPPED.
-
-
-> > +		/* find the first ancestor marked as child_subreaper */
-> > +		for (reaper = father->real_parent;
-> > +		     reaper != &init_task;
-> > +		     reaper = reaper->real_parent) {
->
-> I admit being insufficiently caffienated - does this DTRT in a PID namespace? That
-> &init_task looks fishy to me...
-
-Probably this needs a comment. Initially I was confused too.
-
-Note that the code below checks same_thread_group(reaper, pid_ns->child_reaper),
-this is what we need to DTRT in a PID namespace. However we still need the
-check above, see http://marc.info/?l=linux-kernel&m=131385460420380
-
-Oleg.
-
+Duh! I will do s/to/from/
