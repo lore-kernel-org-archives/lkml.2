@@ -1,253 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab2AIQud (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:50:33 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:52766 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932391Ab2AIQua (ORCPT
+	id S932693Ab2AIQvD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:51:03 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:61874 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932312Ab2AIQvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:50:30 -0500
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, acme@infradead.org,
-        robert.richter@amd.com, ming.m.lin@intel.com, andi@firstfloor.org,
-        asharma@fb.com, ravitillo@lbl.gov, vweaver1@eecs.utk.edu
-Subject: [PATCH 13/13] perf: add support for taken branch sampling to perf report (v3)
-Date: Mon,  9 Jan 2012 17:49:21 +0100
-Message-Id: <1326127761-2723-14-git-send-email-eranian@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1326127761-2723-1-git-send-email-eranian@google.com>
-References: <1326127761-2723-1-git-send-email-eranian@google.com>
+	Mon, 9 Jan 2012 11:51:00 -0500
+Date: Mon, 9 Jan 2012 08:50:53 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Problems with get_driver() and driver_attach() (and new_id too)
+Message-ID: <20120109165053.GA15083@core.coreip.homeip.net>
+References: <20120109084828.GE4049@core.coreip.homeip.net>
+ <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roberto Agostino Vitillo <ravitillo@lbl.gov>
+On Mon, Jan 09, 2012 at 11:37:57AM -0500, Alan Stern wrote:
+> On Mon, 9 Jan 2012, Dmitry Torokhov wrote:
+> 
+> > > I don't think any of those calls actually accomplish anything, but it's
+> > > hard to be certain.  Some of them appear to be futile attempts to
+> > > prevent the driver from being unregistered or unloaded, others are
+> > > there simply to drop the reference taken by driver_find().
+> > > 
+> > > In a few of them it's obvious that the driver can't be unregistered 
+> > > while the critical section runs, but in the others I can't tell.  On 
+> > > the other hand, if a critical section can race with unregistration 
+> > > then the code is buggy now.
+> > > 
+> > > What do you think?
+> > 
+> > I think we need to audit them and decide on case-by-case basis. For
+> > example drivers/s390/cio/device.c is completely nonsensical: it takes a
+> > reference on a driver that is passed as argument before calling
+> > driver_find_device(). But if passed driver was valid before we called
+> > get_driver it won't become any more valid afterwards and it should not
+> > disappear either.
+> > 
+> > drivers/s390/cio/ccwgroup.c - calls are useless;
+> > 
+> > Authors of drivers/net/phy/phy_device.c had their reservations:
+> > 
+> >         /* Make sure the driver is held.
+> >          * XXX -- Is this correct? */
+> >         drv = get_driver(phydev->dev.driver);
+> > 
+> > However it is in phydev_probe() and I hope our device core takes care of
+> > not destroying drivers in the middle of binding to a device.
+> 
+> Yes, it does.  That one looks like a misunderstanding.  It calls
+> get_driver during phy_probe and put_driver during phy_remove, which
+> accomplishes nothing.
+> 
+> > drivers/ssb/main.c seems like needs some protection but does it
+> > incorrectly as we do not wait for drivers to drop all references before
+> > unloading modules.
+> 
+> Possibly it needs to be replaced with try_module_get.  I'll send out an 
+> email to the maintainers of these drivers to see what they think.
 
-This patch adds support for taken branch sampling, i.e, the
-PERF_SAMPLE_BRANCH_STACK feature to perf report. In other
-words, to display histograms based on taken branches rather
-than executed instructions addresses.
+No, I am not that try_module_get() [alone] is quite what is needed, as
+strictly speaking driver lifetime does not need to be the same as module
+lifetime. But maybe I am just splitting hair as all drivers are
+statically initialized and are tied to their modules...
 
-The new option is called -b and it takes no argument. To
-generate meaningful output, the perf.data must have been
-obtained using perf record -b xxx ... where xxx is a branch
-filter option.
-
-The output shows symbols, modules, sorted by 'who branches
-where' the most often. The percentages reported in the first
-column refer to the total number of branches captured and
-not the usual number of samples.
-
-Here is a quick example.
-Here branchy is simple test program which looks as follows:
-
-void f2(void)
-{}
-void f3(void)
-{}
-void f1(unsigned long n)
-{
-  if (n & 1UL)
-    f2();
-  else
-    f3();
-}
-int main(void)
-{
-  unsigned long i;
-
-  for (i=0; i < N; i++)
-   f1(i);
-  return 0;
-}
-
-Here is the output captured on Nehalem, if we are
-only interested in user level function calls.
-
-$ perf record -b any_call,u -e cycles:u branchy
-
-$ perf report -b --sort=symbol
-    52.34%  [.] main                   [.] f1
-    24.04%  [.] f1                     [.] f3
-    23.60%  [.] f1                     [.] f2
-     0.01%  [k] _IO_new_file_xsputn    [k] _IO_file_overflow
-     0.01%  [k] _IO_vfprintf_internal  [k] _IO_new_file_xsputn
-     0.01%  [k] _IO_vfprintf_internal  [k] strchrnul
-     0.01%  [k] __printf               [k] _IO_vfprintf_internal
-     0.01%  [k] main                   [k] __printf
-
-About half (52%) of the call branches captured are from main() -> f1().
-The second half (24%+23%) is split in two equal shares between
-f1() -> f2(), f1() ->f3(). The output is as expected given the code.
-
-It should be noted, that using -b in perf record does not eliminate
-information in the perf.data file. Consequently, a typical profile
-can also be obtained by perf report by simply not using its -b option.
-
-Signed-off-by: Roberto Agostino Vitillo <ravitillo@lbl.gov>
-Signed-off-by: Stephane Eranian <eranian@google.com>
----
- tools/perf/Documentation/perf-report.txt |    7 ++
- tools/perf/builtin-report.c              |   95 +++++++++++++++++++++++++++---
- 2 files changed, 94 insertions(+), 8 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
-index 9b430e9..19b9092 100644
---- a/tools/perf/Documentation/perf-report.txt
-+++ b/tools/perf/Documentation/perf-report.txt
-@@ -153,6 +153,13 @@ OPTIONS
- 	information which may be very large and thus may clutter the display.
- 	It currently includes: cpu and numa topology of the host system.
- 
-+-b::
-+--branch-stack::
-+	Use the addresses of sampled taken branches instead of the instruction
-+	address to build the histograms. To generate meaningful output, the
-+	perf.data file must have been obtained using perf record -b xxx where
-+	xxx is a branch filter option.
-+
- SEE ALSO
- --------
- linkperf:perf-stat[1], linkperf:perf-annotate[1]
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 25d34d4..fb8194b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -53,6 +53,50 @@ struct perf_report {
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-+static int perf_session__add_branch_hist_entry(struct perf_tool *tool,
-+					struct addr_location *al,
-+					struct perf_sample *sample,
-+					struct perf_evsel *evsel,
-+				      struct machine *machine)
-+{
-+	struct perf_report *rep = container_of(tool, struct perf_report, tool);
-+	struct symbol *parent = NULL;
-+	int err = 0;
-+	unsigned i;
-+	struct hist_entry *he;
-+	struct branch_info *bi;
-+
-+	if ((sort__has_parent || symbol_conf.use_callchain)
-+	    && sample->callchain) {
-+		err = machine__resolve_callchain(machine, evsel, al->thread,
-+						 sample->callchain, &parent);
-+		if (err)
-+			return err;
-+	}
-+
-+	bi = perf_session__resolve_bstack(machine, al->thread,
-+					  sample->branch_stack);
-+	if (!bi)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < sample->branch_stack->nr; i++) {
-+		if (rep->hide_unresolved && !(bi[i].from.sym && bi[i].to.sym))
-+			continue;
-+		/*
-+		 * The report shows the percentage of total branches captured
-+		 * and not events sampled. Thus we use a pseudo period of 1.
-+		 */
-+		he = __hists__add_branch_entry(&evsel->hists, al, parent,
-+					       &bi[i], 1);
-+		if (he) {
-+			evsel->hists.stats.total_period += 1;
-+			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+		} else
-+			return -ENOMEM;
-+	}
-+	return err;
-+}
-+
- static int perf_evsel__add_hist_entry(struct perf_evsel *evsel,
- 				      struct addr_location *al,
- 				      struct perf_sample *sample,
-@@ -126,14 +170,21 @@ static int process_sample_event(struct perf_tool *tool,
- 	if (rep->cpu_list && !test_bit(sample->cpu, rep->cpu_bitmap))
- 		return 0;
- 
--	if (al.map != NULL)
--		al.map->dso->hit = 1;
-+	if (sort__branch_mode) {
-+		if (perf_session__add_branch_hist_entry(tool, &al, sample,
-+						    evsel, machine)) {
-+			pr_debug("problem adding lbr entry, skipping event\n");
-+			return -1;
-+		}
-+	} else {
-+		if (al.map != NULL)
-+			al.map->dso->hit = 1;
- 
--	if (perf_evsel__add_hist_entry(evsel, &al, sample, machine)) {
--		pr_debug("problem incrementing symbol period, skipping event\n");
--		return -1;
-+		if (perf_evsel__add_hist_entry(evsel, &al, sample, machine)) {
-+			pr_debug("problem incrementing symbol period, skipping event\n");
-+			return -1;
-+		}
- 	}
--
- 	return 0;
- }
- 
-@@ -188,6 +239,15 @@ static int perf_report__setup_sample_type(struct perf_report *rep)
- 			}
- 	}
- 
-+	if (sort__branch_mode) {
-+		if (!(self->sample_type & PERF_SAMPLE_BRANCH_STACK)) {
-+			fprintf(stderr, "selected -b but no branch data."
-+					" Did you call perf record without"
-+					" -b?\n");
-+			return -1;
-+		}
-+	}
-+
- 	return 0;
- }
- 
-@@ -517,6 +577,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 		   "Specify disassembler style (e.g. -M intel for intel syntax)"),
- 	OPT_BOOLEAN(0, "show-total-period", &symbol_conf.show_total_period,
- 		    "Show a column with the sum of periods"),
-+	OPT_BOOLEAN('b', "branch-stack", &sort__branch_mode,
-+		    "use branch records for histogram filling"),
- 	OPT_END()
- 	};
- 
-@@ -537,10 +599,27 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 			report.input_name = "perf.data";
- 	}
- 
--	if (strcmp(report.input_name, "-") != 0)
-+	if (sort__branch_mode) {
-+		if (use_browser)
-+			fprintf(stderr, "Warning: TUI interface not supported"
-+					" in branch mode\n");
-+		if (symbol_conf.dso_list_str != NULL)
-+			fprintf(stderr, "Warning: dso filtering not supported"
-+					" in branch mode\n");
-+		if (symbol_conf.sym_list_str != NULL)
-+			fprintf(stderr, "Warning: symbol filtering not"
-+					" supported in branch mode\n");
-+
-+		report.use_stdio = true;
- 		setup_browser(true);
--	else
- 		use_browser = 0;
-+		symbol_conf.dso_list_str = NULL;
-+		symbol_conf.sym_list_str = NULL;
-+	} else if (strcmp(report.input_name, "-") != 0) {
-+		setup_browser(true);
-+	} else {
-+		use_browser = 0;
-+	}
- 
- 	/*
- 	 * Only in the newt browser we are doing integrated annotation,
 -- 
-1.7.1
-
+Dmitry
