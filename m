@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2AIVWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 16:22:08 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:34668 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab2AIVWF (ORCPT
+	id S1755867Ab2AIVWk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 16:22:40 -0500
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:59916 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754848Ab2AIVWi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 16:22:05 -0500
+	Mon, 9 Jan 2012 16:22:38 -0500
+Message-ID: <4F0B6845.4080503@xenotime.net>
+Date: Mon, 09 Jan 2012 14:20:53 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <20120109205907.GE4198@dastard>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
- <20120109173010.GX23916@ZenIV.linux.org.uk> <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
- <20120109205907.GE4198@dastard>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 9 Jan 2012 13:21:43 -0800
-X-Google-Sender-Auth: wXFqq1_05EUVVFCD6HIo4NJfYC8
-Message-ID: <CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-To: Dave Chinner <david@fromorbit.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@infradead.org>,
-        Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] menuconfig: add Home and End keys support for
+ inputbox
+References: <20120109113633.24486.69758.stgit@localhost6.localdomain6> <20120109113641.24486.95511.stgit@localhost6.localdomain6>
+In-Reply-To: <20120109113641.24486.95511.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 12:59 PM, Dave Chinner <david@fromorbit.com> wrote:
->
->> It compiles. That's all I'm going to say about my extensive testing.
->> Which is also why I haven't added my sign-off to it.
->
-> I did quite a bit of load and stress testing on the series back when
-> I first posted it, so the dcache changes don't have any problems I
-> know of.
+On 01/09/2012 03:36 AM, Paulius Zaleckas wrote:
+> Makes long string editing easier.
+> 
+> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
 
-.. and from the kernel compiles and looking at the code some more
-today, I'm getting more and more convinced that the patch is
-absolutely the right thing to do.
+Hi,
 
-So I'll happily add my signed-off on that code if Al wants to take
-that edited patch into his tree. Or just commit it directly.
+Does "default hostname" in the "General setup" menu use an inputbox?
+If so, I can't get Home and End keys to work for it.
 
-I'd like to hear that it fixes Miklos' case from somebody that
-recreated it - that bonding_masters script doesn't work for me because
-I compile or use (nor do I compile or use the soft-lockup detector),
-so it would be good if somebody who has the particular test-case
-working (or "not working" ;) for them to verify that yes, it fixes it.
+If not, please tell me a field that uses an inputbox so that I can test it.
 
-But I think I agree with the explanation for why it would be fixed,
-and I certainly agree with the code being cleaner.
+Thanks.
 
-                      Linus
+> ---
+> 
+>  scripts/kconfig/lxdialog/inputbox.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/scripts/kconfig/lxdialog/inputbox.c b/scripts/kconfig/lxdialog/inputbox.c
+> index 834eee9..0d9cacc 100644
+> --- a/scripts/kconfig/lxdialog/inputbox.c
+> +++ b/scripts/kconfig/lxdialog/inputbox.c
+> @@ -158,6 +158,16 @@ do_resize:
+>  					goto redraw;
+>  				}
+>  				continue;
+> +			case KEY_HOME:
+> +				scroll = input_x = 0;
+> +				goto redraw;
+> +			case KEY_END:
+> +				if (len >= box_width) {
+> +					scroll = len - box_width + 1;
+> +					input_x = box_width - 1;
+> +				} else
+> +					input_x = len;
+> +				goto redraw;
+>  			default:
+>  				if (key < 0x100 && isprint(key)) {
+>  					if (len < MAX_LEN) {
+> 
+> --
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
