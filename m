@@ -1,70 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab2AIQCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:02:47 -0500
-Received: from mx.scalarmail.ca ([98.158.95.75]:52912 "EHLO
-	ironport-01.sms.scalar.ca" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932153Ab2AIQCq (ORCPT
+	id S932251Ab2AIQDj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:03:39 -0500
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:36887 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932178Ab2AIQDg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:02:46 -0500
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Jan 2012 11:02:46 EST
-Date: Mon, 9 Jan 2012 10:52:56 -0500
-From: Nick Bowler <nbowler@elliptictech.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>
-Subject: Re: [PATCH] modules: sysfs - export: taint, address, size
-Message-ID: <20120109155256.GA2288@elliptictech.com>
-References: <1325951076.860.2.camel@mop>
+	Mon, 9 Jan 2012 11:03:36 -0500
+Date: Mon, 9 Jan 2012 21:33:17 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        suresh.b.siddha@intel.com, arjan@linux.intel.com, len.brown@intel.com,
+        anhua.xu@intel.com, chaohong.guo@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>,
+        Paul Turner <pjt@google.com>
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+Message-ID: <20120109160317.GA29142@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
+ <1326103578.2442.50.camel@twins>
+ <1326104915.2442.53.camel@twins>
+ <20120109110025.GA7988@dirshya.in.ibm.com>
+ <1326119707.2442.77.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1325951076.860.2.camel@mop>
-Organization: Elliptic Technologies Inc.
+In-Reply-To: <1326119707.2442.77.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12010916-9574-0000-0000-000000D8AE40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-07 16:44 +0100, Kay Sievers wrote:
-> From: Kay Sievers <kay.sievers@vrfy.org>
-> Subject: modules: sysfs - export taint, address, size
-> 
-> Recent tools do not use /proc to retrieve module information. A few values
-> are currently missing from sysfs.
-[...]
-> @@ -907,10 +927,8 @@ static ssize_t show_refcnt(struct module
->  	return sprintf(buffer, "%u\n", module_refcount(mk->mod));
->  }
->  
-> -static struct module_attribute refcnt = {
-> -	.attr = { .name = "refcnt", .mode = 0444 },
-> -	.show = show_refcnt,
-> -};
-> +static struct module_attribute refcnt =
-> +	__ATTR(refcnt, 0444, show_refcnt, NULL);
+* Peter Zijlstra <peterz@infradead.org> [2012-01-09 15:35:07]:
 
-This change seems unrelated to the patch description, and is not
-mentioned in the changelog.  Several instances of this.
+> On Mon, 2012-01-09 at 16:30 +0530, Vaidyanathan Srinivasan wrote:
+> > Lets combine the MC/SMT options and create sched_powersavings={0,1,2}
+> > That will make it only one sysfs knob without any dependencies.
+> > 
+> Is there really any sane rationale to keep the 1/2 thing? Why not have a
+> single boolean knob that says performance/power?
 
-[...]
->  static struct module_attribute *modinfo_attrs[] = {
->  	&modinfo_version,
->  	&modinfo_srcversion,
-> -	&initstate,
-> +	&module_initstate,
+Yes, based on the architecture and topology, we do have two sweet
+spots for power vs performance trade offs.  The first level should be
+to reduce power savings with marginal performance impact and second
+one will be to go for the most aggressive power savings.
 
-Another unrelated change?
+The first one should generally be recommended as default to have
+a right balance between performance and power savings, while the
+second one should be used for reducing power consumption on
+unimportant workloads or under certain constraints.
 
->  	&module_uevent,
-> +	&module_address,
-> +	&module_size,
-> +	&module_taint,
+Some example policies:
 
-You've forgotten to update Documentation/ABI to describe these new
-attributes.
+sched_powersavings=1:
 
-Cheers,
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+        Enable consolidation at MC level
+
+sched_powersavings=2:
+
+        Enable aggressive consolidation at MC level and SMT level if
+        available. In case arch can benefit from cross node
+        consolidation, then enable it.
+
+Having the above simple split in policy will enable wide adoption
+where the first level can be a recommended default.  Having just
+a boolean enable/disable will mean the end-user will have to decide
+when to turn on and later off for best workload experience.
+
+Just similar to cpufreq policy of performance, ondemand and powersave.
+They have their unique use cases and this design choice helps us ship
+ondemand as default.
+
+--Vaidy
 
