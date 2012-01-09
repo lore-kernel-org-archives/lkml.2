@@ -1,115 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933209Ab2AIWUm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 17:20:42 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:36649 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755846Ab2AIWUk convert rfc822-to-8bit (ORCPT
+	id S933262Ab2AIWVq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 17:21:46 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57184 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755846Ab2AIWVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 17:20:40 -0500
-Date: Mon, 09 Jan 2012 14:20:33 -0800 (PST)
-Message-Id: <20120109.142033.306265625914792958.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 9 Jan 2012 17:21:45 -0500
+Date: Mon, 9 Jan 2012 22:22:34 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Phillip Susi <psusi@cfl.rr.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: Multiple consoles
+Message-ID: <20120109222234.6d34a7ad@pyramind.ukuu.org.uk>
+In-Reply-To: <4F0B5808.2010900@cfl.rr.com>
+References: <4F0B5808.2010900@cfl.rr.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 09 Jan 2012 14:20:38 -0800 (PST)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> It occurred to me that there ought to be an entirely separate set of 
+> virtual consoles bound to the second seat, and the second X server ought 
+> to run on one of those vcs.  Or of course, you could choose to log into 
+> the console and not bother with X.
 
-1) Make the new socket diag bits default to 'n'.
+X can do it without consoles.
 
-2) Fix assertion triggers by adding a missing napi_gro_flush() call to
-   the 8139cp driver, from Francois Romieu.
+> Looking at drivers/tty/vt/vt.c, it appears that it was written assuming 
+> that there is just one linux console.  It appears to use global 
+> variables for keeping track of which vc is active, etc, rather than 
+> creating one or more console devices, and store the vc multiplexing 
+> information in those devices.  So to fix this, vt.c and keyboard.c would 
+> need significantly refactored to remove the global variables and create 
+> a console device to bind vcs, keyboards, and displays to, and then you 
+> could create a second one if you wanted.
 
-3) The IGMP delay zero fix from Ben Hutchings.
+Yes - in theory (you'd also have to sort out some of the passing of
+variables around so that the code knew which 'console group' it belonged
+to.
 
-4) Fix endless loop in asix driver's SKB fixup handler, from Aurelien
-   Jacobs.
+> Does this make sense or am I missing something?
 
-5) Silence lockdep warnings when we take the netdevice address list lock
-   for child and parent device at the same time, which is common for
-   nested devices (f.e. bonding, vlan, bridge, teaming).  From Jiri Pirko.
+It makes sense but it's one of a set of three problems with the tty/vt
+layer IMHO
 
-6) Fix socket refcounting when tcp cgroup memcontrol is enabled/disabled.
-   From Glauber Costa.
+- A vt/tty is linked to a framebuffer of some sort, so you can't just
+  create abstract ones plumbed into arbitary objects. Really the vt
+  emulator ought to be separate from the consoles. 
 
-7) Fix regression in r6040 driver wherein the wrong register bits were
-   used.  From Cesar Eduardo Barros.
+- You can only have one set of vts
 
-8) device ops constifications from Stephen Hemminger.
+- The locking needs a rework, particularly the handling of crashes where
+  sometimes we deadlock on the oops reporting.
 
-9) pktgen setting validation from the eagle eyed Dan Carpenter.
+and the framebuffer layer has some problems with locking and mode setting,
+with hotplug, and with a complete inability to handle scatter-gather
+backed consoles.
 
-Please pull, thanks a lot!
-
-The following changes since commit 6b3da11b3c36fdafce3a72e0e90d6c4e99e9aad5:
-
-  Merge branch 'for-3.3' of git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu (2012-01-09 13:08:28 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-Aurelien Jacobs (1):
-      asix: fix infinite loop in rx_fixup()
-
-Ben Hutchings (1):
-      igmp: Avoid zero delay when receiving odd mixture of IGMP queries
-
-Cesar Eduardo Barros (1):
-      r6040: fix typo in use of MCR0 register bits
-
-Dan Carpenter (1):
-      pktgen: set correct max and min in pktgen_setup_inject()
-
-David S. Miller (3):
-      net: Default UDP and UNIX diag to 'n'.
-      smsc911x: Unconditionally include linux/smscphy.h in smsc911x.h
-      net: Fix build with INET disabled.
-
-Glauber Costa (1):
-      net: fix sock_clone reference mismatch with tcp memcontrol
-
-Jiri Pirko (2):
-      net: correct lock name in dev_[uc/mc]_sync documentations.
-      net: introduce netif_addr_lock_nested() and call if when appropriate
-
-Stephen Rothwell (1):
-      net: sk_update_clone is only used in net/core/sock.c
-
-françois romieu (1):
-      8139cp: fix missing napi_gro_flush.
-
-stephen hemminger (3):
-      usbnet: make ethtool_ops const
-      bcm63xx: make ethtool_ops const
-      netdev: make net_device_ops const
-
- drivers/net/ethernet/broadcom/bcm63xx_enet.c |    2 +-
- drivers/net/ethernet/emulex/benet/be_main.c  |    2 +-
- drivers/net/ethernet/rdc/r6040.c             |    2 +-
- drivers/net/ethernet/realtek/8139cp.c        |    1 +
- drivers/net/ethernet/smsc/smsc911x.h         |    2 --
- drivers/net/ethernet/tile/tilepro.c          |    3 +--
- drivers/net/usb/asix.c                       |    4 ++--
- drivers/net/usb/cdc_ncm.c                    |    4 ++--
- drivers/net/usb/ipheth.c                     |    2 +-
- drivers/net/usb/sierra_net.c                 |    2 +-
- include/linux/memcontrol.h                   |    2 --
- include/linux/netdevice.h                    |    5 +++++
- mm/memcontrol.c                              |   19 ++++++++++++++-----
- net/core/dev_addr_lists.c                    |   16 ++++++++--------
- net/core/pktgen.c                            |    4 ++--
- net/core/sock.c                              |    9 +++++++++
- net/ipv4/Kconfig                             |    6 +++++-
- net/ipv4/igmp.c                              |    2 ++
- net/unix/Kconfig                             |    2 +-
- 19 files changed, 57 insertions(+), 32 deletions(-)
+Alan
