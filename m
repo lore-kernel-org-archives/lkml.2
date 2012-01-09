@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932718Ab2AISpO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 13:45:14 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:58429 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752806Ab2AISpM (ORCPT
+	id S932773Ab2AISqp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 13:46:45 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37235 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab2AISqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 13:45:12 -0500
-Date: Mon, 9 Jan 2012 10:45:01 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [GIT PULL] cgroup changes for v3.3-rc1
-Message-ID: <20120109184501.GC7421@google.com>
-References: <20120109183951.GB7421@google.com>
+	Mon, 9 Jan 2012 13:46:43 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120109183951.GB7421@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
+ <20120109173010.GX23916@ZenIV.linux.org.uk> <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Jan 2012 10:46:22 -0800
+X-Google-Sender-Auth: 85J9LQKVzwr70T-hAnPkD19git4
+Message-ID: <CA+55aFxRroO0KAz8qbhz_2vDc=bc-C2b0ux0tdFfQhBGMnqRzQ@mail.gmail.com>
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>, Miklos Szeredi <miklos@szeredi.hu>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mgorman@suse.de, gregkh@suse.de, akpm@linux-foundation.org,
+        david@fromorbit.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 10:39:51AM -0800, Tejun Heo wrote:
-> Hello, Linus.
-> 
-> Please pull from the following branch to receive cgroup changes.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.3
+On Mon, Jan 9, 2012 at 10:30 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Here's a TOTALLY UNTESTED rebase of just that single patch from Dave.
 
-Oops, forgot writing about conflicts.  There will be the following
-conflict in kernel/cgroup.c.
+Well, it boots, and the dentry cache shrinks under memory pressure. So
+it's not _totally_ untested now.
 
-	/*
-	 * step 2: make sure css_sets exist for all threads to be migrated.
-	 * we use find_css_set, which allocates a new one if necessary.
-	 */
-	INIT_LIST_HEAD(&newcg_list);
-	for (i = 0; i < group_size; i++) {
-<<<<<<< HEAD
-		tc = flex_array_get(group, i);
-		oldcg = tc->task->cgroups;
+But I don't really see why it would fix Miklos' case. I think
+select_parent() may still end up touching the d_lru list of something
+that is on the 'dispose' list. So the patch looks like a nice cleanup,
+but it seems to be independent of the issue Miklos found.
 
-		/* if we don't already have it in the list get a new one */
-		if (!css_set_check_fetched(cgrp, tc->task, oldcg,
-					   &newcg_list)) {
-=======
-		tsk = flex_array_get_ptr(group, i);
-		/* nothing to do if this task is already in the cgroup */
-		oldcgrp = task_cgroup_from_root(tsk, root);
-		if (cgrp == oldcgrp)
-			continue;
-		/* get old css_set pointer */
-		task_lock(tsk);
-		oldcg = tsk->cgroups;
-		get_css_set(oldcg);
-		task_unlock(tsk);
-		/* see if the new one for us is already in the list? */
-		if (css_set_check_fetched(cgrp, tsk, oldcg, &newcg_list)) {
-			/* was already there, nothing to do. */
-			put_css_set(oldcg);
-		} else {
-			/* we don't already have it. get new one. */
->>>>>>> a0e86bd4252519321b0d102dc4ed90557aa7bee9
-			retval = css_set_prefetch(cgrp, oldcg, &newcg_list);
-			if (retval)
-				goto out_list_teardown;
-		}
-	}
+What am I missing now?
 
-This is caused by e0197aae59 "cgroups: fix a css_set not found bug in
-cgroup_attach_proc" in mainline fixing a bug in code removed in
-for-3.3 branch and taking the part from for-3.3 is the correct
-resolution.  Just in case, the following is my test merge branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git test-merge
-
-Thanks.
-
--- 
-tejun
+                      Linus
