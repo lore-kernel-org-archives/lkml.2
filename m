@@ -1,126 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755302Ab2AIOF1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 09:05:27 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47370 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab2AIOFZ convert rfc822-to-8bit (ORCPT
+	id S1755314Ab2AIOMk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 09:12:40 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:60222 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755116Ab2AIOMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 09:05:25 -0500
+	Mon, 9 Jan 2012 09:12:39 -0500
+Date: Mon, 9 Jan 2012 14:12:14 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Eric Miao <eric.miao@linaro.org>
+Cc: Richard Zhao <richard.zhao@linaro.org>, patches@linaro.org,
+        vinod.koul@intel.com, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de, dan.j.williams@intel.com, shawn.guo@linaro.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v4 2/2] dma/imx-sdma: convert _raw_readl/_raw_writel to
+	readl/writel
+Message-ID: <20120109141214.GP21765@n2100.arm.linux.org.uk>
+References: <1326033862-25351-1-git-send-email-richard.zhao@linaro.org> <1326033862-25351-3-git-send-email-richard.zhao@linaro.org> <20120109115143.GL21765@n2100.arm.linux.org.uk> <CAMPhdO84p=0D3KrrFnwup4igoh4oNWXOCbW+BOkoRiC8m=JnmQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F0AE2BF.6080605@metafoo.de>
-References: <4F0AC06C.3000502@gmail.com> <4F0AE2BF.6080605@metafoo.de>
-From: Christian Gmeiner <christian.gmeiner@gmail.com>
-Date: Mon, 9 Jan 2012 15:05:02 +0100
-Message-ID: <CAH9NwWeO30KB8UiNNt4Ng9M9Q=cG0wHMkhEEH_m2nutYk7wCHg@mail.gmail.com>
-Subject: Re: [PATCH v2] add led driver for Bachmann's ot200
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        bigeasy@linutronix.de, rpurdie@rpsys.net
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAMPhdO84p=0D3KrrFnwup4igoh4oNWXOCbW+BOkoRiC8m=JnmQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Jan 09, 2012 at 09:25:12PM +0800, Eric Miao wrote:
+> Does this also mean when endian conversion is not necessary, the __raw_*
+> version will be better here? Or generally the _relaxed variants are more
+> recommended as endian conversion will be optimized away anyway with
+> these AMBA accesses as both sides are little-endian?
 
+Useless endian conversions are always optimized away.  Here's the
+definitions:
 
-2012/1/9 Lars-Peter Clausen <lars@metafoo.de>:
-> On 01/09/2012 11:24 AM, Christian Gmeiner wrote:
->> From a7fecf3426ef98fdd19e9d2610665b9d1ce358a0 Mon Sep 17 00:00:00 2001
->> From: Sebastian Andrzej Siewior <bigeasy@linutronix.de
->> <mailto:bigeasy@linutronix.de>>
->> Date: Mon, 9 Jan 2012 10:09:50 +0100
->> Subject: [PATCH v2] add led driver for Bachmann's ot200
->>
->> This patch adds support for leds on Bachmann's ot200 visualisation device.
->> The device has three leds on the back panel (led_err, led_init and led_run)
->> and can handle up to seven leds on the front panel.
->>
->> The driver was written by Linutronix on behalf of
->> Bachmann electronic GmbH.
->>
->> Changes in v2:
->> - *incorporated* feedback from Andrew Morton and Lars-Peter Clausen
->>
->
-> looks good to me except some minor style issues and the <mailto:...> tags.
->
+If your CPU is operating in little endian mode, for 32-bit and 16-bit:
 
-I have switch to an other mail client now...
+#define __cpu_to_le32(x) ((__force __le32)(__u32)(x))
+#define __le32_to_cpu(x) ((__force __u32)(__le32)(x))
+#define __cpu_to_le16(x) ((__force __le16)(__u16)(x))
+#define __le16_to_cpu(x) ((__force __u16)(__le16)(x))
 
->
->> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de
->> <mailto:bigeasy@linutronix.de>>
->> Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com
->> <mailto:christian.gmeiner@gmail.com>>
->> ---
->> [...]
->> diff --git a/drivers/leds/leds-ot200.c b/drivers/leds/leds-ot200.c
->> new file mode 100644
->> index 0000000..4d000ac
->> --- /dev/null
->> +++ b/drivers/leds/leds-ot200.c
->> @@ -0,0 +1,177 @@
->> [...]
->> +
->> +static int __devinit ot200_led_probe(struct platform_device *pdev)
->> +{
->> +    int i;
->> +    int ret;
->> +
->> +    for (i = 0; i < ARRAY_SIZE(leds); i++) {
->> +
->> +        leds[i].cdev.name = leds[i].name;
->> +        leds[i].cdev.default_trigger = NULL;
->> +        leds[i].cdev.blink_set = NULL;
->
-> No need to initialize to NULL.
+So these are just casts to keep sparse happy and able to check this stuff.
 
-okay
+#define __cpu_to_be32(x) ((__force __be32)__swab32((x)))
+#define __be32_to_cpu(x) __swab32((__force __u32)(__be32)(x))
+#define __cpu_to_be16(x) ((__force __be16)__swab16((x)))
+#define __be16_to_cpu(x) __swab16((__force __u16)(__be16)(x))
 
->
->> +        leds[i].cdev.brightness_set = ot200_led_brightness_set;
->> +
->> +        ret = led_classdev_register(&pdev->dev, &leds[i].cdev);
->> +        if (ret < 0)
->> +            goto err;
->> +
->> +        dev_set_drvdata(leds[i].cdev.dev, &leds[i]);
->
-> Neither this ...
->
->> +    }
->> +
->> +    platform_set_drvdata(pdev, leds);
->
-> nor this is ever used.
+These do the endian conversion.
 
-you are right
+If your CPU is running in big endian mode:
 
->
->> +
->> +    outb(0x0, 0x49);    /* turn off all front leds */
->> +    outb(0x2, 0x5a);    /* turn on init led */
->> +    leds_front = 0;
->> +    leds_back = BIT(1);
->
-> Maybe initialize leds_front and leds_back first and pass it to outb.
->
->> +
->> +    return 0;
->> +
->> +err:
->> +    for (i = i - 1; i >= 0; i--)
->> +        led_classdev_unregister(&leds[i].cdev);
->> +
->> +    return ret;
->> +}
->> +
+#define __cpu_to_le32(x) ((__force __le32)__swab32((x)))
+#define __le32_to_cpu(x) __swab32((__force __u32)(__le32)(x))
+#define __cpu_to_le16(x) ((__force __le16)__swab16((x)))
+#define __le16_to_cpu(x) __swab16((__force __u16)(__le16)(x))
 
-Hope v3 will make it :)
+So these do the endian conversion, and:
 
-thanks
---
-Christian Gmeiner, MSc
+#define __cpu_to_be32(x) ((__force __be32)(__u32)(x))
+#define __be32_to_cpu(x) ((__force __u32)(__be32)(x))
+#define __cpu_to_be16(x) ((__force __be16)(__u16)(x))
+#define __be16_to_cpu(x) ((__force __u16)(__be16)(x))
+
+These are just casts.
