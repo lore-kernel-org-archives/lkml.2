@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932319Ab2AJQRQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:17:16 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:55808 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932143Ab2AJQRP convert rfc822-to-8bit (ORCPT
+	id S1756539Ab2AJQWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:22:24 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47736 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756407Ab2AJQWW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:17:15 -0500
+	Tue, 10 Jan 2012 11:22:22 -0500
 MIME-Version: 1.0
-In-Reply-To: <1326183371.6638.6.camel@edumazet-laptop>
-References: <1326171444.6638.3.camel@edumazet-laptop> <1326171798.6638.4.camel@edumazet-laptop>
- <1326183371.6638.6.camel@edumazet-laptop>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 08:16:53 -0800
-X-Google-Sender-Auth: t7Z8POvedg8994bkpTHDS9J8imk
-Message-ID: <CA+55aFwvGQjN42CqjmsUuFGPbPz3kKvasMwd9Sup3mp43KdNjA@mail.gmail.com>
-Subject: Re: [BUG] kernel freezes with latest tree
-To: Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [94.21.63.111]
+In-Reply-To: <CA+55aFxszjhj5MatYe_KXJ=vYyf-05kzBbtmY1vgoGUio0DXuQ@mail.gmail.com>
+References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
+	<20120109171639.GA9359@infradead.org>
+	<20120109173010.GX23916@ZenIV.linux.org.uk>
+	<CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+	<20120109205907.GE4198@dastard>
+	<CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
+	<20120110013434.GA23916@ZenIV.linux.org.uk>
+	<CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
+	<CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
+	<CA+55aFxszjhj5MatYe_KXJ=vYyf-05kzBbtmY1vgoGUio0DXuQ@mail.gmail.com>
+Date: Tue, 10 Jan 2012 17:22:22 +0100
+Message-ID: <CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Ingo & co to the cc, so I'm leaving things quoted. ]
-
-On Tue, Jan 10, 2012 at 12:16 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> Le mardi 10 janvier 2012 à 06:03 +0100, Eric Dumazet a écrit :
->> Le mardi 10 janvier 2012 à 05:57 +0100, Eric Dumazet a écrit :
->> > Hi Linus
->> >
->> > I got some freezes on two different machines, using latest kernel.
->> >
->> > while :; do hackbench 10 thread 4000; done
->> >
->> > Not sure I'll have time today to find the problem.
->> >
->> > It might be related to "perf top" also being run at least once.
->> >
+On Tue, Jan 10, 2012 at 5:00 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jan 10, 2012 at 2:05 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
 >>
->> Hmm, I can trigger the bug without ever using "perf".
+>> I tested Dave's patch and the bug can still be easily reproduced.
+>>
+>> And that's to be expected, as the intermediate "being on the lru"
+>> state that Dave's patch eliminates doesn't play a fundamental part in
+>> the mechanism of the livelock. Â It does eliminate one trylock, but
+>> that's not the one critical to this bug (removing it is a very good
+>> idea anyway).
+>>
+>> The critical trylock here is the one in dentry_kill() which tries to
+>> lock the parent.
 >
-> OK I managed to bisect it, but I have to run now.
+> Ok. Here's your patch munged for current -git. You've got most of a
+> changelog, can you send this out with the right subject and a
+> sign-off, and re-test with the current git just to make sure.
 
-Good. The bisection certainly helps.
+See the one with the subject "vfs: fix shrink_dcache_parent()
+livelock" I sent out a bit earlier.
 
-> $ git bisect log
-[ snipped ]
-> Could it be a merge error ?
->
-> commit 0db49b72bce26341274b74fd968501489a361ae3
-> Merge: 35b740e 1ac9bc6
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Fri Jan 6 08:33:28 2012 -0800
->
->    Merge branch 'sched-core-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip
+You didn't quite get it right: the flag now needs to be set in
+select_parent() not prune_dcache_sb().
 
-That's one of the merges this window that I sent out a query message
-for, because I wasn't happy with it, and stopped at that point waiting
-for people to validate the end result.
+I think prune_dcache_sb() doesn't need this logic (although it
+wouldn't hurt either) because that one is called from the slab
+shrinkers and those are protected from being run multiple times in
+parallel, I hope.
 
-Nobody complained about it, but the first thing to try would be one of
-my questions about that merge: can you move the call to
-
-  set_cpu_sd_state_idle();
-
-(along with the comment above it) in tick_nohz_idle_enter()
-(kernel/time/tick-sched.c) to just *below* the "local_irq_disable()"?
-
-I also questioned the interaction between the sparse cleanups and
-usecs_to_cputime64(), but people said they were fine.. But your report
-will probably make people double-check.
-
-Guys?
-
-                          Linus
+Thanks,
+Miklos
