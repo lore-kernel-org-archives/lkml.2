@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934532Ab2AJXGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:06:02 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52933 "EHLO mx2.suse.de"
+	id S934478Ab2AJXGb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:06:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52901 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934478Ab2AJXEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:04:15 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:05 2012
-Message-Id: <20120110215605.022405477@clark.kroah.org>
+	id S934508Ab2AJXED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:04:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:04 2012
+Message-Id: <20120110215604.750690302@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:43 -0800
+Date: Tue, 10 Jan 2012 13:55:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Janne Snabb <snabb@epipe.com>
-Subject: [40/49] usb: option: add ZD Incorporated HSPA modem
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
+Subject: [37/49] USB: add quirk for another camera
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,51 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Janne Snabb <snabb@epipe.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 3c8c9316710b83e906e425024153bf0929887b59 upstream.
+commit 35284b3d2f68a8a3703745e629999469f78386b5 upstream.
 
-Add support for Chinese Noname HSPA USB modem which is apparently
-manufactured by a company called ZD Incorporated (based on texts in the
-Windows drivers).
+The Guillemot Webcam Hercules Dualpix Exchange camera
+has been reported with a second ID.
 
-This product is available at least from Dealextreme (SKU 80032) and
-possibly in India with name Olive V-MW250. It is based on Qualcomm
-MSM6280 chip.
-
-I needed to also add "options usb-storage quirks=0685:7000:i" in modprobe
-configuration because udevd or the kernel keeps poking the embedded
-fake-cd-rom which fails and causes the device to reset. There might be
-a better way to accomplish the same. usb_modeswitch is not needed with
-this device.
-
-Signed-off-by: Janne Snabb <snabb@epipe.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/usb/core/quirks.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -476,6 +476,10 @@ static void option_instat_callback(struc
- #define VIETTEL_VENDOR_ID			0x2262
- #define VIETTEL_PRODUCT_VT1000			0x0002
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -117,9 +117,12 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
-+/* ZD Incorporated */
-+#define ZD_VENDOR_ID				0x0685
-+#define ZD_PRODUCT_7000				0x7000
+-	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	/* Guillemot Webcam Hercules Dualpix Exchange (2nd ID) */
+ 	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
++	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
 +
- /* some devices interfaces need special handling due to a number of reasons */
- enum option_blacklist_reason {
- 		OPTION_BLACKLIST_NONE = 0,
-@@ -1178,6 +1182,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU528) },
- 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU526) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
- 	{ } /* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, option_ids);
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 
 
