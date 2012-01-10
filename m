@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756755Ab2AJTo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 14:44:27 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33081 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756677Ab2AJToZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 14:44:25 -0500
-Date: Tue, 10 Jan 2012 20:44:07 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Youquan Song <youquan.song@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org,
-        stable@vger.kernel.org, len.brown@intel.com, anhua.xu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-Message-ID: <20120110194407.GB28488@elte.hu>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
- <1326103578.2442.50.camel@twins>
- <20120110001445.GA20542@linux-youquan.bj.intel.com>
- <1326107156.2442.59.camel@twins>
- <20120110055856.GA23741@linux-youquan.bj.intel.com>
- <1326153163.2366.7.camel@sbsiddha-mobl2>
- <20120110091805.GA28024@elte.hu>
- <4F0C4BF0.9090809@linux.intel.com>
- <20120110194108.GA28488@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120110194108.GA28488@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+	id S932853Ab2AJTvM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 14:51:12 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57829 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932308Ab2AJTvK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 14:51:10 -0500
+Message-ID: <1326225067.3264.51.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@kernel.org>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Date: Tue, 10 Jan 2012 13:51:07 -0600
+In-Reply-To: <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
+References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
+	 <CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
+	 <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Ingo Molnar <mingo@elte.hu> wrote:
-
-> > a very good default would be to keep all tasks on one 
-> > package until half the cores in the package are busy, and 
-> > then start spreading out.
+On Tue, 2012-01-10 at 11:33 -0800, Nicholas A. Bellinger wrote:
+> On Tue, 2012-01-10 at 19:19 +0000, Bart Van Assche wrote:
+> > 2012/1/10 Nicholas A. Bellinger <nab@linux-iscsi.org>
+> > > *) Initial merge for the SRP target (ib_srpt) fabric module (bart)
 > > 
-> > I suspect that'll be the 90% case coverage.
+> > As far as I know the last time that patch was posted for review is
+> > November 4 (http://permalink.gmane.org/gmane.linux.scsi.target.devel/420).
+> > The date of the ib_srpt commit is December 16
+> > (http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=commitdiff;h=a42d985bd5b234da8b61347a78dc3057bf7bb94d).
+> > The two patches aren't identical. That makes me wonder whether that
+> > patch should have been reposted for review ?
+> > 
 > 
-> Maybe - but there's no reason to connect all the dots within 
-                                  ^not
-> the kernel and actually *discover* and use the very, very 
-> likely performance preference of the hardware in question.
+> Hi Bart,
+> 
+> The changes since the Nov 4 RFC are listed in the patch commit log:
+> 
+> ib_srpt: Make compilation with BUG=n proceed`
+> ib_srpt: Use new target_core_fabric.h include
+> ib_srpt: Check hex2bin() return code to silence build warning
+> 
+> These are all very minor and did not warrant another full RFC posting.
 
-Thanks,
+They might not warrant a full RFC reposting, but individually they
+should have been posted to the list, so Bart is right.
 
-	Ingo
+As a maintainer, there shouldn't be a patch in your tree that hasn't
+been over the mailing list once.  This is for three reasons
+
+     1. Git is a great source control tool, bit it doesn't hugely
+        facilitate review.  Even virtuoso git users find it easier to
+        read and reply to emailed patches for this purpose
+     2. Not everyone in our community is a wholesale git user.  For
+        them, email might be the only way they get to see a patch, so
+        using git alone lowers our pool of reviewers (and reviewers are
+        the species we most need to encourage)
+     3. Enforcing the rule that everything is emailed first can save you
+        from the maintainers curse:  the temptation to bung in that last
+        little "obvious" fix just before you send your tree to Linus
+        which later turns out to cause huge regressions and much
+        heartache.
+
+You don't have to endlessly repost patch series, just make sure that
+small updates get posted for review and comment before they get applied.
+
+James
+
+
