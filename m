@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab2AJUbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:31:55 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:42939 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756744Ab2AJUbx (ORCPT
+	id S1756814Ab2AJUcy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:32:54 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:55305 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756715Ab2AJUcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:31:53 -0500
-Message-ID: <4F0CADDB.5010303@xenotime.net>
-Date: Tue, 10 Jan 2012 13:30:03 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 10 Jan 2012 15:32:53 -0500
+Date: Tue, 10 Jan 2012 15:32:52 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Sebastian Ott <sebott@linux.vnet.ibm.com>
+cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Michael Buesch <m@bues.ch>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: Incorrect uses of get_driver()/put_driver()
+In-Reply-To: <alpine.LFD.2.02.1201101119230.1750@c4eb>
+Message-ID: <Pine.LNX.4.44L0.1201101524440.1594-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        x86 maintainers <x86@kernel.org>, Andres Salomon <dilinger@queued.net>,
-        Chris Ball <cjb@laptop.org>, Jon Nettleton <jon.nettleton@gmail.com>
-Subject: [PATCH -next] olpc: fix olpc-xo1-sci.c build when INPUT=m
-References: <20120110164454.b595335a42321c80fba56ea7@canb.auug.org.au>
-In-Reply-To: <20120110164454.b595335a42321c80fba56ea7@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@xenotime.net>
+On Tue, 10 Jan 2012, Sebastian Ott wrote:
 
-Fix build errors when CONFIG_INPUT=m.
-This is not pretty, but all of the OLPC kconfig options
-are bool instead of tristate.
+> [PATCH] cio: remove {get,put}_driver
+> 
+> Remove useless {get,put}_driver - the caller of the functions
+> has to ensure valid driver pointers.
+> 
+> Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+> ---
+>  drivers/s390/cio/ccwgroup.c |    2 --
+>  drivers/s390/cio/device.c   |    8 +-------
+>  2 files changed, 1 insertion(+), 9 deletions(-)
+> 
+> --- a/drivers/s390/cio/ccwgroup.c
+> +++ b/drivers/s390/cio/ccwgroup.c
+> @@ -580,7 +580,6 @@ void ccwgroup_driver_unregister(struct c
+>  	struct device *dev;
+>  
+>  	/* We don't want ccwgroup devices to live longer than their driver. */
+> -	get_driver(&cdriver->driver);
+>  	while ((dev = driver_find_device(&cdriver->driver, NULL, NULL,
+>  					 __ccwgroup_match_all))) {
+>  		struct ccwgroup_device *gdev = to_ccwgroupdev(dev);
+> @@ -592,7 +591,6 @@ void ccwgroup_driver_unregister(struct c
+>  		mutex_unlock(&gdev->reg_mutex);
+>  		put_device(dev);
+>  	}
+> -	put_driver(&cdriver->driver);
+>  	driver_unregister(&cdriver->driver);
+>  }
+>  EXPORT_SYMBOL(ccwgroup_driver_unregister);
+> --- a/drivers/s390/cio/device.c
+> +++ b/drivers/s390/cio/device.c
+> @@ -1676,15 +1676,9 @@ struct ccw_device *get_ccwdev_by_busid(s
+>  				       const char *bus_id)
+>  {
+>  	struct device *dev;
+> -	struct device_driver *drv;
+>  
+> -	drv = get_driver(&cdrv->driver);
+> -	if (!drv)
+> -		return NULL;
+> -
+> -	dev = driver_find_device(drv, NULL, (void *)bus_id,
+> +	dev = driver_find_device(&cdrv->driver, NULL, (void *)bus_id,
+>  				 __ccwdev_check_busid);
+> -	put_driver(drv);
+>  
+>  	return dev ? to_ccwdev(dev) : NULL;
+>  }
 
-arch/x86/built-in.o: In function `send_lid_state':
-olpc-xo1-sci.c:(.text+0x1d323): undefined reference to `input_event'
-olpc-xo1-sci.c:(.text+0x1d338): undefined reference to `input_event'
-arch/x86/built-in.o: In function `free_ebook_switch':
-olpc-xo1-sci.c:(.text+0x1d529): undefined reference to `input_unregister_device'
-olpc-xo1-sci.c:(.text+0x1d533): undefined reference to `input_free_device'
-arch/x86/built-in.o: In function `free_power_button':
-olpc-xo1-sci.c:(.text+0x1d549): undefined reference to `input_unregister_device'
-olpc-xo1-sci.c:(.text+0x1d553): undefined reference to `input_free_device'
-arch/x86/built-in.o: In function `send_ebook_state':
-olpc-xo1-sci.c:(.text+0x1d632): undefined reference to `input_event'
-olpc-xo1-sci.c:(.text+0x1d647): undefined reference to `input_event'
-arch/x86/built-in.o: In function `xo1_sci_intr':
-olpc-xo1-sci.c:(.text+0x1d78e): undefined reference to `input_event'
-olpc-xo1-sci.c:(.text+0x1d7a3): undefined reference to `input_event'
-olpc-xo1-sci.c:(.text+0x1d7be): undefined reference to `input_event'
-arch/x86/built-in.o:olpc-xo1-sci.c:(.text+0x1d7d3): more undefined references to `input_event' follow
-arch/x86/built-in.o: In function `free_lid_switch':
-olpc-xo1-sci.c:(.text+0x1d7fd): undefined reference to `input_unregister_device'
-olpc-xo1-sci.c:(.text+0x1d807): undefined reference to `input_free_device'
-arch/x86/built-in.o: In function `setup_lid_switch':
-olpc-xo1-sci.c:(.devinit.text+0x155): undefined reference to `input_allocate_device'
-olpc-xo1-sci.c:(.devinit.text+0x1a4): undefined reference to `input_register_device'
-olpc-xo1-sci.c:(.devinit.text+0x1ce): undefined reference to `input_unregister_device'
-olpc-xo1-sci.c:(.devinit.text+0x1d8): undefined reference to `input_free_device'
-arch/x86/built-in.o: In function `xo1_sci_probe':
-olpc-xo1-sci.c:(.devinit.text+0x235): undefined reference to `input_allocate_device'
-olpc-xo1-sci.c:(.devinit.text+0x285): undefined reference to `input_register_device'
-olpc-xo1-sci.c:(.devinit.text+0x299): undefined reference to `input_free_device'
-olpc-xo1-sci.c:(.devinit.text+0x2e1): undefined reference to `input_register_device'
-olpc-xo1-sci.c:(.devinit.text+0x2f5): undefined reference to `input_free_device'
-olpc-xo1-sci.c:(.devinit.text+0x54c): undefined reference to `input_allocate_device'
+Thanks Sebastian and everybody else.  It looks like there's no reason
+not to simply remove get_driver() and put_driver(), so I'll do just
+that.  This patch can be part of the job -- unless someone else wants
+to commit it first.
 
-Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
-Cc:	Andres Salomon <dilinger@queued.net>
-Cc:	Chris Ball <cjb@laptop.org>
-Cc:	Jon Nettleton <jon.nettleton@gmail.com>
----
- arch/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+To avoid possible conflicts, I'll wait until after the merge window 
+closes and things stabilize a little before posting any changes.
 
---- linux-next-20120110.orig/arch/x86/Kconfig
-+++ linux-next-20120110/arch/x86/Kconfig
-@@ -2132,6 +2132,7 @@ config OLPC_XO1_RTC
- config OLPC_XO1_SCI
- 	bool "OLPC XO-1 SCI extras"
- 	depends on OLPC && OLPC_XO1_PM
-+	depends on INPUT=y
- 	select POWER_SUPPLY
- 	select GPIO_CS5535
- 	select MFD_CORE
+Alan Stern
+
