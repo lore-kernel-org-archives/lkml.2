@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab2AJROR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 12:14:17 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36989 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932290Ab2AJROQ (ORCPT
+	id S932389Ab2AJRTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 12:19:11 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:58684 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932236Ab2AJRTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 12:14:16 -0500
-Date: Tue, 10 Jan 2012 17:14:14 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: dd diasemi <dd.diasemi@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: drivers/regulator/core.c: Fixes mapping inside
-	regulator_mode_to_status() and makes it returning -EINVAL on
-	invalid input.
-Message-ID: <20120110171412.GA7164@opensource.wolfsonmicro.com>
-References: <1326111140.22107.9.camel@sw-eng-lt-dc-vm2> <20120109161456.GC2974@opensource.wolfsonmicro.com> <CAEqHmAte=rvhjGUEdMgNQKfvPxSVTFR5TfWy13VPEhZj0T53KQ@mail.gmail.com> <20120109200734.GB30766@opensource.wolfsonmicro.com> <CAEqHmAtmHjEJUdvkBPhF5PzP4V_xDc5owLJpp0DENsXLs_ynxQ@mail.gmail.com> <20120110001447.GK30766@opensource.wolfsonmicro.com> <CAEqHmAtrUNKTxt3Q8x7=nZNp09ajhyYQn3DmAKd3OUib9hLBUQ@mail.gmail.com>
+	Tue, 10 Jan 2012 12:19:09 -0500
+Date: Tue, 10 Jan 2012 09:18:58 -0800
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <tip-8030c36d13f030103356709e63638678fdc66fdc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        akpm@linux-foundation.org, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tglx@linutronix.de
+In-Reply-To: <20120109165859.1879abda.akpm@linux-foundation.org>
+References: <20120109165859.1879abda.akpm@linux-foundation.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, atomic: atomic64_read() take a const pointer
+Git-Commit-ID: 8030c36d13f030103356709e63638678fdc66fdc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAEqHmAtrUNKTxt3Q8x7=nZNp09ajhyYQn3DmAKd3OUib9hLBUQ@mail.gmail.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 10 Jan 2012 09:19:04 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 05:09:40PM +0000, dd diasemi wrote:
-> On Tue, Jan 10, 2012 at 12:14 AM, Mark Brown
+Commit-ID:  8030c36d13f030103356709e63638678fdc66fdc
+Gitweb:     http://git.kernel.org/tip/8030c36d13f030103356709e63638678fdc66fdc
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Mon, 9 Jan 2012 19:33:24 -0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 9 Jan 2012 19:33:24 -0800
 
-> The behaviour is exactly the same in both cases, because
-> REGULATOR_STATUS_OFF == 0.
+x86, atomic: atomic64_read() take a const pointer
 
-That's not really the intended behaviour...
+atomic64_read() doesn't actually write anything (as far as the C
+environment is concerned... the CPU does actually write but that's an
+implementation quirk), so it should take a const pointer.
 
-> From linux/regulator/driver.h:
-> enum regulator_status {
->        REGULATOR_STATUS_OFF,
+This does NOT mean that it is safe to use atomic64_read() on an object
+in readonly storage (it will trap!)
 
-...if it were intended we'd explicitly set the value here to be zero
-here.  The intention is to return an "I don't know" value rather than an
-error.
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Link: http://lkml.kernel.org/r/20120109165859.1879abda.akpm@linux-foundation.org
+---
+ arch/x86/include/asm/atomic64_32.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> And to set things up, should regulator_get_status() return negative
-> error code or REGULATOR_STATUS_OFF (0) on communication failure?
-
-It should return an error when the I/O fails.
+diff --git a/arch/x86/include/asm/atomic64_32.h b/arch/x86/include/asm/atomic64_32.h
+index 24098aa..fa13f0e 100644
+--- a/arch/x86/include/asm/atomic64_32.h
++++ b/arch/x86/include/asm/atomic64_32.h
+@@ -82,7 +82,7 @@ static inline void atomic64_set(atomic64_t *v, long long i)
+  *
+  * Atomically reads the value of @v and returns it.
+  */
+-static inline long long atomic64_read(atomic64_t *v)
++static inline long long atomic64_read(const atomic64_t *v)
+ {
+ 	long long r;
+ 	asm volatile(ATOMIC64_ALTERNATIVE(read)
