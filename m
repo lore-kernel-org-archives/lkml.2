@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934369Ab2AJXDP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:03:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52703 "EHLO mx2.suse.de"
+	id S934356Ab2AJXDL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:03:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52695 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934162Ab2AJXDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:03:08 -0500
+	id S934342Ab2AJXDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:03:05 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:04 2012
-Message-Id: <20120110215604.413282281@clark.kroah.org>
+Message-Id: <20120110215604.319826410@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:36 -0800
+Date: Tue, 10 Jan 2012 13:55:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Julia Lawall <julia@diku.dk>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [33/49] drivers/usb/class/cdc-acm.c: clear dangling pointer
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
+Subject: [32/49] udf: Fix deadlock when converting file from in-ICB one to normal one
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +24,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julia Lawall <julia@diku.dk>
+From: Jan Kara <jack@suse.cz>
 
-commit e7c8e8605d0bafc705ff27f9da98a1668427cc0f upstream.
+commit d2eb8c359309ec45d6bf5b147303ab8e13be86ea upstream.
 
-On some failures, the country_code field of an acm structure is freed
-without freeing the acm structure itself.  Elsewhere, operations including
-memcpy and kfree are performed on the country_code field.  The patch sets
-the country_code field to NULL when it is freed, and likewise sets the
-country_code_size field to 0.
+During BKL removal in 2.6.38, conversion of files from in-ICB format to normal
+format got broken. We call ->writepage with i_data_sem held but udf_get_block()
+also acquires i_data_sem thus creating A-A deadlock.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Acked-by: Oliver Neukum <oneukum@suse.de>
+We fix the problem by dropping i_data_sem before calling ->writepage() which is
+safe since i_mutex still protects us against any changes in the file. Also fix
+pagelock - i_data_sem lock inversion in udf_expand_file_adinicb() by dropping
+i_data_sem before calling find_or_create_page().
+
+Reported-by: Matthias Matiak <netzpython@mail-on.us>
+Tested-by: Matthias Matiak <netzpython@mail-on.us>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/class/cdc-acm.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/udf/file.c  |    6 +++---
+ fs/udf/inode.c |   21 ++++++++++++++++++---
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1183,6 +1183,8 @@ made_compressed_probe:
- 		i = device_create_file(&intf->dev, &dev_attr_wCountryCodes);
- 		if (i < 0) {
- 			kfree(acm->country_codes);
-+			acm->country_codes = NULL;
-+			acm->country_code_size = 0;
- 			goto skip_countries;
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -125,7 +125,6 @@ static ssize_t udf_file_aio_write(struct
+ 			err = udf_expand_file_adinicb(inode);
+ 			if (err) {
+ 				udf_debug("udf_expand_adinicb: err=%d\n", err);
+-				up_write(&iinfo->i_data_sem);
+ 				return err;
+ 			}
+ 		} else {
+@@ -133,9 +132,10 @@ static ssize_t udf_file_aio_write(struct
+ 				iinfo->i_lenAlloc = pos + count;
+ 			else
+ 				iinfo->i_lenAlloc = inode->i_size;
++			up_write(&iinfo->i_data_sem);
  		}
+-	}
+-	up_write(&iinfo->i_data_sem);
++	} else
++		up_write(&iinfo->i_data_sem);
  
-@@ -1191,6 +1193,8 @@ made_compressed_probe:
- 		if (i < 0) {
- 			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
- 			kfree(acm->country_codes);
-+			acm->country_codes = NULL;
-+			acm->country_code_size = 0;
- 			goto skip_countries;
- 		}
+ 	retval = generic_file_aio_write(iocb, iov, nr_segs, ppos);
+ 	if (retval > 0)
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -151,6 +151,12 @@ const struct address_space_operations ud
+ 	.bmap		= udf_bmap,
+ };
+ 
++/*
++ * Expand file stored in ICB to a normal one-block-file
++ *
++ * This function requires i_data_sem for writing and releases it.
++ * This function requires i_mutex held
++ */
+ int udf_expand_file_adinicb(struct inode *inode)
+ {
+ 	struct page *page;
+@@ -169,9 +175,15 @@ int udf_expand_file_adinicb(struct inode
+ 			iinfo->i_alloc_type = ICBTAG_FLAG_AD_LONG;
+ 		/* from now on we have normal address_space methods */
+ 		inode->i_data.a_ops = &udf_aops;
++		up_write(&iinfo->i_data_sem);
+ 		mark_inode_dirty(inode);
+ 		return 0;
  	}
++	/*
++	 * Release i_data_sem so that we can lock a page - page lock ranks
++	 * above i_data_sem. i_mutex still protects us against file changes.
++	 */
++	up_write(&iinfo->i_data_sem);
+ 
+ 	page = find_or_create_page(inode->i_mapping, 0, GFP_NOFS);
+ 	if (!page)
+@@ -187,6 +199,7 @@ int udf_expand_file_adinicb(struct inode
+ 		SetPageUptodate(page);
+ 		kunmap(page);
+ 	}
++	down_write(&iinfo->i_data_sem);
+ 	memset(iinfo->i_ext.i_data + iinfo->i_lenEAttr, 0x00,
+ 	       iinfo->i_lenAlloc);
+ 	iinfo->i_lenAlloc = 0;
+@@ -196,17 +209,20 @@ int udf_expand_file_adinicb(struct inode
+ 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_LONG;
+ 	/* from now on we have normal address_space methods */
+ 	inode->i_data.a_ops = &udf_aops;
++	up_write(&iinfo->i_data_sem);
+ 	err = inode->i_data.a_ops->writepage(page, &udf_wbc);
+ 	if (err) {
+ 		/* Restore everything back so that we don't lose data... */
+ 		lock_page(page);
+ 		kaddr = kmap(page);
++		down_write(&iinfo->i_data_sem);
+ 		memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr, kaddr,
+ 		       inode->i_size);
+ 		kunmap(page);
+ 		unlock_page(page);
+ 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
+ 		inode->i_data.a_ops = &udf_adinicb_aops;
++		up_write(&iinfo->i_data_sem);
+ 	}
+ 	page_cache_release(page);
+ 	mark_inode_dirty(inode);
+@@ -1111,10 +1127,9 @@ int udf_setsize(struct inode *inode, lof
+ 			if (bsize <
+ 			    (udf_file_entry_alloc_offset(inode) + newsize)) {
+ 				err = udf_expand_file_adinicb(inode);
+-				if (err) {
+-					up_write(&iinfo->i_data_sem);
++				if (err)
+ 					return err;
+-				}
++				down_write(&iinfo->i_data_sem);
+ 			} else
+ 				iinfo->i_lenAlloc = newsize;
+ 		}
 
 
