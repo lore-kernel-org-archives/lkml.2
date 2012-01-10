@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934188Ab2AJXCQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:02:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52601 "EHLO mx2.suse.de"
+	id S1757055Ab2AJXNN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:13:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52591 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934018Ab2AJXCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:02:10 -0500
+	id S934164Ab2AJXCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:02:07 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:03 2012
-Message-Id: <20120110215603.022635510@clark.kroah.org>
+Message-Id: <20120110215602.930683849@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:20 -0800
+Date: Tue, 10 Jan 2012 13:55:19 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [17/49] iwlagn: fix (remove) use of PAGE_SIZE
+        alan@lxorguk.ukuu.org.uk, Johannes Berg <johannes.berg@intel.com>,
+        Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Subject: [16/49] iwlagn: fix TID use bug
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,176 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 106671369e6d046c0b3e1e72b18ad6dd9cb298b0 upstream.
+commit 9a215e40d70ae63762963ab3ccc7f31dd966dc6a upstream.
 
-The ICT code erroneously uses PAGE_SIZE. The bug
-is that PAGE_SIZE isn't necessarily 4096, so on
-such platforms this code will not work correctly
-as we'll try to attempt to read an index in the
-table that the device never wrote, it always has
-4096-byte pages.
+The driver everywhere uses max TID count as 9,
+which is wrong, it should be 8.
 
-Additionally, the manual alignment code here is
-unnecessary -- Documentation/DMA-API-HOWTO.txt
-states:
-  The cpu return address and the DMA bus master address are both
-  guaranteed to be aligned to the smallest PAGE_SIZE order which
-  is greater than or equal to the requested size.  This invariant
-  exists (for example) to guarantee that if you allocate a chunk
-  which is smaller than or equal to 64 kilobytes, the extent of the
-  buffer you receive will not cross a 64K boundary.
+I think the reason it uses 9 here is off-by-one
+confusion by whoever wrote this. We do use the
+value IWL_MAX_TID_COUNT for "not QoS/no TID"
+but that is completely correct even if it is 8
+and not 9 since 0-7 are only valid.
 
-Just use appropriate new constants and get rid of
-the alignment code.
+As a side effect, this fixes the following bug:
 
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+ Open BA session requested for 00:23:cd:16:8a:7e tid 8
+ ------------[ cut here ]------------
+ kernel BUG at drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h:350!
+ ...
+
+when you do
+echo "tx start 8" > /sys/kernel/debug/ieee80211/*/*/*/*/agg_status
+
+Reported-by: Nikolay Martynov <mar.kolya@gmail.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h |    2 
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c  |   77 +++++++++-------------
- 2 files changed, 33 insertions(+), 46 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-commands.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h
-@@ -219,9 +219,7 @@ struct iwl_trans_pcie {
+--- a/drivers/net/wireless/iwlwifi/iwl-commands.h
++++ b/drivers/net/wireless/iwlwifi/iwl-commands.h
+@@ -809,7 +809,7 @@ struct iwl_qosparam_cmd {
+ #define	IWLAGN_STATION_COUNT	16
  
- 	/* INT ICT Table */
- 	__le32 *ict_tbl;
--	void *ict_tbl_vir;
- 	dma_addr_t ict_tbl_dma;
--	dma_addr_t aligned_ict_tbl_dma;
- 	int ict_index;
- 	u32 inta;
- 	bool use_ict;
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
-@@ -1136,7 +1136,11 @@ void iwl_irq_tasklet(struct iwl_trans *t
-  * ICT functions
-  *
-  ******************************************************************************/
--#define ICT_COUNT (PAGE_SIZE/sizeof(u32))
-+
-+/* a device (PCI-E) page is 4096 bytes long */
-+#define ICT_SHIFT	12
-+#define ICT_SIZE	(1 << ICT_SHIFT)
-+#define ICT_COUNT	(ICT_SIZE / sizeof(u32))
+ #define	IWL_INVALID_STATION 	255
+-#define IWL_MAX_TID_COUNT	9
++#define IWL_MAX_TID_COUNT	8
  
- /* Free dram table */
- void iwl_free_isr_ict(struct iwl_trans *trans)
-@@ -1144,21 +1148,19 @@ void iwl_free_isr_ict(struct iwl_trans *
- 	struct iwl_trans_pcie *trans_pcie =
- 		IWL_TRANS_GET_PCIE_TRANS(trans);
- 
--	if (trans_pcie->ict_tbl_vir) {
--		dma_free_coherent(bus(trans)->dev,
--				  (sizeof(u32) * ICT_COUNT) + PAGE_SIZE,
--				  trans_pcie->ict_tbl_vir,
-+	if (trans_pcie->ict_tbl) {
-+		dma_free_coherent(bus(trans)->dev, ICT_SIZE,
-+				  trans_pcie->ict_tbl,
- 				  trans_pcie->ict_tbl_dma);
--		trans_pcie->ict_tbl_vir = NULL;
--		memset(&trans_pcie->ict_tbl_dma, 0,
--			sizeof(trans_pcie->ict_tbl_dma));
--		memset(&trans_pcie->aligned_ict_tbl_dma, 0,
--			sizeof(trans_pcie->aligned_ict_tbl_dma));
-+		trans_pcie->ict_tbl = NULL;
-+		trans_pcie->ict_tbl_dma = 0;
- 	}
- }
- 
- 
--/* allocate dram shared table it is a PAGE_SIZE aligned
-+/*
-+ * allocate dram shared table, it is an aligned memory
-+ * block of ICT_SIZE.
-  * also reset all data related to ICT table interrupt.
-  */
- int iwl_alloc_isr_ict(struct iwl_trans *trans)
-@@ -1166,36 +1168,26 @@ int iwl_alloc_isr_ict(struct iwl_trans *
- 	struct iwl_trans_pcie *trans_pcie =
- 		IWL_TRANS_GET_PCIE_TRANS(trans);
- 
--	/* allocate shrared data table */
--	trans_pcie->ict_tbl_vir =
--		dma_alloc_coherent(bus(trans)->dev,
--				   (sizeof(u32) * ICT_COUNT) + PAGE_SIZE,
--				   &trans_pcie->ict_tbl_dma, GFP_KERNEL);
--	if (!trans_pcie->ict_tbl_vir)
-+	trans_pcie->ict_tbl =
-+		dma_alloc_coherent(bus(trans)->dev, ICT_SIZE,
-+				   &trans_pcie->ict_tbl_dma,
-+				   GFP_KERNEL);
-+	if (!trans_pcie->ict_tbl)
- 		return -ENOMEM;
- 
--	/* align table to PAGE_SIZE boundary */
--	trans_pcie->aligned_ict_tbl_dma =
--		ALIGN(trans_pcie->ict_tbl_dma, PAGE_SIZE);
--
--	IWL_DEBUG_ISR(trans, "ict dma addr %Lx dma aligned %Lx diff %d\n",
--			   (unsigned long long)trans_pcie->ict_tbl_dma,
--			   (unsigned long long)trans_pcie->aligned_ict_tbl_dma,
--			   (int)(trans_pcie->aligned_ict_tbl_dma -
--			   trans_pcie->ict_tbl_dma));
--
--	trans_pcie->ict_tbl =  trans_pcie->ict_tbl_vir +
--			  (trans_pcie->aligned_ict_tbl_dma -
--			  trans_pcie->ict_tbl_dma);
--
--	IWL_DEBUG_ISR(trans, "ict vir addr %p vir aligned %p diff %d\n",
--			     trans_pcie->ict_tbl, trans_pcie->ict_tbl_vir,
--			(int)(trans_pcie->aligned_ict_tbl_dma -
--			    trans_pcie->ict_tbl_dma));
-+	/* just an API sanity check ... it is guaranteed to be aligned */
-+	if (WARN_ON(trans_pcie->ict_tbl_dma & (ICT_SIZE - 1))) {
-+		iwl_free_isr_ict(trans);
-+		return -EINVAL;
-+	}
-+
-+	IWL_DEBUG_ISR(trans, "ict dma addr %Lx\n",
-+		      (unsigned long long)trans_pcie->ict_tbl_dma);
-+
-+	IWL_DEBUG_ISR(trans, "ict vir addr %p\n", trans_pcie->ict_tbl);
- 
- 	/* reset table and index to all 0 */
--	memset(trans_pcie->ict_tbl_vir, 0,
--		(sizeof(u32) * ICT_COUNT) + PAGE_SIZE);
-+	memset(trans_pcie->ict_tbl, 0, ICT_SIZE);
- 	trans_pcie->ict_index = 0;
- 
- 	/* add periodic RX interrupt */
-@@ -1213,23 +1205,20 @@ int iwl_reset_ict(struct iwl_trans *tran
- 	struct iwl_trans_pcie *trans_pcie =
- 		IWL_TRANS_GET_PCIE_TRANS(trans);
- 
--	if (!trans_pcie->ict_tbl_vir)
-+	if (!trans_pcie->ict_tbl)
- 		return 0;
- 
- 	spin_lock_irqsave(&trans->shrd->lock, flags);
- 	iwl_disable_interrupts(trans);
- 
--	memset(&trans_pcie->ict_tbl[0], 0, sizeof(u32) * ICT_COUNT);
-+	memset(trans_pcie->ict_tbl, 0, ICT_SIZE);
- 
--	val = trans_pcie->aligned_ict_tbl_dma >> PAGE_SHIFT;
-+	val = trans_pcie->ict_tbl_dma >> ICT_SHIFT;
- 
- 	val |= CSR_DRAM_INT_TBL_ENABLE;
- 	val |= CSR_DRAM_INIT_TBL_WRAP_CHECK;
- 
--	IWL_DEBUG_ISR(trans, "CSR_DRAM_INT_TBL_REG =0x%X "
--			"aligned dma address %Lx\n",
--			val,
--			(unsigned long long)trans_pcie->aligned_ict_tbl_dma);
-+	IWL_DEBUG_ISR(trans, "CSR_DRAM_INT_TBL_REG =0x%x\n", val);
- 
- 	iwl_write32(bus(trans), CSR_DRAM_INT_TBL_REG, val);
- 	trans_pcie->use_ict = true;
+ #define STA_FLG_TX_RATE_MSK		cpu_to_le32(1 << 2)
+ #define STA_FLG_PWR_SAVE_MSK		cpu_to_le32(1 << 8)
 
 
