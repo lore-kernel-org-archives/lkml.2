@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933511Ab2AJX2D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:28:03 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52084 "EHLO mx2.suse.de"
+	id S933321Ab2AJW5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:57:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52047 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933389Ab2AJW6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:00 -0500
+	id S933028Ab2AJW5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:57:40 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:20 2012
-Message-Id: <20120110214620.472107630@clark.kroah.org>
+Message-Id: <20120110214619.941624844@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:39 -0800
+Date: Tue, 10 Jan 2012 13:45:33 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
-Subject: [26/40] USB: omninet: fix write_room
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
+Subject: [20/40] udf: Fix deadlock when converting file from in-ICB one to normal one
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,32 +24,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 694c6301e515bad574af74b6552134c4d9dcb334 upstream.
+commit d2eb8c359309ec45d6bf5b147303ab8e13be86ea upstream.
 
-Fix regression introduced by commit 507ca9bc047666 ([PATCH] USB: add
-ability for usb-serial drivers to determine if their write urb is
-currently being used.) which inverted the logic in write_room so that it
-returns zero when the write urb is actually free.
+During BKL removal in 2.6.38, conversion of files from in-ICB format to normal
+format got broken. We call ->writepage with i_data_sem held but udf_get_block()
+also acquires i_data_sem thus creating A-A deadlock.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+We fix the problem by dropping i_data_sem before calling ->writepage() which is
+safe since i_mutex still protects us against any changes in the file. Also fix
+pagelock - i_data_sem lock inversion in udf_expand_file_adinicb() by dropping
+i_data_sem before calling find_or_create_page().
+
+Reported-by: Matthias Matiak <netzpython@mail-on.us>
+Tested-by: Matthias Matiak <netzpython@mail-on.us>
+Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/omninet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/udf/file.c  |    6 +++---
+ fs/udf/inode.c |   21 ++++++++++++++++++---
+ 2 files changed, 21 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/serial/omninet.c
-+++ b/drivers/usb/serial/omninet.c
-@@ -315,7 +315,7 @@ static int omninet_write_room(struct tty
- 	int room = 0; /* Default: no room */
+--- a/fs/udf/file.c
++++ b/fs/udf/file.c
+@@ -125,7 +125,6 @@ static ssize_t udf_file_aio_write(struct
+ 			err = udf_expand_file_adinicb(inode);
+ 			if (err) {
+ 				udf_debug("udf_expand_adinicb: err=%d\n", err);
+-				up_write(&iinfo->i_data_sem);
+ 				return err;
+ 			}
+ 		} else {
+@@ -133,9 +132,10 @@ static ssize_t udf_file_aio_write(struct
+ 				iinfo->i_lenAlloc = pos + count;
+ 			else
+ 				iinfo->i_lenAlloc = inode->i_size;
++			up_write(&iinfo->i_data_sem);
+ 		}
+-	}
+-	up_write(&iinfo->i_data_sem);
++	} else
++		up_write(&iinfo->i_data_sem);
  
- 	/* FIXME: no consistent locking for write_urb_busy */
--	if (wport->write_urb_busy)
-+	if (!wport->write_urb_busy)
- 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
+ 	retval = generic_file_aio_write(iocb, iov, nr_segs, ppos);
+ 	if (retval > 0)
+--- a/fs/udf/inode.c
++++ b/fs/udf/inode.c
+@@ -145,6 +145,12 @@ const struct address_space_operations ud
+ 	.bmap		= udf_bmap,
+ };
  
- 	dbg("%s - returns %d", __func__, room);
++/*
++ * Expand file stored in ICB to a normal one-block-file
++ *
++ * This function requires i_data_sem for writing and releases it.
++ * This function requires i_mutex held
++ */
+ int udf_expand_file_adinicb(struct inode *inode)
+ {
+ 	struct page *page;
+@@ -163,9 +169,15 @@ int udf_expand_file_adinicb(struct inode
+ 			iinfo->i_alloc_type = ICBTAG_FLAG_AD_LONG;
+ 		/* from now on we have normal address_space methods */
+ 		inode->i_data.a_ops = &udf_aops;
++		up_write(&iinfo->i_data_sem);
+ 		mark_inode_dirty(inode);
+ 		return 0;
+ 	}
++	/*
++	 * Release i_data_sem so that we can lock a page - page lock ranks
++	 * above i_data_sem. i_mutex still protects us against file changes.
++	 */
++	up_write(&iinfo->i_data_sem);
+ 
+ 	page = find_or_create_page(inode->i_mapping, 0, GFP_NOFS);
+ 	if (!page)
+@@ -181,6 +193,7 @@ int udf_expand_file_adinicb(struct inode
+ 		SetPageUptodate(page);
+ 		kunmap(page);
+ 	}
++	down_write(&iinfo->i_data_sem);
+ 	memset(iinfo->i_ext.i_data + iinfo->i_lenEAttr, 0x00,
+ 	       iinfo->i_lenAlloc);
+ 	iinfo->i_lenAlloc = 0;
+@@ -190,17 +203,20 @@ int udf_expand_file_adinicb(struct inode
+ 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_LONG;
+ 	/* from now on we have normal address_space methods */
+ 	inode->i_data.a_ops = &udf_aops;
++	up_write(&iinfo->i_data_sem);
+ 	err = inode->i_data.a_ops->writepage(page, &udf_wbc);
+ 	if (err) {
+ 		/* Restore everything back so that we don't lose data... */
+ 		lock_page(page);
+ 		kaddr = kmap(page);
++		down_write(&iinfo->i_data_sem);
+ 		memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr, kaddr,
+ 		       inode->i_size);
+ 		kunmap(page);
+ 		unlock_page(page);
+ 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
+ 		inode->i_data.a_ops = &udf_adinicb_aops;
++		up_write(&iinfo->i_data_sem);
+ 	}
+ 	page_cache_release(page);
+ 	mark_inode_dirty(inode);
+@@ -1105,10 +1121,9 @@ int udf_setsize(struct inode *inode, lof
+ 			if (bsize <
+ 			    (udf_file_entry_alloc_offset(inode) + newsize)) {
+ 				err = udf_expand_file_adinicb(inode);
+-				if (err) {
+-					up_write(&iinfo->i_data_sem);
++				if (err)
+ 					return err;
+-				}
++				down_write(&iinfo->i_data_sem);
+ 			} else
+ 				iinfo->i_lenAlloc = newsize;
+ 		}
 
 
