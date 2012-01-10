@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab2AJQyq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:54:46 -0500
-Received: from li9-11.members.linode.com ([67.18.176.11]:59908 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab2AJQyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:54:44 -0500
-Date: Tue, 10 Jan 2012 11:54:40 -0500
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Xi Wang <xi.wang@gmail.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH RESEND] ext4: fix undefined behavior in
- ext4_fill_flex_info()
-Message-ID: <20120110165440.GA6034@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Xi Wang <xi.wang@gmail.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	stable@vger.kernel.org
-References: <1326152840-1188-1-git-send-email-xi.wang@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326152840-1188-1-git-send-email-xi.wang@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S932407Ab2AJQ5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:57:19 -0500
+Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932088Ab2AJQ5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 11:57:18 -0500
+From: Richard Weinberger <richard@nod.at>
+To: dedekind1@gmail.com
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH] ubi: Use UBI_LAYOUT_VOLUME_{TYPE, ALIGN}
+Date: Tue, 10 Jan 2012 17:57:03 +0100
+Message-Id: <1326214623-15938-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 06:47:20PM -0500, Xi Wang wrote:
-> Commit 503358ae01b70ce6909d19dd01287093f6b6271c ("ext4: avoid divide by
-> zero when trying to mount a corrupted file system") fixes CVE-2009-4307
-> by performing a sanity check on s_log_groups_per_flex, since it can be
-> set to a bogus value by an attacker.
-> 
-> 	sbi->s_log_groups_per_flex = sbi->s_es->s_log_groups_per_flex;
-> 	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
-> 
-> 	if (groups_per_flex < 2) { ... }
-> 
-> This patch fixes two potential issues in the previous commit.
-> 
-> 1) The sanity check might only work on architectures like PowerPC.
-> On x86, 5 bits are used for the shifting amount.  That means, given a
-> large s_log_groups_per_flex value like 36, groups_per_flex = 1 << 36
-> is essentially 1 << 4 = 16, rather than 0.  This will bypass the check,
-> leaving s_log_groups_per_flex and groups_per_flex inconsistent.
-> 
-> 2) The sanity check relies on undefined behavior, i.e., oversized shift.
-> A standard-confirming C compiler could rewrite the check in unexpected
-> ways.  Consider the following equivalent form, assuming groups_per_flex
-> is unsigned for simplicity.
-> 
-> 	groups_per_flex = 1 << sbi->s_log_groups_per_flex;
-> 	if (groups_per_flex == 0 || groups_per_flex == 1) {
-> 
-> We compile the code snippet using Clang 3.0 and GCC 4.6.  Clang will
-> completely optimize away the check groups_per_flex == 0, leaving the
-> patched code as vulnerable as the original.  GCC keeps the check, but
-> there is no guarantee that future versions will do the same.
-> 
-> Signed-off-by: Xi Wang <xi.wang@gmail.com>
-> Cc: stable@vger.kernel.org
+UBI_LAYOUT_VOLUME_TYPE and UBI_LAYOUT_VOLUME_ALIGN are currently
+defined but not used.
+Use them at least once. 8-)
 
-Thanks, applied.  And thanks for the expanded commit description!
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/mtd/ubi/vtbl.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-		      	     	     - Ted
+diff --git a/drivers/mtd/ubi/vtbl.c b/drivers/mtd/ubi/vtbl.c
+index 9ad18da..93cb2f1 100644
+--- a/drivers/mtd/ubi/vtbl.c
++++ b/drivers/mtd/ubi/vtbl.c
+@@ -322,7 +322,7 @@ retry:
+ 		goto out_free;
+ 	}
+ 
+-	vid_hdr->vol_type = UBI_VID_DYNAMIC;
++	vid_hdr->vol_type = UBI_LAYOUT_VOLUME_TYPE;
+ 	vid_hdr->vol_id = cpu_to_be32(UBI_LAYOUT_VOLUME_ID);
+ 	vid_hdr->compat = UBI_LAYOUT_VOLUME_COMPAT;
+ 	vid_hdr->data_size = vid_hdr->used_ebs =
+@@ -632,7 +632,7 @@ static int init_volumes(struct ubi_device *ubi, const struct ubi_scan_info *si,
+ 		return -ENOMEM;
+ 
+ 	vol->reserved_pebs = UBI_LAYOUT_VOLUME_EBS;
+-	vol->alignment = 1;
++	vol->alignment = UBI_LAYOUT_VOLUME_ALIGN;
+ 	vol->vol_type = UBI_DYNAMIC_VOLUME;
+ 	vol->name_len = sizeof(UBI_LAYOUT_VOLUME_NAME) - 1;
+ 	memcpy(vol->name, UBI_LAYOUT_VOLUME_NAME, vol->name_len + 1);
+-- 
+1.7.7.3
+
