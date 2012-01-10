@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab2AJUMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:12:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45863 "EHLO mx2.suse.de"
+	id S1757027Ab2AJULc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:11:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45891 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756828Ab2AJULQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:11:16 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:51 2012
-Message-Id: <20120110200851.002013886@clark.kroah.org>
+	id S1756991Ab2AJUL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 15:11:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:50 2012
+Message-Id: <20120110200850.368987282@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 12:07:05 -0800
+Date: Tue, 10 Jan 2012 12:06:58 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
-Subject: [14/20] USB: omninet: fix write_room
+        alan@lxorguk.ukuu.org.uk, reiserfs-devel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: [07/20] reiserfs: Fix quota mount option parsing
 In-Reply-To: <20120110200902.GA5674@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,32 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit 694c6301e515bad574af74b6552134c4d9dcb334 upstream.
+commit a06d789b424190e9f59da391681f908486db2554 upstream.
 
-Fix regression introduced by commit 507ca9bc047666 ([PATCH] USB: add
-ability for usb-serial drivers to determine if their write urb is
-currently being used.) which inverted the logic in write_room so that it
-returns zero when the write urb is actually free.
+When jqfmt mount option is not specified on remount, we mistakenly clear
+s_jquota_fmt value stored in superblock. Fix the problem.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+CC: reiserfs-devel@vger.kernel.org
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/omninet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/reiserfs/super.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/omninet.c
-+++ b/drivers/usb/serial/omninet.c
-@@ -317,7 +317,7 @@ static int omninet_write_room(struct tty
- 	int room = 0; /* Default: no room */
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -1149,7 +1149,8 @@ static void handle_quota_files(struct su
+ 			kfree(REISERFS_SB(s)->s_qf_names[i]);
+ 		REISERFS_SB(s)->s_qf_names[i] = qf_names[i];
+ 	}
+-	REISERFS_SB(s)->s_jquota_fmt = *qfmt;
++	if (*qfmt)
++		REISERFS_SB(s)->s_jquota_fmt = *qfmt;
+ }
+ #endif
  
- 	/* FIXME: no consistent locking for write_urb_busy */
--	if (wport->write_urb_busy)
-+	if (!wport->write_urb_busy)
- 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
- 
- 	dbg("%s - returns %d", __func__, room);
 
 
