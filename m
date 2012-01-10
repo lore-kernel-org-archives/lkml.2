@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab2AJQvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:51:53 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:53065 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932390Ab2AJQvw (ORCPT
+	id S932453Ab2AJQxc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:53:32 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51482 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932257Ab2AJQxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:51:52 -0500
-Date: Tue, 10 Jan 2012 22:21:29 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Youquan Song <youquan.song@intel.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-Message-ID: <20120110165129.GC17432@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
- <1326103578.2442.50.camel@twins>
- <20120110001445.GA20542@linux-youquan.bj.intel.com>
- <1326107156.2442.59.camel@twins>
- <20120110055856.GA23741@linux-youquan.bj.intel.com>
- <1326153163.2366.7.camel@sbsiddha-mobl2>
- <20120110165426.GA20681@linux-youquan.bj.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20120110165426.GA20681@linux-youquan.bj.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12011016-4790-0000-0000-000000C81DC4
+	Tue, 10 Jan 2012 11:53:31 -0500
+Message-ID: <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [BUG] kernel freezes with latest tree
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Jan 2012 17:53:27 +0100
+In-Reply-To: <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
+References: <1326171444.6638.3.camel@edumazet-laptop>
+	 <1326171798.6638.4.camel@edumazet-laptop>
+	 <1326183371.6638.6.camel@edumazet-laptop>
+	 <1326212033.19095.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
+	 <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Youquan Song <youquan.song@intel.com> [2012-01-10 11:54:26]:
-
+Le mardi 10 janvier 2012 à 08:49 -0800, Linus Torvalds a écrit :
+> On Tue, Jan 10, 2012 at 8:37 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >
+> > Just to make sure I understood well, here is what I tested :
 > 
-> > Youquan, As far as I know both the
-> > sched_smt_power_savings/sched_mc_power_savings are broken for atleast an
-> > year.
-> > 
-> > Have you checked the state of 'sched_mc_power_savings' to see if it is
-> > working or gets addressed with your proposed patches?
-> Thanks Suresh!
+> Yup, that was it.
 > 
-> We have verified that sched_mc_power_savings works well in mainline and
-> -tip tree, only sched_smt_power_savings broken.
+> That was the obvious thing about the merge to check.
+> 
+> I suspect that what remains is now the sparse cleanups and
+> usecs_to_cputime64() interaction. I note that you are running on a
+> 32-bit setup, which is where such problems would show up (because any
+> new casts to "unsigned long" due to the forced sparse casting would
+> now actually truncate a 64-bit value down.
+> 
+> Just to test that theory, can you try this attached patch that simply
+> removes the casts? That's what we used to have before adding the
+> stricter type-checking (other things changed too, so this may not make
+> any difference, but this is a "test a small change to *maybe* narrow
+> things down")
+> 
+> Martin - mind re-running sparse on the 32-bit case to see if that
+> shows some messed-up case?
+> 
+>                    Linus
 
-Hi Suresh,
+I am compiling your patch, but I want to point out that I got also
+lockups on my 64bit dev machine.
 
-My testing also shows that sched_mc works find and only sched_smt
-suffers from the group capacity problem at the core level.
+(But alas, my git bisect attempt on it stopped on un bootable kernels)
 
---Vaidy
+
 
