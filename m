@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755965Ab2AJCCk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 21:02:40 -0500
-Received: from mail.linux-iscsi.org ([67.23.28.174]:56948 "EHLO
-	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755727Ab2AJCCi (ORCPT
+	id S1755983Ab2AJCCt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 21:02:49 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59603 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755947Ab2AJCCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 21:02:38 -0500
-Subject: Re: Where is module target_core_stgt or forgot cleanup ?
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Dongsheng Song <dongsheng.song@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <CAE8XmWoi7MpciKfA4t+NeKAX2zZCmHbB6PCYMG4WnhGA_k5jrQ@mail.gmail.com>
-References: <CAE8XmWoi7MpciKfA4t+NeKAX2zZCmHbB6PCYMG4WnhGA_k5jrQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Jan 2012 18:02:36 -0800
-Message-ID: <1326160956.6802.76.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Jan 2012 21:02:47 -0500
+X-Sasl-enc: hj1JcuNJr8bf9fAgLnBQvYFS98idApz/nKesbNFmql0O 1326160966
+Date: Mon, 9 Jan 2012 18:02:05 -0800
+From: Greg KH <greg@kroah.com>
+To: Ameya Palande <ameya.palande@ti.com>
+Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Texas Instruments DRV2665 Piezo Haptics Driver
+Message-ID: <20120110020205.GA11831@kroah.com>
+References: <1326159027-21185-1-git-send-email-ameya.palande@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326159027-21185-1-git-send-email-ameya.palande@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-09 at 14:13 +0800, Dongsheng Song wrote:
-> > Hi NAB,
-> >
-> > In Documentation/target/tcm_mod_builder.txt, the lsmod output example
-> > include target_core_stgt.
-> >
-> > In drivers/target/target_core_transport.c:
-> >
-> >        ret = request_module("target_core_stgt");
-> >        if (ret != 0)
-> >                pr_err("Unable to load target_core_stgt\n");
-> >
-> > But I can not found any other source files or documents mention
-> > target_core_stgt.
-> >
-> > --
-> > Dongsheng Song
+On Mon, Jan 09, 2012 at 05:30:27PM -0800, Ameya Palande wrote:
+> Texas Instruments's DRV2665 is a piezo haptic driver which is capable of
+> driving both high-voltage and low-voltage piezo haptic actuators.
 > 
-> ping ?
+> Signed-off-by: Ameya Palande <ameya.palande@ti.com>
+> ---
+>  MAINTAINERS               |    5 +
+>  drivers/misc/Kconfig      |    7 +
+>  drivers/misc/Makefile     |    1 +
+>  drivers/misc/ti_drv2665.c |  448 +++++++++++++++++++++++++++++++++++++++++++++
 
-Hello,
+Where is the Documentation/ABI/ entries for this driver?
 
-target_core_stgt is a backend driver for a userspace passthrough using
-STGT logic that exists in lio-core.git code.  It's only WIP code in it's
-current form, and until someone shows interest in doing the necessary
-work to make it run it's going to remaine a lio-core.git specific
-module.
+And most importantly, why do you feel this is a "misc" driver and not an
+iio driver instead?
 
---nab
+thanks,
 
-
+greg k-h
