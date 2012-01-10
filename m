@@ -1,53 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab2AJQ0d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:26:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:37648 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756476Ab2AJQ0b (ORCPT
+	id S1756545Ab2AJQ1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:27:55 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37287 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756246Ab2AJQ1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:26:31 -0500
-Date: Tue, 10 Jan 2012 08:26:25 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, namhyung@gmail.com
-Subject: Re: [PATCH 1/2] block: introduce BIO_IN_FLIGHT flag
-Message-ID: <20120110162625.GB20446@google.com>
-References: <1324996113-1837-1-git-send-email-namhyung@gmail.com>
- <1324996113-1837-2-git-send-email-namhyung@gmail.com>
- <20120109015628.GB16360@mtj.dyndns.org>
- <4F0A57A7.4070508@lge.com>
- <20120109164148.GB21732@google.com>
- <4F0BC770.1090702@lge.com>
+	Tue, 10 Jan 2012 11:27:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0BC770.1090702@lge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20120110094026.GB4118@suse.de>
+References: <CAJd=RBDAoNt=TZWhNeLs0MaCJ_ormEp=ya55-PA+B0BAxfGbbQ@mail.gmail.com>
+	<20120110094026.GB4118@suse.de>
+Date: Wed, 11 Jan 2012 00:27:53 +0800
+Message-ID: <CAJd=RBBNK6P=Kq09G88UDEsiU8KUPiko5WTfLgQqKzry8tVH5A@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscan: no change of reclaim mode if unevictable page encountered
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Jan 10, 2012 at 5:40 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Sat, Jan 07, 2012 at 11:46:17AM +0800, Hillf Danton wrote:
+>> Since unevictable page is not isolated from lru list for shrink_page_list(),
+>> it is accident if encountered in shrinking, and no need to change reclaim mode.
+>>
+>
+> This changelog does does not explain the problem, does not explain
+> what is fixed or what the impact is.
+>
+> It also does not make sense. It says "unevictable page is not isolated
+> from LRU list" but this is shrink_page_list() and the page has already
+> been isolated (probably by lumpy reclaim). It will be put back on
+> the LRU_UNEVICTABLE list.
+>
+> It might be the case that resetting the reclaim mode after encountering
+> mlocked pages is overkill but that would need more justification than
+> what this changelog offers. Resetting the mode impacts THP rates but
+> this is erring on the side of caution by doing less work in reclaim
+> as the savings from THP may not offset the cost of reclaim.
+>
 
-On Tue, Jan 10, 2012 at 02:06:56PM +0900, Namhyung Kim wrote:
-> Oh I misunderstood what you said. I was thinking about filtering in
-> pure userspace, but you meant in-kernel probe side.
+Hi Mel
 
-Yeah yeah.
+It is reprepared, please review again.
 
-> Right, we can change the probe to filter BIO_BOUNCED case out. But
-> IMHO BIO_CLONED is different, since it usually routed to another
-> device as a separate IO request. I'll cook a patch for the former
-> soon.
+Thanks
+Hillf
 
-It'll probably get dup'd completions from rq and bio completions for
-request based drivers, right?  Maybe there are better ways but
-blktrace may as well just ignore bio completions if request
-completions are happening.
+===cut please===
+From: Hillf Danton <dhillf@gmail.com>
+[PATCH] mm: vmscan: no change of reclaim mode if unevictable page encountered
 
-Thanks.
+Unevictable pages are not isolated from lru list for shrink_page_list(), and
+they could be put back onto lru list if accidentally encountered in shrinking.
 
--- 
-tejun
+But resetting reclaim mode maybe overkill, as it impacts THP rates. This is
+erring on the side of caution by doing less work in reclaim as the savings
+from THP may not offset the cost of reclaim.
+
+
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+
+--- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
++++ b/mm/vmscan.c	Sat Jan  7 11:27:44 2012
+@@ -995,7 +995,6 @@ cull_mlocked:
+ 			try_to_free_swap(page);
+ 		unlock_page(page);
+ 		putback_lru_page(page);
+-		reset_reclaim_mode(sc);
+ 		continue;
+
+ activate_locked:
