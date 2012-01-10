@@ -1,104 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933840Ab2AJXW4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:22:56 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52242 "EHLO mx2.suse.de"
+	id S933673Ab2AJXX0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:23:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52231 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933797Ab2AJW71 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:59:27 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:21 2012
-Message-Id: <20120110215021.852694679@clark.kroah.org>
+	id S933782Ab2AJW7U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:59:20 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:19 2012
+Message-Id: <20120110214618.993768480@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:21 -0800
+Date: Tue, 10 Jan 2012 13:45:22 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Li Zhong <zhong@linux.vnet.ibm.com>,
+        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [11/42] powerpc: Fix unpaired probe_hcall_entry and probe_hcall_exit
-In-Reply-To: <20120110215031.GA19398@kroah.com>
+Subject: [09/40] powerpc/time: Handle wrapping of decrementer
+In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit e4f387d8db3ba3c2dae4d8bdfe7bb5f4fe1bcb0d upstream.
+commit 37fb9a0231ee43d42d069863bdfd567fca2b61af upstream.
 
-Unpaired calling of probe_hcall_entry and probe_hcall_exit might happen
-as following, which could cause incorrect preempt count.
+When re-enabling interrupts we have code to handle edge sensitive
+decrementers by resetting the decrementer to 1 whenever it is negative.
+If interrupts were disabled long enough that the decrementer wrapped to
+positive we do nothing. This means interrupts can be delayed for a long
+time until it finally goes negative again.
 
-__trace_hcall_entry => trace_hcall_entry -> probe_hcall_entry =>
-get_cpu_var => preempt_disable
+While we hope interrupts are never be disabled long enough for the
+decrementer to go positive, we have a very good test team that can
+drive any kernel into the ground. The softlockup data we get back
+from these fails could be seconds in the future, completely missing
+the cause of the lockup.
 
-__trace_hcall_exit => trace_hcall_exit -> probe_hcall_exit =>
-put_cpu_var => preempt_enable
+We already keep track of the timebase of the next event so use that
+to work out if we should trigger a decrementer exception.
 
-where:
-A => B and A -> B means A calls B, but
-=> means A will call B through function name, and B will definitely be
-called.
--> means A will call B through function pointer, so B might not be
-called if the function pointer is not set.
-
-So error happens when only one of probe_hcall_entry and probe_hcall_exit
-get called during a hcall.
-
-This patch tries to move the preempt count operations from
-probe_hcall_entry and probe_hcall_exit to its callers.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/platforms/pseries/hvCall_inst.c |    4 +---
- arch/powerpc/platforms/pseries/lpar.c        |    2 ++
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ arch/powerpc/include/asm/time.h |    2 ++
+ arch/powerpc/kernel/irq.c       |   15 ++++++---------
+ arch/powerpc/kernel/time.c      |    9 +++++++++
+ 3 files changed, 17 insertions(+), 9 deletions(-)
 
---- a/arch/powerpc/platforms/pseries/hvCall_inst.c
-+++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
-@@ -109,7 +109,7 @@ static void probe_hcall_entry(void *igno
- 	if (opcode > MAX_HCALL_OPCODE)
- 		return;
+--- a/arch/powerpc/include/asm/time.h
++++ b/arch/powerpc/include/asm/time.h
+@@ -219,5 +219,7 @@ DECLARE_PER_CPU(struct cpu_usage, cpu_us
+ extern void secondary_cpu_time_init(void);
+ extern void iSeries_time_init_early(void);
  
--	h = &get_cpu_var(hcall_stats)[opcode / 4];
-+	h = &__get_cpu_var(hcall_stats)[opcode / 4];
- 	h->tb_start = mftb();
- 	h->purr_start = mfspr(SPRN_PURR);
++extern void decrementer_check_overflow(void);
++
+ #endif /* __KERNEL__ */
+ #endif /* __POWERPC_TIME_H */
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -170,16 +170,13 @@ notrace void arch_local_irq_restore(unsi
+ 	 */
+ 	local_paca->hard_enabled = en;
+ 
+-#ifndef CONFIG_BOOKE
+-	/* On server, re-trigger the decrementer if it went negative since
+-	 * some processors only trigger on edge transitions of the sign bit.
+-	 *
+-	 * BookE has a level sensitive decrementer (latches in TSR) so we
+-	 * don't need that
++	/*
++	 * Trigger the decrementer if we have a pending event. Some processors
++	 * only trigger on edge transitions of the sign bit. We might also
++	 * have disabled interrupts long enough that the decrementer wrapped
++	 * to positive.
+ 	 */
+-	if ((int)mfspr(SPRN_DEC) < 0)
+-		mtspr(SPRN_DEC, 1);
+-#endif /* CONFIG_BOOKE */
++	decrementer_check_overflow();
+ 
+ 	/*
+ 	 * Force the delivery of pending soft-disabled interrupts on PS3.
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -889,6 +889,15 @@ static void __init clocksource_init(void
+ 	       clock->name, clock->mult, clock->shift);
  }
-@@ -126,8 +126,6 @@ static void probe_hcall_exit(void *ignor
- 	h->num_calls++;
- 	h->tb_total += mftb() - h->tb_start;
- 	h->purr_total += mfspr(SPRN_PURR) - h->purr_start;
--
--	put_cpu_var(hcall_stats);
- }
  
- static int __init hcall_inst_init(void)
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -553,6 +553,7 @@ void __trace_hcall_entry(unsigned long o
- 		goto out;
- 
- 	(*depth)++;
-+	preempt_disable();
- 	trace_hcall_entry(opcode, args);
- 	(*depth)--;
- 
-@@ -575,6 +576,7 @@ void __trace_hcall_exit(long opcode, uns
- 
- 	(*depth)++;
- 	trace_hcall_exit(opcode, retval, retbuf);
-+	preempt_enable();
- 	(*depth)--;
- 
- out:
++void decrementer_check_overflow(void)
++{
++	u64 now = get_tb_or_rtc();
++	struct decrementer_clock *decrementer = &__get_cpu_var(decrementers);
++
++	if (now >= decrementer->next_tb)
++		set_dec(1);
++}
++
+ static int decrementer_set_next_event(unsigned long evt,
+ 				      struct clock_event_device *dev)
+ {
 
 
