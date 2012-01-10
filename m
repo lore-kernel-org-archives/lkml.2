@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756765Ab2AJS3D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 13:29:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52173 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657Ab2AJS26 (ORCPT
+	id S1756752Ab2AJS25 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 13:28:57 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33972 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756657Ab2AJS2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 13:28:58 -0500
+	Tue, 10 Jan 2012 13:28:55 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
         teravest@google.com, slavapestov@google.com, ctalbott@google.com,
         dhsharp@google.com
 Cc: linux-kernel@vger.kernel.org, winget@google.com, namhyung@gmail.com,
-        Tejun Heo <tj@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 8/9] stacktrace: implement save_stack_trace_quick()
-Date: Tue, 10 Jan 2012 10:28:25 -0800
-Message-Id: <1326220106-5765-9-git-send-email-tj@kernel.org>
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 7/9] vfs: add fcheck tracepoint
+Date: Tue, 10 Jan 2012 10:28:24 -0800
+Message-Id: <1326220106-5765-8-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1326220106-5765-1-git-send-email-tj@kernel.org>
 References: <1326220106-5765-1-git-send-email-tj@kernel.org>
@@ -23,126 +23,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement save_stack_trace_quick() which only considers the usual
-contexts (ie. thread and irq) and doesn't handle links between
-different contexts - if %current is in irq context, only backtrace in
-the irq stack is considered.
+All file accesses from userland go through fcheck to map fd to struct
+file, making it a very good location for peeking at what files
+userland is accessing.  Add a tracepoint there.
 
-This is subset of dump_trace() done in much simpler way.  It's
-intended to be used in hot paths where the overhead of dump_trace()
-can be too heavy.
+This is part of tracepoint additions to improve visiblity into
+dirtying / writeback operations for io tracer and userland.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
 ---
- arch/x86/include/asm/stacktrace.h |    2 +
- arch/x86/kernel/stacktrace.c      |   40 +++++++++++++++++++++++++++++++++++++
- include/linux/stacktrace.h        |    6 +++++
- kernel/stacktrace.c               |    6 +++++
- 4 files changed, 54 insertions(+), 0 deletions(-)
+ fs/super.c                 |    2 ++
+ include/linux/fdtable.h    |    3 +++
+ include/trace/events/vfs.h |   40 ++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 45 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/vfs.h
 
-diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index 70bbe39..06bbdfc 100644
---- a/arch/x86/include/asm/stacktrace.h
-+++ b/arch/x86/include/asm/stacktrace.h
-@@ -50,9 +50,11 @@ void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
- #ifdef CONFIG_X86_32
- #define STACKSLOTS_PER_LINE 8
- #define get_bp(bp) asm("movl %%ebp, %0" : "=r" (bp) :)
-+#define get_irq_stack_end()	0
- #else
- #define STACKSLOTS_PER_LINE 4
- #define get_bp(bp) asm("movq %%rbp, %0" : "=r" (bp) :)
-+#define get_irq_stack_end()	(unsigned long)this_cpu_read(irq_stack_ptr)
- #endif
+diff --git a/fs/super.c b/fs/super.c
+index de41e1e..3055f32 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -34,6 +34,8 @@
+ #include <linux/cleancache.h>
+ #include "internal.h"
  
- #ifdef CONFIG_FRAME_POINTER
-diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
-index fdd0c64..f53ec547 100644
---- a/arch/x86/kernel/stacktrace.c
-+++ b/arch/x86/kernel/stacktrace.c
-@@ -81,6 +81,46 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
++#define CREATE_TRACE_POINTS
++#include <trace/events/vfs.h>
+ 
+ LIST_HEAD(super_blocks);
+ DEFINE_SPINLOCK(sb_lock);
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 82163c4..72df04b 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -12,6 +12,7 @@
+ #include <linux/types.h>
+ #include <linux/init.h>
+ #include <linux/fs.h>
++#include <trace/events/vfs.h>
+ 
+ #include <linux/atomic.h>
+ 
+@@ -87,6 +88,8 @@ static inline struct file * fcheck_files(struct files_struct *files, unsigned in
+ 
+ 	if (fd < fdt->max_fds)
+ 		file = rcu_dereference_check_fdtable(files, fdt->fd[fd]);
++
++	trace_vfs_fcheck(files, fd, file);
+ 	return file;
  }
- EXPORT_SYMBOL_GPL(save_stack_trace_tsk);
  
-+#ifdef CONFIG_FRAME_POINTER
-+void save_stack_trace_quick(struct stack_trace *trace)
-+{
-+	const unsigned long stk_sz = THREAD_SIZE - sizeof(struct stack_frame);
-+	unsigned long tstk = (unsigned long)current_thread_info();
-+	unsigned long istk = get_irq_stack_end();
-+	unsigned long last_bp = 0;
-+	unsigned long bp, stk;
+diff --git a/include/trace/events/vfs.h b/include/trace/events/vfs.h
+new file mode 100644
+index 0000000..9a9bae4
+--- /dev/null
++++ b/include/trace/events/vfs.h
+@@ -0,0 +1,40 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM vfs
 +
-+	get_bp(bp);
++#if !defined(_TRACE_VFS_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_VFS_H
 +
-+	if (bp > tstk && bp <= tstk + stk_sz)
-+		stk = tstk;
-+	else if (istk && (bp > istk && bp <= stk_sz))
-+		stk = istk;
-+	else
-+		goto out;
++#include <linux/tracepoint.h>
++#include <linux/fs.h>
 +
-+	while (bp > last_bp && bp <= stk + stk_sz) {
-+		struct stack_frame *frame = (struct stack_frame *)bp;
-+		unsigned long ret_addr = frame->return_address;
++TRACE_EVENT(vfs_fcheck,
 +
-+		if (!trace->skip) {
-+			if (trace->nr_entries >= trace->max_entries)
-+				return;
-+			trace->entries[trace->nr_entries++] = ret_addr;
-+		} else {
-+			trace->skip--;
-+		}
++	TP_PROTO(struct files_struct *files, unsigned int fd,
++		 struct file *file),
 +
-+		last_bp = bp;
-+		bp = (unsigned long)frame->next_frame;
-+	}
-+out:
-+	if (trace->nr_entries < trace->max_entries)
-+		trace->entries[trace->nr_entries++] = ULONG_MAX;
-+}
-+EXPORT_SYMBOL_GPL(save_stack_trace_quick);
-+#endif
++	TP_ARGS(files, fd, file),
 +
- /* Userspace stacktrace - based on kernel/trace/trace_sysprof.c */
- 
- struct stack_frame_user {
-diff --git a/include/linux/stacktrace.h b/include/linux/stacktrace.h
-index 115b570..d5b16c4 100644
---- a/include/linux/stacktrace.h
-+++ b/include/linux/stacktrace.h
-@@ -19,6 +19,12 @@ extern void save_stack_trace_regs(struct pt_regs *regs,
- extern void save_stack_trace_tsk(struct task_struct *tsk,
- 				struct stack_trace *trace);
- 
-+/*
-+ * Saves only trace from the current context.  Doesn't handle exception
-+ * stacks or verify text address.
-+ */
-+extern void save_stack_trace_quick(struct stack_trace *trace);
++	TP_STRUCT__entry(
++		__field(unsigned int,	fd)
++		__field(umode_t,	mode)
++		__field(dev_t,		dev)
++		__field(ino_t,		ino)
++	),
 +
- extern void print_stack_trace(struct stack_trace *trace, int spaces);
- 
- #ifdef CONFIG_USER_STACKTRACE_SUPPORT
-diff --git a/kernel/stacktrace.c b/kernel/stacktrace.c
-index 00fe55c..4760949 100644
---- a/kernel/stacktrace.c
-+++ b/kernel/stacktrace.c
-@@ -31,6 +31,12 @@ EXPORT_SYMBOL_GPL(print_stack_trace);
-  * (whenever this facility is utilized - for example by procfs):
-  */
- __weak void
-+save_stack_trace_quick(struct stack_trace *trace)
-+{
-+	WARN_ONCE(1, KERN_INFO "save_stack_trace_quick() not implemented yet.\n");
-+}
++	TP_fast_assign(
++		__entry->fd = fd;
++		__entry->mode = file ? file->f_path.dentry->d_inode->i_mode : 0;
++		__entry->dev = file ? file->f_path.dentry->d_inode->i_sb->s_dev : 0;
++		__entry->ino = file ? file->f_path.dentry->d_inode->i_ino : 0;
++	),
 +
-+__weak void
- save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- {
- 	WARN_ONCE(1, KERN_INFO "save_stack_trace_tsk() not implemented yet.\n");
++	TP_printk("fd %u mode 0x%x dev %d,%d ino %lu",
++		  __entry->fd, __entry->mode,
++		  MAJOR(__entry->dev), MINOR(__entry->dev),
++		  (unsigned long)__entry->ino)
++);
++
++#endif /* _TRACE_VFS_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 -- 
 1.7.3.1
 
