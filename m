@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab2AJXKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:10:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52669 "EHLO mx2.suse.de"
+	id S934301Ab2AJXCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:02:50 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52652 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934075Ab2AJXCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:02:51 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:04 2012
-Message-Id: <20120110215603.962739773@clark.kroah.org>
+	id S934290Ab2AJXCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:02:45 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:03 2012
+Message-Id: <20120110215603.804702931@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:31 -0800
+Date: Tue, 10 Jan 2012 13:55:29 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Pete Zaitcev <zaitcev@redhat.com>
-Subject: [28/49] USB: update documentation for usbmon
+        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
+        "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [26/49] drivers: hv: Dont OOPS when you cannot init vmbus
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +25,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: "K. Y. Srinivasan" <kys@microsoft.com>
 
-commit d8cae98cddd286e38db1724dda1b0e7b467f9237 upstream.
+commit cf6a2eacbcb2593b5b91d0817915c4f0464bb534 upstream.
 
-The documentation for usbmon is out of date; the usbfs "devices" file
-now exists in /sys/kernel/debug/usb rather than /proc/bus/usb.  This
-patch (as1505) updates the documentation accordingly, and also
-mentions that the necessary information can be found by running lsusb.
+The hv vmbus driver was causing an OOPS since it was trying to register drivers
+on top of the bus even if initialization of the bus has failed for some
+reason (such as the odd chance someone would run a hv enabled kernel in a
+non-hv environment).
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Pete Zaitcev <zaitcev@redhat.com>
+Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/usb/usbmon.txt |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ drivers/hv/vmbus_drv.c |   16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
---- a/Documentation/usb/usbmon.txt
-+++ b/Documentation/usb/usbmon.txt
-@@ -47,10 +47,11 @@ This allows to filter away annoying devi
+--- a/drivers/hv/vmbus_drv.c
++++ b/drivers/hv/vmbus_drv.c
+@@ -62,6 +62,14 @@ struct hv_device_info {
+ 	struct hv_dev_port_info outbound;
+ };
  
- 2. Find which bus connects to the desired device
- 
--Run "cat /proc/bus/usb/devices", and find the T-line which corresponds to
--the device. Usually you do it by looking for the vendor string. If you have
--many similar devices, unplug one and compare two /proc/bus/usb/devices outputs.
--The T-line will have a bus number. Example:
-+Run "cat /sys/kernel/debug/usb/devices", and find the T-line which corresponds
-+to the device. Usually you do it by looking for the vendor string. If you have
-+many similar devices, unplug one and compare the two
-+/sys/kernel/debug/usb/devices outputs. The T-line will have a bus number.
-+Example:
- 
- T:  Bus=03 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12  MxCh= 0
- D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-@@ -58,7 +59,10 @@ P:  Vendor=0557 ProdID=2004 Rev= 1.00
- S:  Manufacturer=ATEN
- S:  Product=UC100KM V2.00
- 
--Bus=03 means it's bus 3.
-+"Bus=03" means it's bus 3. Alternatively, you can look at the output from
-+"lsusb" and get the bus number from the appropriate line. Example:
++static int vmbus_exists(void)
++{
++	if (hv_acpi_dev == NULL)
++		return -ENODEV;
 +
-+Bus 003 Device 002: ID 0557:2004 ATEN UC100KM V2.00
++	return 0;
++}
++
  
- 3. Start 'cat'
+ static void get_channel_info(struct hv_device *device,
+ 			     struct hv_device_info *info)
+@@ -590,6 +598,10 @@ int __vmbus_driver_register(struct hv_dr
+ 
+ 	pr_info("registering driver %s\n", hv_driver->name);
+ 
++	ret = vmbus_exists();
++	if (ret < 0)
++		return ret;
++
+ 	hv_driver->driver.name = hv_driver->name;
+ 	hv_driver->driver.owner = owner;
+ 	hv_driver->driver.mod_name = mod_name;
+@@ -614,6 +626,9 @@ void vmbus_driver_unregister(struct hv_d
+ {
+ 	pr_info("unregistering driver %s\n", hv_driver->name);
+ 
++	if (!vmbus_exists())
++		return;
++
+ 	driver_unregister(&hv_driver->driver);
+ 
+ }
+@@ -776,6 +791,7 @@ static int __init hv_acpi_init(void)
+ 
+ cleanup:
+ 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
++	hv_acpi_dev = NULL;
+ 	return ret;
+ }
  
 
 
