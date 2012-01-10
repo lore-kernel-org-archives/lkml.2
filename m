@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab2AJW1P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:27:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37438 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754943Ab2AJW1O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:27:14 -0500
-Date: Tue, 10 Jan 2012 22:27:11 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+	id S1756852Ab2AJW1r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:27:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51157 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754943Ab2AJW1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:27:46 -0500
+Date: Wed, 11 Jan 2012 09:27:35 +1100
+From: NeilBrown <neilb@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: Regulator updates for 3.3
-Message-ID: <20120110222711.GK7164@opensource.wolfsonmicro.com>
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com> <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com> <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
-X-Cookie: You're at the end of the road again.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Cc: linux RAID <linux-raid@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
+        Art -kwaak- van Breemen <ard@telegraafnet.nl>,
+        Mikhail Balabin <mbalabin@gmail.com>
+Subject: [PULL REQUEST]  two bugfixes for md.
+Message-ID: <20120111092735.01fe9de2@notabene.brown>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/yfC=H=.qNeHO2V=l4O03tBI"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 11:18:44AM -0800, Linus Torvalds wrote:
-> On Tue, Jan 10, 2012 at 10:45 AM, Mark Brown
+--Sig_/yfC=H=.qNeHO2V=l4O03tBI
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> > Hrm, OK.  These merges are all merges up of bug fixes for -rc from my
-> > own tree into the development code which I tend to do constantly to make
-> > it easier to work directly on the development branch.  What's the best
-> > practice here - push things to you a bit more aggressively and wait
-> > until you've tagged a -rc and then merge that back up into the
-> > development branch?
+The following changes since commit 19d671695e1931ebfd75b2b888778201aefe35ca:
 
-> No. Just don't do the merges. If your development tree isn't stable on
-> its own, then there is something seriously wrong in what you do.
+  md/raid1: Mark device want_replacement when we see a write error. (2011-1=
+2-23 10:17:57 +1100)
 
-Just to be clear I'm not disagreeing that most if not all of these
-merges aren't needed, I'm just trying to figure out in general how to
-get the bug fixes into the development code when it is useful to do
-that.  The merges are happening because I've been in the habit of
-merging fixes up as a matter of routine rather than due to an actual
-immediate need to get the fixes.
+are available in the git repository at:
 
-The major reason why the merges might be needed is that often enough to
-be interesting the stuff getting pushed into -rc is the result of
-fixing bugs that get discovered in the course of doing the new work and
-interfere with that new work.  Either the testing needed to verify that
-work makes some existing issue (that might also be triggered in some
-other way) obvious or the bug got discovered by code inspection as
-someone was looking at a feature and so the two changes end up colliding
-with each other.
+  git://neil.brown.name/md md-3.3-fixes
 
-Especially in the cases where the lack of the bug fix breaks the new
-code it sems sensible enough to want to do the merges so that the
-history includes things that actually work.  This was a lot easier back
-when there was no question of most embedded boards booting with vanilla
-mainline and you couldn't actually directly develop or test usefully
-with upstream code and working history wasn't an issue :/
+for you to fetch changes up to 307729c8bc5b5a41361af8af95906eee7552acb1:
 
-> Just do this:
-> 
->     gitk d52739c62e00..269d430131b6
->
-> to see what I actually got, and then look at what you did on Nov 27,
-> for example. You did *two* of the merges within hours of each other!
-> And then you had two more the very next day, without even having any
-> actual development in between! That's just crazy. The fact that you
+  md/raid1: perform bad-block tests for WriteMostly devices too. (2012-01-1=
+1 08:35:17 +1100)
 
-Yes, it's excessive.  I also made the above graph much more confusing by
-discarding my for-linus branch every time you merged it and making new
-ones based off new -rcs which means that gitk can't just show a
-for-linus branch that gets repeatedly merged into the development branch
-but instead shows a bunch of random isolated commits which get merged
-in.  I'm not saying that this would solve the problem you see, just that
-it's an issue.
+----------------------------------------------------------------
+(from the branch description for md-scratch local branch)
 
-Clearly even if I did nothing beyond defer the merges until there was
-some need for them that'd help though it wouldn't fully address your
-issue.
+for-linus
+Two bugfixes for md.
+
+One is a recently introduced regression that affects an unusual
+configuration with a guaranteed BUG_ON.  Has been tagged for -stable.
+The other is minor missing functionality.
+
+----------------------------------------------------------------
+NeilBrown (2):
+      md: notify the 'degraded' sysfs attribute on failure.
+      md/raid1: perform bad-block tests for WriteMostly devices too.
+
+ drivers/md/md.c    |    6 ++++++
+ drivers/md/raid1.c |   11 ++++++++++-
+ 2 files changed, 16 insertions(+), 1 deletions(-)
+
+--Sig_/yfC=H=.qNeHO2V=l4O03tBI
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.18 (GNU/Linux)
+
+iQIVAwUBTwy7Vznsnt1WYoG5AQJXpBAAtLgSdfBm+iD4l9u8kVcgbPXJhGS1V171
+/w0W811Glzt8eG0dQGe7RMEHlxYhFQsTvZPxXsX4H2qxMafxjHKThwflE5vobJd2
+d3DjhtfV3f+WNCPezkuzK3ecx88Otw4GyPEuy6FSz+zS/rB65NiNHnqYibGX7+7+
+T1Hm5a8/hrT8MyC/+2GWF+YZaVPOfW+cH4cNeAotiBe6m5lA5k95z/K0q4chYSZn
+gKU+IV4mHZYVc9IQp4dq/8ezjbChMn4zWcUqIY1r4YeTPSYzbxOoe6Ai1xfGWuQe
+AWq0ZJRmX2eVpO12YLLQS3oyJANUxPzRTr0r8m2jJqGXQKqAJBpsJu1ih1QPIIuA
+NJRRPj1n7Nnouy+MFXbllVB+otfPXDxnSa/YlIMumYZ3eQvTzfFuonFoNKqc/ebc
+gOJRlSaNyR1zHUirc7yrmiNRqorKeQzPnCVbwX3e0zW2NkC+Xan5mue/KV0yoZ5W
+nIbTQ1xzqrAK6gdyAcY3qnXYHvJ6c0KT/pXtIpb8DOKHCiAUZg5DlV/7jdfUpS1w
+lQlTs/fcN50q5lEZpBm/wDZNlFKEvIKJctS77GnrrAGAq/fCfLhC8zBilQIrNsAN
+dP0bVu0Ao2WglPCgC2beGqwPEbn8UJjo8qda/D61UqbjPbKIuhAuebQI0qV17ViJ
+GRrEWAcZk6Y=
+=mngm
+-----END PGP SIGNATURE-----
+
+--Sig_/yfC=H=.qNeHO2V=l4O03tBI--
