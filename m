@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934301Ab2AJXCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:02:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52652 "EHLO mx2.suse.de"
+	id S934274Ab2AJXCm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:02:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52645 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934290Ab2AJXCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:02:45 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:03 2012
-Message-Id: <20120110215603.804702931@clark.kroah.org>
+	id S934045Ab2AJXCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:02:38 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:02 2012
+Message-Id: <20120110215602.050598345@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:29 -0800
+Date: Tue, 10 Jan 2012 13:55:09 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Sasha Levin <levinsasha928@gmail.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [26/49] drivers: hv: Dont OOPS when you cannot init vmbus
+        alan@lxorguk.ukuu.org.uk,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [06/49] offb: Fix bug in calculating requested vram size
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,68 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit cf6a2eacbcb2593b5b91d0817915c4f0464bb534 upstream.
+commit c055fe0797b7bd8f6f21a13598a55a16d5c13ae7 upstream.
 
-The hv vmbus driver was causing an OOPS since it was trying to register drivers
-on top of the bus even if initialization of the bus has failed for some
-reason (such as the odd chance someone would run a hv enabled kernel in a
-non-hv environment).
+We used to try to request 8 times more vram than needed, which would
+fail if the card has a too small BAR (observed with qemu & kvm).
 
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hv/vmbus_drv.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ drivers/video/offb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -62,6 +62,14 @@ struct hv_device_info {
- 	struct hv_dev_port_info outbound;
- };
- 
-+static int vmbus_exists(void)
-+{
-+	if (hv_acpi_dev == NULL)
-+		return -ENODEV;
-+
-+	return 0;
-+}
-+
- 
- static void get_channel_info(struct hv_device *device,
- 			     struct hv_device_info *info)
-@@ -590,6 +598,10 @@ int __vmbus_driver_register(struct hv_dr
- 
- 	pr_info("registering driver %s\n", hv_driver->name);
- 
-+	ret = vmbus_exists();
-+	if (ret < 0)
-+		return ret;
-+
- 	hv_driver->driver.name = hv_driver->name;
- 	hv_driver->driver.owner = owner;
- 	hv_driver->driver.mod_name = mod_name;
-@@ -614,6 +626,9 @@ void vmbus_driver_unregister(struct hv_d
+--- a/drivers/video/offb.c
++++ b/drivers/video/offb.c
+@@ -377,7 +377,7 @@ static void __init offb_init_fb(const ch
+ 				int pitch, unsigned long address,
+ 				int foreign_endian, struct device_node *dp)
  {
- 	pr_info("unregistering driver %s\n", hv_driver->name);
- 
-+	if (!vmbus_exists())
-+		return;
-+
- 	driver_unregister(&hv_driver->driver);
- 
- }
-@@ -776,6 +791,7 @@ static int __init hv_acpi_init(void)
- 
- cleanup:
- 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
-+	hv_acpi_dev = NULL;
- 	return ret;
- }
- 
+-	unsigned long res_size = pitch * height * (depth + 7) / 8;
++	unsigned long res_size = pitch * height;
+ 	struct offb_par *par = &default_par;
+ 	unsigned long res_start = address;
+ 	struct fb_fix_screeninfo *fix;
 
 
