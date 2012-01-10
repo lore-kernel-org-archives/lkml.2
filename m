@@ -1,54 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab2AJIa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:30:27 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33649 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab2AJIa0 (ORCPT
+	id S1754533Ab2AJIiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:38:55 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:34287
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753382Ab2AJIiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:30:26 -0500
-Date: Tue, 10 Jan 2012 09:30:20 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: linux-next: please update the i.MX tree
-Message-ID: <20120110083020.GR5446@pengutronix.de>
-References: <20120110115218.e00ab8c01abd5b9ae9a3b166@canb.auug.org.au>
+	Tue, 10 Jan 2012 03:38:54 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzzz2dhc1ahc1bh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Date: Tue, 10 Jan 2012 16:38:43 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: Richard Zhao <richard.zhao@linaro.org>, <linus.walleij@stericsson.com>,
+        <s.hauer@pengutronix.de>, <w.sang@pengutronix.de>,
+        <rob.herring@calxeda.com>, <linux-kernel@vger.kernel.org>,
+        <grant.likely@secretlab.ca>, <shawn.guo@freescale.com>,
+        <kernel@pengutronix.de>, <cjb@laptop.org>,
+        Dong Aisheng <b29396@freescale.com>,
+        <devicetree-discuss@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC PATCH v3 3/5] pinctrl: imx: add pinctrl imx driver
+Message-ID: <20120110083842.GA2414@b20223-02.ap.freescale.net>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+ <1324402840-32451-4-git-send-email-b29396@freescale.com>
+ <20120108130542.GC2203@richard-laptop>
+ <20120109020848.GF1835@S2101-09.ap.freescale.net>
+ <20120109021702.GV2414@b20223-02.ap.freescale.net>
+ <20120109063136.GI1835@S2101-09.ap.freescale.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20120110115218.e00ab8c01abd5b9ae9a3b166@canb.auug.org.au>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:29:46 up 58 days, 16:16, 21 users,  load average: 0.24, 0.09,
- 0.06
+In-Reply-To: <20120109063136.GI1835@S2101-09.ap.freescale.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 11:52:18AM +1100, Stephen Rothwell wrote:
-> Hi Sascha,
+On Mon, Jan 09, 2012 at 02:32:12PM +0800, Shawn Guo wrote:
+> On Mon, Jan 09, 2012 at 10:17:03AM +0800, Richard Zhao wrote:
+> > On Mon, Jan 09, 2012 at 10:08:51AM +0800, Shawn Guo wrote:
+> > > On Sun, Jan 08, 2012 at 09:05:44PM +0800, Richard Zhao wrote:
+> > > > > +enum imx_imx53_pinctrl_pads {
+> > > > > +	MX53_GPIO_19 = 0,
+> > > > > +	MX53_KEY_COL0 = 1,
+> > > > > +	MX53_KEY_ROW0 = 2,
+> > > > > +	MX53_KEY_COL1 = 3,
+> > > > > +	MX53_KEY_ROW1 = 4,
+> > > > > +	MX53_KEY_COL2 = 5,
+> > > > > +	MX53_KEY_ROW2 = 6,
+> > > > ...
+> > > > Why not describe it in dts and make this file generic for imx?
+> > > > One node for one pad,
+> > > 
+> > > Doing this will bloat the device tree dramatically.  Actually I had
+> > > a patch doing so before the pinctrl subsystem was born, but it
+> > > concerned Grant a lot for that reason and thus died.
+> > are you against describing pad in dts or one node per pad?
+> > one node per pad is just a tip to extend pad property, to support
+> > other features (pinconf in your word).
 > 
-> It looks like most (if not all) of the i.MX tree has been merged into the
-> arm-soc (and Linus') tree, so could you please update the i.MX tree to
-> eliminate the conflicts I am getting.
+> I definitely want to describe pinconf in device tree, though what's
+> the best interface for pinctrl client driver to talk to pinconf is
+> still vague to me.
+> 
+> > > 
+> > > > it'll be easy to extend pad properties. You know
+> > > > the pad may set pull up/down, open drain, drive strenth, daisy chain etc.
+> > > > The features have to be supported, to make your model usefull.
+> > > > 
+> > > As Aisheng mentioned, the pinconf support will be added later.
+> > I expect pinconf come together, and get a ready-to-use patch series.
+> > 
+> As I was educated by Linus.W, we can not drink ocean and we need to
+> split big chunk of work into pieces and achieve it step by step.
+Sure, we can not drink out the ocean :). But if people can not use it
+in real case, how do we verify the driver? How do we know the driver
+goes in the right way?
 
-Did this. Sorry, I was not aware that there is something in this branch.
+Thanks
+Richard
+> 
+> -- 
+> Regards,
+> Shawn
+> 
 
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
