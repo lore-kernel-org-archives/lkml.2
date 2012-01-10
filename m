@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095Ab2AJE1a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 23:27:30 -0500
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43269 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756036Ab2AJE13 (ORCPT
+	id S1756101Ab2AJEpw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 23:45:52 -0500
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54625 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756062Ab2AJEpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 23:27:29 -0500
+	Mon, 9 Jan 2012 23:45:50 -0500
+Message-ID: <4F0BC273.3080707@linux.vnet.ibm.com>
+Date: Tue, 10 Jan 2012 12:45:39 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Date: Tue, 10 Jan 2012 13:27:28 +0900
-X-Google-Sender-Auth: SSWY6Jah6auinZmjbrHeuOMxPiE
-Message-ID: <CAH9JG2XniMv5dVf1DixGNaQAJk-sZjnV9HfYeihEJP3JDyC4+Q@mail.gmail.com>
-Subject: BUG: sleeping function called from invalid context at include/linux/freezer.h:45
-From: Kyungmin Park <kmpark@infradead.org>
-To: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/8] KVM: MMU: combine unsync and unsync_children
+References: <4EEB19AF.5070501@linux.vnet.ibm.com> <4EEB19D6.60101@linux.vnet.ibm.com> <20120109111638.GA5255@amt.cnet>
+In-Reply-To: <20120109111638.GA5255@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011004-8256-0000-0000-000000CBBCA5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all
+On 01/09/2012 07:16 PM, Marcelo Tosatti wrote:
 
-with the latest kernel. I got the below bug message.
-It calls the sleep function. Does it intended operation?
 
-static inline bool try_to_freeze(void)
-{
-        might_sleep();
-        if (likely(!freezing(current)))
-                return false;
-        return __refrigerator(false);
-}
+> In general, given the number of optimizations made to the shadow mmu
+> code, and the fact that over time NPT will dominate, i'd suggest time
+> should be spent improving other areas.
+> 
 
-# poweroff
-[    6.852523] BUG: sleeping function called from invalid context at
-include/linux/freezer.h:45
-[    6.859489] in_atomic(): 0, irqs_disabled(): 128, pid: 1, name: init
-[    6.865846] [<c0013508>] (unwind_backtrace+0x0/0xec) from
-[<c0010124>] (do_signal+0x88/0x588)
-[    6.874337] [<c0010124>] (do_signal+0x88/0x588) from [<c001063c>]
-(do_notify_resume+0x18/0x38)
-[    6.882928] [<c001063c>] (do_notify_resume+0x18/0x38) from
-[<c000dc18>] (work_pending+0x24/0x28)
+I totally agree with you, thanks Marcelo!
 
-commit e4e11180dfa545233e5145919b75b7fac88638df
-Merge: 37cfc3f adc0e91
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Mon Jan 9 17:37:37 2012 -0800
-
-    Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/vi
-
-Thank you,
-Kyungmin Park
