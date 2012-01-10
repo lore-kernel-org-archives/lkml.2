@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611Ab2AJRXm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 12:23:42 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:32769 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab2AJRXl (ORCPT
+	id S932685Ab2AJRYF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 12:24:05 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:15210 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab2AJRYC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 12:23:41 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: mchehab@infradead.org
-Cc: mikekrufky@gmail.com, linux-media@vger.kernel.org, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 1/4] DVB: dib0700, move Nova-TD Stick to a separate set
-Date: Tue, 10 Jan 2012 18:11:22 +0100
-Message-Id: <1326215485-20846-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.8
+	Tue, 10 Jan 2012 12:24:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Tue, 10 Jan 2012 09:23:53 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Peter De Schrijver <pdeschrijver@nvidia.com>
+CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Jan 2012 09:23:52 -0800
+Subject: RE: [PATCH] ARM: tegra: initialize basic system clocks
+Thread-Topic: [PATCH] ARM: tegra: initialize basic system clocks
+Thread-Index: AczPtA7K8RhZtyXwQ/CI+u4eB5lSEAACEjOg
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A404@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A286@HQMAIL01.nvidia.com>
+ <1326212538-15419-1-git-send-email-pdeschrijver@nvidia.com>
+In-Reply-To: <1326212538-15419-1-git-send-email-pdeschrijver@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To properly support the three LEDs which are on the stick, we need
-a special handling in the ->frontend_attach function. Thus let's have
-a separate ->frontend_attach instead of ifs in the common one.
+Peter De Schrijver wrote at Tuesday, January 10, 2012 9:22 AM:
+> Initialize basic system clocks and provide a auxdata table to allow some
+> peripheral drivers to find their clocks.
+...
+> This should fix the hang you observed when sdhci_add_host() fails.
 
-The hadnling itself will be added in further patches.
+Yes, it does. This plus the Tegra30 clock patch series you posted stops
+I2C and SDHCI drivers complaining about a lack of clocks during boot,
+which is a great step forwards, even if SDHCI doesn't yet initialize
+successfully. Thanks.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/media/dvb/dvb-usb/dib0700_devices.c |   57 ++++++++++++++++++++++++--
- 1 files changed, 52 insertions(+), 5 deletions(-)
+This patch and the clock series:
 
-diff --git a/drivers/media/dvb/dvb-usb/dib0700_devices.c b/drivers/media/dvb/dvb-usb/dib0700_devices.c
-index 81ef4b4..3c6ee54 100644
---- a/drivers/media/dvb/dvb-usb/dib0700_devices.c
-+++ b/drivers/media/dvb/dvb-usb/dib0700_devices.c
-@@ -3892,7 +3892,58 @@ struct dvb_usb_device_properties dib0700_devices[] = {
- 			}
- 		},
- 
--		.num_device_descs = 6,
-+		.num_device_descs = 1,
-+		.devices = {
-+			{   "Hauppauge Nova-TD Stick (52009)",
-+				{ &dib0700_usb_id_table[35], NULL },
-+				{ NULL },
-+			},
-+		},
-+
-+		.rc.core = {
-+			.rc_interval      = DEFAULT_RC_INTERVAL,
-+			.rc_codes         = RC_MAP_DIB0700_RC5_TABLE,
-+			.module_name	  = "dib0700",
-+			.rc_query         = dib0700_rc_query_old_firmware,
-+			.allowed_protos   = RC_TYPE_RC5 |
-+					    RC_TYPE_RC6 |
-+					    RC_TYPE_NEC,
-+			.change_protocol = dib0700_change_protocol,
-+		},
-+	}, { DIB0700_DEFAULT_DEVICE_PROPERTIES,
-+
-+		.num_adapters = 2,
-+		.adapter = {
-+			{
-+			.num_frontends = 1,
-+			.fe = {{
-+				.caps = DVB_USB_ADAP_HAS_PID_FILTER | DVB_USB_ADAP_PID_FILTER_CAN_BE_TURNED_OFF,
-+				.pid_filter_count = 32,
-+				.pid_filter       = stk70x0p_pid_filter,
-+				.pid_filter_ctrl  = stk70x0p_pid_filter_ctrl,
-+				.frontend_attach  = stk7070pd_frontend_attach0,
-+				.tuner_attach     = dib7070p_tuner_attach,
-+
-+				DIB0700_DEFAULT_STREAMING_CONFIG(0x02),
-+			}},
-+				.size_of_priv     = sizeof(struct dib0700_adapter_state),
-+			}, {
-+			.num_frontends = 1,
-+			.fe = {{
-+				.caps = DVB_USB_ADAP_HAS_PID_FILTER | DVB_USB_ADAP_PID_FILTER_CAN_BE_TURNED_OFF,
-+				.pid_filter_count = 32,
-+				.pid_filter       = stk70x0p_pid_filter,
-+				.pid_filter_ctrl  = stk70x0p_pid_filter_ctrl,
-+				.frontend_attach  = stk7070pd_frontend_attach1,
-+				.tuner_attach     = dib7070p_tuner_attach,
-+
-+				DIB0700_DEFAULT_STREAMING_CONFIG(0x03),
-+			}},
-+				.size_of_priv     = sizeof(struct dib0700_adapter_state),
-+			}
-+		},
-+
-+		.num_device_descs = 5,
- 		.devices = {
- 			{   "DiBcom STK7070PD reference design",
- 				{ &dib0700_usb_id_table[17], NULL },
-@@ -3902,10 +3953,6 @@ struct dvb_usb_device_properties dib0700_devices[] = {
- 				{ &dib0700_usb_id_table[18], NULL },
- 				{ NULL },
- 			},
--			{   "Hauppauge Nova-TD Stick (52009)",
--				{ &dib0700_usb_id_table[35], NULL },
--				{ NULL },
--			},
- 			{   "Hauppauge Nova-TD-500 (84xxx)",
- 				{ &dib0700_usb_id_table[36], NULL },
- 				{ NULL },
+Tested-by: Stephen Warren <swarren@nvidia.com>
+Acked-by: Stephen Warren <swarren@nvidia.com>
+
 -- 
-1.7.8
-
+nvpublic
 
