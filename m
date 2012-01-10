@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932853Ab2AJTvM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 14:51:12 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:57829 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932308Ab2AJTvK (ORCPT
+	id S932786Ab2AJT7q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 14:59:46 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39235 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932527Ab2AJT7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 14:51:10 -0500
-Message-ID: <1326225067.3264.51.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>,
-        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Tue, 10 Jan 2012 13:51:07 -0600
-In-Reply-To: <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
-References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
-	 <CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
-	 <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	Tue, 10 Jan 2012 14:59:44 -0500
+Message-ID: <4F0CA652.5040103@xenotime.net>
+Date: Tue, 10 Jan 2012 12:57:54 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: linux-next: Tree for Jan 9 (arch/x86/pci/amd_bus.c)
+References: <20120109170457.4465dfc66a0eace4a2230fef@canb.auug.org.au> <4F0B569B.6050004@xenotime.net> <CAErSpo4+remnOA6gJXOz_54CsbbcOq_Yj=ua9gV_bq5dZ64ABA@mail.gmail.com>
+In-Reply-To: <CAErSpo4+remnOA6gJXOz_54CsbbcOq_Yj=ua9gV_bq5dZ64ABA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 11:33 -0800, Nicholas A. Bellinger wrote:
-> On Tue, 2012-01-10 at 19:19 +0000, Bart Van Assche wrote:
-> > 2012/1/10 Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > > *) Initial merge for the SRP target (ib_srpt) fabric module (bart)
-> > 
-> > As far as I know the last time that patch was posted for review is
-> > November 4 (http://permalink.gmane.org/gmane.linux.scsi.target.devel/420).
-> > The date of the ib_srpt commit is December 16
-> > (http://git.kernel.org/?p=linux/kernel/git/nab/target-pending.git;a=commitdiff;h=a42d985bd5b234da8b61347a78dc3057bf7bb94d).
-> > The two patches aren't identical. That makes me wonder whether that
-> > patch should have been reposted for review ?
-> > 
+On 01/09/2012 02:40 PM, Bjorn Helgaas wrote:
+> On Mon, Jan 9, 2012 at 2:05 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> on several i386 builds:
+>>
+>> amd_bus.c:(.init.text+0x134b): undefined reference to `amd_get_mmconfig_range'
 > 
-> Hi Bart,
+> This is my fault.  I moved some code from amd_bus.c to amd_nb.c, and builds with
 > 
-> The changes since the Nov 4 RFC are listed in the patch commit log:
+>         CONFIG_PCI=y
+>         # CONFIG_AMD_NB not set
 > 
-> ib_srpt: Make compilation with BUG=n proceed`
-> ib_srpt: Use new target_core_fabric.h include
-> ib_srpt: Check hex2bin() return code to silence build warning
+> now fail.  The attached patch should fix it.  I'll repost the series
+> ("x86/PCI: amd: factor out MMCONFIG discovery") with the fix.
 > 
-> These are all very minor and did not warrant another full RFC posting.
+> Yinghai, it looks to me like there's no reason to build amd_bus.o
+> unless we have CONFIG_AMD_NB=y, but speak up if I'm wrong :)
 
-They might not warrant a full RFC reposting, but individually they
-should have been posted to the list, so Bart is right.
-
-As a maintainer, there shouldn't be a patch in your tree that hasn't
-been over the mailing list once.  This is for three reasons
-
-     1. Git is a great source control tool, bit it doesn't hugely
-        facilitate review.  Even virtuoso git users find it easier to
-        read and reply to emailed patches for this purpose
-     2. Not everyone in our community is a wholesale git user.  For
-        them, email might be the only way they get to see a patch, so
-        using git alone lowers our pool of reviewers (and reviewers are
-        the species we most need to encourage)
-     3. Enforcing the rule that everything is emailed first can save you
-        from the maintainers curse:  the temptation to bung in that last
-        little "obvious" fix just before you send your tree to Linus
-        which later turns out to cause huge regressions and much
-        heartache.
-
-You don't have to endlessly repost patch series, just make sure that
-small updates get posted for review and comment before they get applied.
-
-James
+Seems to work for me.  Thanks.
 
 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
