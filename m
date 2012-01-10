@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab2AJQe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:34:27 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:50274 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756388Ab2AJQe0 (ORCPT
+	id S932281Ab2AJQhc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:37:32 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61088 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114Ab2AJQhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:34:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
- <20120109173010.GX23916@ZenIV.linux.org.uk> <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
- <20120109205907.GE4198@dastard> <CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
- <20120110013434.GA23916@ZenIV.linux.org.uk> <CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
- <CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
- <CA+55aFxszjhj5MatYe_KXJ=vYyf-05kzBbtmY1vgoGUio0DXuQ@mail.gmail.com> <CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 08:33:51 -0800
-X-Google-Sender-Auth: 8lAYs11KqJ0N7Z_ltYPr45Kb_Hw
-Message-ID: <CA+55aFxKzDQgsHMuWdSarqak68-NVqJkjjxAh2jbVgkrXm7-eg@mail.gmail.com>
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Jan 2012 11:37:31 -0500
+Message-ID: <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [BUG] kernel freezes with latest tree
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Jan 2012 17:37:22 +0100
+In-Reply-To: <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
+References: <1326171444.6638.3.camel@edumazet-laptop>
+	 <1326171798.6638.4.camel@edumazet-laptop>
+	 <1326183371.6638.6.camel@edumazet-laptop>
+	 <1326212033.19095.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 8:22 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
-> You didn't quite get it right: the flag now needs to be set in
-> select_parent() not prune_dcache_sb().
+Le mardi 10 janvier 2012 à 08:28 -0800, Linus Torvalds a écrit :
+> On Tue, Jan 10, 2012 at 8:13 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> >
+> > Here are two traces of the lockups, since I had some free time to reproduce the
+> > bug on current tree (plus a minor change in bnx2 driver to avoid a
+> > netconsole related stack trace)
+> 
+> Hmm. You have load_balance() and idle_balance() there in the trace, so
+> I'm getting more hopeful that it really is just the fact that
+> set_cpu_sd_state_idle() really needs to just be run with interrupts
+> disabled. That was my main concern about that merge, so if it's that,
+> I'll be relieved.
+> 
+> If you can please try that change out, that would be great.
+> 
+> [ And if that's not it - Ingo & co, please check out the traces on lkml ]
+> 
 
-Ahhah.
+Just to make sure I understood well, here is what I tested :
 
-> I think prune_dcache_sb() doesn't need this logic (although it
-> wouldn't hurt either) because that one is called from the slab
-> shrinkers and those are protected from being run multiple times in
-> parallel, I hope.
 
-Hmm. Even if they are never run in parallel, I think it would be much
-nicer to do it in both, just so that there would be a conceptual
-consistency of "when we remove the dentry from the LRU list and put it
-on our pruning list, we set the bit". That cacheline will be dirty
-anyway (due to the list move and getting the dentry lock), so setting
-a bit is not expensive - but having odd inconsistent ad-hoc rules is
-nasty.
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 7656642..acd88a1 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -466,6 +466,8 @@ void tick_nohz_idle_enter(void)
+ 
+ 	WARN_ON_ONCE(irqs_disabled());
+ 
++	local_irq_disable();
++
+ 	/*
+  	 * Update the idle state in the scheduler domain hierarchy
+  	 * when tick_nohz_stop_sched_tick() is called from the idle loop.
+@@ -474,8 +476,6 @@ void tick_nohz_idle_enter(void)
+  	 */
+ 	set_cpu_sd_state_idle();
+ 
+-	local_irq_disable();
+-
+ 	ts = &__get_cpu_var(tick_cpu_sched);
+ 	/*
+ 	 * set ts->inidle unconditionally. even if the system did not
 
-Al?
 
-                        Linus
