@@ -1,91 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab2AJQBh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:01:37 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:56764 "EHLO
+	id S1756520Ab2AJQGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:06:30 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56445 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756349Ab2AJQBg (ORCPT
+	with ESMTP id S1756394Ab2AJQG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:01:36 -0500
+	Tue, 10 Jan 2012 11:06:28 -0500
+Message-ID: <4F0C61FF.5090709@gmail.com>
+Date: Tue, 10 Jan 2012 17:06:23 +0100
+From: Vincent Vanackere <vincent.vanackere@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20111223 Thunderbird/10.0
 MIME-Version: 1.0
-In-Reply-To: <CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
- <20120109173010.GX23916@ZenIV.linux.org.uk> <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
- <20120109205907.GE4198@dastard> <CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
- <20120110013434.GA23916@ZenIV.linux.org.uk> <CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
- <CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 08:00:30 -0800
-X-Google-Sender-Auth: z1EXGKoIMQKw04sNBwqfZJzNGcE
-Message-ID: <CA+55aFxszjhj5MatYe_KXJ=vYyf-05kzBbtmY1vgoGUio0DXuQ@mail.gmail.com>
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
-        akpm@linux-foundation.org
-Content-Type: multipart/mixed; boundary=bcaec53d550d22dcda04b62ea195
+To: linux-btrfs@vger.kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>
+CC: Vincent Vanackere <vincent.vanackere@gmail.com>
+Subject: [v3.2-4874-ge4e1118 OOPS] btrfs-related kernel oops due to media
+ error
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec53d550d22dcda04b62ea195
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+[Note : this is a resent of a mail I send to linux-btrfs earlier, this 
+time tested with the lastest git kernel]
 
-On Tue, Jan 10, 2012 at 2:05 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
-> I tested Dave's patch and the bug can still be easily reproduced.
->
-> And that's to be expected, as the intermediate "being on the lru"
-> state that Dave's patch eliminates doesn't play a fundamental part in
-> the mechanism of the livelock. =A0It does eliminate one trylock, but
-> that's not the one critical to this bug (removing it is a very good
-> idea anyway).
->
-> The critical trylock here is the one in dentry_kill() which tries to
-> lock the parent.
+Hi,
 
-Ok. Here's your patch munged for current -git. You've got most of a
-changelog, can you send this out with the right subject and a
-sign-off, and re-test with the current git just to make sure.
+One of my disks, partitioned into a single btrfs partition, is showing 
+media errors. The problem is that these errors lead to kernel panic from 
+btrfs - that make the filesystem unusable until reboot - and therefore 
+it is very hard for me to do a full backup of the data prior to changing 
+the disk.
+My current kernel is a vanilla kernel at current tip (output from git 
+describe is v3.2-4874-ge4e1118).
+I assume that the filesystem should not panic even in case of a media 
+error... Is there any procedure I can follow / patch I could apply to 
+salvage my data while ignoring media errors ?
 
-Al, do you want to handle this or should I take it directly? I'm
-assuming nobody has any objections to Miklos' patch?
+logs/OOPS at the end of this mail, please let me know if more 
+information is needed,
 
-                                    Linus
+Best regards,
 
---bcaec53d550d22dcda04b62ea195
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gx93whep0
+Vincent
 
-IGZzL2RjYWNoZS5jICAgICAgICAgICAgfCAgICA4ICsrKysrLS0tCiBpbmNsdWRlL2xpbnV4L2Rj
-YWNoZS5oIHwgICAgMSArCiAyIGZpbGVzIGNoYW5nZWQsIDYgaW5zZXJ0aW9ucygrKSwgMyBkZWxl
-dGlvbnMoLSkKCmRpZmYgLS1naXQgYS9mcy9kY2FjaGUuYyBiL2ZzL2RjYWNoZS5jCmluZGV4IDNj
-NmQzMTEzYTI1NS4uNjQ3N2FmMjRmZjBkIDEwMDY0NAotLS0gYS9mcy9kY2FjaGUuYworKysgYi9m
-cy9kY2FjaGUuYwpAQCAtMjQzLDYgKzI0Myw3IEBAIHN0YXRpYyB2b2lkIGRlbnRyeV9scnVfYWRk
-KHN0cnVjdCBkZW50cnkgKmRlbnRyeSkKIHN0YXRpYyB2b2lkIF9fZGVudHJ5X2xydV9kZWwoc3Ry
-dWN0IGRlbnRyeSAqZGVudHJ5KQogewogCWxpc3RfZGVsX2luaXQoJmRlbnRyeS0+ZF9scnUpOwor
-CWRlbnRyeS0+ZF9mbGFncyAmPSB+RENBQ0hFX1NIUklOS19MSVNUOwogCWRlbnRyeS0+ZF9zYi0+
-c19ucl9kZW50cnlfdW51c2VkLS07CiAJZGVudHJ5X3N0YXQubnJfdW51c2VkLS07CiB9CkBAIC04
-MDYsNiArODA3LDcgQEAgcmVsb2NrOgogCQkJc3Bpbl91bmxvY2soJmRlbnRyeS0+ZF9sb2NrKTsK
-IAkJfSBlbHNlIHsKIAkJCWxpc3RfbW92ZV90YWlsKCZkZW50cnktPmRfbHJ1LCAmdG1wKTsKKwkJ
-CWRlbnRyeS0+ZF9mbGFncyB8PSBEQ0FDSEVfU0hSSU5LX0xJU1Q7CiAJCQlzcGluX3VubG9jaygm
-ZGVudHJ5LT5kX2xvY2spOwogCQkJaWYgKCEtLWNvdW50KQogCQkJCWJyZWFrOwpAQCAtMTA5OCwx
-MSArMTEwMCwxMSBAQCByZXN1bWU6CiAJCS8qCiAJCSAqIG1vdmUgb25seSB6ZXJvIHJlZiBjb3Vu
-dCBkZW50cmllcyB0byB0aGUgZGlzcG9zZSBsaXN0LgogCQkgKi8KLQkJaWYgKCFkZW50cnktPmRf
-Y291bnQpIHsKKwkJaWYgKGRlbnRyeS0+ZF9jb3VudCkgeworCQkJZGVudHJ5X2xydV9kZWwoZGVu
-dHJ5KTsKKwkJfSBlbHNlIGlmKCEoZGVudHJ5LT5kX2ZsYWdzICYgRENBQ0hFX1NIUklOS19MSVNU
-KSkgewogCQkJZGVudHJ5X2xydV9tb3ZlX2xpc3QoZGVudHJ5LCBkaXNwb3NlKTsKIAkJCWZvdW5k
-Kys7Ci0JCX0gZWxzZSB7Ci0JCQlkZW50cnlfbHJ1X2RlbChkZW50cnkpOwogCQl9CiAKIAkJLyoK
-ZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvZGNhY2hlLmggYi9pbmNsdWRlL2xpbnV4L2RjYWNo
-ZS5oCmluZGV4IGE0N2JkYTVmNzZkYi4uMzFmNzMyMjBlN2Q3IDEwMDY0NAotLS0gYS9pbmNsdWRl
-L2xpbnV4L2RjYWNoZS5oCisrKyBiL2luY2x1ZGUvbGludXgvZGNhY2hlLmgKQEAgLTIwMyw2ICsy
-MDMsNyBAQCBzdHJ1Y3QgZGVudHJ5X29wZXJhdGlvbnMgewogCiAjZGVmaW5lIERDQUNIRV9DQU5U
-X01PVU5UCTB4MDEwMAogI2RlZmluZSBEQ0FDSEVfR0VOT0NJREUJCTB4MDIwMAorI2RlZmluZSBE
-Q0FDSEVfU0hSSU5LX0xJU1QJMHgwNDAwCiAKICNkZWZpbmUgRENBQ0hFX05GU0ZTX1JFTkFNRUQJ
-MHgxMDAwCiAgICAgIC8qIHRoaXMgZGVudHJ5IGhhcyBiZWVuICJzaWxseSByZW5hbWVkIiBhbmQg
-aGFzIHRvIGJlIGRlbGV0ZWQgb24gdGhlIGxhc3QK
---bcaec53d550d22dcda04b62ea195--
+-----------------------------------------------------------------------
+
+[ 3210.717304] ata6.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x0
+[ 3210.717309] ata6.00: BMDMA stat 0x24
+[ 3210.717312] ata6.00: failed command: READ DMA EXT
+[ 3210.717318] ata6.00: cmd 25/00:08:5f:dc:2f/00:00:70:00:00/e0 tag 0 
+dma 4096 in
+[ 3210.717320]          res 51/40:00:61:dc:2f/40:00:70:00:00/e0 Emask 
+0x9 (media error)
+[ 3210.717323] ata6.00: status: { DRDY ERR }
+[ 3210.717325] ata6.00: error: { UNC }
+[ 3210.732234] ata6.00: configured for UDMA/133
+[ 3210.732248] sd 5:0:0:0: [sdd] Unhandled sense code
+[ 3210.732250] sd 5:0:0:0: [sdd]  Result: hostbyte=DID_OK 
+driverbyte=DRIVER_SENSE
+[ 3210.732254] sd 5:0:0:0: [sdd]  Sense Key : Medium Error [current] 
+[descriptor]
+[ 3210.732259] Descriptor sense data with sense descriptors (in hex):
+[ 3210.732261]         72 03 11 04 00 00 00 0c 00 0a 80 00 00 00 00 00
+[ 3210.732270]         70 2f dc 61
+[ 3210.732274] sd 5:0:0:0: [sdd]  Add. Sense: Unrecovered read error - 
+auto reallocate failed
+[ 3210.732278] sd 5:0:0:0: [sdd] CDB: Read(10): 28 00 70 2f dc 5f 00 00 
+08 00
+[ 3210.732287] end_request: I/O error, dev sdd, sector 1882184801
+[ 3210.732305] ata6: EH complete
+[ 3210.732322] BUG: unable to handle kernel NULL pointer dereference at 
+           (null)
+[ 3210.732373] IP: [<ffffffffa017f129>] extent_range_uptodate+0x59/0xe0 
+[btrfs]
+[ 3210.732426] PGD 21e9b7067 PUD 21e9b6067 PMD 0
+[ 3210.732455] Oops: 0000 [#1] SMP
+[ 3210.732475] CPU 3
+[ 3210.732486] Modules linked in: ip6table_filter ip6_tables 
+ipt_MASQUERADE bnep iptable_nat nf_nat rfcomm bluetooth 
+nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT 
+xt_CHECKSUM iptable_mangle xt_tcpudp iptable_filter ip_tables x_tables 
+bridge stp kvm_intel kvm parport_pc ppdev nfsd nfs lockd fscache 
+binfmt_misc auth_rpcgss nfs_acl sunrpc dm_crypt snd_usb_audio 
+snd_usbmidi_lib joydev snd_hda_codec_realtek snd_hda_intel snd_hda_codec 
+snd_hwdep snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event snd_seq 
+snd_timer snd_seq_device snd soundcore snd_page_alloc psmouse serio_raw 
+cdc_acm lp parport btrfs zlib_deflate libcrc32c hid_logitech ff_memless 
+usbhid hid i915 drm_kms_helper drm r8169 i2c_algo_bit video pata_jmicron
+[ 3210.732870]
+[ 3210.732880] Pid: 3856, comm: btrfs-endio-met Not tainted 3.2.0-custom 
+#2 Gigabyte Technology Co., Ltd. G33-DS3R/G33-DS3R
+[ 3210.732933] RIP: 0010:[<ffffffffa017f129>]  [<ffffffffa017f129>] 
+extent_range_uptodate+0x59/0xe0 [btrfs]
+[ 3210.732989] RSP: 0018:ffff880006f3fde0  EFLAGS: 00010246
+[ 3210.733014] RAX: 0000000000000000 RBX: 000000df57385000 RCX: 
+0000000000000000
+[ 3210.733047] RDX: 0000000000000001 RSI: 000000000df57385 RDI: 
+0000000000000000
+[ 3210.733079] RBP: ffff880006f3fe00 R08: 0000000000000000 R09: 
+ffff88008bce5200
+[ 3210.733111] R10: ffff8800299f9010 R11: 0000000000001000 R12: 
+ffff8802190f4030
+[ 3210.733143] R13: 000000df573853ff R14: ffff880006f3fe98 R15: 
+ffff880143263d88
+[ 3210.733175] FS:  0000000000000000(0000) GS:ffff88022fd80000(0000) 
+knlGS:0000000000000000
+[ 3210.733212] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3210.733238] CR2: 0000000000000000 CR3: 000000021f35a000 CR4: 
+00000000000406e0
+[ 3210.733270] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
+0000000000000000
+[ 3210.733302] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
+0000000000000400
+[ 3210.733334] Process btrfs-endio-met (pid: 3856, threadinfo 
+ffff880006f3e000, task ffff8801fa8d8000)
+[ 3210.733374] Stack:
+[ 3210.733385]  0000000000000000 ffff8800298dd838 ffff8801f9cc9840 
+ffff88021ee05000
+[ 3210.733423]  ffff880006f3fe30 ffffffffa01581f9 ffff880143263d80 
+ffff8800298dd860
+[ 3210.733461]  ffff880143263d80 ffff880143263d98 ffff880006f3fee0 
+ffffffffa0187fef
+[ 3210.733499] Call Trace:
+[ 3210.733524]  [<ffffffffa01581f9>] end_workqueue_fn+0x119/0x140 [btrfs]
+[ 3210.733567]  [<ffffffffa0187fef>] worker_loop+0x16f/0x5d0 [btrfs]
+[ 3210.733608]  [<ffffffffa0187e80>] ? btrfs_queue_worker+0x310/0x310 
+[btrfs]
+[ 3210.733643]  [<ffffffff8106fa93>] kthread+0x93/0xa0
+[ 3210.733668]  [<ffffffff8162caa4>] kernel_thread_helper+0x4/0x10
+[ 3210.733697]  [<ffffffff8106fa00>] ? 
+kthread_freezable_should_stop+0x70/0x70
+[ 3210.733729]  [<ffffffff8162caa0>] ? gs_change+0x13/0x13
+[ 3210.733752] Code: 01 f0 48 09 f0 a9 ff 0f 00 00 75 4e 49 39 dd b8 01 
+00 00 00 72 36 0f 1f 40 00 49 8b 7c 24 18 48 89 de 48 c1 ee 0c e8 17 38 
+f9 e0 <48> 8b 10 83 e2 08 74 5f 48 89 c7 48 81 c3 00 10 00 00 e8 f0 f7
+[ 3210.733919] RIP  [<ffffffffa017f129>] extent_range_uptodate+0x59/0xe0 
+[btrfs]
+[ 3210.733965]  RSP <ffff880006f3fde0>
+[ 3210.736202] CR2: 0000000000000000
+[ 3210.805459] ---[ end trace 06f41a860c47870b ]---
+
