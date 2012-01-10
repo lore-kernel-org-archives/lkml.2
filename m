@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab2AIQjq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 11:39:46 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50476 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932266Ab2AIQjp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 11:39:45 -0500
+	id S932367Ab2AIQlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 11:41:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:16646 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932266Ab2AIQlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 11:41:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105119508"
+Date: Tue, 10 Jan 2012 00:58:56 -0500
+From: Youquan Song <youquan.song@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        suresh.b.siddha@intel.com, arjan@linux.intel.com, len.brown@intel.com,
+        anhua.xu@intel.com, chaohong.guo@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+Message-ID: <20120110055856.GA23741@linux-youquan.bj.intel.com>
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com> <1326103578.2442.50.camel@twins> <20120110001445.GA20542@linux-youquan.bj.intel.com> <1326107156.2442.59.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <1325945558-4661-1-git-send-email-corentincj@iksaif.net>
-References: <20120105150832.GA25386@ubuntu-macmini>
-	<1325945558-4661-1-git-send-email-corentincj@iksaif.net>
-Date: Mon, 9 Jan 2012 17:39:43 +0100
-Message-ID: <CANq1E4QGahjrxm5B59HGnrfO3LP4kV6bc27BKQDvnJ4HBKAFMg@mail.gmail.com>
-Subject: Re: [PATCH] ACPI / Video: blacklist some samsung laptops
-From: David Herrmann <dh.herrmann@googlemail.com>
-To: Corentin Chary <corentincj@iksaif.net>
-Cc: platform-driver-x86@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        linux-kernel@vger.kernel.org, Andrzej Prochyra <andrzej@prochyra.name>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        =?ISO-8859-1?Q?Richard_Sch=FCtz?= <r.schtz@t-online.de>,
-        Seth Forshee <seth.forshee@canonical.com>, Len Brown <lenb@kernel.org>,
-        linux-acpi@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326107156.2442.59.camel@twins>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Corentin
+> Note, this has the hard-coded assumption you only have 2 threads per
+> core, which while true for intel, isn't true in general. I think you
+> meant to write *= group->group_weight or somesuch.
+> 
+> Also, you forgot to limit this to the SD_SHARE_CPUPOWER domain, you're
+> now doubling the capacity for all domains.
+> 
+> Furthermore, have a look at the SD_PREFER_SIBLING logic and make sure
+> you're not fighting that.
+> 
+Thanks Peter! Here is the patch. 
 
-On Sat, Jan 7, 2012 at 3:12 PM, Corentin Chary <corentincj@iksaif.net> wrote:
-> On these laptops, the ACPI video is not functional, and very unlikely
-> to be fixed by the vendor. Note that intel_backlight works for some
-> of these laptops, and the backlight from samsung-laptop always work.
->
-> The good news is that newer laptops have functional ACPI video device
-> and won't end up growing this list.
->
-> Signed-off-by: Corentin Chary <corentincj@iksaif.net>
-> ---
->
-> Could the concerned people test this patch and check that it correctly
-> disable the acpi_video backlight ?
+-Youquan
 
-Works like a charm on my N210 with linux-3.2. Feel free to add a:
-Tested-by: David Herrmann <dh.herrmann@googlemail.com>
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index a4d2b7a..4ada3e7 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3923,6 +3923,10 @@ static inline void update_sg_lb_stats(struct
+sched_domain *sd,
+                                                SCHED_POWER_SCALE);
+        if (!sgs->group_capacity)
+                sgs->group_capacity = fix_small_capacity(sd, group);
++
++       if (sched_smt_power_savings && !(sd->flags & SD_SHARE_CPUPOWER))
++               sgs->group_capacity = group->group_weight;
++
+        sgs->group_weight = group->group_weight;
 
-I will talk to the intel drm developers about the intel_backlight
-issues as they don't seem related to this driver.
-
-Thanks
-David
+        if (sgs->group_capacity > sgs->sum_nr_running)
