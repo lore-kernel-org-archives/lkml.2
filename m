@@ -1,61 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab2AJUJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:09:20 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49144 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756749Ab2AJUJL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756744Ab2AJUJL (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 10 Jan 2012 15:09:11 -0500
-X-Sasl-enc: QHpu4KwJ2nM0ipwFas9CPwWpdnJyIZ6LA6T0vKcftwHz 1326226150
-Date: Tue, 10 Jan 2012 12:09:02 -0800
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: [00/20] 2.6.32.54-longterm review
-Message-ID: <20120110200902.GA5674@kroah.com>
+Received: from mga11.intel.com ([192.55.52.93]:15089 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754699Ab2AJUJJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 15:09:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="110805483"
+From: "Cihula, Joseph" <joseph.cihula@intel.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "x86@kernel.org" <x86@kernel.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "tboot-devel@lists.sourceforge.net" 
+	<tboot-devel@lists.sourceforge.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "liang.tang@oracle.com" <liang.tang@oracle.com>
+CC: "hpa@zytor.com" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "Wang, Shane" <shane.wang@intel.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: RE: [PATCH 1/7] x86, acpi, tboot: Have a ACPI os prepare sleep
+ instead of calling tboot_sleep.
+Thread-Topic: [PATCH 1/7] x86, acpi, tboot: Have a ACPI os prepare sleep
+ instead of calling tboot_sleep.
+Thread-Index: AQHMyjtbdYuM2MdwO0GLk3xKcuZUZ5YEwS7g
+Date: Tue, 10 Jan 2012 20:09:06 +0000
+Message-ID: <9F57BF860713DF4BA3EFA4F8C6DFEDAC2420CB97@ORSMSX101.amr.corp.intel.com>
+References: <1324075099-11397-1-git-send-email-konrad.wilk@oracle.com>
+ <1324075099-11397-2-git-send-email-konrad.wilk@oracle.com>
+ <20120103171318.GA25341@phenom.dumpdata.com>
+In-Reply-To: <20120103171318.GA25341@phenom.dumpdata.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the longterm review cycle for the 2.6.32.@rel@ release.
-There are 20 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+ACK
 
-Responses should be made by Thursday, January 12, 20:00:00 UTC.
-Anything received after that time might be too late.
-
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.54-rc1.gz
-and the diffstat can be found below.
-
-thanks,
-
-greg k-h
-
- Documentation/HOWTO                         |    4 +-
- Documentation/development-process/5.Posting |    8 ++--
- Documentation/usb/usbmon.txt                |   14 +++--
- MAINTAINERS                                 |    2 +-
- Makefile                                    |    2 +-
- drivers/base/firmware_class.c               |   14 +++---
- drivers/net/usb/asix.c                      |    6 ++-
- drivers/scsi/device_handler/scsi_dh.c       |    7 ++-
- drivers/usb/class/cdc-acm.c                 |    4 ++
- drivers/usb/core/quirks.c                   |    5 ++-
- drivers/usb/misc/isight_firmware.c          |    6 ++-
- drivers/usb/serial/cp210x.c                 |    1 +
- drivers/usb/serial/omninet.c                |    2 +-
- drivers/usb/storage/usb.c                   |    1 +
- drivers/video/offb.c                        |   52 +++++++++----------
- fs/reiserfs/super.c                         |   27 ++++++----
- fs/xfs/linux-2.6/xfs_acl.c                  |    4 +-
- kernel/cpu.c                                |   74 +++++++++++++++++++++++++++
- 18 files changed, 167 insertions(+), 66 deletions(-)
+> -----Original Message-----
+> From: Konrad Rzeszutek Wilk [mailto:konrad.wilk@oracle.com]
+> Sent: Tuesday, January 03, 2012 9:13 AM
+> To: linux-kernel@vger.kernel.org; rjw@sisk.pl; x86@kernel.org; Brown, Len; Cihula, Joseph; linux-
+> pm@lists.linux-foundation.org; tboot-devel@lists.sourceforge.net; linux-acpi@vger.kernel.org;
+> liang.tang@oracle.com
+> Cc: hpa@zytor.com; Thomas Gleixner; Wang, Shane; xen-devel@lists.xensource.com
+> Subject: Re: [PATCH 1/7] x86, acpi, tboot: Have a ACPI os prepare sleep instead of calling
+> tboot_sleep.
+> 
+> On Fri, Dec 16, 2011 at 05:38:13PM -0500, Konrad Rzeszutek Wilk wrote:
+> > From: Tang Liang <liang.tang@oracle.com>
+> 
+> Hey Joseph,
+> 
+> I remember you acked the initial rfc patches I had posted.
+> But I was wondering if these ones are to your liking (I think they are - they aren't that much
+> different, but I didn't want to blindly sticking 'Acked-by' as they did change a bit).
+> 
+> Thanks!
+> >
+> > The ACPI suspend path makes a call to tboot_sleep right before it
+> > writes the PM1A, PM1B values. We replace the direct call to tboot via
+> > an registration callback similar to __acpi_register_gsi.
+> >
+> > CC: Thomas Gleixner <tglx@linutronix.de>
+> > CC: "H. Peter Anvin" <hpa@zytor.com>
+> > CC: x86@kernel.org
+> > CC: Len Brown <len.brown@intel.com>
+> > CC: Joseph Cihula <joseph.cihula@intel.com>
+> > CC: Shane Wang <shane.wang@intel.com>
+> > CC: xen-devel@lists.xensource.com
+> > CC: linux-pm@lists.linux-foundation.org
+> > CC: tboot-devel@lists.sourceforge.net
+> > CC: linux-acpi@vger.kernel.org
+> > [v1: Added __attribute__ ((unused))]
+> > [v2: Introduced a wrapper instead of changing tboot_sleep return
+> > values]
+> > [v3: Added return value AE_CTRL_SKIP for acpi_os_sleep_prepare]
+> > Signed-off-by: Tang Liang <liang.tang@oracle.com>
+> > [v1: Fix compile issues on IA64 and PPC64]
+> > [v2: Fix where __acpi_os_prepare_sleep==NULL and did not go in sleep
+> > properly]
+> > Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> > ---
+> >  arch/x86/kernel/tboot.c       |    8 ++++++++
+> >  drivers/acpi/acpica/hwsleep.c |   10 +++++++---
+> >  drivers/acpi/osl.c            |   24 ++++++++++++++++++++++++
+> >  include/acpi/acexcep.h        |    1 +
+> >  include/linux/acpi.h          |   10 ++++++++++
+> >  include/linux/tboot.h         |    1 -
+> >  6 files changed, 50 insertions(+), 4 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c index
+> > e2410e2..1a4ab7d 100644
+> > --- a/arch/x86/kernel/tboot.c
+> > +++ b/arch/x86/kernel/tboot.c
+> > @@ -297,6 +297,12 @@ void tboot_sleep(u8 sleep_state, u32
+> > pm1a_control, u32 pm1b_control)
+> >
+> >  	tboot_shutdown(acpi_shutdown_map[sleep_state]);
+> >  }
+> > +static int tboot_sleep_wrapper(u8 sleep_state, u32 pm1a_control,
+> > +			       u32 pm1b_control)
+> > +{
+> > +	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+> > +	return 0;
+> > +}
+> >
+> >  static atomic_t ap_wfs_count;
+> >
+> > @@ -345,6 +351,8 @@ static __init int tboot_late_init(void)
+> >
+> >  	atomic_set(&ap_wfs_count, 0);
+> >  	register_hotcpu_notifier(&tboot_cpu_notifier);
+> > +
+> > +	acpi_os_set_prepare_sleep(&tboot_sleep_wrapper);
+> >  	return 0;
+> >  }
+> >
+> > diff --git a/drivers/acpi/acpica/hwsleep.c
+> > b/drivers/acpi/acpica/hwsleep.c index d52da30..992359a 100644
+> > --- a/drivers/acpi/acpica/hwsleep.c
+> > +++ b/drivers/acpi/acpica/hwsleep.c
+> > @@ -43,9 +43,9 @@
+> >   */
+> >
+> >  #include <acpi/acpi.h>
+> > +#include <linux/acpi.h>
+> >  #include "accommon.h"
+> >  #include "actables.h"
+> > -#include <linux/tboot.h>
+> >  #include <linux/module.h>
+> >
+> >  #define _COMPONENT          ACPI_HARDWARE
+> > @@ -344,8 +344,12 @@ acpi_status asmlinkage acpi_enter_sleep_state(u8
+> > sleep_state)
+> >
+> >  	ACPI_FLUSH_CPU_CACHE();
+> >
+> > -	tboot_sleep(sleep_state, pm1a_control, pm1b_control);
+> > -
+> > +	status = acpi_os_prepare_sleep(sleep_state, pm1a_control,
+> > +				       pm1b_control);
+> > +	if (ACPI_SKIP(status))
+> > +		return_ACPI_STATUS(AE_OK);
+> > +	if (ACPI_FAILURE(status))
+> > +		return_ACPI_STATUS(status);
+> >  	/* Write #2: Write both SLP_TYP + SLP_EN */
+> >
+> >  	status = acpi_hw_write_pm1_control(pm1a_control, pm1b_control); diff
+> > --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c index f31c5c5..f3aae4b
+> > 100644
+> > --- a/drivers/acpi/osl.c
+> > +++ b/drivers/acpi/osl.c
+> > @@ -76,6 +76,9 @@ EXPORT_SYMBOL(acpi_in_debugger);  extern char
+> > line_buf[80];
+> >  #endif				/*ENABLE_DEBUGGER */
+> >
+> > +static int (*__acpi_os_prepare_sleep)(u8 sleep_state, u32 pm1a_ctrl,
+> > +				      u32 pm1b_ctrl);
+> > +
+> >  static acpi_osd_handler acpi_irq_handler;  static void
+> > *acpi_irq_context;  static struct workqueue_struct *kacpid_wq; @@
+> > -1659,3 +1662,24 @@ acpi_status acpi_os_terminate(void)
+> >
+> >  	return AE_OK;
+> >  }
+> > +
+> > +acpi_status acpi_os_prepare_sleep(u8 sleep_state, u32 pm1a_control,
+> > +				  u32 pm1b_control)
+> > +{
+> > +	int rc = 0;
+> > +	if (__acpi_os_prepare_sleep)
+> > +		rc = __acpi_os_prepare_sleep(sleep_state,
+> > +					     pm1a_control, pm1b_control);
+> > +	if (rc < 0)
+> > +		return AE_ERROR;
+> > +	else if (rc > 0)
+> > +		return AE_CTRL_SKIP;
+> > +
+> > +	return AE_OK;
+> > +}
+> > +
+> > +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> > +			       u32 pm1a_ctrl, u32 pm1b_ctrl)) {
+> > +	__acpi_os_prepare_sleep = func;
+> > +}
+> > diff --git a/include/acpi/acexcep.h b/include/acpi/acexcep.h index
+> > 5b6c391..fa0d22c 100644
+> > --- a/include/acpi/acexcep.h
+> > +++ b/include/acpi/acexcep.h
+> > @@ -57,6 +57,7 @@
+> >  #define ACPI_SUCCESS(a)                 (!(a))
+> >  #define ACPI_FAILURE(a)                 (a)
+> >
+> > +#define ACPI_SKIP(a)                    (a == AE_CTRL_SKIP)
+> >  #define AE_OK                           (acpi_status) 0x0000
+> >
+> >  /*
+> > diff --git a/include/linux/acpi.h b/include/linux/acpi.h index
+> > 6001b4da..fccd017 100644
+> > --- a/include/linux/acpi.h
+> > +++ b/include/linux/acpi.h
+> > @@ -359,4 +359,14 @@ static inline int suspend_nvs_register(unsigned
+> > long a, unsigned long b)  }  #endif
+> >
+> > +#ifdef CONFIG_ACPI
+> > +void acpi_os_set_prepare_sleep(int (*func)(u8 sleep_state,
+> > +			       u32 pm1a_ctrl,  u32 pm1b_ctrl));
+> > +
+> > +acpi_status acpi_os_prepare_sleep(u8 sleep_state,
+> > +				  u32 pm1a_control, u32 pm1b_control); #else #define
+> > +acpi_os_set_prepare_sleep(func, pm1a_ctrl, pm1b_ctrl) do { } while
+> > +(0) #endif
+> > +
+> >  #endif	/*_LINUX_ACPI_H*/
+> > diff --git a/include/linux/tboot.h b/include/linux/tboot.h index
+> > 1dba6ee..c75128b 100644
+> > --- a/include/linux/tboot.h
+> > +++ b/include/linux/tboot.h
+> > @@ -143,7 +143,6 @@ static inline int tboot_enabled(void)
+> >
+> >  extern void tboot_probe(void);
+> >  extern void tboot_shutdown(u32 shutdown_type); -extern void
+> > tboot_sleep(u8 sleep_state, u32 pm1a_control, u32 pm1b_control);
+> > extern struct acpi_table_header *tboot_get_dmar_table(
+> >  				      struct acpi_table_header *dmar_tbl);  extern int
+> > tboot_force_iommu(void);
+> > --
+> > 1.7.7.4
