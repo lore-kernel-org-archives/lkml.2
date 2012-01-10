@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630Ab2AJJ1H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 04:27:07 -0500
-Received: from casper.infradead.org ([85.118.1.10]:53349 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754533Ab2AJJ1E convert rfc822-to-8bit (ORCPT
+	id S1755762Ab2AJJ3I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 04:29:08 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:35239 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab2AJJ3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 04:27:04 -0500
-Message-ID: <1326187602.2442.103.camel@twins>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Indan Zupancic <indan@nul.nu>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>,
-        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com, len.brown@intel.com,
-        anhua.xu@intel.com
-Date: Tue, 10 Jan 2012 10:26:42 +0100
-In-Reply-To: <0c92071a002c16120b424c4057056a05.squirrel@webmail.greenhost.nl>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
-	 <1326103578.2442.50.camel@twins>
-	 <20120110001445.GA20542@linux-youquan.bj.intel.com>
-	 <1326107563.2442.65.camel@twins>
-	 <CAKfTPtDM-L-AcHr_o44vmR9VYRvQqOyXuwEgnZ61d4pbDOPFUg@mail.gmail.com>
-	 <1326120367.2442.84.camel@twins>
-	 <0c92071a002c16120b424c4057056a05.squirrel@webmail.greenhost.nl>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Tue, 10 Jan 2012 04:29:03 -0500
+Date: Tue, 10 Jan 2012 01:20:46 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Joerg Roedel <joerg.roedel@amd.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Michael Buesch <m@bues.ch>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>
+Subject: Re: Incorrect uses of get_driver()/put_driver()
+Message-ID: <20120110092046.GB32291@core.coreip.homeip.net>
+References: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
+ <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
+ <20120110100541.38a3940f@de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120110100541.38a3940f@de.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 03:12 +0100, Indan Zupancic wrote:
-> Perhaps it should be controlled by the CPU governor instead of being
-> a separate knob? 
+On Tue, Jan 10, 2012 at 10:05:41AM +0100, Martin Schwidefsky wrote:
+> On Mon, 9 Jan 2012 12:35:09 -0500 (EST)
+> Alan Stern <stern@rowland.harvard.edu> wrote:
+> 
+> > drivers/s390/cio/device.c:1681:       drv = get_driver(&cdrv->driver);
+> > drivers/s390/cio/device.c:1687:       put_driver(drv);
+> > 
+> > Martin, these calls seem to be useless.  The calls in ccwgroup.c are 
+> > definitely useless; there's no reason to take a reference to a driver 
+> > while it's being unregistered, since it can't go away until the 
+> > unregistration is finished.
+> 
+> The get_driver/put_driver in ccwgroup.c are obviously useless, the caller
+> passed ccwgroup_driver_unregister a ccwgroup_driver reference.
+> I am not so sure about the code in device.c. get_ccwdev_by_busid() gets
+> used e.g. by vmur like this:
 
-Possibly, Arjan was working on new infrastructure there and we wanted
-tighter integration with the scheduler for a number of other reasons as
-well, hopefully Arjan will get things sorted soon and show us what it
-looks like ;-)
+It does not matter how it is being used. Either get_ccwdev_by_busid()
+gets a valid driver structure or you already lost. You can not say that
+get_driver() protects anything, since if there is a chance driver can
+disappear it can disappear before we get to executing get_driver() code.
+
+So while you might want to audit callers get/put_driver inside of
+get_ccwdev_by_busid() is utterly useless.
+
+Thanks.
+
+-- 
+Dmitry
