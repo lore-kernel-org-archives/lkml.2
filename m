@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933534Ab2AJW6M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:58:12 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52099 "EHLO mx2.suse.de"
+	id S933559Ab2AJW6Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:58:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52105 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933230Ab2AJW6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:07 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:20 2012
-Message-Id: <20120110214620.651400794@clark.kroah.org>
+	id S933230Ab2AJW6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:58:12 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:19 2012
+Message-Id: <20120110214619.083733768@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:41 -0800
+Date: Tue, 10 Jan 2012 13:45:23 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>
-Subject: [28/40] usb: fix number of mapped SG DMA entries
+        alan@lxorguk.ukuu.org.uk, Li Zhong <zhong@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [10/40] powerpc: Fix unpaired probe_hcall_entry and probe_hcall_exit
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,143 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Li Zhong <zhong@linux.vnet.ibm.com>
 
-commit bc677d5b64644c399cd3db6a905453e611f402ab upstream.
+commit e4f387d8db3ba3c2dae4d8bdfe7bb5f4fe1bcb0d upstream.
 
-Add a new field num_mapped_sgs to struct urb so that we have a place to
-store the number of mapped entries and can also retain the original
-value of entries in num_sgs.  Previously, usb_hcd_map_urb_for_dma()
-would overwrite this with the number of mapped entries, which would
-break dma_unmap_sg() because it requires the original number of entries.
+Unpaired calling of probe_hcall_entry and probe_hcall_exit might happen
+as following, which could cause incorrect preempt count.
 
-This fixes warnings like the following when using USB storage devices:
- ------------[ cut here ]------------
- WARNING: at lib/dma-debug.c:902 check_unmap+0x4e4/0x695()
- ehci_hcd 0000:00:12.2: DMA-API: device driver frees DMA sg list with different entry count [map count=4] [unmap count=1]
- Modules linked in: ohci_hcd ehci_hcd
- Pid: 0, comm: kworker/0:1 Not tainted 3.2.0-rc2+ #319
- Call Trace:
-  <IRQ>  [<ffffffff81036d3b>] warn_slowpath_common+0x80/0x98
-  [<ffffffff81036de7>] warn_slowpath_fmt+0x41/0x43
-  [<ffffffff811fa5ae>] check_unmap+0x4e4/0x695
-  [<ffffffff8105e92c>] ? trace_hardirqs_off+0xd/0xf
-  [<ffffffff8147208b>] ? _raw_spin_unlock_irqrestore+0x33/0x50
-  [<ffffffff811fa84a>] debug_dma_unmap_sg+0xeb/0x117
-  [<ffffffff8137b02f>] usb_hcd_unmap_urb_for_dma+0x71/0x188
-  [<ffffffff8137b166>] unmap_urb_for_dma+0x20/0x22
-  [<ffffffff8137b1c5>] usb_hcd_giveback_urb+0x5d/0xc0
-  [<ffffffffa0000d02>] ehci_urb_done+0xf7/0x10c [ehci_hcd]
-  [<ffffffffa0001140>] qh_completions+0x429/0x4bd [ehci_hcd]
-  [<ffffffffa000340a>] ehci_work+0x95/0x9c0 [ehci_hcd]
-  ...
- ---[ end trace f29ac88a5a48c580 ]---
- Mapped at:
-  [<ffffffff811faac4>] debug_dma_map_sg+0x45/0x139
-  [<ffffffff8137bc0b>] usb_hcd_map_urb_for_dma+0x22e/0x478
-  [<ffffffff8137c494>] usb_hcd_submit_urb+0x63f/0x6fa
-  [<ffffffff8137d01c>] usb_submit_urb+0x2c7/0x2de
-  [<ffffffff8137dcd4>] usb_sg_wait+0x55/0x161
+__trace_hcall_entry => trace_hcall_entry -> probe_hcall_entry =>
+get_cpu_var => preempt_disable
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+__trace_hcall_exit => trace_hcall_exit -> probe_hcall_exit =>
+put_cpu_var => preempt_enable
+
+where:
+A => B and A -> B means A calls B, but
+=> means A will call B through function name, and B will definitely be
+called.
+-> means A will call B through function pointer, so B might not be
+called if the function pointer is not set.
+
+So error happens when only one of probe_hcall_entry and probe_hcall_exit
+get called during a hcall.
+
+This patch tries to move the preempt count operations from
+probe_hcall_entry and probe_hcall_exit to its callers.
+
+Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hcd.c       |    5 ++---
- drivers/usb/host/ehci-q.c    |    2 +-
- drivers/usb/host/uhci-q.c    |    2 +-
- drivers/usb/host/whci/qset.c |    4 ++--
- drivers/usb/host/xhci-ring.c |    4 ++--
- include/linux/usb.h          |    1 +
- 6 files changed, 9 insertions(+), 9 deletions(-)
+ arch/powerpc/platforms/pseries/hvCall_inst.c |    4 +---
+ arch/powerpc/platforms/pseries/lpar.c        |    2 ++
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1387,11 +1387,10 @@ int usb_hcd_map_urb_for_dma(struct usb_h
- 					ret = -EAGAIN;
- 				else
- 					urb->transfer_flags |= URB_DMA_MAP_SG;
--				if (n != urb->num_sgs) {
--					urb->num_sgs = n;
-+				urb->num_mapped_sgs = n;
-+				if (n != urb->num_sgs)
- 					urb->transfer_flags |=
- 							URB_DMA_SG_COMBINED;
--				}
- 			} else if (urb->sg) {
- 				struct scatterlist *sg = urb->sg;
- 				urb->transfer_dma = dma_map_page(
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -649,7 +649,7 @@ qh_urb_transaction (
- 	/*
- 	 * data transfer stage:  buffer setup
- 	 */
--	i = urb->num_sgs;
-+	i = urb->num_mapped_sgs;
- 	if (len > 0 && i > 0) {
- 		sg = urb->sg;
- 		buf = sg_dma_address(sg);
---- a/drivers/usb/host/uhci-q.c
-+++ b/drivers/usb/host/uhci-q.c
-@@ -943,7 +943,7 @@ static int uhci_submit_common(struct uhc
- 	if (usb_pipein(urb->pipe))
- 		status |= TD_CTRL_SPD;
+--- a/arch/powerpc/platforms/pseries/hvCall_inst.c
++++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
+@@ -109,7 +109,7 @@ static void probe_hcall_entry(void *igno
+ 	if (opcode > MAX_HCALL_OPCODE)
+ 		return;
  
--	i = urb->num_sgs;
-+	i = urb->num_mapped_sgs;
- 	if (len > 0 && i > 0) {
- 		sg = urb->sg;
- 		data = sg_dma_address(sg);
---- a/drivers/usb/host/whci/qset.c
-+++ b/drivers/usb/host/whci/qset.c
-@@ -443,7 +443,7 @@ static int qset_add_urb_sg(struct whc *w
+-	h = &get_cpu_var(hcall_stats)[opcode / 4];
++	h = &__get_cpu_var(hcall_stats)[opcode / 4];
+ 	h->tb_start = mftb();
+ 	h->purr_start = mfspr(SPRN_PURR);
+ }
+@@ -126,8 +126,6 @@ static void probe_hcall_exit(void *ignor
+ 	h->num_calls++;
+ 	h->tb_total += mftb() - h->tb_start;
+ 	h->purr_total += mfspr(SPRN_PURR) - h->purr_start;
+-
+-	put_cpu_var(hcall_stats);
+ }
  
- 	remaining = urb->transfer_buffer_length;
+ static int __init hcall_inst_init(void)
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -745,6 +745,7 @@ void __trace_hcall_entry(unsigned long o
+ 		goto out;
  
--	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
-+	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
- 		dma_addr_t dma_addr;
- 		size_t dma_remaining;
- 		dma_addr_t sp, ep;
-@@ -561,7 +561,7 @@ static int qset_add_urb_sg_linearize(str
+ 	(*depth)++;
++	preempt_disable();
+ 	trace_hcall_entry(opcode, args);
+ 	(*depth)--;
  
- 	remaining = urb->transfer_buffer_length;
+@@ -767,6 +768,7 @@ void __trace_hcall_exit(long opcode, uns
  
--	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
-+	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
- 		size_t len;
- 		size_t sg_remaining;
- 		void *orig;
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2570,7 +2570,7 @@ static unsigned int count_sg_trbs_needed
- 	struct scatterlist *sg;
+ 	(*depth)++;
+ 	trace_hcall_exit(opcode, retval, retbuf);
++	preempt_enable();
+ 	(*depth)--;
  
- 	sg = NULL;
--	num_sgs = urb->num_sgs;
-+	num_sgs = urb->num_mapped_sgs;
- 	temp = urb->transfer_buffer_length;
- 
- 	xhci_dbg(xhci, "count sg list trbs: \n");
-@@ -2754,7 +2754,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 		return -EINVAL;
- 
- 	num_trbs = count_sg_trbs_needed(xhci, urb);
--	num_sgs = urb->num_sgs;
-+	num_sgs = urb->num_mapped_sgs;
- 	total_packet_count = roundup(urb->transfer_buffer_length,
- 			le16_to_cpu(urb->ep->desc.wMaxPacketSize));
- 
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -1202,6 +1202,7 @@ struct urb {
- 	void *transfer_buffer;		/* (in) associated data buffer */
- 	dma_addr_t transfer_dma;	/* (in) dma addr for transfer_buffer */
- 	struct scatterlist *sg;		/* (in) scatter gather buffer list */
-+	int num_mapped_sgs;		/* (internal) mapped sg entries */
- 	int num_sgs;			/* (in) number of entries in the sg list */
- 	u32 transfer_buffer_length;	/* (in) data buffer length */
- 	u32 actual_length;		/* (return) actual transfer length */
+ out:
 
 
