@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab2AJK1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 05:27:25 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:38813 "EHLO relay.sw.ru"
+	id S1756018Ab2AJKbP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 05:31:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4313 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755965Ab2AJK1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 05:27:23 -0500
-Message-ID: <4F0C1285.10002@parallels.com>
-Date: Tue, 10 Jan 2012 14:27:17 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1751768Ab2AJKbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 05:31:14 -0500
+Message-ID: <4F0C1369.9070607@redhat.com>
+Date: Tue, 10 Jan 2012 12:31:05 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 6/6] NFS: idmap PipeFS notifier introduced
-References: <20111128132805.4251.15252.stgit@localhost6.localdomain6>	 <20111128133410.4251.656.stgit@localhost6.localdomain6> <1325285643.10984.3.camel@lade.trondhjem.org>
-In-Reply-To: <1325285643.10984.3.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: stephan.baerwolf@tu-ilmenau.de
+CC: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: KVM guest-kernel panics double fault
+References: <4EFBC973.1040905@tu-ilmenau.de> <4EFC3B17.1040601@redhat.com> <4F09001D.1050701@tu-ilmenau.de> <4F096E26.4090201@redhat.com> <4F0C0EBB.3090506@tu-ilmenau.de>
+In-Reply-To: <4F0C0EBB.3090506@tu-ilmenau.de>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-31.12.2011 02:54, Trond Myklebust пишет:
-> On Mon, 2011-11-28 at 17:34 +0300, Stanislav Kinsbursky wrote:
->> This patch subscribes NFS clients to RPC pipefs notifications. Idmap notifier
->> is registering on NFS module load. This notifier callback is responsible for
->> creation/destruction of PipeFS idmap pipe dentry for NFS4 clients.
->>
->> Since ipdmap pipe is created in rpc client pipefs directory, we have make sure,
->> that this directory has been created already. IOW RPC client notifier callback
->> has been called already. To achive this, PipeFS notifier priorities has been
->> introduced (RPC clients notifier priority is greater than NFS idmap one).
->> But this approach gives another problem: unlink for RPC client directory will
->> be called before NFS idmap pipe unlink on UMOUNT event and will fail, because
->> directory is not empty.
->> The solution, introduced in this patch, is to try to remove client directory
->> once again after idmap pipe was unlinked. This looks like ugly hack, so
->> probably it should be replaced in some more elegant way.
->>
->> Note that no locking required in notifier callback because PipeFS superblock
->> pointer is passed as an argument from it's creation or destruction routine and
->> thus we can be sure about it's validity.
->>
->> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
+On 01/10/2012 12:11 PM, Stephan B�rwolf wrote:
+> Hello.
 >
-> This patch gives me:
+> Thank you for your lots of information, they helped very much -
+> especially debugging...
 >
-> Kernel: arch/x86/boot/bzImage is ready  (#3)
->    Building modules, stage 2.
->    MODPOST 921 modules
-> ERROR: "nfs_idmap_init" [fs/nfs/nfs.ko] undefined!
-> ERROR: "nfs_idmap_quit" [fs/nfs/nfs.ko] undefined!
-> make[2]: *** [__modpost] Error 1
-> make[1]: *** [modules] Error 2
-> make: *** [sub-make] Error 2
+> > The third parameter is actually ecx
+> (ebx was actually a typing...  ...of course ecx!)
 >
-> if CONFIG_NFS_V4 is not defined.
->
+> > The emulator is written to be independent of the rest of kvm, using
+> > emul_to_vcpu() undoes that.  If you need access to more vpcu internals,
+> > add more function pointers to struct x86_emulate_ops.
+> I prepare/adapt everything to the mentioned styles/policy.
+> (I'll insert 2 additional ops for getting "cpuid" and "id of vcpu"...)
 
-Sorry.
-Will resend soon.
+What do you mean by "id of vcpu"?
 
-> Cheers
->    Trond
 >
+> > Please post patches separately, not as attachments to a single email. 
+> > See Documentation/SubmittingPatches.
+> One thing, which is not fully clear to me: Where exactly should I post
+> the patches?
+> Also to/in this mail/group as an empty mail (containing the patch as
+> text-body) per patch?
+> Or all (3 patches) at once?
+
+One patch per email, with a cover letter.  Git can help you format and
+send them:
+
+  # format three patches, with a cover letter:
+  $ git format-patch -3 --cover-letter -n -o patches
+  # edit the cover letter:
+  $ vi patches/0000-cover-letter-patch
+  # post them:
+  $ git send-email --to kvm@vger.kernel.org patches/*.patch
+
 
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
