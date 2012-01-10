@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755537Ab2AJJNP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 04:13:15 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48400 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754337Ab2AJJNN (ORCPT
+	id S1755426Ab2AJJQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 04:16:09 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:62352 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab2AJJQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 04:13:13 -0500
+	Tue, 10 Jan 2012 04:16:04 -0500
+Date: Tue, 10 Jan 2012 10:18:06 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        James Simmons <jsimmons@infradead.org>,
+        Jerome Glisse <j.glisse@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linaro-mm-sig@lists.linaro.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [RFC] Future TTM DMA direction
+Message-ID: <20120110091806.GC3979@phenom.ffwll.local>
+Mail-Followup-To: Thomas Hellstrom <thellstrom@vmware.com>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	James Simmons <jsimmons@infradead.org>,
+	Jerome Glisse <j.glisse@gmail.com>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	linaro-mm-sig@lists.linaro.org,
+	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+	linux-media@vger.kernel.org
+References: <4F0AB558.3050902@vmware.com>
+ <20120109101105.GC3723@phenom.ffwll.local>
+ <4F0AC908.90708@vmware.com>
 MIME-Version: 1.0
-In-Reply-To: <1325643995-20745-2-git-send-email-haojian.zhuang@marvell.com>
-References: <1325643995-20745-1-git-send-email-haojian.zhuang@marvell.com>
-	<1325643995-20745-2-git-send-email-haojian.zhuang@marvell.com>
-Date: Tue, 10 Jan 2012 10:13:12 +0100
-Message-ID: <CACRpkdaA49pxgseaZNZggQx0GGc3P14tmFzTnxT3fTc2XAJcTA@mail.gmail.com>
-Subject: Re: [PATCH v4 1/3] pinctrl: enable pinmux for mmp series
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@marvell.com>
-Cc: swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, arnd@arndb.de
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F0AC908.90708@vmware.com>
+X-Operating-System: Linux phenom 3.2.0-rc6+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 4, 2012 at 3:26 AM, Haojian Zhuang
-<haojian.zhuang@marvell.com> wrote:
+Hi Thomas,
 
-> Support PXA168/PXA910/MMP2 pinmux. Now only support function switch.
->
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
+On Mon, Jan 09, 2012 at 12:01:28PM +0100, Thomas Hellstrom wrote:
+> Thanks for your input. I think this is mostly orthogonal to dma_buf, and
+> really a way to adapt TTM to be DMA-api aware. That's currently done
+> within the TTM backends. CMA was mearly included as an example that
+> might not be relevant.
+> 
+> I haven't followed dma_buf that closely lately, but if it's growing
+> from being just
+> a way to share buffer objects between devices to something providing
+> also low-level
+> allocators with fragmentation prevention, there's definitely an overlap.
+> However, on the dma_buf meeting in Budapest there seemed to be
+> little or no interest
+> in robust buffer allocation / fragmentation prevention although I
+> remember bringing
+> it up to the point where I felt annoying :).
 
-I've applied this to my devel branch. It's pretty huge but since it's
-split over three files I guess I can live with it. I can also see that
-you have really made an effort to cover the PXA variants and
-these drivers give a real good abstraction and understanding of
-this muxing hardware so WELL DONE!
+Well, I've shot at you quite a bit too, and I still think it's too much
+for the first few iterations. But I also think we will need a cleverer
+dma subsystem sooner or later (even if it's just around dma_buf) so that's
+why I've dragged your rfc out of the drm corner ;-)
 
-I fixed a number of whitespace issues, so please base your further
-work upon my tree (once it emerges after the merge window).
-
-I also removed the .maxpin on all pinctrl_desc:s, since that is
-gone now, we get the max pin from the pin list instead, so it's
-self-describing.
-
-When I see things like this:
-
-	PINCTRL_PIN(GPIO0, "GPIO0"),
-	PINCTRL_PIN(GPIO1, "GPIO1"),
-	PINCTRL_PIN(GPIO2, "GPIO2"),
-	PINCTRL_PIN(GPIO3, "GPIO3"),
-	PINCTRL_PIN(GPIO4, "GPIO4"),
-	PINCTRL_PIN(GPIO5, "GPIO5"),
-
-I wish I could have loops in the preprocessor and just
-PINCTRL_PIN_RANGE("GPIO", start, end)
-but sadly I can't. So as mentioned earlier we might go for
-some static inline helper that can generate that array before you
-assign it to your pin controller.
-
-Maybe the device tree is the answer to everything (as usual). Given the
-time it seems to take to find consensus around DT stuff we might just
-have to wait and see.
-
-Yours,
-Linus Walleij
+Cheers, Daniel
+-- 
+Daniel Vetter
+Mail: daniel@ffwll.ch
+Mobile: +41 (0)79 365 57 48
