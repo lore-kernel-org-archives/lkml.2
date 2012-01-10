@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab2AJPnc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 10:43:32 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:54124 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756250Ab2AJPnb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 10:43:31 -0500
+	id S1756486Ab2AJP6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 10:58:07 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65390 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756349Ab2AJP6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 10:58:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <4F0B9374.5010207@fb.com>
-References: <1326127761-2723-1-git-send-email-eranian@google.com>
-	<1326127761-2723-12-git-send-email-eranian@google.com>
-	<4F0B9374.5010207@fb.com>
-Date: Tue, 10 Jan 2012 16:43:29 +0100
-Message-ID: <CABPqkBRXK7QH9hOaFkCGt0u0Cauf0HLz+oAt72BWs5yZU66wgw@mail.gmail.com>
-Subject: Re: [PATCH 11/13] perf: add code to support PERF_SAMPLE_BRANCH_STACK (v3)
-From: Stephane Eranian <eranian@google.com>
-To: Arun Sharma <asharma@fb.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        acme@infradead.org, robert.richter@amd.com, ming.m.lin@intel.com,
-        andi@firstfloor.org, ravitillo@lbl.gov, vweaver1@eecs.utk.edu
-X-System-Of-Record: true
+In-Reply-To: <20120110094452.GC4118@suse.de>
+References: <CAJd=RBAqzawZ=jEFt7TrZgU0gaejMkfiBxzH7Y19qqNnsZrJGw@mail.gmail.com>
+	<20120110094452.GC4118@suse.de>
+Date: Tue, 10 Jan 2012 23:58:03 +0800
+Message-ID: <CAJd=RBA7vj83SFQFMS5WaRCfz2ndGJXepBqi5tK0LPjnBYYgfg@mail.gmail.com>
+Subject: Re: [PATCH] mm: vmscan: fix setting reclaim mode
+From: Hillf Danton <dhillf@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 2:25 AM, Arun Sharma <asharma@fb.com> wrote:
-> On 1/9/12 8:49 AM, Stephane Eranian wrote:
+On Tue, Jan 10, 2012 at 5:44 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Sun, Jan 08, 2012 at 03:05:03PM +0800, Hillf Danton wrote:
+>> The check for under memory pressure is corrected, then lumpy reclaim or
+>> reclaim/compaction could be avoided either when for order-O reclaim or
+>> when free pages are already low enough.
 >>
->> From: Roberto Agostino Vitillo<ravitillo@lbl.gov>
->>
->> This patch adds:
->> - ability to parse samples with PERF_SAMPLE_BRANCH_STACK
->> - sort on branches
->> - build histograms on branches
->>
-> [..]
->>
->>  static struct sort_dimension sort_dimensions[] = {
->> -       { .name = "pid",        .entry =&sort_thread,   },
->> -       { .name = "comm",       .entry =&sort_comm,     },
->> -       { .name = "dso",        .entry =&sort_dso,      },
->> -       { .name = "symbol",     .entry =&sort_sym,      },
->> -       { .name = "parent",     .entry =&sort_parent,   },
->> -       { .name = "cpu",        .entry =&sort_cpu,      },
->> +       { .name = "pid",        .entry =&sort_thread,                   },
->> +       { .name = "comm",       .entry =&sort_comm,                     },
->> +       { .name = "dso",        .entry =&sort_dso,                      },
->> +       { .name = "dso_from",   .entry =&sort_dso_from,.taken = true    },
->> +       { .name = "dso_to",     .entry =&sort_dso_to,   .taken = true   },
->> +       { .name = "symbol",     .entry =&sort_sym,                      },
->> +       { .name = "symbol_from",.entry =&sort_sym_from,.taken = true    },
->> +       { .name = "symbol_to",  .entry =&sort_sym_to,   .taken = true   },
->> +       { .name = "parent",     .entry =&sort_parent,                   },
->> +       { .name = "cpu",        .entry =&sort_cpu,                      },
->>
->> +       { .name = "mispredict", .entry =&sort_mispredict, },
->>  };
 >
+> No explanation of problem, how this patch fixes it or what the impact
+> is.
 >
-> The new sort dimensions don't seem to show up in perf report -h. Could you
-> please update the help text?
+> At a glance, this will have the impact of using sync reclaim at low
+> reclaim priorities. This is unexpected so needs much better explanation.
 >
-Can do this with the understanding that those are only avail when you
-use branch sampling.
 
-> Also:
->
-> # perf script -h
->
->    -f, --fields <str>    comma separated output fields prepend with 'type:'.
-> Valid types: hw,sw,trace,raw. Fields:
-> comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr
->
-> You probably want to add a field here, so I could:
->
-> perf record -b any_call,u -e cycles:u
-> perf script -f event,branch_stack
->
-> and examine raw (symbolized) samples like I can with
->
-> perf record -g
-> perf script -f event,ip,sym
->
-Ok, I'll look into this. Looks like a useful command for automating processing.
+Hi Mel
 
->  -Arun
->
+It is reprepared, please review again.
+
+Thanks
+Hillf
+
+===cut please===
+From: Hillf Danton <dhillf@gmail.com>
+[PATCH] mm: vmscan: fix setting reclaim mode
+
+The comment says, initially assume we are entering either lumpy reclaim or
+reclaim/compaction, and depending on the reclaim order, we will either set the
+sync mode or just reclaim order-0 pages later.
+
+On other hand, order-0 reclaim, instead of sync reclaim, is expected when
+under memory pressure, but the check for memory pressure is incorrect,
+leading to sync reclaim at low reclaim priorities.
+
+And the result is sync reclaim is set for high priorities.
+
+
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+
+--- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
++++ b/mm/vmscan.c	Tue Jan 10 23:03:48 2012
+@@ -387,7 +387,7 @@ static void set_reclaim_mode(int priorit
+ 	 */
+ 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+ 		sc->reclaim_mode |= syncmode;
+-	else if (sc->order && priority < DEF_PRIORITY - 2)
++	else if (sc->order && priority >= DEF_PRIORITY - 2)
+ 		sc->reclaim_mode |= syncmode;
+ 	else
+ 		sc->reclaim_mode = RECLAIM_MODE_SINGLE | RECLAIM_MODE_ASYNC;
