@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab2AJKLc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 05:11:32 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56911 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170Ab2AJKLa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 05:11:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120109002946.GJ13679@sortiz-mobl>
-References: <1325661266-7982-1-git-send-email-haojian.zhuang@marvell.com>
-	<1325661266-7982-2-git-send-email-haojian.zhuang@marvell.com>
-	<20120109002946.GJ13679@sortiz-mobl>
-Date: Tue, 10 Jan 2012 18:11:29 +0800
-Message-ID: <CAN1soZw1kVif-SeH_9zEDjUGVCYGFRV+m3YUgu4saDMga5DFWQ@mail.gmail.com>
-Subject: Re: [PATCH 2/3] misc: max8925_onkey: add function to work as wakeup source
-From: Haojian Zhuang <haojian.zhuang@gmail.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Haojian Zhuang <haojian.zhuang@marvell.com>, a.zummo@towertech.it,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-        Kevin Liu <kliu5@marvell.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1756279Ab2AJKM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 05:12:28 -0500
+Received: from zmc.proxad.net ([212.27.53.206]:35996 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756156Ab2AJKJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 05:09:40 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -4.057
+From: Florian Fainelli <florian@openwrt.org>
+To: netdev@vger.kernel.org
+Cc: Florian Fainelli <florian@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Wan ZongShun <mcuos.com@gmail.com>, Axel Lin <axel.lin@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 10/21] pxa168-eth: use an unique MDIO bus name.
+Date: Tue, 10 Jan 2012 10:59:16 +0100
+Message-Id: <1326189567-21663-11-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326189567-21663-1-git-send-email-florian@openwrt.org>
+References: <1326189567-21663-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 8:29 AM, Samuel Ortiz <sameo@linux.intel.com> wrote:
-> Hi Haojian,
->
-> On Wed, Jan 04, 2012 at 03:14:25PM +0800, Haojian Zhuang wrote:
->> From: Kevin Liu <kliu5@marvell.com>
->
-> I got this build error:
->
->  CC      drivers/input/misc/max8925_onkey.o
-> drivers/input/misc/max8925_onkey.c: In function ‘max8925_onkey_suspend’:
-> drivers/input/misc/max8925_onkey.c:169:30: error: ‘onkey_irq’ undeclared
-> (first use in this function)
-> drivers/input/misc/max8925_onkey.c:169:30: note: each undeclared identifier is
-> reported only once for each function it appears in
-> drivers/input/misc/max8925_onkey.c: In function ‘max8925_onkey_resume’:
-> drivers/input/misc/max8925_onkey.c:181:32: error: ‘onkey_irq’ undeclared
-> (first use in this function)
-> make[3]: *** [drivers/input/misc/max8925_onkey.o] Error 1
-> make[2]: *** [drivers/input/misc] Error 2
-> make[1]: *** [drivers/input] Error 2
->
-> So I put this one aside.
->
-> Cheers,
-> Samuel.
->
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+ drivers/net/ethernet/marvell/pxa168_eth.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Hi Samuel,
+diff --git a/drivers/net/ethernet/marvell/pxa168_eth.c b/drivers/net/ethernet/marvell/pxa168_eth.c
+index 5ec409e..953ba58 100644
+--- a/drivers/net/ethernet/marvell/pxa168_eth.c
++++ b/drivers/net/ethernet/marvell/pxa168_eth.c
+@@ -1552,7 +1552,8 @@ static int pxa168_eth_probe(struct platform_device *pdev)
+ 	pep->smi_bus->name = "pxa168_eth smi";
+ 	pep->smi_bus->read = pxa168_smi_read;
+ 	pep->smi_bus->write = pxa168_smi_write;
+-	snprintf(pep->smi_bus->id, MII_BUS_ID_SIZE, "%d", pdev->id);
++	snprintf(pep->smi_bus->id, MII_BUS_ID_SIZE, "%s-%d",
++		pdev->name, pdev->id);
+ 	pep->smi_bus->parent = &pdev->dev;
+ 	pep->smi_bus->phy_mask = 0xffffffff;
+ 	err = mdiobus_register(pep->smi_bus);
+-- 
+1.7.5.4
 
-I'm sorry on this patch. I'll send a new one to replace it.
-
-Best Regards
-Haojian
