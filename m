@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932786Ab2AJT7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 14:59:46 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:39235 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932527Ab2AJT7o (ORCPT
+	id S1756776Ab2AJUJU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:09:20 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49144 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756749Ab2AJUJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 14:59:44 -0500
-Message-ID: <4F0CA652.5040103@xenotime.net>
-Date: Tue, 10 Jan 2012 12:57:54 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Tue, 10 Jan 2012 15:09:11 -0500
+X-Sasl-enc: QHpu4KwJ2nM0ipwFas9CPwWpdnJyIZ6LA6T0vKcftwHz 1326226150
+Date: Tue, 10 Jan 2012 12:09:02 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: [00/20] 2.6.32.54-longterm review
+Message-ID: <20120110200902.GA5674@kroah.com>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, x86 maintainers <x86@kernel.org>,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: linux-next: Tree for Jan 9 (arch/x86/pci/amd_bus.c)
-References: <20120109170457.4465dfc66a0eace4a2230fef@canb.auug.org.au> <4F0B569B.6050004@xenotime.net> <CAErSpo4+remnOA6gJXOz_54CsbbcOq_Yj=ua9gV_bq5dZ64ABA@mail.gmail.com>
-In-Reply-To: <CAErSpo4+remnOA6gJXOz_54CsbbcOq_Yj=ua9gV_bq5dZ64ABA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2012 02:40 PM, Bjorn Helgaas wrote:
-> On Mon, Jan 9, 2012 at 2:05 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> on several i386 builds:
->>
->> amd_bus.c:(.init.text+0x134b): undefined reference to `amd_get_mmconfig_range'
-> 
-> This is my fault.  I moved some code from amd_bus.c to amd_nb.c, and builds with
-> 
->         CONFIG_PCI=y
->         # CONFIG_AMD_NB not set
-> 
-> now fail.  The attached patch should fix it.  I'll repost the series
-> ("x86/PCI: amd: factor out MMCONFIG discovery") with the fix.
-> 
-> Yinghai, it looks to me like there's no reason to build amd_bus.o
-> unless we have CONFIG_AMD_NB=y, but speak up if I'm wrong :)
+This is the start of the longterm review cycle for the 2.6.32.@rel@ release.
+There are 20 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-Seems to work for me.  Thanks.
+Responses should be made by Thursday, January 12, 20:00:00 UTC.
+Anything received after that time might be too late.
 
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/longterm-review/patch-2.6.32.54-rc1.gz
+and the diffstat can be found below.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+thanks,
+
+greg k-h
+
+ Documentation/HOWTO                         |    4 +-
+ Documentation/development-process/5.Posting |    8 ++--
+ Documentation/usb/usbmon.txt                |   14 +++--
+ MAINTAINERS                                 |    2 +-
+ Makefile                                    |    2 +-
+ drivers/base/firmware_class.c               |   14 +++---
+ drivers/net/usb/asix.c                      |    6 ++-
+ drivers/scsi/device_handler/scsi_dh.c       |    7 ++-
+ drivers/usb/class/cdc-acm.c                 |    4 ++
+ drivers/usb/core/quirks.c                   |    5 ++-
+ drivers/usb/misc/isight_firmware.c          |    6 ++-
+ drivers/usb/serial/cp210x.c                 |    1 +
+ drivers/usb/serial/omninet.c                |    2 +-
+ drivers/usb/storage/usb.c                   |    1 +
+ drivers/video/offb.c                        |   52 +++++++++----------
+ fs/reiserfs/super.c                         |   27 ++++++----
+ fs/xfs/linux-2.6/xfs_acl.c                  |    4 +-
+ kernel/cpu.c                                |   74 +++++++++++++++++++++++++++
+ 18 files changed, 167 insertions(+), 66 deletions(-)
