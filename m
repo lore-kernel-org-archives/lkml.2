@@ -1,79 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756085Ab2AJKFm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 05:05:42 -0500
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38988 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755803Ab2AJKFk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 05:05:40 -0500
-MIME-Version: 1.0
-X-Originating-IP: [94.21.63.111]
-In-Reply-To: <CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
-	<20120109171639.GA9359@infradead.org>
-	<20120109173010.GX23916@ZenIV.linux.org.uk>
-	<CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
-	<20120109205907.GE4198@dastard>
-	<CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
-	<20120110013434.GA23916@ZenIV.linux.org.uk>
-	<CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
-Date: Tue, 10 Jan 2012 11:05:39 +0100
-Message-ID: <CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1755979Ab2AJKJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 05:09:45 -0500
+Received: from zmc.proxad.net ([212.27.53.206]:35995 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756145Ab2AJKJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 05:09:40 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -4.039
+From: Florian Fainelli <florian@openwrt.org>
+To: netdev@vger.kernel.org
+Cc: Florian Fainelli <florian@openwrt.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Jiri Pirko <jpirko@redhat.com>, Wan ZongShun <mcuos.com@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 03/21] au1000-eth: use an unique MDIO bus name.
+Date: Tue, 10 Jan 2012 10:59:09 +0100
+Message-Id: <1326189567-21663-4-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326189567-21663-1-git-send-email-florian@openwrt.org>
+References: <1326189567-21663-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 3:02 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jan 9, 2012 at 5:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>
->> Dave Chinner (1):
->>      dcache: use a dispose list in select_parent
->
-> Hmm. Should this also have been marked for stable? I'm assuming that
-> the possible deadlock (strictly speaking it's a livelock, I guess?)
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+ drivers/net/ethernet/amd/au1000_eth.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-I tested Dave's patch and the bug can still be easily reproduced.
+diff --git a/drivers/net/ethernet/amd/au1000_eth.c b/drivers/net/ethernet/amd/au1000_eth.c
+index cc9262b..8b95dd3 100644
+--- a/drivers/net/ethernet/amd/au1000_eth.c
++++ b/drivers/net/ethernet/amd/au1000_eth.c
+@@ -1171,7 +1171,8 @@ static int __devinit au1000_probe(struct platform_device *pdev)
+ 	aup->mii_bus->write = au1000_mdiobus_write;
+ 	aup->mii_bus->reset = au1000_mdiobus_reset;
+ 	aup->mii_bus->name = "au1000_eth_mii";
+-	snprintf(aup->mii_bus->id, MII_BUS_ID_SIZE, "%x", aup->mac_id);
++	snprintf(aup->mii_bus->id, MII_BUS_ID_SIZE, "%s-%x",
++		pdev->name, aup->mac_id);
+ 	aup->mii_bus->irq = kmalloc(sizeof(int)*PHY_MAX_ADDR, GFP_KERNEL);
+ 	if (aup->mii_bus->irq == NULL)
+ 		goto err_out;
+-- 
+1.7.5.4
 
-And that's to be expected, as the intermediate "being on the lru"
-state that Dave's patch eliminates doesn't play a fundamental part in
-the mechanism of the livelock.  It does eliminate one trylock, but
-that's not the one critical to this bug (removing it is a very good
-idea anyway).
-
-The critical trylock here is the one in dentry_kill() which tries to
-lock the parent.  That is basically guaranteed to fail if there are
-more then one instances of shrink_dcache_parent() running on the same
-dentry, because select_parent() holds that parent lock for a
-relatively long time.
-
-With Dave's patch the livelock becomes like this (basically the same
-as without the patch):
-
-1 - CPU0: select_parent(P) finds C and puts it on dispose list, returns 1
-
-2 - CPU1: select_parent(P) locks P->d_lock
-
-3 - CPU0: shrink_dentry_list() locks C->d_lock
-   dentry_kill(C) tries to lock P->d_lock but fails, unlocks C->d_lock
-
-4 - CPU1: select_parent(P) locks C->d_lock,
-         moves C from dispose list being processed on CPU0 to new
-dispose list, returns 1
-
-5 - CPU0: shrink_dentry_list() finds dispose list empty, returns
-
-6 - Goto 2 with CPU0 and CPU1 switched
-
-Thanks,
-MIklos
