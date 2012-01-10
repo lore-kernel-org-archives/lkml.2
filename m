@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab2AJNE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 08:04:56 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:43830 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756339Ab2AJNEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 08:04:53 -0500
-Subject: [PATCH v2 5/5] SUNRPC: kernel PipeFS mount point creation routines
- removed
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Tue, 10 Jan 2012 17:04:48 +0400
-Message-ID: <20120110130448.1672.9202.stgit@localhost6.localdomain6>
-In-Reply-To: <20120110130323.1672.97025.stgit@localhost6.localdomain6>
-References: <20120110130323.1672.97025.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S932264Ab2AJNFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 08:05:35 -0500
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:52436 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932127Ab2AJNFc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 08:05:32 -0500
+Message-ID: <4F0C375B.7040600@linux.vnet.ibm.com>
+Date: Tue, 10 Jan 2012 18:34:27 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Kyungmin Park <kmpark@infradead.org>
+CC: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: BUG: sleeping function called from invalid context at include/linux/freezer.h:45
+References: <CAH9JG2XniMv5dVf1DixGNaQAJk-sZjnV9HfYeihEJP3JDyC4+Q@mail.gmail.com>
+In-Reply-To: <CAH9JG2XniMv5dVf1DixGNaQAJk-sZjnV9HfYeihEJP3JDyC4+Q@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+x-cbid: 12011013-8878-0000-0000-000000DDA04A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes static rpc_mnt variable and its creation and destruction
-routines, because they are not used anymore.
+On 01/10/2012 09:57 AM, Kyungmin Park wrote:
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+> Dear all
+> 
+> with the latest kernel. I got the below bug message.
+> It calls the sleep function. Does it intended operation?
+> 
+> static inline bool try_to_freeze(void)
+> {
+>         might_sleep();
+>         if (likely(!freezing(current)))
+>                 return false;
+>         return __refrigerator(false);
+> }
+> 
+> # poweroff
+> [    6.852523] BUG: sleeping function called from invalid context at
+> include/linux/freezer.h:45
+> [    6.859489] in_atomic(): 0, irqs_disabled(): 128, pid: 1, name: init
+> [    6.865846] [<c0013508>] (unwind_backtrace+0x0/0xec) from
+> [<c0010124>] (do_signal+0x88/0x588)
+> [    6.874337] [<c0010124>] (do_signal+0x88/0x588) from [<c001063c>]
+> (do_notify_resume+0x18/0x38)
+> [    6.882928] [<c001063c>] (do_notify_resume+0x18/0x38) from
+> [<c000dc18>] (work_pending+0x24/0x28)
+> 
 
----
- include/linux/sunrpc/rpc_pipe_fs.h |    2 --
- net/sunrpc/rpc_pipe.c              |   21 ---------------------
- 2 files changed, 0 insertions(+), 23 deletions(-)
 
-diff --git a/include/linux/sunrpc/rpc_pipe_fs.h b/include/linux/sunrpc/rpc_pipe_fs.h
-index 7eb0160..a28d2de 100644
---- a/include/linux/sunrpc/rpc_pipe_fs.h
-+++ b/include/linux/sunrpc/rpc_pipe_fs.h
-@@ -90,8 +90,6 @@ void rpc_destroy_pipe_data(struct rpc_pipe *pipe);
- extern struct dentry *rpc_mkpipe_dentry(struct dentry *, const char *, void *,
- 					struct rpc_pipe *);
- extern int rpc_unlink(struct dentry *);
--extern struct vfsmount *rpc_get_mount(void);
--extern void rpc_put_mount(void);
- extern int register_rpc_pipefs(void);
- extern void unregister_rpc_pipefs(void);
- 
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index cd565d7..b53bb3b 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -18,7 +18,6 @@
- #include <linux/kernel.h>
- 
- #include <asm/ioctls.h>
--#include <linux/fs.h>
- #include <linux/poll.h>
- #include <linux/wait.h>
- #include <linux/seq_file.h>
-@@ -37,9 +36,6 @@
- 
- #define NET_NAME(net)	((net == &init_net) ? " (init_net)" : "")
- 
--static struct vfsmount *rpc_mnt __read_mostly;
--static int rpc_mount_count;
--
- static struct file_system_type rpc_pipe_fs_type;
- 
- 
-@@ -450,23 +446,6 @@ struct rpc_filelist {
- 	umode_t mode;
- };
- 
--struct vfsmount *rpc_get_mount(void)
--{
--	int err;
--
--	err = simple_pin_fs(&rpc_pipe_fs_type, &rpc_mnt, &rpc_mount_count);
--	if (err != 0)
--		return ERR_PTR(err);
--	return rpc_mnt;
--}
--EXPORT_SYMBOL_GPL(rpc_get_mount);
--
--void rpc_put_mount(void)
--{
--	simple_release_fs(&rpc_mnt, &rpc_mount_count);
--}
--EXPORT_SYMBOL_GPL(rpc_put_mount);
--
- static int rpc_delete_dentry(const struct dentry *dentry)
- {
- 	return 1;
+You seem to be running on Arm architecture. Can you please try the patch
+at https://lkml.org/lkml/2011/8/25/231 ?
+
+Regards,
+Srivatsa S. Bhat
+IBM Linux Technology Center
 
