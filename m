@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762Ab2AJJ3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 04:29:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35239 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab2AJJ3D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 04:29:03 -0500
-Date: Tue, 10 Jan 2012 01:20:46 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michael Buesch <m@bues.ch>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>
-Subject: Re: Incorrect uses of get_driver()/put_driver()
-Message-ID: <20120110092046.GB32291@core.coreip.homeip.net>
-References: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
- <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
- <20120110100541.38a3940f@de.ibm.com>
+	id S1755792Ab2AJJkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 04:40:33 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60272 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755382Ab2AJJkb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 04:40:31 -0500
+Date: Tue, 10 Jan 2012 09:40:27 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: vmscan: no change of reclaim mode if unevictable
+ page encountered
+Message-ID: <20120110094026.GB4118@suse.de>
+References: <CAJd=RBDAoNt=TZWhNeLs0MaCJ_ormEp=ya55-PA+B0BAxfGbbQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20120110100541.38a3940f@de.ibm.com>
+In-Reply-To: <CAJd=RBDAoNt=TZWhNeLs0MaCJ_ormEp=ya55-PA+B0BAxfGbbQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 10:05:41AM +0100, Martin Schwidefsky wrote:
-> On Mon, 9 Jan 2012 12:35:09 -0500 (EST)
-> Alan Stern <stern@rowland.harvard.edu> wrote:
+On Sat, Jan 07, 2012 at 11:46:17AM +0800, Hillf Danton wrote:
+> Since unevictable page is not isolated from lru list for shrink_page_list(),
+> it is accident if encountered in shrinking, and no need to change reclaim mode.
 > 
-> > drivers/s390/cio/device.c:1681:       drv = get_driver(&cdrv->driver);
-> > drivers/s390/cio/device.c:1687:       put_driver(drv);
-> > 
-> > Martin, these calls seem to be useless.  The calls in ccwgroup.c are 
-> > definitely useless; there's no reason to take a reference to a driver 
-> > while it's being unregistered, since it can't go away until the 
-> > unregistration is finished.
-> 
-> The get_driver/put_driver in ccwgroup.c are obviously useless, the caller
-> passed ccwgroup_driver_unregister a ccwgroup_driver reference.
-> I am not so sure about the code in device.c. get_ccwdev_by_busid() gets
-> used e.g. by vmur like this:
 
-It does not matter how it is being used. Either get_ccwdev_by_busid()
-gets a valid driver structure or you already lost. You can not say that
-get_driver() protects anything, since if there is a chance driver can
-disappear it can disappear before we get to executing get_driver() code.
+This changelog does does not explain the problem, does not explain
+what is fixed or what the impact is.
 
-So while you might want to audit callers get/put_driver inside of
-get_ccwdev_by_busid() is utterly useless.
+It also does not make sense. It says "unevictable page is not isolated
+from LRU list" but this is shrink_page_list() and the page has already
+been isolated (probably by lumpy reclaim). It will be put back on
+the LRU_UNEVICTABLE list.
 
-Thanks.
+It might be the case that resetting the reclaim mode after encountering
+mlocked pages is overkill but that would need more justification than
+what this changelog offers. Resetting the mode impacts THP rates but
+this is erring on the side of caution by doing less work in reclaim
+as the savings from THP may not offset the cost of reclaim.
 
 -- 
-Dmitry
+Mel Gorman
+SUSE Labs
