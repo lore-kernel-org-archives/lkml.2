@@ -1,107 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab2AJUa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:30:28 -0500
-Received: from usindpps06.hds.com ([207.126.252.19]:33575 "EHLO
-	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756672Ab2AJUa0 (ORCPT
+	id S1756807Ab2AJUak (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:30:40 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:18675 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756672Ab2AJUai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:30:26 -0500
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: Chen Gong <gong.chen@linux.intel.com>, "Luck, Tony" <tony.luck@intel.com>
-CC: Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Date: Tue, 10 Jan 2012 15:29:25 -0500
-Subject: RE: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-Thread-Topic: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC)
- below smp_send_stop()
-Thread-Index: AczPRN5VysxyAxzpS/qNaweMc6C1TQAkToUQ
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com>
- <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com>
- <20120105210123.GI5650@redhat.com>
- <5C4C569E8A4B9B42A84A977CF070A35B2C5827BBD8@USINDEVS01.corp.hds.com>
- <4F0BAB33.2090201@linux.intel.com>
-In-Reply-To: <4F0BAB33.2090201@linux.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: ja-JP, en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 10 Jan 2012 15:30:38 -0500
+Date: Tue, 10 Jan 2012 15:28:38 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: tj@kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl
+Cc: xen-devel@lists.xensource.com
+Subject: Bootup regression introduced by
+ 7bd0b0f0da3b1ec11cbcc798eb0ef747a1184077 ("memblock: Reimplement memblock
+ allocation using reverse free area iterato") in v3.3-rc0
+Message-ID: <20120110202838.GA10402@phenom.dumpdata.com>
 MIME-Version: 1.0
-X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
- ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1012030000
- definitions=main-1201100214
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090208.4F0C9FE6.0090,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0AKUfer012733
 
+Hey,
 
->I agree with you. How about adding macros or something like WARN_ON(XX_ARCH) or
->Kconfig to limit its scope?
+With that patch I get this when trying to launch a 4GB xen guest:
 
-Thank you for giving me your idea.
-Your suggestions above will work for me because I'm a x86 user.
-If Tony agrees to it, I can update my patch.
+kernel="/mnt/lab/latest/vmlinuz"
+ramdisk="/mnt/lab/latest/initramfs.cpio.gz"
+extra="console=hvc0 debug earlyprintk=xen" 
+memory=4096
+maxmem=8192
+vcpus=4
+on_crash="preserve"
+vif = [ 'mac=00:0F:4B:00:00:68, bridge=switch' ]
+vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1'
 
-But, I'm hesitating to add WARN_ON() or change Kconfig only for specific arch 
-because pstore aims for generic interface and this is related to its design.
-Also, ramoops is going to use pstore now. It doesn't depend on x86.
-I'm worried that ramoops users will complain about this change.
+If I change the "memory" to be "4000" it or if I revert the
+mention git commit it boots. This is what I get with the mentioned
+git commit:
 
-So, I think a reasonable solution at this time is just adding some explanations 
-about smp_send_stop() to documentation as follows.
+(early) [    0.000000] Initializing cgroup subsys cpuset
+(early) [    0.000000] Initializing cgroup subsys cpu
+(early) [    0.000000] Linux version 3.2.0-04371-g6b3da11 (konrad@phenom.dumpdata.com) (gcc version 4.4.4 20100503 (Red Hat 4.4.4-2) (GCC) ) #2 SMP PREEMPT Tue Jan 10 12:47:50 EST 2012
+(early) [    0.000000] Command line: console=hvc0 debug earlyprintk=xen
+(early) [    0.000000] Disabled fast string operations
+(early) [    0.000000] ACPI in unprivileged domain disabled
+(early) [    0.000000] Released 0 pages of unused memory
+(early) [    0.000000] Set 0 page(s) to 1-1 mapping
+(early) [    0.000000] BIOS-provided physical RAM map:
+(early) [    0.000000]  Xen: 0000000000000000 - 00000000000a0000 (usable)
+(early) [    0.000000]  Xen: 00000000000a0000 - 0000000000100000 (reserved)
+(early) [    0.000000]  Xen: 0000000000100000 - 0000000200800000 (usable)
+(early) [    0.000000] bootconsole [xenboot0] enabled
+(early) [    0.000000] NX (Execute Disable) protection: active
+(early) [    0.000000] DMI not present or invalid.
+(early) [    0.000000] e820 update range: 0000000000000000 - 0000000000010000 (early) (usable)(early)  ==> (early) (reserved)(early) 
+(early) [    0.000000] e820 remove range: 00000000000a0000 - 0000000000100000 (early) (usable)(early) 
+(early) [    0.000000] No AGP bridge found
+(early) [    0.000000] last_pfn = 0x200800 max_arch_pfn = 0x400000000
+(early) [    0.000000] last_pfn = 0x100000 max_arch_pfn = 0x400000000
+(early) [    0.000000] initial memory mapped : 0 - 0fbec000
+(early) [    0.000000] Base memory trampoline at [ffff88000009b000] 9b000 size 20480
+(early) [    0.000000] init_memory_mapping: 0000000000000000-0000000100000000
+(early) [    0.000000]  0000000000 - 0100000000 page 4k
+(early) [    0.000000] Kernel panic - not syncing: Cannot find space for the kernel page tables
+(early) [    0.000000] Pid: 0, comm: swapper Not tainted 3.2.0-04371-g6b3da11 #2
+(early) [    0.000000] Call Trace:
+(early) [    0.000000]  [<ffffffff8163f230>] panic+0x9b/0x1c9
+(early) [    0.000000]  [<ffffffff8163f39f>] ? printk+0x41/0x43
+(early) [    0.000000]  [<ffffffff81621462>] init_memory_mapping+0x562/0x590
+(early) [    0.000000]  [<ffffffff81af58cb>] setup_arch+0x63a/0xafb
+(early) [    0.000000]  [<ffffffff8163f39f>] ? printk+0x41/0x43
+(early) [    0.000000]  [<ffffffff81aefbaf>] start_kernel+0xe6/0x408
+(early) [    0.000000]  [<ffffffff81aef346>] x86_64_start_reservations+0x131/0x136
+(early) [    0.000000]  [<ffffffff81af2b62>] xen_start_kernel+0x60d/0x614
 
-Users can use pstore with their own responsibility and ask developers 
-if smp_send_stop() is reliable enough in panic situation on architecture they want to run.
-
-What do you think?
-
----
- Documentation/ABI/testing/pstore |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/ABI/testing/pstore b/Documentation/ABI/testing/pstore
-index ff1df4e..5583729 100644
---- a/Documentation/ABI/testing/pstore
-+++ b/Documentation/ABI/testing/pstore
-@@ -11,6 +11,14 @@ Description:	Generic interface to platform dependent persistent storage.
- 		of the console log is captured, but other interesting
- 		data can also be saved.
- 
-+		In case of panic, pstore is invoked after smp_send_stop()
-+		,a function call stopping other cpus, so that we can get
-+		logs simpler and cleaner with just one running cpu.
-+
-+		As for x86, smp_send_stop() is reliable enough to work in
-+		panic situation. But we are not guaranteed that it works
-+		reliably on other architectures.
-+
- 		# mount -t pstore -o kmsg_bytes=8000 - /dev/pstore
- 
- 		$ ls -l /dev/pstore
--- 
-
-Seiji
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
