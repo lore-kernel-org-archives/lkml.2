@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab2AIX6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 18:58:24 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54898 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933558Ab2AIX6X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 18:58:23 -0500
-Message-ID: <4F0B7F1E.40504@gmail.com>
-Date: Mon, 09 Jan 2012 18:58:22 -0500
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	id S933560Ab2AJALg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 19:11:36 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:47735 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933440Ab2AJALf convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 19:11:35 -0500
 MIME-Version: 1.0
-To: Tao Ma <tm@tao.ma>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Johannes Weiner <jweiner@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] mm: do not drain pagevecs for mlock
-References: <1325226961-4271-1-git-send-email-tm@tao.ma> <CAHGf_=qOGy3MQgiFyfeG82+gbDXTBT5KQjgR7JqMfQ7e7RSGpA@mail.gmail.com> <4EFD7AE3.8020403@tao.ma> <CAHGf_=pODc6fLGJAEZWzQtUd6fj6v=fV9n6UTwysqRR1SwY++A@mail.gmail.com> <4EFD8832.6010905@tao.ma> <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <4F069120.8060300@tao.ma> <CAHGf_=qhKbVCeUe+y8Hmb=ke-f417K5EYFo=j4ZODVGwewgh6A@mail.gmail.com> <4F06951E.7050605@tao.ma> <4F06959D.2070100@gmail.com> <4F0698D8.3000300@tao.ma>
-In-Reply-To: <4F0698D8.3000300@tao.ma>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120109200734.GB30766@opensource.wolfsonmicro.com>
+References: <1326111140.22107.9.camel@sw-eng-lt-dc-vm2>
+	<20120109161456.GC2974@opensource.wolfsonmicro.com>
+	<CAEqHmAte=rvhjGUEdMgNQKfvPxSVTFR5TfWy13VPEhZj0T53KQ@mail.gmail.com>
+	<20120109200734.GB30766@opensource.wolfsonmicro.com>
+Date: Tue, 10 Jan 2012 00:11:33 +0000
+Message-ID: <CAEqHmAtmHjEJUdvkBPhF5PzP4V_xDc5owLJpp0DENsXLs_ynxQ@mail.gmail.com>
+Subject: Re: drivers/regulator/core.c: Fixes mapping inside
+ regulator_mode_to_status() and makes it returning -EINVAL on invalid input.
+From: dd diasemi <dd.diasemi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(1/6/12 1:46 AM), Tao Ma wrote:
-> On 01/06/2012 02:33 PM, KOSAKI Motohiro wrote:
->> (1/6/12 1:30 AM), Tao Ma wrote:
->>> On 01/06/2012 02:18 PM, KOSAKI Motohiro wrote:
->>>> 2012/1/6 Tao Ma<tm@tao.ma>:
->>>>> Hi Kosaki,
->>>>> On 12/30/2011 06:07 PM, KOSAKI Motohiro wrote:
->>>>>>>> Because your test program is too artificial. 20sec/100000times =
->>>>>>>> 200usec. And your
->>>>>>>> program repeat mlock and munlock the exact same address. so, yes, if
->>>>>>>> lru_add_drain_all() is removed, it become near no-op. but it's
->>>>>>>> worthless comparision.
->>>>>>>> none of any practical program does such strange mlock usage.
->>>>>>> yes, I should say it is artificial. But mlock did cause the
->>>>>>> problem in
->>>>>>> our product system and perf shows that the mlock uses the system time
->>>>>>> much more than others. That's the reason we created this program
->>>>>>> to test
->>>>>>> whether mlock really sucks. And we compared the result with
->>>>>>> rhel5(2.6.18) which runs much much faster.
->>>>>>>
->>>>>>> And from the commit log you described, we can remove
->>>>>>> lru_add_drain_all
->>>>>>> safely here, so why add it? At least removing it makes mlock much
->>>>>>> faster
->>>>>>> compared to the vanilla kernel.
->>>>>>
->>>>>> If we remove it, we lose to a test way of mlock. "Memlocked" field of
->>>>>> /proc/meminfo
->>>>>> show inaccurate number very easily. So, if 200usec is no avoidable,
->>>>>> I'll ack you.
->>>>>> But I'm not convinced yet.
->>>>> Do you find something new for this?
->>>>
->>>> No.
->>>>
->>>> Or more exactly, 200usec is my calculation mistake. your program call
->>>> mlock
->>>> 3 times per each iteration. so, correct cost is 66usec.
->>> yes, so mlock can do 15000/s, it is even slower than the whole i/o time
->>> for some not very fast ssd disk and I don't think it is endurable. I
->>> guess we should remove it, right? Or you have another other suggestion
->>> that I can try for it?
->>
->> read whole thread.
-> I have read the whole thread, and you just described that the test case
-> is artificial and there is no suggestion or patch about how to resolve
-> it. As I have said that it is very time-consuming and with more cpu
-> cores, the more penalty, and an i/o time for a ssd can be faster than
-> it. So do you think 66 usec is OK for a memory operation?
+On Mon, Jan 9, 2012 at 8:07 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Mon, Jan 09, 2012 at 07:20:50PM +0000, dd diasemi wrote:
+>> On Mon, Jan 9, 2012 at 4:14 PM, Mark Brown
+>
+>> >>       default:
+>> >> -             return 0;
+>> >> +             return -EINVAL;
+>
+>> > This behaviour is deliberate.
+>
+>> For this moment, the only usage is in one file in
+>> wm831x_aldo_get_status() and wm831x_gp_ldo_get_status():
+>>       ret = wm831x_aldo_get_mode(rdev);
+>>       if (ret < 0)
+>>               return ret;
+>>       else
+>>               return regulator_mode_to_status(ret);
+>
+>> The usage mistreats the signed value 'ret' as wm831x_aldo_get_mode()
+>> always returns 0 on communication error. It effects in response as if
+>> the regulator was off.
+>
+>> If that behaviour is deliberate, I would suggest to make it explicit:
+>>       default:
+>> -             return 0;
+>> +             return REGULATOR_STATUS_OFF;
+>
+> That's not the deliberate behaviour, the deliberate behaviour is to
+> return no mode if we didn't find one.
 
-I don't think you've read the thread at all. please read akpm's commnet.
+I am focusing now on regulator_mode_to_status(). It returns regulator
+status inside int value. If driver passes 0 to the function (eg. in
+case of communication failure), which is not a valid mode, either it
+may return REGULATOR_STATUS_OFF (0) as a valid status or it may return
+an error code.
 
-http://www.spinics.net/lists/linux-mm/msg28290.html
+I am aware, that dealing with communication problem is rather in
+driver responsibility, than the framework itself, but keeping things
+clear is also important, especially for framework.
 
-
-
-
+Making regulator_mode_to_status() returning an error allows to
+simplify its usage:
+	ret = regulator_mode_to_status(regulator_get_mode(rdev));
+	if (ret < 0)
+		ret = -EIO;
