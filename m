@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab2AJHCI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 02:02:08 -0500
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:7155 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab2AJHCH (ORCPT
+	id S932253Ab2AJHCX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 02:02:23 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:19488
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753221Ab2AJHCT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 02:02:07 -0500
+	Tue, 10 Jan 2012 02:02:19 -0500
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1202hzz8275dhz2dhc1ahc1bh87h2a8h668h839h61h)
 X-Spam-TCS-SCL: 0:0
@@ -17,9 +17,9 @@ To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
         <kernel@pengutronix.de>, <eric.miao@linaro.org>, <patches@linaro.org>,
         Richard Zhao <richard.zhao@linaro.org>
-Subject: [PATCH 4/6] dma/imx-sdma: move clk_enable out of sdma_request_channel
-Date: Tue, 10 Jan 2012 15:01:48 +0800
-Message-ID: <1326178910-14044-4-git-send-email-richard.zhao@linaro.org>
+Subject: [PATCH 6/6] dma/imx-sdma: check whether event_id0 < 32 when set event_mask
+Date: Tue, 10 Jan 2012 15:01:50 +0800
+Message-ID: <1326178910-14044-6-git-send-email-richard.zhao@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
 References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
@@ -30,39 +30,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It makes clk_enable/disable pair more readable, and fix one bug:
-sdma_init calls sdma_request_channel, but seems don't know
-sdma_request_channel enabled the clok.
-
 Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
 ---
- drivers/dma/imx-sdma.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/dma/imx-sdma.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index b40f630..015d93f 100644
+index 22fd561..1d5b6ab 100644
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
-@@ -802,8 +802,6 @@ static int sdma_request_channel(struct sdma_channel *sdmac)
- 	sdma->channel_control[channel].base_bd_ptr = sdmac->bd_phys;
- 	sdma->channel_control[channel].current_bd_ptr = sdmac->bd_phys;
- 
--	clk_enable(sdma->clk);
--
- 	sdma_set_channel_priority(sdmac, MXC_SDMA_DEFAULT_PRIORITY);
- 
- 	init_completion(&sdmac->done);
-@@ -875,6 +873,9 @@ static int sdma_alloc_chan_resources(struct dma_chan *chan)
- 
- 	sdmac->peripheral_type = data->peripheral_type;
- 	sdmac->event_id0 = data->dma_request;
-+
-+	clk_enable(sdmac->sdma->clk);
-+
- 	ret = sdma_request_channel(sdmac);
- 	if (ret)
- 		return ret;
+@@ -753,8 +753,11 @@ static int sdma_config_channel(struct sdma_channel *sdmac)
+ 			if (sdmac->event_id0 > 31)
+ 				sdmac->watermark_level |= 1 << 30;
+ 		} else {
+-			sdmac->event_mask0 = 1 << sdmac->event_id0;
+-			sdmac->event_mask1 = 1 << (sdmac->event_id0 - 32);
++			if (sdmac->event_id0 < 32)
++				sdmac->event_mask0 = 1 << sdmac->event_id0;
++			else
++				sdmac->event_mask1 =
++						1 << (sdmac->event_id0 - 32);
+ 		}
+ 		/* Watermark Level */
+ 		sdmac->watermark_level |= sdmac->watermark_level;
 -- 
 1.7.5.4
 
