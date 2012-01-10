@@ -1,109 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933607Ab2AJBxV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 20:53:21 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:7227 "EHLO mx2.netapp.com"
+	id S933633Ab2AJByw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 20:54:52 -0500
+Received: from mga11.intel.com ([192.55.52.93]:49412 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932317Ab2AJBxT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 20:53:19 -0500
-X-IronPort-AV: E=Sophos;i="4.71,484,1320652800"; 
-   d="scan'208";a="615073841"
-Message-ID: <1326160381.13527.4.camel@lade.trondhjem.org>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes and cleanups
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Wolfgang Walter <wolfgang.walter@stwm.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 09 Jan 2012 20:53:01 -0500
-In-Reply-To: <201201100149.00716.wolfgang.walter@stwm.de>
-References: <1326142671.9041.1.camel@lade.trondhjem.org>
-	 <A4C37DBDA23D504B9F8F6ED1AD1F4F3245A40D11@SACMVEXC2-PRD.hq.netapp.com>
-	 <1326149428.10779.10.camel@lade.trondhjem.org>
-	 <201201100149.00716.wolfgang.walter@stwm.de>
-Organization: NetApp Inc
+	id S932253Ab2AJByv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 20:54:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105303495"
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
+In-Reply-To: <CAKfTPtDM-L-AcHr_o44vmR9VYRvQqOyXuwEgnZ61d4pbDOPFUg@mail.gmail.com>
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
+	 <1326103578.2442.50.camel@twins>
+	 <20120110001445.GA20542@linux-youquan.bj.intel.com>
+	 <1326107563.2442.65.camel@twins>
+	 <CAKfTPtDM-L-AcHr_o44vmR9VYRvQqOyXuwEgnZ61d4pbDOPFUg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Organization: Intel
+Date: Mon, 09 Jan 2012 17:54:21 -0800
+Message-ID: <1326160461.2366.19.camel@sbsiddha-mobl2>
 Mime-Version: 1.0
-X-OriginalArrivalTime: 10 Jan 2012 01:53:01.0683 (UTC) FILETIME=[95E5F430:01CCCF3A]
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 01:49 +0100, Wolfgang Walter wrote: 
-> On Monday 09 January 2012, Trond Myklebust wrote:
-> > On Mon, 2012-01-09 at 14:28 -0800, Myklebust, Trond wrote: 
-> > > > -----Original Message-----
-> > > Please read the changelog and documentation:
-> > > 
-> > > If your server doesn’t support numeric uids/gids, then you will see _no_ 
-> > > change in behaviour.
+On Mon, 2012-01-09 at 15:29 +0100, Vincent Guittot wrote: 
+> Hi Peter,
 > 
-> Hmm, what does that mean exactly? Does a linux nfs4-server support numeric 
-> uids/gids? If yes, by default or do I need do set an option?
+> I'm also using sched_mc level for doing powersaving load balance on
+> ARM platform and we have real benefits.
 
+hi Vincent, Can you elaborate on your platform topology where you see
+the benefits?
 
-The patch requires no changes to a configuration that is already
-working. That's the whole point I've been trying to get across.
+on x86, 'sched_mc' was designed for the case of consolidating load into
+one socket before using another idle socket.
 
-> > > 
-> > > If your server does support numeric uids/gids, and has the same mapping 
-> between numeric uids/gids and username/groupname as your clients, then you 
-> will see _no_ change in behaviour.
-> > > 
-> > > If your server does support numeric uids/gids, but the mapping between 
-> > > numeric uids/gids and username/groupname differs between server and client 
-> > > (e.g.. uid=20 maps to different users on the client and server) then you 
-> > > already had a problem in that creating the file using NFSv4 would result 
-> > > in you seeing the wrong owner and/or group. If this case, and this case 
-> > > only, the change to nfs4_disable_idmapper will result in you now seeing 
-> > > the correct owner/group for these files (just as if you were using NFSv3).
-> 
-> The only thing I can say is that in the moment client and server are using 
-> rpc.idmapd and it works perfectly well.
+Just wondering if this is your use case too or if you are consolidating
+at a different topological level.
 
-Then why are you complaining?
-
-"This patch does nothing for me is NOT a reason to stop others from
-benefiting from it"
-
-> > > 
-> > > IOW: the only people who will want to use the old setting are those with 
-> > > broken servers that return incorrect errors when confronted with a numeric 
-> > > uid/gid. We have found no evidence that any such servers exist during the 
-> > > last full year of testing.
-> > 
-> > Actually, let me amend that last statement.
-> > 
-> > The only broken server we found was the Linux server, which was
-> > returning NFS4ERR_BADNAME in a situation where the protocol specified
-> > that it should be returning NFS4ERR_BADOWNER. This is why we have the
-> > little comment "The following works around a Linux server bug!" in the
-> > client code.
-> > Commit f6af99ec1b261e21219d5eba99e3af48fc6c32d4 (nfsd4: name->id mapping
-> > should fail with BADOWNER not BADNAME) fixed that server bug exactly one
-> > year ago, and the fix was subsequently pushed to stable@kernel.org...
-> > 
-> > IOW: unless you find something earth-shattering when you enable the
-> > option in your existing clients (the option has existed since 2.6.39),
-> > I'd prefer to change the default as soon as possible in order to fix the
-> > existing brokenness for those people running NFSv4 without the benefit
-> > of an ldap/nis/yp server to ensure a homogeneous uid/gid name space...
-> 
-> I always thought that the idmapper with its translation were exactly for that 
-> case. If I have a homogenous uid/gid name space why would I want to use names 
-> and translate anyway?
-
-For RPCSEC_GSS authentication. That's the only case that the original
-RFC3530 cared about. The problems arise when people use AUTH_SYS, and
-this protocol change+patch is the solution.
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+thanks,
+suresh 
 
