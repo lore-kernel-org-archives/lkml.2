@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934581Ab2AJXEk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:04:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53012 "EHLO mx2.suse.de"
+	id S1756882Ab2AJXFL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:05:11 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52977 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934568Ab2AJXEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:04:35 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:04 2012
-Message-Id: <20120110215604.661388715@clark.kroah.org>
+	id S934123Ab2AJXE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:04:28 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:05 2012
+Message-Id: <20120110215605.382414147@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:39 -0800
+Date: Tue, 10 Jan 2012 13:55:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        Tanmay Upadhyay <tanmay.upadhyay@einfochips.com>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: [36/49] USB: pxa168: Fix compilation error
+        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [44/49] usb: ch9: fix up MaxStreams helper
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,40 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tanmay Upadhyay <tanmay.upadhyay@einfochips.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit 35657c4d72925936c7219cc5caac118ca632acc2 upstream.
+commit 18b7ede5f7ee2092aedcb578d3ac30bd5d4fc23c upstream.
 
-After commit c430131a02d677aa708f56342c1565edfdacb3c0 (Support
-controllers with big endian capability regs), HC_LENGTH takes
-two arguments. This patch fixes following compilation error:
+[ removed the dwc3 portion of the patch as it didn't apply to
+older kernels - gregkh]
 
-In file included from drivers/usb/host/ehci-hcd.c:1323:
-drivers/usb/host/ehci-pxa168.c:302:54: error: macro "HC_LENGTH" requires 2 arguments, but only 1 given
-In file included from drivers/usb/host/ehci-hcd.c:1323:
-drivers/usb/host/ehci-pxa168.c: In function 'ehci_pxa168_drv_probe':
-drivers/usb/host/ehci-pxa168.c:302: error: 'HC_LENGTH' undeclared (first use in this function)
-drivers/usb/host/ehci-pxa168.c:302: error: (Each undeclared identifier is reported only once
-drivers/usb/host/ehci-pxa168.c:302: error: for each function it appears in.)
+According to USB 3.0 Specification Table 9-22, if
+bmAttributes [4:0] are set to zero, it means "no
+streams supported", but the way this helper was
+defined on Linux, we will *always* have one stream
+which might cause several problems.
 
-Signed-off-by: Tanmay Upadhyay <tanmay.upadhyay@einfochips.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+For example on DWC3, we would tell the controller
+endpoint has streams enabled and yet start transfers
+with Stream ID set to 0, which would goof up the host
+side.
+
+While doing that, convert the macro to an inline
+function due to the different checks we now need.
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/ehci-pxa168.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |    3 +--
+ include/linux/usb/ch9.h |   20 +++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 3 deletions(-)
 
---- a/drivers/usb/host/ehci-pxa168.c
-+++ b/drivers/usb/host/ehci-pxa168.c
-@@ -299,7 +299,7 @@ static int __devinit ehci_pxa168_drv_pro
- 	ehci = hcd_to_ehci(hcd);
- 	ehci->caps = hcd->regs + 0x100;
- 	ehci->regs = hcd->regs + 0x100 +
--		HC_LENGTH(ehci_readl(ehci, &ehci->caps->hc_capbase));
-+		HC_LENGTH(ehci, ehci_readl(ehci, &ehci->caps->hc_capbase));
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
- 	hcd->has_tt = 1;
- 	ehci->sbrn = 0x20;
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2797,8 +2797,7 @@ static int xhci_calculate_streams_and_bi
+ 		if (ret < 0)
+ 			return ret;
+ 
+-		max_streams = USB_SS_MAX_STREAMS(
+-				eps[i]->ss_ep_comp.bmAttributes);
++		max_streams = usb_ss_max_streams(&eps[i]->ss_ep_comp);
+ 		if (max_streams < (*num_streams - 1)) {
+ 			xhci_dbg(xhci, "Ep 0x%x only supports %u stream IDs.\n",
+ 					eps[i]->desc.bEndpointAddress,
+--- a/include/linux/usb/ch9.h
++++ b/include/linux/usb/ch9.h
+@@ -605,8 +605,26 @@ struct usb_ss_ep_comp_descriptor {
+ } __attribute__ ((packed));
+ 
+ #define USB_DT_SS_EP_COMP_SIZE		6
++
+ /* Bits 4:0 of bmAttributes if this is a bulk endpoint */
+-#define USB_SS_MAX_STREAMS(p)		(1 << ((p) & 0x1f))
++static inline int
++usb_ss_max_streams(const struct usb_ss_ep_comp_descriptor *comp)
++{
++	int		max_streams;
++
++	if (!comp)
++		return 0;
++
++	max_streams = comp->bmAttributes & 0x1f;
++
++	if (!max_streams)
++		return 0;
++
++	max_streams = 1 << max_streams;
++
++	return max_streams;
++}
++
+ /* Bits 1:0 of bmAttributes if this is an isoc endpoint */
+ #define USB_SS_MULT(p)			(1 + ((p) & 0x3))
+ 
 
 
