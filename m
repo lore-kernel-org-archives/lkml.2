@@ -1,92 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab2AJWhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:37:24 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:47292 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246Ab2AJWhW convert rfc822-to-8bit (ORCPT
+	id S932465Ab2AJWnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:43:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46829 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755920Ab2AJWnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:37:22 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust\@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "neilb\@suse.de" <neilb@suse.de>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields\@fieldses.org" <bfields@fieldses.org>,
-        "davem\@davemloft.net" <davem@davemloft.net>,
-        "devel\@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
-References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
-	<20111214104449.3991.61989.stgit@localhost6.localdomain6>
-	<m1bor6rg39.fsf@fess.ebiederm.org> <4EEEFC54.10700@parallels.com>
-	<m18vm8g951.fsf@fess.ebiederm.org> <4EEF2C9A.8000403@parallels.com>
-	<m1pqfkecw0.fsf@fess.ebiederm.org> <4EEF7364.8000407@parallels.com>
-	<m1vcotigyb.fsf@fess.ebiederm.org> <4F0C150F.1020007@parallels.com>
-Date: Tue, 10 Jan 2012 14:39:36 -0800
-In-Reply-To: <4F0C150F.1020007@parallels.com> (Stanislav Kinsbursky's message
-	of "Tue, 10 Jan 2012 14:38:07 +0400")
-Message-ID: <m1ehv76v2v.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 10 Jan 2012 17:43:31 -0500
+Date: Tue, 10 Jan 2012 22:43:30 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>
+Subject: Re: [PATCH 02/06] MFD: DA9052/53 MFD core module v9 Added ADC
+	support
+Message-ID: <20120110224329.GM7164@opensource.wolfsonmicro.com>
+References: <1326098770.3542.31.camel@dhruva> <20120109223725.GG30766@opensource.wolfsonmicro.com> <C3AE124F08223B42BC95AEB82F0F6CED1FDB2D4E@KCHJEXMB02.kpit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1/hY1Eywif8h2RLebK6dvwDGqqPHhHYdMI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <C3AE124F08223B42BC95AEB82F0F6CED1FDB2D4E@KCHJEXMB02.kpit.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+On Tue, Jan 10, 2012 at 05:50:30AM +0000, Ashish Jangam wrote:
 
-> 03.01.2012 07:49, Eric W. Biederman пишет:
->> Stanislav Kinsbursky<skinsbursky@parallels.com>  writes:
->>
->>> 19.12.2011 20:37, Eric W. Biederman пишет:
->>>> Stanislav Kinsbursky<skinsbursky@parallels.com>   writes:
->>>>
->>>> Doing that independently of the rest of the sysctls is pretty horrible
->>>> and confusing to users.   What I am planning might suit your needs and
->>>> if not we need to talk some more about how to get the vfs to do
->>>> something reasonable.
->>>>
->>>
->>> Ok, Eric. Would be glad to discuss your sysctls plans.
->>> But actually you already know my needs: I would like to make sysctls work in the
->>> way like sysfs does: i.e. content of files depends on mount maker -
->>> not viewer.
->>
->> What drives the desire to have sysctls depend on the mount maker?
->
-> Because we can (will, actually) have nested fs root's for containers. IOW,
-> container's root will be accessible from it's creator context. And I want to
-> tune container's fs from creators context.
+> >>This is patch 2/6 - where are patches 1 and 3-6?
 
-Tuning the child context from the parent context is an entirely
-reasonable thing to do.  To affect a namespace that is not yours
-the requirement is simply that we don't use current to lookup the
-sysctl.  So what I am proposing should work for your case.
+> Patch 1 and 3-6 are already ACK'ed and got merged.
+> Since patch 2/6 was not merged therefore got re-submitted.
 
->> Especially what drives that desire not to have it have a /proc/<pid>/sys
->> directory that reflects the sysctls for a given process.
->>
->
-> This is not so important for me, where to access sysctl's. But I'm worrying
-> about backward compatibility. IOW, I'm afraid of changing path
-> "/proc/sys/sunprc/*" to "/proc/<pid>/sys/sunrpc". This would break a lot of
-> user-space programs.
+You're not understanding the purpose of the numbering at all here.  The
+numbering is there so that people know what order the patches being sent
+together come in.  If a patch has been sent before as part of a series
+that's totally irrelevant to a further submission.
 
-The part that keeps it all working is by adding a symlink from /proc/sys
-to /proc/self/sys.  That technique has worked well for /proc/net, and I
-don't expect there will be any problems with /proc/sys either.  It is
-possible but is very rare for the introduction of a symlink in a path
-to cause problems.
-
-Eric
-
+If you label the patch as part of a series like this then you're saying
+that there's a patch 1 that this depends on and is needed for this to be
+applied.
