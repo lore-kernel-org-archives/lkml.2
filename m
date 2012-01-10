@@ -1,116 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab2AJQp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:45:27 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:41533 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114Ab2AJQpZ (ORCPT
+	id S932356Ab2AJQrv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:47:51 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:37878 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932114Ab2AJQrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:45:25 -0500
-Date: Tue, 10 Jan 2012 22:14:55 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        suresh.b.siddha@intel.com, arjan@linux.intel.com, len.brown@intel.com,
-        anhua.xu@intel.com, chaohong.guo@intel.com,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-Message-ID: <20120110164455.GA17432@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
- <1326103578.2442.50.camel@twins>
- <20120110001445.GA20542@linux-youquan.bj.intel.com>
- <1326107156.2442.59.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1326107156.2442.59.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12011016-5816-0000-0000-000000C9E1B8
+	Tue, 10 Jan 2012 11:47:49 -0500
+Message-ID: <1326214063.1038.1.camel@mop>
+Subject: Re: [PATCH] modules: sysfs - export: taint, address, size
+From: Kay Sievers <kay.sievers@vrfy.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jon Masters <jcm@redhat.com>, linux-kernel@vger.kernel.org,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Tue, 10 Jan 2012 17:47:43 +0100
+In-Reply-To: <87zkdw7ayp.fsf@rustcorp.com.au>
+References: <1325951076.860.2.camel@mop> <871ur99vzf.fsf@rustcorp.com.au>
+	 <CAPXgP12rUUYfRy6QB5Z4Rwdday3hNHubCsSRY4gMDYuQGs3oJg@mail.gmail.com>
+	 <87zkdw7ayp.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Content-Transfer-Encoding: 8bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> [2012-01-09 12:05:56]:
-
-> On Mon, 2012-01-09 at 19:14 -0500, Youquan Song wrote:
-> > Fine, I will base your suggestion to develop another patch soon.
+On Tue, 2012-01-10 at 09:14 +1030, Rusty Russell wrote:
+> On Mon, 9 Jan 2012 13:44:52 +0100, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> > On Mon, Jan 9, 2012 at 08:27, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > > The else here is weird.  Shouldn't we leave the exclusion elsewhere?
 > > 
-> 
+> > You mean the 'else if ... TAINT_OOT_MODULE'?  It's a one-to-one copy
+> > of the current code, which just moved up a bit.
 > > 
-> > @@ -3923,6 +3923,10 @@ static inline void update_sg_lb_stats(struct
-> > sched_domain *sd,
-> >                                                 SCHED_POWER_SCALE);
-> >         if (!sgs->group_capacity)
-> >                 sgs->group_capacity = fix_small_capacity(sd, group);
-> > +
-> > +       if (sched_smt_power_savings)
-> > +               sgs->group_capacity *= 2; 
+> > Disconnect the two flags form each other?
 > 
-> Note, this has the hard-coded assumption you only have 2 threads per
-> core, which while true for intel, isn't true in general. I think you
-> meant to write *= group->group_weight or somesuch.
+> Yes, I think so.
 > 
-> Also, you forgot to limit this to the SD_SHARE_CPUPOWER domain, you're
-> now doubling the capacity for all domains.
+> > > This copies a past mistake, and is definitely wrong.  Either expose both
+> > > pointers and sizes, or don't include init_size here.  Sure, it'll
+> > > normally be 0, but if not it's confusing...
+> > 
+> > Ah, good to know, mod->init_size is 0 for all modules here, so we
+> > should just drop mod->init_size and maybe name the 'size' attribute to
+> > 'coresize'?
 > 
-> Furthermore, have a look at the SD_PREFER_SIBLING logic and make sure
-> you're not fighting that.
+> If a module is still initializing, mod->init_size may well be non-zero.
+> Let's rename it to coresize, and add initsize.
+> 
+> > > But the bigger question is: Why are we exposing these sizes?
+> > > /proc/modules did since 2.2, or before, but that doesn't make it the
+> > > best option...
+> > 
+> > Good question, I doubt it is too useful, it's just that 'lsmod' shows
+> > it, so we wanted to show too.
+> 
+> And breaking lsmod output might kill some scripts.  So it stays.
+> 
+> Let's drop the address stuff though.
 
-Hi Peter,
+From: Kay Sievers <kay.sievers@vrfy.org>
+Subject: modules: sysfs - export: taint, coresize, initsize
 
-I think I had proposed the following fix earlier.  Can we revisit this
-now?  This works, but it is not the best solution.
+Recent tools do not want to use /proc to retrieve module information. A few
+values are currently missing from sysfs to replace the information available
+in /proc/modules.
 
-    sched: Fix group_capacity for sched_smt_powersavings
-    
-    sched_smt_powersavings for threaded systems need this fix for
-    consolidation to sibling threads to work.  Since threads have
-    fractional capacity, group_capacity will turn out to be one
-    always and not accommodate another task in the sibling thread.
-    
-    This fix makes group_capacity a function of cpumask_weight that
-    will enable the power saving load balancer to pack tasks among
-    sibling threads and keep more cores idle.
-    
-    Signed-off-by: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+This adds /sys/module/*/{coresize,initsize,taint} attributes.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8e42de9..77ac4ca 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -4010,6 +4010,21 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
- 		 */
- 		if (prefer_sibling && !local_group && sds->this_has_capacity)
- 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
-+		/*
-+		 * If power savings balance is set at this domain, then
-+		 * make capacity equal to number of hardware threads to
-+		 * accommodate more tasks until capacity is reached.
-+		 */
-+		else if (sd->flags & SD_POWERSAVINGS_BALANCE)
-+			sgs.group_capacity =
-+				cpumask_weight(sched_group_cpus(sg));
+TAINT_PROPRIETARY_MODULE (P) and TAINT_OOT_MODULE (O) flags are both always
+shown now, and do no longer exclude each other, also in /proc/modules.
+
+Replace the open-coded sysfs attribute initializers with the __ATTR() macro.
+
+Add the new attributes to Documentation/ABI.
+
+Cc: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
+---
+ Documentation/ABI/testing/sysfs-module |   16 +++++
+ kernel/module.c                        |   93 ++++++++++++++++++++++-----------
+ 2 files changed, 80 insertions(+), 29 deletions(-)
+
+--- a/Documentation/ABI/testing/sysfs-module
++++ b/Documentation/ABI/testing/sysfs-module
+@@ -33,3 +33,19 @@ Description:	Maximum time allowed for pe
+ 		Beware, non-standard modes are usually not thoroughly tested by
+ 		hardware designers, and the hardware can malfunction when this
+ 		setting differ from default 100.
 +
-+			/*
-+			 * The default group_capacity is rounded from sum of
-+			 * fractional cpu_powers of sibling hardware threads
-+			 * in order to enable fair use of available hardware
-+			 * resources.
-+			 */
++What:		/sys/module/*/{coresize,initsize}
++Date:		Jan 2012
++KernelVersion:»·3.3
++Contact:	Kay Sievers <kay.sievers@vrfy.org>
++Description:	Module size in bytes.
++
++What:		/sys/module/*/taint
++Date:		Jan 2012
++KernelVersion:»·3.3
++Contact:	Kay Sievers <kay.sievers@vrfy.org>
++Description:	Module taint flags:
++			P - proprietary module
++			O - out-of-tree module
++			F - force-loaded module
++			C - staging driver module
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -849,6 +849,26 @@ out:
+ 	return ret;
+ }
  
- 		if (local_group) {
- 			sds->this_load = sgs.avg_load;
-@@ -4432,7 +4447,8 @@ static int need_active_balance(struct sched_domain *sd, int idle,
- 		 * move_tasks() will succeed.  ld_moved will be true and this
- 		 * active balance code will not be triggered.
- 		 */
--		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
-+		if (sched_mc_power_savings < POWERSAVINGS_BALANCE_WAKEUP &&
-+		    sched_smt_power_savings < POWERSAVINGS_BALANCE_WAKEUP)
- 			return 0;
- 	}
++static size_t module_flags_taint(struct module *mod, char *buf)
++{
++	size_t l = 0;
++
++	if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
++		buf[l++] = 'P';
++	if (mod->taints & (1 << TAINT_OOT_MODULE))
++		buf[l++] = 'O';
++	if (mod->taints & (1 << TAINT_FORCED_MODULE))
++		buf[l++] = 'F';
++	if (mod->taints & (1 << TAINT_CRAP))
++		buf[l++] = 'C';
++	/*
++	 * TAINT_FORCED_RMMOD: could be added.
++	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
++	 * apply to modules.
++	 */
++	return l;
++}
++
+ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+ {
+ 	struct module_use *use;
+@@ -907,10 +927,8 @@ static ssize_t show_refcnt(struct module
+ 	return sprintf(buffer, "%u\n", module_refcount(mk->mod));
+ }
  
+-static struct module_attribute refcnt = {
+-	.attr = { .name = "refcnt", .mode = 0444 },
+-	.show = show_refcnt,
+-};
++static struct module_attribute modinfo_refcnt =
++	__ATTR(refcnt, 0444, show_refcnt, NULL);
+ 
+ void module_put(struct module *module)
+ {
+@@ -970,10 +988,8 @@ static ssize_t show_initstate(struct mod
+ 	return sprintf(buffer, "%s\n", state);
+ }
+ 
+-static struct module_attribute initstate = {
+-	.attr = { .name = "initstate", .mode = 0444 },
+-	.show = show_initstate,
+-};
++static struct module_attribute modinfo_initstate =
++	__ATTR(initstate, 0444, show_initstate, NULL);
+ 
+ static ssize_t store_uevent(struct module_attribute *mattr,
+ 			    struct module_kobject *mk,
+@@ -986,18 +1002,50 @@ static ssize_t store_uevent(struct modul
+ 	return count;
+ }
+ 
+-struct module_attribute module_uevent = {
+-	.attr = { .name = "uevent", .mode = 0200 },
+-	.store = store_uevent,
+-};
++struct module_attribute module_uevent =
++	__ATTR(uevent, 0200, NULL, store_uevent);
++
++static ssize_t show_coresize(struct module_attribute *mattr,
++			     struct module_kobject *mk, char *buffer)
++{
++	return sprintf(buffer, "%u\n", mk->mod->core_size);
++}
++
++static struct module_attribute modinfo_coresize =
++	__ATTR(coresize, 0444, show_coresize, NULL);
++
++static ssize_t show_initsize(struct module_attribute *mattr,
++			     struct module_kobject *mk, char *buffer)
++{
++	return sprintf(buffer, "%u\n", mk->mod->init_size);
++}
++
++static struct module_attribute modinfo_initsize =
++	__ATTR(initsize, 0444, show_initsize, NULL);
++
++static ssize_t show_taint(struct module_attribute *mattr,
++			  struct module_kobject *mk, char *buffer)
++{
++	size_t l;
++
++	l = module_flags_taint(mk->mod, buffer);
++	buffer[l++] = '\n';
++	return l;
++}
++
++static struct module_attribute modinfo_taint =
++	__ATTR(taint, 0444, show_taint, NULL);
+ 
+ static struct module_attribute *modinfo_attrs[] = {
++	&module_uevent,
+ 	&modinfo_version,
+ 	&modinfo_srcversion,
+-	&initstate,
+-	&module_uevent,
++	&modinfo_initstate,
++	&modinfo_coresize,
++	&modinfo_initsize,
++	&modinfo_taint,
+ #ifdef CONFIG_MODULE_UNLOAD
+-	&refcnt,
++	&modinfo_refcnt,
+ #endif
+ 	NULL,
+ };
+@@ -3256,20 +3304,7 @@ static char *module_flags(struct module
+ 	    mod->state == MODULE_STATE_GOING ||
+ 	    mod->state == MODULE_STATE_COMING) {
+ 		buf[bx++] = '(';
+-		if (mod->taints & (1 << TAINT_PROPRIETARY_MODULE))
+-			buf[bx++] = 'P';
+-		else if (mod->taints & (1 << TAINT_OOT_MODULE))
+-			buf[bx++] = 'O';
+-		if (mod->taints & (1 << TAINT_FORCED_MODULE))
+-			buf[bx++] = 'F';
+-		if (mod->taints & (1 << TAINT_CRAP))
+-			buf[bx++] = 'C';
+-		/*
+-		 * TAINT_FORCED_RMMOD: could be added.
+-		 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
+-		 * apply to modules.
+-		 */
+-
++		bx += module_flags_taint(mod, buf + bx);
+ 		/* Show a - for module-is-being-unloaded */
+ 		if (mod->state == MODULE_STATE_GOING)
+ 			buf[bx++] = '-';
+
 
