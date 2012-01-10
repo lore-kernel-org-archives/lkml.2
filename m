@@ -1,45 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab2AJCCt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 21:02:49 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:59603 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755947Ab2AJCCr (ORCPT
+	id S1755742Ab2AJCIq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 21:08:46 -0500
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:43856 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751493Ab2AJCIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 21:02:47 -0500
-X-Sasl-enc: hj1JcuNJr8bf9fAgLnBQvYFS98idApz/nKesbNFmql0O 1326160966
-Date: Mon, 9 Jan 2012 18:02:05 -0800
-From: Greg KH <greg@kroah.com>
-To: Ameya Palande <ameya.palande@ti.com>
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Texas Instruments DRV2665 Piezo Haptics Driver
-Message-ID: <20120110020205.GA11831@kroah.com>
-References: <1326159027-21185-1-git-send-email-ameya.palande@ti.com>
+	Mon, 9 Jan 2012 21:08:45 -0500
+Message-ID: <4F0B9DA4.5010509@tao.ma>
+Date: Tue, 10 Jan 2012 10:08:36 +0800
+From: Tao Ma <tm@tao.ma>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326159027-21185-1-git-send-email-ameya.palande@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Johannes Weiner <jweiner@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] mm: do not drain pagevecs for mlock
+References: <1325226961-4271-1-git-send-email-tm@tao.ma> <CAHGf_=qOGy3MQgiFyfeG82+gbDXTBT5KQjgR7JqMfQ7e7RSGpA@mail.gmail.com> <4EFD7AE3.8020403@tao.ma> <CAHGf_=pODc6fLGJAEZWzQtUd6fj6v=fV9n6UTwysqRR1SwY++A@mail.gmail.com> <4EFD8832.6010905@tao.ma> <CAHGf_=qA3Pnb00n_smhJVKDDCDDr0d-a3E03Rrhnb-S4xK8_fQ@mail.gmail.com> <4F069120.8060300@tao.ma> <CAHGf_=qhKbVCeUe+y8Hmb=ke-f417K5EYFo=j4ZODVGwewgh6A@mail.gmail.com> <4F06951E.7050605@tao.ma> <4F06959D.2070100@gmail.com> <4F0698D8.3000300@tao.ma> <4F0B7F1E.40504@gmail.com>
+In-Reply-To: <4F0B7F1E.40504@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1390:box585.bluehost.com:colyli:tao.ma} {sentby:smtp auth 182.92.247.2 authed with tm@tao.ma}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 05:30:27PM -0800, Ameya Palande wrote:
-> Texas Instruments's DRV2665 is a piezo haptic driver which is capable of
-> driving both high-voltage and low-voltage piezo haptic actuators.
+On 01/10/2012 07:58 AM, KOSAKI Motohiro wrote:
+> (1/6/12 1:46 AM), Tao Ma wrote:
+>> On 01/06/2012 02:33 PM, KOSAKI Motohiro wrote:
+>>> (1/6/12 1:30 AM), Tao Ma wrote:
+>>>> On 01/06/2012 02:18 PM, KOSAKI Motohiro wrote:
+>>>>> 2012/1/6 Tao Ma<tm@tao.ma>:
+>>>>>> Hi Kosaki,
+>>>>>> On 12/30/2011 06:07 PM, KOSAKI Motohiro wrote:
+>>>>>>>>> Because your test program is too artificial. 20sec/100000times =
+>>>>>>>>> 200usec. And your
+>>>>>>>>> program repeat mlock and munlock the exact same address. so,
+>>>>>>>>> yes, if
+>>>>>>>>> lru_add_drain_all() is removed, it become near no-op. but it's
+>>>>>>>>> worthless comparision.
+>>>>>>>>> none of any practical program does such strange mlock usage.
+>>>>>>>> yes, I should say it is artificial. But mlock did cause the
+>>>>>>>> problem in
+>>>>>>>> our product system and perf shows that the mlock uses the system
+>>>>>>>> time
+>>>>>>>> much more than others. That's the reason we created this program
+>>>>>>>> to test
+>>>>>>>> whether mlock really sucks. And we compared the result with
+>>>>>>>> rhel5(2.6.18) which runs much much faster.
+>>>>>>>>
+>>>>>>>> And from the commit log you described, we can remove
+>>>>>>>> lru_add_drain_all
+>>>>>>>> safely here, so why add it? At least removing it makes mlock much
+>>>>>>>> faster
+>>>>>>>> compared to the vanilla kernel.
+>>>>>>>
+>>>>>>> If we remove it, we lose to a test way of mlock. "Memlocked"
+>>>>>>> field of
+>>>>>>> /proc/meminfo
+>>>>>>> show inaccurate number very easily. So, if 200usec is no avoidable,
+>>>>>>> I'll ack you.
+>>>>>>> But I'm not convinced yet.
+>>>>>> Do you find something new for this?
+>>>>>
+>>>>> No.
+>>>>>
+>>>>> Or more exactly, 200usec is my calculation mistake. your program call
+>>>>> mlock
+>>>>> 3 times per each iteration. so, correct cost is 66usec.
+>>>> yes, so mlock can do 15000/s, it is even slower than the whole i/o time
+>>>> for some not very fast ssd disk and I don't think it is endurable. I
+>>>> guess we should remove it, right? Or you have another other suggestion
+>>>> that I can try for it?
+>>>
+>>> read whole thread.
+>> I have read the whole thread, and you just described that the test case
+>> is artificial and there is no suggestion or patch about how to resolve
+>> it. As I have said that it is very time-consuming and with more cpu
+>> cores, the more penalty, and an i/o time for a ssd can be faster than
+>> it. So do you think 66 usec is OK for a memory operation?
 > 
-> Signed-off-by: Ameya Palande <ameya.palande@ti.com>
-> ---
->  MAINTAINERS               |    5 +
->  drivers/misc/Kconfig      |    7 +
->  drivers/misc/Makefile     |    1 +
->  drivers/misc/ti_drv2665.c |  448 +++++++++++++++++++++++++++++++++++++++++++++
+> I don't think you've read the thread at all. please read akpm's commnet.
+> 
+> http://www.spinics.net/lists/linux-mm/msg28290.html
+Oh, your patch set doesn't cc to me, so my mail filter moved it to
+another directory..
+Sorry and I will read the whole thread. Thanks again for your time.
 
-Where is the Documentation/ABI/ entries for this driver?
-
-And most importantly, why do you feel this is a "misc" driver and not an
-iio driver instead?
-
-thanks,
-
-greg k-h
+Thanks
+Tao
