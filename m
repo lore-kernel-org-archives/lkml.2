@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab2AJCsL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 21:48:11 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:48280 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab2AJCsK (ORCPT
+	id S1756028Ab2AJCvu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 21:51:50 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:63663 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab2AJCvt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 21:48:10 -0500
-Date: Tue, 10 Jan 2012 13:47:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@fys.uio.no>
-Subject: linux-next: manual merge of the rr tree with the nfs tree
-Message-Id: <20120110134757.6e1a52401e7b427d4ba4c59b@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__10_Jan_2012_13_47_57_+1100_OeksFPPa=jJ0cvMx"
+	Mon, 9 Jan 2012 21:51:49 -0500
+Date: Tue, 10 Jan 2012 11:02:25 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Richard Zhao <richard.zhao@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dan.j.williams@intel.com, vinod.koul@intel.com, kernel@pengutronix.de,
+        eric.miao@linaro.org, patches@linaro.org
+Subject: Re: [PATCH 1/2] dma/imx-sdma: call sdma_set_channel_priority after
+ sdma_request_channel
+Message-ID: <20120110030220.GA23362@S2101-09.ap.freescale.net>
+References: <1326098940-3697-1-git-send-email-richard.zhao@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326098940-3697-1-git-send-email-richard.zhao@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__10_Jan_2012_13_47_57_+1100_OeksFPPa=jJ0cvMx
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 09, 2012 at 04:48:59PM +0800, Richard Zhao wrote:
+> sdma_request_channel sets the default priority. sdma_alloc_chan_resources
+> should call sdma_set_channel_priority thereafter to over write it.
+> 
+> Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
 
-Hi Rusty,
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-Today's linux-next merge of the rr tree got a conflict in fs/nfs/client.c
-between commit 074b1d12fe25 ("NFSv4: Change the default setting of the
-nfs4_disable_idmapping parameter") from the nfs tree and commit
-5a925e82e106 ("module_param: make bool parameters really bool (drivers &
-misc)") from the rr tree.
+Regards,
+Shawn
 
-I fixed it up (see below) and can carry the fix as necessary.
-
-Rusty: shouldn't bools be initialise with true/false instead of 1/0?=20
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc fs/nfs/client.c
-index 277dfaf,4a092a0..0000000
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@@ -84,7 -84,7 +84,7 @@@ retry
-  /*
-   * Turn off NFSv4 uid/gid mapping when using AUTH_SYS
-   */
-- static int nfs4_disable_idmapping =3D 1;
- -static bool nfs4_disable_idmapping =3D 0;
-++static bool nfs4_disable_idmapping =3D 1;
- =20
-  /*
-   * RPC cruft for NFS
-
---Signature=_Tue__10_Jan_2012_13_47_57_+1100_OeksFPPa=jJ0cvMx
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPC6bdAAoJEECxmPOUX5FE83AP/ikT2gXfEFxbEnCUR0z9Svz+
-RCQwSd1BfWbYcImcId6668FG5LV5CW+D5B1ZIMeUDfGxn7CQFL7uVFqyqYsHIiBN
-d4su5kPBoIM6aXGdrtRB6Evgzo6MMaKaCcjgio3K3CUAiw24aSvnfCM2lhM/Zx5H
-yR368iW/GJLJvBiBdIDHGEtacYBwOOYI/9p2uGF1U0flzQLJnNkHc6ThkVrd1GDX
-lC1LD1CnY04uOcUzRtLkftSBAInDMkdPVwPi6AVF3Up5Mr2ZlAf77F/vKJglRyev
-oonzHTo4RVCzqXL2Ac7/FSeUZd8G8qKwnHzoG0suFK01284oEt9C4RRHQ86SJr+I
-EVOwHmk3PoGinZSVaQmjayB7iwb/vfJQSZlr5NvjjwclQp+Vfugc9jOR0vZCFFDB
-Sp+c67ryUfqLdjCiq5/MVeEgm5osiD86LRsmdpCAZXicdZ0L8EzJ6Jfe73EzF6z2
-SNr5YBbIToD6JsfgKfYp5XRLI4TmwVbvr60b+7AelAqvFSUh3ayJ7W66Racht6xF
-yCU/w878gRd5eTlPsxCOZj75yuk7SzDO24vkeFoUqfj6hkPfbygD3CBZQuhDnSlq
-Pp430welVqCx2uPweyhEItArtvcpe86lbAFJDjCo09xRBwB//xnGKHC9Sv5XGLBZ
-dcqp2qxXTHQTAPLCrIXg
-=m2yz
------END PGP SIGNATURE-----
-
---Signature=_Tue__10_Jan_2012_13_47_57_+1100_OeksFPPa=jJ0cvMx--
+> ---
+>  drivers/dma/imx-sdma.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> index 2cc96c4..6376009 100644
+> --- a/drivers/dma/imx-sdma.c
+> +++ b/drivers/dma/imx-sdma.c
+> @@ -875,11 +875,11 @@ static int sdma_alloc_chan_resources(struct dma_chan *chan)
+>  
+>  	sdmac->peripheral_type = data->peripheral_type;
+>  	sdmac->event_id0 = data->dma_request;
+> -	ret = sdma_set_channel_priority(sdmac, prio);
+> +	ret = sdma_request_channel(sdmac);
+>  	if (ret)
+>  		return ret;
+>  
+> -	ret = sdma_request_channel(sdmac);
+> +	ret = sdma_set_channel_priority(sdmac, prio);
+>  	if (ret)
+>  		return ret;
+>  
+> -- 
+> 1.7.5.4
+> 
+> 
