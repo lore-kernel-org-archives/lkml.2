@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934447Ab2AJXIq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:08:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52744 "EHLO mx2.suse.de"
+	id S934384Ab2AJXDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:03:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52708 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934376Ab2AJXD3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:03:29 -0500
+	id S934372Ab2AJXDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:03:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:02 2012
-Message-Id: <20120110215602.382071205@clark.kroah.org>
+Message-Id: <20120110215602.141637124@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:13 -0800
+Date: Tue, 10 Jan 2012 13:55:10 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pontus Fuchs <pontus.fuchs@gmail.com>,
-        Luciano Coelho <coelho@ti.com>
-Subject: [10/49] wl12xx: Check buffer bound when processing nvs data
+        alan@lxorguk.ukuu.org.uk, Andres Salomon <dilinger@queued.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [07/49] libertas: clean up scan thread handling
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,66 +25,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pontus Fuchs <pontus.fuchs@gmail.com>
+From: Andres Salomon <dilinger@queued.net>
 
-commit f6efe96edd9c41c624c8f4ddbc4930c1a2d8f1e1 upstream.
+commit afbca95f95f2bf7283a72670c24c1f6de00b1cb5 upstream.
 
-An nvs with malformed contents could cause the processing of the
-calibration data to read beyond the end of the buffer. Prevent this
-from happening by adding bound checking.
+The libertas scan thread expects priv->scan_req to be non-NULL.  In theory,
+it should always be set.  In practice, we've seen the following oops:
 
-Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Reviewed-by: Luciano Coelho <coelho@ti.com>
-Signed-off-by: Luciano Coelho <coelho@ti.com>
+[ 8363.067444] Unable to handle kernel NULL pointer dereference at virtual address 00000004
+[ 8363.067490] pgd = c0004000
+[ 8363.078393] [00000004] *pgd=00000000
+[ 8363.086711] Internal error: Oops: 17 [#1] PREEMPT
+[ 8363.091375] Modules linked in: fuse libertas_sdio libertas psmouse mousedev ov7670 mmp_camera joydev videobuf2_core videobuf2_dma_sg videobuf2_memops [last unloaded: scsi_wait_scan]
+[ 8363.107490] CPU: 0    Not tainted  (3.0.0-gf7ccc69 #671)
+[ 8363.112799] PC is at lbs_scan_worker+0x108/0x5a4 [libertas]
+[ 8363.118326] LR is at 0x0
+[ 8363.120836] pc : [<bf03a854>]    lr : [<00000000>]    psr: 60000113
+[ 8363.120845] sp : ee66bf48  ip : 00000000  fp : 00000000
+[ 8363.120845] r10: ee2c2088  r9 : c04e2efc  r8 : eef97005
+[ 8363.132231] r7 : eee0716f  r6 : ee2c02c0  r5 : ee2c2088  r4 : eee07160
+[ 8363.137419] r3 : 00000000  r2 : a0000113  r1 : 00000001  r0 : eee07160
+[ 8363.143896] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+[ 8363.157630] Control: 10c5387d  Table: 2e754019  DAC: 00000015
+[ 8363.163334] Process kworker/u:1 (pid: 25, stack limit = 0xee66a2f8)
+
+While I've not found a smoking gun, there are two places that raised red flags
+for me.  The first is in _internal_start_scan, when we queue up a scan; we
+first queue the worker, and then set priv->scan_req.  There's theoretically
+a 50mS delay which should be plenty, but doing things that way just seems
+racy (and not in the good way).
+
+The second is in the scan worker thread itself.  Depending on the state of
+priv->scan_channel, we cancel pending scan runs and then requeue a run in
+300mS.  We then send the scan command down to the hardware, sleep, and if
+we get scan results for all the desired channels, we set priv->scan_req to
+NULL.  However, it that's happened in less than 300mS, what happens with
+the pending scan run?
+
+This patch addresses both of those concerns.  With the patch applied, we
+have not seen the oops in the past two weeks.
+
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/wl12xx/boot.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/net/wireless/libertas/cfg.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/wl12xx/boot.c
-+++ b/drivers/net/wireless/wl12xx/boot.c
-@@ -347,6 +347,9 @@ static int wl1271_boot_upload_nvs(struct
- 		nvs_ptr += 3;
+--- a/drivers/net/wireless/libertas/cfg.c
++++ b/drivers/net/wireless/libertas/cfg.c
+@@ -728,9 +728,11 @@ static void lbs_scan_worker(struct work_
+ 		le16_to_cpu(scan_cmd->hdr.size),
+ 		lbs_ret_scan, 0);
  
- 		for (i = 0; i < burst_len; i++) {
-+			if (nvs_ptr + 3 >= (u8 *) wl->nvs + nvs_len)
-+				goto out_badnvs;
-+
- 			val = (nvs_ptr[0] | (nvs_ptr[1] << 8)
- 			       | (nvs_ptr[2] << 16) | (nvs_ptr[3] << 24));
+-	if (priv->scan_channel >= priv->scan_req->n_channels)
++	if (priv->scan_channel >= priv->scan_req->n_channels) {
+ 		/* Mark scan done */
++		cancel_delayed_work(&priv->scan_work);
+ 		lbs_scan_done(priv);
++	}
  
-@@ -358,6 +361,9 @@ static int wl1271_boot_upload_nvs(struct
- 			nvs_ptr += 4;
- 			dest_addr += 4;
- 		}
-+
-+		if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
-+			goto out_badnvs;
- 	}
+ 	/* Restart network */
+ 	if (carrier)
+@@ -759,12 +761,12 @@ static void _internal_start_scan(struct
+ 		request->n_ssids, request->n_channels, request->ie_len);
  
- 	/*
-@@ -369,6 +375,10 @@ static int wl1271_boot_upload_nvs(struct
- 	 */
- 	nvs_ptr = (u8 *)wl->nvs +
- 			ALIGN(nvs_ptr - (u8 *)wl->nvs + 7, 4);
-+
-+	if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
-+		goto out_badnvs;
-+
- 	nvs_len -= nvs_ptr - (u8 *)wl->nvs;
+ 	priv->scan_channel = 0;
+-	queue_delayed_work(priv->work_thread, &priv->scan_work,
+-		msecs_to_jiffies(50));
+-
+ 	priv->scan_req = request;
+ 	priv->internal_scan = internal;
  
- 	/* Now we must set the partition correctly */
-@@ -384,6 +394,10 @@ static int wl1271_boot_upload_nvs(struct
- 
- 	kfree(nvs_aligned);
- 	return 0;
++	queue_delayed_work(priv->work_thread, &priv->scan_work,
++		msecs_to_jiffies(50));
 +
-+out_badnvs:
-+	wl1271_error("nvs data is malformed");
-+	return -EILSEQ;
+ 	lbs_deb_leave(LBS_DEB_CFG80211);
  }
  
- static void wl1271_boot_enable_interrupts(struct wl1271 *wl)
 
 
