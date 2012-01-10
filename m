@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab2AJKM6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 05:12:58 -0500
-Received: from wega.rz.tu-ilmenau.de ([141.24.4.159]:52964 "EHLO
-	wega.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756255Ab2AJKMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 05:12:55 -0500
-Message-ID: <4F0C0EBB.3090506@tu-ilmenau.de>
-Date: Tue, 10 Jan 2012 11:11:07 +0100
-From: =?ISO-8859-1?Q?Stephan_B=E4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
-Reply-To: stephan.baerwolf@tu-ilmenau.de
-Organization: TU-Ilmenau
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111201 Thunderbird/8.0
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: KVM guest-kernel panics double fault
-References: <4EFBC973.1040905@tu-ilmenau.de> <4EFC3B17.1040601@redhat.com> <4F09001D.1050701@tu-ilmenau.de> <4F096E26.4090201@redhat.com>
-In-Reply-To: <4F096E26.4090201@redhat.com>
-X-Enigmail-Version: 1.3.3
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756321Ab2AJKNZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 05:13:25 -0500
+Received: from zmc.proxad.net ([212.27.53.206]:35993 "EHLO zmc.proxad.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756151Ab2AJKJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 05:09:40 -0500
+X-Spam-Flag: NO
+X-Spam-Score: -4.055
+From: Florian Fainelli <florian@openwrt.org>
+To: netdev@vger.kernel.org
+Cc: Florian Fainelli <florian@openwrt.org>,
+        Lennert Buytenhek <buytenh@wantstofly.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 09/21] mv643xx-eth: use an unique MDIO bus name.
+Date: Tue, 10 Jan 2012 10:59:15 +0100
+Message-Id: <1326189567-21663-10-git-send-email-florian@openwrt.org>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326189567-21663-1-git-send-email-florian@openwrt.org>
+References: <1326189567-21663-1-git-send-email-florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Thank you for your lots of information, they helped very much -
-especially debugging...
-
-> The third parameter is actually ecx
-(ebx was actually a typing...  ...of course ecx!)
-
-> The emulator is written to be independent of the rest of kvm, using
-> emul_to_vcpu() undoes that.  If you need access to more vpcu internals,
-> add more function pointers to struct x86_emulate_ops.
-I prepare/adapt everything to the mentioned styles/policy.
-(I'll insert 2 additional ops for getting "cpuid" and "id of vcpu"...)
-
-
-> Please post patches separately, not as attachments to a single email. 
-> See Documentation/SubmittingPatches.
-One thing, which is not fully clear to me: Where exactly should I post
-the patches?
-Also to/in this mail/group as an empty mail (containing the patch as
-text-body) per patch?
-Or all (3 patches) at once?
-Do you prefer them in a git-repo for example at github?
-
-Again, thank you a lot
-
-regards Stephan
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index e87847e..f14122c 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -2612,7 +2612,8 @@ static int mv643xx_eth_shared_probe(struct platform_device *pdev)
+ 		msp->smi_bus->name = "mv643xx_eth smi";
+ 		msp->smi_bus->read = smi_bus_read;
+ 		msp->smi_bus->write = smi_bus_write,
+-		snprintf(msp->smi_bus->id, MII_BUS_ID_SIZE, "%d", pdev->id);
++		snprintf(msp->smi_bus->id, MII_BUS_ID_SIZE, "%s-%d",
++			pdev->name, pdev->id);
+ 		msp->smi_bus->parent = &pdev->dev;
+ 		msp->smi_bus->phy_mask = 0xffffffff;
+ 		if (mdiobus_register(msp->smi_bus) < 0)
+-- 
+1.7.5.4
 
