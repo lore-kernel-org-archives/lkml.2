@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934364Ab2AJXEE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:04:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52869 "EHLO mx2.suse.de"
+	id S934269Ab2AJXEU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:04:20 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52916 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934168Ab2AJXD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:03:56 -0500
+	id S934123Ab2AJXEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:04:12 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:05 2012
-Message-Id: <20120110215605.730705023@clark.kroah.org>
+Message-Id: <20120110215604.946494588@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:51 -0800
+Date: Tue, 10 Jan 2012 13:55:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, jhovold@gmail.com, linux-usb@vger.kernel.org,
-        Thilo-Alexander Ginkel <thilo@ginkel.com>
-Subject: [48/49] usb: cdc-acm: Fix acm_tty_hangup() vs. acm_tty_close() race
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [39/49] USB: omninet: fix write_room
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,60 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
+From: Johan Hovold <jhovold@gmail.com>
 
-[Not upstream as it was fixed differently for 3.3 with a much more
-"intrusive" rework of the driver - gregkh]
+commit 694c6301e515bad574af74b6552134c4d9dcb334 upstream.
 
-There is a race condition involving acm_tty_hangup() and acm_tty_close()
-where hangup() would attempt to access tty->driver_data without proper
-locking and NULL checking after close() has potentially already set it
-to NULL.  One possibility to (sporadically) trigger this behavior is to
-perform a suspend/resume cycle with a running WWAN data connection.
+Fix regression introduced by commit 507ca9bc047666 ([PATCH] USB: add
+ability for usb-serial drivers to determine if their write urb is
+currently being used.) which inverted the logic in write_room so that it
+returns zero when the write urb is actually free.
 
-This patch addresses the issue by introducing a NULL check for
-tty->driver_data in acm_tty_hangup() protected by open_mutex and exiting
-gracefully when hangup() is invoked on a device that has already been
-closed.
-
-Signed-off-by: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- drivers/usb/class/cdc-acm.c |   12 ++++++++++--
- 1 files changed, 10 insertions(+), 2 deletions(-)
+ drivers/usb/serial/omninet.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index a8078d0..97f2e58 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -554,10 +554,18 @@ static void acm_port_down(struct acm *acm)
+--- a/drivers/usb/serial/omninet.c
++++ b/drivers/usb/serial/omninet.c
+@@ -315,7 +315,7 @@ static int omninet_write_room(struct tty
+ 	int room = 0; /* Default: no room */
  
- static void acm_tty_hangup(struct tty_struct *tty)
- {
--	struct acm *acm = tty->driver_data;
--	tty_port_hangup(&acm->port);
-+	struct acm *acm;
-+
- 	mutex_lock(&open_mutex);
-+	acm = tty->driver_data;
-+
-+	if (!acm)
-+		goto out;
-+
-+	tty_port_hangup(&acm->port);
- 	acm_port_down(acm);
-+
-+out:
- 	mutex_unlock(&open_mutex);
- }
+ 	/* FIXME: no consistent locking for write_urb_busy */
+-	if (wport->write_urb_busy)
++	if (!wport->write_urb_busy)
+ 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
  
--- 
-1.7.5.4
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+ 	dbg("%s - returns %d", __func__, room);
 
 
