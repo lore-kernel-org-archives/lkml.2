@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab2AJQ5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:57:19 -0500
-Received: from a.ns.miles-group.at ([95.130.255.143]:47834 "EHLO radon.swed.at"
+	id S932456Ab2AJQ5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:57:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36446 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932088Ab2AJQ5S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:57:18 -0500
-From: Richard Weinberger <richard@nod.at>
-To: dedekind1@gmail.com
-Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH] ubi: Use UBI_LAYOUT_VOLUME_{TYPE, ALIGN}
-Date: Tue, 10 Jan 2012 17:57:03 +0100
-Message-Id: <1326214623-15938-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.7.3
+	id S932088Ab2AJQ5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 11:57:46 -0500
+Date: Tue, 10 Jan 2012 16:57:43 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: vmscan: no change of reclaim mode if unevictable
+ page encountered
+Message-ID: <20120110165743.GE4118@suse.de>
+References: <CAJd=RBDAoNt=TZWhNeLs0MaCJ_ormEp=ya55-PA+B0BAxfGbbQ@mail.gmail.com>
+ <20120110094026.GB4118@suse.de>
+ <CAJd=RBBNK6P=Kq09G88UDEsiU8KUPiko5WTfLgQqKzry8tVH5A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBBNK6P=Kq09G88UDEsiU8KUPiko5WTfLgQqKzry8tVH5A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UBI_LAYOUT_VOLUME_TYPE and UBI_LAYOUT_VOLUME_ALIGN are currently
-defined but not used.
-Use them at least once. 8-)
+On Wed, Jan 11, 2012 at 12:27:53AM +0800, Hillf Danton wrote:
+> On Tue, Jan 10, 2012 at 5:40 PM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Sat, Jan 07, 2012 at 11:46:17AM +0800, Hillf Danton wrote:
+> >> Since unevictable page is not isolated from lru list for shrink_page_list(),
+> >> it is accident if encountered in shrinking, and no need to change reclaim mode.
+> >>
+> >
+> > This changelog does does not explain the problem, does not explain
+> > what is fixed or what the impact is.
+> >
+> > It also does not make sense. It says "unevictable page is not isolated
+> > from LRU list" but this is shrink_page_list() and the page has already
+> > been isolated (probably by lumpy reclaim). It will be put back on
+> > the LRU_UNEVICTABLE list.
+> >
+> > It might be the case that resetting the reclaim mode after encountering
+> > mlocked pages is overkill but that would need more justification than
+> > what this changelog offers. Resetting the mode impacts THP rates but
+> > this is erring on the side of caution by doing less work in reclaim
+> > as the savings from THP may not offset the cost of reclaim.
+> >
+> 
+> Hi Mel
+> 
+> It is reprepared, please review again.
+> 
+> Thanks
+> Hillf
+> 
+> ===cut please===
+> From: Hillf Danton <dhillf@gmail.com>
+> [PATCH] mm: vmscan: no change of reclaim mode if unevictable page encountered
+> 
+> Unevictable pages are not isolated from lru list for shrink_page_list(), and
+> they could be put back onto lru list if accidentally encountered in shrinking.
+> 
+> But resetting reclaim mode maybe overkill, as it impacts THP rates. This is
+> erring on the side of caution by doing less work in reclaim as the savings
+> from THP may not offset the cost of reclaim.
+> 
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
----
- drivers/mtd/ubi/vtbl.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+When I said it needed more justification, I meant that you need to show
+a workload or usecase that suffers as a result of reset_reclaim_mode
+being called here. I explained already that the reset errs on the
+side of caution by making reclaim work less.
 
-diff --git a/drivers/mtd/ubi/vtbl.c b/drivers/mtd/ubi/vtbl.c
-index 9ad18da..93cb2f1 100644
---- a/drivers/mtd/ubi/vtbl.c
-+++ b/drivers/mtd/ubi/vtbl.c
-@@ -322,7 +322,7 @@ retry:
- 		goto out_free;
- 	}
- 
--	vid_hdr->vol_type = UBI_VID_DYNAMIC;
-+	vid_hdr->vol_type = UBI_LAYOUT_VOLUME_TYPE;
- 	vid_hdr->vol_id = cpu_to_be32(UBI_LAYOUT_VOLUME_ID);
- 	vid_hdr->compat = UBI_LAYOUT_VOLUME_COMPAT;
- 	vid_hdr->data_size = vid_hdr->used_ebs =
-@@ -632,7 +632,7 @@ static int init_volumes(struct ubi_device *ubi, const struct ubi_scan_info *si,
- 		return -ENOMEM;
- 
- 	vol->reserved_pebs = UBI_LAYOUT_VOLUME_EBS;
--	vol->alignment = 1;
-+	vol->alignment = UBI_LAYOUT_VOLUME_ALIGN;
- 	vol->vol_type = UBI_DYNAMIC_VOLUME;
- 	vol->name_len = sizeof(UBI_LAYOUT_VOLUME_NAME) - 1;
- 	memcpy(vol->name, UBI_LAYOUT_VOLUME_NAME, vol->name_len + 1);
+You need to describe what problem your workload is suffering from and
+why this patch fixes it.
+
 -- 
-1.7.7.3
-
+Mel Gorman
+SUSE Labs
