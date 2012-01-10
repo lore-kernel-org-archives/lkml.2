@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934384Ab2AJXDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:03:22 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52708 "EHLO mx2.suse.de"
+	id S934438Ab2AJXJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:09:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52722 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934372Ab2AJXDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:03:16 -0500
+	id S934383Ab2AJXDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:03:22 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:02 2012
-Message-Id: <20120110215602.141637124@clark.kroah.org>
+Message-Id: <20120110215602.221866270@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:10 -0800
+Date: Tue, 10 Jan 2012 13:55:11 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Andres Salomon <dilinger@queued.net>,
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [07/49] libertas: clean up scan thread handling
+Subject: [08/49] bcma: support for suspend and resume
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,84 +26,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andres Salomon <dilinger@queued.net>
+From: Rafał Miłecki <zajec5@gmail.com>
 
-commit afbca95f95f2bf7283a72670c24c1f6de00b1cb5 upstream.
+commit 775ab52142b02237a54184238e922251c59a2b5c upstream.
 
-The libertas scan thread expects priv->scan_req to be non-NULL.  In theory,
-it should always be set.  In practice, we've seen the following oops:
+bcma used to lock up machine without enabling PCI or initializing CC.
 
-[ 8363.067444] Unable to handle kernel NULL pointer dereference at virtual address 00000004
-[ 8363.067490] pgd = c0004000
-[ 8363.078393] [00000004] *pgd=00000000
-[ 8363.086711] Internal error: Oops: 17 [#1] PREEMPT
-[ 8363.091375] Modules linked in: fuse libertas_sdio libertas psmouse mousedev ov7670 mmp_camera joydev videobuf2_core videobuf2_dma_sg videobuf2_memops [last unloaded: scsi_wait_scan]
-[ 8363.107490] CPU: 0    Not tainted  (3.0.0-gf7ccc69 #671)
-[ 8363.112799] PC is at lbs_scan_worker+0x108/0x5a4 [libertas]
-[ 8363.118326] LR is at 0x0
-[ 8363.120836] pc : [<bf03a854>]    lr : [<00000000>]    psr: 60000113
-[ 8363.120845] sp : ee66bf48  ip : 00000000  fp : 00000000
-[ 8363.120845] r10: ee2c2088  r9 : c04e2efc  r8 : eef97005
-[ 8363.132231] r7 : eee0716f  r6 : ee2c02c0  r5 : ee2c2088  r4 : eee07160
-[ 8363.137419] r3 : 00000000  r2 : a0000113  r1 : 00000001  r0 : eee07160
-[ 8363.143896] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[ 8363.157630] Control: 10c5387d  Table: 2e754019  DAC: 00000015
-[ 8363.163334] Process kworker/u:1 (pid: 25, stack limit = 0xee66a2f8)
-
-While I've not found a smoking gun, there are two places that raised red flags
-for me.  The first is in _internal_start_scan, when we queue up a scan; we
-first queue the worker, and then set priv->scan_req.  There's theoretically
-a 50mS delay which should be plenty, but doing things that way just seems
-racy (and not in the good way).
-
-The second is in the scan worker thread itself.  Depending on the state of
-priv->scan_channel, we cancel pending scan runs and then requeue a run in
-300mS.  We then send the scan command down to the hardware, sleep, and if
-we get scan results for all the desired channels, we set priv->scan_req to
-NULL.  However, it that's happened in less than 300mS, what happens with
-the pending scan run?
-
-This patch addresses both of those concerns.  With the patch applied, we
-have not seen the oops in the past two weeks.
-
-Signed-off-by: Andres Salomon <dilinger@queued.net>
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/libertas/cfg.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/bcma/bcma_private.h |    3 +++
+ drivers/bcma/host_pci.c     |   37 +++++++++++++++++++++++++++++++++++++
+ drivers/bcma/main.c         |   16 ++++++++++++++++
+ 3 files changed, 56 insertions(+)
 
---- a/drivers/net/wireless/libertas/cfg.c
-+++ b/drivers/net/wireless/libertas/cfg.c
-@@ -728,9 +728,11 @@ static void lbs_scan_worker(struct work_
- 		le16_to_cpu(scan_cmd->hdr.size),
- 		lbs_ret_scan, 0);
+--- a/drivers/bcma/bcma_private.h
++++ b/drivers/bcma/bcma_private.h
+@@ -18,6 +18,9 @@ void bcma_bus_unregister(struct bcma_bus
+ int __init bcma_bus_early_register(struct bcma_bus *bus,
+ 				   struct bcma_device *core_cc,
+ 				   struct bcma_device *core_mips);
++#ifdef CONFIG_PM
++int bcma_bus_resume(struct bcma_bus *bus);
++#endif
  
--	if (priv->scan_channel >= priv->scan_req->n_channels)
-+	if (priv->scan_channel >= priv->scan_req->n_channels) {
- 		/* Mark scan done */
-+		cancel_delayed_work(&priv->scan_work);
- 		lbs_scan_done(priv);
-+	}
- 
- 	/* Restart network */
- 	if (carrier)
-@@ -759,12 +761,12 @@ static void _internal_start_scan(struct
- 		request->n_ssids, request->n_channels, request->ie_len);
- 
- 	priv->scan_channel = 0;
--	queue_delayed_work(priv->work_thread, &priv->scan_work,
--		msecs_to_jiffies(50));
--
- 	priv->scan_req = request;
- 	priv->internal_scan = internal;
- 
-+	queue_delayed_work(priv->work_thread, &priv->scan_work,
-+		msecs_to_jiffies(50));
-+
- 	lbs_deb_leave(LBS_DEB_CFG80211);
+ /* scan.c */
+ int bcma_bus_scan(struct bcma_bus *bus);
+--- a/drivers/bcma/host_pci.c
++++ b/drivers/bcma/host_pci.c
+@@ -224,6 +224,41 @@ static void bcma_host_pci_remove(struct
+ 	pci_set_drvdata(dev, NULL);
  }
  
++#ifdef CONFIG_PM
++static int bcma_host_pci_suspend(struct pci_dev *dev, pm_message_t state)
++{
++	/* Host specific */
++	pci_save_state(dev);
++	pci_disable_device(dev);
++	pci_set_power_state(dev, pci_choose_state(dev, state));
++
++	return 0;
++}
++
++static int bcma_host_pci_resume(struct pci_dev *dev)
++{
++	struct bcma_bus *bus = pci_get_drvdata(dev);
++	int err;
++
++	/* Host specific */
++	pci_set_power_state(dev, 0);
++	err = pci_enable_device(dev);
++	if (err)
++		return err;
++	pci_restore_state(dev);
++
++	/* Bus specific */
++	err = bcma_bus_resume(bus);
++	if (err)
++		return err;
++
++	return 0;
++}
++#else /* CONFIG_PM */
++# define bcma_host_pci_suspend	NULL
++# define bcma_host_pci_resume	NULL
++#endif /* CONFIG_PM */
++
+ static DEFINE_PCI_DEVICE_TABLE(bcma_pci_bridge_tbl) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x0576) },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_BROADCOM, 0x4331) },
+@@ -239,6 +274,8 @@ static struct pci_driver bcma_pci_bridge
+ 	.id_table = bcma_pci_bridge_tbl,
+ 	.probe = bcma_host_pci_probe,
+ 	.remove = bcma_host_pci_remove,
++	.suspend = bcma_host_pci_suspend,
++	.resume = bcma_host_pci_resume,
+ };
+ 
+ int __init bcma_host_pci_init(void)
+--- a/drivers/bcma/main.c
++++ b/drivers/bcma/main.c
+@@ -240,6 +240,22 @@ int __init bcma_bus_early_register(struc
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++int bcma_bus_resume(struct bcma_bus *bus)
++{
++	struct bcma_device *core;
++
++	/* Init CC core */
++	core = bcma_find_core(bus, BCMA_CORE_CHIPCOMMON);
++	if (core) {
++		bus->drv_cc.setup_done = false;
++		bcma_core_chipcommon_init(&bus->drv_cc);
++	}
++
++	return 0;
++}
++#endif
++
+ int __bcma_driver_register(struct bcma_driver *drv, struct module *owner)
+ {
+ 	drv->drv.name = drv->name;
 
 
