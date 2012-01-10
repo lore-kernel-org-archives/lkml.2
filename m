@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934412Ab2AJXDb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:03:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52734 "EHLO mx2.suse.de"
+	id S934442Ab2AJXDn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:03:43 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52759 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934397Ab2AJXD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:03:26 -0500
+	id S934305Ab2AJXDg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:03:36 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:02 2012
-Message-Id: <20120110215602.299428355@clark.kroah.org>
+Message-Id: <20120110215602.570583919@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:12 -0800
+Date: Tue, 10 Jan 2012 13:55:15 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Pontus Fuchs <pontus.fuchs@gmail.com>,
-        Luciano Coelho <coelho@ti.com>
-Subject: [09/49] wl12xx: Validate FEM index from ini file and FW
+        alan@lxorguk.ukuu.org.uk, Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [12/49] powerpc/time: Handle wrapping of decrementer
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,73 +25,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pontus Fuchs <pontus.fuchs@gmail.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 2131d3c2f99b081806fdae7662c92fe6acda52af upstream.
+commit 37fb9a0231ee43d42d069863bdfd567fca2b61af upstream.
 
-Check for out of bound FEM index to prevent reading beyond ini
-memory end.
+When re-enabling interrupts we have code to handle edge sensitive
+decrementers by resetting the decrementer to 1 whenever it is negative.
+If interrupts were disabled long enough that the decrementer wrapped to
+positive we do nothing. This means interrupts can be delayed for a long
+time until it finally goes negative again.
 
-Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
-Reviewed-by: Luciano Coelho <coelho@ti.com>
-Signed-off-by: Luciano Coelho <coelho@ti.com>
+While we hope interrupts are never be disabled long enough for the
+decrementer to go positive, we have a very good test team that can
+drive any kernel into the ground. The softlockup data we get back
+from these fails could be seconds in the future, completely missing
+the cause of the lockup.
+
+We already keep track of the timebase of the next event so use that
+to work out if we should trigger a decrementer exception.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/wl12xx/cmd.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ arch/powerpc/include/asm/time.h |    2 ++
+ arch/powerpc/kernel/irq.c       |   15 ++++++---------
+ arch/powerpc/kernel/time.c      |    9 +++++++++
+ 3 files changed, 17 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/wl12xx/cmd.c
-+++ b/drivers/net/wireless/wl12xx/cmd.c
-@@ -120,6 +120,11 @@ int wl1271_cmd_general_parms(struct wl12
- 	if (!wl->nvs)
- 		return -ENODEV;
+--- a/arch/powerpc/include/asm/time.h
++++ b/arch/powerpc/include/asm/time.h
+@@ -219,5 +219,7 @@ DECLARE_PER_CPU(struct cpu_usage, cpu_us
+ extern void secondary_cpu_time_init(void);
+ extern void iSeries_time_init_early(void);
  
-+	if (gp->tx_bip_fem_manufacturer >= WL1271_INI_FEM_MODULE_COUNT) {
-+		wl1271_warning("FEM index from INI out of bounds");
-+		return -EINVAL;
-+	}
++extern void decrementer_check_overflow(void);
 +
- 	gen_parms = kzalloc(sizeof(*gen_parms), GFP_KERNEL);
- 	if (!gen_parms)
- 		return -ENOMEM;
-@@ -143,6 +148,12 @@ int wl1271_cmd_general_parms(struct wl12
- 	gp->tx_bip_fem_manufacturer =
- 		gen_parms->general_params.tx_bip_fem_manufacturer;
+ #endif /* __KERNEL__ */
+ #endif /* __POWERPC_TIME_H */
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -164,16 +164,13 @@ notrace void arch_local_irq_restore(unsi
+ 	 */
+ 	local_paca->hard_enabled = en;
  
-+	if (gp->tx_bip_fem_manufacturer >= WL1271_INI_FEM_MODULE_COUNT) {
-+		wl1271_warning("FEM index from FW out of bounds");
-+		ret = -EINVAL;
-+		goto out;
-+	}
+-#ifndef CONFIG_BOOKE
+-	/* On server, re-trigger the decrementer if it went negative since
+-	 * some processors only trigger on edge transitions of the sign bit.
+-	 *
+-	 * BookE has a level sensitive decrementer (latches in TSR) so we
+-	 * don't need that
++	/*
++	 * Trigger the decrementer if we have a pending event. Some processors
++	 * only trigger on edge transitions of the sign bit. We might also
++	 * have disabled interrupts long enough that the decrementer wrapped
++	 * to positive.
+ 	 */
+-	if ((int)mfspr(SPRN_DEC) < 0)
+-		mtspr(SPRN_DEC, 1);
+-#endif /* CONFIG_BOOKE */
++	decrementer_check_overflow();
+ 
+ 	/*
+ 	 * Force the delivery of pending soft-disabled interrupts on PS3.
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -889,6 +889,15 @@ static void __init clocksource_init(void
+ 	       clock->name, clock->mult, clock->shift);
+ }
+ 
++void decrementer_check_overflow(void)
++{
++	u64 now = get_tb_or_rtc();
++	struct decrementer_clock *decrementer = &__get_cpu_var(decrementers);
 +
- 	wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
- 		     answer ? "auto" : "manual", gp->tx_bip_fem_manufacturer);
- 
-@@ -162,6 +173,11 @@ int wl128x_cmd_general_parms(struct wl12
- 	if (!wl->nvs)
- 		return -ENODEV;
- 
-+	if (gp->tx_bip_fem_manufacturer >= WL1271_INI_FEM_MODULE_COUNT) {
-+		wl1271_warning("FEM index from ini out of bounds");
-+		return -EINVAL;
-+	}
++	if (now >= decrementer->next_tb)
++		set_dec(1);
++}
 +
- 	gen_parms = kzalloc(sizeof(*gen_parms), GFP_KERNEL);
- 	if (!gen_parms)
- 		return -ENOMEM;
-@@ -186,6 +202,12 @@ int wl128x_cmd_general_parms(struct wl12
- 	gp->tx_bip_fem_manufacturer =
- 		gen_parms->general_params.tx_bip_fem_manufacturer;
- 
-+	if (gp->tx_bip_fem_manufacturer >= WL1271_INI_FEM_MODULE_COUNT) {
-+		wl1271_warning("FEM index from FW out of bounds");
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
- 	wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
- 		     answer ? "auto" : "manual", gp->tx_bip_fem_manufacturer);
- 
+ static int decrementer_set_next_event(unsigned long evt,
+ 				      struct clock_event_device *dev)
+ {
 
 
