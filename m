@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab2AJHlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 02:41:04 -0500
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:32990 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750989Ab2AJHlB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 02:41:01 -0500
+	id S1752285Ab2AJHpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 02:45:34 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39547 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751108Ab2AJHpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 02:45:33 -0500
+Date: Mon, 9 Jan 2012 23:45:20 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Che-Liang Chiou <clchiou@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: your mail
+Message-ID: <20120110074520.GA19930@core.coreip.homeip.net>
+References: <20120110061735.9BD676BA98@mailhub.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <CAH9JG2U7RbnKQRwrOyNQj7Ooa5aOxi3-jShzw7pbRprx-=w55w@mail.gmail.com>
-References: <1326159027-21185-1-git-send-email-ameya.palande@ti.com>
-	<20120110020205.GA11831@kroah.com>
-	<CAH9JG2U7RbnKQRwrOyNQj7Ooa5aOxi3-jShzw7pbRprx-=w55w@mail.gmail.com>
-Date: Mon, 9 Jan 2012 23:40:59 -0800
-Message-ID: <CAHFNHeUBBcfV89A-G=hqToHBf9v3X8+V5N22QNuE7TECS=z21A@mail.gmail.com>
-Subject: Re: [PATCH] Texas Instruments DRV2665 Piezo Haptics Driver
-From: "Palande, Ameya" <ameya.palande@ti.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Greg KH <greg@kroah.com>, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-input <linux-input@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120110061735.9BD676BA98@mailhub.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 6:35 PM, Kyungmin Park <kmpark@infradead.org> wrote:
-> On 1/10/12, Greg KH <greg@kroah.com> wrote:
->> On Mon, Jan 09, 2012 at 05:30:27PM -0800, Ameya Palande wrote:
->>> Texas Instruments's DRV2665 is a piezo haptic driver which is capable of
->>> driving both high-voltage and low-voltage piezo haptic actuators.
->>>
->>> Signed-off-by: Ameya Palande <ameya.palande@ti.com>
->>> ---
->>>  MAINTAINERS               |    5 +
->>>  drivers/misc/Kconfig      |    7 +
->>>  drivers/misc/Makefile     |    1 +
->>>  drivers/misc/ti_drv2665.c |  448
->>> +++++++++++++++++++++++++++++++++++++++++++++
->>
->> Where is the Documentation/ABI/ entries for this driver?
->>
->> And most importantly, why do you feel this is a "misc" driver and not an
->> iio driver instead?
-> Hi,
->
-> In case of haptic, now it's handled at input driver using ff-memless
-> Please see the drivers/input/misc/Kconfig. you can see the already
-> merged haptic/vibrator codes.
->
-> Thank you,
-> Kyungmin Park
+On Mon, Jan 09, 2012 at 10:17:35PM -0800, Milton Miller wrote:
+> Subject	Re: [PATCH 1/2] Input: serio_raw - cosmetic fixes
+> In-Reply-To: <20120109082412.GC4049@core.coreip.homeip.net>
+> References: <20120109082412.GC4049@core.coreip.homeip.net>
+> 	<1325847795-30486-1-git-send-email-clchiou@chromium.org>
+> Date: Tue, 10 Jan 2012 00:14:35 -0600
+> Subject: (No subject header)
+> X-Originating-IP: 71.22.127.106
+> Message-ID: <1326176075_1502@mail4.comsite.net>
+> 
+> On Mon, 9 Jan 2012 about 00:24:12 -0800, Dmitry Torokhov wrote:
+> > >  	struct serio_raw_client *client = file->private_data;
+> > >  	struct serio_raw *serio_raw = client->serio_raw;
+> > > -	unsigned int mask;
+> > > 
+> > >  	poll_wait(file, &serio_raw->wait, wait);
+> > > 
+> > > -	mask = serio_raw->dead ? POLLHUP | POLLERR : POLLOUT | POLLWRNORM;
+> > >  	if (serio_raw->head != serio_raw->tail)
+> > >  		return POLLIN | POLLRDNORM;
+> > > 
+> > 
+> > This however is not quite correct. I will be applying the patch below
+> > instead.
+> > 
+> > 
+> > diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
+> > index ca78a89..c2c6ad8 100644
+> > --- a/drivers/input/serio/serio_raw.c
+> > +++ b/drivers/input/serio/serio_raw.c
+> > @@ -237,7 +237,7 @@ static unsigned int serio_raw_poll(struct file *file, poll_table *wait)
+> >  
+> >  	mask = serio_raw->dead ? POLLHUP | POLLERR : POLLOUT | POLLWRNORM;
+> >  	if (serio_raw->head != serio_raw->tail)
+> > -		return POLLIN | POLLRDNORM;
+> > +		mask |= POLLIN | POLLRDNORM;
+> >  
+> >  	return 0;
+> 
+> doesn't this need to be changed to return mask?
 
-Hi Kyungmin,
+Doh! Of course it does.
 
-DRV2665 IC drives piezo actuator which enables a wide variety of
-high-resolution haptic effects, including feedback localized to
-specific areas of the device, as well as vibrations and pulses that
-change in frequency based on how the user is interacting with the
-device. However it is not a vibra chip so I didn't put it under
-input/misc/
+Thanks.
 
-It comes under the category of ICs like DRV8662:
-http://www.ti.com/lit/ds/symlink/drv8662.pdf
-
-Cheers,
-Ameya.
+-- 
+Dmitry
