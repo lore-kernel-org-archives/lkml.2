@@ -1,131 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756382Ab2AJOcj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 09:32:39 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:48810 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267Ab2AJOch convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 09:32:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120110124442.ffb63d63.kamezawa.hiroyu@jp.fujitsu.com>
-References: <CAJd=RBAMtT04n8p4ht4oCSOYKVcUcG0-hbSvmjrP-yhwBYhU1A@mail.gmail.com>
-	<20120110124442.ffb63d63.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 10 Jan 2012 22:32:36 +0800
-Message-ID: <CAJd=RBAS-hz1=ACF86cRKkzrOSyU5LWcHeLmSL+JfMHdE8wh9g@mail.gmail.com>
-Subject: Re: [PATCH] mm: vmscan: recompute page status when putting back
-From: Hillf Danton <dhillf@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
+	id S1756376Ab2AJOik (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 09:38:40 -0500
+Received: from mga03.intel.com ([143.182.124.21]:36261 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751111Ab2AJOij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 09:38:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="94303187"
+Date: Tue, 10 Jan 2012 22:38:05 +0800
+From: Wu Fengguang <wfg@linux.intel.com>
+To: =?utf-8?B?0JjQu9GM0Y8g0KLRg9C80LDQudC60LjQvQ==?= 
+	<librarian_rus@yahoo.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
         LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: A regression in recent 3.2 kernel: bdi_dirty_limit() divide
+ error
+Message-ID: <20120110143805.GA8320@localhost>
+References: <20120109040445.GB31049@localhost>
+ <1326205945.62365.YahooMailClassic@web161603.mail.bf1.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1326205945.62365.YahooMailClassic@web161603.mail.bf1.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 11:44 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Fri, 6 Jan 2012 22:07:29 +0800
-> Hillf Danton <dhillf@gmail.com> wrote:
->
->> If unlikely the given page is isolated from lru list again, its status is
->> recomputed before putting back to lru list, since the comment says page's
->> status can change while we move it among lru.
->>
->>
->> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> Cc: David Rientjes <rientjes@google.com>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Signed-off-by: Hillf Danton <dhillf@gmail.com>
->> ---
->>
->> --- a/mm/vmscan.c     Thu Dec 29 20:20:16 2011
->> +++ b/mm/vmscan.c     Fri Jan  6 21:31:56 2012
->> @@ -633,12 +633,14 @@ int remove_mapping(struct address_space
->>  void putback_lru_page(struct page *page)
->>  {
->>       int lru;
->> -     int active = !!TestClearPageActive(page);
->> -     int was_unevictable = PageUnevictable(page);
->> +     int active;
->> +     int was_unevictable;
->>
->>       VM_BUG_ON(PageLRU(page));
->>
->>  redo:
->> +     active = !!TestClearPageActive(page);
->> +     was_unevictable = PageUnevictable(page);
->>       ClearPageUnevictable(page);
->>
->>       if (page_evictable(page, NULL)) {
->
-> Hm. Do you handle this case ?
-> ==
->        /*
->         * page's status can change while we move it among lru. If an evictable
->         * page is on unevictable list, it never be freed. To avoid that,
->         * check after we added it to the list, again.
->         */
->        if (lru == LRU_UNEVICTABLE && page_evictable(page, NULL)) {
->                if (!isolate_lru_page(page)) {
->                        put_page(page);
->                        goto redo;
->                }
-> ==
->
-> Ok, let's start from "was_unevictable"
->
-> "was_unevicatable" is used for this
-> ==
->  if (was_unevictable && lru != LRU_UNEVICTABLE)
->                count_vm_event(UNEVICTABLE_PGRESCUED);
-> ==
-> This is for checking that the page turned out to be evictable while we put it
-> into LRU. Assume the 'redo' case, the page's state chages from UNEVICTABLE to
-> ACTIVE_ANON (for example)
->
->  1. at start of function: Page was Unevictable, was_unevictable=true
->  2. lru = LRU_UNEVICTABLE
->  3, add the page to LRU.
->  4. check page_evictable(),..... it returns 'true'.
->  5. isoalte the page again and goto redo.
->  6. lru = LRU_ACTIVE_ANON
->  7. add the page to LRU.
->  8. was_unevictable==true, then, count_vm_event(UNEVICTABLE_PGRESCUED);
->
-> Your patch overwrites was_unevictable between 5. and 6., then,
-> corrupts this event counting.
->
-> about "active" flag.
->
-> PageActive() flag will be set in lru_cache_add_lru() and
-> there will be no inconsistency between page->flags and LRU.
-> And, in what case the changes in 'active' will be problematic ?
->
-Hi Kame
+On Tue, Jan 10, 2012 at 06:32:25AM -0800, Илья Тумайкин wrote:
+> Hello, Mr. Fengguang.
+> 
+> This latter patch fixed the problem completely! I've tested vanilla 3.2 with both patches applied and with only the latter one, results are the same: 
+> - first of all the initial problem solved. I have no "divide error" (not sure if this panic) now.
+> - doing daily desktop stuff (e.g. web browsing, movie playback, book reading etc) also without any errors as well as compiling packages.
+> 
+> So, I can confirm the problem is solved completely. 
+> Thank you and your colleagues very much for you fast response and active help! I am very grateful!
+ 
+Ilya, thank you too for your report and testing! I'll submit the patch right now.
 
-Thanks for reviewing my work.
+Thanks,
+Fengguang
 
-With focus on the case that redo occurs, the patch was prepared based on the
-assumption that any isolated page could be processed by the function.
-
-If redo does occur, though unlikely, there are two rounds of isolation+putback
-or more for the given page. As shown by my workout of page status, difference
-exists in the two cases.
-
-     ==============================================================
-                                     without redo           with redo
-     ==============================================================
-       active                      true  50%              true
-                                     false 50%              false  100%
-     ==============================================================
-       was_unevictable       true  50%              true   100%
-                                      false 50%              false
-     ==============================================================
-
-And the case with redo could be covered by the case without redo, so there is
-no corruption of VM events.
-
-Hillf
+> --- Пн, 9.1.12, Wu Fengguang <wfg@linux.intel.com> пишет:
+> 
+> > От: Wu Fengguang <wfg@linux.intel.com>
+> > Тема: Re: A regression in recent 3.2 kernel: bdi_dirty_limit() divide error
+> > Кому: "Peter Zijlstra" <a.p.zijlstra@chello.nl>
+> > Копия: "Илья Тумайкин" <librarian_rus@yahoo.com>, "LKML" <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+> > Дата: Понедельник, 9 январь 2012, 7:04
+> > On Sun, Jan 08, 2012 at 11:19:14AM
+> > +0100, Peter Zijlstra wrote:
+> > 
+> > > But even then, we limit PROP_MAX_SHIFT to
+> > 3*BITS_PER_LONG/4, I don't
+> > > think that could ever overflow.
+> > 
+> > do_div() only uses the lower 32 bit value of the 64 bit
+> > denominator,
+> > which may happen to be 0.
+> > 
+> > The denominator is not really 64 bit, but limited by
+> > PROP_MAX_SHIFT =
+> > 48 bit, however that upper limit looks not enough.
+> > 
+> > Ilya, would you help try the attached patch instead?
+> > 
+> > Thanks,
+> > Fengguang
+> >
