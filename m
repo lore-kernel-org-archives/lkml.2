@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932403Ab2AJHDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 02:03:30 -0500
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:19464
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754533Ab2AJHCQ (ORCPT
+	id S1754617Ab2AJHKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 02:10:06 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62158 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753980Ab2AJHKE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 02:02:16 -0500
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dhc1ahc1bh87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-From: Richard Zhao <richard.zhao@linaro.org>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
-        <kernel@pengutronix.de>, <eric.miao@linaro.org>, <patches@linaro.org>,
-        Richard Zhao <richard.zhao@linaro.org>
-Subject: [PATCH 5/6] dma/imx-sdma: use num_events to validate event_id0
-Date: Tue, 10 Jan 2012 15:01:49 +0800
-Message-ID: <1326178910-14044-5-git-send-email-richard.zhao@linaro.org>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
-References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: sigmatel.com
+	Tue, 10 Jan 2012 02:10:04 -0500
+Message-ID: <1326179396.4956.3.camel@phoenix>
+Subject: [PATCH] mfd: da9052: Add missing regmap_exit to free a previously
+ allocated register map
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Date: Tue, 10 Jan 2012 15:09:56 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-event number is not always 32. use num_events for checking instead.
-
-Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/dma/imx-sdma.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mfd/da9052-i2c.c |    7 +++++--
+ drivers/mfd/da9052-spi.c |    5 ++++-
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index 015d93f..22fd561 100644
---- a/drivers/dma/imx-sdma.c
-+++ b/drivers/dma/imx-sdma.c
-@@ -723,7 +723,7 @@ static int sdma_config_channel(struct sdma_channel *sdmac)
- 	sdmac->per_addr = 0;
+diff --git a/drivers/mfd/da9052-i2c.c b/drivers/mfd/da9052-i2c.c
+index 44b97c7..fdc2c6a 100644
+--- a/drivers/mfd/da9052-i2c.c
++++ b/drivers/mfd/da9052-i2c.c
+@@ -74,14 +74,16 @@ static int __devinit da9052_i2c_probe(struct i2c_client *client,
  
- 	if (sdmac->event_id0) {
--		if (sdmac->event_id0 > 32)
-+		if (sdmac->event_id0 >= sdmac->sdma->num_events)
- 			return -EINVAL;
- 		sdma_event_enable(sdmac, sdmac->event_id0);
- 	}
+ 	ret = da9052_i2c_enable_multiwrite(da9052);
+ 	if (ret < 0)
+-		goto err;
++		goto err_regmap;
+ 
+ 	ret = da9052_device_init(da9052, id->driver_data);
+ 	if (ret != 0)
+-		goto err;
++		goto err_regmap;
+ 
+ 	return 0;
+ 
++err_regmap:
++	regmap_exit(da9052->regmap);
+ err:
+ 	kfree(da9052);
+ 	return ret;
+@@ -92,6 +94,7 @@ static int da9052_i2c_remove(struct i2c_client *client)
+ 	struct da9052 *da9052 = i2c_get_clientdata(client);
+ 
+ 	da9052_device_exit(da9052);
++	regmap_exit(da9052->regmap);
+ 	kfree(da9052);
+ 
+ 	return 0;
+diff --git a/drivers/mfd/da9052-spi.c b/drivers/mfd/da9052-spi.c
+index cdbc7ca..76bb9ea08 100644
+--- a/drivers/mfd/da9052-spi.c
++++ b/drivers/mfd/da9052-spi.c
+@@ -52,10 +52,12 @@ static int da9052_spi_probe(struct spi_device *spi)
+ 
+ 	ret = da9052_device_init(da9052, id->driver_data);
+ 	if (ret != 0)
+-		goto err;
++		goto err_regmap;
+ 
+ 	return 0;
+ 
++err_regmap:
++	regmap_exit(da9052->regmap);
+ err:
+ 	kfree(da9052);
+ 	return ret;
+@@ -66,6 +68,7 @@ static int da9052_spi_remove(struct spi_device *spi)
+ 	struct da9052 *da9052 = dev_get_drvdata(&spi->dev);
+ 
+ 	da9052_device_exit(da9052);
++	regmap_exit(da9052->regmap);
+ 	kfree(da9052);
+ 
+ 	return 0;
 -- 
 1.7.5.4
+
 
 
