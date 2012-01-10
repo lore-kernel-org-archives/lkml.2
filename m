@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754069Ab2AJIIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:08:09 -0500
-Received: from mail-qw0-f53.google.com ([209.85.216.53]:39282 "EHLO
-	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab2AJIII (ORCPT
+	id S1754377Ab2AJINQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:13:16 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49026 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab2AJINP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:08:08 -0500
+	Tue, 10 Jan 2012 03:13:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <1326160461.2366.19.camel@sbsiddha-mobl2>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
-	<1326103578.2442.50.camel@twins>
-	<20120110001445.GA20542@linux-youquan.bj.intel.com>
-	<1326107563.2442.65.camel@twins>
-	<CAKfTPtDM-L-AcHr_o44vmR9VYRvQqOyXuwEgnZ61d4pbDOPFUg@mail.gmail.com>
-	<1326160461.2366.19.camel@sbsiddha-mobl2>
-Date: Tue, 10 Jan 2012 09:08:06 +0100
-Message-ID: <CAKfTPtA_ORWsgLOZ2+Nn8RdAXQ_4Nu16RCk9J3f04+YyjYuemA@mail.gmail.com>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
+In-Reply-To: <1325799904.3508.12.camel@twins>
+References: <CAOAMb1BHA=5fm7KTewYyke6u-8DP0iUuJMpgQw54vNeXFsGpoQ@mail.gmail.com>
+	<1325786132.3508.1.camel@twins>
+	<1325787342.12696.59.camel@gandalf.stny.rr.com>
+	<1325799904.3508.12.camel@twins>
+Date: Tue, 10 Jan 2012 17:13:15 +0900
+Message-ID: <CAOAMb1A3DNU87oFRHPJZc5OARtsN4wjarmr+Ffu9oB_b0HOioA@mail.gmail.com>
+Subject: Re: [PATCH] sched_rt: the task in irq context can be migrated during
+ context switching
+From: Chanho Min <chanho0207@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, chanho.min@lge.com
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10 January 2012 02:54, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> On Mon, 2012-01-09 at 15:29 +0100, Vincent Guittot wrote:
->> Hi Peter,
+On Fri, Jan 6, 2012 at 6:45 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2012-01-05 at 13:15 -0500, Steven Rostedt wrote:
+>> On Thu, 2012-01-05 at 18:55 +0100, Peter Zijlstra wrote:
 >>
->> I'm also using sched_mc level for doing powersaving load balance on
->> ARM platform and we have real benefits.
+>> > So the problem is quite real, as already said we don't need to worry
+>> > about the future, but we might want to fix this in previous kernels.
+>> > What I'm not entirely sure of is the proposed solution, Steven don't we
+>> > get in trouble by simply bailing out on the push?
+>>
+>> It shouldn't break anything. We shouldn't be pushing tasks that are
+>> running on a rq anyway.
 >
-> hi Vincent, Can you elaborate on your platform topology where you see
-> the benefits?
+> Its not running, but its in the middle of getting scheduled out.
 >
+>> I don't see any harm here. As this scenario can
+>> only happen if we get an interrupt after letting go of the rq lock and
+>> before doing the switch_to(). The schedule_tail() calls
+>> post_schedule_rt() which does the push again, and will push task A at
+>> that time.
+>
+> Right, so the post_schedule() hook will try again.
+>
+>> That said, I'm not sure this patch is enough. I'm worried about a pull
+>> happening. As task A is running, we could possible possibly pick it on
+>> another CPU to do a pull.
+>>
+>> Hmm, looking at the code, the pull already does a task_running() test,
+>> so I guess we should be fine.
+>
+> Yeah, I'm not sure all those task_running() things make sense though,
+> when !->on_rq && ->on_cpu we should busy wait for tasks, not skip them.
+>
+> Then again, with this WANT_INTERRUPTS_ON_CTXSW the busy wait crap is
+> tricky. Luckily its going the way of the Dodo very soon.
 
-Hi Suresh,
+So Will this be applied?  It will be critical and very hard to debug.
+( pretty rare, sometimes system hang without any message )
+It has been well tested on our ARM platform.
 
-I'm using dual/quad cores ARM platform. When sched_mc is different
-from 0, the topology is changed from 1 socket/cluster to 2 virtual
-sockets/clusters with 1 or 2 cores in each cluster.  For low cpu load
-situation, the tasks are gathered in 1 virtual socket and let the
-cores in the other socket to enter idle state thanks to cpuidle. On
-ARM platform, cores in a cluster can enter interesting idle state even
-if the complete cluster can't reach a deep idle state.
-With dual cores platform, i'm increasing the cpu_power to gather tasks
-on 1 core when cores are at lowest frequency. In fact i'm detecting a
-low cpu load (only small tasks are running) and ensure that these
-small tasks are kept on 1 core.
-
-Regards,
-Vincent
-
-> on x86, 'sched_mc' was designed for the case of consolidating load into
-> one socket before using another idle socket.
->
-> Just wondering if this is your use case too or if you are consolidating
-> at a different topological level.
->
-> thanks,
-> suresh
->
+Thanks
+Chanho
