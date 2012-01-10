@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab2AJUKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:10:45 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45804 "EHLO mx2.suse.de"
+	id S1756805Ab2AJUKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:10:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45776 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756797Ab2AJUKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:10:42 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:51 2012
-Message-Id: <20120110200851.273206279@clark.kroah.org>
+	id S1754699Ab2AJUK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 15:10:26 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:50 2012
+Message-Id: <20120110200850.120670502@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 12:07:08 -0800
+Date: Tue, 10 Jan 2012 12:06:55 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [17/20] PM / Sleep: Fix race between CPU hotplug and freezer
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [04/20] offb: Fix setting of the pseudo-palette for >8bpp
 In-Reply-To: <20120110200902.GA5674@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,125 +25,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 79cfbdfa87e84992d509e6c1648a18e1d7e68c20 upstream.
+commit 1bb0b7d21584b3f878e2bc880db62351ddee5185 upstream.
 
-The CPU hotplug notifications sent out by the _cpu_up() and _cpu_down()
-functions depend on the value of the 'tasks_frozen' argument passed to them
-(which indicates whether tasks have been frozen or not).
-(Examples for such CPU hotplug notifications: CPU_ONLINE, CPU_ONLINE_FROZEN,
-CPU_DEAD, CPU_DEAD_FROZEN).
+When using a >8bpp framebuffer, offb advertises truecolor, not directcolor,
+and doesn't touch the color map even if it has a corresponding access method
+for the real hardware.
 
-Thus, it is essential that while the callbacks for those notifications are
-running, the state of the system with respect to the tasks being frozen or
-not remains unchanged, *throughout that duration*. Hence there is a need for
-synchronizing the CPU hotplug code with the freezer subsystem.
+Thus it needs to set the pseudo-palette with all 3 components of the color,
+like other truecolor framebuffers, not with copies of the color index like
+a directcolor framebuffer would do.
 
-Since the freezer is involved only in the Suspend/Hibernate call paths, this
-patch hooks the CPU hotplug code to the suspend/hibernate notifiers
-PM_[SUSPEND|HIBERNATE]_PREPARE and PM_POST_[SUSPEND|HIBERNATE] to prevent
-the race between CPU hotplug and freezer, thus ensuring that CPU hotplug
-notifications will always be run with the state of the system really being
-what the notifications indicate, _throughout_ their execution time.
+This went unnoticed for a long time because it's pretty hard to get offb
+to kick in with anything but 8bpp (old BootX under MacOS will do that and
+qemu does it).
 
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cpu.c |   74 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 74 insertions(+)
+ drivers/video/offb.c |   44 ++++++++++++++++++++------------------------
+ 1 file changed, 20 insertions(+), 24 deletions(-)
 
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -14,6 +14,7 @@
- #include <linux/kthread.h>
- #include <linux/stop_machine.h>
- #include <linux/mutex.h>
-+#include <linux/suspend.h>
+--- a/drivers/video/offb.c
++++ b/drivers/video/offb.c
+@@ -100,36 +100,32 @@ static int offb_setcolreg(u_int regno, u
+ 			  u_int transp, struct fb_info *info)
+ {
+ 	struct offb_par *par = (struct offb_par *) info->par;
+-	int i, depth;
+-	u32 *pal = info->pseudo_palette;
  
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-@@ -442,6 +443,79 @@ static int alloc_frozen_cpus(void)
- 	return 0;
- }
- core_initcall(alloc_frozen_cpus);
-+
-+/*
-+ * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
-+ * hotplug when tasks are about to be frozen. Also, don't allow the freezer
-+ * to continue until any currently running CPU hotplug operation gets
-+ * completed.
-+ * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
-+ * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
-+ * CPU hotplug path and released only after it is complete. Thus, we
-+ * (and hence the freezer) will block here until any currently running CPU
-+ * hotplug operation gets completed.
-+ */
-+void cpu_hotplug_disable_before_freeze(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 1;
-+	cpu_maps_update_done();
-+}
-+
-+
-+/*
-+ * When tasks have been thawed, re-enable regular CPU hotplug (which had been
-+ * disabled while beginning to freeze tasks).
-+ */
-+void cpu_hotplug_enable_after_thaw(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 0;
-+	cpu_maps_update_done();
-+}
-+
-+/*
-+ * When callbacks for CPU hotplug notifications are being executed, we must
-+ * ensure that the state of the system with respect to the tasks being frozen
-+ * or not, as reported by the notification, remains unchanged *throughout the
-+ * duration* of the execution of the callbacks.
-+ * Hence we need to prevent the freezer from racing with regular CPU hotplug.
-+ *
-+ * This synchronization is implemented by mutually excluding regular CPU
-+ * hotplug and Suspend/Hibernate call paths by hooking onto the Suspend/
-+ * Hibernate notifications.
-+ */
-+static int
-+cpu_hotplug_pm_callback(struct notifier_block *nb,
-+			unsigned long action, void *ptr)
-+{
-+	switch (action) {
-+
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		cpu_hotplug_disable_before_freeze();
-+		break;
-+
-+	case PM_POST_SUSPEND:
-+	case PM_POST_HIBERNATION:
-+		cpu_hotplug_enable_after_thaw();
-+		break;
-+
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+
-+int cpu_hotplug_pm_sync_init(void)
-+{
-+	pm_notifier(cpu_hotplug_pm_callback, 0);
-+	return 0;
-+}
-+core_initcall(cpu_hotplug_pm_sync_init);
-+
- #endif /* CONFIG_PM_SLEEP_SMP */
+-	depth = info->var.bits_per_pixel;
+-	if (depth == 16)
+-		depth = (info->var.green.length == 5) ? 15 : 16;
++	if (info->fix.visual == FB_VISUAL_TRUECOLOR) {
++		u32 *pal = info->pseudo_palette;
++		u32 cr = red >> (16 - info->var.red.length);
++		u32 cg = green >> (16 - info->var.green.length);
++		u32 cb = blue >> (16 - info->var.blue.length);
++		u32 value;
  
- /**
+-	if (regno > 255 ||
+-	    (depth == 16 && regno > 63) ||
+-	    (depth == 15 && regno > 31))
+-		return 1;
++		if (regno >= 16)
++			return -EINVAL;
+ 
+-	if (regno < 16) {
+-		switch (depth) {
+-		case 15:
+-			pal[regno] = (regno << 10) | (regno << 5) | regno;
+-			break;
+-		case 16:
+-			pal[regno] = (regno << 11) | (regno << 5) | regno;
+-			break;
+-		case 24:
+-			pal[regno] = (regno << 16) | (regno << 8) | regno;
+-			break;
+-		case 32:
+-			i = (regno << 8) | regno;
+-			pal[regno] = (i << 16) | i;
+-			break;
++		value = (cr << info->var.red.offset) |
++			(cg << info->var.green.offset) |
++			(cb << info->var.blue.offset);
++		if (info->var.transp.length > 0) {
++			u32 mask = (1 << info->var.transp.length) - 1;
++			mask <<= info->var.transp.offset;
++			value |= mask;
+ 		}
++		pal[regno] = value;
++		return 0;
+ 	}
+ 
++	if (regno > 255)
++		return -EINVAL;
++
+ 	red >>= 8;
+ 	green >>= 8;
+ 	blue >>= 8;
 
 
