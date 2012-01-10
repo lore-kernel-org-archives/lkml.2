@@ -1,54 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab2AJLJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 06:09:53 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36227 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752853Ab2AJLJw (ORCPT
+	id S1755630Ab2AJLPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 06:15:11 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55275 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723Ab2AJLPK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 06:09:52 -0500
-Date: Tue, 10 Jan 2012 11:09:42 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        gregkh@suse.de
-Subject: Re: perf event group siblings not counting in mainline
-Message-ID: <20120110110942.GB24180@mudshark.cambridge.arm.com>
-References: <20111224125415.GA14559@mudshark.cambridge.arm.com>
+	Tue, 10 Jan 2012 06:15:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20111224125415.GA14559@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1326192547.11926.5.camel@linux-s257.site>
+References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
+	<1326192547.11926.5.camel@linux-s257.site>
+Date: Tue, 10 Jan 2012 19:15:09 +0800
+X-Google-Sender-Auth: rC5zZV0-jtDH14nK7fJkTvhuSSg
+Message-ID: <CAL-cBk011b4QbSRRuKxbZhNKxQQ-DkRHvq34Ua881h+AKXY_NQ@mail.gmail.com>
+Subject: Re: high speed cams are not working on usbip
+From: David Chang <dchang@suse.com>
+To: joeyli <jlee@suse.com>
+Cc: nagarjun kommineni <nagarjunkommineni@gmail.com>,
+        linux-kernel@vger.kernel.org, gregkh@suse.de,
+        devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=Big5
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 24, 2011 at 12:54:15PM +0000, Will Deacon wrote:
-> If I try using perf with event groups on a mainline kernel, only the group
-> leader counts:
-> 
-> 
-> linaro@mashed-potato:~$ perf stat --no-scale -g -e task-clock -e cpu-clock -e cs -- ls
-> hwb  linux
-> 
->  Performance counter stats for 'ls':
-> 
->          17.545541 task-clock                #    0.634 CPUs utilized
->           0.000000 cpu-clock
->                  0 cs                        #    0.000 M/sec
-> 
->        0.027684984 seconds time elapsed
-> 
-> 
-> This is fixed by b79387ef ("perf: Fix enable_on_exec for sibling events")
-> in -next (20111222) but I can't see this queued anywhere for 3.2 (I thought
-> I might see it in -rc7).
-> 
-> Is this going in for the final cut, or will groups just be borked until 3.3?
+Hi Joey,
 
-Now that 3.2 is out with this regression, would it be possible to get this
-(b79387ef ("perf: Fix enable_on_exec for sibling events")) into -stable please?
+2012/1/10 joeyli <jlee@suse.com>:
+> 於 二，2012-01-10 於 13:46 +0530，nagarjun kommineni 提到：
+>> Hi,
+>>
+>> problem with usbip in drivers/staging/usbip
+>>
+>>  I have configured one pc as server and one as client, with this
+>> configuration high speed web cams are not working for higher
+>> resolutions.
+>>
+>
+> How "high" does this web's speed?
+>
+>> please have a look at this problem.
+>>
+>
+> David,
+> as I remember you test webcam in old kernel before? looks works fine.
 
-Will
+Yes, but I would suggest using lower resolution.
+
+Regards,
+David
+>
+>
+> Thanks
+> Joey Lee
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
