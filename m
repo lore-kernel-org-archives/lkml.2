@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933658Ab2AJW6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:58:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52140 "EHLO mx2.suse.de"
+	id S933629Ab2AJW6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:58:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52117 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933626Ab2AJW6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:33 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:21 2012
-Message-Id: <20120110214621.181776153@clark.kroah.org>
+	id S933613Ab2AJW6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:58:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:20 2012
+Message-Id: <20120110214620.831799316@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:47 -0800
+Date: Tue, 10 Jan 2012 13:45:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [34/40] igmp: Avoid zero delay when receiving odd mixture of IGMP queries
+        alan@lxorguk.ukuu.org.uk, VU Tuan Duc <ducvt@viettel.com.vn>
+Subject: [30/40] USB: option: add id for 3G dongle Model VT1000 of Viettel
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,34 +24,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: VU Tuan Duc <DucVT@viettel.com.vn>
 
-commit a8c1f65c79cbbb2f7da782d4c9d15639a9b94b27 upstream.
+commit 5b061623355d8f69327a24838b0aa05e435ae5d5 upstream.
 
-Commit 5b7c84066733c5dfb0e4016d939757b38de189e4 ('ipv4: correct IGMP
-behavior on v3 query during v2-compatibility mode') added yet another
-case for query parsing, which can result in max_delay = 0.  Substitute
-a value of 1, as in the usual v3 case.
+Add VendorID/ProductID for USB 3G dongle Model VT1000 of Viettel.
 
-Reported-by: Simon McVittie <smcv@debian.org>
-References: http://bugs.debian.org/654876
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: VU Tuan Duc <ducvt@viettel.com.vn>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/ipv4/igmp.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/net/ipv4/igmp.c
-+++ b/net/ipv4/igmp.c
-@@ -875,6 +875,8 @@ static void igmp_heard_query(struct in_d
- 		 * to be intended in a v3 query.
- 		 */
- 		max_delay = IGMPV3_MRC(ih3->code)*(HZ/IGMP_TIMER_SCALE);
-+		if (!max_delay)
-+			max_delay = 1;	/* can't mod w/ 0 */
- 	} else { /* v3 */
- 		if (!pskb_may_pull(skb, sizeof(struct igmpv3_query)))
- 			return;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -472,6 +472,10 @@ static void option_instat_callback(struc
+ #define YUGA_PRODUCT_CLU528			0x260D
+ #define YUGA_PRODUCT_CLU526			0x260F
+ 
++/* Viettel products */
++#define VIETTEL_VENDOR_ID			0x2262
++#define VIETTEL_PRODUCT_VT1000			0x0002
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1173,6 +1177,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU516) },
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU528) },
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU526) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
