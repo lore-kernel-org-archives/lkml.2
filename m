@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974Ab2AJXAs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:00:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52386 "EHLO mx2.suse.de"
+	id S933962Ab2AJXAp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:00:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52380 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933846Ab2AJXAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933638Ab2AJXAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Jan 2012 18:00:41 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:23 2012
-Message-Id: <20120110215023.752968659@clark.kroah.org>
+Message-Id: <20120110215023.672711717@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:43 -0800
+Date: Tue, 10 Jan 2012 13:48:42 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [33/42] usb: ch9: fix up MaxStreams helper
+        alan@lxorguk.ukuu.org.uk, Janne Snabb <snabb@epipe.com>
+Subject: [32/42] usb: option: add ZD Incorporated HSPA modem
 In-Reply-To: <20120110215031.GA19398@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Janne Snabb <snabb@epipe.com>
 
-commit 18b7ede5f7ee2092aedcb578d3ac30bd5d4fc23c upstream.
+commit 3c8c9316710b83e906e425024153bf0929887b59 upstream.
 
-[ removed the dwc3 portion of the patch as it didn't apply to
-older kernels - gregkh]
+Add support for Chinese Noname HSPA USB modem which is apparently
+manufactured by a company called ZD Incorporated (based on texts in the
+Windows drivers).
 
-According to USB 3.0 Specification Table 9-22, if
-bmAttributes [4:0] are set to zero, it means "no
-streams supported", but the way this helper was
-defined on Linux, we will *always* have one stream
-which might cause several problems.
+This product is available at least from Dealextreme (SKU 80032) and
+possibly in India with name Olive V-MW250. It is based on Qualcomm
+MSM6280 chip.
 
-For example on DWC3, we would tell the controller
-endpoint has streams enabled and yet start transfers
-with Stream ID set to 0, which would goof up the host
-side.
+I needed to also add "options usb-storage quirks=0685:7000:i" in modprobe
+configuration because udevd or the kernel keeps poking the embedded
+fake-cd-rom which fails and causes the device to reset. There might be
+a better way to accomplish the same. usb_modeswitch is not needed with
+this device.
 
-While doing that, convert the macro to an inline
-function due to the different checks we now need.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Janne Snabb <snabb@epipe.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    3 +--
- include/linux/usb/ch9.h |   20 +++++++++++++++++++-
- 2 files changed, 20 insertions(+), 3 deletions(-)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2183,8 +2183,7 @@ static int xhci_calculate_streams_and_bi
- 		if (ret < 0)
- 			return ret;
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -476,6 +476,10 @@ static void option_instat_callback(struc
+ #define VIETTEL_VENDOR_ID			0x2262
+ #define VIETTEL_PRODUCT_VT1000			0x0002
  
--		max_streams = USB_SS_MAX_STREAMS(
--				eps[i]->ss_ep_comp.bmAttributes);
-+		max_streams = usb_ss_max_streams(&eps[i]->ss_ep_comp);
- 		if (max_streams < (*num_streams - 1)) {
- 			xhci_dbg(xhci, "Ep 0x%x only supports %u stream IDs.\n",
- 					eps[i]->desc.bEndpointAddress,
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -583,8 +583,26 @@ struct usb_ss_ep_comp_descriptor {
- } __attribute__ ((packed));
- 
- #define USB_DT_SS_EP_COMP_SIZE		6
++/* ZD Incorporated */
++#define ZD_VENDOR_ID				0x0685
++#define ZD_PRODUCT_7000				0x7000
 +
- /* Bits 4:0 of bmAttributes if this is a bulk endpoint */
--#define USB_SS_MAX_STREAMS(p)		(1 << ((p) & 0x1f))
-+static inline int
-+usb_ss_max_streams(const struct usb_ss_ep_comp_descriptor *comp)
-+{
-+	int		max_streams;
-+
-+	if (!comp)
-+		return 0;
-+
-+	max_streams = comp->bmAttributes & 0x1f;
-+
-+	if (!max_streams)
-+		return 0;
-+
-+	max_streams = 1 << max_streams;
-+
-+	return max_streams;
-+}
-+
- /* Bits 1:0 of bmAttributes if this is an isoc endpoint */
- #define USB_SS_MULT(p)			(1 + ((p) & 0x3))
- 
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1178,6 +1182,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU528) },
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU526) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
