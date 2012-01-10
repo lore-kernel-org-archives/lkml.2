@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934048Ab2AJXBQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:01:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52451 "EHLO mx2.suse.de"
+	id S1757206Ab2AJXQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:16:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52470 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933502Ab2AJXBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:01:09 -0500
+	id S934044Ab2AJXBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:01:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:24 2012
-Message-Id: <20120110215024.391656453@clark.kroah.org>
+Message-Id: <20120110215024.563094855@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:50 -0800
+Date: Tue, 10 Jan 2012 13:48:52 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, jhovold@gmail.com, linux-usb@vger.kernel.org,
-        Thilo-Alexander Ginkel <thilo@ginkel.com>
-Subject: [40/42] usb: cdc-acm: Fix acm_tty_hangup() vs. acm_tty_close() race
+        alan@lxorguk.ukuu.org.uk, Xi Wang <xi.wang@gmail.com>,
+        Ben Myers <bpm@sgi.com>
+Subject: [42/42] xfs: fix acl count validation in xfs_acl_from_disk()
 In-Reply-To: <20120110215031.GA19398@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
+From: Xi Wang <xi.wang@gmail.com>
 
-[Not upstream s it was fixed differently there for 3.3 with a much more
-"intrusive" rework of the driver - gregkh]
+commit 093019cf1b18dd31b2c3b77acce4e000e2cbc9ce upstream.
 
-There is a race condition involving acm_tty_hangup() and acm_tty_close()
-where hangup() would attempt to access tty->driver_data without proper
-locking and NULL checking after close() has potentially already set it
-to NULL.  One possibility to (sporadically) trigger this behavior is to
-perform a suspend/resume cycle with a running WWAN data connection.
+Commit fa8b18ed didn't prevent the integer overflow and possible
+memory corruption.  "count" can go negative and bypass the check.
 
-This patch addresses the issue by introducing a NULL check for
-tty->driver_data in acm_tty_hangup() protected by open_mutex and exiting
-gracefully when hangup() is invoked on a device that has already been
-closed.
-
-Signed-off-by: Thilo-Alexander Ginkel <thilo@ginkel.com>
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Ben Myers <bpm@sgi.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/usb/class/cdc-acm.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -554,10 +554,18 @@ static void acm_port_down(struct acm *ac
+---
+ fs/xfs/xfs_acl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/xfs/xfs_acl.c
++++ b/fs/xfs/xfs_acl.c
+@@ -39,7 +39,7 @@ xfs_acl_from_disk(struct xfs_acl *aclp)
+ 	struct posix_acl_entry *acl_e;
+ 	struct posix_acl *acl;
+ 	struct xfs_acl_entry *ace;
+-	int count, i;
++	unsigned int count, i;
  
- static void acm_tty_hangup(struct tty_struct *tty)
- {
--	struct acm *acm = tty->driver_data;
--	tty_port_hangup(&acm->port);
-+	struct acm *acm;
-+
- 	mutex_lock(&open_mutex);
-+	acm = tty->driver_data;
-+
-+	if (!acm)
-+		goto out;
-+
-+	tty_port_hangup(&acm->port);
- 	acm_port_down(acm);
-+
-+out:
- 	mutex_unlock(&open_mutex);
- }
- 
+ 	count = be32_to_cpu(aclp->acl_cnt);
+ 	if (count > XFS_ACL_MAX_ENTRIES)
 
 
