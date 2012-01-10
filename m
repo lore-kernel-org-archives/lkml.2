@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756852Ab2AJW1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:27:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51157 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943Ab2AJW1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:27:46 -0500
-Date: Wed, 11 Jan 2012 09:27:35 +1100
-From: NeilBrown <neilb@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux RAID <linux-raid@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        Art -kwaak- van Breemen <ard@telegraafnet.nl>,
-        Mikhail Balabin <mbalabin@gmail.com>
-Subject: [PULL REQUEST]  two bugfixes for md.
-Message-ID: <20120111092735.01fe9de2@notabene.brown>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+	id S1756635Ab2AJWdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:33:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37932 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756605Ab2AJWdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:33:31 -0500
+Date: Tue, 10 Jan 2012 14:33:30 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan@kernel.org>, Dave Chinner <david@fromorbit.com>,
+        nowhere <nowhere@hakkenden.ath.cx>, Michal Hocko <mhocko@suse.cz>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+Message-Id: <20120110143330.44cf1ccf.akpm@linux-foundation.org>
+In-Reply-To: <20111227135658.08c8016a.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1324437036.4677.5.camel@hakkenden.homenet>
+	<20111221095249.GA28474@tiehlicka.suse.cz>
+	<20111221225512.GG23662@dastard>
+	<1324630880.562.6.camel@rybalov.eng.ttk.net>
+	<20111223102027.GB12731@dastard>
+	<1324638242.562.15.camel@rybalov.eng.ttk.net>
+	<20111223204503.GC12731@dastard>
+	<20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111227035730.GA22840@barrios-laptop.redhat.com>
+	<20111227135658.08c8016a.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/yfC=H=.qNeHO2V=l4O03tBI"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/yfC=H=.qNeHO2V=l4O03tBI
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Tue, 27 Dec 2011 13:56:58 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-The following changes since commit 19d671695e1931ebfd75b2b888778201aefe35ca:
+> Hmm, if I understand correctly,
+> 
+>  - dd's speed down is caused by kswapd's cpu consumption.
+>  - kswapd's cpu consumption is enlarged by shrink_slab() (by perf)
+>  - kswapd can't stop because NORMAL zone is small.
+>  - memory reclaim speed is enough because dd can't get enough cpu.
+> 
+> I wonder reducing to call shrink_slab() may be a help but I'm not sure
+> where lock conention comes from...
 
-  md/raid1: Mark device want_replacement when we see a write error. (2011-1=
-2-23 10:17:57 +1100)
+Nikolay, it sounds as if this problem has only recently started
+happening?  Was 3.1 OK?
 
-are available in the git repository at:
-
-  git://neil.brown.name/md md-3.3-fixes
-
-for you to fetch changes up to 307729c8bc5b5a41361af8af95906eee7552acb1:
-
-  md/raid1: perform bad-block tests for WriteMostly devices too. (2012-01-1=
-1 08:35:17 +1100)
-
-----------------------------------------------------------------
-(from the branch description for md-scratch local branch)
-
-for-linus
-Two bugfixes for md.
-
-One is a recently introduced regression that affects an unusual
-configuration with a guaranteed BUG_ON.  Has been tagged for -stable.
-The other is minor missing functionality.
-
-----------------------------------------------------------------
-NeilBrown (2):
-      md: notify the 'degraded' sysfs attribute on failure.
-      md/raid1: perform bad-block tests for WriteMostly devices too.
-
- drivers/md/md.c    |    6 ++++++
- drivers/md/raid1.c |   11 ++++++++++-
- 2 files changed, 16 insertions(+), 1 deletions(-)
-
---Sig_/yfC=H=.qNeHO2V=l4O03tBI
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.18 (GNU/Linux)
-
-iQIVAwUBTwy7Vznsnt1WYoG5AQJXpBAAtLgSdfBm+iD4l9u8kVcgbPXJhGS1V171
-/w0W811Glzt8eG0dQGe7RMEHlxYhFQsTvZPxXsX4H2qxMafxjHKThwflE5vobJd2
-d3DjhtfV3f+WNCPezkuzK3ecx88Otw4GyPEuy6FSz+zS/rB65NiNHnqYibGX7+7+
-T1Hm5a8/hrT8MyC/+2GWF+YZaVPOfW+cH4cNeAotiBe6m5lA5k95z/K0q4chYSZn
-gKU+IV4mHZYVc9IQp4dq/8ezjbChMn4zWcUqIY1r4YeTPSYzbxOoe6Ai1xfGWuQe
-AWq0ZJRmX2eVpO12YLLQS3oyJANUxPzRTr0r8m2jJqGXQKqAJBpsJu1ih1QPIIuA
-NJRRPj1n7Nnouy+MFXbllVB+otfPXDxnSa/YlIMumYZ3eQvTzfFuonFoNKqc/ebc
-gOJRlSaNyR1zHUirc7yrmiNRqorKeQzPnCVbwX3e0zW2NkC+Xan5mue/KV0yoZ5W
-nIbTQ1xzqrAK6gdyAcY3qnXYHvJ6c0KT/pXtIpb8DOKHCiAUZg5DlV/7jdfUpS1w
-lQlTs/fcN50q5lEZpBm/wDZNlFKEvIKJctS77GnrrAGAq/fCfLhC8zBilQIrNsAN
-dP0bVu0Ao2WglPCgC2beGqwPEbn8UJjo8qda/D61UqbjPbKIuhAuebQI0qV17ViJ
-GRrEWAcZk6Y=
-=mngm
------END PGP SIGNATURE-----
-
---Sig_/yfC=H=.qNeHO2V=l4O03tBI--
+If so, we should work out what we did post-3.1 to cause this.
