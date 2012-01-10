@@ -1,65 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab2AJNFf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 08:05:35 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:52436 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932127Ab2AJNFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 08:05:32 -0500
-Message-ID: <4F0C375B.7040600@linux.vnet.ibm.com>
-Date: Tue, 10 Jan 2012 18:34:27 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	id S1756257Ab2AJNEh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 08:04:37 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:26851 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756207Ab2AJNEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 08:04:20 -0500
+Subject: [PATCH v2 1/5] NFS: handle blocklayout pipe PipeFS dentry by network
+ namespace aware routines
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Tue, 10 Jan 2012 17:04:16 +0400
+Message-ID: <20120110130415.1672.22733.stgit@localhost6.localdomain6>
+In-Reply-To: <20120110130323.1672.97025.stgit@localhost6.localdomain6>
+References: <20120110130323.1672.97025.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Kyungmin Park <kmpark@infradead.org>
-CC: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: BUG: sleeping function called from invalid context at include/linux/freezer.h:45
-References: <CAH9JG2XniMv5dVf1DixGNaQAJk-sZjnV9HfYeihEJP3JDyC4+Q@mail.gmail.com>
-In-Reply-To: <CAH9JG2XniMv5dVf1DixGNaQAJk-sZjnV9HfYeihEJP3JDyC4+Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-x-cbid: 12011013-8878-0000-0000-000000DDA04A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2012 09:57 AM, Kyungmin Park wrote:
+This patch makes blocklayout pipe dentry allocated and destroyed in network
+namespace context by PipeFS network namespace aware routines.
+Network namespace context is obtained from nfs_client structure.
 
-> Dear all
-> 
-> with the latest kernel. I got the below bug message.
-> It calls the sleep function. Does it intended operation?
-> 
-> static inline bool try_to_freeze(void)
-> {
->         might_sleep();
->         if (likely(!freezing(current)))
->                 return false;
->         return __refrigerator(false);
-> }
-> 
-> # poweroff
-> [    6.852523] BUG: sleeping function called from invalid context at
-> include/linux/freezer.h:45
-> [    6.859489] in_atomic(): 0, irqs_disabled(): 128, pid: 1, name: init
-> [    6.865846] [<c0013508>] (unwind_backtrace+0x0/0xec) from
-> [<c0010124>] (do_signal+0x88/0x588)
-> [    6.874337] [<c0010124>] (do_signal+0x88/0x588) from [<c001063c>]
-> (do_notify_resume+0x18/0x38)
-> [    6.882928] [<c001063c>] (do_notify_resume+0x18/0x38) from
-> [<c000dc18>] (work_pending+0x24/0x28)
-> 
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
+---
+ fs/nfs/blocklayout/blocklayout.c |   61 +++++++++++++++++++++++++++++++-------
+ 1 files changed, 49 insertions(+), 12 deletions(-)
 
-You seem to be running on Arm architecture. Can you please try the patch
-at https://lkml.org/lkml/2011/8/25/231 ?
-
-Regards,
-Srivatsa S. Bhat
-IBM Linux Technology Center
+diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+index 2f4ede1..489f95c 100644
+--- a/fs/nfs/blocklayout/blocklayout.c
++++ b/fs/nfs/blocklayout/blocklayout.c
+@@ -965,10 +965,55 @@ static const struct rpc_pipe_ops bl_upcall_ops = {
+ 	.destroy_msg	= bl_pipe_destroy_msg,
+ };
+ 
++static struct dentry *nfs4blocklayout_register_sb(struct super_block *sb,
++					    struct rpc_pipe *pipe)
++{
++	struct dentry *dir, *dentry;
++
++	dir = rpc_d_lookup_sb(sb, NFS_PIPE_DIRNAME);
++	if (dir == NULL)
++		return ERR_PTR(-ENOENT);
++	dentry = rpc_mkpipe_dentry(dir, "blocklayout", NULL, pipe);
++	dput(dir);
++	return dentry;
++}
++
++static void nfs4blocklayout_unregister_sb(struct super_block *sb,
++					  struct rpc_pipe *pipe)
++{
++	if (pipe->dentry)
++		rpc_unlink(pipe->dentry);
++}
++
++static struct dentry *nfs4blocklayout_register_net(struct net *net,
++						   struct rpc_pipe *pipe)
++{
++	struct super_block *pipefs_sb;
++	struct dentry *dentry;
++
++	pipefs_sb = rpc_get_sb_net(net);
++	if (!pipefs_sb)
++		return ERR_PTR(-ENOENT);
++	dentry = nfs4blocklayout_register_sb(pipefs_sb, pipe);
++	rpc_put_sb_net(net);
++	return dentry;
++}
++
++static void nfs4blocklayout_unregister_net(struct net *net,
++					   struct rpc_pipe *pipe)
++{
++	struct super_block *pipefs_sb;
++
++	pipefs_sb = rpc_get_sb_net(net);
++	if (pipefs_sb) {
++		nfs4blocklayout_unregister_sb(pipefs_sb, pipe);
++		rpc_put_sb_net(net);
++	}
++}
++
+ static int __init nfs4blocklayout_init(void)
+ {
+ 	struct vfsmount *mnt;
+-	struct path path;
+ 	int ret;
+ 
+ 	dprintk("%s: NFSv4 Block Layout Driver Registering...\n", __func__);
+@@ -984,21 +1029,13 @@ static int __init nfs4blocklayout_init(void)
+ 		ret = PTR_ERR(mnt);
+ 		goto out_remove;
+ 	}
+-
+-	ret = vfs_path_lookup(mnt->mnt_root,
+-			      mnt,
+-			      NFS_PIPE_DIRNAME, 0, &path);
+-	if (ret)
+-		goto out_putrpc;
+-
+ 	bl_device_pipe = rpc_mkpipe_data(&bl_upcall_ops, 0);
+-	path_put(&path);
+ 	if (IS_ERR(bl_device_pipe)) {
+ 		ret = PTR_ERR(bl_device_pipe);
+ 		goto out_putrpc;
+ 	}
+-	bl_device_pipe->dentry = rpc_mkpipe_dentry(path.dentry, "blocklayout",
+-						   NULL, bl_device_pipe);
++	bl_device_pipe->dentry = nfs4blocklayout_register_net(&init_net,
++							      bl_device_pipe);
+ 	if (IS_ERR(bl_device_pipe->dentry)) {
+ 		ret = PTR_ERR(bl_device_pipe->dentry);
+ 		goto out_destroy_pipe;
+@@ -1021,7 +1058,7 @@ static void __exit nfs4blocklayout_exit(void)
+ 	       __func__);
+ 
+ 	pnfs_unregister_layoutdriver(&blocklayout_type);
+-	rpc_unlink(bl_device_pipe->dentry);
++	nfs4blocklayout_unregister_net(&init_net, bl_device_pipe);
+ 	rpc_destroy_pipe_data(bl_device_pipe);
+ 	rpc_put_mount();
+ }
 
