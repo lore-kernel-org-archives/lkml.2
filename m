@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933906Ab2AJXV1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:21:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52295 "EHLO mx2.suse.de"
+	id S933888Ab2AJXVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:21:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52276 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933864Ab2AJW76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:59:58 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:21 2012
-Message-Id: <20120110215021.172120341@clark.kroah.org>
+	id S933840Ab2AJW7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:59:47 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:22 2012
+Message-Id: <20120110215022.387200962@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:13 -0800
+Date: Tue, 10 Jan 2012 13:48:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Neil Horman <nhorman@tuxdriver.com>
-Subject: [03/42] firmware: Fix an oops on reading fw_priv->fw in sysfs loading file
+        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
+Subject: [17/42] ext3: Dont warn from writepage when readonly inode is spotted after error
 In-Reply-To: <20120110215031.GA19398@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,78 +24,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Jan Kara <jack@suse.cz>
 
-commit eea915bb0d1358755f151eaefb8208a2d5f3e10c upstream.
+commit 33c104d415e92a51aaf638dc3d93920cfa601e5c upstream.
 
-This oops was reported recently:
-firmware_loading_store+0xf9/0x17b
-dev_attr_store+0x20/0x22
-sysfs_write_file+0x101/0x134
-vfs_write+0xac/0xf3
-sys_write+0x4a/0x6e
-system_call_fastpath+0x16/0x1b
+WARN_ON_ONCE(IS_RDONLY(inode)) tends to trip when filesystem hits error and is
+remounted read-only. This unnecessarily scares users (well, they should be
+scared because of filesystem error, but the stack trace distracts them from the
+right source of their fear ;-). We could as well just remove the WARN_ON but
+it's not hard to fix it to not trip on filesystem with errors and not use more
+cycles in the common case so that's what we do.
 
-The complete backtrace was unfortunately not captured, but details can be found
-here:
-https://bugzilla.redhat.com/show_bug.cgi?id=769920
-
-The cause is fairly clear.
-
-Its caused by the fact that firmware_loading_store has a case 0 in its
-switch statement that reads and writes the fw_priv->fw poniter without the
-protection of the fw_lock mutex.  since there is a window between the time that
-_request_firmware sets fw_priv->fw to NULL and the time the corresponding sysfs
-file is unregistered, its possible for a user space application to race in, and
-write a zero to the loading file, causing a NULL dereference in
-firmware_loading_store.  Fix it by extending the protection of the fw_lock mutex
-to cover all of the firware_loading_store function.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/base/firmware_class.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ fs/ext3/inode.c |   24 +++++++++++++++++++++---
+ 1 file changed, 21 insertions(+), 3 deletions(-)
 
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -226,13 +226,13 @@ static ssize_t firmware_loading_store(st
- 	int loading = simple_strtol(buf, NULL, 10);
- 	int i;
+--- a/fs/ext3/inode.c
++++ b/fs/ext3/inode.c
+@@ -1617,7 +1617,13 @@ static int ext3_ordered_writepage(struct
+ 	int err;
  
-+	mutex_lock(&fw_lock);
-+
-+	if (!fw_priv->fw)
-+		goto out;
-+
- 	switch (loading) {
- 	case 1:
--		mutex_lock(&fw_lock);
--		if (!fw_priv->fw) {
--			mutex_unlock(&fw_lock);
--			break;
--		}
- 		firmware_free_data(fw_priv->fw);
- 		memset(fw_priv->fw, 0, sizeof(struct firmware));
- 		/* If the pages are not owned by 'struct firmware' */
-@@ -243,7 +243,6 @@ static ssize_t firmware_loading_store(st
- 		fw_priv->page_array_size = 0;
- 		fw_priv->nr_pages = 0;
- 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
--		mutex_unlock(&fw_lock);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
-@@ -274,7 +273,8 @@ static ssize_t firmware_loading_store(st
- 		fw_load_abort(fw_priv);
- 		break;
- 	}
--
-+out:
-+	mutex_unlock(&fw_lock);
- 	return count;
- }
+ 	J_ASSERT(PageLocked(page));
+-	WARN_ON_ONCE(IS_RDONLY(inode));
++	/*
++	 * We don't want to warn for emergency remount. The condition is
++	 * ordered to avoid dereferencing inode->i_sb in non-error case to
++	 * avoid slow-downs.
++	 */
++	WARN_ON_ONCE(IS_RDONLY(inode) &&
++		     !(EXT3_SB(inode->i_sb)->s_mount_state & EXT3_ERROR_FS));
  
+ 	/*
+ 	 * We give up here if we're reentered, because it might be for a
+@@ -1692,7 +1698,13 @@ static int ext3_writeback_writepage(stru
+ 	int err;
+ 
+ 	J_ASSERT(PageLocked(page));
+-	WARN_ON_ONCE(IS_RDONLY(inode));
++	/*
++	 * We don't want to warn for emergency remount. The condition is
++	 * ordered to avoid dereferencing inode->i_sb in non-error case to
++	 * avoid slow-downs.
++	 */
++	WARN_ON_ONCE(IS_RDONLY(inode) &&
++		     !(EXT3_SB(inode->i_sb)->s_mount_state & EXT3_ERROR_FS));
+ 
+ 	if (ext3_journal_current_handle())
+ 		goto out_fail;
+@@ -1735,7 +1747,13 @@ static int ext3_journalled_writepage(str
+ 	int err;
+ 
+ 	J_ASSERT(PageLocked(page));
+-	WARN_ON_ONCE(IS_RDONLY(inode));
++	/*
++	 * We don't want to warn for emergency remount. The condition is
++	 * ordered to avoid dereferencing inode->i_sb in non-error case to
++	 * avoid slow-downs.
++	 */
++	WARN_ON_ONCE(IS_RDONLY(inode) &&
++		     !(EXT3_SB(inode->i_sb)->s_mount_state & EXT3_ERROR_FS));
+ 
+ 	if (ext3_journal_current_handle())
+ 		goto no_write;
 
 
