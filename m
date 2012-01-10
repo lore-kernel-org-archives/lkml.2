@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752800Ab2AJOJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 09:09:33 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:56595 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751111Ab2AJOJc (ORCPT
+	id S1752846Ab2AJOLn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 09:11:43 -0500
+Received: from imta21.fe.bosch.de ([139.15.243.226]:30016 "EHLO
+	imta21.fe.bosch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab2AJOLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 09:09:32 -0500
-Date: Tue, 10 Jan 2012 22:20:10 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Richard Zhao <richard.zhao@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        dan.j.williams@intel.com, vinod.koul@intel.com, kernel@pengutronix.de,
-        eric.miao@linaro.org, patches@linaro.org
-Subject: Re: [PATCH 6/6] dma/imx-sdma: check whether event_id0 < 32 when set
- event_mask
-Message-ID: <20120110142008.GE26599@S2101-09.ap.freescale.net>
-References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
- <1326178910-14044-6-git-send-email-richard.zhao@linaro.org>
+	Tue, 10 Jan 2012 09:11:42 -0500
+X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jan 2012 09:11:42 EST
+Message-ID: <4F0C44F1.9060703@de.bosch.com>
+Date: Tue, 10 Jan 2012 15:02:25 +0100
+From: Dirk Behme <dirk.behme@de.bosch.com>
+Organization: Robert Bosch Car Multimedia GmbH
+User-Agent: Thunderbird 2.0.0.19 (Windows/20081209)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326178910-14044-6-git-send-email-richard.zhao@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Richard Zhao <richard.zhao@linaro.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        "vinod.koul@intel.com" <vinod.koul@intel.com>,
+        "eric.miao@linaro.org" <eric.miao@linaro.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>
+Subject: Re: [PATCH 5/6] dma/imx-sdma: use num_events to validate event_id0
+References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org> <1326178910-14044-5-git-send-email-richard.zhao@linaro.org>
+In-Reply-To: <1326178910-14044-5-git-send-email-richard.zhao@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.34.217.145]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 03:01:50PM +0800, Richard Zhao wrote:
+On 10.01.2012 08:01, Richard Zhao wrote:
+> event number is not always 32. use num_events for checking instead.
+> 
 > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
 > ---
-
-I think it deserves a sensible commit message explaining why the patch
-is needed.
-
-Regards,
-Shawn
-
->  drivers/dma/imx-sdma.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
+>  drivers/dma/imx-sdma.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
 > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> index 22fd561..1d5b6ab 100644
+> index 015d93f..22fd561 100644
 > --- a/drivers/dma/imx-sdma.c
 > +++ b/drivers/dma/imx-sdma.c
-> @@ -753,8 +753,11 @@ static int sdma_config_channel(struct sdma_channel *sdmac)
->  			if (sdmac->event_id0 > 31)
->  				sdmac->watermark_level |= 1 << 30;
->  		} else {
-> -			sdmac->event_mask0 = 1 << sdmac->event_id0;
-> -			sdmac->event_mask1 = 1 << (sdmac->event_id0 - 32);
-> +			if (sdmac->event_id0 < 32)
-> +				sdmac->event_mask0 = 1 << sdmac->event_id0;
-> +			else
-> +				sdmac->event_mask1 =
-> +						1 << (sdmac->event_id0 - 32);
->  		}
->  		/* Watermark Level */
->  		sdmac->watermark_level |= sdmac->watermark_level;
-> -- 
-> 1.7.5.4
-> 
-> 
+> @@ -723,7 +723,7 @@ static int sdma_config_channel(struct sdma_channel *sdmac)
+>  	sdmac->per_addr = 0;
+>  
+>  	if (sdmac->event_id0) {
+> -		if (sdmac->event_id0 > 32)
+> +		if (sdmac->event_id0 >= sdmac->sdma->num_events)
+>  			return -EINVAL;
+>  		sdma_event_enable(sdmac, sdmac->event_id0);
+>  	}
+
+In your git you have
+
+http://git.linaro.org/gitweb?p=people/riczhao/linux-2.6.git;a=commitdiff;h=4bd46e7f8ade05984ee89222bc0523b656d017d2
+
+-       if (sdmac->event_id0) {
+-               if (sdmac->event_id0 > 32)
+-                       return -EINVAL;
++       if (sdmac->event_id0)
+                 sdma_event_enable(sdmac, sdmac->event_id0);
+
+I your git version outdated and replaced by this patch?
+
+Best regards
+
+Dirk
