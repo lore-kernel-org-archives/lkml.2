@@ -1,104 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309Ab2AJCOH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 21:14:07 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57228 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752017Ab2AJCOF convert rfc822-to-8bit (ORCPT
+	id S1755971Ab2AJC0V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 21:26:21 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47713 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755583Ab2AJC0U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 21:14:05 -0500
+	Mon, 9 Jan 2012 21:26:20 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=wom5GMh1gUkA:10 a=SdIN-k4CDSIA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=RpzzJ-YzScJRQU0EkKQA:9 a=CjuIK1q_8ugA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Date: Mon, 9 Jan 2012 21:26:17 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: Latest kernel stable/longterm status
+Message-ID: <20120110022617.GA11376@home.goodmis.org>
+References: <20120110003705.GA9482@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAQKjZNM51Oenhi-S-9kyq_mLYHBEsMQA3M6=6L_XNnKu5pLbA@mail.gmail.com>
-References: <1322816252-19955-1-git-send-email-sumit.semwal@ti.com>
-	<1322816252-19955-2-git-send-email-sumit.semwal@ti.com>
-	<CAAQKjZPFh6666JKc-XJfKYePQ_F0MNF6FkY=zKypWb52VVX3YQ@mail.gmail.com>
-	<20120109081030.GA3723@phenom.ffwll.local>
-	<CAAQKjZMEsuib18RYE7OvZPUqhKnvrZ8i3+EMuZSXr9KPVygo_Q@mail.gmail.com>
-	<CAF6AEGsTGOxyTX6Xijvm8UXGjtVTtYg5X5xfJo8D+47o+xU+bA@mail.gmail.com>
-	<CAAQKjZNM51Oenhi-S-9kyq_mLYHBEsMQA3M6=6L_XNnKu5pLbA@mail.gmail.com>
-Date: Mon, 9 Jan 2012 20:14:04 -0600
-X-Google-Sender-Auth: UpbTeX1tvKo4n2lhxVlCAXfXEk0
-Message-ID: <CAF6AEGsQdd+K6-OOsdyFi_VVnMCniZFk2QvYqv8m8GgU7bd7zQ@mail.gmail.com>
-Subject: Re: [RFC v2 1/2] dma-buf: Introduce dma buffer sharing mechanism
-From: Rob Clark <rob@ti.com>
-To: InKi Dae <daeinki@gmail.com>
-Cc: t.stanislaws@samsung.com, linux@arm.linux.org.uk, arnd@arndb.de,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        m.szyprowski@samsung.com, Sumit Semwal <sumit.semwal@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120110003705.GA9482@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 7:34 PM, InKi Dae <daeinki@gmail.com> wrote:
-> 2012/1/10 Rob Clark <rob@ti.com>:
->> On Mon, Jan 9, 2012 at 4:10 AM, InKi Dae <daeinki@gmail.com> wrote:
->>> note : in case of sharing a buffer between v4l2 and drm driver, the
->>> memory info would be copied vb2_xx_buf to xx_gem or xx_gem to
->>> vb2_xx_buf through sg table. in this case, only memory info is used to
->>> share, not some objects.
->>
->> which v4l2/vb2 patches are you looking at?  The patches I was using,
->> vb2 holds a reference to the 'struct dma_buf *' internally, not just
->> keeping the sg_table
->>
->
-> yes, not keeping the sg_table. I mean... see a example below please.
->
-> static void vb2_dma_contig_map_dmabuf(void *mem_priv)
-> {
->    struct sg_table *sg;
->     ...
->     sg = dma_buf_map_attachment(buf->db_attach, dir);
->     ...
->     buf->dma_addr = sg_dma_address(sg->sgl);
->     ...
-> }
->
-> at least with no IOMMU, the memory information(containing physical
-> memory address) would be copied to vb2_xx_buf object if drm gem
-> exported its own buffer and vb2 wants to use that buffer at this time,
-> sg table is used to share that buffer. and the problem I pointed out
-> is that this buffer(also physical memory region) could be released by
-> vb2 framework(as you know, vb2_xx_buf object and the memory region for
-> buf->dma_addr pointing) but the Exporter(drm gem) couldn't know that
-> so some problems would be induced once drm gem tries to release or
-> access that buffer. and I have tried to resolve this issue adding
-> get_shared_cnt() callback to dma-buf.h but I'm not sure that this is
-> good way. maybe there would be better way.
+On Mon, Jan 09, 2012 at 04:37:05PM -0800, Greg KH wrote:
+> As 3.2 is now out, here's a note as to the current status of the
+> different stable/longterm kernel trees.
 
-the exporter (in this case your driver's drm/gem bits) shouldn't
-release that mapping / sgtable until the importer (in this case v4l2)
-calls dma_buf_unmap fxn..
+Thanks for all your hard work Greg!
 
-It would be an error if the importer did a dma_buf_put() without first
-calling dma_buf_unmap_attachment() (if currently mapped) and then
-dma_buf_detach() (if currently attached).  Perhaps somewhere there
-should be some sanity checking debug code which could be enabled to do
-a WARN_ON() if the importer does the wrong thing.  It shouldn't really
-be part of the API, I don't think, but it actually does seem like a
-good thing, esp. as new drivers start trying to use dmabuf, to have
-some debug options which could be enabled.
+> Here's the different active kernel versions that I am maintaining at the moment:
+> 
+>  3.2.y - this will be maintained until 3.3 comes out
+>  3.1.y - there will be only one, maybe two, more releases of this tree
+>  3.0.y - this is the new "longterm" kernel release, it will be
+>          maintained for 2 years at the minimum by me.
 
-It is entirely possible that something was missed on the vb2 patches,
-but the way it is intended to work is like this:
-https://github.com/robclark/kernel-omap4/blob/0961428143cd10269223e3d0f24bc3a66a96185f/drivers/media/video/videobuf2-core.c#L92
+I will also point out, that I plan on maintaining the 3.0.y-rtx release
+for just as long.
 
-where it does a detach() before the dma_buf_put(), and the vb2-contig
-backend checks here that it is also unmapped():
-https://github.com/robclark/kernel-omap4/blob/0961428143cd10269223e3d0f24bc3a66a96185f/drivers/media/video/videobuf2-dma-contig.c#L251
+-- Steve
 
-BR,
--R
-
-> Thanks.
->
->> BR,
->> -R
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
