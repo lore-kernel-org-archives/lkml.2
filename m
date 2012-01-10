@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933937Ab2AJXA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:00:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52353 "EHLO mx2.suse.de"
+	id S933947Ab2AJXAf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:00:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52371 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933638Ab2AJXAZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:00:25 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:21 2012
-Message-Id: <20120110215020.985604335@clark.kroah.org>
+	id S933638Ab2AJXAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:00:31 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:23 2012
+Message-Id: <20120110215023.492991112@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:11 -0800
+Date: Tue, 10 Jan 2012 13:48:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Joe Perches <joe@perches.com>
-Subject: [01/42] MAINTAINERS: stable: Update address
+        alan@lxorguk.ukuu.org.uk, Hans de Goede <hdegoede@redhat.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [30/42] xhci: Properly handle COMP_2ND_BW_ERR
 In-Reply-To: <20120110215031.GA19398@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,29 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Joe Perches <joe@perches.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit bc7a2f3abc636d7cab84258a48e77b08fb5fd3d6 upstream.
+commit 71d85724bdd947a3b42a88d08af79f290a1a767b upstream.
 
-The old address hasn't worked since the great intrusion of August 2011.
+I encountered a result of COMP_2ND_BW_ERR while improving how the pwc
+webcam driver handles not having the full usb1 bandwidth available to
+itself.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+I created the following test setup, a NEC xhci controller with a
+single TT USB 2 hub plugged into it, with a usb keyboard and a pwc webcam
+plugged into the usb2 hub. This caused the following to show up in dmesg
+when trying to stream from the pwc camera at its highest alt setting:
+
+xhci_hcd 0000:01:00.0: ERROR: unexpected command completion code 0x23.
+usb 6-2.1: Not enough bandwidth for altsetting 9
+
+And usb_set_interface returned -EINVAL, which caused my pwc code to not
+do the right thing as it expected -ENOSPC.
+
+This patch makes the xhci driver properly handle COMP_2ND_BW_ERR and makes
+usb_set_interface return -ENOSPC as expected.
+
+This should be backported to stable kernels as old as 2.6.32.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- MAINTAINERS |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci.c |    1 +
+ drivers/usb/host/xhci.h |    1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
 
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6129,7 +6129,7 @@ F:	arch/alpha/kernel/srm_env.c
- 
- STABLE BRANCH
- M:	Greg Kroah-Hartman <greg@kroah.com>
--L:	stable@kernel.org
-+L:	stable@vger.kernel.org
- S:	Maintained
- 
- STAGING SUBSYSTEM
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -1568,6 +1568,7 @@ static int xhci_configure_endpoint_resul
+ 		/* FIXME: can we allocate more resources for the HC? */
+ 		break;
+ 	case COMP_BW_ERR:
++	case COMP_2ND_BW_ERR:
+ 		dev_warn(&udev->dev, "Not enough bandwidth "
+ 				"for new device state.\n");
+ 		ret = -ENOSPC;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -900,7 +900,6 @@ struct xhci_transfer_event {
+ /* Invalid Stream ID Error */
+ #define COMP_STRID_ERR	34
+ /* Secondary Bandwidth Error - may be returned by a Configure Endpoint cmd */
+-/* FIXME - check for this */
+ #define COMP_2ND_BW_ERR	35
+ /* Split Transaction Error */
+ #define	COMP_SPLIT_ERR	36
 
 
