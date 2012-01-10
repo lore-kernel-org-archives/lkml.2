@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab2AJRvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 12:51:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26439 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab2AJRvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 12:51:37 -0500
-Date: Tue, 10 Jan 2012 18:45:45 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Seiji Aguchi <saguchi@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] tracing: send_sigqueue() needs trace_signal_generate()
-	too
-Message-ID: <20120110174545.GB30810@redhat.com>
-References: <20120110174509.GA30802@redhat.com>
+	id S1756536Ab2AJSEd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 13:04:33 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59442 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752303Ab2AJSEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 13:04:31 -0500
+Date: Tue, 10 Jan 2012 18:04:21 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
+        akpm@linux-foundation.org
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+Message-ID: <20120110180421.GC23916@ZenIV.linux.org.uk>
+References: <20120109171639.GA9359@infradead.org>
+ <20120109173010.GX23916@ZenIV.linux.org.uk>
+ <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+ <20120109205907.GE4198@dastard>
+ <CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
+ <20120110013434.GA23916@ZenIV.linux.org.uk>
+ <CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
+ <CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
+ <CA+55aFxszjhj5MatYe_KXJ=vYyf-05kzBbtmY1vgoGUio0DXuQ@mail.gmail.com>
+ <CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120110174509.GA30802@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add trace_signal_generate() into send_sigqueue().
+On Tue, Jan 10, 2012 at 05:22:22PM +0100, Miklos Szeredi wrote:
 
-send_sigqueue() is very similar to __send_signal(), just it uses
-the preallocated info. It should do the same wrt tracing.
+> I think prune_dcache_sb() doesn't need this logic (although it
+> wouldn't hurt either) because that one is called from the slab
+> shrinkers and those are protected from being run multiple times in
+> parallel, I hope.
 
-Reported-by: Seiji Aguchi <saguchi@redhat.com>
-Reviewed-by: Seiji Aguchi <seiji.aguchi@hds.com>
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/signal.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 4515114..a6ff776 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1559,7 +1559,7 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
- 	int sig = q->info.si_signo;
- 	struct sigpending *pending;
- 	unsigned long flags;
--	int ret;
-+	int ret, result;
- 
- 	BUG_ON(!(q->flags & SIGQUEUE_PREALLOC));
- 
-@@ -1568,6 +1568,7 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
- 		goto ret;
- 
- 	ret = 1; /* the signal is ignored */
-+	result = TRACE_SIGNAL_IGNORED;
- 	if (!prepare_signal(sig, t, 0))
- 		goto out;
- 
-@@ -1579,6 +1580,7 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
- 		 */
- 		BUG_ON(q->info.si_code != SI_TIMER);
- 		q->info.si_overrun++;
-+		result = TRACE_SIGNAL_ALREADY_PENDING;
- 		goto out;
- 	}
- 	q->info.si_overrun = 0;
-@@ -1588,7 +1590,9 @@ int send_sigqueue(struct sigqueue *q, struct task_struct *t, int group)
- 	list_add_tail(&q->list, &pending->list);
- 	sigaddset(&pending->signal, sig);
- 	complete_signal(sig, t, group);
-+	result = TRACE_SIGNAL_DELIVERED;
- out:
-+	trace_signal_generate(sig, &q->info, t, group, result);
- 	unlock_task_sighand(t, &flags);
- ret:
- 	return ret;
--- 
-1.5.5.1
-
-
+	Eh...  We already have too much convoluted logics in there, so
+let's keep it as non-subtle as possible.
