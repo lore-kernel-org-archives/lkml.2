@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933706Ab2AJXZv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:25:51 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52152 "EHLO mx2.suse.de"
+	id S933652Ab2AJX0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:26:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52131 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933665Ab2AJW6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:39 -0500
+	id S932786Ab2AJW63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:58:29 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:21 2012
-Message-Id: <20120110214621.342835168@clark.kroah.org>
+Message-Id: <20120110214621.094722975@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:49 -0800
+Date: Tue, 10 Jan 2012 13:45:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Stephen Hemminger <shemminger@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [36/40] bonding: fix error handling if slave is busy (v2)
+        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>
+Subject: [33/40] OHCI: final fix for NVIDIA problems (I hope)
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +24,198 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: stephen hemminger <shemminger@vyatta.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f7d9821a6a9c83450ac35e76d3709e32fd38b76f upstream.
+commit c61875977458637226ab093a35d200f2d5789787 upstream.
 
-If slave device already has a receive handler registered, then the
-error unwind of bonding device enslave function is broken.
+Problems with NVIDIA's OHCI host controllers persist.  After looking
+carefully through the spec, I finally realized that when a controller
+is reset it then automatically goes into a SUSPEND state in which it
+is completely quiescent (no DMA and no IRQs) and from which it will
+not awaken until the system puts it into the OPERATIONAL state.
 
-The following will leave a pointer to freed memory in the slave
-device list, causing a later kernel panic.
-# modprobe dummy
-# ip li add dummy0-1 link dummy0 type macvlan
-# modprobe bonding
-# echo +dummy0 >/sys/class/net/bond0/bonding/slaves
+Therefore there's no need to worry about controllers being in the
+RESET state for extended periods, or remaining in the OPERATIONAL
+state during system shutdown.  The proper action for device
+initialization is to put the controller into the RESET state (if it's
+not there already) and then to issue a software reset.  Similarly, the
+proper action for device shutdown is simply to do a software reset.
 
-The fix is to detach the slave (which removes it from the list)
-in the unwind path.
+This patch (as1499) implements such an approach.  It simplifies
+initialization and shutdown, and allows the NVIDIA shutdown-quirk code
+to be removed.
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
-Reviewed-by: Nicolas de Pesloüan <nicolas.2p.debian@free.fr>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Andre "Osku" Schmidt <andre.osku.schmidt@googlemail.com>
+Tested-by: Arno Augustin <Arno.Augustin@web.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/bonding/bond_main.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/usb/host/ohci-hcd.c   |   15 ++++-------
+ drivers/usb/host/ohci-pci.c   |   26 --------------------
+ drivers/usb/host/ohci.h       |    1 
+ drivers/usb/host/pci-quirks.c |   54 ++++++++++++++++++------------------------
+ 4 files changed, 30 insertions(+), 66 deletions(-)
 
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1905,7 +1905,7 @@ int bond_enslave(struct net_device *bond
- 				 "but new slave device does not support netpoll.\n",
- 				 bond_dev->name);
- 			res = -EBUSY;
--			goto err_close;
-+			goto err_detach;
- 		}
+--- a/drivers/usb/host/ohci-hcd.c
++++ b/drivers/usb/host/ohci-hcd.c
+@@ -389,17 +389,14 @@ ohci_shutdown (struct usb_hcd *hcd)
+ 	struct ohci_hcd *ohci;
+ 
+ 	ohci = hcd_to_ohci (hcd);
+-	ohci_writel (ohci, OHCI_INTR_MIE, &ohci->regs->intrdisable);
+-	ohci->hc_control = ohci_readl(ohci, &ohci->regs->control);
++	ohci_writel(ohci, (u32) ~0, &ohci->regs->intrdisable);
+ 
+-	/* If the SHUTDOWN quirk is set, don't put the controller in RESET */
+-	ohci->hc_control &= (ohci->flags & OHCI_QUIRK_SHUTDOWN ?
+-			OHCI_CTRL_RWC | OHCI_CTRL_HCFS :
+-			OHCI_CTRL_RWC);
+-	ohci_writel(ohci, ohci->hc_control, &ohci->regs->control);
++	/* Software reset, after which the controller goes into SUSPEND */
++	ohci_writel(ohci, OHCI_HCR, &ohci->regs->cmdstatus);
++	ohci_readl(ohci, &ohci->regs->cmdstatus);	/* flush the writes */
++	udelay(10);
+ 
+-	/* flush the writes */
+-	(void) ohci_readl (ohci, &ohci->regs->control);
++	ohci_writel(ohci, ohci->fminterval, &ohci->regs->fminterval);
+ }
+ 
+ static int check_ed(struct ohci_hcd *ohci, struct ed *ed)
+--- a/drivers/usb/host/ohci-pci.c
++++ b/drivers/usb/host/ohci-pci.c
+@@ -175,28 +175,6 @@ static int ohci_quirk_amd700(struct usb_
+ 	return 0;
+ }
+ 
+-/* nVidia controllers continue to drive Reset signalling on the bus
+- * even after system shutdown, wasting power.  This flag tells the
+- * shutdown routine to leave the controller OPERATIONAL instead of RESET.
+- */
+-static int ohci_quirk_nvidia_shutdown(struct usb_hcd *hcd)
+-{
+-	struct pci_dev *pdev = to_pci_dev(hcd->self.controller);
+-	struct ohci_hcd	*ohci = hcd_to_ohci(hcd);
+-
+-	/* Evidently nVidia fixed their later hardware; this is a guess at
+-	 * the changeover point.
+-	 */
+-#define PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB		0x026d
+-
+-	if (pdev->device < PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_USB) {
+-		ohci->flags |= OHCI_QUIRK_SHUTDOWN;
+-		ohci_dbg(ohci, "enabled nVidia shutdown quirk\n");
+-	}
+-
+-	return 0;
+-}
+-
+ static void sb800_prefetch(struct ohci_hcd *ohci, int on)
+ {
+ 	struct pci_dev *pdev;
+@@ -260,10 +238,6 @@ static const struct pci_device_id ohci_p
+ 		PCI_DEVICE(PCI_VENDOR_ID_ATI, 0x4399),
+ 		.driver_data = (unsigned long)ohci_quirk_amd700,
+ 	},
+-	{
+-		PCI_DEVICE(PCI_VENDOR_ID_NVIDIA, PCI_ANY_ID),
+-		.driver_data = (unsigned long) ohci_quirk_nvidia_shutdown,
+-	},
+ 
+ 	/* FIXME for some of the early AMD 760 southbridges, OHCI
+ 	 * won't work at all.  blacklist them.
+--- a/drivers/usb/host/ohci.h
++++ b/drivers/usb/host/ohci.h
+@@ -403,7 +403,6 @@ struct ohci_hcd {
+ #define	OHCI_QUIRK_HUB_POWER	0x100			/* distrust firmware power/oc setup */
+ #define	OHCI_QUIRK_AMD_PLL	0x200			/* AMD PLL quirk*/
+ #define	OHCI_QUIRK_AMD_PREFETCH	0x400			/* pre-fetch for ISO transfer */
+-#define	OHCI_QUIRK_SHUTDOWN	0x800			/* nVidia power bug */
+ 	// there are also chip quirks/bugs in init logic
+ 
+ 	struct work_struct	nec_work;	/* Worker for NEC quirk */
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -36,6 +36,7 @@
+ #define OHCI_INTRENABLE		0x10
+ #define OHCI_INTRDISABLE	0x14
+ #define OHCI_FMINTERVAL		0x34
++#define OHCI_HCFS		(3 << 6)	/* hc functional state */
+ #define OHCI_HCR		(1 << 0)	/* host controller reset */
+ #define OHCI_OCR		(1 << 3)	/* ownership change request */
+ #define OHCI_CTRL_RWC		(1 << 9)	/* remote wakeup connected */
+@@ -465,6 +466,8 @@ static void __devinit quirk_usb_handoff_
+ {
+ 	void __iomem *base;
+ 	u32 control;
++	u32 fminterval;
++	int cnt;
+ 
+ 	if (!mmio_resource_enabled(pdev, 0))
+ 		return;
+@@ -497,41 +500,32 @@ static void __devinit quirk_usb_handoff_
  	}
  #endif
-@@ -1914,7 +1914,7 @@ int bond_enslave(struct net_device *bond
  
- 	res = bond_create_slave_symlinks(bond_dev, slave_dev);
- 	if (res)
--		goto err_close;
-+		goto err_detach;
+-	/* reset controller, preserving RWC (and possibly IR) */
+-	writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
+-	readl(base + OHCI_CONTROL);
+-
+-	/* Some NVIDIA controllers stop working if kept in RESET for too long */
+-	if (pdev->vendor == PCI_VENDOR_ID_NVIDIA) {
+-		u32 fminterval;
+-		int cnt;
++	/* disable interrupts */
++	writel((u32) ~0, base + OHCI_INTRDISABLE);
  
- 	res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
- 					 new_slave);
-@@ -1935,6 +1935,11 @@ int bond_enslave(struct net_device *bond
- err_dest_symlinks:
- 	bond_destroy_slave_symlinks(bond_dev, slave_dev);
+-		/* drive reset for at least 50 ms (7.1.7.5) */
+-		msleep(50);
+-
+-		/* software reset of the controller, preserving HcFmInterval */
+-		fminterval = readl(base + OHCI_FMINTERVAL);
+-		writel(OHCI_HCR, base + OHCI_CMDSTATUS);
+-
+-		/* reset requires max 10 us delay */
+-		for (cnt = 30; cnt > 0; --cnt) {	/* ... allow extra time */
+-			if ((readl(base + OHCI_CMDSTATUS) & OHCI_HCR) == 0)
+-				break;
+-			udelay(1);
+-		}
+-		writel(fminterval, base + OHCI_FMINTERVAL);
++	/* Reset the USB bus, if the controller isn't already in RESET */
++	if (control & OHCI_HCFS) {
++		/* Go into RESET, preserving RWC (and possibly IR) */
++		writel(control & OHCI_CTRL_MASK, base + OHCI_CONTROL);
++		readl(base + OHCI_CONTROL);
  
-+err_detach:
-+	write_lock_bh(&bond->lock);
-+	bond_detach_slave(bond, new_slave);
-+	write_unlock_bh(&bond->lock);
+-		/* Now we're in the SUSPEND state with all devices reset
+-		 * and wakeups and interrupts disabled
+-		 */
++		/* drive bus reset for at least 50 ms (7.1.7.5) */
++		msleep(50);
+ 	}
+ 
+-	/*
+-	 * disable interrupts
+-	 */
+-	writel(~(u32)0, base + OHCI_INTRDISABLE);
+-	writel(~(u32)0, base + OHCI_INTRSTATUS);
++	/* software reset of the controller, preserving HcFmInterval */
++	fminterval = readl(base + OHCI_FMINTERVAL);
++	writel(OHCI_HCR, base + OHCI_CMDSTATUS);
 +
- err_close:
- 	dev_close(slave_dev);
++	/* reset requires max 10 us delay */
++	for (cnt = 30; cnt > 0; --cnt) {	/* ... allow extra time */
++		if ((readl(base + OHCI_CMDSTATUS) & OHCI_HCR) == 0)
++			break;
++		udelay(1);
++	}
++	writel(fminterval, base + OHCI_FMINTERVAL);
+ 
++	/* Now the controller is safely in SUSPEND and nothing can wake it up */
+ 	iounmap(base);
+ }
  
 
 
