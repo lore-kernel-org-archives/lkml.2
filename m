@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756692Ab2AJS2j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 13:28:39 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33972 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657Ab2AJS2i (ORCPT
+	id S1756708Ab2AJS2p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 13:28:45 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52173 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756657Ab2AJS2k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 13:28:38 -0500
+	Tue, 10 Jan 2012 13:28:40 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
         teravest@google.com, slavapestov@google.com, ctalbott@google.com,
         dhsharp@google.com
 Cc: linux-kernel@vger.kernel.org, winget@google.com, namhyung@gmail.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/9] block: abstract disk iteration into disk_iter
-Date: Tue, 10 Jan 2012 10:28:18 -0800
-Message-Id: <1326220106-5765-2-git-send-email-tj@kernel.org>
+Subject: [PATCH 2/9] block: block_bio_complete tracepoint was missing
+Date: Tue, 10 Jan 2012 10:28:19 -0800
+Message-Id: <1326220106-5765-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1326220106-5765-1-git-send-email-tj@kernel.org>
 References: <1326220106-5765-1-git-send-email-tj@kernel.org>
@@ -23,202 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using class_dev_iter directly, abstract disk iteration into
-disk_iter and helpers which are exported.  This simplifies the callers
-a bit and allows external users to iterate over disks.
+block_bio_complete tracepoint was defined but not invoked anywhere.
+Fix it.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+-tj: This will generate duplicate BLK_TA_COMPLETEs.  Namhyung is
+     working on proper solution.
+
+DO_NOT_APPLY
+Cc: Namhyung Kim <namhyung@gmail.com>
 ---
- block/genhd.c         |   98 +++++++++++++++++++++++++++++++++----------------
- include/linux/genhd.h |   10 ++++-
- 2 files changed, 75 insertions(+), 33 deletions(-)
+ fs/bio.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/block/genhd.c b/block/genhd.c
-index 83e7c04..7c811ff 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -40,6 +40,47 @@ static void disk_del_events(struct gendisk *disk);
- static void disk_release_events(struct gendisk *disk);
+diff --git a/fs/bio.c b/fs/bio.c
+index b1fe82c..96548da 100644
+--- a/fs/bio.c
++++ b/fs/bio.c
+@@ -1447,6 +1447,9 @@ void bio_endio(struct bio *bio, int error)
+ 	else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+ 		error = -EIO;
  
- /**
-+ * disk_iter_init - initialize disk iterator
-+ * @diter: iterator to initialize
-+ *
-+ * Initialize @diter so that it iterates over all disks
-+ */
-+void disk_iter_init(struct disk_iter *diter)
-+{
-+	class_dev_iter_init(&diter->cdev_iter, &block_class, NULL, &disk_type);
-+}
-+EXPORT_SYMBOL_GPL(disk_iter_init);
-+
-+/**
-+ * disk_iter_next - proceed iterator to the next disk and return it
-+ * @diter: iterator to proceed
-+ *
-+ * Proceed @diter to the next disk and return it.
-+ */
-+struct gendisk *disk_iter_next(struct disk_iter *diter)
-+{
-+	struct device *dev;
-+
-+	dev = class_dev_iter_next(&diter->cdev_iter);
-+	if (dev)
-+		return dev_to_disk(dev);
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(disk_iter_next);
-+
-+/**
-+ * disk_iter_exit - finish up disk iteration
-+ * @diter: iter to exit
-+ *
-+ * Called when iteration is over.  Cleans up @diter.
-+ */
-+void disk_iter_exit(struct disk_iter *diter)
-+{
-+	class_dev_iter_exit(&diter->cdev_iter);
-+}
-+EXPORT_SYMBOL_GPL(disk_iter_exit);
-+
-+/**
-  * disk_get_part - get partition
-  * @disk: disk to look partition from
-  * @partno: partition number
-@@ -730,12 +771,11 @@ EXPORT_SYMBOL(bdget_disk);
-  */
- void __init printk_all_partitions(void)
- {
--	struct class_dev_iter iter;
--	struct device *dev;
-+	struct disk_iter diter;
-+	struct gendisk *disk;
- 
--	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
--	while ((dev = class_dev_iter_next(&iter))) {
--		struct gendisk *disk = dev_to_disk(dev);
-+	disk_iter_init(&diter);
-+	while ((disk = disk_iter_next(&diter))) {
- 		struct disk_part_iter piter;
- 		struct hd_struct *part;
- 		char name_buf[BDEVNAME_SIZE];
-@@ -779,7 +819,7 @@ void __init printk_all_partitions(void)
- 		}
- 		disk_part_iter_exit(&piter);
- 	}
--	class_dev_iter_exit(&iter);
-+	disk_iter_exit(&diter);
++	if (bio->bi_bdev)
++		trace_block_bio_complete(bdev_get_queue(bio->bi_bdev),
++					 bio, error);
+ 	if (bio->bi_end_io)
+ 		bio->bi_end_io(bio, error);
  }
- 
- #ifdef CONFIG_PROC_FS
-@@ -787,44 +827,38 @@ void __init printk_all_partitions(void)
- static void *disk_seqf_start(struct seq_file *seqf, loff_t *pos)
- {
- 	loff_t skip = *pos;
--	struct class_dev_iter *iter;
--	struct device *dev;
-+	struct disk_iter *diter;
-+	struct gendisk *disk;
- 
--	iter = kmalloc(sizeof(*iter), GFP_KERNEL);
--	if (!iter)
-+	diter = kmalloc(sizeof(*diter), GFP_KERNEL);
-+	if (!diter)
- 		return ERR_PTR(-ENOMEM);
- 
--	seqf->private = iter;
--	class_dev_iter_init(iter, &block_class, NULL, &disk_type);
-+	seqf->private = diter;
-+	disk_iter_init(diter);
- 	do {
--		dev = class_dev_iter_next(iter);
--		if (!dev)
-+		disk = disk_iter_next(diter);
-+		if (!disk)
- 			return NULL;
- 	} while (skip--);
- 
--	return dev_to_disk(dev);
-+	return disk;
- }
- 
- static void *disk_seqf_next(struct seq_file *seqf, void *v, loff_t *pos)
- {
--	struct device *dev;
--
- 	(*pos)++;
--	dev = class_dev_iter_next(seqf->private);
--	if (dev)
--		return dev_to_disk(dev);
--
--	return NULL;
-+	return disk_iter_next(seqf->private);
- }
- 
- static void disk_seqf_stop(struct seq_file *seqf, void *v)
- {
--	struct class_dev_iter *iter = seqf->private;
-+	struct disk_iter *diter = seqf->private;
- 
- 	/* stop is called even after start failed :-( */
--	if (iter) {
--		class_dev_iter_exit(iter);
--		kfree(iter);
-+	if (diter) {
-+		disk_iter_exit(diter);
-+		kfree(diter);
- 	}
- }
- 
-@@ -1206,12 +1240,12 @@ module_init(proc_genhd_init);
- dev_t blk_lookup_devt(const char *name, int partno)
- {
- 	dev_t devt = MKDEV(0, 0);
--	struct class_dev_iter iter;
--	struct device *dev;
-+	struct disk_iter diter;
-+	struct gendisk *disk;
- 
--	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
--	while ((dev = class_dev_iter_next(&iter))) {
--		struct gendisk *disk = dev_to_disk(dev);
-+	disk_iter_init(&diter);
-+	while ((disk = disk_iter_next(&diter))) {
-+		struct device *dev = disk_to_dev(disk);
- 		struct hd_struct *part;
- 
- 		if (strcmp(dev_name(dev), name))
-@@ -1233,7 +1267,7 @@ dev_t blk_lookup_devt(const char *name, int partno)
- 		}
- 		disk_put_part(part);
- 	}
--	class_dev_iter_exit(&iter);
-+	disk_iter_exit(&diter);
- 	return devt;
- }
- EXPORT_SYMBOL(blk_lookup_devt);
-diff --git a/include/linux/genhd.h b/include/linux/genhd.h
-index fe23ee7..9d0e0b5 100644
---- a/include/linux/genhd.h
-+++ b/include/linux/genhd.h
-@@ -260,8 +260,16 @@ static inline void disk_put_part(struct hd_struct *part)
- }
- 
- /*
-- * Smarter partition iterator without context limits.
-+ * Smarter disk and partition iterators without context limits.
-  */
-+struct disk_iter {
-+	struct class_dev_iter	cdev_iter;
-+};
-+
-+extern void disk_iter_init(struct disk_iter *diter);
-+extern struct gendisk *disk_iter_next(struct disk_iter *diter);
-+extern void disk_iter_exit(struct disk_iter *diter);
-+
- #define DISK_PITER_REVERSE	(1 << 0) /* iterate in the reverse direction */
- #define DISK_PITER_INCL_EMPTY	(1 << 1) /* include 0-sized parts */
- #define DISK_PITER_INCL_PART0	(1 << 2) /* include partition 0 */
 -- 
 1.7.3.1
 
