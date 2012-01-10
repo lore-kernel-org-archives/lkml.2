@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932884Ab2AJTTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 14:19:20 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63129 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932306Ab2AJTTH convert rfc822-to-8bit (ORCPT
+	id S932812Ab2AJTZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 14:25:03 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58050 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175Ab2AJTZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 14:19:07 -0500
+	Tue, 10 Jan 2012 14:25:01 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120110184530.GE7164@opensource.wolfsonmicro.com>
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com> <20120110184530.GE7164@opensource.wolfsonmicro.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 11:18:44 -0800
-X-Google-Sender-Auth: 473cEo-nmbvG5HjxiotLXz_4Hpw
-Message-ID: <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
-Subject: Re: Regulator updates for 3.3
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20120110121459.6b358afe6052810e91dfdd47@canb.auug.org.au>
+References: <CA+8MBbKKTmZ2fD-j0xnQuxDh9jBO8jfV=gjP2cVvuPZg4r42+Q@mail.gmail.com>
+	<20120110121459.6b358afe6052810e91dfdd47@canb.auug.org.au>
+Date: Tue, 10 Jan 2012 11:25:00 -0800
+Message-ID: <CA+8MBb+=dQb9LE=pDbOw7DBh0Tr=rp4cTstxwQGWGDOguvMpaw@mail.gmail.com>
+Subject: Re: more PID churn during boot?
+From: Tony Luck <tony.luck@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 10:45 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
->
-> Hrm, OK.  These merges are all merges up of bug fixes for -rc from my
-> own tree into the development code which I tend to do constantly to make
-> it easier to work directly on the development branch.  What's the best
-> practice here - push things to you a bit more aggressively and wait
-> until you've tagged a -rc and then merge that back up into the
-> development branch?
+On Mon, Jan 9, 2012 at 5:14 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> while the 2012 editions print:
+>>
+>> udevd (341): /proc/341/oom_adj is deprecated, please use
+>> /proc/341/oom_score_adj instead.
 
-No. Just don't do the merges. If your development tree isn't stable on
-its own, then there is something seriously wrong in what you do.
+Ok - not a kernel problem. Building old kernels (that used to not have this
+much churn) while checking for the start point for a bisect started showing
+the same churn.
 
-Doing *one* or two merges during the cycle might be ok just to not get
-too far out, but you have way way WAY too many of them.
+I tracked the start of the problem to when I updated my build machine
+on jan 3rd - and it's now throwing a new version of udevd[*] into the initrd
+that I throw at my test machine.
+Probably a bunch of other initrd components are new versions too.
 
-Just do this:
+-Tony
 
-    gitk d52739c62e00..269d430131b6
-
-to see what I actually got, and then look at what you did on Nov 27,
-for example. You did *two* of the merges within hours of each other!
-And then you had two more the very next day, without even having any
-actual development in between! That's just crazy. The fact that you
-then say that you have some kind of *excuse* for that craziness is
-just sad.
-
-Stop doing that. It's stupid. It just makes it harder for everybody to
-see what you are doing. You didn't even do any *development* in that
-tree, you just did a few merges in a row because *some other tree* had
-done development! Followed up by a three-way merge where one of the
-points was *again* that useless one. Can't you see how crazy that is?
-
-And the "two consecutive merges with no development in between" is
-just the extreme case of that. It's wrong in general, that extra crazy
-case is just the extreme example of what kind of crap happens when you
-think that you should track another unrelated branch in your
-"for-next" branch.
-
-You shouldn't do that. It's your development branch. You shouldn't
-track the "for-linus" branch in it.
-
-                          Linus
+[1] Builds since Jan 3rd all have this extra line in dmesg log:
+udev: starting version 147
