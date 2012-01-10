@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933550Ab2AJX1j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:27:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52092 "EHLO mx2.suse.de"
+	id S933511Ab2AJX2D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:28:03 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52084 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933425Ab2AJW6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:03 -0500
+	id S933389Ab2AJW6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:58:00 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:20 2012
-Message-Id: <20120110214620.552944937@clark.kroah.org>
+Message-Id: <20120110214620.472107630@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:40 -0800
+Date: Tue, 10 Jan 2012 13:45:39 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk,
-        =?UTF-8?q?Malte=20Schr=C3=B6der?= <maltesch@gmx.de>
-Subject: [27/40] USB: Add USB-ID for Multiplex RC serial adapter to cp210x.c
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [26/40] USB: omninet: fix write_room
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,30 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malte Schröder <maltesch@gmx.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 08e87d0d773dc9ca5faf4c3306e238ed0ea129b0 upstream.
+commit 694c6301e515bad574af74b6552134c4d9dcb334 upstream.
 
-Hi, below patch adds the USB-ID of the serial adapters sold by
-Multiplex RC (www.multiplex-rc.de).
+Fix regression introduced by commit 507ca9bc047666 ([PATCH] USB: add
+ability for usb-serial drivers to determine if their write urb is
+currently being used.) which inverted the logic in write_room so that it
+returns zero when the write urb is actually free.
 
-Signed-off-by: Malte Schröder <maltesch@gmx.de>
-Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/omninet.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -92,6 +92,7 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
- 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
- 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
-+	{ USB_DEVICE(0x10C4, 0x81A9) }, /* Multiplex RC Interface */
- 	{ USB_DEVICE(0x10C4, 0x81AC) }, /* MSD Dash Hawk */
- 	{ USB_DEVICE(0x10C4, 0x81AD) }, /* INSYS USB Modem */
- 	{ USB_DEVICE(0x10C4, 0x81C8) }, /* Lipowsky Industrie Elektronik GmbH, Baby-JTAG */
+--- a/drivers/usb/serial/omninet.c
++++ b/drivers/usb/serial/omninet.c
+@@ -315,7 +315,7 @@ static int omninet_write_room(struct tty
+ 	int room = 0; /* Default: no room */
+ 
+ 	/* FIXME: no consistent locking for write_urb_busy */
+-	if (wport->write_urb_busy)
++	if (!wport->write_urb_busy)
+ 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
+ 
+ 	dbg("%s - returns %d", __func__, room);
 
 
