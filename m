@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756651Ab2AJWyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:54:49 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43486 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751647Ab2AJWys (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:54:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120110222711.GK7164@opensource.wolfsonmicro.com>
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
- <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
- <20120110222711.GK7164@opensource.wolfsonmicro.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 14:54:27 -0800
-X-Google-Sender-Auth: xCqIsQ7YZkUlLzTFpFo2HRARxGE
-Message-ID: <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
-Subject: Re: Regulator updates for 3.3
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Junio C Hamano <gitster@pobox.com>,
-        Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756654Ab2AJW5J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:57:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51995 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab2AJW5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:57:07 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:18 2012
+Message-Id: <20120110214618.428828159@clark.kroah.org>
+User-Agent: quilt/0.50-25.1
+Date: Tue, 10 Jan 2012 13:45:15 -0800
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Joe Perches <joe@perches.com>
+Subject: [02/40] Documentation: Update stable address
+In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 2:27 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
->
-> Especially in the cases where the lack of the bug fix breaks the new
-> code it sems sensible enough to want to do the merges so that the
-> history includes things that actually work.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-So I don't mind merges if they have a lear reason for existing.
+------------------
 
-This is actually one of my major gripes with the git UI, and one of
-the few areas where I really think I screwed up: I made merging *too*
-easy by default. I should have made it always start up an editor for a
-merge message, the way it does for a commit - rather than just do a
-trivial pointless merge without even asking the user for a reason for
-the merge.
+From: Joe Perches <joe@perches.com>
 
-So looking at that almost two months of regulator history in
+commit 2eb7f204db51969ea558802a6601d79c2fb273b9 upstream.
 
-   gitk d52739c62e00..269d430131b6
+The Japanese/Korean/Chinese versions still need updating.
 
-I would not have reacted badly at all if there were one or two of
-those merges, and they actually had a reason associated with them.
-Sadly, due to that git UI mess-up, that's harder to do than it should
-be. Oh, it's easy enough with "git merge --no-commit" followed by just
-"git commit", and then you get the normal git editor window.
+Also, the stable kernel 2.6.x.y descriptions are out of date
+and should be updated as well.
 
-So right now "git merge" (and "git pull") make it too easy to make
-those meaningless merge commits. If instead of seven pointless merges
-you had (say) had two merges that had messages about *why* they
-weren't pointless, I'd be perfectly happy.
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Addid junio and git to the cc just to bring up this issue of bad UI
-once again. I realize it could break old scripts to start up an editor
-window, but still..
+---
+ Documentation/HOWTO                         |    4 ++--
+ Documentation/development-process/5.Posting |    8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-                       Linus
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -275,8 +275,8 @@ versions.
+ If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
+ kernel is the current stable kernel.
+ 
+-2.6.x.y are maintained by the "stable" team <stable@kernel.org>, and are
+-released as needs dictate.  The normal release period is approximately 
++2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
++are released as needs dictate.  The normal release period is approximately
+ two weeks, but it can be longer if there are no pressing problems.  A
+ security-related problem, instead, can cause a release to happen almost
+ instantly.
+--- a/Documentation/development-process/5.Posting
++++ b/Documentation/development-process/5.Posting
+@@ -271,10 +271,10 @@ copies should go to:
+    the linux-kernel list.
+ 
+  - If you are fixing a bug, think about whether the fix should go into the
+-   next stable update.  If so, stable@kernel.org should get a copy of the
+-   patch.  Also add a "Cc: stable@kernel.org" to the tags within the patch
+-   itself; that will cause the stable team to get a notification when your
+-   fix goes into the mainline.
++   next stable update.  If so, stable@vger.kernel.org should get a copy of
++   the patch.  Also add a "Cc: stable@vger.kernel.org" to the tags within
++   the patch itself; that will cause the stable team to get a notification
++   when your fix goes into the mainline.
+ 
+ When selecting recipients for a patch, it is good to have an idea of who
+ you think will eventually accept the patch and get it merged.  While it
+
+
