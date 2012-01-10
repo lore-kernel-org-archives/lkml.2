@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933631Ab2AJB6B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 20:58:01 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:62148 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932329Ab2AJB6A convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 20:58:00 -0500
+	id S1755944Ab2AJCCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 21:02:34 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56747 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab2AJCCc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 21:02:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-References: <bug-41722-5003@https.bugzilla.kernel.org/>
-	<201109062222.p86MMlK9023363@demeter2.kernel.org>
-	<CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
-	<CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-	<20120108221342.GA7058@ime.usp.br>
-	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-Date: Mon, 9 Jan 2012 23:57:59 -0200
-X-Google-Sender-Auth: 3Ig5uXumHPRGj15_gqBJrHA6rMk
-Message-ID: <CAOtrxKOkqxBepX19E1DJu+KSN=DJxxnWi3T9DnJR-C8pRfA-tg@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: bugzilla-daemon@bugzilla.kernel.org,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>, Ram Pai <linuxram@us.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20120110013434.GA23916@ZenIV.linux.org.uk>
+References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu> <20120109171639.GA9359@infradead.org>
+ <20120109173010.GX23916@ZenIV.linux.org.uk> <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+ <20120109205907.GE4198@dastard> <CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
+ <20120110013434.GA23916@ZenIV.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 9 Jan 2012 18:02:10 -0800
+X-Google-Sender-Auth: DEo_9c3gziPCqL8L6ixoK0Qx4fs
+Message-ID: <CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Linus.
-
-On Sun, Jan 8, 2012 at 20:23, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Jan 8, 2012 at 2:13 PM, Rogério Brito <rbrito@ime.usp.br> wrote:
->>
->> It doesn't boot with a vanilla kernel. It only boots when I pass the options
->> above *and* compile the kernel with the following patch applied:
->>
->> ,----[ do_not_size_subtractive_decoding_transparent_pci_to_pci_bridges.patch ]
->> | diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
->> | index 86b69f85..84543f5 100644
->> | --- a/drivers/pci/setup-bus.c
->> | +++ b/drivers/pci/setup-bus.c
->> | @@ -849,6 +849,10 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
->> |               break;
->> |
->> |       case PCI_CLASS_BRIDGE_PCI:
->> | +             /* don't size subtractive decoding (transparent)
->> | +              * PCI-to-PCI bridges */
->> | +             if (bus->self->transparent)
->> | +                     break;
->> |               pci_bridge_check_ranges(bus);
->> |               if (bus->self->is_hotplug_bridge) {
->> |                       additional_io_size  = pci_hotplug_io_size;
->> `----
+On Mon, Jan 9, 2012 at 5:34 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
 >
-> Ahh. I'd forgotten about that particular PCI patch.
+> Dave Chinner (1):
+> � � �dcache: use a dispose list in select_parent
 
-Thanks for acknowledging that issue.
+Hmm. Should this also have been marked for stable? I'm assuming that
+the possible deadlock (strictly speaking it's a livelock, I guess?)
+goes back several releases.
 
-> I think we should try to re-do that "avoid sizing transparent bridges"
-> commit, because it really should make it much easier to do PCI
-> allocations under some very common situations (there's a *lot* of
-> common intel transparent PCI bridges).
+Anyway, it's in my tree now, I suspect it would be good to pick at
+least as far back as it trivially applies.
 
-All this PCI stuff is alien to me, but I am learning some by osmosis
-here, which is not bad at all. :)
+Greg - commit b48f03b319ba78f3abf9a7044d1f436d8d90f4f9.
 
-I only fear that if the patch above is applied and proves to have ill
-effects if reverting it will leave this computer (and, potentially,
-some others) without booting. As I always say, I can test anything
-that you guys want me to do, given some guidance.
-
-
-Thanks,
-
--- 
-Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
-http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
-DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
+                           Linus
