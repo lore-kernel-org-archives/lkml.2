@@ -1,33 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab2AJIjv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:39:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46091 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab2AJIju (ORCPT
+	id S1755147Ab2AJImh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:42:37 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:41004 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754209Ab2AJIme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:39:50 -0500
-Date: Tue, 10 Jan 2012 08:39:33 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [GIT PULL 05/11] SoC-level changes for tegra and omap
-Message-ID: <20120110083933.GS21765@n2100.arm.linux.org.uk>
-References: <1326147171-13752-1-git-send-email-arnd@arndb.de> <1326147171-13752-6-git-send-email-arnd@arndb.de> <CA+55aFyaOnJhrZOFnRiShH9kTeGEG8O8m9spvKF=c36QzjSvBA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyaOnJhrZOFnRiShH9kTeGEG8O8m9spvKF=c36QzjSvBA@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 10 Jan 2012 03:42:34 -0500
+Date: Tue, 10 Jan 2012 09:42:28 +0100
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 00/14] DMA-mapping framework redesign preparation
+In-reply-to: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org
+Cc: "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
+        "'Thomas Gleixner'" <tglx@linutronix.de>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Message-id: <012501cccf73$c90246a0$5b06d3e0$%szyprowski@samsung.com>
+Organization: SPRC
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: pl
+Content-transfer-encoding: 7BIT
+Thread-index: AczBbk0Kypq1Ioj9R1+ZJPNin88RbgOBU+nw
+References: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 02:37:17PM -0800, Linus Torvalds wrote:
-> Please do use -M, because it ends up making diffstats *so* much more
-> readable when there are renames (instead of big delete-create diffs,
-> you get a small diffstat that actually is much more relevant to what
-> happened).
+Hello,
 
-What about using -C instead (which implies -M, but also detects copies) ?
+To help everyone in testing and adapting our patches for his hardware 
+platform I've rebased our patches onto the latest v3.2 Linux kernel and
+prepared a few GIT branches in our public repository. These branches
+contain our memory management related patches posted in the following
+threads:
+
+"[PATCHv18 0/11] Contiguous Memory Allocator":
+http://www.spinics.net/lists/linux-mm/msg28125.html
+later called CMAv18,
+
+"[PATCH 00/14] DMA-mapping framework redesign preparation":
+http://www.spinics.net/lists/linux-sh/msg09777.html
+and
+"[PATCH 0/8 v4] ARM: DMA-mapping framework redesign":
+http://www.spinics.net/lists/arm-kernel/msg151147.html
+with the following update:
+http://www.spinics.net/lists/arm-kernel/msg154889.html
+later called DMAv5.
+
+These branches are available in our public GIT repository:
+
+git://git.infradead.org/users/kmpark/linux-samsung
+http://git.infradead.org/users/kmpark/linux-samsung/
+
+The following branches are available:
+
+1) 3.2-cma-v18
+Vanilla Linux v3.2 with fixed CMA v18 patches (first patch replaced
+with the one from v17 to fix SMP issues, see the respective thread).
+
+2) 3.2-dma-v5
+Vanilla Linux v3.2 + iommu/next (IOMMU maintainer's patches) branch
+with DMA-preparation and DMA-mapping framework redesign patches.
+
+3) 3.2-cma-v18-dma-v5
+Previous two branches merged together (DMA-mapping on top of CMA)
+
+4) 3.2-cma-v18-dma-v5-exynos
+Previous branch rebased on top of iommu/next + kgene/for-next (Samsung
+SoC platform maintainer's patches) with new Exynos4 IOMMU driver by 
+KyongHo Cho and relevant glue code.
+
+5) 3.2-dma-v5-exynos
+Branch from point 2 rebased on top of iommu/next + kgene/for-next 
+(Samsung SoC maintainer's patches) with new Exynos4 IOMMU driver by 
+KyongHo Cho and relevant glue code.
+
+I hope everyone will find a branch that suits his needs. :)
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+
