@@ -1,107 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab2AJNi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 08:38:59 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:26608 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755673Ab2AJNi5 convert rfc822-to-8bit (ORCPT
+	id S1756305Ab2AJNlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 08:41:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53809 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab2AJNlO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 08:38:57 -0500
-X-IronPort-AV: E=Sophos;i="4.71,487,1320652800"; 
-   d="scan'208";a="615218704"
-Message-ID: <1326202733.2477.32.camel@lade.trondhjem.org>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes and cleanups
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Wolfgang Walter <wolfgang.walter@stwm.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 10 Jan 2012 08:38:53 -0500
-In-Reply-To: <201201101153.51438.wolfgang.walter@stwm.de>
-References: <1326142671.9041.1.camel@lade.trondhjem.org>
-	 <201201100149.00716.wolfgang.walter@stwm.de>
-	 <1326160381.13527.4.camel@lade.trondhjem.org>
-	 <201201101153.51438.wolfgang.walter@stwm.de>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 10 Jan 2012 13:38:53.0736 (UTC) FILETIME=[31B06280:01CCCF9D]
+	Tue, 10 Jan 2012 08:41:14 -0500
+Date: Tue, 10 Jan 2012 21:51:50 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Richard Zhao <richard.zhao@freescale.com>,
+        Richard Zhao <richard.zhao@linaro.org>, linus.walleij@stericsson.com,
+        s.hauer@pengutronix.de, w.sang@pengutronix.de, rob.herring@calxeda.com,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        shawn.guo@freescale.com, kernel@pengutronix.de, cjb@laptop.org,
+        Dong Aisheng <b29396@freescale.com>,
+        devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH v3 3/5] pinctrl: imx: add pinctrl imx driver
+Message-ID: <20120110135147.GB26599@S2101-09.ap.freescale.net>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+ <1324402840-32451-4-git-send-email-b29396@freescale.com>
+ <20120108130542.GC2203@richard-laptop>
+ <20120109020848.GF1835@S2101-09.ap.freescale.net>
+ <20120109021702.GV2414@b20223-02.ap.freescale.net>
+ <20120109063136.GI1835@S2101-09.ap.freescale.net>
+ <20120110083842.GA2414@b20223-02.ap.freescale.net>
+ <CACRpkdZ=G+=Aq49r9VYa1ZGMg=Sy3Dy3kHNbbcFRp-Hn6y1ZqQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ=G+=Aq49r9VYa1ZGMg=Sy3Dy3kHNbbcFRp-Hn6y1ZqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 11:53 +0100, Wolfgang Walter wrote: 
-> Am Dienstag, 10. Januar 2012 schrieb Trond Myklebust:
-> > On Tue, 2012-01-10 at 01:49 +0100, Wolfgang Walter wrote:
-> > > On Monday 09 January 2012, Trond Myklebust wrote:
-> > > > On Mon, 2012-01-09 at 14:28 -0800, Myklebust, Trond wrote:
-> > > > > > -----Original Message-----
-> > > > >
-> > > > > Please read the changelog and documentation:
-> > > > >
-> > > > > If your server doesn’t support numeric uids/gids, then you will see
-> > > > > _no_ change in behaviour.
-> > >
-> > > Hmm, what does that mean exactly? Does a linux nfs4-server support
-> > > numeric uids/gids? If yes, by default or do I need do set an option?
-> >
-> > The patch requires no changes to a configuration that is already
-> > working. That's the whole point I've been trying to get across.
+On Tue, Jan 10, 2012 at 11:43:28AM +0100, Linus Walleij wrote:
+> On Tue, Jan 10, 2012 at 9:38 AM, Richard Zhao
+> <richard.zhao@freescale.com> wrote:
+> > On Mon, Jan 09, 2012 at 02:32:12PM +0800, Shawn Guo wrote:
+> >> As I was educated by Linus.W, we can not drink ocean and we need to
+> >> split big chunk of work into pieces and achieve it step by step.
+> > Sure, we can not drink out the ocean :). But if people can not use it
+> > in real case, how do we verify the driver? How do we know the driver
+> > goes in the right way?
 > 
-> So if user foo has uid 500 on the server and uid 600 on the client that will 
-> still work with AUTH_SYS:
+> If you prefer to do a big upfront design of the entire driver then please
+> by all means do that.
 > 
-> client: uid 500 => foo@REALM
-> server: foo@REALM => uid 600
+> What we need to know right now is what you need from the pin
+> controller core to do that. We have a (custom) pinconf API now,
+> does it fit the bill?
+> 
+Hmm, I do not think it fits right away, as I do not think it's sensible
+to have pinctrl client drivers call pin_config_set() directly.
 
-No. In the scenario you describe above, it will be
+> I have spent some time on generic pin config, it was not much
+> commented so if it helps you please ACK the patches.
+> 
+Since the ARM community is the one who is most interested in pinctrl
+subsystem so far, I guess copying LAKML will help collect more comments
+and various tags.  (For example, I'm interested in pinctrl, but I do
+not track LKML as close as I do for LAKML).
 
-client: uid 600 <=> foo@REALM
-server: foo@REALM <=> uid 500
-
-> and vice-versa?
-
-The above _not_ work properly in the existing code... This kind of
-situation is the whole reason for wanting to change the existing code.
-
-With the existing code, the client will send numeric uid 600 as part of
-the rpc-level AUTH_SYS authentication, and so the server will create
-files with uid 600 irrespective of the foo@REALM idmapping at the NFSv4
-level.
-When the client later attempts to do a GETATTR on that file, the server
-will then translate that uid 600 using the idmapper
-
-server  uid 600 => bar@REALM
-client  bar@REALM => uid 213412
-
-IOW: This is exactly the situation where we want to use numeric uids
-everywhere, so that the server returns a numeric uid 600 in the GETATTR.
-In addition, if the client does a 'chown foo', it should send uid 600 in
-the SETATTR request, which matches the uid 600 in the AUTH_SYS
-authentication.
-
-Or again: If I'm using AUTH_SYS, then I'm transmitting numeric uids/gids
-as my authentication token, and so I want to use the same numeric
-uids/gids to label my file ownership. The idmapper doesn't affect the
-AUTH_SYS authentication token, and so mapping the NFS ownership to
-trond@REALM is not useful and may instead result in wrong behaviour such
-as in the situation described above.
-
-When I use KerberosV principals ('kinit trond@REALM') as my
-authentication token in an RPCSEC_GSS session, then I want to use the
-same _string_ user trond@REALM to label my file ownership. The idmapper
-is then used to map the abstract trond@REALM into a uid/gid that the
-kernel can understand (and the actual value on the client/server is
-irrelevant as long as it matches whatever the authentication token maps
-to).
-
+> Next from discussions with Stpehen I've sort of figured out that
+> we need a config mapping table of sorts and then a means to activate
+> entries of that table at runtime. I'm trying to come up with something
+> for this.
+> 
+That's something we are waiting for pinconf being usable for imx.
 
 -- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Regards,
+Shawn
