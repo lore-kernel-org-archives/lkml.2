@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934521Ab2AJXEK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:04:10 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52907 "EHLO mx2.suse.de"
+	id S934543Ab2AJXE1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:04:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52944 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934168Ab2AJXEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:04:06 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:04 2012
-Message-Id: <20120110215604.850635953@clark.kroah.org>
+	id S934123Ab2AJXEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:04:22 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:05 2012
+Message-Id: <20120110215605.201325142@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:41 -0800
+Date: Tue, 10 Jan 2012 13:55:45 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hema HK <hemahk@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [38/49] usb: musb: fix pm_runtime mismatch
+        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>
+Subject: [42/49] usb: fix number of mapped SG DMA entries
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +24,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Contreras <felipe.contreras@gmail.com>
+From: Clemens Ladisch <clemens@ladisch.de>
 
-commit 772aed45b604c5ff171f0f12c12392d868333f79 upstream.
+commit bc677d5b64644c399cd3db6a905453e611f402ab upstream.
 
-In musb_init_controller() there's a pm_runtime_put(), but there's no
-pm_runtime_get(), which creates a mismatch that causes the driver to
-sleep when it shouldn't.
+Add a new field num_mapped_sgs to struct urb so that we have a place to
+store the number of mapped entries and can also retain the original
+value of entries in num_sgs.  Previously, usb_hcd_map_urb_for_dma()
+would overwrite this with the number of mapped entries, which would
+break dma_unmap_sg() because it requires the original number of entries.
 
-This was introduced in 7acc619[1], but it wasn't triggered in my setup
-until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
-when PM is working as it was supposed to.
+This fixes warnings like the following when using USB storage devices:
+ ------------[ cut here ]------------
+ WARNING: at lib/dma-debug.c:902 check_unmap+0x4e4/0x695()
+ ehci_hcd 0000:00:12.2: DMA-API: device driver frees DMA sg list with different entry count [map count=4] [unmap count=1]
+ Modules linked in: ohci_hcd ehci_hcd
+ Pid: 0, comm: kworker/0:1 Not tainted 3.2.0-rc2+ #319
+ Call Trace:
+  <IRQ>  [<ffffffff81036d3b>] warn_slowpath_common+0x80/0x98
+  [<ffffffff81036de7>] warn_slowpath_fmt+0x41/0x43
+  [<ffffffff811fa5ae>] check_unmap+0x4e4/0x695
+  [<ffffffff8105e92c>] ? trace_hardirqs_off+0xd/0xf
+  [<ffffffff8147208b>] ? _raw_spin_unlock_irqrestore+0x33/0x50
+  [<ffffffff811fa84a>] debug_dma_unmap_sg+0xeb/0x117
+  [<ffffffff8137b02f>] usb_hcd_unmap_urb_for_dma+0x71/0x188
+  [<ffffffff8137b166>] unmap_urb_for_dma+0x20/0x22
+  [<ffffffff8137b1c5>] usb_hcd_giveback_urb+0x5d/0xc0
+  [<ffffffffa0000d02>] ehci_urb_done+0xf7/0x10c [ehci_hcd]
+  [<ffffffffa0001140>] qh_completions+0x429/0x4bd [ehci_hcd]
+  [<ffffffffa000340a>] ehci_work+0x95/0x9c0 [ehci_hcd]
+  ...
+ ---[ end trace f29ac88a5a48c580 ]---
+ Mapped at:
+  [<ffffffff811faac4>] debug_dma_map_sg+0x45/0x139
+  [<ffffffff8137bc0b>] usb_hcd_map_urb_for_dma+0x22e/0x478
+  [<ffffffff8137c494>] usb_hcd_submit_urb+0x63f/0x6fa
+  [<ffffffff8137d01c>] usb_submit_urb+0x2c7/0x2de
+  [<ffffffff8137dcd4>] usb_sg_wait+0x55/0x161
 
-However, it seems most of the time this is used in a way that keeps the
-counter above 0, so nobody noticed. Also, it seems to depend on the
-configuration used in versions before 3.1, but not later (or in it).
-
-I found the problem by loading isp1704_charger before any usb gadgets:
-http://article.gmane.org/gmane.linux.kernel/1226122
-
-All versions after 2.6.39 are affected.
-
-[1] usb: musb: Idle path retention and offmode support for OMAP3
-[2] OMAP2+: musb: hwmod adaptation for musb registration
-[3] Merge branch 'omap-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6
-
-Cc: Hema HK <hemahk@ti.com>
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/musb/musb_core.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/usb/core/hcd.c       |    5 ++---
+ drivers/usb/host/ehci-q.c    |    2 +-
+ drivers/usb/host/uhci-q.c    |    2 +-
+ drivers/usb/host/whci/qset.c |    4 ++--
+ drivers/usb/host/xhci-ring.c |    4 ++--
+ include/linux/usb.h          |    1 +
+ 6 files changed, 9 insertions(+), 9 deletions(-)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev,
- 	if (status < 0)
- 		goto fail3;
+--- a/drivers/usb/core/hcd.c
++++ b/drivers/usb/core/hcd.c
+@@ -1412,11 +1412,10 @@ int usb_hcd_map_urb_for_dma(struct usb_h
+ 					ret = -EAGAIN;
+ 				else
+ 					urb->transfer_flags |= URB_DMA_MAP_SG;
+-				if (n != urb->num_sgs) {
+-					urb->num_sgs = n;
++				urb->num_mapped_sgs = n;
++				if (n != urb->num_sgs)
+ 					urb->transfer_flags |=
+ 							URB_DMA_SG_COMBINED;
+-				}
+ 			} else if (urb->sg) {
+ 				struct scatterlist *sg = urb->sg;
+ 				urb->transfer_dma = dma_map_page(
+--- a/drivers/usb/host/ehci-q.c
++++ b/drivers/usb/host/ehci-q.c
+@@ -647,7 +647,7 @@ qh_urb_transaction (
+ 	/*
+ 	 * data transfer stage:  buffer setup
+ 	 */
+-	i = urb->num_sgs;
++	i = urb->num_mapped_sgs;
+ 	if (len > 0 && i > 0) {
+ 		sg = urb->sg;
+ 		buf = sg_dma_address(sg);
+--- a/drivers/usb/host/uhci-q.c
++++ b/drivers/usb/host/uhci-q.c
+@@ -943,7 +943,7 @@ static int uhci_submit_common(struct uhc
+ 	if (usb_pipein(urb->pipe))
+ 		status |= TD_CTRL_SPD;
  
--	pm_runtime_put(musb->controller);
--
- 	status = musb_init_debugfs(musb);
- 	if (status < 0)
- 		goto fail4;
+-	i = urb->num_sgs;
++	i = urb->num_mapped_sgs;
+ 	if (len > 0 && i > 0) {
+ 		sg = urb->sg;
+ 		data = sg_dma_address(sg);
+--- a/drivers/usb/host/whci/qset.c
++++ b/drivers/usb/host/whci/qset.c
+@@ -443,7 +443,7 @@ static int qset_add_urb_sg(struct whc *w
+ 
+ 	remaining = urb->transfer_buffer_length;
+ 
+-	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
++	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
+ 		dma_addr_t dma_addr;
+ 		size_t dma_remaining;
+ 		dma_addr_t sp, ep;
+@@ -561,7 +561,7 @@ static int qset_add_urb_sg_linearize(str
+ 
+ 	remaining = urb->transfer_buffer_length;
+ 
+-	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
++	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
+ 		size_t len;
+ 		size_t sg_remaining;
+ 		void *orig;
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -2561,7 +2561,7 @@ static unsigned int count_sg_trbs_needed
+ 	struct scatterlist *sg;
+ 
+ 	sg = NULL;
+-	num_sgs = urb->num_sgs;
++	num_sgs = urb->num_mapped_sgs;
+ 	temp = urb->transfer_buffer_length;
+ 
+ 	xhci_dbg(xhci, "count sg list trbs: \n");
+@@ -2745,7 +2745,7 @@ static int queue_bulk_sg_tx(struct xhci_
+ 		return -EINVAL;
+ 
+ 	num_trbs = count_sg_trbs_needed(xhci, urb);
+-	num_sgs = urb->num_sgs;
++	num_sgs = urb->num_mapped_sgs;
+ 	total_packet_count = roundup(urb->transfer_buffer_length,
+ 			usb_endpoint_maxp(&urb->ep->desc));
+ 
+--- a/include/linux/usb.h
++++ b/include/linux/usb.h
+@@ -1221,6 +1221,7 @@ struct urb {
+ 	void *transfer_buffer;		/* (in) associated data buffer */
+ 	dma_addr_t transfer_dma;	/* (in) dma addr for transfer_buffer */
+ 	struct scatterlist *sg;		/* (in) scatter gather buffer list */
++	int num_mapped_sgs;		/* (internal) mapped sg entries */
+ 	int num_sgs;			/* (in) number of entries in the sg list */
+ 	u32 transfer_buffer_length;	/* (in) data buffer length */
+ 	u32 actual_length;		/* (return) actual transfer length */
 
 
