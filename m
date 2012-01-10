@@ -1,41 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756799Ab2AJUoS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:44:18 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:5531 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab2AJUoR (ORCPT
+	id S1756811Ab2AJUqB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:46:01 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37140 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab2AJUqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:44:17 -0500
-X-IronPort-AV: E=McAfee;i="5400,1158,6585"; a="151545626"
-Date: Tue, 10 Jan 2012 12:44:15 -0800
-From: David Brown <davidb@codeaurora.org>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Russell King <rmk@arm.linux.org.uk>, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] msm fix for v3.2-rc.
-Message-ID: <20120110204415.GA31264@codeaurora.org>
-References: <20120109233439.GA13911@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120109233439.GA13911@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 10 Jan 2012 15:46:00 -0500
+Date: Tue, 10 Jan 2012 12:45:58 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hillf Danton <dhillf@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        linux-mm@kvack.org, LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH] mm: hugetlb: undo change to page mapcount in fault
+ handler
+Message-Id: <20120110124558.a7303493.akpm@linux-foundation.org>
+In-Reply-To: <20120104151632.05e6b3b0.akpm@linux-foundation.org>
+References: <CAJd=RBBF=K5hHvEwb6uwZJwS4=jHKBCNYBTJq-pSbJ9j_ZaiaA@mail.gmail.com>
+	<20111222163604.GB14983@tiehlicka.suse.cz>
+	<CAJd=RBBY0sKdtdx9d8KXTchjaN6au0_hvMfE2+9JkdhvJe7eAw@mail.gmail.com>
+	<20120104151632.05e6b3b0.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 03:34:39PM -0800, David Brown wrote:
-> Subject: Re: [GIT PULL] msm fix for v3.2-rc.
+On Wed, 4 Jan 2012 15:16:32 -0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-BTW, this is supposed to be for v3.3.  It's a one line fix, so it'd be
-nice if it can make the merge window, but it's also appropriate for
-rc2.
+> On Fri, 23 Dec 2011 21:00:41 +0800
+> Hillf Danton <dhillf@gmail.com> wrote:
+> 
+> > Page mapcount should be updated only if we are sure that the page ends
+> > up in the page table otherwise we would leak if we couldn't COW due to
+> > reservations or if idx is out of bounds.
+> 
+> It would be much nicer if we could run vma_needs_reservation() before
+> even looking up or allocating the page.
+> 
+> And afaict the interface is set up to do that: you run
+> vma_needs_reservation() before allocating the page and then
+> vma_commit_reservation() afterwards.
+> 
+> But hugetlb_no_page() and hugetlb_fault() appear to have forgotten to
+> run vma_commit_reservation() altogether.  Why isn't this as busted as
+> it appears to be?
 
-David
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+ping?
