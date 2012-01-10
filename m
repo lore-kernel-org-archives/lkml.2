@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756622Ab2AJW0b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:26:31 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35797 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab2AJW0a (ORCPT
+	id S1756620Ab2AJW1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:27:15 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37438 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754943Ab2AJW1O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:26:30 -0500
-Date: Tue, 10 Jan 2012 14:26:25 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl, xen-devel@lists.xensource.com
-Subject: Re: Bootup regression introduced by
- 7bd0b0f0da3b1ec11cbcc798eb0ef747a1184077 ("memblock: Reimplement memblock
- allocation using reverse free area iterato") in v3.3-rc0
-Message-ID: <20120110222625.GA26832@google.com>
-References: <20120110202838.GA10402@phenom.dumpdata.com>
+	Tue, 10 Jan 2012 17:27:14 -0500
+Date: Tue, 10 Jan 2012 22:27:11 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: Regulator updates for 3.3
+Message-ID: <20120110222711.GK7164@opensource.wolfsonmicro.com>
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com> <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com> <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120110202838.GA10402@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 03:28:38PM -0500, Konrad Rzeszutek Wilk wrote:
-> With that patch I get this when trying to launch a 4GB xen guest:
+On Tue, Jan 10, 2012 at 11:18:44AM -0800, Linus Torvalds wrote:
+> On Tue, Jan 10, 2012 at 10:45 AM, Mark Brown
+
+> > Hrm, OK.  These merges are all merges up of bug fixes for -rc from my
+> > own tree into the development code which I tend to do constantly to make
+> > it easier to work directly on the development branch.  What's the best
+> > practice here - push things to you a bit more aggressively and wait
+> > until you've tagged a -rc and then merge that back up into the
+> > development branch?
+
+> No. Just don't do the merges. If your development tree isn't stable on
+> its own, then there is something seriously wrong in what you do.
+
+Just to be clear I'm not disagreeing that most if not all of these
+merges aren't needed, I'm just trying to figure out in general how to
+get the bug fixes into the development code when it is useful to do
+that.  The merges are happening because I've been in the habit of
+merging fixes up as a matter of routine rather than due to an actual
+immediate need to get the fixes.
+
+The major reason why the merges might be needed is that often enough to
+be interesting the stuff getting pushed into -rc is the result of
+fixing bugs that get discovered in the course of doing the new work and
+interfere with that new work.  Either the testing needed to verify that
+work makes some existing issue (that might also be triggered in some
+other way) obvious or the bug got discovered by code inspection as
+someone was looking at a feature and so the two changes end up colliding
+with each other.
+
+Especially in the cases where the lack of the bug fix breaks the new
+code it sems sensible enough to want to do the merges so that the
+history includes things that actually work.  This was a lot easier back
+when there was no question of most embedded boards booting with vanilla
+mainline and you couldn't actually directly develop or test usefully
+with upstream code and working history wasn't an issue :/
+
+> Just do this:
 > 
-> kernel="/mnt/lab/latest/vmlinuz"
-> ramdisk="/mnt/lab/latest/initramfs.cpio.gz"
-> extra="console=hvc0 debug earlyprintk=xen" 
-> memory=4096
-> maxmem=8192
-> vcpus=4
-> on_crash="preserve"
-> vif = [ 'mac=00:0F:4B:00:00:68, bridge=switch' ]
-> vfb = [ 'vnc=1, vnclisten=0.0.0.0,vncunused=1'
-> 
-> If I change the "memory" to be "4000" it or if I revert the
-> mention git commit it boots. This is what I get with the mentioned
-> git commit:
+>     gitk d52739c62e00..269d430131b6
+>
+> to see what I actually got, and then look at what you did on Nov 27,
+> for example. You did *two* of the merges within hours of each other!
+> And then you had two more the very next day, without even having any
+> actual development in between! That's just crazy. The fact that you
 
-Heh, interesting.  Can you please apply the following patch and report
-the failing boot log?
+Yes, it's excessive.  I also made the above graph much more confusing by
+discarding my for-linus branch every time you merged it and making new
+ones based off new -rcs which means that gitk can't just show a
+for-linus branch that gets repeatedly merged into the development branch
+but instead shows a bunch of random isolated commits which get merged
+in.  I'm not saying that this would solve the problem you see, just that
+it's an issue.
 
-Thanks.
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 2f55f19..978b58eff 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -102,6 +102,10 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
- 	/* align @size to avoid excessive fragmentation on reserved array */
- 	size = round_up(size, align);
- 
-+	printk("memblock_find: [0x%llx, 0x%llx) size=%llu align=%llu nid=%d\n",
-+	       (unsigned long long)start, (unsigned long long)end,
-+	       (unsigned long long)size, (unsigned long long)align, nid);
-+
- 	/* pump up @end */
- 	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
- 		end = memblock.current_limit;
-@@ -110,13 +114,27 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
- 	start = max3(start, size, (phys_addr_t)PAGE_SIZE);
- 	end = max(start, end);
- 
-+	printk("memblock_find: [0x%llx, 0x%llx) - adjusted\n",
-+	       (unsigned long long)start, (unsigned long long)end);
-+
- 	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
-+		printk("memblock_find: cand [0x%llx, 0x%llx) -> ",
-+		       (unsigned long long)this_start,
-+		       (unsigned long long)this_end);
-+
- 		this_start = clamp(this_start, start, end);
- 		this_end = clamp(this_end, start, end);
- 
-+		printk("[0x%llx, 0x%llx) ",
-+		       (unsigned long long)this_start,
-+		       (unsigned long long)this_end);
-+
- 		cand = round_down(this_end - size, align);
--		if (cand >= this_start)
-+		if (cand >= this_start) {
-+			printk("- success %llx\n", (unsigned long long)cand);
- 			return cand;
-+		}
-+		printk("- rejected\n");
- 	}
- 	return 0;
- }
+Clearly even if I did nothing beyond defer the merges until there was
+some need for them that'd help though it wouldn't fully address your
+issue.
