@@ -1,36 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab2AJJQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 04:16:54 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:39818 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab2AJJQw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 04:16:52 -0500
+	id S1754968Ab2AJJSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 04:18:24 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40588 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754069Ab2AJJSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 04:18:20 -0500
+Date: Tue, 10 Jan 2012 10:18:05 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Youquan Song <youquan.song@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org,
+        stable@vger.kernel.org, arjan@linux.intel.com, len.brown@intel.com,
+        anhua.xu@intel.com, chaohong.guo@intel.com,
+        Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+Message-ID: <20120110091805.GA28024@elte.hu>
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
+ <1326103578.2442.50.camel@twins>
+ <20120110001445.GA20542@linux-youquan.bj.intel.com>
+ <1326107156.2442.59.camel@twins>
+ <20120110055856.GA23741@linux-youquan.bj.intel.com>
+ <1326153163.2366.7.camel@sbsiddha-mobl2>
 MIME-Version: 1.0
-In-Reply-To: <1325882311-7504-1-git-send-email-swarren@nvidia.com>
-References: <1325882311-7504-1-git-send-email-swarren@nvidia.com>
-Date: Tue, 10 Jan 2012 10:16:52 +0100
-Message-ID: <CACRpkdY+qpm1na_fdSEiSeBPQNFYf4JTapVE5o6m07OQiaoPCw@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl: Fix pinconf_pins_show iteration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: linux-kernel@vger.kernel.org, Chanho Park <chanho61.park@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326153163.2366.7.camel@sbsiddha-mobl2>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 6, 2012 at 9:38 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-> Commit 706e852 "pinctrl: correct a offset while enumerating pins"
-> modified the variable used by pinconf_pin_show()'s for loop, but didn't
-> update the for loop test expression.
->
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+* Suresh Siddha <suresh.b.siddha@intel.com> wrote:
 
-OK applied to my fixes branch, will send this along with any other
-fixes once Torvalds has pulled the pinctrl tree for this merge window.
+> On Tue, 2012-01-10 at 00:58 -0500, Youquan Song wrote:
+> > Thanks Peter! Here is the patch. 
+> 
+> Youquan, As far as I know both the
+> sched_smt_power_savings/sched_mc_power_savings are broken for atleast an
+> year.
 
-Yours,
-Linus Walleij
+We want a single knob, sched_power_savings - with the mc_ and 
+smt_ ones still kept and aliased to sched_power_savings, for 
+compatibility reasons.
+
+As Peter said, the other reasonable option is to have no knob at 
+all and restart this code from scratch.
+
+The other thing we should do is to add sane defaults: to turn on 
+sched_power_savings *AUTOMATICALLY* when a system is obviously 
+battery driven and turn it off when the system is obviously AC 
+driven. User-space can still implement policy and override the 
+kernel's default, but there's absolutely no excuse to not offer 
+this default ourselves.
+
+The kernel default should probably change automatically on 
+powerloss and battery events as well. (again, if user-space 
+wants to do it itself, it can do it and we won't interfere.)
+
+Thanks,
+
+	Ingo
