@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096Ab2AJXOm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:14:42 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52499 "EHLO mx2.suse.de"
+	id S1757149Ab2AJXO7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:14:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52490 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933949Ab2AJXBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:01:39 -0500
+	id S934088Ab2AJXBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:01:33 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:23 2012
-Message-Id: <20120110215023.222994184@clark.kroah.org>
+Message-Id: <20120110215023.041737846@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:37 -0800
+Date: Tue, 10 Jan 2012 13:48:35 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
-Subject: [27/42] USB: omninet: fix write_room
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
+Subject: [25/42] USB: add quirk for another camera
 In-Reply-To: <20120110215031.GA19398@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,32 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit 694c6301e515bad574af74b6552134c4d9dcb334 upstream.
+commit 35284b3d2f68a8a3703745e629999469f78386b5 upstream.
 
-Fix regression introduced by commit 507ca9bc047666 ([PATCH] USB: add
-ability for usb-serial drivers to determine if their write urb is
-currently being used.) which inverted the logic in write_room so that it
-returns zero when the write urb is actually free.
+The Guillemot Webcam Hercules Dualpix Exchange camera
+has been reported with a second ID.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/omninet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/quirks.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/omninet.c
-+++ b/drivers/usb/serial/omninet.c
-@@ -315,7 +315,7 @@ static int omninet_write_room(struct tty
- 	int room = 0; /* Default: no room */
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -117,9 +117,12 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
- 	/* FIXME: no consistent locking for write_urb_busy */
--	if (wport->write_urb_busy)
-+	if (!wport->write_urb_busy)
- 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
+-	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	/* Guillemot Webcam Hercules Dualpix Exchange (2nd ID) */
+ 	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	dbg("%s - returns %d", __func__, room);
++	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 
 
