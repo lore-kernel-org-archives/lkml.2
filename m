@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932419Ab2AJQua (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:50:30 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54849 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114Ab2AJQu3 (ORCPT
+	id S932444Ab2AJQun (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:50:43 -0500
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:38309 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932430Ab2AJQuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:50:29 -0500
+	Tue, 10 Jan 2012 11:50:40 -0500
+Date: Tue, 10 Jan 2012 22:19:36 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Youquan Song <youquan.song@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org,
+        stable@vger.kernel.org, len.brown@intel.com, anhua.xu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+Message-ID: <20120110164936.GB17432@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
+ <1326103578.2442.50.camel@twins>
+ <20120110001445.GA20542@linux-youquan.bj.intel.com>
+ <1326107156.2442.59.camel@twins>
+ <20120110055856.GA23741@linux-youquan.bj.intel.com>
+ <1326153163.2366.7.camel@sbsiddha-mobl2>
+ <20120110091805.GA28024@elte.hu>
+ <4F0C4BF0.9090809@linux.intel.com>
 MIME-Version: 1.0
-X-Originating-IP: [94.21.63.111]
-In-Reply-To: <CA+55aFxKzDQgsHMuWdSarqak68-NVqJkjjxAh2jbVgkrXm7-eg@mail.gmail.com>
-References: <87ipkl87m9.fsf@tucsk.pomaz.szeredi.hu>
-	<20120109171639.GA9359@infradead.org>
-	<20120109173010.GX23916@ZenIV.linux.org.uk>
-	<CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
-	<20120109205907.GE4198@dastard>
-	<CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
-	<20120110013434.GA23916@ZenIV.linux.org.uk>
-	<CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
-	<CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
-	<CA+55aFxszjhj5MatYe_KXJ=vYyf-05kzBbtmY1vgoGUio0DXuQ@mail.gmail.com>
-	<CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
-	<CA+55aFxKzDQgsHMuWdSarqak68-NVqJkjjxAh2jbVgkrXm7-eg@mail.gmail.com>
-Date: Tue, 10 Jan 2012 17:50:28 +0100
-Message-ID: <CAJfpegvTPH9_KpJxYDbOU7YzsB=Uq=d706iGJK21BRy_UoWF=w@mail.gmail.com>
-Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4F0C4BF0.9090809@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12011006-5140-0000-0000-000000920DCE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 5:33 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Hmm. Even if they are never run in parallel, I think it would be much
-> nicer to do it in both, just so that there would be a conceptual
-> consistency of "when we remove the dentry from the LRU list and put it
-> on our pruning list, we set the bit". That cacheline will be dirty
-> anyway (due to the list move and getting the dentry lock), so setting
-> a bit is not expensive - but having odd inconsistent ad-hoc rules is
-> nasty.
+* Arjan van de Ven <arjan@linux.intel.com> [2012-01-10 06:32:16]:
 
-Makes sense.
+> On 1/10/2012 1:18 AM, Ingo Molnar wrote:
+> > 
+> > * Suresh Siddha <suresh.b.siddha@intel.com> wrote:
+> > 
+> >> On Tue, 2012-01-10 at 00:58 -0500, Youquan Song wrote:
+> >>> Thanks Peter! Here is the patch. 
+> >>
+> >> Youquan, As far as I know both the
+> >> sched_smt_power_savings/sched_mc_power_savings are broken for atleast an
+> >> year.
+> > 
+> > We want a single knob, sched_power_savings - with the mc_ and 
+> > smt_ ones still kept and aliased to sched_power_savings, for 
+> > compatibility reasons.
+> > 
+> > As Peter said, the other reasonable option is to have no knob at 
+> > all and restart this code from scratch.
+> > 
+> > The other thing we should do is to add sane defaults: to turn on 
+> > sched_power_savings *AUTOMATICALLY* when a system is obviously 
+> > battery driven and turn it off when the system is obviously AC 
+> > driven. User-space can still implement policy and override the 
+> > kernel's default, but there's absolutely no excuse to not offer 
+> > this default ourselves.
+> 
+> a very good default would be to keep all tasks on one package until half
+> the cores in the package are busy, and then start spreading out.
+> 
+> I suspect that'll be the 90% case coverage.
 
-I'm testing the modified patch right now and will post shortly.
+This is a good default, but I guess we will not consolidate tasks into
+SMT threads by default since that will be a larger performance drop.
 
-Thanks,
-Miklos
+--Vaidy
+
