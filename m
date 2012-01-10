@@ -1,80 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932311Ab2AJQj2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:39:28 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19070 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932114Ab2AJQj0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:39:26 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 10 Jan 2012 08:39:14 -0800
-Date: Tue, 10 Jan 2012 18:39:05 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
-        "Russell King" <linux@arm.linux.org.uk>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH v2 0/3] Tegra30 clockframework
-Message-ID: <20120110163905.GL32619@tbergstrom-lnx.Nvidia.com>
-References: <1326123315-32670-1-git-send-email-pdeschrijver@nvidia.com>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE3A286@HQMAIL01.nvidia.com>
+	id S932295Ab2AJQoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:44:13 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35181 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932114Ab2AJQoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 11:44:11 -0500
+Date: Tue, 10 Jan 2012 16:44:07 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: vmscan: fix setting reclaim mode
+Message-ID: <20120110164407.GD4118@suse.de>
+References: <CAJd=RBAqzawZ=jEFt7TrZgU0gaejMkfiBxzH7Y19qqNnsZrJGw@mail.gmail.com>
+ <20120110094452.GC4118@suse.de>
+ <CAJd=RBA7vj83SFQFMS5WaRCfz2ndGJXepBqi5tK0LPjnBYYgfg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A286@HQMAIL01.nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAJd=RBA7vj83SFQFMS5WaRCfz2ndGJXepBqi5tK0LPjnBYYgfg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 10:30:05PM +0100, Stephen Warren wrote:
-> Peter De Schrijver wrote at Monday, January 09, 2012 8:35 AM:
-> > This patchset introduces the tegra30 clockframework. Clocks which require
-> > voltage scaling are not included in this version. The implementation doesn't
-> > use the generic clock code yet. It's the intention to move to it, once the
-> > semantics are fully clarified.
-> > 
-> > ---
-> > 
-> > Changes in v2:
-> >  * Fix parent clocks for TWD. This makes the SMP configuration booting again.
+On Tue, Jan 10, 2012 at 11:58:03PM +0800, Hillf Danton wrote:
+> From: Hillf Danton <dhillf@gmail.com>
+> [PATCH] mm: vmscan: fix setting reclaim mode
 > 
-> Peter,
+> The comment says, initially assume we are entering either lumpy reclaim or
+> reclaim/compaction, and depending on the reclaim order, we will either set the
+> sync mode or just reclaim order-0 pages later.
 > 
-> This version seems to still boot as well as without these patches.
+> On other hand, order-0 reclaim, instead of sync reclaim, is expected when
+> under memory pressure, but the check for memory pressure is incorrect,
+> leading to sync reclaim at low reclaim priorities.
 > 
-> I hacked some AUXDATA into board-dt-tegra30.c in an attempt to get SDHCI
-> working, but found that:
-> 
-> a) sdhci_add_host() fails due to:
-> 
-> mmc0: Hardware doesn't specify timeout clock frequency.
-> 
-> I haven't investigated why this happens.
+> And the result is sync reclaim is set for high priorities.
 > 
 
-I had a look at it, but I haven't found the rootcause.
+RECLAIM_MODE_SYNC is only set for RECLAIM_MODE_LUMPYRECLAIM. Even when
+using RECLAIM_MODE_LUMPYRECLAIM, it should only be set when reclaim
+is under memory pressure and failing to reclaim the necessry pages
+(priority < DEF_PRIORITY - 2). Once in symc reclaim, reclaim will call
+wait_on_page_writeback() on dirty pages which potentially leads to
+significant stalls (one of the reasons why RECLAIM_MODE_LUMPYRECLAIM
+sucks and why compaction is preferred). Your patch means sync reclaim
+is used even when priority == DEF_PRIORITY. This is unexpected.
 
-> b) More directly related to these patches, when sdhci_add_host() fails,
-> sdhci_tegra_probe() calls clk_disable() and clk_put() on its clock. One
-> of these hangs somehow. I assume that's a bug in this clock patch?
-> 
+Your changelog really needs to explain what the problem is that you
+have encountered and why this patch fixes it. It's not like some of
+your other patches which were minor performance optimisations that
+were self-evident.
 
-Sortof. The rootcause for this one is that pll_p gets disabled when
-sdhci_tegra_probe() calls  clk_disable(). pll_p also provides the input clock
-for UARTD however, so the next printk() call will hang the system. The reason
-for this is that no kernel driver has actually enabled the UARTD clock at that
-point, and thus pll_p hasn't been turned on from a clock framework point of
-view.
-Workaround is to enable UARTD in board-dt-tegra30 like we do for tegra20. I
-guess we need a better solution to cope with a different UART being the
-console UART. (See next mail)
-
-Cheers,
-
-Peter.
+-- 
+Mel Gorman
+SUSE Labs
