@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712Ab2AJI1t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:27:49 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48716 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab2AJI1r convert rfc822-to-8bit (ORCPT
+	id S1754792Ab2AJIa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:30:27 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33649 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab2AJIa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:27:47 -0500
+	Tue, 10 Jan 2012 03:30:26 -0500
+Date: Tue, 10 Jan 2012 09:30:20 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: please update the i.MX tree
+Message-ID: <20120110083020.GR5446@pengutronix.de>
+References: <20120110115218.e00ab8c01abd5b9ae9a3b166@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20120109082745.GD4049@core.coreip.homeip.net>
-References: <1325847795-30486-1-git-send-email-clchiou@chromium.org>
- <1325847795-30486-2-git-send-email-clchiou@chromium.org> <20120109082745.GD4049@core.coreip.homeip.net>
-From: Che-liang Chiou <clchiou@chromium.org>
-Date: Tue, 10 Jan 2012 16:27:05 +0800
-X-Google-Sender-Auth: GEbwTqkvS6jI-q2tFIOCP3srrsc
-Message-ID: <CANJuy2JkzVxXAFRU4=Os8Om9i5nV9tOwSZTagTm=m2B4ntNRgA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] Input: serio_raw - return error code instead of
- written on error
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120110115218.e00ab8c01abd5b9ae9a3b166@canb.auug.org.au>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:29:46 up 58 days, 16:16, 21 users,  load average: 0.24, 0.09,
+ 0.06
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 4:27 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> Hi Che-Liang,
->
-> On Fri, Jan 06, 2012 at 07:03:15PM +0800, Che-Liang Chiou wrote:
->> Even if an error occurs and error code is set, serio_raw_write() returns
->> the amount of bytes written anyway.
->>
->> If this behavior is actually desirable, serio_raw_write() should not
->> even bother to set the error code because it is not intended to be
->> returned to the caller.
->
-> Thank you for letting me know. The proper behavior is to return number of
-> bytes successfully written in case of short (or full) transfer, and
-> return appropriate error in case when we fail to transmit the very first
-> byte.
+On Tue, Jan 10, 2012 at 11:52:18AM +1100, Stephen Rothwell wrote:
+> Hi Sascha,
+> 
+> It looks like most (if not all) of the i.MX tree has been merged into the
+> arm-soc (and Linus') tree, so could you please update the i.MX tree to
+> eliminate the conflicts I am getting.
 
-Look good to me. Thanks.
+Did this. Sorry, I was not aware that there is something in this branch.
 
-> I will be applying the patch below.
->
-> Thanks.
->
-> --
-> Dmitry
->
-> Input: serio-raw - return proper result when serio_raw_write fails
->
-> From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
->
-> If serio_raw_write was always returning number of bytes successfully
-> sent to serio port and never signalled error condition to the caller.
-> Change it so that for completely failed transfers appropriate error
-> code returned to the caller (partially successful writes still return
-> number of bytes transferred).
->
-> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
-> ---
->
->  drivers/input/serio/serio_raw.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
->
-> diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
-> index c2c6ad8..5d9f9b1 100644
-> --- a/drivers/input/serio/serio_raw.c
-> +++ b/drivers/input/serio/serio_raw.c
-> @@ -224,7 +224,7 @@ static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
->
->  out:
->        mutex_unlock(&serio_raw_mutex);
-> -       return written;
-> +       return written ?: retval;
->  }
->
->  static unsigned int serio_raw_poll(struct file *file, poll_table *wait)
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
