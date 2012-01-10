@@ -1,122 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756677Ab2AJS2h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 13:28:37 -0500
+	id S1756692Ab2AJS2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 13:28:39 -0500
 Received: from mail-gx0-f174.google.com ([209.85.161.174]:33972 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657Ab2AJS2g (ORCPT
+	with ESMTP id S1756657Ab2AJS2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 13:28:36 -0500
+	Tue, 10 Jan 2012 13:28:38 -0500
 From: Tejun Heo <tj@kernel.org>
 To: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
         teravest@google.com, slavapestov@google.com, ctalbott@google.com,
         dhsharp@google.com
-Cc: linux-kernel@vger.kernel.org, winget@google.com, namhyung@gmail.com
-Subject: [RFC PATCHSET take#2] ioblame: IO tracer with origin tracking
-Date: Tue, 10 Jan 2012 10:28:17 -0800
-Message-Id: <1326220106-5765-1-git-send-email-tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, winget@google.com, namhyung@gmail.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 1/9] block: abstract disk iteration into disk_iter
+Date: Tue, 10 Jan 2012 10:28:18 -0800
+Message-Id: <1326220106-5765-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1326220106-5765-1-git-send-email-tj@kernel.org>
+References: <1326220106-5765-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, guys.
+Instead of using class_dev_iter directly, abstract disk iteration into
+disk_iter and helpers which are exported.  This simplifies the callers
+a bit and allows external users to iterate over disks.
 
-Even with blktrace and tracepoints, getting insight into the IOs going
-on a system is very challenging.  A lot of IO operations happen long
-after the action which triggered the IO finished and the overall
-asynchronous nature of IO operations make it difficult to trace back
-the origin of a given IO.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/genhd.c         |   98 +++++++++++++++++++++++++++++++++----------------
+ include/linux/genhd.h |   10 ++++-
+ 2 files changed, 75 insertions(+), 33 deletions(-)
 
-ioblame is an attempt at providing better visibility into overall IO
-behavior.  ioblame hooks into various tracepoints and tries to
-determine who caused any given IO how and charges the IO accordingly.
+diff --git a/block/genhd.c b/block/genhd.c
+index 83e7c04..7c811ff 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -40,6 +40,47 @@ static void disk_del_events(struct gendisk *disk);
+ static void disk_release_events(struct gendisk *disk);
+ 
+ /**
++ * disk_iter_init - initialize disk iterator
++ * @diter: iterator to initialize
++ *
++ * Initialize @diter so that it iterates over all disks
++ */
++void disk_iter_init(struct disk_iter *diter)
++{
++	class_dev_iter_init(&diter->cdev_iter, &block_class, NULL, &disk_type);
++}
++EXPORT_SYMBOL_GPL(disk_iter_init);
++
++/**
++ * disk_iter_next - proceed iterator to the next disk and return it
++ * @diter: iterator to proceed
++ *
++ * Proceed @diter to the next disk and return it.
++ */
++struct gendisk *disk_iter_next(struct disk_iter *diter)
++{
++	struct device *dev;
++
++	dev = class_dev_iter_next(&diter->cdev_iter);
++	if (dev)
++		return dev_to_disk(dev);
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(disk_iter_next);
++
++/**
++ * disk_iter_exit - finish up disk iteration
++ * @diter: iter to exit
++ *
++ * Called when iteration is over.  Cleans up @diter.
++ */
++void disk_iter_exit(struct disk_iter *diter)
++{
++	class_dev_iter_exit(&diter->cdev_iter);
++}
++EXPORT_SYMBOL_GPL(disk_iter_exit);
++
++/**
+  * disk_get_part - get partition
+  * @disk: disk to look partition from
+  * @partno: partition number
+@@ -730,12 +771,11 @@ EXPORT_SYMBOL(bdget_disk);
+  */
+ void __init printk_all_partitions(void)
+ {
+-	struct class_dev_iter iter;
+-	struct device *dev;
++	struct disk_iter diter;
++	struct gendisk *disk;
+ 
+-	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
+-	while ((dev = class_dev_iter_next(&iter))) {
+-		struct gendisk *disk = dev_to_disk(dev);
++	disk_iter_init(&diter);
++	while ((disk = disk_iter_next(&diter))) {
+ 		struct disk_part_iter piter;
+ 		struct hd_struct *part;
+ 		char name_buf[BDEVNAME_SIZE];
+@@ -779,7 +819,7 @@ void __init printk_all_partitions(void)
+ 		}
+ 		disk_part_iter_exit(&piter);
+ 	}
+-	class_dev_iter_exit(&iter);
++	disk_iter_exit(&diter);
+ }
+ 
+ #ifdef CONFIG_PROC_FS
+@@ -787,44 +827,38 @@ void __init printk_all_partitions(void)
+ static void *disk_seqf_start(struct seq_file *seqf, loff_t *pos)
+ {
+ 	loff_t skip = *pos;
+-	struct class_dev_iter *iter;
+-	struct device *dev;
++	struct disk_iter *diter;
++	struct gendisk *disk;
+ 
+-	iter = kmalloc(sizeof(*iter), GFP_KERNEL);
+-	if (!iter)
++	diter = kmalloc(sizeof(*diter), GFP_KERNEL);
++	if (!diter)
+ 		return ERR_PTR(-ENOMEM);
+ 
+-	seqf->private = iter;
+-	class_dev_iter_init(iter, &block_class, NULL, &disk_type);
++	seqf->private = diter;
++	disk_iter_init(diter);
+ 	do {
+-		dev = class_dev_iter_next(iter);
+-		if (!dev)
++		disk = disk_iter_next(diter);
++		if (!disk)
+ 			return NULL;
+ 	} while (skip--);
+ 
+-	return dev_to_disk(dev);
++	return disk;
+ }
+ 
+ static void *disk_seqf_next(struct seq_file *seqf, void *v, loff_t *pos)
+ {
+-	struct device *dev;
+-
+ 	(*pos)++;
+-	dev = class_dev_iter_next(seqf->private);
+-	if (dev)
+-		return dev_to_disk(dev);
+-
+-	return NULL;
++	return disk_iter_next(seqf->private);
+ }
+ 
+ static void disk_seqf_stop(struct seq_file *seqf, void *v)
+ {
+-	struct class_dev_iter *iter = seqf->private;
++	struct disk_iter *diter = seqf->private;
+ 
+ 	/* stop is called even after start failed :-( */
+-	if (iter) {
+-		class_dev_iter_exit(iter);
+-		kfree(iter);
++	if (diter) {
++		disk_iter_exit(diter);
++		kfree(diter);
+ 	}
+ }
+ 
+@@ -1206,12 +1240,12 @@ module_init(proc_genhd_init);
+ dev_t blk_lookup_devt(const char *name, int partno)
+ {
+ 	dev_t devt = MKDEV(0, 0);
+-	struct class_dev_iter iter;
+-	struct device *dev;
++	struct disk_iter diter;
++	struct gendisk *disk;
+ 
+-	class_dev_iter_init(&iter, &block_class, NULL, &disk_type);
+-	while ((dev = class_dev_iter_next(&iter))) {
+-		struct gendisk *disk = dev_to_disk(dev);
++	disk_iter_init(&diter);
++	while ((disk = disk_iter_next(&diter))) {
++		struct device *dev = disk_to_dev(disk);
+ 		struct hd_struct *part;
+ 
+ 		if (strcmp(dev_name(dev), name))
+@@ -1233,7 +1267,7 @@ dev_t blk_lookup_devt(const char *name, int partno)
+ 		}
+ 		disk_put_part(part);
+ 	}
+-	class_dev_iter_exit(&iter);
++	disk_iter_exit(&diter);
+ 	return devt;
+ }
+ EXPORT_SYMBOL(blk_lookup_devt);
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index fe23ee7..9d0e0b5 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -260,8 +260,16 @@ static inline void disk_put_part(struct hd_struct *part)
+ }
+ 
+ /*
+- * Smarter partition iterator without context limits.
++ * Smarter disk and partition iterators without context limits.
+  */
++struct disk_iter {
++	struct class_dev_iter	cdev_iter;
++};
++
++extern void disk_iter_init(struct disk_iter *diter);
++extern struct gendisk *disk_iter_next(struct disk_iter *diter);
++extern void disk_iter_exit(struct disk_iter *diter);
++
+ #define DISK_PITER_REVERSE	(1 << 0) /* iterate in the reverse direction */
+ #define DISK_PITER_INCL_EMPTY	(1 << 1) /* include 0-sized parts */
+ #define DISK_PITER_INCL_PART0	(1 << 2) /* include partition 0 */
+-- 
+1.7.3.1
 
-On each IO completion, ioblame knows who to charge the IO (task), how
-the IO got triggered (stack trace at the point of triggering, be it
-page, inode dirtying or direct IO issue) and various information about
-the IO itself (offset, size, how long it took and so on).  ioblame
-exports this information via ioblame:ioblame_io tracepoint.
-
-For more details, please read Documentation/trace/ioblame.txt.
-
-Changes from the last take[L] are,
-
-* Per Namhyung's suggestion, in-kernel statistics gathering stripped
-  out.  All information is now exported through a tracepoint per each
-  IO.  This makes a lot of stuff unnecessary and over 1500 lines of
-  code have been removed.
-
-* block_bio_complete tracepoint patch will result in duplicate
-  BLK_TA_COMPLETE notifications.  Namhyung is working on proper
-  solution.  For now, SOB is removed from the patch.
-
-* Trace filter is no longer used and patches dropped from the series.
-
-* Rebased on top of v3.2.
-
-This patchset contains the following 9 patches.
-
-  0001-block-abstract-disk-iteration-into-disk_iter.patch
-  0002-block-block_bio_complete-tracepoint-was-missing.patch
-  0003-block-add-req-to-bio_-front-back-_merge-tracepoints.patch
-  0004-writeback-move-struct-wb_writeback_work-to-writeback.patch
-  0005-writeback-add-more-tracepoints.patch
-  0006-block-add-block_touch_buffer-tracepoint.patch
-  0007-vfs-add-fcheck-tracepoint.patch
-  0008-stacktrace-implement-save_stack_trace_quick.patch
-  0009-block-trace-implement-ioblame-IO-tracer-with-origin-.patch
-
-0001-0004 update block layer in preparation.
-
-0005-0007 add more tracepoints along the IO stack.
-
-0008 adds nimbler backtrace dump function as ioblame dumps stacktrace
-extremely frequently.
-
-0009 implements ioblame.
-
-This is still in early stage and I haven't done much performance
-analysis yet.  Tentative testing shows it adds ~20% CPU overhead when
-used on memory backed loopback device.
-
-The patches are on top of v3.2 and available in the following git
-branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ioblame
-
-diffstat follows.
-
- Documentation/trace/ioblame.txt   |  476 +++++++
- arch/x86/include/asm/stacktrace.h |    2 
- arch/x86/kernel/stacktrace.c      |   40 
- block/blk-core.c                  |    5 
- block/genhd.c                     |   98 +
- fs/bio.c                          |    3 
- fs/fs-writeback.c                 |   34 
- fs/super.c                        |    2 
- include/linux/blk_types.h         |    4 
- include/linux/buffer_head.h       |    7 
- include/linux/fdtable.h           |    3 
- include/linux/fs.h                |    3 
- include/linux/genhd.h             |   13 
- include/linux/ioblame.h           |   72 +
- include/linux/stacktrace.h        |    6 
- include/linux/writeback.h         |   18 
- include/trace/events/block.h      |   70 -
- include/trace/events/vfs.h        |   40 
- include/trace/events/writeback.h  |  113 +
- kernel/stacktrace.c               |    6 
- kernel/trace/Kconfig              |   12 
- kernel/trace/Makefile             |    1 
- kernel/trace/blktrace.c           |    2 
- kernel/trace/ioblame.c            | 2279 ++++++++++++++++++++++++++++++++++++++
- mm/page-writeback.c               |    2 
- 25 files changed, 3244 insertions(+), 67 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[L] http://thread.gmane.org/gmane.linux.kernel/1235937
