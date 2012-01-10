@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933321Ab2AJW5u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:57:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52047 "EHLO mx2.suse.de"
+	id S933491Ab2AJX2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:28:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52062 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933028Ab2AJW5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:57:40 -0500
+	id S933305Ab2AJW5u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:57:50 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:20 2012
-Message-Id: <20120110214619.941624844@clark.kroah.org>
+Message-Id: <20120110214620.202954182@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:33 -0800
+Date: Tue, 10 Jan 2012 13:45:36 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Jan Kara <jack@suse.cz>
-Subject: [20/40] udf: Fix deadlock when converting file from in-ICB one to normal one
+        alan@lxorguk.ukuu.org.uk, Huajun Li <huajun.li.lee@gmail.com>
+Subject: [23/40] usb: usb-storage doesnt support dynamic id currently, the patch disables the feature to fix an oops
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,125 +24,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Huajun Li <huajun.li.lee@gmail.com>
 
-commit d2eb8c359309ec45d6bf5b147303ab8e13be86ea upstream.
+commit 1a3a026ba1b6bbfe0b7f79ab38cf991d691e7c9a upstream.
 
-During BKL removal in 2.6.38, conversion of files from in-ICB format to normal
-format got broken. We call ->writepage with i_data_sem held but udf_get_block()
-also acquires i_data_sem thus creating A-A deadlock.
+Echo vendor and product number of a non usb-storage device to
+usb-storage driver's new_id, then plug in the device to host and you
+will find following oops msg, the root cause is usb_stor_probe1()
+refers invalid id entry if giving a dynamic id, so just disable the
+feature.
 
-We fix the problem by dropping i_data_sem before calling ->writepage() which is
-safe since i_mutex still protects us against any changes in the file. Also fix
-pagelock - i_data_sem lock inversion in udf_expand_file_adinicb() by dropping
-i_data_sem before calling find_or_create_page().
+[ 3105.018012] general protection fault: 0000 [#1] SMP DEBUG_PAGEALLOC
+[ 3105.018062] CPU 0
+[ 3105.018075] Modules linked in: usb_storage usb_libusual bluetooth
+dm_crypt binfmt_misc snd_hda_codec_analog snd_hda_intel snd_hda_codec
+snd_hwdep hp_wmi ppdev sparse_keymap snd_pcm snd_seq_midi snd_rawmidi
+snd_seq_midi_event snd_seq snd_timer snd_seq_device psmouse snd
+serio_raw tpm_infineon soundcore i915 snd_page_alloc tpm_tis
+parport_pc tpm tpm_bios drm_kms_helper drm i2c_algo_bit video lp
+parport usbhid hid sg sr_mod sd_mod ehci_hcd uhci_hcd usbcore e1000e
+usb_common floppy
+[ 3105.018408]
+[ 3105.018419] Pid: 189, comm: khubd Tainted: G          I  3.2.0-rc7+
+#29 Hewlett-Packard HP Compaq dc7800p Convertible Minitower/0AACh
+[ 3105.018481] RIP: 0010:[<ffffffffa045830d>]  [<ffffffffa045830d>]
+usb_stor_probe1+0x2fd/0xc20 [usb_storage]
+[ 3105.018536] RSP: 0018:ffff880056a3d830  EFLAGS: 00010286
+[ 3105.018562] RAX: ffff880065f4e648 RBX: ffff88006bb28000 RCX: 0000000000000000
+[ 3105.018597] RDX: ffff88006f23c7b0 RSI: 0000000000000001 RDI: 0000000000000206
+[ 3105.018632] RBP: ffff880056a3d900 R08: 0000000000000000 R09: ffff880067365000
+[ 3105.018665] R10: 00000000000002ac R11: 0000000000000010 R12: ffff6000b41a7340
+[ 3105.018698] R13: ffff880065f4ef60 R14: ffff88006bb28b88 R15: ffff88006f23d270
+[ 3105.018733] FS:  0000000000000000(0000) GS:ffff88007a200000(0000)
+knlGS:0000000000000000
+[ 3105.018773] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[ 3105.018801] CR2: 00007fc99c8c4650 CR3: 0000000001e05000 CR4: 00000000000006f0
+[ 3105.018835] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 3105.018870] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 3105.018906] Process khubd (pid: 189, threadinfo ffff880056a3c000,
+task ffff88005677a400)
+[ 3105.018945] Stack:
+[ 3105.018959]  0000000000000000 0000000000000000 ffff880056a3d8d0
+0000000000000002
+[ 3105.019011]  0000000000000000 ffff880056a3d918 ffff880000000000
+0000000000000002
+[ 3105.019058]  ffff880056a3d8d0 0000000000000012 ffff880056a3d8d0
+0000000000000006
+[ 3105.019105] Call Trace:
+[ 3105.019128]  [<ffffffffa0458cd4>] storage_probe+0xa4/0xe0 [usb_storage]
+[ 3105.019173]  [<ffffffffa0097822>] usb_probe_interface+0x172/0x330 [usbcore]
+[ 3105.019211]  [<ffffffff815fda67>] driver_probe_device+0x257/0x3b0
+[ 3105.019243]  [<ffffffff815fdd43>] __device_attach+0x73/0x90
+[ 3105.019272]  [<ffffffff815fdcd0>] ? __driver_attach+0x110/0x110
+[ 3105.019303]  [<ffffffff815fb93c>] bus_for_each_drv+0x9c/0xf0
+[ 3105.019334]  [<ffffffff815fd6c7>] device_attach+0xf7/0x120
+[ 3105.019364]  [<ffffffff815fc905>] bus_probe_device+0x45/0x80
+[ 3105.019396]  [<ffffffff815f98a6>] device_add+0x876/0x990
+[ 3105.019434]  [<ffffffffa0094e42>] usb_set_configuration+0x822/0x9e0 [usbcore]
+[ 3105.019479]  [<ffffffffa00a3492>] generic_probe+0x62/0xf0 [usbcore]
+[ 3105.019518]  [<ffffffffa0097a46>] usb_probe_device+0x66/0xb0 [usbcore]
+[ 3105.019555]  [<ffffffff815fda67>] driver_probe_device+0x257/0x3b0
+[ 3105.019589]  [<ffffffff815fdd43>] __device_attach+0x73/0x90
+[ 3105.019617]  [<ffffffff815fdcd0>] ? __driver_attach+0x110/0x110
+[ 3105.019648]  [<ffffffff815fb93c>] bus_for_each_drv+0x9c/0xf0
+[ 3105.019680]  [<ffffffff815fd6c7>] device_attach+0xf7/0x120
+[ 3105.019709]  [<ffffffff815fc905>] bus_probe_device+0x45/0x80
+[ 3105.021040] usb usb6: usb auto-resume
+[ 3105.021045] usb usb6: wakeup_rh
+[ 3105.024849]  [<ffffffff815f98a6>] device_add+0x876/0x990
+[ 3105.025086]  [<ffffffffa0088987>] usb_new_device+0x1e7/0x2b0 [usbcore]
+[ 3105.025086]  [<ffffffffa008a4d7>] hub_thread+0xb27/0x1ec0 [usbcore]
+[ 3105.025086]  [<ffffffff810d5200>] ? wake_up_bit+0x50/0x50
+[ 3105.025086]  [<ffffffffa00899b0>] ? usb_remote_wakeup+0xa0/0xa0 [usbcore]
+[ 3105.025086]  [<ffffffff810d49b8>] kthread+0xd8/0xf0
+[ 3105.025086]  [<ffffffff81939884>] kernel_thread_helper+0x4/0x10
+[ 3105.025086]  [<ffffffff8192a8c0>] ? _raw_spin_unlock_irq+0x50/0x80
+[ 3105.025086]  [<ffffffff8192b1b4>] ? retint_restore_args+0x13/0x13
+[ 3105.025086]  [<ffffffff810d48e0>] ? __init_kthread_worker+0x80/0x80
+[ 3105.025086]  [<ffffffff81939880>] ? gs_change+0x13/0x13
+[ 3105.025086] Code: 00 48 83 05 cd ad 00 00 01 48 83 05 cd ad 00 00
+01 4c 8b ab 30 0c 00 00 48 8b 50 08 48 83 c0 30 48 89 45 a0 4c 89 a3
+40 0c 00 00 <41> 0f b6 44 24 10 48 89 55 a8 3c ff 0f 84 b8 04 00 00 48
+83 05
+[ 3105.025086] RIP  [<ffffffffa045830d>] usb_stor_probe1+0x2fd/0xc20
+[usb_storage]
+[ 3105.025086]  RSP <ffff880056a3d830>
+[ 3105.060037] hub 6-0:1.0: hub_resume
+[ 3105.062616] usb usb5: usb auto-resume
+[ 3105.064317] ehci_hcd 0000:00:1d.7: resume root hub
+[ 3105.094809] ---[ end trace a7919e7f17c0a727 ]---
+[ 3105.130069] hub 5-0:1.0: hub_resume
+[ 3105.132131] usb usb4: usb auto-resume
+[ 3105.132136] usb usb4: wakeup_rh
+[ 3105.180059] hub 4-0:1.0: hub_resume
+[ 3106.290052] usb usb6: suspend_rh (auto-stop)
+[ 3106.290077] usb usb4: suspend_rh (auto-stop)
 
-Reported-by: Matthias Matiak <netzpython@mail-on.us>
-Tested-by: Matthias Matiak <netzpython@mail-on.us>
-Reviewed-by: Namjae Jeon <linkinjeon@gmail.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Huajun Li <huajun.li.lee@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/udf/file.c  |    6 +++---
- fs/udf/inode.c |   21 ++++++++++++++++++---
- 2 files changed, 21 insertions(+), 6 deletions(-)
+ drivers/usb/storage/usb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/udf/file.c
-+++ b/fs/udf/file.c
-@@ -125,7 +125,6 @@ static ssize_t udf_file_aio_write(struct
- 			err = udf_expand_file_adinicb(inode);
- 			if (err) {
- 				udf_debug("udf_expand_adinicb: err=%d\n", err);
--				up_write(&iinfo->i_data_sem);
- 				return err;
- 			}
- 		} else {
-@@ -133,9 +132,10 @@ static ssize_t udf_file_aio_write(struct
- 				iinfo->i_lenAlloc = pos + count;
- 			else
- 				iinfo->i_lenAlloc = inode->i_size;
-+			up_write(&iinfo->i_data_sem);
- 		}
--	}
--	up_write(&iinfo->i_data_sem);
-+	} else
-+		up_write(&iinfo->i_data_sem);
- 
- 	retval = generic_file_aio_write(iocb, iov, nr_segs, ppos);
- 	if (retval > 0)
---- a/fs/udf/inode.c
-+++ b/fs/udf/inode.c
-@@ -145,6 +145,12 @@ const struct address_space_operations ud
- 	.bmap		= udf_bmap,
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -1073,6 +1073,7 @@ static struct usb_driver usb_storage_dri
+ 	.id_table =	usb_storage_usb_ids,
+ 	.supports_autosuspend = 1,
+ 	.soft_unbind =	1,
++	.no_dynamic_id = 1,
  };
  
-+/*
-+ * Expand file stored in ICB to a normal one-block-file
-+ *
-+ * This function requires i_data_sem for writing and releases it.
-+ * This function requires i_mutex held
-+ */
- int udf_expand_file_adinicb(struct inode *inode)
- {
- 	struct page *page;
-@@ -163,9 +169,15 @@ int udf_expand_file_adinicb(struct inode
- 			iinfo->i_alloc_type = ICBTAG_FLAG_AD_LONG;
- 		/* from now on we have normal address_space methods */
- 		inode->i_data.a_ops = &udf_aops;
-+		up_write(&iinfo->i_data_sem);
- 		mark_inode_dirty(inode);
- 		return 0;
- 	}
-+	/*
-+	 * Release i_data_sem so that we can lock a page - page lock ranks
-+	 * above i_data_sem. i_mutex still protects us against file changes.
-+	 */
-+	up_write(&iinfo->i_data_sem);
- 
- 	page = find_or_create_page(inode->i_mapping, 0, GFP_NOFS);
- 	if (!page)
-@@ -181,6 +193,7 @@ int udf_expand_file_adinicb(struct inode
- 		SetPageUptodate(page);
- 		kunmap(page);
- 	}
-+	down_write(&iinfo->i_data_sem);
- 	memset(iinfo->i_ext.i_data + iinfo->i_lenEAttr, 0x00,
- 	       iinfo->i_lenAlloc);
- 	iinfo->i_lenAlloc = 0;
-@@ -190,17 +203,20 @@ int udf_expand_file_adinicb(struct inode
- 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_LONG;
- 	/* from now on we have normal address_space methods */
- 	inode->i_data.a_ops = &udf_aops;
-+	up_write(&iinfo->i_data_sem);
- 	err = inode->i_data.a_ops->writepage(page, &udf_wbc);
- 	if (err) {
- 		/* Restore everything back so that we don't lose data... */
- 		lock_page(page);
- 		kaddr = kmap(page);
-+		down_write(&iinfo->i_data_sem);
- 		memcpy(iinfo->i_ext.i_data + iinfo->i_lenEAttr, kaddr,
- 		       inode->i_size);
- 		kunmap(page);
- 		unlock_page(page);
- 		iinfo->i_alloc_type = ICBTAG_FLAG_AD_IN_ICB;
- 		inode->i_data.a_ops = &udf_adinicb_aops;
-+		up_write(&iinfo->i_data_sem);
- 	}
- 	page_cache_release(page);
- 	mark_inode_dirty(inode);
-@@ -1105,10 +1121,9 @@ int udf_setsize(struct inode *inode, lof
- 			if (bsize <
- 			    (udf_file_entry_alloc_offset(inode) + newsize)) {
- 				err = udf_expand_file_adinicb(inode);
--				if (err) {
--					up_write(&iinfo->i_data_sem);
-+				if (err)
- 					return err;
--				}
-+				down_write(&iinfo->i_data_sem);
- 			} else
- 				iinfo->i_lenAlloc = newsize;
- 		}
+ static int __init usb_stor_init(void)
 
 
