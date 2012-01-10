@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217Ab2AJGeZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 01:34:25 -0500
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:26151
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752834Ab2AJGeX (ORCPT
+	id S1754076Ab2AJGk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 01:40:29 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:50569 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751184Ab2AJGk2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 01:34:23 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dhc1ahc1bh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Date: Tue, 10 Jan 2012 14:34:15 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Richard Zhao <richard.zhao@linaro.org>, <patches@linaro.org>,
-        <vinod.koul@intel.com>, <linux-kernel@vger.kernel.org>,
-        <eric.miao@linaro.org>, <kernel@pengutronix.de>,
-        <dan.j.williams@intel.com>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] dma/imx-sdma: call sdma_set_channel_priority after
- sdma_request_channel
-Message-ID: <20120110063414.GZ2414@b20223-02.ap.freescale.net>
-References: <1326098940-3697-1-git-send-email-richard.zhao@linaro.org>
- <20120110030220.GA23362@S2101-09.ap.freescale.net>
+	Tue, 10 Jan 2012 01:40:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120110030220.GA23362@S2101-09.ap.freescale.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
+In-Reply-To: <1325856086.17441.27.camel@osiris>
+References: <1325856086.17441.27.camel@osiris>
+Date: Tue, 10 Jan 2012 14:40:27 +0800
+Message-ID: <CAGyNYUO0WGXgN50AXW08Hec97TM-PRm4iNQR5gZ+=wdRz1KUgQ@mail.gmail.com>
+Subject: Re: [PATCH] score: fix off-by-one index into syscall table
+From: Eugene Teo <eugeneteo@kernel.sg>
+To: Dan Rosenberg <drosenberg@vsecurity.com>
+Cc: liqin.chen@sunplusct.com, lennox.wu@gmail.com,
+        linux-kernel@vger.kernel.org, security@kernel.org, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid merge conflicts, I'll send the patch series again with
-other prior sdma patch.
+Cc'ed arnd@arndb.de
 
-Thanks
-Richard
+ping
 
-On Tue, Jan 10, 2012 at 11:02:25AM +0800, Shawn Guo wrote:
-> On Mon, Jan 09, 2012 at 04:48:59PM +0800, Richard Zhao wrote:
-> > sdma_request_channel sets the default priority. sdma_alloc_chan_resources
-> > should call sdma_set_channel_priority thereafter to over write it.
-> > 
-> > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-> 
-> Acked-by: Shawn Guo <shawn.guo@linaro.org>
-> 
-> Regards,
-> Shawn
-> 
-> > ---
-> >  drivers/dma/imx-sdma.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-> > index 2cc96c4..6376009 100644
-> > --- a/drivers/dma/imx-sdma.c
-> > +++ b/drivers/dma/imx-sdma.c
-> > @@ -875,11 +875,11 @@ static int sdma_alloc_chan_resources(struct dma_chan *chan)
-> >  
-> >  	sdmac->peripheral_type = data->peripheral_type;
-> >  	sdmac->event_id0 = data->dma_request;
-> > -	ret = sdma_set_channel_priority(sdmac, prio);
-> > +	ret = sdma_request_channel(sdmac);
-> >  	if (ret)
-> >  		return ret;
-> >  
-> > -	ret = sdma_request_channel(sdmac);
-> > +	ret = sdma_set_channel_priority(sdmac, prio);
-> >  	if (ret)
-> >  		return ret;
-> >  
-> > -- 
-> > 1.7.5.4
-> > 
-> > 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
-
+On Fri, Jan 6, 2012 at 9:21 PM, Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+> If the provided system call number is equal to __NR_syscalls, the
+> current check will pass and a function pointer just after the system
+> call table may be called, since sys_call_table is an array with total
+> size __NR_syscalls.  Whether or not this is a security bug depends on
+> what the compiler puts immediately after the system call table.  It's
+> likely that this won't do anything bad because there is an additional
+> NULL check on the syscall entry, but if there happens to be a non-NULL
+> value immediately after the system call table, this may result in local
+> privilege escalation.
+>
+> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+> Cc: stable@kernel.org
+> Cc: security@kernel.org
+> ---
+>  arch/score/kernel/entry.S |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/score/kernel/entry.S b/arch/score/kernel/entry.S
+> index 577abba..83bb960 100644
+> --- a/arch/score/kernel/entry.S
+> +++ b/arch/score/kernel/entry.S
+> @@ -408,7 +408,7 @@ ENTRY(handle_sys)
+>        sw      r9, [r0, PT_EPC]
+>
+>        cmpi.c  r27, __NR_syscalls      # check syscall number
+> -       bgtu    illegal_syscall
+> +       bgeu    illegal_syscall
+>
+>        slli    r8, r27, 2              # get syscall routine
+>        la      r11, sys_call_table
+>
+>
