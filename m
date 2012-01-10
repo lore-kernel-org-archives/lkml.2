@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932934Ab2AJTcO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 14:32:14 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:38597 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab2AJTcL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 14:32:11 -0500
+	id S933039Ab2AJTch (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 14:32:37 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35705 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932175Ab2AJTcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 14:32:35 -0500
+Date: Tue, 10 Jan 2012 20:32:23 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] kernel freezes with latest tree
+Message-ID: <20120110193222.GA26204@elte.hu>
+References: <1326171444.6638.3.camel@edumazet-laptop>
+ <1326171798.6638.4.camel@edumazet-laptop>
+ <1326183371.6638.6.camel@edumazet-laptop>
+ <1326212033.19095.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
+ <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
+ <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4F04E96F.6040501@xenotime.net>
-References: <20120104191656.de575406a93b3c5226c531b2@canb.auug.org.au>
-	<4F04E96F.6040501@xenotime.net>
-Date: Tue, 10 Jan 2012 20:32:09 +0100
-X-Google-Sender-Auth: G87SRxNUXy1v2xbqd3DgSpp94DU
-Message-ID: <CAMuHMdXg=Fr6HLCLJvGBJD6wsUKN0=nRi7rboQU6+i5NwTWe3w@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 4 (usb/otg)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-usb <linux-usb@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 01:06, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 01/04/2012 12:16 AM, Stephen Rothwell wrote:
->> Hi all,
->>
->> Changes since 20120103:
->
->
->
-> ERROR: "usb_add_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
-> ERROR: "usb_remove_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
 
-And now it's in Linus' tree, for m68k allmodconfig:
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-http://kisskb.ellerman.id.au/kisskb/buildresult/5361188/
-http://kisskb.ellerman.id.au/kisskb/buildresult/5361013/
+> Has anybody seen other reports like this?
 
-BTW, strange that this error never popped up in linux-next before for that
-config. Perhaps it was masked by the paride/bpck6.c build failure?
+No.
 
-Gr{oetje,eeting}s,
+And something generic as the scheduler time changes ought to 
+trigger widely - i've booted up thousands and thousands of 
+random kernels with your merge in place - which kind of coverage 
+tends to trigger generic lockups and races.
 
-                        Geert
+So i'd suspect either an environment dependent bug that random 
+testing on a low number of specific systems cannot cover:
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+ - build environment dependent (compiler?) bug
+ - hw environment dependent bug
+ - or sw environment dependent bug
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+... or a mis-bisection.
+
+Thanks,
+
+	Ingo
