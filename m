@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab2AJULQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:11:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45860 "EHLO mx2.suse.de"
+	id S1756985Ab2AJULX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:11:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45872 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756932Ab2AJULM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:11:12 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:50 2012
-Message-Id: <20120110200850.911381629@clark.kroah.org>
+	id S1756789Ab2AJULT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 15:11:19 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:51 2012
+Message-Id: <20120110200851.092633016@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 12:07:04 -0800
+Date: Tue, 10 Jan 2012 12:07:06 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
-Subject: [13/20] USB: add quirk for another camera
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Malte=20Schr=C3=B6der?= <maltesch@gmx.de>
+Subject: [15/20] USB: Add USB-ID for Multiplex RC serial adapter to cp210x.c
 In-Reply-To: <20120110200902.GA5674@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,35 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oliver@neukum.org>
+From: Malte Schröder <maltesch@gmx.de>
 
-commit 35284b3d2f68a8a3703745e629999469f78386b5 upstream.
+commit 08e87d0d773dc9ca5faf4c3306e238ed0ea129b0 upstream.
 
-The Guillemot Webcam Hercules Dualpix Exchange camera
-has been reported with a second ID.
+Hi, below patch adds the USB-ID of the serial adapters sold by
+Multiplex RC (www.multiplex-rc.de).
 
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Malte Schröder <maltesch@gmx.de>
+Cc: stable <stable@vger.kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/quirks.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -114,9 +114,12 @@ static const struct usb_device_id usb_qu
- 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
- 
--	/* Guillemot Webcam Hercules Dualpix Exchange*/
-+	/* Guillemot Webcam Hercules Dualpix Exchange (2nd ID) */
- 	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* Guillemot Webcam Hercules Dualpix Exchange*/
-+	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* M-Systems Flash Disk Pioneers */
- 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -94,6 +94,7 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
+ 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
+ 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
++	{ USB_DEVICE(0x10C4, 0x81A9) }, /* Multiplex RC Interface */
+ 	{ USB_DEVICE(0x10C4, 0x81AC) }, /* MSD Dash Hawk */
+ 	{ USB_DEVICE(0x10C4, 0x81AD) }, /* INSYS USB Modem */
+ 	{ USB_DEVICE(0x10C4, 0x81C8) }, /* Lipowsky Industrie Elektronik GmbH, Baby-JTAG */
 
 
