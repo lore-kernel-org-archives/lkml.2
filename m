@@ -1,47 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab2AJQJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 11:09:19 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60145 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756246Ab2AJQJS (ORCPT
+	id S1756508Ab2AJQKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 11:10:35 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:61499 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756358Ab2AJQKe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 11:09:18 -0500
+	Tue, 10 Jan 2012 11:10:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120110083933.GS21765@n2100.arm.linux.org.uk>
-References: <1326147171-13752-1-git-send-email-arnd@arndb.de>
- <1326147171-13752-6-git-send-email-arnd@arndb.de> <CA+55aFyaOnJhrZOFnRiShH9kTeGEG8O8m9spvKF=c36QzjSvBA@mail.gmail.com>
- <20120110083933.GS21765@n2100.arm.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 08:08:56 -0800
-X-Google-Sender-Auth: 2btEslqH97AlnV59KZV_Ni-BOAk
-Message-ID: <CA+55aFw15sw0PWtom88vJx1M45CLuvpZABQAxMOQ+xowz8Xq2A@mail.gmail.com>
-Subject: Re: [GIT PULL 05/11] SoC-level changes for tegra and omap
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <CAGyNYUMGzoZ50hDgOMeUVZbTyFHBDOV43j1ppBbfpXnMwqSeLw@mail.gmail.com>
+References: <1325856086.17441.27.camel@osiris>
+	<CAGyNYUO0WGXgN50AXW08Hec97TM-PRm4iNQR5gZ+=wdRz1KUgQ@mail.gmail.com>
+	<CAGyNYUMGzoZ50hDgOMeUVZbTyFHBDOV43j1ppBbfpXnMwqSeLw@mail.gmail.com>
+Date: Wed, 11 Jan 2012 00:10:33 +0800
+Message-ID: <CAF0htA4+dMFs_3y+XrSMUA6VBB9H-s369TN_AoyDG-paJ3TuSw@mail.gmail.com>
+Subject: Re: [PATCH] score: fix off-by-one index into syscall table
+From: Lennox Wu <lennox.wu@gmail.com>
+To: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Dan Rosenberg <drosenberg@vsecurity.com>, liqin.chen@sunplusct.com,
+        linux-kernel@vger.kernel.org, security@kernel.org, arnd@arndb.de,
+        Liqin Chen <liqin.gnu@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 12:39 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
+Dear all,
+I will look the issue and update the informaion  of  MAINTAINERS.
+Best,
+Lennox
+
+2012/1/10 Eugene Teo <eugeneteo@kernel.sg>
 >
-> What about using -C instead (which implies -M, but also detects copies) ?
-
-I don't mind -C. It sometimes causes differences to what I see by
-default, but those differences are often interesting.
-
-But while it's interesting and relevant (unlike the non-rename patch
-that is just noisy), it also can hide lots of lines. With -C, you can
-get a diffstat that is actually fairly small, but that adds a lot of
-lines to the kernel (because somebody just copied large files with
-small changes), and if that happens I do want to see it as a "big
-change". So for me, the plain "just show renames" is a good default.
-
-So there is absolutely nothing wrong with -C. It's not what I use, but
-when I see that the diffstats don't match, it's easy to notice why,
-and that information is often fairly interesting, so I don't mind.
-
-                    Linus
+> On Tue, Jan 10, 2012 at 2:40 PM, Eugene Teo <eugeneteo@kernel.sg> wrote:
+> > Cc'ed arnd@arndb.de
+> >
+> > ping
+>
+> Liqin's work email bounced.  I'm not sure if he is working on these
+> anymore. If not, the MAINTAINERS file needs to be updated.
+>
+> > On Fri, Jan 6, 2012 at 9:21 PM, Dan Rosenberg <drosenberg@vsecurity.com> wrote:
+> >> If the provided system call number is equal to __NR_syscalls, the
+> >> current check will pass and a function pointer just after the system
+> >> call table may be called, since sys_call_table is an array with total
+> >> size __NR_syscalls.  Whether or not this is a security bug depends on
+> >> what the compiler puts immediately after the system call table.  It's
+> >> likely that this won't do anything bad because there is an additional
+> >> NULL check on the syscall entry, but if there happens to be a non-NULL
+> >> value immediately after the system call table, this may result in local
+> >> privilege escalation.
+> >>
+> >> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
+> >> Cc: stable@kernel.org
+> >> Cc: security@kernel.org
+> >> ---
+> >>  arch/score/kernel/entry.S |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >>
+> >> diff --git a/arch/score/kernel/entry.S b/arch/score/kernel/entry.S
+> >> index 577abba..83bb960 100644
+> >> --- a/arch/score/kernel/entry.S
+> >> +++ b/arch/score/kernel/entry.S
+> >> @@ -408,7 +408,7 @@ ENTRY(handle_sys)
+> >>        sw      r9, [r0, PT_EPC]
+> >>
+> >>        cmpi.c  r27, __NR_syscalls      # check syscall number
+> >> -       bgtu    illegal_syscall
+> >> +       bgeu    illegal_syscall
+> >>
+> >>        slli    r8, r27, 2              # get syscall routine
+> >>        la      r11, sys_call_table
+> >>
+> >>
