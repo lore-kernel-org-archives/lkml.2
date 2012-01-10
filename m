@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933645Ab2AJW6c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:58:32 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52127 "EHLO mx2.suse.de"
+	id S933658Ab2AJW6g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:58:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52140 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933626Ab2AJW60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:26 -0500
+	id S933626Ab2AJW6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:58:33 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:21 2012
-Message-Id: <20120110214621.012866142@clark.kroah.org>
+Message-Id: <20120110214621.181776153@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:45 -0800
+Date: Tue, 10 Jan 2012 13:45:47 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [32/40] usb: ch9: fix up MaxStreams helper
+        alan@lxorguk.ukuu.org.uk, Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [34/40] igmp: Avoid zero delay when receiving odd mixture of IGMP queries
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +25,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 18b7ede5f7ee2092aedcb578d3ac30bd5d4fc23c upstream.
+commit a8c1f65c79cbbb2f7da782d4c9d15639a9b94b27 upstream.
 
-[ removed the dwc3 portion of the patch as it didn't apply to
-older kernels - gregkh]
+Commit 5b7c84066733c5dfb0e4016d939757b38de189e4 ('ipv4: correct IGMP
+behavior on v3 query during v2-compatibility mode') added yet another
+case for query parsing, which can result in max_delay = 0.  Substitute
+a value of 1, as in the usual v3 case.
 
-According to USB 3.0 Specification Table 9-22, if
-bmAttributes [4:0] are set to zero, it means "no
-streams supported", but the way this helper was
-defined on Linux, we will *always* have one stream
-which might cause several problems.
-
-For example on DWC3, we would tell the controller
-endpoint has streams enabled and yet start transfers
-with Stream ID set to 0, which would goof up the host
-side.
-
-While doing that, convert the macro to an inline
-function due to the different checks we now need.
-
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Reported-by: Simon McVittie <smcv@debian.org>
+References: http://bugs.debian.org/654876
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 
 ---
- drivers/usb/host/xhci.c |    3 +--
- include/linux/usb/ch9.h |   20 +++++++++++++++++++-
- 2 files changed, 20 insertions(+), 3 deletions(-)
+ net/ipv4/igmp.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2184,8 +2184,7 @@ static int xhci_calculate_streams_and_bi
- 		if (ret < 0)
- 			return ret;
- 
--		max_streams = USB_SS_MAX_STREAMS(
--				eps[i]->ss_ep_comp.bmAttributes);
-+		max_streams = usb_ss_max_streams(&eps[i]->ss_ep_comp);
- 		if (max_streams < (*num_streams - 1)) {
- 			xhci_dbg(xhci, "Ep 0x%x only supports %u stream IDs.\n",
- 					eps[i]->desc.bEndpointAddress,
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -583,8 +583,26 @@ struct usb_ss_ep_comp_descriptor {
- } __attribute__ ((packed));
- 
- #define USB_DT_SS_EP_COMP_SIZE		6
-+
- /* Bits 4:0 of bmAttributes if this is a bulk endpoint */
--#define USB_SS_MAX_STREAMS(p)		(1 << ((p) & 0x1f))
-+static inline int
-+usb_ss_max_streams(const struct usb_ss_ep_comp_descriptor *comp)
-+{
-+	int		max_streams;
-+
-+	if (!comp)
-+		return 0;
-+
-+	max_streams = comp->bmAttributes & 0x1f;
-+
-+	if (!max_streams)
-+		return 0;
-+
-+	max_streams = 1 << max_streams;
-+
-+	return max_streams;
-+}
-+
- /* Bits 1:0 of bmAttributes if this is an isoc endpoint */
- #define USB_SS_MULT(p)			(1 + ((p) & 0x3))
- 
+--- a/net/ipv4/igmp.c
++++ b/net/ipv4/igmp.c
+@@ -875,6 +875,8 @@ static void igmp_heard_query(struct in_d
+ 		 * to be intended in a v3 query.
+ 		 */
+ 		max_delay = IGMPV3_MRC(ih3->code)*(HZ/IGMP_TIMER_SCALE);
++		if (!max_delay)
++			max_delay = 1;	/* can't mod w/ 0 */
+ 	} else { /* v3 */
+ 		if (!pskb_may_pull(skb, sizeof(struct igmpv3_query)))
+ 			return;
 
 
