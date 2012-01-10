@@ -1,418 +1,321 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756309Ab2AJNoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 08:44:05 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:51382 "EHLO gir.skynet.ie"
+	id S1752239Ab2AJOAM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 09:00:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51544 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755803Ab2AJNoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 08:44:01 -0500
-Date: Tue, 10 Jan 2012 13:43:51 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Shariq Hasnain <shariq.hasnain@linaro.org>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Gaignard <benjamin.gaignard@linaro.org>
-Subject: Re: [PATCH 02/11] mm: compaction: introduce
- isolate_{free,migrate}pages_range().
-Message-ID: <20120110134351.GA3910@csn.ul.ie>
-References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
- <1325162352-24709-3-git-send-email-m.szyprowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1325162352-24709-3-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751111Ab2AJOAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 09:00:10 -0500
+Subject: [GIT PULL] C6X architecture port
+From: Mark Salter <msalter@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Tue, 10 Jan 2012 09:00:00 -0500
+Organization: Red Hat, Inc
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-ID: <1326204001.2535.201.camel@deneb.redhat.com>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 29, 2011 at 01:39:03PM +0100, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <mina86@mina86.com>
-> 
-> This commit introduces isolate_freepages_range() and
-> isolate_migratepages_range() functions.  The first one replaces
-> isolate_freepages_block() and the second one extracts functionality
-> from isolate_migratepages().
-> 
-> They are more generic and instead of operating on pageblocks operate
-> on PFN ranges.
-> 
-> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> ---
->  mm/compaction.c |  184 ++++++++++++++++++++++++++++++++++++++-----------------
->  1 files changed, 127 insertions(+), 57 deletions(-)
-> 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 899d956..ae73b6f 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -54,55 +54,86 @@ static unsigned long release_freepages(struct list_head *freelist)
->  	return count;
->  }
->  
-> -/* Isolate free pages onto a private freelist. Must hold zone->lock */
-> -static unsigned long isolate_freepages_block(struct zone *zone,
-> -				unsigned long blockpfn,
-> -				struct list_head *freelist)
-> +/**
-> + * isolate_freepages_range() - isolate free pages, must hold zone->lock.
-> + * @zone:	Zone pages are in.
-> + * @start_pfn:	The first PFN to start isolating.
-> + * @end_pfn:	The one-past-last PFN.
-> + * @freelist:	A list to save isolated pages to.
-> + *
-> + * If @freelist is not provided, holes in range (either non-free pages
-> + * or invalid PFNs) are considered an error and function undos its
-> + * actions and returns zero.
-> + *
-> + * If @freelist is provided, function will simply skip non-free and
-> + * missing pages and put only the ones isolated on the list.
-> + *
-> + * Returns number of isolated pages.  This may be more then end_pfn-start_pfn
-> + * if end fell in a middle of a free page.
-> + */
-> +static unsigned long
-> +isolate_freepages_range(struct zone *zone,
-> +			unsigned long start_pfn, unsigned long end_pfn,
-> +			struct list_head *freelist)
->  {
-> -	unsigned long zone_end_pfn, end_pfn;
-> -	int nr_scanned = 0, total_isolated = 0;
-> -	struct page *cursor;
-> -
-> -	/* Get the last PFN we should scan for free pages at */
-> -	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-> -	end_pfn = min(blockpfn + pageblock_nr_pages, zone_end_pfn);
-> +	unsigned long nr_scanned = 0, total_isolated = 0;
-> +	unsigned long pfn = start_pfn;
-> +	struct page *page;
->  
-> -	/* Find the first usable PFN in the block to initialse page cursor */
-> -	for (; blockpfn < end_pfn; blockpfn++) {
-> -		if (pfn_valid_within(blockpfn))
-> -			break;
-> -	}
-> -	cursor = pfn_to_page(blockpfn);
-> +	VM_BUG_ON(!pfn_valid(pfn));
-> +	page = pfn_to_page(pfn);
+Hi Linus,
 
-The existing code is able to find the first usable PFN in a pageblock
-with pfn_valid_within(). It's allowed to do that because it knows
-the pageblock is valid so calling pfn_valid() is unnecessary.
+Please pull this port of Linux to the Texas Instruments C6X arch. This
+is the same set of patches which narrowly missed the 3.2 merge window
+with the addition of two C6X bug fix patches and three other C6X patches
+to deal with changes to the generic kernel.
 
-It is curious to change this to something that can sometimes BUG_ON
-!pfn_valid(pfn) instead of having a PFN walker that knows how to
-handle pfn_valid().
+The top commit has a signed tag: for-linux-3.3-merge-window
 
->  
->  	/* Isolate free pages. This assumes the block is valid */
+The following changes since commit 3ee72ca99288f1de95ec9c570e43f531c8799f06:
 
-You leave this comment intact but you are no longer scanning a page
-block. It is in fact assuming that the entire range is valid.
+  Merge git://github.com/davem330/net (2011-10-06 16:15:10 -0700)
 
-> -	for (; blockpfn < end_pfn; blockpfn++, cursor++) {
-> -		int isolated, i;
-> -		struct page *page = cursor;
-> +	while (pfn < end_pfn) {
-> +		int n = 0, i;
->  
-> -		if (!pfn_valid_within(blockpfn))
-> -			continue;
-> -		nr_scanned++;
-> +		if (!pfn_valid_within(pfn))
-> +			goto next;
-> +		++nr_scanned;
->  
->  		if (!PageBuddy(page))
-> -			continue;
-> +			goto next;
->  
->  		/* Found a free page, break it into order-0 pages */
-> -		isolated = split_free_page(page);
-> -		total_isolated += isolated;
-> -		for (i = 0; i < isolated; i++) {
-> -			list_add(&page->lru, freelist);
-> -			page++;
-> +		n = split_free_page(page);
-> +		total_isolated += n;
-> +		if (freelist) {
-> +			struct page *p = page;
-> +			for (i = n; i; --i, ++p)
-> +				list_add(&p->lru, freelist);
+are available in the git repository at:
 
-Maybe it's just me, but the original code of
+  git://linux-c6x.org/git/projects/linux-c6x-upstreaming.git for-linux-next
 
-		for (i = 0; i < isolated; i++) {
-			list_add(&page->lru, freelist);
-			page++;
-		}
 
-Was a lot easier to read than this increment/decrement with zero
-check for loop. Even 
+Aurelien Jacquiot (14):
+  C6X: build infrastructure
+  C6X: early boot code
+  C6X: memory management and DMA support
+  C6X: process management
+  C6X: signal management
+  C6X: time management
+  C6X: interrupt handling
+  C6X: syscalls
+  C6X: build infrastructure
+  C6X: cache control
+  C6X: loadable module support
+  C6X: ptrace support
+  C6X: headers
+  C6X: library code
 
-for (i = 0; i < n; i++)
-	list_add(&p[i].lru, freelist)
+Mark Salter (15):
+  fix default __strnlen_user macro
+  fixed generic page.h for non-zero PAGE_OFFSET
+  add ELF machine define for TI C6X DSPs
+  add missing __iomem to generic iounmap declaration
+  C6X: devicetree support
+  C6X: clocks
+  C6X: general SoC support
+  C6X: EMIF - External Memory Interface
+  C6X: DSCR - Device State Configuration Registers
+  C6X: MAINTAINERS
+  C6X: fix layout of EMIFA registers
+  C6X: fix timer64 initialization
+  C6X: deal with memblock API changes
+  C6X: add register_cpu call
+  C6X: replace tick_nohz_stop/restart_sched_tick calls
 
-would have been a bit easier to parse. I also don't even get why you
-renamed "isolated" to the less obvious name "n".
+ Documentation/devicetree/bindings/c6x/clocks.txt   |   40 +
+ Documentation/devicetree/bindings/c6x/dscr.txt     |  127 +++
+ Documentation/devicetree/bindings/c6x/emifa.txt    |   62 ++
+ .../devicetree/bindings/c6x/interrupt.txt          |  104 +++
+ Documentation/devicetree/bindings/c6x/soc.txt      |   28 +
+ Documentation/devicetree/bindings/c6x/timer64.txt  |   26 +
+ MAINTAINERS                                        |    8 +
+ arch/c6x/Kconfig                                   |  174 +++++
+ arch/c6x/Makefile                                  |   60 ++
+ arch/c6x/boot/Makefile                             |   30 +
+ arch/c6x/boot/dts/dsk6455.dts                      |   62 ++
+ arch/c6x/boot/dts/evmc6457.dts                     |   48 ++
+ arch/c6x/boot/dts/evmc6472.dts                     |   73 ++
+ arch/c6x/boot/dts/evmc6474.dts                     |   58 ++
+ arch/c6x/boot/dts/tms320c6455.dtsi                 |   96 +++
+ arch/c6x/boot/dts/tms320c6457.dtsi                 |   68 ++
+ arch/c6x/boot/dts/tms320c6472.dtsi                 |  134 ++++
+ arch/c6x/boot/dts/tms320c6474.dtsi                 |   89 +++
+ arch/c6x/boot/linked_dtb.S                         |    2 +
+ arch/c6x/configs/dsk6455_defconfig                 |   44 ++
+ arch/c6x/configs/evmc6457_defconfig                |   41 +
+ arch/c6x/configs/evmc6472_defconfig                |   42 +
+ arch/c6x/configs/evmc6474_defconfig                |   42 +
+ arch/c6x/include/asm/Kbuild                        |   54 ++
+ arch/c6x/include/asm/asm-offsets.h                 |    1 +
+ arch/c6x/include/asm/bitops.h                      |  105 +++
+ arch/c6x/include/asm/byteorder.h                   |   12 +
+ arch/c6x/include/asm/cache.h                       |   90 +++
+ arch/c6x/include/asm/cacheflush.h                  |   65 ++
+ arch/c6x/include/asm/checksum.h                    |   34 +
+ arch/c6x/include/asm/clkdev.h                      |   22 +
+ arch/c6x/include/asm/clock.h                       |  148 ++++
+ arch/c6x/include/asm/delay.h                       |   67 ++
+ arch/c6x/include/asm/dma-mapping.h                 |   91 +++
+ arch/c6x/include/asm/dscr.h                        |   34 +
+ arch/c6x/include/asm/elf.h                         |  113 +++
+ arch/c6x/include/asm/ftrace.h                      |    6 +
+ arch/c6x/include/asm/hardirq.h                     |   20 +
+ arch/c6x/include/asm/irq.h                         |  302 ++++++++
+ arch/c6x/include/asm/irqflags.h                    |   72 ++
+ arch/c6x/include/asm/linkage.h                     |   30 +
+ arch/c6x/include/asm/megamod-pic.h                 |    9 +
+ arch/c6x/include/asm/mmu.h                         |   18 +
+ arch/c6x/include/asm/module.h                      |   33 +
+ arch/c6x/include/asm/mutex.h                       |    6 +
+ arch/c6x/include/asm/page.h                        |   11 +
+ arch/c6x/include/asm/pgtable.h                     |   81 ++
+ arch/c6x/include/asm/processor.h                   |  132 ++++
+ arch/c6x/include/asm/procinfo.h                    |   28 +
+ arch/c6x/include/asm/prom.h                        |    1 +
+ arch/c6x/include/asm/ptrace.h                      |  174 +++++
+ arch/c6x/include/asm/sections.h                    |   12 +
+ arch/c6x/include/asm/setup.h                       |   32 +
+ arch/c6x/include/asm/sigcontext.h                  |   80 ++
+ arch/c6x/include/asm/signal.h                      |   17 +
+ arch/c6x/include/asm/soc.h                         |   35 +
+ arch/c6x/include/asm/string.h                      |   21 +
+ arch/c6x/include/asm/swab.h                        |   54 ++
+ arch/c6x/include/asm/syscall.h                     |  123 +++
+ arch/c6x/include/asm/syscalls.h                    |   55 ++
+ arch/c6x/include/asm/system.h                      |  168 ++++
+ arch/c6x/include/asm/thread_info.h                 |  121 +++
+ arch/c6x/include/asm/timer64.h                     |    6 +
+ arch/c6x/include/asm/timex.h                       |   33 +
+ arch/c6x/include/asm/tlb.h                         |    8 +
+ arch/c6x/include/asm/traps.h                       |   36 +
+ arch/c6x/include/asm/uaccess.h                     |  107 +++
+ arch/c6x/include/asm/unaligned.h                   |  170 +++++
+ arch/c6x/include/asm/unistd.h                      |   26 +
+ arch/c6x/kernel/Makefile                           |   12 +
+ arch/c6x/kernel/asm-offsets.c                      |  123 +++
+ arch/c6x/kernel/c6x_ksyms.c                        |   66 ++
+ arch/c6x/kernel/devicetree.c                       |   53 ++
+ arch/c6x/kernel/dma.c                              |  153 ++++
+ arch/c6x/kernel/entry.S                            |  803 ++++++++++++++++++++
+ arch/c6x/kernel/head.S                             |   84 ++
+ arch/c6x/kernel/irq.c                              |  728 ++++++++++++++++++
+ arch/c6x/kernel/module.c                           |  123 +++
+ arch/c6x/kernel/process.c                          |  265 +++++++
+ arch/c6x/kernel/ptrace.c                           |  187 +++++
+ arch/c6x/kernel/setup.c                            |  510 +++++++++++++
+ arch/c6x/kernel/signal.c                           |  377 +++++++++
+ arch/c6x/kernel/soc.c                              |   91 +++
+ arch/c6x/kernel/switch_to.S                        |   74 ++
+ arch/c6x/kernel/sys_c6x.c                          |   74 ++
+ arch/c6x/kernel/time.c                             |   65 ++
+ arch/c6x/kernel/traps.c                            |  423 ++++++++++
+ arch/c6x/kernel/vectors.S                          |   81 ++
+ arch/c6x/kernel/vmlinux.lds.S                      |  162 ++++
+ arch/c6x/lib/Makefile                              |    7 +
+ arch/c6x/lib/checksum.c                            |   36 +
+ arch/c6x/lib/csum_64plus.S                         |  419 ++++++++++
+ arch/c6x/lib/divi.S                                |   53 ++
+ arch/c6x/lib/divremi.S                             |   46 ++
+ arch/c6x/lib/divremu.S                             |   87 +++
+ arch/c6x/lib/divu.S                                |   98 +++
+ arch/c6x/lib/llshl.S                               |   37 +
+ arch/c6x/lib/llshr.S                               |   38 +
+ arch/c6x/lib/llshru.S                              |   38 +
+ arch/c6x/lib/memcpy_64plus.S                       |   46 ++
+ arch/c6x/lib/mpyll.S                               |   49 ++
+ arch/c6x/lib/negll.S                               |   31 +
+ arch/c6x/lib/pop_rts.S                             |   32 +
+ arch/c6x/lib/push_rts.S                            |   31 +
+ arch/c6x/lib/remi.S                                |   64 ++
+ arch/c6x/lib/remu.S                                |   82 ++
+ arch/c6x/lib/strasgi.S                             |   89 +++
+ arch/c6x/lib/strasgi_64plus.S                      |   39 +
+ arch/c6x/mm/Makefile                               |    5 +
+ arch/c6x/mm/dma-coherent.c                         |  143 ++++
+ arch/c6x/mm/init.c                                 |  113 +++
+ arch/c6x/platforms/Kconfig                         |   16 +
+ arch/c6x/platforms/Makefile                        |   12 +
+ arch/c6x/platforms/cache.c                         |  445 +++++++++++
+ arch/c6x/platforms/dscr.c                          |  598 +++++++++++++++
+ arch/c6x/platforms/emif.c                          |   87 +++
+ arch/c6x/platforms/megamod-pic.c                   |  349 +++++++++
+ arch/c6x/platforms/platform.c                      |   17 +
+ arch/c6x/platforms/pll.c                           |  444 +++++++++++
+ arch/c6x/platforms/plldata.c                       |  404 ++++++++++
+ arch/c6x/platforms/timer64.c                       |  244 ++++++
+ include/asm-generic/io.h                           |    2 +-
+ include/asm-generic/page.h                         |   10 +-
+ include/asm-generic/uaccess.h                      |    7 +-
+ include/linux/elf-em.h                             |    1 +
+ 125 files changed, 12989 insertions(+), 5 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/c6x/clocks.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/dscr.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/emifa.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/interrupt.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/soc.txt
+ create mode 100644 Documentation/devicetree/bindings/c6x/timer64.txt
+ create mode 100644 arch/c6x/Kconfig
+ create mode 100644 arch/c6x/Makefile
+ create mode 100644 arch/c6x/boot/Makefile
+ create mode 100644 arch/c6x/boot/dts/dsk6455.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6457.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6472.dts
+ create mode 100644 arch/c6x/boot/dts/evmc6474.dts
+ create mode 100644 arch/c6x/boot/dts/tms320c6455.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6457.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6472.dtsi
+ create mode 100644 arch/c6x/boot/dts/tms320c6474.dtsi
+ create mode 100644 arch/c6x/boot/linked_dtb.S
+ create mode 100644 arch/c6x/configs/dsk6455_defconfig
+ create mode 100644 arch/c6x/configs/evmc6457_defconfig
+ create mode 100644 arch/c6x/configs/evmc6472_defconfig
+ create mode 100644 arch/c6x/configs/evmc6474_defconfig
+ create mode 100644 arch/c6x/include/asm/Kbuild
+ create mode 100644 arch/c6x/include/asm/asm-offsets.h
+ create mode 100644 arch/c6x/include/asm/bitops.h
+ create mode 100644 arch/c6x/include/asm/byteorder.h
+ create mode 100644 arch/c6x/include/asm/cache.h
+ create mode 100644 arch/c6x/include/asm/cacheflush.h
+ create mode 100644 arch/c6x/include/asm/checksum.h
+ create mode 100644 arch/c6x/include/asm/clkdev.h
+ create mode 100644 arch/c6x/include/asm/clock.h
+ create mode 100644 arch/c6x/include/asm/delay.h
+ create mode 100644 arch/c6x/include/asm/dma-mapping.h
+ create mode 100644 arch/c6x/include/asm/dscr.h
+ create mode 100644 arch/c6x/include/asm/elf.h
+ create mode 100644 arch/c6x/include/asm/ftrace.h
+ create mode 100644 arch/c6x/include/asm/hardirq.h
+ create mode 100644 arch/c6x/include/asm/irq.h
+ create mode 100644 arch/c6x/include/asm/irqflags.h
+ create mode 100644 arch/c6x/include/asm/linkage.h
+ create mode 100644 arch/c6x/include/asm/megamod-pic.h
+ create mode 100644 arch/c6x/include/asm/mmu.h
+ create mode 100644 arch/c6x/include/asm/module.h
+ create mode 100644 arch/c6x/include/asm/mutex.h
+ create mode 100644 arch/c6x/include/asm/page.h
+ create mode 100644 arch/c6x/include/asm/pgtable.h
+ create mode 100644 arch/c6x/include/asm/processor.h
+ create mode 100644 arch/c6x/include/asm/procinfo.h
+ create mode 100644 arch/c6x/include/asm/prom.h
+ create mode 100644 arch/c6x/include/asm/ptrace.h
+ create mode 100644 arch/c6x/include/asm/sections.h
+ create mode 100644 arch/c6x/include/asm/setup.h
+ create mode 100644 arch/c6x/include/asm/sigcontext.h
+ create mode 100644 arch/c6x/include/asm/signal.h
+ create mode 100644 arch/c6x/include/asm/soc.h
+ create mode 100644 arch/c6x/include/asm/string.h
+ create mode 100644 arch/c6x/include/asm/swab.h
+ create mode 100644 arch/c6x/include/asm/syscall.h
+ create mode 100644 arch/c6x/include/asm/syscalls.h
+ create mode 100644 arch/c6x/include/asm/system.h
+ create mode 100644 arch/c6x/include/asm/thread_info.h
+ create mode 100644 arch/c6x/include/asm/timer64.h
+ create mode 100644 arch/c6x/include/asm/timex.h
+ create mode 100644 arch/c6x/include/asm/tlb.h
+ create mode 100644 arch/c6x/include/asm/traps.h
+ create mode 100644 arch/c6x/include/asm/uaccess.h
+ create mode 100644 arch/c6x/include/asm/unaligned.h
+ create mode 100644 arch/c6x/include/asm/unistd.h
+ create mode 100644 arch/c6x/kernel/Makefile
+ create mode 100644 arch/c6x/kernel/asm-offsets.c
+ create mode 100644 arch/c6x/kernel/c6x_ksyms.c
+ create mode 100644 arch/c6x/kernel/devicetree.c
+ create mode 100644 arch/c6x/kernel/dma.c
+ create mode 100644 arch/c6x/kernel/entry.S
+ create mode 100644 arch/c6x/kernel/head.S
+ create mode 100644 arch/c6x/kernel/irq.c
+ create mode 100644 arch/c6x/kernel/module.c
+ create mode 100644 arch/c6x/kernel/process.c
+ create mode 100644 arch/c6x/kernel/ptrace.c
+ create mode 100644 arch/c6x/kernel/setup.c
+ create mode 100644 arch/c6x/kernel/signal.c
+ create mode 100644 arch/c6x/kernel/soc.c
+ create mode 100644 arch/c6x/kernel/switch_to.S
+ create mode 100644 arch/c6x/kernel/sys_c6x.c
+ create mode 100644 arch/c6x/kernel/time.c
+ create mode 100644 arch/c6x/kernel/traps.c
+ create mode 100644 arch/c6x/kernel/vectors.S
+ create mode 100644 arch/c6x/kernel/vmlinux.lds.S
+ create mode 100644 arch/c6x/lib/Makefile
+ create mode 100644 arch/c6x/lib/checksum.c
+ create mode 100644 arch/c6x/lib/csum_64plus.S
+ create mode 100644 arch/c6x/lib/divi.S
+ create mode 100644 arch/c6x/lib/divremi.S
+ create mode 100644 arch/c6x/lib/divremu.S
+ create mode 100644 arch/c6x/lib/divu.S
+ create mode 100644 arch/c6x/lib/llshl.S
+ create mode 100644 arch/c6x/lib/llshr.S
+ create mode 100644 arch/c6x/lib/llshru.S
+ create mode 100644 arch/c6x/lib/memcpy_64plus.S
+ create mode 100644 arch/c6x/lib/mpyll.S
+ create mode 100644 arch/c6x/lib/negll.S
+ create mode 100644 arch/c6x/lib/pop_rts.S
+ create mode 100644 arch/c6x/lib/push_rts.S
+ create mode 100644 arch/c6x/lib/remi.S
+ create mode 100644 arch/c6x/lib/remu.S
+ create mode 100644 arch/c6x/lib/strasgi.S
+ create mode 100644 arch/c6x/lib/strasgi_64plus.S
+ create mode 100644 arch/c6x/mm/Makefile
+ create mode 100644 arch/c6x/mm/dma-coherent.c
+ create mode 100644 arch/c6x/mm/init.c
+ create mode 100644 arch/c6x/platforms/Kconfig
+ create mode 100644 arch/c6x/platforms/Makefile
+ create mode 100644 arch/c6x/platforms/cache.c
+ create mode 100644 arch/c6x/platforms/dscr.c
+ create mode 100644 arch/c6x/platforms/emif.c
+ create mode 100644 arch/c6x/platforms/megamod-pic.c
+ create mode 100644 arch/c6x/platforms/platform.c
+ create mode 100644 arch/c6x/platforms/pll.c
+ create mode 100644 arch/c6x/platforms/plldata.c
+ create mode 100644 arch/c6x/platforms/timer64.c
 
-Neither are wrong, it just looks obscure for the sake of it.
 
->  		}
->  
-> -		/* If a page was split, advance to the end of it */
-> -		if (isolated) {
-> -			blockpfn += isolated - 1;
-> -			cursor += isolated - 1;
-> +next:
-> +		if (!n) {
-> +			/* If n == 0, we have isolated no pages. */
-> +			if (!freelist)
-> +				goto cleanup;
-> +			n = 1;
->  		}
-
-That needs a better comment explaining why we undo what has happened up
-until now if freelist == NULL.
-
-> +
-> +		/*
-> +		 * If we pass max order page, we might end up in a different
-> +		 * vmemmap, so account for that.
-> +		 */
-> +		pfn += n;
-> +		if (pfn & (MAX_ORDER_NR_PAGES - 1))
-> +			page += n;
-> +		else
-> +			page = pfn_to_page(pfn);
->  	}
-
-You never check that the pfn is actually valid. There could be a
-memory hole between start_pfn and end_pfn for example. This is probably
-not true of the CMA caller or the existing compaction caller but it is
-still unnecessarily fragile.
-
->  
->  	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
->  	return total_isolated;
-> +
-> +cleanup:
-> +	/*
-> +	 * Undo what we have done so far, and return.  We know all pages from
-> +	 * [start_pfn, pfn) are free because we have just freed them.  If one of
-> +	 * the page in the range was not freed, we would end up here earlier.
-> +	 */
-> +	for (; start_pfn < pfn; ++start_pfn)
-> +		__free_page(pfn_to_page(start_pfn));
-> +	return 0;
-
-This returns 0 even though you could have isolated some pages.
-
-Overall, there would have been less contortion if you
-implemented isolate_freepages_range() in terms of the existing
-isolate_freepages_block. Something that looked kinda like this not
-compiled untested illustration.
-
-static unsigned long isolate_freepages_range(struct zone *zone,
-                        unsigned long start_pfn, unsigned long end_pfn,
-                        struct list_head *list)
-{
-        unsigned long pfn = start_pfn;
-        unsigned long isolated;
-
-        for (pfn = start_pfn; pfn < end_pfn; pfn += pageblock_nr_pages) {
-                if (!pfn_valid(pfn))
-                        continue;
-
-                isolated += isolate_freepages_block(zone, pfn, list);
-        }
-
-        return isolated;
-}
-
-I neglected to update isolate_freepages_block() to take the end_pfn
-meaning it will in fact isolate too much but that would be easy to
-address. It would be up to yourself whether to shuffle the tracepoint
-around because with this example it will be triggered once per
-pageblock. You'd still need the cleanup code and freelist check in
-isolate_freepages_block() of course.
-
-The point is that it would minimise the disruption to the existing
-code and easier to get details like pfn_valid() right without odd
-contortions, more gotos than should be necessary and trying to keep
-pfn and page straight.
-
->  }
->  
->  /* Returns true if the page is within a block suitable for migration to */
-> @@ -135,7 +166,7 @@ static void isolate_freepages(struct zone *zone,
->  				struct compact_control *cc)
->  {
->  	struct page *page;
-> -	unsigned long high_pfn, low_pfn, pfn;
-> +	unsigned long high_pfn, low_pfn, pfn, zone_end_pfn, end_pfn;
->  	unsigned long flags;
->  	int nr_freepages = cc->nr_freepages;
->  	struct list_head *freelist = &cc->freepages;
-> @@ -155,6 +186,8 @@ static void isolate_freepages(struct zone *zone,
->  	 */
->  	high_pfn = min(low_pfn, pfn);
->  
-> +	zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
-> +
->  	/*
->  	 * Isolate free pages until enough are available to migrate the
->  	 * pages on cc->migratepages. We stop searching if the migrate
-> @@ -191,7 +224,9 @@ static void isolate_freepages(struct zone *zone,
->  		isolated = 0;
->  		spin_lock_irqsave(&zone->lock, flags);
->  		if (suitable_migration_target(page)) {
-> -			isolated = isolate_freepages_block(zone, pfn, freelist);
-> +			end_pfn = min(pfn + pageblock_nr_pages, zone_end_pfn);
-> +			isolated = isolate_freepages_range(zone, pfn,
-> +					end_pfn, freelist);
->  			nr_freepages += isolated;
->  		}
->  		spin_unlock_irqrestore(&zone->lock, flags);
-> @@ -250,31 +285,34 @@ typedef enum {
->  	ISOLATE_SUCCESS,	/* Pages isolated, migrate */
->  } isolate_migrate_t;
->  
-> -/*
-> - * Isolate all pages that can be migrated from the block pointed to by
-> - * the migrate scanner within compact_control.
-> +/**
-> + * isolate_migratepages_range() - isolate all migrate-able pages in range.
-> + * @zone:	Zone pages are in.
-> + * @cc:		Compaction control structure.
-> + * @low_pfn:	The first PFN of the range.
-> + * @end_pfn:	The one-past-the-last PFN of the range.
-> + *
-> + * Isolate all pages that can be migrated from the range specified by
-> + * [low_pfn, end_pfn).  Returns zero if there is a fatal signal
-> + * pending), otherwise PFN of the first page that was not scanned
-> + * (which may be both less, equal to or more then end_pfn).
-> + *
-> + * Assumes that cc->migratepages is empty and cc->nr_migratepages is
-> + * zero.
-> + *
-> + * Other then cc->migratepages and cc->nr_migratetypes this function
-> + * does not modify any cc's fields, ie. it does not modify (or read
-> + * for that matter) cc->migrate_pfn.
->   */
-> -static isolate_migrate_t isolate_migratepages(struct zone *zone,
-> -					struct compact_control *cc)
-> +static unsigned long
-> +isolate_migratepages_range(struct zone *zone, struct compact_control *cc,
-> +			   unsigned long low_pfn, unsigned long end_pfn)
->  {
-> -	unsigned long low_pfn, end_pfn;
->  	unsigned long last_pageblock_nr = 0, pageblock_nr;
->  	unsigned long nr_scanned = 0, nr_isolated = 0;
->  	struct list_head *migratelist = &cc->migratepages;
->  	isolate_mode_t mode = ISOLATE_ACTIVE|ISOLATE_INACTIVE;
->  
-> -	/* Do not scan outside zone boundaries */
-> -	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-> -
-> -	/* Only scan within a pageblock boundary */
-> -	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
-> -
-> -	/* Do not cross the free scanner or scan within a memory hole */
-> -	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
-> -		cc->migrate_pfn = end_pfn;
-> -		return ISOLATE_NONE;
-> -	}
-> -
->  	/*
->  	 * Ensure that there are not too many pages isolated from the LRU
->  	 * list by either parallel reclaimers or compaction. If there are,
-> @@ -283,12 +321,12 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  	while (unlikely(too_many_isolated(zone))) {
->  		/* async migration should just abort */
->  		if (!cc->sync)
-> -			return ISOLATE_ABORT;
-> +			return 0;
->  
->  		congestion_wait(BLK_RW_ASYNC, HZ/10);
->  
->  		if (fatal_signal_pending(current))
-> -			return ISOLATE_ABORT;
-> +			return 0;
->  	}
->  
->  	/* Time to isolate some pages for migration */
-> @@ -365,17 +403,49 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
->  		nr_isolated++;
->  
->  		/* Avoid isolating too much */
-> -		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX)
-> +		if (cc->nr_migratepages == COMPACT_CLUSTER_MAX) {
-> +			++low_pfn;
->  			break;
-> +		}
->  	}
-
-This minor optimisation is unrelated to the implementation of
-isolate_migratepages_range() and should be in its own patch.
-
-Otherwise nothing jumped out.
-
->  
->  	acct_isolated(zone, cc);
->  
->  	spin_unlock_irq(&zone->lru_lock);
-> -	cc->migrate_pfn = low_pfn;
->  
->  	trace_mm_compaction_isolate_migratepages(nr_scanned, nr_isolated);
->  
-> +	return low_pfn;
-> +}
-> +
-> +/*
-> + * Isolate all pages that can be migrated from the block pointed to by
-> + * the migrate scanner within compact_control.
-> + */
-> +static isolate_migrate_t isolate_migratepages(struct zone *zone,
-> +					struct compact_control *cc)
-> +{
-> +	unsigned long low_pfn, end_pfn;
-> +
-> +	/* Do not scan outside zone boundaries */
-> +	low_pfn = max(cc->migrate_pfn, zone->zone_start_pfn);
-> +
-> +	/* Only scan within a pageblock boundary */
-> +	end_pfn = ALIGN(low_pfn + pageblock_nr_pages, pageblock_nr_pages);
-> +
-> +	/* Do not cross the free scanner or scan within a memory hole */
-> +	if (end_pfn > cc->free_pfn || !pfn_valid(low_pfn)) {
-> +		cc->migrate_pfn = end_pfn;
-> +		return ISOLATE_NONE;
-> +	}
-> +
-> +	/* Perform the isolation */
-> +	low_pfn = isolate_migratepages_range(zone, cc, low_pfn, end_pfn);
-> +	if (!low_pfn)
-> +		return ISOLATE_ABORT;
-> +
-> +	cc->migrate_pfn = low_pfn;
-> +
->  	return ISOLATE_SUCCESS;
->  }
->  
-
--- 
-Mel Gorman
-SUSE Labs
