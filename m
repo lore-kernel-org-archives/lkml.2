@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab2AJVdo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 16:33:44 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65510 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752676Ab2AJVdm (ORCPT
+	id S1756799Ab2AJVwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 16:52:46 -0500
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:24306 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752202Ab2AJVwp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 16:33:42 -0500
-Date: Tue, 10 Jan 2012 21:33:38 +0000
-From: Jamie Iles <jamie@jamieiles.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-Message-ID: <20120110213338.GD3226@page>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
+	Tue, 10 Jan 2012 16:52:45 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtkKAAiwDE95LbVq/2dsb2JhbABCq1KBB4EGgXIBAQUyASMjEAgDGC4UJQMhE75pE4sdYwSVC4kfiTA
+Date: Wed, 11 Jan 2012 08:52:40 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mgorman@suse.de, gregkh@suse.de,
+        akpm@linux-foundation.org
+Subject: Re: [RFC PATCH] shrink_dcache_parent() deadlock
+Message-ID: <20120110215240.GA24410@dastard>
+References: <20120109171639.GA9359@infradead.org>
+ <20120109173010.GX23916@ZenIV.linux.org.uk>
+ <CA+55aFwikQQrpGoyxvY+y=B8NfKBSdcAnKME+xZh+N1TQfp8LA@mail.gmail.com>
+ <20120109205907.GE4198@dastard>
+ <CA+55aFxN+Yh_M=P8cVbGcuHGo+PgcXm1bOFAJQ-5_euqU9LOww@mail.gmail.com>
+ <20120110013434.GA23916@ZenIV.linux.org.uk>
+ <CA+55aFzGe6sG0QotpqGpmNJ-HXqMxR5ocmXzvO2wdN_-MnARfA@mail.gmail.com>
+ <CAJfpegu6BrLbmMSbf0QnKRe5rq0HgZYtYBEW8F+qehZC9GpQ8w@mail.gmail.com>
+ <CA+55aFxszjhj5MatYe_KXJ=vYyf-05kzBbtmY1vgoGUio0DXuQ@mail.gmail.com>
+ <CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJfpegszrDO112d9A3PLsMY1+NnRpqFoLzODABnMq_VZq=DWFw@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
-> Based on work by Ben Herrenschmidt and Jeremy Kerr, this patch adds an
-> of_clk_get function to allow platforms to retrieve clock data from the
-> device tree.
+On Tue, Jan 10, 2012 at 05:22:22PM +0100, Miklos Szeredi wrote:
+> On Tue, Jan 10, 2012 at 5:00 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> > On Tue, Jan 10, 2012 at 2:05 AM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> >>
+> >> I tested Dave's patch and the bug can still be easily reproduced.
+> >>
+> >> And that's to be expected, as the intermediate "being on the lru"
+> >> state that Dave's patch eliminates doesn't play a fundamental part in
+> >> the mechanism of the livelock.  It does eliminate one trylock, but
+> >> that's not the one critical to this bug (removing it is a very good
+> >> idea anyway).
+> >>
+> >> The critical trylock here is the one in dentry_kill() which tries to
+> >> lock the parent.
+> >
+> > Ok. Here's your patch munged for current -git. You've got most of a
+> > changelog, can you send this out with the right subject and a
+> > sign-off, and re-test with the current git just to make sure.
 > 
-> Platform register a provider through of_clk_add_provider, which will be
-> called when a device references the provider's OF node for a clock
-> reference.
-[...]
-> diff --git a/Documentation/devicetree/bindings/clock/fixed-clock.txt b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-> new file mode 100644
-> index 0000000..9a75342
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/fixed-clock.txt
-> @@ -0,0 +1,21 @@
-> +Binding for simple fixed-rate clock sources.
-> +
-> +This binding uses the common clock binding[1].
-> +
-> +[1] Documentation/devicetree/bindings/clock/fixed-clock.txt
+> See the one with the subject "vfs: fix shrink_dcache_parent()
+> livelock" I sent out a bit earlier.
+> 
+> You didn't quite get it right: the flag now needs to be set in
+> select_parent() not prune_dcache_sb().
+> 
+> I think prune_dcache_sb() doesn't need this logic (although it
+> wouldn't hurt either) because that one is called from the slab
+> shrinkers and those are protected from being run multiple times in
+> parallel, I hope.
 
-This appears to reference itself?
+Shrinkers can be called in parallel by memory reclaim on different
+CPUs. The only thing serialising them is the LRU locks.
 
-> +
-> +Required properties:
-> +- compatible : shall be "fixed-clock".
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clock-frequency : frequency of clock in Hz. May be multiple cells.
-> +
-> +Optional properties:
-> +- gpios : From common gpio binding; gpio connection to clock enable pin.
+Cheers,
 
-This seems a little odd to me to have in the common binding, but I'm not 
-that familiar with too many platforms.
-
-> +- clock-output-names : From common clock binding
-> +
-> +Example:
-> +	clock {
-> +		compatible = "fixed-clock";
-> +		#clock-cells = <0>;
-> +		clock-frequency = <1000000000>;
-> +	};
-
-I wonder if this should have an optional clock consumer with a standard 
-name for parenting?  For example, on picoxcell there is a fixed 200MHz 
-APB clock that is really a PLL from a 20MHz reference input and I'd like 
-to represent that in the clock tree.
-
-I'm about to start trying to get this and Mike's common struct clk 
-patches working on picoxcell, and the one thing I'm not understanding at 
-the moment is how to handle the tree itself.  Currently I was planning 
-on iterating over all clocks and finding a named input clock "ref" or 
-"input" perhaps.  This would be fine for picoxcell, but I guess more 
-complicated chips may need something else.
-
-Jamie
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
