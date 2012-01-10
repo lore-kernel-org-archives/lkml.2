@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933633Ab2AJByw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 20:54:52 -0500
-Received: from mga11.intel.com ([192.55.52.93]:49412 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932253Ab2AJByv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 20:54:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105303495"
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Youquan Song <youquan.song@intel.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
-In-Reply-To: <CAKfTPtDM-L-AcHr_o44vmR9VYRvQqOyXuwEgnZ61d4pbDOPFUg@mail.gmail.com>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com>
-	 <1326103578.2442.50.camel@twins>
-	 <20120110001445.GA20542@linux-youquan.bj.intel.com>
-	 <1326107563.2442.65.camel@twins>
-	 <CAKfTPtDM-L-AcHr_o44vmR9VYRvQqOyXuwEgnZ61d4pbDOPFUg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel
-Date: Mon, 09 Jan 2012 17:54:21 -0800
-Message-ID: <1326160461.2366.19.camel@sbsiddha-mobl2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S933631Ab2AJB6B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 20:58:01 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:62148 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932329Ab2AJB6A convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 20:58:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+References: <bug-41722-5003@https.bugzilla.kernel.org/>
+	<201109062222.p86MMlK9023363@demeter2.kernel.org>
+	<CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
+	<CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+Date: Mon, 9 Jan 2012 23:57:59 -0200
+X-Google-Sender-Auth: 3Ig5uXumHPRGj15_gqBJrHA6rMk
+Message-ID: <CAOtrxKOkqxBepX19E1DJu+KSN=DJxxnWi3T9DnJR-C8pRfA-tg@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: =?UTF-8?Q?Rog=C3=A9rio_Brito?= <rbrito@ime.usp.br>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: bugzilla-daemon@bugzilla.kernel.org,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?UTF-8?Q?M=C3=A1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>, Ram Pai <linuxram@us.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-01-09 at 15:29 +0100, Vincent Guittot wrote: 
-> Hi Peter,
-> 
-> I'm also using sched_mc level for doing powersaving load balance on
-> ARM platform and we have real benefits.
+Hi, Linus.
 
-hi Vincent, Can you elaborate on your platform topology where you see
-the benefits?
+On Sun, Jan 8, 2012 at 20:23, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Jan 8, 2012 at 2:13 PM, Rogério Brito <rbrito@ime.usp.br> wrote:
+>>
+>> It doesn't boot with a vanilla kernel. It only boots when I pass the options
+>> above *and* compile the kernel with the following patch applied:
+>>
+>> ,----[ do_not_size_subtractive_decoding_transparent_pci_to_pci_bridges.patch ]
+>> | diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+>> | index 86b69f85..84543f5 100644
+>> | --- a/drivers/pci/setup-bus.c
+>> | +++ b/drivers/pci/setup-bus.c
+>> | @@ -849,6 +849,10 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+>> |               break;
+>> |
+>> |       case PCI_CLASS_BRIDGE_PCI:
+>> | +             /* don't size subtractive decoding (transparent)
+>> | +              * PCI-to-PCI bridges */
+>> | +             if (bus->self->transparent)
+>> | +                     break;
+>> |               pci_bridge_check_ranges(bus);
+>> |               if (bus->self->is_hotplug_bridge) {
+>> |                       additional_io_size  = pci_hotplug_io_size;
+>> `----
+>
+> Ahh. I'd forgotten about that particular PCI patch.
 
-on x86, 'sched_mc' was designed for the case of consolidating load into
-one socket before using another idle socket.
+Thanks for acknowledging that issue.
 
-Just wondering if this is your use case too or if you are consolidating
-at a different topological level.
+> I think we should try to re-do that "avoid sizing transparent bridges"
+> commit, because it really should make it much easier to do PCI
+> allocations under some very common situations (there's a *lot* of
+> common intel transparent PCI bridges).
 
-thanks,
-suresh 
+All this PCI stuff is alien to me, but I am learning some by osmosis
+here, which is not bad at all. :)
 
+I only fear that if the patch above is applied and proves to have ill
+effects if reverting it will leave this computer (and, potentially,
+some others) without booting. As I always say, I can test anything
+that you guys want me to do, given some guidance.
+
+
+Thanks,
+
+-- 
+Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
+http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
+DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
