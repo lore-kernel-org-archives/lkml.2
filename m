@@ -1,142 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756135Ab2AJKWT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 05:22:19 -0500
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:42536 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755321Ab2AJKWR (ORCPT
+	id S1756173Ab2AJKWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 05:22:24 -0500
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:57735 "HELO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755833Ab2AJKWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 05:22:17 -0500
-Date: Tue, 10 Jan 2012 11:21:43 +0100 (CET)
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
-X-X-Sender: sebott@c4eb
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-cc: Alan Stern <stern@rowland.harvard.edu>,
-        Joerg Roedel <joerg.roedel@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michael Buesch <m@bues.ch>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: Incorrect uses of get_driver()/put_driver()
-In-Reply-To: <20120110100541.38a3940f@de.ibm.com>
-Message-ID: <alpine.LFD.2.02.1201101119230.1750@c4eb>
-References: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org> <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org> <20120110100541.38a3940f@de.ibm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-Organization: =?ISO-8859-15?Q?=22IBM_Deutschland_Research_&_Development_GmbH_=2F_Vorsitzende_des_Aufsichtsrats=3A_Martina_Koederitz_Gesch=E4ftsf=FChrung=3A_Dirk_Wittkopp_Sitz_der_Gesellschaft=3A_B=F6blingen_=2F_Registergericht?=
- =?ISO-8859-15?Q?=3A_Amtsgericht_Stuttgart=2C_HRB_243294=22?=
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-x-cbid: 12011010-8372-0000-0000-00000150C89F
+	Tue, 10 Jan 2012 05:22:21 -0500
+From: Haojian Zhuang <haojian.zhuang@marvell.com>
+To: sameo@linux.intel.com, a.zummo@towertech.it, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org, kliu5@marvell.com
+Subject: [PATCH 2/3] misc: max8925_onkey: add function to work as wakeup source
+Date: Tue, 10 Jan 2012 18:24:40 +0800
+Message-Id: <1326191080-24524-1-git-send-email-haojian.zhuang@marvell.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20120109002946.GJ13679@sortiz-mobl>
+References: <20120109002946.GJ13679@sortiz-mobl>
+X-OriginalArrivalTime: 10 Jan 2012 10:16:16.0099 (UTC) FILETIME=[E32C3330:01CCCF80]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Kevin Liu <kliu5@marvell.com>
 
-
-On Tue, 10 Jan 2012, Martin Schwidefsky wrote:
-
-> On Mon, 9 Jan 2012 12:35:09 -0500 (EST)
-> Alan Stern <stern@rowland.harvard.edu> wrote:
-> 
-> > drivers/s390/cio/device.c:1681:       drv = get_driver(&cdrv->driver);
-> > drivers/s390/cio/device.c:1687:       put_driver(drv);
-> > 
-> > Martin, these calls seem to be useless.  The calls in ccwgroup.c are 
-> > definitely useless; there's no reason to take a reference to a driver 
-> > while it's being unregistered, since it can't go away until the 
-> > unregistration is finished.
-> 
-> The get_driver/put_driver in ccwgroup.c are obviously useless, the caller
-> passed ccwgroup_driver_unregister a ccwgroup_driver reference.
-> I am not so sure about the code in device.c. get_ccwdev_by_busid() gets
-> used e.g. by vmur like this:
-> 
-> static struct ccw_driver ur_driver = { .. };
-> 
-> static struct urdev *urdev_get_from_devno(u16 devno)
-> {
-> 	..
-> 	sprintf(bus_id, "0.0.%04x", devno);
->         cdev = get_ccwdev_by_busid(&ur_driver, bus_id);
-> 	..
-> }
-> 
-> static int ur_open(struct inode *inode, struct file *file)
-> {
-> 	..
-> 	urd = urdev_get_from_devno(devno);
-> 	..
-> }
-> 
-> For vmur we should be safe by the fact that ur_open is only possible if
-> a try_module_get has been successful and the ccw_driver is unregistered
-> only in the module exit function. But we have to check if this is true
-> for all users of the get_ccwdev_by_busid() function.
-
-Done.
-[PATCH] cio: remove {get,put}_driver
-
-Remove useless {get,put}_driver - the caller of the functions
-has to ensure valid driver pointers.
-
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+Signed-off-by: Kevin Liu <kliu5@marvell.com>
 ---
- drivers/s390/cio/ccwgroup.c |    2 --
- drivers/s390/cio/device.c   |    8 +-------
- 2 files changed, 1 insertion(+), 9 deletions(-)
+ drivers/input/misc/max8925_onkey.c |   32 ++++++++++++++++++++++++++++++++
+ 1 files changed, 32 insertions(+), 0 deletions(-)
 
---- a/drivers/s390/cio/ccwgroup.c
-+++ b/drivers/s390/cio/ccwgroup.c
-@@ -580,7 +580,6 @@ void ccwgroup_driver_unregister(struct c
- 	struct device *dev;
+diff --git a/drivers/input/misc/max8925_onkey.c b/drivers/input/misc/max8925_onkey.c
+index 7de0ded..b0fe395 100644
+--- a/drivers/input/misc/max8925_onkey.c
++++ b/drivers/input/misc/max8925_onkey.c
+@@ -122,6 +122,7 @@ static int __devinit max8925_onkey_probe(struct platform_device *pdev)
+ 	info->idev->evbit[0] = BIT_MASK(EV_KEY);
+ 	info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
  
- 	/* We don't want ccwgroup devices to live longer than their driver. */
--	get_driver(&cdriver->driver);
- 	while ((dev = driver_find_device(&cdriver->driver, NULL, NULL,
- 					 __ccwgroup_match_all))) {
- 		struct ccwgroup_device *gdev = to_ccwgroupdev(dev);
-@@ -592,7 +591,6 @@ void ccwgroup_driver_unregister(struct c
- 		mutex_unlock(&gdev->reg_mutex);
- 		put_device(dev);
- 	}
--	put_driver(&cdriver->driver);
- 	driver_unregister(&cdriver->driver);
++	device_init_wakeup(&pdev->dev, 1);
+ 
+ 	error = input_register_device(info->idev);
+ 	if (error) {
+@@ -158,10 +159,41 @@ static int __devexit max8925_onkey_remove(struct platform_device *pdev)
+ 	return 0;
  }
- EXPORT_SYMBOL(ccwgroup_driver_unregister);
---- a/drivers/s390/cio/device.c
-+++ b/drivers/s390/cio/device.c
-@@ -1676,15 +1676,9 @@ struct ccw_device *get_ccwdev_by_busid(s
- 				       const char *bus_id)
- {
- 	struct device *dev;
--	struct device_driver *drv;
  
--	drv = get_driver(&cdrv->driver);
--	if (!drv)
--		return NULL;
--
--	dev = driver_find_device(drv, NULL, (void *)bus_id,
-+	dev = driver_find_device(&cdrv->driver, NULL, (void *)bus_id,
- 				 __ccwdev_check_busid);
--	put_driver(drv);
- 
- 	return dev ? to_ccwdev(dev) : NULL;
- }
-
-
-
-> 
-> -- 
-> blue skies,
->    Martin.
-> 
-> "Reality continues to ruin my life." - Calvin.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
++#ifdef CONFIG_PM_SLEEP
++static int max8925_onkey_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct max8925_onkey_info *info = platform_get_drvdata(pdev);
++	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
++
++	if (device_may_wakeup(dev)) {
++		chip->wakeup_flag |= 1 << (info->irq[0] - chip->irq_base);
++		chip->wakeup_flag |= 1 << (info->irq[1] - chip->irq_base);
++	}
++	return 0;
++}
++
++static int max8925_onkey_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct max8925_onkey_info *info = platform_get_drvdata(pdev);
++	struct max8925_chip *chip = dev_get_drvdata(pdev->dev.parent);
++
++	if (device_may_wakeup(dev)) {
++		chip->wakeup_flag &= ~(1 << (info->irq[0] - chip->irq_base));
++		chip->wakeup_flag &= ~(1 << (info->irq[1] - chip->irq_base));
++	}
++	return 0;
++}
++#endif
++
++static SIMPLE_DEV_PM_OPS(max8925_onkey_pm_ops, max8925_onkey_suspend, max8925_onkey_resume);
++
+ static struct platform_driver max8925_onkey_driver = {
+ 	.driver		= {
+ 		.name	= "max8925-onkey",
+ 		.owner	= THIS_MODULE,
++		.pm	= &max8925_onkey_pm_ops,
+ 	},
+ 	.probe		= max8925_onkey_probe,
+ 	.remove		= __devexit_p(max8925_onkey_remove),
+-- 
+1.7.0.4
 
