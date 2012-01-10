@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452Ab2AJW6E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:58:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52078 "EHLO mx2.suse.de"
+	id S933550Ab2AJX1j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:27:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52092 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933230Ab2AJW54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:57:56 -0500
+	id S933425Ab2AJW6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:58:03 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:20 2012
-Message-Id: <20120110214620.372063394@clark.kroah.org>
+Message-Id: <20120110214620.552944937@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:38 -0800
+Date: Tue, 10 Jan 2012 13:45:40 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hema HK <hemahk@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [25/40] usb: musb: fix pm_runtime mismatch
+        alan@lxorguk.ukuu.org.uk,
+        =?UTF-8?q?Malte=20Schr=C3=B6der?= <maltesch@gmx.de>
+Subject: [27/40] USB: Add USB-ID for Multiplex RC serial adapter to cp210x.c
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Contreras <felipe.contreras@gmail.com>
+From: Malte Schröder <maltesch@gmx.de>
 
-commit 772aed45b604c5ff171f0f12c12392d868333f79 upstream.
+commit 08e87d0d773dc9ca5faf4c3306e238ed0ea129b0 upstream.
 
-In musb_init_controller() there's a pm_runtime_put(), but there's no
-pm_runtime_get(), which creates a mismatch that causes the driver to
-sleep when it shouldn't.
+Hi, below patch adds the USB-ID of the serial adapters sold by
+Multiplex RC (www.multiplex-rc.de).
 
-This was introduced in 7acc619[1], but it wasn't triggered in my setup
-until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
-when PM is working as it was supposed to.
-
-However, it seems most of the time this is used in a way that keeps the
-counter above 0, so nobody noticed. Also, it seems to depend on the
-configuration used in versions before 3.1, but not later (or in it).
-
-I found the problem by loading isp1704_charger before any usb gadgets:
-http://article.gmane.org/gmane.linux.kernel/1226122
-
-All versions after 2.6.39 are affected.
-
-[1] usb: musb: Idle path retention and offmode support for OMAP3
-[2] OMAP2+: musb: hwmod adaptation for musb registration
-[3] Merge branch 'omap-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6
-
-Cc: Hema HK <hemahk@ti.com>
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Malte Schröder <maltesch@gmx.de>
+Cc: stable <stable@vger.kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/musb/musb_core.c |    2 --
- 1 file changed, 2 deletions(-)
+ drivers/usb/serial/cp210x.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/musb/musb_core.c
-+++ b/drivers/usb/musb/musb_core.c
-@@ -2078,8 +2078,6 @@ musb_init_controller(struct device *dev,
- 	if (status < 0)
- 		goto fail3;
- 
--	pm_runtime_put(musb->controller);
--
- 	status = musb_init_debugfs(musb);
- 	if (status < 0)
- 		goto fail4;
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -92,6 +92,7 @@ static const struct usb_device_id id_tab
+ 	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
+ 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
+ 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
++	{ USB_DEVICE(0x10C4, 0x81A9) }, /* Multiplex RC Interface */
+ 	{ USB_DEVICE(0x10C4, 0x81AC) }, /* MSD Dash Hawk */
+ 	{ USB_DEVICE(0x10C4, 0x81AD) }, /* INSYS USB Modem */
+ 	{ USB_DEVICE(0x10C4, 0x81C8) }, /* Lipowsky Industrie Elektronik GmbH, Baby-JTAG */
 
 
