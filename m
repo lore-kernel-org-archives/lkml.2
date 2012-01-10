@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2AJIyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:54:52 -0500
-Received: from mga09.intel.com ([134.134.136.24]:50154 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754069Ab2AJIyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:54:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="asc'?scan'208";a="96420470"
-Message-ID: <1326185831.8847.17.camel@sauron.fi.intel.com>
-Subject: Re: [GIT PULL] UBI/UBIFS changes for v3.3
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Reply-To: artem.bityutskiy@linux.intel.com
+	id S1755335Ab2AJI5A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:57:00 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51705 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753382Ab2AJI47 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 03:56:59 -0500
+Message-ID: <4F0BFD56.8060804@monstr.eu>
+Date: Tue, 10 Jan 2012 09:56:54 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-        richard -rw- weinberger <richard.weinberger@gmail.com>
-Date: Tue, 10 Jan 2012 10:57:11 +0200
-In-Reply-To: <CAFLxGvy7MPfBp=prAqELwcWuHFjB0qnNrTRzmoGBN39==G76Dg@mail.gmail.com>
-References: <1326118036.6755.101.camel@sauron.fi.intel.com>
-	 <CAFLxGvy7MPfBp=prAqELwcWuHFjB0qnNrTRzmoGBN39==G76Dg@mail.gmail.com>
-Organization: Intel OTC
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-PBPOZoylA/r8OYsGtVTG"
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze changes for 3.3
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---=-PBPOZoylA/r8OYsGtVTG
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+please pull the following changes.
+There are two patches out of microblaze tree which remove NO_IRQ from xilinx sysace/ps2 drivers.
+Appropriate maintainers are not active to add these drivers to their tree.
+I have got ACKs from Grant and Ryan.
+I have completely removed NO_IRQ from Microblaze and drivers we use.
 
-On Mon, 2012-01-09 at 16:00 +0100, richard -rw- weinberger wrote:
-> > Thomas Meyer (1):
-> >      UBIFS: Use kmemdup rather than duplicating its implementation
-> >
->=20
-> Where is "ubi: Make vid_hdr non-static"?
-> http://marc.info/?l=3Dlinux-kernel&m=3D132456978023418
+Thanks,
+Michal
 
-Linus,
+The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
+   Linus Torvalds (1):
+         Linux 3.2
 
-just to elaborate: this pull request is still valid. I'll take care
-of the other patch separately.
+are available in the git repository at:
 
---=20
-Best Regards,
-Artem Bityutskiy
+   git://git.monstr.eu/linux-2.6-microblaze.git next
 
---=-PBPOZoylA/r8OYsGtVTG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
+Michal Simek (14):
+       microblaze: Synchronize __pa __va macros
+       microblaze: Add __cmpdi2
+       microblaze: Use of_find_compatible_node for timer and intc
+       microblaze: intc: Change variable name
+       microblaze: Use irq_of_parse_and_map for timer
+       microblaze: Change NO_IRQ to 0
+       microblaze: Send CR before LF for early console
+       microblaze: Remove eprintk macro
+       microblaze: Fix debug message in module
+       microblaze: Trivial asm fix
+       block: xsysace: Don't use NO_IRQ
+       input: xilinx_ps2: Don't use NO_IRQ
+       microblaze: Remove NO_IRQ from architecture
+       microblaze: Wire-up new system calls
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+  arch/microblaze/include/asm/irq.h      |   11 +++++--
+  arch/microblaze/include/asm/page.h     |   11 +-----
+  arch/microblaze/include/asm/setup.h    |    6 ----
+  arch/microblaze/include/asm/unistd.h   |    5 ++-
+  arch/microblaze/kernel/early_printk.c  |    4 +-
+  arch/microblaze/kernel/entry.S         |    2 +-
+  arch/microblaze/kernel/intc.c          |   52 +++++++++++++------------------
+  arch/microblaze/kernel/irq.c           |   11 ++++---
+  arch/microblaze/kernel/module.c        |    2 +-
+  arch/microblaze/kernel/setup.c         |   18 +++++-----
+  arch/microblaze/kernel/syscall_table.S |    3 ++
+  arch/microblaze/kernel/timer.c         |   21 ++++---------
+  arch/microblaze/lib/Makefile           |    1 +
+  arch/microblaze/lib/cmpdi2.c           |   26 ++++++++++++++++
+  arch/microblaze/pci/pci-common.c       |    4 +-
+  drivers/block/xsysace.c                |   10 +++---
+  drivers/input/serio/xilinx_ps2.c       |    2 +-
+  17 files changed, 99 insertions(+), 90 deletions(-)
+  create mode 100644 arch/microblaze/lib/cmpdi2.c
 
-iQIcBAABAgAGBQJPC/1nAAoJECmIfjd9wqK02VEP/38KgR/D0vQNl4GnP7gUD1+g
-VLCVrbN1+3cjcg3I4dib92GI8T+0K5n/4rTj9C02cf103LaKEzt//fqSsnUK62Bo
-8l25msunQD+CSy0J1dyFNPtUu8fwjkLasy1Tn2pm7ArD67x5GOQJxJHXjL4hMR/b
-Qa446P3dgFtZDXqrHfT6vcA/mwnqaafpJ8BXWeJyDWIcTiHAcEygqD1O9E1zKUhh
-ykHYvk1mEK7Dk9ttYBriqOzwDMIaLZnxnMPX9JtHKK1Ussspb/FrzIreyG8elYu6
-1jym8IEI7jjUD76cG6ZlcR/p9zBcokVatnNEXWbQ8gFbAOmO4VDdtTl9pgCRNaRL
-lRwa9+dC3FeS1PyC5kVbbhx9OjRFH++VXsUElaC6PhTL5qZ7u9GV0xnSQxuTV63S
-Ulnq1t0JwGa91unr4EMfe4/gMqGka8IcJ/XxYRGQde+nzsVxk8IUZe/MTAZq2b7x
-wbfvUBEtqhgUdWiiD0vZn1pD0WFseCNkm3Kby/Dzm3djA4xYvy8SjVO4K5wSxelg
-0GK/AL8qHPueTGJ6lhVnjNcsluI89QSgcbaSzhraN14LP5BioDYjLu/eANz71E55
-Acrajj2PdycDKNrOHYa99EcVVFi1ZJpkjMFPNqEbOUcqFqsUKgiMEycarWYLhTkN
-eqOGeK18yklykTU/Gc0e
-=2YU0
------END PGP SIGNATURE-----
 
---=-PBPOZoylA/r8OYsGtVTG--
-
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
