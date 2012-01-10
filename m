@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934134Ab2AJXBu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:01:50 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52533 "EHLO mx2.suse.de"
+	id S934160Ab2AJXCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:02:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52575 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933982Ab2AJXBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:01:46 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:22 2012
-Message-Id: <20120110215022.550407194@clark.kroah.org>
+	id S934149Ab2AJXB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:01:56 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:01 2012
+Message-Id: <20120110215601.871450672@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:29 -0800
+Date: Tue, 10 Jan 2012 13:55:07 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Claudio Scordino <claudio@evidence.eu.com>,
-        Dave Bender <codehero@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [19/42] atmel_serial: fix spinlock lockup in RS485 code
-In-Reply-To: <20120110215031.GA19398@kroah.com>
+        alan@lxorguk.ukuu.org.uk, Larry Finger <Larry.Finger@lwfinger.net>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [04/49] rt2800usb: Move ID out of unknown
+In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.1-stable review patch.  If anyone has any objections, please let me know.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Claudio Scordino <claudio@evidence.eu.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit dbf1115d3f8c7052788aa4e6e46abd27f3b3eeba upstream.
+commit 3f81f8f1524ccca24df1029b0cf825ecef5e5cdc upstream.
 
-Patch to fix a spinlock lockup in the driver that sometimes happens when the
-tasklet starts.
+Testing on the openSUSE wireless forum has shown that a Linksys
+WUSB54GC v3 with USB ID 1737:0077 works with rt2800usb when the ID is
+written to /sys/.../new_id. This ID can therefore be moved out of UNKNOWN.
 
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
-Signed-off-by: Dave Bender <codehero@gmail.com>
-Tested-by: Dave Bender <codehero@gmail.com>
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Acked-by: Gertjan van Wingerde <gwingerde@gmail.com>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/tty/serial/atmel_serial.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/wireless/rt2x00/rt2800usb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/serial/atmel_serial.c
-+++ b/drivers/tty/serial/atmel_serial.c
-@@ -199,8 +199,9 @@ void atmel_config_rs485(struct uart_port
- {
- 	struct atmel_uart_port *atmel_port = to_atmel_uart_port(port);
- 	unsigned int mode;
-+	unsigned long flags;
- 
--	spin_lock(&port->lock);
-+	spin_lock_irqsave(&port->lock, flags);
- 
- 	/* Disable interrupts */
- 	UART_PUT_IDR(port, atmel_port->tx_done_mask);
-@@ -231,7 +232,7 @@ void atmel_config_rs485(struct uart_port
- 	/* Enable interrupts */
- 	UART_PUT_IER(port, atmel_port->tx_done_mask);
- 
--	spin_unlock(&port->lock);
-+	spin_unlock_irqrestore(&port->lock, flags);
- 
- }
- 
+--- a/drivers/net/wireless/rt2x00/rt2800usb.c
++++ b/drivers/net/wireless/rt2x00/rt2800usb.c
+@@ -976,6 +976,7 @@ static struct usb_device_id rt2800usb_de
+ 	{ USB_DEVICE(0x13b1, 0x0031) },
+ 	{ USB_DEVICE(0x1737, 0x0070) },
+ 	{ USB_DEVICE(0x1737, 0x0071) },
++	{ USB_DEVICE(0x1737, 0x0077) },
+ 	/* Logitec */
+ 	{ USB_DEVICE(0x0789, 0x0162) },
+ 	{ USB_DEVICE(0x0789, 0x0163) },
+@@ -1171,7 +1172,6 @@ static struct usb_device_id rt2800usb_de
+ 	{ USB_DEVICE(0x1740, 0x0605) },
+ 	{ USB_DEVICE(0x1740, 0x0615) },
+ 	/* Linksys */
+-	{ USB_DEVICE(0x1737, 0x0077) },
+ 	{ USB_DEVICE(0x1737, 0x0078) },
+ 	/* Logitec */
+ 	{ USB_DEVICE(0x0789, 0x0168) },
 
 
