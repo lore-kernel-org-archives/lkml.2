@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab2AJULB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:11:01 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45827 "EHLO mx2.suse.de"
+	id S932812Ab2AJUMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:12:53 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45840 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756893Ab2AJUKz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:10:55 -0500
+	id S1756893Ab2AJULC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 15:11:02 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:50 2012
-Message-Id: <20120110200850.467676402@clark.kroah.org>
+Message-Id: <20120110200850.662378871@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 12:06:59 -0800
+Date: Tue, 10 Jan 2012 12:07:01 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, reiserfs-devel@vger.kernel.org,
-        Jeff Mahoney <jeffm@suse.com>, Jan Kara <jack@suse.cz>
-Subject: [08/20] reiserfs: Force inode evictions before umount to avoid crash
+        alan@lxorguk.ukuu.org.uk, Julia Lawall <julia@diku.dk>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [10/20] drivers/usb/class/cdc-acm.c: clear dangling pointer
 In-Reply-To: <20120110200902.GA5674@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,67 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Julia Lawall <julia@diku.dk>
 
-commit a9e36da655e54545c3289b2a0700b5c443de0edd upstream.
+commit e7c8e8605d0bafc705ff27f9da98a1668427cc0f upstream.
 
-This patch fixes a crash in reiserfs_delete_xattrs during umount.
+On some failures, the country_code field of an acm structure is freed
+without freeing the acm structure itself.  Elsewhere, operations including
+memcpy and kfree are performed on the country_code field.  The patch sets
+the country_code field to NULL when it is freed, and likewise sets the
+country_code_size field to 0.
 
-When shrink_dcache_for_umount clears the dcache from
-generic_shutdown_super, delayed evictions are forced to disk. If an
-evicted inode has extended attributes associated with it, it will
-need to walk the xattr tree to locate and remove them.
-
-But since shrink_dcache_for_umount will BUG if it encounters active
-dentries, the xattr tree must be released before it's called or it will
-crash during every umount.
-
-This patch forces the evictions to occur before generic_shutdown_super
-by calling shrink_dcache_sb first. The additional evictions caused
-by the removal of each associated xattr file and dir will be automatically
-handled as they're added to the LRU list.
-
-CC: reiserfs-devel@vger.kernel.org
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Acked-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/super.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ drivers/usb/class/cdc-acm.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -445,16 +445,20 @@ int remove_save_link(struct inode *inode
- static void reiserfs_kill_sb(struct super_block *s)
- {
- 	if (REISERFS_SB(s)) {
--		if (REISERFS_SB(s)->xattr_root) {
--			d_invalidate(REISERFS_SB(s)->xattr_root);
--			dput(REISERFS_SB(s)->xattr_root);
--			REISERFS_SB(s)->xattr_root = NULL;
--		}
--		if (REISERFS_SB(s)->priv_root) {
--			d_invalidate(REISERFS_SB(s)->priv_root);
--			dput(REISERFS_SB(s)->priv_root);
--			REISERFS_SB(s)->priv_root = NULL;
--		}
-+		/*
-+		 * Force any pending inode evictions to occur now. Any
-+		 * inodes to be removed that have extended attributes
-+		 * associated with them need to clean them up before
-+		 * we can release the extended attribute root dentries.
-+		 * shrink_dcache_for_umount will BUG if we don't release
-+		 * those before it's called so ->put_super is too late.
-+		 */
-+		shrink_dcache_sb(s);
-+
-+		dput(REISERFS_SB(s)->xattr_root);
-+		REISERFS_SB(s)->xattr_root = NULL;
-+		dput(REISERFS_SB(s)->priv_root);
-+		REISERFS_SB(s)->priv_root = NULL;
- 	}
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1264,6 +1264,8 @@ made_compressed_probe:
+ 		i = device_create_file(&intf->dev, &dev_attr_wCountryCodes);
+ 		if (i < 0) {
+ 			kfree(acm->country_codes);
++			acm->country_codes = NULL;
++			acm->country_code_size = 0;
+ 			goto skip_countries;
+ 		}
  
- 	kill_block_super(s);
+@@ -1272,6 +1274,8 @@ made_compressed_probe:
+ 		if (i < 0) {
+ 			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
+ 			kfree(acm->country_codes);
++			acm->country_codes = NULL;
++			acm->country_code_size = 0;
+ 			goto skip_countries;
+ 		}
+ 	}
 
 
