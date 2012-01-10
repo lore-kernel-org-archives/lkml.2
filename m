@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab2AJULb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 15:11:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45881 "EHLO mx2.suse.de"
+	id S1757070Ab2AJUMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 15:12:00 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45863 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756980Ab2AJULW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 15:11:22 -0500
+	id S1756828Ab2AJULQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 15:11:16 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 12:08:51 2012
-Message-Id: <20120110200851.192091728@clark.kroah.org>
+Message-Id: <20120110200851.002013886@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 12:07:07 -0800
+Date: Tue, 10 Jan 2012 12:07:05 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Aurelien Jacobs <aurel@gnuage.org>,
-        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [16/20] asix: fix infinite loop in rx_fixup()
+        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
+Subject: [14/20] USB: omninet: fix write_room
 In-Reply-To: <20120110200902.GA5674@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,36 +24,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Aurelien Jacobs <aurel@gnuage.org>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 6c15d74defd38e7e7f8805392578b7a1d508097e upstream.
+commit 694c6301e515bad574af74b6552134c4d9dcb334 upstream.
 
-At this point if skb->len happens to be 2, the subsequant skb_pull(skb, 4)
-call won't work and the skb->len won't be decreased and won't ever reach 0,
-resulting in an infinite loop.
+Fix regression introduced by commit 507ca9bc047666 ([PATCH] USB: add
+ability for usb-serial drivers to determine if their write urb is
+currently being used.) which inverted the logic in write_room so that it
+returns zero when the write urb is actually free.
 
-With an ASIX 88772 under heavy load, without this patch, rx_fixup() reaches
-an infinite loop in less than a minute. With this patch applied,
-no infinite loop even after hours of heavy load.
-
-Signed-off-by: Aurelien Jacobs <aurel@gnuage.org>
-Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/usb/asix.c |    2 +-
+ drivers/usb/serial/omninet.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -339,7 +339,7 @@ static int asix_rx_fixup(struct usbnet *
+--- a/drivers/usb/serial/omninet.c
++++ b/drivers/usb/serial/omninet.c
+@@ -317,7 +317,7 @@ static int omninet_write_room(struct tty
+ 	int room = 0; /* Default: no room */
  
- 		skb_pull(skb, (size + 1) & 0xfffe);
+ 	/* FIXME: no consistent locking for write_urb_busy */
+-	if (wport->write_urb_busy)
++	if (!wport->write_urb_busy)
+ 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
  
--		if (skb->len == 0)
-+		if (skb->len < sizeof(header))
- 			break;
- 
- 		head = (u8 *) skb->data;
+ 	dbg("%s - returns %d", __func__, room);
 
 
