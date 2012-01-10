@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab2AJTZD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 14:25:03 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58050 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab2AJTZB (ORCPT
+	id S932934Ab2AJTcO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 14:32:14 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38597 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932175Ab2AJTcL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 14:25:01 -0500
+	Tue, 10 Jan 2012 14:32:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120110121459.6b358afe6052810e91dfdd47@canb.auug.org.au>
-References: <CA+8MBbKKTmZ2fD-j0xnQuxDh9jBO8jfV=gjP2cVvuPZg4r42+Q@mail.gmail.com>
-	<20120110121459.6b358afe6052810e91dfdd47@canb.auug.org.au>
-Date: Tue, 10 Jan 2012 11:25:00 -0800
-Message-ID: <CA+8MBb+=dQb9LE=pDbOw7DBh0Tr=rp4cTstxwQGWGDOguvMpaw@mail.gmail.com>
-Subject: Re: more PID churn during boot?
-From: Tony Luck <tony.luck@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4F04E96F.6040501@xenotime.net>
+References: <20120104191656.de575406a93b3c5226c531b2@canb.auug.org.au>
+	<4F04E96F.6040501@xenotime.net>
+Date: Tue, 10 Jan 2012 20:32:09 +0100
+X-Google-Sender-Auth: G87SRxNUXy1v2xbqd3DgSpp94DU
+Message-ID: <CAMuHMdXg=Fr6HLCLJvGBJD6wsUKN0=nRi7rboQU6+i5NwTWe3w@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 4 (usb/otg)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-usb <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 9, 2012 at 5:14 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> while the 2012 editions print:
+On Thu, Jan 5, 2012 at 01:06, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> On 01/04/2012 12:16 AM, Stephen Rothwell wrote:
+>> Hi all,
 >>
->> udevd (341): /proc/341/oom_adj is deprecated, please use
->> /proc/341/oom_score_adj instead.
+>> Changes since 20120103:
+>
+>
+>
+> ERROR: "usb_add_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
+> ERROR: "usb_remove_hcd" [drivers/usb/otg/mv_otg.ko] undefined!
 
-Ok - not a kernel problem. Building old kernels (that used to not have this
-much churn) while checking for the start point for a bisect started showing
-the same churn.
+And now it's in Linus' tree, for m68k allmodconfig:
 
-I tracked the start of the problem to when I updated my build machine
-on jan 3rd - and it's now throwing a new version of udevd[*] into the initrd
-that I throw at my test machine.
-Probably a bunch of other initrd components are new versions too.
+http://kisskb.ellerman.id.au/kisskb/buildresult/5361188/
+http://kisskb.ellerman.id.au/kisskb/buildresult/5361013/
 
--Tony
+BTW, strange that this error never popped up in linux-next before for that
+config. Perhaps it was masked by the paride/bpck6.c build failure?
 
-[1] Builds since Jan 3rd all have this extra line in dmesg log:
-udev: starting version 147
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
