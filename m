@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933559Ab2AJW6Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:58:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52105 "EHLO mx2.suse.de"
+	id S933499Ab2AJW6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:58:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52067 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933230Ab2AJW6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:12 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:19 2012
-Message-Id: <20120110214619.083733768@clark.kroah.org>
+	id S933347Ab2AJW5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:57:53 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:20 2012
+Message-Id: <20120110214620.294121500@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:23 -0800
+Date: Tue, 10 Jan 2012 13:45:37 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Li Zhong <zhong@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [10/40] powerpc: Fix unpaired probe_hcall_entry and probe_hcall_exit
+        alan@lxorguk.ukuu.org.uk, Oliver Neukum <oneukum@suse.de>
+Subject: [24/40] USB: add quirk for another camera
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +24,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zhong <zhong@linux.vnet.ibm.com>
+From: Oliver Neukum <oliver@neukum.org>
 
-commit e4f387d8db3ba3c2dae4d8bdfe7bb5f4fe1bcb0d upstream.
+commit 35284b3d2f68a8a3703745e629999469f78386b5 upstream.
 
-Unpaired calling of probe_hcall_entry and probe_hcall_exit might happen
-as following, which could cause incorrect preempt count.
+The Guillemot Webcam Hercules Dualpix Exchange camera
+has been reported with a second ID.
 
-__trace_hcall_entry => trace_hcall_entry -> probe_hcall_entry =>
-get_cpu_var => preempt_disable
-
-__trace_hcall_exit => trace_hcall_exit -> probe_hcall_exit =>
-put_cpu_var => preempt_enable
-
-where:
-A => B and A -> B means A calls B, but
-=> means A will call B through function name, and B will definitely be
-called.
--> means A will call B through function pointer, so B might not be
-called if the function pointer is not set.
-
-So error happens when only one of probe_hcall_entry and probe_hcall_exit
-get called during a hcall.
-
-This patch tries to move the preempt count operations from
-probe_hcall_entry and probe_hcall_exit to its callers.
-
-Reported-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-Tested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/platforms/pseries/hvCall_inst.c |    4 +---
- arch/powerpc/platforms/pseries/lpar.c        |    2 ++
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/core/quirks.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/platforms/pseries/hvCall_inst.c
-+++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
-@@ -109,7 +109,7 @@ static void probe_hcall_entry(void *igno
- 	if (opcode > MAX_HCALL_OPCODE)
- 		return;
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -117,9 +117,12 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
--	h = &get_cpu_var(hcall_stats)[opcode / 4];
-+	h = &__get_cpu_var(hcall_stats)[opcode / 4];
- 	h->tb_start = mftb();
- 	h->purr_start = mfspr(SPRN_PURR);
- }
-@@ -126,8 +126,6 @@ static void probe_hcall_exit(void *ignor
- 	h->num_calls++;
- 	h->tb_total += mftb() - h->tb_start;
- 	h->purr_total += mfspr(SPRN_PURR) - h->purr_start;
--
--	put_cpu_var(hcall_stats);
- }
+-	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	/* Guillemot Webcam Hercules Dualpix Exchange (2nd ID) */
+ 	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
  
- static int __init hcall_inst_init(void)
---- a/arch/powerpc/platforms/pseries/lpar.c
-+++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -745,6 +745,7 @@ void __trace_hcall_entry(unsigned long o
- 		goto out;
++	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	(*depth)++;
-+	preempt_disable();
- 	trace_hcall_entry(opcode, args);
- 	(*depth)--;
- 
-@@ -767,6 +768,7 @@ void __trace_hcall_exit(long opcode, uns
- 
- 	(*depth)++;
- 	trace_hcall_exit(opcode, retval, retbuf);
-+	preempt_enable();
- 	(*depth)--;
- 
- out:
 
 
