@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932481Ab2AJRBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 12:01:15 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59009 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab2AJRBO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 12:01:14 -0500
+	id S1756389Ab2AJRJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 12:09:43 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:49427 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752110Ab2AJRJl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 12:09:41 -0500
 MIME-Version: 1.0
-In-Reply-To: <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-References: <1326171444.6638.3.camel@edumazet-laptop> <1326171798.6638.4.camel@edumazet-laptop>
- <1326183371.6638.6.camel@edumazet-laptop> <1326212033.19095.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
- <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com> <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 09:00:52 -0800
-X-Google-Sender-Auth: LbNaWNKMc2gDWeoJP8DNJY4rNMg
-Message-ID: <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
-Subject: Re: [BUG] kernel freezes with latest tree
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20120110001447.GK30766@opensource.wolfsonmicro.com>
+References: <1326111140.22107.9.camel@sw-eng-lt-dc-vm2>
+	<20120109161456.GC2974@opensource.wolfsonmicro.com>
+	<CAEqHmAte=rvhjGUEdMgNQKfvPxSVTFR5TfWy13VPEhZj0T53KQ@mail.gmail.com>
+	<20120109200734.GB30766@opensource.wolfsonmicro.com>
+	<CAEqHmAtmHjEJUdvkBPhF5PzP4V_xDc5owLJpp0DENsXLs_ynxQ@mail.gmail.com>
+	<20120110001447.GK30766@opensource.wolfsonmicro.com>
+Date: Tue, 10 Jan 2012 17:09:40 +0000
+Message-ID: <CAEqHmAtrUNKTxt3Q8x7=nZNp09ajhyYQn3DmAKd3OUib9hLBUQ@mail.gmail.com>
+Subject: Re: drivers/regulator/core.c: Fixes mapping inside
+ regulator_mode_to_status() and makes it returning -EINVAL on invalid input.
+From: dd diasemi <dd.diasemi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 8:53 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Tue, Jan 10, 2012 at 12:14 AM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Tue, Jan 10, 2012 at 12:11:33AM +0000, dd diasemi wrote:
 >
-> I am compiling your patch, but I want to point out that I got also
-> lockups on my 64bit dev machine.
+>> Making regulator_mode_to_status() returning an error allows to
+>> simplify its usage:
+>>       ret = regulator_mode_to_status(regulator_get_mode(rdev));
+>>       if (ret < 0)
+>>               ret = -EIO;
+>
+> That code would definitely be less than ideal - if we got an error back
+> from the attempt to read the mode we ought to be returning that error
+> not squashing it down to a single value.
 
-Ok. On 64-bit, I think all the casts should be no-ops, so none of the
-cputime changes should matter.
+Yes, indeed.
 
-I'm out of ideas. Those were the only two areas that had any merge
-issues at all that I can think of. How confident are you of the
-bisect? Is the lockup so reliable that you know you got it every time
-you tried, and there isn't a question of "maybe I didn't let the
-test-case run quite long enough" occasionally? The one downside of
-bisection is that if any of the good/bad choices aren't right, you'll
-end up with not just the wrong bisect, you can end up somewhere
-*totally* wrong.
+>> If that behaviour is deliberate, I would suggest to make it explicit:
+>>       default:
+>> -             return 0;
+>> +             return REGULATOR_STATUS_OFF;
+>
+> That's not the deliberate behaviour, the deliberate behaviour is to
+> return no mode if we didn't find one.
 
-So it might be worth checking both parents of that merge individually,
-and making doubly sure that both of them are really really solid and
-don't see the problem. Just to make sure.
+The behaviour is exactly the same in both cases, because
+REGULATOR_STATUS_OFF == 0.
 
-Has anybody seen other reports like this?
+>From linux/regulator/driver.h:
+enum regulator_status {
+       REGULATOR_STATUS_OFF,
+       REGULATOR_STATUS_ON,
+       REGULATOR_STATUS_ERROR,
+       /* fast/normal/idle/standby are flavors of "on" */
+       REGULATOR_STATUS_FAST,
+       REGULATOR_STATUS_NORMAL,
+       REGULATOR_STATUS_IDLE,
+       REGULATOR_STATUS_STANDBY,
+};
 
-                      Linus
+So the only difference is that, the code:
+       return 0;
+is not obvious but still it will be interpreted as:
+       return REGULATOR_STATUS_OFF;
+by the caller of regulator_mode_to_status() when incorrect mode is passed.
+Is it correct way to hide this behaviour rather than to make it explicit ?
+
+And to set things up, should regulator_get_status() return negative
+error code or REGULATOR_STATUS_OFF (0) on communication failure?
