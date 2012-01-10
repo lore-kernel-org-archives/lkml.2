@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab2AJJGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 04:06:32 -0500
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:51458 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755529Ab2AJJG2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 04:06:28 -0500
-From: Haojian Zhuang <hzhuang1@marvell.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "swarren@nvidia.com" <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "arnd@arndb.de" <arnd@arndb.de>
-Date: Tue, 10 Jan 2012 01:05:39 -0800
-Subject: RE: [PATCH v4 2/3] ARM: mmp: enable pinmux in mmp platform
-Thread-Topic: [PATCH v4 2/3] ARM: mmp: enable pinmux in mmp platform
-Thread-Index: AczPdR/SSp6bFZa9SryhdVkJYb3ZMwAAeZZV
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C060A87D719@SC-VEXCH1.marvell.com>
-References: <1325643995-20745-1-git-send-email-haojian.zhuang@marvell.com>
-	<1325643995-20745-3-git-send-email-haojian.zhuang@marvell.com>,<CACRpkdbPk8GEvW7uewMXZcW7ghfry8X0Hgiz3uj4zOrpDgK4hQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbPk8GEvW7uewMXZcW7ghfry8X0Hgiz3uj4zOrpDgK4hQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755537Ab2AJJNP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 04:13:15 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48400 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754337Ab2AJJNN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 04:13:13 -0500
 MIME-Version: 1.0
+In-Reply-To: <1325643995-20745-2-git-send-email-haojian.zhuang@marvell.com>
+References: <1325643995-20745-1-git-send-email-haojian.zhuang@marvell.com>
+	<1325643995-20745-2-git-send-email-haojian.zhuang@marvell.com>
+Date: Tue, 10 Jan 2012 10:13:12 +0100
+Message-ID: <CACRpkdaA49pxgseaZNZggQx0GGc3P14tmFzTnxT3fTc2XAJcTA@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] pinctrl: enable pinmux for mmp series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: swarren@nvidia.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
+        linux@arm.linux.org.uk, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Do you mean the 1st & 2nd patch or the 3rd patch?
-
-Thanks
-Haojian
-________________________________________
-From: Linus Walleij [linus.walleij@linaro.org]
-Sent: Tuesday, January 10, 2012 4:52 PM
-To: Haojian Zhuang
-Cc: swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; eric.y.miao@gmail.com; linux@arm.linux.org.uk; arnd@arndb.de
-Subject: Re: [PATCH v4 2/3] ARM: mmp: enable pinmux in mmp platform
-
 On Wed, Jan 4, 2012 at 3:26 AM, Haojian Zhuang
 <haojian.zhuang@marvell.com> wrote:
 
-> Configuring pinmux in brownstone, aspenite & ttc dkb platform. The functions
-> of pins are initialized in platform driver.
+> Support PXA168/PXA910/MMP2 pinmux. Now only support function switch.
+>
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@marvell.com>
 
-I tried to apply this patch but I can't, I suspect it is dependent on
-some changes
-in the PXA tree?
+I've applied this to my devel branch. It's pretty huge but since it's
+split over three files I guess I can live with it. I can also see that
+you have really made an effort to cover the PXA variants and
+these drivers give a real good abstraction and understanding of
+this muxing hardware so WELL DONE!
 
-I can apply this after the merge window once PXA is pulled in and ready.
+I fixed a number of whitespace issues, so please base your further
+work upon my tree (once it emerges after the merge window).
+
+I also removed the .maxpin on all pinctrl_desc:s, since that is
+gone now, we get the max pin from the pin list instead, so it's
+self-describing.
+
+When I see things like this:
+
+	PINCTRL_PIN(GPIO0, "GPIO0"),
+	PINCTRL_PIN(GPIO1, "GPIO1"),
+	PINCTRL_PIN(GPIO2, "GPIO2"),
+	PINCTRL_PIN(GPIO3, "GPIO3"),
+	PINCTRL_PIN(GPIO4, "GPIO4"),
+	PINCTRL_PIN(GPIO5, "GPIO5"),
+
+I wish I could have loops in the preprocessor and just
+PINCTRL_PIN_RANGE("GPIO", start, end)
+but sadly I can't. So as mentioned earlier we might go for
+some static inline helper that can generate that array before you
+assign it to your pin controller.
+
+Maybe the device tree is the answer to everything (as usual). Given the
+time it seems to take to find consensus around DT stuff we might just
+have to wait and see.
 
 Yours,
 Linus Walleij
