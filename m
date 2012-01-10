@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933082Ab2AJW5l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:57:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52040 "EHLO mx2.suse.de"
+	id S932948Ab2AJW5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:57:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52024 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932668Ab2AJW5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:57:36 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:19 2012
-Message-Id: <20120110214619.861516594@clark.kroah.org>
+	id S932668Ab2AJW53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:57:29 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:18 2012
+Message-Id: <20120110214618.920178780@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:32 -0800
+Date: Tue, 10 Jan 2012 13:45:21 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Li Zefan <lizf@cn.fujitsu.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [19/40] cgroup: fix to allow mounting a hierarchy by name
+        alan@lxorguk.ukuu.org.uk, Pontus Fuchs <pontus.fuchs@gmail.com>,
+        Luciano Coelho <coelho@ti.com>
+Subject: [08/40] wl12xx: Check buffer bound when processing nvs data
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,48 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Pontus Fuchs <pontus.fuchs@gmail.com>
 
-commit 0d19ea866562e46989412a0676412fa0983c9ce7 upstream.
+commit f6efe96edd9c41c624c8f4ddbc4930c1a2d8f1e1 upstream.
 
-If we mount a hierarchy with a specified name, the name is unique,
-and we can use it to mount the hierarchy without specifying its
-set of subsystem names. This feature is documented is
-Documentation/cgroups/cgroups.txt section 2.3
+An nvs with malformed contents could cause the processing of the
+calibration data to read beyond the end of the buffer. Prevent this
+from happening by adding bound checking.
 
-Here's an example:
-
-	# mount -t cgroup -o cpuset,name=myhier xxx /cgroup1
-	# mount -t cgroup -o name=myhier xxx /cgroup2
-
-But it was broken by commit 32a8cf235e2f192eb002755076994525cdbaa35a
-(cgroup: make the mount options parsing more accurate)
-
-This fixes the regression.
-
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+Reviewed-by: Luciano Coelho <coelho@ti.com>
+Signed-off-by: Luciano Coelho <coelho@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/cgroup.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/wl12xx/boot.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1173,10 +1173,10 @@ static int parse_cgroupfs_options(char *
+--- a/drivers/net/wireless/wl12xx/boot.c
++++ b/drivers/net/wireless/wl12xx/boot.c
+@@ -328,6 +328,9 @@ static int wl1271_boot_upload_nvs(struct
+ 		nvs_ptr += 3;
+ 
+ 		for (i = 0; i < burst_len; i++) {
++			if (nvs_ptr + 3 >= (u8 *) wl->nvs + nvs_len)
++				goto out_badnvs;
++
+ 			val = (nvs_ptr[0] | (nvs_ptr[1] << 8)
+ 			       | (nvs_ptr[2] << 16) | (nvs_ptr[3] << 24));
+ 
+@@ -339,6 +342,9 @@ static int wl1271_boot_upload_nvs(struct
+ 			nvs_ptr += 4;
+ 			dest_addr += 4;
+ 		}
++
++		if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
++			goto out_badnvs;
+ 	}
  
  	/*
- 	 * If the 'all' option was specified select all the subsystems,
--	 * otherwise 'all, 'none' and a subsystem name options were not
--	 * specified, let's default to 'all'
-+	 * otherwise if 'none', 'name=' and a subsystem name options
-+	 * were not specified, let's default to 'all'
+@@ -350,6 +356,10 @@ static int wl1271_boot_upload_nvs(struct
  	 */
--	if (all_ss || (!all_ss && !one_ss && !opts->none)) {
-+	if (all_ss || (!one_ss && !opts->none && !opts->name)) {
- 		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
- 			if (ss == NULL)
+ 	nvs_ptr = (u8 *)wl->nvs +
+ 			ALIGN(nvs_ptr - (u8 *)wl->nvs + 7, 4);
++
++	if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
++		goto out_badnvs;
++
+ 	nvs_len -= nvs_ptr - (u8 *)wl->nvs;
+ 
+ 	/* Now we must set the partition correctly */
+@@ -365,6 +375,10 @@ static int wl1271_boot_upload_nvs(struct
+ 
+ 	kfree(nvs_aligned);
+ 	return 0;
++
++out_badnvs:
++	wl1271_error("nvs data is malformed");
++	return -EILSEQ;
+ }
+ 
+ static void wl1271_boot_enable_interrupts(struct wl1271 *wl)
 
 
