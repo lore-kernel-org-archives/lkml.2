@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933736Ab2AJW7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:59:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52184 "EHLO mx2.suse.de"
+	id S933770Ab2AJXY2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:24:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52202 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933695Ab2AJW6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:58:53 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:21 2012
-Message-Id: <20120110214621.607398193@clark.kroah.org>
+	id S933734Ab2AJW7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:59:03 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:46:19 2012
+Message-Id: <20120110214619.418388994@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:45:52 -0800
+Date: Tue, 10 Jan 2012 13:45:27 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, jhovold@gmail.com, linux-usb@vger.kernel.org,
-        Thilo-Alexander Ginkel <thilo@ginkel.com>
-Subject: [39/40] usb: cdc-acm: Fix acm_tty_hangup() vs. acm_tty_close() race
+        alan@lxorguk.ukuu.org.uk, reiserfs-devel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: [14/40] reiserfs: Fix quota mount option parsing
 In-Reply-To: <20120110214630.GA14384@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +25,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thilo-Alexander Ginkel <thilo@ginkel.com>
+From: Jan Kara <jack@suse.cz>
 
-[Not upstream as it was fixed differently for 3.3 with a much more
-"intrusive" rework of the driver - gregkh]
+commit a06d789b424190e9f59da391681f908486db2554 upstream.
 
-There is a race condition involving acm_tty_hangup() and acm_tty_close()
-where hangup() would attempt to access tty->driver_data without proper
-locking and NULL checking after close() has potentially already set it
-to NULL.  One possibility to (sporadically) trigger this behavior is to
-perform a suspend/resume cycle with a running WWAN data connection.
+When jqfmt mount option is not specified on remount, we mistakenly clear
+s_jquota_fmt value stored in superblock. Fix the problem.
 
-This patch addresses the issue by introducing a NULL check for
-tty->driver_data in acm_tty_hangup() protected by open_mutex and exiting
-gracefully when hangup() is invoked on a device that has already been
-closed.
-
-Signed-off-by: Thilo-Alexander Ginkel <thilo@ginkel.com>
+CC: reiserfs-devel@vger.kernel.org
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/usb/class/cdc-acm.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -554,10 +554,18 @@ static void acm_port_down(struct acm *ac
- 
- static void acm_tty_hangup(struct tty_struct *tty)
- {
--	struct acm *acm = tty->driver_data;
--	tty_port_hangup(&acm->port);
-+	struct acm *acm;
-+
- 	mutex_lock(&open_mutex);
-+	acm = tty->driver_data;
-+
-+	if (!acm)
-+		goto out;
-+
-+	tty_port_hangup(&acm->port);
- 	acm_port_down(acm);
-+
-+out:
- 	mutex_unlock(&open_mutex);
+---
+ fs/reiserfs/super.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -1164,7 +1164,8 @@ static void handle_quota_files(struct su
+ 			kfree(REISERFS_SB(s)->s_qf_names[i]);
+ 		REISERFS_SB(s)->s_qf_names[i] = qf_names[i];
+ 	}
+-	REISERFS_SB(s)->s_jquota_fmt = *qfmt;
++	if (*qfmt)
++		REISERFS_SB(s)->s_jquota_fmt = *qfmt;
  }
+ #endif
  
 
 
