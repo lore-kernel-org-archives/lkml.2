@@ -1,66 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab2AJS1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 13:27:25 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35172 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756657Ab2AJS1X convert rfc822-to-8bit (ORCPT
+	id S1756677Ab2AJS2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 13:28:37 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:33972 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756657Ab2AJS2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 13:27:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120109073727.GF22134@opensource.wolfsonmicro.com>
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 10:27:01 -0800
-X-Google-Sender-Auth: _q3OsukrZPM3_shyR5nwN4QKQcM
-Message-ID: <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
-Subject: Re: Regulator updates for 3.3
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Jan 2012 13:28:36 -0500
+From: Tejun Heo <tj@kernel.org>
+To: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
+        dhsharp@google.com
+Cc: linux-kernel@vger.kernel.org, winget@google.com, namhyung@gmail.com
+Subject: [RFC PATCHSET take#2] ioblame: IO tracer with origin tracking
+Date: Tue, 10 Jan 2012 10:28:17 -0800
+Message-Id: <1326220106-5765-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 8, 2012 at 11:37 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> Please pull from the tree below to merge regulator API updates for
-> version 3.3  The major update here is the addition of device tree
-> support by Rajendra Nayak, and we also have a new driver for the
-> regulators on the DA9052 PMIC.  Otherwise most of the changes are
-> bug fixes and cleanups of one form or another.
+Hello, guys.
 
-Mark, I pulled this, but I was *this* close to unpulling it because
-it's such an unholy mess.
+Even with blktrace and tracepoints, getting insight into the IOs going
+on a system is very challenging.  A lot of IO operations happen long
+after the action which triggered the IO finished and the overall
+asynchronous nature of IO operations make it difficult to trace back
+the origin of a given IO.
 
-You seem to do the crazy "daily pull" crap that NOBODY IS EVER SUPPOSED TO DO.
+ioblame is an attempt at providing better visibility into overall IO
+behavior.  ioblame hooks into various tracepoints and tries to
+determine who caused any given IO how and charges the IO accordingly.
 
-There are lots of totally pointless
+On each IO completion, ioblame knows who to charge the IO (task), how
+the IO got triggered (stack trace at the point of triggering, be it
+page, inode dirtying or direct IO issue) and various information about
+the IO itself (offset, size, how long it took and so on).  ioblame
+exports this information via ioblame:ioblame_io tracepoint.
 
-   Merge remote-tracking branch 'regulator/for-linus' into regulator-next
+For more details, please read Documentation/trace/ioblame.txt.
 
-merge commits, and no, that's not ok. It makes the history really hard
-to read, and has some bad practical impact outside of that
-visualization issue too (bisection becomes slower and much more of a
-pain, for example).
+Changes from the last take[L] are,
 
-Just don't do it. There's no excuse. The *only* time you should merge
-is when a sub lieutenant asks you to - and if you have people who work
-with you and ask you to do pointless merges almost every day, just
-tell them to shut the f*ck up already!
+* Per Namhyung's suggestion, in-kernel statistics gathering stripped
+  out.  All information is now exported through a tracepoint per each
+  IO.  This makes a lot of stuff unnecessary and over 1500 lines of
+  code have been removed.
 
-If you want to have a special linux-next branch that you want to merge
-crap into (for linux-next), go right ahead. But dammit, don't then do
-development on top of that kind of crap - use that branch *only* for
-linux-next, not for anything else, and don't ask me to pull that
-polluted piece of sh*t.
+* block_bio_complete tracepoint patch will result in duplicate
+  BLK_TA_COMPLETE notifications.  Namhyung is working on proper
+  solution.  For now, SOB is removed from the patch.
 
-Do your development in a real branch, and do sane things in that real
-branch - like pulling from the people who work with you, but only when
-they ask, and only when they are ready.  And applying patches. But
-never *ever* have those stupid pointless "Merge remote-tracking branch
-'regulator/for-linus' into regulator-next" in the branch you actually
-use for development, and the branch you send to me.
+* Trace filter is no longer used and patches dropped from the series.
 
-                       Linus
+* Rebased on top of v3.2.
+
+This patchset contains the following 9 patches.
+
+  0001-block-abstract-disk-iteration-into-disk_iter.patch
+  0002-block-block_bio_complete-tracepoint-was-missing.patch
+  0003-block-add-req-to-bio_-front-back-_merge-tracepoints.patch
+  0004-writeback-move-struct-wb_writeback_work-to-writeback.patch
+  0005-writeback-add-more-tracepoints.patch
+  0006-block-add-block_touch_buffer-tracepoint.patch
+  0007-vfs-add-fcheck-tracepoint.patch
+  0008-stacktrace-implement-save_stack_trace_quick.patch
+  0009-block-trace-implement-ioblame-IO-tracer-with-origin-.patch
+
+0001-0004 update block layer in preparation.
+
+0005-0007 add more tracepoints along the IO stack.
+
+0008 adds nimbler backtrace dump function as ioblame dumps stacktrace
+extremely frequently.
+
+0009 implements ioblame.
+
+This is still in early stage and I haven't done much performance
+analysis yet.  Tentative testing shows it adds ~20% CPU overhead when
+used on memory backed loopback device.
+
+The patches are on top of v3.2 and available in the following git
+branch.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ioblame
+
+diffstat follows.
+
+ Documentation/trace/ioblame.txt   |  476 +++++++
+ arch/x86/include/asm/stacktrace.h |    2 
+ arch/x86/kernel/stacktrace.c      |   40 
+ block/blk-core.c                  |    5 
+ block/genhd.c                     |   98 +
+ fs/bio.c                          |    3 
+ fs/fs-writeback.c                 |   34 
+ fs/super.c                        |    2 
+ include/linux/blk_types.h         |    4 
+ include/linux/buffer_head.h       |    7 
+ include/linux/fdtable.h           |    3 
+ include/linux/fs.h                |    3 
+ include/linux/genhd.h             |   13 
+ include/linux/ioblame.h           |   72 +
+ include/linux/stacktrace.h        |    6 
+ include/linux/writeback.h         |   18 
+ include/trace/events/block.h      |   70 -
+ include/trace/events/vfs.h        |   40 
+ include/trace/events/writeback.h  |  113 +
+ kernel/stacktrace.c               |    6 
+ kernel/trace/Kconfig              |   12 
+ kernel/trace/Makefile             |    1 
+ kernel/trace/blktrace.c           |    2 
+ kernel/trace/ioblame.c            | 2279 ++++++++++++++++++++++++++++++++++++++
+ mm/page-writeback.c               |    2 
+ 25 files changed, 3244 insertions(+), 67 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[L] http://thread.gmane.org/gmane.linux.kernel/1235937
