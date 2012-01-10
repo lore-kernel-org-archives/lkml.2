@@ -1,120 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab2AJRW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 12:22:26 -0500
-Received: from dresden.studentenwerk.mhn.de ([141.84.225.229]:40500 "EHLO
-	email.studentenwerk.mhn.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932584Ab2AJRWY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 12:22:24 -0500
-From: Wolfgang Walter <wolfgang.walter@stwm.de>
-Organization: Studentenwerk =?iso-8859-1?q?M=FCnchen?=
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: [GIT PULL] Please pull NFS client bugfixes and cleanups
-Date: Tue, 10 Jan 2012 18:22:20 +0100
-User-Agent: KMail/1.9.9
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1326142671.9041.1.camel@lade.trondhjem.org> <201201101153.51438.wolfgang.walter@stwm.de> <1326202733.2477.32.camel@lade.trondhjem.org>
-In-Reply-To: <1326202733.2477.32.camel@lade.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-Message-Id: <201201101822.21157.wolfgang.walter@stwm.de>
+	id S932637Ab2AJRWT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 12:22:19 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:36063 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932584Ab2AJRWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 12:22:17 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: mchehab@infradead.org
+Cc: mikekrufky@gmail.com, linux-media@vger.kernel.org, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 4/4] DVB: dib0700, add support for Nova-TD LEDs
+Date: Tue, 10 Jan 2012 18:11:25 +0100
+Message-Id: <1326215485-20846-4-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.8
+In-Reply-To: <1326215485-20846-1-git-send-email-jslaby@suse.cz>
+References: <1326215485-20846-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag, 10. Januar 2012 schrieb Trond Myklebust:
-> On Tue, 2012-01-10 at 11:53 +0100, Wolfgang Walter wrote:
-> > Am Dienstag, 10. Januar 2012 schrieb Trond Myklebust:
-> > > On Tue, 2012-01-10 at 01:49 +0100, Wolfgang Walter wrote:
-> > > > On Monday 09 January 2012, Trond Myklebust wrote:
-> > > > > On Mon, 2012-01-09 at 14:28 -0800, Myklebust, Trond wrote:
-> > > > > > > -----Original Message-----
-> > > > > >
-> > > > > > Please read the changelog and documentation:
-> > > > > >
-> > > > > > If your server doesn’t support numeric uids/gids, then you will
-> > > > > > see _no_ change in behaviour.
-> > > >
-> > > > Hmm, what does that mean exactly? Does a linux nfs4-server support
-> > > > numeric uids/gids? If yes, by default or do I need do set an option?
-> > >
-> > > The patch requires no changes to a configuration that is already
-> > > working. That's the whole point I've been trying to get across.
-> >
-> > So if user foo has uid 500 on the server and uid 600 on the client that
-> > will still work with AUTH_SYS:
-> >
-> > client: uid 500 => foo@REALM
-> > server: foo@REALM => uid 600
->
-> No. In the scenario you describe above, it will be
+Add an override of read_status to intercept lock status. This allows
+us to switch LEDs appropriately on and off with signal un/locked.
 
-Sorry. Of course.
+The second phase is to override sleep to properly turn off both.
 
->
-> client: uid 600 <=> foo@REALM
-> server: foo@REALM <=> uid 500
->
-> > and vice-versa?
->
-> The above _not_ work properly in the existing code... This kind of
-> situation is the whole reason for wanting to change the existing code.
->
-> With the existing code, the client will send numeric uid 600 as part of
-> the rpc-level AUTH_SYS authentication, and so the server will create
-> files with uid 600 irrespective of the foo@REALM idmapping at the NFSv4
-> level.
-> When the client later attempts to do a GETATTR on that file, the server
-> will then translate that uid 600 using the idmapper
->
-> server  uid 600 => bar@REALM
-> client  bar@REALM => uid 213412
->
-> IOW: This is exactly the situation where we want to use numeric uids
-> everywhere, so that the server returns a numeric uid 600 in the GETATTR.
-> In addition, if the client does a 'chown foo', it should send uid 600 in
-> the SETATTR request, which matches the uid 600 in the AUTH_SYS
-> authentication.
+This is a hackish way to achieve that.
 
-We are using AUTH_SYS for exporting read-only.
+Thanks to Mike Krufky for his help.
 
-The uid (and gids) of the users accessing the filesystem (that is our 
-idenitities used with SYS_AUTH) are synced. But there are other identities 
-which are not. Debian i.e. allocates some system uids and gids dynamically.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/media/dvb/dvb-usb/dib0700.h         |    2 +
+ drivers/media/dvb/dvb-usb/dib0700_devices.c |   41 ++++++++++++++++++++++++++-
+ 2 files changed, 42 insertions(+), 1 deletions(-)
 
-With this change access to files and directories will not break but i.e. if 
-you use cp as root cp will behave differently. I.e. as part of our 
-installation process we once mounted a filesystem ro and cloned it with 
-cp -a .... This would break. 
-
->
-> Or again: If I'm using AUTH_SYS, then I'm transmitting numeric uids/gids
-> as my authentication token, and so I want to use the same numeric
-> uids/gids to label my file ownership. The idmapper doesn't affect the
-> AUTH_SYS authentication token, and so mapping the NFS ownership to
-> trond@REALM is not useful and may instead result in wrong behaviour such
-> as in the situation described above.
-
-So this basically says that idmapper will not be used for AUTH_SYS any more 
-and behaves exactly as NFSv3?
-
->
-> When I use KerberosV principals ('kinit trond@REALM') as my
-> authentication token in an RPCSEC_GSS session, then I want to use the
-> same _string_ user trond@REALM to label my file ownership. The idmapper
-> is then used to map the abstract trond@REALM into a uid/gid that the
-> kernel can understand (and the actual value on the client/server is
-> irrelevant as long as it matches whatever the authentication token maps
-> to).
-
-
-Regards,
+diff --git a/drivers/media/dvb/dvb-usb/dib0700.h b/drivers/media/dvb/dvb-usb/dib0700.h
+index 9bd6d51..7de125c 100644
+--- a/drivers/media/dvb/dvb-usb/dib0700.h
++++ b/drivers/media/dvb/dvb-usb/dib0700.h
+@@ -48,6 +48,8 @@ struct dib0700_state {
+ 	u8 disable_streaming_master_mode;
+ 	u32 fw_version;
+ 	u32 nb_packet_buffer_size;
++	int (*read_status)(struct dvb_frontend *, fe_status_t *);
++	int (*sleep)(struct dvb_frontend* fe);
+ 	u8 buf[255];
+ };
+ 
+diff --git a/drivers/media/dvb/dvb-usb/dib0700_devices.c b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+index 3ab45ae..f9e966a 100644
+--- a/drivers/media/dvb/dvb-usb/dib0700_devices.c
++++ b/drivers/media/dvb/dvb-usb/dib0700_devices.c
+@@ -3105,6 +3105,35 @@ static int stk7070pd_frontend_attach1(struct dvb_usb_adapter *adap)
+ 	return adap->fe_adap[0].fe == NULL ? -ENODEV : 0;
+ }
+ 
++static int novatd_read_status_override(struct dvb_frontend *fe,
++		fe_status_t *stat)
++{
++	struct dvb_usb_adapter *adap = fe->dvb->priv;
++	struct dvb_usb_device *dev = adap->dev;
++	struct dib0700_state *state = dev->priv;
++	int ret;
++
++	ret = state->read_status(fe, stat);
++
++	if (!ret)
++		dib0700_set_gpio(dev, adap->id == 0 ? GPIO1 : GPIO0, GPIO_OUT,
++				!!(*stat & FE_HAS_LOCK));
++
++	return ret;
++}
++
++static int novatd_sleep_override(struct dvb_frontend* fe)
++{
++	struct dvb_usb_adapter *adap = fe->dvb->priv;
++	struct dvb_usb_device *dev = adap->dev;
++	struct dib0700_state *state = dev->priv;
++
++	/* turn off LED */
++	dib0700_set_gpio(dev, adap->id == 0 ? GPIO1 : GPIO0, GPIO_OUT, 0);
++
++	return state->sleep(fe);
++}
++
+ /**
+  * novatd_frontend_attach - Nova-TD specific attach
+  *
+@@ -3114,6 +3143,7 @@ static int stk7070pd_frontend_attach1(struct dvb_usb_adapter *adap)
+ static int novatd_frontend_attach(struct dvb_usb_adapter *adap)
+ {
+ 	struct dvb_usb_device *dev = adap->dev;
++	struct dib0700_state *st = dev->priv;
+ 
+ 	if (adap->id == 0) {
+ 		stk7070pd_init(dev);
+@@ -3134,7 +3164,16 @@ static int novatd_frontend_attach(struct dvb_usb_adapter *adap)
+ 	adap->fe_adap[0].fe = dvb_attach(dib7000p_attach, &dev->i2c_adap,
+ 			adap->id == 0 ? 0x80 : 0x82,
+ 			&stk7070pd_dib7000p_config[adap->id]);
+-	return adap->fe_adap[0].fe == NULL ? -ENODEV : 0;
++
++	if (adap->fe_adap[0].fe == NULL)
++		return -ENODEV;
++
++	st->read_status = adap->fe_adap[0].fe->ops.read_status;
++	adap->fe_adap[0].fe->ops.read_status = novatd_read_status_override;
++	st->sleep = adap->fe_adap[0].fe->ops.sleep;
++	adap->fe_adap[0].fe->ops.sleep = novatd_sleep_override;
++
++	return 0;
+ }
+ 
+ /* S5H1411 */
 -- 
-Wolfgang Walter
-Studentenwerk München
-Anstalt des öffentlichen Rechts
+1.7.8
+
+
