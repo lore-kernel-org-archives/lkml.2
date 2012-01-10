@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130Ab2AJKp4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 05:45:56 -0500
-Received: from re04.intra2net.com ([82.165.46.26]:51127 "EHLO
-	re04.intra2net.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752613Ab2AJKpz (ORCPT
+	id S1754337Ab2AJKqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 05:46:37 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34689 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751493Ab2AJKqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 05:45:55 -0500
-From: Thomas Jarosch <thomas.jarosch@intra2net.com>
-Organization: Intra2net AG
-To: linux-pci@vger.kernel.org
-Subject: Re: [PATCH] pci: Add quirk for still enabled interrupts on Intel Sandy Bridge GPUs
-Date: Tue, 10 Jan 2012 11:45:52 +0100
-User-Agent: KMail/1.13.7 (Linux/2.6.41.4-1.fc15.x86_64; KDE/4.6.5; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-kernel@vger.kernel.org,
-        Charlie Suffin <charlie.suffin@stratus.com>, stable@kernel.org
-References: <4EDFD5BB.1050906@intra2net.com>
-In-Reply-To: <4EDFD5BB.1050906@intra2net.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201101145.52640.thomas.jarosch@intra2net.com>
+	Tue, 10 Jan 2012 05:46:36 -0500
+From: Fabio Estevam <festevam@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: [PATCH v2] init/Kconfig: Fix dependency for CGROUP_SCHED
+Date: Tue, 10 Jan 2012 08:46:23 -0200
+Message-Id: <1326192383-5113-1-git-send-email-festevam@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1326157288-4407-1-git-send-email-festevam@gmail.com>
+References: <1326157288-4407-1-git-send-email-festevam@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, 7. December 2011 22:08:11 Thomas Jarosch wrote:
-> Some BIOS implementations leave the Intel GPU interrupts enabled,
-> even though no one is handling them (f.e. i915 driver is never loaded).
-> Additionally the interrupt destination is not set up properly
-> and the interrupt ends up -somewhere-.
-> 
-> These spurious interrupts are "sticky" and the kernel disables
-> the (shared) interrupt line after 100.000+ generated interrupts.
-> 
-> Fix it by disabling the still enabled interrupts.
-> This resolves crashes often seen on monitor unplug.
+Fix the following build warning:
 
-Happy new year 2012!
+warning: (SCHED_AUTOGROUP) selects CGROUP_SCHED which has unmet direct dependencies (CGROUPS && EXPERIMENTAL)
 
-Any news on the status of this patch?
+Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+---
+Changes since v1:
+- Fix the warning by removing EXPERIMENTAL dependency from CGROUP_SCHED
 
-Cheers,
-Thomas
+ init/Kconfig |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/init/Kconfig b/init/Kconfig
+index 34f6d0c..6ac2236 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -713,7 +713,6 @@ config CGROUP_PERF
+ 
+ menuconfig CGROUP_SCHED
+ 	bool "Group CPU scheduler"
+-	depends on EXPERIMENTAL
+ 	default n
+ 	help
+ 	  This feature lets CPU scheduler recognize task groups and control CPU
+-- 
+1.7.1
+
