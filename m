@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab2AJCel (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Jan 2012 21:34:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8484 "EHLO mx1.redhat.com"
+	id S1756015Ab2AJCe7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Jan 2012 21:34:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13097 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752257Ab2AJCei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Jan 2012 21:34:38 -0500
-Date: Mon, 9 Jan 2012 21:33:57 -0500
+	id S1755260Ab2AJCeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Jan 2012 21:34:36 -0500
+Date: Mon, 9 Jan 2012 21:33:13 -0500
 From: Rik van Riel <riel@redhat.com>
-To: linux-mm@kvack.org, aarcange@redhat.com
+To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Mel Gorman <mel@csn.ul.ie>,
         akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, hughd@google.com
-Subject: [PATCH -mm 2/2] mm: kswapd carefully invoke compaction
-Message-ID: <20120109213357.148e7927@annuminas.surriel.com>
+        Johannes Weiner <hannes@cmpxchg.org>, hughd@google.com,
+        aarcange@redhat.com
+Subject: [PATCH -mm 1/2] mm: kswapd test order 0 watermarks when compaction
+ is enabled
+Message-ID: <20120109213313.22841ef5@annuminas.surriel.com>
 In-Reply-To: <20120109213156.0ff47ee5@annuminas.surriel.com>
 References: <20120109213156.0ff47ee5@annuminas.surriel.com>
 Organization: Red Hat, Inc.
@@ -24,134 +26,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_COMPACTION enabled, kswapd does not try to free
-contiguous free pages, even when it is woken for a higher order
-request.
+When built with CONFIG_COMPACTION, kswapd does not try to free
+contiguous pages.  Because it is not trying, it should also not
+test whether it succeeded, because that can result in continuous
+page reclaim, until a large fraction of memory is free and large
+fractions of the working set have been evicted.
 
-This could be bad for eg. jumbo frame network allocations, which
-are done from interrupt context and cannot compact memory themselves.
-Higher than before allocation failure rates in the network receive
-path have been observed in kernels with compaction enabled.
-
-Teach kswapd to defragment the memory zones in a node, but only
-if required and compaction is not deferred in a zone.
+Also remove a line of code that increments balanced right before
+exiting the function.
 
 Signed-off-by: Rik van Riel <riel@redhat.com>
 ---
- include/linux/compaction.h |    6 ++++++
- mm/compaction.c            |   22 ++++++++++++++--------
- mm/vmscan.c                |    9 +++++++++
- 3 files changed, 29 insertions(+), 8 deletions(-)
+ mm/vmscan.c |   22 +++++++++++++++++-----
+ 1 files changed, 17 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-index bb2bbdb..df31dab 100644
---- a/include/linux/compaction.h
-+++ b/include/linux/compaction.h
-@@ -23,6 +23,7 @@ extern int fragmentation_index(struct zone *zone, unsigned int order);
- extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 			int order, gfp_t gfp_mask, nodemask_t *mask,
- 			bool sync);
-+extern int compact_pgdat(pg_data_t *pgdat, int order, bool force);
- extern unsigned long compaction_suitable(struct zone *zone, int order);
- 
- /* Do not skip compaction more than 64 times */
-@@ -62,6 +63,11 @@ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	return COMPACT_CONTINUE;
- }
- 
-+static inline int compact_pgdat(pg_data_t *pgdat, int order, bool force)
-+{
-+	return COMPACT_CONTINUE;
-+}
-+
- static inline unsigned long compaction_suitable(struct zone *zone, int order)
- {
- 	return COMPACT_SKIPPED;
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 1253d7a..1962a0e 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -651,16 +651,11 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 
- 
- /* Compact all zones within a node */
--static int compact_node(int nid)
-+int compact_pgdat(pg_data_t *pgdat, int order, bool force)
- {
- 	int zoneid;
--	pg_data_t *pgdat;
- 	struct zone *zone;
- 
--	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
--		return -EINVAL;
--	pgdat = NODE_DATA(nid);
--
- 	/* Flush pending updates to the LRU lists */
- 	lru_add_drain_all();
- 
-@@ -668,7 +663,7 @@ static int compact_node(int nid)
- 		struct compact_control cc = {
- 			.nr_freepages = 0,
- 			.nr_migratepages = 0,
--			.order = -1,
-+			.order = order,
- 		};
- 
- 		zone = &pgdat->node_zones[zoneid];
-@@ -679,7 +674,8 @@ static int compact_node(int nid)
- 		INIT_LIST_HEAD(&cc.freepages);
- 		INIT_LIST_HEAD(&cc.migratepages);
- 
--		compact_zone(zone, &cc);
-+		if (force || !compaction_deferred(zone))
-+			compact_zone(zone, &cc);
- 
- 		VM_BUG_ON(!list_empty(&cc.freepages));
- 		VM_BUG_ON(!list_empty(&cc.migratepages));
-@@ -688,6 +684,16 @@ static int compact_node(int nid)
- 	return 0;
- }
- 
-+static int compact_node(int nid)
-+{
-+	pg_data_t *pgdat;
-+	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
-+		return -EINVAL;
-+	pgdat = NODE_DATA(nid);
-+
-+	return compact_pgdat(pgdat, -1, true);
-+}
-+
- /* Compact all nodes in the system */
- static int compact_nodes(void)
- {
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0fb469a..65bf21db 100644
+index f54a05b..c3eec6b 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2522,6 +2522,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 	int priority;
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-+	int zones_need_compaction = 1;
- 	unsigned long total_scanned;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	unsigned long nr_soft_reclaimed;
-@@ -2788,9 +2789,17 @@ out:
- 				goto loop_again;
+@@ -2608,7 +2608,7 @@ loop_again:
+ 		 */
+ 		for (i = 0; i <= end_zone; i++) {
+ 			struct zone *zone = pgdat->node_zones + i;
+-			int nr_slab;
++			int nr_slab, testorder;
+ 			unsigned long balance_gap;
+ 
+ 			if (!populated_zone(zone))
+@@ -2637,11 +2637,25 @@ loop_again:
+ 			 * gap is either the low watermark or 1%
+ 			 * of the zone, whichever is smaller.
+ 			 */
++			testorder = order;
+ 			balance_gap = min(low_wmark_pages(zone),
+ 				(zone->present_pages +
+ 					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
+ 				KSWAPD_ZONE_BALANCE_GAP_RATIO);
+-			if (!zone_watermark_ok_safe(zone, order,
++			/*
++			 * Kswapd reclaims only single pages when
++			 * COMPACTION_BUILD. Trying too hard to get
++			 * contiguous free pages can result in excessive
++			 * amounts of free memory, and useful things
++			 * getting kicked out of memory.
++			 * Limit the amount of reclaim to something sane,
++			 * plus space for compaction to do its thing.
++			 */
++			if (COMPACTION_BUILD) {
++				testorder = 0;
++				balance_gap += 2<<order;
++			}
++			if (!zone_watermark_ok_safe(zone, testorder,
+ 					high_wmark_pages(zone) + balance_gap,
+ 					end_zone, 0)) {
+ 				shrink_zone(priority, zone, &sc);
+@@ -2670,7 +2684,7 @@ loop_again:
+ 				continue;
  			}
  
-+			/* Check if the memory needs to be defragmented. */
-+			if (zone_watermark_ok(zone, order,
-+				    low_wmark_pages(zone), *classzone_idx, 0))
-+				zones_need_compaction = 0;
-+
+-			if (!zone_watermark_ok_safe(zone, order,
++			if (!zone_watermark_ok_safe(zone, testorder,
+ 					high_wmark_pages(zone), end_zone, 0)) {
+ 				all_zones_ok = 0;
+ 				/*
+@@ -2776,8 +2790,6 @@ out:
+ 
  			/* If balanced, clear the congested flag */
  			zone_clear_flag(zone, ZONE_CONGESTED);
+-			if (i <= *classzone_idx)
+-				balanced += zone->present_pages;
  		}
-+
-+		if (zones_need_compaction)
-+			compact_pgdat(pgdat, order, false);
  	}
  
- 	/*
+
