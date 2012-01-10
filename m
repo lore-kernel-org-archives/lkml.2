@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113Ab2AJMQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 07:16:10 -0500
-Received: from mother.openwall.net ([195.42.179.200]:62960 "EHLO openwall.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755314Ab2AJMQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 07:16:09 -0500
-X-Greylist: delayed 1621 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jan 2012 07:16:08 EST
-Date: Tue, 10 Jan 2012 15:49:05 +0400
-From: "Dmitry D. Khlebnikov" <galaxy@openwall.com>
-To: linux-kernel@vger.kernel.org
-Subject: kernel 3.2 crashes too early on HP dc7700 and HP t5000 series
-Message-ID: <20120110114905.GC13535@openwall.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1756001Ab2AJMTE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 07:19:04 -0500
+Received: from wega.rz.tu-ilmenau.de ([141.24.4.159]:54039 "EHLO
+	wega.rz.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab2AJMTC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 07:19:02 -0500
+Message-ID: <4F0C2C4E.3000703@tu-ilmenau.de>
+Date: Tue, 10 Jan 2012 13:17:18 +0100
+From: =?ISO-8859-1?Q?Stephan_B=E4rwolf?= <stephan.baerwolf@tu-ilmenau.de>
+Reply-To: stephan.baerwolf@tu-ilmenau.de
+Organization: TU-Ilmenau
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111201 Thunderbird/8.0
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: KVM guest-kernel panics double fault
+References: <4EFBC973.1040905@tu-ilmenau.de> <4EFC3B17.1040601@redhat.com> <4F09001D.1050701@tu-ilmenau.de> <4F096E26.4090201@redhat.com> <4F0C0EBB.3090506@tu-ilmenau.de> <4F0C1369.9070607@redhat.com>
+In-Reply-To: <4F0C1369.9070607@redhat.com>
+X-Enigmail-Version: 1.3.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi, me again.
 
-I've tried to test the recently released 3.2 version on a couple of my
-PCs (one is HP dc7700, an SFF PC running on Intel E6300, another is HP
-t5710 thin client running Transmeta's Efficeon).  In both cases the
-kernel crashed during the first seconds the control was given to it by
-the bootloader.
+Thank you for your instructions, I will send the patch right after this
+mail.
 
-I decided to investigate, so I've compiled a version using 'make
-allnoconfig' - and it has crashed with the same symptoms: once the
-kernel gets the execution control a screen is filled up with random colour
-rubbish and after 15 seconds or so my LCD turns off into the power
-saving state.  The machine looks to be locked up since it doesn't react
-on the keyboard.
+On 01/10/12 11:31, Avi Kivity wrote:
+>> I prepare/adapt everything to the mentioned styles/policy.
+>> (I'll insert 2 additional ops for getting "cpuid" and "id of vcpu"...)
+> What do you mean by "id of vcpu"?
+I mean the number of the corresponding vcpu.
+(So mostly "vcpu->vcpu_id" ...)
+It is necessary for "pr_err_ratelimited"-complains, if cpuid-vendor is
+unknown ...
+("Jan 10 12:14:55 thinkrat kernel: [ 4476.484359] kvm: 15680: cpu0
+unknown vendor - assuming intel")
 
-Well, I thought that an early printk's may help me to determine what's
-going on so I recompiled the kernel with them + a couple of other
-debugging options (like x86 bootup debugging code), but after I rebooted
-into the newly compiled kernel I got the very same lock-up.
+>>> Please post patches separately, not as attachments to a single email. 
+>>> See Documentation/SubmittingPatches.
+>> One thing, which is not fully clear to me: Where exactly should I post
+>> the patches?
+>> Also to/in this mail/group as an empty mail (containing the patch as
+>> text-body) per patch?
+>> Or all (3 patches) at once?
+> One patch per email, with a cover letter.  Git can help you format and
+> send them:
+>
+>   # format three patches, with a cover letter:
+>   $ git format-patch -3 --cover-letter -n -o patches
+>   # edit the cover letter:
+>   $ vi patches/0000-cover-letter-patch
+>   # post them:
+>   $ git send-email --to kvm@vger.kernel.org patches/*.patch
+>
+Thx, I'll do it this way...
 
-Both these PCs are running fine with 3.1.5 and I'm now downloading
-3.1.8 (just to confirm that 3.1 series are working on this hardware).
 
-This message is just to notify the community that there is some issue
-with 3.2 on old HP hardware.  I'll try to figure out what's wrong and if
-I find anything I'll post a follow-up.
-
-I'd appreciate any hints on how to debug this kind of crashes.  Right
-now, I'm thinking re: adding some dirty debugging code into the kernel
-initialisation just to figure out where it crashes.
-
-Please include me into CC if you are going to reply to this message
-since I'm not subscribed to LKML.
-
--- 
-(GM)
-
+regards Stephan
