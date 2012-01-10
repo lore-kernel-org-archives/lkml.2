@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab2AJShX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 13:37:23 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59657 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752653Ab2AJShV (ORCPT
+	id S1756681Ab2AJSpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 13:45:34 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47880 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754211Ab2AJSpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 13:37:21 -0500
+	Tue, 10 Jan 2012 13:45:33 -0500
+Date: Tue, 10 Jan 2012 18:45:31 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: Regulator updates for 3.3
+Message-ID: <20120110184530.GE7164@opensource.wolfsonmicro.com>
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com> <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1325801944.2775.32.camel@dabdike.Larkspurhotels.com>
-References: <1325801944.2775.32.camel@dabdike.Larkspurhotels.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Jan 2012 10:36:59 -0800
-X-Google-Sender-Auth: OrO7tKBcDAH7MXCKgwNFC5JXdp4
-Message-ID: <CA+55aFzR7Qvhoo9QVy-0RzPkqQ=J-DBpLurYSV7azMbQGOJchg@mail.gmail.com>
-Subject: Re: [GIT PULL] Next round of SCSI updates for 3.2 merge window
-To: James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
+X-Cookie: You're at the end of the road again.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 5, 2012 at 2:19 PM, James Bottomley
-<James.Bottomley@hansenpartnership.com> wrote:
->
-> The patch is available here:
->
-> master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git#scsi-misc
+On Tue, Jan 10, 2012 at 10:27:01AM -0800, Linus Torvalds wrote:
 
-No it's not.
+> Just don't do it. There's no excuse. The *only* time you should merge
+> is when a sub lieutenant asks you to - and if you have people who work
+> with you and ask you to do pointless merges almost every day, just
+> tell them to shut the f*ck up already!
 
-Please fix your crappy script.
+Hrm, OK.  These merges are all merges up of bug fixes for -rc from my
+own tree into the development code which I tend to do constantly to make
+it easier to work directly on the development branch.  What's the best
+practice here - push things to you a bit more aggressively and wait
+until you've tagged a -rc and then merge that back up into the
+development branch?
 
-First off, that '#' is wrong. It should be a space.
+> Do your development in a real branch, and do sane things in that real
+> branch - like pulling from the people who work with you, but only when
+> they ask, and only when they are ready.  And applying patches. But
+> never *ever* have those stupid pointless "Merge remote-tracking branch
+> 'regulator/for-linus' into regulator-next" in the branch you actually
+> use for development, and the branch you send to me.
 
-Secondly, "master.kernel.org" doesn't support ssh'ing into it any
-more, and can't be used the way you claim I should use it.
-
-IOW, that thing should have been
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git scsi-misc
-
-so please fix your script to do that,
-
-                   Linus
+The -next branch is the branch used for development here unless there's
+anything that's actually a topic that might want to get viewed
+separately (like the device tree stuff this time), and all the merges
+are from my own trees.  The reason they showed up as merges from remotes
+is an oddity of my workflow here.
