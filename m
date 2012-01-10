@@ -1,102 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab2AJImf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:42:35 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:41004 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab2AJImd (ORCPT
+	id S1754854Ab2AJIwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:52:04 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51650 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684Ab2AJIwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:42:33 -0500
-Date: Tue, 10 Jan 2012 09:42:13 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCHv18 0/11] Contiguous Memory Allocator
-In-reply-to: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org
-Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>,
-        "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'KyongHo Cho'" <pullip.cho@samsung.com>
-Message-id: <012401cccf73$c013bf10$403b3d30$%szyprowski@samsung.com>
-Organization: SPRC
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: pl
-Content-transfer-encoding: 7BIT
-Thread-index: AczGJt+jU0S+bP+zS0Oo1aeXqXr41QJQMudg
-References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
+	Tue, 10 Jan 2012 03:52:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <1325643995-20745-3-git-send-email-haojian.zhuang@marvell.com>
+References: <1325643995-20745-1-git-send-email-haojian.zhuang@marvell.com>
+	<1325643995-20745-3-git-send-email-haojian.zhuang@marvell.com>
+Date: Tue, 10 Jan 2012 09:52:01 +0100
+Message-ID: <CACRpkdbPk8GEvW7uewMXZcW7ghfry8X0Hgiz3uj4zOrpDgK4hQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/3] ARM: mmp: enable pinmux in mmp platform
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Haojian Zhuang <haojian.zhuang@marvell.com>
+Cc: swarren@nvidia.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, eric.y.miao@gmail.com,
+        linux@arm.linux.org.uk, arnd@arndb.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jan 4, 2012 at 3:26 AM, Haojian Zhuang
+<haojian.zhuang@marvell.com> wrote:
 
-To help everyone in testing and adapting our patches for his hardware 
-platform I've rebased our patches onto the latest v3.2 Linux kernel and
-prepared a few GIT branches in our public repository. These branches
-contain our memory management related patches posted in the following
-threads:
+> Configuring pinmux in brownstone, aspenite & ttc dkb platform. The functions
+> of pins are initialized in platform driver.
 
-"[PATCHv18 0/11] Contiguous Memory Allocator":
-http://www.spinics.net/lists/linux-mm/msg28125.html
-later called CMAv18,
+I tried to apply this patch but I can't, I suspect it is dependent on
+some changes
+in the PXA tree?
 
-"[PATCH 00/14] DMA-mapping framework redesign preparation":
-http://www.spinics.net/lists/linux-sh/msg09777.html
-and
-"[PATCH 0/8 v4] ARM: DMA-mapping framework redesign":
-http://www.spinics.net/lists/arm-kernel/msg151147.html
-with the following update:
-http://www.spinics.net/lists/arm-kernel/msg154889.html
-later called DMAv5.
+I can apply this after the merge window once PXA is pulled in and ready.
 
-These branches are available in our public GIT repository:
-
-git://git.infradead.org/users/kmpark/linux-samsung
-http://git.infradead.org/users/kmpark/linux-samsung/
-
-The following branches are available:
-
-1) 3.2-cma-v18
-Vanilla Linux v3.2 with fixed CMA v18 patches (first patch replaced
-with the one from v17 to fix SMP issues, see the respective thread).
-
-2) 3.2-dma-v5
-Vanilla Linux v3.2 + iommu/next (IOMMU maintainer's patches) branch
-with DMA-preparation and DMA-mapping framework redesign patches.
-
-3) 3.2-cma-v18-dma-v5
-Previous two branches merged together (DMA-mapping on top of CMA)
-
-4) 3.2-cma-v18-dma-v5-exynos
-Previous branch rebased on top of iommu/next + kgene/for-next (Samsung
-SoC platform maintainer's patches) with new Exynos4 IOMMU driver by 
-KyongHo Cho and relevant glue code.
-
-5) 3.2-dma-v5-exynos
-Branch from point 2 rebased on top of iommu/next + kgene/for-next 
-(Samsung SoC maintainer's patches) with new Exynos4 IOMMU driver by 
-KyongHo Cho and relevant glue code.
-
-I hope everyone will find a branch that suits his needs. :)
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
-
+Yours,
+Linus Walleij
