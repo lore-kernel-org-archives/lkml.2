@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755721Ab2AJJGB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 04:06:01 -0500
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:50249 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755576Ab2AJJF5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 04:05:57 -0500
-Date: Tue, 10 Jan 2012 10:05:41 +0100
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Joerg Roedel <joerg.roedel@amd.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Michael Buesch <m@bues.ch>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>
-Subject: Re: Incorrect uses of get_driver()/put_driver()
-Message-ID: <20120110100541.38a3940f@de.ibm.com>
-In-Reply-To: <Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1201091133400.1541-100000@iolanthe.rowland.org>
-	<Pine.LNX.4.44L0.1201091202090.1541-100000@iolanthe.rowland.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011009-3548-0000-0000-000000A33AE3
+	id S1755562Ab2AJJGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 04:06:32 -0500
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:51458 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755529Ab2AJJG2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 04:06:28 -0500
+From: Haojian Zhuang <hzhuang1@marvell.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: "swarren@nvidia.com" <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "arnd@arndb.de" <arnd@arndb.de>
+Date: Tue, 10 Jan 2012 01:05:39 -0800
+Subject: RE: [PATCH v4 2/3] ARM: mmp: enable pinmux in mmp platform
+Thread-Topic: [PATCH v4 2/3] ARM: mmp: enable pinmux in mmp platform
+Thread-Index: AczPdR/SSp6bFZa9SryhdVkJYb3ZMwAAeZZV
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C060A87D719@SC-VEXCH1.marvell.com>
+References: <1325643995-20745-1-git-send-email-haojian.zhuang@marvell.com>
+	<1325643995-20745-3-git-send-email-haojian.zhuang@marvell.com>,<CACRpkdbPk8GEvW7uewMXZcW7ghfry8X0Hgiz3uj4zOrpDgK4hQ@mail.gmail.com>
+In-Reply-To: <CACRpkdbPk8GEvW7uewMXZcW7ghfry8X0Hgiz3uj4zOrpDgK4hQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Jan 2012 12:35:09 -0500 (EST)
-Alan Stern <stern@rowland.harvard.edu> wrote:
+Do you mean the 1st & 2nd patch or the 3rd patch?
 
-> drivers/s390/cio/device.c:1681:       drv = get_driver(&cdrv->driver);
-> drivers/s390/cio/device.c:1687:       put_driver(drv);
-> 
-> Martin, these calls seem to be useless.  The calls in ccwgroup.c are 
-> definitely useless; there's no reason to take a reference to a driver 
-> while it's being unregistered, since it can't go away until the 
-> unregistration is finished.
+Thanks
+Haojian
+________________________________________
+From: Linus Walleij [linus.walleij@linaro.org]
+Sent: Tuesday, January 10, 2012 4:52 PM
+To: Haojian Zhuang
+Cc: swarren@nvidia.com; linux-kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; eric.y.miao@gmail.com; linux@arm.linux.org.uk; arnd@arndb.de
+Subject: Re: [PATCH v4 2/3] ARM: mmp: enable pinmux in mmp platform
 
-The get_driver/put_driver in ccwgroup.c are obviously useless, the caller
-passed ccwgroup_driver_unregister a ccwgroup_driver reference.
-I am not so sure about the code in device.c. get_ccwdev_by_busid() gets
-used e.g. by vmur like this:
+On Wed, Jan 4, 2012 at 3:26 AM, Haojian Zhuang
+<haojian.zhuang@marvell.com> wrote:
 
-static struct ccw_driver ur_driver = { .. };
+> Configuring pinmux in brownstone, aspenite & ttc dkb platform. The functions
+> of pins are initialized in platform driver.
 
-static struct urdev *urdev_get_from_devno(u16 devno)
-{
-	..
-	sprintf(bus_id, "0.0.%04x", devno);
-        cdev = get_ccwdev_by_busid(&ur_driver, bus_id);
-	..
-}
+I tried to apply this patch but I can't, I suspect it is dependent on
+some changes
+in the PXA tree?
 
-static int ur_open(struct inode *inode, struct file *file)
-{
-	..
-	urd = urdev_get_from_devno(devno);
-	..
-}
+I can apply this after the merge window once PXA is pulled in and ready.
 
-For vmur we should be safe by the fact that ur_open is only possible if
-a try_module_get has been successful and the ccw_driver is unregistered
-only in the module exit function. But we have to check if this is true
-for all users of the get_ccwdev_by_busid() function.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Yours,
+Linus Walleij
