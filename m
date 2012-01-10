@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab2AJXFL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:05:11 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52977 "EHLO mx2.suse.de"
+	id S934400Ab2AJXFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:05:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52959 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934123Ab2AJXE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:04:28 -0500
+	id S934313Ab2AJXEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:04:25 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:05 2012
-Message-Id: <20120110215605.382414147@clark.kroah.org>
+Message-Id: <20120110215605.293110884@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:47 -0800
+Date: Tue, 10 Jan 2012 13:55:46 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Felipe Balbi <balbi@ti.com>,
+        alan@lxorguk.ukuu.org.uk, Hans de Goede <hdegoede@redhat.com>,
         Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [44/49] usb: ch9: fix up MaxStreams helper
+Subject: [43/49] xhci: Properly handle COMP_2ND_BW_ERR
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Hans de Goede <hdegoede@redhat.com>
 
-commit 18b7ede5f7ee2092aedcb578d3ac30bd5d4fc23c upstream.
+commit 71d85724bdd947a3b42a88d08af79f290a1a767b upstream.
 
-[ removed the dwc3 portion of the patch as it didn't apply to
-older kernels - gregkh]
+I encountered a result of COMP_2ND_BW_ERR while improving how the pwc
+webcam driver handles not having the full usb1 bandwidth available to
+itself.
 
-According to USB 3.0 Specification Table 9-22, if
-bmAttributes [4:0] are set to zero, it means "no
-streams supported", but the way this helper was
-defined on Linux, we will *always* have one stream
-which might cause several problems.
+I created the following test setup, a NEC xhci controller with a
+single TT USB 2 hub plugged into it, with a usb keyboard and a pwc webcam
+plugged into the usb2 hub. This caused the following to show up in dmesg
+when trying to stream from the pwc camera at its highest alt setting:
 
-For example on DWC3, we would tell the controller
-endpoint has streams enabled and yet start transfers
-with Stream ID set to 0, which would goof up the host
-side.
+xhci_hcd 0000:01:00.0: ERROR: unexpected command completion code 0x23.
+usb 6-2.1: Not enough bandwidth for altsetting 9
 
-While doing that, convert the macro to an inline
-function due to the different checks we now need.
+And usb_set_interface returned -EINVAL, which caused my pwc code to not
+do the right thing as it expected -ENOSPC.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+This patch makes the xhci driver properly handle COMP_2ND_BW_ERR and makes
+usb_set_interface return -ENOSPC as expected.
+
+This should be backported to stable kernels as old as 2.6.32.
+
+Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    3 +--
- include/linux/usb/ch9.h |   20 +++++++++++++++++++-
- 2 files changed, 20 insertions(+), 3 deletions(-)
+ drivers/usb/host/xhci.c |    1 +
+ drivers/usb/host/xhci.h |    1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
 
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
-@@ -2797,8 +2797,7 @@ static int xhci_calculate_streams_and_bi
- 		if (ret < 0)
- 			return ret;
- 
--		max_streams = USB_SS_MAX_STREAMS(
--				eps[i]->ss_ep_comp.bmAttributes);
-+		max_streams = usb_ss_max_streams(&eps[i]->ss_ep_comp);
- 		if (max_streams < (*num_streams - 1)) {
- 			xhci_dbg(xhci, "Ep 0x%x only supports %u stream IDs.\n",
- 					eps[i]->desc.bEndpointAddress,
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -605,8 +605,26 @@ struct usb_ss_ep_comp_descriptor {
- } __attribute__ ((packed));
- 
- #define USB_DT_SS_EP_COMP_SIZE		6
-+
- /* Bits 4:0 of bmAttributes if this is a bulk endpoint */
--#define USB_SS_MAX_STREAMS(p)		(1 << ((p) & 0x1f))
-+static inline int
-+usb_ss_max_streams(const struct usb_ss_ep_comp_descriptor *comp)
-+{
-+	int		max_streams;
-+
-+	if (!comp)
-+		return 0;
-+
-+	max_streams = comp->bmAttributes & 0x1f;
-+
-+	if (!max_streams)
-+		return 0;
-+
-+	max_streams = 1 << max_streams;
-+
-+	return max_streams;
-+}
-+
- /* Bits 1:0 of bmAttributes if this is an isoc endpoint */
- #define USB_SS_MULT(p)			(1 + ((p) & 0x3))
- 
+@@ -1620,6 +1620,7 @@ static int xhci_configure_endpoint_resul
+ 		/* FIXME: can we allocate more resources for the HC? */
+ 		break;
+ 	case COMP_BW_ERR:
++	case COMP_2ND_BW_ERR:
+ 		dev_warn(&udev->dev, "Not enough bandwidth "
+ 				"for new device state.\n");
+ 		ret = -ENOSPC;
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1033,7 +1033,6 @@ struct xhci_transfer_event {
+ /* Invalid Stream ID Error */
+ #define COMP_STRID_ERR	34
+ /* Secondary Bandwidth Error - may be returned by a Configure Endpoint cmd */
+-/* FIXME - check for this */
+ #define COMP_2ND_BW_ERR	35
+ /* Split Transaction Error */
+ #define	COMP_SPLIT_ERR	36
 
 
