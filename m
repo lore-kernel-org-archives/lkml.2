@@ -1,40 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755147Ab2AJImh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:42:37 -0500
+	id S1754726Ab2AJImf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:42:35 -0500
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:41004 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754209Ab2AJIme (ORCPT
+	with ESMTP id S1753382Ab2AJImd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:42:34 -0500
-Date: Tue, 10 Jan 2012 09:42:28 +0100
+	Tue, 10 Jan 2012 03:42:33 -0500
+Date: Tue, 10 Jan 2012 09:42:13 +0100
 From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 00/14] DMA-mapping framework redesign preparation
-In-reply-to: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org
-Cc: "'Benjamin Herrenschmidt'" <benh@kernel.crashing.org>,
-        "'Thomas Gleixner'" <tglx@linutronix.de>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        microblaze-uclinux@itee.uq.edu.au, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-sh@vger.kernel.org, linux-alpha@vger.kernel.org,
-        sparclinux@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        discuss@x86-64.org, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
+Subject: RE: [PATCHv18 0/11] Contiguous Memory Allocator
+In-reply-to: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org
+Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
         "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Message-id: <012501cccf73$c90246a0$5b06d3e0$%szyprowski@samsung.com>
+        "'Russell King'" <linux@arm.linux.org.uk>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Shariq Hasnain'" <shariq.hasnain@linaro.org>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
+        "'Benjamin Gaignard'" <benjamin.gaignard@linaro.org>,
+        "'Kukjin Kim'" <kgene.kim@samsung.com>,
+        "'KyongHo Cho'" <pullip.cho@samsung.com>
+Message-id: <012401cccf73$c013bf10$403b3d30$%szyprowski@samsung.com>
 Organization: SPRC
 MIME-version: 1.0
 X-Mailer: Microsoft Office Outlook 12.0
 Content-type: text/plain; charset=us-ascii
 Content-language: pl
 Content-transfer-encoding: 7BIT
-Thread-index: AczBbk0Kypq1Ioj9R1+ZJPNin88RbgOBU+nw
-References: <1324643253-3024-1-git-send-email-m.szyprowski@samsung.com>
+Thread-index: AczGJt+jU0S+bP+zS0Oo1aeXqXr41QJQMudg
+References: <1325162352-24709-1-git-send-email-m.szyprowski@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
