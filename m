@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934311Ab2AJXCx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:02:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52657 "EHLO mx2.suse.de"
+	id S934341Ab2AJXDF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:03:05 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52690 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934297Ab2AJXCs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:02:48 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:03 2012
-Message-Id: <20120110215603.884365302@clark.kroah.org>
+	id S934297Ab2AJXDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:03:02 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:04 2012
+Message-Id: <20120110215604.221614626@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:30 -0800
+Date: Tue, 10 Jan 2012 13:55:34 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, "K. Y. Srinivasan" <kys@microsoft.com>,
-        Fuzhou Chen <fuzhouch@microsoft.com>,
-        Sasha Levin <levinsasha928@gmail.com>
-Subject: [27/49] Drivers:hv: Fix a bug in vmbus_driver_unregister()
+        alan@lxorguk.ukuu.org.uk, Li Zefan <lizf@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [31/49] cgroup: fix to allow mounting a hierarchy by name
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +25,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "K. Y. Srinivasan" <kys@microsoft.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-commit 8f257a142fc3868d69de3f996b95d7bdbc509560 upstream.
+commit 0d19ea866562e46989412a0676412fa0983c9ce7 upstream.
 
-The function vmbus_exists() was introduced recently to deal with cases where
-the vmbus driver failed to initialize and yet other Hyper-V drivers attempted
-to register with the vmbus bus driver. This patch introduced a bug where
-vmbus_driver_unregister() would fail to unregister the driver. This patch
-fixes the problem.
+If we mount a hierarchy with a specified name, the name is unique,
+and we can use it to mount the hierarchy without specifying its
+set of subsystem names. This feature is documented is
+Documentation/cgroups/cgroups.txt section 2.3
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Fuzhou Chen <fuzhouch@microsoft.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>
+Here's an example:
+
+	# mount -t cgroup -o cpuset,name=myhier xxx /cgroup1
+	# mount -t cgroup -o name=myhier xxx /cgroup2
+
+But it was broken by commit 32a8cf235e2f192eb002755076994525cdbaa35a
+(cgroup: make the mount options parsing more accurate)
+
+This fixes the regression.
+
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/hv/vmbus_drv.c |    5 +----
- 1 file changed, 1 insertion(+), 4 deletions(-)
+ kernel/cgroup.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -627,10 +627,7 @@ void vmbus_driver_unregister(struct hv_d
- 	pr_info("unregistering driver %s\n", hv_driver->name);
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1175,10 +1175,10 @@ static int parse_cgroupfs_options(char *
  
- 	if (!vmbus_exists())
--		return;
--
--	driver_unregister(&hv_driver->driver);
--
-+		driver_unregister(&hv_driver->driver);
- }
- EXPORT_SYMBOL_GPL(vmbus_driver_unregister);
- 
+ 	/*
+ 	 * If the 'all' option was specified select all the subsystems,
+-	 * otherwise 'all, 'none' and a subsystem name options were not
+-	 * specified, let's default to 'all'
++	 * otherwise if 'none', 'name=' and a subsystem name options
++	 * were not specified, let's default to 'all'
+ 	 */
+-	if (all_ss || (!all_ss && !one_ss && !opts->none)) {
++	if (all_ss || (!one_ss && !opts->none && !opts->name)) {
+ 		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+ 			struct cgroup_subsys *ss = subsys[i];
+ 			if (ss == NULL)
 
 
