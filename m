@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab2AJI7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:59:54 -0500
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52165 "EHLO mx2.mail.elte.hu"
+	id S1755598Ab2AJJFe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 04:05:34 -0500
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38790 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754424Ab2AJI7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:59:52 -0500
-Date: Tue, 10 Jan 2012 09:59:11 +0100
+	id S1755436Ab2AJJF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 04:05:29 -0500
+Date: Tue, 10 Jan 2012 10:05:21 +0100
 From: Ingo Molnar <mingo@elte.hu>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/3] Additional RCU commits for 3.3
-Message-ID: <20120110085911.GA5405@elte.hu>
-References: <20120109221457.GA28184@linux.vnet.ibm.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        a.p.zijlstra@chello.nl, Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] init/Kconfig: Fix dependency for SCHED_AUTOGROUP
+Message-ID: <20120110090521.GB5405@elte.hu>
+References: <1326157288-4407-1-git-send-email-festevam@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120109221457.GA28184@linux.vnet.ibm.com>
+In-Reply-To: <1326157288-4407-1-git-send-email-festevam@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,52 +31,32 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+* Fabio Estevam <festevam@gmail.com> wrote:
 
-> Hello, Ingo,
+> Fix the following build warning:
 > 
-> Further -next and other testing uncovered one upcoming change and some
-> build warnings.  The three commits below address these.  I am putting
-> them forward for 3.3, but of course if the risk of change exceeds the
-> magnitude of the problems, I can keep them queued for 3.4.  These are
-> all quite small, have been exposed to -next testing, and I retested them
-> against current tip/master.
+> warning: (SCHED_AUTOGROUP) selects CGROUP_SCHED which has unmet direct dependencies (CGROUPS && EXPERIMENTAL)
 > 
-> The specific changes are as follows:
+> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+> ---
+>  init/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
 > 
-> 1.	Change rcutorture's module parameters of type int to instead
-> 	be bool.  This is in preparation for Rusty's patch that makes
-> 	type-int module parameters illegal.  (Courtesy of Rusty Russell.)
-> 
-> 2.	Add "const" to the new is_idle_task()'s argument, which
-> 	addresses a build warning located by Stephen Rothwell.
-> 
-> 3.	Add __cpuinit to rcu_torture_onoff() to address a section
-> 	mismatch build warning.  (Courtesy of Heiko Carstens.)
-> 
-> These changes are based off of 3.2-rc7 and are available in the git
-> repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/urgent
-> 
-> 							Thanx, Paul
-> 
-> ------------------>
-> 
-> Heiko Carstens (1):
->       rcu: Add missing __cpuinit annotation in rcutorture code
-> 
-> Paul E. McKenney (1):
->       sched: Add "const" to is_idle_task() parameter
-> 
-> Rusty Russell (1):
->       rcu: Make rcutorture bool parameters really bool (core code)
-> 
->  include/linux/sched.h |    2 +-
->  kernel/rcutorture.c   |    8 ++++----
->  2 files changed, 5 insertions(+), 5 deletions(-)
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 34f6d0c..b5cae89 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -850,6 +850,7 @@ endif # NAMESPACES
+>  
+>  config SCHED_AUTOGROUP
+>  	bool "Automatic process group scheduling"
+> +	depends on EXPERIMENTAL
+>  	select EVENTFD
+>  	select CGROUPS
+>  	select CGROUP_SCHED
 
-Pulled them into tip:core/urgent, thanks Paul!
+I think this should rather be solved by removing the 
+EXPERIMENTAL dependency from CGORUP_SCHED.
 
 Thanks,
 
