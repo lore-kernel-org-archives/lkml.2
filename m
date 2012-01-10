@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab2AJIjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 03:39:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:51796 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab2AJIjL (ORCPT
+	id S1754882Ab2AJIje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 03:39:34 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57995 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab2AJIjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 03:39:11 -0500
-Date: Tue, 10 Jan 2012 00:39:06 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Che-liang Chiou <clchiou@chromium.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: serio_raw - cosmetic fixes
-Message-ID: <20120110083906.GA32252@core.coreip.homeip.net>
-References: <1325847795-30486-1-git-send-email-clchiou@chromium.org>
- <20120109082412.GC4049@core.coreip.homeip.net>
- <CANJuy2KrSaqW2XTm4R1+y+KSRZtaNd1_mXW4pP3sOn-_B+h0sw@mail.gmail.com>
+	Tue, 10 Jan 2012 03:39:32 -0500
+Date: Tue, 10 Jan 2012 09:39:22 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-arm-kernel@lists.infradead.org, Vinod Koul <vinod.koul@intel.com>,
+        Javier Martin <javier.martin@vista-silicon.com>,
+        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>
+Subject: Re: [PATCH 2/4] ASoC: i.MX: Add missing dma_async_issue_pending
+Message-ID: <20120110083922.GT5446@pengutronix.de>
+References: <1326101570-3716-1-git-send-email-s.hauer@pengutronix.de>
+ <1326101570-3716-3-git-send-email-s.hauer@pengutronix.de>
+ <20120109161301.GB2974@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CANJuy2KrSaqW2XTm4R1+y+KSRZtaNd1_mXW4pP3sOn-_B+h0sw@mail.gmail.com>
+In-Reply-To: <20120109161301.GB2974@opensource.wolfsonmicro.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:35:13 up 58 days, 16:22, 21 users,  load average: 0.00, 0.04,
+ 0.05
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 04:24:37PM +0800, Che-liang Chiou wrote:
-> On Mon, Jan 9, 2012 at 4:24 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > Hi Che-Liang,
-> >
-> > On Fri, Jan 06, 2012 at 07:03:14PM +0800, Che-Liang Chiou wrote:
-> >> Signed-off-by: Che-Liang Chiou <clchiou@chromium.org>
-> >> ---
-> >>  drivers/input/serio/serio_raw.c |    4 +---
-> >>  1 files changed, 1 insertions(+), 3 deletions(-)
-> >>
-> >> diff --git a/drivers/input/serio/serio_raw.c b/drivers/input/serio/serio_raw.c
-> >> index 4d4cd14..a935c38 100644
-> >> --- a/drivers/input/serio/serio_raw.c
-> >> +++ b/drivers/input/serio/serio_raw.c
-> >> @@ -220,7 +220,7 @@ static ssize_t serio_raw_write(struct file *file, const char __user *buffer,
-> >>                       goto out;
-> >>               }
-> >>               written++;
-> >> -     };
-> >> +     }
-> >>
-> >
-> > I applied this chunk, thanks.
-> >
-> >>  out:
-> >>       mutex_unlock(&serio_raw_mutex);
-> >> @@ -231,11 +231,9 @@ static unsigned int serio_raw_poll(struct file *file, poll_table *wait)
-> >>  {
-> >>       struct serio_raw_client *client = file->private_data;
-> >>       struct serio_raw *serio_raw = client->serio_raw;
-> >> -     unsigned int mask;
-> >>
-> >>       poll_wait(file, &serio_raw->wait, wait);
-> >>
-> >> -     mask = serio_raw->dead ? POLLHUP | POLLERR : POLLOUT | POLLWRNORM;
-> >>       if (serio_raw->head != serio_raw->tail)
-> >>               return POLLIN | POLLRDNORM;
-> >>
-> >
-> > This however is not quite correct. I will be applying the patch below
-> > instead.
+On Mon, Jan 09, 2012 at 08:13:02AM -0800, Mark Brown wrote:
+> On Mon, Jan 09, 2012 at 10:32:48AM +0100, Sascha Hauer wrote:
+> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 > 
-> Yeah I was wondering maybe you are going to make use of mask
-> somewhere. But still the patch below is quite strange. To my
-> understanding the mask is still not used; It is a local variable that
-> not does not make any side effect. Do you intend to use that mask on
-> any global state or return value?
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> 
+> but I guess I can just apply it immediately?
 
-Right, Milton Miller noticed the same. We should be returning mask,
-not 0. I'll fix that up.
+The ASoC patch (also the mmc driver patch) have to be applied
+before the dma driver patches. To make this sure I think it's
+best when Vinoud applies the whole series.
 
-Thanks.
+Sascha
+
 
 -- 
-Dmitry
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
