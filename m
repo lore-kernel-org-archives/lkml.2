@@ -1,60 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab2AJMyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 07:54:39 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50959 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755673Ab2AJMyi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 07:54:38 -0500
-Date: Tue, 10 Jan 2012 21:05:15 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dong Aisheng-B29396 <B29396@freescale.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Message-ID: <20120110130511.GA26599@S2101-09.ap.freescale.net>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
- <1324402840-32451-3-git-send-email-b29396@freescale.com>
- <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
- <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
+	id S1756158Ab2AJM6d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 07:58:33 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:18647 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752596Ab2AJM6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 07:58:32 -0500
+Message-ID: <4F0C35F3.7060508@parallels.com>
+Date: Tue, 10 Jan 2012 16:58:27 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
+ context
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>	 <1325285705.10984.4.camel@lade.trondhjem.org> <1325797111.11084.22.camel@lade.trondhjem.org>
+In-Reply-To: <1325797111.11084.22.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 08:21:05AM +0000, Dong Aisheng-B29396 wrote:
-> Here what I wonder is that do we need to allow the platform to use a func-name
-> property in their pinmux func node or pinmux group node to specify the name.
+06.01.2012 00:58, Trond Myklebust пишет:
+> On Fri, 2011-12-30 at 17:55 -0500, Trond Myklebust wrote:
+>> On Tue, 2011-11-29 at 13:10 +0300, Stanislav Kinsbursky wrote:
+>>> This patch set was created in context of clone of git
+>>> branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+>>> tag: v3.1
+>>>
+>>> This patch set depends on previous patch sets titled:
+>>> 1) "SUNRPC: initial part of making pipefs work in net ns"
+>>> 2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+>>> 3) "SUNRPC: make RPC clients use network-namespace-aware PipeFS routines"
+>>> 4) "NFS: create clients and IDMAP pipes per network namespace"
+>>>
+>>> This patch set is the final part of making SUNRPC PipeFS and it's users work in
+>>> network namespace context.
+>>>
+>>> The following series consists of:
+>>>
+>>> ---
+>>>
+>>> Stanislav Kinsbursky (5):
+>>>        NFS: handle blocklayout pipe PipeFS dentry by network namespace aware routines
+>>>        NFS: blocklayout pipe creation per network namespace context introduced
+>>>        NFS: blocklayout PipeFS notifier introduced
+>>>        NFS: remove RPC PipeFS mount point reference from blocklayout routines
+>>>        SUNRPC: kernel PipeFS mount point creation routines removed
+>>>
+>>>
+>>>   fs/nfs/blocklayout/blocklayout.c    |  154 ++++++++++++++++++++++++++++-------
+>>>   fs/nfs/blocklayout/blocklayout.h    |    3 -
+>>>   fs/nfs/blocklayout/blocklayoutdev.c |    5 +
+>>>   fs/nfs/blocklayout/blocklayoutdm.c  |    7 +-
+>>>   fs/nfs/inode.c                      |    1
+>>>   fs/nfs/netns.h                      |    1
+>>>   include/linux/sunrpc/rpc_pipe_fs.h  |    2
+>>>   net/sunrpc/rpc_pipe.c               |   21 -----
+>>>   8 files changed, 137 insertions(+), 57 deletions(-)
+>>
+>>
+>> These patches need rebasing in order to apply on top of 3.2-rc7...
+>
+> OK. Further testing seems to indicate that we're going to have to
+> postpone merging these patches until the 3.4 merge window.
+>
+> The problems are twofold:
+>
+> As the patches stand now in the linux-next tree, they can (and
+> occasionally do) Oops on unmount. The reason was that I rejected the
+> PipeFS notifier patch for the idmapper (due to the reported problem of
+> nfs_idmap_init/nfs_idmap_quit being undefined when CONFIG_NFS_V4 is
+> undefined), and the fact that it is missing causes the unmount at the
+> end of our tests to hit the BUG() in fs/dcache.c:905. This suggests that
+> we will have the same problem with the pNFS block layout driver, since I
+> still haven't received a rebased update of the 5 'create blocklayout
+> pipe per network namesapce context' patches.
+>
 
-I do not see the necessity.
+Hello, Trond.
+I've resend the patch set (rebased with fix for nfs_idmap_init/nfs_idmap_quit).
 
-> If it is allowed, then it could be flexible for soc to define their names.
-> If not there may be limitations on their node names since we can only get it from
-> the node name.
+> The second problem that was highlighted was the fact that as they stand
+> today, these patchsets do not allow for bisection. When we hit the Oops,
+> I had Bryan try to bisect where the problem arose. He ended up pointing
+> at the patch "SUNRPC: handle RPC client pipefs dentries by network
+> namespace aware routine", which is indeed the cause, but which is one of
+> the _dependencies_ for all the PipeFS notifier patches that fix the
+> problem.
+>
 
-To me, the node name is perfectly fine to be used for that purpose.
+I'm confused here. Does this means, that I have to fix patch "SUNRPC: handle RPC 
+client pipefs dentries by network namespace aware routine" to make it able to 
+bisect?
 
 -- 
-Regards,
-Shawn
+Best regards,
+Stanislav Kinsbursky
