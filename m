@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933859Ab2AJW7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 17:59:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52283 "EHLO mx2.suse.de"
+	id S933698Ab2AJW77 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 17:59:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52285 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933012Ab2AJW7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 17:59:51 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:22 2012
-Message-Id: <20120110215022.470150661@clark.kroah.org>
+	id S933858Ab2AJW7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 17:59:54 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:21 2012
+Message-Id: <20120110215021.072077914@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:28 -0800
+Date: Tue, 10 Jan 2012 13:48:12 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Alan Stern <stern@rowland.harvard.edu>,
-        Pete Zaitcev <zaitcev@redhat.com>
-Subject: [18/42] USB: update documentation for usbmon
+        alan@lxorguk.ukuu.org.uk, Joe Perches <joe@perches.com>
+Subject: [02/42] Documentation: Update stable address
 In-Reply-To: <20120110215031.GA19398@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,52 +24,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Joe Perches <joe@perches.com>
 
-commit d8cae98cddd286e38db1724dda1b0e7b467f9237 upstream.
+commit 2eb7f204db51969ea558802a6601d79c2fb273b9 upstream.
 
-The documentation for usbmon is out of date; the usbfs "devices" file
-now exists in /sys/kernel/debug/usb rather than /proc/bus/usb.  This
-patch (as1505) updates the documentation accordingly, and also
-mentions that the necessary information can be found by running lsusb.
+The Japanese/Korean/Chinese versions still need updating.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-CC: Pete Zaitcev <zaitcev@redhat.com>
+Also, the stable kernel 2.6.x.y descriptions are out of date
+and should be updated as well.
+
+Signed-off-by: Joe Perches <joe@perches.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/usb/usbmon.txt |   14 +++++++++-----
- 1 file changed, 9 insertions(+), 5 deletions(-)
+ Documentation/HOWTO                         |    4 ++--
+ Documentation/development-process/5.Posting |    8 ++++----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/Documentation/usb/usbmon.txt
-+++ b/Documentation/usb/usbmon.txt
-@@ -47,10 +47,11 @@ This allows to filter away annoying devi
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -275,8 +275,8 @@ versions.
+ If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
+ kernel is the current stable kernel.
  
- 2. Find which bus connects to the desired device
+-2.6.x.y are maintained by the "stable" team <stable@kernel.org>, and are
+-released as needs dictate.  The normal release period is approximately 
++2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
++are released as needs dictate.  The normal release period is approximately
+ two weeks, but it can be longer if there are no pressing problems.  A
+ security-related problem, instead, can cause a release to happen almost
+ instantly.
+--- a/Documentation/development-process/5.Posting
++++ b/Documentation/development-process/5.Posting
+@@ -271,10 +271,10 @@ copies should go to:
+    the linux-kernel list.
  
--Run "cat /proc/bus/usb/devices", and find the T-line which corresponds to
--the device. Usually you do it by looking for the vendor string. If you have
--many similar devices, unplug one and compare two /proc/bus/usb/devices outputs.
--The T-line will have a bus number. Example:
-+Run "cat /sys/kernel/debug/usb/devices", and find the T-line which corresponds
-+to the device. Usually you do it by looking for the vendor string. If you have
-+many similar devices, unplug one and compare the two
-+/sys/kernel/debug/usb/devices outputs. The T-line will have a bus number.
-+Example:
+  - If you are fixing a bug, think about whether the fix should go into the
+-   next stable update.  If so, stable@kernel.org should get a copy of the
+-   patch.  Also add a "Cc: stable@kernel.org" to the tags within the patch
+-   itself; that will cause the stable team to get a notification when your
+-   fix goes into the mainline.
++   next stable update.  If so, stable@vger.kernel.org should get a copy of
++   the patch.  Also add a "Cc: stable@vger.kernel.org" to the tags within
++   the patch itself; that will cause the stable team to get a notification
++   when your fix goes into the mainline.
  
- T:  Bus=03 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12  MxCh= 0
- D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-@@ -58,7 +59,10 @@ P:  Vendor=0557 ProdID=2004 Rev= 1.00
- S:  Manufacturer=ATEN
- S:  Product=UC100KM V2.00
- 
--Bus=03 means it's bus 3.
-+"Bus=03" means it's bus 3. Alternatively, you can look at the output from
-+"lsusb" and get the bus number from the appropriate line. Example:
-+
-+Bus 003 Device 002: ID 0557:2004 ATEN UC100KM V2.00
- 
- 3. Start 'cat'
- 
+ When selecting recipients for a patch, it is good to have an idea of who
+ you think will eventually accept the patch and get it merged.  While it
 
 
