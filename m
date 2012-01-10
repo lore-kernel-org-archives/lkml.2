@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab2AJHCS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 02:02:18 -0500
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:25767
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753221Ab2AJHCL (ORCPT
+	id S932403Ab2AJHDa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 02:03:30 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:19464
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754533Ab2AJHCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 02:02:11 -0500
+	Tue, 10 Jan 2012 02:02:16 -0500
 X-SpamScore: 0
 X-BigFish: VS0(zzzz1202hzz8275dhz2dhc1ahc1bh87h2a8h668h839h62h)
 X-Spam-TCS-SCL: 1:0
@@ -17,9 +17,9 @@ To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
         <kernel@pengutronix.de>, <eric.miao@linaro.org>, <patches@linaro.org>,
         Richard Zhao <richard.zhao@linaro.org>
-Subject: [PATCH 2/6] dma/imx-sdma: use readl_relaxed/writel_relaxed and use writel when necessary
-Date: Tue, 10 Jan 2012 15:01:46 +0800
-Message-ID: <1326178910-14044-2-git-send-email-richard.zhao@linaro.org>
+Subject: [PATCH 5/6] dma/imx-sdma: use num_events to validate event_id0
+Date: Tue, 10 Jan 2012 15:01:49 +0800
+Message-ID: <1326178910-14044-5-git-send-email-richard.zhao@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
 References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
@@ -30,149 +30,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use readl_relaxed/writel_relaxed in most places, and use writel when
-enable channel, because it needs memory barrier.
+event number is not always 32. use num_events for checking instead.
 
 Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
 ---
- drivers/dma/imx-sdma.c |   44 ++++++++++++++++++++++----------------------
- 1 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/dma/imx-sdma.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index c2bc4f1..63f4752 100644
+index 015d93f..22fd561 100644
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
-@@ -368,9 +368,9 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
- 	if (event_override && mcu_override && dsp_override)
- 		return -EINVAL;
+@@ -723,7 +723,7 @@ static int sdma_config_channel(struct sdma_channel *sdmac)
+ 	sdmac->per_addr = 0;
  
--	evt = __raw_readl(sdma->regs + SDMA_H_EVTOVR);
--	mcu = __raw_readl(sdma->regs + SDMA_H_HOSTOVR);
--	dsp = __raw_readl(sdma->regs + SDMA_H_DSPOVR);
-+	evt = readl_relaxed(sdma->regs + SDMA_H_EVTOVR);
-+	mcu = readl_relaxed(sdma->regs + SDMA_H_HOSTOVR);
-+	dsp = readl_relaxed(sdma->regs + SDMA_H_DSPOVR);
- 
- 	if (dsp_override)
- 		dsp &= ~(1 << channel);
-@@ -387,16 +387,16 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
- 	else
- 		mcu |= (1 << channel);
- 
--	__raw_writel(evt, sdma->regs + SDMA_H_EVTOVR);
--	__raw_writel(mcu, sdma->regs + SDMA_H_HOSTOVR);
--	__raw_writel(dsp, sdma->regs + SDMA_H_DSPOVR);
-+	writel_relaxed(evt, sdma->regs + SDMA_H_EVTOVR);
-+	writel_relaxed(mcu, sdma->regs + SDMA_H_HOSTOVR);
-+	writel_relaxed(dsp, sdma->regs + SDMA_H_DSPOVR);
- 
- 	return 0;
- }
- 
- static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
- {
--	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
-+	writel(1 << channel, sdma->regs + SDMA_H_START);
- }
- 
- /*
-@@ -460,9 +460,9 @@ static void sdma_event_enable(struct sdma_channel *sdmac, unsigned int event)
- 	u32 val;
- 	u32 chnenbl = chnenbl_ofs(sdma, event);
- 
--	val = __raw_readl(sdma->regs + chnenbl);
-+	val = readl_relaxed(sdma->regs + chnenbl);
- 	val |= (1 << channel);
--	__raw_writel(val, sdma->regs + chnenbl);
-+	writel_relaxed(val, sdma->regs + chnenbl);
- }
- 
- static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
-@@ -472,9 +472,9 @@ static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
- 	u32 chnenbl = chnenbl_ofs(sdma, event);
- 	u32 val;
- 
--	val = __raw_readl(sdma->regs + chnenbl);
-+	val = readl_relaxed(sdma->regs + chnenbl);
- 	val &= ~(1 << channel);
--	__raw_writel(val, sdma->regs + chnenbl);
-+	writel_relaxed(val, sdma->regs + chnenbl);
- }
- 
- static void sdma_handle_channel_loop(struct sdma_channel *sdmac)
-@@ -552,8 +552,8 @@ static irqreturn_t sdma_int_handler(int irq, void *dev_id)
- 	struct sdma_engine *sdma = dev_id;
- 	u32 stat;
- 
--	stat = __raw_readl(sdma->regs + SDMA_H_INTR);
--	__raw_writel(stat, sdma->regs + SDMA_H_INTR);
-+	stat = readl_relaxed(sdma->regs + SDMA_H_INTR);
-+	writel_relaxed(stat, sdma->regs + SDMA_H_INTR);
- 
- 	while (stat) {
- 		int channel = fls(stat) - 1;
-@@ -707,7 +707,7 @@ static void sdma_disable_channel(struct sdma_channel *sdmac)
- 	struct sdma_engine *sdma = sdmac->sdma;
- 	int channel = sdmac->channel;
- 
--	__raw_writel(1 << channel, sdma->regs + SDMA_H_STATSTOP);
-+	writel_relaxed(1 << channel, sdma->regs + SDMA_H_STATSTOP);
- 	sdmac->status = DMA_ERROR;
- }
- 
-@@ -780,7 +780,7 @@ static int sdma_set_channel_priority(struct sdma_channel *sdmac,
- 		return -EINVAL;
+ 	if (sdmac->event_id0) {
+-		if (sdmac->event_id0 > 32)
++		if (sdmac->event_id0 >= sdmac->sdma->num_events)
+ 			return -EINVAL;
+ 		sdma_event_enable(sdmac, sdmac->event_id0);
  	}
- 
--	__raw_writel(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
-+	writel_relaxed(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
- 
- 	return 0;
- }
-@@ -1228,7 +1228,7 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 	clk_enable(sdma->clk);
- 
- 	/* Be sure SDMA has not started yet */
--	__raw_writel(0, sdma->regs + SDMA_H_C0PTR);
-+	writel_relaxed(0, sdma->regs + SDMA_H_C0PTR);
- 
- 	sdma->channel_control = dma_alloc_coherent(NULL,
- 			MAX_DMA_CHANNELS * sizeof (struct sdma_channel_control) +
-@@ -1251,11 +1251,11 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 
- 	/* disable all channels */
- 	for (i = 0; i < sdma->num_events; i++)
--		__raw_writel(0, sdma->regs + chnenbl_ofs(sdma, i));
-+		writel_relaxed(0, sdma->regs + chnenbl_ofs(sdma, i));
- 
- 	/* All channels have priority 0 */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++)
--		__raw_writel(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
-+		writel_relaxed(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
- 
- 	ret = sdma_request_channel(&sdma->channel[0]);
- 	if (ret)
-@@ -1264,16 +1264,16 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 	sdma_config_ownership(&sdma->channel[0], false, true, false);
- 
- 	/* Set Command Channel (Channel Zero) */
--	__raw_writel(0x4050, sdma->regs + SDMA_CHN0ADDR);
-+	writel_relaxed(0x4050, sdma->regs + SDMA_CHN0ADDR);
- 
- 	/* Set bits of CONFIG register but with static context switching */
- 	/* FIXME: Check whether to set ACR bit depending on clock ratios */
--	__raw_writel(0, sdma->regs + SDMA_H_CONFIG);
-+	writel_relaxed(0, sdma->regs + SDMA_H_CONFIG);
- 
--	__raw_writel(ccb_phys, sdma->regs + SDMA_H_C0PTR);
-+	writel_relaxed(ccb_phys, sdma->regs + SDMA_H_C0PTR);
- 
- 	/* Set bits of CONFIG register with given context switching mode */
--	__raw_writel(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
-+	writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
- 
- 	/* Initializes channel's priorities */
- 	sdma_set_channel_priority(&sdma->channel[0], 7);
 -- 
 1.7.5.4
 
