@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933695Ab2AJXTa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:19:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52364 "EHLO mx2.suse.de"
+	id S933924Ab2AJXAY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:00:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52336 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933933Ab2AJXA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:00:28 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:23 2012
-Message-Id: <20120110215023.398725744@clark.kroah.org>
+	id S933886Ab2AJXAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:00:14 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:50:21 2012
+Message-Id: <20120110215021.586675377@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:48:39 -0800
+Date: Tue, 10 Jan 2012 13:48:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Clemens Ladisch <clemens@ladisch.de>
-Subject: [29/42] usb: fix number of mapped SG DMA entries
+        alan@lxorguk.ukuu.org.uk, Pontus Fuchs <pontus.fuchs@gmail.com>,
+        Luciano Coelho <coelho@ti.com>
+Subject: [08/42] wl12xx: Check buffer bound when processing nvs data
 In-Reply-To: <20120110215031.GA19398@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,143 +25,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Pontus Fuchs <pontus.fuchs@gmail.com>
 
-commit bc677d5b64644c399cd3db6a905453e611f402ab upstream.
+commit f6efe96edd9c41c624c8f4ddbc4930c1a2d8f1e1 upstream.
 
-Add a new field num_mapped_sgs to struct urb so that we have a place to
-store the number of mapped entries and can also retain the original
-value of entries in num_sgs.  Previously, usb_hcd_map_urb_for_dma()
-would overwrite this with the number of mapped entries, which would
-break dma_unmap_sg() because it requires the original number of entries.
+An nvs with malformed contents could cause the processing of the
+calibration data to read beyond the end of the buffer. Prevent this
+from happening by adding bound checking.
 
-This fixes warnings like the following when using USB storage devices:
- ------------[ cut here ]------------
- WARNING: at lib/dma-debug.c:902 check_unmap+0x4e4/0x695()
- ehci_hcd 0000:00:12.2: DMA-API: device driver frees DMA sg list with different entry count [map count=4] [unmap count=1]
- Modules linked in: ohci_hcd ehci_hcd
- Pid: 0, comm: kworker/0:1 Not tainted 3.2.0-rc2+ #319
- Call Trace:
-  <IRQ>  [<ffffffff81036d3b>] warn_slowpath_common+0x80/0x98
-  [<ffffffff81036de7>] warn_slowpath_fmt+0x41/0x43
-  [<ffffffff811fa5ae>] check_unmap+0x4e4/0x695
-  [<ffffffff8105e92c>] ? trace_hardirqs_off+0xd/0xf
-  [<ffffffff8147208b>] ? _raw_spin_unlock_irqrestore+0x33/0x50
-  [<ffffffff811fa84a>] debug_dma_unmap_sg+0xeb/0x117
-  [<ffffffff8137b02f>] usb_hcd_unmap_urb_for_dma+0x71/0x188
-  [<ffffffff8137b166>] unmap_urb_for_dma+0x20/0x22
-  [<ffffffff8137b1c5>] usb_hcd_giveback_urb+0x5d/0xc0
-  [<ffffffffa0000d02>] ehci_urb_done+0xf7/0x10c [ehci_hcd]
-  [<ffffffffa0001140>] qh_completions+0x429/0x4bd [ehci_hcd]
-  [<ffffffffa000340a>] ehci_work+0x95/0x9c0 [ehci_hcd]
-  ...
- ---[ end trace f29ac88a5a48c580 ]---
- Mapped at:
-  [<ffffffff811faac4>] debug_dma_map_sg+0x45/0x139
-  [<ffffffff8137bc0b>] usb_hcd_map_urb_for_dma+0x22e/0x478
-  [<ffffffff8137c494>] usb_hcd_submit_urb+0x63f/0x6fa
-  [<ffffffff8137d01c>] usb_submit_urb+0x2c7/0x2de
-  [<ffffffff8137dcd4>] usb_sg_wait+0x55/0x161
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Pontus Fuchs <pontus.fuchs@gmail.com>
+Reviewed-by: Luciano Coelho <coelho@ti.com>
+Signed-off-by: Luciano Coelho <coelho@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/hcd.c       |    5 ++---
- drivers/usb/host/ehci-q.c    |    2 +-
- drivers/usb/host/uhci-q.c    |    2 +-
- drivers/usb/host/whci/qset.c |    4 ++--
- drivers/usb/host/xhci-ring.c |    4 ++--
- include/linux/usb.h          |    1 +
- 6 files changed, 9 insertions(+), 9 deletions(-)
+ drivers/net/wireless/wl12xx/boot.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/usb/core/hcd.c
-+++ b/drivers/usb/core/hcd.c
-@@ -1398,11 +1398,10 @@ int usb_hcd_map_urb_for_dma(struct usb_h
- 					ret = -EAGAIN;
- 				else
- 					urb->transfer_flags |= URB_DMA_MAP_SG;
--				if (n != urb->num_sgs) {
--					urb->num_sgs = n;
-+				urb->num_mapped_sgs = n;
-+				if (n != urb->num_sgs)
- 					urb->transfer_flags |=
- 							URB_DMA_SG_COMBINED;
--				}
- 			} else if (urb->sg) {
- 				struct scatterlist *sg = urb->sg;
- 				urb->transfer_dma = dma_map_page(
---- a/drivers/usb/host/ehci-q.c
-+++ b/drivers/usb/host/ehci-q.c
-@@ -649,7 +649,7 @@ qh_urb_transaction (
+--- a/drivers/net/wireless/wl12xx/boot.c
++++ b/drivers/net/wireless/wl12xx/boot.c
+@@ -358,6 +358,9 @@ static int wl1271_boot_upload_nvs(struct
+ 		nvs_ptr += 3;
+ 
+ 		for (i = 0; i < burst_len; i++) {
++			if (nvs_ptr + 3 >= (u8 *) wl->nvs + nvs_len)
++				goto out_badnvs;
++
+ 			val = (nvs_ptr[0] | (nvs_ptr[1] << 8)
+ 			       | (nvs_ptr[2] << 16) | (nvs_ptr[3] << 24));
+ 
+@@ -369,6 +372,9 @@ static int wl1271_boot_upload_nvs(struct
+ 			nvs_ptr += 4;
+ 			dest_addr += 4;
+ 		}
++
++		if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
++			goto out_badnvs;
+ 	}
+ 
  	/*
- 	 * data transfer stage:  buffer setup
+@@ -380,6 +386,10 @@ static int wl1271_boot_upload_nvs(struct
  	 */
--	i = urb->num_sgs;
-+	i = urb->num_mapped_sgs;
- 	if (len > 0 && i > 0) {
- 		sg = urb->sg;
- 		buf = sg_dma_address(sg);
---- a/drivers/usb/host/uhci-q.c
-+++ b/drivers/usb/host/uhci-q.c
-@@ -943,7 +943,7 @@ static int uhci_submit_common(struct uhc
- 	if (usb_pipein(urb->pipe))
- 		status |= TD_CTRL_SPD;
+ 	nvs_ptr = (u8 *)wl->nvs +
+ 			ALIGN(nvs_ptr - (u8 *)wl->nvs + 7, 4);
++
++	if (nvs_ptr >= (u8 *) wl->nvs + nvs_len)
++		goto out_badnvs;
++
+ 	nvs_len -= nvs_ptr - (u8 *)wl->nvs;
  
--	i = urb->num_sgs;
-+	i = urb->num_mapped_sgs;
- 	if (len > 0 && i > 0) {
- 		sg = urb->sg;
- 		data = sg_dma_address(sg);
---- a/drivers/usb/host/whci/qset.c
-+++ b/drivers/usb/host/whci/qset.c
-@@ -443,7 +443,7 @@ static int qset_add_urb_sg(struct whc *w
+ 	/* Now we must set the partition correctly */
+@@ -395,6 +405,10 @@ static int wl1271_boot_upload_nvs(struct
  
- 	remaining = urb->transfer_buffer_length;
+ 	kfree(nvs_aligned);
+ 	return 0;
++
++out_badnvs:
++	wl1271_error("nvs data is malformed");
++	return -EILSEQ;
+ }
  
--	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
-+	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
- 		dma_addr_t dma_addr;
- 		size_t dma_remaining;
- 		dma_addr_t sp, ep;
-@@ -561,7 +561,7 @@ static int qset_add_urb_sg_linearize(str
- 
- 	remaining = urb->transfer_buffer_length;
- 
--	for_each_sg(urb->sg, sg, urb->num_sgs, i) {
-+	for_each_sg(urb->sg, sg, urb->num_mapped_sgs, i) {
- 		size_t len;
- 		size_t sg_remaining;
- 		void *orig;
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -2562,7 +2562,7 @@ static unsigned int count_sg_trbs_needed
- 	struct scatterlist *sg;
- 
- 	sg = NULL;
--	num_sgs = urb->num_sgs;
-+	num_sgs = urb->num_mapped_sgs;
- 	temp = urb->transfer_buffer_length;
- 
- 	xhci_dbg(xhci, "count sg list trbs: \n");
-@@ -2746,7 +2746,7 @@ static int queue_bulk_sg_tx(struct xhci_
- 		return -EINVAL;
- 
- 	num_trbs = count_sg_trbs_needed(xhci, urb);
--	num_sgs = urb->num_sgs;
-+	num_sgs = urb->num_mapped_sgs;
- 	total_packet_count = roundup(urb->transfer_buffer_length,
- 			le16_to_cpu(urb->ep->desc.wMaxPacketSize));
- 
---- a/include/linux/usb.h
-+++ b/include/linux/usb.h
-@@ -1202,6 +1202,7 @@ struct urb {
- 	void *transfer_buffer;		/* (in) associated data buffer */
- 	dma_addr_t transfer_dma;	/* (in) dma addr for transfer_buffer */
- 	struct scatterlist *sg;		/* (in) scatter gather buffer list */
-+	int num_mapped_sgs;		/* (internal) mapped sg entries */
- 	int num_sgs;			/* (in) number of entries in the sg list */
- 	u32 transfer_buffer_length;	/* (in) data buffer length */
- 	u32 actual_length;		/* (return) actual transfer length */
+ static void wl1271_boot_enable_interrupts(struct wl1271 *wl)
 
 
