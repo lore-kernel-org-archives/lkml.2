@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934230Ab2AJXC0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:02:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52623 "EHLO mx2.suse.de"
+	id S934243Ab2AJXCa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:02:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52628 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934191Ab2AJXCY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:02:24 -0500
+	id S934079Ab2AJXC1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:02:27 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:03 2012
-Message-Id: <20120110215603.362094983@clark.kroah.org>
+Message-Id: <20120110215603.452423766@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:24 -0800
+Date: Tue, 10 Jan 2012 13:55:25 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Boaz Harrosh <bharrosh@panasas.com>
-Subject: [21/49] ore: Must support none-PAGE-aligned IO
+Subject: [22/49] ore: FIX breakage when MISC_FILESYSTEMS is not set
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,159 +26,79 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Boaz Harrosh <bharrosh@panasas.com>
 
-commit 724577ca355795b0a25c93ccbeee927871ca1a77 upstream.
+commit 831c2dc5f47c1dc79c32229d75065ada1dcc66e1 upstream.
 
-NFS might send us offsets that are not PAGE aligned. So
-we must read in the reminder of the first/last pages, in cases
-we need it for Parity calculations.
+As Reported by Randy Dunlap
 
-We only add an sg segments to read the partial page. But
-we don't mark it as read=true because it is a lock-for-write
-page.
+When MISC_FILESYSTEMS is not enabled and NFS4.1 is:
 
-TODO: In some cases (IO spans a single unit) we can just
-adjust the raid_unit offset/length, but this is left for
-later Kernels.
+fs/built-in.o: In function `objio_alloc_io_state':
+objio_osd.c:(.text+0xcb525): undefined reference to `ore_get_rw_state'
+fs/built-in.o: In function `_write_done':
+objio_osd.c:(.text+0xcb58d): undefined reference to `ore_check_io'
+fs/built-in.o: In function `_read_done':
+...
 
+When MISC_FILESYSTEMS, which is more of a GUI thing then anything else,
+is not selected. exofs/Kconfig is never examined during Kconfig,
+and it can not do it's magic stuff to automatically select everything
+needed.
+
+We must split exofs/Kconfig in two. The ore one is always included.
+And the exofs one is left in it's old place in the menu.
+
+Reported-by: Randy Dunlap <rdunlap@xenotime.net>
 Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/exofs/ore_raid.c |   72 +++++++++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 60 insertions(+), 12 deletions(-)
+ fs/Kconfig           |    2 ++
+ fs/exofs/Kconfig     |   11 -----------
+ fs/exofs/Kconfig.ore |   12 ++++++++++++
+ 3 files changed, 14 insertions(+), 11 deletions(-)
 
---- a/fs/exofs/ore_raid.c
-+++ b/fs/exofs/ore_raid.c
-@@ -328,8 +328,8 @@ static int _alloc_read_4_write(struct or
- /* @si contains info of the to-be-inserted page. Update of @si should be
-  * maintained by caller. Specificaly si->dev, si->obj_offset, ...
-  */
--static int _add_to_read_4_write(struct ore_io_state *ios,
--				struct ore_striping_info *si, struct page *page)
-+static int _add_to_r4w(struct ore_io_state *ios, struct ore_striping_info *si,
-+		       struct page *page, unsigned pg_len)
- {
- 	struct request_queue *q;
- 	struct ore_per_dev_state *per_dev;
-@@ -366,17 +366,60 @@ static int _add_to_read_4_write(struct o
- 		_ore_add_sg_seg(per_dev, gap, true);
- 	}
- 	q = osd_request_queue(ore_comp_dev(read_ios->oc, per_dev->dev));
--	added_len = bio_add_pc_page(q, per_dev->bio, page, PAGE_SIZE, 0);
--	if (unlikely(added_len != PAGE_SIZE)) {
-+	added_len = bio_add_pc_page(q, per_dev->bio, page, pg_len,
-+				    si->obj_offset % PAGE_SIZE);
-+	if (unlikely(added_len != pg_len)) {
- 		ORE_DBGMSG("Failed to bio_add_pc_page bi_vcnt=%d\n",
- 			      per_dev->bio->bi_vcnt);
- 		return -ENOMEM;
- 	}
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -218,6 +218,8 @@ source "fs/exofs/Kconfig"
  
--	per_dev->length += PAGE_SIZE;
-+	per_dev->length += pg_len;
- 	return 0;
- }
+ endif # MISC_FILESYSTEMS
  
-+/* read the beginning of an unaligned first page */
-+static int _add_to_r4w_first_page(struct ore_io_state *ios, struct page *page)
-+{
-+	struct ore_striping_info si;
-+	unsigned pg_len;
++source "fs/exofs/Kconfig.ore"
 +
-+	ore_calc_stripe_info(ios->layout, ios->offset, 0, &si);
-+
-+	pg_len = si.obj_offset % PAGE_SIZE;
-+	si.obj_offset -= pg_len;
-+
-+	ORE_DBGMSG("offset=0x%llx len=0x%x index=0x%lx dev=%x\n",
-+		   _LLU(si.obj_offset), pg_len, page->index, si.dev);
-+
-+	return _add_to_r4w(ios, &si, page, pg_len);
-+}
-+
-+/* read the end of an incomplete last page */
-+static int _add_to_r4w_last_page(struct ore_io_state *ios, u64 *offset)
-+{
-+	struct ore_striping_info si;
-+	struct page *page;
-+	unsigned pg_len, p, c;
-+
-+	ore_calc_stripe_info(ios->layout, *offset, 0, &si);
-+
-+	p = si.unit_off / PAGE_SIZE;
-+	c = _dev_order(ios->layout->group_width * ios->layout->mirrors_p1,
-+		       ios->layout->mirrors_p1, si.par_dev, si.dev);
-+	page = ios->sp2d->_1p_stripes[p].pages[c];
-+
-+	pg_len = PAGE_SIZE - (si.unit_off % PAGE_SIZE);
-+	*offset += pg_len;
-+
-+	ORE_DBGMSG("p=%d, c=%d next-offset=0x%llx len=0x%x dev=%x par_dev=%d\n",
-+		   p, c, _LLU(*offset), pg_len, si.dev, si.par_dev);
-+
-+	BUG_ON(!page);
-+
-+	return _add_to_r4w(ios, &si, page, pg_len);
-+}
-+
- static void _mark_read4write_pages_uptodate(struct ore_io_state *ios, int ret)
- {
- 	struct bio_vec *bv;
-@@ -444,9 +487,13 @@ static int _read_4_write(struct ore_io_s
- 			struct page **pp = &_1ps->pages[c];
- 			bool uptodate;
- 
--			if (*pp)
-+			if (*pp) {
-+				if (ios->offset % PAGE_SIZE)
-+					/* Read the remainder of the page */
-+					_add_to_r4w_first_page(ios, *pp);
- 				/* to-be-written pages start here */
- 				goto read_last_stripe;
-+			}
- 
- 			*pp = ios->r4w->get_page(ios->private, offset,
- 						 &uptodate);
-@@ -454,7 +501,7 @@ static int _read_4_write(struct ore_io_s
- 				return -ENOMEM;
- 
- 			if (!uptodate)
--				_add_to_read_4_write(ios, &read_si, *pp);
-+				_add_to_r4w(ios, &read_si, *pp, PAGE_SIZE);
- 
- 			/* Mark read-pages to be cache_released */
- 			_1ps->page_is_read[c] = true;
-@@ -465,8 +512,11 @@ static int _read_4_write(struct ore_io_s
- 	}
- 
- read_last_stripe:
--	offset = ios->offset + (ios->length + PAGE_SIZE - 1) /
--				PAGE_SIZE * PAGE_SIZE;
-+	offset = ios->offset + ios->length;
-+	if (offset % PAGE_SIZE)
-+		_add_to_r4w_last_page(ios, &offset);
-+		/* offset will be aligned to next page */
-+
- 	last_stripe_end = div_u64(offset + bytes_in_stripe - 1, bytes_in_stripe)
- 				 * bytes_in_stripe;
- 	if (offset == last_stripe_end) /* Optimize for the aligned case */
-@@ -503,7 +553,7 @@ read_last_stripe:
- 			/* Mark read-pages to be cache_released */
- 			_1ps->page_is_read[c] = true;
- 			if (!uptodate)
--				_add_to_read_4_write(ios, &read_si, page);
-+				_add_to_r4w(ios, &read_si, page, PAGE_SIZE);
- 		}
- 
- 		offset += PAGE_SIZE;
-@@ -616,8 +666,6 @@ int _ore_post_alloc_raid_stuff(struct or
- 			return -ENOMEM;
- 		}
- 
--		BUG_ON(ios->offset % PAGE_SIZE);
+ menuconfig NETWORK_FILESYSTEMS
+ 	bool "Network File Systems"
+ 	default y
+--- a/fs/exofs/Kconfig
++++ b/fs/exofs/Kconfig
+@@ -1,14 +1,3 @@
+-# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
+-# for every ORE user we do it like this. Any user should add itself here
+-# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
+-# selected here, and we default to "ON". So in effect it is like been
+-# selected by any of the users.
+-config ORE
+-	tristate
+-	depends on EXOFS_FS || PNFS_OBJLAYOUT
+-	select ASYNC_XOR
+-	default SCSI_OSD_ULD
 -
- 		/* Round io down to last full strip */
- 		first_stripe = div_u64(ios->offset, stripe_size);
- 		last_stripe = div_u64(ios->offset + ios->length, stripe_size);
+ config EXOFS_FS
+ 	tristate "exofs: OSD based file system support"
+ 	depends on SCSI_OSD_ULD
+--- /dev/null
++++ b/fs/exofs/Kconfig.ore
+@@ -0,0 +1,12 @@
++# ORE - Objects Raid Engine (libore.ko)
++#
++# Note ORE needs to "select ASYNC_XOR". So Not to force multiple selects
++# for every ORE user we do it like this. Any user should add itself here
++# at the "depends on EXOFS_FS || ..." with an ||. The dependencies are
++# selected here, and we default to "ON". So in effect it is like been
++# selected by any of the users.
++config ORE
++	tristate
++	depends on EXOFS_FS || PNFS_OBJLAYOUT
++	select ASYNC_XOR
++	default SCSI_OSD_ULD
 
 
