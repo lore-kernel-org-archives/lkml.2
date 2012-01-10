@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934269Ab2AJXEU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:04:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52916 "EHLO mx2.suse.de"
+	id S934521Ab2AJXEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:04:10 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52907 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934123Ab2AJXEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:04:12 -0500
-X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:05 2012
-Message-Id: <20120110215604.946494588@clark.kroah.org>
+	id S934168Ab2AJXEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:04:06 -0500
+X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:04 2012
+Message-Id: <20120110215604.850635953@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:42 -0800
+Date: Tue, 10 Jan 2012 13:55:41 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Johan Hovold <jhovold@gmail.com>
-Subject: [39/49] USB: omninet: fix write_room
+        alan@lxorguk.ukuu.org.uk, Hema HK <hemahk@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [38/49] usb: musb: fix pm_runtime mismatch
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,32 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johan Hovold <jhovold@gmail.com>
+From: Felipe Contreras <felipe.contreras@gmail.com>
 
-commit 694c6301e515bad574af74b6552134c4d9dcb334 upstream.
+commit 772aed45b604c5ff171f0f12c12392d868333f79 upstream.
 
-Fix regression introduced by commit 507ca9bc047666 ([PATCH] USB: add
-ability for usb-serial drivers to determine if their write urb is
-currently being used.) which inverted the logic in write_room so that it
-returns zero when the write urb is actually free.
+In musb_init_controller() there's a pm_runtime_put(), but there's no
+pm_runtime_get(), which creates a mismatch that causes the driver to
+sleep when it shouldn't.
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+This was introduced in 7acc619[1], but it wasn't triggered in my setup
+until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
+when PM is working as it was supposed to.
+
+However, it seems most of the time this is used in a way that keeps the
+counter above 0, so nobody noticed. Also, it seems to depend on the
+configuration used in versions before 3.1, but not later (or in it).
+
+I found the problem by loading isp1704_charger before any usb gadgets:
+http://article.gmane.org/gmane.linux.kernel/1226122
+
+All versions after 2.6.39 are affected.
+
+[1] usb: musb: Idle path retention and offmode support for OMAP3
+[2] OMAP2+: musb: hwmod adaptation for musb registration
+[3] Merge branch 'omap-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6
+
+Cc: Hema HK <hemahk@ti.com>
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 
 ---
- drivers/usb/serial/omninet.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/musb/musb_core.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/usb/serial/omninet.c
-+++ b/drivers/usb/serial/omninet.c
-@@ -315,7 +315,7 @@ static int omninet_write_room(struct tty
- 	int room = 0; /* Default: no room */
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev,
+ 	if (status < 0)
+ 		goto fail3;
  
- 	/* FIXME: no consistent locking for write_urb_busy */
--	if (wport->write_urb_busy)
-+	if (!wport->write_urb_busy)
- 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
- 
- 	dbg("%s - returns %d", __func__, room);
+-	pm_runtime_put(musb->controller);
+-
+ 	status = musb_init_debugfs(musb);
+ 	if (status < 0)
+ 		goto fail4;
 
 
