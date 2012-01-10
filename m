@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934400Ab2AJXFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 18:05:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52959 "EHLO mx2.suse.de"
+	id S934532Ab2AJXGC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 18:06:02 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52933 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934313Ab2AJXEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 18:04:25 -0500
+	id S934478Ab2AJXEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 18:04:15 -0500
 X-Mailbox-Line: From gregkh@clark.kroah.org Tue Jan 10 13:56:05 2012
-Message-Id: <20120110215605.293110884@clark.kroah.org>
+Message-Id: <20120110215605.022405477@clark.kroah.org>
 User-Agent: quilt/0.50-25.1
-Date: Tue, 10 Jan 2012 13:55:46 -0800
+Date: Tue, 10 Jan 2012 13:55:43 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Hans de Goede <hdegoede@redhat.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [43/49] xhci: Properly handle COMP_2ND_BW_ERR
+        alan@lxorguk.ukuu.org.uk, Janne Snabb <snabb@epipe.com>
+Subject: [40/49] usb: option: add ZD Incorporated HSPA modem
 In-Reply-To: <20120110215609.GA22505@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Janne Snabb <snabb@epipe.com>
 
-commit 71d85724bdd947a3b42a88d08af79f290a1a767b upstream.
+commit 3c8c9316710b83e906e425024153bf0929887b59 upstream.
 
-I encountered a result of COMP_2ND_BW_ERR while improving how the pwc
-webcam driver handles not having the full usb1 bandwidth available to
-itself.
+Add support for Chinese Noname HSPA USB modem which is apparently
+manufactured by a company called ZD Incorporated (based on texts in the
+Windows drivers).
 
-I created the following test setup, a NEC xhci controller with a
-single TT USB 2 hub plugged into it, with a usb keyboard and a pwc webcam
-plugged into the usb2 hub. This caused the following to show up in dmesg
-when trying to stream from the pwc camera at its highest alt setting:
+This product is available at least from Dealextreme (SKU 80032) and
+possibly in India with name Olive V-MW250. It is based on Qualcomm
+MSM6280 chip.
 
-xhci_hcd 0000:01:00.0: ERROR: unexpected command completion code 0x23.
-usb 6-2.1: Not enough bandwidth for altsetting 9
+I needed to also add "options usb-storage quirks=0685:7000:i" in modprobe
+configuration because udevd or the kernel keeps poking the embedded
+fake-cd-rom which fails and causes the device to reset. There might be
+a better way to accomplish the same. usb_modeswitch is not needed with
+this device.
 
-And usb_set_interface returned -EINVAL, which caused my pwc code to not
-do the right thing as it expected -ENOSPC.
-
-This patch makes the xhci driver properly handle COMP_2ND_BW_ERR and makes
-usb_set_interface return -ENOSPC as expected.
-
-This should be backported to stable kernels as old as 2.6.32.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Janne Snabb <snabb@epipe.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/host/xhci.c |    1 +
- drivers/usb/host/xhci.h |    1 -
- 2 files changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/serial/option.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1620,6 +1620,7 @@ static int xhci_configure_endpoint_resul
- 		/* FIXME: can we allocate more resources for the HC? */
- 		break;
- 	case COMP_BW_ERR:
-+	case COMP_2ND_BW_ERR:
- 		dev_warn(&udev->dev, "Not enough bandwidth "
- 				"for new device state.\n");
- 		ret = -ENOSPC;
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -1033,7 +1033,6 @@ struct xhci_transfer_event {
- /* Invalid Stream ID Error */
- #define COMP_STRID_ERR	34
- /* Secondary Bandwidth Error - may be returned by a Configure Endpoint cmd */
--/* FIXME - check for this */
- #define COMP_2ND_BW_ERR	35
- /* Split Transaction Error */
- #define	COMP_SPLIT_ERR	36
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -476,6 +476,10 @@ static void option_instat_callback(struc
+ #define VIETTEL_VENDOR_ID			0x2262
+ #define VIETTEL_PRODUCT_VT1000			0x0002
+ 
++/* ZD Incorporated */
++#define ZD_VENDOR_ID				0x0685
++#define ZD_PRODUCT_7000				0x7000
++
+ /* some devices interfaces need special handling due to a number of reasons */
+ enum option_blacklist_reason {
+ 		OPTION_BLACKLIST_NONE = 0,
+@@ -1178,6 +1182,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU528) },
+ 	{ USB_DEVICE(YUGA_VENDOR_ID, YUGA_PRODUCT_CLU526) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(VIETTEL_VENDOR_ID, VIETTEL_PRODUCT_VT1000, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(ZD_VENDOR_ID, ZD_PRODUCT_7000, 0xff, 0xff, 0xff) },
+ 	{ } /* Terminating entry */
+ };
+ MODULE_DEVICE_TABLE(usb, option_ids);
 
 
