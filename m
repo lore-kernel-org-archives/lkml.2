@@ -1,73 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756155Ab2AJM1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 07:27:10 -0500
-Received: from webbox1416.server-home.net ([77.236.96.61]:44931 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755314Ab2AJM1I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 07:27:08 -0500
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: linux-mtd@lists.infradead.org
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH] [MTD] Only call mtd->sync() method in mtdblock_release if opened for write.
-Date: Tue, 10 Jan 2012 13:26:58 +0100
-Message-Id: <1326198418-8996-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
+	id S1755935Ab2AJMeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 07:34:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8217 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755453Ab2AJMeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 07:34:20 -0500
+Message-ID: <4F0C3044.7050307@redhat.com>
+Date: Tue, 10 Jan 2012 14:34:12 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: stephan.baerwolf@tu-ilmenau.de
+CC: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: KVM guest-kernel panics double fault
+References: <4EFBC973.1040905@tu-ilmenau.de> <4EFC3B17.1040601@redhat.com> <4F09001D.1050701@tu-ilmenau.de> <4F096E26.4090201@redhat.com> <4F0C0EBB.3090506@tu-ilmenau.de> <4F0C1369.9070607@redhat.com> <4F0C2C4E.3000703@tu-ilmenau.de>
+In-Reply-To: <4F0C2C4E.3000703@tu-ilmenau.de>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
- drivers/mtd/mtd_blkdevs.c    |    1 +
- drivers/mtd/mtdblock.c       |    7 +++++--
- include/linux/mtd/blktrans.h |    1 +
- 3 files changed, 7 insertions(+), 2 deletions(-)
+On 01/10/2012 02:17 PM, Stephan Bärwolf wrote:
+> Hi, me again.
+>
+> Thank you for your instructions, I will send the patch right after this
+> mail.
+>
+> On 01/10/12 11:31, Avi Kivity wrote:
+> >> I prepare/adapt everything to the mentioned styles/policy.
+> >> (I'll insert 2 additional ops for getting "cpuid" and "id of vcpu"...)
+> > What do you mean by "id of vcpu"?
+> I mean the number of the corresponding vcpu.
+> (So mostly "vcpu->vcpu_id" ...)
+> It is necessary for "pr_err_ratelimited"-complains, if cpuid-vendor is
+> unknown ...
+> ("Jan 10 12:14:55 thinkrat kernel: [ 4476.484359] kvm: 15680: cpu0
+> unknown vendor - assuming intel")
 
-diff --git a/drivers/mtd/mtd_blkdevs.c b/drivers/mtd/mtd_blkdevs.c
-index ed8b5e7..e8aac1d 100644
---- a/drivers/mtd/mtd_blkdevs.c
-+++ b/drivers/mtd/mtd_blkdevs.c
-@@ -234,6 +234,7 @@ static int blktrans_open(struct block_device *bdev, fmode_t mode)
- 	if (ret)
- 		goto error_release;
- 
-+	dev->file_mode = mode;
- unlock:
- 	mutex_unlock(&dev->lock);
- 	blktrans_dev_put(dev);
-diff --git a/drivers/mtd/mtdblock.c b/drivers/mtd/mtdblock.c
-index 7c1dc90..3904df1 100644
---- a/drivers/mtd/mtdblock.c
-+++ b/drivers/mtd/mtdblock.c
-@@ -321,8 +321,11 @@ static int mtdblock_release(struct mtd_blktrans_dev *mbd)
- 	mutex_unlock(&mtdblk->cache_mutex);
- 
- 	if (!--mtdblk->count) {
--		/* It was the last usage. Free the cache */
--		if (mbd->mtd->sync)
-+		/*
-+		 * It was the last usage. Free the cache
-+		 * But only sync if opened writeable
-+		 */
-+		if ((mbd->file_mode & FMODE_WRITE) && mbd->mtd->sync)
- 			mbd->mtd->sync(mbd->mtd);
- 		vfree(mtdblk->cache_data);
- 	}
-diff --git a/include/linux/mtd/blktrans.h b/include/linux/mtd/blktrans.h
-index 1bbd9f2..ed270bd 100644
---- a/include/linux/mtd/blktrans.h
-+++ b/include/linux/mtd/blktrans.h
-@@ -47,6 +47,7 @@ struct mtd_blktrans_dev {
- 	struct request_queue *rq;
- 	spinlock_t queue_lock;
- 	void *priv;
-+	fmode_t file_mode;
- };
- 
- struct mtd_blktrans_ops {
+It isn't worthwhile - just don't print the vcpu number (the task ID
+contains enough information, and anyway this should be rare to the point
+of never ever happening)
+
 -- 
-1.7.3.4
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
