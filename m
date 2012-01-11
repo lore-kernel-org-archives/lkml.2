@@ -1,187 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757666Ab2AKQK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:10:28 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:53284 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab2AKQK0 convert rfc822-to-8bit (ORCPT
+	id S933476Ab2AKQKe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:10:34 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:33963 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757673Ab2AKQKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:10:26 -0500
+	Wed, 11 Jan 2012 11:10:30 -0500
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1326265454_1664@mail4.comsite.net>
-References: <alpine.DEB.2.00.1201091034390.31395@router.home>
-	<1326040026-7285-8-git-send-email-gilad@benyossef.com>
-	<op.v7vcjum63l0zgt@mpn-glaptop>
-	<1326265454_1664@mail4.comsite.net>
-Date: Wed, 11 Jan 2012 18:10:25 +0200
-Message-ID: <CAOtvUMdXUjr8ZN+Mv8XuAmMtf0jZ-_r2f_1XJxhpwmJC6orSGw@mail.gmail.com>
-Subject: Re: [PATCH v6 7/8] mm: only IPI CPUs to drain local pages if they exist
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: Christoph Lameter <cl@linux.com>, Michal Nazarewicz <mina86@mina86.com>,
-        Mel Gorman <mel@csn.ul.ie>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Date: Wed, 11 Jan 2012 22:10:29 +0600
+Message-ID: <CADZ9YHgCc3T1oPJ717+=2CGODqz715qCzwvEobh8yBur4E80Eg@mail.gmail.com>
+Subject: [Question] sched: Should balance_iterator be removed?
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 9:04 AM, Milton Miller <miltonm@bga.com> wrote:
+Hello all,
 
->> > > @@ -1097,7 +1105,19 @@ void drain_local_pages(void *arg)
->> > >   */
->> > >  void drain_all_pages(void)
->> > >  {
->> > > - on_each_cpu(drain_local_pages, NULL, 1);
->> > > + int cpu;
->> > > + struct per_cpu_pageset *pcp;
->> > > + struct zone *zone;
->> > > +
->> > > + for_each_online_cpu(cpu)
->> > > +         for_each_populated_zone(zone) {
->> > > +                 pcp = per_cpu_ptr(zone->pageset, cpu);
->> > > +                 if (pcp->pcp.count)
->> > > +                         cpumask_set_cpu(cpu, cpus_with_pcps);
->> > > +                 else
->> > > +                         cpumask_clear_cpu(cpu, cpus_with_pcps);
->> > > +         }
->> > > + on_each_cpu_mask(cpus_with_pcps, drain_local_pages, NULL, 1);
->> >
->
-> This will only select cpus that have pcp pages in the last zone,
-> not pages in any populated zone.
-
-Oy! you are very right.
-
->
-> Call cpu_mask_clear before the for_each_online_cpu loop, and only
-> set cpus in the loop.
->
-> Hmm, that means we actually need a lock for using the static mask.
-
-We don't have to clear before the loop or lock. We can do something like this:
-
-        int cpu;
-        struct per_cpu_pageset *pcp;
-        struct zone *zone;
-
-        for_each_online_cpu(cpu) {
-                bool has_pcps = false;
-                for_each_populated_zone(zone) {
-                        pcp = per_cpu_ptr(zone->pageset, cpu);
-                        if (pcp->pcp.count) {
-                                has_pcps = true;
-                                break;
-                        }
-                }
-                if (has_pcps)
-                        cpumask_set_cpu(cpu, cpus_with_pcps);
-                else
-                        cpumask_clear_cpu(cpu, cpus_with_pcps);
-        }
-        on_each_cpu_mask(cpus_with_pcps, drain_local_pages, NULL, 1);
-
-
->
-> -- what would happen without any lock?
-> [The last to store would likely see all the cpus and send them IPIs
-> but the earlier, racing callers would miss some cpus (It will test
-> our smp_call_function_many locking!), and would retry before all the
-> pages were drained from pcp pools].  The locking should be better
-> than racing -- one cpu will peek and pull all per-cpu data to itself,
-> then copy the mask to its smp_call_function_many element, then wait
-> for all the cpus it found cpus to process their list pulling their
-> pcp data back to the owners.   Not much sense in the racing cpus
-> figighting to bring the per-cpu data to themselves to write to the
-> now contended static mask while pulling the zone pcp data from the
-> owning cpus that are trying to push to the buddy lists.
->
-
-That is a very good point and I guess you are right that the locking
-saves cache bounces and probably also some IPIs.
-
-I am not 100% it is a win though. The lockless approach is simpler,
-has zero risk of dead locks. I also fear that any non interruptable lock
-(be it spinlock or  interruptable lock non mutex) might delay an OOM
-in progress.
-
-Having the lock there is not a correctness issue - it is a performance
-enhancement. Because this is not a fast path, i would go for simple
-and less risk and not have the lock there at all.
-
-> The benefit numbers in the changelog need to be measured again
-> after this correction.
->
-
-Yes, of course. Preliminary numbers with the lockless version above
-still looks good.
-
-I am guessing though that Mel's patch will make all this moot anyway
-since if we're not doing a drain_all in the direct reclaim we're left with
-very rare code paths (memory error and memory migration) that call
-the drain_all and they wont tend to do that concurrently like the direct
-reclaim.
-
->
->
-> Disabling preemption around online loop and the call will prevent
-> races with cpus going offline, but we do not that we care as the
-> offline notification will cause the notified cpu to drain that pool.
-> on_each_cpu_mask disables preemption as part of its processing.
->
-> If we document the o-e-c-m behaviour then we should consider putting a
-> comment here, or at least put the previous paragraph in the change log.
-
-I noticed that Mel's patch already added get_online_cpus() in drain_all.
-
-
->
->> > >  }
->> > >
->> > >  #ifdef CONFIG_HIBERNATION
->> > > @@ -3601,6 +3621,10 @@ static void setup_zone_pageset(struct zone *zone)
->> > >  void __init setup_per_cpu_pageset(void)
->> > >  {
->> > >   struct zone *zone;
->> > > + int ret;
->> > > +
->> > > + ret = zalloc_cpumask_var(&cpus_with_pcps, GFP_KERNEL);
->> > > + BUG_ON(!ret);
->> > >
->
-> Switching to cpumask_t will eliminate this hunk.   Even if we decide
-> to keep it a cpumask_var_t we don't need to pre-zero it as we set
-> the entire mask so alloc_cpumask_var would be sufficient.
->
-
-hmm... then we can make it a static local variable and it doesn't even
-make the kernel image really bigger since it's in the BSS. Cool.
+Commit 4a55bd5e97b1775913 (sched: fair-group: de-couple load-balancing
+from the rb-trees) added balance_iterator in cfs_rq. But, no real use
+in current code. Shouldn't it be removed? Or has it been kept for
+future use?
 
 Thanks,
-
-Gilad
-
-
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+Rakib
