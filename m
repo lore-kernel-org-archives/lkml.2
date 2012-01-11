@@ -1,104 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757365Ab2AKMZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 07:25:27 -0500
-Received: from casper.infradead.org ([85.118.1.10]:42281 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab2AKMZZ convert rfc822-to-8bit (ORCPT
+	id S1757402Ab2AKM3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 07:29:54 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43603 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab2AKM3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 07:25:25 -0500
-Message-ID: <1326284711.2442.138.camel@twins>
-Subject: Re: [BUG] kernel freezes with latest tree
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Wed, 11 Jan 2012 13:25:11 +0100
-In-Reply-To: <1326272685.2442.120.camel@twins>
-References: <1326171444.6638.3.camel@edumazet-laptop>
-	 <1326171798.6638.4.camel@edumazet-laptop>
-	 <1326183371.6638.6.camel@edumazet-laptop>
-	 <1326212033.19095.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
-	 <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
-	 <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
-	 <1326234230.2614.15.camel@edumazet-laptop>
-	 <CA+55aFwYmX7q4MZc-xOStZB2ZQjVt_Jca6qDP+0cPKekz8yL+A@mail.gmail.com>
-	 <4F0D2D9B.8030501@gmail.com> <1326272685.2442.120.camel@twins>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
+	Wed, 11 Jan 2012 07:29:50 -0500
+Date: Wed, 11 Jan 2012 12:30:25 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Rajanikanth H V <rajanikanth.hv@stericsson.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, gregkh@sude.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: tty/serial: Need clarification on Support for 4+M Baudrate
+Message-ID: <20120111123025.244a9cf5@pyramind.ukuu.org.uk>
+In-Reply-To: <20120111121901.GA4034@bnru05>
+References: <20120111121901.GA4034@bnru05>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 10:04 +0100, Peter Zijlstra wrote:
-> Maybe adding a few more NEED_BREAK bits
-> and making it a counter and overflowing it into ABORT might be good.
-> 
-> 
-I could reproduce and confirm something like the below makes the hang
-go-away. I haven't managed to fully understand why we're stuck though
-because we do release the runqueue locks and re-enable IRQs on this
-lock-break.
+On Wed, 11 Jan 2012 17:49:01 +0530
+> I have a requirement to interface UART with an external microcontroller 
+> using baud rate above 4Mbps, hence following is my approach to apply
+> the changes. Can any one review/provide me appropriate approach.
 
-My stuck machine had several CPUs stuck in a load-balance pass, so it
-could be they're bouncing tasks back and forth without actually making
-any progress what so ever.
+See TCGETS2/TCSETS2 and the BOTHER flag.
 
-I reproduced with hackbench 500, which results in 20000 tasks, spread
-over 24 cpus that gives some 833 tasks per runqueue on average, easily
-overflowing that lock-break scanning limit.
+The kernel supports aetting arbitary baud rates already.
 
----
-Subject: sched: Limit load-balance retries on lock-break
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Wed Jan 11 13:11:12 CET 2012
-
-Eric and David reported dead machines and traced it to commit a195f004 ("sched:
-Fix load-balance lock-breaking"), it turns out there's still a
-scenario where we can end up re-trying forever.
-
-Limit the number of retries and simply abort.
-
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: David Ahern <dsahern@gmail.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/sched/fair.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
-
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3130,8 +3130,10 @@ task_hot(struct task_struct *p, u64 now,
- }
- 
- #define LBF_ALL_PINNED	0x01
--#define LBF_NEED_BREAK	0x02
--#define LBF_ABORT	0x04
-+#define LBF_NEED_BREAK	0x02	/* clears into HAD_BREAK */
-+#define LBF_HAD_BREAK	0x04
-+#define LBF_HAD_BREAKS	0x0C	/* count HAD_BREAKs overflows into ABORT */
-+#define LBF_ABORT	0x10
- 
- /*
-  * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
-@@ -4509,6 +4511,9 @@ static int load_balance(int this_cpu, st
- 
- 		if (lb_flags & LBF_NEED_BREAK) {
- 			lb_flags &= ~LBF_NEED_BREAK;
-+			lb_flags += LBF_HAD_BREAK;
-+			if (lb_flags & LBF_ABORT)
-+				goto out_balanced;
- 			goto redo;
- 		}
- 
-
+Alan
