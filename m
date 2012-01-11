@@ -1,56 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933478Ab2AKBmr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 20:42:47 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:62136 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756971Ab2AKBmp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 20:42:45 -0500
+	id S1757319Ab2AKBrn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 20:47:43 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:50296
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756701Ab2AKBrm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 20:47:42 -0500
+X-SpamScore: -9
+X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dhc1ahc1bh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 13,
+Date: Wed, 11 Jan 2012 09:47:30 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Shawn Guo <shawn.guo@linaro.org>
+CC: <patches@linaro.org>, <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>, <eric.miao@linaro.org>,
+        <kernel@pengutronix.de>, <dan.j.williams@intel.com>,
+        Richard Zhao <richard.zhao@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] dma/imx-sdma: check whether event_id0 < 32 when set
+ event_mask
+Message-ID: <20120111014730.GE2414@b20223-02.ap.freescale.net>
+References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
+ <1326178910-14044-6-git-send-email-richard.zhao@linaro.org>
+ <20120110142008.GE26599@S2101-09.ap.freescale.net>
+ <20120110142939.GB2019@richard-laptop>
+ <20120110153836.GA27831@S2101-09.ap.freescale.net>
+ <20120111005322.GB2414@b20223-02.ap.freescale.net>
 MIME-Version: 1.0
-In-Reply-To: <8739bn6n66.fsf@rustcorp.com.au>
-References: <20120110174052.4505.66514.stgit@mike2.sea.corp.google.com>
- <20120110174100.4505.8939.stgit@mike2.sea.corp.google.com> <8739bn6n66.fsf@rustcorp.com.au>
-From: Mike Waychison <mikew@google.com>
-Date: Tue, 10 Jan 2012 17:42:24 -0800
-Message-ID: <CAGTjWtApo4WgPjPsRxpjJBjLrcXHr=SdDq_ryuHDwRnZHvjrng@mail.gmail.com>
-Subject: Re: [PATCH v2 1/3] virtio_net: Split receive buffer alloc/add
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev@vger.kernel.org,
-        earhart@google.com, virtualization@lists.linux-foundation.org,
-        digitaleric@google.com, linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20120111005322.GB2414@b20223-02.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 5:30 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Tue, 10 Jan 2012 09:41:01 -0800, Mike Waychison <mikew@google.com> wrote:
->> In preparation for allocating receive buffers in the slow path without
->> disabling NAPI, split the allocation and addition of receive buffers
->> apart into two separate functions (per receive buffer type).
->>
->> While here, move the vi->num accounting into the add functions.
->>
->> Signed-off-by: Mike Waychison <mikew@google.com>
->
-> Hi Mike...
->
->        This exposes a nasty ugliness in the way virtio_net works.  We
-> allocate an skbuff for the small packet case, and just allocate the
-> pages for the large packet cases, and alloc the skbuff when we fill the
-> pages.
->
->        I think all the allocators should return a populated skbuff;
-> this uses a bit more memory in theory, but should make the code simpler.
-> As an added bonus, your life should get much simpler for these patches.
->
-> I'll try to create such a patch tonight, but I'm busy finalizing my
-> linux.conf.au presentation, so it might take longer :(
->
+On Wed, Jan 11, 2012 at 08:53:23AM +0800, Richard Zhao wrote:
+> On Tue, Jan 10, 2012 at 11:38:39PM +0800, Shawn Guo wrote:
+> > On Tue, Jan 10, 2012 at 10:29:42PM +0800, Richard Zhao wrote:
+> > > On Tue, Jan 10, 2012 at 10:20:10PM +0800, Shawn Guo wrote:
+> > > > On Tue, Jan 10, 2012 at 03:01:50PM +0800, Richard Zhao wrote:
+> > > > > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+> > > > > ---
+> > > > 
+> > > > I think it deserves a sensible commit message explaining why the patch
+> > > > is needed.
+> > > If event_id0 < 32, 1 << (sdmac->event_id0 - 32) is not zero.
+> This meant to make you clear about the patch. I'll add it in commit
+> message.
+unsigned int t = 31;
+printf("%d %08x\n", t, 1 << (t-32));
 
-This seems reasonable for the "big" receive buffers, but I don't think
-it makes a lot of sense for "mergeable" receive buffers as best I can
-tell.  Hopefully making this work isn't too hard though :)
+I test above code on both x86 and arm. They shows different results.
+x86: 31 80000000
+arm: 31 00000000
+
+I think we still need this patch. we shoud not let it depends on gcc's
+behavior.
+
+Thanks
+Richard
+> > > 
+> > My point is you may explain the exact problem you are seeing without
+> > this patch
+> The kernel don't have event_id < 32 case yet. I found the bug when
+> I review the code.
+> > and how the patch helps here.  In general, doing so would
+> > win a warm feeling from reviewers much more easily than leaving the
+> > commit message empty there.
+> I understand your point that comment as much as possible.
+> 
+> Thanks
+> Richard
+> > 
+> > -- 
+> > Regards,
+> > Shawn
+> > 
+> > _______________________________________________
+> > linux-arm-kernel mailing list
+> > linux-arm-kernel@lists.infradead.org
+> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > 
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> 
+
