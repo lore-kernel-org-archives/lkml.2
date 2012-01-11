@@ -1,130 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757445Ab2AKKLl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:11:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46395 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab2AKKLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:11:15 -0500
-From: Mel Gorman <mgorman@suse.de>
-To: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Miklos Szeredi <mszeredi@novell.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
-        Gong Chen <gong.chen@intel.com>, Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/2] fs: sysfs: Do dcache-related updates to sysfs dentries under sysfs_mutex
-Date: Wed, 11 Jan 2012 10:11:07 +0000
-Message-Id: <1326276668-19932-2-git-send-email-mgorman@suse.de>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1326276668-19932-1-git-send-email-mgorman@suse.de>
-References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
+	id S1757438Ab2AKKXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:23:55 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53603 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755776Ab2AKKXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 05:23:54 -0500
+Date: Wed, 11 Jan 2012 11:23:46 +0100
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Daniel Lezcano <daniel.lezcano@free.fr>
+Cc: containers@lists.linux-foundation.org, oleg@redhat.com,
+        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
+Message-ID: <20120111102346.GB8504@peqn>
+References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
+ <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
+ <20120105192954.GA16083@sergelap>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120105192954.GA16083@sergelap>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While running a CPU hotplug stress test under memory pressure, a
-spinlock lockup was detected due to a dentry lock being recursively
-taken.  When this happens varies considerably and is difficult
-to trigger.
+Quoting Serge Hallyn (serge.hallyn@canonical.com):
+> Quoting Daniel Lezcano (daniel.lezcano@free.fr):
+> > In the case of a child pid namespace, rebooting the system does not
+> > really makes sense. When the pid namespace is used in conjunction
+> > with the other namespaces in order to create a linux container, the
+> > reboot syscall leads to some problems.
+> > 
+> > A container can reboot the host. That can be fixed by dropping
+> > the sys_reboot capability but we are unable to correctly to poweroff/
+> > halt/reboot a container and the container stays stuck at the shutdown
+> > time with the container's init process waiting indefinitively.
+> > 
+> > After several attempts, no solution from userspace was found to reliabily
+> > handle the shutdown from a container.
+> > 
+> > This patch propose to make the init process of the child pid namespace to
+> > exit with a signal status set to : SIGINT if the child pid namespace called
+> > "halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
+> > When the reboot syscall is called and we are not in the initial
+> > pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
+> > and "RESTART2". Otherwise we return EINVAL.
+> > 
+> > Returning EINVAL is also an easy way to check if this feature is supported
+> > by the kernel when invoking another 'reboot' option like CAD.
+> > 
+> > By this way the parent process of the child pid namespace knows if
+> > it rebooted or not and can take the right decision.
+> > 
+> > Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
+> > Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
+> > Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+> 
+> The testcase in [PATCH 0/1] passed for me, and reboot from init_pid_ns
+> works as usual.
+> 
+> Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
 
-[  482.345588] BUG: spinlock lockup on CPU#2, udevd/4400
-[  482.345590]  lock: ffff8803075be0d0, .magic: dead4ead, .owner: udevd/5689, .owner_cpu: 0
-[  482.345592] Pid: 4400, comm: udevd Not tainted 3.2.0-vanilla #1
-[  482.345592] Call Trace:
-[  482.345595]  [<ffffffff811e4ffd>] spin_dump+0x88/0x8d
-[  482.345597]  [<ffffffff811e5186>] do_raw_spin_lock+0xd6/0xf9
-[  482.345599]  [<ffffffff813454e1>] _raw_spin_lock+0x39/0x3d
-[  482.345601]  [<ffffffff811396b6>] ? shrink_dcache_parent+0x77/0x28c
-[  482.345603]  [<ffffffff811396b6>] shrink_dcache_parent+0x77/0x28c
-[  482.345605]  [<ffffffff811373a9>] ? have_submounts+0x13e/0x1bd
-[  482.345607]  [<ffffffff811858f8>] sysfs_dentry_revalidate+0xaa/0xbe
-[  482.345608]  [<ffffffff8112e6bd>] do_lookup+0x263/0x2fc
-[  482.345610]  [<ffffffff8119c99b>] ? security_inode_permission+0x1e/0x20
-[  482.345612]  [<ffffffff8112f2c9>] link_path_walk+0x1e2/0x763
-[  482.345614]  [<ffffffff8112fcf2>] path_lookupat+0x5c/0x61a
-[  482.345616]  [<ffffffff810f479c>] ? might_fault+0x89/0x8d
-[  482.345618]  [<ffffffff810f4753>] ? might_fault+0x40/0x8d
-[  482.345619]  [<ffffffff811302da>] do_path_lookup+0x2a/0xa8
-[  482.345621]  [<ffffffff811329dd>] user_path_at_empty+0x5d/0x97
-[  482.345623]  [<ffffffff8107441b>] ? trace_hardirqs_off+0xd/0xf
-[  482.345625]  [<ffffffff81345bcf>] ? _raw_spin_unlock_irqrestore+0x44/0x5a
-[  482.345627]  [<ffffffff81132a28>] user_path_at+0x11/0x13
-[  482.345629]  [<ffffffff81128af0>] vfs_fstatat+0x44/0x71
-[  482.345631]  [<ffffffff81128b7b>] vfs_lstat+0x1e/0x20
-[  482.345632]  [<ffffffff81128b9c>] sys_newlstat+0x1f/0x40
-[  482.345634]  [<ffffffff81075944>] ? trace_hardirqs_on_caller+0x12d/0x164
-[  482.345636]  [<ffffffff811e04fe>] ?  trace_hardirqs_on_thunk+0x3a/0x3f
-[  482.345638]  [<ffffffff8107441b>] ? trace_hardirqs_off+0xd/0xf
-[  482.345640]  [<ffffffff8134d002>] system_call_fastpath+0x16/0x1b
-[  482.515004]  [<ffffffff8107441b>] ? trace_hardirqs_off+0xd/0xf
-[  482.520870]  [<ffffffff8134d002>] system_call_fastpath+0x16/0x1b
+Hi Andrew,
 
-At this point, CPU hotplug stops and other processes get stuck in a
-similar deadlock waiting for 5689 to unlock. RCU reports stalls but
-it is collateral damage.
+Are you considering taking this patch into -mm?
 
-The deadlocked processes have sysfs_dentry_revalidate() in
-common. Miklos Szeredi explained at https://lkml.org/lkml/2012/1/9/114
-that the deadlock happens within dcache if two processes call
-shrink_dcache_parent() on the same dentry.
+thanks,
+-serge
 
-In Miklos's case, the problem is with the bonding driver but during
-CPU online or offline, a number of dentries are being created and
-deleted and this deadlock is also being hit. Looking at sysfs, there
-is a global sysfs_mutex that protects the sysfs directory tree from
-concurrent reclaims. Almost all operations involving directory inodes
-and dentries take place under the sysfs_mutex - linking, unlinking,
-patch searching lookup, renames and readdir. d_invalidate is slightly
-different. It is mostly under the mutex but if the dentry has to be
-removed from the dcache, the mutex is dropped.
-
-Where as Miklos' patch changes dcache, this patch changes sysfs to
-consistently hold the mutex for dentry-related operations. Once
-applied, this particular bug with CPU hotadd/hotremove no longer
-occurs.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- fs/sysfs/dir.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index 7fdf6a7..acaf21d 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -279,8 +279,8 @@ static int sysfs_dentry_revalidate(struct dentry *dentry, struct nameidata *nd)
- 	if (strcmp(dentry->d_name.name, sd->s_name) != 0)
- 		goto out_bad;
- 
--	mutex_unlock(&sysfs_mutex);
- out_valid:
-+	mutex_unlock(&sysfs_mutex);
- 	return 1;
- out_bad:
- 	/* Remove the dentry from the dcache hashes.
-@@ -294,7 +294,6 @@ out_bad:
- 	 * to the dcache hashes.
- 	 */
- 	is_dir = (sysfs_type(sd) == SYSFS_DIR);
--	mutex_unlock(&sysfs_mutex);
- 	if (is_dir) {
- 		/* If we have submounts we must allow the vfs caches
- 		 * to lie about the state of the filesystem to prevent
-@@ -305,6 +304,7 @@ out_bad:
- 		shrink_dcache_parent(dentry);
- 	}
- 	d_drop(dentry);
-+	mutex_unlock(&sysfs_mutex);
- 	return 0;
- }
- 
--- 
-1.7.3.4
-
+> 
+> thanks,
+> -serge
+> 
+> > ---
+> >  include/linux/pid_namespace.h |    8 +++++++-
+> >  kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
+> >  kernel/sys.c                  |    8 ++++++++
+> >  3 files changed, 48 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
+> > index e7cf666..b90c798 100644
+> > --- a/include/linux/pid_namespace.h
+> > +++ b/include/linux/pid_namespace.h
+> > @@ -32,6 +32,7 @@ struct pid_namespace {
+> >  #endif
+> >  	gid_t pid_gid;
+> >  	int hide_pid;
+> > +	int reboot;
+> >  };
+> >  
+> >  extern struct pid_namespace init_pid_ns;
+> > @@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
+> >  extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
+> >  extern void free_pid_ns(struct kref *kref);
+> >  extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
+> > +extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
+> >  
+> >  static inline void put_pid_ns(struct pid_namespace *ns)
+> >  {
+> > @@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
+> >  {
+> >  }
+> >  
+> > -
+> >  static inline void zap_pid_ns_processes(struct pid_namespace *ns)
+> >  {
+> >  	BUG();
+> >  }
+> > +
+> > +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
+> > +{
+> > +	return 0;
+> > +}
+> >  #endif /* CONFIG_PID_NS */
+> >  
+> >  extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
+> > diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
+> > index a896839..0d355e8 100644
+> > --- a/kernel/pid_namespace.c
+> > +++ b/kernel/pid_namespace.c
+> > @@ -15,6 +15,7 @@
+> >  #include <linux/acct.h>
+> >  #include <linux/slab.h>
+> >  #include <linux/proc_fs.h>
+> > +#include <linux/reboot.h>
+> >  
+> >  #define BITS_PER_PAGE		(PAGE_SIZE*8)
+> >  
+> > @@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+> >  		rc = sys_wait4(-1, NULL, __WALL, NULL);
+> >  	} while (rc != -ECHILD);
+> >  
+> > +	if (pid_ns->reboot)
+> > +		current->signal->group_exit_code = pid_ns->reboot;
+> > +
+> >  	acct_exit_ns(pid_ns);
+> >  	return;
+> >  }
+> > @@ -221,6 +225,35 @@ static struct ctl_table pid_ns_ctl_table[] = {
+> >  
+> >  static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
+> >  
+> > +int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
+> > +{
+> > +	if (pid_ns == &init_pid_ns)
+> > +		return 0;
+> > +
+> > +	switch(cmd) {
+> > +	case LINUX_REBOOT_CMD_RESTART2:
+> > +	case LINUX_REBOOT_CMD_RESTART:
+> > +		pid_ns->reboot = SIGHUP;
+> > +		break;
+> > +
+> > +	case LINUX_REBOOT_CMD_POWER_OFF:
+> > +	case LINUX_REBOOT_CMD_HALT:
+> > +		pid_ns->reboot = SIGINT;
+> > +		break;
+> > +	default:
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	read_lock(&tasklist_lock);
+> > +	force_sig(SIGKILL, pid_ns->child_reaper);
+> > +	read_unlock(&tasklist_lock);
+> > +
+> > +	do_exit(0);
+> > +
+> > +	/* Not reached */
+> > +	return 0;
+> > +}
+> > +
+> >  static __init int pid_namespaces_init(void)
+> >  {
+> >  	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
+> > diff --git a/kernel/sys.c b/kernel/sys.c
+> > index 4070153..bd924fa 100644
+> > --- a/kernel/sys.c
+> > +++ b/kernel/sys.c
+> > @@ -444,6 +444,14 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+> >  	                magic2 != LINUX_REBOOT_MAGIC2C))
+> >  		return -EINVAL;
+> >  
+> > +	/* In case the pid namespaces are enabled, the current task is in a
+> > +	 * child pid_namespace and the command is handled by 'reboot_pid_ns',
+> > +	 * this one will invoke 'do_exit'.
+> > +	 */
+> > +	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> >  	/* Instead of trying to make the power_off code look like
+> >  	 * halt when pm_power_off is not set do it the easy way.
+> >  	 */
+> > -- 
+> > 1.7.5.4
+> > 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
