@@ -1,77 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757539Ab2AKNv3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 08:51:29 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:47500 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756547Ab2AKNv1 (ORCPT
+	id S1757553Ab2AKODr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 09:03:47 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34567 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756011Ab2AKODo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 08:51:27 -0500
-Date: Wed, 11 Jan 2012 16:52:25 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: nagarjun kommineni <nagarjunkommineni@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org, Bart Westgeest <bart@elbrys.com>
-Subject: Re: high speed cams are not working on usbip
-Message-ID: <20120111135225.GG16258@mwanda>
-References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
- <20120110103929.GH3644@mwanda>
- <CAKPZvrah6P4vR9vsrbtTzWwz=tVAE_eyabUhGt4+C39N4Cft8w@mail.gmail.com>
- <20120111125137.GF16258@mwanda>
- <CAKPZvrbwZEFY1zZ30Tcoe9TBw6AoP+Xf2oX5VenQYKvZA6Z_Pw@mail.gmail.com>
+	Wed, 11 Jan 2012 09:03:44 -0500
+From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
+        sjurbren@gmail.com,
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCHv5 00/11]  modem_shm: Driver for ST-E Thor M7400 LTE modem
+Date: Wed, 11 Jan 2012 15:03:22 +0100
+Message-Id: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="hcut4fGOf7Kh6EdG"
-Content-Disposition: inline
-In-Reply-To: <CAKPZvrbwZEFY1zZ30Tcoe9TBw6AoP+Xf2oX5VenQYKvZA6Z_Pw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4F0D93D7.0069,ss=1,re=0.000,fgs=0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is the fifth patch-set for the M7400 SHM driver. Most notable
+change is the rename to modem_shm, the rest of the changes are bug-fixes.
+Changes:
+o Renames xshm to modem_shm
+o Fix stall in caif packet data. Pending buffers was not always flushed
+o More bug-fixes related to firmware loading (memory leak, sanity checks)
+o Add more sanity checks for user data
+o Fix bugs for character device open failures
+o Fix bugs for channel configuration layout
 
---hcut4fGOf7Kh6EdG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Patches available at github.com:sjurbren/modem-ipc.git for-next.
 
-So on 3.1 low resolutions work for usbip but high resolutions don't.
-As near as we can tell they never have, so it's not a regression.
+Introduction:
+~~~~~~~~~~~~~
+This patch-set introduces the Shared Memory Driver for ST-Ericsson's
+Thor M7400 LTE modem.
+The shared memory model is implemented for Chip-to-chip and
+uses a reserved memory area and a number of bi-directional
+channels. Each channel has it's own designated data area where payload
+data is copied into.
 
-File a bug on http://bugzilla.kernel.org explaining:
-1) Which resolutions you tested (working and not working).
-2) What you mean when you say it doesn't work.  What were the error
-   messages etc?
+Two different channel types are defined, one stream channel which is
+implemented as a traditional ring-buffer, and a packet channel which
+is a ring-buffer of fix sized buffers where each buffer contains
+an array of CAIF frames.
 
-When it comes time to move this out of the staging directory, we'll
-look through bugzilla and see what bugs it has.
+The notification of read and write index updates are handled in a
+separate driver called c2c_genio. This driver will be contributed separately,
+but the API is included in this patch-set.
 
-regards,
-dan carpenter
+The channel configuration is stored in shared memory, each channel
+has a designated area in shared memory for configuration data,
+read and write indexes and a data area.
+
+Configuration
+~~~~~~~~~~~~~~~
+
+        IPC-TOC
+        +--------------------+	   Index Area
+        | Channel Descr 0    | -----> +------------+
+	|                    | -+     |	Read Index |
+	|--------------------|	|     |------------|
+	| Channel Descr 1    | 	|     |	Write Index|
+	|                    |	|     +------------+
+	|--------------------|	|   Data Area
+	|       ...    	     |	|     +------------+
+	|                    |	+---> |            |
+	+--------------------+	      |	       	   |
+				      |	       	   |
+				      +------------+
+
+A IPC-TOC (table of content) is used for holding configuration data
+for the channels (struct shm_ipctoc). It contains an array of
+channel descriptors (struct shm_ipctoc_channel). The channel
+descriptors points out the data area and the location of
+read and write indexes.
+
+The configuration is provided from user-space using gen-netlink.
+The gen-netlink format is defined in modem_shm_netlink.h and and handled
+in shm_boot.c
+
+Packet data
+~~~~~~~~~~~
+The packet channel is set up to minimize interrupts needed to
+transfer a packet and to allow efficient DMA operations on the modem.
+
+Ring Buffer Indexes:
+    +------------+
+  +-| Read Index |
+  | |------------|
+  | | Write Index|------------------------+
+  | +------------+   		 	  |
+  |    		    			  |
+  V    	  				  |
+Buffer-0:				  V Buffer-1:
+ +----------------------------------------+---------------+---
+ |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
+ +----------------------------------------+---------------+--
+   |      |              ^      ^
+   +---------------------+      |
+	  +---------------------+
+
+Packet data is organized in a channel containing a number of fixed-
+size buffers. The channel has a read and write pointer to a buffer in a normal
+ring-buffer fashion.
+
+Each buffer holds an array of CAIF-frames, and starts with an descriptor array
+containing pointers to the data frames in the buffer. The descriptor array
+contains offset and length of each frame.
+
+The packet device (caif_shm.c) is implemented as a network interface of
+type ARPHRD_CAIF.
+
+Stream data
+~~~~~~~~~~~
+The driver for the stream channel is implemented as a character device
+interface to user space. The character device implements non-blocking open
+and non-blocking IO in general. The character device is implementing
+a traditional circular buffer directly in the shared memory region for
+the channel.
 
 
---hcut4fGOf7Kh6EdG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Driver model
+~~~~~~~~~~~~~~
+A SHM bus is implemented, the example below shows one device
+of each type (stream and packet):
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+/sys/bus/modem_shm
+|-- devices
+|   |-- shm0 -> ../../../devices/modem_shm/shm0
+|   `-- shm1 -> ../../../devices/modem_shm/shm1
+|-- drivers
+|   |-- caif_shm
+|   |   |-- bind
+|   |   |-- module -> ../../../../module/caif_shm
+|   |   |-- uevent
+|   |   |-- unbind
+|   |   `-- shm1 -> ../../../../devices/shm/shm1
+|   `-- shm_chr
+|       |-- bind
+|       |-- module -> ../../../../module/shm_chr
+|       |-- uevent
+|       |-- unbind
+|       `-- shm0 -> ../../../../devices/shm/shm0
+|-- drivers_autoprobe
+|-- drivers_probe
+`-- uevent
 
-iQIcBAEBAgAGBQJPDZQYAAoJEOnZkXI/YHqR4UcQAKQIMeJFeAbNrhIgu8nvOb2u
-UhjJ4cpiM2mkmp8Etp+sExP1NrTxUn2qrAD8kkLY7ywVZY+wMLwhm9IXzJkuq1vb
-3l9Lcm2m5bY3fpkpWV20ix3fK0jOiQQeEneST3d65g2fqBPlRUo/ivifKSWPKhlQ
-oFFf1TvWQAsHEzOo8zMOmI4PbQjdUEc7iO7mb20WvkeNzZnoiVa7soKf/4simNKX
-Iqvb4K0gwzPLtP4KownTTDuxigkDqRD05wjDnzo/jRLxH4i8ULhZ6iUWH/ZcNMt2
-Cs1uN08nraYooBQF2C1UqgrifTdUuYv16tLNidT+VXMC+l2nRjfbY4KyN14rvFEa
-nMIyv0rnEZ+rzA7JDUXobTLdKx62zssNPxYw0wo/KW738jHkEkC6ZK9ZoPFILmQa
-eWnMmsrNC/3QIx2gBhMkpcnUavRYimvde3YIS3i2HAdF+P6uTWOUdHTGyxJppXNf
-y8ZyUffB+ebZUWngAcY0ItPVqQZvrutliE3GZkWkC3k+9o4EuTAQFkKsZe9AzSve
-Thwf+x9dx+AIiKcZGy2+GIsMFZUzc2juUqloVKB0HvcUxlwiZI5m/2qNwPF9cJdh
-My174sZCgix09TxpnAdHP+kkmeU94EN58HooOsOr0WdXx1VCMYFha9KXcZ7LGG96
-s0LTmIQUPb6ZayV52WPJ
-=UQO/
------END PGP SIGNATURE-----
 
---hcut4fGOf7Kh6EdG--
+/sys/devices/modem_shm/
+|-- bootimg
+|-- caif_ready
+|-- ipc_ready
+|-- uevent
+|-- shm0
+|   |-- driver -> ../../../bus/shm/drivers/modem_shm_chr
+|   |-- misc
+|   |   `-- shm0
+|   |       |-- dev
+|   |       |-- device -> ../../../shm0
+|   |       |-- subsystem -> ../../../../../class/misc
+|   |       `-- uevent
+|   |-- subsystem -> ../../../bus/shm
+|   `-- uevent
+`-- shm1
+    |-- driver -> ../../../bus/shm/drivers/caif_shm
+    |-- subsystem -> ../../../bus/shm
+    `-- uevent
+
+Review comments and feedback are welcome.
+
+
+Sjur Brændeland (11):
+  modem_shm: Shared Memory layout for ST-E M7400 driver.
+  modem_shm: Channel config definitions for ST-E M7400 driver.
+  modem_shm: Configuration for SHM Channel an devices.
+  modem_shm: geni/geno driver interface.
+  modem_shm: genio dummy driver
+  modem_shm: Add SHM device bus.
+  modem_shm: Add shm device implementation
+  modem_shm: SHM Configuration data handling
+  modem_shm: Character device for SHM channel access.
+  modem_shm: Makefile and Kconfig for M7400 Shared Memory Drivers
+  caif_shm: Add CAIF driver for Shared memory for M7400
+
+ drivers/Kconfig                             |    2 +
+ drivers/Makefile                            |    1 +
+ drivers/modem_shm/Kconfig                   |   62 ++
+ drivers/modem_shm/Makefile                  |    5 +
+ drivers/modem_shm/dummy_c2c_genio.c         |   76 ++
+ drivers/modem_shm/shm_boot.c                | 1208 ++++++++++++++++++++++++++
+ drivers/modem_shm/shm_bus.c                 |  113 +++
+ drivers/modem_shm/shm_chr.c                 | 1242 +++++++++++++++++++++++++++
+ drivers/modem_shm/shm_dev.c                 |  527 ++++++++++++
+ drivers/modem_shm/shm_ipctoc.h              |  154 ++++
+ drivers/net/caif/Kconfig                    |   12 +-
+ drivers/net/caif/Makefile                   |    3 +-
+ drivers/net/caif/caif_shm.c                 |  900 +++++++++++++++++++
+ include/linux/Kbuild                        |    1 +
+ include/linux/c2c_genio.h                   |  195 +++++
+ include/linux/modem_shm/Kbuild              |    1 +
+ include/linux/modem_shm/modem_shm_netlink.h |   95 ++
+ include/linux/modem_shm/shm_dev.h           |  245 ++++++
+ 18 files changed, 4840 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/modem_shm/Kconfig
+ create mode 100644 drivers/modem_shm/Makefile
+ create mode 100644 drivers/modem_shm/dummy_c2c_genio.c
+ create mode 100644 drivers/modem_shm/shm_boot.c
+ create mode 100644 drivers/modem_shm/shm_bus.c
+ create mode 100644 drivers/modem_shm/shm_chr.c
+ create mode 100644 drivers/modem_shm/shm_dev.c
+ create mode 100644 drivers/modem_shm/shm_ipctoc.h
+ create mode 100644 drivers/net/caif/caif_shm.c
+ create mode 100644 include/linux/c2c_genio.h
+ create mode 100644 include/linux/modem_shm/Kbuild
+ create mode 100644 include/linux/modem_shm/modem_shm_netlink.h
+ create mode 100644 include/linux/modem_shm/shm_dev.h
+
