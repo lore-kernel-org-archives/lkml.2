@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab2AKWlN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 17:41:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52369 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751005Ab2AKWlJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 17:41:09 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120111135847.d28425c6.akpm@linux-foundation.org>
-References: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
-	<20120111204330.GT2618@outflux.net>
-	<20120111135847.d28425c6.akpm@linux-foundation.org>
-Date: Wed, 11 Jan 2012 14:41:09 -0800
-X-Google-Sender-Auth: 1n6xKuYiuvitme3RMXEn7dd_ohE
-Message-ID: <CAGXu5jKNWMYnTdh-t2C9gG2PL+frRSOY=O5hyuHmN2uyQ3YFbg@mail.gmail.com>
-Subject: Re: [PATCH] proc: fix null pointer deref in proc_pid_permission()
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>, linux-kernel@vger.kernel.org,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        David Rientjes <rientjes@google.com>
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1751071Ab2AKWom (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 17:44:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:10908 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750732Ab2AKWok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 17:44:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="95415699"
+Date: Wed, 11 Jan 2012 22:57:48 +0000
+From: Alan Cox <alan@linux.intel.com>
+To: Alessandro Rubini <rubini@gnudd.com>
+Cc: linux-kernel@vger.kernel.org, giancarlo.asnaghi@st.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, jgarzik@pobox.com,
+        inux-ide@vger.kernel.org
+Subject: Re: [PATCH 6/6] ahci: support the STA2X11 I/O Hub
+Message-ID: <20120111225748.3e80a52d@bob.linux.org.uk>
+In-Reply-To: <78cef636f264afa64de043be2018b5d66290240e.1325852059.git.rubini@gnudd.com>
+References: <3bffc0889fba822f58b5f8607fa5247c6f50649c.1325852059.git.rubini@gnudd.com>
+	<78cef636f264afa64de043be2018b5d66290240e.1325852059.git.rubini@gnudd.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 1:58 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Wed, 11 Jan 2012 12:43:30 -0800
-> Kees Cook <keescook@chromium.org> wrote:
->> On Wed, Jan 11, 2012 at 01:47:05PM -0500, Xiaotian Feng wrote:
->> > get_proc_task() can fail to search the task and return NULL, put_task_struct()
->> > will then bomb the kernel with following oops:
->> >
->> > [ 1870.574045] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
->> > [ 1870.574065] IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
->> > [ 1870.574088] PGD 112075067 PUD 112814067 PMD 0
->> > [ 1870.574106] Oops: 0002 [#1] PREEMPT SMP
->> >
->> > This is a regression introduced by commit 0499680a, kernel should
->> > return -ESRCH if get_proc_task() failed.
->>
->> Nice catch!
->>
->> However since this error is returned to userspace, shouldn't this be
->> -ENOENT instead?
->
-> Failed get_proc_task() frequently results in -ESRCH.  And less
-> frequently results in -ENOENT.
->
-> It seems odd that inode_operations.permission() would ever return
-> anything other than zero or -EPERM.
+On Fri, 6 Jan 2012 13:33:39 +0100
+Alessandro Rubini <rubini@gnudd.com> wrote:
 
-Right, but won't this show up at ESRCH from open(2)? If this is used
-as-is, we just need to have the manpages updated.
+> The AHCI controller found in the STA2X11 chip uses BAR number 0
+> instead of 5. Also, the chip's fixup code sets a special DMA mask
+> for all of its PCI functions, and the mask must be preserved here.
 
--Kees
+The more I look at this aspect of it the more convinced I grow that you
+should handle this in the DMA ops.
 
--- 
-Kees Cook
-ChromeOS Security
+dma_supported will call ops->dma_supported which can in turn make its
+own decisions and avoid driver hackery.
+
+Alan
