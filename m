@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab2AKIsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:48:07 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42441 "EHLO mx2.suse.de"
+	id S1757178Ab2AKIts (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:49:48 -0500
+Received: from mga01.intel.com ([192.55.52.88]:12997 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab2AKIsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:48:04 -0500
-Date: Wed, 11 Jan 2012 09:48:02 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: David Rientjes <rientjes@google.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
-Message-ID: <20120111084802.GA16466@tiehlicka.suse.cz>
-References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
- <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754749Ab2AKItr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 03:49:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="111013753"
+Subject: Re: [PATCH 2/3] kvm: use this_cpu_xxx replace percpu_xxx funcs
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Christoph Lameter <cl@gentwo.org>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "jeremy@xensource.com" <jeremy@xensource.com>
+In-Reply-To: <4ECA17EC.5050803@redhat.com>
+References: <1318237851.27949.190.camel@debian>
+	 <alpine.DEB.2.00.1110101026080.16264@router.home>
+	 <1318324774.27949.693.camel@debian>
+	 <alpine.DEB.2.00.1110110910480.3388@router.home>
+	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
+	 <alpine.DEB.2.00.1110120910540.26610@router.home>
+	 <1318908091.23426.52.camel@debian>
+	 <alpine.DEB.2.00.1110180932330.687@router.home>
+	 <1319016218.23426.104.camel@debian>  <4E9E97D2.1040807@redhat.com>
+	 <1319096041.23426.182.camel@debian> <1319424608.5061.25.camel@debian>
+	 <4EA54694.5070703@redhat.com> <1321866128.30341.567.camel@debian>
+	 <4ECA17EC.5050803@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Jan 2012 16:48:24 +0800
+Message-ID: <1326271704.5695.245.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 10-01-12 13:31:08, David Rientjes wrote:
-> On Tue, 10 Jan 2012, Michal Hocko wrote:
-[...]
-> >  mm/page_alloc.c |   11 +++++++++++
-> >  1 files changed, 11 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > index 2b8ba3a..485be89 100644
-> > --- a/mm/page_alloc.c
-> > +++ b/mm/page_alloc.c
-> > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
-> >  bool is_pageblock_removable_nolock(struct page *page)
-> >  {
-> >  	struct zone *zone = page_zone(page);
-> > +	unsigned long pfn = page_to_pfn(page);
-> > +
-> > +	/*
-> > +	 * We have to be careful here because we are iterating over memory
-> > +	 * sections which are not zone aware so we might end up outside of
-> > +	 * the zone but still within the section.
-> > +	 */
-> > +	if (!zone || zone->zone_start_pfn > pfn ||
-> > +			zone->zone_start_pfn + zone->spanned_pages <= pfn)
-> > +		return false;
-> > +
-> >  	return __count_immobile_pages(zone, page, 0);
-> >  }
-> >  
+> > > 
+> > > Acked-by: Avi Kivity <avi@redhat.com>
+> > > 
+> >
+> > And this one, picking up or comments are all appreciated. :) 
 > 
-> This seems partially bogus, why would
+> Just to be clear, you want this applied in kvm.git?
 > 
-> 	page_zone(page)->zone_start_pfn > page_to_pfn(page) ||
-> 	page_zone(page)->zone_start_pfn + page_zone(page)->spanned_pages <= page_to_pfn(page)
-> 
-> ever be true?  That would certainly mean that the struct zone is corrupted 
-> and seems to be unnecessary to fix the problem you're addressing.
 
-Not really. Consider the case when the node 0 is present. Uninitialized
-page would lead to node=0, zone=0 and then we have to check for the zone
-boundaries.
+Thanks Avi! 
+I saw it is in your 3.3 submit list. 
 
-> I think this should be handled in is_mem_section_removable() on the pfn 
-> rather than using the struct page in is_pageblock_removable_nolock() and 
-> converting back and forth.  We should make sure that any page passed to 
-> is_pageblock_removable_nolock() is valid.
-
-Yes, I do not like pfn->page->pfn dance as well and in fact I do not
-have a strong opinion which one is better. I just put it at the place
-where we care about zone to be more obvious. If others think that I
-should move the check one level higher I'll do that. I just think this
-is more obvious.
-
-Thanks for your comments.
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
