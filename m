@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab2AKH2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 02:28:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:64294 "EHLO mga11.intel.com"
+	id S1755216Ab2AKHf5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 02:35:57 -0500
+Received: from tundra.namei.org ([65.99.196.166]:53848 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab2AKH2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 02:28:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105853019"
-Message-ID: <4F0D3A0B.4090709@linux.intel.com>
-Date: Wed, 11 Jan 2012 15:28:11 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
+	id S1752457Ab2AKHf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 02:35:56 -0500
+Date: Wed, 11 Jan 2012 18:35:50 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [GIT] Security subsystem updates for 3.3
+In-Reply-To: <CA+55aFwD2-bhd32L1SsjPQrpwOBhBdxTUaOj=oXN24vPwc+Wsg@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1201111834570.2966@tundra.namei.org>
+References: <alpine.LRH.2.00.1201091252220.18816@tundra.namei.org> <CA+55aFwD2-bhd32L1SsjPQrpwOBhBdxTUaOj=oXN24vPwc+Wsg@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Seiji Aguchi <seiji.aguchi@hds.com>
-CC: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
-        "Chen, Gong" <gong.chen@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "Brown, Len" <len.brown@intel.com>,
-        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
-        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
-        "'hughd@chromium.org'" <'hughd@chromium.org'>,
-        "'mingo@elte.hu'" <'mingo@elte.hu'>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "namhyung@gmail.com" <namhyung@gmail.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        Satoru Moriya <satoru.moriya@hds.com>
-Subject: Re: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
- smp_send_stop()
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com> <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com> <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com> <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com> <20120105210123.GI5650@redhat.com> <5C4C569E8A4B9B42A84A977CF070A35B2C5827BBD8@USINDEVS01.corp.hds.com> <4F0BAB33.2090201@linux.intel.com> <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
-In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012/1/11 4:29, Seiji Aguchi 写道:
->
->> I agree with you. How about adding macros or something like WARN_ON(XX_ARCH) or
->> Kconfig to limit its scope?
->
-> Thank you for giving me your idea.
-> Your suggestions above will work for me because I'm a x86 user.
-> If Tony agrees to it, I can update my patch.
->
-> But, I'm hesitating to add WARN_ON() or change Kconfig only for specific arch
-> because pstore aims for generic interface and this is related to its design.
-> Also, ramoops is going to use pstore now. It doesn't depend on x86.
-> I'm worried that ramoops users will complain about this change.
->
-> So, I think a reasonable solution at this time is just adding some explanations
-> about smp_send_stop() to documentation as follows.
->
-> Users can use pstore with their own responsibility and ask developers
-> if smp_send_stop() is reliable enough in panic situation on architecture they want to run.
->
-> What do you think?
->
-> ---
->   Documentation/ABI/testing/pstore |    8 ++++++++
->   1 files changed, 8 insertions(+), 0 deletions(-)
->
-> diff --git a/Documentation/ABI/testing/pstore b/Documentation/ABI/testing/pstore
-> index ff1df4e..5583729 100644
-> --- a/Documentation/ABI/testing/pstore
-> +++ b/Documentation/ABI/testing/pstore
-> @@ -11,6 +11,14 @@ Description:	Generic interface to platform dependent persistent storage.
->   		of the console log is captured, but other interesting
->   		data can also be saved.
->
-> +		In case of panic, pstore is invoked after smp_send_stop()
-> +		,a function call stopping other cpus, so that we can get
-> +		logs simpler and cleaner with just one running cpu.
-> +
-> +		As for x86, smp_send_stop() is reliable enough to work in
-> +		panic situation. But we are not guaranteed that it works
-> +		reliably on other architectures.
-> +
->   		# mount -t pstore -o kmsg_bytes=8000 - /dev/pstore
->
->   		$ ls -l /dev/pstore
+On Tue, 10 Jan 2012, Linus Torvalds wrote:
 
-The explanation is great. but In my opinion, I still insist that
-a WARN_ON() is necessary. What do you think, Tony and Don?
+> Hmm. The CONFIG_MPI/DIGSIG thing really should go away as a question,
+> I think. I'd expect modules that need it to select it, there's no
+> point in asking a user "do you want this enabled" afaik.
+
+Ok.
+
+> 
+> And "DIGSIG" is really a horrible config name. Did somebody run out of
+> letters suddenly? Is there some global letter shortage that I haven't
+> been told of and that we should do something about?
+
+Any objections to DIGITAL_SIGNATURE_API ?
+
+> But I pulled it. Please do fix it up, though.
+
+Thanks, will do.
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
