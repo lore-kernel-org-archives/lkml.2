@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757466Ab2AKKtt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:49:49 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38353
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678Ab2AKKtr (ORCPT
+	id S932584Ab2AKKu1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:50:27 -0500
+Received: from ims-m12.mx.aol.com ([64.12.207.145]:37153 "EHLO
+	ims-m12.mx.aol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751678Ab2AKKu0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:49:47 -0500
-Date: Wed, 11 Jan 2012 05:49:40 -0500
-From: Christoph Hellwig <hch@infradead.org>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        Bart Van Assche <bvanassche@acm.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>, J?rn Engel <joern@purestorage.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
-Message-ID: <20120111104940.GA5394@infradead.org>
-References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
- <CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
- <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
- <1326225067.3264.51.camel@dabdike.int.hansenpartnership.com>
+	Wed, 11 Jan 2012 05:50:26 -0500
+To: lseaman@mindspring.com, lintangquan@126.com, linux-kernel@vger.kernel.org,
+        lipeng3818862@hotmail.com, liqiang1855@hotmail.com,
+        lagoodyear@trane.com, lisatrans@hotmail.com
+Content-Transfer-Encoding: 8BIT
+Subject: vanessa_athis
+X-MB-Message-Source: WebUI
+X-MB-Message-Type: User
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326225067.3264.51.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+From: mcpmalachi@aim.com
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+X-Mailer: AOL Webmail 35138-MOBILE
+Message-Id: <8CE9E65C9BA46AC-F6C-88916@webmail-d023.sysops.aol.com>
+X-Originating-IP: [205.188.23.79]
+Date: Wed, 11 Jan 2012 05:49:11 -0500 (EST)
+x-aol-global-disposition: S
+X-SPAM-FLAG: YES
+X-AOL-SCOLL-SCORE: 0:2:328853984:93952408  
+X-AOL-SCOLL-URL_COUNT: 0  
+X-AOL-REROUTE: YES 
+x-aol-sid: 3039ac1d290b4f0d69277a98
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 01:51:07PM -0600, James Bottomley wrote:
-> > The changes since the Nov 4 RFC are listed in the patch commit log:
-> > 
-> > ib_srpt: Make compilation with BUG=n proceed`
-> > ib_srpt: Use new target_core_fabric.h include
-> > ib_srpt: Check hex2bin() return code to silence build warning
-> > 
-> > These are all very minor and did not warrant another full RFC posting.
-> 
-> They might not warrant a full RFC reposting, but individually they
-> should have been posted to the list, so Bart is right.
+Hi, my friend!
+http://kaireiss.de/image/yuiojkl.php?umywcampID=81
 
-At least 2 and 3 list, just not as global patches against the
-target tree, not ib_srpt specificly:
 
-2 is from: [PATCH] target: header reshuffle, part2
-3 is from: [PATCH 5/5] target: check hex2bin result
 
-Not sure about 1.
+            Wed, 11 Jan 2012 11:49:11
+_________________________________
+"Clemens, where the red-headed conductor threw the train boy and his 
+laboratory off the train.Young Edison, says the station agent, had 
+endeared himself to the station agents, operators and their families 
+all along the line." (c) Caymen vxm66a3
 
-I'm really getting tired of this bickering. It's a brand new driver and
-doesn't have to be perfect.  While Bart generally has technically good
-points there's really no reason to put his remaining fixups in after
-the driver has been merged and available to a wieder audience.
 
