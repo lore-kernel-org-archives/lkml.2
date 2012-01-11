@@ -1,93 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757797Ab2AKQ6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:58:39 -0500
-Received: from casper.infradead.org ([85.118.1.10]:45928 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757686Ab2AKQ6i convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:58:38 -0500
-Message-ID: <1326301102.2442.171.camel@twins>
-Subject: Re: [BUG] kernel freezes with latest tree
-From: Peter Zijlstra <peterz@infradead.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Wed, 11 Jan 2012 17:58:22 +0100
-In-Reply-To: <CA+55aFyyBpDR_oYu9EizwPf63q3Q=44Yw_jXd0Ozk0Ei1TtZJQ@mail.gmail.com>
-References: <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
-	 <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
-	 <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
-	 <1326234230.2614.15.camel@edumazet-laptop>
-	 <CA+55aFwYmX7q4MZc-xOStZB2ZQjVt_Jca6qDP+0cPKekz8yL+A@mail.gmail.com>
-	 <4F0D2D9B.8030501@gmail.com> <1326272685.2442.120.camel@twins>
-	 <1326284711.2442.138.camel@twins> <20120111155658.GB26659@elte.hu>
-	 <1326297936.2442.157.camel@twins>
-	 <CA+55aFyyBpDR_oYu9EizwPf63q3Q=44Yw_jXd0Ozk0Ei1TtZJQ@mail.gmail.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	id S1757805Ab2AKRBd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:01:33 -0500
+Received: from mail.tpi.com ([70.99.223.143]:2853 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757743Ab2AKRBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 12:01:31 -0500
+From: Tim Gardner <tim.gardner@canonical.com>
+To: linux-fsdevel@vger.kernel.org, tyler.hicks@canonical.com
+Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: [PATCH 1/2] ecryptfs: Improve metatdata read failure logging
+Date: Wed, 11 Jan 2012 18:00:41 +0100
+Message-Id: <1326301242-5817-2-git-send-email-tim.gardner@canonical.com>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com>
+References: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 08:31 -0800, Linus Torvalds wrote:
-> On Wed, Jan 11, 2012 at 8:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> > Ah, right! Silly me. One possibility is to rotate that list, except that
-> > won't work for the cgroup case where we have another iteration.
-> 
-> I just wonder whether you *really* need that loop at all?
-> 
-> If something went wrong with the attempted task move - you raced with
-> another cpu, or whatever - is there any real reason to even bother to
-> try again?
-> 
-> It's just a heuristic, after all, and we'll come back to balancing later.
-> 
-> The minimal patch looks good, but I did want to ask whether people
-> have considered just removing the looping entirely?
+There are 3 read failure cases in ecryptfs_read_metadata(), but only 2
+of them are uniquely noted by kernel log messages. This patch
+identifies and logs each read failure case. It also correctly interprets
+a negative return value from ecryptfs_read_lower().
 
-Yeah, I did consider it, and given the current code it doesn't really
-make a difference either way. But ideally we'll go fix the code to
-provide better progress over repeated attempts.
+Removes unnecessary variable initialization.
 
-Esp for people who put the migration count rather low (-rt crackpots)
-multiple rounds (provided progress) make more sense.
-
-Something like the below snippet improves the progress for !cgroup
-kernels, but it also defeats the regular termination condition since any
-list with two or more elements will endlessly rotate until we hit the
-break limit.
-
-We could fix this by adding an iteration count and limit that to
-nr_running I guess, but since world and dog compiles kernels with cgroup
-muck these days we need something slightly more clever to deal with the
-for_each_leaf_cfs_rq() loop in load_balance_fair().
-
-Will ponder more.. 
-
+Cc: linux-kernel@vger.kernel.org
+Cc: stable@vger.kernel.org
+Cc: Tyler Hicks <tyler.hicks@canonical.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 ---
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3244,8 +3246,10 @@ balance_tasks(struct rq *this_rq, int th
- 
- 		if ((p->se.load.weight >> 1) > rem_load_move ||
- 		    !can_migrate_task(p, busiest, this_cpu, sd, idle,
--				      lb_flags))
-+				      lb_flags)) {
-+			list_move_tail(&p->se.group_node, &busiest_cfs_rq->tasks);
- 			continue;
-+		}
- 
- 		pull_task(busiest, p, this_rq, this_cpu);
- 		pulled++;
+ fs/ecryptfs/crypto.c |   17 +++++++++++------
+ 1 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
+index d3c8776..ac063bd 100644
+--- a/fs/ecryptfs/crypto.c
++++ b/fs/ecryptfs/crypto.c
+@@ -1590,8 +1590,8 @@ int ecryptfs_read_and_validate_xattr_region(struct dentry *dentry,
+  */
+ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+ {
+-	int rc = 0;
+-	char *page_virt = NULL;
++	int rc;
++	char *page_virt;
+ 	struct inode *ecryptfs_inode = ecryptfs_dentry->d_inode;
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+ 	    &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+@@ -1611,10 +1611,15 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+ 	}
+ 	rc = ecryptfs_read_lower(page_virt, 0, crypt_stat->extent_size,
+ 				 ecryptfs_inode);
+-	if (rc >= 0)
+-		rc = ecryptfs_read_headers_virt(page_virt, crypt_stat,
+-						ecryptfs_dentry,
+-						ECRYPTFS_VALIDATE_HEADER_SIZE);
++	if (rc < 0) {
++		printk(KERN_ERR "%s: Could not read %u bytes\n",
++			__func__, crypt_stat->extent_size);
++		goto out;
++	}
++
++	rc = ecryptfs_read_headers_virt(page_virt, crypt_stat,
++					ecryptfs_dentry,
++					ECRYPTFS_VALIDATE_HEADER_SIZE);
+ 	if (rc) {
+ 		memset(page_virt, 0, PAGE_CACHE_SIZE);
+ 		rc = ecryptfs_read_xattr_region(page_virt, ecryptfs_inode);
+-- 
+1.7.8.3
 
