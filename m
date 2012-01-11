@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934106Ab2AKV7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 16:59:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934036Ab2AKV7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 16:59:03 -0500
-Message-ID: <4F0E05F6.30105@redhat.com>
-Date: Wed, 11 Jan 2012 16:58:14 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
-MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, akpm@linux-foundation.org,
-        mel@csn.ul.ie, minchan.kim@gmail.com
-Subject: Re: [PATCH v2 -mm] make swapin readahead skip over holes
-References: <20120111143044.3c538d46@cuia.bos.redhat.com> <20120111205041.GE24386@cmpxchg.org> <4F0DFF64.4040704@redhat.com> <20120111214242.GF24386@cmpxchg.org>
-In-Reply-To: <20120111214242.GF24386@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S934113Ab2AKWLo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 17:11:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:51318 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933993Ab2AKWLn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 17:11:43 -0500
+Date: Thu, 12 Jan 2012 07:11:37 +0900
+From: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>
+To: Nadav Amit <namit@cs.technion.ac.il>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nadav Amit <nadav.amit@gmail.com>
+Subject: Re: [PATCH 1/2] KVM: Exception during emulation decode should
+ propagate
+Message-Id: <20120112071137.303628cea69b79868956d860@gmail.com>
+In-Reply-To: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il>
+References: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: Sylpheed 3.2.0beta3 (GTK+ 2.24.6; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 04:42 PM, Johannes Weiner wrote:
-> On Wed, Jan 11, 2012 at 04:30:12PM -0500, Rik van Riel wrote:
->> On 01/11/2012 04:10 PM, Johannes Weiner wrote:
->>> On Wed, Jan 11, 2012 at 02:30:44PM -0500, Rik van Riel wrote:
->>>> Ever since abandoning the virtual scan of processes, for scalability
->>>> reasons, swap space has been a little more fragmented than before.
->>>> This can lead to the situation where a large memory user is killed,
->>>> swap space ends up full of "holes" and swapin readahead is totally
->>>> ineffective.
->>>>
->>>> On my home system, after killing a leaky firefox it took over an
->>>> hour to page just under 2GB of memory back in, slowing the virtual
->>>> machines down to a crawl.
->>>>
->>>> This patch makes swapin readahead simply skip over holes, instead
->>>> of stopping at them.  This allows the system to swap things back in
->>>> at rates of several MB/second, instead of a few hundred kB/second.
->>>>
->>>> The checks done in valid_swaphandles are already done in
->>>> read_swap_cache_async as well, allowing us to remove a fair amount
->>>> of code.
->>>
->>> __swap_duplicate() also checks for whether the offset is within the
->>> swap device range.  Do you think we could remove get_swap_cluster()
->>> altogether and just try reading the aligned page_cluster range?
->>
->> That is how I implemented it originally, but we need
->> to take the swap_lock so it is cleaner to implement
->> a helper function in swapfile.c :)
->
-> AFAICS, it's only needed to validate the offset against si->max, but
-> this too is done in __swap_duplicate().
->
-> What's otherwise left is just rounding down swp_offset(entry) and
-> adding 1<<  page_cluster to it, that shouldn't need the swap_lock?
->
-> Am I missing something?
+On Wed, 11 Jan 2012 18:53:30 +0200
+Nadav Amit <namit@cs.technion.ac.il> wrote:
 
-Good point.  I guess we could get rid of get_swap_cluster
-afterall and let __swap_duplicate deal with everything.
+> An exception might occur during decode (e.g., #PF during fetch).
+> Currently, the exception is ignored and emulation is performed.
 
-Andrew, Mel, is that ok with you?
+When I cleaned up insn_fetch(), I thought that fetching the instruction
+which is being executed by the guest cannot cause #PF.
+
+The possibility that a meaningless userspace might similtaneously unmap
+the page, noted by Avi IIRC, was ignored intentionally, so we just fail
+in such a case.
+
+Did you see any real problem?
+
+	Takuya
+
+
+> Instead, emulation should be skipped and the fault should be injected.
+> Skipping instruction should report a failure in this case.
