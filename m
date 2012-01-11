@@ -1,279 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab2AKP0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 10:26:05 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61742 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755380Ab2AKP0C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 10:26:02 -0500
+	id S933139Ab2AKP3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 10:29:42 -0500
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35772 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932584Ab2AKP3k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 10:29:40 -0500
+Date: Wed, 11 Jan 2012 16:29:05 +0100
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
+Message-ID: <20120111152905.GA26659@elte.hu>
+References: <20120111145709.77ef7d68996cd5fa724326e5@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <NEXT-4f0c800d645e48.34497251@nextmail.ru>
-References: <NEXT-4f0c800d645e48.34497251@nextmail.ru>
-Date: Wed, 11 Jan 2012 20:56:02 +0530
-Message-ID: <CAD2nsn0DPr53mQET7G01ZdrbyyqvjYQzBj1qodgpKc1QjyfAjw@mail.gmail.com>
-Subject: Re: ath9k crash 3.2-rc7
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: MR <g7af0ec1e3ea1e7b1@nextmail.ru>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Rajkumar Manoharan <rmanohar@qca.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120111145709.77ef7d68996cd5fa724326e5@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
+	0.0 AWL                    AWL: From: address is in the auto white-list
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/10 MR <g7af0ec1e3ea1e7b1@nextmail.ru>:
->  > >> So, I am building 3.2 with two patches: over/under-flow catcher (pity
->  > >that
->  >>> it seems to be on a multiple-times-per-second codepath and just leaving
->  > >the
->  >> > checks there for everyone is suboptimal) and allegedely proper fix.
->  >Both
->  > > > applied OK with a small offset.
->  > >
->  > > as per our assumption, we should not see those over/underflow errors,
->  > > with the patch
->  > > above mentioned. please let us know if you hit upon this warnings,
->  > > even after the proper fix.
->  >
->  > 2 hours in. It looks like 10%-20% throughput loss (both up and down with
->  >similar ratio) relative to "remove suspicious code" build. It may be some
->  >other change, of course (slightly moving the notebook, removing USB device
->  >
->  > charging from the notebook or something like that)
->
-> Seems to be AP-dependent.
->
-> I spent entire day on one AP with no problems, went across the building,
-> roamed (went offline, found new AP) succesfully, and then ten minutes later:
-> (logs saved)
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-does roaming seems to trigger this issue consistently ?
-. please provide the logs
-sudo modprobe -v ath9k debug=0xffffffff
-http://linuxwireless.org/en/users/Drivers/ath9k/debug
+> Hi all,
+> 
+> Today's linux-next merge of the xen tree got a conflict in
+> arch/x86/xen/Kconfig between commit 10fe570fc167 ("Revert "xen/debug:
+> WARN_ON when identity PFN has no _PAGE_IOMAP flag set."") from Linus'
+> tree and commit 23757fb5d678 ("xen: add CPU microcode update driver")
+> from the xen tree.
+> 
+> Just context changes.  I fixed it up (see below) and can carry the fix as
+> necessary.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/x86/xen/Kconfig
+> index fdce49c,4d04d4f..0000000
+> --- a/arch/x86/xen/Kconfig
+> +++ b/arch/x86/xen/Kconfig
+> @@@ -50,3 -50,14 +50,6 @@@ config XEN_DEBUG_F
+>   	  Enable statistics output and various tuning options in debugfs.
+>   	  Enabling this option may incur a significant performance overhead.
+>   
+>  -config XEN_DEBUG
+>  -	bool "Enable Xen debug checks"
+>  -	depends on XEN
+>  -	default n
+>  -	help
+>  -	  Enable various WARN_ON checks in the Xen MMU code.
+>  -	  Enabling this option WILL incur a significant performance overhead.
+>  -
+> + config MICROCODE_XEN
+> +        def_bool y
+> +        depends on XEN_DOM0 && MICROCODE
 
->
-> Jan 10 10:35:57 401a0bf1 kernel: [ 7681.407314] wlan0: deauthenticating from
-> 00:19:5b:be:3c:a7 by local choice (reason=3)
-> Jan 10 10:35:57 401a0bf1 kernel: [ 7681.427485] cfg80211: Calling CRDA to
-> update world regulatory domain
-> Jan 10 10:35:57 401a0bf1 kernel: [ 7681.694908] ADDRCONF(NETDEV_UP): wlan0:
-> link is not ready
-> Jan 10 10:35:58 401a0bf1 kernel: [ 7682.545018] wlan0: authenticate with
-> 00:19:5b:be:3c:a7 (try 1)
-> Jan 10 10:35:58 401a0bf1 kernel: [ 7682.546922] wlan0: authenticated
-> Jan 10 10:35:58 401a0bf1 kernel: [ 7682.546954] wlan0: associate with
-> 00:19:5b:be:3c:a7 (try 1)
-> Jan 10 10:35:58 401a0bf1 kernel: [ 7682.549414] wlan0: RX AssocResp from
-> 00:19:5b:be:3c:a7 (capab=0x431 status=0 aid=1)
-> Jan 10 10:35:58 401a0bf1 kernel: [ 7682.549421] wlan0: associated
-> Jan 10 10:35:58 401a0bf1 kernel: [ 7682.549900] ADDRCONF(NETDEV_CHANGE):
-> wlan0: link becomes ready
-> Jan 10 10:36:09 401a0bf1 kernel: [ 7693.095841] wlan0: no IPv6 routers
-> present
-> Jan 10 21:01:14 401a0bf1 kernel: [45162.286679] cfg80211: Calling CRDA to
-> update world regulatory domain
-> Jan 10 21:01:14 401a0bf1 kernel: [45163.155037] wlan0: authenticate with
-> 00:24:8c:81:e1:76 (try 1)
-> Jan 10 21:01:14 401a0bf1 kernel: [45163.157132] wlan0: authenticated
-> Jan 10 21:01:14 401a0bf1 kernel: [45163.157159] wlan0: associate with
-> 00:24:8c:81:e1:76 (try 1)
-> Jan 10 21:01:14 401a0bf1 kernel: [45163.159708] wlan0: RX AssocResp from
-> 00:24:8c:81:e1:76 (capab=0x411 status=0 aid=2)
-> Jan 10 21:01:14 401a0bf1 kernel: [45163.159713] wlan0: associated
-> Jan 10 21:34:32 401a0bf1 kernel: [47159.166426] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:34:34 401a0bf1 kernel: [47160.506049] ath: Failed to stop TX DMA,
-> queues=0x10f!
-> Jan 10 21:34:34 401a0bf1 kernel: [47160.518977] ath: DMA failed to stop in
-> 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff DMADBG_7=0xffffffff
-> Jan 10 21:34:34 401a0bf1 kernel: [47160.518982] ath: Could not stop RX, we
-> could be confusing the DMA engine when we start RX up
-> Jan 10 21:34:34 401a0bf1 kernel: [47160.635143] ath: Chip reset failed
-> Jan 10 21:34:34 401a0bf1 kernel: [47160.635146] ath: Unable to reset
-> channel, reset status -22
-> Jan 10 21:34:34 401a0bf1 kernel: [47161.226194] ath: Failed to stop TX DMA,
-> queues=0x10f!
-> Jan 10 21:34:34 401a0bf1 kernel: [47161.239098] ath: DMA failed to stop in
-> 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff DMADBG_7=0xffffffff
-> Jan 10 21:34:34 401a0bf1 kernel: [47161.239103] ath: Could not stop RX, we
-> could be confusing the DMA engine when we start RX up
->
->
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.159537] ath: Failed to stop TX DMA,
-> queues=0x10f!
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.172508] ath: DMA failed to stop in
-> 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff DMADBG_7=0xffffffff
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.172510] ath: Could not stop RX, we
-> could be confusing the DMA engine when we start RX up
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.288040] ath: Chip reset failed
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.288045] ath: Unable to reset
-> channel, reset status -22
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.288091] ath: Unable to set channel
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.353999] ath: Failed to stop TX DMA,
-> queues=0x10f!
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.366852] ath: DMA failed to stop in
-> 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff DMADBG_7=0xffffffff
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.366857] ath: Could not stop RX, we
-> could be confusing the DMA engine when we start RX up
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.482275] ath: Chip reset failed
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.482280] ath: Unable to reset
-> channel, reset status -22
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.482302] ath: Unable to set channel
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.548509] ath: Failed to stop TX DMA,
-> queues=0x10f!
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.561477] ath: DMA failed to stop in
-> 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff DMADBG_7=0xffffffff
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.561481] ath: Could not stop RX, we
-> could be confusing the DMA engine when we start RX up
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.677601] ath: Chip reset failed
-> Jan 10 21:42:53 401a0bf1 kernel: [47659.677604] ath: Unable to reset channel
-> (2462 MHz), reset status -22
-> Jan 10 21:42:54 401a0bf1 kernel: [47660.682084] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.231280] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.245756] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.273456] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.284277] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.349214] ath: Failed to stop TX DMA,
-> queues=0x10f!
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.362013] ath: DMA failed to stop in
-> 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff DMADBG_7=0xffffffff
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.362016] ath: Could not stop RX, we
-> could be confusing the DMA engine when we start RX up
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.604443] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.670201] ath: Failed to stop TX DMA,
-> queues=0x10f!
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.683148] ath: DMA failed to stop in
-> 10 ms AR_CR=0xffffffff AR_DIAG_SW=0xffffffff DMADBG_7=0xffffffff
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.683152] ath: Could not stop RX, we
-> could be confusing the DMA engine when we start RX up
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.799038] ath: Chip reset failed
-> Jan 10 21:42:55 401a0bf1 kernel: [47661.799043] ath: Unable to reset channel
-> (2462 MHz), reset status -22
-> Jan 10 21:42:56 401a0bf1 kernel: [47662.373472] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:42:56 401a0bf1 kernel: [47662.489762] ath: Chip reset failed
-> Jan 10 21:42:56 401a0bf1 kernel: [47662.489769] ath: Unable to reset
-> hardware; reset status -22 (freq 2462 MHz)
-> Jan 10 21:42:59 401a0bf1 kernel: [47665.685279] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:43:04 401a0bf1 kernel: [47670.688494] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:43:09 401a0bf1 kernel: [47675.675943] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:43:14 401a0bf1 kernel: [47680.663071] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:43:19 401a0bf1 kernel: [47685.666297] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:43:24 401a0bf1 kernel: [47690.669649] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:43:25 401a0bf1 kernel: [47691.020335] ath: Failed to wakeup in
-> 500us
-> Jan 10 21:43:25 401a0bf1 kernel: [47691.135856] ath: Chip reset failed
-> Jan 10 21:43:25 401a0bf1 kernel: [47691.135861] ath: Unable to reset
-> hardware; reset status -22 (freq 2462 MHz)
-> Jan 10 21:43:29 401a0bf1 kernel: [47695.656864] ath: Failed to wakeup in
-> 500us
->
->
->
-> Jan 10 21:44:01 401a0bf1 kernel: [47727.484465] ath9k: Driver unloaded
-> Jan 10 21:44:04 401a0bf1 kernel: [47729.913403] ath9k 0000:03:00.0: enabling
-> device (0000 -> 0002)
-> Jan 10 21:44:04 401a0bf1 kernel: [47729.913414] ath9k 0000:03:00.0: PCI INT
-> A -> GSI 17 (level, low) -> IRQ 17
-> Jan 10 21:44:04 401a0bf1 kernel: [47729.913427] ath9k 0000:03:00.0: setting
-> latency timer to 64
-> Jan 10 21:44:04 401a0bf1 kernel: [47730.028960] ath: Couldn't reset chip
-> Jan 10 21:44:04 401a0bf1 kernel: [47730.028963] ath: Unable to initialize
-> hardware; initialization status: -5
-> Jan 10 21:44:04 401a0bf1 kernel: [47730.028968] ath9k 0000:03:00.0: Failed
-> to initialize device
-> Jan 10 21:44:04 401a0bf1 kernel: [47730.029010] ath9k 0000:03:00.0: PCI INT
-> A disabled
-> Jan 10 21:44:04 401a0bf1 kernel: [47730.029033] ath9k: probe of 0000:03:00.0
-> failed with error -5
->
->
->
-> 03:00.0 Network controller: Atheros Communications Inc. AR9285 Wireless
-> Network Adapter (PCI-Express) (rev 01)
->        Control: I/O- Mem+ BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr-
-> Stepping- SERR- FastB2B- DisINTx-
->        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
-> <TAbort- <MAbort- >SERR- <PERR- INTx-
->        Interrupt: pin A routed to IRQ 17
->        Region 0: Memory at d7400000 (64-bit, non-prefetchable) [size=64K]
->        Capabilities: [40] Power Management version 3
->                Flags: PMEClk- DSI- D1+ D2- AuxCurrent=375mA PME(D0+,D1+,D2-
-> ,D3hot+,D3cold-)
->                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
->        Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit-
->                Address: 00000000  Data: 0000
->        Capabilities: [60] Express (v2) Legacy Endpoint, MSI 00
->                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s
-> <128ns, L1 <2us
->                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
->                DevCtl: Report errors: Correctable- Non-Fatal- Fatal-
-> Unsupported-
->                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop-
->                        MaxPayload 128 bytes, MaxReadReq 512 bytes
->                DevSta: CorrErr+ UncorrErr+ FatalErr- UnsuppReq+ AuxPwr-
-> TransPend-
->                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1,
-> Latency L0 <512ns, L1 <64us
->                        ClockPM- Surprise- LLActRep- BwNot-
->                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain-
-> CommClk-
->                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
->                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+
-> DLActive- BWMgmt- ABWMgmt-
->                DevCap2: Completion Timeout: Not Supported, TimeoutDis+
->                DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
->                LnkCtl2: Target Link Speed: 2.5GT/s, EnterCompliance-
-> SpeedDis-, Selectable De-emphasis: -6dB
->                         Transmit Margin: Normal Operating Range,
-> EnterModifiedCompliance- ComplianceSOS-
->                         Compliance De-emphasis: -6dB
->                LnkSta2: Current De-emphasis Level: -6dB
->        Capabilities: [100 v1] Advanced Error Reporting
->                UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
-> RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
->                UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt-
-> RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
->                UESvrt: DLP+ SDES+ TLP- FCP+ CmpltTO- CmpltAbrt- UnxCmplt-
-> RxOF+ MalfTLP+ ECRC- UnsupReq- ACSViol-
->                CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout-
-> NonFatalErr+
->                CEMsk:  RxErr- BadTLP- BadDLLP- Rollover- Timeout-
-> NonFatalErr+
->                AERCap: First Error Pointer: 14, GenCap+ CGenEn- ChkCap+
-> ChkEn-
->        Capabilities: [140 v1] Virtual Channel
->                Caps:   LPEVC=0 RefClk=100ns PATEntryBits=1
->                Arb:    Fixed- WRR32- WRR64- WRR128-
->                Ctrl:   ArbSelect=Fixed
->                Status: InProgress-
->                VC0:    Caps:   PATOffset=00 MaxTimeSlots=1 RejSnoopTrans-
->                        Arb:    Fixed- WRR32- WRR64- WRR128- TWRR128-
-> WRR256-
->                        Ctrl:   Enable+ ID=0 ArbSelect=Fixed TC/VC=ff
->                        Status: NegoPending- InProgress-
->        Capabilities: [160 v1] Device Serial Number 00-00-00-00-00-00-00-00
->        Capabilities: [170 v1] Power Budgeting <?>
->
->
->
+Jeremy, Konrad, the current Xen microcode crap was objected to 
+early last year by the people developing the x86 microcode 
+subsystem - still you have put it into the Xen tree, without 
+even Cc:-ing the people involved!
 
+To make it even clearer, because you don't seem to be able to 
+follow the proper upstream workflow unless forced to:
 
+ NAKed-By: Ingo Molnar <mingo@elte.hu>
 
--- 
-shafi
+Please remove it from the Xen tree until the proper agreeement 
+is reached.
+
+Thanks,
+
+	Ingo
