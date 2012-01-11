@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab2AKPP6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 10:15:58 -0500
-Received: from mga05.intel.com ([192.55.52.89]:5103 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757192Ab2AKPP4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 10:15:56 -0500
+	id S932768Ab2AKPSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 10:18:00 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:31184 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756658Ab2AKPR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 10:17:59 -0500
+Subject: [PATCH v2 0/6] SUNRPC: make RPC clients use network-namespace-aware
+ PipeFS routines
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Wed, 11 Jan 2012 19:17:52 +0400
+Message-ID: <20120111151051.5891.1830.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFxecGt54RG3EX+LTQQx6ZXzYLOMRdgRmXTRDaD54JAVGg@mail.gmail.com>
-References: <alpine.LRH.2.00.1201091252220.18816@tundra.namei.org>
-	<CA+55aFwD2-bhd32L1SsjPQrpwOBhBdxTUaOj=oXN24vPwc+Wsg@mail.gmail.com>
-	<alpine.LRH.2.00.1201111834570.2966@tundra.namei.org>
-	<CA+55aFxecGt54RG3EX+LTQQx6ZXzYLOMRdgRmXTRDaD54JAVGg@mail.gmail.com>
-Date: Wed, 11 Jan 2012 17:15:53 +0200
-Message-ID: <CALLzPKaSmpKot=bgm7qQ8a7J4-sxXLsMPrHz6Pe0SyzWpZp-yQ@mail.gmail.com>
-Subject: Re: [GIT] Security subsystem updates for 3.3
-From: "Kasatkin, Dmitry" <dmitry.kasatkin@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Mimi Zohar <zohar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 4:51 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jan 10, 2012 at 11:35 PM, James Morris <jmorris@namei.org> wrote:
->>> And "DIGSIG" is really a horrible config name. Did somebody run out of
->>> letters suddenly? Is there some global letter shortage that I haven't
->>> been told of and that we should do something about?
->>
->> Any objections to DIGITAL_SIGNATURE_API ?
->
-> Sounds much better. Slightly more typing, but CONFIG_DIGSIG really
-> didn't tell me anything and sounded like some odd new device to me.
->
->                          Linus
+This patch set was created in context of clone of git
+branch: git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
 
-Would just DIGITAL_SIGNATURE be enough?
+v2:
+1) "over-put" of PipeFS mount point in 1st patch of the series fixed, which
+allow allows to bisect the patch set.
+2) rebased on tag v3.2
 
-- Dmitry
+This patch set depends on previous patch sets titled:
+1) "SUNRPC: initial part of making pipefs work in net ns"
+2) "SUNPRC: cleanup PipeFS for network-namespace-aware users"
+
+This patch set is a first part of reworking SUNPRC PipeFS users.
+It makes SUNRPC clients using PipeFS nofitications for directory and GSS pipes
+dentries creation. With this patch set RPC clients and GSS auth creations
+routines doesn't force SUNRPC PipeFS mount point creation which actually means,
+that they now can work without PipeFS dentries.
+
+
+The following series consists of:
+
+---
+
+Stanislav Kinsbursky (6):
+      SUNRPC: handle RPC client pipefs dentries by network namespace aware routines
+      SUNRPC: handle GSS AUTH pipes by network namespace aware routines
+      SUNRPC: subscribe RPC clients to pipefs notifications
+      SUNRPC: remove RPC client pipefs dentries after unregister
+      SUNRPC: remove RPC pipefs mount point manipulations from RPC clients code
+      SUNRPC: remove RPC PipeFS mount point reference from RPC client
+
+
+ fs/nfs/idmap.c                 |    4 +
+ fs/nfsd/nfs4callback.c         |    2 -
+ include/linux/nfs.h            |    2 -
+ include/linux/sunrpc/auth.h    |    2 +
+ include/linux/sunrpc/clnt.h    |    2 -
+ net/sunrpc/auth_gss/auth_gss.c |  101 +++++++++++++++++++++------
+ net/sunrpc/clnt.c              |  150 +++++++++++++++++++++++++++++++---------
+ net/sunrpc/rpc_pipe.c          |   19 +++--
+ net/sunrpc/sunrpc.h            |    2 +
+ 9 files changed, 217 insertions(+), 67 deletions(-)
+
