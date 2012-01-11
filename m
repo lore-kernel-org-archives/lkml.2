@@ -1,50 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933502Ab2AKQLb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:11:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36791 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755297Ab2AKQL3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:11:29 -0500
-Date: Wed, 11 Jan 2012 14:10:00 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 2/2] kvm: set affinity hint for assigned device msi
-Message-ID: <20120111161000.GA12868@amt.cnet>
-References: <cover.1318358229.git.mst@redhat.com>
- <7458f62a58ad7d4022eefba4333336ba268e4ef9.1318358229.git.mst@redhat.com>
- <20111013145450.GA4143@amt.cnet>
- <20111016131223.GB17978@redhat.com>
- <20111017105859.GA20914@amt.cnet>
- <20111017133215.GA6406@redhat.com>
- <20111017160741.GA25476@amt.cnet>
- <20111017170440.GA8894@redhat.com>
+	id S1757631Ab2AKQMG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:12:06 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:36377 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932918Ab2AKQMD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 11:12:03 -0500
+Date: Wed, 11 Jan 2012 21:42:33 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S . Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jun Ma <harry.majun@huawei.com>,
+        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH] kprobes: fix a memory leak in function
+	pre_handler_kretprobe()
+Message-ID: <20120111161233.GA13539@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <1326295311-10985-1-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20111017170440.GA8894@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1326295311-10985-1-git-send-email-jiang.liu@huawei.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
+x-cbid: 12011116-1780-0000-0000-0000023990B1
+X-IBM-ISS-SpamDetectors: 
+X-IBM-ISS-DetailInfo: BY=3.00000244; HX=3.00000180; KW=3.00000007;
+ PH=3.00000001; SC=3.00000001; SDB=6.00104040; UDB=6.00026376; UTC=2012-01-11
+ 16:12:02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 17, 2011 at 07:04:40PM +0200, Michael S. Tsirkin wrote:
-> On Mon, Oct 17, 2011 at 02:07:41PM -0200, Marcelo Tosatti wrote:
-> > > > Configurations to consider, all common ones used for assigned devices?
-> > > 
-> > > I mean, besides round robin, any other modes that
-> > > have an issue? Interrupts can also be multicast,
-> > > I think, but we probably don't care what happens
-> > > to affinity then, as msi interrupts are probably never
-> > > broadcast ...
-> > 
-> > There is also lowest priority, which can be used with MSI.
+On Wed, Jan 11, 2012 at 11:21:51PM +0800, Jiang Liu wrote:
+> From: Jiang Liu <liuj97@gmail.com>
 > 
+> In function pre_handler_kretprobe(), the allocated kretprobe_instance object
+> will be leaked if the entry_handler callback returns non-zero. This may cause
+> all the preallocated kretprobe_instance objects exhausted. This issue could be
+> reproduced by changing samples/kprobes/kretprobe_example.c to probe 
+> "mutex_unlock". And the fix is straight forward, just put the allocated 
+> kretprobe_instance object back onto the free_instances list. 
 > 
-> So the following will probably address that comment?
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+> Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
 
-Yes, it does. Patch looks fine.
+Thank you Jiang. I think the correct ID for stable is now
+stable@vger.kernel.org.
+
+> ---
+>  kernel/kprobes.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index e5d8464..2423295 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -1673,8 +1673,12 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
+>  		ri->rp = rp;
+>  		ri->task = current;
+> 
+> -		if (rp->entry_handler && rp->entry_handler(ri, regs))
+> +		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
+> +			spin_lock_irqsave(&rp->lock, flags);
+> +			hlist_add_head(&ri->hlist, &rp->free_instances);
+> +			spin_unlock_irqrestore(&rp->lock, flags);
+>  			return 0;
+> +		}
+> 
+>  		arch_prepare_kretprobe(ri, regs);
+> 
+> -- 
+> 1.7.5.4
 
