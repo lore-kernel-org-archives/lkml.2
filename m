@@ -1,161 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933534Ab2AKPS4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 10:18:56 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:17302 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933074Ab2AKPSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 10:18:48 -0500
-Subject: [PATCH v2 6/6] SUNRPC: remove RPC PipeFS mount point reference from
- RPC client
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Wed, 11 Jan 2012 19:18:42 +0400
-Message-ID: <20120111151842.5891.32237.stgit@localhost6.localdomain6>
-In-Reply-To: <20120111151051.5891.1830.stgit@localhost6.localdomain6>
-References: <20120111151051.5891.1830.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S933201Ab2AKPYK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 10:24:10 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:56939 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757105Ab2AKPYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 10:24:07 -0500
+Date: Wed, 11 Jan 2012 10:23:37 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Subject: Re: [git pull] vfs pile 1
+Message-ID: <20120111152337.GA4589@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Miklos Szeredi <mszeredi@suse.cz>,
+	Christoph Hellwig <hch@infradead.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org,
+	Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+References: <20120105022318.GG23916@ZenIV.linux.org.uk>
+ <CA+55aFw+7xvfP3NCr5p2Ma--UTb7zT+QQxtjCn3V2SU_g3LUdA@mail.gmail.com>
+ <20120111115846.GA2646@infradead.org>
+ <1326285382.13736.4.camel@tucsk.pomaz.szeredi.hu>
+ <20120111124001.GA834@infradead.org>
+ <1326287556.13736.12.camel@tucsk.pomaz.szeredi.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326287556.13736.12.camel@tucsk.pomaz.szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a cleanup patch. We don't need this reference anymore.
+On Wed, Jan 11, 2012 at 02:12:36PM +0100, Miklos Szeredi wrote:
+> > Yes.  a) really isn't an option - we don't want to spew thousands of
+> > useless messages during a log recovery for an operation that's totally
+> > normal.  b) is okay, too - but it's not just xfs that needs to be
+> > covered, but any fs that support the concept of recovering from open
+> > but unlinked inodes after a crash.  It's just that no one else seems
+> > to have regular QA for that code path.
+> 
+> Since it's a ratelimited printk there won't be thousands of messages.  I
+> think this is just a cosmetic issue and lack of QA isn't a problem.  If
+> the messages are bothersome it can be fixed.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+We're going to spew messages in ext3/4 for orphan inodes as well
+(thanks for Cristoph for pointing that out).  I can put in a similar
+kludge, but maybe there should be a _set_nlink() that skips the check?
+We do our own more sophisticated check in and will do appropriate
+error handling in ext4_iget() anyway, so it's just a waste in that
+particular codepath anyway.
 
----
- fs/nfs/idmap.c                 |    4 ++--
- include/linux/sunrpc/clnt.h    |    2 +-
- net/sunrpc/auth_gss/auth_gss.c |    8 ++++----
- net/sunrpc/clnt.c              |   21 ++++++++++-----------
- 4 files changed, 17 insertions(+), 18 deletions(-)
-
-diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
-index 096e374..9c701b5 100644
---- a/fs/nfs/idmap.c
-+++ b/fs/nfs/idmap.c
-@@ -368,8 +368,8 @@ nfs_idmap_new(struct nfs_client *clp)
- 		return error;
- 	}
- 
--	if (clp->cl_rpcclient->cl_path.dentry)
--		pipe->dentry = rpc_mkpipe_dentry(clp->cl_rpcclient->cl_path.dentry,
-+	if (clp->cl_rpcclient->cl_dentry)
-+		pipe->dentry = rpc_mkpipe_dentry(clp->cl_rpcclient->cl_dentry,
- 				"idmap", idmap, pipe);
- 	if (IS_ERR(pipe->dentry)) {
- 		error = PTR_ERR(pipe->dentry);
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index a4f237c..1e56469 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -57,7 +57,7 @@ struct rpc_clnt {
- 
- 	int			cl_nodelen;	/* nodename length */
- 	char 			cl_nodename[UNX_MAXNODENAME];
--	struct path		cl_path;
-+	struct dentry *		cl_dentry;
- 	struct rpc_clnt *	cl_parent;	/* Points to parent of clones */
- 	struct rpc_rtt		cl_rtt_default;
- 	struct rpc_timeout	cl_timeout_default;
-diff --git a/net/sunrpc/auth_gss/auth_gss.c b/net/sunrpc/auth_gss/auth_gss.c
-index d7a5719..1fd4abe 100644
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -779,12 +779,12 @@ static int gss_pipes_dentries_create(struct rpc_auth *auth)
- 	gss_auth = container_of(auth, struct gss_auth, rpc_auth);
- 	clnt = gss_auth->client;
- 
--	gss_auth->pipe[1]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
-+	gss_auth->pipe[1]->dentry = rpc_mkpipe_dentry(clnt->cl_dentry,
- 						      "gssd",
- 						      clnt, gss_auth->pipe[1]);
- 	if (IS_ERR(gss_auth->pipe[1]->dentry))
- 		return PTR_ERR(gss_auth->pipe[1]->dentry);
--	gss_auth->pipe[0]->dentry = rpc_mkpipe_dentry(clnt->cl_path.dentry,
-+	gss_auth->pipe[0]->dentry = rpc_mkpipe_dentry(clnt->cl_dentry,
- 						      gss_auth->mech->gm_name,
- 						      clnt, gss_auth->pipe[0]);
- 	if (IS_ERR(gss_auth->pipe[0]->dentry)) {
-@@ -806,7 +806,7 @@ static void gss_pipes_dentries_destroy_net(struct rpc_clnt *clnt,
- 
- 	sb = rpc_get_sb_net(net);
- 	if (sb) {
--		if (clnt->cl_path.dentry)
-+		if (clnt->cl_dentry)
- 			gss_pipes_dentries_destroy(auth);
- 		rpc_put_sb_net(net);
- 	}
-@@ -821,7 +821,7 @@ static int gss_pipes_dentries_create_net(struct rpc_clnt *clnt,
- 
- 	sb = rpc_get_sb_net(net);
- 	if (sb) {
--		if (clnt->cl_path.dentry)
-+		if (clnt->cl_dentry)
- 			err = gss_pipes_dentries_create(auth);
- 		rpc_put_sb_net(net);
- 	}
-diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-index e3ced30..ed7c22d 100644
---- a/net/sunrpc/clnt.c
-+++ b/net/sunrpc/clnt.c
-@@ -98,12 +98,12 @@ static void rpc_unregister_client(struct rpc_clnt *clnt)
- 
- static void __rpc_clnt_remove_pipedir(struct rpc_clnt *clnt)
- {
--	if (clnt->cl_path.dentry) {
-+	if (clnt->cl_dentry) {
- 		if (clnt->cl_auth && clnt->cl_auth->au_ops->pipes_destroy)
- 			clnt->cl_auth->au_ops->pipes_destroy(clnt->cl_auth);
--		rpc_remove_client_dir(clnt->cl_path.dentry);
-+		rpc_remove_client_dir(clnt->cl_dentry);
- 	}
--	clnt->cl_path.dentry = NULL;
-+	clnt->cl_dentry = NULL;
- }
- 
- static void rpc_clnt_remove_pipedir(struct rpc_clnt *clnt)
-@@ -154,20 +154,19 @@ static int
- rpc_setup_pipedir(struct rpc_clnt *clnt, char *dir_name)
- {
- 	struct super_block *pipefs_sb;
--	struct path path;
-+	struct dentry *dentry;
- 
--	clnt->cl_path.mnt = ERR_PTR(-ENOENT);
--	clnt->cl_path.dentry = NULL;
-+	clnt->cl_dentry = NULL;
- 	if (dir_name == NULL)
- 		return 0;
- 	pipefs_sb = rpc_get_sb_net(clnt->cl_xprt->xprt_net);
- 	if (!pipefs_sb)
- 		return 0;
--	path.dentry = rpc_setup_pipedir_sb(pipefs_sb, clnt, dir_name);
-+	dentry = rpc_setup_pipedir_sb(pipefs_sb, clnt, dir_name);
- 	rpc_put_sb_net(clnt->cl_xprt->xprt_net);
--	if (IS_ERR(path.dentry))
--		return PTR_ERR(path.dentry);
--	clnt->cl_path = path;
-+	if (IS_ERR(dentry))
-+		return PTR_ERR(dentry);
-+	clnt->cl_dentry = dentry;
- 	return 0;
- }
- 
-@@ -186,7 +185,7 @@ static int __rpc_pipefs_event(struct rpc_clnt *clnt, unsigned long event,
- 		BUG_ON(dentry == NULL);
- 		if (IS_ERR(dentry))
- 			return PTR_ERR(dentry);
--		clnt->cl_path.dentry = dentry;
-+		clnt->cl_dentry = dentry;
- 		if (clnt->cl_auth->au_ops->pipes_create) {
- 			err = clnt->cl_auth->au_ops->pipes_create(clnt->cl_auth);
- 			if (err)
-
+						- Ted
