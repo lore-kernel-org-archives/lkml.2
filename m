@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933671Ab2AKRYl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:24:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:28779 "EHLO mga01.intel.com"
+	id S933695Ab2AKRYt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:24:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:1574 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933596Ab2AKRYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:24:37 -0500
+	id S1757865Ab2AKRYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 12:24:40 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="106055455"
+   d="scan'208";a="106055483"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -27,9 +27,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH v5 05/12] x86/power/cpu.c: Don't hibernate/suspend if CPU0 is offline
-Date: Wed, 11 Jan 2012 09:04:46 -0800
-Message-Id: <1326301493-28760-6-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v5 12/12] x86/topology.c: debug CPU0 hotplug
+Date: Wed, 11 Jan 2012 09:04:53 -0800
+Message-Id: <1326301493-28760-13-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
 References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
@@ -39,67 +39,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate
-can't be executed if CPU0 is detected offline. To make suspend or hibernate and
-further resume succeed, CPU0 must be online.
+CONFIG_DEBUG_HOTPLUG_CPU0 is for debuging the CPU0 hotplug feature. The switch
+offlines CPU0 as soon as possible and boots userspace up with CPU0 offlined.
+User can online CPU0 back after boot time. The default value of the switch is
+off.
+
+To debug CPU0 hotplug, you need to enable CPU0 offline/online feature by either
+turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during compilation or giving
+cpu0_hotplug kernel parameter at boot.
+
+It's safe and early place to take down CPU0 after all hotplug notifiers
+are installed and SMP is booted.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
+ arch/x86/Kconfig           |   15 +++++++++++++++
+ arch/x86/kernel/topology.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
-index f10c0af..a4ec084 100644
---- a/arch/x86/power/cpu.c
-+++ b/arch/x86/power/cpu.c
-@@ -236,3 +236,47 @@ void restore_processor_state(void)
- #ifdef CONFIG_X86_32
- EXPORT_SYMBOL(restore_processor_state);
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index c2cf195..36b6a2c 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1748,6 +1748,21 @@ config BOOTPARAM_HOTPLUG_CPU0
+ 	  You still can enable the CPU0 hotplug feature at boot by kernel
+ 	  parameter cpu0_hotplug.
+ 
++config DEBUG_HOTPLUG_CPU0
++	def_bool n
++	prompt "Debug CPU0 hotplug"
++	depends on HOTPLUG_CPU && EXPERIMENTAL
++	---help---
++	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
++	  soon as possible and boots up userspace with CPU0 offlined. User
++	  can online CPU0 back after boot time.
++
++	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
++	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
++	  compilation or giving cpu0_hotplug kernel parameter at boot.
++
++	  If unuser, say N.
++
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
+diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
+index 8cec15c..3f697dd 100644
+--- a/arch/x86/kernel/topology.c
++++ b/arch/x86/kernel/topology.c
+@@ -49,6 +49,45 @@ static int __init enable_cpu0_hotplug(char *str)
+ __setup("cpu0_hotplug", enable_cpu0_hotplug);
  #endif
-+
+ 
++#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
 +/*
-+ * When bsp_check() is called in hibernate and suspend, cpu hotplug
-+ * is disabled already. So it's unnessary to handle race condition between
-+ * cpumask query and cpu hotplug.
++ * This function offlines CPU0 as early as possible and allows userspace to
++ * boot up without CPU0. CPU0 can be onlined back by user after boot.
++ *
++ * This is only called for debugging CPU0 offline feature.
 + */
-+static int bsp_check(void)
++static void __init _debug_hotplug_cpu(int num)
 +{
-+	if (cpumask_first(cpu_online_mask) != 0) {
-+		printk(KERN_WARNING "CPU0 is offline.\n");
-+		return -ENODEV;
-+	}
++	int ret;
++	struct sys_device *dev = get_cpu_sysdev(num);
 +
-+	return 0;
-+}
-+
-+static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
-+			   void *ptr)
-+{
-+	int ret = 0;
-+
-+	switch (action) {
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		ret = bsp_check();
-+		break;
-+	default:
-+		break;
-+	}
-+	return notifier_from_errno(ret);
-+}
-+
-+static int __init bsp_pm_check_init(void)
-+{
 +	/*
-+	 * Set this bsp_pm_callback as lower priority than
-+	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
-+	 * earlier to disable cpu hotplug before bsp online check.
++	 * Take hotpluggable online CPU0 down.
 +	 */
-+	pm_notifier(bsp_pm_callback, -INT_MAX);
++	if (num || !per_cpu(cpu_devices, num).cpu.hotpluggable || !dev ||
++	    !cpu_online(num)) {
++		pr_debug("CPU0 can't be offlined.\n");
++		return;
++	}
++
++	cpu_hotplug_driver_lock();
++
++	ret = cpu_down(num);
++	if (!ret)
++		kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
++	else
++		pr_debug("Can't offline CPU%d.\n", num);
++
++	cpu_hotplug_driver_unlock();
++}
++static int __init debug_hotplug_cpu(void)
++{
++	_debug_hotplug_cpu(0);
 +	return 0;
 +}
++device_initcall_sync(debug_hotplug_cpu);
++#endif /* CONFIG_DEBUG_HOTPLUG_CPU0 */
 +
-+core_initcall(bsp_pm_check_init);
+ int __ref arch_register_cpu(int num)
+ {
+ 	/*
 -- 
 1.6.0.3
 
