@@ -1,43 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758087Ab2AKUhP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:37:15 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52009 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2AKUhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:37:11 -0500
-Message-ID: <4F0DF2F3.8080902@canonical.com>
-Date: Wed, 11 Jan 2012 21:37:07 +0100
-From: Tim Gardner <rtg.canonical@gmail.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120110 Thunderbird/10.0
+	id S933758Ab2AKUik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:38:40 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:48976 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933006Ab2AKUii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 15:38:38 -0500
+Date: Wed, 11 Jan 2012 12:38:37 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-fsdevel@vger.kernel.org, tyler.hicks@canonical.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ecryptfs: Print inode on metadata error
+Message-ID: <20120111203837.GS2618@outflux.net>
+References: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com>
+ <1326301242-5817-3-git-send-email-tim.gardner@canonical.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: stable@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>
-Subject: Re: Latest kernel stable/longterm status
-References: <20120110003705.GA9482@kroah.com> <20120110022617.GA11376@home.goodmis.org> <4F0C0CF5.1080706@gmail.com> <20120110235612.GB1507@kroah.com> <4F0D6006.40506@canonical.com> <20120111151218.GB24077@kroah.com>
-In-Reply-To: <20120111151218.GB24077@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326301242-5817-3-git-send-email-tim.gardner@canonical.com>
+Organization: Chromium
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 04:12 PM, Greg KH wrote:
->
-> As I previously stated, in this email, I already have someone lined up
-> to maintain 2.6.32 after I am done with it, but I'm sure that person
-> would love it if you would send any needed patches to
-> stable@vger.kernel.org to help them out.
->
-> greg k-h
+On Wed, Jan 11, 2012 at 06:00:42PM +0100, Tim Gardner wrote:
+> If a lower file system file is corrupted, then ecryptfs prints
+> a generic and mostly useless log message when attempting to
+> read metadata. Print the inode associated with the file
+> so that a user can do something about it, e.g.,
+> 
+> find -inum INODE_NUM
+> 
+> Cc: linux-kernel@vger.kernel.org
+> Cc: stable@vger.kernel.org
+> Cc: Tyler Hicks <tyler.hicks@canonical.com>
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
 
-I'm happy to work with whomever. Your original email with "it might be 
-picked up by someone else, but I'm not going to promise anything" didn't 
-seem that definite.
+Reviewed-by: Kees Cook <keescook@chromium.org>
 
-rtg
+-Kees
+
 -- 
-Tim Gardner tim.gardner@canonical.com
+Kees Cook
