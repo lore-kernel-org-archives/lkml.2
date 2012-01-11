@@ -1,173 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757032Ab2AKIq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:46:58 -0500
-Received: from mga11.intel.com ([192.55.52.93]:51629 "EHLO mga11.intel.com"
+	id S1757219Ab2AKIsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:48:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42441 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756117Ab2AKIq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:46:56 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="105890858"
-Subject: Re: [PATCH 1/3] net: use this_cpu_xxx replace percpu_xxx funcs
-From: "Alex,Shi" <alex.shi@intel.com>
-To: Patrick McHardy <kaber@trash.net>, davem@davemloft.net
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Christoph Lameter <cl@gentwo.org>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "jeremy@xensource.com" <jeremy@xensource.com>
-In-Reply-To: <4ED8BD00.4000500@trash.net>
-References: <1318237851.27949.190.camel@debian>
-	 <alpine.DEB.2.00.1110101026080.16264@router.home>
-	 <1318324774.27949.693.camel@debian>
-	 <alpine.DEB.2.00.1110110910480.3388@router.home>
-	 <1318382964.27949.782.camel@debian> <1318428673.29699.13.camel@debian>
-	 <alpine.DEB.2.00.1110120910540.26610@router.home>
-	 <1318908091.23426.52.camel@debian>
-	 <alpine.DEB.2.00.1110180932330.687@router.home>
-	 <1319016218.23426.104.camel@debian>
-	 <alpine.DEB.2.00.1110191033480.24001@router.home>
-	 <1319078687.23426.146.camel@debian>
-	 <1319087281.8416.45.camel@edumazet-laptop>
-	 <1319095929.23426.180.camel@debian>
-	 <1319099893.3781.0.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <1321866051.30341.565.camel@debian> <1322793200.11530.33.camel@debian>
-	 <4ED8BD00.4000500@trash.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Jan 2012 16:45:33 +0800
-Message-ID: <1326271533.5695.242.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754749Ab2AKIsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 03:48:04 -0500
+Date: Wed, 11 Jan 2012 09:48:02 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: David Rientjes <rientjes@google.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
+Message-ID: <20120111084802.GA16466@tiehlicka.suse.cz>
+References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
+ <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>> percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-> >>>> for further code clean up.
-> >>>>
-> >>>> And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-> >>>> performance since __this_cpu_xxx has no redundant preempt_disable()
-> >>>>
-> >>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> >>>> ---
-> >>>>  net/netfilter/xt_TEE.c |   12 ++++++------
-> >>>>  net/socket.c           |    4 ++--
-> >>>>  2 files changed, 8 insertions(+), 8 deletions(-)
-> >>>
-> >>> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-> >>>
-> >>> Thanks !
-> >>
-> >> Anyone like to pick up this patch? or more comments for this? 
+On Tue 10-01-12 13:31:08, David Rientjes wrote:
+> On Tue, 10 Jan 2012, Michal Hocko wrote:
+[...]
+> >  mm/page_alloc.c |   11 +++++++++++
+> >  1 files changed, 11 insertions(+), 0 deletions(-)
 > > 
-> > Kaber, David: 
-> > I appreciate for your any comments on this. Could you like do me a
-> > favor? 
+> > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > index 2b8ba3a..485be89 100644
+> > --- a/mm/page_alloc.c
+> > +++ b/mm/page_alloc.c
+> > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+> >  bool is_pageblock_removable_nolock(struct page *page)
+> >  {
+> >  	struct zone *zone = page_zone(page);
+> > +	unsigned long pfn = page_to_pfn(page);
+> > +
+> > +	/*
+> > +	 * We have to be careful here because we are iterating over memory
+> > +	 * sections which are not zone aware so we might end up outside of
+> > +	 * the zone but still within the section.
+> > +	 */
+> > +	if (!zone || zone->zone_start_pfn > pfn ||
+> > +			zone->zone_start_pfn + zone->spanned_pages <= pfn)
+> > +		return false;
+> > +
+> >  	return __count_immobile_pages(zone, page, 0);
+> >  }
+> >  
 > 
-> No objections from me.
+> This seems partially bogus, why would
+> 
+> 	page_zone(page)->zone_start_pfn > page_to_pfn(page) ||
+> 	page_zone(page)->zone_start_pfn + page_zone(page)->spanned_pages <= page_to_pfn(page)
+> 
+> ever be true?  That would certainly mean that the struct zone is corrupted 
+> and seems to be unnecessary to fix the problem you're addressing.
 
-rend this patch for 3.2.0 kernel with Eric's Ack. 
+Not really. Consider the case when the node 0 is present. Uninitialized
+page would lead to node=0, zone=0 and then we have to check for the zone
+boundaries.
 
-David, do you have any concerns for this patch?  I will very appreciate
-if it can met 3.3 open window. 
+> I think this should be handled in is_mem_section_removable() on the pfn 
+> rather than using the struct page in is_pageblock_removable_nolock() and 
+> converting back and forth.  We should make sure that any page passed to 
+> is_pageblock_removable_nolock() is valid.
 
----------
->From 037bd159fdf52b915e452fac8db2252b1c60297e Mon Sep 17 00:00:00 2001
-From: Alex Shi <alex.shi@intel.com>
-Date: Thu, 20 Oct 2011 14:52:17 +0800
-Subject: [PATCH 1/3] net: use this_cpu_xxx replace percpu_xxx funcs
+Yes, I do not like pfn->page->pfn dance as well and in fact I do not
+have a strong opinion which one is better. I just put it at the place
+where we care about zone to be more obvious. If others think that I
+should move the check one level higher I'll do that. I just think this
+is more obvious.
 
-percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-for further code clean up.
-
-And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-performance since __this_cpu_xxx has no redundant preempt_disable()
-
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- net/netfilter/xt_TEE.c |   12 ++++++------
- net/socket.c           |    4 ++--
- 2 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/net/netfilter/xt_TEE.c b/net/netfilter/xt_TEE.c
-index 5f054a0..678084c 100644
---- a/net/netfilter/xt_TEE.c
-+++ b/net/netfilter/xt_TEE.c
-@@ -90,7 +90,7 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- 	const struct xt_tee_tginfo *info = par->targinfo;
- 	struct iphdr *iph;
- 
--	if (percpu_read(tee_active))
-+	if (__this_cpu_read(tee_active))
- 		return XT_CONTINUE;
- 	/*
- 	 * Copy the skb, and route the copy. Will later return %XT_CONTINUE for
-@@ -127,9 +127,9 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- 	ip_send_check(iph);
- 
- 	if (tee_tg_route4(skb, info)) {
--		percpu_write(tee_active, true);
-+		__this_cpu_write(tee_active, true);
- 		ip_local_out(skb);
--		percpu_write(tee_active, false);
-+		__this_cpu_write(tee_active, false);
- 	} else {
- 		kfree_skb(skb);
- 	}
-@@ -170,7 +170,7 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- {
- 	const struct xt_tee_tginfo *info = par->targinfo;
- 
--	if (percpu_read(tee_active))
-+	if (__this_cpu_read(tee_active))
- 		return XT_CONTINUE;
- 	skb = pskb_copy(skb, GFP_ATOMIC);
- 	if (skb == NULL)
-@@ -188,9 +188,9 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- 		--iph->hop_limit;
- 	}
- 	if (tee_tg_route6(skb, info)) {
--		percpu_write(tee_active, true);
-+		__this_cpu_write(tee_active, true);
- 		ip6_local_out(skb);
--		percpu_write(tee_active, false);
-+		__this_cpu_write(tee_active, false);
- 	} else {
- 		kfree_skb(skb);
- 	}
-diff --git a/net/socket.c b/net/socket.c
-index ffe92ca..4b62ca9 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -479,7 +479,7 @@ static struct socket *sock_alloc(void)
- 	inode->i_uid = current_fsuid();
- 	inode->i_gid = current_fsgid();
- 
--	percpu_add(sockets_in_use, 1);
-+	this_cpu_add(sockets_in_use, 1);
- 	return sock;
- }
- 
-@@ -522,7 +522,7 @@ void sock_release(struct socket *sock)
- 	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
- 		printk(KERN_ERR "sock_release: fasync list not empty!\n");
- 
--	percpu_sub(sockets_in_use, 1);
-+	this_cpu_sub(sockets_in_use, 1);
- 	if (!sock->file) {
- 		iput(SOCK_INODE(sock));
- 		return;
+Thanks for your comments.
 -- 
-1.6.3.3
-
- 
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
