@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757461Ab2AKKkw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:40:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44866 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab2AKKkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:40:51 -0500
-Date: Wed, 11 Jan 2012 02:45:30 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Daniel Lezcano <daniel.lezcano@free.fr>,
-        containers@lists.linux-foundation.org, oleg@redhat.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
-Subject: Re: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
-Message-Id: <20120111024530.7b3607e7.akpm@linux-foundation.org>
-In-Reply-To: <20120111102346.GB8504@peqn>
-References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
-	<1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
-	<20120105192954.GA16083@sergelap>
-	<20120111102346.GB8504@peqn>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757475Ab2AKKlj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:41:39 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37112 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753040Ab2AKKlg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 05:41:36 -0500
+From: AnilKumar Ch <anilkumar@ti.com>
+To: <sameo@linux.intel.com>, <lrg@ti.com>,
+        <broonie@opensource.wolfsonmicro.com>, <linux-kernel@vger.kernel.org>
+CC: <linux-omap@vger.kernel.org>, <nsekhar@ti.com>,
+        AnilKumar Ch <anilkumar@ti.com>
+Subject: [PATCH V4 0/2] Add TI TPS65217 PMIC driver support
+Date: Wed, 11 Jan 2012 16:11:26 +0530
+Message-ID: <1326278486-27162-1-git-send-email-anilkumar@ti.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jan 2012 11:23:46 +0100 Serge Hallyn <serge.hallyn@canonical.com> wrote:
+TPS65217 power management IC supports various features, like
+Battery charger, white LED driver along with basic regulator
+Functionality.
 
-> > 
-> > The testcase in [PATCH 0/1] passed for me, and reboot from init_pid_ns
-> > works as usual.
-> > 
-> > Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
-> 
-> Hi Andrew,
-> 
-> Are you considering taking this patch into -mm?
+This patch set adds support as an MFD device into the kernel
+to facilitate adding additional drivers on top of it.
 
-I have it queued up to look at.  I'll do that I've merged the current
-lot into rc1 - if I were to merge new stuff before then I'd only
-confuse myself ;)
+This device is used on one of AM335x platform (BeagleBone), and
+details about board can be accessed at -
+http://beagleboard.org/bone
+
+Device Spec and related documents can be accessed from -
+http://www.ti.com/product/tps65217b
+
+Changes form V3:
+	- Incorporated all Mark Brown's review commets on V3
+	  * changed non uniform step-size voltage range API to a table
+	  * Implemented set_voltage for formula based regulators
+	  * Implemented set_voltage_sel for table based regulators
+	  * changed get_voltage to get_voltage_sel
+
+Changes form V2:
+	- Incorporated all Mark Brown's review commets on V2
+	  * clear/set bit API's moved to MFD driver
+	  * voltage range API's clean-up
+
+Changes form V1:
+	- Incorporated all Mark Brown's review commets
+	  * MFD read/writes API's modifed to use regmap read/writes
+	  * kzalloc() changed to devm_kzalloc()
+	  * Converted voltage tables to function calls
+	  * set_voltage() changed to set_voltage_sel()
+	- cleaned-up the code little bit
+
+AnilKumar Ch (2):
+  MFD: TPS65217: Add new mfd device for TPS65217
+  regulator: tps65217: Add tps65217 regulator driver
+
+ drivers/mfd/Kconfig                    |   15 +
+ drivers/mfd/Makefile                   |    1 +
+ drivers/mfd/tps65217.c                 |  242 ++++++++++++++++
+ drivers/regulator/Kconfig              |    9 +
+ drivers/regulator/Makefile             |    1 +
+ drivers/regulator/tps65217-regulator.c |  493 ++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65217.h           |  283 ++++++++++++++++++
+ 7 files changed, 1044 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/tps65217.c
+ create mode 100644 drivers/regulator/tps65217-regulator.c
+ create mode 100644 include/linux/mfd/tps65217.h
+
