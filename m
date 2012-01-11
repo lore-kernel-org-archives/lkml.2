@@ -1,155 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933844Ab2AKU3Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:29:25 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:56061 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932671Ab2AKU3W (ORCPT
+	id S933934Ab2AKU36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:29:58 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43841 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932671Ab2AKU34 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:29:22 -0500
-Message-ID: <1326313742.25050.137.camel@fourier>
-Subject: Re: [PATCH v2 5/7] VFS: Avoid read-write deadlock in
- try_to_writeback_inodes_sb
-From: Kamal Mostafa <kamal@canonical.com>
-To: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Date: Wed, 11 Jan 2012 12:29:02 -0800
-In-Reply-To: <20120106003533.GC3790@quack.suse.cz>
-References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
-	 <1323367477-21685-6-git-send-email-kamal@canonical.com>
-	 <20120106003533.GC3790@quack.suse.cz>
-Content-Type: multipart/signed; micalg="pgp-sha256";
-	protocol="application/pgp-signature"; boundary="=-U2xfAI58b+tRyk5peQa0"
-X-Mailer: Evolution 3.2.1- 
-Mime-Version: 1.0
+	Wed, 11 Jan 2012 15:29:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <201201111812.46431.arnd@arndb.de>
+References: <1326147171-13752-1-git-send-email-arnd@arndb.de>
+	<CA+55aFw15sw0PWtom88vJx1M45CLuvpZABQAxMOQ+xowz8Xq2A@mail.gmail.com>
+	<7vty438575.fsf@alter.siamese.dyndns.org>
+	<201201111812.46431.arnd@arndb.de>
+Date: Wed, 11 Jan 2012 21:29:55 +0100
+X-Google-Sender-Auth: FwW25iqQxUFIA_mE0oJ2gcQh5co
+Message-ID: <CAMuHMdVvQzdxw0B3ZMtJej=9Qwm7Qbd5aenSOfa=QPhX8UUt2w@mail.gmail.com>
+Subject: Re: [GIT PULL 05/11] SoC-level changes for tegra and omap
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Junio C Hamano <gitster@pobox.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 11, 2012 at 19:12, Arnd Bergmann <arnd@arndb.de> wrote:
 
---=-U2xfAI58b+tRyk5peQa0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+[...]
 
-On Fri, 2012-01-06 at 01:35 +0100, Jan Kara wrote:
-> On Thu 08-12-11 10:04:35, Kamal Mostafa wrote:
-> > From: Valerie Aurora <val@vaaconsulting.com>
-> >=20
-> > Use trylock in try_to_writeback_inodes_sb to avoid read-write
-> > deadlocks that could be triggered by freeze.
+> Now let's assume that all dependencies are merged upstream already
+> and I just want to send out three pull requests. The first
+> pull request generally works fine, though it could be that some
+> version of git in the past would include the diff between v3.3-rc2
+> and v3.3-rc4 in the diffstat. For the second pull request, I merge
+> v3.3 with A and send do 'git request-pull B origin
+> tmp-merge-of-upstream-and-A'. This seems to generate the correct
+> list of patches, but the wrong diffstat (diffstat also contains
+> the diff between v3.3-rc4 and v3.3-rc5, although that is indeed
+> part of tmp-merge-of-upstream-and-A. For submitting branch C,
+> I have to merge upstream, A, B and the dependencies together
+> and then send a pull request against that. This typically also
+> includes the external dependencies in the diffstat.
 
->   Christoph asked about what is the exact deadlock this patch tries to fi=
-x.
-> I don't think you answered that. So can you elaborate please? Is it someh=
-ow
-> connected with the fact that ext4 calls try_to_writeback_inodes_sb() with
-> i_mutex held?
->=20
-> 								Honza
+<throwing the bat in the hen house, no idea if this expression exists
+in other languages than Dutch>
+And all of this would look nice if you would have done a rebase on top of the
+latest tagged version of Linus' tree that contains all prerequisites, right?
+</throwing...>
 
-This was discussed in the thread
-http://www.spinics.net/lists/linux-fsdevel/msg48754.html
-Summarizing...
+Gr{oetje,eeting}s,
 
-Jan>   What's exactly the deadlock trylock protects from here?
-Jan>   Or is it just an optimization?
+                        Geert
 
-Val>   The trylock is an optimization Dave Chinner suggested.  The first
-Val>   version I wrote acquired the lock and then checked vfs_is_frozen().
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Dave>  It's not so much an optimisation, but the general case of avoiding
-Dave>  read-write deadlocks such that freezing can trigger. I think remount
-Dave>  can trigger the same deadlock as freezing, so the trylock avoids
-Dave>  both deadlock cases rather than just working around the freeze
-Dave>  problem....
-
- -Kamal
-
-
-> > BugLink: https://bugs.launchpad.net/bugs/897421
-> > Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
-> > Cc: Kamal Mostafa <kamal@canonical.com>
-> > Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
-> > [kamal@canonical.com: patch restructure]
-> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> > ---
-> >  fs/fs-writeback.c |   13 ++++++++-----
-> >  1 files changed, 8 insertions(+), 5 deletions(-)
-> >=20
-> > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-> > index ea89b3f..3a80f1b 100644
-> > --- a/fs/fs-writeback.c
-> > +++ b/fs/fs-writeback.c
-> > @@ -1274,8 +1274,9 @@ EXPORT_SYMBOL(writeback_inodes_sb);
-> >   * try_to_writeback_inodes_sb	-	start writeback if none underway
-> >   * @sb: the superblock
-> >   *
-> > - * Invoke writeback_inodes_sb if no writeback is currently underway.
-> > - * Returns 1 if writeback was started, 0 if not.
-> > + * Invoke writeback_inodes_sb if no writeback is currently underway
-> > + * and no one else holds the s_umount lock.  Returns 1 if writeback
-> > + * was started, 0 if not.
-> >   */
-> >  int try_to_writeback_inodes_sb(struct super_block *sb, enum wb_reason =
-reason)
-> >  {
-> > @@ -1288,15 +1289,17 @@ EXPORT_SYMBOL(try_to_writeback_inodes_sb);
-> >   * @sb: the superblock
-> >   * @nr: the number of pages to write
-> >   *
-> > - * Invoke writeback_inodes_sb if no writeback is currently underway.
-> > - * Returns 1 if writeback was started, 0 if not.
-> > + * Invoke writeback_inodes_sb if no writeback is currently underway
-> > + * and no one else holds the s_umount lock.  Returns 1 if writeback
-> > + * was started, 0 if not.
-> >   */
-> >  int try_to_writeback_inodes_sb_nr(struct super_block *sb,
-> >  				   unsigned long nr,
-> >  				   enum wb_reason reason)
-> >  {
-> >  	if (!writeback_in_progress(sb->s_bdi)) {
-> > -		down_read(&sb->s_umount);
-> > +		if (!down_read_trylock(&sb->s_umount))
-> > +		    return 0;
-> >  		if (nr =3D=3D 0)
-> >  			writeback_inodes_sb(sb, reason);
-> >  		else
-> > --=20
-> > 1.7.5.4
-> >=20
-
-
---=-U2xfAI58b+tRyk5peQa0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABCAAGBQJPDfEOAAoJEOf3EFVUCeQi2MgP/in+4Oox6XpRiKDQR6xlSziq
-NTEr0GxiFqY5wg64PaJunHJW9c/yFP0qocWsHKm1YUEl6UI0v8VjwMo0T634rBkh
-aUYjuHLHvwFjh54fK1Tq2eur/pPA6hzWuDvaGG5S506N4+TSSVpctSmVlUwh1E2+
-25q5YfVicX+ym624kasGMWfEQ7a8n6Q53jVryGvSET38ml52BIjz0Jzf6UksC7Zc
-J3l09WEIC0eO7RTgHFFD7D1PHxfFtBcloC3T6wP3cb/7Q5qOzTVcCNMHxO0rdX+c
-POJP7722IGIxstkiOJjn3kAZg+pcRVhb9u4a9RSmkm/V2fHfhZ0f3oNqxOW/0r8G
-sGxLXPa3OBVxHxzg8w3ePd+BI+PJjgADkxdAfua7m028ZVryKBMg1xi8jzLr29Nt
-DOz7spHeCbizCGZS33g8nAbkwJnuw7qkeX+5rmtMPHuS+78uk/wE1G+MBalLpUO2
-wMEL8dAOg7I/Mr9k2ADVL0IFXVlCdhxxnnNKbNXWgSU+LV7QR8Lnvt1XKXP/5D8+
-GiCIK94cWIECYj3sDMBXDAO34CCofN60e3/5WcQJxzOGZtY+o7eTkidfmxwzQA6A
-5ISG/2QueOU2oUyR3ErWWgHIJUCGr/VdkTsi/eBv9kS0sjtwjTQAVds7OuB/r8di
-bZG28lJk08i9s/9mMxSi
-=jaJy
------END PGP SIGNATURE-----
-
---=-U2xfAI58b+tRyk5peQa0--
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
