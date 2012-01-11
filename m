@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757631Ab2AKQMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:12:06 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36377 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932918Ab2AKQMD (ORCPT
+	id S1757619Ab2AKQNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:13:10 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55699 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756938Ab2AKQNH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:12:03 -0500
-Date: Wed, 11 Jan 2012 21:42:33 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S . Miller" <davem@davemloft.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jun Ma <harry.majun@huawei.com>,
-        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>
-Subject: Re: [PATCH] kprobes: fix a memory leak in function
-	pre_handler_kretprobe()
-Message-ID: <20120111161233.GA13539@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <1326295311-10985-1-git-send-email-jiang.liu@huawei.com>
+	Wed, 11 Jan 2012 11:13:07 -0500
+Date: Wed, 11 Jan 2012 16:12:49 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Kmemleak patches for 3.3-rc1 (now with signed tag)
+Message-ID: <20120111161249.GG858@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326295311-10985-1-git-send-email-jiang.liu@huawei.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-x-cbid: 12011116-1780-0000-0000-0000023990B1
-X-IBM-ISS-SpamDetectors: 
-X-IBM-ISS-DetailInfo: BY=3.00000244; HX=3.00000180; KW=3.00000007;
- PH=3.00000001; SC=3.00000001; SDB=6.00104040; UDB=6.00026376; UTC=2012-01-11
- 16:12:02
+user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 11:21:51PM +0800, Jiang Liu wrote:
-> From: Jiang Liu <liuj97@gmail.com>
-> 
-> In function pre_handler_kretprobe(), the allocated kretprobe_instance object
-> will be leaked if the entry_handler callback returns non-zero. This may cause
-> all the preallocated kretprobe_instance objects exhausted. This issue could be
-> reproduced by changing samples/kprobes/kretprobe_example.c to probe 
-> "mutex_unlock". And the fix is straight forward, just put the allocated 
-> kretprobe_instance object back onto the free_instances list. 
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Acked-by: Jim Keniston <jkenisto@us.ibm.com>
-> Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Hi Linus,
 
-Thank you Jiang. I think the correct ID for stable is now
-stable@vger.kernel.org.
+Could you please pull the "kmemleak" branch below (or the signed
+"kmemleak" tag in the same repository, whichever you prefer)?
 
-> ---
->  kernel/kprobes.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index e5d8464..2423295 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -1673,8 +1673,12 @@ static int __kprobes pre_handler_kretprobe(struct kprobe *p,
->  		ri->rp = rp;
->  		ri->task = current;
-> 
-> -		if (rp->entry_handler && rp->entry_handler(ri, regs))
-> +		if (rp->entry_handler && rp->entry_handler(ri, regs)) {
-> +			spin_lock_irqsave(&rp->lock, flags);
-> +			hlist_add_head(&ri->hlist, &rp->free_instances);
-> +			spin_unlock_irqrestore(&rp->lock, flags);
->  			return 0;
-> +		}
-> 
->  		arch_prepare_kretprobe(ri, regs);
-> 
-> -- 
-> 1.7.5.4
+Thanks.
 
+
+The following changes since commit 5611cc4572e889b62a7b4c72a413536bf6a9c416:
+
+  Linux 3.2-rc4 (2011-12-01 14:56:01 -0800)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux.git kmemleak
+
+Catalin Marinas (4):
+      kmemleak: Show where early_log issues come from
+      kmemleak: When the early log buffer is exceeded, report the actual number
+      kmemleak: Report previously found leaks even after an error
+      kmemleak: Handle percpu memory allocation
+
+Laura Abbott (1):
+      kmemleak: Add support for memory hotplug
+
+ Documentation/kmemleak.txt |    3 +
+ include/linux/kmemleak.h   |    8 ++
+ lib/Kconfig.debug          |    2 +-
+ mm/kmemleak.c              |  158 ++++++++++++++++++++++++++++++++++++-------
+ mm/percpu.c                |   12 +++-
+ 5 files changed, 155 insertions(+), 28 deletions(-)
