@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab2AKJ2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 04:28:49 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54814 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756735Ab2AKJ2o convert rfc822-to-8bit (ORCPT
+	id S1757362Ab2AKJqL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 04:46:11 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:23287 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616Ab2AKJqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 04:28:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120110135147.GB26599@S2101-09.ap.freescale.net>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
-	<1324402840-32451-4-git-send-email-b29396@freescale.com>
-	<20120108130542.GC2203@richard-laptop>
-	<20120109020848.GF1835@S2101-09.ap.freescale.net>
-	<20120109021702.GV2414@b20223-02.ap.freescale.net>
-	<20120109063136.GI1835@S2101-09.ap.freescale.net>
-	<20120110083842.GA2414@b20223-02.ap.freescale.net>
-	<CACRpkdZ=G+=Aq49r9VYa1ZGMg=Sy3Dy3kHNbbcFRp-Hn6y1ZqQ@mail.gmail.com>
-	<20120110135147.GB26599@S2101-09.ap.freescale.net>
-Date: Wed, 11 Jan 2012 10:28:43 +0100
-Message-ID: <CACRpkdbUX-s8hM_Gk=XiwUufAzGz479L_t8vg77ek1KwPCKa_Q@mail.gmail.com>
-Subject: Re: [RFC PATCH v3 3/5] pinctrl: imx: add pinctrl imx driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Richard Zhao <richard.zhao@freescale.com>,
-        Richard Zhao <richard.zhao@linaro.org>, linus.walleij@stericsson.com,
-        s.hauer@pengutronix.de, w.sang@pengutronix.de, rob.herring@calxeda.com,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        shawn.guo@freescale.com, kernel@pengutronix.de, cjb@laptop.org,
-        Dong Aisheng <b29396@freescale.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Jan 2012 04:46:07 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-0d-4f0d5a5d1654
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
+        Mike Lockwood <lockwood@android.com>,
+        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        myungjoo.ham@gmail.com
+Subject: [PATCH v3 0/4] introduce External Connector Class (extcon)
+Date: Wed, 11 Jan 2012 18:46:38 +0900
+Message-id: <1326275202-27401-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 2:51 PM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Tue, Jan 10, 2012 at 11:43:28AM +0100, Linus Walleij wrote:
->> What we need to know right now is what you need from the pin
->> controller core to do that. We have a (custom) pinconf API now,
->> does it fit the bill?
->>
-> Hmm, I do not think it fits right away, as I do not think it's sensible
-> to have pinctrl client drivers call pin_config_set() directly.
+For external connectors, which may have different types of cables attached
+(USB, TA, HDMI, Analog A/V, and others), we often have seperated device
+drivers that detect the state changes at the port and device drivers that
+do something according to the state changes.
 
-OK that's more or less what Stephen said too so I'm cooking a
-config table ala pinmux with string identifiers.
+For example, when MAX8997-MUIC detects a Charger cable insertion, another
+device driver (such as MAX8903 charger, MAX8997 charger, Charger Manager,
+or board file) needs to set charger current limit accordingly and when
+MAX8997-MUIC detects a HDMI cable insertion, multimedia device drivers
+need to do some operations accordingly.
 
->> I have spent some time on generic pin config, it was not much
->> commented so if it helps you please ACK the patches.
->>
-> Since the ARM community is the one who is most interested in pinctrl
-> subsystem so far, I guess copying LAKML will help collect more comments
-> and various tags.  (For example, I'm interested in pinctrl, but I do
-> not track LKML as close as I do for LAKML).
+This patchset supports the usage of notifier for passing such information
+between device drivers.
 
-True. I'll fix that.
+Another issue is that at a single switch port, there might be multiple
+and heterogeneous cables attached at the same time. Besides the state
+(Attached or Detached) of each cable may alter independently. Such extcon
+devices that support simultaneous mult-cable attachment include, bot not
+limited to, docks, cradles, and 30-pin-like ports (like that of NURI board
+in linux/arch/arm/mach-exynos, which resembles Samsung Galaxy Tab series).
+For example, the 30-pin port of NURI board may be used to connect analog
+audio cables, analog video cable, and a USB or a charger. Because such
+cables coonnect part of the 30 pins to external devices/cables, the
+possible combinations of external devices/cables vary significantly and
+users may fabricate their own design; e.g., an 30-pin adaptor connecting
+USB, AC-DC adaptor, HDMI, analog audio, analog video, USB-host, SD-card,
+and so on.
 
->> Next from discussions with Stpehen I've sort of figured out that
->> we need a config mapping table of sorts and then a means to activate
->> entries of that table at runtime. I'm trying to come up with something
->> for this.
->>
-> That's something we are waiting for pinconf being usable for imx.
+In order to address such issues, Android kernel's "Switch" class seems to
+be a good basis and we have implemented "Multistate Switch Class" based on
+it. The "Switch" class code of Android kernel is GPL as well.
 
-I'll fix something, please review when it appears!
 
-Thanks,
-Linus Walleij
+Summary of changes from v2 patchset
+- Support to express mutually exclusive set of cables
+- Revised device/class/sysfs-entries add/removal methods
+- Added sysfs entries
+- Revised documentation and comments
+- Some bugfixes
+- Compatible with Android (for extcon devices with "use_class_name_switch" set)
+
+Summary of changes from RFC
+- ABI documentation added
+- Notifees may get notified for a state change of a specific cable, not
+every cable of the corresponding extcon.
+- Added kerneldoc comments
+- Moved to /drivers/extcon/
+- Added helper functions
+- Some bugfixes
+
+
+Donggeun Kim (1):
+  Extcon: support notification based on the state changes.
+
+MyungJoo Ham (3):
+  Extcon (external connector): import Android's switch class and
+    modify.
+  Extcon: support multiple states at a device.
+  Extcon: support mutually exclusive relation between cables.
+
+ Documentation/ABI/testing/sysfs-class-extcon |   75 +++
+ drivers/Kconfig                              |    2 +
+ drivers/Makefile                             |    1 +
+ drivers/extcon/Kconfig                       |   22 +
+ drivers/extcon/Makefile                      |    6 +
+ drivers/extcon/extcon_class.c                |  641 ++++++++++++++++++++++++++
+ drivers/extcon/extcon_gpio.c                 |  173 +++++++
+ include/linux/extcon.h                       |  305 ++++++++++++
+ 8 files changed, 1225 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-class-extcon
+ create mode 100644 drivers/extcon/Kconfig
+ create mode 100644 drivers/extcon/Makefile
+ create mode 100644 drivers/extcon/extcon_class.c
+ create mode 100644 drivers/extcon/extcon_gpio.c
+ create mode 100644 include/linux/extcon.h
+
+-- 
+1.7.4.1
+
