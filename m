@@ -1,210 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933135Ab2AKOZY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 09:25:24 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:3589 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932786Ab2AKOZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 09:25:20 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 11 Jan 2012 06:25:18 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linaro-mm-sig-bounces@lists.linaro.org" 
-	<linaro-mm-sig-bounces@lists.linaro.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 11 Jan 2012 15:24:40 +0100
-Subject: Re: [PATCH v3 0/2] ARM: IOMMU: tegra: Add iommu_ops for GART/SMMU
- driver
-Thread-Topic: [PATCH v3 0/2] ARM: IOMMU: tegra: Add iommu_ops for GART/SMMU
- driver
-Thread-Index: AczQbNX119GnLoLjSdWNg4Ji4xrFlQ==
-Message-ID: <20120111.162440.1854857348878391112.hdoyu@nvidia.com>
-References: <20120105125326.GT11810@n2100.arm.linux.org.uk><20120105.162930.604365154868332443.hdoyu@nvidia.com><20120105144631.GV11810@n2100.arm.linux.org.uk>
-In-Reply-To: <20120105144631.GV11810@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_201201111624401854857348878391112hdoyunvidiacom_"
-MIME-Version: 1.0
+	id S933144Ab2AKO32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 09:29:28 -0500
+Received: from xyratex197.xyratex.com ([194.131.166.197]:51011 "EHLO
+	XY01EX21.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932962Ab2AKO31 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 09:29:27 -0500
+X-Greylist: delayed 837 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jan 2012 09:29:26 EST
+Subject: Re: aacraid question: is maximum_num_containers supposed to be minimum?
+Mime-Version: 1.0 (Apple Message framework v1251.1)
+Content-Type: text/plain; charset=us-ascii
+From: Mark Salyzyn <mark_salyzyn@xyratex.com>
+In-Reply-To: <20120111082842.GA31452@elgon.mountain>
+Date: Wed, 11 Jan 2012 09:15:20 -0500
+Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C9E26AA3-B4DE-450F-8DC6-6C706FF703A1@xyratex.com>
+References: <20120111082842.GA31452@elgon.mountain>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+X-Mailer: Apple Mail (2.1251.1)
+X-OriginalArrivalTime: 11 Jan 2012 14:15:21.0527 (UTC) FILETIME=[74208C70:01CCD06B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_201201111624401854857348878391112hdoyunvidiacom_
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+It is *both*, in part because of history, and usage.
 
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v3 0/2] ARM: IOMMU: tegra: Add iommu_ops for GART/SMMU =
-driver
-Date: Thu, 5 Jan 2012 15:46:31 +0100
-Message-ID: <20120105144631.GV11810@n2100.arm.linux.org.uk>
+Initially the value was the hard coded maximum number of containers (arrays) for the earlier Firmware that never reported what they were capable of, until the value became variable based on Firmware Release with a new information field. Older Firmware would report zero.
 
-> On Thu, Jan 05, 2012 at 03:29:30PM +0100, Hiroshi Doyu wrote:
-> > Ok, the above function order should be as below?
-> >=20
-> >   page =3D alloc_page(GFP_KERNEL);
-> >       cpu_addr =3D kmap(page);
-> >       memset(cpu_addr, 0xa5, PAGE_SIZE);
-> >   	dma_addr =3D dma_map_page(dev, page, 0, PAGE_SIZE, DMA_TO_DEVICE);
-> >   	    < expect GPU does something >
-> >   	dma_unmap_page(dev, dma_addr, PAGE_SIZE, DMA_TO_DEVICE);
-> >       < CPU can access data here again>
-> >       kunmap(cpu_addr);
-> >   __free_page(page);
->=20
-> That should work, but it's not particularly nice to wrap kmap around
-> the DMA API.
->=20
-> Bear in mind that alloc_page(GFP_KERNEL) will always give you a lowmem
-> page.  So, you might as well do:
->=20
-> 	page =3D alloc_page(GFP_KERNEL);
-> 	cpu_addr =3D page_address(page);
-> 	memset()
-> 	dma_addr =3D dma_map_single(dev, cpu_addr, PAGE_SIZE, DMA_TO_DEVICE);
-> 		< GPU access >
-> 	dma_unmap_single(dev, dma_ddr, PAGE_SIZE, DMA_TO_DEVICE);
-> 	< CPU access >
-> 	__free_page(page);
->=20
-> and this doesn't raise any issues with kmap vs DMA API.
+In order to stress compatibility, and reliability should the value that is returned from the Firmware report badly, if a controller had less than this value, then we would allocate at least that amount of space for containers. This is the point at which the value went from being a maximum to a minimum.
 
-Attached the update one just in case that someone wants to use it for their=
-s.
+The first bus is the containers, the remaining higher buses are the physical devices. If the number of ids on a physical bus is less than the number of containers, then we up it to match the first bus to that we have symmetry. An addition check,along this vein, to make sure that the max_ids is at least the returned maximum_num_containers ...
 
---_002_201201111624401854857348878391112hdoyunvidiacom_
-Content-Type: text/x-patch;
-	name="0001-NOT-FOR-MERGE-TEST-Simple-dma-iommu-mapping-API-TEST.patch"
-Content-Description: 0001-NOT-FOR-MERGE-TEST-Simple-dma-iommu-mapping-API-TEST.patch
-Content-Disposition: attachment;
-	filename="0001-NOT-FOR-MERGE-TEST-Simple-dma-iommu-mapping-API-TEST.patch";
-	size=6451; creation-date="Wed, 11 Jan 2012 14:25:15 GMT";
-	modification-date="Wed, 11 Jan 2012 14:25:15 GMT"
-Content-Transfer-Encoding: base64
+A clarification patch replacing minimum with maximum would help, but is purely cosmetic. You are the first person to ask this question in over a decade ;->
 
-RnJvbSA3NmFlZmVhMWM3YWQwMDQ1OTAyOTVkYmU2M2MyN2YwYzZmNDgyZjdhIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogSGlyb3NoaSBET1lVIDxoZG95dUBudmlkaWEuY29tPg0KRGF0
-ZTogVGh1LCAxNSBEZWMgMjAxMSAxMzoyNDoyNCArMDIwMA0KU3ViamVjdDogW1BBVENIIDEvMV0g
-W05PVC1GT1ItTUVSR0VdIFRFU1Q6IFNpbXBsZSBkbWEtaW9tbXUtbWFwcGluZyBBUEkgVEVTVA0K
-IG1vZHVsZQ0KDQpUaGlzIGlzIG5vdCBwb3N0ZWQgdG8gbWVyZ2UgYnV0IHRoaXMgaXMgbmVjZXNz
-YXJ5IHRvIHVuZGVyc3RhbmQgaG93DQpTTU1VL0dBUlQgd29ya3Mgd2l0aCBETUEoLWlvbW11LW1h
-cHBpbmctKUFQSS4NCg0KVGhpcyBpcyBhIHRlc3QgdG8gdmVyaWZ5IERNQSBBUEkoRE1BIGlvbW11
-IG1hcHBpbmcgQVBJKSwgd2hlcmUgU29DDQpzcGVjaWZpYyBpb21tdV9vcHMgaXMgdXNlZCBpbnRl
-cm5hbGx5Lg0KDQpUaGlzIGRvZXMgYWxsb2MvKHVuKW1hcC9mcmVlLCBidXQgdGhlcmUncyBubyBh
-Y3R1YWwgYWNjZXNzIGZyb20gZGV2aWNlDQpzaWRlIHNpbmNlIGl0IHJlcXVpcmVzIGRldmljZSBz
-cGVjaWZpYyBjb21tdW5pY2F0aW9ucy4NCg0KU2lnbmVkLW9mZi1ieTogSGlyb3NoaSBET1lVIDxo
-ZG95dUBudmlkaWEuY29tPg0KLS0tDQogZHJpdmVycy9pb21tdS9kbWFhcGktdGVzdC5jIHwgIDIw
-MiArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrDQogMSBmaWxlcyBj
-aGFuZ2VkLCAyMDIgaW5zZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMoLSkNCiBjcmVhdGUgbW9kZSAx
-MDA2NDQgZHJpdmVycy9pb21tdS9kbWFhcGktdGVzdC5jDQoNCmRpZmYgLS1naXQgYS9kcml2ZXJz
-L2lvbW11L2RtYWFwaS10ZXN0LmMgYi9kcml2ZXJzL2lvbW11L2RtYWFwaS10ZXN0LmMNCm5ldyBm
-aWxlIG1vZGUgMTAwNjQ0DQppbmRleCAwMDAwMDAwLi4zMTk5Mzg2DQotLS0gL2Rldi9udWxsDQor
-KysgYi9kcml2ZXJzL2lvbW11L2RtYWFwaS10ZXN0LmMNCkBAIC0wLDAgKzEsMjAyIEBADQorLyoN
-CisgKiBETUEgSU9NTVUgbWFwcGluZyBBUEkgdGVzdCBtb2R1bGUNCisgKg0KKyAqIENvcHlyaWdo
-dCAoYykgMjAxMiwgTlZJRElBIENPUlBPUkFUSU9OLiAgQWxsIHJpZ2h0cyByZXNlcnZlZC4NCisg
-Kg0KKyAqIEF1dGhvcjogS3Jpc2huYSBSZWRkeSA8dmR1bXBhQG52aWRpYS5jb20+LA0KKyAqCUhp
-cm9zaGkgRE9ZVSA8aGRveXVAbnZpZGlhLmNvbT4NCisgKg0KKyAqIFRoaXMgcHJvZ3JhbSBpcyBm
-cmVlIHNvZnR3YXJlOyB5b3UgY2FuIHJlZGlzdHJpYnV0ZSBpdCBhbmQvb3IgbW9kaWZ5IGl0DQor
-ICogdW5kZXIgdGhlIHRlcm1zIGFuZCBjb25kaXRpb25zIG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJs
-aWMgTGljZW5zZSwNCisgKiB2ZXJzaW9uIDIsIGFzIHB1Ymxpc2hlZCBieSB0aGUgRnJlZSBTb2Z0
-d2FyZSBGb3VuZGF0aW9uLg0KKyAqDQorICogVGhpcyBwcm9ncmFtIGlzIGRpc3RyaWJ1dGVkIGlu
-IHRoZSBob3BlIGl0IHdpbGwgYmUgdXNlZnVsLCBidXQgV0lUSE9VVA0KKyAqIEFOWSBXQVJSQU5U
-WTsgd2l0aG91dCBldmVuIHRoZSBpbXBsaWVkIHdhcnJhbnR5IG9mIE1FUkNIQU5UQUJJTElUWSBv
-cg0KKyAqIEZJVE5FU1MgRk9SIEEgUEFSVElDVUxBUiBQVVJQT1NFLiAgU2VlIHRoZSBHTlUgR2Vu
-ZXJhbCBQdWJsaWMgTGljZW5zZSBmb3INCisgKiBtb3JlIGRldGFpbHMuDQorICoNCisgKiBZb3Ug
-c2hvdWxkIGhhdmUgcmVjZWl2ZWQgYSBjb3B5IG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGlj
-ZW5zZSBhbG9uZyB3aXRoDQorICogdGhpcyBwcm9ncmFtOyBpZiBub3QsIHdyaXRlIHRvIHRoZSBG
-cmVlIFNvZnR3YXJlIEZvdW5kYXRpb24sIEluYy4sDQorICogNTEgRnJhbmtsaW4gU3QgLSBGaWZ0
-aCBGbG9vciwgQm9zdG9uLCBNQSAwMjExMC0xMzAxIFVTQS4NCisgKi8NCisNCisjZGVmaW5lIERF
-QlVHDQorI2RlZmluZSBwcl9mbXQoZm10KQlLQlVJTERfTU9ETkFNRSAiOiIgZm10DQorDQorI2lu
-Y2x1ZGUgPGxpbnV4L21vZHVsZS5oPg0KKyNpbmNsdWRlIDxsaW51eC9kbWEtbWFwcGluZy5oPg0K
-KyNpbmNsdWRlIDxsaW51eC9rdGhyZWFkLmg+DQorI2luY2x1ZGUgPGxpbnV4L2RlbGF5Lmg+DQor
-I2luY2x1ZGUgPGxpbnV4L2hpZ2htZW0uaD4NCisjaW5jbHVkZSA8bGludXgvcGZuLmg+DQorI2lu
-Y2x1ZGUgPGxpbnV4L2RtYS1tYXBwaW5nLmg+DQorI2luY2x1ZGUgPGxpbnV4L3BsYXRmb3JtX2Rl
-dmljZS5oPg0KKw0KKyNpbmNsdWRlIDxtYWNoL2lvbWFwLmg+DQorI2luY2x1ZGUgPG1hY2gvc21t
-dS5oPg0KKw0KKyNpbmNsdWRlIDxhc20vZG1hLWlvbW11Lmg+DQorDQorI2luY2x1ZGUgImRldmlj
-ZXMuaCINCisNCisvKiBGSVhNRTogMnggYW5kIDN4IHNob3VsZCBiZSBzdXBwb3J0ZWQgYXQgb25j
-ZSAqLw0KKyNpZmRlZiBDT05GSUdfQVJDSF9URUdSQV8yeF9TT0MNCisjZGVmaW5lIElPVkFfU1RB
-UlQJVEVHUkFfR0FSVF9CQVNFDQorI2RlZmluZSBJT1ZBX1NJWkUJVEVHUkFfR0FSVF9TSVpFDQor
-c3RhdGljIHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnRlZ3JhX2lvbW11X2RldmljZSA9ICZ0ZWdy
-YV9nYXJ0X2RldmljZTsNCisjZWxpZiBDT05GSUdfQVJDSF9URUdSQV8zeF9TT0MNCisjZGVmaW5l
-IElPVkFfU1RBUlQJVEVHUkFfU01NVV9CQVNFDQorI2RlZmluZSBJT1ZBX1NJWkUJVEVHUkFfU01N
-VV9TSVpFDQorc3RhdGljIHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnRlZ3JhX2lvbW11X2Rldmlj
-ZSA9ICZ0ZWdyYV9zbW11X2RldmljZTsNCisjZWxzZQ0KKyNlcnJvciBVbnN1cHBvcnRlZCBkZXZp
-Y2UNCisjZW5kaWYNCisNCisjZGVmaW5lIE5VTV9URVNUCTMNCisjZGVmaW5lIE1BUF9TSVpFCSg0
-ICogUEFHRV9TSVpFKQ0KKw0KK3N0cnVjdCBkbWFhcGlfdGVzdF9jYXNlIHsNCisJY2hhciAqbmFt
-ZTsNCisJdm9pZCAoKmZuKShzdHJ1Y3QgZGV2aWNlICopOw0KK307DQorDQorc3RhdGljIHZvaWQg
-ZG1hYXBpX3Rlc3RfbWFwX3BhZ2Uoc3RydWN0IGRldmljZSAqZGV2KQ0KK3sNCisJc3RydWN0IHBh
-Z2UgKnBhZ2U7DQorCWRtYV9hZGRyX3QgZG1hX2FkZHI7DQorCXZvaWQgKmNwdV9hZGRyOw0KKw0K
-KwlwYWdlID0gYWxsb2NfcGFnZShHRlBfS0VSTkVMKTsNCisJQlVHX09OKCFwYWdlKTsNCisNCisJ
-Y3B1X2FkZHIgPSBwYWdlX2FkZHJlc3MocGFnZSk7DQorCUJVR19PTighY3B1X2FkZHIpOw0KKwlt
-ZW1zZXQoY3B1X2FkZHIsIDB4YTUsIFBBR0VfU0laRSk7DQorDQorCWRtYV9hZGRyID0gZG1hX21h
-cF9wYWdlKGRldiwgcGFnZSwgMCwgUEFHRV9TSVpFLCBETUFfVE9fREVWSUNFKTsNCisJQlVHX09O
-KCFkbWFfYWRkcik7DQorDQorCXByX2RlYnVnKCJwaWQ6JWQsJXMgbWFwcGVkXHQlMDh4OiUwOHhc
-biIsDQorCQkgY3VycmVudC0+cGlkLCBkZXZfbmFtZShkZXYpLCBkbWFfYWRkciwgcGFnZV90b19w
-aHlzKHBhZ2UpKTsNCisNCisJLyoNCisJICogRXhwZWN0IEdQVSBhY2Nlc3MNCisJICovDQorDQor
-CWRtYV91bm1hcF9wYWdlKGRldiwgZG1hX2FkZHIsIFBBR0VfU0laRSwgRE1BX1RPX0RFVklDRSk7
-DQorDQorCS8qDQorCSAqIENQVSBhY2Nlc3MNCisJICovDQorCUJVR19PTigqKGNoYXIgKiljcHVf
-YWRkciAhPSAweGE1KTsNCisNCisJX19mcmVlX3BhZ2UocGFnZSk7DQorfQ0KKw0KK3N0YXRpYyB2
-b2lkIGRtYWFwaV90ZXN0X2FsbG9jX2NvaGVyZW50KHN0cnVjdCBkZXZpY2UgKmRldikNCit7DQor
-CWRtYV9hZGRyX3QgZGFbTlVNX1RFU1RdOw0KKwl2b2lkICp2YVtOVU1fVEVTVF07DQorCWludCBp
-Ow0KKw0KKwlmb3IgKGkgPSAwOyBpIDwgTlVNX1RFU1Q7IGkrKykgew0KKwkJdm9pZCAqY3B1X2Fk
-ZHI7DQorCQlkbWFfYWRkcl90IGRtYV9hZGRyOw0KKw0KKwkJY3B1X2FkZHIgPSBkbWFfYWxsb2Nf
-Y29oZXJlbnQoZGV2LCBNQVBfU0laRSwNCisJCQkJCSAgICAgICZkbWFfYWRkciwgR0ZQX0tFUk5F
-TCk7DQorCQlCVUdfT04oIWNwdV9hZGRyKTsNCisJCW1lbXNldChjcHVfYWRkciwgMHhhNSwgTUFQ
-X1NJWkUpOw0KKw0KKwkJcHJfZGVidWcoInBpZDolZCwlcyxbJWRdIG1hcHBlZFx0JTA4eDolMDh4
-XG4iLA0KKwkJCSBjdXJyZW50LT5waWQsIGRldl9uYW1lKGRldiksIGksDQorCQkJIGRtYV9hZGRy
-LCB2aXJ0X3RvX3BoeXMoY3B1X2FkZHIpKTsNCisNCisJCWRhW2ldID0gZG1hX2FkZHI7DQorCQl2
-YVtpXSA9IGNwdV9hZGRyOw0KKwl9DQorDQorCXdoaWxlICgtLWkgPj0gMCkgew0KKwkJcHJfZGVi
-dWcoInBpZDolZCwlcyxbJWRdIHVubWFwcGluZ1x0JTA4eDolMDh4XG4iLA0KKwkJCSBjdXJyZW50
-LT5waWQsIGRldl9uYW1lKGRldiksIGksDQorCQkJIGRhW2ldLCB2aXJ0X3RvX3BoeXModmFbaV0p
-KTsNCisJCWRtYV9mcmVlX2NvaGVyZW50KGRldiwgTUFQX1NJWkUsIHZhW2ldLCBkYVtpXSk7DQor
-CX0NCit9DQorDQorc3RhdGljIHN0cnVjdCBkbWFhcGlfdGVzdF9jYXNlIHRlc3RbXSA9IHsNCisJ
-ew0KKwkJLm5hbWUgPSAiZG1hYXBpL21hcCBwYWdlIiwNCisJCS5mbiA9IGRtYWFwaV90ZXN0X21h
-cF9wYWdlLA0KKwl9LA0KKwl7DQorCQkubmFtZSA9ICJkbWFhcGkvYWxsb2MgY29oZXJlbnQiLA0K
-KwkJLmZuID0gZG1hYXBpX3Rlc3RfYWxsb2NfY29oZXJlbnQsDQorCX0sDQorfTsNCisNCitzdGF0
-aWMgdTMyIGR1bW15X2h3Z3JwX21hcFtdID0gew0KKwlIV0dfREMgfCBIV0dfQUZJIHwgSFdHX0FW
-UEMgfCBIV0dfRENCLA0KKwlIV0dfRVBQIHwgSFdHX0hDIHwgSFdHX0cyIHwgSFdHX01QRSB8IEhX
-R19IREEgfCBIV0dfSVNQLA0KKwlIV0dfTlYgfCBIV0dfUFBDUyB8IEhXR19TQVRBIHwgSFdHX05W
-MiB8IEhXR19WSSB8IEhXR19WREUsDQorfTsNCisNCisvKiBGSVhNRTogTmVlZCBkcml2ZXIgZm9y
-IGlvbW11IGNvbnRleHQ/ICovDQorc3RhdGljIHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgZG1hYXBp
-X2R1bW15X2RldmljZVtdID0gew0KKwl7IC5uYW1lID0gImh3Z3JwQGEiLCAuaWQgPSAtMSwgfSwN
-CisJeyAubmFtZSA9ICJod2dycEBiIiwgLmlkID0gLTEsIH0sDQorCXsgLm5hbWUgPSAiaHdncnBA
-YyIsIC5pZCA9IC0xLCB9LA0KK307DQorDQorc3RhdGljIGludCBkbWFhcGlfdGVzdF90aHJlYWQo
-dm9pZCAqZGF0YSkNCit7DQorCWludCBpOw0KKwlzdHJ1Y3QgZG1hYXBpX3Rlc3RfY2FzZSAqYyA9
-IGRhdGE7DQorDQorCWZvciAoaSA9IDA7IHRydWU7IGkrKykgew0KKwkJc3RydWN0IGRldmljZSAq
-ZGV2Ow0KKwkJaW50IGludGVydmFsW10gPSB7NywgMywgNSx9Ow0KKwkJaW50IG47DQorDQorCQlu
-ID0gaSAlIEFSUkFZX1NJWkUoZG1hYXBpX2R1bW15X2RldmljZSk7DQorCQlzc2xlZXAoaW50ZXJ2
-YWxbbl0pOw0KKwkJZGV2ID0gJmRtYWFwaV9kdW1teV9kZXZpY2Vbbl0uZGV2Ow0KKwkJYy0+Zm4o
-ZGV2KTsNCisJfQ0KKwlyZXR1cm4gMDsNCit9DQorDQorc3RhdGljIGludCBfX2luaXQgZG1hYXBp
-X3Rlc3RfaW5pdCh2b2lkKQ0KK3sNCisJaW50IGk7DQorCXN0cnVjdCBkbWFfaW9tbXVfbWFwcGlu
-ZyAqbWFwOw0KKw0KKwltYXAgPSBhcm1faW9tbXVfY3JlYXRlX21hcHBpbmcoSU9WQV9TVEFSVCwg
-SU9WQV9TSVpFLCAwKTsNCisJQlVHX09OKCFtYXApOw0KKwlwcl9kZWJ1ZygiQWxsb2NhdGUgSU9W
-QTogJTA4eC0lMDh4XG4iLCBtYXAtPmJhc2UsIG1hcC0+YmFzZSArIElPVkFfU0laRSk7DQorDQor
-CWZvciAoaSA9IDA7IGkgPCBBUlJBWV9TSVpFKGRtYWFwaV9kdW1teV9kZXZpY2UpOyBpKyspIHsN
-CisJCWludCBlcnI7DQorCQlzdHJ1Y3QgcGxhdGZvcm1fZGV2aWNlICpwZGV2ID0gJmRtYWFwaV9k
-dW1teV9kZXZpY2VbaV07DQorDQorCQlwZGV2LT5kZXYucGxhdGZvcm1fZGF0YSA9ICh2b2lkICop
-ZHVtbXlfaHdncnBfbWFwW2ldOw0KKwkJcGRldi0+ZGV2LnBhcmVudCA9ICZ0ZWdyYV9pb21tdV9k
-ZXZpY2UtPmRldjsNCisJCWVyciA9IHBsYXRmb3JtX2RldmljZV9yZWdpc3RlcihwZGV2KTsNCisJ
-CUJVR19PTihlcnIpOw0KKw0KKwkJZXJyID0gYXJtX2lvbW11X2F0dGFjaF9kZXZpY2UoJnBkZXYt
-PmRldiwgbWFwKTsNCisJCUJVR19PTihlcnIpOw0KKwkJcHJfZGVidWcoIklPTU1VIEFQSTogQXR0
-YWNoZWQgdG8gJXNcbiIsIGRldl9uYW1lKCZwZGV2LT5kZXYpKTsNCisJfQ0KKw0KKwlmb3IgKGkg
-PSAwOyBpIDwgQVJSQVlfU0laRSh0ZXN0KTsgaSsrKQ0KKwkJa3RocmVhZF9ydW4oZG1hYXBpX3Rl
-c3RfdGhyZWFkLCAmdGVzdFtpXSwgdGVzdFtpXS5uYW1lKTsNCisNCisJcmV0dXJuIDA7DQorfQ0K
-K21vZHVsZV9pbml0KGRtYWFwaV90ZXN0X2luaXQpOw0KKw0KK01PRFVMRV9BVVRIT1IoIktyaXNo
-bmEgUmVkZHkgPHZkdW1wYUBudmlkaWEuY29tPiIpOw0KK01PRFVMRV9BVVRIT1IoIkhpcm9zaGkg
-RE9ZVSA8aGRveXVAbnZpZGlhLmNvbT4iKTsNCitNT0RVTEVfREVTQ1JJUFRJT04oIkRNQSBJT01N
-VSBtYXBwaW5nIEFQSSB0ZXN0Iik7DQorTU9EVUxFX0xJQ0VOU0UoIkdQTCB2MiIpOw0KLS0gDQox
-LjcuNS40DQoNCg==
+Sincerely -- Mark Salyzyn
 
---_002_201201111624401854857348878391112hdoyunvidiacom_--
+On Jan 11, 2012, at 3:28 AM, Dan Carpenter wrote:
+
+> MAXIMUM_NUM_CONTAINERS is consistently used as a minimum not a maximum
+> so I was wondering what was up with that?  This is ancient code that
+> predates git.
+> 
+> drivers/scsi/aacraid/aachba.c
+>   382          if (maximum_num_containers < MAXIMUM_NUM_CONTAINERS)
+>   383                  maximum_num_containers = MAXIMUM_NUM_CONTAINERS;
+>   384          fsa_dev_ptr = kzalloc(sizeof(*fsa_dev_ptr) * maximum_num_containers,
+>   385                          GFP_KERNEL);
+> 
+> Btw, if maximum_num_containers were really a maximum instead of minimum
+> then it should be unsigned.  That was what brought the code to my
+> attention initially.
+> 
+> drivers/scsi/aacraid/linit.c
+>  1235          if (shost->max_id < MAXIMUM_NUM_CONTAINERS)
+>  1236                  shost->max_id = MAXIMUM_NUM_CONTAINERS;
+>  1237          else
+>  1238                  shost->this_id = shost->max_id;
+> 
+> regards,
+> dan carpenter
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
