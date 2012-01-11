@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933698Ab2AKC2g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 21:28:36 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:46373 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757035Ab2AKC2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 21:28:35 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:references:date:in-reply-to:message-id:mime-version
-	:content-type; q=dns; s=sasl; b=U1X1J/hjLOPaxESq/G2QsUbo6hU/gnBn
-	FWlkKGYSv8KjNCKdd/E3IZ9aei41sv6pJQXrTKosJtq+j6mBH1ydV4KXWg0Rttb2
-	ZmUme64MzvhyQsx5U+wUg3n6+F1Un8gnZ871pcUxs5E2J2iyZbAwJdDFh2EwnIgI
-	zWijQOmoRIo=
-From: Junio C Hamano <gitster@pobox.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Git Mailing List <git@vger.kernel.org>
-Subject: Re: Regulator updates for 3.3
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
- <20120110184530.GE7164@opensource.wolfsonmicro.com>
- <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
- <20120110222711.GK7164@opensource.wolfsonmicro.com>
- <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
-Date: Tue, 10 Jan 2012 18:28:32 -0800
-In-Reply-To: <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com> (Linus
- Torvalds's message of "Tue, 10 Jan 2012 14:54:27 -0800")
-Message-ID: <7vmx9v7z1r.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: F55ED0DE-3BFB-11E1-8BC7-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+	id S933732Ab2AKCcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 21:32:01 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:53026 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756760Ab2AKCb7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 21:31:59 -0500
+Date: Wed, 11 Jan 2012 13:31:46 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+Subject: linux-next: manual merge of the v4l-dvb tree with the arm-soc tree
+Message-Id: <20120111133146.990e2b7115c9fa80e8fc3234@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__11_Jan_2012_13_31_46_+1100_c58BTM0b/TJ0jKTZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+--Signature=_Wed__11_Jan_2012_13_31_46_+1100_c58BTM0b/TJ0jKTZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Addid junio and git to the cc just to bring up this issue of bad UI
-> once again. I realize it could break old scripts to start up an editor
-> window, but still..
+Hi Mauro,
 
-It is a non-starter to unconditionally start an editor. We would need a
-good way for users to conveniently say "I am doing this unusual merge that
-needs to be justified, and I want an editor to write my justification".
+Today's linux-next merge of the v4l-dvb tree got conflicts in a large
+number of files between commits from the arm-soc tree and commits from the
+v4l-dvb tree.  You have rebased the v4l-dvb tree onto v3.2 while the
+arm-soc tree had merged a previous version. you have then added a lot
+more commits on top of the result - which produces all the conflicts.  :-(
 
-Obviously, "git merge -e regulator/for-linus" would work and is just three
-keystrokes, which can be said "convenient enough" once the user gets used
-to, but I think this is still inadequate as a solution, as the real
-problem is it is _too_ easy to forget to give the option.  Until the user
-becomes _aware_ of the issues, it will not even occur to the user that
-s/he _has_ to justify a merge (or not create a merge at all) in certain
-circumstances and directions.  After all, you have been repeating the "do
-not make meaningless merges" for the past five years on the list. UI tweak
-alone will not fix that.
+This is exactly the sort of pain I alluded to when I first noted that the
+v4l-dvb tree had been merged into the arm-soc tree ...
 
-If we are to rely on user's conscious action, I think it may be something
-like a set of configurations that say things like:
+Not happy.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
- - This branch is for advancing a specific topic, and not for merging
-   random development that happen elsewhere;
+--Signature=_Wed__11_Jan_2012_13_31_46_+1100_c58BTM0b/TJ0jKTZ
+Content-Type: application/pgp-signature
 
- - This branch is for merging works by people downstream from me;
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
- - This remote tracking branch (and by extension that branch at that
-   remote that uses this as its remote tracking branch) is my upstream and
-   I should not be merging back from it; and
+iQIcBAEBCAAGBQJPDPSSAAoJEECxmPOUX5FEa1kP/iAIybu/OWiYiYa4HI00YKUL
+lZvR27u/GPmPoQ2SEjQziVHOJJDcIvlK4hkh1paworC45wZlhMitIm1YKsAsDd8s
+XBSRNF1RNOojzGs+u710GLsRXl/1tjalTZI8GttJM9YeYf9yN7V5X6oEQcWy7Gpo
+AqCBqRt8DzKN/x+ecoGC84YLZoeBNlg8waCHy6yAdxPI8b2hHlrhDmUNmf/lr5rC
+uE4vrd30n4UCajXFXxwKAHj/l2Q2cVL4pwUYeSmjVpQKm694ltni8MtSD28+jag0
+ZK5vK/BNHrLpEhOSLsLiT8Mjb2G6KzIooR0GKRnlEayWZNMUN07IEJdvM2m6C/lP
+z5yxB8QfyIdm4KhlXC6YCrqUsjG3VAZnpI2qMfwbk0+N5hjbXdm/YvYBrQk5Aq3z
+i3oDDn7xA93d2/+x3ke0BYYGKIQwKXca+yYA5E2wBLmJRXoYQTNdKzRMgO1ExTgP
+JjbKwTw75bFKHS5BUs6a//a4oucpEkS+8H6EvixiLmjMGDK7nhz/ytg694+kmt7S
+tqPdlJPmiKRVRO/MkcZeiocsmqDWtc2erWEjjAK9yMm/IFcIPvxohoWIONJ5s70n
+UMISIGXvvivIfRxs8osch1XeTIdlxYQg4bvmXP4cpUqqIf5Nvq8gi4zw56TZaUrr
+Fc0huhNzVAtQj6cv7Qxz
+=AqZa
+-----END PGP SIGNATURE-----
 
- - This remote tracking branch is my downstream, and I should freely merge
-   it when I heard it is ready.
-
-and depending on the combination of what is being merged into what, toggle
-the --edit option by default for "git merge" when neither "--edit" nor
-"--no-edit" is given, just like "git merge" defaults to "--edit" when
-merging an annotated tag.
+--Signature=_Wed__11_Jan_2012_13_31_46_+1100_c58BTM0b/TJ0jKTZ--
