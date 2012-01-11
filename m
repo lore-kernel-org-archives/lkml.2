@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757471Ab2AKMmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 07:42:14 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:37372 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab2AKMmK convert rfc822-to-8bit (ORCPT
+	id S1757465Ab2AKMpM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 07:45:12 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:34759 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab2AKMpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 07:42:10 -0500
+	Wed, 11 Jan 2012 07:45:08 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAMuHMdWHgQY-=43ReEOHgDtdAFhhOELaB8aNimV99+ud1Y=NCA@mail.gmail.com>
-References: <20120110003705.GA9482@kroah.com>
-	<CAMuHMdWHgQY-=43ReEOHgDtdAFhhOELaB8aNimV99+ud1Y=NCA@mail.gmail.com>
-Date: Wed, 11 Jan 2012 13:42:08 +0100
-X-Google-Sender-Auth: IRXlR1kplEmMmUMLwvqZqz3fCUw
-Message-ID: <CAMuHMdVSQS0B_DotQytbmeBs0=a4=8NMhdG5UVXbWjBXYrykFQ@mail.gmail.com>
-Subject: Re: Latest kernel stable/longterm status
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Date: Wed, 11 Jan 2012 20:45:07 +0800
+Message-ID: <CAJd=RBAiAfyXBcn+9WO6AERthyx+C=cNP-romp9YJO3Hn7-U-g@mail.gmail.com>
+Subject: [PATCH] mm: vmscan: deactivate isolated pages with lru lock released
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-mm@kvack.org
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 13:32, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Tue, Jan 10, 2012 at 01:37, Greg KH <greg@kroah.com> wrote:
->> First off, please everyone remember to mark any patch that you want to
->> have applied to the stable kernel trees with a simple:
->>        Cc: stable <stable@vger.kernel.org>
->> marking in the Signed-off-by: area.  Once the patch hits Linus's tree, I
->> will automatically be notified of it and it will be applied if possible.
->> If it does not applied, you will be notified of that.
->
-> How do you want us to specify to which versions it should be applied?
+Spinners on other CPUs, if any, could take the lru lock and do their jobs while
+isolated pages are deactivated on the current CPU if the lock is released
+actively. And no risk of race raised as pages are already queued on locally
+private list.
 
-Cc: v3.2, v3.1, ... <stable@vger.kernel.org>
 
-?
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-Gr{oetje,eeting}s,
+--- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
++++ b/mm/vmscan.c	Wed Jan 11 20:40:40 2012
+@@ -1464,6 +1464,7 @@ update_isolated_counts(struct mem_cgroup
+ 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
 
-                        Geert
+ 	nr_active = clear_active_flags(isolated_list, count);
++	spin_lock_irq(&zone->lru_lock);
+ 	__count_vm_events(PGDEACTIVATE, nr_active);
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+ 	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
+@@ -1482,6 +1483,7 @@ update_isolated_counts(struct mem_cgroup
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+ 	reclaim_stat->recent_scanned[0] += *nr_anon;
+ 	reclaim_stat->recent_scanned[1] += *nr_file;
++	spin_unlock_irq(&zone->lru_lock);
+ }
+
+ /*
+@@ -1577,15 +1579,13 @@ shrink_inactive_list(unsigned long nr_to
+ 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
+ 					       nr_scanned);
+ 	}
++	spin_unlock_irq(&zone->lru_lock);
+
+-	if (nr_taken == 0) {
+-		spin_unlock_irq(&zone->lru_lock);
++	if (nr_taken == 0)
+ 		return 0;
+-	}
+
+ 	update_isolated_counts(mz, sc, &nr_anon, &nr_file, &page_list);
+
+-	spin_unlock_irq(&zone->lru_lock);
+
+ 	nr_reclaimed = shrink_page_list(&page_list, mz, sc, priority,
+ 						&nr_dirty, &nr_writeback);
