@@ -1,80 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933613Ab2AKQx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:53:56 -0500
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:54382 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757720Ab2AKQxv (ORCPT
+	id S1757758Ab2AKQ6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:58:05 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58924 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757195Ab2AKQ6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:53:51 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAJe9DU+ERM5e/2dsb2JhbABCrGuBBYFzAQUnUhBRITYGE79QjB0EoAKHSA
-X-IronPort-AV: E=Sophos;i="4.71,493,1320616800"; 
-   d="scan'208";a="74150933"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
-        Nadav Amit <nadav.amit@gmail.com>
-Subject: [PATCH 2/2] KVM: Fix writeback on page boundary that propagate changes in spite of #PF
-Date: Wed, 11 Jan 2012 18:53:31 +0200
-Message-Id: <1326300811-17065-2-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il>
-References: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il>
+	Wed, 11 Jan 2012 11:58:02 -0500
+MIME-Version: 1.0
+X-Originating-IP: [173.13.129.225]
+In-Reply-To: <201201111646.24731.arnd@arndb.de>
+References: <20120111133146.990e2b7115c9fa80e8fc3234@canb.auug.org.au>
+	<201201111450.02798.arnd@arndb.de>
+	<4F0DB16B.3010302@atmel.com>
+	<201201111646.24731.arnd@arndb.de>
+Date: Wed, 11 Jan 2012 08:58:00 -0800
+Message-ID: <CAOesGMhNOd6uXQLASn2ipryq8kXvCv_t-6Oioyfxbk2Mcvn9PA@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with the arm-soc tree
+From: Olof Johansson <olof@lixom.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, "Wu, Josh" <Josh.wu@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Consider the case in which an instruction emulation writeback is performed on a page boundary.
-In such case, if a #PF occurs on the second page, the write to the first page already occurred and cannot be retracted.
-Therefore, validation of the second page access must be performed prior to writeback.
+On Wed, Jan 11, 2012 at 8:46 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
----
- arch/x86/kvm/x86.c |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+> Agreed. How about if you rebase the few other (non-ISI) patches that
+> I had in arm-soc onto v3.2 and send me an updated pull request so
+> I can send them on? There's no reason to hold them up.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 05fd3d7..7af3d67 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3626,6 +3626,8 @@ struct read_write_emulator_ops {
- 			       int bytes, void *val);
- 	int (*read_write_exit_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
- 				    void *val, int bytes);
-+	gpa_t (*read_write_validate)(struct kvm_vcpu *vcpu, gva_t gva,
-+				     struct x86_exception *exception);
- 	bool write;
- };
- 
-@@ -3686,6 +3688,7 @@ static struct read_write_emulator_ops write_emultor = {
- 	.read_write_emulate = write_emulate,
- 	.read_write_mmio = write_mmio,
- 	.read_write_exit_mmio = write_exit_mmio,
-+	.read_write_validate = kvm_mmu_gva_to_gpa_write,
- 	.write = true,
- };
- 
-@@ -3750,6 +3753,16 @@ int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
- 		int rc, now;
- 
- 		now = -addr & ~PAGE_MASK;
-+
-+		/* First check there is no page-fault on the next page */
-+		if (ops->read_write_validate &&
-+			ops->read_write_validate(vcpu, addr+now, exception) ==
-+			UNMAPPED_GVA) {
-+			/* #PF on the first page should be reported first */
-+			ops->read_write_validate(vcpu, addr, exception);
-+			return X86EMUL_PROPAGATE_FAULT;
-+		}
-+
- 		rc = emulator_read_write_onepage(addr, val, now, exception,
- 						 vcpu, ops);
- 
--- 
-1.7.4.1
+Just to clarify: The late/* branch that I was referring to in my email
+would just then contain the ISI patches, the rest would be in the
+above branch.
 
+
+-Olof
