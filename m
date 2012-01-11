@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757159Ab2AKANv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 19:13:51 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:42346 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753365Ab2AKANs convert rfc822-to-8bit (ORCPT
+	id S1757240Ab2AKAPJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 19:15:09 -0500
+Received: from smtprelay0130.b.hostedemail.com ([64.98.42.130]:45590 "EHLO
+	smtprelay.b.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756025Ab2AKAPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 19:13:48 -0500
+	Tue, 10 Jan 2012 19:15:07 -0500
+X-Panda: scanned!
+X-Session-Marker: 742E617274656D406C79636F732E636F6D
+X-Filterd-Recvd-Size: 1175
+Date: Wed, 11 Jan 2012 00:15:05 +0000 (GMT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1238980316.306275.1326240905866.JavaMail.mail@webmail10>
+Subject: For bugzilla.kernel.org admins
 MIME-Version: 1.0
-In-Reply-To: <20120111000448.GA16395@quack.suse.cz>
-References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
-	<1323367477-21685-2-git-send-email-kamal@canonical.com>
-	<4F0C9D87.8010006@sandeen.net>
-	<20120110213104.GI4516@quack.suse.cz>
-	<CAMBkX3eVeKSmEzmYTe6Oe_D6kAMQTL5LYoi1-Axj7CcrM85Pow@mail.gmail.com>
-	<20120111000448.GA16395@quack.suse.cz>
-Date: Tue, 10 Jan 2012 16:13:46 -0800
-Message-ID: <CAMBkX3e_jyTZ=i8D8_cza23Xygd+Gf5iACZ+hbo5TaYLrJPH-Q@mail.gmail.com>
-Subject: Re: [PATCH v2 1/7] Adding support to freeze and unfreeze a journal
-From: Surbhi Palande <csurbhi@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Eric Sandeen <sandeen@sandeen.net>, Kamal Mostafa <kamal@canonical.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Surbhi Palande <surbhi.palande@canonical.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Mailer: Webmail
+X-Originating-IP: [79.141.56.42]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+Hello,
 
->>
->>
->> If all the write operations were journaled, then this patch would not allow
->> ext4 filesystem to have any dirty data after its frozen.
->> (as journal_start() would block).
->>
->>  I think the only one candidate that creates dirty data without calling
->> ext4_journal_start() is mmapped?
->  No, the problem is in any write path. The problem is with operations
-> that happen during the phase when s_frozen == SB_FREEZE_WRITE. These
-> operations dirty the filesystem but running sync may easily miss them.
-> During this phase journal is not frozen so that does not help you in any
-> way.
->
->                                                                Honza
+Big thanks for bringing bugzilla.kernel.org back alive however there are two issues with it:
 
-Ok! No new transaction can really start after the journal is frozen.
-But we can have dirty data after SB_FREEZE_WRITE and before
-SB_FREEZE_TRANS.
-I agree with you. However, can this be fixed by adding a
-sync_filesystem() in freeze_super() after the sb->s_op->freeze_fs() is
-over?
+1) Searches don't work:
+
+Can't connect to the database.
+Error: Can't connect to MySQL server on '127.0.0.1' (111)
+  Is your database installed and up and running?
+  Do you have the correct username and password selected in localconfig?
+
+2) GZip is not enabled, thus bug reports take a lot of time to load.
 
 
-So then essentially, when freeze_super() returns, the page cache is clean?
+Best wishes,
 
-I do definitely agree that the fix is to add a lock for mutual
-exclusion between freeze filesystem and writes to a frozen filesystem.
-
-Thanks!
-
-Regards,
-Surbhi.
+Artem
