@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757276Ab2AKAd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 19:33:27 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:65344 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756667Ab2AKAdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 19:33:25 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAHvWDE95LbVq/2dsb2JhbABDrFiBBoFyAQEFOhwjEAgDGC4UJQMhE75yE4sdYwSVC5JP
-Date: Wed, 11 Jan 2012 11:33:22 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan@kernel.org>, nowhere <nowhere@hakkenden.ath.cx>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
-Message-ID: <20120111003322.GE24410@dastard>
-References: <1324437036.4677.5.camel@hakkenden.homenet>
- <20111221095249.GA28474@tiehlicka.suse.cz>
- <20111221225512.GG23662@dastard>
- <1324630880.562.6.camel@rybalov.eng.ttk.net>
- <20111223102027.GB12731@dastard>
- <1324638242.562.15.camel@rybalov.eng.ttk.net>
- <20111223204503.GC12731@dastard>
- <20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
- <20111227035730.GA22840@barrios-laptop.redhat.com>
- <20111227135658.08c8016a.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1757295Ab2AKAvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 19:51:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:57500 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757007Ab2AKAvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 19:51:21 -0500
+Date: Wed, 11 Jan 2012 01:51:19 +0100
+From: Jan Kara <jack@suse.cz>
+To: Surbhi Palande <csurbhi@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@sandeen.net>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Valerie Aurora <val@vaaconsulting.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Surbhi Palande <surbhi.palande@canonical.com>
+Subject: Re: [PATCH v2 1/7] Adding support to freeze and unfreeze a journal
+Message-ID: <20120111005119.GA24005@quack.suse.cz>
+References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
+ <1323367477-21685-2-git-send-email-kamal@canonical.com>
+ <4F0C9D87.8010006@sandeen.net>
+ <20120110213104.GI4516@quack.suse.cz>
+ <CAMBkX3eVeKSmEzmYTe6Oe_D6kAMQTL5LYoi1-Axj7CcrM85Pow@mail.gmail.com>
+ <20120111000448.GA16395@quack.suse.cz>
+ <CAMBkX3e_jyTZ=i8D8_cza23Xygd+Gf5iACZ+hbo5TaYLrJPH-Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20111227135658.08c8016a.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMBkX3e_jyTZ=i8D8_cza23Xygd+Gf5iACZ+hbo5TaYLrJPH-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 27, 2011 at 01:56:58PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 27 Dec 2011 12:57:31 +0900
-> Minchan Kim <minchan@kernel.org> wrote:
-> > The scenario I think is as follows,
-> > 
-> > 1. dd comsumes memory in NORMAL zone
-> > 2. dd enter direct reclaim and wakeup kswapd
-> > 3. kswapd reclaims some memory in NORMAL zone until it reclaims high wamrk
-> > 4. schedule
-> > 5. dd consumes memory again in NORMAL zone
-> > 6. kswapd fail to reclaim memory by high watermark due to 5.
-> > 7. loop again, goto 3.
-> > 
-> > The point is speed between reclaim VS memory consumption.
-> > So kswapd cannot reach a point which enough pages are in NORMAL zone.
-> > 
-> > > 
-> > > BTW. I'm sorry if I miss something ...Why only kswapd reclaims memory
-> > > while 'dd' operation ? (no direct relcaim by dd.)
-> > > Is this log record cpu hog after 'dd' ?
-> > 
-> > If above scenario is right, dd couldn't enter direct reclaim to reclaim memory.
-> > 
+On Tue 10-01-12 16:13:46, Surbhi Palande wrote:
+> >> If all the write operations were journaled, then this patch would not allow
+> >> ext4 filesystem to have any dirty data after its frozen.
+> >> (as journal_start() would block).
+> >>
+> >>  I think the only one candidate that creates dirty data without calling
+> >> ext4_journal_start() is mmapped?
+> >  No, the problem is in any write path. The problem is with operations
+> > that happen during the phase when s_frozen == SB_FREEZE_WRITE. These
+> > operations dirty the filesystem but running sync may easily miss them.
+> > During this phase journal is not frozen so that does not help you in any
+> > way.
+> >
+> >                                                                Honza
 > 
-> I think you're right. IIUC, kswapd's behavior is what we usually see.
+> Ok! No new transaction can really start after the journal is frozen.
+> But we can have dirty data after SB_FREEZE_WRITE and before
+> SB_FREEZE_TRANS.
+> I agree with you. However, can this be fixed by adding a
+> sync_filesystem() in freeze_super() after the sb->s_op->freeze_fs() is
+> over?
+  The problem with this is that to do writeback you need to start a
+transaction. So you would deadlock.
+
+> So then essentially, when freeze_super() returns, the page cache is clean?
 > 
-> Hmm, if I understand correctly,
-> 
->  - dd's speed down is caused by kswapd's cpu consumption.
->  - kswapd's cpu consumption is enlarged by shrink_slab() (by perf)
->  - kswapd can't stop because NORMAL zone is small.
->  - memory reclaim speed is enough because dd can't get enough cpu.
-> 
-> I wonder reducing to call shrink_slab() may be a help but I'm not sure
-> where lock conention comes from...
+> I do definitely agree that the fix is to add a lock for mutual
+> exclusion between freeze filesystem and writes to a frozen filesystem.
+  Yes, that would be the cleanest solution but it's quite some work.
 
-There is no lock contention. It's simply the overhead of grabbing a
-passive reference to every superblock in the machine 3 times every
-100uS.
-
-FWIW, I don't think kswapd should be polling the shrinkers this
-often when there are no/very few pages available to be freed from
-the slab caches. There are many more shrinkers now than there were
-in the past, so the overhead of polling all shrinkers very quickly
-is significant.
-
-FWIW, when we move to locality aware shrinkers, the polling overhead
-is going to be even higher, so either the VM needs to call
-shrink_slab less aggressively, or shrink_slab() needs to have some
-method of reducing shrinker polling frequency.....
-
-Cheers,
-
-Dave.
+								Honza
 -- 
-Dave Chinner
-david@fromorbit.com
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
