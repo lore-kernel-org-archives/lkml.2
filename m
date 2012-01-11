@@ -1,104 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab2AKI2x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:28:53 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50708 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282Ab2AKI2u convert rfc822-to-8bit (ORCPT
+	id S1757110Ab2AKI2v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:28:51 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:20482 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab2AKI2u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jan 2012 03:28:50 -0500
+Date: Wed, 11 Jan 2012 11:28:43 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: aacraid question: is maximum_num_containers supposed to be minimum?
+Message-ID: <20120111082842.GA31452@elgon.mountain>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1326265449_1658@mail4.comsite.net>
-References: <1326040026-7285-1-git-send-email-gilad@benyossef.com>
-	<1326265449_1658@mail4.comsite.net>
-Date: Wed, 11 Jan 2012 10:28:49 +0200
-Message-ID: <CAOtvUMf6v5iqdLaf6qocfso-HwEdJbHNt_SbY_7vWz6-1gA73g@mail.gmail.com>
-Subject: Re: [PATCH v6 0/8] Reduce cross CPU IPI interference
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-        Michal Nazarewicz <mina86@mina86.org>,
-        Kosaki Motohiro <kosaki.motohiro@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4F0D4841.001E,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 9:04 AM, Milton Miller <miltonm@bga.com> wrote:
->
-> Hi Gilad.   A few minor corrections for several of the patch logs, but some
-> meater discussions on several of the patches.
->
-> Overall I like the series and hope you see it through.
+MAXIMUM_NUM_CONTAINERS is consistently used as a minimum not a maximum
+so I was wondering what was up with that?  This is ancient code that
+predates git.
 
+drivers/scsi/aacraid/aachba.c
+   382          if (maximum_num_containers < MAXIMUM_NUM_CONTAINERS)
+   383                  maximum_num_containers = MAXIMUM_NUM_CONTAINERS;
+   384          fsa_dev_ptr = kzalloc(sizeof(*fsa_dev_ptr) * maximum_num_containers,
+   385                          GFP_KERNEL);
 
-Hi Milton. Thanks so much for the detailed review.
+Btw, if maximum_num_containers were really a maximum instead of minimum
+then it should be unsigned.  That was what brought the code to my
+attention initially.
 
-As you've no doubt noticed, English is not my mother tongue (as opposed to
- C), so a special thank you for the patch logs review :-)
+drivers/scsi/aacraid/linit.c
+  1235          if (shost->max_id < MAXIMUM_NUM_CONTAINERS)
+  1236                  shost->max_id = MAXIMUM_NUM_CONTAINERS;
+  1237          else
+  1238                  shost->this_id = shost->max_id;
 
+regards,
+dan carpenter
 
->
-> <SNIP>
-
-
-
->
-> > +void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
-> > +                     void *info, bool wait)
-> > +{
-> > +     int cpu = get_cpu();
-> > +
-> > +     smp_call_function_many(mask, func, info, wait);
-> > +     if (cpumask_test_cpu(cpu, mask)) {
-> > +             local_irq_disable();
-> > +             func(info);
-> > +             local_irq_enable();
-> > +     }
-> > +     put_cpu();
-> > +}
-> > +EXPORT_SYMBOL(on_each_cpu_mask);
->
-> It should be less code if we rewrite on_each_cpu as the one liner
-> on_each_cpu_mask(cpu_online_mask).  I think the trade off of less
-> code is worth the cost of the added test of cpu being in online_mask.
->
-> That could be a seperate patch, but will be easier to read the result
-> if on_each_cpu_mask is placed above on_each_cpu in this one.
-
-
-Yes, it does look cleaner and I agree that the extra test is not a big
-price to pay for simplee code.
-
-However, to do that, on_each_cpu return value need to go away and
-all caller needs to be adjusted. I figured this is out of scope for this
-patch set.
-
-I did send out a separate patch set to do the needed work  (see:
-https://lkml.org/lkml/2012/1/8/48) and I suggest that after both of
-them go in, I'll send a patch to do exactly what you suggested.
-
-Thanks!
-Gilad
---
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
