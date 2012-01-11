@@ -1,146 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933915Ab2AKTYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 14:24:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43827 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932901Ab2AKTYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 14:24:48 -0500
-Message-ID: <4F0DE1CE.5000006@redhat.com>
-Date: Wed, 11 Jan 2012 14:23:58 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	id S933908Ab2AKTaM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 14:30:12 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:55039 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932901Ab2AKTaK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 14:30:10 -0500
 MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH -mm] make swapin readahead skip over holes
-References: <20120109181023.7c81d0be@annuminas.surriel.com> <20120111165123.GF3910@csn.ul.ie>
-In-Reply-To: <20120111165123.GF3910@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120111183115.GA28196@moon>
+References: <20120111161939.GI8752@moon> <CAHGf_=r1vrZbCTYNAp7e+Hbbxh2BnDXXrdsNckSkQVVrXQ=9KQ@mail.gmail.com>
+ <20120111175952.GI466@moon> <CAHGf_=oMk2YDnmsomgCc45Ei5yaSdNzRwapm7Fqm9mN7LY0FNw@mail.gmail.com>
+ <4F0DD365.6070200@parallels.com> <20120111183115.GA28196@moon>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Wed, 11 Jan 2012 14:29:48 -0500
+Message-ID: <CAHGf_=oXsrbsXPqBw_CvZQjwdXhzhqkoWX3mRSEgMZHy44ZUKg@mail.gmail.com>
+Subject: Re: [RFC] on general object IDs again
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kyle Moffett <kyle@moffetthome.net>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 11:51 AM, Mel Gorman wrote:
-> On Mon, Jan 09, 2012 at 06:10:23PM -0500, Rik van Riel wrote:
-
->> +	get_swap_cluster(entry,&offset,&end_offset);
->> +
->> +	for (; offset<= end_offset ; offset++) {
->>   		/* Ok, do the async read-ahead now */
->>   		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
->>   						gfp_mask, vma, addr);
->>   		if (!page)
->> -			break;
->> +			continue;
->>   		page_cache_release(page);
->>   	}
+>> > Then, you only need to compare. not any other calculation. i.e. only
+>> > need id uniqueness.
+>> > And any resource are referenced from tasks. so, can you reuse pid for
+>> > this? example,
+>> > two taska share one mm.
+>> >
+>> > task-a(pid: 100)
+>> >               |-----------------mm
+>> > task-b(pid: 200)
+>> >
+>> >
+>> > gen_obj_id(task-b, GEN_OBJ_ID_VM) return 100. (youngest pid of referenced tasks)
+>>
+>> We can, but determining the youngest pid for an mm struct is O(N) algo.
+>> Having N tasks with N mm_structs getting the sharing picture becomes O(N^2).
 >
-> For a heavily fragmented swap file, this will result in more IO and
-> the gamble is that pages nearby are needed soon. You say your virtual
-> machines swapin faster and that does not surprise me. I also expect
-> they need the data so it's a net win.
+> Yeah, exactly. If not the speed problem we would simply stick
+> with Andrew's proposal as two-id-are-the-same(pid1, pid2)
+> syscall.
 
-More IO operations, yes.  However, IO operations from nearby
-blocks can often be done without incurring extra disk seeks,
-because the disk head is already in the right place.
+Why O(N^2) is matter? Typical HPC system have mere a few hundred pids.
+so, O(N^2)
+is not slow. How do you mesure Andrew's proposal?
 
-This seems to be born out by the fact that I saw swapin
-rates increase from maybe 200-300kB/s to 5-15MB/s...
+If you have 1000 pids and each syscall need 10usec,
 
-Even on some SSDs it could avoid some bank switches, though
-of course there I would expect the effect to be much less
-pronounced.
+1000 * 1000 * 10 = 10,000,000usec = 10sec. But, important thing is, almost all
+processes don't share fs, mm and other structs. then, if we check
+reference count
+before task traversal, required time may reduce 1/10x - 1/100x.
 
-> There is an possibility that under memory pressure that swapping in
-> more pages will cause more memory pressure (increased swapin causing
-> clean page cache discards and pageout) and be an overall loss. This may
-> be a net loss in some cases such as where the working set size is just
-> over physical memory and the increased swapin causes a problem. I doubt
-> this case is common but it is worth bearing in mind if future bug
-> reports complain about increased swap activity.
 
-True, there may be workloads that benefit from a smaller
-page-cluster. The fact that the recently swapped in pages
-are all put on the inactive anon list should help protect
-the working set, too.
-
-Another alternative may be a time based decision. If we
-have swapped something out recently, go with a less
-aggressive swapin readahead.
-
-That would automatically give us fast swapin readahead
-when in "memory hog just exited, let the system recover"
-mode, and conservative swapin readahead in your situation.
-
-However, that could still hurt badly if the system is just
-moving the working set from one part of a program to another.
-
-I suspect we will be faster off by having faster swap IO,
-which this patch seems to provide.
-
->> -	si = swap_info[swp_type(entry)];
->> -	target = swp_offset(entry);
->> -	base = (target>>  our_page_cluster)<<  our_page_cluster;
->> -	end = base + (1<<  our_page_cluster);
->> -	if (!base)		/* first page is swap header */
->> -		base++;
-
->> +	si = swap_info[swp_type(entry)];
->> +	/* Round the begin down to a page_cluster boundary. */
->> +	offset = (offset>>  page_cluster)<<  page_cluster;
->
-> Minor nit but it would feel more natural to me to see
->
-> offset&  ~((1<<  page_cluster) - 1)
->
-> but I understand that you are reusing the existing code.
-
-Sure, I can do that.
-
-While I'm there, I can also add that if (!base) base++
-thing back in :)
-
->> +	*begin = offset;
->> +	/* Round the end up, but not beyond the end of the swap device. */
->> +	offset = offset + (1<<  page_cluster);
->> +	if (offset>  si->max)
->> +		offset = si->max;
->> +	*end = offset;
->>   	spin_unlock(&swap_lock);
->> -
->> -	/*
->> -	 * Indicate starting offset, and return number of pages to get:
->> -	 * if only 1, say 0, since there's then no readahead to be done.
->> -	 */
->> -	*offset = ++toff;
->> -	return nr_pages? ++nr_pages: 0;
->>   }
->
-> This section deletes code which is nice but there is a
-> problem. Your changelog says that this is duplicating the effort of
-> read_swap_cache_async() which is true but what it does is
->
-> 1. a swap cache lookup which will probably fail
-> 2. alloc_page_vma()
-> 3. radix_tree_preload()
-> 4. swapcache_prepare
->     - calls __swap_duplicate()
->     - finds the hole, bails out
->
-> That's a lot of work before the hole is found. Would it be worth
-> doing a racy check in swapin_readahead without swap lock held before
-> calling read_swap_cache_async()?
-
-The problem is that without the swap_lock held, the swap_info
-struct may disappear completely because of the swapin_readahead
-happening concurrently with a swapoff.
-
-I suspect that the CPU time spent doing 1-4 above will be
-negligible compared to the amount of time spent doing disk IO,
-but if there turns out to be a problem it should be possible
-to move the swap hole identification closer to the top of
-swap_cache_read_async().
+> But when we get a number of pids to dump we need the
+> resource affinity picture over them all.
