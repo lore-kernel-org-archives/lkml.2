@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933129Ab2AKRpp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:45:45 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53816 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757900Ab2AKRpm (ORCPT
+	id S933640Ab2AKRqK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:46:10 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:57727 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932120Ab2AKRqH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:45:42 -0500
-Date: Wed, 11 Jan 2012 17:45:41 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Thomas Abraham <thomas.abraham@linaro.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, rpurdie@rpsys.net,
-        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, kgene.kim@samsung.com, jg1.han@samsung.com,
-        kyungmin.park@samsung.com, cbou@mail.ru, kwangwoo.lee@gmail.com,
-        augulis.darius@gmail.com, ben-linux@fluff.org, patches@linaro.org
-Subject: Re: [PATCH] backlight: lcd: add driver for raster-type lcd's with
-	gpio controlled panel reset
-Message-ID: <20120111174540.GE24213@opensource.wolfsonmicro.com>
-References: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org> <4F05F509.6020405@metafoo.de> <20120106064929.GB3496@opensource.wolfsonmicro.com> <CAJuYYwRxuZAm_JpLw1fN2ypnFc6TocH6veRmCeuqENvZHSz3kg@mail.gmail.com> <20120107172826.GA355@opensource.wolfsonmicro.com> <CAJuYYwSuDzUWgnSJHO0vwjYH7zscC9=j_=JuOUuJy9shHpPUuA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJuYYwSuDzUWgnSJHO0vwjYH7zscC9=j_=JuOUuJy9shHpPUuA@mail.gmail.com>
-X-Cookie: Condense soup, not books!
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Wed, 11 Jan 2012 12:46:07 -0500
+X-IronPort-AV: E=Sophos;i="4.71,493,1320652800"; 
+   d="scan'208";a="615704462"
+Message-ID: <1326303963.19024.1.camel@lade.trondhjem.org>
+Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
+ context
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Date: Wed, 11 Jan 2012 12:46:03 -0500
+In-Reply-To: <4F0DC582.6030805@parallels.com>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+			 <1325285705.10984.4.camel@lade.trondhjem.org>
+		 <1325797111.11084.22.camel@lade.trondhjem.org>
+		 <4F0C35F3.7060508@parallels.com>
+	 <1326299003.17212.7.camel@lade.trondhjem.org>
+	 <4F0DC582.6030805@parallels.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 11 Jan 2012 17:46:04.0420 (UTC) FILETIME=[E3E0EC40:01CCD088]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 04:21:57PM +0530, Thomas Abraham wrote:
+On Wed, 2012-01-11 at 21:23 +0400, Stanislav Kinsbursky wrote: 
+> I've sent rebased "v2" of the patch set, contains updated patch "SUNRPC: handle 
+> RPC client pipefs dentries by network namespace aware routine", which, I 
+> believe, fixes oops, spotted by Bryan (it was caused by excessive call of 
+> rpc_put_mount() on PipeFS dentries unlink).
+> So, if I'm not mistaken here, there's no need in implementing of dummy versions 
+> of rpc_pipefs_notifier_(un)register() or any other dummy stuff.
 
-> In the case of Exynos4 based Origen board, buck7 of max8997 supplies
-> power to the lcd panel. buck7 is capable of supplying power at
-> different voltage levels but for Origen board, it is required to
-> supply only 3.3V. The constraints for buck7 can specify 'apply_uV' and
-> this will ensure that buck7 is configured to supply 3.3V.
+OK. Fair enough. We'll give it some testing to make sure that we don't
+hit it again...
 
-> But 'apply_uV' seems to be not ideal for regulators that supply power
-> to lcd panels. It would be better to power lcd panels only when video
-> data has to be displayed.
+> BTW, it looks like that in last 2 days I've sent all updates to the issues you 
+> pointed out. If not, please, ping me once more.
 
-What makes you say this?  Enabling and disabling a regulator are
-entirely orthogonal to setting the regulator voltage.
+I'm in the process of reviewing it right now.
+
+Cheers
+  Trond
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
