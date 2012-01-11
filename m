@@ -1,68 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab2AKIXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:23:51 -0500
-Received: from solca.med.ec ([200.105.240.90]:34067 "EHLO mail.solca.med.ec"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754225Ab2AKIXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:23:50 -0500
-Message-ID: <54560.41.71.150.50.1326269638.squirrel@mail.solca.med.ec>
-Date: Wed, 11 Jan 2012 03:13:58 -0500 (ECT)
-Subject: =?utf-8?B?V2VibWFzdGVyIHBvd2lhZG9taWXFhCEh4oCP4oCP4oCPICA=?=
-From: =?utf-8?B?V2VibWFzdGVyIEFrdHVhbGl6YWNqYSBXeWR6aWHFgg==?= 
-	<info@webmaster.pl>
-Reply-To: customercarewebdept40@w.cn
-User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+	id S1757185Ab2AKI2x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:28:53 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:50708 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754282Ab2AKI2u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 03:28:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain;charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
-X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18638.005
-X-TM-AS-Result: No-0.555-4.5-31-10
-X-imss-scan-details: No-0.555-4.5-31-10
-X-TM-AS-User-Approved-Sender: No
-X-TMASE-MatchedRID: bF/ftEib5FfmR+RxuU2vfUwAZYE2FMixerJCitPoIIzfUZT83lbkEMWm
-	DR829mMW+SihPPY9VI/SFZyaJmMIRq4HyN5VK32o3QfwsVk0UbsIoUKaF27lxe9ttG7ej8LDTf7
-	84XTH6n02i1vZX3Gk8jR5DBXp0fyKfL+lEnWkaa1YMZmn2SPR7wADRaWctxCv9lwBnJvrqCOKFQ
-	bGqG+X5kV4mhCkeaWfaWNolBtQ1wbDHYSZWYRUCk9o3BPtf0h2+rL5VW+ofZc=
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <1326265449_1658@mail4.comsite.net>
+References: <1326040026-7285-1-git-send-email-gilad@benyossef.com>
+	<1326265449_1658@mail4.comsite.net>
+Date: Wed, 11 Jan 2012 10:28:49 +0200
+Message-ID: <CAOtvUMf6v5iqdLaf6qocfso-HwEdJbHNt_SbY_7vWz6-1gA73g@mail.gmail.com>
+Subject: Re: [PATCH v6 0/8] Reduce cross CPU IPI interference
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>,
+        Chris Metcalf <cmetcalf@tilera.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-mm@kvack.org,
+        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        Rik van Riel <riel@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        Sasha Levin <levinsasha928@gmail.com>, Mel Gorman <mel@csn.ul.ie>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+        Michal Nazarewicz <mina86@mina86.org>,
+        Kosaki Motohiro <kosaki.motohiro@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 11, 2012 at 9:04 AM, Milton Miller <miltonm@bga.com> wrote:
+>
+> Hi Gilad.   A few minor corrections for several of the patch logs, but some
+> meater discussions on several of the patches.
+>
+> Overall I like the series and hope you see it through.
+
+
+Hi Milton. Thanks so much for the detailed review.
+
+As you've no doubt noticed, English is not my mother tongue (as opposed to
+ C), so a special thank you for the patch logs review :-)
+
+
+>
+> <SNIP>
 
 
 
-Drodzy Widzowie konto e-mail,
+>
+> > +void on_each_cpu_mask(const struct cpumask *mask, void (*func)(void *),
+> > +                     void *info, bool wait)
+> > +{
+> > +     int cpu = get_cpu();
+> > +
+> > +     smp_call_function_many(mask, func, info, wait);
+> > +     if (cpumask_test_cpu(cpu, mask)) {
+> > +             local_irq_disable();
+> > +             func(info);
+> > +             local_irq_enable();
+> > +     }
+> > +     put_cpu();
+> > +}
+> > +EXPORT_SYMBOL(on_each_cpu_mask);
+>
+> It should be less code if we rewrite on_each_cpu as the one liner
+> on_each_cpu_mask(cpu_online_mask).  I think the trade off of less
+> code is worth the cost of the added test of cpu being in online_mask.
+>
+> That could be a seperate patch, but will be easier to read the result
+> if on_each_cpu_mask is placed above on_each_cpu in this one.
 
 
-Ten komunikat jest od poczty centrum wiadomoÅ›ci do wszystkich na nasze
-konto poczty owners.As pierwszym kwartale 2012 r. Obecnie jest
-przeprowadzenie usÅ‚ugi aktualizacji dla naszej bazy i e-mail centrum
-konta. JesteÅ›my usuniÄ™cie wszystkich niewykorzystanych konto poczty
-internetowej, aby utworzyÄ‡ wiÄ™cej miejsca dla nowych kont.
+Yes, it does look cleaner and I agree that the extra test is not a big
+price to pay for simplee code.
 
-Aby zapobiec koncie od usuwania i Aby kontynuowaÄ‡ korzystanie z naszych
-usÅ‚ug, ktÃ³re sÄ… wymagane do aktualizacji i potwierdzenia konta webmail.
+However, to do that, on_each_cpu return value need to go away and
+all caller needs to be adjusted. I figured this is out of scope for this
+patch set.
 
+I did send out a separate patch set to do the needed work  (see:
+https://lkml.org/lkml/2012/1/8/48) and I suggest that after both of
+them go in, I'll send a patch to do exactly what you suggested.
 
-Aby zakoÅ„czyÄ‡ potwierdzenia konta za pierwszy kwartaÅ‚ 2012 r. JesteÅ›
-odpowiedzieÄ‡ na tÄ™ wiadomoÅ›Ä‡ natychmiast i wprowadÅº dane swojego
-konta w wymienionych poniÅ¼ej.
+Thanks!
+Gilad
+--
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
-
-Potwierdzenie informacji o koncie
-Nazwa uÅ¼ytkownika: ......
-E-mail Login ............
-HasÅ‚o: ..................
-PotwierdÅº hasÅ‚o :........
-Data urodzenia: .........
-
-WaÅ¼ne * ProszÄ™ podaÄ‡ wszystkie te informacje kompletnie i prawidÅ‚owo w
-przeciwnym razie ze wzglÄ™dÃ³w bezpieczeÅ„stwa byÄ‡ moÅ¼e bÄ™dziemy
-musieli zamknÄ…Ä‡ temporarily.We konto poczty dziÄ™kujÄ™ za szybkie zajÄ™cie
-siÄ™ tÄ… matter.Please zrozumieÄ‡, Å¼e jest to Å›rodek bezpieczeÅ„stwa
-przeznaczonych do ochrony uÅ¼ytkownikÃ³w i konta poczty internetowej.
-Przepraszamy za wszelkie niedogodnoÅ›ci.
-
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
