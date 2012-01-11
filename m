@@ -1,70 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933144Ab2AKO32 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 09:29:28 -0500
-Received: from xyratex197.xyratex.com ([194.131.166.197]:51011 "EHLO
-	XY01EX21.xy01.xyratex.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932962Ab2AKO31 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 09:29:27 -0500
-X-Greylist: delayed 837 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jan 2012 09:29:26 EST
-Subject: Re: aacraid question: is maximum_num_containers supposed to be minimum?
-Mime-Version: 1.0 (Apple Message framework v1251.1)
+	id S1757587Ab2AKOkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 09:40:22 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:46179 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab2AKOkU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 09:40:20 -0500
+Date: Wed, 11 Jan 2012 15:40:14 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org,
+        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
+        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
+        namhyung@gmail.com
+Subject: Re: [RFC PATCHSET take#2] ioblame: IO tracer with origin tracking
+Message-ID: <20120111144012.GB7991@somewhere.redhat.com>
+References: <1326220106-5765-1-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Mark Salyzyn <mark_salyzyn@xyratex.com>
-In-Reply-To: <20120111082842.GA31452@elgon.mountain>
-Date: Wed, 11 Jan 2012 09:15:20 -0500
-Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <C9E26AA3-B4DE-450F-8DC6-6C706FF703A1@xyratex.com>
-References: <20120111082842.GA31452@elgon.mountain>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-X-Mailer: Apple Mail (2.1251.1)
-X-OriginalArrivalTime: 11 Jan 2012 14:15:21.0527 (UTC) FILETIME=[74208C70:01CCD06B]
+Content-Disposition: inline
+In-Reply-To: <1326220106-5765-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is *both*, in part because of history, and usage.
+Hi Tejun,
 
-Initially the value was the hard coded maximum number of containers (arrays) for the earlier Firmware that never reported what they were capable of, until the value became variable based on Firmware Release with a new information field. Older Firmware would report zero.
-
-In order to stress compatibility, and reliability should the value that is returned from the Firmware report badly, if a controller had less than this value, then we would allocate at least that amount of space for containers. This is the point at which the value went from being a maximum to a minimum.
-
-The first bus is the containers, the remaining higher buses are the physical devices. If the number of ids on a physical bus is less than the number of containers, then we up it to match the first bus to that we have symmetry. An addition check,along this vein, to make sure that the max_ids is at least the returned maximum_num_containers ...
-
-A clarification patch replacing minimum with maximum would help, but is purely cosmetic. You are the first person to ask this question in over a decade ;->
-
-Sincerely -- Mark Salyzyn
-
-On Jan 11, 2012, at 3:28 AM, Dan Carpenter wrote:
-
-> MAXIMUM_NUM_CONTAINERS is consistently used as a minimum not a maximum
-> so I was wondering what was up with that?  This is ancient code that
-> predates git.
+On Tue, Jan 10, 2012 at 10:28:17AM -0800, Tejun Heo wrote:
+> Hello, guys.
 > 
-> drivers/scsi/aacraid/aachba.c
->   382          if (maximum_num_containers < MAXIMUM_NUM_CONTAINERS)
->   383                  maximum_num_containers = MAXIMUM_NUM_CONTAINERS;
->   384          fsa_dev_ptr = kzalloc(sizeof(*fsa_dev_ptr) * maximum_num_containers,
->   385                          GFP_KERNEL);
+> Even with blktrace and tracepoints, getting insight into the IOs going
+> on a system is very challenging.  A lot of IO operations happen long
+> after the action which triggered the IO finished and the overall
+> asynchronous nature of IO operations make it difficult to trace back
+> the origin of a given IO.
 > 
-> Btw, if maximum_num_containers were really a maximum instead of minimum
-> then it should be unsigned.  That was what brought the code to my
-> attention initially.
+> ioblame is an attempt at providing better visibility into overall IO
+> behavior.  ioblame hooks into various tracepoints and tries to
+> determine who caused any given IO how and charges the IO accordingly.
 > 
-> drivers/scsi/aacraid/linit.c
->  1235          if (shost->max_id < MAXIMUM_NUM_CONTAINERS)
->  1236                  shost->max_id = MAXIMUM_NUM_CONTAINERS;
->  1237          else
->  1238                  shost->this_id = shost->max_id;
+> On each IO completion, ioblame knows who to charge the IO (task), how
+> the IO got triggered (stack trace at the point of triggering, be it
+> page, inode dirtying or direct IO issue) and various information about
+> the IO itself (offset, size, how long it took and so on).  ioblame
+> exports this information via ioblame:ioblame_io tracepoint.
 > 
-> regards,
-> dan carpenter
+> For more details, please read Documentation/trace/ioblame.txt.
+> 
+> Changes from the last take[L] are,
+> 
+> * Per Namhyung's suggestion, in-kernel statistics gathering stripped
+>   out.  All information is now exported through a tracepoint per each
+>   IO.  This makes a lot of stuff unnecessary and over 1500 lines of
+>   code have been removed.
+> 
+> * block_bio_complete tracepoint patch will result in duplicate
+>   BLK_TA_COMPLETE notifications.  Namhyung is working on proper
+>   solution.  For now, SOB is removed from the patch.
+> 
+> * Trace filter is no longer used and patches dropped from the series.
+> 
+> * Rebased on top of v3.2.
+> 
+> This patchset contains the following 9 patches.
+> 
+>   0001-block-abstract-disk-iteration-into-disk_iter.patch
+>   0002-block-block_bio_complete-tracepoint-was-missing.patch
+>   0003-block-add-req-to-bio_-front-back-_merge-tracepoints.patch
+>   0004-writeback-move-struct-wb_writeback_work-to-writeback.patch
+>   0005-writeback-add-more-tracepoints.patch
+>   0006-block-add-block_touch_buffer-tracepoint.patch
+>   0007-vfs-add-fcheck-tracepoint.patch
+>   0008-stacktrace-implement-save_stack_trace_quick.patch
+>   0009-block-trace-implement-ioblame-IO-tracer-with-origin-.patch
+> 
+> 0001-0004 update block layer in preparation.
+> 
+> 0005-0007 add more tracepoints along the IO stack.
+> 
+> 0008 adds nimbler backtrace dump function as ioblame dumps stacktrace
+> extremely frequently.
+> 
+> 0009 implements ioblame.
+> 
+> This is still in early stage and I haven't done much performance
+> analysis yet.  Tentative testing shows it adds ~20% CPU overhead when
+> used on memory backed loopback device.
+> 
+> The patches are on top of v3.2 and available in the following git
+> branch.
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ioblame
+> 
+> diffstat follows.
+> 
+>  Documentation/trace/ioblame.txt   |  476 +++++++
+>  arch/x86/include/asm/stacktrace.h |    2 
+>  arch/x86/kernel/stacktrace.c      |   40 
+>  block/blk-core.c                  |    5 
+>  block/genhd.c                     |   98 +
+>  fs/bio.c                          |    3 
+>  fs/fs-writeback.c                 |   34 
+>  fs/super.c                        |    2 
+>  include/linux/blk_types.h         |    4 
+>  include/linux/buffer_head.h       |    7 
+>  include/linux/fdtable.h           |    3 
+>  include/linux/fs.h                |    3 
+>  include/linux/genhd.h             |   13 
+>  include/linux/ioblame.h           |   72 +
+>  include/linux/stacktrace.h        |    6 
+>  include/linux/writeback.h         |   18 
+>  include/trace/events/block.h      |   70 -
+>  include/trace/events/vfs.h        |   40 
+>  include/trace/events/writeback.h  |  113 +
+>  kernel/stacktrace.c               |    6 
+>  kernel/trace/Kconfig              |   12 
+>  kernel/trace/Makefile             |    1 
+>  kernel/trace/blktrace.c           |    2 
+>  kernel/trace/ioblame.c            | 2279 ++++++++++++++++++++++++++++++++++++++
+
+I think this has been asked before. So sorry for asking twice.
+
+But I'm wondering why the post processing is made from the kernel. Do you think
+it would be possible to pull that out in userspace. We have some nice scripting
+framework for post processing of trace events in perf tools for example.
+
+If it's not possible please tell us why. We really would like to avoid adding such
+a big piece of code in the tracing subsystem if possible.
+
+Thanks.
+
+>  mm/page-writeback.c               |    2 
+>  25 files changed, 3244 insertions(+), 67 deletions(-)
+> 
+> Thanks.
 > 
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+> tejun
+> 
+> [L] http://thread.gmane.org/gmane.linux.kernel/1235937
