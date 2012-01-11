@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab2AKMpM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 07:45:12 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:34759 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab2AKMpI (ORCPT
+	id S1757449Ab2AKMrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 07:47:31 -0500
+Received: from smtp.nokia.com ([147.243.1.47]:20506 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753588Ab2AKMr3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 07:45:08 -0500
+	Wed, 11 Jan 2012 07:47:29 -0500
+From: <leonid.moiseichuk@nokia.com>
+To: <rientjes@google.com>
+CC: <gregkh@suse.de>, <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <cesarb@cesarb.net>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <emunson@mgebm.net>, <penberg@kernel.org>, <aarcange@redhat.com>,
+        <riel@redhat.com>, <mel@csn.ul.ie>, <dima@android.com>,
+        <rebecca@android.com>, <san@google.com>, <akpm@linux-foundation.org>,
+        <vesa.jaaskelainen@nokia.com>
+Subject: RE: [PATCH 3.2.0-rc1 3/3] Used Memory Meter pseudo-device module
+Thread-Topic: [PATCH 3.2.0-rc1 3/3] Used Memory Meter pseudo-device module
+Thread-Index: AQHMyxrzw3V52zxEQkmaiNpKEK9QnpYDzM3g///5tgCAABJ9kIAAofQAgAKqrWA=
+Date: Wed, 11 Jan 2012 12:46:33 +0000
+Message-ID: <84FF21A720B0874AA94B46D76DB98269045568A1@008-AM1MPN1-003.mgdnok.nokia.com>
+References: <cover.1325696593.git.leonid.moiseichuk@nokia.com>
+ <ed78895aa673d2e5886e95c3e3eae38cc6661eda.1325696593.git.leonid.moiseichuk@nokia.com>
+ <20120104195521.GA19181@suse.de>
+ <84FF21A720B0874AA94B46D76DB9826904554AFD@008-AM1MPN1-003.mgdnok.nokia.com>
+ <alpine.DEB.2.00.1201090203470.8480@chino.kir.corp.google.com>
+ <84FF21A720B0874AA94B46D76DB9826904554B81@008-AM1MPN1-003.mgdnok.nokia.com>
+ <alpine.DEB.2.00.1201091251300.10232@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1201091251300.10232@chino.kir.corp.google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.25.15.109]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Date: Wed, 11 Jan 2012 20:45:07 +0800
-Message-ID: <CAJd=RBAiAfyXBcn+9WO6AERthyx+C=cNP-romp9YJO3Hn7-U-g@mail.gmail.com>
-Subject: [PATCH] mm: vmscan: deactivate isolated pages with lru lock released
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-mm@kvack.org
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+X-OriginalArrivalTime: 11 Jan 2012 12:46:34.0896 (UTC) FILETIME=[0D352900:01CCD05F]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Spinners on other CPUs, if any, could take the lru lock and do their jobs while
-isolated pages are deactivated on the current CPU if the lock is released
-actively. And no risk of race raised as pages are already queued on locally
-private list.
+> -----Original Message-----
+> From: ext David Rientjes [mailto:rientjes@google.com]
+> Sent: 09 January, 2012 21:55
+...
+> 
+> Maybe there's some confusion: the proposed oom killer delay that I'm
+> referring to here is not upstream and has never been written for global oom
+> conditions.  My reference to it earlier was as an internal patch that we carry
+> on top of memory controller, but what I'm proposing here is for it to be
+> implemented globally.
 
+That is explains situation - I know how memcg can handle OOM in cgroup but not about internal patch.
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+> So if the page allocator can make no progress in freeing memory, we would
+> introduce a delay in out_of_memory() if it were configured via a sysctl from
+> userspace.  When this delay is started, applications waiting on this event can
+> be notified with eventfd(2) that the delay has started and they have
+> however many milliseconds to address the situation.  When they rewrite the
+> sysctl, the delay is cleared.  If they don't rewrite the sysctl and the delay
+> expires, the oom killer proceeds with killing.
+> 
+> What's missing for your use case with this proposal?
 
---- a/mm/vmscan.c	Thu Dec 29 20:20:16 2011
-+++ b/mm/vmscan.c	Wed Jan 11 20:40:40 2012
-@@ -1464,6 +1464,7 @@ update_isolated_counts(struct mem_cgroup
- 	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
+Timed delays in multi-process handling in case OOM looks for me fragile construction due to delays are not predicable.
+Memcg supports [1] better approach to freeze whole group and kick pointed user-space application to handle it. We planned
+to use it as:
+- enlarge cgroup
+- send SIGTERM to selected "bad" application e.g. based on oom_score
+- wait a bit
+- send SIGKILL to "bad" application
+- reduce group size
 
- 	nr_active = clear_active_flags(isolated_list, count);
-+	spin_lock_irq(&zone->lru_lock);
- 	__count_vm_events(PGDEACTIVATE, nr_active);
+But finally default OOM killer starts to work fine.
 
- 	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-@@ -1482,6 +1483,7 @@ update_isolated_counts(struct mem_cgroup
+[1] http://lwn.net/Articles/377708/
 
- 	reclaim_stat->recent_scanned[0] += *nr_anon;
- 	reclaim_stat->recent_scanned[1] += *nr_file;
-+	spin_unlock_irq(&zone->lru_lock);
- }
-
- /*
-@@ -1577,15 +1579,13 @@ shrink_inactive_list(unsigned long nr_to
- 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
- 					       nr_scanned);
- 	}
-+	spin_unlock_irq(&zone->lru_lock);
-
--	if (nr_taken == 0) {
--		spin_unlock_irq(&zone->lru_lock);
-+	if (nr_taken == 0)
- 		return 0;
--	}
-
- 	update_isolated_counts(mz, sc, &nr_anon, &nr_file, &page_list);
-
--	spin_unlock_irq(&zone->lru_lock);
-
- 	nr_reclaimed = shrink_page_list(&page_list, mz, sc, priority,
- 						&nr_dirty, &nr_writeback);
+ 
