@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756539Ab2AKHzD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 02:55:03 -0500
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:40446
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752457Ab2AKHzA convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 02:55:00 -0500
-X-SpamScore: -11
-X-BigFish: VS-11(zz542Mdf9M4015Lzz1202hzz8275bh8275dhz2dhc1ahc1bh2a8h668h839h8e2h8e3h945hbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Shi Xuelin-B29237 <B29237@freescale.com>
-To: "iws@ovro.caltech.edu" <iws@ovro.caltech.edu>
-CC: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH]     fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Topic: [PATCH]     fsldma: fix performance degradation by optimizing
- spinlock use.
-Thread-Index: AQHMw5qGc5XFHvvUIkC2vfg0WOM0aZYG5Iug
-Date: Wed, 11 Jan 2012 07:54:55 +0000
-Message-ID: <DBB740589CE8814680DECFE34BE197AB1665A3@039-SN1MPN1-006.039d.mgd.msft.net>
-References: <1324879263-11845-1-git-send-email-b29237@freescale.com>
-In-Reply-To: <1324879263-11845-1-git-send-email-b29237@freescale.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.208.103]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	id S1756064Ab2AKH6r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 02:58:47 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:39014 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752457Ab2AKH6q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 02:58:46 -0500
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: [PATCH] sched/s390: fix compile error in sched/core.c
+Date: Wed, 11 Jan 2012 08:58:16 +0100
+Message-Id: <1326268696-30904-1-git-send-email-borntraeger@de.ibm.com>
+X-Mailer: git-send-email 1.7.8.2
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+x-cbid: 12011107-4966-0000-0000-000001201885
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Iris,
+From: Christian Borntraeger <borntraeger@de.ibm.com>
 
-As we discussed in the previous patch, I add one smp_mb() in fsl_tx_status.
-In my testing with iozone, this smp_mb() could cause 1%~2% performance degradation.
-Anyway it is acceptable for me. Do you have any other comments?
+commit 029632fbb7b7c9d85063cc9eb470de6c54873df3
+    sched: Make separate sched*.c translation units
 
-Thanks,
-Forrest
+removed the include of asm/mutex.h from sched.c. This breaks the combination of
 
------Original Message-----
-From: Shi Xuelin-B29237 
-Sent: 2011$BG/(B12$B7n(B26$BF|(B 14:01
-To: iws@ovro.caltech.edu; vinod.koul@intel.com; dan.j.williams@intel.com; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-Cc: Shi Xuelin-B29237
-Subject: [PATCH] fsldma: fix performance degradation by optimizing spinlock use.
+CONFIG_MUTEX_SPIN_ON_OWNER=yes
+CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX=yes
+like s390 without mutex debugging:
 
-From: Forrest shi <b29237@freescale.com>
+  CC      kernel/sched/core.o
+kernel/sched/core.c: In function ‘mutex_spin_on_owner’:
+kernel/sched/core.c:3287: error: implicit declaration of function ‘arch_mutex_cpu_relax’
+make[2]: *** [kernel/sched/core.o] Error 1
 
-    dma status check function fsl_tx_status is heavily called in
-    a tight loop and the desc lock in fsl_tx_status contended by
-    the dma status update function. this caused the dma performance
-    degrades much.
+Lets re-add the include to kernel/sched/core.c
 
-    this patch releases the lock in the fsl_tx_status function, and
-    introduce the smp_mb() to avoid possible memory inconsistency.
-
-    Signed-off-by: Forrest Shi <xuelin.shi@freescale.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 ---
- drivers/dma/fsldma.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ kernel/sched/core.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c index 8a78154..008fb5e 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -986,15 +986,11 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
- 	struct fsldma_chan *chan = to_fsl_chan(dchan);
- 	dma_cookie_t last_complete;
- 	dma_cookie_t last_used;
--	unsigned long flags;
--
--	spin_lock_irqsave(&chan->desc_lock, flags);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index cecbb64..f82efdc 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -74,6 +74,9 @@
  
-	last_complete = chan->completed_cookie;
-+	smp_mb();
-	last_used = dchan->cookie;
- 
--	spin_unlock_irqrestore(&chan->desc_lock, flags);
--
- 	dma_set_tx_state(txstate, last_complete, last_used, 0);
- 	return dma_async_is_complete(cookie, last_complete, last_used); }
---
-1.7.0.4
-
+ #include <asm/tlb.h>
+ #include <asm/irq_regs.h>
++#ifdef CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX
++#include <asm/mutex.h>
++#endif
+ #ifdef CONFIG_PARAVIRT
+ #include <asm/paravirt.h>
+ #endif
+-- 
+1.7.8.2
 
