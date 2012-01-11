@@ -1,80 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757711Ab2AKQXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:23:32 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:48318 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756974Ab2AKQX0 convert rfc822-to-8bit (ORCPT
+	id S1757412Ab2AKQ0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:26:50 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62264 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2AKQ0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:23:26 -0500
-X-IronPort-AV: E=Sophos;i="4.71,493,1320652800"; 
-   d="scan'208";a="615667768"
-Message-ID: <1326299003.17212.7.camel@lade.trondhjem.org>
-Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
- context
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Date: Wed, 11 Jan 2012 11:23:23 -0500
-In-Reply-To: <4F0C35F3.7060508@parallels.com>
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
-		 <1325285705.10984.4.camel@lade.trondhjem.org>
-	 <1325797111.11084.22.camel@lade.trondhjem.org>
-	 <4F0C35F3.7060508@parallels.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 11 Jan 2012 16:23:24.0517 (UTC) FILETIME=[578BC950:01CCD07D]
+	Wed, 11 Jan 2012 11:26:48 -0500
+Date: Wed, 11 Jan 2012 17:26:44 +0100
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org,
+        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
+        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
+        namhyung@gmail.com, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 8/9] stacktrace: implement save_stack_trace_quick()
+Message-ID: <20120111162642.GC7991@somewhere.redhat.com>
+References: <1326220106-5765-1-git-send-email-tj@kernel.org>
+ <1326220106-5765-9-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326220106-5765-9-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 16:58 +0400, Stanislav Kinsbursky wrote: 
-> 06.01.2012 00:58, Trond Myklebust пишет:
-> > The second problem that was highlighted was the fact that as they stand
-> > today, these patchsets do not allow for bisection. When we hit the Oops,
-> > I had Bryan try to bisect where the problem arose. He ended up pointing
-> > at the patch "SUNRPC: handle RPC client pipefs dentries by network
-> > namespace aware routine", which is indeed the cause, but which is one of
-> > the _dependencies_ for all the PipeFS notifier patches that fix the
-> > problem.
-> >
-> 
-> I'm confused here. Does this means, that I have to fix patch "SUNRPC: handle RPC 
-> client pipefs dentries by network namespace aware routine" to make it able to 
-> bisect?
+On Tue, Jan 10, 2012 at 10:28:25AM -0800, Tejun Heo wrote:
+> Implement save_stack_trace_quick() which only considers the usual
+> contexts (ie. thread and irq) and doesn't handle links between
+> different contexts - if %current is in irq context, only backtrace in
+> the irq stack is considered.
 
-What I mean is that currently, I have various ways to Oops the kernel
-when I apply "SUNRPC: handle RPC client pipefs dentries by network
-namespace aware routine" before all these other followup patches are
-applied.
+The thing I don't like is the duplication that involves not only on
+stack unwinding but also on the safety checks.
 
-One way to could fix this, might be to add dummy versions of
-rpc_pipefs_notifier_register()/unregister() so that "NFS: idmap PipeFS
-notifier introduced" and the other such patches can be applied without
-compilation errors or Oopses before the "handle RPC client pipefs
-dentries..." patch is applied. The latter could then enable the real
-rpc_pipefs_notifier_register()/....
+What about making struct stacktrace_ops::stack() return a value
+that either stops or continue the trace? In your case EOE/EOI would
+be the triggering condition.
 
-The point is to not have these patches add _known_ bugs to the kernel at
-any point, so that someone who is trying to track down an unknown bug
-via "git bisect" doesn't have to also cope with these avoidable
-issues...
+Filtering stack contexts might in fact be a desirable generic feature
+overall.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+At least in perf we could be interested in filtering kernel/user contexts.
+And in your case in stopping after the first context. I also don't know if
+we will be interested in filtering irq/exception/process stacks in the future
+but I prefer to ensure we have a flexible enough interface to allow that.
 
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+So it may be a good idea to reuse the exisiting code for your needs like
+a stack() return value as above. And if the post processing will be done
+from userspace (which I really hope) then extend the ftrace/perf interface
+to allow your quick filtering, something that can be later extended to
+allow more finegrained stacktrace filtering.
 
+> This is subset of dump_trace() done in much simpler way.  It's
+> intended to be used in hot paths where the overhead of dump_trace()
+> can be too heavy.
+
+Is it? Have you found a measurable impact (outside the fact you record only
+one stack).
+
+Thanks.
