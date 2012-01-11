@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933788Ab2AKRZv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:25:51 -0500
+	id S933805Ab2AKR0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:26:07 -0500
 Received: from mail-gy0-f174.google.com ([209.85.160.174]:38150 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933759Ab2AKRZm (ORCPT
+	with ESMTP id S933640Ab2AKR0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:25:42 -0500
+	Wed, 11 Jan 2012 12:26:00 -0500
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: keescook@chromium.org, john.johansen@canonical.com,
@@ -22,173 +22,190 @@ Cc: keescook@chromium.org, john.johansen@canonical.com,
         daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
         linux-security-module@vger.kernel.org, olofj@chromium.org,
         mhalcrow@google.com, dlaor@redhat.com
-Subject: [RFC,PATCH 0/2] dynamic seccomp policies (using BPF filters)
-Date: Wed, 11 Jan 2012 11:25:08 -0600
-Message-Id: <1326302710-9427-1-git-send-email-wad@chromium.org>
+Subject: [RFC,PATCH 2/2] Documentation: prctl/seccomp_filter
+Date: Wed, 11 Jan 2012 11:25:10 -0600
+Message-Id: <1326302710-9427-3-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326302710-9427-1-git-send-email-wad@chromium.org>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The goal of the patchset is straightforward:
+Document how system call filtering with BPF works
+and can be used.
 
- To provide a means of reducing the kernel attack surface.
-
-In practice, this is done at the primary kernel ABI: system calls.
-Achieving this goal will address the needs expressed by many systems
-projects:
-  qemu/kvm, openssh, vsftpd, lxc, and chromium and chromium os (me).
-
-While system call filtering has been attempted many times, I hope that
-this approach shows more promise.  It works as described below and in
-the patch series.
-
-A userland task may call prctl(PR_ATTACH_SECCOMP_FILTER) to attach a
-BPF program to itself.  Once attached, all system calls made by the
-task will be evaluated by the BPF program prior to being accepted.
-Evaluation is done by executing the BPF program over the struct
-user_regs_state for the process.
-
-!! If you don't care about background or reasoning, stop reading !!
-
-Past attempts have used:
-- bitmap of system call numbers evaluated by seccomp (or tracehooks)
-- standalone data structures and extra entry hooks
-  (cgroups syscall, systrace)
-- a collection of ftrace filter strings evaluated by seccomp
-- perf_event hackery to allow process termination when an event matches
-  (or doesn't)
-
-In addition to the publicly posted approaches, I've personally attempted
-continued deeper integration with ftrace along a number of different
-lines (lead up to that can be found here[1]).  What inspired the current
-patch series was a number of realizations:
-1. Userland knows its ABI - that's how it made the system calls in the
-   first place.
-2. We already exposed a filtering system to userland processes in the
-   form of BPF and there is continued focus on optimizing evaluation
-   even after so many years.
-3. System call filtering policies should not expose
-   time-of-check-time-of-use (TOCTOU) vulnerable interfaces but should
-   expose all the information that may be relevant to a syscall policy
-   decision.
-
-The prior seccomp-ftrace  implementations struggled with very
-fixable challenges in ftrace: incomplete syscall coverage,
-mismatched syscall names versus unistd, incomplete arch coverage,
-etc.  These challenges may all be fixed with some time and effort, and
-potentially, even closer integration.  I explored a number of
-alternative approaches from making system call tracepoints per-thread
-and "active" to adding a new less-perf-oriented system call.
-
-In the process of experimentation, a number of things became clear:
-- perf/ftrace system-wide analysis goals don't align with lightweight
-  per-thread analysis.
-- ftrace/perf ABI doesn't mix well with security policy enforcement,
-  reduced attack surface environments, or keeping users from specifing
- vulnerable filtering policies.
-- other than system calls, tracepoints aren't considered ABI-stable.
-
-The core focus of ftrace and perf is to support system-wide
-performance and debugging tracing.  Despite its amazing flexibility,
-there are tradeoffs that are made to provide efficient system-wide
-behavior that are less efficient at a per-thread level.  For instance,
-system call tracepoints are global.  It is possible to make them
-per-thread (since they use a TIF anyway).  However, doing so would mean
-that a system-wide system call analysis would require one trace event
-per thread rather than one total.  It's possible to alleviate that pain,
-but that in turn requires more bookkeeping (global versus local
-tracepoint registrations mapping to the thread info flag).
-
-Another example is the ftrace ABI.  Both the debugfs entry point with
-unstable event ids and the perf-oriented perf_event_open(2) are not
-suitable to providing a subsystem which is meant to reduce the attack
-surface -- much less avoid maintainer flame wars :) The third aspect of
-its ABI was also concerning and hints at yet-another-potential struggle.
-The ftrace filter language happily accepts globbing and string matching.
-This is excellent for tracing, but horrible for system call
-interposition.  If, despite warning, a user decides that blocking a
-system call based on a string is what they want, they can do it.  The
-result is that their policy may be bypassed due to a time of check, time
-of use race.  While addressable, it would mean that the filtering engine
-would need to allow operation filtering or offer a "secure" subset.
-
-A side challenge that emerged from the desire to enable tracing to act
-as a security policy mechanism was the ability to enact policy over more
-than just the system calls.  While this would be doable if all
-tracepoints became active, there is a fundamental problem in that very
-little, if any, tracepoints aside from system calls can be considered
-stable.  If a subset were to emerge as stable, there is still the
-challenge of enacting security policy in parallel with tracing policy.
-In an example patch where security policy logic was added to
-perf_event_open(2), the basics of the system worked, but enforcement of
-the security policy was simplistic and intertwined with a large number
-of event attributes that were meaningless or altered the behavior.
-
-At every turn, it appears that the tracing infrastructure was unsuited
-for being used for attack surface reduction or as a larger security
-subsystem on its own.  It is well suited for feeding a policy
-enforcement mechanism (like seccomp), but not for letting the logic
-co-exist.  It doesn't mean that it has security problems, just that
-there will be a continued struggle between having a really good perf
-system and and really good kernel attack surface reduction system if
-they were merged.  While there may be some distant vision where the
-apparent struggle does not exist, I don't see how it would be reached.
-Of course, anything is possible with unlimited time. :)
-
-That said, much of that discussion is history and to fill in some of the
-gaps since I posted the last ftrace-based patches.  This patch series
-should stand on its own as both straightforward and effective.  In my
-opinion, this is the direction I should have taken before I sent my
-first patch.
-
-I am looking forward to any and all feedback - thanks!
-will
-
-
-[1] http://search.gmane.org/?query=seccomp+wad%40chromium.org&group=gmane.linux.kernel
-
-
-Will Drewry (3):
-  seccomp_filters: dynamic system call filtering using BPF programs
-  Documentation: prctl/seccomp_filter
-
- Documentation/prctl/seccomp_filter.txt |  179 ++++++++
- fs/exec.c                              |    5 +
- include/linux/prctl.h                  |    3 +
- include/linux/seccomp.h                |   70 +++++-
- kernel/Makefile                        |    1 +
- kernel/fork.c                          |    4 +
- kernel/seccomp.c                       |    8 +
- kernel/seccomp_filter.c                |  639 +++++++++++++++++++++++++++++++++++++++++++++++
- kernel/sys.c                           |    4 +
- security/Kconfig                       |   12 +
- 9 files changed, 743 insertions(+), 3 deletions(-)
- create mode 100644 kernel/seccomp_filter.c
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ Documentation/prctl/seccomp_filter.txt |  159 ++++++++++++++++++++++++++++++++
+ 1 files changed, 159 insertions(+), 0 deletions(-)
  create mode 100644 Documentation/prctl/seccomp_filter.txt
+
+diff --git a/Documentation/prctl/seccomp_filter.txt b/Documentation/prctl/seccomp_filter.txt
+new file mode 100644
+index 0000000..5fb3f44
+--- /dev/null
++++ b/Documentation/prctl/seccomp_filter.txt
+@@ -0,0 +1,159 @@
++		Seccomp filtering
++		=================
++
++Introduction
++------------
++
++A large number of system calls are exposed to every userland process
++with many of them going unused for the entire lifetime of the process.
++As system calls change and mature, bugs are found and eradicated.  A
++certain subset of userland applications benefit by having a reduced set
++of available system calls.  The resulting set reduces the total kernel
++surface exposed to the application.  System call filtering is meant for
++use with those applications.
++
++Seccomp filtering provides a means for a process to specify a filter
++for incoming system calls.  The filter is expressed as a Berkeley Packet
++Filter program, as with socket filters, except that the data operated on
++is the current user_regs_struct.  This allows for expressive filtering
++of system calls using the pre-existing system call ABI and using a filter
++program language with a long history of being exposed to userland.
++Additionally, BPF makes it impossible for users of seccomp to fall prey to
++time-of-check-time-of-use (TOCTOU) attacks that are common in system call
++interposition frameworks because the evaluated data is solely register state
++just after system call entry.
++
++What it isn't
++-------------
++
++System call filtering isn't a sandbox.  It provides a clearly defined
++mechanism for minimizing the exposed kernel surface.  Beyond that,
++policy for logical behavior and information flow should be managed with
++a combinations of other system hardening techniques and, potentially, a
++LSM of your choosing.  Expressive, dynamic filters provide further options down
++this path (avoiding pathological sizes or selecting which of the multiplexed
++system calls in socketcall() is allowed, for instance) which could be
++construed, incorrectly, as a more complete sandboxing solution.
++
++Usage
++-----
++
++An additional seccomp mode is added, but they are not directly set by the
++consuming process.  The new mode, '2', is only available if
++CONFIG_SECCOMP_FILTER is set and enabled using prctl with the
++PR_ATTACH_SECCOMP_FILTER argument.
++
++Interacting with seccomp filters is done using one prctl(2) call.
++
++PR_ATTACH_SECCOMP_FILTER:
++	Allows the specification of a new filter using a BPF program.
++	The BPF program will be executed over a user_regs_struct data
++	reflecting system call time except with the system call number
++	resident in orig_[register].  To allow a system call, the size
++	of the data must be returned.  At present, all other return values
++	result in the system call being blocked, but it is recommended to
++	return 0 in those cases.  This will allow for future custom return
++	values to be introduced, if ever desired.
++
++	Usage:
++		prctl(PR_ATTACH_SECCOMP_FILTER, prog);
++
++	The 'prog' argument is a pointer to a struct sock_fprog which will
++	contain the filter program.  If the program is invalid, the call
++	will return -1 and set errno to -EINVAL.
++
++	The struct user_regs_struct the @prog will see is based on the
++	personality of the task at the time of this prctl call.  Additionally,
++	is_compat_task is also tracked for the @prog.  This means that once set
++	the calling task will have all of its system calls blocked if it
++	switches its system call ABI (via personality or other means).
++
++	If the @prog is installed while the task has CAP_SYS_ADMIN in its user
++	namespace, the @prog will be marked as inheritable across execve.  Any
++	inherited filters are still subject to the system call ABI constraints
++	above and any ABI mismatched system calls will result in process death.
++
++All of the above calls return 0 on success and non-zero on error.
++
++
++Example
++-------
++
++Assume a process would like to cleanly read and write to stdin/out/err and exit
++cleanly.  Without using a BPF compiler, it may be done as follows on x86 32-bit:
++
++#include <asm/unistd.h>
++#include <linux/filter.h>
++#include <stdio.h>
++#include <stddef.h>
++#include <sys/user.h>
++#include <unistd.h>
++
++#define regoffset(_reg) (offsetof(struct user_regs_struct, _reg))
++int install_filter(void)
++{
++	struct sock_filter filter[] = {
++		/* Grab the system call number */
++		BPF_STMT(BPF_LD+BPF_W+BPF_IND, regoffset(orig_eax)),
++		/* Jump table for the allowed syscalls */
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_rt_sigreturn, 10, 0),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_sigreturn, 9, 0),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_exit_group, 8, 0),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_exit, 7, 0),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_read, 1, 0),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_write, 2, 6),
++
++		/* Check that read is only using stdin. */
++		BPF_STMT(BPF_LD+BPF_W+BPF_IND, regoffset(ebx)),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, STDIN_FILENO, 3, 4),
++
++		/* Check that write is only using stdout/stderr */
++		BPF_STMT(BPF_LD+BPF_W+BPF_IND, regoffset(ebx)),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, STDOUT_FILENO, 1, 0),
++		BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, STDERR_FILENO, 0, 1),
++
++		/* Put the "accept" value in A */
++		BPF_STMT(BPF_LD+BPF_W+BPF_LEN, 0),
++
++		BPF_STMT(BPF_RET+BPF_A,0),
++	};
++	struct sock_fprog prog = {
++		.len = (unsigned short)(sizeof(filter)/sizeof(filter[0])),
++		.filter = filter,
++	};
++	if (prctl(36, &prog)) {
++		perror("prctl");
++		return 1;
++	}
++	return 0;
++}
++
++#define payload(_c) _c, sizeof(_c)
++int main(int argc, char **argv) {
++	char buf[4096];
++	ssize_t bytes = 0;
++	if (install_filter())
++		return 1;
++	syscall(__NR_write, STDOUT_FILENO, payload("OHAI! WHAT IS YOUR NAME? "));
++	bytes = syscall(__NR_read, STDIN_FILENO, buf, sizeof(buf));
++	syscall(__NR_write, STDOUT_FILENO, payload("HELLO, "));
++	syscall(__NR_write, STDOUT_FILENO, buf, bytes);
++	return 0;
++}
++
++Additionally, if prctl(2) is allowed by the installed filter, additional
++filters may be layered on which will increase evaluation time, but allow for
++further decreasing the attack surface during execution of a process.
++
++
++Caveats
++-------
++
++- execve will fail unless the most recently attached filter was installed by
++  a process with CAP_SYS_ADMIN (in its namespace).
++
++Adding architecture support
++-----------------------
++
++Any platform with seccomp support will support seccomp filters
++as long as CONFIG_SECCOMP_FILTER is enabled.
 -- 
 1.7.5.4
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
