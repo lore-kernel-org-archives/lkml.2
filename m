@@ -1,69 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933640Ab2AKRqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:46:10 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:57727 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932120Ab2AKRqH convert rfc822-to-8bit (ORCPT
+	id S933680Ab2AKRqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:46:21 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40590 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932120Ab2AKRqS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:46:07 -0500
-X-IronPort-AV: E=Sophos;i="4.71,493,1320652800"; 
-   d="scan'208";a="615704462"
-Message-ID: <1326303963.19024.1.camel@lade.trondhjem.org>
-Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
- context
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Date: Wed, 11 Jan 2012 12:46:03 -0500
-In-Reply-To: <4F0DC582.6030805@parallels.com>
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
-			 <1325285705.10984.4.camel@lade.trondhjem.org>
-		 <1325797111.11084.22.camel@lade.trondhjem.org>
-		 <4F0C35F3.7060508@parallels.com>
-	 <1326299003.17212.7.camel@lade.trondhjem.org>
-	 <4F0DC582.6030805@parallels.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
-Mime-Version: 1.0
-X-OriginalArrivalTime: 11 Jan 2012 17:46:04.0420 (UTC) FILETIME=[E3E0EC40:01CCD088]
+	Wed, 11 Jan 2012 12:46:18 -0500
+Message-ID: <4F0DCAA7.4000601@linux.vnet.ibm.com>
+Date: Wed, 11 Jan 2012 11:45:11 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
+References: <<1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com>> <<1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com>> <b5b5a961-85e5-4ce1-8280-7ca382cb0e0f@default>
+In-Reply-To: <b5b5a961-85e5-4ce1-8280-7ca382cb0e0f@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011117-3352-0000-0000-000001DA8C28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 21:23 +0400, Stanislav Kinsbursky wrote: 
-> I've sent rebased "v2" of the patch set, contains updated patch "SUNRPC: handle 
-> RPC client pipefs dentries by network namespace aware routine", which, I 
-> believe, fixes oops, spotted by Bryan (it was caused by excessive call of 
-> rpc_put_mount() on PipeFS dentries unlink).
-> So, if I'm not mistaken here, there's no need in implementing of dummy versions 
-> of rpc_pipefs_notifier_(un)register() or any other dummy stuff.
+On 01/11/2012 11:19 AM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Subject: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
+>>
+>> From: Nitin Gupta <ngupta@vflare.org>
+>>
+>> This patch creates a new memory allocation library named
+>> zsmalloc.
+>>
+>> +/*
+>> + * Allocate a zspage for the given size class
+>> + */
+>> +static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+>> +{
+>> +	int i, error;
+>> +	struct page *first_page = NULL;
+>> +
+>> +	/*
+>> +	 * Allocate individual pages and link them together as:
+>> +	 * 1. first page->private = first sub-page
+>> +	 * 2. all sub-pages are linked together using page->lru
+>> +	 * 3. each sub-page is linked to the first page using page->first_page
+>> +	 *
+>> +	 * For each size class, First/Head pages are linked together using
+>> +	 * page->lru. Also, we set PG_private to identify the first page
+>> +	 * (i.e. no other sub-page has this flag set) and PG_private_2 to
+>> +	 * identify the last page.
+>> +	 */
+>> +	error = -ENOMEM;
+>> +	for (i = 0; i < class->zspage_order; i++) {
+>> +		struct page *page, *prev_page;
+>> +
+>> +		page = alloc_page(flags);
+> 
+> Hmmm... I thought we agreed offlist that the new allocator API would
+> provide for either preloads or callbacks (which may differ per pool)
+> instead of directly allocating raw pages from the kernel.  The caller
+> (zcache or ramster or ???) needs to be able to somehow manage maximum
+> memory capacity to avoid OOMs.
+> 
+> Or am I missing the code that handles that?
 
-OK. Fair enough. We'll give it some testing to make sure that we don't
-hit it again...
+No, you aren't missing it; it's not there.  And I agree that we
+should add that.
 
-> BTW, it looks like that in last 2 days I've sent all updates to the issues you 
-> pointed out. If not, please, ping me once more.
+However, the existing allocator, xvmalloc, doesn't support callback
+functionality either.  Would it be simpler to add the that as 
+a separate patch, that way we can keep the changes to zcache/zram
+in this patchset isolated to just changing the xvmalloc calls to 
+zsmalloc calls?
 
-I'm in the process of reviewing it right now.
-
-Cheers
-  Trond
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
+--
+Seth
 
