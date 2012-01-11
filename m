@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711Ab2AKH2L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 02:28:11 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38658 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753720Ab2AKH2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 02:28:08 -0500
-Date: Tue, 10 Jan 2012 23:28:03 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.3-rc0 (part 2)
-Message-ID: <20120111072802.GA19831@core.coreip.homeip.net>
+	id S1756462Ab2AKH2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 02:28:21 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64294 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752457Ab2AKH2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 02:28:17 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="105853019"
+Message-ID: <4F0D3A0B.4090709@linux.intel.com>
+Date: Wed, 11 Jan 2012 15:28:11 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+CC: "Luck, Tony" <tony.luck@intel.com>, Don Zickus <dzickus@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Matthew Garrett <mjg@redhat.com>, Vivek Goyal <vgoyal@redhat.com>,
+        "Chen, Gong" <gong.chen@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Brown, Len" <len.brown@intel.com>,
+        "'ying.huang@intel.com'" <'ying.huang@intel.com'>,
+        "'ak@linux.intel.com'" <'ak@linux.intel.com'>,
+        "'hughd@chromium.org'" <'hughd@chromium.org'>,
+        "'mingo@elte.hu'" <'mingo@elte.hu'>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "namhyung@gmail.com" <namhyung@gmail.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        Satoru Moriya <satoru.moriya@hds.com>
+Subject: Re: [RFC][PATCH v4 -next 1/4] Move kmsg_dump(KMSG_DUMP_PANIC) below
+ smp_send_stop()
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF7F@USINDEVS01.corp.hds.com> <5C4C569E8A4B9B42A84A977CF070A35B2C5827AF81@USINDEVS01.corp.hds.com> <3908561D78D1C84285E8C5FCA982C28FBB21@ORSMSX104.amr.corp.intel.com> <5C4C569E8A4B9B42A84A977CF070A35B2C5827B01D@USINDEVS01.corp.hds.com> <20120105210123.GI5650@redhat.com> <5C4C569E8A4B9B42A84A977CF070A35B2C5827BBD8@USINDEVS01.corp.hds.com> <4F0BAB33.2090201@linux.intel.com> <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
+In-Reply-To: <5C4C569E8A4B9B42A84A977CF070A35B2C583163B0@USINDEVS01.corp.hds.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+于 2012/1/11 4:29, Seiji Aguchi 写道:
+>
+>> I agree with you. How about adding macros or something like WARN_ON(XX_ARCH) or
+>> Kconfig to limit its scope?
+>
+> Thank you for giving me your idea.
+> Your suggestions above will work for me because I'm a x86 user.
+> If Tony agrees to it, I can update my patch.
+>
+> But, I'm hesitating to add WARN_ON() or change Kconfig only for specific arch
+> because pstore aims for generic interface and this is related to its design.
+> Also, ramoops is going to use pstore now. It doesn't depend on x86.
+> I'm worried that ramoops users will complain about this change.
+>
+> So, I think a reasonable solution at this time is just adding some explanations
+> about smp_send_stop() to documentation as follows.
+>
+> Users can use pstore with their own responsibility and ask developers
+> if smp_send_stop() is reliable enough in panic situation on architecture they want to run.
+>
+> What do you think?
+>
+> ---
+>   Documentation/ABI/testing/pstore |    8 ++++++++
+>   1 files changed, 8 insertions(+), 0 deletions(-)
+>
+> diff --git a/Documentation/ABI/testing/pstore b/Documentation/ABI/testing/pstore
+> index ff1df4e..5583729 100644
+> --- a/Documentation/ABI/testing/pstore
+> +++ b/Documentation/ABI/testing/pstore
+> @@ -11,6 +11,14 @@ Description:	Generic interface to platform dependent persistent storage.
+>   		of the console log is captured, but other interesting
+>   		data can also be saved.
+>
+> +		In case of panic, pstore is invoked after smp_send_stop()
+> +		,a function call stopping other cpus, so that we can get
+> +		logs simpler and cleaner with just one running cpu.
+> +
+> +		As for x86, smp_send_stop() is reliable enough to work in
+> +		panic situation. But we are not guaranteed that it works
+> +		reliably on other architectures.
+> +
+>   		# mount -t pstore -o kmsg_bytes=8000 - /dev/pstore
+>
+>   		$ ls -l /dev/pstore
 
---T4sUOijqQbZv57TR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Linus,
-
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive more updates for the input subsystem. This pull corrects
-problem of overzealous conversion to module_platform_driver() introduced
-in previous pull (called out by Geert), a couple of fixups to serio_raw
-driver and a small change to bcm5974 driver.
-
-Thanks!
-
-Changelog:
----------
-
-Che-Liang Chiou (1):
-      Input: serio_raw - remove stray semicolon
-
-Dmitry Torokhov (3):
-      Input: revert some over-zealous conversions to module_platform_driver=
-()
-      Input: serio_raw - really signal HUP upon disconnect
-      Input: serio_raw - return proper result when serio_raw_write fails
-
-Jussi Pakkanen (1):
-      Input: bcm5974 - set BUTTONPAD property
-
-
-Diffstat:
---------
-
- drivers/input/keyboard/amikbd.c             |   15 ++++++++++++++-
- drivers/input/keyboard/davinci_keyscan.c    |   13 ++++++++++++-
- drivers/input/keyboard/nomadik-ske-keypad.c |   13 ++++++++++++-
- drivers/input/misc/twl4030-pwrbutton.c      |   15 +++++++++++++--
- drivers/input/mouse/amimouse.c              |   16 ++++++++++++++--
- drivers/input/mouse/bcm5974.c               |    3 +++
- drivers/input/serio/at32psif.c              |   14 +++++++++++++-
- drivers/input/serio/serio_raw.c             |    8 ++++----
- drivers/input/touchscreen/atmel-wm97xx.c    |   13 ++++++++++++-
- drivers/input/touchscreen/mc13783_ts.c      |   13 ++++++++++++-
- 10 files changed, 109 insertions(+), 14 deletions(-)
-
---=20
-Dmitry
-
-
---T4sUOijqQbZv57TR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPDToCAAoJEH70+W8r6ZYqtdgP/1EmmZPcIio0sM5UyY0ovnI9
-DVDwb8isaxXn/MA7Tt6TNbpbF61qNglmjb1+duWIUaiTtZeve2n4cD1A3cGDj8bW
-XArbaNs1ZLLDuV3mfnGcw8lXBZl/3Ohtp6B0dctIulCN1z87i8R5mFiHlxO2QyK8
-6QHfVE5lzRbfAJSLyfnYzAE/tNWZCiigrggQOhkY4QchivmXz0M/zYDcec9WdWDO
-vyRZMLf6eo3J7XH+pKS10PVFju8e88F5LrpW2CI7KM3EHEUPWuDriPg8ggOtBdRF
-XwWmPxsvcjmxqSSAYs9fDtBvvK9hhbGgvNRdwEZNbhLiJUOxL/BB4OCq2vCQ19ds
-XsXerw6G274qi/bUft88Mnrgm/IyCy6svGB/wrfHvZiF3WAlFOoxbf1PR4Ts+kr4
-ApDNWPWFB4L9yGIEmU9eqR6BiQOxd/2qIVfHeicjT+uzHFAxP201c6XANLfVg8EA
-2FYg4Yn9eQvLZ6LPogPyZJ+c1ZjQ+2ZwxRk3u4M32jKwjJBLmDPogpSqx6ilIr69
-0BLRlBz6fWxpy7Z+mLVYxXpFklUoNUdkvcZRfNYS/uv09Vdak08l4imok/EipUYy
-nyYWJTmwlqpEqTTQ81k86XLqpeXoldaQaqH+H40exFB2sF+AQpzx1zJYDW9BOhRP
-mYmSWKO9s8j+jY1F0oWW
-=Yhr6
------END PGP SIGNATURE-----
-
---T4sUOijqQbZv57TR--
+The explanation is great. but In my opinion, I still insist that
+a WARN_ON() is necessary. What do you think, Tony and Don?
