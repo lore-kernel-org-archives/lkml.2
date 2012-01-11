@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757831Ab2AKRBl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:01:41 -0500
-Received: from mail.tpi.com ([70.99.223.143]:2854 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757811Ab2AKRBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:01:37 -0500
-From: Tim Gardner <tim.gardner@canonical.com>
-To: linux-fsdevel@vger.kernel.org, tyler.hicks@canonical.com
-Cc: Tim Gardner <tim.gardner@canonical.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: [PATCH 2/2] ecryptfs: Print inode on metadata error
-Date: Wed, 11 Jan 2012 18:00:42 +0100
-Message-Id: <1326301242-5817-3-git-send-email-tim.gardner@canonical.com>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com>
-References: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com>
+	id S1757834Ab2AKRCq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:02:46 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:37330 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757727Ab2AKRCo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 12:02:44 -0500
+X-Sasl-enc: 0lIfFhQZZNj1Nkj8eY8fk0NB3F1noQwdMslv6qmlXTIG 1326301362
+Date: Wed, 11 Jan 2012 08:59:10 -0800
+From: Greg KH <greg@kroah.com>
+To: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Jiang Liu <liuj97@gmail.com>, linux-kernel@vger.kernel.org,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S . Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jun Ma <harry.majun@huawei.com>,
+        stable@vger.kernel.org, Jiang Liu <jiang.liu@huawei.com>
+Subject: Re: [PATCH] kprobes: fix a memory leak in function
+ pre_handler_kretprobe()
+Message-ID: <20120111165910.GB2794@kroah.com>
+References: <1326295311-10985-1-git-send-email-jiang.liu@huawei.com>
+ <20120111161233.GA13539@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120111161233.GA13539@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a lower file system file is corrupted, then ecryptfs prints
-a generic and mostly useless log message when attempting to
-read metadata. Print the inode associated with the file
-so that a user can do something about it, e.g.,
+On Wed, Jan 11, 2012 at 09:42:33PM +0530, Ananth N Mavinakayanahalli wrote:
+> On Wed, Jan 11, 2012 at 11:21:51PM +0800, Jiang Liu wrote:
+> > From: Jiang Liu <liuj97@gmail.com>
+> > 
+> > In function pre_handler_kretprobe(), the allocated kretprobe_instance object
+> > will be leaked if the entry_handler callback returns non-zero. This may cause
+> > all the preallocated kretprobe_instance objects exhausted. This issue could be
+> > reproduced by changing samples/kprobes/kretprobe_example.c to probe 
+> > "mutex_unlock". And the fix is straight forward, just put the allocated 
+> > kretprobe_instance object back onto the free_instances list. 
+> > 
+> > Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> > Acked-by: Jim Keniston <jkenisto@us.ibm.com>
+> > Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> 
+> Thank you Jiang. I think the correct ID for stable is now
+> stable@vger.kernel.org.
 
-find -inum INODE_NUM
+<formletter>
 
-Cc: linux-kernel@vger.kernel.org
-Cc: stable@vger.kernel.org
-Cc: Tyler Hicks <tyler.hicks@canonical.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- fs/ecryptfs/crypto.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
-diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-index ac063bd..affad0c 100644
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -1612,8 +1612,9 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- 	rc = ecryptfs_read_lower(page_virt, 0, crypt_stat->extent_size,
- 				 ecryptfs_inode);
- 	if (rc < 0) {
--		printk(KERN_ERR "%s: Could not read %u bytes\n",
--			__func__, crypt_stat->extent_size);
-+		printk(KERN_ERR "%s: Could not read %zu bytes, inode %lu\n",
-+			__func__, crypt_stat->extent_size,
-+			ecryptfs_inode->i_ino);
- 		goto out;
- 	}
- 
-@@ -1625,7 +1626,8 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- 		rc = ecryptfs_read_xattr_region(page_virt, ecryptfs_inode);
- 		if (rc) {
- 			printk(KERN_DEBUG "Valid eCryptfs headers not found in "
--			       "file header region or xattr region\n");
-+			       "file header region or xattr region, inode %lu\n",
-+				ecryptfs_inode->i_ino);
- 			rc = -EINVAL;
- 			goto out;
- 		}
-@@ -1634,7 +1636,8 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- 						ECRYPTFS_DONT_VALIDATE_HEADER_SIZE);
- 		if (rc) {
- 			printk(KERN_DEBUG "Valid eCryptfs headers not found in "
--			       "file xattr region either\n");
-+			       "file xattr region either, inode %lu\n",
-+				ecryptfs_inode->i_ino);
- 			rc = -EINVAL;
- 		}
- 		if (crypt_stat->mount_crypt_stat->flags
-@@ -1645,7 +1648,8 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- 			       "crypto metadata only in the extended attribute "
- 			       "region, but eCryptfs was mounted without "
- 			       "xattr support enabled. eCryptfs will not treat "
--			       "this like an encrypted file.\n");
-+			       "this like an encrypted file, inode %lu\n",
-+				ecryptfs_inode->i_ino);
- 			rc = -EINVAL;
- 		}
- 	}
--- 
-1.7.8.3
-
+</formletter>
