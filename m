@@ -1,90 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757761Ab2AKQpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:45:05 -0500
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:34637 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757627Ab2AKQpD (ORCPT
+	id S1757731Ab2AKQqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:46:31 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:51847 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970Ab2AKQqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:45:03 -0500
-X-Greylist: delayed 1874 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jan 2012 11:45:03 EST
-Date: Wed, 11 Jan 2012 08:13:47 -0800
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: Shi Xuelin-B29237 <B29237@freescale.com>
-Cc: "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]     fsldma: fix performance degradation by optimizing
- spinlock use.
-Message-ID: <20120111161347.GA1430@ovro.caltech.edu>
-References: <1324879263-11845-1-git-send-email-b29237@freescale.com>
- <DBB740589CE8814680DECFE34BE197AB1665A3@039-SN1MPN1-006.039d.mgd.msft.net>
+	Wed, 11 Jan 2012 11:46:30 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with the arm-soc tree
+Date: Wed, 11 Jan 2012 16:46:24 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Olof Johansson <olof@lixom.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, "Wu, Josh" <Josh.wu@atmel.com>
+References: <20120111133146.990e2b7115c9fa80e8fc3234@canb.auug.org.au> <201201111450.02798.arnd@arndb.de> <4F0DB16B.3010302@atmel.com>
+In-Reply-To: <4F0DB16B.3010302@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <DBB740589CE8814680DECFE34BE197AB1665A3@039-SN1MPN1-006.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (ovro.ovro.caltech.edu); Wed, 11 Jan 2012 08:13:49 -0800 (PST)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201111646.24731.arnd@arndb.de>
+X-Provags-ID: V02:K0:3fBCWDRbNX0Ip7a0f40zD2i2vCOO0yVxCJMWz17aTfF
+ BBY1Q/TIDDmlJIalC+zKdx5hXXUru2dWDefnbsm7Z0zAC977KC
+ xE6UhWyNjqp5SPdJ5EExmy+hKt7ZCXBecIrukrGVCnErBUMs43
+ //Smm0aoColuMpvsgJcwTNfHTVwAAddDIl63bmeeXpXf9VPHfi
+ WEtveUKmhtpeh156l7zyZMEDah8AJxHSmyXGvux/DscPxoR4C2
+ yBacOPeZXREecNZKWAiVUd3BpO14vlNL+jaxMTtZcaFQu8w+81
+ xXfKi734GtXODN8lYhlXECVkdaOgs7Ztco1cH9l1V4on7+GeKs
+ XYd/98KyZHCQ2D8OAEVg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 07:54:55AM +0000, Shi Xuelin-B29237 wrote:
-> Hello Iris,
-> 
-> As we discussed in the previous patch, I add one smp_mb() in fsl_tx_status.
-> In my testing with iozone, this smp_mb() could cause 1%~2% performance degradation.
-> Anyway it is acceptable for me. Do you have any other comments?
-> 
+On Wednesday 11 January 2012, Nicolas Ferre wrote:
+> I am so astonished and sad about all this! I have the feeling of having
+> done exactly what Guennadi and Olof had asked me to do: What I get at
+> the end: people having a bad feeling about my work, not expected merge
+> conflicts which annoy everybody (only for a ridiculous amount of code),
+> my patches delayed and a comment saying that I cannot handle simple
+> dependency...
+> Nice result!
 
-This patch looks fine to me.
+I'm sorry for accusing you, you are right. You did exactly what was
+agreed on in the mail thread, I just reread the history.
 
-Ira
+My impression is that Guennadi simply didn't know what he was doing
+when he sent you a patch based on a branch that was clearly not
+stable.
 
-> -----Original Message-----
-> From: Shi Xuelin-B29237 
-> Sent: 2011年12月26日 14:01
-> To: iws@ovro.caltech.edu; vinod.koul@intel.com; dan.j.williams@intel.com; linuxppc-dev@lists.ozlabs.org; linux-kernel@vger.kernel.org
-> Cc: Shi Xuelin-B29237
-> Subject: [PATCH] fsldma: fix performance degradation by optimizing spinlock use.
+> - Guennadi did not want to take SoC/board code in his tree
+> => I had to take those lines of code through at91/arm-soc breaking the
+>    patch series and allowing the introduction of an out-of-sync merge
+
+This was probably the first mistake. It would have been trivial
+to handle all this if we had just stuck the same commit into both
+trees.
+
+> I have understood and approved all the reasons for the requested
+> changes, of course. But for which gain?
 > 
-> From: Forrest shi <b29237@freescale.com>
-> 
->     dma status check function fsl_tx_status is heavily called in
->     a tight loop and the desc lock in fsl_tx_status contended by
->     the dma status update function. this caused the dma performance
->     degrades much.
-> 
->     this patch releases the lock in the fsl_tx_status function, and
->     introduce the smp_mb() to avoid possible memory inconsistency.
-> 
->     Signed-off-by: Forrest Shi <xuelin.shi@freescale.com>
-> ---
->  drivers/dma/fsldma.c |    6 +-----
->  1 files changed, 1 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c index 8a78154..008fb5e 100644
-> --- a/drivers/dma/fsldma.c
-> +++ b/drivers/dma/fsldma.c
-> @@ -986,15 +986,11 @@ static enum dma_status fsl_tx_status(struct dma_chan *dchan,
->  	struct fsldma_chan *chan = to_fsl_chan(dchan);
->  	dma_cookie_t last_complete;
->  	dma_cookie_t last_used;
-> -	unsigned long flags;
-> -
-> -	spin_lock_irqsave(&chan->desc_lock, flags);
->  
-> 	last_complete = chan->completed_cookie;
-> +	smp_mb();
-> 	last_used = dchan->cookie;
->  
-> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
-> -
->  	dma_set_tx_state(txstate, last_complete, last_used, 0);
->  	return dma_async_is_complete(cookie, last_complete, last_used); }
-> --
-> 1.7.0.4
-> 
-> 
+> Ok... well, it looks like a massive incomprehension which took us time
+> and ends up by wastefulness.
+
+Agreed. How about if you rebase the few other (non-ISI) patches that
+I had in arm-soc onto v3.2 and send me an updated pull request so
+I can send them on? There's no reason to hold them up.
+
+	Arnd
