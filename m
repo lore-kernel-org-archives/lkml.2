@@ -1,95 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757379Ab2AKJs0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 04:48:26 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:38504 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756735Ab2AKJsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 04:48:23 -0500
-Message-ID: <4F0D5A9E.5030501@parallels.com>
-Date: Wed, 11 Jan 2012 13:47:10 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
-References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>	<20111214104449.3991.61989.stgit@localhost6.localdomain6>	<m1bor6rg39.fsf@fess.ebiederm.org> <4EEEFC54.10700@parallels.com>	<m18vm8g951.fsf@fess.ebiederm.org> <4EEF2C9A.8000403@parallels.com>	<m1pqfkecw0.fsf@fess.ebiederm.org> <4EEF7364.8000407@parallels.com>	<m1vcotigyb.fsf@fess.ebiederm.org> <4F0C150F.1020007@parallels.com> <m1ehv76v2v.fsf@fess.ebiederm.org>
-In-Reply-To: <m1ehv76v2v.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S932507Ab2AKKBj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:01:39 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:26552 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757365Ab2AKKBf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 05:01:35 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-90-4f0d5dfe12aa
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Mike Turquette <mturquette@ti.com>, myungjoo.ham@gmail.com
+Subject: [PATCH 1/2] PM / devfreq: add min/max_freq limit requested by users.
+Date: Wed, 11 Jan 2012 19:02:09 +0900
+Message-id: <1326276130-4042-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.01.2012 02:39, Eric W. Biederman пишет:
-> Stanislav Kinsbursky<skinsbursky@parallels.com>  writes:
->
->> 03.01.2012 07:49, Eric W. Biederman пишет:
->>> Stanislav Kinsbursky<skinsbursky@parallels.com>   writes:
->>>
->>>> 19.12.2011 20:37, Eric W. Biederman пишет:
->>>>> Stanislav Kinsbursky<skinsbursky@parallels.com>    writes:
->>>>>
->>>>> Doing that independently of the rest of the sysctls is pretty horrible
->>>>> and confusing to users.   What I am planning might suit your needs and
->>>>> if not we need to talk some more about how to get the vfs to do
->>>>> something reasonable.
->>>>>
->>>>
->>>> Ok, Eric. Would be glad to discuss your sysctls plans.
->>>> But actually you already know my needs: I would like to make sysctls work in the
->>>> way like sysfs does: i.e. content of files depends on mount maker -
->>>> not viewer.
->>>
->>> What drives the desire to have sysctls depend on the mount maker?
->>
->> Because we can (will, actually) have nested fs root's for containers. IOW,
->> container's root will be accessible from it's creator context. And I want to
->> tune container's fs from creators context.
->
-> Tuning the child context from the parent context is an entirely
-> reasonable thing to do.  To affect a namespace that is not yours
-> the requirement is simply that we don't use current to lookup the
-> sysctl.  So what I am proposing should work for your case.
->
+The frequency requested to devfreq device driver from devfreq governors
+is restricted by min_freq and max_freq input.
 
-Could you explain, what are you proposing?
-I still don't know any details about it.
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/devfreq/devfreq.c                 |   70 +++++++++++++++++++++++++++++
+ drivers/devfreq/governor_performance.c    |    5 ++-
+ drivers/devfreq/governor_powersave.c      |    2 +-
+ drivers/devfreq/governor_simpleondemand.c |   12 ++++-
+ drivers/devfreq/governor_userspace.c      |   15 +++++-
+ include/linux/devfreq.h                   |    5 ++
+ 6 files changed, 101 insertions(+), 8 deletions(-)
 
->>> Especially what drives that desire not to have it have a /proc/<pid>/sys
->>> directory that reflects the sysctls for a given process.
->>>
->>
->> This is not so important for me, where to access sysctl's. But I'm worrying
->> about backward compatibility. IOW, I'm afraid of changing path
->> "/proc/sys/sunprc/*" to "/proc/<pid>/sys/sunrpc". This would break a lot of
->> user-space programs.
->
-> The part that keeps it all working is by adding a symlink from /proc/sys
-> to /proc/self/sys.  That technique has worked well for /proc/net, and I
-> don't expect there will be any problems with /proc/sys either.  It is
-> possible but is very rare for the introduction of a symlink in a path
-> to cause problems.
->
-
-Probably I don't understand you, but as I see it now, symlink to "/proc/self/" 
-is unacceptable because of the following:
-1) will be used current context (any) instead of desired one
-1) if CT has other pid namespace - then we just have broken link.
-
-> Eric
->
-
-
+diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
+index 59d24e9..358d129 100644
+--- a/drivers/devfreq/devfreq.c
++++ b/drivers/devfreq/devfreq.c
+@@ -502,12 +502,82 @@ static ssize_t show_central_polling(struct device *dev,
+ 		       !to_devfreq(dev)->governor->no_central_polling);
+ }
+ 
++static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
++			      const char *buf, size_t count)
++{
++	struct devfreq *df = to_devfreq(dev);
++	unsigned long value;
++	int ret;
++	unsigned long max;
++
++	ret = sscanf(buf, "%lu", &value);
++	if (ret != 1)
++		goto out;
++
++	mutex_lock(&df->lock);
++	max = df->max_freq;
++	if (value && max && value > max) {
++		ret = -EINVAL;
++		goto unlock;
++	}
++
++	df->min_freq = value;
++	update_devfreq(df);
++	ret = count;
++unlock:
++	mutex_unlock(&df->lock);
++out:
++	return ret;
++}
++
++static ssize_t show_min_freq(struct device *dev, struct device_attribute *attr,
++			     char *buf)
++{
++	return sprintf(buf, "%lu\n", to_devfreq(dev)->min_freq);
++}
++
++static ssize_t store_max_freq(struct device *dev, struct device_attribute *attr,
++			      const char *buf, size_t count)
++{
++	struct devfreq *df = to_devfreq(dev);
++	unsigned long value;
++	int ret;
++	unsigned long min;
++
++	ret = sscanf(buf, "%lu", &value);
++	if (ret != 1)
++		goto out;
++
++	mutex_lock(&df->lock);
++	min = df->min_freq;
++	if (value && min && value < min) {
++		ret = -EINVAL;
++		goto unlock;
++	}
++
++	df->max_freq = value;
++	update_devfreq(df);
++	ret = count;
++unlock:
++	mutex_unlock(&df->lock);
++out:
++	return ret;
++}
++
++static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
++			     char *buf)
++{
++	return sprintf(buf, "%lu\n", to_devfreq(dev)->max_freq);
++}
++
+ static struct device_attribute devfreq_attrs[] = {
+ 	__ATTR(governor, S_IRUGO, show_governor, NULL),
+ 	__ATTR(cur_freq, S_IRUGO, show_freq, NULL),
+ 	__ATTR(central_polling, S_IRUGO, show_central_polling, NULL),
+ 	__ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
+ 	       store_polling_interval),
++	__ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
++	__ATTR(max_freq, S_IRUGO | S_IWUSR, show_max_freq, store_max_freq),
+ 	{ },
+ };
+ 
+diff --git a/drivers/devfreq/governor_performance.c b/drivers/devfreq/governor_performance.c
+index c0596b2..574a06b 100644
+--- a/drivers/devfreq/governor_performance.c
++++ b/drivers/devfreq/governor_performance.c
+@@ -18,7 +18,10 @@ static int devfreq_performance_func(struct devfreq *df,
+ 	 * target callback should be able to get floor value as
+ 	 * said in devfreq.h
+ 	 */
+-	*freq = UINT_MAX;
++	if (!df->max_freq)
++		*freq = UINT_MAX;
++	else
++		*freq = df->max_freq;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/devfreq/governor_powersave.c b/drivers/devfreq/governor_powersave.c
+index 2483a85..d742d4a 100644
+--- a/drivers/devfreq/governor_powersave.c
++++ b/drivers/devfreq/governor_powersave.c
+@@ -18,7 +18,7 @@ static int devfreq_powersave_func(struct devfreq *df,
+ 	 * target callback should be able to get ceiling value as
+ 	 * said in devfreq.h
+ 	 */
+-	*freq = 0;
++	*freq = df->min_freq;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/devfreq/governor_simpleondemand.c b/drivers/devfreq/governor_simpleondemand.c
+index efad8dc..a2e3eae 100644
+--- a/drivers/devfreq/governor_simpleondemand.c
++++ b/drivers/devfreq/governor_simpleondemand.c
+@@ -25,6 +25,7 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
+ 	unsigned int dfso_upthreshold = DFSO_UPTHRESHOLD;
+ 	unsigned int dfso_downdifferential = DFSO_DOWNDIFFERENCTIAL;
+ 	struct devfreq_simple_ondemand_data *data = df->data;
++	unsigned long max = (df->max_freq) ? df->max_freq : UINT_MAX;
+ 
+ 	if (err)
+ 		return err;
+@@ -41,7 +42,7 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
+ 
+ 	/* Assume MAX if it is going to be divided by zero */
+ 	if (stat.total_time == 0) {
+-		*freq = UINT_MAX;
++		*freq = max;
+ 		return 0;
+ 	}
+ 
+@@ -54,13 +55,13 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
+ 	/* Set MAX if it's busy enough */
+ 	if (stat.busy_time * 100 >
+ 	    stat.total_time * dfso_upthreshold) {
+-		*freq = UINT_MAX;
++		*freq = max;
+ 		return 0;
+ 	}
+ 
+ 	/* Set MAX if we do not know the initial frequency */
+ 	if (stat.current_frequency == 0) {
+-		*freq = UINT_MAX;
++		*freq = max;
+ 		return 0;
+ 	}
+ 
+@@ -79,6 +80,11 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
+ 	b = div_u64(b, (dfso_upthreshold - dfso_downdifferential / 2));
+ 	*freq = (unsigned long) b;
+ 
++	if (df->min_freq && *freq < df->min_freq)
++		*freq = df->min_freq;
++	if (df->max_freq && *freq > df->max_freq)
++		*freq = df->max_freq;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/devfreq/governor_userspace.c b/drivers/devfreq/governor_userspace.c
+index 4f8b563..0681246 100644
+--- a/drivers/devfreq/governor_userspace.c
++++ b/drivers/devfreq/governor_userspace.c
+@@ -25,10 +25,19 @@ static int devfreq_userspace_func(struct devfreq *df, unsigned long *freq)
+ {
+ 	struct userspace_data *data = df->data;
+ 
+-	if (!data->valid)
++	if (data->valid) {
++		unsigned long adjusted_freq = data->user_frequency;
++
++		if (df->max_freq && adjusted_freq > df->max_freq)
++			adjusted_freq = df->max_freq;
++
++		if (df->min_freq && adjusted_freq < df->min_freq)
++			adjusted_freq = df->min_freq;
++
++		*freq = adjusted_freq;
++	} else {
+ 		*freq = df->previous_freq; /* No user freq specified yet */
+-	else
+-		*freq = data->user_frequency;
++	}
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+index 98ce812..e9385bf 100644
+--- a/include/linux/devfreq.h
++++ b/include/linux/devfreq.h
+@@ -124,6 +124,8 @@ struct devfreq_governor {
+  *		touch this.
+  * @being_removed	a flag to mark that this object is being removed in
+  *			order to prevent trying to remove the object multiple times.
++ * @min_freq	Limit minimum frequency requested by user (0: none)
++ * @max_freq	Limit maximum frequency requested by user (0: none)
+  *
+  * This structure stores the devfreq information for a give device.
+  *
+@@ -149,6 +151,9 @@ struct devfreq {
+ 	void *data; /* private data for governors */
+ 
+ 	bool being_removed;
++
++	unsigned long min_freq;
++	unsigned long max_freq;
+ };
+ 
+ #if defined(CONFIG_PM_DEVFREQ)
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.4.1
+
