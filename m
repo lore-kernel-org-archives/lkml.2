@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757319Ab2AKBrn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 20:47:43 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:50296
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756701Ab2AKBrm (ORCPT
+	id S933618Ab2AKBtG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 20:49:06 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47760 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756706Ab2AKBtE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 20:47:42 -0500
-X-SpamScore: -9
-X-BigFish: VS-9(zz1432N98dKzz1202hzz8275dhz2dhc1ahc1bh2a8h668h839h944h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 13,
-Date: Wed, 11 Jan 2012 09:47:30 +0800
-From: Richard Zhao <richard.zhao@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: <patches@linaro.org>, <vinod.koul@intel.com>,
-        <linux-kernel@vger.kernel.org>, <eric.miao@linaro.org>,
-        <kernel@pengutronix.de>, <dan.j.williams@intel.com>,
-        Richard Zhao <richard.zhao@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 6/6] dma/imx-sdma: check whether event_id0 < 32 when set
- event_mask
-Message-ID: <20120111014730.GE2414@b20223-02.ap.freescale.net>
-References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
- <1326178910-14044-6-git-send-email-richard.zhao@linaro.org>
- <20120110142008.GE26599@S2101-09.ap.freescale.net>
- <20120110142939.GB2019@richard-laptop>
- <20120110153836.GA27831@S2101-09.ap.freescale.net>
- <20120111005322.GB2414@b20223-02.ap.freescale.net>
+	Tue, 10 Jan 2012 20:49:04 -0500
+Date: Wed, 11 Jan 2012 01:49:00 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sage Weil <sage@newdream.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alex Elder <elder@dreamhost.com>
+Subject: Re: linux-next: manual merge of the ceph tree with Linus' tree
+Message-ID: <20120111014900.GF23916@ZenIV.linux.org.uk>
+References: <20120111122744.7db3bfb91d79b1307db02228@canb.auug.org.au>
+ <20120111013127.GE23916@ZenIV.linux.org.uk>
+ <Pine.LNX.4.64.1201101732330.15859@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120111005322.GB2414@b20223-02.ap.freescale.net>
+In-Reply-To: <Pine.LNX.4.64.1201101732330.15859@cobra.newdream.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 08:53:23AM +0800, Richard Zhao wrote:
-> On Tue, Jan 10, 2012 at 11:38:39PM +0800, Shawn Guo wrote:
-> > On Tue, Jan 10, 2012 at 10:29:42PM +0800, Richard Zhao wrote:
-> > > On Tue, Jan 10, 2012 at 10:20:10PM +0800, Shawn Guo wrote:
-> > > > On Tue, Jan 10, 2012 at 03:01:50PM +0800, Richard Zhao wrote:
-> > > > > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
-> > > > > ---
-> > > > 
-> > > > I think it deserves a sensible commit message explaining why the patch
-> > > > is needed.
-> > > If event_id0 < 32, 1 << (sdmac->event_id0 - 32) is not zero.
-> This meant to make you clear about the patch. I'll add it in commit
-> message.
-unsigned int t = 31;
-printf("%d %08x\n", t, 1 << (t-32));
-
-I test above code on both x86 and arm. They shows different results.
-x86: 31 80000000
-arm: 31 00000000
-
-I think we still need this patch. we shoud not let it depends on gcc's
-behavior.
-
-Thanks
-Richard
+On Tue, Jan 10, 2012 at 05:35:36PM -0800, Sage Weil wrote:
+> On Wed, 11 Jan 2012, Al Viro wrote:
+> > On Wed, Jan 11, 2012 at 12:27:44PM +1100, Stephen Rothwell wrote:
+> > > Hi Sage,
 > > > 
-> > My point is you may explain the exact problem you are seeing without
-> > this patch
-> The kernel don't have event_id < 32 case yet. I found the bug when
-> I review the code.
-> > and how the patch helps here.  In general, doing so would
-> > win a warm feeling from reviewers much more easily than leaving the
-> > commit message empty there.
-> I understand your point that comment as much as possible.
-> 
-> Thanks
-> Richard
+> > > Today's linux-next merge of the ceph tree got a conflict in
+> > > fs/ceph/super.c between commit 3c5184ef1216 ("ceph: d_alloc_root() may
+> > > fail") from Linus' tree and commit 26d913cdd955 ("ceph: always initialize
+> > > the dentry in open_root_dentry()") from the ceph tree.
+> > > 
+> > > I fixed it up (see below) and can carry the fix as necessary.
 > > 
-> > -- 
-> > Regards,
-> > Shawn
+> > Ahem...  
 > > 
-> > _______________________________________________
-> > linux-arm-kernel mailing list
-> > linux-arm-kernel@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > >  +			root = d_obtain_alias(inode);
+> > >  +		}
+> > > + 		ceph_init_dentry(root);
 > > 
+> > What will happen if dentry returned by d_obtain_alias() had already existed?
 > 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+> ceph_init_dentry() bails out immediately if d_fsdata is non-NULL.
 
+Right.
+
+> BTW, should I let Linus resolve this, or merge his master back into my 
+> tree, or rebase onto his master?
+
+My fault - I should've checked your tree for conflicts and feed that fix to
+you since it turned out to have them.  I thought for some reason that ceph
+pull had already happened...
