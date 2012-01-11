@@ -1,31 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab2AKRWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:22:32 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:65330 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757290Ab2AKRWa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:22:30 -0500
+	id S933167Ab2AKRXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:23:22 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:9078 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755320Ab2AKRXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 12:23:21 -0500
+Message-ID: <4F0DC582.6030805@parallels.com>
+Date: Wed, 11 Jan 2012 21:23:14 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Date: Wed, 11 Jan 2012 23:22:29 +0600
-Message-ID: <CADZ9YHicin2YjGm_m9B0LMv3NW1Z3cb7HSCaqwycFmVfRpvpWA@mail.gmail.com>
-Subject: [Question] sched: Should nr_uninterruptible be decremented in ttwu_do_activate()?
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
+ context
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>		 <1325285705.10984.4.camel@lade.trondhjem.org>	 <1325797111.11084.22.camel@lade.trondhjem.org>	 <4F0C35F3.7060508@parallels.com> <1326299003.17212.7.camel@lade.trondhjem.org>
+In-Reply-To: <1326299003.17212.7.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+11.01.2012 20:23, Trond Myklebust пишет:
+> On Tue, 2012-01-10 at 16:58 +0400, Stanislav Kinsbursky wrote:
+>> 06.01.2012 00:58, Trond Myklebust пишет:
+>>> The second problem that was highlighted was the fact that as they stand
+>>> today, these patchsets do not allow for bisection. When we hit the Oops,
+>>> I had Bryan try to bisect where the problem arose. He ended up pointing
+>>> at the patch "SUNRPC: handle RPC client pipefs dentries by network
+>>> namespace aware routine", which is indeed the cause, but which is one of
+>>> the _dependencies_ for all the PipeFS notifier patches that fix the
+>>> problem.
+>>>
+>>
+>> I'm confused here. Does this means, that I have to fix patch "SUNRPC: handle RPC
+>> client pipefs dentries by network namespace aware routine" to make it able to
+>> bisect?
+>
+> What I mean is that currently, I have various ways to Oops the kernel
+> when I apply "SUNRPC: handle RPC client pipefs dentries by network
+> namespace aware routine" before all these other followup patches are
+> applied.
+>
+> One way to could fix this, might be to add dummy versions of
+> rpc_pipefs_notifier_register()/unregister() so that "NFS: idmap PipeFS
+> notifier introduced" and the other such patches can be applied without
+> compilation errors or Oopses before the "handle RPC client pipefs
+> dentries..." patch is applied. The latter could then enable the real
+> rpc_pipefs_notifier_register()/....
+>
+> The point is to not have these patches add _known_ bugs to the kernel at
+> any point, so that someone who is trying to track down an unknown bug
+> via "git bisect" doesn't have to also cope with these avoidable
+> issues...
+>
 
-In ttwu_do_activate(), we're decrementing nr_uninterruptible if
-p->sched_contributes_to_load (for SMP=y). But, we're also decrementing
-nr_uninterruptible from activate_task at the same path. Why we're
-doing it twice for a single task activation path?
+Ok, thanks for explanation.
+I've sent rebased "v2" of the patch set, contains updated patch "SUNRPC: handle 
+RPC client pipefs dentries by network namespace aware routine", which, I 
+believe, fixes oops, spotted by Bryan (it was caused by excessive call of 
+rpc_put_mount() on PipeFS dentries unlink).
+So, if I'm not mistaken here, there's no need in implementing of dummy versions 
+of rpc_pipefs_notifier_(un)register() or any other dummy stuff.
 
+BTW, it looks like that in last 2 days I've sent all updates to the issues you 
+pointed out. If not, please, ping me once more.
 
-Thanks,
-Rakib
+-- 
+Best regards,
+Stanislav Kinsbursky
