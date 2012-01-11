@@ -1,37 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab2AKM3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 07:29:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43603 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588Ab2AKM3u (ORCPT
+	id S1757416Ab2AKMcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 07:32:25 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59128 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588Ab2AKMcW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 07:29:50 -0500
-Date: Wed, 11 Jan 2012 12:30:25 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Rajanikanth H V <rajanikanth.hv@stericsson.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org, gregkh@sude.de,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: tty/serial: Need clarification on Support for 4+M Baudrate
-Message-ID: <20120111123025.244a9cf5@pyramind.ukuu.org.uk>
-In-Reply-To: <20120111121901.GA4034@bnru05>
-References: <20120111121901.GA4034@bnru05>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jan 2012 07:32:22 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120110003705.GA9482@kroah.com>
+References: <20120110003705.GA9482@kroah.com>
+Date: Wed, 11 Jan 2012 13:32:20 +0100
+X-Google-Sender-Auth: RCKQMlvxKgymKeg9htrHADmHx7M
+Message-ID: <CAMuHMdWHgQY-=43ReEOHgDtdAFhhOELaB8aNimV99+ud1Y=NCA@mail.gmail.com>
+Subject: Re: Latest kernel stable/longterm status
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jan 2012 17:49:01 +0530
-> I have a requirement to interface UART with an external microcontroller 
-> using baud rate above 4Mbps, hence following is my approach to apply
-> the changes. Can any one review/provide me appropriate approach.
+On Tue, Jan 10, 2012 at 01:37, Greg KH <greg@kroah.com> wrote:
+> First off, please everyone remember to mark any patch that you want to
+> have applied to the stable kernel trees with a simple:
+>        Cc: stable <stable@vger.kernel.org>
+> marking in the Signed-off-by: area.  Once the patch hits Linus's tree, I
+> will automatically be notified of it and it will be applied if possible.
+> If it does not applied, you will be notified of that.
 
-See TCGETS2/TCSETS2 and the BOTHER flag.
+How do you want us to specify to which versions it should be applied?
 
-The kernel supports aetting arbitary baud rates already.
+Gr{oetje,eeting}s,
 
-Alan
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
