@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315Ab2AKWpY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 17:45:24 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:46515 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab2AKWpX (ORCPT
+	id S1751377Ab2AKWqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 17:46:21 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:42203 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab2AKWqS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 17:45:23 -0500
-Date: Thu, 12 Jan 2012 09:45:12 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
-Message-Id: <20120112094512.51c8ced573da371780da0b26@canb.auug.org.au>
-In-Reply-To: <4F0E02B2.7010908@goop.org>
-References: <20120111145709.77ef7d68996cd5fa724326e5@canb.auug.org.au>
-	<4F0DFF39.8090103@goop.org>
-	<4F0E02B2.7010908@goop.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__12_Jan_2012_09_45_12_+1100_Le9EI3tlalrxcjDL"
+	Wed, 11 Jan 2012 17:46:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <20120111170252.GD26832@google.com>
+References: <1326220106-5765-1-git-send-email-tj@kernel.org>
+ <20120111144012.GB7991@somewhere.redhat.com> <20120111170252.GD26832@google.com>
+From: David Sharp <dhsharp@google.com>
+Date: Wed, 11 Jan 2012 14:45:56 -0800
+Message-ID: <CAJL_ektD=A5ATqt11+tAWeoCDGYRpi=_JVgr0ubM4ih96WAuxg@mail.gmail.com>
+Subject: Re: [RFC PATCHSET take#2] ioblame: IO tracer with origin tracking
+To: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, axboe@kernel.dk,
+        mingo@redhat.com, rostedt@goodmis.org, teravest@google.com,
+        slavapestov@google.com, ctalbott@google.com,
+        linux-kernel@vger.kernel.org, winget@google.com, namhyung@gmail.com
+X-System-Of-Record: true
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__12_Jan_2012_09_45_12_+1100_Le9EI3tlalrxcjDL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Jeremy,
-
-On Thu, 12 Jan 2012 08:44:18 +1100 Jeremy Fitzhardinge <jeremy@goop.org> wr=
-ote:
+On Wed, Jan 11, 2012 at 9:02 AM, Tejun Heo <tj@kernel.org> wrote:
+> Hello, Frederic.
 >
-> On 01/12/2012 08:29 AM, Jeremy Fitzhardinge wrote:
-> > Are you by some chance still (or again) pulling from my
-> > "git://github.com/jsgf/linux-xen.git upstream/xen" repo, which
-> > contains a number of obsolete changes...
->=20
-> Which looks like my mistake, because I don't think I had asked you to
-> switch back to git.kernel.org.
+> On Wed, Jan 11, 2012 at 03:40:14PM +0100, Frederic Weisbecker wrote:
+>> I think this has been asked before. So sorry for asking twice.
+>
+> I thought Namhyung was primarily asking about stat gathering which is
+> chopped now.
+>
+>> But I'm wondering why the post processing is made from the kernel. Do you think
+>> it would be possible to pull that out in userspace. We have some nice scripting
+>> framework for post processing of trace events in perf tools for example.
+>>
+>> If it's not possible please tell us why. We really would like to avoid adding such
+>> a big piece of code in the tracing subsystem if possible.
+>
+> I suppose you're talking about the state tracking by post-processing,
+> right?
+>
+> * ioblame tracks stack trace for each dirtying operation.  If we don't
+>  want further state tracking in kernel, we would have to exort the
+>  whole stack trace on each dirtying operation which can be high
+>  frequency.  Also, is there an efficient way to export variable
+>  length data via TPs?  If so, it can be somewhat better but still not
+>  very good.
 
-OK, I will switch back to kernel.org today.
+See __dynamic_array. It imposes a 4-byte overhead to store the offset
+and length of data within the trace event.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+That said, I'm always very wary of adding large amounts of data to
+tracepoints, especially if they are high frequency, as that just leads
+to faster ring buffer exhaustion.
 
---Signature=_Thu__12_Jan_2012_09_45_12_+1100_Le9EI3tlalrxcjDL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPDhD4AAoJEECxmPOUX5FEcfUP/038+64uRiHuVPki4HBREdZZ
-wbYYNvcoa3y6VQ9VUNOoJvWb0z0Tu0/HxCgk49gdSz/iX4HiSem43FUPIkY17UUv
-15j7jUNce4oWI4kFgIQR76rPTCdloIAr+ir5qiZoVTQv1CFRZ7TBmeU0YQ8ESTLd
-/Ro9EYXMuUTi+fgjKgktFgsl7TPq01U6Z9OAN8c6KlZr37Fj0JJ4BcWy5LMyzbcL
-Up7dUnIB1R1PfJ9pjNQ31gZbghRUho40e3xDuhDPN/agmTR4kaDWiYUe6lvN22hA
-5TNIxJd7MHyFkT0G3rDIlLnQ84IBSQWAXfkaE8peTFqa5tgIEqxppWCVD+feHX6M
-NWJIv2njaVO3i4txpFZPDFBhWx0Gq3U6fpY7hgXkf4niJAGFiMwkbIoF8nTZrVw0
-Pv1DUcIHGcnEGfZ7ef/Af4f8X3Cu5608SiRAmuRDpYb6XcgAwvFhBzeKBnfQaCI8
-86xbiiwVCRk0CAi2F28S2kynFUZaEa9CuPt8kV3Mp4gsV2P4Tix+Ki60ygge/o+C
-VySNT/8d+dgY229VBLdRKI1hytbd980AZdgAWvReynIzIbD8wEZru5y3Kr3PY/Ah
-FQG1nPoaAiLivPSpNONr03h+4B5SFZzQ5YSU65CJsMD1prXYGFOilrOGgGR+c8mm
-mvTbMAAlI4QPL1E69+k3
-=qpz7
------END PGP SIGNATURE-----
-
---Signature=_Thu__12_Jan_2012_09_45_12_+1100_Le9EI3tlalrxcjDL--
+>
+> * Even if we track dirtying state in userland, when an io is issued,
+>  it needs to be mapped back to the dirtying actions.  If the dirtier
+>  state is in userland, we have to export all physaddrs of pages in
+>  the IO so that userland can match them up and clear dirtied states.
+>  Again, the same problem.
+>
+> * As implemented, most of state tracking should be fairly stable and
+>  shouldn't require much modification as code base evolves but it's
+>  still trying to extract pretty high level semantics from disjoint
+>  events across multiple layers.  It's reasonable to expect future
+>  changes would require updates to how those semantics are
+>  established.  Exporting higher level semantics, we don't get tied to
+>  keeping the relevant raw tracepoints and, more importantly, their
+>  exact interactions stable.
+>
+> * It isn't trivial but still pretty straight-forward.  Most of what it
+>  does is abbreviating strack trace to an identifier (which BTW could
+>  be useful for other tracing purposes and may be worthwhile to
+>  generalize) and tracking page and inode dirtiers using those
+>  identifiers.  It stays mostly out of the way and doesn't noticeably
+>  harm maintainability.  It fits the role of in-kernel tracers -
+>  building information from domain knowledge and states and exporting
+>  to userland in sensible form.
+>
+> Thanks.
+>
+> --
+> tejun
