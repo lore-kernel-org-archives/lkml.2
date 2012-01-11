@@ -1,136 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933868Ab2AKSh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 13:37:56 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9188 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902Ab2AKShw convert rfc822-to-8bit (ORCPT
+	id S933882Ab2AKSki (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 13:40:38 -0500
+Received: from mail.windriver.com ([147.11.1.11]:47022 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933111Ab2AKSkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 13:37:52 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 11 Jan 2012 10:37:37 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Richard Zhao <richard.zhao@linaro.org>
-CC: "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Dong Aisheng <dongas86@gmail.com>
-Date: Wed, 11 Jan 2012 10:37:36 -0800
-Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Index: AczOcHCWXAuy7VFcQqaPdJ4QJHgOAACHm2LA
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A6FB@HQMAIL01.nvidia.com>
-References: <1324402840-32451-3-git-send-email-b29396@freescale.com>
- <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
- <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
- <20120107135445.GI4790@S2101-09.ap.freescale.net>
- <20120108125156.GB2203@richard-laptop>
- <20120109015625.GE1835@S2101-09.ap.freescale.net>
-In-Reply-To: <20120109015625.GE1835@S2101-09.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Jan 2012 13:40:37 -0500
+Date: Wed, 11 Jan 2012 13:40:27 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, <linux-kernel@vger.kernel.org>,
+        Junio C Hamano <gitster@pobox.com>,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re: Regulator updates for 3.3
+Message-ID: <20120111184026.GA23952@windriver.com>
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
+ <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
+ <20120110184530.GE7164@opensource.wolfsonmicro.com>
+ <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
+ <20120110222711.GK7164@opensource.wolfsonmicro.com>
+ <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shawn Guo wrote at Sunday, January 08, 2012 6:56 PM:
-> On Sun, Jan 08, 2012 at 08:51:59PM +0800, Richard Zhao wrote:
-> ...
-> > > > So, this does appear to be conflating the two things: The definition of
-> > > > what pins are in a pingroup, and the mux function for a particular
-> > > > setting of that pingroup. I think you need separate nodes for this.
-> > > >
-> > > At least for imx, we do not have mux function setting for pingroup.
-> > > Instead, it only applies to individual pin.
-> > I think it depends on function definition of pinmux driver. For the
-> > imx example patch, it's one-to-one.
-> 
-> It should depend on particular imx soc pinmux design rather than
-> pinmux driver.  If it's always one-to-one case, we do not need
-> pinmux at all.  Aisheng's patch just did not enumerate all the groups
-> for given function.  Instead, it puts a couple simple examples there
-> for demonstration.
-> 
-> ...
-> 
-> > > > 		uart4func: func@1 {
-> > > > 			func-name = "uart4";
-> > > > 			locations = <&bargrp &bazgrp>;
-> > > > 			mux-value = <6 3>;
-> > > > 		};
-> > >
-> > > I prefer to have function node defined in <board>.dtsi, since it's
-> > > all about defining phandle to the correct pingroup, which should be
-> > > decided by board design.
-> > group and function are one-to-one mapped for imx.
-> 
-> Again, it's not the case.
-> 
-> > So if you put function
-> > in board dts, why not put pin group there too?
-> 
-> If we put pingroup data in <board>.dts, the data will be likely get
-> duplicated a lot in different board dts files.  For example, if
-> imx6q-sabrelite chooses the same pingroup for usdhc3 and usdhc4 as
-> imx6q-arm2, the pingroup data will be duplicated between imx6q-arm2.dts
-> and imx6q-sabrelite.dts.
-> 
-> On the contrary, putting pingroup data in <soc>.dtsi and having function
-> node in <board>.dts with phandle pointing to the correct pingroup will
-> help avoid such data duplication.
+[Re: Regulator updates for 3.3] On 10/01/2012 (Tue 14:54) Linus Torvalds wrote:
 
-Oh, when I wrote in my first mail today that I'd expand on one of my
-points when responding to Richard Zhao's email, I actually meant when
-responding to this email. Sorry for the confusion!
+[...]
 
-So, I don't agree with putting the "combinations" in the SoC .dtsi file,
-since that could grow it into a huge file that contains a lot of nodes
-that are used on some board somewhere, but typically not the "current"
-board that's including it.
+> So right now "git merge" (and "git pull") make it too easy to make
+> those meaningless merge commits. If instead of seven pointless merges
 
-However, I do see that there are probably lots of common combinations
-that get re-used across multiple boards, and you might want a common
-place to put those definitions so they don't need to be cut/paste
-everywhere.
+It looks like the editor-by-default solution is a go, but there still
+might be value in increasing the visibility of the pointless merges
+via. the patch below.
 
-So, why not create specific include files (.dtsi files) for each of those
-combinations? Each include could define one particular common combination
-of pin mux usage, or perhaps even a set of them if they're commonly used
-together. Each board file would include the SoC .dtsi file, the relevant
-set of "pinmux config" .dtsi files, and then include anything custom to
-that board. Remember, that include files simply get merged into the device
-tree, so you can easily add based definitions (like) regs for e.g. an
-SDHCI controller in a SoC .dtsi file, the pinmux properties in a .dtsi
-file specific to SHDCI controller 3, and then e.g. CD/WP/power GPIOs in
-the final board .dts file.
+Paul.
 
-Following this model, we can initially just put the pinmux config into
-each board file, then factor it out into new .dtsi files as/when we see
-duplication. We get to start off simple, then clean up by refactoring as
-we go.
+> you had (say) had two merges that had messages about *why* they
+> weren't pointless, I'd be perfectly happy.
+> 
+> Addid junio and git to the cc just to bring up this issue of bad UI
+> once again. I realize it could break old scripts to start up an editor
+> window, but still..
+> 
+>                        Linus
 
+
+>From 1a548fa97b78cebcded15d2b00ee3d826f731abd Mon Sep 17 00:00:00 2001
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 11 Jan 2012 10:33:45 -0500
+Subject: [PATCH] merge: Make merge strategy message follow the diffstat
+
+One of the common problems I've seen with people who are
+somewhat new to git is that they don't realize that a pull
+is a fetch+merge.  They simply decide they want all the
+latest stuff and issue a git pull without really thinking
+if they are on a branch with local commits or on master,
+where a fast forward can take place.
+
+But the one line message that tells you whether you got a fast
+forward or a real merge commit is usually pushed off the
+screen by all the diffstat information.  So these users won't
+even know that their pull has created a merge, and chances
+are they will never change their workflow.
+
+By moving the message after the diffstat, there is a better
+chance that people will be aware they've done a pointless
+merge commit.
+
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+
+diff --git a/builtin/merge.c b/builtin/merge.c
+index 3a45172..9471588 100644
+--- a/builtin/merge.c
++++ b/builtin/merge.c
+@@ -370,12 +370,12 @@ static void finish(struct commit *head_commit,
+ {
+ 	struct strbuf reflog_message = STRBUF_INIT;
+ 	const unsigned char *head = head_commit->object.sha1;
++	int automsg = 0;
+ 
+-	if (!msg)
++	if (!msg) {
++		automsg = 1;
+ 		strbuf_addstr(&reflog_message, getenv("GIT_REFLOG_ACTION"));
+-	else {
+-		if (verbosity >= 0)
+-			printf("%s\n", msg);
++	} else {
+ 		strbuf_addf(&reflog_message, "%s: %s",
+ 			getenv("GIT_REFLOG_ACTION"), msg);
+ 	}
+@@ -409,6 +409,9 @@ static void finish(struct commit *head_commit,
+ 		diff_flush(&opts);
+ 	}
+ 
++	if (!automsg && verbosity >= 0)
++		printf("%s\n", msg);
++
+ 	/* Run a post-merge hook */
+ 	run_hook(NULL, "post-merge", squash ? "1" : "0", NULL);
+ 
 -- 
-nvpublic
+1.7.4.4
 
