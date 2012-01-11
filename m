@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757715Ab2AKOEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 09:04:54 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53679 "EHLO
+	id S1757651Ab2AKOEg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 09:04:36 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34567 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757580Ab2AKOEI (ORCPT
+	by vger.kernel.org with ESMTP id S1757577Ab2AKOEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 09:04:08 -0500
+	Wed, 11 Jan 2012 09:04:00 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
-        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCHv5 11/11] caif_shm: Add CAIF driver for Shared memory for M7400
-Date: Wed, 11 Jan 2012 15:03:33 +0100
-Message-Id: <1326290613-18287-12-git-send-email-sjur.brandeland@stericsson.com>
+        =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
+Subject: [PATCHv5 08/11] modem_shm: SHM Configuration data handling
+Date: Wed, 11 Jan 2012 15:03:30 +0100
+Message-Id: <1326290613-18287-9-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -26,975 +25,1230 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a caif shared memory link layer driver for ST-Ericsson's Thor M7400
-LTE modem.
+Add configuration handling of modem shared memory. A gen-netlink endpoint
+for "modem-shm" is implemented handling channel configuration requests.
+The channel configuration is stored in the device and in shared memory.
 
-M7400 uses a ring-buffer in shared memory for transporting data from the modem.
-Each ring-buffer element contains an array of caif frames. caif_shm calls
-napi_schedule() when receiving notification about incoming data.
-The napi-poll function copies data from the ring-buffer to SKBs until
-ring-buffer is empty, or quota is exceeded.
-
-If transmit ring-buffer is full, it also uses napi for scheduling transmission
-of queued transmit buffer.
-
-cc: David S. Miller <davem@davemloft.net>
-Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/net/caif/Kconfig    |   12 +-
- drivers/net/caif/Makefile   |    3 +-
- drivers/net/caif/caif_shm.c |  900 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 913 insertions(+), 2 deletions(-)
- create mode 100644 drivers/net/caif/caif_shm.c
+ drivers/modem_shm/shm_boot.c | 1208 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 1208 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/modem_shm/shm_boot.c
 
-diff --git a/drivers/net/caif/Kconfig b/drivers/net/caif/Kconfig
-index abf4d7a..5a8912b 100644
---- a/drivers/net/caif/Kconfig
-+++ b/drivers/net/caif/Kconfig
-@@ -32,7 +32,7 @@ config CAIF_SPI_SYNC
- 	help to synchronize to the next transfer in case of over or under-runs.
- 	This option also needs to be enabled on the modem.
- 
--config CAIF_SHM
-+config CAIF_SHM_MBX
- 	tristate "CAIF shared memory protocol driver"
- 	depends on CAIF && U5500_MBOX
- 	default n
-@@ -47,3 +47,13 @@ config CAIF_HSI
-        The caif low level driver for CAIF over HSI.
-        Be aware that if you enable this then you also need to
-        enable a low-level HSI driver.
-+
-+config CAIF_SHM
-+	tristate "CAIF shared memory protocol driver"
-+	depends on MODEM_SHM_BUS && CAIF
-+	default n
-+	---help---
-+	Say "Y" if you want to support CAIF over Modem Shared Memory
-+	IPC mechanism (e.g. over Chip to Chip). Only say M here if you want to
-+	test CAIF over SHM and need to load and unload its module.
-+	If unsure say N.
-diff --git a/drivers/net/caif/Makefile b/drivers/net/caif/Makefile
-index 91dff86..2837c56 100644
---- a/drivers/net/caif/Makefile
-+++ b/drivers/net/caif/Makefile
-@@ -8,7 +8,8 @@ cfspi_slave-objs := caif_spi.o caif_spi_slave.o
- obj-$(CONFIG_CAIF_SPI_SLAVE) += cfspi_slave.o
- 
- # Shared memory
--caif_shm-objs := caif_shmcore.o caif_shm_u5500.o
-+caif_shmmbx-objs := caif_shmcore.o caif_shm_u5500.o
-+obj-$(CONFIG_CAIF_SHM_MBX) += caif_shmmbx.o
- obj-$(CONFIG_CAIF_SHM) += caif_shm.o
- 
- # HSI interface
-diff --git a/drivers/net/caif/caif_shm.c b/drivers/net/caif/caif_shm.c
+diff --git a/drivers/modem_shm/shm_boot.c b/drivers/modem_shm/shm_boot.c
 new file mode 100644
-index 0000000..f6ce486
+index 0000000..87ff053
 --- /dev/null
-+++ b/drivers/net/caif/caif_shm.c
-@@ -0,0 +1,900 @@
++++ b/drivers/modem_shm/shm_boot.c
+@@ -0,0 +1,1208 @@
 +/*
-+ * Copyright (C) ST-Ericsson AB 2011
-+ * Contact: Sjur Brændeland / sjur.brandeland@stericsson.com
-+ * Authors: Sjur Brændeland / sjur.brandeland@stericsson.com
-+ *	   Daniel Martensson / daniel.martensson@stericsson.com
++ * Copyright (C) ST-Ericsson AB 2012
++ * Author:	Sjur Brændeland / sjur.brandeland@stericsson.com
 + * License terms: GNU General Public License (GPL) version 2
 + */
 +
 +#define pr_fmt(fmt) KBUILD_MODNAME ":" fmt
++#include <linux/version.h>
++#include <linux/init.h>
 +#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/spinlock.h>
-+#include <linux/sched.h>
-+#include <linux/list.h>
-+#include <linux/netdevice.h>
-+#include <linux/if_arp.h>
++#include <linux/kobject.h>
++#include <linux/string.h>
++#include <linux/sysfs.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/ctype.h>
++#include <linux/crc-ccitt.h>
++#include <linux/kdev_t.h>
++#include <net/netlink.h>
++#include <net/genetlink.h>
++#include "shm_ipctoc.h"
 +#include <linux/modem_shm/shm_dev.h>
-+#include <net/rtnetlink.h>
-+#include <net/caif/caif_device.h>
-+#include <net/caif/caif_layer.h>
++#include <linux/modem_shm/modem_shm_netlink.h>
++#include <linux/c2c_genio.h>
 +
 +MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Daniel Martensson <daniel.martensson@stericsson.com>");
-+MODULE_AUTHOR("Sjur Brændeland <sjur.brandeland@stericsson.com>");
-+MODULE_DESCRIPTION("CAIF SHM driver");
++MODULE_AUTHOR("Sjur Brændland <sjur.brandeland@stericsson.com>");
 +
-+#define CONNECT_TIMEOUT (3 * HZ)
-+#define CAIF_NEEDED_HEADROOM	32
-+#define CAIF_FLOW_ON		1
-+#define CAIF_FLOW_OFF		0
++#define SHM_VERSION	0x1
++#define SHM_SUBVER	0x0
++#define TOC_SZ		512
++#define IMG_MAX_SZ	65536
++#define SHM_ALIGNMT	sizeof(u32)
++#define SHM_MIN_CHSZ 3
++#define SHM_PAYL_ALIGN max(32, L1_CACHE_BYTES)
++#define STE_BOOTIMG_NAME "ste-bootimg.bin"
 +
-+#define LOW_XOFF_WATERMARK	50
-+#define HIGH_XOFF_WATERMARK	70
-+#define STUFF_MARK		30
++#define GET_OFFSET(base, ptr) (((u8 *)(ptr)) - ((u8 *)(base)))
++#define OFFS2PTR(base, offs) ((void *) ((u8 *)base + offs))
++#define LEOFFS2PTR(base, offs) ((void *) ((u8 *)base + le32_to_cpu(offs)))
 +
-+struct ringbuf {
-+	__le32	*rip;
-+	__le32	*wip;
-+	u32	size;
-+	__le32	*bufsize;
++/* Structure use in debug mode for integrity checking */
++struct ipctoc_hash {
++	u16 img_hash;
++	u16 ch_hash;
++	u16 ch_size;
++};
++struct shm_modem {
++	bool config_error;
++	bool commited;
++	bool registered;
++	bool addr_set;
++	bool fw_requested;
++	u32 modem_bootimg_size;
++	void *shm_start;
++	u32 channels;
++	struct shm_channel *channel[SHM_MAX_CHANNELS + 1];
++	struct shm_ipctoc *ipctoc;
++	bool gennetl_reg;
 +};
 +
-+struct shm_pck_desc {
-+	/* Offset from start of channel to CAIF frame. */
-+	u32 offset;
-+	u32 length;
-+} __packed;
++static unsigned long shm_start;
++module_param(shm_start, ulong, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(shm_start, "Address for memory shared by host/modem.");
 +
-+struct shm_caif_frm {
-+	/* Number of bytes of padding before the CAIF frame. */
-+	u8 hdr_ofs;
-+} __packed;
++static unsigned long shm_c2c_bootaddr;
++module_param(shm_c2c_bootaddr, ulong, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(shm_c2c_bootaddr,
++			"Address given to modem (through GENI register)");
 +
-+#define SHM_HDR_LEN sizeof(struct shm_caif_frm)
++static long shm_size;
++module_param(shm_size, long, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(shm_size, "Size of SHM area");
 +
-+struct shmbuffer {
-+/* Static part: */
-+	u8 *addr;
-+	u32 index;
-+	u32 len;
-+/* Dynamic part: */
-+	u32 frames;
-+	/* Offset from start of buffer to CAIF frame. */
-+	u32 frm_ofs;
-+};
++#ifdef DEBUG
 +
-+enum CFSHM_STATE {
-+	CFSHM_CLOSED = 1,
-+	CFSHM_OPENING,
-+	CFSHM_OPEN
-+};
++/* In debug mode we pad around all payload area in order to detect overwrite */
++#define MAGIC_PAD_LEN 32
++#define MAGIC_PAD 0xbc
 +
-+struct cfshm {
-+	/* caif_dev_common must always be first in the structure*/
-+	struct caif_dev_common cfdev;
-+	struct shm_dev *shm;
-+	struct napi_struct napi;
-+	struct ringbuf tx;
-+	struct sk_buff_head sk_qhead;
-+	spinlock_t lock;
-+	struct ringbuf rx;
-+	u8 *rx_ringbuf;
-+	u32 rx_frms_pr_buf;
-+	u32 rx_alignment;
-+	struct shmbuffer **rx_bufs;
-+	struct net_device *ndev;
-+
-+	u32 tx_frms_pr_buf;
-+	u32 tx_alignment;
-+	struct shmbuffer **tx_bufs;
-+	u8 *tx_ringbuf;
-+	u32 tx_flow_on;
-+	u32 high_xoff_water;
-+	u32 low_xoff_water;
-+	u32 stuff_mark;
-+	atomic_t dbg_smp_rxactive;
-+	enum CFSHM_STATE state;
-+	wait_queue_head_t netmgmt_wq;
-+};
-+
-+static unsigned int ringbuf_used(struct ringbuf *rb)
++/* Verify a magic-pad area */
++static inline bool padok(void *mag)
 +{
-+	if (le32_to_cpu(*rb->wip) >= le32_to_cpu(*rb->rip))
-+		return le32_to_cpu(*rb->wip) - le32_to_cpu(*rb->rip);
-+	else
-+		return rb->size - le32_to_cpu(*rb->rip) + le32_to_cpu(*rb->wip);
++	u32 *p = mag, v = 0xbcbcbcbc;
++	int i;
++
++	for (i = 0; i < 8; i++)
++		if (*p++ != v)
++			return false;
++	return true;
 +}
 +
-+static int ringbuf_get_writepos(struct ringbuf *rb)
++/* Insert a magic-pad area */
++static inline void add_magic_pad(u32 *offset, void *base)
 +{
-+	if ((le32_to_cpu(*rb->wip) + 1) % rb->size == le32_to_cpu(*rb->rip))
-+		return -1;
-+	else
-+		return le32_to_cpu(*rb->wip);
++	if (*offset < shm_size)
++		memset(base + *offset, MAGIC_PAD, MAGIC_PAD_LEN);
++	*offset += MAGIC_PAD_LEN;
 +}
 +
-+static int ringbuf_get_readpos(struct ringbuf *rb)
++/* Abuse the pad area to create a checksum of the ipc-toc and descriptors */
++static inline void store_checksum(struct shm_modem *modem, u32 size)
 +{
-+
-+	if (le32_to_cpu(*rb->wip) == le32_to_cpu(*rb->rip))
-+		return -1;
-+	else
-+		return le32_to_cpu(*rb->rip);
++	struct ipctoc_hash *hash = (void *)modem->ipctoc;
++	--hash;
++	hash->img_hash =
++		crc_ccitt(0xffff, (u8 *) modem->shm_start,
++				modem->modem_bootimg_size);
++	hash->ch_hash = crc_ccitt(0xffff, (u8 *) modem->ipctoc, size);
++	hash->ch_size = size;
 +}
 +
-+static int ringbuf_upd_writeptr(struct ringbuf *rb)
++/* Verify that shm config has not been accidently tampered. */
++static inline bool ok_checksum(struct shm_modem *modem,
++				struct shm_ipctoc *ipctoc)
 +{
-+	if (!WARN_ON((le32_to_cpu(*rb->wip) + 1) % rb->size ==
-+					le32_to_cpu(*rb->rip))) {
++	struct ipctoc_hash *hash = (void *) ipctoc;
++	u16 new_hash, new_imghash;
++	int i;
++	u8 *p;
 +
-+		*rb->wip = cpu_to_le32((le32_to_cpu(*rb->wip) + 1) % rb->size);
-+		/* Do write barrier before updating index */
-+		smp_wmb();
++	if (!modem->commited)
++		return false;
++
++	for (i = 0; i < modem->channels; i++) {
++		struct shm_ipctoc_channel *ch;
++
++		ch = LEOFFS2PTR(modem->shm_start,
++				ipctoc->channel_offsets[i].rx);
++		p = LEOFFS2PTR(modem->shm_start, ch->ipc);
++		if (!padok(p - MAGIC_PAD_LEN))
++			return false;
++		p = LEOFFS2PTR(modem->shm_start, ch->offset);
++		if (!padok(p - MAGIC_PAD_LEN))
++			return false;
++		ch = LEOFFS2PTR(modem->shm_start,
++				ipctoc->channel_offsets[i].tx);
++		p = LEOFFS2PTR(modem->shm_start, ch->ipc);
++		if (!padok(p - MAGIC_PAD_LEN))
++			return false;
++		p = LEOFFS2PTR(modem->shm_start, ch->offset);
++		if (!padok(p - MAGIC_PAD_LEN))
++			return false;
 +	}
-+	return le32_to_cpu(*rb->wip);
++
++	--hash;
++	new_hash = crc_ccitt(0xffff, (u8 *) ipctoc, hash->ch_size);
++	new_imghash =
++		crc_ccitt(0xffff, (u8 *) modem->shm_start,
++				modem->modem_bootimg_size);
++	pr_debug("Hash result:size:%d chksm:%u/%u img:%u/%u\n",
++			hash->ch_size, hash->ch_hash, new_hash,
++			hash->img_hash, new_imghash);
++	return hash->ch_hash == new_hash && hash->img_hash == new_imghash;
 +}
 +
-+static void ringbuf_upd_readptr(struct ringbuf *rb)
++static inline void init_data(void *shm_start, u32 offset,
++				int ch, u32 size)
 +{
-+	if (!WARN_ON(le32_to_cpu(*rb->wip) == le32_to_cpu(*rb->rip))) {
-+		*rb->rip = cpu_to_le32((le32_to_cpu(*rb->rip) + 1) % rb->size);
-+		/* Do write barrier before updating index */
-+		smp_wmb();
++	memset((u8 *)shm_start + offset, ch + 1, size);
++}
++#else
++#define MAGIC_PAD_LEN 0
++static inline void add_magic_pad(u32 *offset, void *base)
++{
++}
++static inline void store_checksum(struct shm_modem *modem, u32 size)
++{
++}
++static inline bool ok_checksum(struct shm_modem *modem, void *ipctoc)
++{
++	return true;
++}
++static inline void init_data(struct shm_modem *modem, u32 offs, int ch,
++				u32 size)
++{
++}
++#endif
++
++/* write_to_shm - Write SHM Channel descriptors to SHM.
++ *
++ * Based on the configuration data channel configuration
++ * is written to the shared memory area.
++ * This is the data layout:
++ *
++ * +------------+  <---- shm_start
++ * |	TOC	|
++ * +------------+
++ * | Boot IMG	|
++ * +------------+ <---- rw_start
++ * | RW Data	|
++ * +------------+
++ * | RW Buf idx |
++ * +------------+ <---- ipctoc
++ * | IPC TOC	|
++ * +------------+
++ * | RW Ch Decr |
++ * +------------+ <---- ro_start
++ * | RO Ch Decr |
++ * +------------+
++ * | RO Buf idx |
++ * +------------+
++ * | RO Data	|
++ * +------------+
++ */
++
++static int write_to_shm(struct shm_modem *modem)
++{
++	int i, pri, bitno;
++	u32 offset, ro_start, rw_start, ipctoc_offs, ipcro_offs;
++	bool found;
++	struct shm_ipctoc_channel *ch;
++	struct toc_entry *toc_entry;
++	struct shm_bufidx *bix;
++
++	/*
++	 * Find where to put IPC-TOC by adding up
++	 * the size of Payload buffers pluss buf-indices
++	 */
++	ipctoc_offs = ALIGN(modem->modem_bootimg_size, SHM_PAYL_ALIGN);
++	rw_start = ipctoc_offs;
++	for (i = 0; i < modem->channels; i++) {
++		int n = modem->channel[i]->tx.buffers;
++		ipctoc_offs += MAGIC_PAD_LEN;
++		ipctoc_offs += offsetof(struct shm_bufidx, size[n + 2]);
++		ipctoc_offs = ALIGN(ipctoc_offs, SHM_PAYL_ALIGN);
++		ipctoc_offs += MAGIC_PAD_LEN;
++		ipctoc_offs += modem->channel[i]->tx.ch_size;
++		ipctoc_offs = ALIGN(ipctoc_offs, SHM_PAYL_ALIGN);
 +	}
-+}
++	add_magic_pad(&ipctoc_offs, modem->shm_start);
++	pr_debug("IPC toc @ %08x\n", ipctoc_offs);
 +
++	/*
++	 * Allocate the IPC-TOC and, initiatlize it.
++	 * The IPC toc will be located after the RW Data and
++	 * buffer indices.
++	 */
++	offset = ipctoc_offs;
++	modem->ipctoc = OFFS2PTR(modem->shm_start, ipctoc_offs);
++	modem->ipctoc->magic[0] = SHM_IPCTOC_MAGIC1;
++	modem->ipctoc->magic[1] = SHM_IPCTOC_MAGIC2;
++	modem->ipctoc->version = SHM_VERSION;
++	modem->ipctoc->subver = SHM_SUBVER;
++	memset(modem->ipctoc->channel_offsets, 0,
++		sizeof(modem->ipctoc->channel_offsets));
 +
++	/* Find start of first channel descriptor */
++	offset += sizeof(struct shm_ipctoc);
 +
-+static struct shmbuffer *get_rx_buf(struct cfshm *cfshm)
-+{
-+	struct shmbuffer *pbuf = NULL;
-+	int idx = ringbuf_get_readpos(&cfshm->rx);
-+
-+	if (idx < 0)
-+		goto out;
-+	pbuf = cfshm->rx_bufs[idx];
-+out:
-+	return pbuf;
-+}
-+
-+static struct shmbuffer *new_rx_buf(struct cfshm *cfshm)
-+{
-+	struct shmbuffer *pbuf = get_rx_buf(cfshm);
-+
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+	if (pbuf)
-+		pbuf->frames = 0;
-+
-+	return pbuf;
-+}
-+
-+static struct shmbuffer *get_tx_buf(struct cfshm *cfshm)
-+{
-+	int idx = ringbuf_get_writepos(&cfshm->tx);
-+
-+	if (idx < 0)
-+		return NULL;
-+	return cfshm->tx_bufs[idx];
-+}
-+
-+inline struct shmbuffer *tx_bump_buf(struct cfshm *cfshm,
-+			struct shmbuffer *pbuf)
-+{
-+	u32 desc_size;
-+	struct shmbuffer *newpbuf = pbuf;
-+
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+	if (pbuf) {
-+		cfshm->shm->cfg.tx.buf_size[pbuf->index] =
-+			cpu_to_le32(pbuf->frm_ofs);
-+		ringbuf_upd_writeptr(&cfshm->tx);
-+		newpbuf = get_tx_buf(cfshm);
-+		/* Reset buffer parameters. */
-+		desc_size = (cfshm->tx_frms_pr_buf + 1) *
-+			sizeof(struct shm_pck_desc);
-+		pbuf->frm_ofs = desc_size + (desc_size % cfshm->rx_alignment);
-+		pbuf->frames = 0;
-+
++	/*
++	 * Allocate the location for the RW Channel descriptors.
++	 * It will be located after the IPC-TOC.
++	 */
++	offset = ALIGN(offset, SHM_ALIGNMT);
++	for (i = 0; i < modem->channels; i++) {
++		pr_debug("Channel descriptor %d RW @ 0x%08x\n", i, offset);
++		modem->ipctoc->channel_offsets[i].tx = cpu_to_le32(offset);
++		offset += sizeof(struct shm_ipctoc_channel);
++		offset = ALIGN(offset, SHM_ALIGNMT);
++		if (offset > shm_size)
++			goto badsize;
 +	}
-+	return newpbuf;
-+}
++	ro_start = offset;
 +
-+static struct shmbuffer *shm_rx_func(struct cfshm *cfshm, int quota)
-+{
-+	struct shmbuffer *pbuf;
-+	struct sk_buff *skb;
-+	int ret;
-+	unsigned long flags;
++	/*
++	 * Allocate the location for the RO Channel descriptors.
++	 * It will be located after the RW Channels.
++	 */
++	for (i = 0; i < modem->channels; i++) {
++		pr_debug("Channel descriptor %d RO @ 0x%08x\n", i, offset);
++		modem->ipctoc->channel_offsets[i].rx = cpu_to_le32(offset);
++		offset += sizeof(struct shm_ipctoc_channel);
++		offset = ALIGN(offset, SHM_ALIGNMT);
++		if (offset > shm_size)
++			goto badsize;
++	}
 +
-+	pbuf = get_rx_buf(cfshm);
-+	while (pbuf) {
-+		/* Retrieve pointer to start of the packet descriptor area. */
-+		struct shm_pck_desc *pck_desc =
-+			((struct shm_pck_desc *) pbuf->addr) + pbuf->frames;
-+		u32 offset;
++	/*
++	 * Allocate the location for the RO Buffer Indices.
++	 * It will be located after the RO Channels.
++	 */
++	offset = ALIGN(offset, SHM_PAYL_ALIGN);
++	ipcro_offs = offset;
++	for (i = 0; i < modem->channels; i++) {
++		int n = modem->channel[i]->rx.buffers;
++		ch = LEOFFS2PTR(modem->shm_start,
++				modem->ipctoc->channel_offsets[i].rx);
++		add_magic_pad(&offset, modem->shm_start);
++		ch->ipc = cpu_to_le32(offset);
 +
-+		/* Loop until descriptor contains zero offset */
-+		while ((offset = pck_desc->offset)) {
-+			unsigned int caif_len;
-+			struct shm_caif_frm *frm;
-+			u32 length = pck_desc->length;
-+			u8 hdr_ofs;
-+			frm = (struct shm_caif_frm *)(pbuf->addr + offset);
-+			hdr_ofs = frm->hdr_ofs;
-+			caif_len =
-+				length - SHM_HDR_LEN -
-+				hdr_ofs;
++		bix = OFFS2PTR(modem->shm_start, offset);
++		bix->read_index = cpu_to_le32(0);
++		bix->write_index = cpu_to_le32(0);
++		bix->state = cpu_to_le32(SHM_CLOSED);
++		bix->size[0] = cpu_to_le32(0);
 +
-+			pr_devel("copy data buf:%d frm:%d offs:%d @%x len:%d\n",
-+					pbuf->index, pbuf->frames, offset,
-+					(u32) (SHM_HDR_LEN + hdr_ofs + offset +
-+						pbuf->addr - cfshm->rx_ringbuf),
-+					length);
++		pr_debug("IPC RO[%d] @: 0x%08x\n",  i, offset);
++		offset += offsetof(struct shm_bufidx, size[n + 2]);
++		offset = ALIGN(offset, SHM_PAYL_ALIGN);
++		if (offset > shm_size)
++			goto badsize;
++	}
 +
-+			/* Check whether number of frames is below limit */
-+			if (pbuf->frames > cfshm->rx_frms_pr_buf) {
-+				pr_warn("Too many frames in buffer.\n");
-+				++cfshm->ndev->stats.rx_frame_errors;
-+				goto desc_err;
-+			}
++	/*
++	 * Allocate RO Data Area. This will located after
++	 * the RO Buffer Indices at the end of the Share Memory
++	 * area.
++	 */
++	offset = ALIGN(offset, SHM_PAYL_ALIGN);
++	for (i = 0; i < modem->channels; i++) {
++		u8 align;
++		u32 size;
++		ch = LEOFFS2PTR(modem->shm_start,
++				modem->ipctoc->channel_offsets[i].rx);
++		add_magic_pad(&offset, modem->shm_start);
++		ch->offset = cpu_to_le32(offset);
 +
-+			/* Check whether offset is below low limits */
-+			if (pbuf->addr + offset
-+					<= (u8 *)(pck_desc + 1)) {
-+				pr_warn("Offset in desc. below buffer area.\n");
-+				++cfshm->ndev->stats.rx_frame_errors;
-+				goto desc_err;
-+			}
++		BUILD_BUG_ON(sizeof(ch->mode) != 1);
++		ch->mode = modem->channel[i]->mode & SHM_MODE_MASK;
++		ch->buffers = cpu_to_le32(modem->channel[i]->rx.buffers);
++		align = rounddown_pow_of_two(modem->channel[i]->rx.alignment);
++		ch->alignment = align;
++		ch->packets = modem->channel[i]->rx.packets;
++		ch->mtu = modem->channel[i]->rx.mtu;
++		size = modem->channel[i]->tx.ch_size;
++		if (modem->channel[i]->mode & SHM_PACKET_MODE) {
++			u32 buf_size;
++			buf_size = size / modem->channel[i]->tx.buffers;
++			buf_size = rounddown(buf_size, align);
++			size = buf_size * modem->channel[i]->tx.buffers;
++		}
++		pr_debug("Buffer area RO for Channel[%d] at: 0x%08x size:%d\n",
++				i, offset, size);
++		ch->size = cpu_to_le32(size);
 +
-+			/* Check whether offset above upper limit */
-+			if (offset + length > pbuf->len) {
-+				pr_warn("Offset outside buffer area:\n");
-+				++cfshm->ndev->stats.rx_frame_errors;
-+				goto desc_err;
-+			}
++		init_data(modem->shm_start, offset, i,
++				modem->channel[i]->rx.ch_size);
++		offset += modem->channel[i]->rx.ch_size;
++		offset = ALIGN(offset, SHM_PAYL_ALIGN);
++		if (offset > shm_size)
++			goto badsize;
++	}
 +
-+			skb = netdev_alloc_skb(cfshm->ndev,
-+							caif_len + 1);
-+			if (skb == NULL) {
-+				pr_debug("Couldn't allocate SKB\n");
-+				++cfshm->ndev->stats.rx_dropped;
-+				goto out;
-+			}
++	/*
++	 * Allocate RW Data Area. This will located in the beginning
++	 * just after the Modem Boot Image.
++	 */
++	offset = rw_start;
++	for (i = 0; i < modem->channels; i++) {
++		u8 align;
++		u32 size;
++		ch = LEOFFS2PTR(modem->shm_start,
++				modem->ipctoc->channel_offsets[i].tx);
++		add_magic_pad(&offset, modem->shm_start);
++		ch->offset = cpu_to_le32(offset);
++		init_data(modem->shm_start, offset, i,
++				modem->channel[i]->tx.ch_size);
++		ch->mode = modem->channel[i]->mode &
++				SHM_MODE_MASK;
++		ch->buffers = cpu_to_le32(modem->channel[i]->tx.buffers);
++		align = rounddown_pow_of_two(modem->channel[i]->rx.alignment);
++		ch->alignment = align;
++		ch->packets = modem->channel[i]->rx.packets;
++		ch->mtu = modem->channel[i]->rx.mtu;
++		size = modem->channel[i]->tx.ch_size;
++		if (modem->channel[i]->mode & SHM_PACKET_MODE) {
++			u32 buf_size;
++			buf_size = size / modem->channel[i]->tx.buffers;
++			buf_size = rounddown(buf_size, align);
++			size = buf_size * modem->channel[i]->tx.buffers;
++		}
++		ch->size = cpu_to_le32(size);
++		pr_debug("Buffer area RW for Channel[%d] at: 0x%08x size:%d\n",
++				i, offset, size);
++		offset += modem->channel[i]->tx.ch_size;
++		offset = ALIGN(offset, SHM_PAYL_ALIGN);
++		if (offset > ro_start)
++			goto badsize;
++	}
 +
-+			memcpy(skb_put(skb, caif_len),
-+					SHM_HDR_LEN + hdr_ofs +
-+					offset + pbuf->addr,
-+					caif_len);
++	/*
++	 * Allocate RW IPC Area. This will located after RW data area,
++	 * just before the IPC-TOC.
++	 */
++	offset = ALIGN(offset, SHM_PAYL_ALIGN);
++	for (i = 0; i < modem->channels; i++) {
++		int n = modem->channel[i]->tx.buffers;
++		ch = LEOFFS2PTR(modem->shm_start,
++				modem->ipctoc->channel_offsets[i].tx);
++		add_magic_pad(&offset, modem->shm_start);
++		ch->ipc = cpu_to_le32(offset);
++		bix = OFFS2PTR(modem->shm_start, offset);
++		bix->read_index = cpu_to_le32(0);
++		bix->write_index = cpu_to_le32(0);
++		bix->state = cpu_to_le32(SHM_CLOSED);
++		bix->size[0] = cpu_to_le32(0);
 +
-+			skb->protocol = htons(ETH_P_CAIF);
-+			skb_reset_mac_header(skb);
-+			skb->dev = cfshm->ndev;
++		pr_debug("IPC RW[%d] @: 0x%08x\n",  i, offset);
++		offset += offsetof(struct shm_bufidx, size[n + 2]);
++		offset = ALIGN(offset, SHM_PAYL_ALIGN);
++		if (offset > shm_size)
++			goto badsize;
++	}
 +
-+			/* Push received packet up the stack. */
-+			ret = netif_receive_skb(skb);
-+
-+			if (!ret) {
-+				cfshm->ndev->stats.rx_packets++;
-+				cfshm->ndev->stats.rx_bytes +=
-+					length;
-+			} else
-+				++cfshm->ndev->stats.rx_dropped;
-+			/* Move to next packet descriptor. */
-+			pck_desc++;
-+
-+			pbuf->frames++;
-+			if (--quota <= 0) {
-+				pr_devel("Quota exeeded (pbuf:%p)\n", pbuf);
-+				goto out;
++	/* Allocate genio bits for each channel according to priority*/
++	bitno = 0;
++	for (pri = 0; pri < 8; pri++) {
++		for (i = 0; i < modem->channels; i++) {
++			if (modem->channel[i]->priority == pri) {
++				ch = LEOFFS2PTR(modem->shm_start,
++					modem->ipctoc->channel_offsets[i].tx);
++				ch->write_bit = cpu_to_le16(bitno * 4);
++				ch->read_bit = cpu_to_le16(bitno * 4 + 2);
++				ch = LEOFFS2PTR(modem->shm_start,
++					modem->ipctoc->channel_offsets[i].rx);
++				ch->write_bit = cpu_to_le16(bitno * 4 + 1);
++				ch->read_bit = cpu_to_le16(bitno * 4 + 3);
++				bitno++;
 +			}
 +		}
-+desc_err:
-+		pbuf->frames = 0;
-+
-+		spin_lock_irqsave(&cfshm->lock, flags);
-+		ringbuf_upd_readptr(&cfshm->rx);
-+		pbuf = new_rx_buf(cfshm);
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+
 +	}
-+	cfshm->shm->ipc_rx_release(cfshm->shm, false);
-+out:
-+	return pbuf;
++
++	/*
++	 * The Master TOC points out the boot images for the modem,
++	 * Use the first avilable entry in the toc to write the pointer,
++	 * to the IPC-TOC defined above.
++	 */
++	found = false;
++	for (toc_entry = modem->shm_start, i = 0; i < 16; i++, toc_entry++)
++		if (toc_entry->start == cpu_to_le32(0xffffffff)) {
++			pr_debug("IPCTOC address written into Master TOC"
++					" @ 0x%08x\n", i * 32);
++			toc_entry->start =
++				cpu_to_le32(GET_OFFSET(modem->shm_start,
++							modem->ipctoc));
++			toc_entry->size = cpu_to_le32(0);
++			toc_entry->flags = cpu_to_le32(0);
++			toc_entry->entry_point = cpu_to_le32(0);
++			toc_entry->load_addr = cpu_to_le32(0xffffffff);
++			memset(toc_entry->name, 0, sizeof(toc_entry->name));
++			sprintf(toc_entry->name, "ipc-toc");
++			found = true;
++			break;
++		}
++	if (!found) {
++		pr_debug("Cannot insert IPC-TOC in toc\n");
++		goto bad_config;
++	}
++
++	store_checksum(modem, ipcro_offs - ipctoc_offs);
++
++	return 0;
++
++badsize:
++	pr_debug("IPCTOC not enough space offset (size:0x%lx offset:0x%x\n",
++			shm_size, offset);
++	return -ENOSPC;
++
++bad_config:
++	pr_debug("IPCTOC bad configuration data\n");
++	return -EINVAL;
 +}
 +
-+static int insert_skb_in_buf(struct cfshm *cfshm, struct sk_buff *skb,
-+					struct shmbuffer *pbuf)
++static int shm_verify_config(struct shm_modem *modem,
++				struct shm_channel *xcfg)
 +{
-+	struct shm_pck_desc *pck_desc;
-+	unsigned int frmlen;
-+	struct shm_caif_frm *frm;
-+	u8 hdr_ofs;
-+	struct caif_payload_info *info = (struct caif_payload_info *)&skb->cb;
++	int j;
++	u32 size;
 +
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+
-+	if (unlikely(pbuf->frames >= cfshm->tx_frms_pr_buf)) {
-+		pr_devel("-ENOSPC exeeded frames: %d >= %d\n",
-+				pbuf->frames, cfshm->tx_frms_pr_buf);
-+		return -ENOSPC;
++	if (modem->channels <= 0 || modem->channels > SHM_MAX_CHANNELS) {
++		pr_debug("Bad config: channel mode must be set\n");
++		return -EINVAL;
 +	}
 +
-+	/*
-+	 * Align the address of the entire CAIF frame (incl padding),
-+	 * so the modem can do efficient DMA of this frame
-+	 * FIXME: Alignment is power of to, so it could use binary ops.
-+	 */
-+	pbuf->frm_ofs = roundup(pbuf->frm_ofs, cfshm->tx_alignment);
-+
-+
-+	/* Make the payload (IP packet) inside the frame aligned */
-+	hdr_ofs = (unsigned long) &pbuf->frm_ofs;
-+	hdr_ofs = roundup(hdr_ofs + SHM_HDR_LEN + info->hdr_len,
-+			cfshm->tx_alignment);
-+
-+	frm = (struct shm_caif_frm *)
-+		(pbuf->addr + pbuf->frm_ofs);
-+
-+	frmlen = SHM_HDR_LEN + hdr_ofs + skb->len;
-+
-+	/*
-+	 * Verify that packet, header and additional padding
-+	 * can fit within the buffer frame area.
-+	 */
-+	if (pbuf->len < pbuf->frm_ofs + frmlen) {
-+		pr_devel("-ENOSPC exeeded offset %d < %d\n",
-+				pbuf->len, pbuf->frm_ofs + frmlen);
-+		return -ENOSPC;
++	if ((xcfg->mode & SHM_MODE_MASK) != SHM_PACKET_MODE &&
++			(xcfg->mode & SHM_MODE_MASK) != SHM_STREAM_MODE) {
++		pr_debug("Bad config: channel mode must be set\n");
++		return -EINVAL;
++	}
++	if (xcfg->mode & SHM_PACKET_MODE && xcfg->rx.buffers < 2) {
++		pr_debug("Bad config:minimum 2 buffers "
++				"must be set for packet mode\n");
++		return -EINVAL;
 +	}
 +
-+	/* Copy in CAIF frame. */
-+	frm->hdr_ofs = hdr_ofs;
-+	skb_copy_bits(skb, 0, pbuf->addr +
-+			pbuf->frm_ofs + SHM_HDR_LEN +
-+			hdr_ofs, skb->len);
++	if (xcfg->rx.ch_size < SHM_MIN_CHSZ) {
++		pr_debug("Bad config:"
++				"Channel size must be larger than %d\n",
++				SHM_MIN_CHSZ);
++		return -EINVAL;
++	}
 +
-+	pr_devel("copy data buf:%d frm:%d offs:%d @%d len:%d\n",
-+			pbuf->index, pbuf->frames,
-+			pbuf->frm_ofs,
-+			(u32) (pbuf->addr + pbuf->frm_ofs +
-+				SHM_HDR_LEN + hdr_ofs - cfshm->tx_ringbuf),
-+			skb->len);
++	if (xcfg->mode & SHM_PACKET_MODE) {
++		if (xcfg->tx.buffers < 2) {
++			pr_debug("Bad config:"
++				"buffers must be minimum 2 packet mode\n");
++			return -EINVAL;
++		}
++		if (xcfg->tx.packets < 1) {
++			pr_debug("Bad config:"
++				"packets must be set for packet mode\n");
++			return -EINVAL;
++		}
++	}
 +
-+	cfshm->ndev->stats.tx_packets++;
-+	cfshm->ndev->stats.tx_bytes += frmlen;
-+	/* Fill in the shared memory packet descriptor area. */
-+	pck_desc = (struct shm_pck_desc *) (pbuf->addr);
-+	/* Forward to current frame. */
-+	pck_desc += pbuf->frames;
-+	pck_desc->offset = pbuf->frm_ofs;
-+	pck_desc->length = frmlen;
-+	/* Terminate packet descriptor area. */
-+	pck_desc++;
-+	pck_desc->offset = 0;
-+	pck_desc->length = 0;
-+	/* Update buffer parameters. */
-+	pbuf->frames++;
-+	pbuf->frm_ofs += frmlen;
++	if (xcfg->tx.ch_size < SHM_MIN_CHSZ) {
++		pr_debug("Bad config:"
++				"Channel size must be larger than %d\n",
++				SHM_MIN_CHSZ);
++		return -EINVAL;
++	}
++
++	if (xcfg->name[0] == '\0') {
++		pr_debug("Channel must be named\n");
++		return -EINVAL;
++	}
++
++	size = modem->modem_bootimg_size;
++
++	for (j = 0; j < modem->channels; j++) {
++		struct shm_channel *xcfg2 = modem->channel[j];
++		size = xcfg2->tx.ch_size + xcfg2->rx.ch_size;
++		if (xcfg != xcfg2 && strcmp(xcfg->name, xcfg2->name) == 0) {
++			pr_debug("Channels has same name:%s\n",
++					 xcfg->name);
++			return -EINVAL;
++		}
++	}
++
++	if (size > shm_size) {
++		pr_debug("Channel size too big\n");
++		return -EINVAL;
++	}
 +
 +	return 0;
 +}
 +
-+static struct shmbuffer *queue_to_ringbuf(struct cfshm *cfshm, int *new_bufs)
++static int verify_config(struct shm_modem *modem)
 +{
-+	struct shmbuffer *pbuf;
-+	struct sk_buff *skb;
-+	int err;
++	int i;
 +
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+
-+	pbuf = get_tx_buf(cfshm);
-+	while (pbuf != NULL) {
-+		skb = skb_peek(&cfshm->sk_qhead);
-+		if (skb == NULL)
-+			break;
-+		err = insert_skb_in_buf(cfshm, skb, pbuf);
-+		if (unlikely(err == -ENOSPC)) {
-+			pr_devel("No more space in buffer\n");
-+			++(*new_bufs);
-+			pbuf = tx_bump_buf(cfshm, pbuf);
-+			continue;
-+		}
-+		skb = skb_dequeue(&cfshm->sk_qhead);
-+		/* We're always in NET_*_SOFTIRQ */
-+		dev_kfree_skb(skb);
++	if (modem->channels == 0) {
++		pr_debug("Bad config: minimum one channel must be defined\n");
++		return -EINVAL;
 +	}
-+	return pbuf;
++	for (i = 0; i < modem->channels; i++) {
++		int err = shm_verify_config(modem, modem->channel[i]);
++		if (err)
++			return err;
++	}
++	return 0;
 +}
 +
-+static int shm_netdev_open(struct net_device *netdev)
++/*
++ * Create Configuration data for the shm devices.
++ */
++static void create_devs(struct shm_modem *modem)
 +{
-+	struct cfshm *cfshm = netdev_priv(netdev);
-+	int ret, err = 0;
++	int i;
 +
-+	cfshm->state = CFSHM_OPENING;
-+	if (cfshm->shm != NULL && cfshm->shm->open != NULL)
-+		err = cfshm->shm->open(cfshm->shm);
++	for (i = 0; i < modem->channels; i++) {
++		struct shm_bufidx *buf_rx, *buf_tx;
++		struct shm_ipctoc_channel *ch_rx, *ch_tx;
++		struct shm_channel *xcfg = modem->channel[i];
++		ch_rx = LEOFFS2PTR(modem->shm_start,
++				modem->ipctoc->channel_offsets[i].rx);
++		buf_rx = LEOFFS2PTR(modem->shm_start, ch_rx->ipc);
++		ch_tx = LEOFFS2PTR(modem->shm_start,
++				modem->ipctoc->channel_offsets[i].tx);
++		buf_tx = LEOFFS2PTR(modem->shm_start, ch_tx->ipc);
++
++		/*
++		 * Due to restricted read-only access
++		 * we swap positions for read/write
++		 * pointers.
++		 */
++		xcfg->tx.write = &buf_tx->write_index;
++		xcfg->tx.read = &buf_rx->read_index;
++
++		xcfg->rx.write = &buf_rx->write_index;
++		xcfg->rx.read = &buf_tx->read_index;
++
++		xcfg->rx.addr = LEOFFS2PTR(modem->shm_start, ch_rx->offset);
++		xcfg->tx.addr = LEOFFS2PTR(modem->shm_start, ch_tx->offset);
++		xcfg->rx.state = &buf_rx->state;
++		xcfg->tx.state = &buf_tx->state;
++		xcfg->tx.buf_size = buf_tx->size;
++		xcfg->rx.buf_size = buf_rx->size;
++
++		xcfg->rx.xfer_bit = le16_to_cpu(ch_rx->write_bit);
++		xcfg->tx.xfer_bit = le16_to_cpu(ch_tx->write_bit);
++		xcfg->rx.xfer_done_bit = le16_to_cpu(ch_rx->read_bit);
++		xcfg->tx.xfer_done_bit = le16_to_cpu(ch_tx->read_bit);
++
++		if (xcfg->mode & SHM_PAIR_MODE) {
++			struct shm_channel *pair;
++			pr_debug("Channel[%d] is in PAIR mode\n", i);
++			if (i < 1) {
++				pr_debug("No channel to pair with\n");
++				continue;
++			}
++			/* Cross couple rx/tx on the pair */
++			pair = modem->channel[i - 1];
++
++			/* Copy everything but the kobj which is at the end */
++			memcpy(&xcfg->tx, &pair->rx,
++					offsetof(struct shm_udchannel, kobj));
++			memcpy(&xcfg->rx, &pair->tx,
++					offsetof(struct shm_udchannel, kobj));
++		} else if (xcfg->mode & SHM_LOOP_MODE) {
++			pr_debug("Channel[%d] is in LOOP mode\n", i);
++			/*
++			 * Connect rx/tx in a pair. Copy everything,
++			 * but the kobj which is at the end
++			 */
++			memcpy(&xcfg->tx, &xcfg->rx,
++					offsetof(struct shm_udchannel, kobj));
++		}
++
++		pr_devel("RX[%d] wi:%p ri:%p\n", i, xcfg->rx.read,
++				xcfg->rx.write);
++		pr_devel("TX[%d] wi:%p ri:%p\n", i, xcfg->tx.read,
++				xcfg->tx.write);
++	}
++}
++
++struct shm_modem *modem;
++
++struct shm_modem *get_modem(struct sk_buff *skb, struct genl_info *info)
++{
++	return modem;
++}
++
++static int do_commit(struct shm_modem *modem)
++{
++	int err;
++
++	if (modem->config_error) {
++		pr_devel("config error detected\n");
++		return -EINVAL;
++	}
++
++	if (modem->commited) {
++		pr_devel("already commited\n");
++		modem->config_error = true;
++		return -EINVAL;
++	}
++	err = verify_config(modem);
++	if (err) {
++		pr_devel("bad config\n");
++		modem->config_error = true;
++		return err;
++	}
++	err = write_to_shm(modem);
++	if (err) {
++		pr_devel("writei to SHM failed\n");
++		modem->config_error = true;
++		return err;
++	}
++	modem->commited = true;
++	create_devs(modem);
++	return 0;
++}
++
++static int do_register(struct shm_modem *modem)
++{
++	int err;
++
++	if (!modem->commited || modem->registered || modem->config_error) {
++		pr_devel("bad sequence of requests\n");
++		modem->config_error = true;
++		return -EINVAL;
++	}
++
++	err = verify_config(modem);
++	if (err) {
++		modem->config_error = true;
++		pr_devel("bad config\n");
++		return err;
++	}
++	modem->registered = true;
++
++	modem_shm_register_devices(modem->channel, modem->channels);
++
++	return 0;
++}
++
++static void shm_firmware(const struct firmware *fw, void *context)
++{
++	struct shm_modem *modem = context;
++	struct toc_entry *toc_entry;
++	int i;
++
++	modem->fw_requested = false;
++
++	pr_debug("recevied firmware\n");
++	if (fw == NULL) {
++		pr_warn("No boot-img provided\n");
++		goto out;
++	}
++
++	if (modem->commited) {
++		pr_warn("Received firmware too late in modem boot\n");
++		goto out;
++	}
++
++	toc_entry = (void *)fw->data;
++	if (fw->size < TOC_SZ) {
++		pr_debug("Modem image too short\n");
++		goto bad_img;
++	}
++
++	for (i = 0; i < 16; i++, toc_entry++)
++		if (toc_entry->start == cpu_to_le32(0xffffffff))
++			break;
++
++	if (i == 0) {
++		pr_debug("Empty TOC in firmware image\n");
++		goto bad_img;
++	}
++
++	if (i >= 15) {
++		pr_debug("No free slot for IPC-TOC in received image\n");
++		goto bad_img;
++	}
++
++	modem->modem_bootimg_size = fw->size;
++	memcpy(modem->shm_start, fw->data, fw->size);
++out:
++	release_firmware(fw);
++	return;
++bad_img:
++	pr_warn("Bad modem firmware received\n");
++	modem->config_error = true;
++	release_firmware(fw);
++}
++
++static void do_reset(struct shm_modem *modem)
++{
++	int i;
++
++	modem_shm_reset();
++	modem->config_error = false;
++	modem->registered = false;
++	modem->commited = false;
++	modem->addr_set = false;
++	modem->modem_bootimg_size = TOC_SZ;
++	for (i = 0; i < modem->channels; i++) {
++		kfree(modem->channel[i]);
++		modem->channel[i] = NULL;
++	}
++	modem->channels = 0;
++
++	/* Initiate the Master TOC to 0xff for the first 512 bytes */
++	memset(modem->shm_start, 0xff, TOC_SZ);
++
++	if (!modem->fw_requested)
++		modem_shm_request_firmware(modem, THIS_MODULE,
++				STE_BOOTIMG_NAME, shm_firmware);
++	modem->fw_requested = true;
++}
++
++static int do_set_addr(struct shm_modem *modem)
++{
++	int err;
++	if (!modem->commited || modem->addr_set || modem->config_error) {
++		pr_devel("bad sequence of requests\n");
++		modem->config_error = true;
++		return -EINVAL;
++	}
++	err = verify_config(modem);
++	if (err) {
++		modem->config_error = true;
++		pr_devel("bad config\n");
++		return err;
++	}
++	modem->addr_set = true;
++	return genio_set_shm_addr(shm_c2c_bootaddr, genio_ipc_ready_cb);
++}
++
++static int copy_name(const char *src, char *d, size_t count)
++{
++	const char *s, *end = src + count;
++	for (s = src; *s && s < end; s++, d++)
++		if (*s == '\0' || *s == '\n')
++			break;
++		else if (!isalnum(*s)) {
++			pr_debug("Illegal chr:'%c' in name:'%s'\n", *s, src);
++			return -EINVAL;
++		} else if (s - src >= SHM_NAMESZ - 1) {
++			pr_debug("Name '%s'too long\n", src);
++			return -EINVAL;
++		} else
++			*d = *s;
++	*d = '\0';
++
++	return count;
++}
++
++/* SHM Generic NETLINK family */
++static struct genl_family shm_gnl_family = {
++	.id = GENL_ID_GENERATE,
++	.hdrsize = 0,
++	.name = "modem_shm",
++	.version = SHM_PROTO_VERSION,
++	.maxattr = SHM_A_MAX,
++};
++
++/* SHM Netlink attribute policy */
++static const struct nla_policy shm_genl_policy[SHM_A_MAX + 1] = {
++	[SHM_A_VERSION] = { .type = NLA_U8 },
++	[SHM_A_SUB_VERSION] = { .type = NLA_U8 },
++	[__SHM_A_FLAGS] = { .type = NLA_U32 },
++	[SHM_A_NAME] = { .type = NLA_NUL_STRING, .len = SHM_NAMESZ},
++	[SHM_A_RX_CHANNEL] = { .type = NLA_NESTED },
++	[SHM_A_TX_CHANNEL] = { .type = NLA_NESTED },
++	[SHM_A_PRIORITY] = { .type = NLA_U8 },
++	[SHM_A_LATENCY] = { .type = NLA_U8 },
++};
++
++/* Policy for uni-directional attributes for stream */
++static const struct nla_policy stream_policy[SHM_A_MAX + 1] = {
++	[SHM_A_CHANNEL_SIZE] = { .type = NLA_U32 },
++};
++
++/* Policy for uni-directional attributes for packet */
++static const struct nla_policy packet_policy[SHM_A_MAX + 1] = {
++	[SHM_A_CHANNEL_SIZE] = { .type = NLA_U32 },
++	[SHM_A_CHANNEL_BUFFERS] = { .type = NLA_U32 },
++	[SHM_A_MTU] = { .type = NLA_U16 },
++	[SHM_A_ALIGNMENT] = { .type = NLA_U8 },
++	[SHM_A_PACKETS] = { .type = NLA_U8 },
++};
++
++static int shm_add_udchannel(struct shm_udchannel *chn, int attr,
++			struct genl_info *info, struct nla_policy const *policy)
++{
++	struct nlattr *nla;
++	int nla_rem;
++
++	if (!info->attrs[attr])
++		return -EINVAL;
++
++	if (nla_validate_nested(info->attrs[attr],
++					SHM_A_MAX,
++					policy) != 0) {
++		pr_info("Invalid RX channel attributes\n");
++		return -EINVAL;
++	}
++
++	nla_for_each_nested(nla, info->attrs[attr], nla_rem) {
++
++		if (nla_type(nla) == SHM_A_CHANNEL_SIZE)
++			chn->ch_size = nla_get_u32(nla);
++
++		if (nla_type(nla) == SHM_A_CHANNEL_BUFFERS)
++			chn->buffers = nla_get_u32(nla);
++
++		if (nla_type(nla) == SHM_A_MTU)
++			chn->mtu = nla_get_u16(nla);
++
++		if (nla_type(nla) == SHM_A_PACKETS)
++			chn->packets = nla_get_u8(nla);
++
++		if (nla_type(nla) == SHM_A_ALIGNMENT) {
++			chn->alignment = nla_get_u8(nla);
++			chn->alignment = rounddown_pow_of_two(chn->alignment);
++		}
++
++	}
++	return 0;
++}
++
++static int shm_add_channel(struct shm_channel *cfg, struct genl_info *info,
++			int mode)
++{
++	int len, err;
++	struct nla_policy const *policy;
++	char name[SHM_NAMESZ];
++
++	policy = (mode == SHM_PACKET_MODE) ? packet_policy : stream_policy;
++
++	if (info->attrs[SHM_A_VERSION]) {
++		u8 version;
++		u8 sub_version;
++
++		version = nla_get_u8(info->attrs[SHM_A_VERSION]);
++		if (!info->attrs[SHM_A_SUB_VERSION])
++			return -EINVAL;
++		sub_version = nla_get_u8(info->attrs[SHM_A_SUB_VERSION]);
++		if (version != 1 || sub_version != 0) {
++			pr_info("Bad version or sub_version\n");
++			return -EINVAL;
++		}
++	}
++
++	if (!info->attrs[SHM_A_NAME]) {
++		pr_debug("Name not specified\n");
++		return -EINVAL;
++	}
++
++	len = nla_strlcpy(name, info->attrs[SHM_A_NAME],
++			SHM_NAMESZ);
++
++	if (len > SHM_NAMESZ)
++		return -EINVAL;
++
++	err = copy_name(name, cfg->name, sizeof(name));
++	if (err < 0)
++		return err;
++
++	cfg->excl_group = 1;
++	if (info->attrs[SHM_A_EXCL_GROUP])
++		cfg->excl_group = nla_get_u8(info->attrs[SHM_A_EXCL_GROUP]);
++
++	err = shm_add_udchannel(&cfg->rx, SHM_A_RX_CHANNEL, info, policy);
++	if (err)
++		return err;
++
++	err = shm_add_udchannel(&cfg->tx, SHM_A_TX_CHANNEL, info, policy);
++	if (err)
++		return err;
++
++	if (cfg->tx.ch_size + cfg->rx.ch_size > shm_size) {
++		pr_debug("Channel size too big\n");
++		return -EINVAL;
++	}
++
++	if (info->attrs[SHM_A_PRIORITY]) {
++		cfg->priority = nla_get_u8(info->attrs[SHM_A_PRIORITY]);
++		/* silently fixup bad value */
++		if (cfg->priority > 7)
++			cfg->priority = 0;
++	}
++
++	if (info->attrs[SHM_A_LATENCY])
++		cfg->latency = nla_get_u8(info->attrs[SHM_A_LATENCY]);
++
++	if (info->attrs[__SHM_A_FLAGS])
++		cfg->mode |= nla_get_u32(info->attrs[__SHM_A_FLAGS]);
++
++	return 0;
++}
++
++static int do_reply(struct genl_info *info, int result)
++{
++	struct sk_buff *msg;
++	int err;
++	void *reply;
++
++	msg = nlmsg_new(NLMSG_DEFAULT_SIZE, GFP_KERNEL);
++	if (msg == NULL)
++		return -ENOMEM;
++
++	reply = genlmsg_put_reply(msg, info, &shm_gnl_family, 0, result);
++	if (reply == NULL) {
++		kfree_skb(msg);
++		return -EMSGSIZE;
++	}
++
++	genlmsg_end(msg, reply);
++	err = genlmsg_reply(msg, info);
++	return err;
++}
++
++static int shm_add_ch(struct sk_buff *skb, struct genl_info *info, int mode)
++{
++	int err;
++	struct shm_channel *cfg;
++	struct shm_modem *modem = get_modem(skb, info);
++	if (!modem)
++		return -EINVAL;
++
++	if (modem->channels + 1 > SHM_MAX_CHANNELS) {
++		pr_debug("Too many channels added\n");
++		return -EINVAL;
++	}
++
++
++	cfg = kzalloc(sizeof(*cfg), GFP_KERNEL);
++	if (cfg == NULL)
++		return -ENOMEM;
++
++	cfg->mode = mode;
++	err = shm_add_channel(cfg, info, mode);
 +	if (err)
 +		goto error;
 +
-+	rtnl_unlock();  /* Release RTNL lock during connect wait */
-+	ret = wait_event_interruptible_timeout(cfshm->netmgmt_wq,
-+			cfshm->state != CFSHM_OPENING,
-+			CONNECT_TIMEOUT);
-+	rtnl_lock();
++	modem->channel[modem->channels] = cfg;
++	++modem->channels;
 +
-+	if (ret == 0) {
-+		pr_debug("connect timeout\n");
-+		err = -ETIMEDOUT;
-+		goto error;
-+	}
++	err = shm_verify_config(modem, cfg);
++	if (err)
++		goto error_remove;
 +
-+	if (cfshm->state !=  CFSHM_OPEN) {
-+		pr_debug("connect failed\n");
-+		err = -ECONNREFUSED;
-+		goto error;
-+	}
++	err = do_reply(info, 0);
++	if (err)
++		goto error_remove;
++	return err;
 +
-+	napi_enable(&cfshm->napi);
-+	return 0;
++error_remove:
++	--modem->channels;
 +error:
-+	if (cfshm->shm != NULL && cfshm->shm->close != NULL)
-+		cfshm->shm->close(cfshm->shm);
++	kfree(cfg);
 +	return err;
 +}
 +
-+static int shm_netdev_close(struct net_device *netdev)
++static int shm_add_packet_ch(struct sk_buff *skb, struct genl_info *info)
 +{
-+	struct cfshm *cfshm = netdev_priv(netdev);
-+
-+	napi_disable(&cfshm->napi);
-+
-+	if (cfshm->shm != NULL && cfshm->shm->close != NULL)
-+		cfshm->shm->close(cfshm->shm);
-+
-+	return 0;
++	return shm_add_ch(skb, info, SHM_PACKET_MODE);
 +}
 +
-+static int open_cb(void *drv)
++static int shm_add_stream_ch(struct sk_buff *skb, struct genl_info *info)
 +{
-+	struct cfshm *cfshm = drv;
-+
-+	cfshm->state = CFSHM_OPEN;
-+	netif_carrier_on(cfshm->ndev);
-+	wake_up_interruptible(&cfshm->netmgmt_wq);
-+	return 0;
++	return shm_add_ch(skb, info, SHM_STREAM_MODE);
 +}
 +
-+static void close_cb(void *drv)
++
++static int shm_c_commit(struct sk_buff *skb, struct genl_info *info)
 +{
-+	struct cfshm *cfshm = drv;
-+
-+	cfshm->state = CFSHM_CLOSED;
-+	netif_carrier_off(cfshm->ndev);
-+	wake_up_interruptible(&cfshm->netmgmt_wq);
-+}
-+
-+static int caif_shmdrv_rx_cb(void *drv)
-+{
-+	struct cfshm *cfshm = drv;
-+
-+	if (unlikely(*cfshm->shm->cfg.rx.state == cpu_to_le32(SHM_CLOSED)))
-+		return -ESHUTDOWN;
-+
-+	napi_schedule(&cfshm->napi);
-+	return 0;
-+}
-+
-+static int send_pending_txbufs(struct cfshm *cfshm, int usedbufs)
-+{
-+	/* Send the started buffer if used buffers are low enough */
-+	WARN_ON(!spin_is_locked(&cfshm->lock));
-+	if (likely(usedbufs < cfshm->stuff_mark)) {
-+		struct shmbuffer *pbuf = get_tx_buf(cfshm);
-+		if (unlikely(pbuf->frames > 0)) {
-+			pbuf = get_tx_buf(cfshm);
-+			tx_bump_buf(cfshm, pbuf);
-+			cfshm->shm->ipc_tx(cfshm->shm);
-+			return 0;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int caif_shmdrv_tx_release_cb(void *drv)
-+{
-+	struct cfshm *cfshm = drv;
-+	int usedbufs;
-+
-+	usedbufs = ringbuf_used(&cfshm->tx);
-+
-+	/* Send flow-on if we have sent flow-off and get below low-water */
-+	if (usedbufs <= cfshm->low_xoff_water && !cfshm->tx_flow_on) {
-+		pr_debug("Flow on\n");
-+		cfshm->tx_flow_on = true;
-+		cfshm->cfdev.flowctrl(cfshm->ndev, CAIF_FLOW_ON);
-+	}
-+
-+	/* If ringbuf is full, schedule NAPI to start sending */
-+	if (skb_peek(&cfshm->sk_qhead) != NULL) {
-+		pr_debug("Schedule NAPI to empty queue\n");
-+		napi_schedule(&cfshm->napi);
-+	}
-+
-+	return 0;
-+}
-+
-+static int shm_rx_poll(struct napi_struct *napi, int quota)
-+{
-+	struct cfshm *cfshm = container_of(napi, struct cfshm, napi);
-+	int new_bufs;
-+	struct shmbuffer *pbuf;
-+	int usedbufs;
-+	unsigned long flags;
-+
-+	/* Simply return if rx_poll is already called on other CPU */
-+	if (atomic_read(&cfshm->dbg_smp_rxactive) > 0)
-+		return quota;
-+
-+	WARN_ON(atomic_inc_return(&cfshm->dbg_smp_rxactive) > 1);
-+
-+	pbuf = shm_rx_func(cfshm, quota);
-+
-+	usedbufs = ringbuf_used(&cfshm->tx);
-+
-+	if (spin_trylock_irqsave(&cfshm->lock, flags)) {
-+
-+		/* Check if we're below "Stuff" limit, and send pending data */
-+		send_pending_txbufs(cfshm, usedbufs);
-+
-+		/* Check if we have queued packets */
-+		if (unlikely(skb_peek(&cfshm->sk_qhead) != NULL)) {
-+			struct shmbuffer *txbuf;
-+			WARN_ON(!spin_is_locked(&cfshm->lock));
-+			pr_debug("Try to empty tx-queue\n");
-+			new_bufs = 0;
-+			txbuf = queue_to_ringbuf(cfshm, &new_bufs);
-+
-+			/* Bump out if we are configured with few buffers */
-+			if (txbuf && cfshm->shm->cfg.tx.buffers < 3) {
-+				tx_bump_buf(cfshm, txbuf);
-+
-+				spin_unlock_irqrestore(&cfshm->lock, flags);
-+				cfshm->shm->ipc_tx(cfshm->shm);
-+				goto txdone;
-+			}
-+		}
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+	}
-+txdone:
-+
-+	if (pbuf == NULL)
-+		napi_complete(&cfshm->napi);
-+
-+	atomic_dec(&cfshm->dbg_smp_rxactive);
-+	return 0;
-+}
-+
-+static int shm_netdev_tx(struct sk_buff *skb, struct net_device *shm_netdev)
-+{
-+	struct shmbuffer *pbuf = NULL;
-+	int usedbufs;
-+	int new_bufs = 0;
-+	struct cfshm *cfshm = netdev_priv(shm_netdev);
-+	unsigned long flags;
-+
-+	/*
-+	 * If we have packets in queue, keep queueing to avoid
-+	 * out-of-order delivery
-+	 */
-+	spin_lock_irqsave(&cfshm->lock, flags);
-+
-+	skb_queue_tail(&cfshm->sk_qhead, skb);
-+	pbuf = queue_to_ringbuf(cfshm, &new_bufs);
-+
-+	usedbufs = ringbuf_used(&cfshm->tx);
-+
-+	if (usedbufs > cfshm->high_xoff_water && cfshm->tx_flow_on) {
-+		pr_debug("Flow off\n");
-+		cfshm->tx_flow_on = false;
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+		cfshm->cfdev.flowctrl(cfshm->ndev, CAIF_FLOW_OFF);
-+		return 0;
-+	}
-+
-+	/* Check if we should accumulate more packets */
-+	if (new_bufs == 0 && usedbufs > cfshm->stuff_mark) {
-+		spin_unlock_irqrestore(&cfshm->lock, flags);
-+		return 0;
-+	}
-+	tx_bump_buf(cfshm, pbuf);
-+	spin_unlock_irqrestore(&cfshm->lock, flags);
-+	cfshm->shm->ipc_tx(cfshm->shm);
-+	return 0;
-+}
-+
-+static const struct net_device_ops netdev_ops = {
-+	.ndo_open = shm_netdev_open,
-+	.ndo_stop = shm_netdev_close,
-+	.ndo_start_xmit = shm_netdev_tx,
-+};
-+
-+static void shm_netdev_setup(struct net_device *pshm_netdev)
-+{
-+	struct cfshm *cfshm;
-+
-+	cfshm = netdev_priv(pshm_netdev);
-+	pshm_netdev->netdev_ops = &netdev_ops;
-+	pshm_netdev->type = ARPHRD_CAIF;
-+	pshm_netdev->hard_header_len = CAIF_NEEDED_HEADROOM;
-+	pshm_netdev->tx_queue_len = 0;
-+	pshm_netdev->destructor = free_netdev;
-+
-+	/* Initialize structures in a clean state. */
-+	memset(cfshm, 0, sizeof(struct cfshm));
-+}
-+
-+static void deinit_bufs(struct cfshm *cfshm)
-+{
-+	int j;
-+
-+	if (cfshm == NULL)
-+		return;
-+
-+	for (j = 0; j < cfshm->shm->cfg.rx.buffers; j++)
-+		kfree(cfshm->rx_bufs[j]);
-+	kfree(cfshm->rx_bufs);
-+
-+	for (j = 0; j < cfshm->shm->cfg.tx.buffers; j++)
-+		kfree(cfshm->tx_bufs[j]);
-+	kfree(cfshm->tx_bufs);
-+}
-+
-+static int cfshm_probe(struct shm_dev *shm)
-+{
-+	int err, j;
-+	struct cfshm *cfshm = NULL;
-+	struct net_device *netdev;
-+	u32 buf_size;
-+	unsigned long flags;
-+
-+	if (shm == NULL)
++	struct shm_modem *modem = get_modem(skb, info);
++	int err;
++	if (!modem)
 +		return -EINVAL;
-+	if (shm->cfg.tx.addr == NULL || shm->cfg.rx.addr == NULL) {
-+		pr_debug("Shared Memory are not configured\n");
-+		return -EINVAL;
-+	}
 +
-+	if (shm->cfg.tx.ch_size / shm->cfg.tx.buffers <
-+			shm->cfg.tx.packets * sizeof(struct shm_pck_desc) +
-+				shm->cfg.tx.mtu) {
-+		pr_warn("Bad packet TX-channel size");
-+		return -EINVAL;
-+	}
-+
-+	if (shm->cfg.rx.ch_size / shm->cfg.rx.buffers <
-+			sizeof(struct shm_pck_desc) + shm->cfg.rx.mtu) {
-+		pr_warn("Bad packet RX-channel size");
-+		return -EINVAL;
-+	}
-+
-+	if (shm->cfg.rx.buffers < 2 || shm->cfg.tx.buffers < 2) {
-+		pr_warn("Too few buffers in channel");
-+		return -EINVAL;
-+	}
-+
-+	err = -ENOMEM;
-+	netdev = alloc_netdev(sizeof(struct cfshm), shm->cfg.name,
-+			shm_netdev_setup);
-+
-+	if (netdev == NULL)
-+		goto error;
-+
-+	cfshm = netdev_priv(netdev);
-+	cfshm->state = CFSHM_CLOSED;
-+	init_waitqueue_head(&cfshm->netmgmt_wq);
-+
-+	cfshm->shm = shm;
-+	shm->driver_data = cfshm;
-+	cfshm->ndev = netdev;
-+	netdev->mtu = shm->cfg.tx.mtu;
-+	cfshm->high_xoff_water =
-+		(shm->cfg.rx.buffers * HIGH_XOFF_WATERMARK) / 100;
-+	cfshm->low_xoff_water =
-+		(shm->cfg.rx.buffers * LOW_XOFF_WATERMARK) / 100;
-+	cfshm->stuff_mark = (shm->cfg.rx.buffers * STUFF_MARK) / 100;
-+
-+	cfshm->tx_frms_pr_buf = shm->cfg.tx.packets;
-+	cfshm->rx_frms_pr_buf = shm->cfg.rx.packets;
-+	cfshm->rx_alignment = shm->cfg.rx.alignment;
-+	cfshm->tx_alignment = shm->cfg.tx.alignment;
-+
-+	if (shm->cfg.latency)
-+		cfshm->cfdev.link_select = CAIF_LINK_LOW_LATENCY;
-+	else
-+		cfshm->cfdev.link_select = CAIF_LINK_HIGH_BANDW;
-+
-+	cfshm->tx.rip = shm->cfg.tx.read;
-+	cfshm->tx.wip = shm->cfg.tx.write;
-+	cfshm->tx.bufsize = shm->cfg.tx.buf_size;
-+	cfshm->tx.size = shm->cfg.tx.buffers;
-+
-+	cfshm->rx.rip = shm->cfg.rx.read;
-+	cfshm->rx.wip = shm->cfg.rx.write;
-+	cfshm->rx.bufsize = shm->cfg.rx.buf_size;
-+	cfshm->rx.size = shm->cfg.rx.buffers;
-+	pr_devel("RX ri:%d wi:%d size:%d\n",
-+		le32_to_cpu(*cfshm->rx.rip),
-+			le32_to_cpu(*cfshm->rx.wip), cfshm->rx.size);
-+	pr_devel("TX ri:%d wi:%d size:%d\n",
-+		le32_to_cpu(*cfshm->tx.rip),
-+			le32_to_cpu(*cfshm->tx.wip), cfshm->rx.size);
-+	pr_devel("frms_pr_buf:%d %d\n", cfshm->rx_frms_pr_buf,
-+			cfshm->tx_frms_pr_buf);
-+
-+	spin_lock_init(&cfshm->lock);
-+	netif_carrier_off(netdev);
-+	skb_queue_head_init(&cfshm->sk_qhead);
-+
-+	pr_devel("SHM DEVICE[%p] PROBED BY DRIVER, NEW SHM DRIVER"
-+			" INSTANCE AT cfshm =0x%p\n",
-+			cfshm->shm, cfshm);
-+
-+	cfshm->tx_ringbuf = shm->cfg.tx.addr;
-+	cfshm->rx_ringbuf = shm->cfg.rx.addr;
-+
-+	pr_devel("TX-BASE:%p RX-BASE:%p\n",
-+			cfshm->tx_ringbuf,
-+			cfshm->rx_ringbuf);
-+
-+	cfshm->tx_bufs = kzalloc(sizeof(struct shmbuffer *) *
-+			shm->cfg.tx.buffers, GFP_KERNEL);
-+	if (cfshm->tx_bufs == NULL)
-+		goto error;
-+	buf_size = shm->cfg.tx.ch_size / shm->cfg.tx.buffers;
-+
-+	pr_devel("TX: buffers:%d buf_size:%d frms:%d mtu:%d\n",
-+			shm->cfg.tx.buffers, buf_size,
-+			cfshm->tx_frms_pr_buf, netdev->mtu);
-+
-+	for (j = 0; j < shm->cfg.tx.buffers; j++) {
-+		u32 desc_size;
-+		struct shmbuffer *tx_buf =
-+				kzalloc(sizeof(struct shmbuffer), GFP_KERNEL);
-+
-+		if (tx_buf == NULL) {
-+			pr_warn("ERROR, Could not"
-+					" allocate dynamic mem. for tx_buf, "
-+					" Bailing out ...\n");
-+			goto error;
-+		}
-+
-+		tx_buf->index = j;
-+
-+		tx_buf->addr = cfshm->tx_ringbuf + (buf_size * j);
-+		tx_buf->len = buf_size;
-+		tx_buf->frames = 0;
-+		desc_size = (cfshm->tx_frms_pr_buf + 1) *
-+				sizeof(struct shm_pck_desc);
-+
-+		tx_buf->frm_ofs = desc_size + (desc_size % cfshm->tx_alignment);
-+
-+		cfshm->tx_bufs[j] = tx_buf;
-+
-+		pr_devel("tx_buf[%d] addr:%p len:%d\n",
-+				tx_buf->index,
-+				tx_buf->addr,
-+				tx_buf->len);
-+	}
-+
-+	cfshm->rx_bufs = kzalloc(sizeof(struct shmbuffer *) *
-+				shm->cfg.rx.buffers, GFP_KERNEL);
-+	if (cfshm->rx_bufs == NULL)
-+		goto error;
-+	buf_size = shm->cfg.tx.ch_size / shm->cfg.tx.buffers;
-+	pr_devel("RX: buffers:%d buf_size:%d frms:%d mtu:%d\n",
-+			shm->cfg.rx.buffers, buf_size,
-+			cfshm->rx_frms_pr_buf, netdev->mtu);
-+
-+	for (j = 0; j < shm->cfg.rx.buffers; j++) {
-+		struct shmbuffer *rx_buf =
-+				kzalloc(sizeof(struct shmbuffer), GFP_KERNEL);
-+
-+		if (rx_buf == NULL) {
-+			pr_warn("ERROR, Could not"
-+					" allocate dynamic mem.for rx_buf, "
-+					" Bailing out ...\n");
-+			goto error;
-+		}
-+
-+		rx_buf->index = j;
-+
-+		rx_buf->addr = cfshm->rx_ringbuf + (buf_size * j);
-+		rx_buf->len = buf_size;
-+		cfshm->rx_bufs[j] = rx_buf;
-+		pr_devel("rx_buf[%d] addr:%p len:%d\n",
-+				rx_buf->index,
-+				rx_buf->addr,
-+				rx_buf->len);
-+	}
-+
-+	cfshm->tx_flow_on = 1;
-+	cfshm->shm->ipc_rx_cb = caif_shmdrv_rx_cb;
-+	cfshm->shm->ipc_tx_release_cb = caif_shmdrv_tx_release_cb;
-+	cfshm->shm->open_cb = open_cb;
-+	cfshm->shm->close_cb = close_cb;
-+
-+	spin_lock_irqsave(&cfshm->lock, flags);
-+	get_tx_buf(cfshm);
-+	new_rx_buf(cfshm);
-+	spin_unlock_irqrestore(&cfshm->lock, flags);
-+
-+	netif_napi_add(netdev, &cfshm->napi, shm_rx_poll,
-+			2 * cfshm->rx_frms_pr_buf);
-+
-+	netdev->dev.parent = &shm->dev;
-+	err = register_netdev(netdev);
-+	if (err) {
-+		pr_warn("ERROR[%d], SHM could not, "
-+			"register with NW FRMWK Bailing out ...\n", err);
-+		goto error;
-+	}
-+	return err;
-+error:
-+	deinit_bufs(cfshm);
-+	free_netdev(netdev);
++	err = do_commit(modem);
++	if (!err)
++		do_reply(info, 0);
 +	return err;
 +}
 +
-+static void cfshm_remove(struct shm_dev *shm)
-+{
-+	struct cfshm *cfshm;
-+
-+	if (shm == NULL || shm->driver_data == NULL)
-+		return;
-+
-+	cfshm = shm->driver_data;
-+	deinit_bufs(cfshm);
-+	unregister_netdev(cfshm->ndev);
-+
-+	shm->ipc_rx_cb = NULL;
-+	shm->ipc_tx_release_cb = NULL;
-+	shm->open_cb = NULL;
-+	shm->close_cb = NULL;
-+	shm->driver_data = NULL;
-+}
-+
-+static struct shm_driver cfshm_drv = {
-+	.mode = SHM_PACKET_MODE,
-+	.probe = cfshm_probe,
-+	.remove = cfshm_remove,
-+	.driver = {
-+		.name = KBUILD_MODNAME,
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+static void __exit cfshm_exit_module(void)
-+{
-+	modem_shm_unregister_driver(&cfshm_drv);
-+}
-+
-+static int __init cfshm_init_module(void)
++static int shm_c_register(struct sk_buff *skb, struct genl_info *info)
 +{
 +	int err;
++	struct shm_modem *modem = get_modem(skb, info);
++	if (!modem)
++		return -EINVAL;
 +
-+	err = modem_shm_register_driver(&cfshm_drv);
-+	if (err) {
-+		printk(KERN_ERR "Could not register SHM driver: %d.\n",
-+			err);
-+		goto err_dev_register;
-+	}
-+	return err;
-+
-+ err_dev_register:
++	err = do_register(modem);
++	if (!err)
++		do_reply(info, 0);
 +	return err;
 +}
 +
-+module_init(cfshm_init_module);
-+module_exit(cfshm_exit_module);
++static int shm_c_set_addr(struct sk_buff *skb, struct genl_info *info)
++{
++	int err;
++	struct shm_modem *modem = get_modem(skb, info);
++	if (!modem)
++		return -EINVAL;
++
++	err = do_set_addr(modem);
++	if (!err)
++		do_reply(info, 0);
++	return err;
++}
++
++static int shm_c_reset(struct sk_buff *skb, struct genl_info *info)
++{
++	struct shm_modem *modem = get_modem(skb, info);
++	if (!modem)
++		return -EINVAL;
++
++	do_reset(modem);
++	do_reply(info, 0);
++	return 0;
++}
++
++static int shm_c_verify(struct sk_buff *skb, struct genl_info *info)
++{
++	int err;
++	struct shm_modem *modem = get_modem(skb, info);
++	if (!modem)
++		return -EINVAL;
++
++	err = verify_config(modem);
++	if (!err)
++		do_reply(info, 0);
++	return err;
++}
++
++static struct genl_ops shm_genl_ops[] = {
++	{
++	.cmd = SHM_C_ADD_STREAM_CHANNEL,
++	.flags = GENL_ADMIN_PERM,
++	.policy = shm_genl_policy,
++	.doit = shm_add_stream_ch,
++	.dumpit = NULL,
++	},
++	{
++	.cmd = SHM_C_ADD_PACKET_CHANNEL,
++	.flags = GENL_ADMIN_PERM,
++	.policy = shm_genl_policy,
++	.doit = shm_add_packet_ch,
++	.dumpit = NULL,
++	},
++	{
++	.cmd = SHM_C_COMMIT,
++	.flags = GENL_ADMIN_PERM,
++	.doit = shm_c_commit,
++	.dumpit = NULL,
++	},
++	{
++	.cmd = SHM_C_REGISTER,
++	.flags = GENL_ADMIN_PERM,
++	.doit = shm_c_register,
++	.dumpit = NULL,
++	},
++	{
++	.cmd = SHM_C_SET_ADDR,
++	.flags = GENL_ADMIN_PERM,
++	.doit = shm_c_set_addr,
++	.dumpit = NULL,
++	},
++	{
++	.cmd = SHM_C_RESET,
++	.flags = GENL_ADMIN_PERM,
++	.doit = shm_c_reset,
++	.dumpit = NULL,
++	},
++	{
++	.cmd = __SHM_C_VERIFY,
++	.flags = GENL_ADMIN_PERM,
++	.doit = shm_c_verify,
++	.dumpit = NULL,
++	},
++
++};
++
++/* Initialize boot handling and create sysfs entries*/
++int __init shm_boot_init(void)
++{
++	int err = -EINVAL;
++	bool shm_fake = false;
++
++	modem = kzalloc(sizeof(struct shm_modem), GFP_KERNEL);
++	if (modem == NULL)
++		return -ENOMEM;
++
++	/* Negative shm_size indicates module test without real SHM */
++	if (shm_size < 0) {
++		shm_fake = true;
++		shm_size = abs(shm_size);
++	}
++
++	if (shm_size < TOC_SZ)
++		goto bad_config;
++
++	if (shm_fake) {
++		modem->shm_start = kzalloc(shm_size, GFP_KERNEL);
++		err = -ENOMEM;
++		if (!modem->shm_start)
++			goto error;
++		shm_start = (unsigned long) modem->shm_start;
++		memset(modem->shm_start, 0xaa, shm_size);
++	} else {
++		if (shm_start == 0)
++			goto bad_config;
++		modem->shm_start = ioremap(shm_start, shm_size);
++	}
++
++	/* Initiate the Master TOC to 0xff for the first 512 bytes */
++	if (shm_size > TOC_SZ)
++		memset(modem->shm_start, 0xff, TOC_SZ);
++
++	modem->modem_bootimg_size = TOC_SZ;
++
++	pr_debug("Boot image addr: %p size:%d\n", modem->shm_start,
++			modem->modem_bootimg_size);
++
++	err = genl_register_family_with_ops(&shm_gnl_family,
++		shm_genl_ops, ARRAY_SIZE(shm_genl_ops));
++	if (err)
++		goto error;
++
++	modem->gennetl_reg = true;
++	modem->fw_requested = true;
++	err = modem_shm_request_firmware(modem, THIS_MODULE,
++			STE_BOOTIMG_NAME, shm_firmware);
++	if (err)
++		goto error;
++
++	return err;
++error:
++	pr_debug("initialization failed\n");
++
++	if (shm_fake)
++		kfree(modem->shm_start);
++	return err;
++bad_config:
++	pr_err("Bad module configuration:"
++			" shm_base_address:%lu shm_size:%lu err:%d\n",
++			shm_start, shm_size, err);
++	/* Buildin module should not return error */
++	return -EINVAL;
++}
++
++void __exit shm_boot_exit(void)
++{
++
++	if (modem->gennetl_reg)
++		genl_unregister_family(&shm_gnl_family);
++	modem->gennetl_reg = false;
++}
++module_init(shm_boot_init);
++module_exit(shm_boot_exit);
 -- 
 1.7.1
 
