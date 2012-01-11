@@ -1,76 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295Ab2AKAvY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 19:51:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:57500 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757007Ab2AKAvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 19:51:21 -0500
-Date: Wed, 11 Jan 2012 01:51:19 +0100
-From: Jan Kara <jack@suse.cz>
-To: Surbhi Palande <csurbhi@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Eric Sandeen <sandeen@sandeen.net>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
-        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Valerie Aurora <val@vaaconsulting.com>,
-        Christopher Chaltain <christopher.chaltain@canonical.com>,
-        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Surbhi Palande <surbhi.palande@canonical.com>
-Subject: Re: [PATCH v2 1/7] Adding support to freeze and unfreeze a journal
-Message-ID: <20120111005119.GA24005@quack.suse.cz>
-References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
- <1323367477-21685-2-git-send-email-kamal@canonical.com>
- <4F0C9D87.8010006@sandeen.net>
- <20120110213104.GI4516@quack.suse.cz>
- <CAMBkX3eVeKSmEzmYTe6Oe_D6kAMQTL5LYoi1-Axj7CcrM85Pow@mail.gmail.com>
- <20120111000448.GA16395@quack.suse.cz>
- <CAMBkX3e_jyTZ=i8D8_cza23Xygd+Gf5iACZ+hbo5TaYLrJPH-Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMBkX3e_jyTZ=i8D8_cza23Xygd+Gf5iACZ+hbo5TaYLrJPH-Q@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757314Ab2AKAw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 19:52:29 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:55297 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757283Ab2AKAw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 19:52:28 -0500
+Date: Wed, 11 Jan 2012 11:52:17 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Pablo Neira Ayuso <pablo@netfilter.org>, Patrick McHardy <kaber@trash.net>
+Cc: "David S. Miller" <davem@davemloft.net>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] netfilter: fix unused variable warning in xt_hashlimit.c
+Message-Id: <20120111115217.b5db064c4bf233a4e1df42b8@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__11_Jan_2012_11_52_17_+1100_B.oiuv/7=ykjb1zD"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 10-01-12 16:13:46, Surbhi Palande wrote:
-> >> If all the write operations were journaled, then this patch would not allow
-> >> ext4 filesystem to have any dirty data after its frozen.
-> >> (as journal_start() would block).
-> >>
-> >>  I think the only one candidate that creates dirty data without calling
-> >> ext4_journal_start() is mmapped?
-> >  No, the problem is in any write path. The problem is with operations
-> > that happen during the phase when s_frozen == SB_FREEZE_WRITE. These
-> > operations dirty the filesystem but running sync may easily miss them.
-> > During this phase journal is not frozen so that does not help you in any
-> > way.
-> >
-> >                                                                Honza
-> 
-> Ok! No new transaction can really start after the journal is frozen.
-> But we can have dirty data after SB_FREEZE_WRITE and before
-> SB_FREEZE_TRANS.
-> I agree with you. However, can this be fixed by adding a
-> sync_filesystem() in freeze_super() after the sb->s_op->freeze_fs() is
-> over?
-  The problem with this is that to do writeback you need to start a
-transaction. So you would deadlock.
+--Signature=_Wed__11_Jan_2012_11_52_17_+1100_B.oiuv/7=ykjb1zD
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> So then essentially, when freeze_super() returns, the page cache is clean?
-> 
-> I do definitely agree that the fix is to add a lock for mutual
-> exclusion between freeze filesystem and writes to a frozen filesystem.
-  Yes, that would be the cleanest solution but it's quite some work.
+Fixes this warning when CONFIG_IP6_NF_IPTABLES is not enabled:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+net/netfilter/xt_hashlimit.c: In function =E2=80=98hashlimit_init_dst=E2=80=
+=99:
+net/netfilter/xt_hashlimit.c:448:9: warning: unused variable =E2=80=98frag_=
+off=E2=80=99 [-Wunused-variable]
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/netfilter/xt_hashlimit.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+Sorry for the wide posting, but the MAINTAINERS file is not clear about
+which mailing lists are relevant.
+
+diff --git a/net/netfilter/xt_hashlimit.c b/net/netfilter/xt_hashlimit.c
+index 8e49921..d95f9c9 100644
+--- a/net/netfilter/xt_hashlimit.c
++++ b/net/netfilter/xt_hashlimit.c
+@@ -445,7 +445,6 @@ hashlimit_init_dst(const struct xt_hashlimit_htable *hi=
+nfo,
+ {
+ 	__be16 _ports[2], *ports;
+ 	u8 nexthdr;
+-	__be16 frag_off;
+ 	int poff;
+=20
+ 	memset(dst, 0, sizeof(*dst));
+@@ -466,6 +465,9 @@ hashlimit_init_dst(const struct xt_hashlimit_htable *hi=
+nfo,
+ 		break;
+ #if IS_ENABLED(CONFIG_IP6_NF_IPTABLES)
+ 	case NFPROTO_IPV6:
++	{
++		__be16 frag_off;
++
+ 		if (hinfo->cfg.mode & XT_HASHLIMIT_HASH_DIP) {
+ 			memcpy(&dst->ip6.dst, &ipv6_hdr(skb)->daddr,
+ 			       sizeof(dst->ip6.dst));
+@@ -485,6 +487,7 @@ hashlimit_init_dst(const struct xt_hashlimit_htable *hi=
+nfo,
+ 		if ((int)protoff < 0)
+ 			return -1;
+ 		break;
++	}
+ #endif
+ 	default:
+ 		BUG();
+--=20
+1.7.8.197.g73c6b
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__11_Jan_2012_11_52_17_+1100_B.oiuv/7=ykjb1zD
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPDN1BAAoJEECxmPOUX5FEr0wP/3/an3mvFqpWxZe25LjlMpzT
+3qjaVWOX5zmelm8IU5MUcjLFw5ofMxy6vUAH6CUFnCqy0di0fIOUnIXkGhcDuMI1
+O8sXILErzoV/klu5vut6RMdtQvdKj6U2CBAvBqEcAacQ3Er2r3hUXM0D4JwXhZYq
+sf5DuA7RtFCNuscLXgHJKpkEXe1WJW7bnRVOpfT6ECzu+ZreLQkoVNyAs9pWb8oK
+Zl4tspaWztat74uyMhytSiTPD07tJycIEwd6Lw/214gvi86sDmXc7pzgi/wFQgSQ
+ZNcG+DuDrDrSjPk2TzX9xol+J9PZoOEQCgQDVzSWcDgV6bokEe6qlv/Vts1tyGxp
+6o/+Yz9MtQpqlZHDfCuofQVeayTe+t+X1MYF175B5G+vdc07itn5SFnKAuRfSB2s
+u6RjGBYPm3TbwIJbijvzrhPD+oZotY+a3hTX+kWFDPZKYoLv1PTPAnc/jM3a6i+p
+8THwbtnFMAmlPkI1zW1NYrHlR+UqUpm5rMck34RqM8P+ZI2s2dLgpxZnSxGd0n7v
+umQPWDNyW5vcygZEZMiTb1AlKvhVy9p12YhiHikb/HdnIWUf/hlu41we4mw9HORM
+qSwCwVRx2HN5+e0WDR31bxUpvjQ+U+nL8RSCwIRlhyzVB5JY+JDNCdWbvZ1xCziL
+QjRWKTP9z9645O7eHyZY
+=3ZMy
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__11_Jan_2012_11_52_17_+1100_B.oiuv/7=ykjb1zD--
