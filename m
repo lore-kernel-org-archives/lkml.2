@@ -1,72 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab2AKTaM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 14:30:12 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55039 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab2AKTaK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 14:30:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120111183115.GA28196@moon>
-References: <20120111161939.GI8752@moon> <CAHGf_=r1vrZbCTYNAp7e+Hbbxh2BnDXXrdsNckSkQVVrXQ=9KQ@mail.gmail.com>
- <20120111175952.GI466@moon> <CAHGf_=oMk2YDnmsomgCc45Ei5yaSdNzRwapm7Fqm9mN7LY0FNw@mail.gmail.com>
- <4F0DD365.6070200@parallels.com> <20120111183115.GA28196@moon>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Wed, 11 Jan 2012 14:29:48 -0500
-Message-ID: <CAHGf_=oXsrbsXPqBw_CvZQjwdXhzhqkoWX3mRSEgMZHy44ZUKg@mail.gmail.com>
-Subject: Re: [RFC] on general object IDs again
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyle Moffett <kyle@moffetthome.net>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757550Ab2AKTbN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 14:31:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43662 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751745Ab2AKTbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 14:31:10 -0500
+Date: Wed, 11 Jan 2012 14:30:44 -0500
+From: Rik van Riel <riel@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        akpm@linux-foundation.org, mel@csn.un.ie, hannes@cmpxchg.org,
+        minchan.kim@gmail.com
+Subject: [PATCH v2 -mm] make swapin readahead skip over holes
+Message-ID: <20120111143044.3c538d46@cuia.bos.redhat.com>
+Organization: Red Hat, Inc
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> > Then, you only need to compare. not any other calculation. i.e. only
->> > need id uniqueness.
->> > And any resource are referenced from tasks. so, can you reuse pid for
->> > this? example,
->> > two taska share one mm.
->> >
->> > task-a(pid: 100)
->> >               |-----------------mm
->> > task-b(pid: 200)
->> >
->> >
->> > gen_obj_id(task-b, GEN_OBJ_ID_VM) return 100. (youngest pid of referenced tasks)
->>
->> We can, but determining the youngest pid for an mm struct is O(N) algo.
->> Having N tasks with N mm_structs getting the sharing picture becomes O(N^2).
->
-> Yeah, exactly. If not the speed problem we would simply stick
-> with Andrew's proposal as two-id-are-the-same(pid1, pid2)
-> syscall.
+Ever since abandoning the virtual scan of processes, for scalability
+reasons, swap space has been a little more fragmented than before.
+This can lead to the situation where a large memory user is killed,
+swap space ends up full of "holes" and swapin readahead is totally
+ineffective.
 
-Why O(N^2) is matter? Typical HPC system have mere a few hundred pids.
-so, O(N^2)
-is not slow. How do you mesure Andrew's proposal?
+On my home system, after killing a leaky firefox it took over an
+hour to page just under 2GB of memory back in, slowing the virtual
+machines down to a crawl.
 
-If you have 1000 pids and each syscall need 10usec,
+This patch makes swapin readahead simply skip over holes, instead
+of stopping at them.  This allows the system to swap things back in
+at rates of several MB/second, instead of a few hundred kB/second.
 
-1000 * 1000 * 10 = 10,000,000usec = 10sec. But, important thing is, almost all
-processes don't share fs, mm and other structs. then, if we check
-reference count
-before task traversal, required time may reduce 1/10x - 1/100x.
+The checks done in valid_swaphandles are already done in 
+read_swap_cache_async as well, allowing us to remove a fair amount
+of code.
 
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+-v2: cleanups suggested by Mel Gorman
+     skip swap offset zero
 
-> But when we get a number of pids to dump we need the
-> resource affinity picture over them all.
+ include/linux/swap.h |    2 +-
+ mm/swap_state.c      |   17 ++++----------
+ mm/swapfile.c        |   59 +++++++++++++------------------------------------
+ 3 files changed, 22 insertions(+), 56 deletions(-)
+
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 1e22e12..6e1282e 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -328,7 +328,7 @@ extern long total_swap_pages;
+ extern void si_swapinfo(struct sysinfo *);
+ extern swp_entry_t get_swap_page(void);
+ extern swp_entry_t get_swap_page_of_type(int);
+-extern int valid_swaphandles(swp_entry_t, unsigned long *);
++extern void get_swap_cluster(swp_entry_t, unsigned long *, unsigned long *);
+ extern int add_swap_count_continuation(swp_entry_t, gfp_t);
+ extern void swap_shmem_alloc(swp_entry_t);
+ extern int swap_duplicate(swp_entry_t);
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index ea6b32d..3ec4886 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -372,25 +372,18 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
+ 			struct vm_area_struct *vma, unsigned long addr)
+ {
+-	int nr_pages;
+ 	struct page *page;
+-	unsigned long offset;
++	unsigned long offset = swp_offset(entry);
+ 	unsigned long end_offset;
+ 
+-	/*
+-	 * Get starting offset for readaround, and number of pages to read.
+-	 * Adjust starting address by readbehind (for NUMA interleave case)?
+-	 * No, it's very unlikely that swap layout would follow vma layout,
+-	 * more likely that neighbouring swap pages came from the same node:
+-	 * so use the same "addr" to choose the same node for each swap read.
+-	 */
+-	nr_pages = valid_swaphandles(entry, &offset);
+-	for (end_offset = offset + nr_pages; offset < end_offset; offset++) {
++	get_swap_cluster(entry, &offset, &end_offset);
++
++	for (; offset <= end_offset ; offset++) {
+ 		/* Ok, do the async read-ahead now */
+ 		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
+ 						gfp_mask, vma, addr);
+ 		if (!page)
+-			break;
++			continue;
+ 		page_cache_release(page);
+ 	}
+ 	lru_add_drain();	/* Push any new pages onto the LRU now */
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index b1cd120..f09182e 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -2289,55 +2289,28 @@ int swapcache_prepare(swp_entry_t entry)
+ }
+ 
+ /*
+- * swap_lock prevents swap_map being freed. Don't grab an extra
+- * reference on the swaphandle, it doesn't matter if it becomes unused.
++ * Return a swap cluster sized and aligned block around offset.
+  */
+-int valid_swaphandles(swp_entry_t entry, unsigned long *offset)
++void get_swap_cluster(swp_entry_t entry, unsigned long *begin,
++			unsigned long *end)
+ {
+ 	struct swap_info_struct *si;
+-	int our_page_cluster = page_cluster;
+-	pgoff_t target, toff;
+-	pgoff_t base, end;
+-	int nr_pages = 0;
+-
+-	if (!our_page_cluster)	/* no readahead */
+-		return 0;
+-
+-	si = swap_info[swp_type(entry)];
+-	target = swp_offset(entry);
+-	base = (target >> our_page_cluster) << our_page_cluster;
+-	end = base + (1 << our_page_cluster);
+-	if (!base)		/* first page is swap header */
+-		base++;
++	unsigned long offset = swp_offset(entry);
++	unsigned long mask = (1 << page_cluster) - 1;
+ 
+ 	spin_lock(&swap_lock);
+-	if (end > si->max)	/* don't go beyond end of map */
+-		end = si->max;
+-
+-	/* Count contiguous allocated slots above our target */
+-	for (toff = target; ++toff < end; nr_pages++) {
+-		/* Don't read in free or bad pages */
+-		if (!si->swap_map[toff])
+-			break;
+-		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
+-			break;
+-	}
+-	/* Count contiguous allocated slots below our target */
+-	for (toff = target; --toff >= base; nr_pages++) {
+-		/* Don't read in free or bad pages */
+-		if (!si->swap_map[toff])
+-			break;
+-		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
+-			break;
+-	}
++	si = swap_info[swp_type(entry)];
++	/* Round the begin down to a page_cluster boundary. */
++	offset &= ~mask;
++	if (!offset)	/* First page is swap header. */
++		offset++;
++	*begin = offset;
++	/* Round the end up, but not beyond the end of the swap device. */
++	offset |= mask;
++	if (offset > si->max)
++		offset = si->max;
++	*end = offset;
+ 	spin_unlock(&swap_lock);
+-
+-	/*
+-	 * Indicate starting offset, and return number of pages to get:
+-	 * if only 1, say 0, since there's then no readahead to be done.
+-	 */
+-	*offset = ++toff;
+-	return nr_pages? ++nr_pages: 0;
+ }
+ 
+ /*
+
