@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978Ab2AKSbX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 13:31:23 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:51524 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab2AKSbT (ORCPT
+	id S933838Ab2AKSdf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 13:33:35 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:25828 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933111Ab2AKSdb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 13:31:19 -0500
-Date: Wed, 11 Jan 2012 22:31:15 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyle Moffett <kyle@moffetthome.net>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [RFC] on general object IDs again
-Message-ID: <20120111183115.GA28196@moon>
-References: <20120111161939.GI8752@moon>
- <CAHGf_=r1vrZbCTYNAp7e+Hbbxh2BnDXXrdsNckSkQVVrXQ=9KQ@mail.gmail.com>
- <20120111175952.GI466@moon>
- <CAHGf_=oMk2YDnmsomgCc45Ei5yaSdNzRwapm7Fqm9mN7LY0FNw@mail.gmail.com>
- <4F0DD365.6070200@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0DD365.6070200@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Jan 2012 13:33:31 -0500
+X-IronPort-AV: E=Sophos;i="4.71,493,1320652800"; 
+   d="scan'208";a="615725130"
+Message-ID: <1326306793.20284.3.camel@lade.trondhjem.org>
+Subject: Re: [PATCH v2 4/5] NFS: remove RPC PipeFS mount point reference
+ from blocklayout routines
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Wed, 11 Jan 2012 13:33:13 -0500
+In-Reply-To: <20120110130440.1672.43785.stgit@localhost6.localdomain6>
+References: <20120110130323.1672.97025.stgit@localhost6.localdomain6>
+	 <20120110130440.1672.43785.stgit@localhost6.localdomain6>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 11 Jan 2012 18:33:14.0625 (UTC) FILETIME=[7ACFEF10:01CCD08F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 10:22:29PM +0400, Pavel Emelyanov wrote:
-> On 01/11/2012 10:19 PM, KOSAKI Motohiro wrote:
-> >> Hi Kosaki,
-> >>
-> >> the idea on user-space is something like
-> >>
-> >>  - collect all pids to dump
-> >>  - collect IDs for every pid
-> >>  - sort the IDs obtained
-> >>  - find the same IDs (which will be kind of find intersections in a sets of IDs) and
-> >>   set up CLONE_ flags on restore procedure as appropriate (for example if
-> >>   GEN_OBJ_ID_VM IDs for two or more tasks are the same we need to use CLONE_VM
-> >>   at restore time, and so on).
-> > 
-> > Then, you only need to compare. not any other calculation. i.e. only
-> > need id uniqueness.
-> > And any resource are referenced from tasks. so, can you reuse pid for
-> > this? example,
-> > two taska share one mm.
-> > 
-> > task-a(pid: 100)
-> >               |-----------------mm
-> > task-b(pid: 200)
-> > 
-> > 
-> > gen_obj_id(task-b, GEN_OBJ_ID_VM) return 100. (youngest pid of referenced tasks)
+On Tue, 2012-01-10 at 17:04 +0400, Stanislav Kinsbursky wrote: 
+> This is a cleanup patch. We don't need this reference anymore, because
+> blocklayout pipes dentries now creates and destroys in per-net operations and
+> on PipeFS mount/umount notification.
+> Note that nfs4blocklayout_register_net() now returns 0 instead of -ENOENT in
+> case of PipeFS superblock absence. This is ok, because blocklayout pipe dentry
+> will be created on PipeFS mount event.
 > 
-> We can, but determining the youngest pid for an mm struct is O(N) algo.
-> Having N tasks with N mm_structs getting the sharing picture becomes O(N^2).
+> Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 > 
+> ---
+>  fs/nfs/blocklayout/blocklayout.c |    9 +--------
+>  1 files changed, 1 insertions(+), 8 deletions(-)
+> 
+> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
+> index 322d920..2c70202 100644
+> --- a/fs/nfs/blocklayout/blocklayout.c
+> +++ b/fs/nfs/blocklayout/blocklayout.c
+> @@ -1034,7 +1034,7 @@ static struct dentry *nfs4blocklayout_register_net(struct net *net,
+>  
+>  	pipefs_sb = rpc_get_sb_net(net);
+>  	if (!pipefs_sb)
+> -		return ERR_PTR(-ENOENT);
+> +		return 0;
 
-Yeah, exactly. If not the speed problem we would simply stick
-with Andrew's proposal as two-id-are-the-same(pid1, pid2)
-syscall. But when we get a number of pids to dump we need the
-resource affinity picture over them all.
+This looks like a typo of some sort. The caller in
+nfs4blocklayout_net_init() checks for IS_ERR(), not NULL. I'll just
+remove this hunk...
 
-	Cyrill
+> 	dentry = nfs4blocklayout_register_sb(pipefs_sb, pipe);
+>  	rpc_put_sb_net(net);
+>  	return dentry;
+> @@ -1085,7 +1085,6 @@ static struct pernet_operations nfs4blocklayout_net_ops = {
+>  
+>  static int __init nfs4blocklayout_init(void)
+>  {
+> -	struct vfsmount *mnt;
+>  	int ret;
+>  
+>  	dprintk("%s: NFSv4 Block Layout Driver Registering...\n", __func__);
+> @@ -1095,12 +1094,6 @@ static int __init nfs4blocklayout_init(void)
+>  		goto out;
+>  
+>  	init_waitqueue_head(&bl_wq);
+> -
+> -	mnt = rpc_get_mount();
+> -	if (IS_ERR(mnt)) {
+> -		ret = PTR_ERR(mnt);
+> -		goto out_remove;
+> -	}
+>  	ret = rpc_pipefs_notifier_register(&nfs4blocklayout_block);
+>  	if (ret)
+>  		goto out_remove;
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
