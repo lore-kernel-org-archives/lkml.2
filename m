@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933615Ab2AKRYh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:24:37 -0500
-Received: from mga01.intel.com ([192.55.52.88]:9550 "EHLO mga01.intel.com"
+	id S933671Ab2AKRYl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:24:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28779 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757195Ab2AKRYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:24:34 -0500
+	id S933596Ab2AKRYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 12:24:37 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="106055445"
+   d="scan'208";a="106055455"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -27,9 +27,9 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH v5 02/12] x86/Kconfig: Add config switch for CPU0 hotplug
-Date: Wed, 11 Jan 2012 09:04:43 -0800
-Message-Id: <1326301493-28760-3-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v5 05/12] x86/power/cpu.c: Don't hibernate/suspend if CPU0 is offline
+Date: Wed, 11 Jan 2012 09:04:46 -0800
+Message-Id: <1326301493-28760-6-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
 References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
@@ -39,60 +39,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-New config switch CONFIG_BOOTPARAM_HOTPLUG_CPU0 sets default state of whether
-the CPU0 hotplug is on or off.
-
-If the switch is off, CPU0 is not hotpluggable by default. But the CPU0 hotplug
-feature can still be turned on by kernel parameter cpu0_hotplug at boot.
-
-If the switch is on, CPU0 is always hotpluggable. The default value of
-the switch is off.
+Because x86 BIOS requires CPU0 to resume from sleep, suspend or hibernate
+can't be executed if CPU0 is detected offline. To make suspend or hibernate and
+further resume succeed, CPU0 must be online.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/Kconfig |   29 +++++++++++++++++++++++++++++
- 1 files changed, 29 insertions(+), 0 deletions(-)
+ arch/x86/power/cpu.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 44 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d6f1e91..c2cf195 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1719,6 +1719,35 @@ config HOTPLUG_CPU
- 	    automatically on SMP systems. )
- 	  Say N if you want to disable CPU hotplug.
- 
-+config BOOTPARAM_HOTPLUG_CPU0
-+	bool "Set default setting of cpu0_hotpluggable"
-+	default n
-+	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	---help---
-+	  Set whether default state of cpu0_hotpluggable is on or off.
+diff --git a/arch/x86/power/cpu.c b/arch/x86/power/cpu.c
+index f10c0af..a4ec084 100644
+--- a/arch/x86/power/cpu.c
++++ b/arch/x86/power/cpu.c
+@@ -236,3 +236,47 @@ void restore_processor_state(void)
+ #ifdef CONFIG_X86_32
+ EXPORT_SYMBOL(restore_processor_state);
+ #endif
 +
-+	  Say Y here to enable CPU0 hotplug by default. If this switch
-+	  is turned on, there is no need to give cpu0_hotplug kernel
-+	  parameter and the CPU0 hotplug feature is enabled by default.
++/*
++ * When bsp_check() is called in hibernate and suspend, cpu hotplug
++ * is disabled already. So it's unnessary to handle race condition between
++ * cpumask query and cpu hotplug.
++ */
++static int bsp_check(void)
++{
++	if (cpumask_first(cpu_online_mask) != 0) {
++		printk(KERN_WARNING "CPU0 is offline.\n");
++		return -ENODEV;
++	}
 +
-+	  Please note: there are two known CPU0 dependencies if you want
-+	  to enable the CPU0 hotplug feature either by this switch or by
-+	  cpu0_hotplug kernel parameter.
++	return 0;
++}
 +
-+	  First, resume from hibernate or suspend always starts from CPU0.
-+	  So hibernate and suspend are prevented if CPU0 is offline.
++static int bsp_pm_callback(struct notifier_block *nb, unsigned long action,
++			   void *ptr)
++{
++	int ret = 0;
 +
-+	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
-+	  offline if any interrupt can not migrate out of CPU0. There may
-+	  be other CPU0 dependencies.
++	switch (action) {
++	case PM_SUSPEND_PREPARE:
++	case PM_HIBERNATION_PREPARE:
++		ret = bsp_check();
++		break;
++	default:
++		break;
++	}
++	return notifier_from_errno(ret);
++}
 +
-+	  Please make sure the dependencies are under your control before
-+	  you enable this feature.
++static int __init bsp_pm_check_init(void)
++{
++	/*
++	 * Set this bsp_pm_callback as lower priority than
++	 * cpu_hotplug_pm_callback. So cpu_hotplug_pm_callback will be called
++	 * earlier to disable cpu hotplug before bsp online check.
++	 */
++	pm_notifier(bsp_pm_callback, -INT_MAX);
++	return 0;
++}
 +
-+	  Say N if you don't want to enable CPU0 hotplug feature by default.
-+	  You still can enable the CPU0 hotplug feature at boot by kernel
-+	  parameter cpu0_hotplug.
-+
- config COMPAT_VDSO
- 	def_bool y
- 	prompt "Compat VDSO support"
++core_initcall(bsp_pm_check_init);
 -- 
 1.6.0.3
 
