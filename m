@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931Ab2AKRmI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:42:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:49410 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757858Ab2AKRmD (ORCPT
+	id S933129Ab2AKRpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:45:45 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53816 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757900Ab2AKRpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:42:03 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=xKagQIkeoNUA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=0XEA30vv-wYp-iRS3HMA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326303721.7642.59.camel@gandalf.stny.rr.com>
-Subject: Re: [PATCH 6/9] block: add block_touch_buffer tracepoint
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, mingo@redhat.com, fweisbec@gmail.com, teravest@google.com,
-        slavapestov@google.com, ctalbott@google.com, dhsharp@google.com,
-        linux-kernel@vger.kernel.org, winget@google.com, namhyung@gmail.com
-Date: Wed, 11 Jan 2012 12:42:01 -0500
-In-Reply-To: <1326220106-5765-7-git-send-email-tj@kernel.org>
-References: <1326220106-5765-1-git-send-email-tj@kernel.org>
-	 <1326220106-5765-7-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 11 Jan 2012 12:45:42 -0500
+Date: Wed, 11 Jan 2012 17:45:41 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Thomas Abraham <thomas.abraham@linaro.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, rpurdie@rpsys.net,
+        linux-samsung-soc@vger.kernel.org, grant.likely@secretlab.ca,
+        rob.herring@calxeda.com, kgene.kim@samsung.com, jg1.han@samsung.com,
+        kyungmin.park@samsung.com, cbou@mail.ru, kwangwoo.lee@gmail.com,
+        augulis.darius@gmail.com, ben-linux@fluff.org, patches@linaro.org
+Subject: Re: [PATCH] backlight: lcd: add driver for raster-type lcd's with
+	gpio controlled panel reset
+Message-ID: <20120111174540.GE24213@opensource.wolfsonmicro.com>
+References: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org> <4F05F509.6020405@metafoo.de> <20120106064929.GB3496@opensource.wolfsonmicro.com> <CAJuYYwRxuZAm_JpLw1fN2ypnFc6TocH6veRmCeuqENvZHSz3kg@mail.gmail.com> <20120107172826.GA355@opensource.wolfsonmicro.com> <CAJuYYwSuDzUWgnSJHO0vwjYH7zscC9=j_=JuOUuJy9shHpPUuA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJuYYwSuDzUWgnSJHO0vwjYH7zscC9=j_=JuOUuJy9shHpPUuA@mail.gmail.com>
+X-Cookie: Condense soup, not books!
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 10:28 -0800, Tejun Heo wrote:
->  
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/block.h>
-> diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
-> index 458f497..245caed 100644
-> --- a/include/linux/buffer_head.h
-> +++ b/include/linux/buffer_head.h
-> @@ -13,6 +13,7 @@
->  #include <linux/pagemap.h>
->  #include <linux/wait.h>
->  #include <linux/atomic.h>
-> +#include <trace/events/block.h>
+On Wed, Jan 11, 2012 at 04:21:57PM +0530, Thomas Abraham wrote:
 
-trace/events/x.h in a header can cause issue if this header is ever
-included in another trace/events/x.h header. I think I'll need to write
-a patch that allows this, but it wont be pretty.
+> In the case of Exynos4 based Origen board, buck7 of max8997 supplies
+> power to the lcd panel. buck7 is capable of supplying power at
+> different voltage levels but for Origen board, it is required to
+> supply only 3.3V. The constraints for buck7 can specify 'apply_uV' and
+> this will ensure that buck7 is configured to supply 3.3V.
 
+> But 'apply_uV' seems to be not ideal for regulators that supply power
+> to lcd panels. It would be better to power lcd panels only when video
+> data has to be displayed.
 
--- Steve
-
-
+What makes you say this?  Enabling and disabling a regulator are
+entirely orthogonal to setting the regulator voltage.
