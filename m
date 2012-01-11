@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab2AKNtW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 08:49:22 -0500
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:46114 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756011Ab2AKNtU convert rfc822-to-8bit (ORCPT
+	id S1757539Ab2AKNv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 08:51:29 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:47500 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756547Ab2AKNv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 08:49:20 -0500
+	Wed, 11 Jan 2012 08:51:27 -0500
+Date: Wed, 11 Jan 2012 16:52:25 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: nagarjun kommineni <nagarjunkommineni@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org, Bart Westgeest <bart@elbrys.com>
+Subject: Re: high speed cams are not working on usbip
+Message-ID: <20120111135225.GG16258@mwanda>
+References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
+ <20120110103929.GH3644@mwanda>
+ <CAKPZvrah6P4vR9vsrbtTzWwz=tVAE_eyabUhGt4+C39N4Cft8w@mail.gmail.com>
+ <20120111125137.GF16258@mwanda>
+ <CAKPZvrbwZEFY1zZ30Tcoe9TBw6AoP+Xf2oX5VenQYKvZA6Z_Pw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20120111133458.GD20968@S2101-09.ap.freescale.net>
-References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
- <1326178910-14044-6-git-send-email-richard.zhao@linaro.org>
- <20120110142008.GE26599@S2101-09.ap.freescale.net> <20120110142939.GB2019@richard-laptop>
- <20120110153836.GA27831@S2101-09.ap.freescale.net> <20120111005322.GB2414@b20223-02.ap.freescale.net>
- <20120111014730.GE2414@b20223-02.ap.freescale.net> <CAMPhdO9sGWTomtyMSTe_jC2GfvtdLR=M-z3Uzpesm9efBzhSqA@mail.gmail.com>
- <20120111131615.GC20968@S2101-09.ap.freescale.net> <20120111130910.GC27484@b20223-02.ap.freescale.net>
- <20120111133458.GD20968@S2101-09.ap.freescale.net>
-From: Eric Miao <eric.miao@linaro.org>
-Date: Wed, 11 Jan 2012 21:48:58 +0800
-X-Google-Sender-Auth: meKGgkiI4X6et7FoyCGegyQ4hzM
-Message-ID: <CAMPhdO_sZGUwNmrrh1uemOff1mzG4WLFPLq2jbPt1n+mfydcpA@mail.gmail.com>
-Subject: Re: [PATCH 6/6] dma/imx-sdma: check whether event_id0 < 32 when set event_mask
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: Richard Zhao <richard.zhao@freescale.com>, patches@linaro.org,
-        vinod.koul@intel.com, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de, dan.j.williams@intel.com,
-        Richard Zhao <richard.zhao@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hcut4fGOf7Kh6EdG"
+Content-Disposition: inline
+In-Reply-To: <CAKPZvrbwZEFY1zZ30Tcoe9TBw6AoP+Xf2oX5VenQYKvZA6Z_Pw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F0D93D7.0069,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 9:35 PM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> On Wed, Jan 11, 2012 at 09:09:11PM +0800, Richard Zhao wrote:
->> On Wed, Jan 11, 2012 at 09:16:17PM +0800, Shawn Guo wrote:
->> > On Wed, Jan 11, 2012 at 02:37:08PM +0800, Eric Miao wrote:
->> > > I think Richard has made the issue quite clear here, the original
->> >
->> > Yes, he has made it clear, but only after I asked for more comments,
->> > not with the empty commit message.
->> >
->> > > code does seem to have some problems even to me, who do not
->> > > understand the very details of the SDMA:
->> > >
->> > > -                       sdmac->event_mask0 = 1 << sdmac->event_id0;
->> > > -                       sdmac->event_mask1 = 1 << (sdmac->event_id0 - 32);
->> > >
->> > > 1. if sdmac->event_id0 >= 32, which will cause event_mask0 to be incorrect
->> > > 2. if sdmac->event_id < 32, sdmac->event_mask1 will be incorrect
->> > >
->> > My testing tells this is not the case.  The event_mask0 will be 0 in
->> > case 1) and event_mask1 will be 0 in case 2), which is quite what we
->> > expect.  And I do not believe you will see any functionality bug with
->> > the existing code.
->> Please see my mail mentioned "we shoud not let it depends on gcc's
->> behavior."
->
-> In this case, I would rather believe that the author is smart enough
-> to write the code intentionally based on his good understanding on
-> behavior of arm-gcc.
 
-Either using the tricky gcc behavior which _will_ vary along version changes,
-or using "hard to understand code" is BAD idea. We don't write good code
-depending on author's "smartness", we write code so that it's understandable
-and maintainable.
+--hcut4fGOf7Kh6EdG
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+So on 3.1 low resolutions work for usbip but high resolutions don't.
+As near as we can tell they never have, so it's not a regression.
+
+File a bug on http://bugzilla.kernel.org explaining:
+1) Which resolutions you tested (working and not working).
+2) What you mean when you say it doesn't work.  What were the error
+   messages etc?
+
+When it comes time to move this out of the staging directory, we'll
+look through bugzilla and see what bugs it has.
+
+regards,
+dan carpenter
+
+
+--hcut4fGOf7Kh6EdG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPDZQYAAoJEOnZkXI/YHqR4UcQAKQIMeJFeAbNrhIgu8nvOb2u
+UhjJ4cpiM2mkmp8Etp+sExP1NrTxUn2qrAD8kkLY7ywVZY+wMLwhm9IXzJkuq1vb
+3l9Lcm2m5bY3fpkpWV20ix3fK0jOiQQeEneST3d65g2fqBPlRUo/ivifKSWPKhlQ
+oFFf1TvWQAsHEzOo8zMOmI4PbQjdUEc7iO7mb20WvkeNzZnoiVa7soKf/4simNKX
+Iqvb4K0gwzPLtP4KownTTDuxigkDqRD05wjDnzo/jRLxH4i8ULhZ6iUWH/ZcNMt2
+Cs1uN08nraYooBQF2C1UqgrifTdUuYv16tLNidT+VXMC+l2nRjfbY4KyN14rvFEa
+nMIyv0rnEZ+rzA7JDUXobTLdKx62zssNPxYw0wo/KW738jHkEkC6ZK9ZoPFILmQa
+eWnMmsrNC/3QIx2gBhMkpcnUavRYimvde3YIS3i2HAdF+P6uTWOUdHTGyxJppXNf
+y8ZyUffB+ebZUWngAcY0ItPVqQZvrutliE3GZkWkC3k+9o4EuTAQFkKsZe9AzSve
+Thwf+x9dx+AIiKcZGy2+GIsMFZUzc2juUqloVKB0HvcUxlwiZI5m/2qNwPF9cJdh
+My174sZCgix09TxpnAdHP+kkmeU94EN58HooOsOr0WdXx1VCMYFha9KXcZ7LGG96
+s0LTmIQUPb6ZayV52WPJ
+=UQO/
+-----END PGP SIGNATURE-----
+
+--hcut4fGOf7Kh6EdG--
