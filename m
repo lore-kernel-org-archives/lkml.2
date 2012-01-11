@@ -1,70 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933745Ab2AKCiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 21:38:12 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:52321 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab2AKCiK (ORCPT
+	id S933775Ab2AKCij (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 21:38:39 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:49925 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932901Ab2AKCig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 21:38:10 -0500
-Date: Wed, 11 Jan 2012 13:38:03 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: linux-next: manual merge of the l2-mtd tree with Linus' tree
-Message-Id: <20120111133803.e7033fe7c4250df71b14ba3f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__11_Jan_2012_13_38_03_+1100_DRFWdL2jPSWWtCQU"
+	Tue, 10 Jan 2012 21:38:36 -0500
+Message-ID: <4F0CF61F.50705@gmail.com>
+Date: Tue, 10 Jan 2012 20:38:23 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Doug Anderson <dianders@chromium.org>
+CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH] of: Support CONFIG_CMDLINE_EXTEND config option
+References: <1326156853-24840-1-git-send-email-dianders@chromium.org>
+In-Reply-To: <1326156853-24840-1-git-send-email-dianders@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Jan_2012_13_38_03_+1100_DRFWdL2jPSWWtCQU
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/09/2012 06:54 PM, Doug Anderson wrote:
+> The old logic assumes CMDLINE_FROM_BOOTLOADER vs. CMDLINE_FORCE and
+> ignores CMDLINE_EXTEND.  Here's the old logic:
+> 
+> - CONFIG_CMDLINE_FORCE=true
+>     CONFIG_CMDLINE
+> - dt bootargs=non-empty:
+>     dt bootargs
+> - dt bootargs=empty, @data is non-empty string
+>     @data is left unchanged
+> - dt bootargs=empty, @data is empty string
+>     CONFIG_CMDLINE (or "" if that's not defined)
+> 
+> The old logic would also not honor CONFIG_CMDLINE_FORCE if there was no
+> "chosen" attribute in the device tree.
+> 
+> The new logic is now documented in of_fdt.h and is copied here for
+> reference:
+> 
+> - CONFIG_CMDLINE_FORCE=true
+>     CONFIG_CMDLINE
+> - CONFIG_CMDLINE_EXTEND=true
+>     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
+> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
+>     dt bootargs
+> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
+>     @data is left unchanged
+> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
+>     CONFIG_CMDLINE (or "" if that's not defined)
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> CC: devicetree-discuss@lists-ozlabs.org
+> CC: Grant Likely <grant.likely@secretlab.ca>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
 
-Hi Artem,
+Acked-by: Rob Herring <rob.herring@calxeda.com>
 
-Today's linux-next merge of the l2-mtd tree got a conflict in
-fs/jffs2/erase.c between commit 10934478e44d ("mtd: do use mtd->point
-directly") from Linus' tree and commit aa64d929dfae ("jffs2: do not
-initialize variable unnecessarily") from the l2-mtd tree.
+I'll apply, but would like Ben's ack first.
 
-The commit from Linus' tree above is also in the l2-mtd tree.  This is
-because the l2-mtd tree commits were (at least partially) rebased before
-being merged into Linus' tree.
+Rob
 
-I just used the l2-mtd tree version.  But this tree needs cleaning up to
-represent what was actually merged upstream.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>  drivers/of/fdt.c       |   56 ++++++++++++++++++++++++++++++++++-------------
+>  include/linux/of_fdt.h |   19 ++++++++++++++++
+>  2 files changed, 59 insertions(+), 16 deletions(-)
+> 
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index ea2bd1b..577f3a9 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -664,6 +664,29 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
+>  	return 0;
+>  }
+>  
+> +/*
+> + * Convert configs to something easy to use in C code
+> + */
+> +#if defined(CONFIG_CMDLINE_FORCE)
+> +static const int overwrite_incoming_cmdline = 1;
+> +static const int read_dt_cmdline;
+> +static const int concat_cmdline;
+> +#elif defined(CONFIG_CMDLINE_EXTEND)
+> +static const int overwrite_incoming_cmdline = 1;
+> +static const int read_dt_cmdline = 1;
+> +static const int concat_cmdline = 1;
+> +#else /* CMDLINE_FROM_BOOTLOADER */
+> +static const int overwrite_incoming_cmdline;
+> +static const int read_dt_cmdline = 1;
+> +static const int concat_cmdline;
+> +#endif
+> +
+> +#ifdef CONFIG_CMDLINE
+> +static const char *config_cmdline = CONFIG_CMDLINE;
+> +#else
+> +static const char *config_cmdline = "";
+> +#endif
+> +
+>  int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
+>  				     int depth, void *data)
+>  {
+> @@ -672,28 +695,29 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
+>  
+>  	pr_debug("search \"chosen\", depth: %d, uname: %s\n", depth, uname);
+>  
+> +	/* Make sure cmdline default is set early to handle case of no chosen */
+> +	if (data && (overwrite_incoming_cmdline || !((char *)data)[0]))
+> +		strlcpy(data, config_cmdline, COMMAND_LINE_SIZE);
+> +
+>  	if (depth != 1 || !data ||
+>  	    (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
+>  		return 0;
+>  
+>  	early_init_dt_check_for_initrd(node);
+>  
+> -	/* Retrieve command line */
+> -	p = of_get_flat_dt_prop(node, "bootargs", &l);
+> -	if (p != NULL && l > 0)
+> -		strlcpy(data, p, min((int)l, COMMAND_LINE_SIZE));
+> -
+> -	/*
+> -	 * CONFIG_CMDLINE is meant to be a default in case nothing else
+> -	 * managed to set the command line, unless CONFIG_CMDLINE_FORCE
+> -	 * is set in which case we override whatever was found earlier.
+> -	 */
+> -#ifdef CONFIG_CMDLINE
+> -#ifndef CONFIG_CMDLINE_FORCE
+> -	if (!((char *)data)[0])
+> -#endif
+> -		strlcpy(data, CONFIG_CMDLINE, COMMAND_LINE_SIZE);
+> -#endif /* CONFIG_CMDLINE */
+> +	/* Retrieve command line unless forcing */
+> +	if (read_dt_cmdline) {
+> +		p = of_get_flat_dt_prop(node, "bootargs", &l);
+> +		if (p != NULL && l > 0) {
+> +			if (concat_cmdline) {
+> +				strlcat(data, " ", COMMAND_LINE_SIZE);
+> +				strlcat(data, p, min_t(int, (int)l,
+> +						       COMMAND_LINE_SIZE));
+> +			} else
+> +				strlcpy(data, p, min_t(int, (int)l,
+> +						       COMMAND_LINE_SIZE));
+> +		}
+> +	}
+>  
+>  	pr_debug("Command line is: %s\n", (char*)data);
+>  
+> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+> index ed136ad..346d6c7 100644
+> --- a/include/linux/of_fdt.h
+> +++ b/include/linux/of_fdt.h
+> @@ -91,6 +91,25 @@ extern int of_flat_dt_is_compatible(unsigned long node, const char *name);
+>  extern int of_flat_dt_match(unsigned long node, const char *const *matches);
+>  extern unsigned long of_get_flat_dt_root(void);
+>  
+> +/*
+> + * early_init_dt_scan_chosen - scan the device tree for ramdisk and bootargs
+> + *
+> + * The boot arguments will be placed into the memory pointed to by @data.
+> + * That memory should be COMMAND_LINE_SIZE big and initialized to be a valid
+> + * (possibly empty) string.  Logic for what will be in @data after this
+> + * function finishes:
+> + *
+> + * - CONFIG_CMDLINE_FORCE=true
+> + *     CONFIG_CMDLINE
+> + * - CONFIG_CMDLINE_EXTEND=true
+> + *     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
+> + * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
+> + *     dt bootargs
+> + * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
+> + *     @data is left unchanged
+> + * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
+> + *     CONFIG_CMDLINE (or "" if that's not defined)
+> + */
+>  extern int early_init_dt_scan_chosen(unsigned long node, const char *uname,
+>  				     int depth, void *data);
+>  extern void early_init_dt_check_for_initrd(unsigned long node);
 
---Signature=_Wed__11_Jan_2012_13_38_03_+1100_DRFWdL2jPSWWtCQU
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPDPYLAAoJEECxmPOUX5FEGtAP/A7p0+aYIp+scv10oVIZIHix
-TqyHU3/cWx5IypSYUATXMJF1/bGYvUvjsVCHYBCpsUV3VClN4uR1NfOe02bxAILj
-KhMEp5xDwQtWFaIgCrrmRydCB56xToOSDPxuWYktoT4jSjiji/dpNkrkCHjOzDzv
-I1Qa3osPc9zprKRB3709NcEu6CpCsSYg5lwEPi2yqwSxvPFkGvDfYsiNuC9sKnX3
-cIdLbF7NEmV+RcYQ3tTF8q+k1ky7ATWnVHZ08HHrTbqAXabsmfaM7nLx0rSwQgXU
-5WQvMCDOT/g4kPhLYfdMTQpI8aWZ6HYA0JrAH64YGv8ri/zcwShPllli5x3V4p8p
-2Jr9n8fEukNfywtwY24025Bob2RGBIHSK+t4eWDC4q5YIzwsTP0gN6i/k+4QUNcV
-htGo8LS/NvuWt//FBT17tsrCV07g5QJ0ChNS44Mty+TULzajZBjQ1C9IPM1aGPz8
-kvErzJZqSdIgsypLODA5Q/YOJy6e1yNcTdCdNMSL14TMWb+BIDxPtS7vDzOSg6Z7
-eul9p8ytQ5gX28jexF0R3Rg56QxzJhHEczA5HMBb4++Oq6uWuY4KTXvGnNh+YJ78
-nDKWBa8IyEO1JSRIiJhe29BCjAsWCoJzVIBYYgflvtKuLcu/oysmqEYRXSZgemCS
-DGOdA2Wp4i1F5KJ0MiQ0
-=DZUK
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_Jan_2012_13_38_03_+1100_DRFWdL2jPSWWtCQU--
