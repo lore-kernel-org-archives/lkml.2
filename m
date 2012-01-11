@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757887Ab2AKRUB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:20:01 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62410 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755320Ab2AKRT6 (ORCPT
+	id S1757903Ab2AKRVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:21:00 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:50087 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab2AKRUz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:19:58 -0500
-Date: Wed, 11 Jan 2012 09:19:51 -0800
-From: "tj@kernel.org" <tj@kernel.org>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Lameter <cl@gentwo.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/3] Code clean up for percpu_xxx() functions
-Message-ID: <20120111171951.GF26832@google.com>
-References: <1318428673.29699.13.camel@debian>
- <alpine.DEB.2.00.1110120910540.26610@router.home>
- <1318908091.23426.52.camel@debian>
- <alpine.DEB.2.00.1110180932330.687@router.home>
- <1319016218.23426.104.camel@debian>
- <alpine.DEB.2.00.1110191033480.24001@router.home>
- <1319096139.23426.184.camel@debian>
- <1321866612.30341.572.camel@debian>
- <20111122000653.GS25776@google.com>
- <1326272921.5695.263.camel@debian>
+	Wed, 11 Jan 2012 12:20:55 -0500
 MIME-Version: 1.0
+Message-ID: <b5b5a961-85e5-4ce1-8280-7ca382cb0e0f@default>
+Date: Wed, 11 Jan 2012 09:19:35 -0800 (PST)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Nitin Gupta <ngupta@vflare.org>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: RE: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
+References: <<1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com>>
+ <<1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com>>
+In-Reply-To: <<1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com>>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
+ 12.0.6607.1000 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326272921.5695.263.camel@debian>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4F0DC4B5.005A,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 05:08:41PM +0800, Alex,Shi wrote:
-> On Mon, 2011-11-21 at 17:06 -0700, tj@kernel.org wrote:
-> > (cc'ing hpa and quoting whole body)
-> > > 
-> > > Signed-off-by: Alex Shi <alex.shi@intel.com>
-> > > Acked-by: Christoph Lameter <cl@gentwo.org>
-> > 
-> >  Acked-by: Tejun Heo <tj@kernel.org>
-> > 
-> > hpa, I suppose this should go through x86?  The original patch can be
-> > accessed at
-> > 
-> >   http://article.gmane.org/gmane.linux.kernel/1218055/raw
+> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+> Subject: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
 > 
-> Rend for 3.2 kernel, no any change needed to apply on latest Linus'
-> tree. :) 
+> From: Nitin Gupta <ngupta@vflare.org>
 > 
-> Actually, this clean up has no performance or security impact for
-> kernel. On the contrary, removing some potential redundant preempt
-> disable will bring a slight performance benefit to kernel. 
+> This patch creates a new memory allocation library named
+> zsmalloc.
 > 
-> This 3rd patch depends on previous 2 patches, the 2nd one kvm code clean
-> up was submitted for 3.3 kernel. but the 2st one net code clean up is
-> waiting for David's comments.
+> +/*
+> + * Allocate a zspage for the given size class
+> + */
+> +static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+> +{
+> +	int i, error;
+> +	struct page *first_page = NULL;
+> +
+> +	/*
+> +	 * Allocate individual pages and link them together as:
+> +	 * 1. first page->private = first sub-page
+> +	 * 2. all sub-pages are linked together using page->lru
+> +	 * 3. each sub-page is linked to the first page using page->first_page
+> +	 *
+> +	 * For each size class, First/Head pages are linked together using
+> +	 * page->lru. Also, we set PG_private to identify the first page
+> +	 * (i.e. no other sub-page has this flag set) and PG_private_2 to
+> +	 * identify the last page.
+> +	 */
+> +	error = -ENOMEM;
+> +	for (i = 0; i < class->zspage_order; i++) {
+> +		struct page *page, *prev_page;
+> +
+> +		page = alloc_page(flags);
 
-Alex, can you please collect all patches into a single patchset?
-Please split it such that, usage changes are per-system so that they
-can be routed through respective subsystems (x86 or net) and updates
-to percpu proper which can be applied after other changes have been
-applied.  It would probably be best to route these patches separately
-rather than all through percpu as it touches a lot of different places
-and is likely to cause conflicts.  I *think* the best way would be,
+Hmmm... I thought we agreed offlist that the new allocator API would
+provide for either preloads or callbacks (which may differ per pool)
+instead of directly allocating raw pages from the kernel.  The caller
+(zcache or ramster or ???) needs to be able to somehow manage maximum
+memory capacity to avoid OOMs.
 
-* Submit per-subsystem patches and get them merged to subsystem trees.
+Or am I missing the code that handles that?
 
-* (Optional) Apply a patch to mark unused interface deprecated in
-  percpu tree, so that new usages in linux-next can be detected.
-
-* Towards the end of the next merge window, merge a patch to actually
-  kill the old interface.
-
-Thanks.
-
--- 
-tejun
+Dan
