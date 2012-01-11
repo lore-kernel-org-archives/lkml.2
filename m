@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab2AKIXU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:23:20 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52101 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756684Ab2AKIXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:23:15 -0500
-Message-ID: <4F0D46EF.4060705@openvz.org>
-Date: Wed, 11 Jan 2012 12:23:11 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111108 Iceape/2.0.14
+	id S1757229Ab2AKIXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:23:51 -0500
+Received: from solca.med.ec ([200.105.240.90]:34067 "EHLO mail.solca.med.ec"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754225Ab2AKIXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 03:23:50 -0500
+Message-ID: <54560.41.71.150.50.1326269638.squirrel@mail.solca.med.ec>
+Date: Wed, 11 Jan 2012 03:13:58 -0500 (ECT)
+Subject: =?utf-8?B?V2VibWFzdGVyIHBvd2lhZG9taWXFhCEh4oCP4oCP4oCPICA=?=
+From: =?utf-8?B?V2VibWFzdGVyIEFrdHVhbGl6YWNqYSBXeWR6aWHFgg==?= 
+	<info@webmaster.pl>
+Reply-To: customercarewebdept40@w.cn
+User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/3] mm: adjust rss counters for migration entiries
-References: <20120106173827.11700.74305.stgit@zurg>	<20120106173856.11700.98858.stgit@zurg> <20120111144125.0c61f35f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120111144125.0c61f35f.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18638.005
+X-TM-AS-Result: No-0.555-4.5-31-10
+X-imss-scan-details: No-0.555-4.5-31-10
+X-TM-AS-User-Approved-Sender: No
+X-TMASE-MatchedRID: bF/ftEib5FfmR+RxuU2vfUwAZYE2FMixerJCitPoIIzfUZT83lbkEMWm
+	DR829mMW+SihPPY9VI/SFZyaJmMIRq4HyN5VK32o3QfwsVk0UbsIoUKaF27lxe9ttG7ej8LDTf7
+	84XTH6n02i1vZX3Gk8jR5DBXp0fyKfL+lEnWkaa1YMZmn2SPR7wADRaWctxCv9lwBnJvrqCOKFQ
+	bGqG+X5kV4mhCkeaWfaWNolBtQ1wbDHYSZWYRUCk9o3BPtf0h2+rL5VW+ofZc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote:
-> On Fri, 06 Jan 2012 21:38:56 +0400
-> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
->
->> Memory migration fill pte with migration entry and it didn't update rss counters.
->> Then it replace migration entry with new page (or old one if migration was failed).
->> But between this two passes this pte can be unmaped, or task can fork child and
->> it will get copy of this migration entry. Nobody account this into rss counters.
->>
->> This patch properly adjust rss counters for migration entries in zap_pte_range()
->> and copy_one_pte(). Thus we avoid extra atomic operations on migration fast-path.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->
-> It's better to show wheter this is a bug-fix or not in changelog.
->
-> IIUC, the bug-fix is the 1st harf of this patch + patch [2/3].
-> Your new bug-check code is in patch[1/3] and 2nd half of this patch.
->
 
-No, there only one new bug-check in 1st patch, this is non-fatal warning.
-I didn't hide this check under CONFIG_VM_DEBUG because it rather small and
-rss counters covers whole page-table management, this is very good invariant.
-Currently I can trigger this warning only on this rare race -- extremely loaded
-memory compaction catches this every several seconds.
 
-1/3 bug-check
-2/3 fix preparation
-3/3 bugfix in two places:
-     do rss++ in copy_one_pte()
-     do rss-- in zap_pte_range()
 
-> I think it's better to do bug-fix 1st and add bug-check later.
->
-> So, could you reorder patches to bug-fix and new-bug-check ?
+Drodzy Widzowie konto e-mail,
 
-Patches didn't share any context, so they can be applied in any order.
 
->
-> To the logic itself,
-> Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> Please CC when you repost.
->
->
->
+Ten komunikat jest od poczty centrum wiadomości do wszystkich na nasze
+konto poczty owners.As pierwszym kwartale 2012 r. Obecnie jest
+przeprowadzenie usługi aktualizacji dla naszej bazy i e-mail centrum
+konta. Jesteśmy usunięcie wszystkich niewykorzystanych konto poczty
+internetowej, aby utworzyć więcej miejsca dla nowych kont.
 
+Aby zapobiec koncie od usuwania i Aby kontynuować korzystanie z naszych
+usług, które są wymagane do aktualizacji i potwierdzenia konta webmail.
+
+
+Aby zakończyć potwierdzenia konta za pierwszy kwartał 2012 r. Jesteś
+odpowiedzieć na tę wiadomość natychmiast i wprowadź dane swojego
+konta w wymienionych poniżej.
+
+
+Potwierdzenie informacji o koncie
+Nazwa użytkownika: ......
+E-mail Login ............
+Hasło: ..................
+Potwierdź hasło :........
+Data urodzenia: .........
+
+Ważne * Proszę podać wszystkie te informacje kompletnie i prawidłowo w
+przeciwnym razie ze względów bezpieczeństwa być może będziemy
+musieli zamknąć temporarily.We konto poczty dziękuję za szybkie zajęcie
+się tą matter.Please zrozumieć, że jest to środek bezpieczeństwa
+przeznaczonych do ochrony użytkowników i konta poczty internetowej.
+Przepraszamy za wszelkie niedogodności.
 
