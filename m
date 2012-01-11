@@ -1,134 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757449Ab2AKK24 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:28:56 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:37627 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753678Ab2AKK2y (ORCPT
+	id S1757427Ab2AKKfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:35:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:41202 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab2AKKfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:28:54 -0500
-Message-ID: <1326277729.2767.5.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Subject: Re: [BUG] kernel freezes with latest tree
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: David Ahern <dsahern@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Wed, 11 Jan 2012 11:28:49 +0100
-In-Reply-To: <1326272685.2442.120.camel@twins>
-References: <1326171444.6638.3.camel@edumazet-laptop>
-	 <1326171798.6638.4.camel@edumazet-laptop>
-	 <1326183371.6638.6.camel@edumazet-laptop>
-	 <1326212033.19095.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
-	 <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
-	 <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
-	 <1326234230.2614.15.camel@edumazet-laptop>
-	 <CA+55aFwYmX7q4MZc-xOStZB2ZQjVt_Jca6qDP+0cPKekz8yL+A@mail.gmail.com>
-	 <4F0D2D9B.8030501@gmail.com> <1326272685.2442.120.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	Wed, 11 Jan 2012 05:35:48 -0500
+Message-ID: <4F0D65F6.8080209@infradead.org>
+Date: Wed, 11 Jan 2012 08:35:34 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+CC: Olof Johansson <olof@lixom.net>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with the arm-soc
+ tree
+References: <20120111133146.990e2b7115c9fa80e8fc3234@canb.auug.org.au> <CAOesGMh0W1hvpySB8jtVBojZtoniHXur98Bzq1Feh3vAD4CkOg@mail.gmail.com> <Pine.LNX.4.64.1201110933480.1191@axis700.grange>
+In-Reply-To: <Pine.LNX.4.64.1201110933480.1191@axis700.grange>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 11 janvier 2012 à 10:04 +0100, Peter Zijlstra a écrit :
-> On Tue, 2012-01-10 at 23:35 -0700, David Ahern wrote:
-> > On 01/10/2012 04:44 PM, Linus Torvalds wrote:
-> > > Anybody? Any ideas? Clearly there can be a merge problem that doesn't
-> > > actually show as a real data conflict, just some semantic conflict,
-> > > but I don't see what such issues would be brouht in by the scheduler
-> > > merge anyway.
-> > 
-> > This is really easy to reproduce in a KVM hosted VM.
-> > 
-> > Using the gdb stub one cpu is spinning here:
-> > 
-> > (gdb) bt
-> > #0  try_to_wake_up (p=0xf529b200, state=<optimized out>, wake_flags=1)
-> >     at /mnt/sw/kernel-2.6.git/kernel/sched/core.c:1575
-> > #1  0xc0470ab0 in default_wake_function (curr=<optimized out>,
-> > mode=<optimized out>,
-> >     wake_flags=<optimized out>, key=0xc3) at
-> > /mnt/sw/kernel-2.6.git/kernel/sched/core.c:3364
-> > 
-> > So basically:
-> >     while (p->on_cpu) {
-> > ...
-> >         cpu_relax();
-> >     }
-> > 
-> > 
-> > And the other vcpu is here:
-> > 
-> > #0  tg_load_down (tg=0xf55b9c00, data=<optimized out>) at
-> > /mnt/sw/kernel-2.6.git/kernel/sched/fair.c:3351
-> > #1  0xc0470049 in walk_tg_tree_from (from=0xc0ba5400, down=0xc04753c0
-> > <tg_load_down>, up=0xc046a3b0 <tg_nop>,
-> >     data=0x0) at /mnt/sw/kernel-2.6.git/kernel/sched/core.c:664
-> > #2  0xc04793f7 in walk_tg_tree (data=<optimized out>, up=<optimized
-> > out>, down=0xc04753c0 <tg_load_down>)
-> >     at /mnt/sw/kernel-2.6.git/kernel/sched/sched.h:175
-> > #3  update_h_load (cpu=<optimized out>) at
-> > /mnt/sw/kernel-2.6.git/kernel/sched/fair.c:3361
-> > #4  load_balance_fair (lb_flags=<synthetic pointer>,
-> > idle=CPU_NEWLY_IDLE, sd=0xf5c30800, max_load_move=278,
-> >     busiest=0xf6607d00, this_cpu=1, this_rq=0xf6707d00) at
-> > /mnt/sw/kernel-2.6.git/kernel/sched/fair.c:3374
-> > #5  move_tasks (lb_flags=<synthetic pointer>, idle=CPU_NEWLY_IDLE,
-> > sd=0xf5c30800, max_load_move=278,
-> >     busiest=<optimized out>, this_cpu=1, this_rq=0xf6707d00)
-> >     at /mnt/sw/kernel-2.6.git/kernel/sched/fair.c:3444
-> > #6  load_balance (this_cpu=1, this_rq=0xf6707d00, sd=0xf5c30800,
-> > idle=CPU_NEWLY_IDLE, balance=0xf5217cb4)
-> >     at /mnt/sw/kernel-2.6.git/kernel/sched/fair.c:4496
-> > #7  0xc0479be2 in idle_balance (this_cpu=1, this_rq=0xf6707d00)
-> >     at /mnt/sw/kernel-2.6.git/kernel/sched/fair.c:4640
-> > 
-> > 
-> > Based on the file in question (sched/fair.c) I took a stab at guessing
-> > the commit: without a195f004 I was not able to lock it up. With the
-> > patch the VM spins after a few hackbench iterations.
-> > 
-> > I don't have time for a proper bisect tonight. I can do that in the a.m.
-> > if I am not totally off base here. Peter: any chance this commit could
-> > explain the spinning cpus / system freeze?
+On 11-01-2012 06:36, Guennadi Liakhovetski wrote:
+> On Tue, 10 Jan 2012, Olof Johansson wrote:
 > 
-> It could, I certainly ran into similar issues while developing that
-> patch. I ran into all sorts of weird stuff but had hoped I'd cured all
-> of it.
+>> On Tue, Jan 10, 2012 at 6:31 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>> Hi Mauro,
+>>>
+>>> Today's linux-next merge of the v4l-dvb tree got conflicts in a large
+>>> number of files between commits from the arm-soc tree and commits from the
+>>> v4l-dvb tree.  You have rebased the v4l-dvb tree onto v3.2 while the
+>>> arm-soc tree had merged a previous version. you have then added a lot
+>>> more commits on top of the result - which produces all the conflicts.  :-(
+>>>
+>>> This is exactly the sort of pain I alluded to when I first noted that the
+>>> v4l-dvb tree had been merged into the arm-soc tree ...
+>>
+>> We do this every now and then though, it's not an issue as long as
+>> nothing stupid is done with the dependent branch at the other end.
+>> I.e. if it's actually a stable branch (which we got promised that it
+>> was).
+>>
+>> So, why was the whole v4l tree rebased? Guennadi, you said it was
+>> going to be a stable branch? What happened?
 > 
-> If Eric can confirm this is indeed what is causing his pain, I'm fine
-> with reverting it and having another go at it later. How easy is it to
-> reproduce using your KVM thing?
+> Sorry, I don't think I _promised_ anything, I even don't think I said 
+> anything at all about the stability of that branch. On the contrary - I 
+> suggested you to only take _one_ patch, about which we knew, that some ARM 
+> patches depended upon, for which I've got Mauro's ack. This has been done 
+> with the sole purpose for you to avoid any dependencies. Instead you 
+> decided to pull the whole branch.
+
+What I and Guennadi agreed (http://linuxtv.org/irc/v4l/index.php?date=2012-01-05)
+were to do just the reverse:
+
+He would be sending you one single patch with my ack, that would allow the 
+arm tree to be merged [1], I would wait for a few days for the arm tree to
+be pulled, and then I would rebase my -next tree to remove that patch
+from it.
+
+[1] http://git.linuxtv.org/gliakhovetski/v4l-dvb.git/commitdiff/88c6599d97b489ac543fa352159a81f60bddded7
+
+My -next tree were never meant to be stable. It is just a patch repository
+where I merge from the real development repository, in order to test them
+against the hole changes. From time to time, when bad things happen
+(patch conflicts, compilation breakages, requests to remove bad patches),
+I just rebase it.
+
+The media stable tree is stored elsewhere, but it contains the sort of patches
+that Linus once asked me to not send him: merge patches from upstream
+that are sometimes needed, due to some conflict dependencies. This time,
+there are two of such patches inside my tree. That's a second reason
+for me to rebase.
+
+>>> Not happy.
+>>
+>> No kidding.  Mauro, can you undo your rebase or should I remove the
+>> dependent branch (and the at91 branch that needs it) from arm-soc
+>> instead?
+
+I prefer if you could just pick this patch from Guennadi's tree:
+ http://git.linuxtv.org/gliakhovetski/v4l-dvb.git/commitdiff/88c6599d97b489ac543fa352159a81f60bddded7
+
+and add my ack on it, removing the v4l-dvb merge from yours.
+
+Linus seems to prefer to have the arch trees merged before the drivers
+tree, with makes sense.
+
+Regards,
+Mauro
 > 
-> I think simply replacing the one |= LBF_NEED_BREAK with a LBF_ABORT or
-> removing that condition all-together should make the hang go away.
-> 
-> I'll try and figure out how it ends up in the infinite retry loop after
-> my brain wakes up a bit more. Maybe adding a few more NEED_BREAK bits
-> and making it a counter and overflowing it into ABORT might be good.
-> 
-> /me off to get breakfast and morning-juice..
-> 
-
-
-I let my machine run 3.2 kernel for 37 minutes with no hang, so at least
-we know there is no hardware glitch.
-
-$ uptime
- 11:26:45 up 37 min,  2 users,  load average: 201.80, 206.06, 170.68
-
-I'll try now latest tree with a195f004 reverted.
-
-Thanks
-
+> Thanks
+> Guennadi
+> ---
+> Guennadi Liakhovetski, Ph.D.
+> Freelance Open-Source Software Developer
+> http://www.open-technology.de/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-next" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
