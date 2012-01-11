@@ -1,73 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757492Ab2AKMui (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 07:50:38 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:65158 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754477Ab2AKMuh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 07:50:37 -0500
-Date: Wed, 11 Jan 2012 15:51:37 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: nagarjun kommineni <nagarjunkommineni@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org
-Subject: Re: high speed cams are not working on usbip
-Message-ID: <20120111125137.GF16258@mwanda>
-References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
- <20120110103929.GH3644@mwanda>
- <CAKPZvrah6P4vR9vsrbtTzWwz=tVAE_eyabUhGt4+C39N4Cft8w@mail.gmail.com>
+	id S1757499Ab2AKMxu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 07:53:50 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:42892
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757158Ab2AKMxs convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 07:53:48 -0500
+X-SpamScore: -10
+X-BigFish: VS-10(zz9371I1432N98dKzz1202hzz8275bh8275dhz2dhc1ahc1bh2a8h668h839h)
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+Date: Wed, 11 Jan 2012 20:53:38 +0800
+From: Richard Zhao <richard.zhao@freescale.com>
+To: Richard Zhao <richard.zhao@linaro.org>
+CC: Eric Miao <eric.miao@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
+        <patches@linaro.org>, <vinod.koul@intel.com>,
+        <linux-kernel@vger.kernel.org>, <kernel@pengutronix.de>,
+        <dan.j.williams@intel.com>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 6/6] dma/imx-sdma: check whether event_id0 < 32 when set
+ event_mask
+Message-ID: <20120111125337.GA27484@b20223-02.ap.freescale.net>
+References: <1326178910-14044-1-git-send-email-richard.zhao@linaro.org>
+ <1326178910-14044-6-git-send-email-richard.zhao@linaro.org>
+ <20120110142008.GE26599@S2101-09.ap.freescale.net>
+ <20120110142939.GB2019@richard-laptop>
+ <20120110153836.GA27831@S2101-09.ap.freescale.net>
+ <20120111005322.GB2414@b20223-02.ap.freescale.net>
+ <20120111014730.GE2414@b20223-02.ap.freescale.net>
+ <CAMPhdO9sGWTomtyMSTe_jC2GfvtdLR=M-z3Uzpesm9efBzhSqA@mail.gmail.com>
+ <20120111123555.GA1916@richard-laptop>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="B0nZA57HJSoPbsHY"
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Disposition: inline
-In-Reply-To: <CAKPZvrah6P4vR9vsrbtTzWwz=tVAE_eyabUhGt4+C39N4Cft8w@mail.gmail.com>
+In-Reply-To: <20120111123555.GA1916@richard-laptop>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A020208.4F0D8598.0161,ss=1,re=0.000,fgs=0
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 11, 2012 at 08:35:57PM +0800, Richard Zhao wrote:
+> On Wed, Jan 11, 2012 at 02:37:08PM +0800, Eric Miao wrote:
+> > On Wed, Jan 11, 2012 at 9:47 AM, Richard Zhao
+> > <richard.zhao@freescale.com> wrote:
+> > > On Wed, Jan 11, 2012 at 08:53:23AM +0800, Richard Zhao wrote:
+> > >> On Tue, Jan 10, 2012 at 11:38:39PM +0800, Shawn Guo wrote:
+> > >> > On Tue, Jan 10, 2012 at 10:29:42PM +0800, Richard Zhao wrote:
+> > >> > > On Tue, Jan 10, 2012 at 10:20:10PM +0800, Shawn Guo wrote:
+> > >> > > > On Tue, Jan 10, 2012 at 03:01:50PM +0800, Richard Zhao wrote:
+> > >> > > > > Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
+> > >> > > > > ---
+> > >> > > >
+> > >> > > > I think it deserves a sensible commit message explaining why the patch
+> > >> > > > is needed.
+> > >> > > If event_id0 < 32, 1 << (sdmac->event_id0 - 32) is not zero.
+> > >> This meant to make you clear about the patch. I'll add it in commit
+> > >> message.
+> > > unsigned int t = 31;
+> > > printf("%d %08x\n", t, 1 << (t-32));
+> > >
+> > > I test above code on both x86 and arm. They shows different results.
+> > > x86: 31 80000000
+> > > arm: 31 00000000
+> > >
+> > > I think we still need this patch. we shoud not let it depends on gcc's
+> > > behavior.
+> > >
+> > > Thanks
+> > > Richard
+> > >> > >
+> > >> > My point is you may explain the exact problem you are seeing without
+> > >> > this patch
+> > >> The kernel don't have event_id < 32 case yet. I found the bug when
+> > >> I review the code.
+> > >> > and how the patch helps here.  In general, doing so would
+> > >> > win a warm feeling from reviewers much more easily than leaving the
+> > >> > commit message empty there.
+> > >> I understand your point that comment as much as possible.
+> > >>
+> > 
+> > Shawn,
+> > 
+> > I think Richard has made the issue quite clear here, the original
+> > code does seem to have some problems even to me, who do not
+> > understand the very details of the SDMA:
+> > 
+> > -                       sdmac->event_mask0 = 1 << sdmac->event_id0;
+> > -                       sdmac->event_mask1 = 1 << (sdmac->event_id0 - 32);
+> > 
+> > 1. if sdmac->event_id0 >= 32, which will cause event_mask0 to be incorrect
+> > 2. if sdmac->event_id < 32, sdmac->event_mask1 will be incorrect
+> > 
+> > An alternate way is to use the standard bit operations:
+> > 
+> > struct sdma_channel {
+> > 
+> > 	...
+> > 
+> > 	unsigned long event_mask[2];
+> > 
+> > 	...
+> > };
+> > 
+> > 	set_bit(sdmac->event_id0, event_mask);
+> > 
+> > Which avoids branch instructions and add a bit protection for the operation
+> > to be atomic enough (event_mask0/1 won't be inconsistent).
+> It's a good idea.
+I'm not sure whether I can always use bitops for every bit operation case,
+event it don't need atomic. bitops has locks to be atomic. 
 
---B0nZA57HJSoPbsHY
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks
+Richard
+> Thanks
+> Richard
+> 
 
-On Wed, Jan 11, 2012 at 06:12:31PM +0530, nagarjun kommineni wrote:
-> hi,
->=20
-> I tested it on 3.1.4.
-
-Did it work when you tested it?  Which kernel worked and which
-kernel failed?
-
-regards,
-dan carpenter
-
-
---B0nZA57HJSoPbsHY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJPDYXYAAoJEOnZkXI/YHqRpx4P/AsRnNJmrrSIKcois7QyHyU2
-Z6oKT2eyrwcnyukCEFRyj7ALJaK+zA3xijU37VDhpuRumbw7vjAOL8oAfEdqq6hm
-a5DEhUtS4+pBnUI+W5csLGwk40+zfRYLxgqv0fmjr86aLp5odxfgz6TC7iDS4QHN
-5wbLhUlVEK6HM4+P8JXWiUoZ2ylKTZ+FLLNBoNm51u/3Ir+J1hQMl7Lyw2Ku42yq
-X0poNLKtEeqL2sIRrUfgj/2iaT/AfjTL82LUp6sUtidcgBYcchn2XyH06tfKFpvf
-HR+A9fB5a1/HQQCMAf0EDXSgHNDnyhwt/91E+t9vbJKCpvUu2XJxhEy/yNbbnMdq
-J6AClV0aZi5FaMrMDmDfYbzuqK7niDSsTeDsl8gjUX2huBX+KCXzb6HdnZrQtUPK
-wCnNwJb/FgEZqUtMbROM2nez9MpJiqKgoNGB+AJuCmji74Hd4HtgJntXqL3PZGbe
-Elz1OV51keUmsYVrIiHE9BFhG9KiNSC3kpCeeBYKhpRqh5wtMHJqafav6bHYGC/c
-mFfHNGEaEKC8h6Q8mpbJrUS5GSVYMtEiGW12PCX5jPkUjbWQjKW+dvxNcinxILzo
-gjFR8zIFgex7DCF7FLZ2I3Ro62+p58cpb+c/cL58npeZDaBymqN8N+QeL0+SfrL4
-FOs9iZudKdhdgTr3zUMd
-=+JXv
------END PGP SIGNATURE-----
-
---B0nZA57HJSoPbsHY--
