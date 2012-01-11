@@ -1,49 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2AKHf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 02:35:57 -0500
-Received: from tundra.namei.org ([65.99.196.166]:53848 "EHLO tundra.namei.org"
+	id S1756434Ab2AKHli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 02:41:38 -0500
+Received: from verein.lst.de ([213.95.11.211]:44584 "EHLO newverein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752457Ab2AKHf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 02:35:56 -0500
-Date: Wed, 11 Jan 2012 18:35:50 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Kasatkin <dmitry.kasatkin@intel.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>
-Subject: Re: [GIT] Security subsystem updates for 3.3
-In-Reply-To: <CA+55aFwD2-bhd32L1SsjPQrpwOBhBdxTUaOj=oXN24vPwc+Wsg@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1201111834570.2966@tundra.namei.org>
-References: <alpine.LRH.2.00.1201091252220.18816@tundra.namei.org> <CA+55aFwD2-bhd32L1SsjPQrpwOBhBdxTUaOj=oXN24vPwc+Wsg@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754769Ab2AKHlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 02:41:37 -0500
+Date: Wed, 11 Jan 2012 08:41:35 +0100
+From: Christoph Hellwig <hch@lst.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
+        Ben Myers <bpm@sgi.com>
+Subject: Re: [41/42] xfs: validate acl count
+Message-ID: <20120111074135.GA30829@lst.de>
+References: <20120110215031.GA19398@kroah.com> <20120110215024.482323323@clark.kroah.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120110215024.482323323@clark.kroah.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Jan 2012, Linus Torvalds wrote:
+On Tue, Jan 10, 2012 at 01:48:51PM -0800, Greg KH wrote:
+> 3.1-stable review patch.  If anyone has any objections, please let me know.
 
-> Hmm. The CONFIG_MPI/DIGSIG thing really should go away as a question,
-> I think. I'd expect modules that need it to select it, there's no
-> point in asking a user "do you want this enabled" afaik.
+Just curious, how well tested are all the patches on 2.6.32 and 3.1 hat I only
+submitted for 3.0?  I'd really prefer if they at least get an xfstest run
+before they get sent out to the world.
 
-Ok.
-
-> 
-> And "DIGSIG" is really a horrible config name. Did somebody run out of
-> letters suddenly? Is there some global letter shortage that I haven't
-> been told of and that we should do something about?
-
-Any objections to DIGITAL_SIGNATURE_API ?
-
-> But I pulled it. Please do fix it up, though.
-
-Thanks, will do.
-
-
-- James
--- 
-James Morris
-<jmorris@namei.org>
