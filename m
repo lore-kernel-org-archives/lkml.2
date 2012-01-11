@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab2AKJRa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 04:17:30 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:56125 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754816Ab2AKJR1 (ORCPT
+	id S1757330Ab2AKJUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 04:20:01 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:38126 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755599Ab2AKJT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 04:17:27 -0500
-Message-ID: <4F0D538C.5040202@de.ibm.com>
-Date: Wed, 11 Jan 2012 10:17:00 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sched/s390: fix compile error in sched/core.c
-References: <1326268696-30904-1-git-send-email-borntraeger@de.ibm.com> <1326272868.2442.122.camel@twins>
-In-Reply-To: <1326272868.2442.122.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-x-cbid: 12011109-0542-0000-0000-000000A28E7B
+	Wed, 11 Jan 2012 04:19:57 -0500
+Message-ID: <1326273585.8938.1.camel@phoenix>
+Subject: [PATCH] power_supply: Fix modalias for charger-manager
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Donggeun Kim <dg77.kim@samsung.com>
+Date: Wed, 11 Jan 2012 17:19:45 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/01/12 10:07, Peter Zijlstra wrote:
-> On Wed, 2012-01-11 at 08:58 +0100, Christian Borntraeger wrote:
->> From: Christian Borntraeger <borntraeger@de.ibm.com>
->>
->> commit 029632fbb7b7c9d85063cc9eb470de6c54873df3
->>     sched: Make separate sched*.c translation units
->>
->> removed the include of asm/mutex.h from sched.c. This breaks the combination of
->>
->> CONFIG_MUTEX_SPIN_ON_OWNER=yes
->> CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX=yes
->> like s390 without mutex debugging:
->>
->>   CC      kernel/sched/core.o
->> kernel/sched/core.c: In function ‘mutex_spin_on_owner’:
->> kernel/sched/core.c:3287: error: implicit declaration of function ‘arch_mutex_cpu_relax’
->> make[2]: *** [kernel/sched/core.o] Error 1
->>
->> Lets re-add the include to kernel/sched/core.c
-> 
-> Weird, I would have expected -next to pick this up.. 
-Maybe the builds of next runs with DEBUG_MUTEXES, which disables MUTEX_SPIN_ON_OWNER.
+Since 43cc71eed1250755986da4c0f9898f9a635cb3bf, the platform
+modalias is prefixed with "platform:".
+Current code has the id_table, thus add MODULE_DEVICE_TABLE will
+automatically setup the modalias.
 
-> Anyway, no objection although do we really need that extra #ifdef ?
+Also make charger_manager_id static as it is only used in this driver.
 
-Dont think so. I consider this more as a comment why we need this. Whoever applies the patch,
-feel free to remove the ifdefs.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/power/charger-manager.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Christian
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 0378d01..88fd971 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -974,10 +974,11 @@ static int __devexit charger_manager_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-const struct platform_device_id charger_manager_id[] = {
++static const struct platform_device_id charger_manager_id[] = {
+ 	{ "charger-manager", 0 },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(platform, charger_manager_id);
+ 
+ static int cm_suspend_prepare(struct device *dev)
+ {
+@@ -1069,4 +1070,3 @@ module_exit(charger_manager_cleanup);
+ MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
+ MODULE_DESCRIPTION("Charger Manager");
+ MODULE_LICENSE("GPL");
+-MODULE_ALIAS("charger-manager");
+-- 
+1.7.5.4
+
+
 
