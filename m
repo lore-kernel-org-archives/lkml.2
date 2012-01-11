@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab2AKSNR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 13:13:17 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49286 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab2AKSNO (ORCPT
+	id S933739Ab2AKSOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 13:14:08 -0500
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:44012 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933586Ab2AKSOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 13:13:14 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Junio C Hamano <gitster@pobox.com>
-Subject: Re: [GIT PULL 05/11] SoC-level changes for tegra and omap
-Date: Wed, 11 Jan 2012 18:12:46 +0000
-User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org
-References: <1326147171-13752-1-git-send-email-arnd@arndb.de> <CA+55aFw15sw0PWtom88vJx1M45CLuvpZABQAxMOQ+xowz8Xq2A@mail.gmail.com> <7vty438575.fsf@alter.siamese.dyndns.org>
-In-Reply-To: <7vty438575.fsf@alter.siamese.dyndns.org>
+	Wed, 11 Jan 2012 13:14:03 -0500
+Message-ID: <4F0DDF08.1000005@xenotime.net>
+Date: Wed, 11 Jan 2012 11:12:08 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] menuconfig: add Home and End keys support for
+ inputbox
+References: <20120109113633.24486.69758.stgit@localhost6.localdomain6>	<20120109113641.24486.95511.stgit@localhost6.localdomain6>	<4F0B6845.4080503@xenotime.net>	<CAPiS6wCVo40tB40sXTzTt7RpVHJG_2wrYeP8L=ghin09WHftfg@mail.gmail.com>	<4F0C75A5.6000000@xenotime.net> <CAPiS6wDYrryyPimun2N0xFCY3xCTDAS+tKKAmuZGjbSUjWpZGw@mail.gmail.com>
+In-Reply-To: <CAPiS6wDYrryyPimun2N0xFCY3xCTDAS+tKKAmuZGjbSUjWpZGw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201201111812.46431.arnd@arndb.de>
-X-Provags-ID: V02:K0:zEnQt7IlbSletNY1eDSs6xgukWJAemOxLEnsSyb/ZuO
- NTKfYH1VFFYZsa3CJl1OSndHEWzk0JqKnoUz9fNwuGP6j+8G14
- 7E0wmx2LxlOES12VTc8fIJaYXOvUW5VxzY4+IpE9h9Hd/OHkn7
- sWx6KuAojAgY5QktNSf7CdclRC16Kyg3J3X1+WIrwUcAiaGRY3
- ya7mZfpQkjjbUS+tXqLDeasJjS7y4J+FaVG2Is/WycA6o5xrmz
- twRXE/MB3d/QcWqm9X8dotajNMsH319KzHCfpXu8fLKDbaXvD0
- xHU7wKcpjX5GoIt5si7NNHKzuOYOD7V9I6tkveT0/Y0qAT/N+4
- eah4gCuAaPcTN97QgtNA=
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 January 2012, Junio C Hamano wrote:
+On 01/11/2012 01:21 AM, Paulius Zaleckas wrote:
+> On Tue, Jan 10, 2012 at 7:30 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> On 01/10/2012 03:50 AM, Paulius Zaleckas wrote:
+>>> On Tue, Jan 10, 2012 at 12:20 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>>>> On 01/09/2012 03:36 AM, Paulius Zaleckas wrote:
+>>>>> Makes long string editing easier.
+>>>>>
+>>>>> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+>>>>
+>>>> Hi,
+>>>>
+>>>> Does "default hostname" in the "General setup" menu use an inputbox?
+>>>
+>>> Yes, it does.
+>>>
+>>>> If so, I can't get Home and End keys to work for it.
+>>>
+>>> Strange. It works for me. Have you applied both patches?
+>>
+>> Yes, I have both patches applied.
 > 
-> Linus Torvalds <torvalds@linux-foundation.org> writes:
+> Ok this is really very strange, but I have made debug patch. See attachement.
+> It will print octal pressed key value just below the text field.
 > 
-> > On Tue, Jan 10, 2012 at 12:39 AM, Russell King - ARM Linux
-> > <linux@arm.linux.org.uk> wrote:
-> >>
-> >> What about using -C instead (which implies -M, but also detects copies) ?
-> >
-> > I don't mind -C. It sometimes causes differences to what I see by
-> > default, but those differences are often interesting.
-> >
-> > But while it's interesting and relevant (unlike the non-rename patch
-> > that is just noisy), it also can hide lots of lines. With -C, you can
-> > get a diffstat that is actually fairly small, but that adds a lot of
-> > lines to the kernel (because somebody just copied large files with
-> > small changes), and if that happens I do want to see it as a "big
-> > change". So for me, the plain "just show renames" is a good default.
-> >
-> > So there is absolutely nothing wrong with -C. It's not what I use, but
-> > when I see that the diffstats don't match, it's easy to notice why,
-> > and that information is often fairly interesting, so I don't mind.
+> From curses.h:
+> #define KEY_HOME	0406		/* home key */
+> #define KEY_END		0550		/* end key */
 > 
-> How about encouraging people to use stock "git request-pull" instead?
-> 
-> Then best/better practices can be captured as improvement patches to it,
-> instead of being spread as updates to many people's homebrew scripts, no?
+> Do you get the same values for Home and End keys? I do.
 
-I keep having trouble in multiple ways with git request-pull, so I ended
-up running it as part of a script on fictional commits, removing the
-diffstat output, adding a new diffstat output that actually refered to
-the contents I was sending (though forgetting to use -M, as Linus noted)
-and adding the necessary headers that let me send out the series of
-pull requests using git send-email.
+All that I see in the inputbox when I use Home or End is:
 
-I think that request-pull is fixable, but I'm not completely sure
-if I'm misunderstanding something myself.
+033
 
-To give a realistic example, lets assume I have three branches I
-want to send out as individual pull requests. Each of these branch
-is the result of merging multiple of my downstream branches:
+(ESCape key)
 
-* Branch A (fixes) contains a bunch of bug fixes collected from
-various people that have sent me a pull request. Some of these
-are based on v3.3-rc2, others are based on v3.3-rc3 or v3.3-rc4,
-so the resulting tree is based on v3.3-rc4.
 
-* Branch B (cleanups) contains cleanup patches from multiple
-sources. Some of the branches I pulled in here also contain
-commits that I have on the fixes branches from the same
-people, but most don't. The latest branch I have pulled in is
-based on v3.3-rc5, so this has a newer base than Branch A,
-but is not a complete superset of it.
+Could this have anything to do with me using xfce (xfce4)?
 
-* Branch C (features) contains new stuff from various people,
-some of whom are basing them on top of branches that went into
-A and/or B. It also contains v3.3-rc4 but no later upstream
-code. However, one of the branches has a dependency on an external
-tree (typically Russell's devel-stable branch), so that gets
-pulled into C and I would wait for the dependency to get upstream
-before submitting C.
-
-Now let's assume that all dependencies are merged upstream already
-and I just want to send out three pull requests. The first
-pull request generally works fine, though it could be that some
-version of git in the past would include the diff between v3.3-rc2
-and v3.3-rc4 in the diffstat. For the second pull request, I merge
-v3.3 with A and send do 'git request-pull B origin
-tmp-merge-of-upstream-and-A'. This seems to generate the correct
-list of patches, but the wrong diffstat (diffstat also contains
-the diff between v3.3-rc4 and v3.3-rc5, although that is indeed
-part of tmp-merge-of-upstream-and-A. For submitting branch C,
-I have to merge upstream, A, B and the dependencies together
-and then send a pull request against that. This typically also
-includes the external dependencies in the diffstat.
-
-	Arnd
+thanks,
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
