@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab2AKCKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 21:10:24 -0500
-Received: from mail.hq.newdream.net ([66.33.206.127]:46500 "EHLO
-	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756700Ab2AKCKX (ORCPT
+	id S933720Ab2AKCSS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 21:18:18 -0500
+Received: from emcscan.emc.com.tw ([192.72.220.5]:50450 "EHLO
+	emcscan.emc.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932437Ab2AKCSQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 21:10:23 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=dreamhost.com; h=message-id
-	:subject:from:reply-to:to:cc:date:in-reply-to:references
-	:content-type:content-transfer-encoding:mime-version; q=dns; s=
-	dreamhost.com; b=NBXEMVQHIKLP3nZ30iTn4dUSucuVPiG6n073K+X/cMcxMu7
-	FurQ4tfGZAeItsR7APtBQysOzLAqBP5wudXGkqcYPbMioksRuac/oCoPRxLVszf9
-	tQgP1aGE0JCZAIMgiwAxbZvjqtpqgMHJDv3ATIWOC16HBnNXzsBduasuOzVM=
-Message-ID: <1326247822.2443.18.camel@doink>
-Subject: Re: linux-next: manual merge of the ceph tree with Linus' tree
-From: Alex Elder <elder@dreamhost.com>
-Reply-To: elder@dreamhost.com
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Sage Weil <sage@newdream.net>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Tue, 10 Jan 2012 18:10:22 -0800
-In-Reply-To: <20120111013127.GE23916@ZenIV.linux.org.uk>
-References: <20120111122744.7db3bfb91d79b1307db02228@canb.auug.org.au>
-	 <20120111013127.GE23916@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Tue, 10 Jan 2012 21:18:16 -0500
+X-Greylist: delayed 597 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jan 2012 21:18:16 EST
+From: JJ Ding <jj_ding@emc.com.tw>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, JJ Ding <dgdunix@gmail.com>
+Subject: Re: [PATCH TRIVIAL 1/5] Input: keyboard: use macro module_platform_driver()
+In-Reply-To: <CAMuHMdU1fv-Qx1dRstFjBkqcKswWCu34Hkeusk1vW3ReXB7CDA@mail.gmail.com>
+References: <1321952446-7591-1-git-send-email-jj_ding@emc.com.tw> <1321952446-7591-2-git-send-email-jj_ding@emc.com.tw> <CAMuHMdWVedppkaO5sF4WH78e8rdVJKXJknFVEZQo+VD2Rxmk=A@mail.gmail.com> <CAMuHMdU1fv-Qx1dRstFjBkqcKswWCu34Hkeusk1vW3ReXB7CDA@mail.gmail.com>
+User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Wed, 11 Jan 2012 10:07:38 +0800
+Message-ID: <87lipf9el1.fsf@emc.com.tw>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 01:31 +0000, Al Viro wrote:
-> On Wed, Jan 11, 2012 at 12:27:44PM +1100, Stephen Rothwell wrote:
-> > Hi Sage,
-> > 
-> > Today's linux-next merge of the ceph tree got a conflict in
-> > fs/ceph/super.c between commit 3c5184ef1216 ("ceph: d_alloc_root() may
-> > fail") from Linus' tree and commit 26d913cdd955 ("ceph: always initialize
-> > the dentry in open_root_dentry()") from the ceph tree.
-> > 
-> > I fixed it up (see below) and can carry the fix as necessary.
-> 
-> Ahem...  
-> 
-> >  +			root = d_obtain_alias(inode);
-> >  +		}
-> > + 		ceph_init_dentry(root);
-> 
-> What will happen if dentry returned by d_obtain_alias() had already existed?
+Hi Geert,
 
-I had *exactly* the same reaction, and maybe the code would
-have been a little less surprising if the null check were
-in the caller (here)  rather than in ceph_init_dentry().
+On Tue, 10 Jan 2012 21:57:08 +0100, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Tue, Jan 10, 2012 at 21:47, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> 
+> And looking for platform_driver_probe() in recent changesets, I found
+> a few more:
+> 
+> drivers/input/touchscreen/atmel-wm97xx.c atmel_wm97xx_probe
+> drivers/input/touchscreen/mc13783_ts.c mc13783_ts_probe
+> drivers/input/serio/at32psif.c psif_probe
+> drivers/input/mouse/amimouse.c amimouse_probe
+> 
+> Interestingly, in drivers/input/misc/twl4030-pwrbutton.c you did make
+> platform_driver.probe point to twl4030_pwrbutton_probe().
+> But that one is also broken, as twl4030_pwrbutton_probe() is marked __init,
+> which is no longer correct.
+> 
+> Still, setting up platform_driver.probe and removing __init from all probe
+> functions is not the right thing to do, as this make (non-__init) kernel code
+> size bigger, while none of these devices are hotpluggable and thus cannot
+> appear after bootup. That's why we have platform_driver_probe() in the
+> first place. So I think all of this should be reverted for non-hotpluggable
+> drivers.
 
-					-Alex
+Thank you for explaining this.
+I am sorry for the trouble.
 
+jj
+
+> Gr{oetje,eeting}s,
+> 
+>                         Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
+> 
