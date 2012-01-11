@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757412Ab2AKQ0u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:26:50 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62264 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab2AKQ0s (ORCPT
+	id S1757321Ab2AKQbi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:31:38 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:47369 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab2AKQbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:26:48 -0500
-Date: Wed, 11 Jan 2012 17:26:44 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org,
-        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
-        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
-        namhyung@gmail.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 8/9] stacktrace: implement save_stack_trace_quick()
-Message-ID: <20120111162642.GC7991@somewhere.redhat.com>
-References: <1326220106-5765-1-git-send-email-tj@kernel.org>
- <1326220106-5765-9-git-send-email-tj@kernel.org>
+	Wed, 11 Jan 2012 11:31:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326220106-5765-9-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1326297936.2442.157.camel@twins>
+References: <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
+ <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
+ <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+ <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
+ <1326234230.2614.15.camel@edumazet-laptop> <CA+55aFwYmX7q4MZc-xOStZB2ZQjVt_Jca6qDP+0cPKekz8yL+A@mail.gmail.com>
+ <4F0D2D9B.8030501@gmail.com> <1326272685.2442.120.camel@twins>
+ <1326284711.2442.138.camel@twins> <20120111155658.GB26659@elte.hu> <1326297936.2442.157.camel@twins>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 11 Jan 2012 08:31:12 -0800
+X-Google-Sender-Auth: A981ttHlZH6Nr-pe9K8xCOIpbbI
+Message-ID: <CA+55aFyyBpDR_oYu9EizwPf63q3Q=44Yw_jXd0Ozk0Ei1TtZJQ@mail.gmail.com>
+Subject: Re: [BUG] kernel freezes with latest tree
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, David Ahern <dsahern@gmail.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 10:28:25AM -0800, Tejun Heo wrote:
-> Implement save_stack_trace_quick() which only considers the usual
-> contexts (ie. thread and irq) and doesn't handle links between
-> different contexts - if %current is in irq context, only backtrace in
-> the irq stack is considered.
+On Wed, Jan 11, 2012 at 8:05 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+> Ah, right! Silly me. One possibility is to rotate that list, except that
+> won't work for the cgroup case where we have another iteration.
 
-The thing I don't like is the duplication that involves not only on
-stack unwinding but also on the safety checks.
+I just wonder whether you *really* need that loop at all?
 
-What about making struct stacktrace_ops::stack() return a value
-that either stops or continue the trace? In your case EOE/EOI would
-be the triggering condition.
+If something went wrong with the attempted task move - you raced with
+another cpu, or whatever - is there any real reason to even bother to
+try again?
 
-Filtering stack contexts might in fact be a desirable generic feature
-overall.
+It's just a heuristic, after all, and we'll come back to balancing later.
 
-At least in perf we could be interested in filtering kernel/user contexts.
-And in your case in stopping after the first context. I also don't know if
-we will be interested in filtering irq/exception/process stacks in the future
-but I prefer to ensure we have a flexible enough interface to allow that.
+The minimal patch looks good, but I did want to ask whether people
+have considered just removing the looping entirely?
 
-So it may be a good idea to reuse the exisiting code for your needs like
-a stack() return value as above. And if the post processing will be done
-from userspace (which I really hope) then extend the ftrace/perf interface
-to allow your quick filtering, something that can be later extended to
-allow more finegrained stacktrace filtering.
-
-> This is subset of dump_trace() done in much simpler way.  It's
-> intended to be used in hot paths where the overhead of dump_trace()
-> can be too heavy.
-
-Is it? Have you found a measurable impact (outside the fact you record only
-one stack).
-
-Thanks.
+                           Linus
