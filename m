@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933758Ab2AKUik (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:38:40 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:48976 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933006Ab2AKUii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:38:38 -0500
-Date: Wed, 11 Jan 2012 12:38:37 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Tim Gardner <tim.gardner@canonical.com>
-Cc: linux-fsdevel@vger.kernel.org, tyler.hicks@canonical.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ecryptfs: Print inode on metadata error
-Message-ID: <20120111203837.GS2618@outflux.net>
-References: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com>
- <1326301242-5817-3-git-send-email-tim.gardner@canonical.com>
+	id S1758085Ab2AKUlG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:41:06 -0500
+Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:53839 "HELO
+	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751097Ab2AKUlD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 15:41:03 -0500
+Message-ID: <4F0E017B.9060602@xenotime.net>
+Date: Wed, 11 Jan 2012 13:39:07 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326301242-5817-3-git-send-email-tim.gardner@canonical.com>
-Organization: Chromium
-X-HELO: www.outflux.net
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au
+Subject: Re: [RFC 0/14] Finish up irq_domain generalization
+References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+In-Reply-To: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 06:00:42PM +0100, Tim Gardner wrote:
-> If a lower file system file is corrupted, then ecryptfs prints
-> a generic and mostly useless log message when attempting to
-> read metadata. Print the inode associated with the file
-> so that a user can do something about it, e.g.,
-> 
-> find -inum INODE_NUM
-> 
-> Cc: linux-kernel@vger.kernel.org
-> Cc: stable@vger.kernel.org
-> Cc: Tyler Hicks <tyler.hicks@canonical.com>
-> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+On 01/11/2012 12:22 PM, Grant Likely wrote:
+> Here are the patches that I've been working on to finish up the creation
+> of the generic irq_domain infrastructure.
 
-Reviewed-by: Kees Cook <keescook@chromium.org>
+Does this fix the linux-next build problems that I have reported?
 
--Kees
+https://lkml.org/lkml/2012/1/9/318
 
+
+>  kernel/irq/irqdomain.c                           |  733 ++++++++++++++++++----
+
+thanks,
 -- 
-Kees Cook
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
