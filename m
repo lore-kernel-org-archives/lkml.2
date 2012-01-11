@@ -1,143 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757587Ab2AKOkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 09:40:22 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:46179 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756374Ab2AKOkU (ORCPT
+	id S933020Ab2AKOqI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 09:46:08 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:50252 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757528Ab2AKOqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 09:40:20 -0500
-Date: Wed, 11 Jan 2012 15:40:14 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org,
-        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
-        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
-        namhyung@gmail.com
-Subject: Re: [RFC PATCHSET take#2] ioblame: IO tracer with origin tracking
-Message-ID: <20120111144012.GB7991@somewhere.redhat.com>
-References: <1326220106-5765-1-git-send-email-tj@kernel.org>
+	Wed, 11 Jan 2012 09:46:06 -0500
+Date: Wed, 11 Jan 2012 09:30:11 -0500
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Bastien ROUCARIES <roucaries.bastien@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-wireless@vger.kernel.org
+Subject: Re: Fwd: Warning in wifi card
+Message-ID: <20120111143011.GB11093@tuxdriver.com>
+References: <CAE2SPAbTDbGjuM6rNmjzw0X2fU_k431XkbwYuhvKtfXggOO=-w@mail.gmail.com>
+ <CAE2SPAaVtXWN+x8oaV2BkbLr6e700KizCc_39J2yp+XtWzFhXQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1326220106-5765-1-git-send-email-tj@kernel.org>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAE2SPAaVtXWN+x8oaV2BkbLr6e700KizCc_39J2yp+XtWzFhXQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+Please Cc linux-wireless@vger.kernel.org on such issues...
 
-On Tue, Jan 10, 2012 at 10:28:17AM -0800, Tejun Heo wrote:
-> Hello, guys.
+On Wed, Jan 11, 2012 at 11:04:39AM +0100, Bastien ROUCARIES wrote:
+> I get the following warning using 3.1 after going back to suspend to ram.
 > 
-> Even with blktrace and tracepoints, getting insight into the IOs going
-> on a system is very challenging.  A lot of IO operations happen long
-> after the action which triggered the IO finished and the overall
-> asynchronous nature of IO operations make it difficult to trace back
-> the origin of a given IO.
+> Seems quite current a quick google search found
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/809777
 > 
-> ioblame is an attempt at providing better visibility into overall IO
-> behavior.  ioblame hooks into various tracepoints and tries to
-> determine who caused any given IO how and charges the IO accordingly.
+> Kernel failure message 1:
+> ------------[ cut here ]------------
+> WARNING: at /home/blank/debian/kernel/release/linux-2.6/linux-2.6-3.1.6/debian/build/source_amd64_none/drivers/net/wireless/iwlwifi/iwl-core.c:1367
+> iwl_mac_remove_interface+0x39/0x5e [iwlagn]()
+> Hardware name: Dell System XPS L502X
+> Modules linked in: nls_utf8 nls_cp437 vfat fat pciehp pci_hotplug
+> mmc_block sdhci_pci sdhci mmc_core jmb38x_ms memstick dell_wmi
+> aesni_intel cryptd aes_x86_64 aes_generic ecb btusb ip6table_filter
+> ip6_tables iptable_filter ip_tables ebtable_nat ebtables x_tables cn
+> parport_pc ppdev lp parport acpi_cpufreq mperf cpufreq_powersave
+> cpufreq_conservative cpufreq_userspace bnep rfcomm cpufreq_stats
+> bluetooth binfmt_misc uinput fuse nfsd nfs lockd fscache auth_rpcgss
+> nfs_acl sunrpc coretemp loop dm_crypt kvm_intel kvm snd_hda_codec_hdmi
+> snd_hda_codec_realtek arc4 snd_hda_intel snd_hda_codec joydev iwlagn
+> uvcvideo videodev media snd_hwdep v4l2_compat_ioctl32 snd_pcm_oss
+> snd_mixer_oss snd_pcm snd_seq_midi snd_rawmidi snd_seq_midi_event
+> snd_seq nouveau ttm i915 mac80211 drm_kms_helper drm snd_timer
+> snd_seq_device i2c_algo_bit i2c_i801 i2c_core snd cfg80211 mxm_wmi
+> pcspkr battery ac sparse_keymap iTCO_wdt iTCO_vendor_support soundcore
+> wmi dell_laptop power_supply psmouse video evdev serio_raw dcdbas
+> button rfkill processor snd_page_alloc ext4 mbcache jbd2 crc16 btrfs
+> zlib_deflate crc32c libcrc32c dm_mod sr_mod sd_mod cdrom crc_t10dif
+> ahci libahci libata scsi_mod r8169 mii xhci_hcd ehci_hcd usbcore
+> thermal thermal_sys [last unloaded: dell_wmi]
+> Pid: 27387, comm: kworker/0:1 Tainted: G        W    3.1.0-1-amd64 #1
+> Call Trace:
+>  [<ffffffff81045785>] ? warn_slowpath_common+0x78/0x8c
+>  [<ffffffffa04c54f8>] ? iwl_mac_remove_interface+0x39/0x5e [iwlagn]
+>  [<ffffffffa027dc01>] ? cfg80211_event_work+0x4/0x2c [cfg80211]
+>  [<ffffffffa034f539>] ? ieee80211_do_stop+0x319/0x46a [mac80211]
+>  [<ffffffff8104abe7>] ? _local_bh_enable_ip.isra.11+0x1e/0x88
+>  [<ffffffffa027dc8b>] ? cfg80211_rfkill_set_block+0x62/0x62 [cfg80211]
+>  [<ffffffffa034f69d>] ? ieee80211_stop+0x13/0x17 [mac80211]
+>  [<ffffffff8126e437>] ? __dev_close_many+0x84/0xb0
+>  [<ffffffff8126e532>] ? dev_close_many+0x88/0xee
+>  [<ffffffff8103539b>] ? should_resched+0x5/0x23
+>  [<ffffffff8127066f>] ? dev_close+0x37/0x46
+>  [<ffffffffa027dc66>] ? cfg80211_rfkill_set_block+0x3d/0x62 [cfg80211]
+>  [<ffffffff8105a74d>] ? process_one_work+0x163/0x284
+>  [<ffffffff8105b715>] ? worker_thread+0xc2/0x145
+>  [<ffffffff8105b653>] ? manage_workers.isra.23+0x15b/0x15b
+>  [<ffffffff8105e5e5>] ? kthread+0x76/0x7e
+>  [<ffffffff81334934>] ? kernel_thread_helper+0x4/0x10
+>  [<ffffffff8105e56f>] ? kthread_worker_fn+0x139/0x139
+>  [<ffffffff81334930>] ? gs_change+0x13/0x13
+> ---[ end trace f03a55c4c1238b61 ]---
 > 
-> On each IO completion, ioblame knows who to charge the IO (task), how
-> the IO got triggered (stack trace at the point of triggering, be it
-> page, inode dirtying or direct IO issue) and various information about
-> the IO itself (offset, size, how long it took and so on).  ioblame
-> exports this information via ioblame:ioblame_io tracepoint.
 > 
-> For more details, please read Documentation/trace/ioblame.txt.
-> 
-> Changes from the last take[L] are,
-> 
-> * Per Namhyung's suggestion, in-kernel statistics gathering stripped
->   out.  All information is now exported through a tracepoint per each
->   IO.  This makes a lot of stuff unnecessary and over 1500 lines of
->   code have been removed.
-> 
-> * block_bio_complete tracepoint patch will result in duplicate
->   BLK_TA_COMPLETE notifications.  Namhyung is working on proper
->   solution.  For now, SOB is removed from the patch.
-> 
-> * Trace filter is no longer used and patches dropped from the series.
-> 
-> * Rebased on top of v3.2.
-> 
-> This patchset contains the following 9 patches.
-> 
->   0001-block-abstract-disk-iteration-into-disk_iter.patch
->   0002-block-block_bio_complete-tracepoint-was-missing.patch
->   0003-block-add-req-to-bio_-front-back-_merge-tracepoints.patch
->   0004-writeback-move-struct-wb_writeback_work-to-writeback.patch
->   0005-writeback-add-more-tracepoints.patch
->   0006-block-add-block_touch_buffer-tracepoint.patch
->   0007-vfs-add-fcheck-tracepoint.patch
->   0008-stacktrace-implement-save_stack_trace_quick.patch
->   0009-block-trace-implement-ioblame-IO-tracer-with-origin-.patch
-> 
-> 0001-0004 update block layer in preparation.
-> 
-> 0005-0007 add more tracepoints along the IO stack.
-> 
-> 0008 adds nimbler backtrace dump function as ioblame dumps stacktrace
-> extremely frequently.
-> 
-> 0009 implements ioblame.
-> 
-> This is still in early stage and I haven't done much performance
-> analysis yet.  Tentative testing shows it adds ~20% CPU overhead when
-> used on memory backed loopback device.
-> 
-> The patches are on top of v3.2 and available in the following git
-> branch.
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git review-ioblame
-> 
-> diffstat follows.
-> 
->  Documentation/trace/ioblame.txt   |  476 +++++++
->  arch/x86/include/asm/stacktrace.h |    2 
->  arch/x86/kernel/stacktrace.c      |   40 
->  block/blk-core.c                  |    5 
->  block/genhd.c                     |   98 +
->  fs/bio.c                          |    3 
->  fs/fs-writeback.c                 |   34 
->  fs/super.c                        |    2 
->  include/linux/blk_types.h         |    4 
->  include/linux/buffer_head.h       |    7 
->  include/linux/fdtable.h           |    3 
->  include/linux/fs.h                |    3 
->  include/linux/genhd.h             |   13 
->  include/linux/ioblame.h           |   72 +
->  include/linux/stacktrace.h        |    6 
->  include/linux/writeback.h         |   18 
->  include/trace/events/block.h      |   70 -
->  include/trace/events/vfs.h        |   40 
->  include/trace/events/writeback.h  |  113 +
->  kernel/stacktrace.c               |    6 
->  kernel/trace/Kconfig              |   12 
->  kernel/trace/Makefile             |    1 
->  kernel/trace/blktrace.c           |    2 
->  kernel/trace/ioblame.c            | 2279 ++++++++++++++++++++++++++++++++++++++
-
-I think this has been asked before. So sorry for asking twice.
-
-But I'm wondering why the post processing is made from the kernel. Do you think
-it would be possible to pull that out in userspace. We have some nice scripting
-framework for post processing of trace events in perf tools for example.
-
-If it's not possible please tell us why. We really would like to avoid adding such
-a big piece of code in the tracing subsystem if possible.
-
-Thanks.
-
->  mm/page-writeback.c               |    2 
->  25 files changed, 3244 insertions(+), 67 deletions(-)
-> 
-> Thanks.
-> 
+> Bastien
 > --
-> tejun
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> [L] http://thread.gmane.org/gmane.linux.kernel/1235937
+
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
