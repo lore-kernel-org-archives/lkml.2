@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167Ab2AKRXW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:23:22 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:9078 "EHLO relay.sw.ru"
+	id S933615Ab2AKRYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:24:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:9550 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755320Ab2AKRXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:23:21 -0500
-Message-ID: <4F0DC582.6030805@parallels.com>
-Date: Wed, 11 Jan 2012 21:23:14 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
- context
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>		 <1325285705.10984.4.camel@lade.trondhjem.org>	 <1325797111.11084.22.camel@lade.trondhjem.org>	 <4F0C35F3.7060508@parallels.com> <1326299003.17212.7.camel@lade.trondhjem.org>
-In-Reply-To: <1326299003.17212.7.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1757195Ab2AKRYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 12:24:34 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="106055445"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
+        "H Peter Anvin" <hpa@zytor.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tony Luck" <tony.luck@intel.com>,
+        "Arjan van de Ven" <arjan.van.de.ven@intel.com>,
+        "Suresh B Siddha" <suresh.b.siddha@intel.com>,
+        "Len Brown" <len.brown@intel.com>,
+        "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Chen Gong" <gong.chen@linux.intel.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Subject: [PATCH v5 02/12] x86/Kconfig: Add config switch for CPU0 hotplug
+Date: Wed, 11 Jan 2012 09:04:43 -0800
+Message-Id: <1326301493-28760-3-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
+References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.01.2012 20:23, Trond Myklebust пишет:
-> On Tue, 2012-01-10 at 16:58 +0400, Stanislav Kinsbursky wrote:
->> 06.01.2012 00:58, Trond Myklebust пишет:
->>> The second problem that was highlighted was the fact that as they stand
->>> today, these patchsets do not allow for bisection. When we hit the Oops,
->>> I had Bryan try to bisect where the problem arose. He ended up pointing
->>> at the patch "SUNRPC: handle RPC client pipefs dentries by network
->>> namespace aware routine", which is indeed the cause, but which is one of
->>> the _dependencies_ for all the PipeFS notifier patches that fix the
->>> problem.
->>>
->>
->> I'm confused here. Does this means, that I have to fix patch "SUNRPC: handle RPC
->> client pipefs dentries by network namespace aware routine" to make it able to
->> bisect?
->
-> What I mean is that currently, I have various ways to Oops the kernel
-> when I apply "SUNRPC: handle RPC client pipefs dentries by network
-> namespace aware routine" before all these other followup patches are
-> applied.
->
-> One way to could fix this, might be to add dummy versions of
-> rpc_pipefs_notifier_register()/unregister() so that "NFS: idmap PipeFS
-> notifier introduced" and the other such patches can be applied without
-> compilation errors or Oopses before the "handle RPC client pipefs
-> dentries..." patch is applied. The latter could then enable the real
-> rpc_pipefs_notifier_register()/....
->
-> The point is to not have these patches add _known_ bugs to the kernel at
-> any point, so that someone who is trying to track down an unknown bug
-> via "git bisect" doesn't have to also cope with these avoidable
-> issues...
->
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-Ok, thanks for explanation.
-I've sent rebased "v2" of the patch set, contains updated patch "SUNRPC: handle 
-RPC client pipefs dentries by network namespace aware routine", which, I 
-believe, fixes oops, spotted by Bryan (it was caused by excessive call of 
-rpc_put_mount() on PipeFS dentries unlink).
-So, if I'm not mistaken here, there's no need in implementing of dummy versions 
-of rpc_pipefs_notifier_(un)register() or any other dummy stuff.
+New config switch CONFIG_BOOTPARAM_HOTPLUG_CPU0 sets default state of whether
+the CPU0 hotplug is on or off.
 
-BTW, it looks like that in last 2 days I've sent all updates to the issues you 
-pointed out. If not, please, ping me once more.
+If the switch is off, CPU0 is not hotpluggable by default. But the CPU0 hotplug
+feature can still be turned on by kernel parameter cpu0_hotplug at boot.
 
+If the switch is on, CPU0 is always hotpluggable. The default value of
+the switch is off.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+---
+ arch/x86/Kconfig |   29 +++++++++++++++++++++++++++++
+ 1 files changed, 29 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index d6f1e91..c2cf195 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -1719,6 +1719,35 @@ config HOTPLUG_CPU
+ 	    automatically on SMP systems. )
+ 	  Say N if you want to disable CPU hotplug.
+ 
++config BOOTPARAM_HOTPLUG_CPU0
++	bool "Set default setting of cpu0_hotpluggable"
++	default n
++	depends on HOTPLUG_CPU && EXPERIMENTAL
++	---help---
++	  Set whether default state of cpu0_hotpluggable is on or off.
++
++	  Say Y here to enable CPU0 hotplug by default. If this switch
++	  is turned on, there is no need to give cpu0_hotplug kernel
++	  parameter and the CPU0 hotplug feature is enabled by default.
++
++	  Please note: there are two known CPU0 dependencies if you want
++	  to enable the CPU0 hotplug feature either by this switch or by
++	  cpu0_hotplug kernel parameter.
++
++	  First, resume from hibernate or suspend always starts from CPU0.
++	  So hibernate and suspend are prevented if CPU0 is offline.
++
++	  Second dependency is PIC interrupts always go to CPU0. CPU0 can not
++	  offline if any interrupt can not migrate out of CPU0. There may
++	  be other CPU0 dependencies.
++
++	  Please make sure the dependencies are under your control before
++	  you enable this feature.
++
++	  Say N if you don't want to enable CPU0 hotplug feature by default.
++	  You still can enable the CPU0 hotplug feature at boot by kernel
++	  parameter cpu0_hotplug.
++
+ config COMPAT_VDSO
+ 	def_bool y
+ 	prompt "Compat VDSO support"
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.6.0.3
+
