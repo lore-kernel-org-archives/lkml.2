@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab2AKOEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 09:04:45 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34567 "EHLO
+	id S1757604Ab2AKOEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 09:04:24 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:53679 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757579Ab2AKOEG (ORCPT
+	by vger.kernel.org with ESMTP id S1757512Ab2AKODq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 09:04:06 -0500
+	Wed, 11 Jan 2012 09:03:46 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv5 10/11] modem_shm: Makefile and Kconfig for M7400 Shared Memory Drivers
-Date: Wed, 11 Jan 2012 15:03:32 +0100
-Message-Id: <1326290613-18287-11-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCHv5 01/11] modem_shm: Shared Memory layout for ST-E M7400 driver.
+Date: Wed, 11 Jan 2012 15:03:23 +0100
+Message-Id: <1326290613-18287-2-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
 References: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
@@ -25,122 +25,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Kconfig and Makefile for modem shm.
-MODEM_SHM should be selected from architectures supporting
-C2C.
+Add data structures defining the channel configuration and the shared
+memory layout used for ST-Ericsson's M7400 modem. These data
+structures are shared between the Linux host and the M7400 modem.
+
+The data structures contains table of content, channel configuration,
+and ring-buffer indexes for read and write pointers.
 
 Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
 ---
- drivers/Kconfig            |    2 +
- drivers/Makefile           |    1 +
- drivers/modem_shm/Kconfig  |   62 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/modem_shm/Makefile |    5 +++
- 4 files changed, 70 insertions(+), 0 deletions(-)
- create mode 100644 drivers/modem_shm/Kconfig
- create mode 100644 drivers/modem_shm/Makefile
+ drivers/modem_shm/shm_ipctoc.h |  154 ++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 154 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/modem_shm/shm_ipctoc.h
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index b5e6f24..e54401a 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -136,4 +136,6 @@ source "drivers/hv/Kconfig"
- 
- source "drivers/devfreq/Kconfig"
- 
-+source "drivers/modem_shm/Kconfig"
-+
- endmenu
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 1b31421..6914068 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -120,6 +120,7 @@ obj-$(CONFIG_VLYNQ)		+= vlynq/
- obj-$(CONFIG_STAGING)		+= staging/
- obj-y				+= platform/
- obj-y				+= ieee802154/
-+obj-$(CONFIG_MODEM_SHM)	+= modem_shm/
- #common clk code
- obj-y				+= clk/
- 
-diff --git a/drivers/modem_shm/Kconfig b/drivers/modem_shm/Kconfig
+diff --git a/drivers/modem_shm/shm_ipctoc.h b/drivers/modem_shm/shm_ipctoc.h
 new file mode 100644
-index 0000000..7e18801
+index 0000000..1a9b072
 --- /dev/null
-+++ b/drivers/modem_shm/Kconfig
-@@ -0,0 +1,62 @@
-+#
-+# MODEM_SHM Framework
-+#
++++ b/drivers/modem_shm/shm_ipctoc.h
+@@ -0,0 +1,154 @@
++/*
++ * Copyright (C) ST-Ericsson AB 2012
++ * Author: Sjur Brændeland / sjur.brandeland@stericsson.com
++ * License terms: GNU General Public License (GPL) version 2
++ */
 +
-+config MODEM_SHM
-+	tristate
-+	default n
-+	depends on EXPERIMENTAL
++#ifndef SHM_TOC
++#define SHM_TOC
 +
-+if MODEM_SHM && NET
++/**
++ * DOC: SHM Shared Memory Layout
++ *
++ * SHM defines a set of structures describing the memory layout used
++ * for the Shared Memory IPC. In short &toc_entry points out &ipc_toc,
++ * which points out the &shm_ipctoc_channel. &shm_ipctoc_channel defines
++ * the channels used to communicate between host and external device (modem).
++ *
++ *  &shm_ipctoc_channel can be used in packet-mode or stream-mode,
++ *  and points out &shm_bufidx holding information about cirular
++ *  buffers, andtheir read/write indices etc.
++ */
 +
-+menu "Modem Shared Memory"
++struct _shm_offsets {
++	__le32 tx;
++	__le32 rx;
++};
 +
-+config DUMMY_C2C
-+	tristate "Dummy C2C GENIO driver"
-+	depends on !C2C
-+	default MODEM_SHM
-+	---help---
-+	Say "Y" or "M" if you want to compile a dummy C2C driver.
-+	Use this if you want to compile without the real
-+	C2C driver available.
-+	If unsure say N.
++/**
++ * struct shm_ipctoc - Table Of Content definition for IPC.
++ *
++ * @subver:	Sub version of the TOC header.
++ * @version:	Main version of the TOC header.
++ * @magic:	Magic shall always be set to Ascii coded string "TC" (2 bytes)
++ * @channel_offsets: Offset to both rx and tx direction must be set.
++ *			The array must be terminated by a zero value.
++ *
++ * This struct is stored at the start of the External Shared memory, and
++ * serves as a extended table of contents defining the channel configurations
++ * for the external shared memory protocol between a modem and host.
++ *
++ * This extended table of content (ipctoc) is written to a predefine memory
++ * location and the modem will read this ipctoc during start-up and use this
++ * for setting up the IPC channels and it's buffers.
++ *
++ */
 +
-+config MODEM_SHM_BUS
-+	tristate
-+	default MODEM_SHM_DEV
++struct shm_ipctoc {
++	__u8 subver;
++	__u8 version;
++	__u8 magic[2];
++	struct _shm_offsets channel_offsets[8];
++};
 +
-+config MODEM_SHM_BOOT
-+	tristate
-+	depends on MODEM_SHM_DEV
-+	default MODEM_SHM_DEV
++#define SHM_IPCTOC_MAGIC1 'T'
++#define SHM_IPCTOC_MAGIC2 'C'
 +
-+config MODEM_SHM_DEV
-+	tristate "SHM Channels for Modem Shared Memory"
-+	depends on DUMMY_C2C || C2C
-+	select MODEM_SHM_BUS
-+	select MODEM_SHM_BOOT
-+	default MODEM_SHM
-+	---help---
-+	Say "Y" to use Modem Shared Memory IPC mechanism.
-+	SHM is an IPC protocol used to talk to external device such
-+	as modem over a shared memory (e.g. Chip to Chip).
-+	Only say "M" here if you want to test MODEM_SHM and need to load
-+	and unload its module.
-+	If unsure say N.
++/**
++ * struct shm_ipctoc_channel - Channel descriptor for External Shared memory.
++ *
++ * @offset: Relative address to channel data area.
++ * @size: Total size of a SHM channel area partition.
++ * @mode: Mode of channel: Packet mode=1, Stream mode (shm_channel_mode = 2).
++ * @buffers: Number of buffers for the channel.
++ * @ipc: Offset to IPC message location (of type struct shm_bufidx).
++ * @read_bit: GENI/O bit used to indicate update of the read pointer for
++ *	this channel (at offset ipc).
++ * @write_bit: GENI/O bit used to indicate update of the write pointer for
++ *	this channel (at offset ipc).
++ * @alignment: Protocol specific options for the protocol,
++ *	e.g. packet alignment.
++ * @packets: Maximum Number of packets in a buffer (packet mode).
++ * @mtu: Maximum Transfer Unit for packets in a buffer (packet mode).
++ *
++ * This struct defines the channel configuration for a single direction.
++ *
++ * This structure is pointed out by the &shm_toc and is written by
++ * host during start-up and read by modem at firmware boot.
++ *
++ */
 +
-+config MODEM_SHM_CHR
-+	tristate "Character device for Modem Shared Memory"
-+	depends on MODEM_SHM_DEV
-+	default MODEM_SHM_DEV
-+	---help---
-+	Say "Y" to use a character device for the Modem Shared
-+	Memory IPC mechanism. MODEM_SHM is an IPC protocol used to
-+	talk to external device such as modem over a shared memory
-+	(e.g. Chip to Chip).
-+	Only say "M" here if you want to test MODEM_SHM and need to load
-+	and unload its module.
-+	If unsure say N.
++struct shm_ipctoc_channel {
++	__le32 offset;
++	__le32 size;
++	__u8 mode;
++/* private: */
++	__u8 unused[3];
++/* public: */
++	__le32 buffers;
++	__le32 ipc;
++	__le16 read_bit;
++	__le16 write_bit;
++	__u8 alignment;
++	__u8 packets;
++	__u16 mtu;
++};
 +
-+endmenu
++/**
++ * struct shm_bufidx - Indices's for a uni-directional shm channel.
++ *
++ * @read_index: Specify the read index for a channel. This field can
++ *	have value in range of [0.. shm_ipctoc_channel.buffers -1].
++ *	In stream mode - this is the read index in the ringbuffer.
++ *	In packet mode - this index will at any time refer to the next
++ *	buffer available for read.
++ *
++ * @write_index: Specify the write index for a channel.
++ *	This field can have value in range of [0.. buffers -1].
++ *	In stream mode - this is the write index in the ringbuffer.
++ *	In packet mode - this index will at any time refer to the next
++ *	buffer available for write.
++ *
++ * @size: The actual number of bytes for a buffer at each index.
++ *	  This array has shm_ipctoc_channel.buffers slots, one for each buffer.
++ *	  The size is updated every time data is written to the buffer.
++ *
++ * @state: The state of the channel, 0 - Closed, 1 - Open
++ *
++ *
++ * This structure contains data for the ring-buffer used in packet and stream
++ * mode, for the external shared memory protocol.
++ * Note that the read_buf_index and the write_buf_index
++ * refer to two different channels. So for a ring buffer used to communicate
++ * from modem, the modem will update the write_buf_index while Linux host
++ * will update read_buf_index.
++ */
++struct shm_bufidx {
++	__le32 state;
++	__le32 read_index;
++	__le32 write_index;
++	__le32 size[0];
++};
 +
-+endif
-diff --git a/drivers/modem_shm/Makefile b/drivers/modem_shm/Makefile
-new file mode 100644
-index 0000000..3bd2274
---- /dev/null
-+++ b/drivers/modem_shm/Makefile
-@@ -0,0 +1,5 @@
-+obj-$(CONFIG_MODEM_SHM_BUS) += shm_bus.o
-+obj-$(CONFIG_MODEM_SHM_BOOT) += shm_boot.o
-+obj-$(CONFIG_MODEM_SHM_DEV) += shm_dev.o
-+obj-$(CONFIG_MODEM_SHM_CHR) +=  shm_chr.o
-+obj-$(CONFIG_DUMMY_C2C) +=  dummy_c2c_genio.o
++/**
++ * struct toc_entry - Points out the boot imiages
++ *
++ * @start: Offset counting from start of memory area to the image data.
++ * @size:  Size of the images in bytes.
++ * @flags: Use 0 if no flags are in use.
++ * @entry: Where to jump to start exeuting. Only applicable
++ *		when using SDRAM. Set to 0xffffffff if unused.
++ * @load_addr: Location in SDRAM to move image. Set to 0xffffffff if
++ *		not applicable.
++ * @name: Name of image.
++ */
++struct toc_entry {
++	__le32 start;
++	__le32 size;
++	__le32 flags;
++	__le32 entry_point;
++	__le32 load_addr;
++	char name[12];
++};
++
++#endif
 -- 
 1.7.1
 
