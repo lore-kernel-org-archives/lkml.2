@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934092Ab2AKV6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 16:58:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57624 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933502Ab2AKV6t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 16:58:49 -0500
-Date: Wed, 11 Jan 2012 13:58:47 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>, linux-kernel@vger.kernel.org,
-        Xiaotian Feng <dannyfeng@tencent.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] proc: fix null pointer deref in proc_pid_permission()
-Message-Id: <20120111135847.d28425c6.akpm@linux-foundation.org>
-In-Reply-To: <20120111204330.GT2618@outflux.net>
-References: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
-	<20120111204330.GT2618@outflux.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S934106Ab2AKV7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 16:59:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43303 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934036Ab2AKV7D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 16:59:03 -0500
+Message-ID: <4F0E05F6.30105@redhat.com>
+Date: Wed, 11 Jan 2012 16:58:14 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, akpm@linux-foundation.org,
+        mel@csn.ul.ie, minchan.kim@gmail.com
+Subject: Re: [PATCH v2 -mm] make swapin readahead skip over holes
+References: <20120111143044.3c538d46@cuia.bos.redhat.com> <20120111205041.GE24386@cmpxchg.org> <4F0DFF64.4040704@redhat.com> <20120111214242.GF24386@cmpxchg.org>
+In-Reply-To: <20120111214242.GF24386@cmpxchg.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jan 2012 12:43:30 -0800
-Kees Cook <keescook@chromium.org> wrote:
+On 01/11/2012 04:42 PM, Johannes Weiner wrote:
+> On Wed, Jan 11, 2012 at 04:30:12PM -0500, Rik van Riel wrote:
+>> On 01/11/2012 04:10 PM, Johannes Weiner wrote:
+>>> On Wed, Jan 11, 2012 at 02:30:44PM -0500, Rik van Riel wrote:
+>>>> Ever since abandoning the virtual scan of processes, for scalability
+>>>> reasons, swap space has been a little more fragmented than before.
+>>>> This can lead to the situation where a large memory user is killed,
+>>>> swap space ends up full of "holes" and swapin readahead is totally
+>>>> ineffective.
+>>>>
+>>>> On my home system, after killing a leaky firefox it took over an
+>>>> hour to page just under 2GB of memory back in, slowing the virtual
+>>>> machines down to a crawl.
+>>>>
+>>>> This patch makes swapin readahead simply skip over holes, instead
+>>>> of stopping at them.  This allows the system to swap things back in
+>>>> at rates of several MB/second, instead of a few hundred kB/second.
+>>>>
+>>>> The checks done in valid_swaphandles are already done in
+>>>> read_swap_cache_async as well, allowing us to remove a fair amount
+>>>> of code.
+>>>
+>>> __swap_duplicate() also checks for whether the offset is within the
+>>> swap device range.  Do you think we could remove get_swap_cluster()
+>>> altogether and just try reading the aligned page_cluster range?
+>>
+>> That is how I implemented it originally, but we need
+>> to take the swap_lock so it is cleaner to implement
+>> a helper function in swapfile.c :)
+>
+> AFAICS, it's only needed to validate the offset against si->max, but
+> this too is done in __swap_duplicate().
+>
+> What's otherwise left is just rounding down swp_offset(entry) and
+> adding 1<<  page_cluster to it, that shouldn't need the swap_lock?
+>
+> Am I missing something?
 
-> Hi,
-> 
-> On Wed, Jan 11, 2012 at 01:47:05PM -0500, Xiaotian Feng wrote:
-> > get_proc_task() can fail to search the task and return NULL, put_task_struct()
-> > will then bomb the kernel with following oops:
-> > 
-> > [ 1870.574045] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-> > [ 1870.574065] IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
-> > [ 1870.574088] PGD 112075067 PUD 112814067 PMD 0
-> > [ 1870.574106] Oops: 0002 [#1] PREEMPT SMP
-> > 
-> > This is a regression introduced by commit 0499680a, kernel should
-> > return -ESRCH if get_proc_task() failed.
-> 
-> Nice catch!
-> 
-> However since this error is returned to userspace, shouldn't this be
-> -ENOENT instead?
-> 
+Good point.  I guess we could get rid of get_swap_cluster
+afterall and let __swap_duplicate deal with everything.
 
-Failed get_proc_task() frequently results in -ESRCH.  And less
-frequently results in -ENOENT.
-
-It seems odd that inode_operations.permission() would ever return
-anything other than zero or -EPERM.
-
+Andrew, Mel, is that ok with you?
