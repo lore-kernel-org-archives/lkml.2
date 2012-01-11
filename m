@@ -1,70 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275Ab2AKH0A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 02:26:00 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:35040 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755309Ab2AKHZ5 (ORCPT
+	id S1755711Ab2AKH2L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 02:28:11 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38658 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753720Ab2AKH2I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 02:25:57 -0500
-Date: Tue, 10 Jan 2012 23:25:28 -0800
-From: tip-bot for Fabio Estevam <festevam@gmail.com>
-Message-ID: <tip-6db9dc150eabce7053c8df2a2146aa0d6748ec42@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        fabio.estevam@freescale.com, tglx@linutronix.de, mingo@elte.hu,
-        festevam@gmail.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fabio.estevam@freescale.com, tglx@linutronix.de, festevam@gmail.com,
-        mingo@elte.hu
-In-Reply-To: <1326192383-5113-1-git-send-email-festevam@gmail.com>
-References: <1326192383-5113-1-git-send-email-festevam@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Fix CONFIG_CGROUP_SCHED dependency
-Git-Commit-ID: 6db9dc150eabce7053c8df2a2146aa0d6748ec42
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 11 Jan 2012 02:28:08 -0500
+Date: Tue, 10 Jan 2012 23:28:03 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.3-rc0 (part 2)
+Message-ID: <20120111072802.GA19831@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="T4sUOijqQbZv57TR"
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Tue, 10 Jan 2012 23:25:34 -0800 (PST)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6db9dc150eabce7053c8df2a2146aa0d6748ec42
-Gitweb:     http://git.kernel.org/tip/6db9dc150eabce7053c8df2a2146aa0d6748ec42
-Author:     Fabio Estevam <festevam@gmail.com>
-AuthorDate: Tue, 10 Jan 2012 08:46:23 -0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 10 Jan 2012 13:44:50 +0100
 
-sched: Fix CONFIG_CGROUP_SCHED dependency
+--T4sUOijqQbZv57TR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The dependency bug was pointed out by this build warning:
+Hi Linus,
 
- warning: (SCHED_AUTOGROUP) selects CGROUP_SCHED which has unmet direct dependencies (CGROUPS && EXPERIMENTAL)
+Please pull from:
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: a.p.zijlstra@chello.nl
-Cc: Fabio Estevam <festevam@gmail.com>
-Link: http://lkml.kernel.org/r/1326192383-5113-1-git-send-email-festevam@gmail.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- init/Kconfig |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-diff --git a/init/Kconfig b/init/Kconfig
-index 82b6a4c..a34cd17 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -702,7 +702,6 @@ config CGROUP_PERF
- 
- menuconfig CGROUP_SCHED
- 	bool "Group CPU scheduler"
--	depends on EXPERIMENTAL
- 	default n
- 	help
- 	  This feature lets CPU scheduler recognize task groups and control CPU
+to receive more updates for the input subsystem. This pull corrects
+problem of overzealous conversion to module_platform_driver() introduced
+in previous pull (called out by Geert), a couple of fixups to serio_raw
+driver and a small change to bcm5974 driver.
+
+Thanks!
+
+Changelog:
+---------
+
+Che-Liang Chiou (1):
+      Input: serio_raw - remove stray semicolon
+
+Dmitry Torokhov (3):
+      Input: revert some over-zealous conversions to module_platform_driver=
+()
+      Input: serio_raw - really signal HUP upon disconnect
+      Input: serio_raw - return proper result when serio_raw_write fails
+
+Jussi Pakkanen (1):
+      Input: bcm5974 - set BUTTONPAD property
+
+
+Diffstat:
+--------
+
+ drivers/input/keyboard/amikbd.c             |   15 ++++++++++++++-
+ drivers/input/keyboard/davinci_keyscan.c    |   13 ++++++++++++-
+ drivers/input/keyboard/nomadik-ske-keypad.c |   13 ++++++++++++-
+ drivers/input/misc/twl4030-pwrbutton.c      |   15 +++++++++++++--
+ drivers/input/mouse/amimouse.c              |   16 ++++++++++++++--
+ drivers/input/mouse/bcm5974.c               |    3 +++
+ drivers/input/serio/at32psif.c              |   14 +++++++++++++-
+ drivers/input/serio/serio_raw.c             |    8 ++++----
+ drivers/input/touchscreen/atmel-wm97xx.c    |   13 ++++++++++++-
+ drivers/input/touchscreen/mc13783_ts.c      |   13 ++++++++++++-
+ 10 files changed, 109 insertions(+), 14 deletions(-)
+
+--=20
+Dmitry
+
+
+--T4sUOijqQbZv57TR
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJPDToCAAoJEH70+W8r6ZYqtdgP/1EmmZPcIio0sM5UyY0ovnI9
+DVDwb8isaxXn/MA7Tt6TNbpbF61qNglmjb1+duWIUaiTtZeve2n4cD1A3cGDj8bW
+XArbaNs1ZLLDuV3mfnGcw8lXBZl/3Ohtp6B0dctIulCN1z87i8R5mFiHlxO2QyK8
+6QHfVE5lzRbfAJSLyfnYzAE/tNWZCiigrggQOhkY4QchivmXz0M/zYDcec9WdWDO
+vyRZMLf6eo3J7XH+pKS10PVFju8e88F5LrpW2CI7KM3EHEUPWuDriPg8ggOtBdRF
+XwWmPxsvcjmxqSSAYs9fDtBvvK9hhbGgvNRdwEZNbhLiJUOxL/BB4OCq2vCQ19ds
+XsXerw6G274qi/bUft88Mnrgm/IyCy6svGB/wrfHvZiF3WAlFOoxbf1PR4Ts+kr4
+ApDNWPWFB4L9yGIEmU9eqR6BiQOxd/2qIVfHeicjT+uzHFAxP201c6XANLfVg8EA
+2FYg4Yn9eQvLZ6LPogPyZJ+c1ZjQ+2ZwxRk3u4M32jKwjJBLmDPogpSqx6ilIr69
+0BLRlBz6fWxpy7Z+mLVYxXpFklUoNUdkvcZRfNYS/uv09Vdak08l4imok/EipUYy
+nyYWJTmwlqpEqTTQ81k86XLqpeXoldaQaqH+H40exFB2sF+AQpzx1zJYDW9BOhRP
+mYmSWKO9s8j+jY1F0oWW
+=Yhr6
+-----END PGP SIGNATURE-----
+
+--T4sUOijqQbZv57TR--
