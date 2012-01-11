@@ -1,183 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933775Ab2AKCij (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 21:38:39 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49925 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932901Ab2AKCig (ORCPT
+	id S933813Ab2AKCjE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 21:39:04 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:51118 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933596Ab2AKCjB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 21:38:36 -0500
-Message-ID: <4F0CF61F.50705@gmail.com>
-Date: Tue, 10 Jan 2012 20:38:23 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Tue, 10 Jan 2012 21:39:01 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type:content-transfer-encoding; q=dns; s=sasl; b=Y0AmOM
+	m7uYm4HW8FY3IG+2q6XD6MFPQU7kTzsyCXiNTCLSVm3wi5rMAV80x4kghf2xBDxF
+	pvyGSxFKkVfWGnMpHbxspGCCgFGXoURJnCoo+qfrWxHTze2v+FH4IeSjzhK1rg/g
+	UfEZm00GY1qzjfFQEMZFSk+YtwiyINYPrk51E=
+From: Junio C Hamano <gitster@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Git Mailing List <git@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] use generic pci_iomap on all architectures
+References: <20120105145836.GA2751@redhat.com>
+ <20120106083141.9c14a8d2d09539c6a6c0db75@canb.auug.org.au>
+ <20120106083916.9588034bde22a6803e327aa9@canb.auug.org.au>
+ <20120106084701.8f704542754db826deda318a@canb.auug.org.au>
+ <CA+55aFwXj2ELrTDSgFfSC2Usz99-24uFSznAP34feJiCttwayQ@mail.gmail.com>
+Date: Tue, 10 Jan 2012 18:38:58 -0800
+In-Reply-To: <CA+55aFwXj2ELrTDSgFfSC2Usz99-24uFSznAP34feJiCttwayQ@mail.gmail.com> (Linus
+ Torvalds's message of "Tue, 10 Jan 2012 17:51:07 -0800")
+Message-ID: <7vipkj7ykd.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: [PATCH] of: Support CONFIG_CMDLINE_EXTEND config option
-References: <1326156853-24840-1-git-send-email-dianders@chromium.org>
-In-Reply-To: <1326156853-24840-1-git-send-email-dianders@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 6A7D5DE4-3BFD-11E1-8274-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2012 06:54 PM, Doug Anderson wrote:
-> The old logic assumes CMDLINE_FROM_BOOTLOADER vs. CMDLINE_FORCE and
-> ignores CMDLINE_EXTEND.  Here's the old logic:
-> 
-> - CONFIG_CMDLINE_FORCE=true
->     CONFIG_CMDLINE
-> - dt bootargs=non-empty:
->     dt bootargs
-> - dt bootargs=empty, @data is non-empty string
->     @data is left unchanged
-> - dt bootargs=empty, @data is empty string
->     CONFIG_CMDLINE (or "" if that's not defined)
-> 
-> The old logic would also not honor CONFIG_CMDLINE_FORCE if there was no
-> "chosen" attribute in the device tree.
-> 
-> The new logic is now documented in of_fdt.h and is copied here for
-> reference:
-> 
-> - CONFIG_CMDLINE_FORCE=true
->     CONFIG_CMDLINE
-> - CONFIG_CMDLINE_EXTEND=true
->     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
-> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
->     dt bootargs
-> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
->     @data is left unchanged
-> - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
->     CONFIG_CMDLINE (or "" if that's not defined)
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> CC: devicetree-discuss@lists-ozlabs.org
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-Acked-by: Rob Herring <rob.herring@calxeda.com>
+> On Thu, Jan 5, 2012 at 1:47 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> On Fri, 6 Jan 2012 08:39:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>>
+>>> So why does you pull request refer to "commit
+>>> 805a6af8dba5dfdd35ec35dc52ec0122400b2610", I wonder?  Is that just what
+>>> "git request-pull" produced?
+>>
+>> I see, "git request-pull" just puts in whatever you specify on the
+>> command line rather than the merge-base ...
+>
+> .. and that is a fairly silly misfeature, since it makes the "since
+> commit xyz" largely meaningless.
+>
+> I suspect we really should make "git request-pull" show the merge
+> base(s) as the "since commit", because that way the output of git
+> request-pull is "stable", and doesn't depend on what particular random
+> state you've synced up to since.
+>
+> Junio, I think the patch would be as simple as the attached - totally
+> untested - one-liner? Comments?
 
-I'll apply, but would like Ben's ack first.
+I think it makes sense.
 
-Rob
+We use whatever garbage the user gave us (e.g. "origin/linus" which may
+have been updated since the topic forked and be made irrelevant) only to
+figure out where the history forked, and once we find that out we
+consistently use the fork-point which has some meaning.
 
->  drivers/of/fdt.c       |   56 ++++++++++++++++++++++++++++++++++-------------
->  include/linux/of_fdt.h |   19 ++++++++++++++++
->  2 files changed, 59 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index ea2bd1b..577f3a9 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -664,6 +664,29 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
->  	return 0;
->  }
->  
-> +/*
-> + * Convert configs to something easy to use in C code
-> + */
-> +#if defined(CONFIG_CMDLINE_FORCE)
-> +static const int overwrite_incoming_cmdline = 1;
-> +static const int read_dt_cmdline;
-> +static const int concat_cmdline;
-> +#elif defined(CONFIG_CMDLINE_EXTEND)
-> +static const int overwrite_incoming_cmdline = 1;
-> +static const int read_dt_cmdline = 1;
-> +static const int concat_cmdline = 1;
-> +#else /* CMDLINE_FROM_BOOTLOADER */
-> +static const int overwrite_incoming_cmdline;
-> +static const int read_dt_cmdline = 1;
-> +static const int concat_cmdline;
-> +#endif
-> +
-> +#ifdef CONFIG_CMDLINE
-> +static const char *config_cmdline = CONFIG_CMDLINE;
-> +#else
-> +static const char *config_cmdline = "";
-> +#endif
-> +
->  int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
->  				     int depth, void *data)
->  {
-> @@ -672,28 +695,29 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
->  
->  	pr_debug("search \"chosen\", depth: %d, uname: %s\n", depth, uname);
->  
-> +	/* Make sure cmdline default is set early to handle case of no chosen */
-> +	if (data && (overwrite_incoming_cmdline || !((char *)data)[0]))
-> +		strlcpy(data, config_cmdline, COMMAND_LINE_SIZE);
-> +
->  	if (depth != 1 || !data ||
->  	    (strcmp(uname, "chosen") != 0 && strcmp(uname, "chosen@0") != 0))
->  		return 0;
->  
->  	early_init_dt_check_for_initrd(node);
->  
-> -	/* Retrieve command line */
-> -	p = of_get_flat_dt_prop(node, "bootargs", &l);
-> -	if (p != NULL && l > 0)
-> -		strlcpy(data, p, min((int)l, COMMAND_LINE_SIZE));
-> -
-> -	/*
-> -	 * CONFIG_CMDLINE is meant to be a default in case nothing else
-> -	 * managed to set the command line, unless CONFIG_CMDLINE_FORCE
-> -	 * is set in which case we override whatever was found earlier.
-> -	 */
-> -#ifdef CONFIG_CMDLINE
-> -#ifndef CONFIG_CMDLINE_FORCE
-> -	if (!((char *)data)[0])
-> -#endif
-> -		strlcpy(data, CONFIG_CMDLINE, COMMAND_LINE_SIZE);
-> -#endif /* CONFIG_CMDLINE */
-> +	/* Retrieve command line unless forcing */
-> +	if (read_dt_cmdline) {
-> +		p = of_get_flat_dt_prop(node, "bootargs", &l);
-> +		if (p != NULL && l > 0) {
-> +			if (concat_cmdline) {
-> +				strlcat(data, " ", COMMAND_LINE_SIZE);
-> +				strlcat(data, p, min_t(int, (int)l,
-> +						       COMMAND_LINE_SIZE));
-> +			} else
-> +				strlcpy(data, p, min_t(int, (int)l,
-> +						       COMMAND_LINE_SIZE));
-> +		}
-> +	}
->  
->  	pr_debug("Command line is: %s\n", (char*)data);
->  
-> diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-> index ed136ad..346d6c7 100644
-> --- a/include/linux/of_fdt.h
-> +++ b/include/linux/of_fdt.h
-> @@ -91,6 +91,25 @@ extern int of_flat_dt_is_compatible(unsigned long node, const char *name);
->  extern int of_flat_dt_match(unsigned long node, const char *const *matches);
->  extern unsigned long of_get_flat_dt_root(void);
->  
-> +/*
-> + * early_init_dt_scan_chosen - scan the device tree for ramdisk and bootargs
-> + *
-> + * The boot arguments will be placed into the memory pointed to by @data.
-> + * That memory should be COMMAND_LINE_SIZE big and initialized to be a valid
-> + * (possibly empty) string.  Logic for what will be in @data after this
-> + * function finishes:
-> + *
-> + * - CONFIG_CMDLINE_FORCE=true
-> + *     CONFIG_CMDLINE
-> + * - CONFIG_CMDLINE_EXTEND=true
-> + *     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
-> + * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
-> + *     dt bootargs
-> + * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
-> + *     @data is left unchanged
-> + * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
-> + *     CONFIG_CMDLINE (or "" if that's not defined)
-> + */
->  extern int early_init_dt_scan_chosen(unsigned long node, const char *uname,
->  				     int depth, void *data);
->  extern void early_init_dt_check_for_initrd(unsigned long node);
+The parameter to "git shortlog" that appears later should also be updated
+to match this, by the way, even though that should not affect the outcome
+in any way.
 
+I am however not sure what would happen when there are more than one merge
+bases. I guess those who throw pull requests are not supposed to be doing
+merges in reverse direction, so it should not matter ;-)
+
+ git-request-pull.sh |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/git-request-pull.sh b/git-request-pull.sh
+index d7ba117..38b68bb 100755
+--- a/git-request-pull.sh
++++ b/git-request-pull.sh
+@@ -96,7 +96,7 @@ git show -s --format='The following changes since commit %H:
+   %s (%ci)
+ 
+ are available in the git repository at:
+-' $baserev &&
++' $merge_base &&
+ echo "  $url${ref+ $ref}" &&
+ git show -s --format='
+ for you to fetch changes up to %H:
+@@ -124,7 +124,7 @@ then
+ 	echo "----------------------------------------------------------------"
+ fi &&
+ 
+-git shortlog ^$baserev $headrev &&
++git shortlog $merge_base..$headrev &&
+ git diff -M --stat --summary $patch $merge_base..$headrev || status=1
+ 
+ if test -z "$ref"
