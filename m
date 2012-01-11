@@ -1,76 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab2AKDwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 22:52:14 -0500
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:42798 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756237Ab2AKDwN convert rfc822-to-8bit (ORCPT
+	id S1757050Ab2AKD5W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 22:57:22 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:34562 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756726Ab2AKD5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 22:52:13 -0500
-X-Greylist: delayed 1509 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Jan 2012 22:52:12 EST
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 80.237.6.56
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/tJl9rDI+y0U+MKwHsxpZDiFBwBhDy93k=
-Message-ID: <1326252320.5973.13.camel@hakkenden.homenet>
-Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
-From: "Nikolay S." <nowhere@hakkenden.ath.cx>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan@kernel.org>, Dave Chinner <david@fromorbit.com>,
-        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Date: Wed, 11 Jan 2012 07:25:20 +0400
-In-Reply-To: <20120110143330.44cf1ccf.akpm@linux-foundation.org>
-References: <1324437036.4677.5.camel@hakkenden.homenet>
-	 <20111221095249.GA28474@tiehlicka.suse.cz> <20111221225512.GG23662@dastard>
-	 <1324630880.562.6.camel@rybalov.eng.ttk.net>
-	 <20111223102027.GB12731@dastard>
-	 <1324638242.562.15.camel@rybalov.eng.ttk.net>
-	 <20111223204503.GC12731@dastard>
-	 <20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20111227035730.GA22840@barrios-laptop.redhat.com>
-	 <20111227135658.08c8016a.kamezawa.hiroyu@jp.fujitsu.com>
-	 <20120110143330.44cf1ccf.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.2 
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Jan 2012 22:57:21 -0500
+Date: Wed, 11 Jan 2012 14:57:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Xen Devel <Xen-devel@lists.xensource.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: linux-next: manual merge of the xen tree with Linus' tree
+Message-Id: <20120111145709.77ef7d68996cd5fa724326e5@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Вт., 10/01/2012 в 14:33 -0800, Andrew Morton пишет:
-> On Tue, 27 Dec 2011 13:56:58 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > Hmm, if I understand correctly,
-> > 
-> >  - dd's speed down is caused by kswapd's cpu consumption.
-> >  - kswapd's cpu consumption is enlarged by shrink_slab() (by perf)
-> >  - kswapd can't stop because NORMAL zone is small.
-> >  - memory reclaim speed is enough because dd can't get enough cpu.
-> > 
-> > I wonder reducing to call shrink_slab() may be a help but I'm not sure
-> > where lock conention comes from...
-> 
-> Nikolay, it sounds as if this problem has only recently started
-> happening?  Was 3.1 OK?
-> 
-> If so, we should work out what we did post-3.1 to cause this.
+--Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yes, 3.1. was ok.
-Recently I have upgraded to 3.2, and I can not reproduce the problem.
-I'm now at 5 days uptime, the machine usage pattern, the software - all
-the same, but the problem is not visible anymore:
+Hi all,
 
-  PID USER      S %CPU %MEM    TIME+  SWAP COMMAND
-14822 nowhere   R   30  0.2   0:01.52  10m dd
-  416 root      S    7  0.0   6:26.72    0 kswapd0
+Today's linux-next merge of the xen tree got a conflict in
+arch/x86/xen/Kconfig between commit 10fe570fc167 ("Revert "xen/debug:
+WARN_ON when identity PFN has no _PAGE_IOMAP flag set."") from Linus'
+tree and commit 23757fb5d678 ("xen: add CPU microcode update driver")
+from the xen tree.
 
-(also, kswapd run time after 5 days is only 6,5 seconds, whereas with
--rc5 it was 22 seconds after 5 days).
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I can provide similar traces to see what has changed in kswapd's
-activities (if it is of any value)
+diff --cc arch/x86/xen/Kconfig
+index fdce49c,4d04d4f..0000000
+--- a/arch/x86/xen/Kconfig
++++ b/arch/x86/xen/Kconfig
+@@@ -50,3 -50,14 +50,6 @@@ config XEN_DEBUG_F
+  	  Enable statistics output and various tuning options in debugfs.
+  	  Enabling this option may incur a significant performance overhead.
+ =20
+ -config XEN_DEBUG
+ -	bool "Enable Xen debug checks"
+ -	depends on XEN
+ -	default n
+ -	help
+ -	  Enable various WARN_ON checks in the Xen MMU code.
+ -	  Enabling this option WILL incur a significant performance overhead.
+ -
++ config MICROCODE_XEN
++        def_bool y
++        depends on XEN_DOM0 && MICROCODE
 
+--Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPDQiVAAoJEECxmPOUX5FEG7AP/Rssqi+tUaxgVskTmlim2KNY
+kWhpjgiZ0j6Hq1gNncJa/YntMH+GP2IAaCOkXqf2KSzfi6/2ZxpB64qhpwUv6m7x
+Vy7qag1Qw6hIZ20jue9IdkI2Zw5nmk3kPwpvE9pYbvd8zUqTS2RSUyk4dxLTd2A2
+2YRqEGfGsJQ4axMLX5y2S4bTzIezUNWuw0z+SXs3wpiaiXUWl7Ge2XQfnN/gkNiu
+7bGw7nTwZirdZ5d70As5EEDmb42rEJ7OtU+3VSj4R90d/2m22a0IZyfwbcEFOYn+
+hzd1boox/8nWEHQXVYsWMvnD3b71c57ydcb1MBbJ+mxX0NLEwKQBzemwKywFafwV
+7mx4a58NkkvKvGQ4IDRry7gCzM+/8osI0rukLivLji6plJDLvwnB3Q2T+vI/G+dj
+gBZAIdwEjlry6Y4YmOu9EbGw4Cq/DRb5t+EcvGFKzfcE41tXdhVhBeL7W+gKaE1J
+844Yvfm2xtbthYv4tDjVer+gQr8IbVZ1IMfvS+A/TDqJqHzJKN1dL1wrAyKLKtAX
+EnrlfGr9dnS68yhR89bCCTfDCGJ8KN/FSIaHSlhHg+8dzHim2l6NAnuroI0ROJvt
+UVfjgNYNVtj1XJMFgoCo+w3wbonrF71bFh3TRRCE3Eb9jt3VQjar5QRVBQjxOT5m
+r3D7nPvrJGUr9G5pUvvl
+=NhaO
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh--
