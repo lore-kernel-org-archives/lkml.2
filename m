@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933695Ab2AKRYt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:24:49 -0500
-Received: from mga01.intel.com ([192.55.52.88]:1574 "EHLO mga01.intel.com"
+	id S933652Ab2AKRYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:24:39 -0500
+Received: from mga01.intel.com ([192.55.52.88]:28779 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757865Ab2AKRYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:24:40 -0500
+	id S1755320Ab2AKRYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 12:24:34 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="106055483"
+   d="scan'208";a="106055438"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "H Peter Anvin" <hpa@zytor.com>,
@@ -27,112 +27,74 @@ To: "Ingo Molnar" <mingo@elte.hu>, "Thomas Gleixner" <tglx@linutronix.de>,
         "linux-kernel" <linux-kernel@vger.kernel.org>,
         "linux-pm" <linux-pm@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH v5 12/12] x86/topology.c: debug CPU0 hotplug
-Date: Wed, 11 Jan 2012 09:04:53 -0800
-Message-Id: <1326301493-28760-13-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v5 0/12] x86: Arbitrary CPU hot(un)plug support
+Date: Wed, 11 Jan 2012 09:04:41 -0800
+Message-Id: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-CONFIG_DEBUG_HOTPLUG_CPU0 is for debuging the CPU0 hotplug feature. The switch
-offlines CPU0 as soon as possible and boots userspace up with CPU0 offlined.
-User can online CPU0 back after boot time. The default value of the switch is
-off.
+CPU0 or BSP (Bootstrap Processor) has been the last processor that can not be
+hot removed on x86. This patch set implements CPU0 or BSP online and offline
+and removes this obstacle to CPU hotplug.
 
-To debug CPU0 hotplug, you need to enable CPU0 offline/online feature by either
-turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during compilation or giving
-cpu0_hotplug kernel parameter at boot.
+RAS needs the feature. If socket0 needs to be hotplugged for any reason (any
+thread on socket0 is bad, shared cache issue, uncore issue, etc), CPU0 is
+required to be offline or hot replaced to keep the system run. For example,
+starting with Core Duo, if you have a system that is reporting cache problems
+via the "yellow" status in the MCi_STATUS msr, then there is benefit in simply
+soft off-lining the cores that share that cache - assuming that leaves you at
+least one online core. A single socket system with L3 cache troubles is not
+helped - but problems in L1/L2 cache, or on multi-socket systems can be avoided.
+They are already being avoided for the cases where CPU0 is not involved.
+This patchset can help L1/L2 cache problem in CPU0 or L3 cache problem on the
+socket with CPU0 in a multi-socket system.
 
-It's safe and early place to take down CPU0 after all hotplug notifiers
-are installed and SMP is booted.
+v5: Add CONFIG_BOOTPARAM_HOTPLUG_CPU0 and CONFIG_DEBUG_HOTPLUG_CPU0. Simplify
+duplicate xstate_size init check. Wakeup CPU0 via nmi instead INITs. Add
+mcheck_cpu_init when CPU0 online. Change variable bsp_hotpluggable to
+cpu0_hotpluggable with __initdata qualifier.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
----
- arch/x86/Kconfig           |   15 +++++++++++++++
- arch/x86/kernel/topology.c |   39 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+), 0 deletions(-)
+v4: Add __read_mostly for internal bsp_hotpluggable variable. Add my email
+address in cpu-hotplug.txt document. A wording change in comment.
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index c2cf195..36b6a2c 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1748,6 +1748,21 @@ config BOOTPARAM_HOTPLUG_CPU0
- 	  You still can enable the CPU0 hotplug feature at boot by kernel
- 	  parameter cpu0_hotplug.
- 
-+config DEBUG_HOTPLUG_CPU0
-+	def_bool n
-+	prompt "Debug CPU0 hotplug"
-+	depends on HOTPLUG_CPU && EXPERIMENTAL
-+	---help---
-+	  Enabling this option offlines CPU0 (if CPU0 can be offlined) as
-+	  soon as possible and boots up userspace with CPU0 offlined. User
-+	  can online CPU0 back after boot time.
-+
-+	  To debug CPU0 hotplug, you need to enable CPU0 offline/online
-+	  feature by either turning on CONFIG_BOOTPARAM_HOTPLUG_CPU0 during
-+	  compilation or giving cpu0_hotplug kernel parameter at boot.
-+
-+	  If unuser, say N.
-+
- config COMPAT_VDSO
- 	def_bool y
- 	prompt "Compat VDSO support"
-diff --git a/arch/x86/kernel/topology.c b/arch/x86/kernel/topology.c
-index 8cec15c..3f697dd 100644
---- a/arch/x86/kernel/topology.c
-+++ b/arch/x86/kernel/topology.c
-@@ -49,6 +49,45 @@ static int __init enable_cpu0_hotplug(char *str)
- __setup("cpu0_hotplug", enable_cpu0_hotplug);
- #endif
- 
-+#ifdef CONFIG_DEBUG_HOTPLUG_CPU0
-+/*
-+ * This function offlines CPU0 as early as possible and allows userspace to
-+ * boot up without CPU0. CPU0 can be onlined back by user after boot.
-+ *
-+ * This is only called for debugging CPU0 offline feature.
-+ */
-+static void __init _debug_hotplug_cpu(int num)
-+{
-+	int ret;
-+	struct sys_device *dev = get_cpu_sysdev(num);
-+
-+	/*
-+	 * Take hotpluggable online CPU0 down.
-+	 */
-+	if (num || !per_cpu(cpu_devices, num).cpu.hotpluggable || !dev ||
-+	    !cpu_online(num)) {
-+		pr_debug("CPU0 can't be offlined.\n");
-+		return;
-+	}
-+
-+	cpu_hotplug_driver_lock();
-+
-+	ret = cpu_down(num);
-+	if (!ret)
-+		kobject_uevent(&dev->kobj, KOBJ_OFFLINE);
-+	else
-+		pr_debug("Can't offline CPU%d.\n", num);
-+
-+	cpu_hotplug_driver_unlock();
-+}
-+static int __init debug_hotplug_cpu(void)
-+{
-+	_debug_hotplug_cpu(0);
-+	return 0;
-+}
-+device_initcall_sync(debug_hotplug_cpu);
-+#endif /* CONFIG_DEBUG_HOTPLUG_CPU0 */
-+
- int __ref arch_register_cpu(int num)
- {
- 	/*
--- 
-1.6.0.3
+v3: Register a pm notifier to check if CPU0 is online before hibernate/suspend.
+Small wording changes in document and print info.
+
+v2: Add locking changes between cpu hotplug and hibernate/suspend. Change PIC
+irq bound to CPU0 detection.
+
+Fenghua Yu (12):
+  Documentations/cpu-hotplug.tx, kernel-parameters.txt: Add x86 CPU0
+    online/offline feature
+  x86/Kconfig: Add config switch for CPU0 hotplug
+  x86/topology.c: Support functions for CPU0 online/offline
+  x86/smpboot.c: Don't offline CPU0 if any irq can not be migrated out
+    of it and remove CPU0 check in smp_callin()
+  x86/power/cpu.c: Don't hibernate/suspend if CPU0 is offline
+  x86/head_64.S: Define start_cpu0
+  x86/head_32.S: Define start_cpu0
+  x86/smpboot.c: Wake up CPU0 via NMI instead of INITs
+  x86/common.c: Init CPU0 data during CPU0 online
+  x86/mtrr/main.c: Ask the first online CPU to save mtrr
+  x86/i387.c: Thread xstate is initialized only on CPU0 once
+  x86/topology.c: debug CPU0 hotplug
+
+ Documentation/cpu-hotplug.txt       |   24 +++++++
+ Documentation/kernel-parameters.txt |   14 ++++
+ arch/x86/Kconfig                    |   44 ++++++++++++
+ arch/x86/include/asm/cpu.h          |    1 +
+ arch/x86/include/asm/processor.h    |    1 +
+ arch/x86/kernel/cpu/common.c        |   17 ++++-
+ arch/x86/kernel/cpu/mtrr/main.c     |    9 ++-
+ arch/x86/kernel/head_32.S           |   17 ++++-
+ arch/x86/kernel/head_64.S           |   15 ++++
+ arch/x86/kernel/i387.c              |    6 ++-
+ arch/x86/kernel/smpboot.c           |  124 +++++++++++++++++++++++++++++++----
+ arch/x86/kernel/topology.c          |   66 +++++++++++++++++--
+ arch/x86/power/cpu.c                |   44 ++++++++++++
+ 13 files changed, 352 insertions(+), 30 deletions(-)
 
