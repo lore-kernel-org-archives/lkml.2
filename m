@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab2AKKoc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:44:32 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:42618 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932584Ab2AKKo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:44:28 -0500
-From: Xiaotian Feng <xtfeng@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Xiaotian Feng <xtfeng@gmail.com>, Xiaotian Feng <dannyfeng@tencent.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        David Rientjes <rientjes@google.com>
-Subject: [PATCH] proc: fix null pointer deref in proc_pid_permission()
-Date: Wed, 11 Jan 2012 13:47:05 -0500
-Message-Id: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1756939Ab2AKKpu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:45:50 -0500
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40764 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751678Ab2AKKps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 05:45:48 -0500
+Date: Wed, 11 Jan 2012 18:45:38 +0800
+From: Ram Pai <linuxram@us.ibm.com>
+To: =?iso-8859-1?Q?Rog=E9rio?= Brito <rbrito@ime.usp.br>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        bugzilla-daemon@bugzilla.kernel.org,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        =?iso-8859-1?Q?M=E1rcia?= Coutinho de Brito 
+	<mcbrito@gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+Message-ID: <20120111104538.GD7380@ram-ThinkPad-T61>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
+ <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+ <20120108221342.GA7058@ime.usp.br>
+ <CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+ <20120109112207.7f993845@jbarnes-desktop>
+ <CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+ <CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+ <CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+ <CAErSpo5RwkriMA=2H0UR7tA9LyMi__QaAm-16kYSKpiK3oLVvw@mail.gmail.com>
+ <CAOtrxKObbRSHsadjgJse1MwbCTjcaf6o1gp2nLVseJGEDnwuqQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOtrxKObbRSHsadjgJse1MwbCTjcaf6o1gp2nLVseJGEDnwuqQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12011110-6078-0000-0000-00000696BFD1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_proc_task() can fail to search the task and return NULL, put_task_struct()
-will then bomb the kernel with following oops:
+On Wed, Jan 11, 2012 at 05:05:44AM -0200, Rogério Brito wrote:
+> Hi, Bjorn.
+> 
+> 2012/1/10 Bjorn Helgaas <bhelgaas@google.com>:
+> > On Mon, Jan 9, 2012 at 7:41 PM, Rogério Brito <rbrito@ime.usp.br> wrote:
+> >
+> >> Please, note that this boot log was taken with the patch that I
+> >> e-mailed earlier (i.e., the one that makes things work). If you want
+> >> me to send a log with a vanilla kernel, just let me know and I will
+> >> grab more information.
+> >
+> > I'd definitely be interested in a log with a vanilla kernel.
+> 
+> Sure, here you go:
+> 
+>     http://www.ime.usp.br/~rbrito/linux/clevo/boot-with-vanilla-3.2.m4v
+> 
 
-[ 1870.574045] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-[ 1870.574065] IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
-[ 1870.574088] PGD 112075067 PUD 112814067 PMD 0
-[ 1870.574106] Oops: 0002 [#1] PREEMPT SMP
+I cannot tell what exactly is the problem, but looks like the transparent
+bridge gets assigned a positive-decoded address, which seems to create some
+conflict later somehow..
 
-This is a regression introduced by commit 0499680a, kernel should
-return -ESRCH if get_proc_task() failed.
-
-Signed-off-by: Xiaotian Feng <dannyfeng@tencent.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Stephen Wilson <wilsons@start.ca>
-Cc: David Rientjes <rientjes@google.com>
----
- fs/proc/base.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 8173dfd..5485a53 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -654,6 +654,8 @@ static int proc_pid_permission(struct inode *inode, int mask)
- 	bool has_perms;
- 
- 	task = get_proc_task(inode);
-+	if (!task)
-+		return -ESRCH;
- 	has_perms = has_pid_permissions(pid, task, 1);
- 	put_task_struct(task);
- 
--- 
-1.7.5.4
+RP
 
