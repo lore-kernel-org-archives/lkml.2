@@ -1,45 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab2AKLN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 06:13:58 -0500
-Received: from blade.4t2.com ([178.63.72.200]:56292 "EHLO blade.4t2.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756988Ab2AKLNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 06:13:44 -0500
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jan 2012 06:13:43 EST
-Message-ID: <1326279818.24835.12.camel@utumno>
-Subject: 3.2.0 reboot powers off machine
-From: Tom Weber <l_linux-kernel@mail2news.4t2.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Jan 2012 12:03:38 +0100
+	id S1756937Ab2AKLTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 06:19:45 -0500
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:51283 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753905Ab2AKLTo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 06:19:44 -0500
+Message-ID: <1326280780.2767.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: RE: Extermeley large PageTables over 500G on kernel 2.6.32.49
+ (SLES11 SP1)
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Borzenkov, Andrey" <andrey.borzenkov@ts.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jan 2012 12:19:40 +0100
+In-Reply-To: <CB1B361E45A85849902B25342E88900501CFDC311187@ABGEX70E.FSC.NET>
+References: <CB1B361E45A85849902B25342E88900501CFDC3110D6@ABGEX70E.FSC.NET>
+	 <1326278196.2767.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+	 <CB1B361E45A85849902B25342E88900501CFDC311187@ABGEX70E.FSC.NET>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-X-4t2Systems-MailScanner-Information: processed at blade.4t2.com
-X-4t2Systems-MailScanner-ID: 0BB9920AE5.ECF78
-X-4t2Systems-MailScanner: Found to be clean
-X-4t2Systems-MailScanner-From: l_linux-kernel@mail2news.4t2.com
-X-4t2Systems-MailScanner-Watermark: 1327143828.42926@CVUBn2UiLXNyrwqH8ZPftA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le mercredi 11 janvier 2012 à 11:52 +0100, Borzenkov, Andrey a écrit :
 
-with 3.2.0 I end up with a powered down machine when trying to reboot.
-shutdown -r, reboot, reboot -f, echo b > /proc/sysrq-trigger
-will all result in power off.
+> Colleagues responsible for Oracle are reconfiguring it now.
+> 
 
-3.1.8 reboots as expected.
+OK. Since your hardware supports 1GB hugepages, you might try to use
+them as well. Not sure if your kernel is recent enough...
 
-64bit
-Xeon E31240 CPU
-Supermicro X9SCA-F Mainboard
-(http://www.supermicro.nl/products/motherboard/Xeon/C202_C204/X9SCA-F.cfm)
+cat /proc/cmdline 
+ro root=LABEL=/ hugepagesz=1GB hugepages=512 
 
-dmidecode and both kernel configs at http://www.4t2.org/rebootinfo/
+> > If not, its normal to eat so much memory for page tables
+> > 
+> > grep VmPTE /proc/*/status
+> > 
+> > 
+> 
+> Forgive my ignorance. I thought that
+> 
+> 1. PTE is 8 bytes per page, which is 4K which gives 2K per 1M of memory
+> 2. All processes sharing the same shared memory share the same page table
 
-let me know if you need more info,
-  Tom
+It depends how oracle maps its SGA.
+
+It probably uses a method disallowing page table sharing.
+
+Anyway, hugetables for this kind of workload is a must.
+
+
 
