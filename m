@@ -1,87 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835Ab2AKTmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 14:42:19 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:9567 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755907Ab2AKTmQ convert rfc822-to-8bit (ORCPT
+	id S1757899Ab2AKTpI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 14:45:08 -0500
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:47167 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755743Ab2AKTpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 14:42:16 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 11 Jan 2012 11:41:57 -0800
-From: Stephen Warren <swarren@nvidia.com>
-To: Shawn Guo <shawn.guo@linaro.org>,
-        Dong Aisheng-B29396 <B29396@freescale.com>
-CC: Dong Aisheng <dongas86@gmail.com>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Wed, 11 Jan 2012 11:41:56 -0800
-Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Index: AczPlwPoC6af21G2TcKLc4ap2tt/xgBAZe1Q
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A74D@HQMAIL01.nvidia.com>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
- <1324402840-32451-3-git-send-email-b29396@freescale.com>
- <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
- <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
- <20120110130511.GA26599@S2101-09.ap.freescale.net>
-In-Reply-To: <20120110130511.GA26599@S2101-09.ap.freescale.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Jan 2012 14:45:06 -0500
+Date: Wed, 11 Jan 2012 17:43:31 -0200
+From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Tim Gardner <tim.gardner@canonical.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        tpmdd-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        Marcel Selhorst <m.selhorst@sirrix.com>
+Subject: Re: [tpmdd-devel] [PATCH 2/3] TPM: Close data_pending and
+ data_buffer races
+Message-ID: <20120111194331.GB12299@hardened-box.br.ibm.com>
+References: <1323196162-2717-1-git-send-email-tim.gardner@canonical.com>
+ <1323196162-2717-3-git-send-email-tim.gardner@canonical.com>
+ <4EF0B9F8.9020305@linux.vnet.ibm.com>
+ <4EF0E465.5060704@canonical.com>
+ <4EF36C1F.6040409@linux.vnet.ibm.com>
+ <4EF37A7A.2060504@canonical.com>
+ <4EF38CBD.3080302@linux.vnet.ibm.com>
+ <4EF48F64.4010509@canonical.com>
+ <1325016165.2313.45.camel@falcor>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1325016165.2313.45.camel@falcor>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12011119-1524-0000-0000-000000F55172
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shawn Guo wrote at Tuesday, January 10, 2012 6:05 AM:
-> On Tue, Jan 10, 2012 at 08:21:05AM +0000, Dong Aisheng-B29396 wrote:
-> > Here what I wonder is that do we need to allow the platform to use a func-name
-> > property in their pinmux func node or pinmux group node to specify the name.
+On Tue, 27 Dec 2011, Mimi Zohar wrote:
+
+> On Fri, 2011-12-23 at 07:25 -0700, Tim Gardner wrote:
+> > On 12/22/2011 01:02 PM, Rajiv Andrade wrote:
 > 
-> I do not see the necessity.
+> <snip>
 > 
-> > If it is allowed, then it could be flexible for soc to define their names.
-> > If not there may be limitations on their node names since we can only get it from
-> > the node name.
+> > > It's inside the mutex region.
+> > >
+> > 
+> > Actually, the patch you sent (https://lkml.org/lkml/2011/12/22/257) is 
+> > _outside_ the mutex area, but I got your drift.
 > 
-> To me, the node name is perfectly fine to be used for that purpose.
+> Yes, thanks for pointing it out in your original comments. I haven't
+> tested the following patch, but perhaps it will help clarify the updated
+> version, that I think Rajiv was describing ... 
+>
 
-I'd prefer if we could use integers over strings if at all possible, but
-that does have a dependency on dtc getting a syntax to define named
-constants, or the kernel pre-processing the .dts files before passing
-them to dtc.
+That's exactly it Mimi, thanks for writing down the patch.
 
-But if we have to use strings, I will point out that the pin names I
-chose for Tegra may not be suitable as DT node names; I don't /think/
-the DT node names can contain spaces, but I chose to name the Tegra
-pinctrl pins after both their pin name and GPIO name so that it's
-easier to correlate the two:
+> diff --git a/drivers/char/tpm/tpm.c b/drivers/char/tpm/tpm.c
+> index 6a8771f..7dafd95 100644
+> --- a/drivers/char/tpm/tpm.c
+> +++ b/drivers/char/tpm/tpm.c
+> @@ -1210,7 +1210,6 @@ ssize_t tpm_read(struct file *file, char __user *buf,
+>  	del_singleshot_timer_sync(&chip->user_read_timer);
+>  	flush_work_sync(&chip->work);
+>  	ret_size = atomic_read(&chip->data_pending);
+> -	atomic_set(&chip->data_pending, 0);
+>  	if (ret_size > 0) {	/* relay data */
+>  		if (size < ret_size)
+>  			ret_size = size;
+> @@ -1221,8 +1220,10 @@ ssize_t tpm_read(struct file *file, char __user *buf,
+>  		if (rc)
+>  			ret_size = -EFAULT;
+> 
+> +		atomic_set(&chip->data_pending, 0);
+>  		mutex_unlock(&chip->buffer_mutex);
+> -	}
+> +	} else if (ret_size < 0)
+> +		atomic_set(&chip->data_pending, 0);
+> 
+>  	return ret_size;
+>  }
 
-        PINCTRL_PIN(TEGRA_PIN_SDIO3_CLK_PA6, "SDIO3_CLK PA6"),
+Tim, do you still see a race with the changes posted above?
 
-Now, I could change that, but I'd prefer not to.
+Rajiv
 
--- 
-nvpublic
+> 
+> > Even clearing chip->data_pending _inside_ the mutex area, I'm not sure 
+> > it closes all of the race windows. I think its still possible to race 
+> > with mod_timer() and del_singleshot_timer_sync(). Therein lies my point, 
+> > if the exclusion code is not _obviously_ correct for something this 
+> > simple, then its probably not. I think my patch is the correct approach.
+> 
+> With the above patch, tpm_read() resets the data_pending flag only after
+> copying the data to userspace, resolving the original race condition
+> described.
+> 
+> > > This would require another fix though. tpm_write() doesn't check
+> > > tpm_transmit return code (and it should).
+> > > In case it returns an error (< 0), chip->data_pending would remain the
+> > > same forever with that change.
+> > >
+> > 
+> > This observation is also correct, but not relevant to the exclusion 
+> > races. It deserves a separate patch.
+> 
+> With the above patch, tpm_read() resets the data_pending flag only if
+> set, resolving the other race condition(s).
+> 
+> thanks,
+> 
+> Mimi
+> 
 
