@@ -1,68 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab2AKQie (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:38:34 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:35244 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745Ab2AKQid (ORCPT
+	id S1757655Ab2AKQjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:39:44 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:57874 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757102Ab2AKQjm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:38:33 -0500
-Date: Wed, 11 Jan 2012 08:38:26 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org,
-        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
-        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
-        namhyung@gmail.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 8/9] stacktrace: implement save_stack_trace_quick()
-Message-ID: <20120111163826.GC26832@google.com>
-References: <1326220106-5765-1-git-send-email-tj@kernel.org>
- <1326220106-5765-9-git-send-email-tj@kernel.org>
- <20120111162642.GC7991@somewhere.redhat.com>
+	Wed, 11 Jan 2012 11:39:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120111162642.GC7991@somewhere.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1326258182.23910.105.camel@pasglop>
+References: <1326156853-24840-1-git-send-email-dianders@chromium.org>
+	<4F0CF61F.50705@gmail.com>
+	<1326258182.23910.105.camel@pasglop>
+Date: Wed, 11 Jan 2012 08:39:40 -0800
+X-Google-Sender-Auth: XS1vVkXRVvalmJcOrhPSTyFZV7k
+Message-ID: <CAD=FV=Uc7bhr4Knvr2Th5HVNnoF8TtBHZ7LTE6ZFYGUyNkgM4Q@mail.gmail.com>
+Subject: Re: [PATCH] of: Support CONFIG_CMDLINE_EXTEND config option
+From: Doug Anderson <dianders@chromium.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rob Herring <robherring2@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Frederic.
+Ben,
 
-On Wed, Jan 11, 2012 at 05:26:44PM +0100, Frederic Weisbecker wrote:
-> On Tue, Jan 10, 2012 at 10:28:25AM -0800, Tejun Heo wrote:
-> > Implement save_stack_trace_quick() which only considers the usual
-> > contexts (ie. thread and irq) and doesn't handle links between
-> > different contexts - if %current is in irq context, only backtrace in
-> > the irq stack is considered.
-> 
-> The thing I don't like is the duplication that involves not only on
-> stack unwinding but also on the safety checks.
+Thank you for the review!  See below for a question...
 
-I'm not entirely convinced that this is necessary or we can just add
-more features to the existing backtrace facility (and maybe make that
-more efficient) and be done with it.
+On Tue, Jan 10, 2012 at 9:03 PM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+>> > The new logic is now documented in of_fdt.h and is copied here for
+>> > reference:
+>> >
+>> > - CONFIG_CMDLINE_FORCE=true
+>> >     CONFIG_CMDLINE
+>> > - CONFIG_CMDLINE_EXTEND=true
+>> >     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
+>> > - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
+>> >     dt bootargs
+>> > - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
+>> >     @data is left unchanged
+>> > - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
+>> >     CONFIG_CMDLINE (or "" if that's not defined)
+>> >
+> So if CONFIG_CMDLINE_EXTEND=true, dt_bootargs is empty, and @data is non
+> empty, I want CONFIG_CMDLINE + @data..
 
-> > This is subset of dump_trace() done in much simpler way.  It's
-> > intended to be used in hot paths where the overhead of dump_trace()
-> > can be too heavy.
-> 
-> Is it? Have you found a measurable impact (outside the fact you record only
-> one stack).
+Before I go and recode, can you confirm this?  It doesn't seem to
+match the help for CMDLINE_EXTEND, which says that the final command
+line should be the kernel's base plus the bootloader's (not combining
+the two separate ways that the kernel determined the cmdline).  Here's
+the help string:
 
-As I wrote in the head message, I haven't done comparative test yet
-but in the preliminary tests the CPU overhead against memory backed
-device is quite visible (roughly ~20%), so I expect it to matter.
-Note that testing against memory backed device is actually relevant,
-on faster SSDs, CPU is already a bottleneck.
+           The command-line arguments provided by the boot loader will be
+           appended to the default kernel command string.
 
-It would be best if we can extend the existing one to cover all the
-cases with acceptable overhead.  I needed to write this minimal
-version anyway for comparison so it's posted together but no matter
-how it turns out switching them isn't difficult.
+Instead, would you consider the following?  It would seem to match the
+concept of @data being a higher-priority alternative to
+CONFIG_CMDLINE:
 
-Thanks.
+- CONFIG_CMDLINE_EXTEND=true, @data is non-empty string
+    @data + dt bootargs (even if dt bootargs are empty)
+- CONFIG_CMDLINE_EXTEND=true, @data is empty string
+    CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
 
--- 
-tejun
+
+In that, there would never be a case of combining @data and
+CONFIG_CMDLINE, which I think is OK.
+
+
+> So if you have CONFIG_CMDLINE_EXTEND, and have a command line in the
+> device-tree, you just read it, concat with what's in data but ...
+>
+> the next node in the device-tree will hit the initial code above again
+> which will overwrite what you just did with the content of
+> CONFIG_CMDLINE (unless /chosen is the last node in the device-tree,
+> probably why it might have worked for you once).
+>
+> It can still work ... as long as once you've hit the command line above,
+> you clear overwrite_incoming_cmdline. You may also clear read_dt_cmdline
+> for good measure.
+
+Good catch here.  I didn't have a real test case where @data was set
+to something before this function was called, so I unit tested that
+particular scenario and didn't catch it there.
+
+I may just move things back to only working properly if the DT has a
+"chosen" attribute, like the old code did.  I don't need that fix, so
+there's no reason to complicate this patch.
+
+
+-Doug
