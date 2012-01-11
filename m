@@ -1,71 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933739Ab2AKSOI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 13:14:08 -0500
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:44012 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933586Ab2AKSOD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 13:14:03 -0500
-Message-ID: <4F0DDF08.1000005@xenotime.net>
-Date: Wed, 11 Jan 2012 11:12:08 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] menuconfig: add Home and End keys support for
- inputbox
-References: <20120109113633.24486.69758.stgit@localhost6.localdomain6>	<20120109113641.24486.95511.stgit@localhost6.localdomain6>	<4F0B6845.4080503@xenotime.net>	<CAPiS6wCVo40tB40sXTzTt7RpVHJG_2wrYeP8L=ghin09WHftfg@mail.gmail.com>	<4F0C75A5.6000000@xenotime.net> <CAPiS6wDYrryyPimun2N0xFCY3xCTDAS+tKKAmuZGjbSUjWpZGw@mail.gmail.com>
-In-Reply-To: <CAPiS6wDYrryyPimun2N0xFCY3xCTDAS+tKKAmuZGjbSUjWpZGw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	id S933811Ab2AKSQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 13:16:57 -0500
+Received: from oz.csail.mit.edu ([128.30.30.239]:40102 "EHLO mail.mgebm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932665Ab2AKSQu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 13:16:50 -0500
+From: Eric B Munson <emunson@mgebm.net>
+To: avi@redhat.com
+Cc: Eric B Munson <emunson@mgebm.net>, mingo@redhat.com, hpa@zytor.com,
+        ryanh@linux.vnet.ibm.com, aliguori@us.ibm.com, mtosatti@redhat.com,
+        jeremy.fitzhardinge@citrix.com, kvm@vger.kernel.org,
+        linux-arch@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4 V8] Add functions to check if the host has stopped the vm
+Date: Wed, 11 Jan 2012 13:16:38 -0500
+Message-Id: <1326305800-25228-3-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326305800-25228-1-git-send-email-emunson@mgebm.net>
+References: <1326305800-25228-1-git-send-email-emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 01:21 AM, Paulius Zaleckas wrote:
-> On Tue, Jan 10, 2012 at 7:30 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> On 01/10/2012 03:50 AM, Paulius Zaleckas wrote:
->>> On Tue, Jan 10, 2012 at 12:20 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->>>> On 01/09/2012 03:36 AM, Paulius Zaleckas wrote:
->>>>> Makes long string editing easier.
->>>>>
->>>>> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
->>>>
->>>> Hi,
->>>>
->>>> Does "default hostname" in the "General setup" menu use an inputbox?
->>>
->>> Yes, it does.
->>>
->>>> If so, I can't get Home and End keys to work for it.
->>>
->>> Strange. It works for me. Have you applied both patches?
->>
->> Yes, I have both patches applied.
-> 
-> Ok this is really very strange, but I have made debug patch. See attachement.
-> It will print octal pressed key value just below the text field.
-> 
-> From curses.h:
-> #define KEY_HOME	0406		/* home key */
-> #define KEY_END		0550		/* end key */
-> 
-> Do you get the same values for Home and End keys? I do.
+When a host stops or suspends a VM it will set a flag to show this.  The
+watchdog will use these functions to determine if a softlockup is real, or the
+result of a suspended VM.
 
-All that I see in the inputbox when I use Home or End is:
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+asm-generic changes Acked-by: Arnd Bergmann <arnd@arndb.de>
+Cc: mingo@redhat.com
+Cc: hpa@zytor.com
+Cc: ryanh@linux.vnet.ibm.com
+Cc: aliguori@us.ibm.com
+Cc: mtosatti@redhat.com
+Cc: jeremy.fitzhardinge@citrix.com
+Cc: kvm@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+Cc: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+---
+Changes from V6:
+ Use __this_cpu_and when clearing the PVCLOCK_GUEST_STOPPED flag
 
-033
+Changes from V5:
+ Collapse generic stubs into this patch
+ check_and_clear_guest_stopped() takes no args and uses __get_cpu_var()
+ Include individual definitions in ia64, s390, and powerpc
 
-(ESCape key)
+ arch/ia64/include/asm/kvm_para.h    |    5 +++++
+ arch/powerpc/include/asm/kvm_para.h |    5 +++++
+ arch/s390/include/asm/kvm_para.h    |    5 +++++
+ arch/x86/include/asm/kvm_para.h     |    8 ++++++++
+ arch/x86/kernel/kvmclock.c          |   21 +++++++++++++++++++++
+ include/asm-generic/kvm_para.h      |   14 ++++++++++++++
+ 6 files changed, 58 insertions(+), 0 deletions(-)
+ create mode 100644 include/asm-generic/kvm_para.h
 
-
-Could this have anything to do with me using xfce (xfce4)?
-
-thanks,
+diff --git a/arch/ia64/include/asm/kvm_para.h b/arch/ia64/include/asm/kvm_para.h
+index 1588aee..2019cb9 100644
+--- a/arch/ia64/include/asm/kvm_para.h
++++ b/arch/ia64/include/asm/kvm_para.h
+@@ -26,6 +26,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return 0;
+ }
+ 
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++
+ #endif
+ 
+ #endif
+diff --git a/arch/powerpc/include/asm/kvm_para.h b/arch/powerpc/include/asm/kvm_para.h
+index 50533f9..1f80293 100644
+--- a/arch/powerpc/include/asm/kvm_para.h
++++ b/arch/powerpc/include/asm/kvm_para.h
+@@ -169,6 +169,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return r;
+ }
+ 
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++
+ #endif /* __KERNEL__ */
+ 
+ #endif /* __POWERPC_KVM_PARA_H__ */
+diff --git a/arch/s390/include/asm/kvm_para.h b/arch/s390/include/asm/kvm_para.h
+index 6964db2..a988329 100644
+--- a/arch/s390/include/asm/kvm_para.h
++++ b/arch/s390/include/asm/kvm_para.h
+@@ -149,6 +149,11 @@ static inline unsigned int kvm_arch_para_features(void)
+ 	return 0;
+ }
+ 
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++
+ #endif
+ 
+ #endif /* __S390_KVM_PARA_H */
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 734c376..99c4bbe 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -95,6 +95,14 @@ struct kvm_vcpu_pv_apf_data {
+ extern void kvmclock_init(void);
+ extern int kvm_register_clock(char *txt);
+ 
++#ifdef CONFIG_KVM_CLOCK
++bool kvm_check_and_clear_guest_paused(void);
++#else
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++#endif /* CONFIG_KVMCLOCK */
+ 
+ /* This instruction is vmcall.  On non-VT architectures, it will generate a
+  * trap that we will then rewrite to the appropriate instruction.
+diff --git a/arch/x86/kernel/kvmclock.c b/arch/x86/kernel/kvmclock.c
+index 44842d7..bdf6423 100644
+--- a/arch/x86/kernel/kvmclock.c
++++ b/arch/x86/kernel/kvmclock.c
+@@ -22,6 +22,7 @@
+ #include <asm/msr.h>
+ #include <asm/apic.h>
+ #include <linux/percpu.h>
++#include <linux/hardirq.h>
+ 
+ #include <asm/x86_init.h>
+ #include <asm/reboot.h>
+@@ -114,6 +115,26 @@ static void kvm_get_preset_lpj(void)
+ 	preset_lpj = lpj;
+ }
+ 
++bool kvm_check_and_clear_guest_paused(void)
++{
++	bool ret = false;
++	struct pvclock_vcpu_time_info *src;
++
++	/*
++	 * per_cpu() is safe here because this function is only called from
++	 * timer functions where preemption is already disabled.
++	 */
++	WARN_ON(!in_atomic());
++	src = &__get_cpu_var(hv_clock);
++	if ((src->flags & PVCLOCK_GUEST_STOPPED) != 0) {
++		__this_cpu_and(hv_clock.flags, ~PVCLOCK_GUEST_STOPPED);
++		ret = true;
++	}
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(kvm_check_and_clear_guest_paused);
++
+ static struct clocksource kvm_clock = {
+ 	.name = "kvm-clock",
+ 	.read = kvm_clock_get_cycles,
+diff --git a/include/asm-generic/kvm_para.h b/include/asm-generic/kvm_para.h
+new file mode 100644
+index 0000000..05ef7e7
+--- /dev/null
++++ b/include/asm-generic/kvm_para.h
+@@ -0,0 +1,14 @@
++#ifndef _ASM_GENERIC_KVM_PARA_H
++#define _ASM_GENERIC_KVM_PARA_H
++
++
++/*
++ * This function is used by architectures that support kvm to avoid issuing
++ * false soft lockup messages.
++ */
++static inline bool kvm_check_and_clear_guest_paused(void)
++{
++	return false;
++}
++
++#endif
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.5.4
+
