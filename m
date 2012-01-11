@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051Ab2AKGP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 01:15:59 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:46365 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932943Ab2AKGP5 (ORCPT
+	id S1753284Ab2AKGXf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 01:23:35 -0500
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:58214 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753165Ab2AKGXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 01:15:57 -0500
-X-AuditID: 9c930197-b7bf2ae000001470-8e-4f0d291ac8ec
-Message-ID: <4F0D291A.8030205@lge.com>
-Date: Wed, 11 Jan 2012 15:15:54 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Wed, 11 Jan 2012 01:23:33 -0500
+From: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+To: <viresh.kumar@st.com>
+Cc: <linus.walleij@linaro.org>, <mirko.gardi@st.com>, <bhupesh.sharma@st.com>,
+        <deepak.sikri@st.com>, <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <vipulkumar.samar@st.com>, <pratyush.anand@st.com>,
+        <rajeev-dlh.kumar@st.com>, <armando.visconti@st.com>,
+        <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux@arm.linux.org.uk>
+Subject: [PATCH] dmaengine/dw_dmac: Hibernation support in dw_dmac
+Date: Wed, 11 Jan 2012 11:53:09 +0530
+Message-ID: <1326262989-18608-1-git-send-email-rajeev-dlh.kumar@st.com>
+X-Mailer: git-send-email 1.6.0.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
-        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
-        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
-        Chanho Park <chanho61.park@samsung.com>, namhyung@gmail.com
-Subject: Re: [PATCH RESEND 9/9] block, trace: implement ioblame - IO tracer
- with origin tracking
-References: <1326220106-5765-1-git-send-email-tj@kernel.org> <1326220106-5765-10-git-send-email-tj@kernel.org> <20120111013212.GA6843@dhcp-172-17-108-109.mtv.corp.google.com>
-In-Reply-To: <20120111013212.GA6843@dhcp-172-17-108-109.mtv.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012-01-11 10:32 AM, Tejun Heo wrote:
-> Implement ioblame, which can attribute each IO to its origin and
-> export the information using a tracepoint.
->
-> Operations which may eventually cause IOs and IO operations themselves
-> are identified and tracked primarily by their stack traces along with
-> the task and the target file (dev:ino:gen).  On each IO completion,
-> ioblame knows why that specific IO happened and exports the
-> information via ioblame:ioblame_io tracepoint.
->
-> While ioblame adds fields to a few fs and block layer objects, all
-> logic is well insulated inside ioblame proper and all hooking goes
-> through well defined tracepoints and doesn't add any significant
-> maintenance overhead.
->
-> For details, please read Documentation/trace/ioblame.txt.
->
-> -v2: Namhyung pointed out that all the information available at IO
->       completion can be exported via tracepoint and letting userland do
->       whatever it wants to do with that would be better.  Stripped out
->       in-kernel statistics gathering.
->
->       Now that everything is exported through tracepoint, iolog and
->       counters_pipe[_pipe] are unnecessary.  Removed.  intents_bin too
->       is removed.
->
->       As data collection no longer requires polling, ioblame/intents is
->       updated to generate inotify IN_MODIFY event after a new intent is
->       created.
->
+The suspend and resume implementation is through dev_pm_ops in dmac. So
+in order to support hibernation, freeze, thaw and restore features are required.
 
-Hi Tejun,
+Signed-off-by: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+---
+ drivers/dma/dw_dmac.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-How about adding another tracepoint for intent creation to provide raw 
-data as well, somewhere in iob_get_intent() or iob_intent_create() 
-maybe? It can be useful to get those data for further processing IMHO.
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index d2e1c25..cb346d6 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1568,6 +1568,9 @@ static int dw_resume_noirq(struct device *dev)
+ static const struct dev_pm_ops dw_dev_pm_ops = {
+ 	.suspend_noirq = dw_suspend_noirq,
+ 	.resume_noirq = dw_resume_noirq,
++	.freeze_noirq = dw_suspend_noirq,
++	.thaw_noirq =	dw_resume_noirq,
++	.restore_noirq = dw_resume_noirq,
+ };
+ 
+ static struct platform_driver dw_driver = {
+-- 
+1.6.0.2
 
-Thanks,
-Namhyung Kim
