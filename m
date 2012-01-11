@@ -1,264 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab2AKJqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 04:46:48 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:23287 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757346Ab2AKJqJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 04:46:09 -0500
-X-AuditID: cbfee61b-b7b95ae00000198b-1b-4f0d5a5efe8f
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: NeilBrown <neilb@suse.de>, Randy Dunlap <rdunlap@xenotime.net>,
-        Mike Lockwood <lockwood@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>, Greg KH <gregkh@suse.de>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Morten CHRISTIANSEN <morten.christiansen@stericsson.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        myungjoo.ham@gmail.com
-Subject: [PATCH v3 2/4] Extcon: support notification based on the state changes.
-Date: Wed, 11 Jan 2012 18:46:40 +0900
-Message-id: <1326275202-27401-3-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-In-reply-to: <1326275202-27401-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1326275202-27401-1-git-send-email-myungjoo.ham@samsung.com>
-X-Brightmail-Tracker: AAAAAA==
+	id S1757379Ab2AKJs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 04:48:26 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:38504 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756735Ab2AKJsX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 04:48:23 -0500
+Message-ID: <4F0D5A9E.5030501@parallels.com>
+Date: Wed, 11 Jan 2012 13:47:10 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
+References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>	<20111214104449.3991.61989.stgit@localhost6.localdomain6>	<m1bor6rg39.fsf@fess.ebiederm.org> <4EEEFC54.10700@parallels.com>	<m18vm8g951.fsf@fess.ebiederm.org> <4EEF2C9A.8000403@parallels.com>	<m1pqfkecw0.fsf@fess.ebiederm.org> <4EEF7364.8000407@parallels.com>	<m1vcotigyb.fsf@fess.ebiederm.org> <4F0C150F.1020007@parallels.com> <m1ehv76v2v.fsf@fess.ebiederm.org>
+In-Reply-To: <m1ehv76v2v.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Donggeun Kim <dg77.kim@samsung.com>
+11.01.2012 02:39, Eric W. Biederman пишет:
+> Stanislav Kinsbursky<skinsbursky@parallels.com>  writes:
+>
+>> 03.01.2012 07:49, Eric W. Biederman пишет:
+>>> Stanislav Kinsbursky<skinsbursky@parallels.com>   writes:
+>>>
+>>>> 19.12.2011 20:37, Eric W. Biederman пишет:
+>>>>> Stanislav Kinsbursky<skinsbursky@parallels.com>    writes:
+>>>>>
+>>>>> Doing that independently of the rest of the sysctls is pretty horrible
+>>>>> and confusing to users.   What I am planning might suit your needs and
+>>>>> if not we need to talk some more about how to get the vfs to do
+>>>>> something reasonable.
+>>>>>
+>>>>
+>>>> Ok, Eric. Would be glad to discuss your sysctls plans.
+>>>> But actually you already know my needs: I would like to make sysctls work in the
+>>>> way like sysfs does: i.e. content of files depends on mount maker -
+>>>> not viewer.
+>>>
+>>> What drives the desire to have sysctls depend on the mount maker?
+>>
+>> Because we can (will, actually) have nested fs root's for containers. IOW,
+>> container's root will be accessible from it's creator context. And I want to
+>> tune container's fs from creators context.
+>
+> Tuning the child context from the parent context is an entirely
+> reasonable thing to do.  To affect a namespace that is not yours
+> the requirement is simply that we don't use current to lookup the
+> sysctl.  So what I am proposing should work for your case.
+>
 
-State changes of extcon devices have been notified via kobjet_uevent.
-This patch adds notifier interfaces in order to allow device drivers to
-get notified easily. Along with notifier interface,
-extcon_get_extcon_dev() function is added so that device drivers may
-discover a extcon_dev easily.
+Could you explain, what are you proposing?
+I still don't know any details about it.
 
-Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>> Especially what drives that desire not to have it have a /proc/<pid>/sys
+>>> directory that reflects the sysctls for a given process.
+>>>
+>>
+>> This is not so important for me, where to access sysctl's. But I'm worrying
+>> about backward compatibility. IOW, I'm afraid of changing path
+>> "/proc/sys/sunprc/*" to "/proc/<pid>/sys/sunrpc". This would break a lot of
+>> user-space programs.
+>
+> The part that keeps it all working is by adding a symlink from /proc/sys
+> to /proc/self/sys.  That technique has worked well for /proc/net, and I
+> don't expect there will be any problems with /proc/sys either.  It is
+> possible but is very rare for the introduction of a symlink in a path
+> to cause problems.
+>
 
---
-Changes from RFC
-- Renamed switch to extcon
-- Bugfix: extcon_dev_unregister()
-- Bugfix: "edev->dev" is "internal" data.
-- Added kerneldoc comments.
-- Reworded comments.
----
- drivers/extcon/extcon_class.c |   66 +++++++++++++++++++++++++++++++++++++++++
- include/linux/extcon.h        |   38 +++++++++++++++++++++++
- 2 files changed, 104 insertions(+), 0 deletions(-)
+Probably I don't understand you, but as I see it now, symlink to "/proc/self/" 
+is unacceptable because of the following:
+1) will be used current context (any) instead of desired one
+1) if CT has other pid namespace - then we just have broken link.
 
-diff --git a/drivers/extcon/extcon_class.c b/drivers/extcon/extcon_class.c
-index 9d29c79..763cf4d 100644
---- a/drivers/extcon/extcon_class.c
-+++ b/drivers/extcon/extcon_class.c
-@@ -34,6 +34,9 @@
- struct class *extcon_class;
- struct class *extcon_class_for_android;
- 
-+static LIST_HEAD(extcon_dev_list);
-+static DEFINE_MUTEX(extcon_dev_list_lock);
-+
- static ssize_t state_show(struct device *dev, struct device_attribute *attr,
- 			  char *buf)
- {
-@@ -73,6 +76,9 @@ static ssize_t name_show(struct device *dev, struct device_attribute *attr,
-  * the name of extcon device (envp[0]) and the state output (envp[1]).
-  * Tizen uses this format for extcon device to get events from ports.
-  * Android uses this format as well.
-+ *
-+ * Note that notifier provides the which bits are changes in the state
-+ * variable with "val" to the callback.
-  */
- void extcon_set_state(struct extcon_dev *edev, u32 state)
- {
-@@ -82,10 +88,14 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
- 	char *envp[3];
- 	int env_offset = 0;
- 	int length;
-+	u32 old_state = edev->state;
- 
- 	if (edev->state != state) {
- 		edev->state = state;
- 
-+		raw_notifier_call_chain(&edev->nh, old_state ^ edev->state,
-+					edev);
-+
- 		prop_buf = (char *)get_zeroed_page(GFP_KERNEL);
- 		if (prop_buf) {
- 			length = name_show(edev->dev, NULL, prop_buf);
-@@ -115,6 +125,51 @@ void extcon_set_state(struct extcon_dev *edev, u32 state)
- }
- EXPORT_SYMBOL_GPL(extcon_set_state);
- 
-+/**
-+ * extcon_get_extcon_dev() - Get the extcon device instance from the name
-+ * @extcon_name:	The extcon name provided with extcon_dev_register()
-+ */
-+struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
-+{
-+	struct extcon_dev *sd;
-+
-+	mutex_lock(&extcon_dev_list_lock);
-+	list_for_each_entry(sd, &extcon_dev_list, entry) {
-+		if (!strcmp(sd->name, extcon_name))
-+			goto out;
-+	}
-+	sd = NULL;
-+out:
-+	mutex_unlock(&extcon_dev_list_lock);
-+	return sd;
-+}
-+EXPORT_SYMBOL_GPL(extcon_get_extcon_dev);
-+
-+/**
-+ * extcon_register_notifier() - Register a notifee to get notified by
-+ *			      any attach status changes from the extcon.
-+ * @edev:	the extcon device.
-+ * @nb:		a notifier block to be registered.
-+ */
-+int extcon_register_notifier(struct extcon_dev *edev,
-+			struct notifier_block *nb)
-+{
-+	return raw_notifier_chain_register(&edev->nh, nb);
-+}
-+EXPORT_SYMBOL_GPL(extcon_register_notifier);
-+
-+/**
-+ * extcon_unregister_notifier() - Unregister a notifee from the extcon device.
-+ * @edev:	the extcon device.
-+ * @nb:		a registered notifier block to be unregistered.
-+ */
-+int extcon_unregister_notifier(struct extcon_dev *edev,
-+			struct notifier_block *nb)
-+{
-+	return raw_notifier_chain_unregister(&edev->nh, nb);
-+}
-+EXPORT_SYMBOL_GPL(extcon_unregister_notifier);
-+
- static struct device_attribute extcon_attrs[] = {
- 	__ATTR_RO(state),
- 	__ATTR_RO(name),
-@@ -145,6 +200,10 @@ static int create_extcon_class_for_android(void)
- 
- static void extcon_cleanup(struct extcon_dev *edev, bool skip)
- {
-+	mutex_lock(&extcon_dev_list_lock);
-+	list_del(&edev->entry);
-+	mutex_unlock(&extcon_dev_list_lock);
-+
- 	if (!skip && get_device(edev->dev)) {
- 		device_unregister(edev->dev);
- 		put_device(edev->dev);
-@@ -200,8 +259,15 @@ int extcon_dev_register(struct extcon_dev *edev, struct device *dev)
- 		goto err_dev;
- 	}
- 
-+	RAW_INIT_NOTIFIER_HEAD(&edev->nh);
-+
- 	dev_set_drvdata(edev->dev, edev);
- 	edev->state = 0;
-+
-+	mutex_lock(&extcon_dev_list_lock);
-+	list_add(&edev->entry, &extcon_dev_list);
-+	mutex_unlock(&extcon_dev_list_lock);
-+
- 	return 0;
- 
- err_dev:
-diff --git a/include/linux/extcon.h b/include/linux/extcon.h
-index da0bbc8..1e47e3b 100644
---- a/include/linux/extcon.h
-+++ b/include/linux/extcon.h
-@@ -23,6 +23,7 @@
- #ifndef __LINUX_EXTCON_H__
- #define __LINUX_EXTCON_H__
- 
-+#include <linux/notifier.h>
- /**
-  * struct extcon_dev - An extcon device represents one external connector.
-  * @name	The name of this extcon device. Parent device name is used
-@@ -37,6 +38,9 @@
-  * @dev		Device of this extcon. Do not provide at register-time.
-  * @state	Attach/detach state of this extcon. Do not provide at
-  *		register-time
-+ * @nh	Notifier for the state change events from this extcon
-+ * @entry	To support list of extcon devices so that uses can search
-+ *		for extcon devices based on the extcon name.
-  *
-  * In most cases, users only need to provide "User initializing data" of
-  * this struct when registering an extcon. In some exceptional cases,
-@@ -55,6 +59,8 @@ struct extcon_dev {
- 	/* --- Internal data. Please do not set. --- */
- 	struct device	*dev;
- 	u32		state;
-+	struct raw_notifier_head nh;
-+	struct list_head entry;
- };
- 
- /**
-@@ -76,8 +82,14 @@ struct gpio_extcon_platform_data {
- };
- 
- #ifdef CONFIG_EXTCON
-+
-+/*
-+ * Following APIs are for notifiers or configurations.
-+ * Notifiers are the external port and connection devices.
-+ */
- extern int extcon_dev_register(struct extcon_dev *edev, struct device *dev);
- extern void extcon_dev_unregister(struct extcon_dev *edev);
-+extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
- 
- static inline u32 extcon_get_state(struct extcon_dev *edev)
- {
-@@ -85,6 +97,15 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
- }
- 
- extern void extcon_set_state(struct extcon_dev *edev, u32 state);
-+
-+/*
-+ * Following APIs are to monitor every action of a notifier.
-+ * Registerer gets notified for every external port of a connection device.
-+ */
-+extern int extcon_register_notifier(struct extcon_dev *edev,
-+				    struct notifier_block *nb);
-+extern int extcon_unregister_notifier(struct extcon_dev *edev,
-+				      struct notifier_block *nb);
- #else /* CONFIG_EXTCON */
- static inline int extcon_dev_register(struct extcon_dev *edev,
- 				      struct device *dev)
-@@ -100,5 +121,22 @@ static inline u32 extcon_get_state(struct extcon_dev *edev)
- }
- 
- static inline void extcon_set_state(struct extcon_dev *edev, u32 state) { }
-+static inline struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name)
-+{
-+	return NULL;
-+}
-+
-+static inline int extcon_register_notifier(struct extcon_dev *edev,
-+					   struct notifier_block *nb)
-+{
-+	return 0;
-+}
-+
-+static inline int extcon_unregister_notifier(struct extcon_dev *edev,
-+					     struct notifier_block *nb)
-+{
-+	return 0;
-+}
-+
- #endif /* CONFIG_EXTCON */
- #endif /* __LINUX_EXTCON_H__ */
+> Eric
+>
+
+
 -- 
-1.7.4.1
-
+Best regards,
+Stanislav Kinsbursky
