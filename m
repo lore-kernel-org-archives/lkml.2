@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab2AKQX0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:23:26 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:46261 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104Ab2AKQXX (ORCPT
+	id S1757711Ab2AKQXc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:23:32 -0500
+Received: from mx2.netapp.com ([216.240.18.37]:48318 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756974Ab2AKQX0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:23:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <7vzkdu7miv.fsf@alter.siamese.dyndns.org>
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
- <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
- <20120110222711.GK7164@opensource.wolfsonmicro.com> <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
- <7vmx9v7z1r.fsf@alter.siamese.dyndns.org> <CA+55aFx5NATrpLnkMiV2vAxSAJPK7wkY2vyHbyeZGgT9+jP06w@mail.gmail.com>
- <7vehv77xeq.fsf@alter.siamese.dyndns.org> <CA+55aFzuGtJkQFDooSGWQ2_NiJVHN2E7S5dmOnWTYn8_s8Gg3g@mail.gmail.com>
- <7vzkdu7miv.fsf@alter.siamese.dyndns.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, 11 Jan 2012 08:23:01 -0800
-X-Google-Sender-Auth: x7lpfQ3WB0_YcDUmbICwHR-iPA8
-Message-ID: <CA+55aFy679Skqi_D3x8=M=mwZiViMX9EbZrqP11riiLb_Hzb9g@mail.gmail.com>
-Subject: Re: Re* Regulator updates for 3.3
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 11 Jan 2012 11:23:26 -0500
+X-IronPort-AV: E=Sophos;i="4.71,493,1320652800"; 
+   d="scan'208";a="615667768"
+Message-ID: <1326299003.17212.7.camel@lade.trondhjem.org>
+Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
+ context
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Date: Wed, 11 Jan 2012 11:23:23 -0500
+In-Reply-To: <4F0C35F3.7060508@parallels.com>
+References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>
+		 <1325285705.10984.4.camel@lade.trondhjem.org>
+	 <1325797111.11084.22.camel@lade.trondhjem.org>
+	 <4F0C35F3.7060508@parallels.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
+Mime-Version: 1.0
+X-OriginalArrivalTime: 11 Jan 2012 16:23:24.0517 (UTC) FILETIME=[578BC950:01CCD07D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 10:59 PM, Junio C Hamano <gitster@pobox.com> wrote:
->
-> What makes me uneasy about the idea of running the editor by default is
-> that many people still use Git as a better CVS/SVN. Their workflow is to
-> build randomly on their 'master', attempt to push and get rejected, pull
-> only so that they can push out, and then push the merge result out.
+On Tue, 2012-01-10 at 16:58 +0400, Stanislav Kinsbursky wrote: 
+> 06.01.2012 00:58, Trond Myklebust пишет:
+> > The second problem that was highlighted was the fact that as they stand
+> > today, these patchsets do not allow for bisection. When we hit the Oops,
+> > I had Bryan try to bisect where the problem arose. He ended up pointing
+> > at the patch "SUNRPC: handle RPC client pipefs dentries by network
+> > namespace aware routine", which is indeed the cause, but which is one of
+> > the _dependencies_ for all the PipeFS notifier patches that fix the
+> > problem.
+> >
+> 
+> I'm confused here. Does this means, that I have to fix patch "SUNRPC: handle RPC 
+> client pipefs dentries by network namespace aware routine" to make it able to 
+> bisect?
 
-Sure. And I don't think we can do much about it. They'll either set
-the legacy flag, or they'll just exit the editor without adding
-anything useful (if you come from a CVS background in particular, you
-probably never learnt to do good commit logs anyway).
+What I mean is that currently, I have various ways to Oops the kernel
+when I apply "SUNRPC: handle RPC client pipefs dentries by network
+namespace aware routine" before all these other followup patches are
+applied.
 
-So it will be a bit more work for the bad workflow, I agree - although
-if it really irritates people, they can just set that GIT_MERGE_LEGACY
-in their .bashrc files or something. But we can *hope* that even those
-people might sometimes actually talk about what/why they are doing
-things, or maybe even learn about that whole "distributed" thing.
+One way to could fix this, might be to add dummy versions of
+rpc_pipefs_notifier_register()/unregister() so that "NFS: idmap PipeFS
+notifier introduced" and the other such patches can be applied without
+compilation errors or Oopses before the "handle RPC client pipefs
+dentries..." patch is applied. The latter could then enable the real
+rpc_pipefs_notifier_register()/....
 
-I agree that is unlikely to ever happen, though. It's more likely that
-they will change their aliases so that their "update" command just
-adds the --no-edit flag. Regardless, it doesn't sound *too* onerous to
-work around.
+The point is to not have these patches add _known_ bugs to the kernel at
+any point, so that someone who is trying to track down an unknown bug
+via "git bisect" doesn't have to also cope with these avoidable
+issues...
 
-Patch looks good to me. I would personally have compared "st_mode"
-instead of (or in addition to) "st_rdev", but I don't think it matters
-all that much.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-                                 Linus
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
