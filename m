@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933939Ab2AKUoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:44:10 -0500
-Received: from smtp.outflux.net ([198.145.64.163]:52749 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933006Ab2AKUoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:44:07 -0500
-Date: Wed, 11 Jan 2012 12:43:30 -0800
-From: Kees Cook <keescook@chromium.org>
-To: Xiaotian Feng <xtfeng@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] proc: fix null pointer deref in proc_pid_permission()
-Message-ID: <20120111204330.GT2618@outflux.net>
-References: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
+	id S933941Ab2AKUpr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:45:47 -0500
+Received: from kirsty.vergenet.net ([202.4.237.240]:37794 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932962Ab2AKUpn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 15:45:43 -0500
+Date: Thu, 12 Jan 2012 05:45:39 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, linux-s390@vger.kernel.org,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>, schwidefsky@de.ibm.com,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH] kdump: Define KEXEC_NOTE_BYTES arch specific for s390x
+Message-ID: <20120111204539.GB23752@verge.net.au>
+References: <1326281412.2819.3.camel@br98xy6r>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
-Organization: Chromium
-X-HELO: www.outflux.net
+In-Reply-To: <1326281412.2819.3.camel@br98xy6r>
+Organisation: Horms Solutions Ltd.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Jan 11, 2012 at 01:47:05PM -0500, Xiaotian Feng wrote:
-> get_proc_task() can fail to search the task and return NULL, put_task_struct()
-> will then bomb the kernel with following oops:
+On Wed, Jan 11, 2012 at 12:30:12PM +0100, Michael Holzheu wrote:
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 > 
-> [ 1870.574045] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
-> [ 1870.574065] IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
-> [ 1870.574088] PGD 112075067 PUD 112814067 PMD 0
-> [ 1870.574106] Oops: 0002 [#1] PREEMPT SMP
+> kdump only allocates memory for the prstatus ELF note. For s390x,
+> besides of prstatus multiple ELF notes for various different register
+> types are stored. Therefore the currently allocated memory is not
+> sufficient. With this patch the KEXEC_NOTE_BYTES macro can be
+> defined by architecture code and for s390x it is set to the correct
+> size now.
 > 
-> This is a regression introduced by commit 0499680a, kernel should
-> return -ESRCH if get_proc_task() failed.
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-Nice catch!
+This seems reasonable to me.
 
-However since this error is returned to userspace, shouldn't this be
--ENOENT instead?
-
--Kees
-
--- 
-Kees Cook
-ChromeOS Security
+Reviewed-by: Simon Horman <horms@verge.net.au>
