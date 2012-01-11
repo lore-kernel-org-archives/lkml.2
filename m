@@ -1,123 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757875Ab2AKRT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 12:19:29 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:45223 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757822Ab2AKRT0 convert rfc822-to-8bit (ORCPT
+	id S1757887Ab2AKRUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 12:20:01 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62410 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755320Ab2AKRT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 12:19:26 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: "Trond.Myklebust\@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs\@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>,
-        "neilb\@suse.de" <neilb@suse.de>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields\@fieldses.org" <bfields@fieldses.org>,
-        "davem\@davemloft.net" <davem@davemloft.net>,
-        "devel\@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
-References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>
-	<20111214104449.3991.61989.stgit@localhost6.localdomain6>
-	<m1bor6rg39.fsf@fess.ebiederm.org> <4EEEFC54.10700@parallels.com>
-	<m18vm8g951.fsf@fess.ebiederm.org> <4EEF2C9A.8000403@parallels.com>
-	<m1pqfkecw0.fsf@fess.ebiederm.org> <4EEF7364.8000407@parallels.com>
-	<m1vcotigyb.fsf@fess.ebiederm.org> <4F0C150F.1020007@parallels.com>
-	<m1ehv76v2v.fsf@fess.ebiederm.org> <4F0D5A9E.5030501@parallels.com>
-Date: Wed, 11 Jan 2012 09:21:43 -0800
-In-Reply-To: <4F0D5A9E.5030501@parallels.com> (Stanislav Kinsbursky's message
-	of "Wed, 11 Jan 2012 13:47:10 +0400")
-Message-ID: <m1sjjm40k8.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Wed, 11 Jan 2012 12:19:58 -0500
+Date: Wed, 11 Jan 2012 09:19:51 -0800
+From: "tj@kernel.org" <tj@kernel.org>
+To: "Alex,Shi" <alex.shi@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Lameter <cl@gentwo.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
+        "Huang, Ying" <ying.huang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "avi@redhat.com" <avi@redhat.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 3/3] Code clean up for percpu_xxx() functions
+Message-ID: <20120111171951.GF26832@google.com>
+References: <1318428673.29699.13.camel@debian>
+ <alpine.DEB.2.00.1110120910540.26610@router.home>
+ <1318908091.23426.52.camel@debian>
+ <alpine.DEB.2.00.1110180932330.687@router.home>
+ <1319016218.23426.104.camel@debian>
+ <alpine.DEB.2.00.1110191033480.24001@router.home>
+ <1319096139.23426.184.camel@debian>
+ <1321866612.30341.572.camel@debian>
+ <20111122000653.GS25776@google.com>
+ <1326272921.5695.263.camel@debian>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+D/7VRhnZuUSU9wbNnq/YPs9a99hnz1yk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326272921.5695.263.camel@debian>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanislav Kinsbursky <skinsbursky@parallels.com> writes:
+On Wed, Jan 11, 2012 at 05:08:41PM +0800, Alex,Shi wrote:
+> On Mon, 2011-11-21 at 17:06 -0700, tj@kernel.org wrote:
+> > (cc'ing hpa and quoting whole body)
+> > > 
+> > > Signed-off-by: Alex Shi <alex.shi@intel.com>
+> > > Acked-by: Christoph Lameter <cl@gentwo.org>
+> > 
+> >  Acked-by: Tejun Heo <tj@kernel.org>
+> > 
+> > hpa, I suppose this should go through x86?  The original patch can be
+> > accessed at
+> > 
+> >   http://article.gmane.org/gmane.linux.kernel/1218055/raw
+> 
+> Rend for 3.2 kernel, no any change needed to apply on latest Linus'
+> tree. :) 
+> 
+> Actually, this clean up has no performance or security impact for
+> kernel. On the contrary, removing some potential redundant preempt
+> disable will bring a slight performance benefit to kernel. 
+> 
+> This 3rd patch depends on previous 2 patches, the 2nd one kvm code clean
+> up was submitted for 3.3 kernel. but the 2st one net code clean up is
+> waiting for David's comments.
 
-> 11.01.2012 02:39, Eric W. Biederman пишет:
->> Stanislav Kinsbursky<skinsbursky@parallels.com>  writes:
->>
->>> 03.01.2012 07:49, Eric W. Biederman пишет:
->>>> Stanislav Kinsbursky<skinsbursky@parallels.com>   writes:
->>>>
->>>>> 19.12.2011 20:37, Eric W. Biederman пишет:
->>>>>> Stanislav Kinsbursky<skinsbursky@parallels.com>    writes:
->>>>>>
->>>>>> Doing that independently of the rest of the sysctls is pretty horrible
->>>>>> and confusing to users.   What I am planning might suit your needs and
->>>>>> if not we need to talk some more about how to get the vfs to do
->>>>>> something reasonable.
->>>>>>
->>>>>
->>>>> Ok, Eric. Would be glad to discuss your sysctls plans.
->>>>> But actually you already know my needs: I would like to make sysctls work in the
->>>>> way like sysfs does: i.e. content of files depends on mount maker -
->>>>> not viewer.
->>>>
->>>> What drives the desire to have sysctls depend on the mount maker?
->>>
->>> Because we can (will, actually) have nested fs root's for containers. IOW,
->>> container's root will be accessible from it's creator context. And I want to
->>> tune container's fs from creators context.
->>
->> Tuning the child context from the parent context is an entirely
->> reasonable thing to do.  To affect a namespace that is not yours
->> the requirement is simply that we don't use current to lookup the
->> sysctl.  So what I am proposing should work for your case.
->>
->
-> Could you explain, what are you proposing?
-> I still don't know any details about it.
+Alex, can you please collect all patches into a single patchset?
+Please split it such that, usage changes are per-system so that they
+can be routed through respective subsystems (x86 or net) and updates
+to percpu proper which can be applied after other changes have been
+applied.  It would probably be best to route these patches separately
+rather than all through percpu as it touches a lot of different places
+and is likely to cause conflicts.  I *think* the best way would be,
 
-I am proposing treating /proc/sys like /proc/net is currently treated.
-See below.
+* Submit per-subsystem patches and get them merged to subsystem trees.
 
->>>> Especially what drives that desire not to have it have a /proc/<pid>/sys
->>>> directory that reflects the sysctls for a given process.
->>>>
->>>
->>> This is not so important for me, where to access sysctl's. But I'm worrying
->>> about backward compatibility. IOW, I'm afraid of changing path
->>> "/proc/sys/sunprc/*" to "/proc/<pid>/sys/sunrpc". This would break a lot of
->>> user-space programs.
->>
->> The part that keeps it all working is by adding a symlink from /proc/sys
->> to /proc/self/sys.  That technique has worked well for /proc/net, and I
->> don't expect there will be any problems with /proc/sys either.  It is
->> possible but is very rare for the introduction of a symlink in a path
->> to cause problems.
->>
->
-> Probably I don't understand you, but as I see it now, symlink to "/proc/self/"
-> is unacceptable because of the following:
-> 1) will be used current context (any) instead of desired one
-(Using the current context is the desirable outcome for existing tools).
-> 1) if CT has other pid namespace - then we just have broken link.
+* (Optional) Apply a patch to mark unused interface deprecated in
+  percpu tree, so that new usages in linux-next can be detected.
 
-Assuming the process in question is not in the pid namespace available
-to proc then yes you will indeed have a broken link.  But a broken
-link is only a problem for new applications that are doing something strange.
+* Towards the end of the next merge window, merge a patch to actually
+  kill the old interface.
 
-I am proposing treating /proc/sys like /proc/net has already been
-treated.  Aka move have the version of /proc/sys that relative to a
-process be visible at: /proc/<pid>/sys, and with a compat symlink 
-from /proc/sys -> /proc/self/sys.
+Thanks.
 
-Just like has already been done with /proc/net.
-
-Semantically this should be easy to understand, and about as backwards
-compatible as it gets.
-
-Eric
+-- 
+tejun
