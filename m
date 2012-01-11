@@ -1,204 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab2AKKXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:23:55 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:53603 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755776Ab2AKKXy (ORCPT
+	id S1757435Ab2AKK2Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:28:16 -0500
+Received: from dgate20.ts.fujitsu.com ([80.70.172.51]:34075 "EHLO
+	dgate20.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756622Ab2AKK2L convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:23:54 -0500
-Date: Wed, 11 Jan 2012 11:23:46 +0100
-From: Serge Hallyn <serge.hallyn@canonical.com>
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: containers@lists.linux-foundation.org, oleg@redhat.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
-Message-ID: <20120111102346.GB8504@peqn>
-References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
- <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
- <20120105192954.GA16083@sergelap>
+	Wed, 11 Jan 2012 05:28:11 -0500
+X-Greylist: delayed 603 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jan 2012 05:28:11 EST
+DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
+  h=X-SBRSScore:X-IronPort-AV:Received:Received:From:To:Date:
+   Subject:Thread-Topic:Thread-Index:Message-ID:
+   Accept-Language:Content-Language:X-MS-Has-Attach:
+   X-MS-TNEF-Correlator:acceptlanguage:Content-Type:
+   Content-Transfer-Encoding:MIME-Version;
+  b=t1wrmX0WXamlfWfDDbQSGoM1X6xq8ovGRvK5ub3OcxdG46xYDOEzl+8V
+   o+G1bkn0De7c0ssTkzLLujgYKnfLS4tsI6pa4gEosN5pOa/ZP8RpSGBFd
+   C8Fn4kPKOajGyl6aM7+vrGVv6HuPx3xshPjBT08qDFAvScNZeKl9eraDK
+   KWPrRHAuPQuJvIICqiKeLb91+sOoRkLJ52CS/SPMcdjRILYg/L2RpVx2i
+   esLSqfwJ+WU4B0tEXdoVQ5JJdo+xn;
+X-SBRSScore: None
+X-IronPort-AV: E=Sophos;i="4.71,492,1320620400"; 
+   d="scan'208";a="83128020"
+From: "Borzenkov, Andrey" <andrey.borzenkov@ts.fujitsu.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 11 Jan 2012 11:18:01 +0100
+Subject: Extermeley large PageTables over 500G on kernel 2.6.32.49 (SLES11
+ SP1)
+Thread-Topic: Extermeley large PageTables over 500G on kernel 2.6.32.49
+ (SLES11 SP1)
+Thread-Index: AczQSkxBxFSP4MwhRqCBX9rNuHEgLA==
+Message-ID: <CB1B361E45A85849902B25342E88900501CFDC3110D6@ABGEX70E.FSC.NET>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120105192954.GA16083@sergelap>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Serge Hallyn (serge.hallyn@canonical.com):
-> Quoting Daniel Lezcano (daniel.lezcano@free.fr):
-> > In the case of a child pid namespace, rebooting the system does not
-> > really makes sense. When the pid namespace is used in conjunction
-> > with the other namespaces in order to create a linux container, the
-> > reboot syscall leads to some problems.
-> > 
-> > A container can reboot the host. That can be fixed by dropping
-> > the sys_reboot capability but we are unable to correctly to poweroff/
-> > halt/reboot a container and the container stays stuck at the shutdown
-> > time with the container's init process waiting indefinitively.
-> > 
-> > After several attempts, no solution from userspace was found to reliabily
-> > handle the shutdown from a container.
-> > 
-> > This patch propose to make the init process of the child pid namespace to
-> > exit with a signal status set to : SIGINT if the child pid namespace called
-> > "halt/poweroff" and SIGHUP if the child pid namespace called "reboot".
-> > When the reboot syscall is called and we are not in the initial
-> > pid namespace, we kill the pid namespace for "HALT", "POWEROFF", "RESTART",
-> > and "RESTART2". Otherwise we return EINVAL.
-> > 
-> > Returning EINVAL is also an easy way to check if this feature is supported
-> > by the kernel when invoking another 'reboot' option like CAD.
-> > 
-> > By this way the parent process of the child pid namespace knows if
-> > it rebooted or not and can take the right decision.
-> > 
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@free.fr>
-> > Acked-by: Serge Hallyn <serge.hallyn@canonical.com>
-> > Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-> 
-> The testcase in [PATCH 0/1] passed for me, and reboot from init_pid_ns
-> works as usual.
-> 
-> Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
+I try to understand whether what I see is a bug in kernel (may be in accounting) or some other problem.
 
-Hi Andrew,
+Server with 1TB memory (slightly less due to 2 DIMMs disabled) running SLES11 SP1:
 
-Are you considering taking this patch into -mm?
+Linux rx900-01 2.6.32.49-0.3-default #1 SMP 2011-12-02 11:28:04 +0100 x86_64 x86_64 x86_64 GNU/Linux
 
-thanks,
--serge
+Server runs Oracle database and SAP central instance. Oracle SGA is ~500GB; there are over 2000 oracle client processes (connection from dialog instances).
 
-> 
-> thanks,
-> -serge
-> 
-> > ---
-> >  include/linux/pid_namespace.h |    8 +++++++-
-> >  kernel/pid_namespace.c        |   33 +++++++++++++++++++++++++++++++++
-> >  kernel/sys.c                  |    8 ++++++++
-> >  3 files changed, 48 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-> > index e7cf666..b90c798 100644
-> > --- a/include/linux/pid_namespace.h
-> > +++ b/include/linux/pid_namespace.h
-> > @@ -32,6 +32,7 @@ struct pid_namespace {
-> >  #endif
-> >  	gid_t pid_gid;
-> >  	int hide_pid;
-> > +	int reboot;
-> >  };
-> >  
-> >  extern struct pid_namespace init_pid_ns;
-> > @@ -47,6 +48,7 @@ static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
-> >  extern struct pid_namespace *copy_pid_ns(unsigned long flags, struct pid_namespace *ns);
-> >  extern void free_pid_ns(struct kref *kref);
-> >  extern void zap_pid_ns_processes(struct pid_namespace *pid_ns);
-> > +extern int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd);
-> >  
-> >  static inline void put_pid_ns(struct pid_namespace *ns)
-> >  {
-> > @@ -74,11 +76,15 @@ static inline void put_pid_ns(struct pid_namespace *ns)
-> >  {
-> >  }
-> >  
-> > -
-> >  static inline void zap_pid_ns_processes(struct pid_namespace *ns)
-> >  {
-> >  	BUG();
-> >  }
-> > +
-> > +static inline int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> > +{
-> > +	return 0;
-> > +}
-> >  #endif /* CONFIG_PID_NS */
-> >  
-> >  extern struct pid_namespace *task_active_pid_ns(struct task_struct *tsk);
-> > diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> > index a896839..0d355e8 100644
-> > --- a/kernel/pid_namespace.c
-> > +++ b/kernel/pid_namespace.c
-> > @@ -15,6 +15,7 @@
-> >  #include <linux/acct.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/proc_fs.h>
-> > +#include <linux/reboot.h>
-> >  
-> >  #define BITS_PER_PAGE		(PAGE_SIZE*8)
-> >  
-> > @@ -187,6 +188,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
-> >  		rc = sys_wait4(-1, NULL, __WALL, NULL);
-> >  	} while (rc != -ECHILD);
-> >  
-> > +	if (pid_ns->reboot)
-> > +		current->signal->group_exit_code = pid_ns->reboot;
-> > +
-> >  	acct_exit_ns(pid_ns);
-> >  	return;
-> >  }
-> > @@ -221,6 +225,35 @@ static struct ctl_table pid_ns_ctl_table[] = {
-> >  
-> >  static struct ctl_path kern_path[] = { { .procname = "kernel", }, { } };
-> >  
-> > +int reboot_pid_ns(struct pid_namespace *pid_ns, int cmd)
-> > +{
-> > +	if (pid_ns == &init_pid_ns)
-> > +		return 0;
-> > +
-> > +	switch(cmd) {
-> > +	case LINUX_REBOOT_CMD_RESTART2:
-> > +	case LINUX_REBOOT_CMD_RESTART:
-> > +		pid_ns->reboot = SIGHUP;
-> > +		break;
-> > +
-> > +	case LINUX_REBOOT_CMD_POWER_OFF:
-> > +	case LINUX_REBOOT_CMD_HALT:
-> > +		pid_ns->reboot = SIGINT;
-> > +		break;
-> > +	default:
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	read_lock(&tasklist_lock);
-> > +	force_sig(SIGKILL, pid_ns->child_reaper);
-> > +	read_unlock(&tasklist_lock);
-> > +
-> > +	do_exit(0);
-> > +
-> > +	/* Not reached */
-> > +	return 0;
-> > +}
-> > +
-> >  static __init int pid_namespaces_init(void)
-> >  {
-> >  	pid_ns_cachep = KMEM_CACHE(pid_namespace, SLAB_PANIC);
-> > diff --git a/kernel/sys.c b/kernel/sys.c
-> > index 4070153..bd924fa 100644
-> > --- a/kernel/sys.c
-> > +++ b/kernel/sys.c
-> > @@ -444,6 +444,14 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
-> >  	                magic2 != LINUX_REBOOT_MAGIC2C))
-> >  		return -EINVAL;
-> >  
-> > +	/* In case the pid namespaces are enabled, the current task is in a
-> > +	 * child pid_namespace and the command is handled by 'reboot_pid_ns',
-> > +	 * this one will invoke 'do_exit'.
-> > +	 */
-> > +	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> >  	/* Instead of trying to make the power_off code look like
-> >  	 * halt when pm_power_off is not set do it the easy way.
-> >  	 */
-> > -- 
-> > 1.7.5.4
-> > 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linuxfoundation.org/mailman/listinfo/containers
+Second time server experienced slowdown. CPU goes near to 100% system; in SAR statistic from yesterday
+
+00:00:01        CPU     %user     %nice   %system   %iowait    %steal     %idle
+14:20:01        all      8.37      0.00      1.50      8.32      0.00     81.82
+14:30:01        all      9.76      0.00     11.91      9.53      0.00     68.80
+14:40:02        all      7.73      0.00     14.94      8.35      0.00     68.98
+14:50:01        all      4.46      0.00     64.24      4.71      0.00     26.60
+15:04:10        all      3.92      0.00     71.64      3.91      0.00     20.53
+15:14:06        all      4.26      0.06     73.70      3.75      0.00     18.22
+15:21:43        all      5.80      0.00     58.29      6.39      0.00     29.51
+15:33:13        all      0.57      0.00     98.44      0.22      0.00      0.77
+15:40:01        all      2.11      0.00     92.75      1.38      0.00      3.76
+15:53:05        all      4.65      0.00     67.29      4.62      0.00     23.43
+16:00:02        all      0.22      0.00     99.73      0.01      0.00      0.03
+16:10:01        all      6.77      0.00     62.23      5.45      0.00     25.55
+16:22:36        all      1.09      0.00     96.75      0.60      0.00      1.56
+16:35:00        all      1.00      0.00     98.32      0.23      0.00      0.46
+
+
+14:00:01     70890.08  32610.94 293683.34      0.66 302353.74   1511.70      0.00    553.15     36.59
+14:10:01     62785.00  41756.85 248404.91      1.39 262783.25    526.27      0.00     13.80      2.62
+14:20:01     45202.79  14421.25 247825.24      0.57 263555.49      0.00      0.00      0.00      0.00
+14:30:01     55258.89  19961.76 320001.06      6.67 292015.15   4642.89    421.42   1939.95     38.31
+14:40:02     39944.66  13820.21 265597.61     18.52 225282.13   3609.07    827.76    983.08     22.16
+14:40:02     pgpgin/s pgpgout/s   fault/s  majflt/s  pgfree/s pgscank/s pgscand/s pgsteal/s    %vmeff
+14:50:01     32186.97   6173.29 290924.86     18.14 159640.32    320.29   1047.12    357.74     26.16
+15:04:10     21821.44   5088.61 204284.90      8.49 136538.28    167.06   1166.24    320.86     24.06
+15:14:06     26446.08  10471.94 210644.97     13.09 134230.69    704.49   1810.80    790.93     31.44
+15:21:43     39126.74   7556.64 342544.63     31.48 180565.12    285.73   1354.19    451.70     27.54
+15:33:13      2796.56   2909.25  47558.06      8.24  22382.27     88.62   2052.66    531.01     24.80
+15:40:01      6200.17   5969.42 161088.56     21.97  42077.69    120.03   1832.63    438.99     22.48
+15:53:05     23803.80   9406.65 258179.22     60.35 118982.69    211.06   1679.50    512.08     27.09
+16:00:02       728.41   3156.68  16022.08      3.30   6382.78     88.78   2142.13    653.90     29.31
+16:10:01     27009.53   8949.01 330194.26    142.67 126540.73    209.47   1883.92    735.54     35.14
+16:22:36      2546.53   4279.80  64544.54     14.25  17826.19    148.21   2405.98    840.27     32.90
+16:35:00      2038.20   4231.65  61680.28     19.28  19653.35    114.72   2416.81    936.73     37.00
+
+
+Just got info about the same situation; looking at /proc/meminfo:
+
+MemTotal:       992606568 kB
+MemFree:          209064 kB
+Buffers:            8144 kB
+Cached:         435401824 kB
+SwapCached:      1098968 kB
+Active:         440527496 kB
+Inactive:       13550356 kB
+Active(anon):   440436992 kB
+Inactive(anon): 13467304 kB
+Active(file):      90504 kB
+Inactive(file):    83052 kB
+Unevictable:         124 kB
+Mlocked:               0 kB
+SwapTotal:      292421588 kB
+SwapFree:       290932124 kB
+Dirty:                32 kB
+Writeback:            32 kB
+AnonPages:      17599492 kB
+Mapped:         434635928 kB
+Shmem:          435236256 kB
+Slab:            2423828 kB
+SReclaimable:    1957952 kB
+SUnreclaim:       465876 kB
+KernelStack:       39536 kB
+PageTables:     519555856 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:    788724872 kB
+Committed_AS:   514649400 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:     3662244 kB
+VmallocChunk:   33484035568 kB
+HardwareCorrupted:     0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+DirectMap4k:       22528 kB
+DirectMap2M:     2058240 kB
+DirectMap1G:    1004535808 kB
+
+
+What can be the reason for system consuming half of physical memory for page tables?
+
+
+---
+With best regards
+
+Andrey Borzenkov
+
