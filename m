@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934066Ab2AKVpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 16:45:21 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:60954 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758148Ab2AKVpS convert rfc822-to-8bit (ORCPT
+	id S934020Ab2AKVqk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 16:46:40 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:50085 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758047Ab2AKVqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 16:45:18 -0500
+	Wed, 11 Jan 2012 16:46:38 -0500
+Date: Wed, 11 Jan 2012 13:46:35 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Sasha Levin <levinsasha928@gmail.com>
+cc: lizf@cn.fujitsu.com, akpm@linux-foundation.org, penberg@kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: Don't warn if memdup_user fails
+In-Reply-To: <1326300636-29233-1-git-send-email-levinsasha928@gmail.com>
+Message-ID: <alpine.DEB.2.00.1201111346180.21755@chino.kir.corp.google.com>
+References: <1326300636-29233-1-git-send-email-levinsasha928@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Message-ID: <1caa64c1-a36d-4779-a757-1a653ecd88d6@default>
-Date: Wed, 11 Jan 2012 13:44:49 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Nitin Gupta <ngupta@vflare.org>,
-        Brian King <brking@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, linux-mm@kvack.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: RE: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
-References: <<1326149520-31720-1-git-send-email-sjenning@linux.vnet.ibm.com>>
- <<1326149520-31720-2-git-send-email-sjenning@linux.vnet.ibm.com>>
- <b5b5a961-85e5-4ce1-8280-7ca382cb0e0f@default>
- <4F0DCAA7.4000601@linux.vnet.ibm.com>
-In-Reply-To: <4F0DCAA7.4000601@linux.vnet.ibm.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.6  (510070) [OL
- 12.0.6607.1000 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4F0E02E2.00B2,ss=1,re=0.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: Re: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
-> 
-> On 01/11/2012 11:19 AM, Dan Magenheimer wrote:
-> >> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> >> Subject: [PATCH 1/5] staging: zsmalloc: zsmalloc memory allocation library
-> >>
-> >> From: Nitin Gupta <ngupta@vflare.org>
-> >>
-> >> This patch creates a new memory allocation library named
-> >> zsmalloc.
-> >>
-> >> +/*
-> >> + * Allocate a zspage for the given size class
-> >> + */
-> >> +static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
-> >> +{
-> >> +	int i, error;
-> >> +	struct page *first_page = NULL;
-> >> +
-> >> +	/*
-> >> +	 * Allocate individual pages and link them together as:
-> >> +	 * 1. first page->private = first sub-page
-> >> +	 * 2. all sub-pages are linked together using page->lru
-> >> +	 * 3. each sub-page is linked to the first page using page->first_page
-> >> +	 *
-> >> +	 * For each size class, First/Head pages are linked together using
-> >> +	 * page->lru. Also, we set PG_private to identify the first page
-> >> +	 * (i.e. no other sub-page has this flag set) and PG_private_2 to
-> >> +	 * identify the last page.
-> >> +	 */
-> >> +	error = -ENOMEM;
-> >> +	for (i = 0; i < class->zspage_order; i++) {
-> >> +		struct page *page, *prev_page;
-> >> +
-> >> +		page = alloc_page(flags);
-> >
-> > Hmmm... I thought we agreed offlist that the new allocator API would
-> > provide for either preloads or callbacks (which may differ per pool)
-> > instead of directly allocating raw pages from the kernel.  The caller
-> > (zcache or ramster or ???) needs to be able to somehow manage maximum
-> > memory capacity to avoid OOMs.
-> >
-> > Or am I missing the code that handles that?
-> 
-> No, you aren't missing it; it's not there.  And I agree that we
-> should add that.
-> 
-> However, the existing allocator, xvmalloc, doesn't support callback
-> functionality either.  Would it be simpler to add the that as
-> a separate patch, that way we can keep the changes to zcache/zram
-> in this patchset isolated to just changing the xvmalloc calls to
-> zsmalloc calls?
+On Wed, 11 Jan 2012, Sasha Levin wrote:
 
-OK, I'll buy that.  Since you haven't changed any of the policy
-code, and the allocator is (purportedly) more storage-efficient on
-any sequence of chunks stored in it, the potential for OOMs shouldn't
-get any worse.
+> memdup_user() is called when we need to copy data from userspace. This
+> means that a user is able to trigger warnings if the kmalloc() inside
+> memdup_user() fails.
+> 
+> For example, this is one caused by writing to much data to ecryptdev:
+> 
+> [  912.739685] ------------[ cut here ]------------
+> [  912.745080] WARNING: at mm/page_alloc.c:2217 __alloc_pages_nodemask+0x22c/0x910()
+> [  912.746525] Pid: 19977, comm: trinity Not tainted 3.2.0-next-20120110-sasha #120
+> [  912.747915] Call Trace:
+> [  912.748415]  [<ffffffff8115ec5c>] ? __alloc_pages_nodemask+0x22c/0x910
+> [  912.749651]  [<ffffffff8109a2d5>] warn_slowpath_common+0x75/0xb0
+> [  912.750756]  [<ffffffff8109a3d5>] warn_slowpath_null+0x15/0x20
+> [  912.751831]  [<ffffffff8115ec5c>] __alloc_pages_nodemask+0x22c/0x910
+> [  912.754230]  [<ffffffff81070fd5>] ? pvclock_clocksource_read+0x55/0xd0
+> [  912.755484]  [<ffffffff8106ff56>] ? kvm_clock_read+0x46/0x80
+> [  912.756565]  [<ffffffff810d1548>] ? sched_clock_cpu+0xc8/0x140
+> [  912.757667]  [<ffffffff810cc731>] ? get_parent_ip+0x11/0x50
+> [  912.758731]  [<ffffffff810cc731>] ? get_parent_ip+0x11/0x50
+> [  912.759890]  [<ffffffff81341a4b>] ? ecryptfs_miscdev_write+0x6b/0x240
+> [  912.761119]  [<ffffffff81196c80>] alloc_pages_current+0xa0/0x110
+> [  912.762269]  [<ffffffff8115ba1f>] __get_free_pages+0xf/0x40
+> [  912.763347]  [<ffffffff811a6082>] __kmalloc_track_caller+0x172/0x190
+> [  912.764561]  [<ffffffff8116f0ab>] memdup_user+0x2b/0x90
+> [  912.765526]  [<ffffffff81341a4b>] ecryptfs_miscdev_write+0x6b/0x240
+> [  912.766669]  [<ffffffff813419e0>] ? ecryptfs_miscdev_open+0x190/0x190
+> [  912.767832]  [<ffffffff811ba360>] do_loop_readv_writev+0x50/0x80
+> [  912.770735]  [<ffffffff811ba69e>] do_readv_writev+0x1ce/0x1e0
+> [  912.773059]  [<ffffffff8251bbbc>] ? __mutex_unlock_slowpath+0x10c/0x200
+> [  912.774634]  [<ffffffff810cc731>] ? get_parent_ip+0x11/0x50
+> [  912.775699]  [<ffffffff810cc8dd>] ? sub_preempt_count+0x9d/0xd0
+> [  912.776827]  [<ffffffff8251f09d>] ? retint_swapgs+0x13/0x1b
+> [  912.777887]  [<ffffffff811ba758>] vfs_writev+0x48/0x60
+> [  912.779162]  [<ffffffff811ba86f>] sys_writev+0x4f/0xb0
+> [  912.780152]  [<ffffffff8251f979>] system_call_fastpath+0x16/0x1b
+> [  912.793046] ---[ end trace 50c38c9cdee53379 ]---
+> [  912.793906] ecryptfs_miscdev_write: memdup_user returned error [-12]
+> 
+> Failing memdup_user() shouldn't be generating warnings, instead it should
+> be notifying userspace about the error.
+> 
+> Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
 
-Dan
+Acked-by: David Rientjes <rientjes@google.com>
