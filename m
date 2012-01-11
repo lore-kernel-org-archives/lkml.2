@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756975Ab2AKIWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:22:16 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:60095 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752172Ab2AKIWP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:22:15 -0500
-Message-ID: <1326270127.2614.19.camel@edumazet-laptop>
-Subject: Re: [BUG] kernel freezes with latest tree
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Date: Wed, 11 Jan 2012 09:22:07 +0100
-In-Reply-To: <CA+55aFwYmX7q4MZc-xOStZB2ZQjVt_Jca6qDP+0cPKekz8yL+A@mail.gmail.com>
-References: <1326171444.6638.3.camel@edumazet-laptop>
-	 <1326171798.6638.4.camel@edumazet-laptop>
-	 <1326183371.6638.6.camel@edumazet-laptop>
-	 <1326212033.19095.3.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
-	 <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
-	 <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
-	 <1326234230.2614.15.camel@edumazet-laptop>
-	 <CA+55aFwYmX7q4MZc-xOStZB2ZQjVt_Jca6qDP+0cPKekz8yL+A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
+	id S1757133Ab2AKIWu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:22:50 -0500
+Received: from solca.med.ec ([200.105.240.90]:60217 "EHLO mail.solca.med.ec"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757098Ab2AKIWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 03:22:48 -0500
+Message-ID: <54547.41.71.150.50.1326269573.squirrel@mail.solca.med.ec>
+Date: Wed, 11 Jan 2012 03:12:53 -0500 (ECT)
+Subject: =?utf-8?B?V2VibWFzdGVyIHBvd2lhZG9taWXFhCEh4oCP4oCP4oCPICA=?=
+From: =?utf-8?B?V2VibWFzdGVyIEFrdHVhbGl6YWNqYSBXeWR6aWHFgg==?= 
+	<info@webmaster.pl>
+Reply-To: customercarewebdept40@w.cn
+User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+MIME-Version: 1.0
+Content-Type: text/plain;charset=utf-8
 Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-TM-AS-Product-Ver: IMSS-7.1.0.1302-6.8.0.1017-18638.005
+X-TM-AS-Result: No-0.555-4.5-31-10
+X-imss-scan-details: No-0.555-4.5-31-10
+X-TM-AS-User-Approved-Sender: No
+X-TMASE-MatchedRID: bF/ftEib5FfmR+RxuU2vfUwAZYE2FMixerJCitPoIIzfUZT83lbkEMWm
+	DR829mMW+SihPPY9VI/SFZyaJmMIRq4HyN5VK32o3QfwsVk0UbsIoUKaF27lxe9ttG7ej8LDTf7
+	84XTH6n02i1vZX3Gk8jR5DBXp0fyKfL+lEnWkaa1YMZmn2SPR7wADRaWctxCv9lwBnJvrqCOKFQ
+	bGqG+X5kV4mhCkeaWfaWNolBtQ1wbDHYSZWYRUCk9o3BPtf0h2+rL5VW+ofZc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 10 janvier 2012 à 15:44 -0800, Linus Torvalds a écrit :
-> On Tue, Jan 10, 2012 at 2:23 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> >
-> > Maybe a recent change in NMI handling, or perf events ?
-> 
-> Unlikely. And it shouldn't show up in the merge commit anyway, those
-> things should be pretty independent.
-> 
-> > No idea why the bisection (I redid it carefully : same result) points to the above commit.
-> 
-> Ok, so the bisect is almost certainly correct. But just to be anal and
-> really careful, can you independently check both parents of the merge,
-> and then re-check the merge itself, and verify that the two parent
-> commits never hang, and that the merged state hangs.
-> 
-> Just to take any bisection issues out of the picture, and just verify
-> those three commits by hand.
-> 
-> But in the meantime, we should assume that it's the merge that is the problem.
-> 
-> I added Frederic to the cc, because he did the
-> tick_nohz_idle_enter_norcu(), so maybe he can tell if there is
-> something in that merge that looks suspicious (Frederic - see the
-> history of the thread on lkml. I thought maybe it was the lack of
-> irq-disable around set_cpu_sd_state_idle(), but Eric already tested
-> that). And Suresh because he worked on the whole nohz/nr_busy_cpus.
-> Maybe you guys see some obvious semantic clash..
-> 
-> Anybody? Any ideas? Clearly there can be a merge problem that doesn't
-> actually show as a real data conflict, just some semantic conflict,
-> but I don't see what such issues would be brouht in by the scheduler
-> merge anyway.
-> 
-
-Thanks Linus for all the input.
-
-I'll redo extensive bisection today, waiting at least 30 minutes before
-telling a point is good (or not).
-
-Maybe bug can sometime hide a long time before triggering.
-
-[ I'll first make sure 3.2 is rock solid ]
 
 
+
+Drodzy Widzowie konto e-mail,
+
+
+Ten komunikat jest od poczty centrum wiadomości do wszystkich na nasze
+konto poczty owners.As pierwszym kwartale 2012 r. Obecnie jest
+przeprowadzenie usługi aktualizacji dla naszej bazy i e-mail centrum
+konta. Jesteśmy usunięcie wszystkich niewykorzystanych konto poczty
+internetowej, aby utworzyć więcej miejsca dla nowych kont.
+
+Aby zapobiec koncie od usuwania i Aby kontynuować korzystanie z naszych
+usług, które są wymagane do aktualizacji i potwierdzenia konta webmail.
+
+
+Aby zakończyć potwierdzenia konta za pierwszy kwartał 2012 r. Jesteś
+odpowiedzieć na tę wiadomość natychmiast i wprowadź dane swojego
+konta w wymienionych poniżej.
+
+
+Potwierdzenie informacji o koncie
+Nazwa użytkownika: ......
+E-mail Login ............
+Hasło: ..................
+Potwierdź hasło :........
+Data urodzenia: .........
+
+Ważne * Proszę podać wszystkie te informacje kompletnie i prawidłowo w
+przeciwnym razie ze względów bezpieczeństwa być może będziemy
+musieli zamknąć temporarily.We konto poczty dziękuję za szybkie zajęcie
+się tą matter.Please zrozumieć, że jest to środek bezpieczeństwa
+przeznaczonych do ochrony użytkowników i konta poczty internetowej.
+Przepraszamy za wszelkie niedogodności.
 
