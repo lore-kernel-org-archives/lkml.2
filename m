@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab2AKODr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 09:03:47 -0500
+	id S1757573Ab2AKOD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 09:03:57 -0500
 Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34567 "EHLO
 	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756011Ab2AKODo (ORCPT
+	by vger.kernel.org with ESMTP id S1757528Ab2AKODr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 09:03:44 -0500
+	Wed, 11 Jan 2012 09:03:47 -0500
 From: =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Linus Walleij <linus.walleij@linaro.org>,
         sjurbren@gmail.com,
         =?UTF-8?q?Sjur=20Br=C3=A6ndeland?= <sjur.brandeland@stericsson.com>
-Subject: [PATCHv5 00/11]  modem_shm: Driver for ST-E Thor M7400 LTE modem
-Date: Wed, 11 Jan 2012 15:03:22 +0100
-Message-Id: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
+Subject: [PATCHv5 02/11] modem_shm: Channel config definitions for ST-E M7400 driver.
+Date: Wed, 11 Jan 2012 15:03:24 +0100
+Message-Id: <1326290613-18287-3-git-send-email-sjur.brandeland@stericsson.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
+References: <1326290613-18287-1-git-send-email-sjur.brandeland@stericsson.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,201 +25,140 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the fifth patch-set for the M7400 SHM driver. Most notable
-change is the rename to modem_shm, the rest of the changes are bug-fixes.
-Changes:
-o Renames xshm to modem_shm
-o Fix stall in caif packet data. Pending buffers was not always flushed
-o More bug-fixes related to firmware loading (memory leak, sanity checks)
-o Add more sanity checks for user data
-o Fix bugs for character device open failures
-o Fix bugs for channel configuration layout
+Add definitions of netlink commands for setting the channel
+configuration and shared memory layout for ST-Ericsson M7400.
+The netlink commands are use to configure channels, reset configuration,
+making channel configuration available to modem, etc.
 
-Patches available at github.com:sjurbren/modem-ipc.git for-next.
-
-Introduction:
-~~~~~~~~~~~~~
-This patch-set introduces the Shared Memory Driver for ST-Ericsson's
-Thor M7400 LTE modem.
-The shared memory model is implemented for Chip-to-chip and
-uses a reserved memory area and a number of bi-directional
-channels. Each channel has it's own designated data area where payload
-data is copied into.
-
-Two different channel types are defined, one stream channel which is
-implemented as a traditional ring-buffer, and a packet channel which
-is a ring-buffer of fix sized buffers where each buffer contains
-an array of CAIF frames.
-
-The notification of read and write index updates are handled in a
-separate driver called c2c_genio. This driver will be contributed separately,
-but the API is included in this patch-set.
-
-The channel configuration is stored in shared memory, each channel
-has a designated area in shared memory for configuration data,
-read and write indexes and a data area.
-
-Configuration
-~~~~~~~~~~~~~~~
-
-        IPC-TOC
-        +--------------------+	   Index Area
-        | Channel Descr 0    | -----> +------------+
-	|                    | -+     |	Read Index |
-	|--------------------|	|     |------------|
-	| Channel Descr 1    | 	|     |	Write Index|
-	|                    |	|     +------------+
-	|--------------------|	|   Data Area
-	|       ...    	     |	|     +------------+
-	|                    |	+---> |            |
-	+--------------------+	      |	       	   |
-				      |	       	   |
-				      +------------+
-
-A IPC-TOC (table of content) is used for holding configuration data
-for the channels (struct shm_ipctoc). It contains an array of
-channel descriptors (struct shm_ipctoc_channel). The channel
-descriptors points out the data area and the location of
-read and write indexes.
-
-The configuration is provided from user-space using gen-netlink.
-The gen-netlink format is defined in modem_shm_netlink.h and and handled
-in shm_boot.c
-
-Packet data
-~~~~~~~~~~~
-The packet channel is set up to minimize interrupts needed to
-transfer a packet and to allow efficient DMA operations on the modem.
-
-Ring Buffer Indexes:
-    +------------+
-  +-| Read Index |
-  | |------------|
-  | | Write Index|------------------------+
-  | +------------+   		 	  |
-  |    		    			  |
-  V    	  				  |
-Buffer-0:				  V Buffer-1:
- +----------------------------------------+---------------+---
- |ofs,len|ofs,len| ....| frm-0|frm-1| ... | ofs,len | ....|...
- +----------------------------------------+---------------+--
-   |      |              ^      ^
-   +---------------------+      |
-	  +---------------------+
-
-Packet data is organized in a channel containing a number of fixed-
-size buffers. The channel has a read and write pointer to a buffer in a normal
-ring-buffer fashion.
-
-Each buffer holds an array of CAIF-frames, and starts with an descriptor array
-containing pointers to the data frames in the buffer. The descriptor array
-contains offset and length of each frame.
-
-The packet device (caif_shm.c) is implemented as a network interface of
-type ARPHRD_CAIF.
-
-Stream data
-~~~~~~~~~~~
-The driver for the stream channel is implemented as a character device
-interface to user space. The character device implements non-blocking open
-and non-blocking IO in general. The character device is implementing
-a traditional circular buffer directly in the shared memory region for
-the channel.
-
-
-Driver model
-~~~~~~~~~~~~~~
-A SHM bus is implemented, the example below shows one device
-of each type (stream and packet):
-
-/sys/bus/modem_shm
-|-- devices
-|   |-- shm0 -> ../../../devices/modem_shm/shm0
-|   `-- shm1 -> ../../../devices/modem_shm/shm1
-|-- drivers
-|   |-- caif_shm
-|   |   |-- bind
-|   |   |-- module -> ../../../../module/caif_shm
-|   |   |-- uevent
-|   |   |-- unbind
-|   |   `-- shm1 -> ../../../../devices/shm/shm1
-|   `-- shm_chr
-|       |-- bind
-|       |-- module -> ../../../../module/shm_chr
-|       |-- uevent
-|       |-- unbind
-|       `-- shm0 -> ../../../../devices/shm/shm0
-|-- drivers_autoprobe
-|-- drivers_probe
-`-- uevent
-
-
-/sys/devices/modem_shm/
-|-- bootimg
-|-- caif_ready
-|-- ipc_ready
-|-- uevent
-|-- shm0
-|   |-- driver -> ../../../bus/shm/drivers/modem_shm_chr
-|   |-- misc
-|   |   `-- shm0
-|   |       |-- dev
-|   |       |-- device -> ../../../shm0
-|   |       |-- subsystem -> ../../../../../class/misc
-|   |       `-- uevent
-|   |-- subsystem -> ../../../bus/shm
-|   `-- uevent
-`-- shm1
-    |-- driver -> ../../../bus/shm/drivers/caif_shm
-    |-- subsystem -> ../../../bus/shm
-    `-- uevent
-
-Review comments and feedback are welcome.
-
-
-Sjur Brændeland (11):
-  modem_shm: Shared Memory layout for ST-E M7400 driver.
-  modem_shm: Channel config definitions for ST-E M7400 driver.
-  modem_shm: Configuration for SHM Channel an devices.
-  modem_shm: geni/geno driver interface.
-  modem_shm: genio dummy driver
-  modem_shm: Add SHM device bus.
-  modem_shm: Add shm device implementation
-  modem_shm: SHM Configuration data handling
-  modem_shm: Character device for SHM channel access.
-  modem_shm: Makefile and Kconfig for M7400 Shared Memory Drivers
-  caif_shm: Add CAIF driver for Shared memory for M7400
-
- drivers/Kconfig                             |    2 +
- drivers/Makefile                            |    1 +
- drivers/modem_shm/Kconfig                   |   62 ++
- drivers/modem_shm/Makefile                  |    5 +
- drivers/modem_shm/dummy_c2c_genio.c         |   76 ++
- drivers/modem_shm/shm_boot.c                | 1208 ++++++++++++++++++++++++++
- drivers/modem_shm/shm_bus.c                 |  113 +++
- drivers/modem_shm/shm_chr.c                 | 1242 +++++++++++++++++++++++++++
- drivers/modem_shm/shm_dev.c                 |  527 ++++++++++++
- drivers/modem_shm/shm_ipctoc.h              |  154 ++++
- drivers/net/caif/Kconfig                    |   12 +-
- drivers/net/caif/Makefile                   |    3 +-
- drivers/net/caif/caif_shm.c                 |  900 +++++++++++++++++++
+Signed-off-by: Sjur Brændeland <sjur.brandeland@stericsson.com>
+---
  include/linux/Kbuild                        |    1 +
- include/linux/c2c_genio.h                   |  195 +++++
  include/linux/modem_shm/Kbuild              |    1 +
- include/linux/modem_shm/modem_shm_netlink.h |   95 ++
- include/linux/modem_shm/shm_dev.h           |  245 ++++++
- 18 files changed, 4840 insertions(+), 2 deletions(-)
- create mode 100644 drivers/modem_shm/Kconfig
- create mode 100644 drivers/modem_shm/Makefile
- create mode 100644 drivers/modem_shm/dummy_c2c_genio.c
- create mode 100644 drivers/modem_shm/shm_boot.c
- create mode 100644 drivers/modem_shm/shm_bus.c
- create mode 100644 drivers/modem_shm/shm_chr.c
- create mode 100644 drivers/modem_shm/shm_dev.c
- create mode 100644 drivers/modem_shm/shm_ipctoc.h
- create mode 100644 drivers/net/caif/caif_shm.c
- create mode 100644 include/linux/c2c_genio.h
+ include/linux/modem_shm/modem_shm_netlink.h |   95 +++++++++++++++++++++++++++
+ 3 files changed, 97 insertions(+), 0 deletions(-)
  create mode 100644 include/linux/modem_shm/Kbuild
  create mode 100644 include/linux/modem_shm/modem_shm_netlink.h
- create mode 100644 include/linux/modem_shm/shm_dev.h
+
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index 619b565..c076119 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -17,6 +17,7 @@ header-y += netfilter_bridge/
+ header-y += netfilter_ipv4/
+ header-y += netfilter_ipv6/
+ header-y += usb/
++header-y += shm/
+ header-y += wimax/
+ 
+ objhdr-y += version.h
+diff --git a/include/linux/modem_shm/Kbuild b/include/linux/modem_shm/Kbuild
+new file mode 100644
+index 0000000..165b66c
+--- /dev/null
++++ b/include/linux/modem_shm/Kbuild
+@@ -0,0 +1 @@
++header-y += modem_shm_netlink.h
+diff --git a/include/linux/modem_shm/modem_shm_netlink.h b/include/linux/modem_shm/modem_shm_netlink.h
+new file mode 100644
+index 0000000..fedeab5
+--- /dev/null
++++ b/include/linux/modem_shm/modem_shm_netlink.h
+@@ -0,0 +1,95 @@
++/*
++ * Copyright (C) ST-Ericsson AB 2012
++ * Author: Sjur Brændeland / sjur.brandeland@stericsson.com
++ * License terms: GNU General Public License (GPL) version 2
++ */
++
++#ifndef SHM_NL_H_
++#define SHM_NL_H_
++
++#define SHM_PROTO_VERSION 1
++#define SHM_PROTO_SUB_VERSION 0
++#define SHM_NETLINK_VERSION 1
++/**
++ * enum SHM_COMMANDS - Attributes used for configuring SHM device.
++ *
++ * @SHM_C_ADD_STREAM_CHANNEL: Adds a Stream Channel.
++ * This will cause an instance of SHM-CHR to be created.
++ * @SHM_C_ADD_PACKET_CHANNEL: Adds a Packet Channel.
++ * This will cause an instance of CAIF-SHM to be created.
++ * @SHM_C_COMMIT: formats and write Channel configuration data to
++ *	Shared Memory.
++ * @SHM_C_SET_ADDR: Writes the TOC address to GENO register.
++ * @SHM_C_REGISTER:  Initiates registration of the channel devices.
++ *	This will cause shm - character devices or
++ *	CAIF network instances to be created.
++ * @SHM_C_RESET:  Reset the configuration data and removes the
++ *	platform devices and their associated channel configuration.
++ *	ipc_ready and caif_ready is set to false.
++ *
++ * A normal sequence of events is: [SHM_C_RESET], [SHM_C_ADD_X_CHANNEL],
++ *	SHM_C_COMMIT, SHM_C_REGISTER, SHM_C_SET_ADDR.
++ */
++enum SHM_COMMANDS {
++	SHM_C_ADD_STREAM_CHANNEL = 1,
++	SHM_C_ADD_PACKET_CHANNEL,
++	SHM_C_RESET,
++	SHM_C_SET_ADDR,
++	SHM_C_COMMIT,
++	SHM_C_REGISTER,
++	__SHM_C_VERIFY,
++	__SHM_C_MAX
++};
++
++/**
++ * enum SHM_ATTRIBUTES - Attributes used for configuring SHM device.
++ * @SHM_A_VERSION: Version of SHM netlink protocol. Type NLA_U8
++ * @SHM_A_SUB_VERSION: Sub-version of SHM netlink protocol. Type NLA_U8
++ * @SHM_A_NAME: Name of the channel, max 15 characters. Type NLA_NUL_STRING
++ * @SHM_A_EXCL_GROUP: Devices may be part of a group. Devices from the
++ *	same group are allowed to be open simultaneously,
++ *	but devices from different groups cannot be opened
++ *	at the same time. Type NLA_U8.
++ * @SHM_A_RX_CHANNEL: The RX direction attributes. Type NLA_NESTED.
++ *	Each channel may contain the attributes - SHM_A_CHANNEL_SIZE,
++ *	SHM_A_CHANNEL_BUFFERS, SHM_A_ALIGNMENT, SHM_A_MTU.
++ *
++ * @SHM_A_TX_CHANNEL: The TX direction attributes. Type NLA_NESTED.
++ *
++ * @SHM_A_CHANNEL_SIZE: Size of the data area for a channel. Specified
++ *	for RX, TX. Type NLA_U32,
++ * @SHM_A_CHANNEL_BUFFERS: Numer of buffers for a packet channel.
++ *	This attribute is only used for packet channels.  Specified for RX, TX.
++ *	Type NLA_U32,
++ * @SHM_A_ALIGNMENT: Alignment for each packet in a buffer. This attribute
++ *	 is only used for packet channels.  Specified for RX, TX.Type NLA_U8,
++ * @SHM_A_MTU: Maximum Transfer Unit for packets in a buffer.
++ *	This is only appplicable for packet channels.
++ *	Specified for RX, TX.Type NLA_U16,
++ * @SHM_A_PACKETS: Maximum number of packets in a buffer. Type NLA_U8
++ * @SHM_A_PRIORITY: Priority of the channel, legal range is 0-7 where
++ *	0 is lowest priority. Type NLA_U8.
++ * @SHM_A_LATENCY: Latency for channel, value:0 means low latency
++ *	 and low bandwidth,
++ *	 value 1 means high latency and high bandwidth. Type NLA_U8.
++ */
++enum SHM_ATTRIBUTES {
++	__SHM_A_FLAGS = 1,		/* Test flags: NLA_U32 */
++	SHM_A_VERSION,
++	SHM_A_SUB_VERSION,
++	SHM_A_NAME,
++	SHM_A_EXCL_GROUP,
++	SHM_A_RX_CHANNEL,
++	SHM_A_TX_CHANNEL,
++	SHM_A_CHANNEL_SIZE,
++	SHM_A_CHANNEL_BUFFERS,
++	SHM_A_ALIGNMENT,
++	SHM_A_MTU,
++	SHM_A_PACKETS,
++	SHM_A_PRIORITY,
++	SHM_A_LATENCY,
++	__SHM_A_MAX,
++};
++#define SHM_A_MAX (__SHM_A_MAX - 1)
++
++#endif /* SHM_NL_H_ */
+-- 
+1.7.1
 
