@@ -1,49 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933958Ab2AKUXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:23:31 -0500
-Received: from lo.gmane.org ([80.91.229.12]:47442 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933921Ab2AKUXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:23:11 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Mantas <grawity@gmail.com>
-Subject: Re: 3.2rc7 rcu_preempt stalls and tasks blocked.
-Date: Wed, 11 Jan 2012 22:22:40 +0200
-Message-ID: <jekr2s$c9c$1@dough.gmane.org>
-References: <bcf.4ef5dd08.61f72@roo.daria.co.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 78-60-211-195.static.zebra.lt
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111224 Thunderbird/9.0.1
-In-Reply-To: <bcf.4ef5dd08.61f72@roo.daria.co.uk>
+	id S933950Ab2AKUYA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:24:00 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47650 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933758Ab2AKUW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 15:22:56 -0500
+From: Grant Likely <grant.likely@secretlab.ca>
+To: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Subject: [RFC 14/14] irq_domain: Remove irq_domain_add_simple()
+Date: Wed, 11 Jan 2012 13:22:17 -0700
+Message-Id: <1326313337-24603-15-git-send-email-grant.likely@secretlab.ca>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-12-24 16:09, Jonathan Hudson wrote:
-> Ever since 3.1, I've been experiencing rcu_preempt stalls, tasks
-> blocked and subsequent lock ups on an eeepc 901. Judging by the thread
-> <https://bugs.archlinux.org/task/26847> on the Arch forums, this is not
-> an uncommon experience. 
+irq_domain_add_simple() was a stop-gap measure until complete irq_domain
+support was complete.  This patch removes the irq_domain_add_simple()
+interface.
 
-Can confirm on ASUS K52JT, using 3.2 (Arch Linux) and various git builds
-starting around 3.2-rc6/7. Appears to be caused by heavier wireless
-network activity (ath9k, Atheros AR9285, open network, IPv4 & IPv6),
-such as BitTorrent -- although not by ordinary HTTP or such. Other posts
-in the Arch bug report say having ipv6 loaded/enabled is causing the
-problem.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
+ arch/arm/mach-imx/imx51-dt.c        |    4 ++--
+ arch/arm/mach-imx/imx53-dt.c        |    4 ++--
+ arch/arm/mach-imx/mach-imx6q.c      |    2 +-
+ arch/arm/mach-msm/board-msm8x60.c   |    8 ++------
+ arch/arm/mach-omap2/board-generic.c |    2 +-
+ arch/arm/mach-prima2/irq.c          |    2 +-
+ include/linux/irqdomain.h           |    1 -
+ kernel/irq/irqdomain.c              |   10 ++--------
+ 8 files changed, 11 insertions(+), 22 deletions(-)
 
-During the lockup, accessing certain files in /proc (can't remember all,
-but /proc/*/mounts and /proc/*/cgroup included) causes the process to
-hang; same when running `ip`, `iwconfig` and related tools. Often (but
-not always), killing NetworkManager makes everything work again.
-
-Hoping for a fix someday.
-
+diff --git a/arch/arm/mach-imx/imx51-dt.c b/arch/arm/mach-imx/imx51-dt.c
+index e6bad17..83e660f 100644
+--- a/arch/arm/mach-imx/imx51-dt.c
++++ b/arch/arm/mach-imx/imx51-dt.c
+@@ -47,7 +47,7 @@ static const struct of_dev_auxdata imx51_auxdata_lookup[] __initconst = {
+ static int __init imx51_tzic_add_irq_domain(struct device_node *np,
+ 				struct device_node *interrupt_parent)
+ {
+-	irq_domain_add_simple(np, 0);
++	irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops);
+ 	return 0;
+ }
+ 
+@@ -57,7 +57,7 @@ static int __init imx51_gpio_add_irq_domain(struct device_node *np,
+ 	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+ 
+ 	gpio_irq_base -= 32;
+-	irq_domain_add_simple(np, gpio_irq_base);
++	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-imx/imx53-dt.c b/arch/arm/mach-imx/imx53-dt.c
+index 05ebb3e..ba2558d 100644
+--- a/arch/arm/mach-imx/imx53-dt.c
++++ b/arch/arm/mach-imx/imx53-dt.c
+@@ -51,7 +51,7 @@ static const struct of_dev_auxdata imx53_auxdata_lookup[] __initconst = {
+ static int __init imx53_tzic_add_irq_domain(struct device_node *np,
+ 				struct device_node *interrupt_parent)
+ {
+-	irq_domain_add_simple(np, 0);
++	irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops);
+ 	return 0;
+ }
+ 
+@@ -61,7 +61,7 @@ static int __init imx53_gpio_add_irq_domain(struct device_node *np,
+ 	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+ 
+ 	gpio_irq_base -= 32;
+-	irq_domain_add_simple(np, gpio_irq_base);
++	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
+index c257281..7a98354 100644
+--- a/arch/arm/mach-imx/mach-imx6q.c
++++ b/arch/arm/mach-imx/mach-imx6q.c
+@@ -97,7 +97,7 @@ static int __init imx6q_gpio_add_irq_domain(struct device_node *np,
+ 	static int gpio_irq_base = MXC_GPIO_IRQ_START + ARCH_NR_GPIOS;
+ 
+ 	gpio_irq_base -= 32;
+-	irq_domain_add_simple(np, gpio_irq_base);
++	irq_domain_add_legacy(np, 32, gpio_irq_base, 0, &irq_domain_simple_ops);
+ 
+ 	return 0;
+ }
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 0a11342..962e711 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -80,12 +80,8 @@ static struct of_device_id msm_dt_gic_match[] __initdata = {
+ 
+ static void __init msm8x60_dt_init(void)
+ {
+-	struct device_node *node;
+-
+-	node = of_find_matching_node_by_address(NULL, msm_dt_gic_match,
+-			MSM8X60_QGIC_DIST_PHYS);
+-	if (node)
+-		irq_domain_add_simple(node, GIC_SPI_START);
++	irq_domain_generate_simple(msm_dt_gic_match, MSM8X60_QGIC_DIST_PHYS,
++				GIC_SPI_START);
+ 
+ 	if (of_machine_is_compatible("qcom,msm8660-surf")) {
+ 		printk(KERN_INFO "Init surf UART registers\n");
+diff --git a/arch/arm/mach-omap2/board-generic.c b/arch/arm/mach-omap2/board-generic.c
+index d587560..0b8e095 100644
+--- a/arch/arm/mach-omap2/board-generic.c
++++ b/arch/arm/mach-omap2/board-generic.c
+@@ -67,7 +67,7 @@ static void __init omap_generic_init(void)
+ {
+ 	struct device_node *node = of_find_matching_node(NULL, intc_match);
+ 	if (node)
+-		irq_domain_add_simple(node, 0);
++		irq_domain_add_legacy(node, 32, 0, 0, &irq_domain_simple_ops);
+ 
+ 	omap_sdrc_init(NULL, NULL);
+ 
+diff --git a/arch/arm/mach-prima2/irq.c b/arch/arm/mach-prima2/irq.c
+index d93ceef..676d512 100644
+--- a/arch/arm/mach-prima2/irq.c
++++ b/arch/arm/mach-prima2/irq.c
+@@ -68,7 +68,7 @@ void __init sirfsoc_of_irq_init(void)
+ 	if (!sirfsoc_intc_base)
+ 		panic("unable to map intc cpu registers\n");
+ 
+-	irq_domain_add_simple(np, 0);
++	irq_domain_add_legacy(np, 32, 0, 0, &irq_domain_simple_ops);
+ 
+ 	of_node_put(np);
+ 
+diff --git a/include/linux/irqdomain.h b/include/linux/irqdomain.h
+index 7c25e7c..5818908 100644
+--- a/include/linux/irqdomain.h
++++ b/include/linux/irqdomain.h
+@@ -163,7 +163,6 @@ extern unsigned int irq_linear_revmap(struct irq_domain *host,
+ 
+ extern struct irq_domain_ops irq_domain_simple_ops;
+ #if defined(CONFIG_OF_IRQ)
+-extern void irq_domain_add_simple(struct device_node *controller, int irq_base);
+ extern void irq_domain_generate_simple(const struct of_device_id *match,
+ 					u64 phys_base, unsigned int irq_start);
+ #else /* CONFIG_OF_IRQ */
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index b90a32e..d3e00c7 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -689,13 +689,6 @@ struct irq_domain_ops irq_domain_simple_ops = {
+ EXPORT_SYMBOL_GPL(irq_domain_simple_ops);
+ 
+ #ifdef CONFIG_OF_IRQ
+-void irq_domain_add_simple(struct device_node *controller, int irq_base)
+-{
+-	irq_domain_add_legacy(controller, 32, irq_base, 0,
+-			      &irq_domain_simple_ops);
+-}
+-EXPORT_SYMBOL_GPL(irq_domain_add_simple);
+-
+ void irq_domain_generate_simple(const struct of_device_id *match,
+ 				u64 phys_base, unsigned int irq_start)
+ {
+@@ -704,7 +697,8 @@ void irq_domain_generate_simple(const struct of_device_id *match,
+ 		(unsigned long long) phys_base, (int) irq_start);
+ 	node = of_find_matching_node_by_address(NULL, match, phys_base);
+ 	if (node)
+-		irq_domain_add_simple(node, irq_start);
++		irq_domain_add_legacy(controller, 32, irq_start, 0,
++					&irq_domain_simple_ops);
+ }
+ EXPORT_SYMBOL_GPL(irq_domain_generate_simple);
+ #endif
 -- 
-Mantas M.
+1.7.5.4
 
