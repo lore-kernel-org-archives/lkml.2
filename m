@@ -1,63 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab2AKK6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:58:55 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53828 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752522Ab2AKK6y convert rfc822-to-8bit (ORCPT
+	id S1756520Ab2AKLG4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 06:06:56 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42462 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752522Ab2AKLGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:58:54 -0500
+	Wed, 11 Jan 2012 06:06:53 -0500
+Date: Wed, 11 Jan 2012 12:06:50 +0100
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Austin Boyle <Austin.Boyle@aviatnet.com>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] rtc: ds1307: generalise ram size and offset
+Message-ID: <20120111110650.GC2605@pengutronix.de>
+References: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
 MIME-Version: 1.0
-In-Reply-To: <20120107182319.GA13181@n2100.arm.linux.org.uk>
-References: <1325778146-27056-1-git-send-email-thomas.abraham@linaro.org>
-	<20120107182319.GA13181@n2100.arm.linux.org.uk>
-Date: Wed, 11 Jan 2012 16:28:53 +0530
-Message-ID: <CAJuYYwR6tySTcD9RdNcuGhqCRT2mSLep2sMf1MOJViXEbFEwxw@mail.gmail.com>
-Subject: Re: [PATCH] backlight: lcd: add driver for raster-type lcd's with
- gpio controlled panel reset
-From: Thomas Abraham <thomas.abraham@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kgene.kim@samsung.com, lars@metafoo.de, kwangwoo.lee@gmail.com,
-        patches@linaro.org, jg1.han@samsung.com, rob.herring@calxeda.com,
-        grant.likely@secretlab.ca, cbou@mail.ru, kyungmin.park@samsung.com,
-        linux-samsung-soc@vger.kernel.org, rpurdie@rpsys.net,
-        ben-linux@fluff.org, broonie@opensource.wolfsonmicro.com,
-        augulis.darius@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JgQwtEuHJzHdouWu"
+Content-Disposition: inline
+In-Reply-To: <1326144071.3096.25.camel@pc786-ubu.gnet.global.vpn>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
 
-On 7 January 2012 23:53, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Jan 05, 2012 at 09:12:26PM +0530, Thomas Abraham wrote:
->> Add a lcd panel driver for simple raster-type lcd's which uses a gpio
->> controlled panel reset. The driver controls the nRESET line of the panel
->> using a gpio connected from the host system. The Vcc supply to the panel
->> is (optionally) controlled using a voltage regulator. This driver excludes
->> support for lcd panels that use a serial command interface or direct
->> memory mapped IO interface.
->
-> I'm trying to work out what kind of LCD panel this is for.  I assume
-> not the panels which would be connected to a SoC, which have a parallel
-> interface to a frame buffer device (LCD controller)?
->
-> If this is for these kinds of LCD panels, how are you handling the
-> timing required for active panels - some of which must not be powered
-> up without the LCD controller first being setup and enabled, and must
-> be powered down before the LCD controller is disabled.
->
-> I've seen this requirement with panels connected to ARM Ltd's development
-> boards, and also some SoCs.
+--JgQwtEuHJzHdouWu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch is for passive panels that use a nRESET line controlled by
-a SoC GPIO and the panel do not use serial command interface (i2c or
-spi) or memory-mapped-io for panel control. Panels that just need a
-nRESET to be controlled can be handled by this driver.
+Austin,
 
-Thanks,
-Thomas.
+> --- a/drivers/rtc/rtc-ds1307.c	2011-10-10 11:22:22.674690998 +1300
+> +++ b/drivers/rtc/rtc-ds1307.c	2011-11-04 10:02:27.859155009 +1300
+> @@ -104,6 +104,8 @@ enum ds_type {
+> =20
+>  struct ds1307 {
+>  	u8			offset; /* register's offset */
+> +	u16			nvram_offset;
+> +	u16			nvram_size;
+
+I'd put them further down in the struct, at least after regs.
+
+
+>  	u8			regs[11];
+>  	enum ds_type		type;
+>  	unsigned long		flags;
+> @@ -119,26 +121,37 @@ struct ds1307 {
+>  };
+> =20
+>  struct chip_desc {
+> -	unsigned		nvram56:1;
+>  	unsigned		alarm:1;
+> +	u8			offset;
+
+I think the stuff related to 'offset' should be in a separate patch with
+specific commit-msg.
+
+> +	u16			nvram_offset;
+> +	u16			nvram_size;
+>  };
+> =20
+>  static const struct chip_desc chips[last_ds_type] =3D {
+>  	[ds_1307] =3D {
+> -		.nvram56	=3D 1,
+> +		.nvram_offset	=3D 8,
+> +		.nvram_size	=3D 56, /* 56 bytes NVRAM */
+
+Skip the comment, should be obvious.
+
+>  	},
+>  	[ds_1337] =3D {
+>  		.alarm		=3D 1,
+>  	},
+>  	[ds_1338] =3D {
+> -		.nvram56	=3D 1,
+> +		.nvram_offset	=3D 8,
+> +		.nvram_size	=3D 56, /* 56 bytes NVRAM */
+>  	},
+>  	[ds_1339] =3D {
+>  		.alarm		=3D 1,
+>  	},
+> +	[ds_1388] =3D {
+> +		.offset		=3D 1, /* seconds starts at 1 */
+> +	},
+>  	[ds_3231] =3D {
+>  		.alarm		=3D 1,
+>  	},
+> +	[mcp7941x] =3D {
+> +		.nvram_offset	=3D 0x20,
+> +		.nvram_size	=3D 64, /* 64 bytes SRAM */
+
+Minor: hex value for size, too? Comment should probably emphasize that
+this is SRAM not NVRAM, the size is obvious again.
+
+> +	},
+>  };
+> =20
+=2E..
+
+> @@ -638,7 +650,19 @@ static int __devinit ds1307_probe(struct
+> =20
+>  	ds1307->client	=3D client;
+>  	ds1307->type	=3D id->driver_data;
+> -	ds1307->offset	=3D 0;
+> +
+> +	if (chip && chip->offset)
+> +		ds1307->offset =3D chip->offset;
+> +	else
+> +		ds1307->offset =3D 0;
+> +	if (chip && chip->nvram_size)
+> +		ds1307->nvram_size =3D chip->nvram_size;
+> +	else
+> +		ds1307->nvram_size =3D 0;
+> +	if (chip && chip->nvram_offset)
+> +		ds1307->nvram_offset =3D chip->nvram_offset;
+> +	else
+> +		ds1307->nvram_offset =3D 0;
+
+ds1307 is kzalloced, so you can simplify this. Then, you also need to
+check only once if chip !=3D NULL.
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--JgQwtEuHJzHdouWu
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAk8NbUoACgkQD27XaX1/VRtd8gCeLxWSpKbBBHzLa6bFkynb1Qx3
+20YAoIxWAPE70z5WozTlhbw60tsWeLKk
+=0WMU
+-----END PGP SIGNATURE-----
+
+--JgQwtEuHJzHdouWu--
