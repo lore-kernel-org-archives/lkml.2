@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757192Ab2AKIgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:36:39 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52364 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab2AKIgh (ORCPT
+	id S1757275Ab2AKIhP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:37:15 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:52466 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757032Ab2AKIhN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:36:37 -0500
-Date: Wed, 11 Jan 2012 09:36:34 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Michael Thalmeier <michael.thalmeier@hale.at>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org, michael@thalmeier.at
-Subject: Re: [PATCH] input/mc13783-ts: add pdata to set conversion delay
-Message-ID: <20120111083634.GL14252@pengutronix.de>
-References: <1326269903-22180-1-git-send-email-michael.thalmeier@hale.at>
+	Wed, 11 Jan 2012 03:37:13 -0500
+Date: Wed, 11 Jan 2012 09:36:51 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Olof Johansson <olof@lixom.net>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with the arm-soc
+ tree
+In-Reply-To: <CAOesGMh0W1hvpySB8jtVBojZtoniHXur98Bzq1Feh3vAD4CkOg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1201110933480.1191@axis700.grange>
+References: <20120111133146.990e2b7115c9fa80e8fc3234@canb.auug.org.au>
+ <CAOesGMh0W1hvpySB8jtVBojZtoniHXur98Bzq1Feh3vAD4CkOg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1326269903-22180-1-git-send-email-michael.thalmeier@hale.at>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:2dLp/CRZWBSC2mEPm6gp+z8mYb9fV8bwETbvDgskynC
+ A5aFfT9Fn6ZvgJAhdsp3fTgC3hvGvkQr+ZXRaTgBYAaMvI7sF4
+ fDj8QsWIfHPOPKqCctmyvhwH9SlIrGFnTYC9++/WxtlFR748f8
+ q43ox03MKluskThvdR+qqdPS75SdndYROcw26Txuu94eUSh0J1
+ aO8Rw8+yPZgb05+y89SJb9BXGDV5YMgu/0H8EXuhJie9p/fwYL
+ eORnZXJvnVlRn5fNv64avXQJ2ANwMkB2qQvQGF1RDdUR/Q3XSX
+ mKpP1V0xrY5WEoN7foCsgg/n5J7ub3Hai59keKUvcfsaXB8YU9
+ c3XTrcm05RPlY+kCkSjED62hAX0CKlKmX0+q1EZiSGO9H8LJxi
+ G14kVDRCVP4+A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michael,
+On Tue, 10 Jan 2012, Olof Johansson wrote:
 
-On Wed, Jan 11, 2012 at 09:18:23AM +0100, Michael Thalmeier wrote:
-> MC13783 can be programmed to wait some clock cycles between the touch screen
-> polarization and the resistance conversion. This is needed to adjust for
-> touchscreens with high capacitance between plates.
+> On Tue, Jan 10, 2012 at 6:31 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > Hi Mauro,
+> >
+> > Today's linux-next merge of the v4l-dvb tree got conflicts in a large
+> > number of files between commits from the arm-soc tree and commits from the
+> > v4l-dvb tree.  You have rebased the v4l-dvb tree onto v3.2 while the
+> > arm-soc tree had merged a previous version. you have then added a lot
+> > more commits on top of the result - which produces all the conflicts.  :-(
+> >
+> > This is exactly the sort of pain I alluded to when I first noted that the
+> > v4l-dvb tree had been merged into the arm-soc tree ...
 > 
-> Signed-off-by: Michael Thalmeier <michael.thalmeier@hale.at>
-> ---
->  drivers/hwmon/mc13783-adc.c            |    2 +-
->  drivers/input/touchscreen/mc13783_ts.c |    6 +++++-
->  drivers/mfd/mc13xxx-core.c             |   11 +++++++++--
->  include/linux/mfd/mc13xxx.h            |   16 +++++++++++++++-
->  4 files changed, 30 insertions(+), 5 deletions(-)
+> We do this every now and then though, it's not an issue as long as
+> nothing stupid is done with the dependent branch at the other end.
+> I.e. if it's actually a stable branch (which we got promised that it
+> was).
 > 
-> diff --git a/drivers/hwmon/mc13783-adc.c b/drivers/hwmon/mc13783-adc.c
-> index ef65ab5..6acd044 100644
-> --- a/drivers/hwmon/mc13783-adc.c
-> +++ b/drivers/hwmon/mc13783-adc.c
-> @@ -53,7 +53,7 @@ static int mc13783_adc_read(struct device *dev,
->  
->  	ret = mc13xxx_adc_do_conversion(priv->mc13xxx,
->  			MC13XXX_ADC_MODE_MULT_CHAN,
-> -			channel, sample);
-> +			channel, 0, 0, sample);
->  	if (ret)
->  		return ret;
->  
-> diff --git a/drivers/input/touchscreen/mc13783_ts.c b/drivers/input/touchscreen/mc13783_ts.c
-> index 68f86f7..d71f45a 100644
-> --- a/drivers/input/touchscreen/mc13783_ts.c
-> +++ b/drivers/input/touchscreen/mc13783_ts.c
-> @@ -39,6 +39,7 @@ struct mc13783_ts_priv {
->  	struct delayed_work work;
->  	struct workqueue_struct *workq;
->  	unsigned int sample[4];
-> +	struct mc13xxx_ts_platform_data *touch;
->  };
->  
->  static irqreturn_t mc13783_ts_handler(int irq, void *data)
-> @@ -125,7 +126,9 @@ static void mc13783_ts_work(struct work_struct *work)
->  	unsigned int channel = 12;
->  
->  	if (mc13xxx_adc_do_conversion(priv->mc13xxx,
-> -				mode, channel, priv->sample) == 0)
-> +				mode, channel,
-> +				priv->touch->ato, priv->touch->atox,
-> +				priv->sample) == 0)
->  		mc13783_ts_report_sample(priv);
->  }
->  
-> @@ -179,6 +182,7 @@ static int __init mc13783_ts_probe(struct platform_device *pdev)
->  	INIT_DELAYED_WORK(&priv->work, mc13783_ts_work);
->  	priv->mc13xxx = dev_get_drvdata(pdev->dev.parent);
->  	priv->idev = idev;
-> +	priv->touch = dev_get_platdata(&pdev->dev);
-This cannot fail in practice unless the device isn't created via
-mc13xxx_probe. Still it would feel a tad better to have error detection
-here or at least a comment saying why it doesn't fail.
+> So, why was the whole v4l tree rebased? Guennadi, you said it was
+> going to be a stable branch? What happened?
 
-Other than that:
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Sorry, I don't think I _promised_ anything, I even don't think I said 
+anything at all about the stability of that branch. On the contrary - I 
+suggested you to only take _one_ patch, about which we knew, that some ARM 
+patches depended upon, for which I've got Mauro's ack. This has been done 
+with the sole purpose for you to avoid any dependencies. Instead you 
+decided to pull the whole branch.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > Not happy.
+> 
+> No kidding.  Mauro, can you undo your rebase or should I remove the
+> dependent branch (and the at91 branch that needs it) from arm-soc
+> instead?
+
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
