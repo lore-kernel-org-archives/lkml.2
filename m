@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933693Ab2AKSDa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 13:03:30 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:2453 "EHLO relay.sw.ru"
+	id S933663Ab2AKSHc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 13:07:32 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46384 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933656Ab2AKSDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 13:03:23 -0500
-Message-ID: <4F0DCEE5.5090100@parallels.com>
-Date: Wed, 11 Jan 2012 22:03:17 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S932432Ab2AKSHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 13:07:31 -0500
+Date: Wed, 11 Jan 2012 18:07:23 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Miklos Szeredi <mszeredi@novell.com>, Greg KH <gregkh@suse.de>,
+        Gong Chen <gong.chen@intel.com>
+Subject: Re: [PATCH 1/2] fs: sysfs: Do dcache-related updates to sysfs
+ dentries under sysfs_mutex
+Message-ID: <20120111180723.GF4118@suse.de>
+References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
+ <1326276668-19932-2-git-send-email-mgorman@suse.de>
+ <m1k44y5fls.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 0/5] NFS: create blocklayout pipe per network namesapce
- context
-References: <20111129090754.20730.64567.stgit@localhost6.localdomain6>			 <1325285705.10984.4.camel@lade.trondhjem.org>		 <1325797111.11084.22.camel@lade.trondhjem.org>		 <4F0C35F3.7060508@parallels.com>	 <1326299003.17212.7.camel@lade.trondhjem.org>	 <4F0DC582.6030805@parallels.com> <1326303963.19024.1.camel@lade.trondhjem.org>
-In-Reply-To: <1326303963.19024.1.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <m1k44y5fls.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.01.2012 21:46, Trond Myklebust пишет:
-> On Wed, 2012-01-11 at 21:23 +0400, Stanislav Kinsbursky wrote:
->> I've sent rebased "v2" of the patch set, contains updated patch "SUNRPC: handle
->> RPC client pipefs dentries by network namespace aware routine", which, I
->> believe, fixes oops, spotted by Bryan (it was caused by excessive call of
->> rpc_put_mount() on PipeFS dentries unlink).
->> So, if I'm not mistaken here, there's no need in implementing of dummy versions
->> of rpc_pipefs_notifier_(un)register() or any other dummy stuff.
->
-> OK. Fair enough. We'll give it some testing to make sure that we don't
-> hit it again...
->
->> BTW, it looks like that in last 2 days I've sent all updates to the issues you
->> pointed out. If not, please, ping me once more.
->
-> I'm in the process of reviewing it right now.
->
+On Wed, Jan 11, 2012 at 09:11:27AM -0800, Eric W. Biederman wrote:
+> > In Miklos's case, the problem is with the bonding driver but during
+> > CPU online or offline, a number of dentries are being created and
+> > deleted and this deadlock is also being hit. Looking at sysfs, there
+> > is a global sysfs_mutex that protects the sysfs directory tree from
+> > concurrent reclaims. Almost all operations involving directory inodes
+> > and dentries take place under the sysfs_mutex - linking, unlinking,
+> > patch searching lookup, renames and readdir. d_invalidate is slightly
+> > different. It is mostly under the mutex but if the dentry has to be
+> > removed from the dcache, the mutex is dropped.
+> 
+> The sysfs_mutex protects the sysfs data structures not the vfs.
+> 
 
-Cool, thanks, Trond.
+Ok.
 
-> Cheers
->    Trond
->
+> > Where as Miklos' patch changes dcache, this patch changes sysfs to
+> > consistently hold the mutex for dentry-related operations. Once
+> > applied, this particular bug with CPU hotadd/hotremove no longer
+> > occurs.
+> 
+> After taking a quick skim over the code to reacquaint myself with
+> it appears that the usage in sysfs is idiomatic.  That is sysfs
+> uses shrink_dcache_parent without a lock and in a context where
+> the right race could trigger this deadlock.
+> 
 
+Yes.
+
+> And in particular I expect you could trigger the same deadlock in
+> proc, nfs, and gfs2 with if you can get the timing right.
+> 
+
+Agreed. When the dcache-specific fix was being discussed on an external
+bugzilla, this came up. It's probably easiest to race in sysfs because
+it's possible to create/delete directories faster than is possible
+for proc, nfs or gfs2.
+
+> I don't think adding a work-around for the bug in shrink_dcache_parent
+> is going to do anything except hide the bug in the VFS, and
+> unnecessarily increase the sysfs_mutex hold times.
+> 
+
+Ok.
+
+> I may be blind but I don't see a reason at this point to rush out an
+> incomplete work-around for the bug in shrink_dcahce_parent instead of
+> actually fixing shrink_dcache_parent.
+> 
+
+Since I wrote this patch, the dcache specific fix was finished, merged
+and I expect it'll make it to stable. Assuming that happens, this patch
+will no longer be required.
+
+Thanks Eric.
 
 -- 
-Best regards,
-Stanislav Kinsbursky
+Mel Gorman
+SUSE Labs
