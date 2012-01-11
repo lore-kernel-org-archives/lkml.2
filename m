@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab2AKEUi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 23:20:38 -0500
-Received: from mga11.intel.com ([192.55.52.93]:62361 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756525Ab2AKEUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 23:20:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="110947564"
-Date: Wed, 11 Jan 2012 12:37:44 -0500
-From: Youquan Song <youquan.song@intel.com>
-To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-        Youquan Song <youquan.song@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        akpm@linux-foundation.org, stable@vger.kernel.org,
-        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
-        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
-Message-ID: <20120111173744.GA27967@linux-youquan.bj.intel.com>
-References: <1326099367-4166-1-git-send-email-youquan.song@intel.com> <1326103578.2442.50.camel@twins> <20120110001445.GA20542@linux-youquan.bj.intel.com> <1326107156.2442.59.camel@twins> <20120110055856.GA23741@linux-youquan.bj.intel.com> <1326153163.2366.7.camel@sbsiddha-mobl2> <20120110165426.GA20681@linux-youquan.bj.intel.com> <20120110165129.GC17432@dirshya.in.ibm.com> <1326222073.6283.9.camel@sbsiddha-mobl2> <20120111035156.GB7988@dirshya.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120111035156.GB7988@dirshya.in.ibm.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S932850Ab2AKEiK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 23:38:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:41500 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756739Ab2AKEiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 23:38:08 -0500
+Date: Tue, 10 Jan 2012 20:42:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Nikolay S." <nowhere@hakkenden.ath.cx>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan@kernel.org>, Dave Chinner <david@fromorbit.com>,
+        Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: Kswapd in 3.2.0-rc5 is a CPU hog
+Message-Id: <20120110204245.d24ed540.akpm@linux-foundation.org>
+In-Reply-To: <1326252320.5973.13.camel@hakkenden.homenet>
+References: <1324437036.4677.5.camel@hakkenden.homenet>
+	<20111221095249.GA28474@tiehlicka.suse.cz>
+	<20111221225512.GG23662@dastard>
+	<1324630880.562.6.camel@rybalov.eng.ttk.net>
+	<20111223102027.GB12731@dastard>
+	<1324638242.562.15.camel@rybalov.eng.ttk.net>
+	<20111223204503.GC12731@dastard>
+	<20111227111543.5e486eb7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20111227035730.GA22840@barrios-laptop.redhat.com>
+	<20111227135658.08c8016a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120110143330.44cf1ccf.akpm@linux-foundation.org>
+	<1326252320.5973.13.camel@hakkenden.homenet>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I had tested sched_mc_powersavings=2 on dual socket quad core HT
-> nehalem.  It worked as expected.  Let me check the
-> sched_mc_powersavings=1 case.  I will not be surprised if it is
-> broken.
+On Wed, 11 Jan 2012 07:25:20 +0400 "Nikolay S." <nowhere@hakkenden.ath.cx> wrote:
+
+> __ ____., 10/01/2012 __ 14:33 -0800, Andrew Morton __________:
+> > On Tue, 27 Dec 2011 13:56:58 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > Hmm, if I understand correctly,
+> > > 
+> > >  - dd's speed down is caused by kswapd's cpu consumption.
+> > >  - kswapd's cpu consumption is enlarged by shrink_slab() (by perf)
+> > >  - kswapd can't stop because NORMAL zone is small.
+> > >  - memory reclaim speed is enough because dd can't get enough cpu.
+> > > 
+> > > I wonder reducing to call shrink_slab() may be a help but I'm not sure
+> > > where lock conention comes from...
+> > 
+> > Nikolay, it sounds as if this problem has only recently started
+> > happening?  Was 3.1 OK?
+> > 
+> > If so, we should work out what we did post-3.1 to cause this.
 > 
- 
-In my opinion. When CPU cores > 8, sched_mc will have issue of course.
-What's more, when CPU cores increase it will be abviously if following
-current CPU power capability calcaluation logic.
+> Yes, 3.1. was ok.
+> Recently I have upgraded to 3.2, and I can not reproduce the problem.
+> I'm now at 5 days uptime, the machine usage pattern, the software - all
+> the same, but the problem is not visible anymore:
+> 
+>   PID USER      S %CPU %MEM    TIME+  SWAP COMMAND
+> 14822 nowhere   R   30  0.2   0:01.52  10m dd
+>   416 root      S    7  0.0   6:26.72    0 kswapd0
+> 
+> (also, kswapd run time after 5 days is only 6,5 seconds, whereas with
+> -rc5 it was 22 seconds after 5 days).
+> 
+> I can provide similar traces to see what has changed in kswapd's
+> activities (if it is of any value)
 
-If CPU has 8 cores and if HT enabled, its power capability > 9 cores. 
-Current logic, HT enable core power capability = 1178,  1178 * 8
-/ 1024 > 9.2. So scheduler will try to schedule >8 threads to meet its
-power capability before use other socket if sched_mc used.
+OK, thanks for the followup.  I suppose we assume this is fixed unless
+someone reports it in 3.2.
 
-So it will be better, like this: Of course, It is only sample code
-and I do not try it yet.
-
-For MC:
-+       if (sched_mc_power_savings)
-+               sgs->group_capacity = group->group_weight/2;
-
-For SMT:
-+       if (sched_smt_power_savings && !(sd->flags & SD_SHARE_CPUPOWER))
-+               sgs->group_capacity = group->group_weight;
-
-
-Thanks
--Youquan
