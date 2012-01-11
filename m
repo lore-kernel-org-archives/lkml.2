@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab2AKUAH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:00:07 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:8859 "EHLO relay.sw.ru"
+	id S1758014Ab2AKUD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:03:56 -0500
+Received: from tex.lwn.net ([70.33.254.29]:59923 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757999Ab2AKUAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:00:03 -0500
-Message-ID: <4F0DE99B.3050803@parallels.com>
-Date: Wed, 11 Jan 2012 23:57:15 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyle Moffett <kyle@moffetthome.net>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [RFC] on general object IDs again
-References: <20120111161939.GI8752@moon> <CAHGf_=r1vrZbCTYNAp7e+Hbbxh2BnDXXrdsNckSkQVVrXQ=9KQ@mail.gmail.com> <20120111175952.GI466@moon> <CAHGf_=oMk2YDnmsomgCc45Ei5yaSdNzRwapm7Fqm9mN7LY0FNw@mail.gmail.com> <4F0DD365.6070200@parallels.com> <20120111183115.GA28196@moon> <CAHGf_=oXsrbsXPqBw_CvZQjwdXhzhqkoWX3mRSEgMZHy44ZUKg@mail.gmail.com> <4F0DE4B0.4070800@parallels.com> <CAHGf_=qs+-YZ-XFx5FyWMhF4Dee3_bCGJXGmKkQ0_ED75KxxOQ@mail.gmail.com>
-In-Reply-To: <CAHGf_=qs+-YZ-XFx5FyWMhF4Dee3_bCGJXGmKkQ0_ED75KxxOQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756695Ab2AKUDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 15:03:53 -0500
+Date: Wed, 11 Jan 2012 13:03:49 -0700
+From: Jonathan Corbet <corbet@lwn.net>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+Subject: Re: [RFC,PATCH 2/2] Documentation: prctl/seccomp_filter
+Message-ID: <20120111130349.0dda72b3@dt>
+In-Reply-To: <1326302710-9427-3-git-send-email-wad@chromium.org>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	<1326302710-9427-3-git-send-email-wad@chromium.org>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 11:50 PM, KOSAKI Motohiro wrote:
->> This might work for mm_structs, although quite a lot apps now do have threads and
->> this mm->users check will be negative. But how about open files? Once we entered the
->> get-the-youngest-file-owner routine we need to take locks and with 1000 tasks the
->> overhead is not 1000 syscalls, but 1000 (syscalls + locks).
-> 
-> Unfortunately, I have no knowledge your program have what assumption
-> of file modify. When I reviewed mincore patch from you, you said you
-> assume any file are preserved. And If nobody change the files, why do
-> we need to care file locks? I have no knowledge a grand picture of
-> your design at all.
+Interesting approach to the problem, I think I like it.  Watch for news at
+11...:)
 
-By locking I mean the internal kernel locks that preserve kernel objects
-integrity. E.g. to check for a task's file (the struct file) being the one
-you're interested in you need to lock the task lock (call the task_lock(p))
-in order to get the fdtable pointer.
+One nit:
 
-By the way, if you have a file and want to have its ID the complexity is not
-just O(N^2) for N tasks. For each task you should walk the whole fdtable which
-just makes things worse.
+> +Example
+> +-------
+> +
+> +Assume a process would like to cleanly read and write to stdin/out/err and exit
+> +cleanly.  Without using a BPF compiler, it may be done as follows on x86 32-bit:
+> +
 
-That said, I'd stick to the IDs that are calculated out of the object pointer.
+It seems like this little program belongs in the samples/ directory.
 
 Thanks,
-Pavel
+
+jon
