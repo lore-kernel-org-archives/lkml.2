@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933990Ab2AKUY3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:24:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55482 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065Ab2AKUWu (ORCPT
+	id S934018Ab2AKUYf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:24:35 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:33353 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933006Ab2AKUWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:22:50 -0500
+	Wed, 11 Jan 2012 15:22:47 -0500
 From: Grant Likely <grant.likely@secretlab.ca>
 To: linux-kernel@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -14,9 +14,9 @@ To: linux-kernel@vger.kernel.org,
         Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
         Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au
 Cc: Grant Likely <grant.likely@secretlab.ca>
-Subject: [RFC 08/14] irqdomain: remove NO_IRQ from irq domain code
-Date: Wed, 11 Jan 2012 13:22:11 -0700
-Message-Id: <1326313337-24603-9-git-send-email-grant.likely@secretlab.ca>
+Subject: [RFC 06/14] irq_domain/powerpc: Eliminate virq_is_host()
+Date: Wed, 11 Jan 2012 13:22:09 -0700
+Message-Id: <1326313337-24603-7-git-send-email-grant.likely@secretlab.ca>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
 References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
@@ -24,171 +24,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zero always means no irq when using irq domains.  Get rid of the NO_IRQ
-references.
+There is only one user, and it is trivial to open-code.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- kernel/irq/irqdomain.c |   38 +++++++++++++++++++-------------------
- 1 files changed, 19 insertions(+), 19 deletions(-)
+ arch/powerpc/include/asm/irq.h         |    1 -
+ arch/powerpc/kernel/irq.c              |    7 -------
+ arch/powerpc/sysdev/xics/xics-common.c |   12 ++++++------
+ 3 files changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
-index b59482a..103072b 100644
---- a/kernel/irq/irqdomain.c
-+++ b/kernel/irq/irqdomain.c
-@@ -103,7 +103,7 @@ struct irq_domain *irq_alloc_host(struct device_node *of_node,
- 	case IRQ_DOMAIN_MAP_LINEAR:
- 		rmap = (unsigned int *)(host + 1);
- 		for (i = 0; i < revmap_arg; i++)
--			rmap[i] = NO_IRQ;
-+			rmap[i] = 0;
- 		host->revmap_data.linear.size = revmap_arg;
- 		host->revmap_data.linear.revmap = rmap;
- 		break;
-@@ -213,16 +213,16 @@ unsigned int irq_create_direct_mapping(struct irq_domain *host)
- 	WARN_ON(host->revmap_type != IRQ_DOMAIN_MAP_NOMAP);
+diff --git a/arch/powerpc/include/asm/irq.h b/arch/powerpc/include/asm/irq.h
+index abdd7ef..f80f262 100644
+--- a/arch/powerpc/include/asm/irq.h
++++ b/arch/powerpc/include/asm/irq.h
+@@ -58,7 +58,6 @@ extern atomic_t ppc_n_lost_interrupts;
+ struct irq_data;
+ extern irq_hw_number_t irqd_to_hwirq(struct irq_data *d);
+ extern irq_hw_number_t virq_to_hw(unsigned int virq);
+-extern bool virq_is_host(unsigned int virq, struct irq_domain *host);
  
- 	virq = irq_alloc_desc(0);
--	if (virq == NO_IRQ) {
-+	if (!virq) {
- 		pr_debug("irq: create_direct virq allocation failed\n");
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	pr_debug("irq: create_direct obtained virq %d\n", virq);
- 
- 	if (irq_setup_virq(host, virq, virq)) {
- 		irq_free_desc(virq);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	return virq;
-@@ -252,13 +252,13 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		printk(KERN_WARNING "irq_create_mapping called for"
- 		       " NULL host, hwirq=%lx\n", hwirq);
- 		WARN_ON(1);
--		return NO_IRQ;
-+		return 0;
- 	}
- 	pr_debug("irq: -> using host @%p\n", host);
- 
- 	/* Check if mapping already exists */
- 	virq = irq_find_mapping(host, hwirq);
--	if (virq != NO_IRQ) {
-+	if (virq) {
- 		pr_debug("irq: -> existing mapping on virq %d\n", virq);
- 		return virq;
- 	}
-@@ -268,7 +268,7 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		/* Handle legacy */
- 		virq = (unsigned int)hwirq;
- 		if (virq == 0 || virq >= NUM_ISA_INTERRUPTS)
--			return NO_IRQ;
-+			return 0;
- 		return virq;
- 	} else {
- 		/* Allocate a virtual interrupt number */
-@@ -276,16 +276,16 @@ unsigned int irq_create_mapping(struct irq_domain *host,
- 		virq = irq_alloc_desc_from(hint, 0);
- 		if (!virq)
- 			virq = irq_alloc_desc(0);
--		if (virq == NO_IRQ) {
-+		if (!virq) {
- 			pr_debug("irq: -> virq allocation failed\n");
--			return NO_IRQ;
-+			return 0;
- 		}
- 	}
- 
- 	if (irq_setup_virq(host, virq, hwirq)) {
- 		if (host->revmap_type != IRQ_DOMAIN_MAP_LEGACY)
- 			irq_free_desc(virq);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	pr_debug("irq: irq %lu on host %s mapped to virtual irq %u\n",
-@@ -310,7 +310,7 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 	if (host == NULL) {
- 		printk(KERN_WARNING "irq: no irq host found for %s !\n",
- 		       controller->full_name);
--		return NO_IRQ;
-+		return 0;
- 	}
- 
- 	/* If host has no translation, then we assume interrupt line */
-@@ -319,12 +319,12 @@ unsigned int irq_create_of_mapping(struct device_node *controller,
- 	else {
- 		if (host->ops->xlate(host, controller, intspec, intsize,
- 				     &hwirq, &type))
--			return NO_IRQ;
-+			return 0;
- 	}
- 
- 	/* Create mapping */
- 	virq = irq_create_mapping(host, hwirq);
--	if (virq == NO_IRQ)
-+	if (!virq)
- 		return virq;
- 
- 	/* Set type if specified and different than the current one */
-@@ -345,7 +345,7 @@ void irq_dispose_mapping(unsigned int virq)
- 	struct irq_domain *host;
- 	irq_hw_number_t hwirq;
- 
--	if (virq == NO_IRQ || !irq_data)
-+	if (!virq || !irq_data)
- 		return;
- 
- 	host = irq_data->domain;
-@@ -374,7 +374,7 @@ void irq_dispose_mapping(unsigned int virq)
- 	switch(host->revmap_type) {
- 	case IRQ_DOMAIN_MAP_LINEAR:
- 		if (hwirq < host->revmap_data.linear.size)
--			host->revmap_data.linear.revmap[hwirq] = NO_IRQ;
-+			host->revmap_data.linear.revmap[hwirq] = 0;
- 		break;
- 	case IRQ_DOMAIN_MAP_TREE:
- 		mutex_lock(&revmap_trees_mutex);
-@@ -409,7 +409,7 @@ unsigned int irq_find_mapping(struct irq_domain *host,
- 	if (host == NULL)
- 		host = irq_default_host;
- 	if (host == NULL)
--		return NO_IRQ;
-+		return 0;
- 
- 	/* legacy -> bail early */
- 	if (host->revmap_type == IRQ_DOMAIN_MAP_LEGACY)
-@@ -427,7 +427,7 @@ unsigned int irq_find_mapping(struct irq_domain *host,
- 		if (i >= irq_virq_count)
- 			i = NUM_ISA_INTERRUPTS;
- 	} while(i != hint);
--	return NO_IRQ;
-+	return 0;
+ /**
+  * irq_alloc_host - Allocate a new irq_domain data structure
+diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
+index 23fd9ce..a15cf0a 100644
+--- a/arch/powerpc/kernel/irq.c
++++ b/arch/powerpc/kernel/irq.c
+@@ -510,13 +510,6 @@ irq_hw_number_t virq_to_hw(unsigned int virq)
  }
- EXPORT_SYMBOL_GPL(irq_find_mapping);
+ EXPORT_SYMBOL_GPL(virq_to_hw);
  
-@@ -480,7 +480,7 @@ void irq_radix_revmap_insert(struct irq_domain *host, unsigned int virq,
- 	if (WARN_ON(host->revmap_type != IRQ_DOMAIN_MAP_TREE))
- 		return;
- 
--	if (virq != NO_IRQ) {
-+	if (virq) {
- 		mutex_lock(&revmap_trees_mutex);
- 		radix_tree_insert(&host->revmap_data.tree, hwirq, irq_data);
- 		mutex_unlock(&revmap_trees_mutex);
-@@ -514,7 +514,7 @@ unsigned int irq_linear_revmap(struct irq_domain *host,
- 		return irq_find_mapping(host, hwirq);
- 
- 	/* Fill up revmap with slow path if no mapping found */
--	if (unlikely(revmap[hwirq] == NO_IRQ))
-+	if (unlikely(!revmap[hwirq]))
- 		revmap[hwirq] = irq_find_mapping(host, hwirq);
- 
- 	return revmap[hwirq];
+-bool virq_is_host(unsigned int virq, struct irq_domain *host)
+-{
+-	struct irq_data *irq_data = irq_get_irq_data(virq);
+-	return irq_data ? irq_data->domain == host : false;
+-}
+-EXPORT_SYMBOL_GPL(virq_is_host);
+-
+ static int default_irq_host_match(struct irq_domain *h, struct device_node *np)
+ {
+ 	return h->of_node != NULL && h->of_node == np;
+diff --git a/arch/powerpc/sysdev/xics/xics-common.c b/arch/powerpc/sysdev/xics/xics-common.c
+index c4b3ce1..fb2e303 100644
+--- a/arch/powerpc/sysdev/xics/xics-common.c
++++ b/arch/powerpc/sysdev/xics/xics-common.c
+@@ -212,16 +212,16 @@ void xics_migrate_irqs_away(void)
+ 		/* We can't set affinity on ISA interrupts */
+ 		if (virq < NUM_ISA_INTERRUPTS)
+ 			continue;
+-		if (!virq_is_host(virq, xics_host))
+-			continue;
+-		irq = (unsigned int)virq_to_hw(virq);
+-		/* We need to get IPIs still. */
+-		if (irq == XICS_IPI || irq == XICS_IRQ_SPURIOUS)
+-			continue;
+ 		desc = irq_to_desc(virq);
+ 		/* We only need to migrate enabled IRQS */
+ 		if (!desc || !desc->action)
+ 			continue;
++		if (desc->irq_data.domain != xics_host)
++			continue;
++		irq = desc->irq_data.hwirq;
++		/* We need to get IPIs still. */
++		if (irq == XICS_IPI || irq == XICS_IRQ_SPURIOUS)
++			continue;
+ 		chip = irq_desc_get_chip(desc);
+ 		if (!chip || !chip->irq_set_affinity)
+ 			continue;
 -- 
 1.7.5.4
 
