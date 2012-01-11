@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933620Ab2AKUnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:43:10 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:55329 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751097Ab2AKUnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:43:06 -0500
-Message-ID: <1326314582.6774.4.camel@joe2Laptop>
-Subject: Re: [RFC PATCH] checkpatch: Add warning for asymmetric brace use
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@shadowen.org>
-Cc: Dan Carpenter <dan.carpenter@oracle.com>,
-        Julian Andres Klode <jak@jak-linux.org>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+	id S933939Ab2AKUoK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:44:10 -0500
+Received: from smtp.outflux.net ([198.145.64.163]:52749 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933006Ab2AKUoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 15:44:07 -0500
+Date: Wed, 11 Jan 2012 12:43:30 -0800
+From: Kees Cook <keescook@chromium.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dannyfeng@tencent.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 11 Jan 2012 12:43:02 -0800
-In-Reply-To: <1326311897.3491.6.camel@joe2Laptop>
-References: <1324918660-25708-1-git-send-email-jak@jak-linux.org>
-	 <1324918660-25708-5-git-send-email-jak@jak-linux.org>
-	 <20120110113552.GJ3644@mwanda> <20120110114835.GB6325@jak-linux.org>
-	 <20120110121453.GC16258@mwanda> <1326216615.26536.18.camel@joe2Laptop>
-	 <1326311897.3491.6.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] proc: fix null pointer deref in proc_pid_permission()
+Message-ID: <20120111204330.GT2618@outflux.net>
+References: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
+Organization: Chromium
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 11:58 -0800, Joe Perches wrote:
-> Here's a possible checkpatch patch.
-> It seems to work on the test cases I've tried.
-[]
-> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> +				if ($seen) {
-> +					my $sum_allowed = 0;
-> +					foreach (@allowed) {
-> +						$sum_allowed += $_;
-> +					}
-> +					if ($sum_allowed == 0) {
-> +						WARN("BRACES",
-> +						     "braces {} are not necessary for any arm of this statement\n" . $herectx);
-> +					} elsif ($sum_allowed != $allow) {
+Hi,
 
-I ran some more tests against the kernel source.
-This works better as:
+On Wed, Jan 11, 2012 at 01:47:05PM -0500, Xiaotian Feng wrote:
+> get_proc_task() can fail to search the task and return NULL, put_task_struct()
+> will then bomb the kernel with following oops:
+> 
+> [ 1870.574045] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+> [ 1870.574065] IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
+> [ 1870.574088] PGD 112075067 PUD 112814067 PMD 0
+> [ 1870.574106] Oops: 0002 [#1] PREEMPT SMP
+> 
+> This is a regression introduced by commit 0499680a, kernel should
+> return -ESRCH if get_proc_task() failed.
 
-+					} elsif ($sum_allowed != $allow &&
-+						 $seen != $allow) {
+Nice catch!
 
-> +						WARN("BRACES",
-> +						     "braces {} should be used on all arms of this statement\n" . $herectx);
-> +					}
+However since this error is returned to userspace, shouldn't this be
+-ENOENT instead?
 
+-Kees
 
-
+-- 
+Kees Cook
+ChromeOS Security
