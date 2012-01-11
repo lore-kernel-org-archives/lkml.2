@@ -1,47 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101Ab2AKU0O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 15:26:14 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:45507 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757992Ab2AKU0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 15:26:12 -0500
-Message-ID: <4F0DF001.6090903@parallels.com>
-Date: Thu, 12 Jan 2012 00:24:33 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kyle Moffett <kyle@moffetthome.net>, Tejun Heo <tj@kernel.org>,
-        Glauber Costa <glommer@parallels.com>,
-        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrey Vagin <avagin@openvz.org>
-Subject: Re: [RFC] on general object IDs again
-References: <20120111161939.GI8752@moon>	<CAHGf_=r1vrZbCTYNAp7e+Hbbxh2BnDXXrdsNckSkQVVrXQ=9KQ@mail.gmail.com>	<20120111175952.GI466@moon>	<CAHGf_=oMk2YDnmsomgCc45Ei5yaSdNzRwapm7Fqm9mN7LY0FNw@mail.gmail.com>	<4F0DD365.6070200@parallels.com> <20120111183115.GA28196@moon>	<CAHGf_=oXsrbsXPqBw_CvZQjwdXhzhqkoWX3mRSEgMZHy44ZUKg@mail.gmail.com> <m139bmxa9g.fsf@fess.ebiederm.org>
-In-Reply-To: <m139bmxa9g.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933844Ab2AKU3Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 15:29:25 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56061 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932671Ab2AKU3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 15:29:22 -0500
+Message-ID: <1326313742.25050.137.camel@fourier>
+Subject: Re: [PATCH v2 5/7] VFS: Avoid read-write deadlock in
+ try_to_writeback_inodes_sb
+From: Kamal Mostafa <kamal@canonical.com>
+To: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Date: Wed, 11 Jan 2012 12:29:02 -0800
+In-Reply-To: <20120106003533.GC3790@quack.suse.cz>
+References: <1323367477-21685-1-git-send-email-kamal@canonical.com>
+	 <1323367477-21685-6-git-send-email-kamal@canonical.com>
+	 <20120106003533.GC3790@quack.suse.cz>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-U2xfAI58b+tRyk5peQa0"
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In the second place the only reason why we would need O(N^2) complexity
-> instead of O(NlogN) is if the comparison system call only compares for
-> identity instead of returning a result that allows us to order the
-> objects we are worrying about.
 
-Hm... I like this one. As I said we'd have to do the sorting anyway so
-having the less-equals-above comparator right in the kernel sounds OK.
+--=-U2xfAI58b+tRyk5peQa0
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Pavel
+On Fri, 2012-01-06 at 01:35 +0100, Jan Kara wrote:
+> On Thu 08-12-11 10:04:35, Kamal Mostafa wrote:
+> > From: Valerie Aurora <val@vaaconsulting.com>
+> >=20
+> > Use trylock in try_to_writeback_inodes_sb to avoid read-write
+> > deadlocks that could be triggered by freeze.
+
+>   Christoph asked about what is the exact deadlock this patch tries to fi=
+x.
+> I don't think you answered that. So can you elaborate please? Is it someh=
+ow
+> connected with the fact that ext4 calls try_to_writeback_inodes_sb() with
+> i_mutex held?
+>=20
+> 								Honza
+
+This was discussed in the thread
+http://www.spinics.net/lists/linux-fsdevel/msg48754.html
+Summarizing...
+
+Jan>   What's exactly the deadlock trylock protects from here?
+Jan>   Or is it just an optimization?
+
+Val>   The trylock is an optimization Dave Chinner suggested.  The first
+Val>   version I wrote acquired the lock and then checked vfs_is_frozen().
+
+Dave>  It's not so much an optimisation, but the general case of avoiding
+Dave>  read-write deadlocks such that freezing can trigger. I think remount
+Dave>  can trigger the same deadlock as freezing, so the trylock avoids
+Dave>  both deadlock cases rather than just working around the freeze
+Dave>  problem....
+
+ -Kamal
+
+
+> > BugLink: https://bugs.launchpad.net/bugs/897421
+> > Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
+> > Cc: Kamal Mostafa <kamal@canonical.com>
+> > Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+> > [kamal@canonical.com: patch restructure]
+> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> > ---
+> >  fs/fs-writeback.c |   13 ++++++++-----
+> >  1 files changed, 8 insertions(+), 5 deletions(-)
+> >=20
+> > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> > index ea89b3f..3a80f1b 100644
+> > --- a/fs/fs-writeback.c
+> > +++ b/fs/fs-writeback.c
+> > @@ -1274,8 +1274,9 @@ EXPORT_SYMBOL(writeback_inodes_sb);
+> >   * try_to_writeback_inodes_sb	-	start writeback if none underway
+> >   * @sb: the superblock
+> >   *
+> > - * Invoke writeback_inodes_sb if no writeback is currently underway.
+> > - * Returns 1 if writeback was started, 0 if not.
+> > + * Invoke writeback_inodes_sb if no writeback is currently underway
+> > + * and no one else holds the s_umount lock.  Returns 1 if writeback
+> > + * was started, 0 if not.
+> >   */
+> >  int try_to_writeback_inodes_sb(struct super_block *sb, enum wb_reason =
+reason)
+> >  {
+> > @@ -1288,15 +1289,17 @@ EXPORT_SYMBOL(try_to_writeback_inodes_sb);
+> >   * @sb: the superblock
+> >   * @nr: the number of pages to write
+> >   *
+> > - * Invoke writeback_inodes_sb if no writeback is currently underway.
+> > - * Returns 1 if writeback was started, 0 if not.
+> > + * Invoke writeback_inodes_sb if no writeback is currently underway
+> > + * and no one else holds the s_umount lock.  Returns 1 if writeback
+> > + * was started, 0 if not.
+> >   */
+> >  int try_to_writeback_inodes_sb_nr(struct super_block *sb,
+> >  				   unsigned long nr,
+> >  				   enum wb_reason reason)
+> >  {
+> >  	if (!writeback_in_progress(sb->s_bdi)) {
+> > -		down_read(&sb->s_umount);
+> > +		if (!down_read_trylock(&sb->s_umount))
+> > +		    return 0;
+> >  		if (nr =3D=3D 0)
+> >  			writeback_inodes_sb(sb, reason);
+> >  		else
+> > --=20
+> > 1.7.5.4
+> >=20
+
+
+--=-U2xfAI58b+tRyk5peQa0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABCAAGBQJPDfEOAAoJEOf3EFVUCeQi2MgP/in+4Oox6XpRiKDQR6xlSziq
+NTEr0GxiFqY5wg64PaJunHJW9c/yFP0qocWsHKm1YUEl6UI0v8VjwMo0T634rBkh
+aUYjuHLHvwFjh54fK1Tq2eur/pPA6hzWuDvaGG5S506N4+TSSVpctSmVlUwh1E2+
+25q5YfVicX+ym624kasGMWfEQ7a8n6Q53jVryGvSET38ml52BIjz0Jzf6UksC7Zc
+J3l09WEIC0eO7RTgHFFD7D1PHxfFtBcloC3T6wP3cb/7Q5qOzTVcCNMHxO0rdX+c
+POJP7722IGIxstkiOJjn3kAZg+pcRVhb9u4a9RSmkm/V2fHfhZ0f3oNqxOW/0r8G
+sGxLXPa3OBVxHxzg8w3ePd+BI+PJjgADkxdAfua7m028ZVryKBMg1xi8jzLr29Nt
+DOz7spHeCbizCGZS33g8nAbkwJnuw7qkeX+5rmtMPHuS+78uk/wE1G+MBalLpUO2
+wMEL8dAOg7I/Mr9k2ADVL0IFXVlCdhxxnnNKbNXWgSU+LV7QR8Lnvt1XKXP/5D8+
+GiCIK94cWIECYj3sDMBXDAO34CCofN60e3/5WcQJxzOGZtY+o7eTkidfmxwzQA6A
+5ISG/2QueOU2oUyR3ErWWgHIJUCGr/VdkTsi/eBv9kS0sjtwjTQAVds7OuB/r8di
+bZG28lJk08i9s/9mMxSi
+=jaJy
+-----END PGP SIGNATURE-----
+
+--=-U2xfAI58b+tRyk5peQa0--
+
