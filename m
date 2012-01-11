@@ -1,87 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab2AKD5W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 22:57:22 -0500
-Received: from calzone.tip.net.au ([203.10.76.15]:34562 "EHLO
-	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756726Ab2AKD5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 22:57:21 -0500
-Date: Wed, 11 Jan 2012 14:57:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Xen Devel <Xen-devel@lists.xensource.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: linux-next: manual merge of the xen tree with Linus' tree
-Message-Id: <20120111145709.77ef7d68996cd5fa724326e5@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh"
+	id S1757078Ab2AKEUi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 23:20:38 -0500
+Received: from mga11.intel.com ([192.55.52.93]:62361 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756525Ab2AKEUg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Jan 2012 23:20:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="110947564"
+Date: Wed, 11 Jan 2012 12:37:44 -0500
+From: Youquan Song <youquan.song@intel.com>
+To: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+        Youquan Song <youquan.song@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        akpm@linux-foundation.org, stable@vger.kernel.org,
+        arjan@linux.intel.com, len.brown@intel.com, anhua.xu@intel.com,
+        chaohong.guo@intel.com, Youquan Song <youquan.song@linux.intel.com>
+Subject: Re: [PATCH] x86,sched: Fix sched_smt_power_savings totally broken
+Message-ID: <20120111173744.GA27967@linux-youquan.bj.intel.com>
+References: <1326099367-4166-1-git-send-email-youquan.song@intel.com> <1326103578.2442.50.camel@twins> <20120110001445.GA20542@linux-youquan.bj.intel.com> <1326107156.2442.59.camel@twins> <20120110055856.GA23741@linux-youquan.bj.intel.com> <1326153163.2366.7.camel@sbsiddha-mobl2> <20120110165426.GA20681@linux-youquan.bj.intel.com> <20120110165129.GC17432@dirshya.in.ibm.com> <1326222073.6283.9.camel@sbsiddha-mobl2> <20120111035156.GB7988@dirshya.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120111035156.GB7988@dirshya.in.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> I had tested sched_mc_powersavings=2 on dual socket quad core HT
+> nehalem.  It worked as expected.  Let me check the
+> sched_mc_powersavings=1 case.  I will not be surprised if it is
+> broken.
+> 
+ 
+In my opinion. When CPU cores > 8, sched_mc will have issue of course.
+What's more, when CPU cores increase it will be abviously if following
+current CPU power capability calcaluation logic.
 
-Hi all,
+If CPU has 8 cores and if HT enabled, its power capability > 9 cores. 
+Current logic, HT enable core power capability = 1178,  1178 * 8
+/ 1024 > 9.2. So scheduler will try to schedule >8 threads to meet its
+power capability before use other socket if sched_mc used.
 
-Today's linux-next merge of the xen tree got a conflict in
-arch/x86/xen/Kconfig between commit 10fe570fc167 ("Revert "xen/debug:
-WARN_ON when identity PFN has no _PAGE_IOMAP flag set."") from Linus'
-tree and commit 23757fb5d678 ("xen: add CPU microcode update driver")
-from the xen tree.
+So it will be better, like this: Of course, It is only sample code
+and I do not try it yet.
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+For MC:
++       if (sched_mc_power_savings)
++               sgs->group_capacity = group->group_weight/2;
 
-diff --cc arch/x86/xen/Kconfig
-index fdce49c,4d04d4f..0000000
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@@ -50,3 -50,14 +50,6 @@@ config XEN_DEBUG_F
-  	  Enable statistics output and various tuning options in debugfs.
-  	  Enabling this option may incur a significant performance overhead.
- =20
- -config XEN_DEBUG
- -	bool "Enable Xen debug checks"
- -	depends on XEN
- -	default n
- -	help
- -	  Enable various WARN_ON checks in the Xen MMU code.
- -	  Enabling this option WILL incur a significant performance overhead.
- -
-+ config MICROCODE_XEN
-+        def_bool y
-+        depends on XEN_DOM0 && MICROCODE
+For SMT:
++       if (sched_smt_power_savings && !(sd->flags & SD_SHARE_CPUPOWER))
++               sgs->group_capacity = group->group_weight;
 
---Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBCAAGBQJPDQiVAAoJEECxmPOUX5FEG7AP/Rssqi+tUaxgVskTmlim2KNY
-kWhpjgiZ0j6Hq1gNncJa/YntMH+GP2IAaCOkXqf2KSzfi6/2ZxpB64qhpwUv6m7x
-Vy7qag1Qw6hIZ20jue9IdkI2Zw5nmk3kPwpvE9pYbvd8zUqTS2RSUyk4dxLTd2A2
-2YRqEGfGsJQ4axMLX5y2S4bTzIezUNWuw0z+SXs3wpiaiXUWl7Ge2XQfnN/gkNiu
-7bGw7nTwZirdZ5d70As5EEDmb42rEJ7OtU+3VSj4R90d/2m22a0IZyfwbcEFOYn+
-hzd1boox/8nWEHQXVYsWMvnD3b71c57ydcb1MBbJ+mxX0NLEwKQBzemwKywFafwV
-7mx4a58NkkvKvGQ4IDRry7gCzM+/8osI0rukLivLji6plJDLvwnB3Q2T+vI/G+dj
-gBZAIdwEjlry6Y4YmOu9EbGw4Cq/DRb5t+EcvGFKzfcE41tXdhVhBeL7W+gKaE1J
-844Yvfm2xtbthYv4tDjVer+gQr8IbVZ1IMfvS+A/TDqJqHzJKN1dL1wrAyKLKtAX
-EnrlfGr9dnS68yhR89bCCTfDCGJ8KN/FSIaHSlhHg+8dzHim2l6NAnuroI0ROJvt
-UVfjgNYNVtj1XJMFgoCo+w3wbonrF71bFh3TRRCE3Eb9jt3VQjar5QRVBQjxOT5m
-r3D7nPvrJGUr9G5pUvvl
-=NhaO
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_Jan_2012_14_57_09_+1100_3.I5m9WLz+XWRtAh--
+Thanks
+-Youquan
