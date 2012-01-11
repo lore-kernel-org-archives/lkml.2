@@ -1,120 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab2AKIXK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:23:10 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:49108 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756684Ab2AKIXH convert rfc822-to-8bit (ORCPT
+	id S1757253Ab2AKIXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:23:20 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52101 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756684Ab2AKIXP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:23:07 -0500
-From: "AnilKumar, Chimata" <anilkumar@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>
-Subject: RE: [PATCH V3 2/2] regulator: tps65217: Add tps65217 regulator
- driver
-Thread-Topic: [PATCH V3 2/2] regulator: tps65217: Add tps65217 regulator
- driver
-Thread-Index: AQHMysaSE83cMB9VAEO6PYi4r3FZF5YDTE6AgAOPtrA=
-Date: Wed, 11 Jan 2012 08:22:59 +0000
-Message-ID: <331ABD5ECB02734CA317220B2BBEABC104BF75@DBDE01.ent.ti.com>
-References: <1325670747-31429-1-git-send-email-anilkumar@ti.com>
- <20120109071930.GC22134@opensource.wolfsonmicro.com>
-In-Reply-To: <20120109071930.GC22134@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.133.59]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Jan 2012 03:23:15 -0500
+Message-ID: <4F0D46EF.4060705@openvz.org>
+Date: Wed, 11 Jan 2012 12:23:11 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.19) Gecko/20111108 Iceape/2.0.14
 MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] mm: adjust rss counters for migration entiries
+References: <20120106173827.11700.74305.stgit@zurg>	<20120106173856.11700.98858.stgit@zurg> <20120111144125.0c61f35f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120111144125.0c61f35f.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+KAMEZAWA Hiroyuki wrote:
+> On Fri, 06 Jan 2012 21:38:56 +0400
+> Konstantin Khlebnikov<khlebnikov@openvz.org>  wrote:
+>
+>> Memory migration fill pte with migration entry and it didn't update rss counters.
+>> Then it replace migration entry with new page (or old one if migration was failed).
+>> But between this two passes this pte can be unmaped, or task can fork child and
+>> it will get copy of this migration entry. Nobody account this into rss counters.
+>>
+>> This patch properly adjust rss counters for migration entries in zap_pte_range()
+>> and copy_one_pte(). Thus we avoid extra atomic operations on migration fast-path.
+>>
+>> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
+>
+> It's better to show wheter this is a bug-fix or not in changelog.
+>
+> IIUC, the bug-fix is the 1st harf of this patch + patch [2/3].
+> Your new bug-check code is in patch[1/3] and 2nd half of this patch.
+>
 
-On Mon, Jan 09, 2012 at 12:49:31, Mark Brown wrote:
-> On Wed, Jan 04, 2012 at 03:22:27PM +0530, AnilKumar Ch wrote:
-> 
-> This looks pretty good.  A couple of small issues.
-> 
-> > +static int tps65217_vsel_to_uv_range1(unsigned int vsel)
-> > +{
-> > +	int uV = 0;
-> > +
-> > +	if (vsel > 15)
-> > +		return -EINVAL;
-> > +
-> > +	if (vsel <= 2)
-> > +		uV = vsel * 100000 + 1000000;
-> > +	else if (vsel <= 6)
-> > +		uV = (vsel - 2) * 50000 + 1200000;
-> > +	else if (vsel <= 9)
-> > +		uV = (vsel - 6) * 100000 + 1400000;
-> > +	else if (vsel == 10)
-> > +		uV = 2500000;
-> > +	else if (vsel == 11)
-> > +		uV = 2750000;
-> > +	else if (vsel == 12)
-> > +		uV = 2800000;
-> > +	else if (vsel == 13)
-> > +		uV = 3000000;
-> > +	else if (vsel == 14)
-> > +		uV = 3100000;
-> > +	else
-> > +		uV = 3300000;
-> 
-> This looks like it should actually be a table - there's far too many
-> irregular steps here.  The other regulators looked to be benefiting from
-> the use of calculations.
+No, there only one new bug-check in 1st patch, this is non-fatal warning.
+I didn't hide this check under CONFIG_VM_DEBUG because it rather small and
+rss counters covers whole page-table management, this is very good invariant.
+Currently I can trigger this warning only on this rare race -- extremely loaded
+memory compaction catches this every several seconds.
 
-Changed to a table for this regulator only. 
+1/3 bug-check
+2/3 fix preparation
+3/3 bugfix in two places:
+     do rss++ in copy_one_pte()
+     do rss-- in zap_pte_range()
 
-> 
-> > +static int tps65217_pmic_dcdc_get_voltage(struct regulator_dev *dev)
-> > +{
-> > +	int ret;
-> > +	struct tps65217 *tps = rdev_get_drvdata(dev);
-> > +	unsigned int data, dcdc = rdev_get_id(dev);
-> > +
-> > +	if (dcdc < TPS65217_DCDC_1 || dcdc > TPS65217_DCDC_3)
-> > +		return -EINVAL;
-> > +
-> > +	ret = tps65217_reg_read(tps, tps->info[dcdc]->set_vout_reg, &data);
-> > +	if (ret)
-> > +		return ret;
-> > +
-> > +	data &= tps->info[dcdc]->set_vout_mask;
-> > +
-> > +	ret = tps->info[dcdc]->tps_range(data);
-> > +	if (ret < 0)
-> > +		dev_err(&dev->dev, "Failed to get voltage\n");
-> > +
-> > +	return ret;
-> 
-> It seems odd to implement this as a vanilla get_voltage()
+> I think it's better to do bug-fix 1st and add bug-check later.
+>
+> So, could you reorder patches to bug-fix and new-bug-check ?
 
-Agree, changed to get_voltage_sel()
+Patches didn't share any context, so they can be applied in any order.
 
-> 
-> > +static int tps65217_pmic_dcdc_set_voltage(struct regulator_dev *dev,
-> > +						unsigned selector)
-> > +{
-> 
-> but this as set_voltage_sel().  For non table based regulators plain
-> set_voltage() usually makes a bit more sense as we don't have to iterate
-> through the selectors looking for a match.
-> 
+>
+> To the logic itself,
+> Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> Please CC when you repost.
+>
+>
+>
 
-I changed the implementation according to your point but the
-code size actually increased by 68 lines after fixing these
-comments. I will send across the replacement, please see if
-you like this one better.
 
-Regards,
-AnilKumar
