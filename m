@@ -1,89 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933383Ab2AKP5S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 10:57:18 -0500
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53126 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932372Ab2AKP5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 10:57:17 -0500
-Date: Wed, 11 Jan 2012 16:56:59 +0100
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [BUG] kernel freezes with latest tree
-Message-ID: <20120111155658.GB26659@elte.hu>
-References: <CA+55aFwNVutn=Z8N9k3CHLri=EKWX2UcN8skZvMfJ9Tg1LHCpg@mail.gmail.com>
- <1326213442.19095.9.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <CA+55aFyyZUJHELdbKfk2Gzpx9np7Ov74idttCo6+wi2+MAVG=g@mail.gmail.com>
- <1326214407.19095.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
- <CA+55aFzUSMVD84acwDGC_mqBUWg-6rdy6n_BfP6up+_V3oGx7A@mail.gmail.com>
- <1326234230.2614.15.camel@edumazet-laptop>
- <CA+55aFwYmX7q4MZc-xOStZB2ZQjVt_Jca6qDP+0cPKekz8yL+A@mail.gmail.com>
- <4F0D2D9B.8030501@gmail.com>
- <1326272685.2442.120.camel@twins>
- <1326284711.2442.138.camel@twins>
+	id S933470Ab2AKP6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 10:58:06 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:17245 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933193Ab2AKP6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 10:58:04 -0500
+Message-ID: <4F0DB16B.3010302@atmel.com>
+Date: Wed, 11 Jan 2012 16:57:31 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326284711.2442.138.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=AWL,BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.0 AWL                    AWL: From: address is in the auto white-list
+To: Arnd Bergmann <arnd@arndb.de>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Olof Johansson <olof@lixom.net>
+CC: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, "Wu, Josh" <Josh.wu@atmel.com>
+Subject: Re: linux-next: manual merge of the v4l-dvb tree with the arm-soc
+ tree
+References: <20120111133146.990e2b7115c9fa80e8fc3234@canb.auug.org.au> <Pine.LNX.4.64.1201110933480.1191@axis700.grange> <4F0D65F6.8080209@infradead.org> <201201111450.02798.arnd@arndb.de>
+In-Reply-To: <201201111450.02798.arnd@arndb.de>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+On 01/11/2012 03:50 PM, Arnd Bergmann :
+> On Wednesday 11 January 2012, Mauro Carvalho Chehab wrote:
+>> What I and Guennadi agreed (http://linuxtv.org/irc/v4l/index.php?date=2012-01-05)
+>> were to do just the reverse:
+>>
+>> He would be sending you one single patch with my ack, that would allow the 
+>> arm tree to be merged [1], I would wait for a few days for the arm tree to
+>> be pulled, and then I would rebase my -next tree to remove that patch
+>> from it.
+>>
+>> [1] http://git.linuxtv.org/gliakhovetski/v4l-dvb.git/commitdiff/88c6599d97b489ac543fa352159a81f60bddded7
+> 
+> It's just not what happened. I got this series from Nicolas:
+> 
+> 7a1834b ARM: at91: Update struct atmel_nand_data to support PMECC
+> 9356fba ARM: at91/dma: DMA controller registering with DT support
+> 31527e7 ARM: at91/dma: remove platform data from DMA controller
+> 226e3aa ARM: at91: add Atmel ISI and ov2640 support on sam9m10g45 board
+> e889a64 ARM: at91: add clock selection parameter for at91_add_device_isi()
+> 7a13e73 media i.MX27 camera: Fix field_count handling.
+> 166b37f media i.MX27 camera: add support for YUV420 format.
+> 88c6599 V4L: atmel-isi: add code to enable/disable ISI_MCK clock
+> ... (the rest of v4l at the time)
+> 
+> and I merged it into the next/drivers2 branch, explaining that I would
+> merge these as soon as the dependencies in v4l are merged. :(
+> 
+>> My -next tree were never meant to be stable. It is just a patch repository
+>> where I merge from the real development repository, in order to test them
+>> against the hole changes. From time to time, when bad things happen
+>> (patch conflicts, compilation breakages, requests to remove bad patches),
+>> I just rebase it.
+> 
+> Ok, thanks for the confirmation.
+> 
+>> I prefer if you could just pick this patch from Guennadi's tree:
+>>  http://git.linuxtv.org/gliakhovetski/v4l-dvb.git/commitdiff/88c6599d97b489ac543fa352159a81f60bddded7
+>>
+>> and add my ack on it, removing the v4l-dvb merge from yours.
+>>
+>> Linus seems to prefer to have the arch trees merged before the drivers
+>> tree, with makes sense.
+> 
+> I think it's better for you to just send everything you have right away,
+> including the atmel-isi patch.
+> 
+> I'll drop the remaining atmel patches from my next/drivers2 branch and let
+> Nicolas send me a new rebased pull request for 3.4. The patches in question
+> look simple enough, but if the developers can't get a simple dependency right
+> after discussing it for weeks, I'd rather not take it this time.
 
-> On Wed, 2012-01-11 at 10:04 +0100, Peter Zijlstra wrote:
-> > Maybe adding a few more NEED_BREAK bits
-> > and making it a counter and overflowing it into ABORT might be good.
-> > 
-> > 
->
-> I could reproduce and confirm something like the below makes 
-> the hang go-away. I haven't managed to fully understand why 
-> we're stuck though because we do release the runqueue locks 
-> and re-enable IRQs on this lock-break.
+I am so astonished and sad about all this! I have the feeling of having
+done exactly what Guennadi and Olof had asked me to do: What I get at
+the end: people having a bad feeling about my work, not expected merge
+conflicts which annoy everybody (only for a ridiculous amount of code),
+my patches delayed and a comment saying that I cannot handle simple
+dependency...
+Nice result!
 
-Well, what happens if every CPU runs load_balance() and we keep 
-triggering:
+- Guennadi did not want to take SoC/board code in his tree
+=> I had to take those lines of code through at91/arm-soc breaking the
+   patch series and allowing the introduction of an out-of-sync merge
 
-                if (loops++ > sysctl_sched_nr_migrate) {
-                        *lb_flags |= LBF_NEED_BREAK;
-                        break;
-                }
+- I built a pull request with only the SoC/board code on top of a
+  Linus' -rc tag (yes, that was breaking compilation on certain
+  configurations in the meantime)
+=> I was told that I should bring the v4l dependency with my branch
 
-in this case load_balance() will do the retry:
+- I resent a "pull request" on top of v4l branch after a discussion
+  between Guennadi, Olof and me. The conclusion of this discussion was
+  quite obvious:
+http://article.gmane.org/gmane.linux.ports.arm.kernel/145196
+=> It was supposed to be the last time I moved those patches around...
 
-                if (lb_flags & LBF_NEED_BREAK) {
-                        lb_flags &= ~LBF_NEED_BREAK;
-                        goto redo;
-                }
+I have understood and approved all the reasons for the requested
+changes, of course. But for which gain?
 
-but the retry starts the loop again:
+Ok... well, it looks like a massive incomprehension which took us time
+and ends up by wastefulness.
 
-        list_for_each_entry_safe(p, n, &busiest_cfs_rq->tasks, se.group_node) {
-
-so nobody is able to make progress: livelock/lockup.
-
-( This also explains why i was unable to see this in my 
-  randomized testing: my tests never extreme enough to trigger 
-  the sysctl_sched_nr_migrate threshold. )
-
-Thanks,
-
-	Ingo
+Best regards,
+-- 
+Nicolas Ferre
