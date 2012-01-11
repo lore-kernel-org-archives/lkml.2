@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934075Ab2AKV5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 16:57:47 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:48278 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2AKV5m (ORCPT
+	id S934092Ab2AKV6u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 16:58:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57624 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933502Ab2AKV6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 16:57:42 -0500
-Date: Wed, 11 Jan 2012 13:57:36 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Jones <drjones@redhat.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        david.woodhouse@intel.com, gregkh@suse.de, davem@davemloft.net,
-        axboe@kernel.dk, arnd@arndb.de, holt@sgi.com,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
-        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
-        yasutake.koichi@jp.panasonic.com, jonas@southpole.se, kyle@mcmartin.ca,
-        deller@gmx.de, jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
-        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
-        mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-In-Reply-To: <1326295008-29795-1-git-send-email-drjones@redhat.com>
-Message-ID: <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com>
-References: <1326295008-29795-1-git-send-email-drjones@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 11 Jan 2012 16:58:49 -0500
+Date: Wed, 11 Jan 2012 13:58:47 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>, linux-kernel@vger.kernel.org,
+        Xiaotian Feng <dannyfeng@tencent.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] proc: fix null pointer deref in proc_pid_permission()
+Message-Id: <20120111135847.d28425c6.akpm@linux-foundation.org>
+In-Reply-To: <20120111204330.GT2618@outflux.net>
+References: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
+	<20120111204330.GT2618@outflux.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jan 2012, Andrew Jones wrote:
+On Wed, 11 Jan 2012 12:43:30 -0800
+Kees Cook <keescook@chromium.org> wrote:
 
-> Commit 6a108a14fa35 renamed CONFIG_EMBEDDED to CONFIG_EXPERT with the
-> justification that EMBEDDED was being used with a broader scope. It was
-> no longer just being used to expose standard options to embedded kernel
-> configs for tweaking, but rather for all "non-standard" kernel configs.
-> This is nice, because now developers have a way to clean up the config
-> menu by adding 'if EXPERT' to all entries in their Kconfig files that
-> should rarely have a non-default value selected (hint1: it would be nice
-> if developers would do this, hint2: it would also be nice if developers
-> would do this rather than making these types of options silent, and thus
-> impossible to override).
+> Hi,
 > 
-> Unfortunately, EMBEDDED was also being used to modify the defaults of
-> some of these options to selections more appropriate for embedded
-> kernels. Since the renaming was a simple global search-replace, if
-> developers were to follow hints 1 and 2 above for non-embedded kernels,
-> then they may find unexpected changes in their configs after turning on
-> EXPERT.
+> On Wed, Jan 11, 2012 at 01:47:05PM -0500, Xiaotian Feng wrote:
+> > get_proc_task() can fail to search the task and return NULL, put_task_struct()
+> > will then bomb the kernel with following oops:
+> > 
+> > [ 1870.574045] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+> > [ 1870.574065] IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
+> > [ 1870.574088] PGD 112075067 PUD 112814067 PMD 0
+> > [ 1870.574106] Oops: 0002 [#1] PREEMPT SMP
+> > 
+> > This is a regression introduced by commit 0499680a, kernel should
+> > return -ESRCH if get_proc_task() failed.
+> 
+> Nice catch!
+> 
+> However since this error is returned to userspace, shouldn't this be
+> -ENOENT instead?
 > 
 
-We discussed this when the patch was made to change EMBEDDED to EXPERT and 
-we knew that things like CONFIG_SLOB exist that would only make sense on a 
-platform with a very small memory footprint.  So what criteria are you 
-using to determine what makes sense for EMBEDDED or not and what would be 
-generally useful for platforms with very small memory footprints?
+Failed get_proc_task() frequently results in -ESRCH.  And less
+frequently results in -ENOENT.
 
-I would think that something like CONFIG_SMALLMEM would identify those 
-candidates (for things like SLOB) and then you could separate the rest 
-based on the platform they exist for since you're essentially introducing 
-a new config symbol here that existed in the past but are now using it 
-with different semantics.
+It seems odd that inode_operations.permission() would ever return
+anything other than zero or -EPERM.
+
