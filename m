@@ -1,51 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752419Ab2AKG4j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 01:56:39 -0500
-Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:40928 "EHLO
-	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751483Ab2AKG4i (ORCPT
+	id S1752325Ab2AKG5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 01:57:45 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:61656 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab2AKG5n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 01:56:38 -0500
-Message-ID: <4F0D3277.8040102@st.com>
-Date: Wed, 11 Jan 2012 12:25:51 +0530
-From: Rajeev kumar <rajeev-dlh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0) Gecko/20110812 Thunderbird/6.0
+	Wed, 11 Jan 2012 01:57:43 -0500
 MIME-Version: 1.0
-To: Viresh KUMAR <viresh.kumar@st.com>
-Cc: Deepak SIKRI <deepak.sikri@st.com>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Mirko GARDI <mirko.gardi@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Pratyush ANAND <pratyush.anand@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] dmaengine/dw_dmac: Hibernation support in dw_dmac
-References: <1326262989-18608-1-git-send-email-rajeev-dlh.kumar@st.com> <4F0D2B75.7000800@st.com> <4F0D3134.4090209@st.com>
-In-Reply-To: <4F0D3134.4090209@st.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
+References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
+	<CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
+	<1326223998.14089.26.camel@haakon2.linux-iscsi.org>
+Date: Wed, 11 Jan 2012 07:57:41 +0100
+X-Google-Sender-Auth: yKPPK-FPbRc3cS9yBlkr5l8Zdt0
+Message-ID: <CAO+b5-oqsimTj6fRa=euEegH8Sqg=N_j4vXs6u=j31Za+WBKOw@mail.gmail.com>
+Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
+From: Bart Van Assche <bvanassche@acm.org>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@kernel.org>,
+        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/11/2012 12:20 PM, Viresh KUMAR wrote:
-> On 1/11/2012 11:55 AM, Deepak SIKRI wrote:
->>> +	.freeze_noirq = dw_suspend_noirq,
->>> +	.thaw_noirq =	dw_resume_noirq,
->>> +	.restore_noirq = dw_resume_noirq,
->
-> You need to add poweroff_noirq too.
->
+2012/1/10 Nicholas A. Bellinger <nab@linux-iscsi.org>:
+> These are all very minor and did not warrant another full RFC posting.
 
-Yep, will add this in V2
+There is a reason why the ib_srpt patch should have been reposted:
+Last WQE handling is still wrong, despite a patch being available
+(http://www.spinics.net/lists/linux-rdma/msg09982.html).
 
-Best Regards
-Rajeev
+Bart.
