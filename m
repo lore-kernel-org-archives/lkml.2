@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756905Ab2AKLXn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 06:23:43 -0500
-Received: from dgate10.ts.fujitsu.com ([80.70.172.49]:39277 "EHLO
-	dgate10.ts.fujitsu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab2AKLXl (ORCPT
+	id S932812Ab2AKLXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 06:23:51 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:57352 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757032Ab2AKLXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 06:23:41 -0500
-DomainKey-Signature: s=s1536a; d=ts.fujitsu.com; c=nofws; q=dns;
-  h=X-SBRSScore:X-IronPort-AV:Received:Received:From:To:CC:
-   Date:Subject:Thread-Topic:Thread-Index:Message-ID:
-   References:In-Reply-To:Accept-Language:Content-Language:
-   X-MS-Has-Attach:X-MS-TNEF-Correlator:acceptlanguage:
-   Content-Type:Content-Transfer-Encoding:MIME-Version;
-  b=louoAz08mCHHUeKQTECCkrxQh+QKKTa+XY297EIcfQPqbigkRFdNxxUC
-   0GDC1RGfFKOLO5cAcPQbvXSQgLtMOWSEQtr4LJ8Sp0GoW58A1+m5jlrIR
-   s1xoNMdrC99B7iJ0hvsCbUz/i9+4E/9CCoPn8psMNv6+VEWp0XIWXGXk3
-   NaMV5lfBd7Dwn3KpAdnfNFbVicDfBcLPkICorxLymt8OXNjcQKrwDwkae
-   FpbnwKY6DnUaI2lS/asMq5DeGH4Wm;
-X-SBRSScore: None
-X-IronPort-AV: E=Sophos;i="4.71,492,1320620400"; 
-   d="scan'208";a="98072083"
-From: "Borzenkov, Andrey" <andrey.borzenkov@ts.fujitsu.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 11 Jan 2012 12:23:37 +0100
-Subject: RE: Extermeley large PageTables over 500G on kernel 2.6.32.49
- (SLES11 SP1)
-Thread-Topic: Extermeley large PageTables over 500G on kernel 2.6.32.49
- (SLES11 SP1)
-Thread-Index: AczQUuwR3jcOp4OISQqzYeVgqSiqRAAADooQ
-Message-ID: <CB1B361E45A85849902B25342E88900501CFDC31120E@ABGEX70E.FSC.NET>
-References: <CB1B361E45A85849902B25342E88900501CFDC3110D6@ABGEX70E.FSC.NET>
-	 <1326278196.2767.7.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-	 <CB1B361E45A85849902B25342E88900501CFDC311187@ABGEX70E.FSC.NET>
- <1326280780.2767.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-In-Reply-To: <1326280780.2767.11.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Wed, 11 Jan 2012 06:23:47 -0500
+X-AuditID: cbfee60f-b7bceae00000240c-55-4f0d7125cc39
+Date: Wed, 11 Jan 2012 11:23:17 +0000 (GMT)
+From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH] power_supply: Fix modalias for charger-manager
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
+        =?euc-kr?Q?=B1=E8=B5=BF=B1=D9?= <dg77.kim@samsung.com>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20120111112134771@myungjoo.ham
+Msgkey: 20120111112134771@myungjoo.ham
+X-EPLocale: ko_KR.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20120111112134771@myungjoo.ham
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <10819991.146571326280997005.JavaMail.weblogic@epml24>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id q0BBNpsD016793
+X-MIME-Autoconverted: from base64 to 8bit by nfs id q0BBO2YH016801
 
-> -----Original Message-----
-> From: Eric Dumazet [mailto:eric.dumazet@gmail.com]
-> Sent: Wednesday, January 11, 2012 3:20 PM
-> To: Borzenkov, Andrey
-> Cc: linux-kernel@vger.kernel.org
-> Subject: RE: Extermeley large PageTables over 500G on kernel 2.6.32.49
-> (SLES11 SP1)
+Written by Axel Lin<axel.lin@gmail.com>
+> Since 43cc71eed1250755986da4c0f9898f9a635cb3bf, the platform
+> modalias is prefixed with "platform:".
+> Current code has the id_table, thus add MODULE_DEVICE_TABLE will
+> automatically setup the modalias.
 > 
-> Le mercredi 11 janvier 2012 √† 11:52 +0100, Borzenkov, Andrey a √©crit :
+> Also make charger_manager_id static as it is only used in this driver.
 > 
-> > Colleagues responsible for Oracle are reconfiguring it now.
-> >
-> 
-> OK. Since your hardware supports 1GB hugepages, you might try to use
-> them as well. Not sure if your kernel is recent enough...
-> 
-> cat /proc/cmdline
-> ro root=LABEL=/ hugepagesz=1GB hugepages=512
-> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-It says 2M so it probably is the limit.
+Thanks.
 
-> > > If not, its normal to eat so much memory for page tables
-> > >
-> > > grep VmPTE /proc/*/status
-> > >
-> > >
-> >
-> > Forgive my ignorance. I thought that
-> >
-> > 1. PTE is 8 bytes per page, which is 4K which gives 2K per 1M of memory
-> > 2. All processes sharing the same shared memory share the same page
-> table
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+
+> ---
+>  drivers/power/charger-manager.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
-> It depends how oracle maps its SGA.
+> diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+> index 0378d01..88fd971 100644
+> --- a/drivers/power/charger-manager.c
+> +++ b/drivers/power/charger-manager.c
+> @@ -974,10 +974,11 @@ static int __devexit charger_manager_remove(struct platform_device *pdev)
+>  	return 0;
+>  }
+>  
+> -const struct platform_device_id charger_manager_id[] = {
+> +static const struct platform_device_id charger_manager_id[] = {
+>  	{ "charger-manager", 0 },
+>  	{ },
+>  };
+> +MODULE_DEVICE_TABLE(platform, charger_manager_id);
+>  
+>  static int cm_suspend_prepare(struct device *dev)
+>  {
+> @@ -1069,4 +1070,3 @@ module_exit(charger_manager_cleanup);
+>  MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
+>  MODULE_DESCRIPTION("Charger Manager");
+>  MODULE_LICENSE("GPL");
+> -MODULE_ALIAS("charger-manager");
+> -- 
+> 1.7.5.4
 > 
-> It probably uses a method disallowing page table sharing.
-
-Do you have any reference to description of these methods so we can check?
-
-Thank you!
-
-> 
-> Anyway, hugetables for this kind of workload is a must.
-> 
-
-
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
