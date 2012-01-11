@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab2AKJLo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 04:11:44 -0500
-Received: from mga03.intel.com ([143.182.124.21]:21818 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754816Ab2AKJLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 04:11:41 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="94652066"
-Subject: Re: [PATCH 1/3] net: use this_cpu_xxx replace percpu_xxx funcs
-From: "Alex,Shi" <alex.shi@intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: kaber@trash.net, eric.dumazet@gmail.com, cl@gentwo.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, ying.huang@intel.com, tglx@linutronix.de,
-        mingo@redhat.com, avi@redhat.com, akpm@linux-foundation.org,
-        a.p.zijlstra@chello.nl, kvm@vger.kernel.org, jeremy@xensource.com
-In-Reply-To: <20120111.010331.2039534822545257440.davem@davemloft.net>
-References: <1322793200.11530.33.camel@debian> <4ED8BD00.4000500@trash.net>
-	 <1326271533.5695.242.camel@debian>
-	 <20120111.010331.2039534822545257440.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Jan 2012 17:10:18 +0800
-Message-ID: <1326273018.5695.264.camel@debian>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1757312Ab2AKJRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 04:17:30 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:56125 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754816Ab2AKJR1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 04:17:27 -0500
+Message-ID: <4F0D538C.5040202@de.ibm.com>
+Date: Wed, 11 Jan 2012 10:17:00 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sched/s390: fix compile error in sched/core.c
+References: <1326268696-30904-1-git-send-email-borntraeger@de.ibm.com> <1326272868.2442.122.camel@twins>
+In-Reply-To: <1326272868.2442.122.camel@twins>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+x-cbid: 12011109-0542-0000-0000-000000A28E7B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 01:03 -0800, David Miller wrote:
-> From: "Alex,Shi" <alex.shi@intel.com>
-> Date: Wed, 11 Jan 2012 16:45:33 +0800
+On 11/01/12 10:07, Peter Zijlstra wrote:
+> On Wed, 2012-01-11 at 08:58 +0100, Christian Borntraeger wrote:
+>> From: Christian Borntraeger <borntraeger@de.ibm.com>
+>>
+>> commit 029632fbb7b7c9d85063cc9eb470de6c54873df3
+>>     sched: Make separate sched*.c translation units
+>>
+>> removed the include of asm/mutex.h from sched.c. This breaks the combination of
+>>
+>> CONFIG_MUTEX_SPIN_ON_OWNER=yes
+>> CONFIG_HAVE_ARCH_MUTEX_CPU_RELAX=yes
+>> like s390 without mutex debugging:
+>>
+>>   CC      kernel/sched/core.o
+>> kernel/sched/core.c: In function ‘mutex_spin_on_owner’:
+>> kernel/sched/core.c:3287: error: implicit declaration of function ‘arch_mutex_cpu_relax’
+>> make[2]: *** [kernel/sched/core.o] Error 1
+>>
+>> Lets re-add the include to kernel/sched/core.c
 > 
-> >> >>>> percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-> >> >>>> for further code clean up.
-> >> >>>>
-> >> >>>> And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-> >> >>>> performance since __this_cpu_xxx has no redundant preempt_disable()
-> >> >>>>
-> >> >>>> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> >> >>>> ---
-> >> >>>>  net/netfilter/xt_TEE.c |   12 ++++++------
-> >> >>>>  net/socket.c           |    4 ++--
-> >> >>>>  2 files changed, 8 insertions(+), 8 deletions(-)
-> >> >>>
-> >> >>> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-> >> >>>
-> >> >>> Thanks !
-> >> >>
-> >> >> Anyone like to pick up this patch? or more comments for this? 
-> >> > 
-> >> > Kaber, David: 
-> >> > I appreciate for your any comments on this. Could you like do me a
-> >> > favor? 
-> >> 
-> >> No objections from me.
-> > 
-> > rend this patch for 3.2.0 kernel with Eric's Ack. 
-> > 
-> > David, do you have any concerns for this patch?  I will very appreciate
-> > if it can met 3.3 open window. 
-> 
-> Please just submit it directly with the other this_cpu() patches:
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+> Weird, I would have expected -next to pick this up.. 
+Maybe the builds of next runs with DEBUG_MUTEXES, which disables MUTEX_SPIN_ON_OWNER.
 
-Thanks a lot! :) 
+> Anyway, no objection although do we really need that extra #ifdef ?
 
+Dont think so. I consider this more as a comment why we need this. Whoever applies the patch,
+feel free to remove the ifdefs.
+
+Christian
 
