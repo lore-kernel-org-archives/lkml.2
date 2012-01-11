@@ -1,34 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab2AKHli (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 02:41:38 -0500
-Received: from verein.lst.de ([213.95.11.211]:44584 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754769Ab2AKHlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 02:41:37 -0500
-Date: Wed, 11 Jan 2012 08:41:35 +0100
-From: Christoph Hellwig <hch@lst.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Christoph Hellwig <hch@lst.de>,
-        Ben Myers <bpm@sgi.com>
-Subject: Re: [41/42] xfs: validate acl count
-Message-ID: <20120111074135.GA30829@lst.de>
-References: <20120110215031.GA19398@kroah.com> <20120110215024.482323323@clark.kroah.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120110215024.482323323@clark.kroah.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1756589Ab2AKHn5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 02:43:57 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65204 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755228Ab2AKHn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 02:43:56 -0500
+Message-ID: <1326267824.15588.2.camel@phoenix>
+Subject: [PATCH 1/3] power_supply: da9052-battery: Add missing
+ platform_set_drvdata
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        David Dajun Chen <dchen@diasemi.com>
+Date: Wed, 11 Jan 2012 15:43:44 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 01:48:51PM -0800, Greg KH wrote:
-> 3.1-stable review patch.  If anyone has any objections, please let me know.
+Add missing platform_set_drvdata in da9052_bat_probe.
+Otherwise, calling platform_get_drvdata in da9052_bat_remove returns NULL.
 
-Just curious, how well tested are all the patches on 2.6.32 and 3.1 hat I only
-submitted for 3.0?  I'd really prefer if they at least get an xfstest run
-before they get sent out to the world.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/power/da9052-battery.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/power/da9052-battery.c b/drivers/power/da9052-battery.c
+index e8ea47a..07d5b36 100644
+--- a/drivers/power/da9052-battery.c
++++ b/drivers/power/da9052-battery.c
+@@ -612,6 +612,7 @@ static s32 __devinit da9052_bat_probe(struct platform_device *pdev)
+ 	 if (ret)
+ 		goto err;
+ 
++	platform_set_drvdata(pdev, bat);
+ 	return 0;
+ 
+ err:
+-- 
+1.7.5.4
+
+
 
