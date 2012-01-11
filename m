@@ -1,177 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab2AKTbN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 14:31:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751745Ab2AKTbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 14:31:10 -0500
-Date: Wed, 11 Jan 2012 14:30:44 -0500
-From: Rik van Riel <riel@redhat.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        akpm@linux-foundation.org, mel@csn.un.ie, hannes@cmpxchg.org,
-        minchan.kim@gmail.com
-Subject: [PATCH v2 -mm] make swapin readahead skip over holes
-Message-ID: <20120111143044.3c538d46@cuia.bos.redhat.com>
-Organization: Red Hat, Inc
+	id S1755849Ab2AKTdE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 14:33:04 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:47101 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab2AKTdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 14:33:00 -0500
+Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@kernel.org>,
+        =?ISO-8859-1?Q?J=F6rn?= Engel <joern@purestorage.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+In-Reply-To: <CAO+b5-oqsimTj6fRa=euEegH8Sqg=N_j4vXs6u=j31Za+WBKOw@mail.gmail.com>
+References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
+	 <CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
+	 <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
+	 <CAO+b5-oqsimTj6fRa=euEegH8Sqg=N_j4vXs6u=j31Za+WBKOw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Jan 2012 11:32:57 -0800
+Message-ID: <1326310377.20199.16.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ever since abandoning the virtual scan of processes, for scalability
-reasons, swap space has been a little more fragmented than before.
-This can lead to the situation where a large memory user is killed,
-swap space ends up full of "holes" and swapin readahead is totally
-ineffective.
+On Wed, 2012-01-11 at 07:57 +0100, Bart Van Assche wrote:
+> 2012/1/10 Nicholas A. Bellinger <nab@linux-iscsi.org>:
+> > These are all very minor and did not warrant another full RFC posting.
+> 
+> There is a reason why the ib_srpt patch should have been reposted:
+> Last WQE handling is still wrong, despite a patch being available
+> (http://www.spinics.net/lists/linux-rdma/msg09982.html).
+> 
 
-On my home system, after killing a leaky firefox it took over an
-hour to page just under 2GB of memory back in, slowing the virtual
-machines down to a crawl.
+This patch was applied to lio-core.git, but considering that I've
+received zero testing feedback on this I elected not to include it in
+target-pending for the initial merge.
 
-This patch makes swapin readahead simply skip over holes, instead
-of stopping at them.  This allows the system to swap things back in
-at rates of several MB/second, instead of a few hundred kB/second.
+Once it can get some real testing it will be included into rc-fixes
+along with the rest of the post merge-window updates.  So please, lets
+not try to delay the merging of this driver (again) over bits that will
+be addressed post -rc1.
 
-The checks done in valid_swaphandles are already done in 
-read_swap_cache_async as well, allowing us to remove a fair amount
-of code.
+Thanks,
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
--v2: cleanups suggested by Mel Gorman
-     skip swap offset zero
+--nab
 
- include/linux/swap.h |    2 +-
- mm/swap_state.c      |   17 ++++----------
- mm/swapfile.c        |   59 +++++++++++++------------------------------------
- 3 files changed, 22 insertions(+), 56 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index 1e22e12..6e1282e 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -328,7 +328,7 @@ extern long total_swap_pages;
- extern void si_swapinfo(struct sysinfo *);
- extern swp_entry_t get_swap_page(void);
- extern swp_entry_t get_swap_page_of_type(int);
--extern int valid_swaphandles(swp_entry_t, unsigned long *);
-+extern void get_swap_cluster(swp_entry_t, unsigned long *, unsigned long *);
- extern int add_swap_count_continuation(swp_entry_t, gfp_t);
- extern void swap_shmem_alloc(swp_entry_t);
- extern int swap_duplicate(swp_entry_t);
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index ea6b32d..3ec4886 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -372,25 +372,18 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
- 			struct vm_area_struct *vma, unsigned long addr)
- {
--	int nr_pages;
- 	struct page *page;
--	unsigned long offset;
-+	unsigned long offset = swp_offset(entry);
- 	unsigned long end_offset;
- 
--	/*
--	 * Get starting offset for readaround, and number of pages to read.
--	 * Adjust starting address by readbehind (for NUMA interleave case)?
--	 * No, it's very unlikely that swap layout would follow vma layout,
--	 * more likely that neighbouring swap pages came from the same node:
--	 * so use the same "addr" to choose the same node for each swap read.
--	 */
--	nr_pages = valid_swaphandles(entry, &offset);
--	for (end_offset = offset + nr_pages; offset < end_offset; offset++) {
-+	get_swap_cluster(entry, &offset, &end_offset);
-+
-+	for (; offset <= end_offset ; offset++) {
- 		/* Ok, do the async read-ahead now */
- 		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
- 						gfp_mask, vma, addr);
- 		if (!page)
--			break;
-+			continue;
- 		page_cache_release(page);
- 	}
- 	lru_add_drain();	/* Push any new pages onto the LRU now */
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index b1cd120..f09182e 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2289,55 +2289,28 @@ int swapcache_prepare(swp_entry_t entry)
- }
- 
- /*
-- * swap_lock prevents swap_map being freed. Don't grab an extra
-- * reference on the swaphandle, it doesn't matter if it becomes unused.
-+ * Return a swap cluster sized and aligned block around offset.
-  */
--int valid_swaphandles(swp_entry_t entry, unsigned long *offset)
-+void get_swap_cluster(swp_entry_t entry, unsigned long *begin,
-+			unsigned long *end)
- {
- 	struct swap_info_struct *si;
--	int our_page_cluster = page_cluster;
--	pgoff_t target, toff;
--	pgoff_t base, end;
--	int nr_pages = 0;
--
--	if (!our_page_cluster)	/* no readahead */
--		return 0;
--
--	si = swap_info[swp_type(entry)];
--	target = swp_offset(entry);
--	base = (target >> our_page_cluster) << our_page_cluster;
--	end = base + (1 << our_page_cluster);
--	if (!base)		/* first page is swap header */
--		base++;
-+	unsigned long offset = swp_offset(entry);
-+	unsigned long mask = (1 << page_cluster) - 1;
- 
- 	spin_lock(&swap_lock);
--	if (end > si->max)	/* don't go beyond end of map */
--		end = si->max;
--
--	/* Count contiguous allocated slots above our target */
--	for (toff = target; ++toff < end; nr_pages++) {
--		/* Don't read in free or bad pages */
--		if (!si->swap_map[toff])
--			break;
--		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
--			break;
--	}
--	/* Count contiguous allocated slots below our target */
--	for (toff = target; --toff >= base; nr_pages++) {
--		/* Don't read in free or bad pages */
--		if (!si->swap_map[toff])
--			break;
--		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
--			break;
--	}
-+	si = swap_info[swp_type(entry)];
-+	/* Round the begin down to a page_cluster boundary. */
-+	offset &= ~mask;
-+	if (!offset)	/* First page is swap header. */
-+		offset++;
-+	*begin = offset;
-+	/* Round the end up, but not beyond the end of the swap device. */
-+	offset |= mask;
-+	if (offset > si->max)
-+		offset = si->max;
-+	*end = offset;
- 	spin_unlock(&swap_lock);
--
--	/*
--	 * Indicate starting offset, and return number of pages to get:
--	 * if only 1, say 0, since there's then no readahead to be done.
--	 */
--	*offset = ++toff;
--	return nr_pages? ++nr_pages: 0;
- }
- 
- /*
+
 
