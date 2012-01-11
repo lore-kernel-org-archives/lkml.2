@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757353Ab2AKKsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 05:48:39 -0500
-Received: from 50-56-35-84.static.cloud-ips.com ([50.56.35.84]:35100 "EHLO
-	mail.hallyn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753203Ab2AKKsh (ORCPT
+	id S1757466Ab2AKKtt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 05:49:49 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38353
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751678Ab2AKKtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 05:48:37 -0500
-Date: Wed, 11 Jan 2012 10:49:57 +0000
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org, mtk.manpages@gmail.com,
-        oleg@redhat.com
-Subject: Re: [PATCH 1/1][V5] Add reboot_pid_ns to handle the reboot syscall
-Message-ID: <20120111104957.GA1097@hallyn.com>
-References: <1325754410-32600-1-git-send-email-daniel.lezcano@free.fr>
- <1325754410-32600-2-git-send-email-daniel.lezcano@free.fr>
- <20120105192954.GA16083@sergelap>
- <20120111102346.GB8504@peqn>
- <20120111024530.7b3607e7.akpm@linux-foundation.org>
+	Wed, 11 Jan 2012 05:49:47 -0500
+Date: Wed, 11 Jan 2012 05:49:40 -0500
+From: Christoph Hellwig <hch@infradead.org>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        Bart Van Assche <bvanassche@acm.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        target-devel <target-devel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Roland Dreier <roland@kernel.org>, J?rn Engel <joern@purestorage.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
+Message-ID: <20120111104940.GA5394@infradead.org>
+References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
+ <CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
+ <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
+ <1326225067.3264.51.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120111024530.7b3607e7.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1326225067.3264.51.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Andrew Morton (akpm@linux-foundation.org):
-> On Wed, 11 Jan 2012 11:23:46 +0100 Serge Hallyn <serge.hallyn@canonical.com> wrote:
-> 
-> > > 
-> > > The testcase in [PATCH 0/1] passed for me, and reboot from init_pid_ns
-> > > works as usual.
-> > > 
-> > > Tested-by: Serge Hallyn <serge.hallyn@canonical.com>
+On Tue, Jan 10, 2012 at 01:51:07PM -0600, James Bottomley wrote:
+> > The changes since the Nov 4 RFC are listed in the patch commit log:
 > > 
-> > Hi Andrew,
+> > ib_srpt: Make compilation with BUG=n proceed`
+> > ib_srpt: Use new target_core_fabric.h include
+> > ib_srpt: Check hex2bin() return code to silence build warning
 > > 
-> > Are you considering taking this patch into -mm?
+> > These are all very minor and did not warrant another full RFC posting.
 > 
-> I have it queued up to look at.  I'll do that I've merged the current
-> lot into rc1 - if I were to merge new stuff before then I'd only
-> confuse myself ;)
+> They might not warrant a full RFC reposting, but individually they
+> should have been posted to the list, so Bart is right.
 
-Thanks!
+At least 2 and 3 list, just not as global patches against the
+target tree, not ib_srpt specificly:
 
--serge
+2 is from: [PATCH] target: header reshuffle, part2
+3 is from: [PATCH 5/5] target: check hex2bin result
+
+Not sure about 1.
+
+I'm really getting tired of this bickering. It's a brand new driver and
+doesn't have to be perfect.  While Bart generally has technically good
+points there's really no reason to put his remaining fixups in after
+the driver has been merged and available to a wieder audience.
+
