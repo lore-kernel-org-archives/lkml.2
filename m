@@ -1,225 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab2AKQva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 11:51:30 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:39388 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757774Ab2AKQv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 11:51:26 -0500
-Date: Wed, 11 Jan 2012 16:51:23 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH -mm] make swapin readahead skip over holes
-Message-ID: <20120111165123.GF3910@csn.ul.ie>
-References: <20120109181023.7c81d0be@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120109181023.7c81d0be@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933268Ab2AKQxv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 11:53:51 -0500
+Received: from mailgw12.technion.ac.il ([132.68.225.12]:54382 "EHLO
+	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757633Ab2AKQxu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 11:53:50 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvwEAJe9DU+ERM5e/2dsb2JhbABCrGuBBYIgUoECPBO/UIwdBKACh0g
+X-IronPort-AV: E=Sophos;i="4.71,493,1320616800"; 
+   d="scan'208";a="74150932"
+From: Nadav Amit <namit@cs.technion.ac.il>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nadav Amit <namit@cs.technion.ac.il>,
+        Nadav Amit <nadav.amit@gmail.com>
+Subject: [PATCH 1/2] KVM: Exception during emulation decode should propagate
+Date: Wed, 11 Jan 2012 18:53:30 +0200
+Message-Id: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 06:10:23PM -0500, Rik van Riel wrote:
-> Ever since abandoning the virtual scan of processes, for scalability
-> reasons, swap space has been a little more fragmented than before.
-> This can lead to the situation where a large memory user is killed,
-> swap space ends up full of "holes" and swapin readahead is totally
-> ineffective.
-> 
-> On my home system, after killing a leaky firefox it took over an
-> hour to page just under 2GB of memory back in, slowing the virtual
-> machines down to a crawl.
-> 
-> This patch makes swapin readahead simply skip over holes, instead
-> of stopping at them.  This allows the system to swap things back in
-> at rates of several MB/second, instead of a few hundred kB/second.
-> 
+An exception might occur during decode (e.g., #PF during fetch).
+Currently, the exception is ignored and emulation is performed.
+Instead, emulation should be skipped and the fault should be injected.
+Skipping instruction should report a failure in this case.
 
-Nice.
+Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
+---
+ arch/x86/kvm/emulate.c |    3 +++
+ arch/x86/kvm/x86.c     |    8 ++++++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-> The checks done in valid_swaphandles are already done in 
-> read_swap_cache_async as well, allowing us to remove a fair amount
-> of code.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  include/linux/swap.h |    2 +-
->  mm/swap_state.c      |   17 ++++----------
->  mm/swapfile.c        |   56 +++++++++++--------------------------------------
->  3 files changed, 19 insertions(+), 56 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 1e22e12..6e1282e 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -328,7 +328,7 @@ extern long total_swap_pages;
->  extern void si_swapinfo(struct sysinfo *);
->  extern swp_entry_t get_swap_page(void);
->  extern swp_entry_t get_swap_page_of_type(int);
-> -extern int valid_swaphandles(swp_entry_t, unsigned long *);
-> +extern void get_swap_cluster(swp_entry_t, unsigned long *, unsigned long *);
->  extern int add_swap_count_continuation(swp_entry_t, gfp_t);
->  extern void swap_shmem_alloc(swp_entry_t);
->  extern int swap_duplicate(swp_entry_t);
-> diff --git a/mm/swap_state.c b/mm/swap_state.c
-> index 78cc4d1..36501b3 100644
-> --- a/mm/swap_state.c
-> +++ b/mm/swap_state.c
-> @@ -373,25 +373,18 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
->  struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
->  			struct vm_area_struct *vma, unsigned long addr)
->  {
-> -	int nr_pages;
->  	struct page *page;
-> -	unsigned long offset;
-> +	unsigned long offset = swp_offset(entry);
->  	unsigned long end_offset;
->  
-> -	/*
-> -	 * Get starting offset for readaround, and number of pages to read.
-> -	 * Adjust starting address by readbehind (for NUMA interleave case)?
-> -	 * No, it's very unlikely that swap layout would follow vma layout,
-> -	 * more likely that neighbouring swap pages came from the same node:
-> -	 * so use the same "addr" to choose the same node for each swap read.
-> -	 */
-> -	nr_pages = valid_swaphandles(entry, &offset);
-> -	for (end_offset = offset + nr_pages; offset < end_offset; offset++) {
-> +	get_swap_cluster(entry, &offset, &end_offset);
-> +
-> +	for (; offset <= end_offset ; offset++) {
->  		/* Ok, do the async read-ahead now */
->  		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
->  						gfp_mask, vma, addr);
->  		if (!page)
-> -			break;
-> +			continue;
->  		page_cache_release(page);
->  	}
-
-For a heavily fragmented swap file, this will result in more IO and
-the gamble is that pages nearby are needed soon. You say your virtual
-machines swapin faster and that does not surprise me. I also expect
-they need the data so it's a net win.
-
-There is an possibility that under memory pressure that swapping in
-more pages will cause more memory pressure (increased swapin causing
-clean page cache discards and pageout) and be an overall loss. This may
-be a net loss in some cases such as where the working set size is just
-over physical memory and the increased swapin causes a problem. I doubt
-this case is common but it is worth bearing in mind if future bug
-reports complain about increased swap activity.
-
->  	lru_add_drain();	/* Push any new pages onto the LRU now */
-> diff --git a/mm/swapfile.c b/mm/swapfile.c
-> index b1cd120..8dae1ca 100644
-> --- a/mm/swapfile.c
-> +++ b/mm/swapfile.c
-> @@ -2289,55 +2289,25 @@ int swapcache_prepare(swp_entry_t entry)
->  }
->  
->  /*
-> - * swap_lock prevents swap_map being freed. Don't grab an extra
-> - * reference on the swaphandle, it doesn't matter if it becomes unused.
-> + * Return a swap cluster sized and aligned block around offset.
->   */
-> -int valid_swaphandles(swp_entry_t entry, unsigned long *offset)
-> +void get_swap_cluster(swp_entry_t entry, unsigned long *begin,
-> +			unsigned long *end)
->  {
->  	struct swap_info_struct *si;
-> -	int our_page_cluster = page_cluster;
-> -	pgoff_t target, toff;
-> -	pgoff_t base, end;
-> -	int nr_pages = 0;
-> -
-> -	if (!our_page_cluster)	/* no readahead */
-> -		return 0;
-> -
-> -	si = swap_info[swp_type(entry)];
-> -	target = swp_offset(entry);
-> -	base = (target >> our_page_cluster) << our_page_cluster;
-> -	end = base + (1 << our_page_cluster);
-> -	if (!base)		/* first page is swap header */
-> -		base++;
-> +	unsigned long offset = swp_offset(entry);
->  
->  	spin_lock(&swap_lock);
-> -	if (end > si->max)	/* don't go beyond end of map */
-> -		end = si->max;
-> -
-> -	/* Count contiguous allocated slots above our target */
-> -	for (toff = target; ++toff < end; nr_pages++) {
-> -		/* Don't read in free or bad pages */
-> -		if (!si->swap_map[toff])
-> -			break;
-> -		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
-> -			break;
-> -	}
-> -	/* Count contiguous allocated slots below our target */
-> -	for (toff = target; --toff >= base; nr_pages++) {
-> -		/* Don't read in free or bad pages */
-> -		if (!si->swap_map[toff])
-> -			break;
-> -		if (swap_count(si->swap_map[toff]) == SWAP_MAP_BAD)
-> -			break;
-> -	}
-> +	si = swap_info[swp_type(entry)];
-> +	/* Round the begin down to a page_cluster boundary. */
-> +	offset = (offset >> page_cluster) << page_cluster;
-
-Minor nit but it would feel more natural to me to see
-
-offset & ~((1 << page_cluster) - 1)
-
-but I understand that you are reusing the existing code.
-
-As an aside, page_cluster is statically calculated at swap_setup and
-it is a trivial calculation. It is worth having it in bss? At the
-very least it should be read_mostly. Currently it is oblivious to
-memory hotplug but as the value only changes for machines with < 16M,
-it doesn't matter. Would it make sense to just get rid of page_cluster
-too?
-
-> +	*begin = offset;
-> +	/* Round the end up, but not beyond the end of the swap device. */
-> +	offset = offset + (1 << page_cluster);
-> +	if (offset > si->max)
-> +		offset = si->max;
-> +	*end = offset;
->  	spin_unlock(&swap_lock);
-> -
-> -	/*
-> -	 * Indicate starting offset, and return number of pages to get:
-> -	 * if only 1, say 0, since there's then no readahead to be done.
-> -	 */
-> -	*offset = ++toff;
-> -	return nr_pages? ++nr_pages: 0;
->  }
-
-This section deletes code which is nice but there is a
-problem. Your changelog says that this is duplicating the effort of
-read_swap_cache_async() which is true but what it does is
-
-1. a swap cache lookup which will probably fail
-2. alloc_page_vma()
-3. radix_tree_preload()
-4. swapcache_prepare
-   - calls __swap_duplicate()
-   - finds the hole, bails out
-
-That's a lot of work before the hole is found. Would it be worth
-doing a racy check in swapin_readahead without swap lock held before
-calling read_swap_cache_async()?
-
->  
->  /*
-> 
-
+diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+index 05a562b..e06dc98 100644
+--- a/arch/x86/kvm/emulate.c
++++ b/arch/x86/kvm/emulate.c
+@@ -3869,6 +3869,9 @@ done:
+ 	if (ctxt->memopp && ctxt->memopp->type == OP_MEM && ctxt->rip_relative)
+ 		ctxt->memopp->addr.mem.ea += ctxt->_eip;
+ 
++	if (rc == X86EMUL_PROPAGATE_FAULT)
++		ctxt->have_exception = true;
++
+ 	return (rc != X86EMUL_CONTINUE) ? EMULATION_FAILED : EMULATION_OK;
+ }
+ 
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 1171def..05fd3d7 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4443,10 +4443,17 @@ int x86_emulate_instruction(struct kvm_vcpu *vcpu,
+ 	}
+ 
+ 	if (emulation_type & EMULTYPE_SKIP) {
++		if (ctxt->have_exception)
++			return EMULATE_FAIL;
+ 		kvm_rip_write(vcpu, ctxt->_eip);
+ 		return EMULATE_DONE;
+ 	}
+ 
++	if (ctxt->have_exception) {
++		writeback = false;
++		goto post;
++	}
++
+ 	if (retry_instruction(ctxt, cr2, emulation_type))
+ 		return EMULATE_DONE;
+ 
+@@ -4470,6 +4477,7 @@ restart:
+ 		return handle_emulation_failure(vcpu);
+ 	}
+ 
++post:
+ 	if (ctxt->have_exception) {
+ 		inject_emulated_exception(vcpu);
+ 		r = EMULATE_DONE;
 -- 
-Mel Gorman
-SUSE Labs
+1.7.4.1
+
