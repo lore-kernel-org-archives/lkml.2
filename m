@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab2AKI2v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 03:28:51 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:20482 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab2AKI2u (ORCPT
+	id S1757105Ab2AKIek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 03:34:40 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52332 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756117Ab2AKIej (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 03:28:50 -0500
-Date: Wed, 11 Jan 2012 11:28:43 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: aacraid question: is maximum_num_containers supposed to be minimum?
-Message-ID: <20120111082842.GA31452@elgon.mountain>
+	Wed, 11 Jan 2012 03:34:39 -0500
+Date: Wed, 11 Jan 2012 09:34:29 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: linux-next: please update the i.MX tree
+Message-ID: <20120111083429.GU5446@pengutronix.de>
+References: <20120110115218.e00ab8c01abd5b9ae9a3b166@canb.auug.org.au>
+ <20120110083020.GR5446@pengutronix.de>
+ <20120111093457.af3caeabe2dbf50b70942334@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120111093457.af3caeabe2dbf50b70942334@canb.auug.org.au>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 09:32:27 up 59 days, 16:19, 21 users,  load average: 0.21, 0.07,
+ 0.06
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4F0D4841.001E,ss=1,re=0.000,fgs=0
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAXIMUM_NUM_CONTAINERS is consistently used as a minimum not a maximum
-so I was wondering what was up with that?  This is ancient code that
-predates git.
+On Wed, Jan 11, 2012 at 09:34:57AM +1100, Stephen Rothwell wrote:
+> Hi Sascha,
+> 
+> On Tue, 10 Jan 2012 09:30:20 +0100 Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> >
+> > On Tue, Jan 10, 2012 at 11:52:18AM +1100, Stephen Rothwell wrote:
+> > > 
+> > > It looks like most (if not all) of the i.MX tree has been merged into the
+> > > arm-soc (and Linus') tree, so could you please update the i.MX tree to
+> > > eliminate the conflicts I am getting.
+> > 
+> > Did this. Sorry, I was not aware that there is something in this branch.
+> 
+> Did you push it out? I just checked and it hasn't changed. Just to be
+> clear, I am fetching git://git.pengutronix.de/git/imx/linux-2.6.git
+> branch for-next and it hasn't changed since last September.
 
-drivers/scsi/aacraid/aachba.c
-   382          if (maximum_num_containers < MAXIMUM_NUM_CONTAINERS)
-   383                  maximum_num_containers = MAXIMUM_NUM_CONTAINERS;
-   384          fsa_dev_ptr = kzalloc(sizeof(*fsa_dev_ptr) * maximum_num_containers,
-   385                          GFP_KERNEL);
+I failed to wait until my push returned. It failed due to
+non-fast-forward pushing. Really fixed this now.
 
-Btw, if maximum_num_containers were really a maximum instead of minimum
-then it should be unsigned.  That was what brought the code to my
-attention initially.
+> 
+> Should I, instead, just remove that tree from linux-next and let you send
+> stuff just via the arm-soc (or arm)tree?
 
-drivers/scsi/aacraid/linit.c
-  1235          if (shost->max_id < MAXIMUM_NUM_CONTAINERS)
-  1236                  shost->max_id = MAXIMUM_NUM_CONTAINERS;
-  1237          else
-  1238                  shost->this_id = shost->max_id;
+Yes, that's probably best. That's what I do anyway.
 
-regards,
-dan carpenter
+Sascha
 
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
