@@ -1,119 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758016Ab2AKT6W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 14:58:22 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:45017 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757871Ab2AKT6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 14:58:21 -0500
-Message-ID: <1326311897.3491.6.camel@joe2Laptop>
-Subject: [RFC PATCH] checkpatch: Add warning for asymmetric brace use
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@shadowen.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Julian Andres Klode <jak@jak-linux.org>, devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+	id S1758022Ab2AKT7d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 14:59:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:62961 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757680Ab2AKT7a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 14:59:30 -0500
+Date: Wed, 11 Jan 2012 23:59:25 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Date: Wed, 11 Jan 2012 11:58:17 -0800
-In-Reply-To: <1326216615.26536.18.camel@joe2Laptop>
-References: <1324918660-25708-1-git-send-email-jak@jak-linux.org>
-	 <1324918660-25708-5-git-send-email-jak@jak-linux.org>
-	 <20120110113552.GJ3644@mwanda> <20120110114835.GB6325@jak-linux.org>
-	 <20120110121453.GC16258@mwanda> <1326216615.26536.18.camel@joe2Laptop>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+        Kyle Moffett <kyle@moffetthome.net>, Tejun Heo <tj@kernel.org>,
+        Glauber Costa <glommer@parallels.com>,
+        Andi Kleen <andi@firstfloor.org>, Matt Helsley <matthltc@us.ibm.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrey Vagin <avagin@openvz.org>
+Subject: Re: [RFC] on general object IDs again
+Message-ID: <20120111195925.GK466@moon>
+References: <20120111161939.GI8752@moon>
+ <CAHGf_=r1vrZbCTYNAp7e+Hbbxh2BnDXXrdsNckSkQVVrXQ=9KQ@mail.gmail.com>
+ <20120111175952.GI466@moon>
+ <CAHGf_=oMk2YDnmsomgCc45Ei5yaSdNzRwapm7Fqm9mN7LY0FNw@mail.gmail.com>
+ <4F0DD365.6070200@parallels.com>
+ <20120111183115.GA28196@moon>
+ <CAHGf_=oXsrbsXPqBw_CvZQjwdXhzhqkoWX3mRSEgMZHy44ZUKg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHGf_=oXsrbsXPqBw_CvZQjwdXhzhqkoWX3mRSEgMZHy44ZUKg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-01-10 at 09:30 -0800, Joe Perches wrote:
-> Here's a snippet where checkpatch does not emit
-> a warning where it reasonably could:
+On Wed, Jan 11, 2012 at 02:29:48PM -0500, KOSAKI Motohiro wrote:
+> >> > Then, you only need to compare. not any other calculation. i.e. only
+> >> > need id uniqueness.
+> >> > And any resource are referenced from tasks. so, can you reuse pid for
+> >> > this? example,
+> >> > two taska share one mm.
+> >> >
+> >> > task-a(pid: 100)
+> >> >               |-----------------mm
+> >> > task-b(pid: 200)
+> >> >
+> >> >
+> >> > gen_obj_id(task-b, GEN_OBJ_ID_VM) return 100. (youngest pid of referenced tasks)
+> >>
+> >> We can, but determining the youngest pid for an mm struct is O(N) algo.
+> >> Having N tasks with N mm_structs getting the sharing picture becomes O(N^2).
+> >
+> > Yeah, exactly. If not the speed problem we would simply stick
+> > with Andrew's proposal as two-id-are-the-same(pid1, pid2)
+> > syscall.
 > 
-> int main(int argc, char **argv)
-> {
-> 	int a;
-> 	if (a) {
-> 		int foo;
-> 		int bar;
-> 	} else
-> 		int foo;
-> }
+> Why O(N^2) is matter? Typical HPC system have mere a few hundred pids.
+> so, O(N^2) is not slow. How do you mesure Andrew's proposal?
 > 
-> Maybe you could look at it?
 
-Hey Andy.
-Here's a possible checkpatch patch.
-It seems to work on the test cases I've tried.
----
- scripts/checkpatch.pl |   28 ++++++++++++++++++++--------
- 1 files changed, 20 insertions(+), 8 deletions(-)
+I consider quadratic approach only as a path where nothing
+else can go. So to be fair -- I didn't measure such syscall.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index e3bfcbe..19f228c 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2882,7 +2882,8 @@ sub process {
- 			#print "chunks<$#chunks> linenr<$linenr> endln<$endln> level<$level>\n";
- 			#print "APW: <<$chunks[1][0]>><<$chunks[1][1]>>\n";
- 			if ($#chunks > 0 && $level == 0) {
--				my $allowed = 0;
-+				my @allowed = ();
-+				my $allow = 0;
- 				my $seen = 0;
- 				my $herectx = $here . "\n";
- 				my $ln = $linenr - 1;
-@@ -2893,6 +2894,7 @@ sub process {
- 					my ($whitespace) = ($cond =~ /^((?:\s*\n[+-])*\s*)/s);
- 					my $offset = statement_rawlines($whitespace) - 1;
- 
-+					$allowed[$allow] = 0;
- 					#print "COND<$cond> whitespace<$whitespace> offset<$offset>\n";
- 
- 					# We have looked at and allowed this specific line.
-@@ -2905,23 +2907,33 @@ sub process {
- 
- 					$seen++ if ($block =~ /^\s*{/);
- 
--					#print "cond<$cond> block<$block> allowed<$allowed>\n";
-+					#print "cond<$cond> block<$block> allowed<$allowed[$allow]>\n";
- 					if (statement_lines($cond) > 1) {
- 						#print "APW: ALLOWED: cond<$cond>\n";
--						$allowed = 1;
-+						$allowed[$allow] = 1;
- 					}
- 					if ($block =~/\b(?:if|for|while)\b/) {
- 						#print "APW: ALLOWED: block<$block>\n";
--						$allowed = 1;
-+						$allowed[$allow] = 1;
- 					}
- 					if (statement_block_size($block) > 1) {
- 						#print "APW: ALLOWED: lines block<$block>\n";
--						$allowed = 1;
-+						$allowed[$allow] = 1;
- 					}
-+					$allow++;
- 				}
--				if ($seen && !$allowed) {
--					WARN("BRACES",
--					     "braces {} are not necessary for any arm of this statement\n" . $herectx);
-+				if ($seen) {
-+					my $sum_allowed = 0;
-+					foreach (@allowed) {
-+						$sum_allowed += $_;
-+					}
-+					if ($sum_allowed == 0) {
-+						WARN("BRACES",
-+						     "braces {} are not necessary for any arm of this statement\n" . $herectx);
-+					} elsif ($sum_allowed != $allow) {
-+						WARN("BRACES",
-+						     "braces {} should be used on all arms of this statement\n" . $herectx);
-+					}
- 				}
- 			}
- 		}
+> If you have 1000 pids and each syscall need 10usec,
+> 
+> 1000 * 1000 * 10 = 10,000,000usec = 10sec. But, important thing is, almost all
+> processes don't share fs, mm and other structs. then, if we check
+> reference count before task traversal, required time may reduce 1/10x - 1/100x.
+> 
 
+Sure thing, until some number of pids this will work (since compare two pointers
+is very fast), but I fear eventually we will hit situation were such trade off
+beat us. Also note that we do ask not only mm IDs, but ->files, ->signals,
+->sysv.undo-list and so on (and who knows what else might be needed
+in future). Since there is a hardware support for AES encoding on new
+CPUs I think this is significant.
 
+But again, Kosaki, if there some other fast way to retrieve such info,
+it should be considered of course.
+
+Technically for us plain kernel pointers would be enough unde root-only
+approach but I've been strongly adviced to export such IDs via safe way
+to a regular users as well (you could find the former patches from Pavel
+in LKML archives).
+
+	Cyrill
