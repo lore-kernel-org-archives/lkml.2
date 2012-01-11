@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932986Ab2AKLN0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 06:13:26 -0500
-Received: from lunge.queued.net ([173.255.254.236]:57057 "EHLO
-	lunge.queued.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932808Ab2AKLNM (ORCPT
+	id S1757105Ab2AKLNr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 06:13:47 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:47832 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932889Ab2AKLNX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 06:13:12 -0500
-Date: Wed, 11 Jan 2012 02:15:11 -0800
-From: Andres Salomon <dilinger@queued.net>
-To: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-geode@lists.infradead.org
-Subject: Re: [PATCH] cs5535-clockevt: allow the MFGPT IRQ to be shared
-Message-ID: <20120111021511.44497bac@debxo>
-In-Reply-To: <4EF35C66.6010402@LiPPERTEmbedded.de>
-References: <4EE620A5.7080402@LiPPERTEmbedded.de>
-	<20111212123131.502be350@queued.net>
-	<4EE77416.8090907@LiPPERTEmbedded.de>
-	<4EE8ECF3.6000900@LiPPERTEmbedded.de>
-	<20111214104724.292b02d4@queued.net>
-	<4EF35C66.6010402@LiPPERTEmbedded.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Wed, 11 Jan 2012 06:13:23 -0500
+Message-ID: <1326280540.24577.9.camel@sauron.fi.intel.com>
+Subject: Re: linux-next: manual merge of the l2-mtd tree with Linus' tree
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>,
+        David Woodhouse <David.Woodhouse@intel.com>
+Date: Wed, 11 Jan 2012 13:15:40 +0200
+In-Reply-To: <20120111133803.e7033fe7c4250df71b14ba3f@canb.auug.org.au>
+References: <20120111133803.e7033fe7c4250df71b14ba3f@canb.auug.org.au>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-y8wsYdpHWDJkXVV5JhJX"
+X-Mailer: Evolution 3.2.2 (3.2.2-1.fc16) 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems fine to me
 
-Acked-by: Andres Salomon <dilinger@queued.net>
+--=-y8wsYdpHWDJkXVV5JhJX
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, 22 Dec 2011 17:35:50 +0100
-Jens Rottmann <JRottmann@LiPPERTEmbedded.de> wrote:
+On Wed, 2012-01-11 at 13:38 +1100, Stephen Rothwell wrote:
+> I just used the l2-mtd tree version.  But this tree needs cleaning up to
+> represent what was actually merged upstream.
 
-> cs5535-clockevt: allow the MFGPT IRQ to be shared
-> 
-> Shared timer IRQs are not a good solution, however the Geode platform
-> has no APIC, IRQs are a scarce resource and there is no technical
-> reason to forbid it rightaway.  Increased latencies and overhead due
-> to sharing are still better than a driver refusing to load.
-> 
-> Signed-off-by: Jens Rottmann <JRottmann@LiPPERTEmbedded.de>
-> ---
-> 
-> Hi,
-> 
-> I tested this a bit longer, this time with MFGPT IRQ actually being
-> triggered, with cs5535-clockevt driver loaded first or second when
-> sharing the IRQ, with some CPU load or without.
-> 
-> I didn't encounter any negative effects of this change. I did have
-> suspend problems with cs5535-clockevt, but that was in no way
-> different from before I applied this patch, it's an unrelated BIOS
-> issue.
-> 
-> Thomas Gleixner wrote:
-> > No, you can share a timer irq. The other drivers don't have the
-> > SHARED flag set because they are on exclusive irq lines, ...
-> 
-> Is this an ACK?
-> 
-> > shared irqs suck and you figure that out once you try to
-> > use that shared timer irq on a preempt-rt enabled kernel.
-> 
-> Or a NACK?  :-|   (I did address this in the commit log.)
-> 
-> The kernel I tested with was 3.2-rc6, CONFIG_SMP=y and
-> CONFIG_PREEMPT=y. As I said, I didn't notice anything bad happening.
-> 
-> Thanks and have a nice christmas holiday,
-> Jens
-> 
-> --- linux-3.2-rc6/drivers/clocksource/cs5535-clockevt.c
-> +++ allow_shared_mfgpt_irq/drivers/clocksource/cs5535-clockevt.c
-> @@ -133,7 +133,7 @@ static irqreturn_t mfgpt_tick(int irq, v
->  
->  static struct irqaction mfgptirq  = {
->  	.handler = mfgpt_tick,
-> -	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TIMER,
-> +	.flags = IRQF_DISABLED | IRQF_NOBALANCING | IRQF_TIMER |
-> IRQF_SHARED, .name = DRV_NAME,
->  };
->  
-> _
-> 
+Yes, will be cleaned up, thanks.
+
+--=20
+Best Regards,
+Artem Bityutskiy
+
+--=-y8wsYdpHWDJkXVV5JhJX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAABAgAGBQJPDW9cAAoJECmIfjd9wqK0HwgQAI6teXTGatdPQaxt24lv9RV0
+YN2u0kpqZkdPatHcxCqwD/oCL0LLq6rLmmgjup7xPlx9nDXYeOyHrCa/6FeNIDH7
+tDgd/abmw+GT0F/q+ZcFDaGOwq7Par8aPLZ68lBtkpF1NQRhkAC1qkT6p6PuD24G
+3OWIAWDQ0Ww3UN7vBWQYVW1of6aL2JvlhG3jZ/e1gYi1Pcv0IYCvqIbJ0HKfS/Vg
+mWY3YZS4Of56I1SgQ9gUOoQTSXAzUZVluqTfbqFf2h6FVWeBd8Q19WbRu1ZnurdQ
+JNLvkcWY5RG1aEikSlxGIAgYLBdFICYbTYpx1mx8NEb0LJmV2+Rz6eJlNbtB+2w3
+qQWuMXGnu7uEu+8BjGYvotENY8/pMFEy/IT986kj+1UddcmSA5F4kJ+YVIerKVPk
+xFvAssq4U5tbhMFgXU1BD+TKbpHZinhLxSAVBunCNPo1qV58DorGU2YoJ0uWw6Cz
+nuHKoYSkr7/i7VbzcUVEXJ2pvucwXCQE5g5uw+zYFqXwHuRkXSN/LY+Tg3RAzI75
+nfv0MYajOn6FLBanSYB5NWgG7ZZXNyT23nvwF+C+6Drdb0kpXu/kV3Fr20Vg0heS
+T17xhz0Gajb7TpMilCyb/jPim5svcIuBFERpBgC0tLupTmM60BfpyTar7LfzVnBP
+O7T9GIP5Bo+rPY1LpeGk
+=T2kk
+-----END PGP SIGNATURE-----
+
+--=-y8wsYdpHWDJkXVV5JhJX--
 
