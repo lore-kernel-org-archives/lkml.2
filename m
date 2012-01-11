@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932712Ab2AKA5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Jan 2012 19:57:19 -0500
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:54586 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932424Ab2AKA5S (ORCPT
+	id S932529Ab2AKBFD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Jan 2012 20:05:03 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:44198 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223Ab2AKBEv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Jan 2012 19:57:18 -0500
+	Tue, 10 Jan 2012 20:04:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <4F0C375B.7040600@linux.vnet.ibm.com>
-References: <CAH9JG2XniMv5dVf1DixGNaQAJk-sZjnV9HfYeihEJP3JDyC4+Q@mail.gmail.com>
-	<4F0C375B.7040600@linux.vnet.ibm.com>
-Date: Wed, 11 Jan 2012 09:57:15 +0900
-X-Google-Sender-Auth: UGzopOzFXUGWUTc56GGOUk24JtA
-Message-ID: <CAH9JG2WQakNYM=CVbKmtSAB-09Vphh6xRVghrnXdiJu_Jrqetw@mail.gmail.com>
-Subject: Re: BUG: sleeping function called from invalid context at include/linux/freezer.h:45
-From: Kyungmin Park <kmpark@infradead.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <len.brown@intel.com>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <008401cccff7$950164b0$bf042e10$%park@samsung.com>
+References: <1326220106-5765-1-git-send-email-tj@kernel.org>
+	<1326220106-5765-10-git-send-email-tj@kernel.org>
+	<008401cccff7$950164b0$bf042e10$%park@samsung.com>
+Date: Tue, 10 Jan 2012 17:04:50 -0800
+X-Google-Sender-Auth: z3tX6kfcX2LUPfcQxQdkWtSjVLI
+Message-ID: <CAOS58YM1pdw77Bz8sXuT9Jyd6pGVFs5zwnKBb4Guzxy=UdWDJg@mail.gmail.com>
+Subject: Re: [PATCH 9/9] block, trace: implement ioblame - IO tracer with
+ origin tracking
+From: Tejun Heo <tj@kernel.org>
+To: Chanho Park <chanho61.park@samsung.com>
+Cc: axboe@kernel.dk, mingo@redhat.com, rostedt@goodmis.org, fweisbec@gmail.com,
+        teravest@google.com, slavapestov@google.com, ctalbott@google.com,
+        dhsharp@google.com, linux-kernel@vger.kernel.org, winget@google.com,
+        namhyung@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/10/12, Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> On 01/10/2012 09:57 AM, Kyungmin Park wrote:
->
->> Dear all
->>
->> with the latest kernel. I got the below bug message.
->> It calls the sleep function. Does it intended operation?
->>
->> static inline bool try_to_freeze(void)
->> {
->>         might_sleep();
->>         if (likely(!freezing(current)))
->>                 return false;
->>         return __refrigerator(false);
->> }
->>
->> # poweroff
->> [    6.852523] BUG: sleeping function called from invalid context at
->> include/linux/freezer.h:45
->> [    6.859489] in_atomic(): 0, irqs_disabled(): 128, pid: 1, name: init
->> [    6.865846] [<c0013508>] (unwind_backtrace+0x0/0xec) from
->> [<c0010124>] (do_signal+0x88/0x588)
->> [    6.874337] [<c0010124>] (do_signal+0x88/0x588) from [<c001063c>]
->> (do_notify_resume+0x18/0x38)
->> [    6.882928] [<c001063c>] (do_notify_resume+0x18/0x38) from
->> [<c000dc18>] (work_pending+0x24/0x28)
->>
->
->
-> You seem to be running on Arm architecture. Can you please try the patch
-> at https://lkml.org/lkml/2011/8/25/231 ?
+Hello,
 
-Thank you,
-It's working and I read the all mails related with this issue. and
-need to fix it at arm side.
+On Tue, Jan 10, 2012 at 4:25 PM, Chanho Park <chanho61.park@samsung.com> wrote:
+>> +#define CREATE_TRACE_POINTS
+>> +#include <trace/events/ioblame.h>
+>
+> I can't find it from patchset. So when compiling, I've got below error.
+>
+> CC      kernel/trace/power-traces.o
+> kernel/trace/ioblame.c:308: fatal error: trace/events/ioblame.h: No such
+> file or directory
+> compilation terminated.
+> make[2]: *** [kernel/trace/ioblame.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+>
+> Are you forgot to attach it or just only RFC?
 
-I think some more codes from arm are needed to work it properly.
+Eh... crap. That's me forgetting to do quilt add. :( I'll resend shortly.
 
-Thank you,
-Kyungmin Park
->
-> Regards,
-> Srivatsa S. Bhat
-> IBM Linux Technology Center
->
->
+Thanks.
+
+-- 
+tejun
