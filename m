@@ -1,63 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934051Ab2AKVnI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 16:43:08 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:35632 "EHLO zene.cmpxchg.org"
+	id S1758182Ab2AKVob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 16:44:31 -0500
+Received: from claw.goop.org ([74.207.240.146]:36970 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934009Ab2AKVms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 16:42:48 -0500
-Date: Wed, 11 Jan 2012 22:42:42 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, akpm@linux-foundation.org,
-        mel@csn.ul.ie, minchan.kim@gmail.com
-Subject: Re: [PATCH v2 -mm] make swapin readahead skip over holes
-Message-ID: <20120111214242.GF24386@cmpxchg.org>
-References: <20120111143044.3c538d46@cuia.bos.redhat.com>
- <20120111205041.GE24386@cmpxchg.org>
- <4F0DFF64.4040704@redhat.com>
+	id S1751316Ab2AKVo3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 16:44:29 -0500
+Message-ID: <4F0E02B2.7010908@goop.org>
+Date: Thu, 12 Jan 2012 08:44:18 +1100
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0DFF64.4040704@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Xen Devel <Xen-devel@lists.xensource.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: Re: linux-next: manual merge of the xen tree with Linus' tree
+References: <20120111145709.77ef7d68996cd5fa724326e5@canb.auug.org.au> <4F0DFF39.8090103@goop.org>
+In-Reply-To: <4F0DFF39.8090103@goop.org>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 04:30:12PM -0500, Rik van Riel wrote:
-> On 01/11/2012 04:10 PM, Johannes Weiner wrote:
-> >On Wed, Jan 11, 2012 at 02:30:44PM -0500, Rik van Riel wrote:
-> >>Ever since abandoning the virtual scan of processes, for scalability
-> >>reasons, swap space has been a little more fragmented than before.
-> >>This can lead to the situation where a large memory user is killed,
-> >>swap space ends up full of "holes" and swapin readahead is totally
-> >>ineffective.
-> >>
-> >>On my home system, after killing a leaky firefox it took over an
-> >>hour to page just under 2GB of memory back in, slowing the virtual
-> >>machines down to a crawl.
-> >>
-> >>This patch makes swapin readahead simply skip over holes, instead
-> >>of stopping at them.  This allows the system to swap things back in
-> >>at rates of several MB/second, instead of a few hundred kB/second.
-> >>
-> >>The checks done in valid_swaphandles are already done in
-> >>read_swap_cache_async as well, allowing us to remove a fair amount
-> >>of code.
-> >
-> >__swap_duplicate() also checks for whether the offset is within the
-> >swap device range.  Do you think we could remove get_swap_cluster()
-> >altogether and just try reading the aligned page_cluster range?
-> 
-> That is how I implemented it originally, but we need
-> to take the swap_lock so it is cleaner to implement
-> a helper function in swapfile.c :)
+On 01/12/2012 08:29 AM, Jeremy Fitzhardinge wrote:
+> Are you by some chance still (or again) pulling from my
+> "git://github.com/jsgf/linux-xen.git upstream/xen" repo, which
+> contains a number of obsolete changes...
 
-AFAICS, it's only needed to validate the offset against si->max, but
-this too is done in __swap_duplicate().
+Which looks like my mistake, because I don't think I had asked you to
+switch back to git.kernel.org.
 
-What's otherwise left is just rounding down swp_offset(entry) and
-adding 1 << page_cluster to it, that shouldn't need the swap_lock?
-
-Am I missing something?
+Thanks,
+    J
