@@ -1,40 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752325Ab2AKG5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 01:57:45 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:61656 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab2AKG5n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 01:57:43 -0500
+	id S1752714Ab2AKG7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 01:59:11 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:36975 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752124Ab2AKG7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 01:59:08 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:message-id:mime-version:content-type;
+	 q=dns; s=sasl; b=s5uEozBa0vVVLDUetLdy4g9O9XCd74kkAgyvdv101/nvqI
+	uJSsAF3GQDfwGgpzWOznJKFdOOoNl0+ROIa2mEH33zTZsmJdsvcYPnMHO//z17ph
+	UNTYQrSG+BdD35Wpxn7KAdW2x+R710+M4qmC0pcF0ddYE0nfUcCPxwgpeVqdI=
+From: Junio C Hamano <gitster@pobox.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Git Mailing List <git@vger.kernel.org>
+Subject: Re* Regulator updates for 3.3
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
+ <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
+ <20120110184530.GE7164@opensource.wolfsonmicro.com>
+ <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
+ <20120110222711.GK7164@opensource.wolfsonmicro.com>
+ <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
+ <7vmx9v7z1r.fsf@alter.siamese.dyndns.org>
+ <CA+55aFx5NATrpLnkMiV2vAxSAJPK7wkY2vyHbyeZGgT9+jP06w@mail.gmail.com>
+ <7vehv77xeq.fsf@alter.siamese.dyndns.org>
+ <CA+55aFzuGtJkQFDooSGWQ2_NiJVHN2E7S5dmOnWTYn8_s8Gg3g@mail.gmail.com>
+Date: Tue, 10 Jan 2012 22:59:04 -0800
+Message-ID: <7vzkdu7miv.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1326223998.14089.26.camel@haakon2.linux-iscsi.org>
-References: <1326221809.14089.23.camel@haakon2.linux-iscsi.org>
-	<CAO+b5-qs3fE8yZaKQ+kzpsSsX1PyXE09wBzxnUi55GZ5j4TJKg@mail.gmail.com>
-	<1326223998.14089.26.camel@haakon2.linux-iscsi.org>
-Date: Wed, 11 Jan 2012 07:57:41 +0100
-X-Google-Sender-Auth: yKPPK-FPbRc3cS9yBlkr5l8Zdt0
-Message-ID: <CAO+b5-oqsimTj6fRa=euEegH8Sqg=N_j4vXs6u=j31Za+WBKOw@mail.gmail.com>
-Subject: Re: [GIT PULL] target: Updates for v3.3-rc1 (round 1)
-From: Bart Van Assche <bvanassche@acm.org>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        target-devel <target-devel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Roland Dreier <roland@kernel.org>,
-        =?ISO-8859-1?Q?J=F6rn_Engel?= <joern@purestorage.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: C07CC2CE-3C21-11E1-A29E-9DB42E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/1/10 Nicholas A. Bellinger <nab@linux-iscsi.org>:
-> These are all very minor and did not warrant another full RFC posting.
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-There is a reason why the ib_srpt patch should have been reposted:
-Last WQE handling is still wrong, despite a patch being available
-(http://www.spinics.net/lists/linux-rdma/msg09982.html).
+> The (b) thing I suggested was for "work around for people who have
+> legacy cases that they don't want to make explicit". I guess you could
+> count that as some rule, but I really think it's more of a "ok, we had
+> bad legacy behavior, and now we have scripts that depended on that bad
+> legacy".
 
-Bart.
+I would think that would solve the issue for scripts like the one used to
+rebuild the linux-next tree.  I also have such a script to rebuild 'pu' I
+use three or four times a day, but admittedly the standard input of "git
+merge" in that script is connected to a here document that feeds the list
+of branches to be merged to the loop that drives the "git merge", so your
+heuristic (a) will kick in and I wouldn't need the GIT_MERGE_NO_EDIT
+environment myself.
+
+What makes me uneasy about the idea of running the editor by default is
+that many people still use Git as a better CVS/SVN. Their workflow is to
+build randomly on their 'master', attempt to push and get rejected, pull
+only so that they can push out, and then push the merge result out. Such
+merges are done without any consideration on the cohesiveness of the
+branch (the segment of the history that records their work since they last
+pulled from the central repository). Having to justify the backmerge is
+nothing but a nuisance for them, as they do not have any justification
+better than "I am done for the day, and my commuter shuttle will leave in
+15 minutes, so I tried to push what I've done so far, but it was rejected
+due to non fast-forward, and I am merging random things others did so that
+I can push back". They won't be saying "This merges the great work I
+completed and have been testing privately for a few days to the trunk", as
+the direction of their merge is backwards.
+
+With that caveat, the patch should look like this.
+
+-- >8 --
+Subject: [PATCH] merge: use editor by default in interactive sessions
+
+Traditionally, a cleanly resolved merge was committed by "git merge" using
+the auto-generated merge commit log message with invoking the editor.
+
+After 5 years of use in the field, it turns out that many people perform
+too many unjustified backmerges of the upstream history into their topic
+branches. These merges are not just useless, but they are more often than
+not explained and making the end result unreadable when it gets time for
+merging their history back to their upstream.
+
+Earlier we added the "--edit" option to the command, so that people can
+edit the log message to explain and justify their merge commits. Let's
+take it one step further and spawn the editor by default when we are in an
+interactive session (i.e. the standard input and the standard output are
+pointing at the same tty device).
+
+There may be existing scripts that leave the standard input and the
+standard output of the "git merge" connected to whatever environment the
+scripts were started, and such invocation might trigger the above
+"interactive session" heuristics. Such scripts can export GIT_MERGE_LEGACY
+environment variable set to "yes" to force the traditional behaviour.
+
+Suggested-by: Linus Torvalds
+Signed-off-by: Junio C Hamano <gitster@pobox.com>
+---
+ builtin/merge.c |   34 ++++++++++++++++++++++++++++++----
+ t/test-lib.sh   |    3 ++-
+ 2 files changed, 32 insertions(+), 5 deletions(-)
+
+diff --git a/builtin/merge.c b/builtin/merge.c
+index 99f1429..6a80e1e 100644
+--- a/builtin/merge.c
++++ b/builtin/merge.c
+@@ -46,7 +46,7 @@ static const char * const builtin_merge_usage[] = {
+ 
+ static int show_diffstat = 1, shortlog_len, squash;
+ static int option_commit = 1, allow_fast_forward = 1;
+-static int fast_forward_only, option_edit;
++static int fast_forward_only, option_edit = -1;
+ static int allow_trivial = 1, have_message;
+ static struct strbuf merge_msg;
+ static struct commit_list *remoteheads;
+@@ -189,7 +189,7 @@ static struct option builtin_merge_options[] = {
+ 		"create a single commit instead of doing a merge"),
+ 	OPT_BOOLEAN(0, "commit", &option_commit,
+ 		"perform a commit if the merge succeeds (default)"),
+-	OPT_BOOLEAN('e', "edit", &option_edit,
++	OPT_BOOL('e', "edit", &option_edit,
+ 		"edit message before committing"),
+ 	OPT_BOOLEAN(0, "ff", &allow_fast_forward,
+ 		"allow fast-forward (default)"),
+@@ -877,12 +877,12 @@ static void prepare_to_commit(void)
+ 	write_merge_msg(&msg);
+ 	run_hook(get_index_file(), "prepare-commit-msg",
+ 		 git_path("MERGE_MSG"), "merge", NULL, NULL);
+-	if (option_edit) {
++	if (0 < option_edit) {
+ 		if (launch_editor(git_path("MERGE_MSG"), NULL, NULL))
+ 			abort_commit(NULL);
+ 	}
+ 	read_merge_msg(&msg);
+-	stripspace(&msg, option_edit);
++	stripspace(&msg, 0 < option_edit);
+ 	if (!msg.len)
+ 		abort_commit(_("Empty commit message."));
+ 	strbuf_release(&merge_msg);
+@@ -1076,6 +1076,29 @@ static void write_merge_state(void)
+ 	close(fd);
+ }
+ 
++static int default_edit_option(void)
++{
++	static const char name[] = "GIT_MERGE_LEGACY";
++	const char *e = getenv(name);
++	struct stat st_stdin, st_stdout;
++
++	if (e) {
++		int v = git_config_maybe_bool(name, e);
++		if (v < 0)
++			die("Bad value '%s' in environment '%s'", e, name);
++		return !v;
++	}
++
++	/* Use editor if stdin and stdout are the same and is a tty */
++	return (!fstat(0, &st_stdin) &&
++		!fstat(1, &st_stdout) &&
++		isatty(0) &&
++		st_stdin.st_dev == st_stdout.st_dev &&
++		st_stdin.st_ino == st_stdout.st_ino &&
++		st_stdin.st_rdev == st_stdout.st_rdev);
++}
++
++
+ int cmd_merge(int argc, const char **argv, const char *prefix)
+ {
+ 	unsigned char result_tree[20];
+@@ -1261,6 +1284,9 @@ int cmd_merge(int argc, const char **argv, const char *prefix)
+ 		}
+ 	}
+ 
++	if (option_edit < 0)
++		option_edit = default_edit_option();
++
+ 	if (!use_strategies) {
+ 		if (!remoteheads->next)
+ 			add_strategies(pull_twohead, DEFAULT_TWOHEAD);
+diff --git a/t/test-lib.sh b/t/test-lib.sh
+index bdd9513..439f192 100644
+--- a/t/test-lib.sh
++++ b/t/test-lib.sh
+@@ -63,7 +63,8 @@ GIT_AUTHOR_NAME='A U Thor'
+ GIT_COMMITTER_EMAIL=committer@example.com
+ GIT_COMMITTER_NAME='C O Mitter'
+ GIT_MERGE_VERBOSITY=5
+-export GIT_MERGE_VERBOSITY
++GIT_MERGE_LEGACY=yes
++export GIT_MERGE_VERBOSITY GIT_MERGE_LEGACY
+ export GIT_AUTHOR_EMAIL GIT_AUTHOR_NAME
+ export GIT_COMMITTER_EMAIL GIT_COMMITTER_NAME
+ export EDITOR
+-- 
+1.7.9.rc0.39.ged86b
+
