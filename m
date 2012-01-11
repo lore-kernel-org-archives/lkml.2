@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751593Ab2ALAEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 19:04:52 -0500
-Received: from fw-out.uzulu.ac.za ([196.21.80.2]:54410 "EHLO
+	id S1751628Ab2ALAEy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 19:04:54 -0500
+Received: from fw-out.uzulu.ac.za ([196.21.80.2]:54416 "EHLO
 	fw-out.uzulu.ac.za" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab2ALAEv (ORCPT
+	with ESMTP id S1751492Ab2ALAEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Jan 2012 19:04:51 -0500
-X-Greylist: delayed 677 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Jan 2012 19:04:50 EST
-Message-ID: <52785.119.160.192.35.1326324251.squirrel@webmail.uzulu.ac.za>
-Date: Thu, 12 Jan 2012 01:24:11 +0200 (SAST)
+Message-ID: <34943.119.160.192.35.1326324301.squirrel@webmail.uzulu.ac.za>
+Date: Thu, 12 Jan 2012 01:25:01 +0200 (SAST)
 Subject: Warning! Your mailbox is almost full.
 From: "wemail upgrade" <msithole@pan.uzulu.ac.za>
 Reply-To: info@webmail.com
