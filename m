@@ -1,126 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab2ALWgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 17:36:10 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:47063 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754025Ab2ALWgH (ORCPT
+	id S1755927Ab2ALWkP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 17:40:15 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:50223 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755630Ab2ALWkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 17:36:07 -0500
-Date: Thu, 12 Jan 2012 14:35:44 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Theodore Tso <tytso@google.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Greg KH <greg@kroah.com>,
-        Paul Taysom <taysom@chromium.org>, Paul Taysom <taysom@google.com>,
-        Olof Johansson <olofj@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@google.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-Message-ID: <20120112223544.GC18166@google.com>
-References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
- <20120112213830.GB17405@kroah.com>
- <20120112215331.GB18166@google.com>
- <CAGagf4dk4KsZSkaWTO9Yegi=_wRJsYBPgfyks1z=wMZJV8gX0w@mail.gmail.com>
+	Thu, 12 Jan 2012 17:40:11 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Kexec reboot and stale/inconsistent system state
+References: <1326405521-2736-1-git-send-email-venki@google.com>
+Date: Thu, 12 Jan 2012 14:42:26 -0800
+In-Reply-To: <1326405521-2736-1-git-send-email-venki@google.com> (Venkatesh
+	Pallipadi's message of "Thu, 12 Jan 2012 13:58:41 -0800")
+Message-ID: <m14nw0wnjh.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGagf4dk4KsZSkaWTO9Yegi=_wRJsYBPgfyks1z=wMZJV8gX0w@mail.gmail.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+aKRIaQjxBZLl2ILYG/BRe9fB+P8XhbAo=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Theodore Tso (tytso@google.com) wrote:
-> On Thu, Jan 12, 2012 at 4:53 PM, Mandeep Singh Baines <msb@chromium.org>wrote:
-> 
-> >
-> > Hi Greg,
-> >
-> > What is the conventional way of doing this? There is a lot of good
-> > data in the bug report which might be useful to reviewers. We
-> > couldn't find a de-facto way of referencing the downstream bug database
-> > so we just made up a new field. Sorry. We'll use the correct
-> > field name next time.
-> >
-> 
-> There isn't a "correct field name", since it hasn't been standardized.  I
-> can tell you as an the ext4 maintainer, I've put things like
-> 
-> Addresses-Redhat-Bugzilla: <Bugzilla #>
-> 
-> or
-> 
-> Addresses-Debian-Bug: <debian-bug-number>
-> 
+Venkatesh Pallipadi <venki@google.com> writes:
 
-This seems like a good convention. Its also nice in that it scales to
-the case where the bug is reported by multiple distros.
+> Of course, kexec reboots has a lot of advantantages. There is one
+> blind spot though, in the way we handle shutdown of the old kernel in kexec.
+> The problem: there are drivers in the kernel that change
+> system state either during init or during normal operation. During a
+> hardware reboot these system states would get reset to default.
+> But, with kexec reboot this system state can stay persistent with the
+> new kernel and can lead to some inconsistencies.
+>
+> More concrete x86 example:
+> * Kernel_v0 has a driver which sets a particular MSR.
+> * Kernel_v1 has a different version of the driver which does not touch the
+> MSR and assumes it to be at BIOS init state.
+> * Now we have a kexec reboot from Kernel_v0 to Kernel_v1 and the MSR will
+> stay set leading to potential inconsistent state.
+>
+> One such driver I was looking at is drivers/idle/intel_idle.c, which sets
+> the MSR during init and forgets about it. There are other drivers which can
+> potentially have similar problems - like MTRR, etc. There can be other
+> state in the system like chipset state and device state etc, though
+> I expect most of it won't be a problem based on the way drivers init.
+>
+> Seemingly simple solution is to do the needed cleanup in driver's module_exit
+> code path. That is not enough as module_exit for all builtin drivers are
+> all discarded.
+>
+> What if we retain all the module_exits in CONFIG_KEXEC case and do a
+> cleanup before launching a new kernel. This should work, but most of the
+> module_exit code assumes that they will be only called when corresponding
+> init is successful. I couldn't find a clean and easy way of associating
+> module's init function with its exit function and to save the result of
+> init.
+>
+> Alternate quick solution is to create a new module interface to register
+> kexec cleanup function as in the patch below. But, this is not generic enough
+> yet and does not handle the case where we have done the cleanup and kexec
+> fails after that and we have to do some setup again to run with old
+> kernel.
+>
+> Before spending more time on this, just wanted to run this RFC along to see:
+> * How big/serious this problem really is?
+> * Has this been looked at before and any other potential solution for
+> this?
 
-For future, we'll use:
+Use the drivers shutdown method.  The shutdown method is called
+at reboot and at normal kexec.  If you care about the kexec on panic
+case you need to write a paranoid driver initialization routine.
 
-Addresses-ChromiumOS-Bug: http://crosbug.com/<Bug #>
+Hmm.  Looking a little closer the intel idle driver is a weird thing.
+I am not seeing any operations structures.  There are kobjects so
+the intel idle driver might be properly hooked into the device tree.
+If the intel idle driver isn't properly hooked into the device
+tree you should be able to hook into the reboot notifier instead
+of implementing a device shutdown method.  Although for a lot
+of reasons implementing the standard device shutdown method is
+preferred.
 
-I included the URL because its small and folks might not know where
-our bug database is.
-
-Regards,
-Mandeep
-
-> etc. in commit messages.  I usually put them before the signed-off-block,
-> i.e, like this:
-> 
-> --------
-> ext4: a simple commit
-> 
-> This is the longer commit description, blah, blah, blah.
-> 
-> Addresses-Redhat-Bugzilla: 12345
-> 
-> Signed-off-by: Eric Sandeen <....@redhat.com>
-> Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-> -----------
-> 
-> There is some disagreement about whether it's useful to do this for
-> bugzilla entries which are not publically available (i.e., protected
-> Enterprise Linux bugzillas which have customer information and thus are
-> restricted access, or internal Company bug numbers).
-> 
-> My personal take on this matter is that if an engineer from a particular
-> company has taken the time and effort to contribute a bug that fixes a bug
-> that they had seen internally, and they include an internal bug number,
-> it's presumably to make it easier to track when a particular commit fixing
-> a bug that they really care about has hit upstream, and it's in my interest
-> to keep the code contributions coming, and it's very little effort to
-> include an internal bug tracker reference, even if I don't have personal
-> access to said bug tracker;  it's a nice thing I can do that doesn't cost
-> much, and may be useful to the original patch submitter.
-> 
-> Others, including Greg K-H, think it's a horrible thing to do, and will
-> reject commits on that basis.
-> 
-> So it all depends on which subsystem maintainer handles your bug.....  at
-> the end, it's up to the maintainer.  I've never had Linus complain to me
-> because the commits that I ask him to pull might include "Google-Bug-Id:
-> 12345" lines in the commit description.
-> 
-> -- Ted
-> 
-> 
-> 
-> 
-> 
-> 
-> >
-> > So what is the correct field name?
-> >
-> > Regards,
-> > Mandeep
-> >
-> > > And shouldn't this go to the stable kernel releases as well?
-> > >
-> > > Third time's a charm?
-> > >
-> > > greg k-h
-> >
+Eric
