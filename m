@@ -1,78 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753168Ab2ALJNE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:13:04 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:45974 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab2ALJNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:13:00 -0500
-Message-ID: <4F0EA47C.9000405@oss.ntt.co.jp>
-Date: Thu, 12 Jan 2012 18:14:36 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+	id S1753084Ab2ALJRi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:17:38 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:60261 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751715Ab2ALJRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:17:34 -0500
+Date: Thu, 12 Jan 2012 10:17:21 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 1/2] mm: memcg: per-memcg reclaim statistics
+Message-ID: <20120112091721.GH24386@cmpxchg.org>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+ <1326207772-16762-2-git-send-email-hannes@cmpxchg.org>
+ <CALWz4izbTw4+7zbfiED9Lx=6RwiqxE11g5-fNRHTh=mcP=vQ2Q@mail.gmail.com>
+ <20120111003020.GD24386@cmpxchg.org>
+ <CALWz4iy4hw9jQ++w4oiZG_hih-x9iieuEmnRBfxYKriAKSoOgw@mail.gmail.com>
 MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
-        Nadav Amit <namit@cs.technion.ac.il>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: Exception during emulation decode should propagate
-References: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il> <20120112071137.303628cea69b79868956d860@gmail.com> <4F0E28C7.2010409@oss.ntt.co.jp> <0C475788-593F-46AA-8BE0-274E6765D46D@gmail.com>
-In-Reply-To: <0C475788-593F-46AA-8BE0-274E6765D46D@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWz4iy4hw9jQ++w4oiZG_hih-x9iieuEmnRBfxYKriAKSoOgw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/01/12 18:07), Nadav Amit wrote:
->
-> On Jan 12, 2012, at 2:26 AM, Takuya Yoshikawa wrote:
->
->> (2012/01/12 7:11), Takuya Yoshikawa wrote:
->>> On Wed, 11 Jan 2012 18:53:30 +0200
->>> Nadav Amit<namit@cs.technion.ac.il>   wrote:
->>>
->>>> An exception might occur during decode (e.g., #PF during fetch).
->>>> Currently, the exception is ignored and emulation is performed.
->>
->> Note that the decode/emulation will not be continued in such a case.
->>
->> insn_fetch() is a bit tricky macro and it contains "goto done" to outside.
->> So if an error happens during fetching the instruction, x86_decode_insn()
->> will handle the X86EMUL_* fault value and returns FAIL immediately.
->
-> You got a point. Yet, a problem still exists.
-> I now notice I was originally working on previous version (3.0.0)
-> where the return-code of x86_decode_insn is handled differently.
-> Nonetheless, I think the current implementation might report emulation
-> error in such a scenario (instead of triggering #PF/#GP in the guest).
+On Wed, Jan 11, 2012 at 02:33:59PM -0800, Ying Han wrote:
+> On Tue, Jan 10, 2012 at 4:30 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Tue, Jan 10, 2012 at 03:54:05PM -0800, Ying Han wrote:
+> >> Thank you for the patch and the stats looks reasonable to me, few
+> >> questions as below:
+> >>
+> >> On Tue, Jan 10, 2012 at 7:02 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> >> > With the single per-zone LRU gone and global reclaim scanning
+> >> > individual memcgs, it's straight-forward to collect meaningful and
+> >> > accurate per-memcg reclaim statistics.
+> >> >
+> >> > This adds the following items to memory.stat:
+> >>
+> >> Some of the previous discussions including patches have similar stats
+> >> in memory.vmscan_stat API, which collects all the per-memcg vmscan
+> >> stats. I would like to understand more why we add into memory.stat
+> >> instead, and do we have plan to keep extending memory.stat for those
+> >> vmstat like stats?
+> >
+> > I think they were put into an extra file in particular to be able to
+> > write to this file to reset the statistics.  But in my opinion, it's
+> > trivial to calculate a delta from before and after running a workload,
+> > so I didn't really like adding kernel code for that.
+> >
+> > Did you have another reason for a separate file in mind?
+> 
+> Another reason I had them in separate file is easier to extend. I
+> don't know if we have plan to have something like memory.vmstat, or
+> just keep adding stuff into memory.stat. In general, I wanted to keep
+> the memory.stat being reasonable size including only the basic
+> statistics. In my existing vmscan_stat path, i have breakdowns of
+> reclaim stats into file/anon which will make the memory.stat even
+> larger.
 
-It's me who did that fix.
+Do you think it's a problem of presentation, where we want to allow
+admins to figure out the memcg parameters at a glance when looking at
+memory.stat but be able to debug malfunction by looking at the more
+extensive vmstat file?
 
->
->>>
->>> When I cleaned up insn_fetch(), I thought that fetching the instruction
->>> which is being executed by the guest cannot cause #PF.
->>>
->>> The possibility that a meaningless userspace might similtaneously unmap
->>> the page, noted by Avi IIRC, was ignored intentionally, so we just fail
->>> in such a case.
->>>
->>> Did you see any real problem?
->
-> Well, I run some research project for which I emulate instructions quite
-> often. I do see a real problem with Linux 3.0.0. Please note AFAIK #GP
-> might occur as well during instruction fetch. I don't think failing is the
-> right behavior in such case - there is no real reason to fail.
->
-> Please tell me whether you are OK with KVM failing in such a scenario.
-> If not - I'll send an updated patch (in which x86_decode_insn returns
-> EMULATION_OK when rc == X86EMUL_PROPAGATE_FAULT).
+> >> > áReclaim activity from kswapd due to the memcg's own limit. áOnly
+> >> > áapplicable to the root memcg for now since kswapd is only triggered
+> >> > áby physical limits, but kswapd-style reclaim based on memcg hard
+> >> > álimits is being developped.
+> >> >
+> >> > hierarchy_pgreclaim
+> >> > hierarchy_pgscan
+> >> > hierarchy_kswapd_pgreclaim
+> >> > hierarchy_kswapd_pgscan
+> >>
+> >> "pgsteal_hierarchy"
+> >> "pgsteal_kswapd_hierarchy"
+> >> ..
+> >>
+> >> No strong option on the naming, but try to make it more consistent to
+> >> existing API.
+> >
+> > I swear I tried, but the existing naming is pretty screwed up :(
+> >
+> > For example, pgscan_direct_* and pgscan_kswapd_* allow you to compare
+> > scan rates of direct reclaim vs. kswapd reclaim.  To get the total
+> > number of pages reclaimed, you sum them up.
+> >
+> > On the other hand, pgsteal_* does not differentiate between direct
+> > reclaim and kswapd, so to get direct reclaim numbers, you add up the
+> > pgsteal_* counters and subtract kswapd_steal (notice the lack of pg?),
+> > which is in turn not available at zone granularity.
+> 
+> agree and that always confuses me.
 
-You need comments from maintainers.
+I just have scripts that present it as 'Direct page reclaimed' and
+'Kswapd page reclaimed' when evaluating data so I don't have to
+remember anymore :-)
 
-	Takuya
+But I think the wish for consistency is a bit misguided when we end up
+with something like pgpgin that means something completely different
+in memcg than it does on the global level.  Likewise, I don't want to
+use pgsteal_* and pgsteal_kswapd_* because of their similarity to
+/proc/vmstat while the numbers represent something different.
