@@ -1,163 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab2ALJep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:34:45 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45224 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab2ALJej (ORCPT
+	id S1753317Ab2ALJtV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:49:21 -0500
+Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:64925 "EHLO
+	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752859Ab2ALJtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:34:39 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 12 Jan 2012 18:33:23 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+	Thu, 12 Jan 2012 04:49:20 -0500
+Message-ID: <1326361755.2950.1.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Subject: Re: [PATCH] nohz: fix race allowing use of stale jiffies when waking
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Milton Miller <miltonm@bga.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>,
         linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
-Message-Id: <20120112183323.1bb62f4d.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20120112092314.GC1042@tiehlicka.suse.cz>
-References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
-	<alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
-	<20120111084802.GA16466@tiehlicka.suse.cz>
-	<20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120112082722.GB1042@tiehlicka.suse.cz>
-	<20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120112092314.GC1042@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Thu, 12 Jan 2012 10:49:15 +0100
+In-Reply-To: <nohz-jiffies-update64-race@mdm.bga.com>
+References: <nohz-jiffies-update64-race@mdm.bga.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
+Content-Transfer-Encoding: 8bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jan 2012 10:23:14 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> On Thu 12-01-12 17:35:36, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 12 Jan 2012 09:27:22 +0100
-> > Michal Hocko <mhocko@suse.cz> wrote:
-> > 
-> > > On Thu 12-01-12 11:17:02, KAMEZAWA Hiroyuki wrote:
-> > > > On Wed, 11 Jan 2012 09:48:02 +0100
-> > > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > > 
-> > > > > On Tue 10-01-12 13:31:08, David Rientjes wrote:
-> > > > > > On Tue, 10 Jan 2012, Michal Hocko wrote:
-> > > > > [...]
-> > > > > > >  mm/page_alloc.c |   11 +++++++++++
-> > > > > > >  1 files changed, 11 insertions(+), 0 deletions(-)
-> > > > > > > 
-> > > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > > > > > index 2b8ba3a..485be89 100644
-> > > > > > > --- a/mm/page_alloc.c
-> > > > > > > +++ b/mm/page_alloc.c
-> > > > > > > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
-> > > > > > >  bool is_pageblock_removable_nolock(struct page *page)
-> > > > > > >  {
-> > > > > > >  	struct zone *zone = page_zone(page);
-> > > > > > > +	unsigned long pfn = page_to_pfn(page);
-> > > > > > > +
-> > > > 
-> > > > Hmm, I don't like to use page_zone() when we know the page may not be initialized.
-> > > > Shouldn't we add
-> > > > 
-> > > > 	if (!node_online(page_to_nid(page))
-> > > > 		return false;
-> > > > ?
-> > > 
-> > > How is this different? The node won't be initialized in page flags as
-> > > well.
-> > > 
-> > 
-> > page_zone(page) is
-> > ==
-> > static inline struct zone *page_zone(const struct page *page)
-> > {
-> >         return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
-> > }
-> > ==
-> > 
-> > Then, if the page is unitialized, 
-> > 
-> >    &(NODE_DATA(0)->node_zones[0])
-> > 
-> > If NODE_DATA(0) is NULL, node_zones[0] is NULL just because zone array is placed
-> > on the top of struct pglist_data.
-> > 
-> > I never think someone may change the layout but...Hmm, just a nitpick.
-> > please do as you like.
+Le jeudi 12 janvier 2012 à 02:55 -0600, Milton Miller a écrit :
+> When waking up from nohz mode, all cpus call tick_do_update_jiffies64
+> regardless of tick_do_timer_cpu as it could be no cpu was assigned.
 > 
-> Yes, fair point. See the follow up patch bellow.
+> At the start of the function there is a quick lockless check to
+> determine if jiffies is current.  The check uses last_jiffies_update,
+> which is used to calculate when to perform the next increment.
+> Unfortunately it is updated when how many jiffies to advance the
+> clock is calculated, before the call to do_timer which actually
+> updates jiffies.  A second cpu waking up could use the (potentially
+> very) stale jiffies value during this window.
 > 
-> > > > But...hmm. I think we should return 'true' here for removing a section with a hole
-> > > > finally....(Now, false will be safe.)
-> > > 
-> > > Those pages are reserved (for BIOS I guess) in this particular case so I
-> > > do not think it is safe to claim that the block is removable. Or am I
-> > > missing something?
-> > > 
-> > 
-> > We can't know it's reserved by BIOS or it's just a memory hole by the fact
-> > the page wasn't initialized.
+> This patch changes the check to be against tick_next_period, which
+> is updated after the call to do_timer completes.  It compares the
+> result of subtraction to zero, but this is safe as ktime_sub returns
+> ktime_t which is s64, as signed type.
 > 
-> OK, so then we should return false to mark to block non removable,
-> right?
-
-Ok.
-
+> I found this race while trying to track down reports of network adapter
+> hangs on a large system.  I suspected premature false detection so
+> I added logging when the locked region determined a multiple jiffie
+> update would be required.  I noticed that it happened frequently when
+> tick_do_timer_cpu was NONE (-1), and realized the large update was
+> when all cpus were previously in nohz.  I then thought about what
+> would happen if multiple cpus woke up near close to each other in
+> time and decided the stale jiffies would be used.  (I later found at
+> least part of the hung adapter reports were due to faulty detection
+> logic that has since changed upstream.)
+> 
+> Signed-off-by: Milton Miller <miltonm@bga.com>
+> Cc: stable@vger.kernel.org
 > --- 
-> From 04f74e6f0ebf28f61650d63f8884e8855fb21b55 Mon Sep 17 00:00:00 2001
-> From: Michal Hocko <mhocko@suse.cz>
-> Date: Thu, 12 Jan 2012 10:19:04 +0100
-> Subject: [PATCH] mm: __count_immobile_pages make sure the node is online
+> Patch was generated and tested against 2.6.36; I verified it applies
+> with offset -1 line to next-20120111.
 > 
-> page_zone requires to have an online node otherwise we are accessing
-> NULL NODE_DATA. This is not an issue at the moment because node_zones
-> are located at the structure beginning but this might change in the
-> future so better be careful about that.
-> 
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/page_alloc.c |   11 +++++++++--
->  1 files changed, 9 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 485be89..c6fb8ea 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5607,14 +5607,21 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
->  
->  bool is_pageblock_removable_nolock(struct page *page)
->  {
-> -	struct zone *zone = page_zone(page);
-> -	unsigned long pfn = page_to_pfn(page);
-> +	struct zone *zone;
-> +	unsigned long pfn;
->  
+> Index: src/kernel/time/tick-sched.c
+> ===================================================================
+> --- src.orig/kernel/time/tick-sched.c	2011-10-13 17:42:16.000000000 -0500
+> +++ src/kernel/time/tick-sched.c	2011-10-13 17:45:31.000000000 -0500
+> @@ -52,8 +52,8 @@ static void tick_do_update_jiffies64(kti
 >  	/*
->  	 * We have to be careful here because we are iterating over memory
->  	 * sections which are not zone aware so we might end up outside of
->  	 * the zone but still within the section.
-> +	 * We have to take care about the node as well. If the node is offline
-> +	 * its NODE_DATA will be NULL - see page_zone.
+>  	 * Do a quick check without holding xtime_lock:
 >  	 */
-> +	if (!node_online(page_to_nid(page)))
-> +		return false;
-> +
-> +	zone = page_zone(page);
-> +	pfn = page_to_pfn(page);
->  	if (!zone || zone->zone_start_pfn > pfn ||
->  			zone->zone_start_pfn + zone->spanned_pages <= pfn)
->  		return false;
+> -	delta = ktime_sub(now, last_jiffies_update);
+> -	if (delta.tv64 < tick_period.tv64)
+> +	delta = ktime_sub(now, tick_next_period);
+> +	if (delta.tv64 < 0)
+>  		return;
+>  
 
-!zone check can be removed because of node_online() check.
+Given ktime_t on 32bit arches is not an atomic type, I wonder how safe
+is this anyway...
 
-Thanks,
--Kame
 
 
