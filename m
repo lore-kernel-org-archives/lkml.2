@@ -1,96 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab2ALK2A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 05:28:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14789 "EHLO mx1.redhat.com"
+	id S1752670Ab2ALKec (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 05:34:32 -0500
+Received: from seven.medozas.de ([188.40.89.202]:36366 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518Ab2ALK16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 05:27:58 -0500
-Date: Thu, 12 Jan 2012 12:27:45 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Nadav Amit <namit@cs.technion.ac.il>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nadav Amit <nadav.amit@gmail.com>
-Subject: Re: [PATCH 2/2] KVM: Fix writeback on page boundary that propagate
- changes in spite of #PF
-Message-ID: <20120112102745.GX2167@redhat.com>
-References: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il>
- <1326300811-17065-2-git-send-email-namit@cs.technion.ac.il>
- <20120112101259.GW2167@redhat.com>
- <4F0EB40C.7060201@redhat.com>
+	id S1752260Ab2ALKe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 05:34:29 -0500
+Date: Thu, 12 Jan 2012 11:34:23 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Josh Triplett <josh@joshtriplett.org>
+cc: paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com, manfred@colorfullife.com,
+        dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: avoid checking for constant
+In-Reply-To: <20120112095257.GA2441@leaf>
+Message-ID: <alpine.LNX.2.01.1201121106040.17330@frira.zrqbmnf.qr>
+References: <1326345104-6919-1-git-send-email-jengelh@medozas.de> <20120112071431.GA1896@leaf> <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr> <20120112095257.GA2441@leaf>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0EB40C.7060201@redhat.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 12:21:00PM +0200, Avi Kivity wrote:
-> On 01/12/2012 12:12 PM, Gleb Natapov wrote:
-> > On Wed, Jan 11, 2012 at 06:53:31PM +0200, Nadav Amit wrote:
-> > > Consider the case in which an instruction emulation writeback is performed on a page boundary.
-> > > In such case, if a #PF occurs on the second page, the write to the first page already occurred and cannot be retracted.
-> > > Therefore, validation of the second page access must be performed prior to writeback.
-> > > 
-> > > Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
-> > > ---
-> > >  arch/x86/kvm/x86.c |   13 +++++++++++++
-> > >  1 files changed, 13 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > > index 05fd3d7..7af3d67 100644
-> > > --- a/arch/x86/kvm/x86.c
-> > > +++ b/arch/x86/kvm/x86.c
-> > > @@ -3626,6 +3626,8 @@ struct read_write_emulator_ops {
-> > >  			       int bytes, void *val);
-> > >  	int (*read_write_exit_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
-> > >  				    void *val, int bytes);
-> > > +	gpa_t (*read_write_validate)(struct kvm_vcpu *vcpu, gva_t gva,
-> > > +				     struct x86_exception *exception);
-> > >  	bool write;
-> > >  };
-> > >  
-> > > @@ -3686,6 +3688,7 @@ static struct read_write_emulator_ops write_emultor = {
-> > >  	.read_write_emulate = write_emulate,
-> > >  	.read_write_mmio = write_mmio,
-> > >  	.read_write_exit_mmio = write_exit_mmio,
-> > > +	.read_write_validate = kvm_mmu_gva_to_gpa_write,
-> > >  	.write = true,
-> > >  };
-> > >  
-> > > @@ -3750,6 +3753,16 @@ int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
-> > >  		int rc, now;
-> > >  
-> > >  		now = -addr & ~PAGE_MASK;
-> > > +
-> > > +		/* First check there is no page-fault on the next page */
-> > > +		if (ops->read_write_validate &&
-> > > +			ops->read_write_validate(vcpu, addr+now, exception) ==
-> > > +			UNMAPPED_GVA) {
-> > > +			/* #PF on the first page should be reported first */
-> > > +			ops->read_write_validate(vcpu, addr, exception);
-> > > +			return X86EMUL_PROPAGATE_FAULT;
-> > > +		}
-> > > +
-> > This undoes optimization that vcpu_mmio_gva_to_gpa() has for handling
-> > mmio. 
-> 
-> Right.  I suggest changing I/O to have two phases: first, translate the
-> virtual address into an array of two physical addresses; check
-> exceptions and report.  Then do the actual writes.
-> 
-> > Furthermore for common (non faulting) case we will check page
-> > tables twice on each write that crosses page boundary, first time here
-> > and second time in emulator_read_write_onepage().
-> 
-> Those should be very uncommon.
-> 
-Still it is better to have all the checks in one place like you suggest
-above.
 
---
-			Gleb.
+On Thursday 2012-01-12 10:52, Josh Triplett wrote:
+>> +#define __kfree_rcu(head, offset) \
+>> +	call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset) + \
+>> +		 BUILD_BUG_ON_ZERO((offset) >= 4096))
+>> +
+>
+>I had to stare at this for a while, and look up the definition of
+>BUILD_BUG_ON_ZERO.  Naturally I assumed that BUILD_BUG_ON_ZERO(arg)
+>meant BUILT_BUG_ON((arg) == 0), which would have made the logic
+>backwards here.  However, per the definition it just provides a
+>zero-returning version of BUILD_BUG_ON.  Ow.
+
+Same impression here. BUILD_BUG_ON_ZERO was introduced by
+
+commit 4552d5dc08b79868829b4be8951b29b07284753f
+Author: Jan Beulich <jbeulich@novell.com>
+Date:   Mon Jun 26 13:57:28 2006 +0200
+
+while Rusty's CCAN archive calls it "BUILD_BUG_OR_ZERO" (since either 
+it's a bug, or returning neutral zero).
+
+>In any case, __kfree_rcu has void return type, so how about just using
+>do { ... } while(0) and BUILD_BUG_ON instead?  That seems significantly
+>clearer.
+
+Ok. In that case, I'll allow myself to reintroduce the extra temporal 
+typedef line that was there previously:
+
+>Apart from that, I can live with this, though it seems horribly
+>backwards to replace an inline with a macro rather than the other way
+>around.
+
+parent f9fab10bbd768b0e5254e53a4a8477a94bfc4b96 (v3.2-rc7-86-gf9fab10)
+commit 041ac1b39390b93d8db91075aefc56b585db75cd
+Author: Jan Engelhardt <jengelh@medozas.de>
+Date:   Wed Jan 11 10:05:00 2012 +0100
+
+rcu: avoid checking for constant
+
+When compiling kernel or module code with -O0, "offset" is no longer
+considered a constant, and therefore always triggers the build error
+that BUILD_BUG_ON is defined to yield.
+
+Therefore, change the innards of kfree_rcu so that the offset is not
+tunneled through a function argument before checking it.
+
+Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
+---
+ include/linux/rcupdate.h |   31 +++++++++++++------------------
+ 1 files changed, 13 insertions(+), 18 deletions(-)
+
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 2cf4226..7395ab6 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -795,24 +795,6 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+ #define RCU_INIT_POINTER(p, v) \
+ 		p = (typeof(*v) __force __rcu *)(v)
+ 
+-static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
+-{
+-	return offset < 4096;
+-}
+-
+-static __always_inline
+-void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+-{
+-	typedef void (*rcu_callback)(struct rcu_head *);
+-
+-	BUILD_BUG_ON(!__builtin_constant_p(offset));
+-
+-	/* See the kfree_rcu() header comment. */
+-	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
+-
+-	call_rcu(head, (rcu_callback)offset);
+-}
+-
+ /**
+  * kfree_rcu() - kfree an object after a grace period.
+  * @ptr:	pointer to kfree
+@@ -835,7 +817,20 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+  *
+  * Note that the allowable offset might decrease in the future, for example,
+  * to allow something like kmem_cache_free_rcu().
++ *
++ * The BUILD_BUG_ON check must not involve any function calls, hence the
++ * checks are done in macros here. __is_kfree_rcu_offset is also used by
++ * kernel/rcu.h.
+  */
++#define __is_kfree_rcu_offset(offset) ((offset) < 4096)
++
++#define __kfree_rcu(head, offset) \
++	do { \
++		typedef void (*rcu_callback)(struct rcu_head *); \
++		BUILD_BUG_ON(!__is_kfree_rcu_offset(offset)); \
++		call_rcu(head, (rcu_callback)(unsigned long)(offset)); \
++	} while (0)
++
+ #define kfree_rcu(ptr, rcu_head)					\
+ 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+ 
+-- 
