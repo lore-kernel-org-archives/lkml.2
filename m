@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab2ALIpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 03:45:35 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:15239 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752698Ab2ALIpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 03:45:34 -0500
-Message-ID: <4F0E9DA5.5060505@parallels.com>
-Date: Thu, 12 Jan 2012 12:45:25 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1753013Ab2ALIsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 03:48:03 -0500
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:34120 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752698Ab2ALIsA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 03:48:00 -0500
+From: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+To: <viresh.kumar@st.com>, <vinod.koul@intel.com>
+Cc: <linus.walleij@linaro.org>, <mirko.gardi@st.com>, <bhupesh.sharma@st.com>,
+        <deepak.sikri@st.com>, <shiraz.hashim@st.com>, <vipin.kumar@st.com>,
+        <vipulkumar.samar@st.com>, <pratyush.anand@st.com>,
+        <rajeev-dlh.kumar@st.com>, <armando.visconti@st.com>,
+        <dan.j.williams@intel.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>
+Subject: [PATCH V2] dmaengine/dw_dmac: Hibernation support in dw_dmac
+Date: Thu, 12 Jan 2012 14:17:35 +0530
+Message-ID: <1326358055-6576-1-git-send-email-rajeev-dlh.kumar@st.com>
+X-Mailer: git-send-email 1.6.0.2
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH v2 4/5] NFS: remove RPC PipeFS mount point reference from
- blocklayout routines
-References: <20120110130323.1672.97025.stgit@localhost6.localdomain6>	 <20120110130440.1672.43785.stgit@localhost6.localdomain6>	 <1326306793.20284.3.camel@lade.trondhjem.org> <1326306977.20284.4.camel@lade.trondhjem.org>
-In-Reply-To: <1326306977.20284.4.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.01.2012 22:36, Trond Myklebust пишет:
-> On Wed, 2012-01-11 at 13:33 -0500, Trond Myklebust wrote:
->> On Tue, 2012-01-10 at 17:04 +0400, Stanislav Kinsbursky wrote:
->>> This is a cleanup patch. We don't need this reference anymore, because
->>> blocklayout pipes dentries now creates and destroys in per-net operations and
->>> on PipeFS mount/umount notification.
->>> Note that nfs4blocklayout_register_net() now returns 0 instead of -ENOENT in
->>> case of PipeFS superblock absence. This is ok, because blocklayout pipe dentry
->>> will be created on PipeFS mount event.
->>>
->>> Signed-off-by: Stanislav Kinsbursky<skinsbursky@parallels.com>
->>>
->>> ---
->>>   fs/nfs/blocklayout/blocklayout.c |    9 +--------
->>>   1 files changed, 1 insertions(+), 8 deletions(-)
->>>
->>> diff --git a/fs/nfs/blocklayout/blocklayout.c b/fs/nfs/blocklayout/blocklayout.c
->>> index 322d920..2c70202 100644
->>> --- a/fs/nfs/blocklayout/blocklayout.c
->>> +++ b/fs/nfs/blocklayout/blocklayout.c
->>> @@ -1034,7 +1034,7 @@ static struct dentry *nfs4blocklayout_register_net(struct net *net,
->>>
->>>   	pipefs_sb = rpc_get_sb_net(net);
->>>   	if (!pipefs_sb)
->>> -		return ERR_PTR(-ENOENT);
->>> +		return 0;
->>
->> This looks like a typo of some sort. The caller in
->> nfs4blocklayout_net_init() checks for IS_ERR(), not NULL. I'll just
->> remove this hunk...
->
-> Never mind. I see what's going on now... It should be NULL, and not 0
-> for coding style reasons, though...
->
+The suspend and resume implementation is through dev_pm_ops in dmac. So
+in order to support hibernation, freeze, thaw, restore and poweroff
+features are required.
 
-Yep, NULL of course, sorry.
+Signed-off-by: Rajeev Kumar <rajeev-dlh.kumar@st.com>
+---
+ drivers/dma/dw_dmac.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
+index 9b592b0..3a3d7ed 100644
+--- a/drivers/dma/dw_dmac.c
++++ b/drivers/dma/dw_dmac.c
+@@ -1562,6 +1562,10 @@ static int dw_resume_noirq(struct device *dev)
+ static const struct dev_pm_ops dw_dev_pm_ops = {
+ 	.suspend_noirq = dw_suspend_noirq,
+ 	.resume_noirq = dw_resume_noirq,
++	.freeze_noirq = dw_suspend_noirq,
++	.thaw_noirq = dw_resume_noirq,
++	.restore_noirq = dw_resume_noirq,
++	.poweroff_noirq = dw_suspend_noirq,
+ };
+ 
+ static struct platform_driver dw_driver = {
 -- 
-Best regards,
-Stanislav Kinsbursky
+1.7.2.2
+
