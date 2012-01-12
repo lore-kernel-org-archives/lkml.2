@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab2ALVdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 16:33:51 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:42210 "EHLO mgw2.diku.dk"
+	id S1755824Ab2ALVhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 16:37:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52998 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755589Ab2ALVdP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 16:33:15 -0500
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: kernel-janitors@vger.kernel.org, Kamil Debski <k.debski@samsung.com>,
-        Jeongtae Park <jtp.park@samsung.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] drivers/media/video/s5p-mfc/s5p_mfc.c: adjust double test
-Date: Thu, 12 Jan 2012 22:33:08 +0100
-Message-Id: <1326403988-872-5-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1326403988-872-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1326403988-872-1-git-send-email-Julia.Lawall@lip6.fr>
+	id S1755375Ab2ALVg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 16:36:59 -0500
+Date: Thu, 12 Jan 2012 22:36:56 +0100
+From: Jan Kara <jack@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>
+Subject: Re: [PATCH 4/4] xfs: Protect xfs_file_aio_write() with
+ sb_start_write - sb_end_write
+Message-ID: <20120112213656.GF8778@quack.suse.cz>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz>
+ <1326331253-6497-5-git-send-email-jack@suse.cz>
+ <20120112212941.GI23916@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112212941.GI23916@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On Thu 12-01-12 21:29:41, Al Viro wrote:
+> On Thu, Jan 12, 2012 at 02:20:53AM +0100, Jan Kara wrote:
+> > Replace racy xfs_wait_for_freeze() check with reliable sb_start_write()
+> > - sb_end_write() locking. Due to lock ranking dictated by the page fault
+> > code we have to call sb_start_write() after we acquire ilock.
+> > 
+> > CC: Ben Myers <bpm@sgi.com>
+> > CC: Alex Elder <elder@kernel.org>
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> >  fs/xfs/xfs_file.c |    6 ++++--
+> >  1 files changed, 4 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> > index 753ed9b..c5f879b 100644
+> > --- a/fs/xfs/xfs_file.c
+> > +++ b/fs/xfs/xfs_file.c
+> > @@ -862,9 +862,11 @@ xfs_file_dio_aio_write(
+> >  		*iolock = XFS_IOLOCK_SHARED;
+> >  	}
+> >  
+> > +	sb_start_write(inode->i_sb);
+> >  	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+> >  	ret = generic_file_direct_write(iocb, iovp,
+> >  			&nr_segs, pos, &iocb->ki_pos, count, ocount);
+> > +	sb_end_write(inode->i_sb);
+> 
+> What lock ordering do you have in mind?  Explicit description in fs/super.c,
+> please...
+  Good point. Will add explanatory comment. Thanks.
 
-Rewrite a duplicated test to test the correct value
-
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-expression E;
-@@
-
-(
-* E
-  || ... || E
-|
-* E
-  && ... && E
-)
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
- drivers/media/video/s5p-mfc/s5p_mfc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/media/video/s5p-mfc/s5p_mfc.c b/drivers/media/video/s5p-mfc/s5p_mfc.c
-index 8be8b54..53126f2 100644
---- a/drivers/media/video/s5p-mfc/s5p_mfc.c
-+++ b/drivers/media/video/s5p-mfc/s5p_mfc.c
-@@ -475,7 +475,7 @@ static void s5p_mfc_handle_seq_done(struct s5p_mfc_ctx *ctx,
- 			ctx->mv_size = 0;
- 		}
- 		ctx->dpb_count = s5p_mfc_get_dpb_count();
--		if (ctx->img_width == 0 || ctx->img_width == 0)
-+		if (ctx->img_width == 0 || ctx->img_height == 0)
- 			ctx->state = MFCINST_ERROR;
- 		else
- 			ctx->state = MFCINST_HEAD_PARSED;
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
