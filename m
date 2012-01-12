@@ -1,101 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734Ab2ALJxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:53:13 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:48092 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab2ALJxI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:53:08 -0500
-X-Originating-IP: 217.70.178.136
-X-Originating-IP: 50.43.15.19
-Date: Thu, 12 Jan 2012 01:52:57 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com, manfred@colorfullife.com,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: avoid checking for constant
-Message-ID: <20120112095257.GA2441@leaf>
-References: <1326345104-6919-1-git-send-email-jengelh@medozas.de>
- <20120112071431.GA1896@leaf>
- <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753367Ab2ALJzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:55:33 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41625 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523Ab2ALJz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:55:26 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: kernel-janitors@vger.kernel.org, Vinod Koul <vinod.koul@intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 4/15] drivers/dma/pl330.c: add missing iounmap
+Date: Thu, 12 Jan 2012 10:55:06 +0100
+Message-Id: <1326362117-29371-4-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 10:25:23AM +0100, Jan Engelhardt wrote:
-> rcu: avoid checking for constant
-> 
-> When compiling kernel or module code with -O0, "offset" is no longer
-> considered a constant, and therefore always triggers the build error
-> that BUILD_BUG_ON is defined to yield.
-> 
-> What is the rationale between the forced constant check,
-> introduced in 9ab1544eb4196ca8d05c433b2eb56f74496b1ee3?
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-This question shouldn't live in the commit message.  Please replace it
-with an explanation of the change instead.
+Add missing iounmap in error handling code, in a case where the function
+already preforms iounmap on some other execution path.
 
-> Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
-> ---
->  include/linux/rcupdate.h |   22 ++++------------------
->  1 files changed, 4 insertions(+), 18 deletions(-)
-> 
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 2cf4226..5e7286d 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -795,24 +795,6 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
->  #define RCU_INIT_POINTER(p, v) \
->  		p = (typeof(*v) __force __rcu *)(v)
->  
-> -static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
-> -{
-> -	return offset < 4096;
-> -}
-> -
-> -static __always_inline
-> -void __kfree_rcu(struct rcu_head *head, unsigned long offset)
-> -{
-> -	typedef void (*rcu_callback)(struct rcu_head *);
-> -
-> -	BUILD_BUG_ON(!__builtin_constant_p(offset));
-> -
-> -	/* See the kfree_rcu() header comment. */
-> -	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
-> -
-> -	call_rcu(head, (rcu_callback)offset);
-> -}
-> -
->  /**
->   * kfree_rcu() - kfree an object after a grace period.
->   * @ptr:	pointer to kfree
-> @@ -836,6 +818,10 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
->   * Note that the allowable offset might decrease in the future, for example,
->   * to allow something like kmem_cache_free_rcu().
->   */
-> +#define __kfree_rcu(head, offset) \
-> +	call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset) + \
-> +		 BUILD_BUG_ON_ZERO((offset) >= 4096))
-> +
+This patch additionally adds calls to clk_disable and clk_put.
 
-I had to stare at this for a while, and look up the definition of
-BUILD_BUG_ON_ZERO.  Naturally I assumed that BUILD_BUG_ON_ZERO(arg)
-meant BUILT_BUG_ON((arg) == 0), which would have made the logic
-backwards here.  However, per the definition it just provides a
-zero-returning version of BUILD_BUG_ON.  Ow.
+A simplified version of the semantic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-In any case, __kfree_rcu has void return type, so how about just using
-do { ... } while(0) and BUILD_BUG_ON instead?  That seems significantly
-clearer.
+// <smpl>
+@@
+expression e;
+statement S,S1;
+int ret;
+@@
+e = \(ioremap\|ioremap_nocache\)(...)
+... when != iounmap(e)
+if (<+...e...+>) S
+... when any
+    when != iounmap(e)
+*if (...)
+   { ... when != iounmap(e)
+     return ...; }
+... when any
+iounmap(e);
+// </smpl>
 
-Apart from that, I can live with this, though it seems horribly
-backwards to replace an inline with a macro rather than the other way
-around.
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-- Josh Triplett
+---
+Perhaps clk_put is not needed?  It is not present in the remove function.
+
+ drivers/dma/pl330.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 2b3aab3..2f83094 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -2690,7 +2690,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	if (IS_ERR(pdmac->clk)) {
+ 		dev_err(&adev->dev, "Cannot get operation clock.\n");
+ 		ret = -EINVAL;
+-		goto probe_err1;
++		goto probe_err2;
+ 	}
+ 
+ 	amba_set_drvdata(adev, pdmac);
+@@ -2704,11 +2704,11 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	ret = request_irq(irq, pl330_irq_handler, 0,
+ 			dev_name(&adev->dev), pi);
+ 	if (ret)
+-		goto probe_err2;
++		goto probe_err3;
+ 
+ 	ret = pl330_add(pi);
+ 	if (ret)
+-		goto probe_err3;
++		goto probe_err4;
+ 
+ 	INIT_LIST_HEAD(&pdmac->desc_pool);
+ 	spin_lock_init(&pdmac->pool_lock);
+@@ -2765,7 +2765,7 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 	ret = dma_async_device_register(pd);
+ 	if (ret) {
+ 		dev_err(&adev->dev, "unable to register DMAC\n");
+-		goto probe_err4;
++		goto probe_err5;
+ 	}
+ 
+ 	dev_info(&adev->dev,
+@@ -2778,10 +2778,15 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
+ 
+ 	return 0;
+ 
+-probe_err4:
++probe_err5:
+ 	pl330_del(pi);
+-probe_err3:
++probe_err4:
+ 	free_irq(irq, pi);
++probe_err3:
++#ifndef CONFIG_PM_RUNTIME
++	clk_disable(pdmac->clk);
++#endif
++	clk_put(pdmac->clk);
+ probe_err2:
+ 	iounmap(pi->base);
+ probe_err1:
+
