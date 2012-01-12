@@ -1,119 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab2ALWWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 17:22:09 -0500
-Received: from fieldses.org ([174.143.236.118]:47391 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457Ab2ALWWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 17:22:06 -0500
-Date: Thu, 12 Jan 2012 17:22:04 -0500
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: nfsd changes for 3.3
-Message-ID: <20120112222204.GB9592@fieldses.org>
+	id S1755375Ab2ALW3R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 17:29:17 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62071 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754073Ab2ALW3P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 17:29:15 -0500
+Date: Thu, 12 Jan 2012 14:29:10 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Pekka Enberg <penberg@kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
+        lizf@cn.fujitsu.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <kirkland@canonical.com>, ecryptfs@vger.kernel.org
+Subject: Re: [PATCH] mm: Don't warn if memdup_user fails
+In-Reply-To: <20120112135803.1fb98fd6.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1201121418060.1124@chino.kir.corp.google.com>
+References: <1326300636-29233-1-git-send-email-levinsasha928@gmail.com> <20120111141219.271d3a97.akpm@linux-foundation.org> <1326355594.1999.7.camel@lappy> <CAOJsxLEYY=ZO8QrxiWL6qAxPzsPpZj3RsF9cXY0Q2L44+sn7JQ@mail.gmail.com>
+ <alpine.DEB.2.00.1201121309340.17287@chino.kir.corp.google.com> <20120112135803.1fb98fd6.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nfsd changes for 3.3 are available from
+On Thu, 12 Jan 2012, Andrew Morton wrote:
 
-  git://linux-nfs.org/~bfields/linux.git for-3.3
+> > I think it's good to fix ecryptfs like Tyler is doing and, at the same 
+> > time, ensure that the len passed to memdup_user() makes sense prior to 
+> > kmallocing memory with GFP_KERNEL.  Perhaps something like
+> > 
+> > 	if (WARN_ON(len > PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER))
+> > 		return ERR_PTR(-ENOMEM);
+> > 
+> > in which case __GFP_NOWARN is irrelevant.
+> 
+> If someone is passing huge size_t's into kmalloc() and getting failures
+> then that's probably a bug.  So perhaps we should add a warning to
+> kmalloc itself if the size_t is out of bounds, and !__GFP_NOWARN.
+> 
 
-This was a fairly quiet cycle.  About the only new feature is Bryan's
-fault-injection code, which simulates certain kinds of bad server
-behavior as a way to test client recovery paths.
+That's already done.  For slub, for example, the largest object size 
+handled by the allocator itself is an order-1 page; everything else gets 
+passed through to the page allocator and its limitation is MAX_ORDER, 
+which is the warning that we're seeing in Sasha's changelog when 
+!__GFP_NOWARN.
 
-Other than that, mostly bugfixes: some fixes for reboot recovery
-(especially in the NFSv4.1 case), fixes for unusual races on shutdown of
-the nfsd server, and some continuing overhaul of the NFSv4 state
-(especially handling of lockowners).
+> But none of this will be very effective.  If someone is passing an
+> unchecked size_t into kmalloc then normal testing will not reveal the
+> problem because the testers won't pass stupid numbers into their
+> syscalls.
+> 
 
-Neil also asked to have his name taken out of the MAINTAINER entry,
-though he continues to be an important (if now more occasional)
-contributor.  Thanks very much to Neil for his service over the years!
+They'll get the same warning that Sasha got, which is because the page 
+allocator can't handle larger than MAX_ORDER orders.  The intention in my 
+WARN_ON() above specifically for memdup_user() is to avoid the infinite 
+loop in the page allocator for GFP_KERNEL allocations where the order 
+is less than PAGE_ALLOC_COSTLY_ORDER and avoid the oom killer.  It returns 
+immediately rather than passing __GFP_NORETRY since we don't want to incur 
+the side-effects of direct reclaim or compaction as well.
 
---b.
-
-Bryan Schumaker (7):
-      NFSD: Added fault injection
-      NFSD: Added fault injection script
-      NFSD: Added fault injection documentation
-      NFSD: Call nfsd4_init_slabs() from init_nfsd()
-      NFSD: Remove unnecessary whitespace
-      NFSD: Only reinitilize the recall_lru list under the recall lock
-      NFSD: forget_delegations should use list_for_each_entry_safe
-
-Chuck Lever (1):
-      NFSD: Change name of extended attribute containing junction
-
-J. Bruce Fields (17):
-      nfsd4: fix lockowner matching
-      nfsd4: cleanup lock clientid handling in sessions case
-      nfsd4: maintain one seqid stream per (lockowner, file)
-      nfsd4: hash lockowners to simplify RELEASE_LOCKOWNER
-      nfsd4: share open and lock owner hash tables
-      nfsd4: fix CONFIG_NFSD_FAULT_INJECTION compile error
-      nfsd4: add a separate (lockowner, inode) lookup
-      svcrpc: make svc_delete_xprt static
-      svcrpc: destroy server sockets all at once
-      svcrpc: avoid memory-corruption on pool shutdown
-      svcrpc: update outdated BKL comment
-      nfsd4: initialize special stateid's at compile time
-      nfsd4: fix spurious 4.1 post-reboot failures
-      nfsd4: be forgiving in the absence of the recovery directory
-      svcrpc: fix double-free on shutdown of nfsd after changing pool mode
-      svcrpc: don't revert to SVC_POOL_DEFAULT on nfsd shutdown
-      nfsd4: nfsd4_create_clid_dir return value is unused
-
-Mi Jinlong (1):
-      nfsd41: allow non-reclaim open-by-fh's in 4.1
-
-NeilBrown (1):
-      Update NFSD MAINTAINER
-
-Sasha Levin (1):
-      nfsd: Fix oops when parsing a 0 length export
-
-Stanislav Kinsbursky (2):
-      SUNRPC: create svc_xprt in proper network namespace
-      NFSd: use network-namespace-aware cache registering routines
-
-Thomas Meyer (1):
-      nfsd4: Use kmemdup rather than duplicating its implementation
-
- CREDITS                                           |    5 +
- Documentation/filesystems/nfs/00-INDEX            |    2 +
- Documentation/filesystems/nfs/fault_injection.txt |   69 +++++
- MAINTAINERS                                       |    1 -
- fs/nfsd/Kconfig                                   |   10 +
- fs/nfsd/Makefile                                  |    1 +
- fs/nfsd/export.c                                  |   12 +-
- fs/nfsd/fault_inject.c                            |   91 ++++++
- fs/nfsd/fault_inject.h                            |   28 ++
- fs/nfsd/nfs4idmap.c                               |   11 +-
- fs/nfsd/nfs4proc.c                                |    7 +-
- fs/nfsd/nfs4recover.c                             |   22 +-
- fs/nfsd/nfs4state.c                               |  328 +++++++++++++++------
- fs/nfsd/nfs4xdr.c                                 |    3 +-
- fs/nfsd/nfsctl.c                                  |   10 +-
- fs/nfsd/nfsd.h                                    |   20 +-
- fs/nfsd/state.h                                   |    3 +-
- fs/nfsd/vfs.c                                     |   17 +-
- include/linux/sunrpc/svc_xprt.h                   |    3 +-
- include/linux/sunrpc/svcsock.h                    |    2 +-
- net/sunrpc/cache.c                                |    2 +
- net/sunrpc/svc.c                                  |   25 +-
- net/sunrpc/svc_xprt.c                             |   62 +++--
- net/sunrpc/svcsock.c                              |    8 +-
- net/sunrpc/xprtrdma/svc_rdma_transport.c          |    2 +-
- tools/nfsd/inject_fault.sh                        |   49 +++
- 26 files changed, 624 insertions(+), 169 deletions(-)
- create mode 100644 Documentation/filesystems/nfs/fault_injection.txt
- create mode 100644 fs/nfsd/fault_inject.c
- create mode 100644 fs/nfsd/fault_inject.h
- create mode 100755 tools/nfsd/inject_fault.sh
+The real fix would be to convert all callers to pass gfp flags into 
+memdup_user() to determine the behavior they want, though.
