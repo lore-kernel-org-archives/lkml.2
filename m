@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385Ab2ALUZu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:25:50 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:60396 "EHLO
+	id S1755369Ab2ALUZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:25:47 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:38895 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755300Ab2ALUZf (ORCPT
+	by vger.kernel.org with ESMTP id S1755208Ab2ALUZc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:25:35 -0500
-X-Sasl-enc: GF8WEj5ED0RVgtdYGs/73EamhG1ow1mvEUa3Bf+BKU/C 1326399933
-Date: Thu, 12 Jan 2012 12:22:32 -0800
+	Thu, 12 Jan 2012 15:25:32 -0500
+X-Sasl-enc: LpkhuFr4YP+Z/+1w1DkWGUvIiRDhwDPbkY8ZPwt2JIaw 1326399930
+Date: Thu, 12 Jan 2012 12:21:49 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org, lwn@lwn.net
-Subject: Re: Linux 3.1.9
-Message-ID: <20120112202232.GB15628@kroah.com>
-References: <20120112202218.GA15628@kroah.com>
+Subject: Re: Linux 3.0.17
+Message-ID: <20120112202149.GB15607@kroah.com>
+References: <20120112202136.GA15607@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120112202218.GA15628@kroah.com>
+In-Reply-To: <20120112202136.GA15607@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -91,10 +91,10 @@ index a4efa04..5335fa8 100644
  3. Start 'cat'
  
 diff --git a/MAINTAINERS b/MAINTAINERS
-index e608038..c0bb916 100644
+index 34e2418..de85391 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6129,7 +6129,7 @@ F:	arch/alpha/kernel/srm_env.c
+@@ -6039,7 +6039,7 @@ F:	arch/alpha/kernel/srm_env.c
  
  STABLE BRANCH
  M:	Greg Kroah-Hartman <greg@kroah.com>
@@ -104,16 +104,16 @@ index e608038..c0bb916 100644
  
  STAGING SUBSYSTEM
 diff --git a/Makefile b/Makefile
-index 64a2e76..a32c262 100644
+index 7f0d8e2..295fbda 100644
 --- a/Makefile
 +++ b/Makefile
 @@ -1,6 +1,6 @@
  VERSION = 3
- PATCHLEVEL = 1
--SUBLEVEL = 8
-+SUBLEVEL = 9
+ PATCHLEVEL = 0
+-SUBLEVEL = 16
++SUBLEVEL = 17
  EXTRAVERSION =
- NAME = "Divemaster Edition"
+ NAME = Sneaky Weasel
  
 diff --git a/arch/powerpc/include/asm/time.h b/arch/powerpc/include/asm/time.h
 index fe6f7c2..bc3c745 100644
@@ -128,10 +128,10 @@ index fe6f7c2..bc3c745 100644
  #endif /* __KERNEL__ */
  #endif /* __POWERPC_TIME_H */
 diff --git a/arch/powerpc/kernel/irq.c b/arch/powerpc/kernel/irq.c
-index d281fb6..4b1e82a 100644
+index 5b428e3..ca2987d 100644
 --- a/arch/powerpc/kernel/irq.c
 +++ b/arch/powerpc/kernel/irq.c
-@@ -164,16 +164,13 @@ notrace void arch_local_irq_restore(unsigned long en)
+@@ -170,16 +170,13 @@ notrace void arch_local_irq_restore(unsigned long en)
  	 */
  	local_paca->hard_enabled = en;
  
@@ -197,10 +197,10 @@ index f106662..c9311cf 100644
  
  static int __init hcall_inst_init(void)
 diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
-index c9a29da..2178cc4 100644
+index ed96b37..81e30d9 100644
 --- a/arch/powerpc/platforms/pseries/lpar.c
 +++ b/arch/powerpc/platforms/pseries/lpar.c
-@@ -553,6 +553,7 @@ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
+@@ -745,6 +745,7 @@ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
  		goto out;
  
  	(*depth)++;
@@ -208,7 +208,7 @@ index c9a29da..2178cc4 100644
  	trace_hcall_entry(opcode, args);
  	(*depth)--;
  
-@@ -575,6 +576,7 @@ void __trace_hcall_exit(long opcode, unsigned long retval,
+@@ -767,6 +768,7 @@ void __trace_hcall_exit(long opcode, unsigned long retval,
  
  	(*depth)++;
  	trace_hcall_exit(opcode, retval, retbuf);
@@ -275,10 +275,10 @@ index d8ca0a0..65df26c 100644
  
  static u32 qib_6120_hdrqempty(struct qib_ctxtdata *rcd)
 diff --git a/drivers/infiniband/hw/qib/qib_iba7220.c b/drivers/infiniband/hw/qib/qib_iba7220.c
-index e1f9474..4250c05 100644
+index c765a2e..759bb63 100644
 --- a/drivers/infiniband/hw/qib/qib_iba7220.c
 +++ b/drivers/infiniband/hw/qib/qib_iba7220.c
-@@ -2724,9 +2724,11 @@ static int qib_7220_set_loopback(struct qib_pportdata *ppd, const char *what)
+@@ -2704,9 +2704,11 @@ static int qib_7220_set_loopback(struct qib_pportdata *ppd, const char *what)
  static void qib_update_7220_usrhead(struct qib_ctxtdata *rcd, u64 hd,
  				    u32 updegr, u32 egrhd, u32 npkts)
  {
@@ -292,10 +292,10 @@ index e1f9474..4250c05 100644
  
  static u32 qib_7220_hdrqempty(struct qib_ctxtdata *rcd)
 diff --git a/drivers/infiniband/hw/qib/qib_iba7322.c b/drivers/infiniband/hw/qib/qib_iba7322.c
-index 5ea9ece..b7c3c7d 100644
+index 8ec5237..49e4a58 100644
 --- a/drivers/infiniband/hw/qib/qib_iba7322.c
 +++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -4084,10 +4084,12 @@ static void qib_update_7322_usrhead(struct qib_ctxtdata *rcd, u64 hd,
+@@ -4060,10 +4060,12 @@ static void qib_update_7322_usrhead(struct qib_ctxtdata *rcd, u64 hd,
  	 */
  	if (hd >> IBA7322_HDRHEAD_PKTINT_SHIFT)
  		adjust_rcv_timeout(rcd, npkts);
@@ -311,10 +311,10 @@ index 5ea9ece..b7c3c7d 100644
  
  static u32 qib_7322_hdrqempty(struct qib_ctxtdata *rcd)
 diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index de3d351..ba0e065 100644
+index 2065cb4..0b65c5f 100644
 --- a/drivers/net/bonding/bond_main.c
 +++ b/drivers/net/bonding/bond_main.c
-@@ -1839,7 +1839,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+@@ -1905,7 +1905,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
  				 "but new slave device does not support netpoll.\n",
  				 bond_dev->name);
  			res = -EBUSY;
@@ -323,7 +323,7 @@ index de3d351..ba0e065 100644
  		}
  	}
  #endif
-@@ -1848,7 +1848,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+@@ -1914,7 +1914,7 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
  
  	res = bond_create_slave_symlinks(bond_dev, slave_dev);
  	if (res)
@@ -332,7 +332,7 @@ index de3d351..ba0e065 100644
  
  	res = netdev_rx_handler_register(slave_dev, bond_handle_frame,
  					 new_slave);
-@@ -1869,6 +1869,11 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
+@@ -1935,6 +1935,11 @@ int bond_enslave(struct net_device *bond_dev, struct net_device *slave_dev)
  err_dest_symlinks:
  	bond_destroy_slave_symlinks(bond_dev, slave_dev);
  
@@ -369,10 +369,10 @@ index c5c4b4d..7105577 100644
  	{ },		// END
  };
 diff --git a/drivers/net/wireless/rt2x00/rt2800usb.c b/drivers/net/wireless/rt2x00/rt2800usb.c
-index dbf501c..05f9769 100644
+index 6e7fe94..d4e9eac 100644
 --- a/drivers/net/wireless/rt2x00/rt2800usb.c
 +++ b/drivers/net/wireless/rt2x00/rt2800usb.c
-@@ -970,6 +970,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
+@@ -878,6 +878,7 @@ static struct usb_device_id rt2800usb_device_table[] = {
  	{ USB_DEVICE(0x13b1, 0x0031) },
  	{ USB_DEVICE(0x1737, 0x0070) },
  	{ USB_DEVICE(0x1737, 0x0071) },
@@ -380,7 +380,7 @@ index dbf501c..05f9769 100644
  	/* Logitec */
  	{ USB_DEVICE(0x0789, 0x0162) },
  	{ USB_DEVICE(0x0789, 0x0163) },
-@@ -1165,7 +1166,6 @@ static struct usb_device_id rt2800usb_device_table[] = {
+@@ -1069,7 +1070,6 @@ static struct usb_device_id rt2800usb_device_table[] = {
  	{ USB_DEVICE(0x1740, 0x0605) },
  	{ USB_DEVICE(0x1740, 0x0615) },
  	/* Linksys */
@@ -389,10 +389,10 @@ index dbf501c..05f9769 100644
  	/* Logitec */
  	{ USB_DEVICE(0x0789, 0x0168) },
 diff --git a/drivers/net/wireless/wl12xx/boot.c b/drivers/net/wireless/wl12xx/boot.c
-index 5ebc64d..454e913 100644
+index b07f8b7..e0e1688 100644
 --- a/drivers/net/wireless/wl12xx/boot.c
 +++ b/drivers/net/wireless/wl12xx/boot.c
-@@ -358,6 +358,9 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
+@@ -328,6 +328,9 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
  		nvs_ptr += 3;
  
  		for (i = 0; i < burst_len; i++) {
@@ -402,7 +402,7 @@ index 5ebc64d..454e913 100644
  			val = (nvs_ptr[0] | (nvs_ptr[1] << 8)
  			       | (nvs_ptr[2] << 16) | (nvs_ptr[3] << 24));
  
-@@ -369,6 +372,9 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
+@@ -339,6 +342,9 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
  			nvs_ptr += 4;
  			dest_addr += 4;
  		}
@@ -412,7 +412,7 @@ index 5ebc64d..454e913 100644
  	}
  
  	/*
-@@ -380,6 +386,10 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
+@@ -350,6 +356,10 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
  	 */
  	nvs_ptr = (u8 *)wl->nvs +
  			ALIGN(nvs_ptr - (u8 *)wl->nvs + 7, 4);
@@ -423,7 +423,7 @@ index 5ebc64d..454e913 100644
  	nvs_len -= nvs_ptr - (u8 *)wl->nvs;
  
  	/* Now we must set the partition correctly */
-@@ -395,6 +405,10 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
+@@ -365,6 +375,10 @@ static int wl1271_boot_upload_nvs(struct wl1271 *wl)
  
  	kfree(nvs_aligned);
  	return 0;
@@ -435,10 +435,10 @@ index 5ebc64d..454e913 100644
  
  static void wl1271_boot_enable_interrupts(struct wl1271 *wl)
 diff --git a/drivers/net/wireless/wl12xx/cmd.c b/drivers/net/wireless/wl12xx/cmd.c
-index 97dd237..2144f60 100644
+index 42935ac..b8ec8cd 100644
 --- a/drivers/net/wireless/wl12xx/cmd.c
 +++ b/drivers/net/wireless/wl12xx/cmd.c
-@@ -120,6 +120,11 @@ int wl1271_cmd_general_parms(struct wl1271 *wl)
+@@ -121,6 +121,11 @@ int wl1271_cmd_general_parms(struct wl1271 *wl)
  	if (!wl->nvs)
  		return -ENODEV;
  
@@ -450,7 +450,7 @@ index 97dd237..2144f60 100644
  	gen_parms = kzalloc(sizeof(*gen_parms), GFP_KERNEL);
  	if (!gen_parms)
  		return -ENOMEM;
-@@ -148,6 +153,12 @@ int wl1271_cmd_general_parms(struct wl1271 *wl)
+@@ -144,6 +149,12 @@ int wl1271_cmd_general_parms(struct wl1271 *wl)
  	gp->tx_bip_fem_manufacturer =
  		gen_parms->general_params.tx_bip_fem_manufacturer;
  
@@ -463,7 +463,7 @@ index 97dd237..2144f60 100644
  	wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
  		     answer ? "auto" : "manual", gp->tx_bip_fem_manufacturer);
  
-@@ -167,6 +178,11 @@ int wl128x_cmd_general_parms(struct wl1271 *wl)
+@@ -163,6 +174,11 @@ int wl128x_cmd_general_parms(struct wl1271 *wl)
  	if (!wl->nvs)
  		return -ENODEV;
  
@@ -475,7 +475,7 @@ index 97dd237..2144f60 100644
  	gen_parms = kzalloc(sizeof(*gen_parms), GFP_KERNEL);
  	if (!gen_parms)
  		return -ENOMEM;
-@@ -191,6 +207,12 @@ int wl128x_cmd_general_parms(struct wl1271 *wl)
+@@ -187,6 +203,12 @@ int wl128x_cmd_general_parms(struct wl1271 *wl)
  	gp->tx_bip_fem_manufacturer =
  		gen_parms->general_params.tx_bip_fem_manufacturer;
  
@@ -488,23 +488,11 @@ index 97dd237..2144f60 100644
  	wl1271_debug(DEBUG_CMD, "FEM autodetect: %s, manufacturer: %d\n",
  		     answer ? "auto" : "manual", gp->tx_bip_fem_manufacturer);
  
-diff --git a/drivers/net/wireless/wl12xx/testmode.c b/drivers/net/wireless/wl12xx/testmode.c
-index 4ae8eff..abfb120 100644
---- a/drivers/net/wireless/wl12xx/testmode.c
-+++ b/drivers/net/wireless/wl12xx/testmode.c
-@@ -36,6 +36,7 @@ enum wl1271_tm_commands {
- 	WL1271_TM_CMD_TEST,
- 	WL1271_TM_CMD_INTERROGATE,
- 	WL1271_TM_CMD_CONFIGURE,
-+	WL1271_TM_CMD_NVS_PUSH,		/* Not in use. Keep to not break ABI */
- 	WL1271_TM_CMD_SET_PLT_MODE,
- 	WL1271_TM_CMD_RECOVER,
- 
 diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-index d3b3567..7375124 100644
+index f88e52a..c79857e 100644
 --- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
 +++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -7354,6 +7354,7 @@ _scsih_remove(struct pci_dev *pdev)
+@@ -7211,6 +7211,7 @@ _scsih_remove(struct pci_dev *pdev)
  	}
  
  	sas_remove_host(shost);
@@ -513,7 +501,7 @@ index d3b3567..7375124 100644
  	scsi_remove_host(shost);
  	scsi_host_put(shost);
 diff --git a/drivers/tty/serial/atmel_serial.c b/drivers/tty/serial/atmel_serial.c
-index b922f5d..948fc77 100644
+index af9b781..b989495 100644
 --- a/drivers/tty/serial/atmel_serial.c
 +++ b/drivers/tty/serial/atmel_serial.c
 @@ -199,8 +199,9 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
@@ -580,10 +568,10 @@ index 8faa23c..158f631 100644
  		}
  	}
 diff --git a/drivers/usb/core/hcd.c b/drivers/usb/core/hcd.c
-index 73cbbd8..ea47c13 100644
+index 39ea00b..691d212 100644
 --- a/drivers/usb/core/hcd.c
 +++ b/drivers/usb/core/hcd.c
-@@ -1398,11 +1398,10 @@ int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
+@@ -1387,11 +1387,10 @@ int usb_hcd_map_urb_for_dma(struct usb_hcd *hcd, struct urb *urb,
  					ret = -EAGAIN;
  				else
  					urb->transfer_flags |= URB_DMA_MAP_SG;
@@ -830,10 +818,10 @@ index a403b53..76083ae 100644
  		size_t sg_remaining;
  		void *orig;
 diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 2c07fff..daddfb3 100644
+index b4b0691..c0c5d6c 100644
 --- a/drivers/usb/host/xhci-ring.c
 +++ b/drivers/usb/host/xhci-ring.c
-@@ -2562,7 +2562,7 @@ static unsigned int count_sg_trbs_needed(struct xhci_hcd *xhci, struct urb *urb)
+@@ -2570,7 +2570,7 @@ static unsigned int count_sg_trbs_needed(struct xhci_hcd *xhci, struct urb *urb)
  	struct scatterlist *sg;
  
  	sg = NULL;
@@ -842,7 +830,7 @@ index 2c07fff..daddfb3 100644
  	temp = urb->transfer_buffer_length;
  
  	xhci_dbg(xhci, "count sg list trbs: \n");
-@@ -2746,7 +2746,7 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+@@ -2754,7 +2754,7 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
  		return -EINVAL;
  
  	num_trbs = count_sg_trbs_needed(xhci, urb);
@@ -852,7 +840,7 @@ index 2c07fff..daddfb3 100644
  			le16_to_cpu(urb->ep->desc.wMaxPacketSize));
  
 diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 10dc1bd..5fc595f 100644
+index 221f14e..107438e 100644
 --- a/drivers/usb/host/xhci.c
 +++ b/drivers/usb/host/xhci.c
 @@ -1568,6 +1568,7 @@ static int xhci_configure_endpoint_result(struct xhci_hcd *xhci,
@@ -863,7 +851,7 @@ index 10dc1bd..5fc595f 100644
  		dev_warn(&udev->dev, "Not enough bandwidth "
  				"for new device state.\n");
  		ret = -ENOSPC;
-@@ -2182,8 +2183,7 @@ static int xhci_calculate_streams_and_bitmask(struct xhci_hcd *xhci,
+@@ -2183,8 +2184,7 @@ static int xhci_calculate_streams_and_bitmask(struct xhci_hcd *xhci,
  		if (ret < 0)
  			return ret;
  
@@ -874,7 +862,7 @@ index 10dc1bd..5fc595f 100644
  			xhci_dbg(xhci, "Ep 0x%x only supports %u stream IDs.\n",
  					eps[i]->desc.bEndpointAddress,
 diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index 1fb0549..c149d20 100644
+index 49ce76c..3e7c3a6 100644
 --- a/drivers/usb/host/xhci.h
 +++ b/drivers/usb/host/xhci.h
 @@ -900,7 +900,6 @@ struct xhci_transfer_event {
@@ -912,10 +900,10 @@ index fe1d443..8f725f6 100644
  		printk(KERN_ERR "isight firmware loading completion failed\n");
  		ret = -ENODEV;
 diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-index a057a5a..96c5dbd 100644
+index dce7182..a0232a7 100644
 --- a/drivers/usb/musb/musb_core.c
 +++ b/drivers/usb/musb/musb_core.c
-@@ -2013,8 +2013,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
+@@ -2078,8 +2078,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
  	if (status < 0)
  		goto fail3;
  
@@ -1063,10 +1051,10 @@ index cb163a5..3251a02 100644
  	unsigned long res_start = address;
  	struct fb_fix_screeninfo *fix;
 diff --git a/fs/ext3/inode.c b/fs/ext3/inode.c
-index 12661e1..2ce3c52 100644
+index 3451d23..db9ba1a 100644
 --- a/fs/ext3/inode.c
 +++ b/fs/ext3/inode.c
-@@ -1617,7 +1617,13 @@ static int ext3_ordered_writepage(struct page *page,
+@@ -1568,7 +1568,13 @@ static int ext3_ordered_writepage(struct page *page,
  	int err;
  
  	J_ASSERT(PageLocked(page));
@@ -1081,7 +1069,7 @@ index 12661e1..2ce3c52 100644
  
  	/*
  	 * We give up here if we're reentered, because it might be for a
-@@ -1692,7 +1698,13 @@ static int ext3_writeback_writepage(struct page *page,
+@@ -1642,7 +1648,13 @@ static int ext3_writeback_writepage(struct page *page,
  	int err;
  
  	J_ASSERT(PageLocked(page));
@@ -1096,7 +1084,7 @@ index 12661e1..2ce3c52 100644
  
  	if (ext3_journal_current_handle())
  		goto out_fail;
-@@ -1735,7 +1747,13 @@ static int ext3_journalled_writepage(struct page *page,
+@@ -1684,7 +1696,13 @@ static int ext3_journalled_writepage(struct page *page,
  	int err;
  
  	J_ASSERT(PageLocked(page));
@@ -1112,7 +1100,7 @@ index 12661e1..2ce3c52 100644
  	if (ext3_journal_current_handle())
  		goto no_write;
 diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index 14363b9..5e3527b 100644
+index aa91089..f19dfbf 100644
 --- a/fs/reiserfs/super.c
 +++ b/fs/reiserfs/super.c
 @@ -453,16 +453,20 @@ int remove_save_link(struct inode *inode, int truncate)
@@ -1157,7 +1145,7 @@ index 14363b9..5e3527b 100644
  #endif
  
 diff --git a/fs/udf/file.c b/fs/udf/file.c
-index d8ffa7c..dca0c38 100644
+index 2a346bb..0c0c9d3 100644
 --- a/fs/udf/file.c
 +++ b/fs/udf/file.c
 @@ -125,7 +125,6 @@ static ssize_t udf_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
@@ -1256,11 +1244,11 @@ index 1d1358e..262050f 100644
  			} else
  				iinfo->i_lenAlloc = newsize;
  		}
-diff --git a/fs/xfs/xfs_acl.c b/fs/xfs/xfs_acl.c
-index b6c4b37..ac702a6 100644
---- a/fs/xfs/xfs_acl.c
-+++ b/fs/xfs/xfs_acl.c
-@@ -39,9 +39,11 @@ xfs_acl_from_disk(struct xfs_acl *aclp)
+diff --git a/fs/xfs/linux-2.6/xfs_acl.c b/fs/xfs/linux-2.6/xfs_acl.c
+index 4b9fb91..f86e034 100644
+--- a/fs/xfs/linux-2.6/xfs_acl.c
++++ b/fs/xfs/linux-2.6/xfs_acl.c
+@@ -39,7 +39,7 @@ xfs_acl_from_disk(struct xfs_acl *aclp)
  	struct posix_acl_entry *acl_e;
  	struct posix_acl *acl;
  	struct xfs_acl_entry *ace;
@@ -1268,11 +1256,7 @@ index b6c4b37..ac702a6 100644
 +	unsigned int count, i;
  
  	count = be32_to_cpu(aclp->acl_cnt);
-+	if (count > XFS_ACL_MAX_ENTRIES)
-+		return ERR_PTR(-EFSCORRUPTED);
- 
- 	acl = posix_acl_alloc(count, GFP_KERNEL);
- 	if (!acl)
+ 	if (count > XFS_ACL_MAX_ENTRIES)
 diff --git a/include/linux/usb.h b/include/linux/usb.h
 index 73c7df4..b08e04c 100644
 --- a/include/linux/usb.h
@@ -1318,10 +1302,10 @@ index 0fd3fbd..cf65b5c 100644
  #define USB_SS_MULT(p)			(1 + ((p) & 0x3))
  
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index b7ab0b8..e4cbdfb 100644
+index 575a5e7..2efce77 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -1175,10 +1175,10 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
+@@ -1173,10 +1173,10 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
  
  	/*
  	 * If the 'all' option was specified select all the subsystems,
