@@ -1,186 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab2ALQM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:12:26 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:54566 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752751Ab2ALQMX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:12:23 -0500
-Date: Thu, 12 Jan 2012 16:12:19 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, aarcange@redhat.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, hughd@google.com
-Subject: Re: [PATCH -mm 2/2] mm: kswapd carefully invoke compaction
-Message-ID: <20120112161219.GI3910@csn.ul.ie>
-References: <20120109213156.0ff47ee5@annuminas.surriel.com>
- <20120109213357.148e7927@annuminas.surriel.com>
+	id S1753973Ab2ALQOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:14:07 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:26152 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab2ALQOD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 11:14:03 -0500
+Date: Thu, 12 Jan 2012 11:12:04 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>, linux-kernel@vger.kernel.org,
+        xen-devel <xen-devel@lists.xensource.com>
+Subject: Re: linux 3.3-pre-rc1: Starting domU fails with Error: Failed to
+ query current memory allocation of dom0.
+Message-ID: <20120112161204.GC10269@phenom.dumpdata.com>
+References: <498097597.20120112133832@eikelenboom.it>
+ <20120112154613.GA10148@phenom.dumpdata.com>
+ <CAPXgP1373C5SfzU-rfo5GG53dUE6dVzECSuKzX1c_FirpXQt2g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120109213357.148e7927@annuminas.surriel.com>
+In-Reply-To: <CAPXgP1373C5SfzU-rfo5GG53dUE6dVzECSuKzX1c_FirpXQt2g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4F0F06C6.0062,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 09:33:57PM -0500, Rik van Riel wrote:
-> With CONFIG_COMPACTION enabled, kswapd does not try to free
-> contiguous free pages, even when it is woken for a higher order
-> request.
+On Thu, Jan 12, 2012 at 05:05:34PM +0100, Kay Sievers wrote:
+> On Thu, Jan 12, 2012 at 16:46, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> > On Thu, Jan 12, 2012 at 01:38:32PM +0100, Sander Eikelenboom wrote:
 > 
-> This could be bad for eg. jumbo frame network allocations, which
-> are done from interrupt context and cannot compact memory themselves.
-> Higher than before allocation failure rates in the network receive
-> path have been observed in kernels with compaction enabled.
+> >> Today i tried linuses tree of today (last commit is 4c4d285ad5665bfbd983b95fde8d7a477d24a361).
+> >>
+> >> It boots dom0 fine, but it fails to start any domU with: "Error: Failed to query current memory allocation of dom0."
+> >> With my previous 3.1.5 kernel everything is fine, nothing else changed in config in between.
+> > Your patch that converts the xen-balloon to use the regular device bus driver
+> > (070680218379e15c1901f4bf21b98e3cbf12b527) has some not-so-happy consequences.
+> >
+> > The toolstack (xen-tools) use:
+> >
+> > /sys/devices/system/xen_memory/xen_memory0
+> >
+> > But with the change, it is now:
+> >
+> > /sys/devices/xen_memory0/target_kb
 > 
-> Teach kswapd to defragment the memory zones in a node, but only
-> if required and compaction is not deferred in a zone.
+> Urks, seems like a mistake on my side.
 > 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Please try if changing:
+>   bus_unregister(&balloon_subsys);
+> to:
+>   subsys_system_register(&balloon_subsys, NULL);
+> in:
+>   drivers/xen/xen-balloon.c
+> fixes the issue.
 
-heh, this is not the first time we had kswapd doing compaction. It was a
-bit of a disaster the last time around but a lot has changed since.
+Heh. I was *just* looking at d369a5d8fc70710236ae2d06a0e42dce483712df
+("clocksource: convert sysdev_class to a regular subsystem") and typed up this patch
+to try it out:
 
-Care is needed here though. There are patches in-bound that implement
-sync-light. Part of that series includes a fix that makes compact_node
-use sync compaction. This is fine for a process writing to /proc, not to
-fine for kswapd. Watch for that.
 
-> diff --git a/include/linux/compaction.h b/include/linux/compaction.h
-> index bb2bbdb..df31dab 100644
-> --- a/include/linux/compaction.h
-> +++ b/include/linux/compaction.h
-> @@ -23,6 +23,7 @@ extern int fragmentation_index(struct zone *zone, unsigned int order);
->  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  			int order, gfp_t gfp_mask, nodemask_t *mask,
->  			bool sync);
-> +extern int compact_pgdat(pg_data_t *pgdat, int order, bool force);
->  extern unsigned long compaction_suitable(struct zone *zone, int order);
->  
->  /* Do not skip compaction more than 64 times */
-> @@ -62,6 +63,11 @@ static inline unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  	return COMPACT_CONTINUE;
->  }
->  
-> +static inline int compact_pgdat(pg_data_t *pgdat, int order, bool force)
-> +{
-> +	return COMPACT_CONTINUE;
-> +}
-> +
->  static inline unsigned long compaction_suitable(struct zone *zone, int order)
->  {
->  	return COMPACT_SKIPPED;
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 1253d7a..1962a0e 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -651,16 +651,11 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
->  
->  
->  /* Compact all zones within a node */
-> -static int compact_node(int nid)
-> +int compact_pgdat(pg_data_t *pgdat, int order, bool force)
+diff --git a/drivers/xen/xen-balloon.c b/drivers/xen/xen-balloon.c
+index 3832e30..f0b206e 100644
+--- a/drivers/xen/xen-balloon.c
++++ b/drivers/xen/xen-balloon.c
+@@ -221,13 +221,13 @@ static int register_balloon(struct device *dev)
+ {
+ 	int i, error;
+ 
+-	error = bus_register(&balloon_subsys);
++	error = subsys_system_register(&balloon_subsys, NULL);
+ 	if (error)
+ 		return error;
+-
++/*
+ 	dev->id = 0;
+ 	dev->bus = &balloon_subsys;
+-
++*/
+ 	error = device_register(dev);
+ 	if (error) {
+ 		bus_unregister(&balloon_subsys);
+> 
+> Sorry for that,
 
-force is a bad parameter to have as a VM-internal API to kswapd. By
-and large I'm trying to move away from these sort of bools towards
-compact_mode of sync, sync-light or async.
+That is OK. That is what rc0 is for.
 
-I would much prefer if what was exposed to kswapd was a compact_pgdat()
-that created a suitable compact_control (async compaction I would
-expect) and pass that to a static __compact_pgdat() that is shared by
-both kswapd and compact_nodes.
-
-That would stop spreading too much knowledge of compaction to kswapd.
-
->  {
->  	int zoneid;
-> -	pg_data_t *pgdat;
->  	struct zone *zone;
->  
-> -	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
-> -		return -EINVAL;
-> -	pgdat = NODE_DATA(nid);
-> -
->  	/* Flush pending updates to the LRU lists */
->  	lru_add_drain_all();
->  
-> @@ -668,7 +663,7 @@ static int compact_node(int nid)
->  		struct compact_control cc = {
->  			.nr_freepages = 0,
->  			.nr_migratepages = 0,
-> -			.order = -1,
-> +			.order = order,
->  		};
->  
->  		zone = &pgdat->node_zones[zoneid];
-
-Just to be clear, there is a fix that applies to here that initialises
-sync and that would have caused problems for this patch.
-
-> @@ -679,7 +674,8 @@ static int compact_node(int nid)
->  		INIT_LIST_HEAD(&cc.freepages);
->  		INIT_LIST_HEAD(&cc.migratepages);
->  
-> -		compact_zone(zone, &cc);
-> +		if (force || !compaction_deferred(zone))
-> +			compact_zone(zone, &cc);
->  
->  		VM_BUG_ON(!list_empty(&cc.freepages));
->  		VM_BUG_ON(!list_empty(&cc.migratepages));
-> @@ -688,6 +684,16 @@ static int compact_node(int nid)
->  	return 0;
->  }
->  
-> +static int compact_node(int nid)
-> +{
-> +	pg_data_t *pgdat;
-> +	if (nid < 0 || nid >= nr_node_ids || !node_online(nid))
-> +		return -EINVAL;
-> +	pgdat = NODE_DATA(nid);
-> +
-> +	return compact_pgdat(pgdat, -1, true);
-> +}
-> +
->  /* Compact all nodes in the system */
->  static int compact_nodes(void)
->  {
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 0fb469a..65bf21db 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2522,6 +2522,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->  	int priority;
->  	int i;
->  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
-> +	int zones_need_compaction = 1;
->  	unsigned long total_scanned;
->  	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	unsigned long nr_soft_reclaimed;
-> @@ -2788,9 +2789,17 @@ out:
->  				goto loop_again;
->  			}
->  
-> +			/* Check if the memory needs to be defragmented. */
-> +			if (zone_watermark_ok(zone, order,
-> +				    low_wmark_pages(zone), *classzone_idx, 0))
-> +				zones_need_compaction = 0;
-> +
->  			/* If balanced, clear the congested flag */
->  			zone_clear_flag(zone, ZONE_CONGESTED);
->  		}
-> +
-> +		if (zones_need_compaction)
-> +			compact_pgdat(pgdat, order, false);
-
-hmm, not fully convinced this is the right way of deciding if compaction
-should be used. If patch 1 used compaction_suitable() to decide when to
-stop reclaiming instead of a watermark check, we could then call
-compact_pgdat() in the exit path to balance_pgdat(). That would minimise
-the risk that kswapd gets stuck in compaction when it should be
-reclaiming pages. What do you think?
-
--- 
-Mel Gorman
-SUSE Labs
+Anyhow, let me see if that fixes the issue. Thanks for your quick reply.
