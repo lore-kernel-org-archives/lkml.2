@@ -1,29 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755164Ab2ALTnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:43:01 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:62773 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755103Ab2ALTm5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 14:42:57 -0500
+	id S1755182Ab2ALTrB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 14:47:01 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:39294 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751467Ab2ALTq7 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 14:46:59 -0500
 MIME-Version: 1.0
 In-Reply-To: <CABqD9hYynwP6ViTZi_7XH7OWbZ7SHskU9W6roX2yD5rwqBO96Q@mail.gmail.com>
 References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<1326383015.7642.77.camel@gandalf.stny.rr.com>
-	<CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
-	<1326385635.7642.89.camel@gandalf.stny.rr.com>
-	<CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
-	<CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com>
-	<CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
-	<CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
-	<CABqD9hYynwP6ViTZi_7XH7OWbZ7SHskU9W6roX2yD5rwqBO96Q@mail.gmail.com>
-Date: Thu, 12 Jan 2012 13:42:55 -0600
-Message-ID: <CABqD9hYt7nSMBAYhTpM2w3-hMpZKZ8SMXxF77nA37wPBAFU=xQ@mail.gmail.com>
+ <1326302710-9427-2-git-send-email-wad@chromium.org> <1326383015.7642.77.camel@gandalf.stny.rr.com>
+ <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
+ <1326385635.7642.89.camel@gandalf.stny.rr.com> <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
+ <CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com>
+ <CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
+ <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com> <CABqD9hYynwP6ViTZi_7XH7OWbZ7SHskU9W6roX2yD5rwqBO96Q@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 12 Jan 2012 11:46:37 -0800
+X-Google-Sender-Auth: CqcXYXd1HvBEivf1xkDWuEEDMN8
+Message-ID: <CAObL_7G7TpLL9QUmzEfjEqtg3G06O+rjO-Hy6snS5j2rmbXHXQ@mail.gmail.com>
 Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Andrew Lutomirski <luto@mit.edu>
+To: Will Drewry <wad@chromium.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
         keescook@chromium.org, john.johansen@canonical.com,
@@ -43,7 +41,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 1:40 PM, Will Drewry <wad@chromium.org> wrote:
+On Thu, Jan 12, 2012 at 11:40 AM, Will Drewry <wad@chromium.org> wrote:
 > On Thu, Jan 12, 2012 at 12:44 PM, Andrew Lutomirski <luto@mit.edu> wrote:
 >> On Thu, Jan 12, 2012 at 10:32 AM, Linus Torvalds
 >> <torvalds@linux-foundation.org> wrote:
@@ -83,12 +81,13 @@ On Thu, Jan 12, 2012 at 1:40 PM, Will Drewry <wad@chromium.org> wrote:
 > This sounds cool.  Do you think you'll go for a new task_struct member
 > or will it a securebit?  (Seems like securebits might be too tied to
 > posix file caps, but I figured I'd ask).
-
-Or cred member, etc.
-
+>
 > I'm planning on going ahead and mocking up your potential patch so I
 > can respin this series using it and make sure I understand the
 > interactions.
->
-> thanks!
-> will
+
+I think securebits and cred didn't exist the first time I did this,
+and sticking it in struct cred might unnecessarily prevent sharing
+cred (assuming that even happens).  So I'd say task_struct.
+
+--Andy
