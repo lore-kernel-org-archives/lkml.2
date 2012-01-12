@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab2ALRhs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:37:48 -0500
-Received: from smtp2.ustc.edu.cn ([202.38.64.46]:59010 "HELO ustc.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751860Ab2ALRhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:37:47 -0500
-X-Greylist: delayed 743 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jan 2012 12:37:46 EST
-Date: Fri, 13 Jan 2012 01:30:28 +0800
-From: JiSheng Zhang <jszhang3@mail.ustc.edu.cn>
-To: xfs@oss.sgi.com, elder@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] xfs: remove unecessary AIL push wakeups
-Message-ID: <20120113013028.6802d878@ustc>
-X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754732Ab2ALRkL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:40:11 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49845 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab2ALRkK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:40:10 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=CN4PQ-MNGcoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=1vfNl0wJnvAby7S1ftEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326390006.7642.114.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
+        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com
+Date: Thu, 12 Jan 2012 12:40:06 -0500
+In-Reply-To: <20120112173048.GK7180@jl-vm1.vm.bytemark.co.uk>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	 <1326302710-9427-2-git-send-email-wad@chromium.org>
+	 <1326383015.7642.77.camel@gandalf.stny.rr.com>
+	 <20120112161418.GA22360@redhat.com>
+	 <1326386324.7642.96.camel@gandalf.stny.rr.com>
+	 <20120112173048.GK7180@jl-vm1.vm.bytemark.co.uk>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
-X-CM-TRANSID: yia_0ZDrHQR2Fw9PgIQeAA--.9667S2
-X-Coremail-Antispam: 1Uf129KBjvdXoWruw43Xr1ftFy7GryUtF15XFb_yoWfGFb_Xa
-	1vyryxWwnxWrs2yrW8Xrs8Aryjyw4IyrZ7WayUtay5Ka4UWF4ayF98XFZ0qry7CrWYkrn3
-	Zr9I9r13Kr92yjkaLaAFLSUrUUUUUbIjqfuFe4nvWSU5nxnvy29KBjDU0xBIdaVrnRJUUU
-	6Sb7IF0VCFI7km07C26c804VAKzcIF0wAYjxAI6xZILanIXVAFwwAYjxAI6IIYrVAFwwAY
-	jsxI4VWxJwAYFVCjjxCrM7AC8VAFwI0_Jr0_Gr1l1I0E4x80FVCIwcAKzIAtM7C26IkvcI
-	IF6IxKo4kEV4yl1IIY67AEw4v_Jr0_Jr4l84ACjcxK6xIIjxv20xvE14v26r4j6ryUM28E
-	F7xvwVC0I7IYx2IY6xkF7I0E14v26r4j6F4UM28EF7xvwVC2z280aVAFwI0_GcCE3s1l84
-	ACjcxK6I8E87Iv6xkF7I0E14v26rxl6s0DM2kK67kvxFCE548m6r1fGryUXwAac4AC648E
-	w2Wl57IF6s8CjcxG0xyl5I8CrVACY4xI64kE6c02F40Ex7xfMcIj6xIIjxv20xvE14v26r
-	1Y6r17McIj6I8E87Iv67AKxVWUJVW8JwACjcxG0xvY0x0EwIxGrwCF04k20xvY0x0EwIxG
-	rwCFI7vE0wC2zVAF1VAY17CE14v26r1Y6r17MIIYrxkI7VAKI48JMIIF0xvE2Ix0cI8IcV
-	AFwI0_Jr0_JF4lIxAIcVC0I7IYx2IY6xkF7I0E14v26r1j6r4UMIIF0xvEx4A2jsIE14v2
-	6r1j6r4UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Jr0_GrUvcSsGvfC2KfnxnUUI43ZEXa7IU8
-	ag4DUUUUU==
-X-CM-SenderInfo: xmv2xttqjtqzxdloh3xvwfhvlgxou0/
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2012-01-12 at 17:30 +0000, Jamie Lokier wrote:
 
-In commit 0030807c66("xfs: revert to using a kthread for AIL pushing"),
-AIL pushing is revert back to use a kthread. But unfortunately, it
-introduced a regression: there are unnecessary AIL push wakeups during
-idle, ~20 wakeups/s. This change remove the wakeups by reverting a bit
-more: set "tout" value as zero during idle.
+> You can do this now, using ptrace().  It's horrible, but half of the
+> horribleness is needing to understand machine-dependent registers,
+> which this new patch doesn't address.  (The other half is a ton of
+> undocumented but important ptrace() behaviours on Linux.)
 
-Signed-off-by: JiSheng Zhang <jszhang3@mail.ustc.edu.cn>
----
- fs/xfs/xfs_trans_ail.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Yeah I know the horrid use of ptrace, I've implemented programs that use
+it :-p
 
-diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
-index ed9252b..2014387 100644
---- a/fs/xfs/xfs_trans_ail.c
-+++ b/fs/xfs/xfs_trans_ail.c
-@@ -508,7 +508,7 @@ out_done:
- 		ailp->xa_last_pushed_lsn = 0;
- 		ailp->xa_log_flush = 0;
- 
--		tout = 50;
-+		tout = 0;
- 	} else if (XFS_LSN_CMP(lsn, target) >= 0) {
- 		/*
- 		 * We reached the target so wait a bit longer for I/O to
--- 
-1.7.8.3
+I guess ptrace can capture the execv and determine if it is OK or not to
+run it. But again, this doesn't stop the possible attacks that could
+happen, with having the execv on a symlink file, having the ptrace check
+say its OK, and then switching the symlink to a setuid file.
+
+When the new execv executed, the parent process would lose all control
+over it. The idea is to prevent this.
+
+I like Alan's suggestion. Have userspace decide to allow execv or not,
+and even let it decide if it should allow setuid execv's or not, but
+still allow non-setuid execvs. If you allow the setuid execv, once that
+happens, the same behavior will occur as with ptrace. A setuid execv
+will lose all its filtering.
+
+-- Steve
 
 
