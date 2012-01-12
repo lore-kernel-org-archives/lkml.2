@@ -1,137 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab2ALR5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:57:48 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38306 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2ALR5q (ORCPT
+	id S1754853Ab2ALR6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:58:22 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:52074 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab2ALR6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:57:46 -0500
-Date: Thu, 12 Jan 2012 09:57:25 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20120112175725.GD9511@google.com>
-References: <20111221190817.GI17668@somewhere>
- <20111221192413.GF13529@google.com>
- <20111221200422.GJ17668@somewhere>
- <20111222153004.GA30522@redhat.com>
- <20120104193614.GF9511@google.com>
- <20120106152356.GA23995@redhat.com>
- <20120106182535.GJ9511@google.com>
- <20120111160730.GA24556@redhat.com>
- <20120112003102.GB9511@google.com>
- <20120112170728.GA25717@redhat.com>
+	Thu, 12 Jan 2012 12:58:20 -0500
+Date: Thu, 12 Jan 2012 17:57:50 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Will Drewry <wad@chromium.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+Message-ID: <20120112175750.GN7180@jl-vm1.vm.bytemark.co.uk>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+ <1326302710-9427-2-git-send-email-wad@chromium.org>
+ <1326383015.7642.77.camel@gandalf.stny.rr.com>
+ <CABqD9hbOUy1qO0f+JFitRXH6c5EgLTWOh5eGdo8dTxeXJ40h2g@mail.gmail.com>
+ <20120112172241.GJ7180@jl-vm1.vm.bytemark.co.uk>
+ <CABqD9hYza5BpOk-+n0svHVGuWem39M=asGTMPy0z1ke0rCv8hA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20120112170728.GA25717@redhat.com>
-X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABqD9hYza5BpOk-+n0svHVGuWem39M=asGTMPy0z1ke0rCv8hA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
-
-Oleg Nesterov (oleg@redhat.com) wrote:
-> Hi Mandeep,
-> 
-> On 01/11, Mandeep Singh Baines wrote:
-> > > >
-> > > > #define while_each_thread(g, t, o) \
-> > > > 	while (t->group_leader == o && (t = next_thread(t)) != g)
-> > > >
-> > > > Where o should have the value of g->group_leader.
-> > >
-> > > I don't understand how this helps... and how this can work even
-> > > ignoring the barriers.
-> > >
-> > > OK, we have the main thream M and the sub-thread T, we are doing
-> > >
-> > > 	do {
-> > > 		do_something(t);
-> > > 	} while_each_thread(M, t, M);
-> > >
-> > > why we can't miss T if it does exec?
-> > >
+Will Drewry wrote:
+> On Thu, Jan 12, 2012 at 11:22 AM, Jamie Lokier <jamie@shareable.org> wrote:
+> > Will Drewry wrote:
+> >> On Thu, Jan 12, 2012 at 9:43 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> >> > On Wed, 2012-01-11 at 11:25 -0600, Will Drewry wrote:
+> >> >
+> >> >> Filter programs may _only_ cross the execve(2) barrier if last filter
+> >> >> program was attached by a task with CAP_SYS_ADMIN capabilities in its
+> >> >> user namespace.  Once a task-local filter program is attached from a
+> >> >> process without privileges, execve will fail.  This ensures that only
+> >> >> privileged parent task can affect its privileged children (e.g., setuid
+> >> >> binary).
+> >> >
+> >> > This means that a non privileged user can not run another program with
+> >> > limited features? How would a process exec another program and filter
+> >> > it? I would assume that the filter would need to be attached first and
+> >> > then the execv() would be performed. But after the filter is attached,
+> >> > the execv is prevented?
+> >>
+> >> Yeah - it means tasks can filter themselves, but not each other.
+> >> However, you can inject a filter for any dynamically linked executable
+> >> using LD_PRELOAD.
+> >>
+> >> > Maybe I don't understand this correctly.
+> >>
+> >> You're right on.  This was to ensure that one process didn't cause
+> >> crazy behavior in another. I think Alan has a better proposal than
+> >> mine below.  (Goes back to catching up.)
 > >
-> > So for:
+> > You can already use ptrace() to cause crazy behaviour in another
+> > process, including modifying registers arbitrarily at syscall entry
+> > and exit, aborting and emulating syscalls.
 > >
-> > struct task *M; /* assuming this is passed in to us */
-> > struct task *L = M->group_leader;
-> 
-> L == M
-> 
-> > do {
-> > 	do_something(T);
-> > } while_each_thread(M, T, L);
+> > ptrace() is quite slow and it would be really nice to speed it up,
+> > especially for trapping a small subset of syscalls, or limiting some
+> > kinds of access to some file descriptors, while everything else runs
+> > at normal speed.
 > >
-> > Here is my thinking.
+> > Speeding up ptrace() with BPF filters would be a really nice.  Not
+> > that I like ptrace(), but sometimes it's the only thing you can rely on.
 > >
-> > If some thread K does exec, you won't miss it because:
+> > LD_PRELOAD and code running in the target process address space can't
+> > always be trusted in some contexts (e.g. the target process may modify
+> > the tracing code or its data); whereas ptrace() is pretty complete and
+> > reliable, if ugly.
 > >
-> > 1) Ignoring the group_leader check, you'll visit K just by following
-> >    next_thread(). That's the case today and is what you except
-> >    when iterating over an rcu_list.
-> > 2) (t->group_leader == o) will fail iff t is the exec thread.
-> >    Since we test t->group_leader before re-assigning it (t=next_thread()),
-> >    the test will fail only after visiting the exec thread. So you'll
-> >    visit the exec thread and then terminate the loop.
+> > There's already a security model around who can use ptrace(); speeding
+> > it up needn't break that.
+> >
+> > If we'd had BPF ptrace in the first place, SECCOMP wouldn't have been
+> > needed as userspace could have done it, with exactly the restrictions
+> > it wants.  Google's NaCl comes to mind as a potential user.
 > 
-> Still can't understand... Lets look at this trivial example again.
-> 
-> We start from the main thread M, it is ->group_leader. There is
-> another thread T in this thread group. We are doing
-> 
-> 	OLD = M;
-> 
-> 	t = M;
-> 	do {
-> 		do_smth(t);
-> 	}
-> 	while (t->group_leader == OLD && ((t = next_thread(t)) != M);
-> 
-> The first iteration does do_smth(M).
-> 
-> T calls de_thread() and, in particular, it does M->group_leader = T
-> (see "leader->group_leader = tsk" in de_thread).
-> 
-> after that t->group_leader == OLD fails. t == M, its group_leader == T.
-> do_smth(T) won't be called.
-> 
-> No?
-> 
+> That's not entirely true.  ptrace supervisors are subject to races and
+> always fail open.  This makes them effective but not as robust as a
+> seccomp solution can provide.
 
-I think we can handle this by removing the assignment. So in de_thread():
+What races do you know about?
 
--		leader->group_leader = tsk;
+I'm not aware of any ptrace races if it's used properly.  I'm also not
+sure what you mean by fail open/close here, unless you mean the target
+process gets to carry on if the tracing process dies.
 
-		tsk->exit_signal = SIGCHLD;
-		leader->exit_signal = -1;
+Having said that, I can think of one race, but I think your BPF scheme
+has the same one: After checking the syscall's string arguments and
+other pointed to data, another thread can change those arguments
+before the real syscall uses them.
 
-		BUG_ON(leader->exit_state != EXIT_ZOMBIE);
-		leader->exit_state = EXIT_DEAD;
+> With seccomp, it fails close.  What I think would make sense would be
+> to add a user-controllable failure mode with seccomp bpf that calls
+> tracehook_ptrace_syscall_entry(regs).  I've prototyped this and it
+> works quite well, but I didn't want to conflate the discussions.
 
-In the current d_thread(), four statements after reassigning
-leader->group_leader, we mark the old leader as EXIT_DEAD. So what if
-we leave leader->group_leader = leader. Since its EXIT_DEAD a few
-statements later, I don't think anything should break.
+It think it's a nice idea.  While you're at it could you fix all the
+architectures to actually use tracehooks for syscall tracing ;-)
 
-What do you think?
+(I think it's ok to call the tracehook function on all archs though.)
 
-Regards,
-Mandeep
-
-> Oleg.
+> Using ptrace() would also mean that all consumers of this interface
+> would need a supervisor, but with seccomp, the filters are installed
+> and require no supervisors to stick around for when failure occurs.
 > 
+> Does that make sense?
+
+It does, I agree that ptrace() is quite cumbersome and you don't
+always want a separate tracing process, especially if "failure" means
+to die or get an error.
+
+On the other hand, sometimes when a failure occurs, having another
+process decide what to do, or log the event, is exactly what you want.
+
+For my nefarious purposes I'm really just looking for a faster way to
+reliably trace some activities of individual processes, in particular
+tracking which files they access.  I'd rather not interfere with
+debuggers, so I'd really like your ability to stack multiple filters
+to work with separate-process tracing as well.  And I'd happily use a
+filter rule which can dump some information over a pipe, without
+waiting for the tracer to respond in most cases.
+
+-- Jamie
