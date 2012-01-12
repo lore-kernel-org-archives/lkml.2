@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab2ALRX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:23:58 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:51254 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2ALRXz convert rfc822-to-8bit (ORCPT
+	id S1754710Ab2ALRZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:25:27 -0500
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:51966 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab2ALRZZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:23:55 -0500
+	Thu, 12 Jan 2012 12:25:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <4F0F238E.7020508@xenotime.net>
-References: <CABqD9hbQRinbYqqwjqH8TfDvkOpESwiCp1uEE8d0Q7Rp4tsM0A@mail.gmail.com>
-	<1326323983-23630-1-git-send-email-wad@chromium.org>
-	<4F0F238E.7020508@xenotime.net>
-Date: Thu, 12 Jan 2012 11:23:53 -0600
-Message-ID: <CABqD9haEB8OFxKht0u7hiHoQf+_xZL=Y8nFYKUb6DxonR9w6UQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] Documentation: prctl/seccomp_filter
+In-Reply-To: <4F0EDC5C.3040001@gmail.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	<1326302710-9427-3-git-send-email-wad@chromium.org>
+	<4F0EDC5C.3040001@gmail.com>
+Date: Thu, 12 Jan 2012 11:25:22 -0600
+Message-ID: <CABqD9hZmd9eXavwUDOsfNSH0vWyjqH_g4gX=Vf2jGQdRAY3Udw@mail.gmail.com>
+Subject: Re: [RFC,PATCH 2/2] Documentation: prctl/seccomp_filter
 From: Will Drewry <wad@chromium.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
+To: =?UTF-8?B?xYF1a2FzeiBTb3dh?= <luksow@gmail.com>
 Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
         john.johansen@canonical.com, serge.hallyn@canonical.com,
         coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
@@ -28,41 +28,36 @@ Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
         ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
         dhowells@redhat.com, daniel.lezcano@free.fr,
         linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net
-Content-Type: text/plain; charset=ISO-8859-1
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 12:16 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 01/11/2012 03:19 PM, Will Drewry wrote:
->> Document how system call filtering with BPF works and
->> may be used. †Includes an example for x86 (32-bit).
+On Thu, Jan 12, 2012 at 7:13 AM, ≈Åukasz Sowa <luksow@gmail.com> wrote:
+> Hi Will,
 >
-> Please tell some of us what "BPF" means. †wikipedia lists 15 possible
-> choices, but I don't know which one to choose.
+> That's very different approach to the system call interposition problem.
+> I find you solution very interesting. It gives far more capabilities
+> than my syscalls cgroup that you commented on some time ago. It's ready
+> now but I haven't tried filtering yet. I think that if your solution
+> make it to the mainline (and I guess that's really possible at current
+> stage :)), there will be no place for mine solution but that's ok.
 
-I'll make it clearer in the documentation file and update the patch description.
+Yeah - there've been so many tries, I'll be happy when one makes it in
+which is usable :)
 
-BPF == Berkeley Packet Filters which are implemented in Linux Socket
-Filters (LSF)>
+> There's one thing that I'm curious about - have you measured overhead in
+> any way? That was one of the biggest issues in all previous attempts to
+> limit syscalls. I'd love to compare the numbers with mine solution.
 
-thanks!
+Certainly. I have some rough numbers, but nothing I'd call strong
+measurements.  There is still a fair amount of cost due to the syscall
+slow path.
 
->> Signed-off-by: Will Drewry <wad@chromium.org>
->> ---
->> †Documentation/prctl/seccomp_filter.txt | † 99 ++++++++++++++++++++++++++++++++
->> †samples/Makefile † † † † † † † † † † † | † †2 +-
->> †samples/seccomp/Makefile † † † † † † † | † 12 ++++
->> †samples/seccomp/bpf-example.c † † † † †| † 74 ++++++++++++++++++++++++
->> †4 files changed, 186 insertions(+), 1 deletions(-)
->> †create mode 100644 Documentation/prctl/seccomp_filter.txt
->> †create mode 100644 samples/seccomp/Makefile
->> †create mode 100644 samples/seccomp/bpf-example.c
->
->
-> --
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> I'll examine your patch later on and put some comments if I bump into
+> something.
+
+Much appreciated - cheers!
+will
