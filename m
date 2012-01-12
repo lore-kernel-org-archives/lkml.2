@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755565Ab2ALUmw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:42:52 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:56875
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755472Ab2ALUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:41:46 -0500
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, ohering@suse.com,
-        jbottomley@parallels.com, hch@infradead.org,
-        linux-scsi@vger.kernel.org
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 05/15] Staging:hv: storvsc: Cleanup storvsc_host_reset_handler()
-Date: Thu, 12 Jan 2012 12:37:58 -0800
-Message-Id: <1326400688-13544-5-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1326400688-13544-1-git-send-email-kys@microsoft.com>
-References: <1326400637-13494-1-git-send-email-kys@microsoft.com>
- <1326400688-13544-1-git-send-email-kys@microsoft.com>
+	id S1755519Ab2ALUqq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:46:46 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:41012 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755378Ab2ALUqp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:46:45 -0500
+Date: Thu, 12 Jan 2012 12:46:42 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: how to get of the the "plus" in 3.2.0+
+In-Reply-To: <CAAJw_ZvxGc8kKjLO49ONLG=AuU6-DXExwNk2PuRszF1Y0jVeog@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1201121242560.17287@chino.kir.corp.google.com>
+References: <CAAJw_ZvxGc8kKjLO49ONLG=AuU6-DXExwNk2PuRszF1Y0jVeog@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-191808671-1326401204=:17287"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup storvsc_host_reset_handler() by getting rid of storvsc_host_reset().
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/staging/hv/storvsc_drv.c |   14 ++++----------
- 1 files changed, 4 insertions(+), 10 deletions(-)
+--397155492-191808671-1326401204=:17287
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 979f25b..8340387 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -1122,8 +1122,11 @@ static int storvsc_get_chs(struct scsi_device *sdev, struct block_device * bdev,
- 	return 0;
- }
- 
--static int storvsc_host_reset(struct hv_device *device)
-+static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
- {
-+	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
-+	struct hv_device *device = host_dev->dev;
-+
- 	struct storvsc_device *stor_device;
- 	struct hv_storvsc_request *request;
- 	struct vstor_packet *vstor_packet;
-@@ -1165,15 +1168,6 @@ static int storvsc_host_reset(struct hv_device *device)
- }
- 
- 
--static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
--{
--	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
--	struct hv_device *dev = host_dev->dev;
--
--	return storvsc_host_reset(dev);
--}
--
--
- static void storvsc_command_completion(struct hv_storvsc_request *request)
- {
- 	struct storvsc_cmd_request *cmd_request =
--- 
-1.7.4.1
+On Fri, 13 Jan 2012, Jeff Chua wrote:
 
+> Every time I do a fresh compile of the kernel, it append the version
+> with a "+". How can I get rid of the annoying "+" without doing
+> another major recompile or before I even start the compiling?
+> 
+
+The `+´ is emitted to indicate that you have modifications to your tree 
+beyond an official release, so your tree is actually not 3.2.0 but rather 
+it has additional changes on top of 3.2.0.
+
+To suppress it, use "make LOCALVERSION="
+
+The version string is written to include/generated/utsrelease.h at the 
+beginning of the build.
+--397155492-191808671-1326401204=:17287--
