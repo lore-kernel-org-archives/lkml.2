@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958Ab2ALMbn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 07:31:43 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:65497 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2ALMbl (ORCPT
+	id S1752452Ab2ALMdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 07:33:06 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63233 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751077Ab2ALMdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 07:31:41 -0500
+	Thu, 12 Jan 2012 07:33:03 -0500
 MIME-Version: 1.0
-In-Reply-To: <1326301493-28760-9-git-send-email-fenghua.yu@intel.com>
+In-Reply-To: <1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
 References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
-	<1326301493-28760-9-git-send-email-fenghua.yu@intel.com>
-Date: Thu, 12 Jan 2012 07:31:40 -0500
-Message-ID: <CAMzpN2gFB0LuWqVA2KA13C3+g8Zb2irmFnpjwHOtOvhuE67KWQ@mail.gmail.com>
-Subject: Re: [PATCH v5 08/12] x86/smpboot.c: Wake up CPU0 via NMI instead of INITs
+	<1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
+Date: Thu, 12 Jan 2012 07:33:01 -0500
+Message-ID: <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
+Subject: Re: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
+ save mtrr
 From: Brian Gerst <brgerst@gmail.com>
 To: Fenghua Yu <fenghua.yu@intel.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
@@ -39,21 +40,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com> wrote:
 > From: Fenghua Yu <fenghua.yu@intel.com>
 >
-> Instead of waiting for STARTUP after INITs, BSP will execute
-> the BIOS boot-strap code which is not a desired behavior for
-> waking up BSP. To avoid the boot-strap code, wake up CPU0 by
-> NMI instead.
->
-> This works to wake up soft offlined CPU0 only. If CPU0 is hard offlined (i.e.
-> physically hot removed and then hot added), NMI won't wake it up. We'll change
-> this code in the future to wake up hard offlined CPU0 if real platform and
-> request are available.
->
-> AP is still waken up as before by INIT, INIT, STARTUP sequence.
+> Ask the first online CPU to save mtrr instead of asking BSP. BSP could be
+> offline when mtrr_save_state() is called.
 
-Would clearing IA32_APIC_BASE_MSR.BSP avoid calling the BIOS code when
-the cpu is brought back online?  Setting that flag in another cpu that
-is still online might also allow suspend/resume to work.
+If you can use any non-boot cpu to save the MTRRs why not just use the
+current cpu?  They should all be in sync anyways.
 
 --
 Brian Gerst
