@@ -1,83 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab2ALXG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 18:06:59 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25092 "EHLO mx1.redhat.com"
+	id S1756041Ab2ALXOA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 18:14:00 -0500
+Received: from ozlabs.org ([203.10.76.45]:47500 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751467Ab2ALXGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 18:06:54 -0500
-Message-ID: <1326409536.9705.4.camel@localhost>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Eric Paris <eparis@redhat.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: Andrew Lutomirski <luto@mit.edu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Date: Thu, 12 Jan 2012 18:05:36 -0500
-In-Reply-To: <CAGZ=bq+E3PFm8aZ1eaJaLnHK2dL_nxKBJ_F6MDR-uON+6T-87A@mail.gmail.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	 <1326302710-9427-2-git-send-email-wad@chromium.org>
-	 <1326383015.7642.77.camel@gandalf.stny.rr.com>
-	 <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
-	 <1326385635.7642.89.camel@gandalf.stny.rr.com>
-	 <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
-	 <CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com>
-	 <CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
-	 <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
-	 <CAGZ=bq+E3PFm8aZ1eaJaLnHK2dL_nxKBJ_F6MDR-uON+6T-87A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1756013Ab2ALXN5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 18:13:57 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Antonino Daplas <adaplas@gmail.com>, linux-fbdev@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH 3/15] i810: fix module_param bool abuse.
+In-Reply-To: <4EEFC5B4.9000704@gmx.de>
+References: <874nx2tu1v.fsf@rustcorp.com.au> <4EEFC5B4.9000704@gmx.de>
+User-Agent: Notmuch/0.6.1-1 (http://notmuchmail.org) Emacs/23.3.1 (i686-pc-linux-gnu)
+Date: Fri, 13 Jan 2012 09:27:34 +1030
+Message-ID: <87sjjk34wx.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-12 at 14:08 -0500, Kyle Moffett wrote:
-> On Thu, Jan 12, 2012 at 13:44, Andrew Lutomirski <luto@mit.edu> wrote:
-> > On Thu, Jan 12, 2012 at 10:32 AM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> >> You can do any amount of crazy things with selinux, but the other side
-> >> of the coin is that it would also be trivial to teach selinux about
-> >> this same "restricted environment" bit, and just say that a process
-> >> with that bit set doesn't get to match whatever selinux privilege
-> >> escalation rules..
-
-> I don't see any issues with SELinux support for this feature.
+On Mon, 19 Dec 2011 23:16:04 +0000, Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+> On 12/15/2011 03:03 AM, Rusty Russell wrote:
+> > The driver says "module_param(ddc3, bool, 0);".  But it's not a used
+> > as a bool, it's used as a count.
+> > 
+> > Make it a bool.
+> > 
+> > Cc: Antonino Daplas <adaplas@gmail.com>
+> > Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+> > Cc: linux-fbdev@vger.kernel.org
+> > Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 > 
-> Specifically, when you try to execute something in SELinux, it will
-> first look at the types and try to "execute" (involving a type
-> transition IE: security label change).
-> 
-> But if that fails in many cases it may still be allowed to
-> "execute_no_trans" (IE: regular non-privileged exec() without a
-> transition).
+> Applied.
 
-That's not true.  See specifically
-security/selinux/hooks.c::selinux_bprm_set_creds()  We calculate a label
-for the new task (that may or may not be the same) and then check if
-there is permission to run the new binary with the new label.  There is
-no fallback.
+Hmm, I don't see this in Linus' tree yet, and it's a context-clash
+pre-requisite for part of the general driver bool conversion.  I want to
+push today since I have linux.conf.au next week, so I've split the i810
+conversion into a separate patch, below.
 
-The exception would be if the binary is on a MNT_NOSUID mount point, in
-which case we calculate the new label, then just revert to the same
-label.
+It's been over a week in linux-next, can you push this please?
 
-At first glance it looks to me like a reasonable way to implement this
-at first would be to do the new checks right next to any place we
-already do MNT_NOSUID checks and mimic their behavior.  If there are
-other priv escalation points in the kernel we might need to consider if
-MNT_NOSUID is adequate....
+From: Rusty Russell <rusty@rustcorp.com.au>
+Subject: module_param: make bool parameters really bool (drivers/vidio/i810)
 
--Eric
+module_param(bool) used to counter-intuitively take an int.  In
+fddd5201 (mid-2009) we allowed bool or int/unsigned int using a messy
+trick.
 
+It's time to remove the int/unsigned int option.  For this version
+it'll simply give a warning, but it'll break next kernel version.
+
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+
+diff --git a/drivers/video/i810/i810_main.c b/drivers/video/i810/i810_main.c
+--- a/drivers/video/i810/i810_main.c
++++ b/drivers/video/i810/i810_main.c
+@@ -135,8 +135,8 @@ static struct pci_driver i810fb_driver =
+ static char *mode_option __devinitdata = NULL;
+ static int vram       __devinitdata = 4;
+ static int bpp        __devinitdata = 8;
+-static int mtrr       __devinitdata;
+-static int accel      __devinitdata;
++static bool mtrr      __devinitdata;
++static bool accel     __devinitdata;
+ static int hsync1     __devinitdata;
+ static int hsync2     __devinitdata;
+ static int vsync1     __devinitdata;
+@@ -144,9 +144,9 @@ static int vsync2     __devinitdata;
+ static int xres       __devinitdata;
+ static int yres;
+ static int vyres      __devinitdata;
+-static int sync       __devinitdata;
+-static int extvga     __devinitdata;
+-static int dcolor     __devinitdata;
++static bool sync      __devinitdata;
++static bool extvga    __devinitdata;
++static bool dcolor    __devinitdata;
+ static bool ddc3      __devinitdata;
+ 
+ /*------------------------------------------------------------*/
