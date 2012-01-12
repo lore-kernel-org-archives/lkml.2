@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab2ALWMA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 17:12:00 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50525 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752306Ab2ALWL5 (ORCPT
+	id S1754146Ab2ALWSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 17:18:51 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38007 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2ALWSs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 17:11:57 -0500
+	Thu, 12 Jan 2012 17:18:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120112215331.GB18166@google.com>
-References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
-	<20120112213830.GB17405@kroah.com>
-	<20120112215331.GB18166@google.com>
-Date: Thu, 12 Jan 2012 17:11:54 -0500
-Message-ID: <CAGagf4fNhiL9RDsAOk278K5iovg72nvT6ePCN0_18bHOh4d1aA@mail.gmail.com>
-Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-From: Theodore Tso <tytso@google.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Greg KH <greg@kroah.com>, Paul Taysom <taysom@chromium.org>,
-        Paul Taysom <taysom@google.com>, Olof Johansson <olofj@chromium.org>,
-        Jens Axboe <axboe@kernel.dk>, Andrew Morton <akpm@google.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-X-System-Of-Record: true
+In-Reply-To: <1326390006.7642.114.camel@gandalf.stny.rr.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	<1326302710-9427-2-git-send-email-wad@chromium.org>
+	<1326383015.7642.77.camel@gandalf.stny.rr.com>
+	<20120112161418.GA22360@redhat.com>
+	<1326386324.7642.96.camel@gandalf.stny.rr.com>
+	<20120112173048.GK7180@jl-vm1.vm.bytemark.co.uk>
+	<1326390006.7642.114.camel@gandalf.stny.rr.com>
+Date: Thu, 12 Jan 2012 16:18:46 -0600
+Message-ID: <CABqD9hY+2qJEGqGxO89m6iKK9+oe0q8rHEtOP6w0DKrwpNB90Q@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Steven Rostedt <rostedt@goodmis.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Jamie Lokier <jamie@shareable.org>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
+        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 4:53 PM, Mandeep Singh Baines <msb@chromium.org> wrote:
+On Thu, Jan 12, 2012 at 11:40 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 2012-01-12 at 17:30 +0000, Jamie Lokier wrote:
 >
-> What is the conventional way of doing this? There is a lot of good
-> data in the bug report which might be useful to reviewers. We
-> couldn't find a de-facto way of referencing the downstream bug database
-> so we just made up a new field. Sorry. We'll use the correct
-> field name next time.
+>> You can do this now, using ptrace().  It's horrible, but half of the
+>> horribleness is needing to understand machine-dependent registers,
+>> which this new patch doesn't address.  (The other half is a ton of
+>> undocumented but important ptrace() behaviours on Linux.)
+>
+> Yeah I know the horrid use of ptrace, I've implemented programs that use
+> it :-p
+>
+> I guess ptrace can capture the execv and determine if it is OK or not to
+> run it. But again, this doesn't stop the possible attacks that could
+> happen, with having the execv on a symlink file, having the ptrace check
+> say its OK, and then switching the symlink to a setuid file.
+>
+> When the new execv executed, the parent process would lose all control
+> over it. The idea is to prevent this.
+>
+> I like Alan's suggestion. Have userspace decide to allow execv or not,
+> and even let it decide if it should allow setuid execv's or not, but
+> still allow non-setuid execvs. If you allow the setuid execv, once that
+> happens, the same behavior will occur as with ptrace. A setuid execv
+> will lose all its filtering.
 
-There isn't a "correct field name", since it hasn't been standardized.
-I can tell you as an the ext4 maintainer, I've put things like:
+In the ptrace case, doesn't it just downgrade the privileges of the new process
+if there is a tracer, rather than detach the tracer?
 
-Addresses-Redhat-Bugzilla: <Bugzilla #>
+Ignoring that, I've been looking at system call filters as being equivalent to
+something like the caps bounding set.  Once reduced, there's no going
+back. I think Linus's proposal perfectly resolves the policy decision around
+suid execution behavior in the run-with-privs or not scenarios (just like with
+how ptrace does it).  However, I'd like to avoid allowing any process to
+escape system call filters once installed.  (It's doable to add
+suid/caps-based-bypass, but it certainly not ideal from my perspective.)
 
-or
-
-Addresses-Debian-Bug: <debian-bug-number>
-
-etc. in commit messages.  I usually put them before the signed-off-block,
-i.e, like this:
-
---------
-ext4: a simple commit
-
-This is the longer commit description, blah, blah, blah.
-
-Addresses-Redhat-Bugzilla: 12345
-
-Signed-off-by: Eric Sandeen <....@redhat.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
------------
-
-There is some disagreement about whether it's useful to do this
-for bugzilla entries which are not publically available (i.e., protected
-Enterprise Linux bugzillas which have customer information and
-thus are restricted access, or internal Company bug numbers).
-
-My personal take on this matter is that if an engineer from a
-particular company has taken the time and effort to contribute
-a bug that fixes a bug that they had seen internally, and they
-include an internal bug number, it's presumably to make it easier
-to track when a particular commit fixing a bug that they really
-care about has hit upstream.  It costs me very little to keep
-the bug tracker reference, even if I don't have personal access
-to it, and given the code contributor has helped me by submitting
-a bug fix, it's nice to be able to do a little something nice in
-return.  The extra line doesn't really bloat the "git log" output
-by all that much.
-
-Others, including Greg K-H, think it's a horrible thing to do,
-and will reject commits on that basis.
-
-So it all depends on which subsystem maintainer handles
-your bug.....  at the end, it's up to the maintainer.  I've never
-had Linus complain to me because the commits that I ask him
-to pull might include "Google-Bug-Id: 12345" lines in the commit
-description.
-
--- Ted
+cheers,
+will
