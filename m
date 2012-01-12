@@ -1,86 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab2ALVxz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 16:53:55 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:65052 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755748Ab2ALVxw (ORCPT
+	id S1755951Ab2ALVz0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 16:55:26 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:44346 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755645Ab2ALVzZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 16:53:52 -0500
-Date: Thu, 12 Jan 2012 13:53:31 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Greg KH <greg@kroah.com>
-Cc: Paul Taysom <taysom@chromium.org>, Paul Taysom <taysom@google.com>,
-        Mandeep Baines <msb@chromium.org>, Olof Johansson <olofj@chromium.org>,
-        Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@google.com>,
-        Andrew Morton <akpm@google.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-Message-ID: <20120112215331.GB18166@google.com>
-References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
- <20120112213830.GB17405@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112213830.GB17405@kroah.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 12 Jan 2012 16:55:25 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@suse.de
+Cc: Arnd Bergmann <arnd@arndb.de>, alan@linux.intel.com,
+        linux-serial@vger.kernel.org, jirislaby@gmail.com,
+        linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        "3.0 3.1 3.2" <stable@vger.kernel.org>
+Subject: [PATCH] TTY: fix UV serial console regression
+Date: Thu, 12 Jan 2012 22:55:15 +0100
+Message-Id: <1326405315-6601-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <4EDE988B.6010501@suse.cz>
+References: <4EDE988B.6010501@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH (greg@kroah.com) wrote:
-> On Thu, Jan 12, 2012 at 01:15:35PM -0800, Paul Taysom wrote:
-> > From: Paul Taysom <taysom@google.com>
-> > 
-> > A USB stick with a ext file system on it, would occasionally crash
-> > when the stick was pulled.
-> > 
-> > The problem was a timer was being set on the Backing Device Interface,
-> > bdi, after the USB device had been removed and the bdi had been
-> > unregistered. The bdi would then be later reinitialized by zeroing
-> > the timer without removing from the timer from the timer queue.
-> > This would eventually result in a kernel crash (NULL ptr dereference).
-> > 
-> > When the bdi is unregistered, the dev field is set to NULL. This
-> > indication is used by bdi_unregister to only unregister the device
-> > once.
-> > 
-> > Fix: When the backing device is invalidated, the mapping backing_dev_info
-> > should be redirected to the default_backing_dev_info.
-> > 
-> > Created 3 USB sticks with ext2, ext4 and one with both apple and DOS
-> > file systems on it. Inserted and removed USB sticks many times in random
-> > order. With out the bug fix, the kernel would soon crash. With the fix,
-> > it did not. Ran on both stumpy and amd64-generic.
-> > 
-> > Change-Id: Icdd06cf3ced555dcd9994cfcc9478a9071a802f1
-> 
-> What is this field for?  It makes no sense for a kernel patch
-> submission.
-> 
-> > Signed-off-by: Paul Taysom <taysom@chromium.org>
-> > Downstream-bug-report: http://crosbug.com/24165
-> 
-> Is that a regular field that we now use?
-> 
+Commit 74c2107759d (serial: Use block_til_ready helper) and its fixup
+3f582b8c110 (serial: fix termios settings in open) introduced a
+regression on UV systems. The serial eventually freezes while being
+used. It's completely unpredictable and sometimes needs a heap of
+traffic to happen first.
 
-Hi Greg,
+To reproduce this, yast installation was used as it turned out to be
+pretty reliable in reproducing. Especially during installation process
+where one doesn't have an SSH daemon running. And no monitor as the HW
+is completely headless. So this was fun to find. Given the machine
+doesn't boot on vanilla before 2.6.36 final. (And the commits above
+are older.)
 
-What is the conventional way of doing this? There is a lot of good
-data in the bug report which might be useful to reviewers. We
-couldn't find a de-facto way of referencing the downstream bug database
-so we just made up a new field. Sorry. We'll use the correct
-field name next time.
+Unless there is some bad race in the code, the hardware seems to be
+pretty broken. Otherwise pure MSR read should not cause such a bug,
+or?
 
-So what is the correct field name?
+So to prevent the bug, revert to the old behavior. I.e. read modem
+status only if we really have to -- for non-CLOCAL set serials.
+Non-CLOCAL works on this hardware OK, I tried. See? I don't.
 
-Regards,
-Mandeep
+And document that shit.
 
-> And shouldn't this go to the stable kernel releases as well?
-> 
-> Third time's a charm?
-> 
-> greg k-h
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: 3.0 3.1 3.2 <stable@vger.kernel.org>
+References: https://lkml.org/lkml/2011/12/6/573
+References: https://bugzilla.novell.com/show_bug.cgi?id=718518
+---
+ drivers/tty/tty_port.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/tty/tty_port.c b/drivers/tty/tty_port.c
+index 7a4fb1c..1109e1b 100644
+--- a/drivers/tty/tty_port.c
++++ b/drivers/tty/tty_port.c
+@@ -227,7 +227,6 @@ int tty_port_block_til_ready(struct tty_port *port,
+ 	int do_clocal = 0, retval;
+ 	unsigned long flags;
+ 	DEFINE_WAIT(wait);
+-	int cd;
+ 
+ 	/* block if port is in the process of being closed */
+ 	if (tty_hung_up_p(filp) || port->flags & ASYNC_CLOSING) {
+@@ -284,11 +283,14 @@ int tty_port_block_til_ready(struct tty_port *port,
+ 				retval = -ERESTARTSYS;
+ 			break;
+ 		}
+-		/* Probe the carrier. For devices with no carrier detect this
+-		   will always return true */
+-		cd = tty_port_carrier_raised(port);
++		/*
++		 * Probe the carrier. For devices with no carrier detect
++		 * tty_port_carrier_raised will always return true.
++		 * Never ask drivers if CLOCAL is set, this causes troubles
++		 * on some hardware.
++		 */
+ 		if (!(port->flags & ASYNC_CLOSING) &&
+-				(do_clocal || cd))
++				(do_clocal || tty_port_carrier_raised(port)))
+ 			break;
+ 		if (signal_pending(current)) {
+ 			retval = -ERESTARTSYS;
+-- 
+1.7.8.3
+
+
