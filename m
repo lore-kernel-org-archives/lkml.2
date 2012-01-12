@@ -1,159 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab2ALTOq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:14:46 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:47593 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab2ALTOm convert rfc822-to-8bit (ORCPT
+	id S1753634Ab2ALTQp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 14:16:45 -0500
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43068 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab2ALTQn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 14:14:42 -0500
+	Thu, 12 Jan 2012 14:16:43 -0500
 MIME-Version: 1.0
-X-Originating-IP: [89.138.86.114]
-In-Reply-To: <20120112171847.GN4118@suse.de>
-References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
-	<1326276668-19932-3-git-send-email-mgorman@suse.de>
-	<1326381492.2442.188.camel@twins>
-	<20120112153712.GL4118@suse.de>
-	<1326383551.2442.203.camel@twins>
-	<20120112171847.GN4118@suse.de>
-Date: Thu, 12 Jan 2012 21:14:41 +0200
-Message-ID: <CAOtvUMdOwyzcPx3rHgQq1CVVfNG7w51RPmHw+_jG7HVtX+n2ig@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
- IPI from page allocator context
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Miklos Szeredi <mszeredi@novell.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
-        Gong Chen <gong.chen@intel.com>
+In-Reply-To: <CAJOA=zPUA56R=vt9MKyhgdyLU96aD_TweZ6BnJy2w3mCVC4Dzg@mail.gmail.com>
+References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
+ <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
+ <20120110213338.GD3226@page> <CACxGe6vqb8AZcZb5WMvfmLsUZH7=SEtBrJCSfsFmDYpKX42MzA@mail.gmail.com>
+ <20120112100702.GM3226@page> <CAJOA=zPUA56R=vt9MKyhgdyLU96aD_TweZ6BnJy2w3mCVC4Dzg@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 12 Jan 2012 12:16:22 -0700
+X-Google-Sender-Auth: 5iebl2MdFB3JdHPGwAVNvAlCPsc
+Message-ID: <CACxGe6u6ujS2TVXBmmTFdvn3e+rpnroXoswRtsw89+Mk9HGHwg@mail.gmail.com>
+Subject: Re: [RFC v2 4/9] of: add clock providers
+To: "Turquette, Mike" <mturquette@ti.com>
+Cc: Jamie Iles <jamie@jamieiles.com>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 7:18 PM, Mel Gorman <mgorman@suse.de> wrote:
-> On Thu, Jan 12, 2012 at 04:52:31PM +0100, Peter Zijlstra wrote:
->> On Thu, 2012-01-12 at 15:37 +0000, Mel Gorman wrote:
->> > On Thu, Jan 12, 2012 at 04:18:12PM +0100, Peter Zijlstra wrote:
->> > > On Wed, 2012-01-11 at 10:11 +0000, Mel Gorman wrote:
->> > > > At least one bug report has
->> > > > been seen on ppc64 against a 3.0 era kernel that looked like a bug
->> > > > receiving interrupts on a CPU being offlined.
->> > >
->> > > Got details on that Mel? The preempt_disable() in on_each_cpu() should
->> > > serialize against the stop_machine() crap in unplug.
->> >
->> > I might have added 2 and 2 together and got 5.
->> >
->> > The stack trace clearly was while sending IPIs in on_each_cpu() and
->> > always when under memory pressure and stuck in direct reclaim. This was
->> > on !PREEMPT kernels where preempt_disable() is a no-op. That is why I
->> > thought get_online_cpu() would be necessary.
+On Thu, Jan 12, 2012 at 11:44 AM, Turquette, Mike <mturquette@ti.com> wrote:
+> On Thu, Jan 12, 2012 at 2:07 AM, Jamie Iles <jamie@jamieiles.com> wrote:
+>> On Wed, Jan 11, 2012 at 09:46:58PM -0700, Grant Likely wrote:
+>>> On Tue, Jan 10, 2012 at 2:33 PM, Jamie Iles <jamie@jamieiles.com> wrote:
+>>> > On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
+>>> > I'm about to start trying to get this and Mike's common struct clk
+>>> > patches working on picoxcell, and the one thing I'm not understanding at
+>>> > the moment is how to handle the tree itself.  Currently I was planning
+>>> > on iterating over all clocks and finding a named input clock "ref" or
+>>> > "input" perhaps.  This would be fine for picoxcell, but I guess more
+>>> > complicated chips may need something else.
+>>>
+>>> It might be useful to have something like of_irq_init() for setting up
+>>> initial clocks, but the solution feels inelegant to me.  I suspect
+>>> that there will be end up being intertwined init order dependencies
+>>> between clocks and irqs and other early setup stuff that could be
+>>> handled better.  Again, I need to think about this some more.  There
+>>> might need to be something like an of_early_probe() call that accepts
+>>> a match table of compatible values and setup functions with some logic
+>>> or data to resolve dependencies.  The trick will be to not end up with
+>>> something complex.  I'll need to think about this more...
 >>
->> For non-preempt the required scheduling of stop_machine() will have to
->> wait even longer. Still there might be something funny, some of the
->> hotplug notifiers are ran before the stop_machine thing does its thing
->> so there might be some fun interaction.
+>> Yes, probably not an easy problem to solve, especially for the platforms
+>> where the parent can change at runtime.
+>>
+>> I wonder if an of_clk_init() could take a platform callback, so that
+>> of_clk_init() goes of and creates a struct clk for each clk in the DT,
+>> then for each registered clock calls a platform specific callback which
+>> returns the parent (if any).  It feels like a fairly platform specific
+>> problem to me.
 >
-> Ok, how about this as a replacement patch?
+> Based on Thomas' feedback I'm removing the requirement for clocks to
+> be registered in-order with clk_init().  Any clock that cannot resolve
+> it's parent within clk_init() (via the .get_parent callback, or
+> otherwise having .parent statically initialized) will be put into an
+> orphaned clocks list, which will be walked every time a new clock is
+> registered.  Hurray for n^2 solutions.
 >
-> ---8<---
-> From: Mel Gorman <mgorman@suse.de>
-> Subject: [PATCH] mm: page allocator: Do not drain per-cpu lists via IPI from page allocator context
->
-> While running a CPU hotplug stress test under memory pressure, it
-> was observed that the machine would halt with no messages logged
-> to console. This is difficult to trigger and required a machine
-> with 8 cores and plenty of memory. In at least one case on ppc64,
-> the warning in include/linux/cpumask.h:107 triggered implying that
-> IPIs are being sent to offline CPUs in some cases.
->
-> A suspicious part of the problem is that the page allocator is sending
-> IPIs using on_each_cpu() without calling get_online_cpus() to prevent
-> changes to the online cpumask. It is depending on preemption being
-> disabled to protect it which is a no-op on !PREEMPT kernels. This means
-> that a thread can be reading the mask in smp_call_function_many() when
-> an attempt is made to take a CPU offline. The expectation is that this
-> is not a problem as the stop_machine() used during CPU hotplug should
-> be able to prevent any problems as the reader of the online mask will
-> prevent stop_machine making forward progress but it's unhelpful.
->
-> On the other side, the mask can also be read while the CPU is being
-> brought online. In this case it is the responsibility of the
-> architecture that the CPU is able to receive and handle interrupts
-> before being marked active but that does not mean they always get it
-> right.
->
-> Sending excessive IPIs from the page allocator is a bad idea. In low
-> memory situations, a large number of processes can drain the per-cpu
-> lists at the same time, in quick succession and on many CPUs which is
-> pointless. In light of this and the unspecific CPU hotplug concerns,
-> this patch removes the call drain_all_pages() after failing direct
-> reclaim. To avoid impacting high-order allocation success rates,
-> it still drains the local per-cpu lists for high-order allocations
-> that failed.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/page_alloc.c |   10 ++++++----
->  1 files changed, 6 insertions(+), 4 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 2b8ba3a..63ea182 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1982,11 +1982,13 @@ retry:
->                                        migratetype);
->
->        /*
-> -        * If an allocation failed after direct reclaim, it could be because
-> -        * pages are pinned on the per-cpu lists. Drain them and try again
-> +        * If a high-order allocation failed after direct reclaim, there is a
-> +        * possibility that it is because the necessary buddies have been
-> +        * freed to the per-cpu list. Drain the local list and try again.
->         */
-> -       if (!page && !drained) {
-> -               drain_all_pages();
-> +       if (!page && order && !drained) {
-> +               drain_pages(get_cpu());
-> +               put_cpu();
->                drained = true;
->                goto retry;
->        }
+> Does the above help with the of_clk_init problems?
 
+It does.
 
+> One final data point: I certainly plan on allowing for statically
+> allocated clocks to live alongside DT clocks.  In fact the clock trees
+> on OMAP are so large that there is some discussion about having some
+> of the clocks statically allocated and some in DT, but I don't know
+> what that split looks like right now.  I don't enjoy the idea of
+> packing 200+ of any entity into a .dts blob.
 
-I like the patch, think it is better then current code and want it to go in.
-
-I also think there is still some problems with IPIs somewhere that
-cause some corruption when a lot of IPIs are sent and that
- the patch simply lowered the very big number of IPIs that are sent
-via the direct reclaim code path so the problem
-is hidden, not solved by this patch.
-
-I've seen something related when trying to test the IPI reduction
-patches. Interesting enough it was not related to CPU hotplug at all -
-When a lot of IPIs are being sent, I sometime got an assert from low
-level platform code that I'm trying to send IPIs with an empty mask
-although the mask was NOT empty. I didn't manage to debug it then but
-I did manage to recreate it quite easily.
-
-I will see if I can recreate it with recent master and report.
-
--- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+I'm okay with that.
