@@ -1,203 +1,724 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab2ALUfb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:35:31 -0500
-Received: from rs130.luxsci.com ([72.32.115.17]:55211 "EHLO rs130.luxsci.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755126Ab2ALUf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:35:28 -0500
-X-Greylist: delayed 336 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jan 2012 15:35:28 EST
-Message-ID: <4F0F42AA.2030408@firmworks.com>
-Date: Thu, 12 Jan 2012 10:29:30 -1000
-From: Mitch Bradley <wmb@firmworks.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Michael Bohan <mbohan@codeaurora.org>
-CC: devicetree-discuss@lists.ozlabs.org, linux-arm-msm@vger.kernel.org,
-        David Brown <davidb@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Representing SPMI bus in Device Tree
-References: <4EE2A6F8.3010604@codeaurora.org>
-In-Reply-To: <4EE2A6F8.3010604@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Lux-Comment: Message q0CKTS8i021343 sent by user #11875
+	id S1755464Ab2ALUf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:35:58 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54244
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755412Ab2ALUfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:35:24 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 08/15] Staging: hv: storvsc: Get rid of the on_io_completion in hv_storvsc_request
+Date: Thu, 12 Jan 2012 12:38:01 -0800
+Message-Id: <1326400688-13544-8-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1326400688-13544-1-git-send-email-kys@microsoft.com>
+References: <1326400637-13494-1-git-send-email-kys@microsoft.com>
+ <1326400688-13544-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the delay in responding; I just received the message today...
+Get rid of the on_io_completion field  in struct hv_storvsc_request. As part of this
+relocate the bounce buffer handling code (to avoid having forward declarations).
 
-On 12/9/2011 2:25 PM, Michael Bohan wrote:
-> Hi,
-> 
-> I am designing a bus driver for the System Power Management Interface, 
-> which is also known as SPMI. Information about the bus can be found 
-> through this website:
-> 
-> http://www.mipi.org/specifications/system-power-management-interface
-> 
-> In short, to make a transaction, you need two things: a 4 bit slave ID 
-> and a 16 bit address offset.
-> 
-> One difference in our model is a requirement to instantiate multiple 
-> devices on the same slave ID. That is to say, our 16 bit address space 
-> is segmented. For this reason, I was thinking it would be nice to have 
-> an optional second level in the tree under the bus driver. The first 
-> level specifies the slave ID, and the optional second is reserved for 
-> specifying any number of address ranges for carving out chunks in the 
-> 16-bit address space.
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/staging/hv/storvsc_drv.c |  630 +++++++++++++++++++-------------------
+ 1 files changed, 313 insertions(+), 317 deletions(-)
 
-If both the slave ID and the offset are necessary for selecting a device, that perfectly fits the normal device tree model for 2 address cells.  Here is your example using 2 address cells (I changed the addresses and sizes to something more plausible - having an address range starting at 0xcafe of size 0x4000 seemed unlikely) :
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 204b3ca..7c9fa19 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -276,7 +276,6 @@ struct hv_storvsc_request {
+ 
+ 	unsigned char *sense_buffer;
+ 	void *context;
+-	void (*on_io_completion)(struct hv_storvsc_request *request);
+ 	struct hv_multipage_buffer data_buffer;
+ 
+ 	struct vstor_packet vstor_packet;
+@@ -436,6 +435,227 @@ get_in_err:
+ 
+ }
+ 
++static void destroy_bounce_buffer(struct scatterlist *sgl,
++				  unsigned int sg_count)
++{
++	int i;
++	struct page *page_buf;
++
++	for (i = 0; i < sg_count; i++) {
++		page_buf = sg_page((&sgl[i]));
++		if (page_buf != NULL)
++			__free_page(page_buf);
++	}
++
++	kfree(sgl);
++}
++
++static int do_bounce_buffer(struct scatterlist *sgl, unsigned int sg_count)
++{
++	int i;
++
++	/* No need to check */
++	if (sg_count < 2)
++		return -1;
++
++	/* We have at least 2 sg entries */
++	for (i = 0; i < sg_count; i++) {
++		if (i == 0) {
++			/* make sure 1st one does not have hole */
++			if (sgl[i].offset + sgl[i].length != PAGE_SIZE)
++				return i;
++		} else if (i == sg_count - 1) {
++			/* make sure last one does not have hole */
++			if (sgl[i].offset != 0)
++				return i;
++		} else {
++			/* make sure no hole in the middle */
++			if (sgl[i].length != PAGE_SIZE || sgl[i].offset != 0)
++				return i;
++		}
++	}
++	return -1;
++}
++
++static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
++						unsigned int sg_count,
++						unsigned int len,
++						int write)
++{
++	int i;
++	int num_pages;
++	struct scatterlist *bounce_sgl;
++	struct page *page_buf;
++	unsigned int buf_len = ((write == WRITE_TYPE) ? 0 : PAGE_SIZE);
++
++	num_pages = ALIGN(len, PAGE_SIZE) >> PAGE_SHIFT;
++
++	bounce_sgl = kcalloc(num_pages, sizeof(struct scatterlist), GFP_ATOMIC);
++	if (!bounce_sgl)
++		return NULL;
++
++	for (i = 0; i < num_pages; i++) {
++		page_buf = alloc_page(GFP_ATOMIC);
++		if (!page_buf)
++			goto cleanup;
++		sg_set_page(&bounce_sgl[i], page_buf, buf_len, 0);
++	}
++
++	return bounce_sgl;
++
++cleanup:
++	destroy_bounce_buffer(bounce_sgl, num_pages);
++	return NULL;
++}
++
++/* Assume the original sgl has enough room */
++static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
++					    struct scatterlist *bounce_sgl,
++					    unsigned int orig_sgl_count,
++					    unsigned int bounce_sgl_count)
++{
++	int i;
++	int j = 0;
++	unsigned long src, dest;
++	unsigned int srclen, destlen, copylen;
++	unsigned int total_copied = 0;
++	unsigned long bounce_addr = 0;
++	unsigned long dest_addr = 0;
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	for (i = 0; i < orig_sgl_count; i++) {
++		dest_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
++					KM_IRQ0) + orig_sgl[i].offset;
++		dest = dest_addr;
++		destlen = orig_sgl[i].length;
++
++		if (bounce_addr == 0)
++			bounce_addr =
++			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
++							KM_IRQ0);
++
++		while (destlen) {
++			src = bounce_addr + bounce_sgl[j].offset;
++			srclen = bounce_sgl[j].length - bounce_sgl[j].offset;
++
++			copylen = min(srclen, destlen);
++			memcpy((void *)dest, (void *)src, copylen);
++
++			total_copied += copylen;
++			bounce_sgl[j].offset += copylen;
++			destlen -= copylen;
++			dest += copylen;
++
++			if (bounce_sgl[j].offset == bounce_sgl[j].length) {
++				/* full */
++				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
++				j++;
++
++				/*
++				 * It is possible that the number of elements
++				 * in the bounce buffer may not be equal to
++				 * the number of elements in the original
++				 * scatter list. Handle this correctly.
++				 */
++
++				if (j == bounce_sgl_count) {
++					/*
++					 * We are done; cleanup and return.
++					 */
++					kunmap_atomic((void *)(dest_addr -
++							orig_sgl[i].offset),
++							KM_IRQ0);
++					local_irq_restore(flags);
++					return total_copied;
++				}
++
++				/* if we need to use another bounce buffer */
++				if (destlen || i != orig_sgl_count - 1)
++					bounce_addr =
++					(unsigned long)kmap_atomic(
++					sg_page((&bounce_sgl[j])), KM_IRQ0);
++			} else if (destlen == 0 && i == orig_sgl_count - 1) {
++				/* unmap the last bounce that is < PAGE_SIZE */
++				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
++			}
++		}
++
++		kunmap_atomic((void *)(dest_addr - orig_sgl[i].offset),
++			      KM_IRQ0);
++	}
++
++	local_irq_restore(flags);
++
++	return total_copied;
++}
++
++/* Assume the bounce_sgl has enough room ie using the create_bounce_buffer() */
++static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
++					  struct scatterlist *bounce_sgl,
++					  unsigned int orig_sgl_count)
++{
++	int i;
++	int j = 0;
++	unsigned long src, dest;
++	unsigned int srclen, destlen, copylen;
++	unsigned int total_copied = 0;
++	unsigned long bounce_addr = 0;
++	unsigned long src_addr = 0;
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	for (i = 0; i < orig_sgl_count; i++) {
++		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
++				KM_IRQ0) + orig_sgl[i].offset;
++		src = src_addr;
++		srclen = orig_sgl[i].length;
++
++		if (bounce_addr == 0)
++			bounce_addr =
++			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
++						KM_IRQ0);
++
++		while (srclen) {
++			/* assume bounce offset always == 0 */
++			dest = bounce_addr + bounce_sgl[j].length;
++			destlen = PAGE_SIZE - bounce_sgl[j].length;
++
++			copylen = min(srclen, destlen);
++			memcpy((void *)dest, (void *)src, copylen);
++
++			total_copied += copylen;
++			bounce_sgl[j].length += copylen;
++			srclen -= copylen;
++			src += copylen;
++
++			if (bounce_sgl[j].length == PAGE_SIZE) {
++				/* full..move to next entry */
++				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
++				j++;
++
++				/* if we need to use another bounce buffer */
++				if (srclen || i != orig_sgl_count - 1)
++					bounce_addr =
++					(unsigned long)kmap_atomic(
++					sg_page((&bounce_sgl[j])), KM_IRQ0);
++
++			} else if (srclen == 0 && i == orig_sgl_count - 1) {
++				/* unmap the last bounce that is < PAGE_SIZE */
++				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
++			}
++		}
++
++		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset), KM_IRQ0);
++	}
++
++	local_irq_restore(flags);
++
++	return total_copied;
++}
++
+ static int storvsc_channel_init(struct hv_device *device)
+ {
+ 	struct storvsc_device *stor_device;
+@@ -562,24 +782,101 @@ cleanup:
+ 	return ret;
+ }
+ 
+-static void storvsc_on_io_completion(struct hv_device *device,
+-				  struct vstor_packet *vstor_packet,
+-				  struct hv_storvsc_request *request)
++
++static void storvsc_command_completion(struct hv_storvsc_request *request)
+ {
+-	struct storvsc_device *stor_device;
+-	struct vstor_packet *stor_pkt;
++	struct storvsc_cmd_request *cmd_request =
++		(struct storvsc_cmd_request *)request->context;
++	struct scsi_cmnd *scmnd = cmd_request->cmd;
++	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
++	void (*scsi_done_fn)(struct scsi_cmnd *);
++	struct scsi_sense_hdr sense_hdr;
++	struct vmscsi_request *vm_srb;
++	struct storvsc_scan_work *wrk;
++	struct stor_mem_pools *memp = scmnd->device->hostdata;
+ 
+-	stor_device = hv_get_drvdata(device);
+-	stor_pkt = &request->vstor_packet;
++	vm_srb = &request->vstor_packet.vm_srb;
++	if (cmd_request->bounce_sgl_count) {
++		if (vm_srb->data_in == READ_TYPE)
++			copy_from_bounce_buffer(scsi_sglist(scmnd),
++					cmd_request->bounce_sgl,
++					scsi_sg_count(scmnd),
++					cmd_request->bounce_sgl_count);
++		destroy_bounce_buffer(cmd_request->bounce_sgl,
++					cmd_request->bounce_sgl_count);
++	}
+ 
+ 	/*
+-	 * The current SCSI handling on the host side does
+-	 * not correctly handle:
+-	 * INQUIRY command with page code parameter set to 0x80
+-	 * MODE_SENSE command with cmd[2] == 0x1c
+-	 *
+-	 * Setup srb and scsi status so this won't be fatal.
+-	 * We do this so we can distinguish truly fatal failues
++	 * If there is an error; offline the device since all
++	 * error recovery strategies would have already been
++	 * deployed on the host side.
++	 */
++	if (vm_srb->srb_status == SRB_STATUS_ERROR)
++		scmnd->result = DID_TARGET_FAILURE << 16;
++	else
++		scmnd->result = vm_srb->scsi_status;
++
++	/*
++	 * If the LUN is invalid; remove the device.
++	 */
++	if (vm_srb->srb_status == SRB_STATUS_INVALID_LUN) {
++		struct storvsc_device *stor_dev;
++		struct hv_device *dev = host_dev->dev;
++		struct Scsi_Host *host;
++
++		stor_dev = get_in_stor_device(dev);
++		host = stor_dev->host;
++
++		wrk = kmalloc(sizeof(struct storvsc_scan_work),
++				GFP_ATOMIC);
++		if (!wrk) {
++			scmnd->result = DID_TARGET_FAILURE << 16;
++		} else {
++			wrk->host = host;
++			wrk->lun = vm_srb->lun;
++			INIT_WORK(&wrk->work, storvsc_remove_lun);
++			schedule_work(&wrk->work);
++		}
++	}
++
++	if (scmnd->result) {
++		if (scsi_normalize_sense(scmnd->sense_buffer,
++				SCSI_SENSE_BUFFERSIZE, &sense_hdr))
++			scsi_print_sense_hdr("storvsc", &sense_hdr);
++	}
++
++	scsi_set_resid(scmnd,
++		request->data_buffer.len -
++		vm_srb->data_transfer_length);
++
++	scsi_done_fn = scmnd->scsi_done;
++
++	scmnd->host_scribble = NULL;
++	scmnd->scsi_done = NULL;
++
++	scsi_done_fn(scmnd);
++
++	mempool_free(cmd_request, memp->request_mempool);
++}
++
++static void storvsc_on_io_completion(struct hv_device *device,
++				  struct vstor_packet *vstor_packet,
++				  struct hv_storvsc_request *request)
++{
++	struct storvsc_device *stor_device;
++	struct vstor_packet *stor_pkt;
++
++	stor_device = hv_get_drvdata(device);
++	stor_pkt = &request->vstor_packet;
++
++	/*
++	 * The current SCSI handling on the host side does
++	 * not correctly handle:
++	 * INQUIRY command with page code parameter set to 0x80
++	 * MODE_SENSE command with cmd[2] == 0x1c
++	 *
++	 * Setup srb and scsi status so this won't be fatal.
++	 * We do this so we can distinguish truly fatal failues
+ 	 * (srb status == 0x4) and off-line the device in that case.
+ 	 */
+ 
+@@ -625,7 +922,7 @@ static void storvsc_on_io_completion(struct hv_device *device,
+ 	stor_pkt->vm_srb.data_transfer_length =
+ 	vstor_packet->vm_srb.data_transfer_length;
+ 
+-	request->on_io_completion(request);
++	storvsc_command_completion(request);
+ 
+ 	if (atomic_dec_and_test(&stor_device->num_outstanding_req) &&
+ 		stor_device->drain_notify)
+@@ -875,229 +1172,6 @@ static int storvsc_device_configure(struct scsi_device *sdevice)
+ 	return 0;
+ }
+ 
+-static void destroy_bounce_buffer(struct scatterlist *sgl,
+-				  unsigned int sg_count)
+-{
+-	int i;
+-	struct page *page_buf;
+-
+-	for (i = 0; i < sg_count; i++) {
+-		page_buf = sg_page((&sgl[i]));
+-		if (page_buf != NULL)
+-			__free_page(page_buf);
+-	}
+-
+-	kfree(sgl);
+-}
+-
+-static int do_bounce_buffer(struct scatterlist *sgl, unsigned int sg_count)
+-{
+-	int i;
+-
+-	/* No need to check */
+-	if (sg_count < 2)
+-		return -1;
+-
+-	/* We have at least 2 sg entries */
+-	for (i = 0; i < sg_count; i++) {
+-		if (i == 0) {
+-			/* make sure 1st one does not have hole */
+-			if (sgl[i].offset + sgl[i].length != PAGE_SIZE)
+-				return i;
+-		} else if (i == sg_count - 1) {
+-			/* make sure last one does not have hole */
+-			if (sgl[i].offset != 0)
+-				return i;
+-		} else {
+-			/* make sure no hole in the middle */
+-			if (sgl[i].length != PAGE_SIZE || sgl[i].offset != 0)
+-				return i;
+-		}
+-	}
+-	return -1;
+-}
+-
+-static struct scatterlist *create_bounce_buffer(struct scatterlist *sgl,
+-						unsigned int sg_count,
+-						unsigned int len,
+-						int write)
+-{
+-	int i;
+-	int num_pages;
+-	struct scatterlist *bounce_sgl;
+-	struct page *page_buf;
+-	unsigned int buf_len = ((write == WRITE_TYPE) ? 0 : PAGE_SIZE);
+-
+-	num_pages = ALIGN(len, PAGE_SIZE) >> PAGE_SHIFT;
+-
+-	bounce_sgl = kcalloc(num_pages, sizeof(struct scatterlist), GFP_ATOMIC);
+-	if (!bounce_sgl)
+-		return NULL;
+-
+-	for (i = 0; i < num_pages; i++) {
+-		page_buf = alloc_page(GFP_ATOMIC);
+-		if (!page_buf)
+-			goto cleanup;
+-		sg_set_page(&bounce_sgl[i], page_buf, buf_len, 0);
+-	}
+-
+-	return bounce_sgl;
+-
+-cleanup:
+-	destroy_bounce_buffer(bounce_sgl, num_pages);
+-	return NULL;
+-}
+-
+-
+-/* Assume the original sgl has enough room */
+-static unsigned int copy_from_bounce_buffer(struct scatterlist *orig_sgl,
+-					    struct scatterlist *bounce_sgl,
+-					    unsigned int orig_sgl_count,
+-					    unsigned int bounce_sgl_count)
+-{
+-	int i;
+-	int j = 0;
+-	unsigned long src, dest;
+-	unsigned int srclen, destlen, copylen;
+-	unsigned int total_copied = 0;
+-	unsigned long bounce_addr = 0;
+-	unsigned long dest_addr = 0;
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	for (i = 0; i < orig_sgl_count; i++) {
+-		dest_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
+-					KM_IRQ0) + orig_sgl[i].offset;
+-		dest = dest_addr;
+-		destlen = orig_sgl[i].length;
+-
+-		if (bounce_addr == 0)
+-			bounce_addr =
+-			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
+-							KM_IRQ0);
+-
+-		while (destlen) {
+-			src = bounce_addr + bounce_sgl[j].offset;
+-			srclen = bounce_sgl[j].length - bounce_sgl[j].offset;
+-
+-			copylen = min(srclen, destlen);
+-			memcpy((void *)dest, (void *)src, copylen);
+-
+-			total_copied += copylen;
+-			bounce_sgl[j].offset += copylen;
+-			destlen -= copylen;
+-			dest += copylen;
+-
+-			if (bounce_sgl[j].offset == bounce_sgl[j].length) {
+-				/* full */
+-				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
+-				j++;
+-
+-				/*
+-				 * It is possible that the number of elements
+-				 * in the bounce buffer may not be equal to
+-				 * the number of elements in the original
+-				 * scatter list. Handle this correctly.
+-				 */
+-
+-				if (j == bounce_sgl_count) {
+-					/*
+-					 * We are done; cleanup and return.
+-					 */
+-					kunmap_atomic((void *)(dest_addr -
+-							orig_sgl[i].offset),
+-							KM_IRQ0);
+-					local_irq_restore(flags);
+-					return total_copied;
+-				}
+-
+-				/* if we need to use another bounce buffer */
+-				if (destlen || i != orig_sgl_count - 1)
+-					bounce_addr =
+-					(unsigned long)kmap_atomic(
+-					sg_page((&bounce_sgl[j])), KM_IRQ0);
+-			} else if (destlen == 0 && i == orig_sgl_count - 1) {
+-				/* unmap the last bounce that is < PAGE_SIZE */
+-				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
+-			}
+-		}
+-
+-		kunmap_atomic((void *)(dest_addr - orig_sgl[i].offset),
+-			      KM_IRQ0);
+-	}
+-
+-	local_irq_restore(flags);
+-
+-	return total_copied;
+-}
+-
+-
+-/* Assume the bounce_sgl has enough room ie using the create_bounce_buffer() */
+-static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
+-					  struct scatterlist *bounce_sgl,
+-					  unsigned int orig_sgl_count)
+-{
+-	int i;
+-	int j = 0;
+-	unsigned long src, dest;
+-	unsigned int srclen, destlen, copylen;
+-	unsigned int total_copied = 0;
+-	unsigned long bounce_addr = 0;
+-	unsigned long src_addr = 0;
+-	unsigned long flags;
+-
+-	local_irq_save(flags);
+-
+-	for (i = 0; i < orig_sgl_count; i++) {
+-		src_addr = (unsigned long)kmap_atomic(sg_page((&orig_sgl[i])),
+-				KM_IRQ0) + orig_sgl[i].offset;
+-		src = src_addr;
+-		srclen = orig_sgl[i].length;
+-
+-		if (bounce_addr == 0)
+-			bounce_addr =
+-			(unsigned long)kmap_atomic(sg_page((&bounce_sgl[j])),
+-						KM_IRQ0);
+-
+-		while (srclen) {
+-			/* assume bounce offset always == 0 */
+-			dest = bounce_addr + bounce_sgl[j].length;
+-			destlen = PAGE_SIZE - bounce_sgl[j].length;
+-
+-			copylen = min(srclen, destlen);
+-			memcpy((void *)dest, (void *)src, copylen);
+-
+-			total_copied += copylen;
+-			bounce_sgl[j].length += copylen;
+-			srclen -= copylen;
+-			src += copylen;
+-
+-			if (bounce_sgl[j].length == PAGE_SIZE) {
+-				/* full..move to next entry */
+-				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
+-				j++;
+-
+-				/* if we need to use another bounce buffer */
+-				if (srclen || i != orig_sgl_count - 1)
+-					bounce_addr =
+-					(unsigned long)kmap_atomic(
+-					sg_page((&bounce_sgl[j])), KM_IRQ0);
+-
+-			} else if (srclen == 0 && i == orig_sgl_count - 1) {
+-				/* unmap the last bounce that is < PAGE_SIZE */
+-				kunmap_atomic((void *)bounce_addr, KM_IRQ0);
+-			}
+-		}
+-
+-		kunmap_atomic((void *)(src_addr - orig_sgl[i].offset), KM_IRQ0);
+-	}
+-
+-	local_irq_restore(flags);
+-
+-	return total_copied;
+-}
+-
+ static int storvsc_get_chs(struct scsi_device *sdev, struct block_device * bdev,
+ 			   sector_t capacity, int *info)
+ {
+@@ -1166,83 +1240,6 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
+ 	return SUCCESS;
+ }
+ 
+-
+-static void storvsc_command_completion(struct hv_storvsc_request *request)
+-{
+-	struct storvsc_cmd_request *cmd_request =
+-		(struct storvsc_cmd_request *)request->context;
+-	struct scsi_cmnd *scmnd = cmd_request->cmd;
+-	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
+-	void (*scsi_done_fn)(struct scsi_cmnd *);
+-	struct scsi_sense_hdr sense_hdr;
+-	struct vmscsi_request *vm_srb;
+-	struct storvsc_scan_work *wrk;
+-	struct stor_mem_pools *memp = scmnd->device->hostdata;
+-
+-	vm_srb = &request->vstor_packet.vm_srb;
+-	if (cmd_request->bounce_sgl_count) {
+-		if (vm_srb->data_in == READ_TYPE)
+-			copy_from_bounce_buffer(scsi_sglist(scmnd),
+-					cmd_request->bounce_sgl,
+-					scsi_sg_count(scmnd),
+-					cmd_request->bounce_sgl_count);
+-		destroy_bounce_buffer(cmd_request->bounce_sgl,
+-					cmd_request->bounce_sgl_count);
+-	}
+-
+-	/*
+-	 * If there is an error; offline the device since all
+-	 * error recovery strategies would have already been
+-	 * deployed on the host side.
+-	 */
+-	if (vm_srb->srb_status == SRB_STATUS_ERROR)
+-		scmnd->result = DID_TARGET_FAILURE << 16;
+-	else
+-		scmnd->result = vm_srb->scsi_status;
+-
+-	/*
+-	 * If the LUN is invalid; remove the device.
+-	 */
+-	if (vm_srb->srb_status == SRB_STATUS_INVALID_LUN) {
+-		struct storvsc_device *stor_dev;
+-		struct hv_device *dev = host_dev->dev;
+-		struct Scsi_Host *host;
+-
+-		stor_dev = get_in_stor_device(dev);
+-		host = stor_dev->host;
+-
+-		wrk = kmalloc(sizeof(struct storvsc_scan_work),
+-				GFP_ATOMIC);
+-		if (!wrk) {
+-			scmnd->result = DID_TARGET_FAILURE << 16;
+-		} else {
+-			wrk->host = host;
+-			wrk->lun = vm_srb->lun;
+-			INIT_WORK(&wrk->work, storvsc_remove_lun);
+-			schedule_work(&wrk->work);
+-		}
+-	}
+-
+-	if (scmnd->result) {
+-		if (scsi_normalize_sense(scmnd->sense_buffer,
+-				SCSI_SENSE_BUFFERSIZE, &sense_hdr))
+-			scsi_print_sense_hdr("storvsc", &sense_hdr);
+-	}
+-
+-	scsi_set_resid(scmnd,
+-		request->data_buffer.len -
+-		vm_srb->data_transfer_length);
+-
+-	scsi_done_fn = scmnd->scsi_done;
+-
+-	scmnd->host_scribble = NULL;
+-	scmnd->scsi_done = NULL;
+-
+-	scsi_done_fn(scmnd);
+-
+-	mempool_free(cmd_request, memp->request_mempool);
+-}
+-
+ static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
+ {
+ 	bool allowed = true;
+@@ -1318,7 +1315,6 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 		break;
+ 	}
+ 
+-	request->on_io_completion = storvsc_command_completion;
+ 	request->context = cmd_request;/* scmnd; */
+ 
+ 	vm_srb->port_number = host_dev->port;
+-- 
+1.7.4.1
 
-/ {
-	spmi@abc123 {
-		#address-cells = <2>;
-		#size-cells = <1>;
-		compatible = "qcom,spmi-platform";
-		coincell@1,1000 {
-			compatible = "qcom,coincell";
-			/* Two response ranges: slave 1 offset 1000 size 100, slave 1 offset 2000 size 100 */
-			reg = <0x1 0x1000 0x100 0x01 0x2000 0x100>;
-			interrupts = <100>;
-		};
-		pon@1,4000 {
-			compatible = "qcom,pon";
-			/* One response range: slave 1 offset 4000 size 800 */
-			reg = <0x1 0x4000 0x800>;
-		};
-		pon@2,0 {
-			compatible = "qcom,pon";
-			/* One response range: slave 2 offset 0 size 10000 (the full range of offsets) */
-			reg = <0x2 0x0 0x10000>;
-			interrupts = <51>;
-		};
-	};
-}
-
-I guess that your idea was to preserve the "usual" SPMI semantics of slave-id == device, but the fact that some hardware breaks that model means that it isn't really the correct model in practice.
-
-The 2-address-cell model shown above is fully consistent with device tree theory and practice.  In fact, it's almost identical to SBus addressing - SBus was the first bus ever to be described with the device tree.
-
-> 
-> Here is a graphical representation on this model:
-> 
-> / {
-> spmi@abc123 {
-> #address-cells = <1>;
-> #size-cells = <0>;
-> compatible = "qcom,spmi-platform";
-> pmic@1 {
-> #address-cells = <1>;
-> #size-cells = <1>;
-> reg = <0x1>;
-> spmi-dev-container;
-> 
-> coincell@beef {
-> compatible = "qcom,coincell";
-> reg = <0xbeef 0x4000>;
-> interrupts = <100>;
-> };
-> pon@cafe {
-> compatible = "qcom,pon";
-> reg = <0xcafe 0x4000 0xf00 0x1000>;
-> };
-> };
-> simple_dev@2 {
-> compatible = "qcom,pon";
-> reg = <0x2>;
-> interrupts = <51>;
-> };
-> };
-> };
-> 
-> For each node entry, the of layer checks for the spmi-dev-container flag 
-> that instructs whether this node 'contains' another level of devices, of 
-> which include and numbe1r of bus address ranges. I think this approach 
-> does a good job of describing the hardware and respecting the Device 
-> Tree conventions.
-> 
-> I can think of a couple other ways to portray this same information, but 
-> each have what I consider huge problems. For example, we could treat the 
-> first 'reg' tuple to mean slave ID, and any subsequent ones to be bus 
-> addresses:
-> 
-> 
-> spmi@abc123 {
-> #address-cells = <1>;
-> #size-cells = <1>;
-> compatible = "qcom,spmi-platform";
-> coincell@1 {
-> compatible = "qcom,coincell";
-> reg = <0x1 0x0 0xbeef1 0x4000>;
-> interrupts = <100>;
-> };
-> pon@1 {
-> compatible = "qcom,pon";
-> reg = <0x1 0x0 0xcafe1 0x4000 0xf001 0x1000>;
-> };
-> simple_dev@2 {
-> compatible = "qcom,pon";
-> reg = <0x2>;
-> interrupts = <51>;
-> };
-> };
-> 
-> But then we end up with duplicate devices on the same node address for 
-> the same bus level, which I understand is not allowed in Device Tree. 
-> Also, I don't like the notion that the address meaning is overloaded 
-> here. We could establish a new binding to represent bus addresses (eg. 
-> spmi-bus-addr = <0xcafe 0x4000>, but my understanding is there should be 
-> only one address specifier per node level.
-> 
-> Another possibility is to have a single level that encapsulates both a 
-> slave id and bus address within one address. For ex. the upper bits 
-> represent the bus address and the least significant nibble is the slave 
-> id. This seems somewhat convoluted, though. Since we require support for 
-> multiple bus address ranges, then we have redundancy in the sense that 
-> each address includes a separate declaration of the slave ID. Plus, we 
-> have the same issue of an arbitrary structure imposed on an address.
-> 
-> I probably dislike this one the most.
-> 
-> Ex.
-> 
-> spmi@abc123 {
-> #address-cells = <1>;
-> #size-cells = <1>;
-> compatible = "qcom,spmi-platform";
-> coincell@beef1 {
-> compatible = "qcom,coincell";
-> reg = <0xbeef1 0x4000>;
-> interrupts = <100>;
-> };
-> pon@cafe1 {
-> compatible = "qcom,pon";
-> reg = <0xcafe1 0x4000 0xf001 0x1000>;
-> };
-> simple_dev@2 {
-> compatible = "qcom,pon";
-> reg = <0x2>;
-> interrupts = <51>;
-> };
-> };
-> 
-> To me the first example is the most consistent with what Device Tree 
-> expects, but I certainly welcome any feedback or additional ideas.
-> 
-> A separate but related problem is how to convey these bus addresses and 
-> interrupt values in a data structure. The of_platform code puts these in 
-> a 'struct resource', which is almost exactly what we want here. But the 
-> problem is that the semantics of a resource include addresses that are 
-> translatable to cpu addresses, and SPMI addresses are not. For example, 
-> of_address_to_resource() will fail on this model since it tries to 
-> translate the addresses. I can always implement it using more primitive 
-> APIs, but the fact that of_address_to_resource() is designed this way 
-> makes me think that perhaps 'resources' are not the right mechanism to 
-> be using. What is the best way to convey a variable amount of bus 
-> addresses and interrupt numbers? Should we invent a new data structure?
-> 
-> Thanks in advance for any suggestions that people have.
-> 
-> Mike
-> 
