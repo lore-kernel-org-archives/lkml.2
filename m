@@ -1,182 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957Ab2ALPCr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 10:02:47 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33900 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753918Ab2ALPCD (ORCPT
+	id S1753886Ab2ALPIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 10:08:16 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33474 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703Ab2ALPIL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 10:02:03 -0500
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Petr Matousek <pmatouse@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-scsi@vger.kernel.org, Jens Axboe <axboe@kernel.dk>,
-        James Bottomley <JBottomley@parallels.com>
-Subject: [PATCH v2 1/3] block: add and use scsi_blk_cmd_ioctl
-Date: Thu, 12 Jan 2012 16:01:27 +0100
-Message-Id: <1326380489-9044-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.7.7.1
-In-Reply-To: <1326380489-9044-1-git-send-email-pbonzini@redhat.com>
-References: <1326380489-9044-1-git-send-email-pbonzini@redhat.com>
+	Thu, 12 Jan 2012 10:08:11 -0500
+MIME-Version: 1.0
+X-Originating-IP: [212.179.42.66]
+In-Reply-To: <CAOtvUMfmSrotCGn-51SC3eiQU=xK4C_Trh+8FEfTGOJcGUgVag@mail.gmail.com>
+References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
+	<1326276668-19932-3-git-send-email-mgorman@suse.de>
+	<CAOtvUMfmSrotCGn-51SC3eiQU=xK4C_Trh+8FEfTGOJcGUgVag@mail.gmail.com>
+Date: Thu, 12 Jan 2012 17:08:10 +0200
+Message-ID: <CAOtvUMeL19942umZH22THGU-TQbnjRfxz-JLdY_wdWPN7ZNy5Q@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
+ IPI from page allocator context
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Miklos Szeredi <mszeredi@novell.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
+        Gong Chen <gong.chen@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a wrapper around scsi_cmd_ioctl that takes a block device.
-The function will then be enhanced to detect partition block devices and,
-in that case, subject the ioctls to whitelisting.
+On Thu, Jan 12, 2012 at 4:51 PM, Gilad Ben-Yossef <gilad@benyossef.com> wrote:
+> On Wed, Jan 11, 2012 at 12:11 PM, Mel Gorman <mgorman@suse.de> wrote:
+> <SNIP>
+>> Rather than making it safe to call get_online_cpus() from the page
+>> allocator, this patch simply removes the page allocator call to
+>> drain_all_pages(). To avoid impacting high-order allocation success
+>> rates, it still drains the local per-cpu lists for high-order
+>> allocations that failed. As a side effect, this reduces the number
+>> of IPIs sent during low memory situations.
+>>
+>> Signed-off-by: Mel Gorman <mgorman@suse.de>
+>> ---
+>>  mm/page_alloc.c |   16 ++++++++++++----
+>>  1 files changed, 12 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index 2b8ba3a..b6df6fc 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -1119,7 +1119,9 @@ void drain_local_pages(void *arg)
+>>  */
+>>  void drain_all_pages(void)
+>>  {
+>> +       get_online_cpus();
+>>        on_each_cpu(drain_local_pages, NULL, 1);
+>> +       put_online_cpus();
+>>  }
+>>
+>>  #ifdef CONFIG_HIBERNATION
+>> @@ -1982,11 +1984,17 @@ retry:
+>>                                        migratetype);
+>>
+>>        /*
+>> -        * If an allocation failed after direct reclaim, it could be because
+>> -        * pages are pinned on the per-cpu lists. Drain them and try again
+>> +        * If a high-order allocation failed after direct reclaim, there is a
+>> +        * possibility that it is because the necessary buddies have been
+>> +        * freed to the per-cpu list. Drain the local list and try again.
+>> +        * drain_all_pages is not used because it is unsafe to call
+>> +        * get_online_cpus from this context as it is possible that kthreadd
+>> +        * would block during thread creation and the cost of sending storms
+>> +        * of IPIs in low memory conditions is quite high.
+>>         */
+>> -       if (!page && !drained) {
+>> -               drain_all_pages();
+>> +       if (!page && order && !drained) {
+>> +               drain_pages(get_cpu());
+>> +               put_cpu();
+>>                drained = true;
+>>                goto retry;
+>>        }
+>> --
+>> 1.7.3.4
+>>
+>
+> I very much like the judo like quality of relying on the fact that in
+> memory pressure conditions most
+> of the cpus will end up in the direct reclaim path to drain them all
+> without IPIs.
+>
+> What I can't figure out is why we don't need  get/put_online_cpus()
+> pair around each and every call
+> to on_each_cpu everywhere? and if we do, perhaps making it a part of
+> on_each_cpu is the way to go?
+>
+> Something like:
+>
+> diff --git a/kernel/smp.c b/kernel/smp.c
+> index f66a1b2..cfa3882 100644
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -691,11 +691,15 @@ void on_each_cpu(void (*func) (void *info), void
+> *info, int wait)
+>  {
+>        unsigned long flags;
+>
+> +       BUG_ON(in_atomic());
+> +
+> +       get_online_cpus();
+>        preempt_disable();
+>        smp_call_function(func, info, wait);
+>        local_irq_save(flags);
+>        func(info);
+>        local_irq_restore(flags);
+>        preempt_enable();
+> +       put_online_cpus();
+>  }
+>  EXPORT_SYMBOL(on_each_cpu);
+>
+> Does that makes?
 
-Cc: linux-scsi@vger.kernel.org
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: James Bottomley <JBottomley@parallels.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- block/scsi_ioctl.c             |    7 +++++++
- drivers/block/cciss.c          |    6 +++---
- drivers/block/ub.c             |    3 +--
- drivers/block/virtio_blk.c     |    4 ++--
- drivers/cdrom/cdrom.c          |    3 +--
- drivers/ide/ide-floppy_ioctl.c |    3 +--
- drivers/scsi/sd.c              |    2 +-
- include/linux/blkdev.h         |    2 ++
- 8 files changed, 18 insertions(+), 12 deletions(-)
+Well, it dies on boot (after adding the needed include file), so it's
+obviously wrong, but I'm still guessing
+other users of on_each_cpu will need an  get/put_online_cpus() wrapper too.
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index fbdf0d8..a2c11f3 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -690,6 +690,13 @@ int scsi_cmd_ioctl(struct request_queue *q, struct gendisk *bd_disk, fmode_t mod
- }
- EXPORT_SYMBOL(scsi_cmd_ioctl);
- 
-+int scsi_cmd_blk_ioctl(struct block_device *bd, fmode_t mode,
-+		       unsigned int cmd, void __user *arg)
-+{
-+	return scsi_cmd_ioctl(bd->bd_disk->queue, bd->bd_disk, mode, cmd, arg);
-+}
-+EXPORT_SYMBOL(scsi_cmd_blk_ioctl);
-+
- static int __init blk_scsi_ioctl_init(void)
- {
- 	blk_set_cmd_filter_defaults(&blk_default_cmd_filter);
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 587cce5..b0f553b 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -1735,7 +1735,7 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 	case CCISS_BIG_PASSTHRU:
- 		return cciss_bigpassthru(h, argp);
- 
--	/* scsi_cmd_ioctl handles these, below, though some are not */
-+	/* scsi_cmd_blk_ioctl handles these, below, though some are not */
- 	/* very meaningful for cciss.  SG_IO is the main one people want. */
- 
- 	case SG_GET_VERSION_NUM:
-@@ -1746,9 +1746,9 @@ static int cciss_ioctl(struct block_device *bdev, fmode_t mode,
- 	case SG_EMULATED_HOST:
- 	case SG_IO:
- 	case SCSI_IOCTL_SEND_COMMAND:
--		return scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
-+		return scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 
--	/* scsi_cmd_ioctl would normally handle these, below, but */
-+	/* scsi_cmd_blk_ioctl would normally handle these, below, but */
- 	/* they aren't a good fit for cciss, as CD-ROMs are */
- 	/* not supported, and we don't have any bus/target/lun */
- 	/* which we present to the kernel. */
-diff --git a/drivers/block/ub.c b/drivers/block/ub.c
-index 0e376d4..7333b9e 100644
---- a/drivers/block/ub.c
-+++ b/drivers/block/ub.c
-@@ -1744,12 +1744,11 @@ static int ub_bd_release(struct gendisk *disk, fmode_t mode)
- static int ub_bd_ioctl(struct block_device *bdev, fmode_t mode,
-     unsigned int cmd, unsigned long arg)
- {
--	struct gendisk *disk = bdev->bd_disk;
- 	void __user *usermem = (void __user *) arg;
- 	int ret;
- 
- 	mutex_lock(&ub_mutex);
--	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, usermem);
-+	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, usermem);
- 	mutex_unlock(&ub_mutex);
- 
- 	return ret;
-diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-index 4d0b70a..e46f2f7 100644
---- a/drivers/block/virtio_blk.c
-+++ b/drivers/block/virtio_blk.c
-@@ -243,8 +243,8 @@ static int virtblk_ioctl(struct block_device *bdev, fmode_t mode,
- 	if (!virtio_has_feature(vblk->vdev, VIRTIO_BLK_F_SCSI))
- 		return -ENOTTY;
- 
--	return scsi_cmd_ioctl(disk->queue, disk, mode, cmd,
--			      (void __user *)data);
-+	return scsi_cmd_blk_ioctl(bdev, mode, cmd,
-+				  (void __user *)data);
- }
- 
- /* We provide getgeo only to please some old bootloader/partitioning tools */
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 2118211..129af31 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -2746,12 +2746,11 @@ int cdrom_ioctl(struct cdrom_device_info *cdi, struct block_device *bdev,
- {
- 	void __user *argp = (void __user *)arg;
- 	int ret;
--	struct gendisk *disk = bdev->bd_disk;
- 
- 	/*
- 	 * Try the generic SCSI command ioctl's first.
- 	 */
--	ret = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, argp);
-+	ret = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 	if (ret != -ENOTTY)
- 		return ret;
- 
-diff --git a/drivers/ide/ide-floppy_ioctl.c b/drivers/ide/ide-floppy_ioctl.c
-index d267b7a..a22ca84 100644
---- a/drivers/ide/ide-floppy_ioctl.c
-+++ b/drivers/ide/ide-floppy_ioctl.c
-@@ -292,8 +292,7 @@ int ide_floppy_ioctl(ide_drive_t *drive, struct block_device *bdev,
- 	 * and CDROM_SEND_PACKET (legacy) ioctls
- 	 */
- 	if (cmd != CDROM_SEND_PACKET && cmd != SCSI_IOCTL_SEND_COMMAND)
--		err = scsi_cmd_ioctl(bdev->bd_disk->queue, bdev->bd_disk,
--				mode, cmd, argp);
-+		err = scsi_cmd_blk_ioctl(bdev, mode, cmd, argp);
- 
- 	if (err == -ENOTTY)
- 		err = generic_ide_ioctl(drive, bdev, cmd, arg);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index fa3a591..ffa1c79 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1096,7 +1096,7 @@ static int sd_ioctl(struct block_device *bdev, fmode_t mode,
- 			error = scsi_ioctl(sdp, cmd, p);
- 			break;
- 		default:
--			error = scsi_cmd_ioctl(disk->queue, disk, mode, cmd, p);
-+			error = scsi_cmd_blk_ioctl(bdev, mode, cmd, p);
- 			if (error != -ENOTTY)
- 				break;
- 			error = scsi_ioctl(sdp, cmd, p);
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 94acd81..ca7b869 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -675,6 +675,8 @@ extern int blk_insert_cloned_request(struct request_queue *q,
- 				     struct request *rq);
- extern void blk_delay_queue(struct request_queue *, unsigned long);
- extern void blk_recount_segments(struct request_queue *, struct bio *);
-+extern int scsi_cmd_blk_ioctl(struct block_device *, fmode_t,
-+			      unsigned int, void __user *);
- extern int scsi_cmd_ioctl(struct request_queue *, struct gendisk *, fmode_t,
- 			  unsigned int, void __user *);
- extern int sg_scsi_ioctl(struct request_queue *, struct gendisk *, fmode_t,
+Maybe -
+
+on_each_cpu(...)
+{
+  get_online_cpus();
+  __on_each_cpu(...);
+  put_online_cpus();
+}
+
+We'll need to audit all callers.
+
+Gilad
+
 -- 
-1.7.7.1
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
 
-
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
