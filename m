@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab2ALUju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:39:50 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36769 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381Ab2ALUjs (ORCPT
+	id S1755537Ab2ALUkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:40:05 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:51198 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755381Ab2ALUkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:39:48 -0500
-From: Bradley Peterson <despite@gmail.com>
-To: xeb@mail.ru
-Cc: Bradley Peterson <despite@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] pptp: Accept packet with seq zero
-Date: Thu, 12 Jan 2012 14:39:16 -0600
-Message-Id: <1326400756-14021-1-git-send-email-despite@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 12 Jan 2012 15:40:01 -0500
+From: Sorin Dumitru <dumitru.sorin87@gmail.com>
+To: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net
+Cc: Sorin Dumitru <dumitru.sorin87@gmail.com>
+Subject: [PATCH] perf: check if address is in range
+Date: Thu, 12 Jan 2012 22:39:38 +0200
+Message-Id: <1326400778-24131-1-git-send-email-dumitru.sorin87@gmail.com>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize the PPTP "seq received" value to 0xffffffff, so we don't
-ignore packets with seq zero.
+When addr isn't in the [sym->start,sym->end] range offset
+will be a very big value, giving us a segfault when we do:
+	h->addr[offset]++
+Fix this by checking that addr is in the correct range.
 
-Signed-off-by: Bradley Peterson <despite@gmail.com>
+Signed-off-by: Sorin Dumitru <dumitru.sorin87@gmail.com>
 ---
- drivers/net/ppp/pptp.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/annotate.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ppp/pptp.c b/drivers/net/ppp/pptp.c
-index c1c9293..df884dd 100644
---- a/drivers/net/ppp/pptp.c
-+++ b/drivers/net/ppp/pptp.c
-@@ -585,8 +585,8 @@ static int pptp_create(struct net *net, struct socket *sock)
- 	po = pppox_sk(sk);
- 	opt = &po->proto.pptp;
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 011ed26..4ddc55f 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -64,7 +64,7 @@ int symbol__inc_addr_samples(struct symbol *sym, struct map *map,
  
--	opt->seq_sent = 0; opt->seq_recv = 0;
--	opt->ack_recv = 0; opt->ack_sent = 0;
-+	opt->seq_sent = 0; opt->seq_recv = 0xffffffff;
-+	opt->ack_recv = 0; opt->ack_sent = 0xffffffff;
+ 	pr_debug3("%s: addr=%#" PRIx64 "\n", __func__, map->unmap_ip(map, addr));
  
- 	error = 0;
- out:
+-	if (addr >= sym->end)
++	if (addr <= sym->start || addr >= sym->end)
+ 		return 0;
+ 
+ 	offset = addr - sym->start;
 -- 
-1.7.4.4
+1.7.8.3
 
