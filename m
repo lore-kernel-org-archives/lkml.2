@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755318Ab2ALXBN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 18:01:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:48829 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab2ALXBI convert rfc822-to-8bit (ORCPT
+	id S1755466Ab2ALXEQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 18:04:16 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:44217 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754146Ab2ALXEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 18:01:08 -0500
+	Thu, 12 Jan 2012 18:04:13 -0500
+X-Sasl-enc: +SITck5wgcZ/h31F4BxLsJX8LeY9wlpqYAKWuQncM07i 1326409452
+Date: Thu, 12 Jan 2012 15:01:33 -0800
+From: Greg KH <greg@kroah.com>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [00/40] 3.0.17-stable review
+Message-ID: <20120112230133.GC3360@kroah.com>
+References: <20120110214630.GA14384@kroah.com>
+ <20120111222158.GA20915@elliptictech.com>
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hY+2qJEGqGxO89m6iKK9+oe0q8rHEtOP6w0DKrwpNB90Q@mail.gmail.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
- <1326302710-9427-2-git-send-email-wad@chromium.org> <1326383015.7642.77.camel@gandalf.stny.rr.com>
- <20120112161418.GA22360@redhat.com> <1326386324.7642.96.camel@gandalf.stny.rr.com>
- <20120112173048.GK7180@jl-vm1.vm.bytemark.co.uk> <1326390006.7642.114.camel@gandalf.stny.rr.com>
- <CABqD9hY+2qJEGqGxO89m6iKK9+oe0q8rHEtOP6w0DKrwpNB90Q@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 12 Jan 2012 15:00:46 -0800
-X-Google-Sender-Auth: 8vSByzPfVxx36Oj0WbDl3t3CKGY
-Message-ID: <CAObL_7F3-GcxOc3p7wkbp1f=brUt5VKzcD0+v1dbAgfCk_Z2Jg@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-To: Will Drewry <wad@chromium.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Jamie Lokier <jamie@shareable.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120111222158.GA20915@elliptictech.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 2:18 PM, Will Drewry <wad@chromium.org> wrote:
-> On Thu, Jan 12, 2012 at 11:40 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
->> On Thu, 2012-01-12 at 17:30 +0000, Jamie Lokier wrote:
->>
->>> You can do this now, using ptrace().  It's horrible, but half of the
->>> horribleness is needing to understand machine-dependent registers,
->>> which this new patch doesn't address.  (The other half is a ton of
->>> undocumented but important ptrace() behaviours on Linux.)
->>
->> Yeah I know the horrid use of ptrace, I've implemented programs that use
->> it :-p
->>
->> I guess ptrace can capture the execv and determine if it is OK or not to
->> run it. But again, this doesn't stop the possible attacks that could
->> happen, with having the execv on a symlink file, having the ptrace check
->> say its OK, and then switching the symlink to a setuid file.
->>
->> When the new execv executed, the parent process would lose all control
->> over it. The idea is to prevent this.
->>
->> I like Alan's suggestion. Have userspace decide to allow execv or not,
->> and even let it decide if it should allow setuid execv's or not, but
->> still allow non-setuid execvs. If you allow the setuid execv, once that
->> happens, the same behavior will occur as with ptrace. A setuid execv
->> will lose all its filtering.
->
-> In the ptrace case, doesn't it just downgrade the privileges of the new process
-> if there is a tracer, rather than detach the tracer?
->
-> Ignoring that, I've been looking at system call filters as being equivalent to
-> something like the caps bounding set.  Once reduced, there's no going
-> back. I think Linus's proposal perfectly resolves the policy decision around
-> suid execution behavior in the run-with-privs or not scenarios (just like with
-> how ptrace does it).  However, I'd like to avoid allowing any process to
-> escape system call filters once installed.  (It's doable to add
-> suid/caps-based-bypass, but it certainly not ideal from my perspective.)
+On Wed, Jan 11, 2012 at 05:21:58PM -0500, Nick Bowler wrote:
+> Hi Greg,
+> 
+> On 2012-01-10 13:46 -0800, Greg KH wrote:
+> > This is the start of the stable review cycle for the 3.0.17 release.
+> > There are 40 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let us know.  If anyone is a maintainer of the proper subsystem, and
+> > wants to add a Signed-off-by: line to the patch, please respond with it.
+> 
+> These upstream commits (in 3.2):
+> 
+>   b7ea81a58adc ("ah: Read nexthdr value before overwriting it in ahash input callback.")
+>   069294e813ed ("ah: Correctly pass error codes in ahash output callback.")
+> 
+> made it into the 3.1.y series but they appear to not have made it into
+> 3.0.y, where they're also applicable.  Also, the following one fixes a
+> real bug so it may be 3.0.y material, although I'm not sure if any
+> in-tree drivers can trigger it (this one requires a real ahash driver
+> for real hardware to trigger; unlike the previous two, cryptd won't do):
+> 
+>   4b90a603a1b2 ("ah: Don't return NET_XMIT_DROP on input")
 
-I agree.
+I rely on the networking maintainer (i.e. David) to send me network
+patches.  If he acks these, I'll be glad to queue them up for the next
+3.0-stable release.
 
-In principle, it could be safe for an outside (non-seccomp) process
-with appropriate credentials to lift seccomp restrictions from a
-different process.  But why?
+thanks,
 
---Andy
+greg k-h
