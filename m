@@ -1,44 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab2ALR2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:28:20 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48560 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2ALR2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:28:19 -0500
-Subject: [PATCH] sched: Update scheduler stat documentation.
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: mingo@elte.hu, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Jan 2012 23:27:02 +0600
-Message-ID: <1326389222.9115.2.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 (2.32.1-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1754547Ab2ALRab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:30:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754089Ab2ALRa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:30:28 -0500
+Date: Thu, 12 Jan 2012 18:23:15 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using
+	BPF
+Message-ID: <20120112172315.GA26295@redhat.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org> <1326302710-9427-2-git-send-email-wad@chromium.org> <20120112162231.GA23960@redhat.com> <CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/proc/schedstat's second field reflect to # of time context switch happened not # of times switched to the expired queue.
+On 01/12, Will Drewry wrote:
+>
+> On Thu, Jan 12, 2012 at 10:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >> +      */
+> >> +     regs = seccomp_get_regs(regs_tmp, &regs_size);
+> >
+> > Stupid question. I am sure you know what are you doing ;) and I know
+> > nothing about !x86 arches.
+> >
+> > But could you explain why it is designed to use user_regs_struct ?
+> > Why we can't simply use task_pt_regs() and avoid the (costly) regsets?
+>
+> So on x86 32, it would work since user_regs_struct == task_pt_regs
+> (iirc), but on x86-64
+> and others, that's not true.
 
-Signed-off-by: Rakib Mullick <rakib.mullick@gmail.com>
----
+Yes sure, I meant that userpace should use pt_regs too.
 
-diff --git a/Documentation/scheduler/sched-stats.txt b/Documentation/scheduler/sched-stats.txt
-index 1cd5d51..7d8e12c 100644
---- a/Documentation/scheduler/sched-stats.txt
-+++ b/Documentation/scheduler/sched-stats.txt
-@@ -38,7 +38,8 @@ First field is a sched_yield() statistic:
-      1) # of times sched_yield() was called
- 
- Next three are schedule() statistics:
--     2) # of times we switched to the expired queue and reused it
-+     2) # of times context switch happened. This field is not utilized these
-+	days but kept for holding userspace tools integrity.
-      3) # of times schedule() was called
-      4) # of times schedule() left the processor idle
- 
+> If it would be appropriate to expose pt_regs to userspace, then I'd
+> happily do so :)
 
+Ah, so that was the reason. But it is already exported? At least I see
+the "#ifndef __KERNEL__" definition in arch/x86/include/asm/ptrace.h.
+
+Once again, I am not arguing, just trying to understand. And I do not
+know if this definition is part of abi.
+
+Oleg.
 
