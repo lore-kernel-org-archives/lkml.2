@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab2ALUL0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:11:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49672 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755222Ab2ALULW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:11:22 -0500
-Date: Thu, 12 Jan 2012 21:11:21 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 2/4] vfs: Protect write paths by sb_start_write -
- sb_end_write
-Message-ID: <20120112201121.GD8778@quack.suse.cz>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
- <1326331253-6497-3-git-send-email-jack@suse.cz>
- <FA7A1011-4312-4050-8AD5-C6060CFF3A55@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <FA7A1011-4312-4050-8AD5-C6060CFF3A55@dilger.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755320Ab2ALULi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:11:38 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:40597 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222Ab2ALULe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:11:34 -0500
+Date: Thu, 12 Jan 2012 12:10:23 -0800 (PST)
+Message-Id: <20120112.121023.570915351051554327.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless 2012-01-12
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120112184919.GK11093@tuxdriver.com>
+References: <20120112184919.GK11093@tuxdriver.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Jan 2012 12:10:26 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-01-12 12:56:01, Andreas Dilger wrote:
-> On 2012-01-11, at 6:20 PM, Jan Kara wrote:
-> > There are three entry points which dirty pages in a filesystem.  mmap (handled
-> > by block_page_mkwrite()), buffered write (handled by
-> > __generic_file_aio_write()), and truncate (it can dirty last partial page -
-> > handled by do_truncate()). Protect these places with sb_start_write() and
-> > sb_end_write().
-> > 
-> > Signed-off-by: Jan Kara <jack@suse.cz>
-> > ---
-> > fs/buffer.c  |   18 ++----------------
-> > fs/open.c    |    6 ++++++
-> > mm/filemap.c |    3 ++-
-> > 3 files changed, 10 insertions(+), 17 deletions(-)
-> > 
-> > diff --git a/fs/buffer.c b/fs/buffer.c
-> > index 19d8eb7..8519405 100644
-> > --- a/fs/buffer.c
-> > +++ b/fs/buffer.c
-> > @@ -2371,18 +2371,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
-> 
-> The comment for __block_page_mkwrite() needs to be updated to reference
-> sb_start_write() and sb_end_write() instead of vfs_check_frozen().
-  Thanks. Fixed.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Thu, 12 Jan 2012 13:49:19 -0500
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Here is a quick batch of wireless fixes intended for 3.3!
+> 
+> On the Bluetooth patches, Gustavo says this:
+> 
+> "A couple of fixes for the 3.3 release. The majority of the fixes are
+> related to the change from tasklets to workqueue in the Bluetooth
+> Core. The rest are important fixes over the tree. Exception is
+> 'Bluetooth: Rename extfeatures', as the name says it is just a rename
+> and no harm, but it is a preparation for a following fix."
+> 
+> Also included is a fix from Jesper Juhl for a potential memory leak in
+> brcm80211, a one-line comment fix (plus a couple of lines of removing
+> unused code) from Mohammed Shafi Shajakhan in ath9k, a fix from Larry
+> Finger to prevent hitting a BUG in rtl8192se when an skb allocation
+> fails, a fix from Stanislaw Gruszka for a NULL pointer dereference
+> in mac80211, a fix from Rajkumar Manoharan for an ath9k regression
+> relating to channel noisefloor readings, and a fix from Johannes Berg
+> for a regression related to parsing station flags.
+> 
+> Hopefully all of these are fine for the merge window.  Please let me
+> know if there are problems!
+
+Pulled, thanks John.
