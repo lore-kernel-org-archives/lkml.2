@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab2ALU0A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:26:00 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:58463 "EHLO
+	id S1755398Ab2ALUZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:25:56 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50351 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755326Ab2ALUZg (ORCPT
+	by vger.kernel.org with ESMTP id S1755294Ab2ALUZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:25:36 -0500
-X-Sasl-enc: ob9IoMjqk9g1wKI5ZDcljxER54Fq9sLFJGzEmlpbHvTN 1326399935
-Date: Thu, 12 Jan 2012 12:25:05 -0800
+	Thu, 12 Jan 2012 15:25:33 -0500
+X-Sasl-enc: yfhFtS3I17pat34JCxwbGNl2yPirJSHWzrYWtGYJbnfM 1326399932
+Date: Thu, 12 Jan 2012 12:22:18 -0800
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net
-Subject: Linux 3.2.1
-Message-ID: <20120112202505.GA15676@kroah.com>
+Subject: Linux 3.1.9
+Message-ID: <20120112202218.GA15628@kroah.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+	protocol="application/pgp-signature"; boundary="BOKacYhQ+x31HxR3"
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,18 +25,18 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---ReaqsoxgOBHFXBhH
-Content-Type: text/plain; charset=utf-8
+--BOKacYhQ+x31HxR3
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-I'm announcing the release of the 3.2.1 kernel.
+I'm announcing the release of the 3.1.9 kernel.
 
-All users of the 3.2 kernel series must upgrade.
+All users of the 3.1 kernel series must upgrade.
 
-The updated 3.2.y git tree can be found at:
+The updated 3.1.y git tree can be found at:
         git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.g=
-it linux-3.2.y
+it linux-3.1.y
 and can be browsed at the normal kernel.org git web browser:
         http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git=
 ;a=3Dsummary
@@ -47,83 +47,71 @@ greg k-h
 
 ------------
 
- Documentation/HOWTO                               |    4 -
- Documentation/development-process/5.Posting       |    8 +-
- Documentation/usb/usbmon.txt                      |   14 ++-
- MAINTAINERS                                       |    2=20
- Makefile                                          |    2=20
- arch/powerpc/include/asm/time.h                   |    2=20
- arch/powerpc/kernel/irq.c                         |   15 +---
- arch/powerpc/kernel/time.c                        |    9 ++
- arch/powerpc/platforms/pseries/hvCall_inst.c      |    4 -
- arch/powerpc/platforms/pseries/lpar.c             |    2=20
- drivers/base/firmware_class.c                     |   14 +--
- drivers/bcma/bcma_private.h                       |    3=20
- drivers/bcma/host_pci.c                           |   37 ++++++++++
- drivers/bcma/main.c                               |   16 ++++
- drivers/hv/vmbus_drv.c                            |   17 ++++
- drivers/infiniband/core/uverbs_cmd.c              |   21 ++++-
- drivers/infiniband/hw/qib/qib_iba6120.c           |    4 -
- drivers/infiniband/hw/qib/qib_iba7220.c           |    4 -
- drivers/infiniband/hw/qib/qib_iba7322.c           |    6 +
- drivers/net/bonding/bond_main.c                   |    9 +-
- drivers/net/usb/asix.c                            |    2=20
- drivers/net/wireless/iwlwifi/iwl-commands.h       |    2=20
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-int.h |    2=20
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c  |   73 ++++++++---------=
----
- drivers/net/wireless/libertas/cfg.c               |   10 +-
- drivers/net/wireless/rt2x00/rt2800usb.c           |    2=20
- drivers/net/wireless/wl12xx/boot.c                |   14 +++
- drivers/net/wireless/wl12xx/cmd.c                 |   22 ++++++
- drivers/net/wireless/wl12xx/testmode.c            |    1=20
- drivers/tty/serial/atmel_serial.c                 |    5 -
- drivers/usb/class/cdc-acm.c                       |   16 +++-
- drivers/usb/core/devio.c                          |    3=20
- drivers/usb/core/hcd.c                            |    5 -
- drivers/usb/core/quirks.c                         |    5 +
- drivers/usb/host/ehci-pxa168.c                    |    2=20
- drivers/usb/host/ehci-q.c                         |    2=20
- drivers/usb/host/uhci-q.c                         |    2=20
- drivers/usb/host/whci/qset.c                      |    4 -
- drivers/usb/host/xhci-ring.c                      |    4 -
- drivers/usb/host/xhci.c                           |    4 -
- drivers/usb/host/xhci.h                           |    1=20
- drivers/usb/misc/isight_firmware.c                |    6 +
- drivers/usb/musb/musb_core.c                      |    2=20
- drivers/usb/serial/cp210x.c                       |    1=20
- drivers/usb/serial/omninet.c                      |    2=20
- drivers/usb/serial/option.c                       |    5 +
- drivers/usb/storage/usb.c                         |    1=20
- drivers/video/offb.c                              |   52 ++++++--------
- fs/Kconfig                                        |    2=20
- fs/exofs/Kconfig                                  |   11 ---
- fs/exofs/Kconfig.ore                              |   12 +++
- fs/exofs/ore.c                                    |    8 +-
- fs/exofs/ore_raid.c                               |   78 +++++++++++++++++=
-+----
- fs/ext3/inode.c                                   |   24 +++++-
- fs/reiserfs/super.c                               |   27 ++++---
- fs/udf/file.c                                     |    6 -
- fs/udf/inode.c                                    |   21 +++++
- fs/xfs/xfs_acl.c                                  |    2=20
- include/linux/usb.h                               |    1=20
- include/linux/usb/ch9.h                           |   20 +++++
- kernel/cgroup.c                                   |    6 -
- net/ipv4/igmp.c                                   |    2=20
- tools/perf/util/trace-event-parse.c               |    2=20
- 63 files changed, 465 insertions(+), 200 deletions(-)
+ Documentation/HOWTO                          |    4 -
+ Documentation/development-process/5.Posting  |    8 +-
+ Documentation/usb/usbmon.txt                 |   14 +++--
+ MAINTAINERS                                  |    2=20
+ Makefile                                     |    2=20
+ arch/powerpc/include/asm/time.h              |    2=20
+ arch/powerpc/kernel/irq.c                    |   15 ++---
+ arch/powerpc/kernel/time.c                   |    9 +++
+ arch/powerpc/platforms/pseries/hvCall_inst.c |    4 -
+ arch/powerpc/platforms/pseries/lpar.c        |    2=20
+ drivers/base/firmware_class.c                |   14 ++---
+ drivers/infiniband/hw/qib/qib_iba6120.c      |    4 +
+ drivers/infiniband/hw/qib/qib_iba7220.c      |    4 +
+ drivers/infiniband/hw/qib/qib_iba7322.c      |    6 +-
+ drivers/net/bonding/bond_main.c              |    9 ++-
+ drivers/net/usb/asix.c                       |    6 +-
+ drivers/net/wireless/rt2x00/rt2800usb.c      |    2=20
+ drivers/net/wireless/wl12xx/boot.c           |   14 +++++
+ drivers/net/wireless/wl12xx/cmd.c            |   22 ++++++++
+ drivers/net/wireless/wl12xx/testmode.c       |    1=20
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c         |    1=20
+ drivers/tty/serial/atmel_serial.c            |    5 +
+ drivers/usb/class/cdc-acm.c                  |   16 +++++
+ drivers/usb/core/hcd.c                       |    5 -
+ drivers/usb/core/quirks.c                    |    5 +
+ drivers/usb/host/ehci-q.c                    |    2=20
+ drivers/usb/host/ohci-hcd.c                  |   15 ++---
+ drivers/usb/host/ohci-pci.c                  |   26 ---------
+ drivers/usb/host/ohci.h                      |    1=20
+ drivers/usb/host/pci-quirks.c                |   50 ++++++++----------
+ drivers/usb/host/uhci-q.c                    |    2=20
+ drivers/usb/host/whci/qset.c                 |    4 -
+ drivers/usb/host/xhci-ring.c                 |    4 -
+ drivers/usb/host/xhci.c                      |    4 -
+ drivers/usb/host/xhci.h                      |    1=20
+ drivers/usb/misc/isight_firmware.c           |    6 +-
+ drivers/usb/musb/musb_core.c                 |    2=20
+ drivers/usb/serial/cp210x.c                  |    1=20
+ drivers/usb/serial/omninet.c                 |    2=20
+ drivers/usb/serial/option.c                  |   10 +++
+ drivers/usb/storage/usb.c                    |    1=20
+ drivers/video/offb.c                         |   52 ++++++++----------
+ fs/ext3/inode.c                              |   24 +++++++-
+ fs/reiserfs/super.c                          |   27 +++++----
+ fs/udf/file.c                                |    6 +-
+ fs/udf/inode.c                               |   21 ++++++-
+ fs/xfs/xfs_acl.c                             |    4 +
+ include/linux/usb.h                          |    1=20
+ include/linux/usb/ch9.h                      |   20 ++++++-
+ kernel/cgroup.c                              |    6 +-
+ kernel/cpu.c                                 |   74 ++++++++++++++++++++++=
++++++
+ net/ipv4/igmp.c                              |    2=20
+ tools/perf/util/trace-event-parse.c          |    2=20
+ 53 files changed, 367 insertions(+), 179 deletions(-)
 
-Alan Stern (1):
+Alan Stern (2):
       USB: update documentation for usbmon
-
-Andres Salomon (1):
-      libertas: clean up scan thread handling
+      OHCI: final fix for NVIDIA problems (I hope)
 
 Anton Blanchard (1):
       powerpc/time: Handle wrapping of decrementer
 
-Aurelien Jacobs (1):
+Aurelien Jacobs (2):
+      asix: new device id
       asix: fix infinite loop in rx_fixup()
 
 Ben Hutchings (1):
@@ -133,20 +121,14 @@ Benjamin Herrenschmidt (2):
       offb: Fix setting of the pseudo-palette for >8bpp
       offb: Fix bug in calculating requested vram size
 
-Boaz Harrosh (4):
-      ore: Fix crash in case of an IO error.
-      ore: fix BUG_ON, too few sgs when reading
-      ore: Must support none-PAGE-aligned IO
-      ore: FIX breakage when MISC_FILESYSTEMS is not set
+Christoph Hellwig (1):
+      xfs: validate acl count
 
 Claudio Scordino (1):
       atmel_serial: fix spinlock lockup in RS485 code
 
 Clemens Ladisch (1):
       usb: fix number of mapped SG DMA entries
-
-Eli Cohen (1):
-      IB/uverbs: Protect QP multicast list
 
 Felipe Balbi (1):
       usb: ch9: fix up MaxStreams helper
@@ -156,7 +138,7 @@ Felipe Contreras (1):
 
 Greg Kroah-Hartman (2):
       USB: isight: fix kernel bug when loading firmware
-      Linux 3.2.1
+      Linux 3.1.9
 
 Hans de Goede (1):
       xhci: Properly handle COMP_2ND_BW_ERR
@@ -184,16 +166,8 @@ Joe Perches (2):
 Johan Hovold (1):
       USB: omninet: fix write_room
 
-Johannes Berg (2):
-      iwlagn: fix TID use bug
-      iwlagn: fix (remove) use of PAGE_SIZE
-
 Julia Lawall (1):
       drivers/usb/class/cdc-acm.c: clear dangling pointer
-
-K. Y. Srinivasan (2):
-      drivers: hv: Don't OOPS when you cannot init vmbus
-      Drivers:hv: Fix a bug in vmbus_driver_unregister()
 
 Larry Finger (1):
       rt2800usb: Move ID out of unknown
@@ -204,7 +178,7 @@ Li Zefan (1):
 Li Zhong (1):
       powerpc: Fix unpaired probe_hcall_entry and probe_hcall_exit
 
-Malte Schr=C3=B6der (1):
+Malte Schr=F6der (1):
       USB: Add USB-ID for Multiplex RC serial adapter to cp210x.c
 
 Neil Horman (1):
@@ -218,50 +192,51 @@ Pontus Fuchs (3):
       wl12xx: Check buffer bound when processing nvs data
       wl12xx: Restore testmode ABI
 
-Rafa=C5=82 Mi=C5=82ecki (1):
-      bcma: support for suspend and resume
-
 Ram Vepa (1):
       IB/qib: Fix a possible data corruption when receiving packets
 
-Sarah Sharp (1):
-      usbfs: Fix oops related to user namespace conversion.
+Srivatsa S. Bhat (1):
+      PM / Sleep: Fix race between CPU hotplug and freezer
 
 Steven Rostedt (1):
       perf: Fix parsing of __print_flags() in TP_printk()
 
-Tanmay Upadhyay (1):
-      USB: pxa168: Fix compilation error
-
 Thilo-Alexander Ginkel (1):
       usb: cdc-acm: Fix acm_tty_hangup() vs. acm_tty_close() race
 
+VU Tuan Duc (1):
+      USB: option: add id for 3G dongle Model VT1000 of Viettel
+
 Xi Wang (1):
       xfs: fix acl count validation in xfs_acl_from_disk()
+
+kashyap.desai@lsi.com (1):
+      SCSI: mpt2sas: Added missing mpt2sas_base_detach call from scsih_remo=
+ve context
 
 stephen hemminger (1):
       bonding: fix error handling if slave is busy (v2)
 
 
---ReaqsoxgOBHFXBhH
+--BOKacYhQ+x31HxR3
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.18 (GNU/Linux)
 
-iQIcBAEBAgAGBQJPD0GhAAoJEDjbvchgkmk+MukQALnwuvmay42thM2GB+FvA2Dr
-/9Vhh/X/IGWeJY/v0q7TfklE43pwYUiBISrNHfNb+qIzauJCGuH0AyJO803SUKv2
-C+B2PROvk5evi9A+Y7nF+QoYH0P14BBQMJL4DhJ3TIByfGIHHxGplSy1FzUD7gE3
-Gwl/29HTy+/LUw8YHwOkAlgucl8XYc+Z7WsLEgrG6JaZiXHdIGcnTu9GetfjjtEH
-tE2yORuCa+nfAbgqeHUD2YkmGb3kq/sEA6ycCMISX/Ap/l8cVtz3fGTrUcCeEiiK
-tiM9aMtZahuckr3lkUAs3XDFKFugYwVZWFcCXwxCBOZzId4hCIvGpPbnPIfCHr13
-QMzJPtjKrnTv2wvLuSGP7jAfj6W/8gy0euJy7z6TweAwq0ZP8bqdJqsy8I6V8uNJ
-1yZfOH7lQaoqPm4CHgaR2XLOMEi7P7wM92znCEGBNHj72GBvZPLwOxxA9aK9RghF
-lV8Xt0Ez6gDxKxOAzqFU2tLDXpLDeueAIHgeNSca5EPGKBVRyV0aiYlMET6pWOE/
-tCn9chPo0z+KoAKg+OXvFUzZwQzb8exWQ91J31udyBDMAp9tNH2JE1uUyJpUwmfF
-i+uL3DPaWiD6kourkOtgLBZgoneTDyc7asgR/izwXo6jXCPws8yhcuWG1VSVrEjs
-vmmCZ5K/QlTs6lZS3HS7
-=pMxE
+iQIcBAEBAgAGBQJPD0D6AAoJEDjbvchgkmk+H0wP/3zIBDFWVml3vOdVw3PMKtvF
+M+HRsxkH68K+5C0L9Nw//2UpPWTN9xs1fjobhIBs6IQhA7uuLgAlK0Fcig8AiUU/
+x4bvb/VuIkfohHmiiBhfu4E9//TpOdlcc6wBB+vuNvYoJT/9gsKeOfF5M3vNRJJ1
+nCo4nECQmbgzI1kwdRpe9K/zcWxbJ24WO3e8CJqMWM3BhQRJTt2U9tjOwDl4KMCN
+ErJpJep8vXn+Y9jqtZu1QAyKX71T3JsCMF6xFOiyW2zAh0XuVsUPUmiiwjMY04qM
+JgbMcJSec8o84tsr48jWUM2TPTdzUhQgO86pmMV00WLq2LTsTPksZ7nqbgiIwWvI
+G9EAIoZQl/vpwUizTXgX1Xb8oeGIDIlR7ojpQaKAWMg9Cn2MoBgRdP6CHynoQkVZ
+AGcHjAxfyB/WOc1O8ZCy7OHyBjdKb5s5+IOw6sRBY37pEh5ValAZkdShu9mER9X0
+qJukZgJ++cRlNia41WTMg6+HdOfRSNRSfFfYz4jpH49U6kh+KFuEh0PpDsO/9ZwZ
+hymx5OXhK8w74PmXVqReYGH8xd7l/yaENYaW3rVhdMAeLtQQ/S5tTNF1YW0Iy81I
+uy7ITHbKdteyCiPk3lamnNQrl+f5IESW6uoyrnd3+OQkJjKUcUWGUJcmVUwKSXy2
+LB0gEwZ1nJnmndQFx+1w
+=9VJW
 -----END PGP SIGNATURE-----
 
---ReaqsoxgOBHFXBhH--
+--BOKacYhQ+x31HxR3--
