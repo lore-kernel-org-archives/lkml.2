@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab2ALQiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:38:50 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61574 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab2ALQir (ORCPT
+	id S1754237Ab2ALQmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:42:12 -0500
+Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45683 "HELO
+	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752948Ab2ALQmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:38:47 -0500
-X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=CN4PQ-MNGcoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=Fc00G34392aBtCSHeYYA:9 a=sToINQ_FQKW0xBegNAgA:7 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326386324.7642.96.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Date: Thu, 12 Jan 2012 11:38:44 -0500
-In-Reply-To: <20120112161418.GA22360@redhat.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	 <1326302710-9427-2-git-send-email-wad@chromium.org>
-	 <1326383015.7642.77.camel@gandalf.stny.rr.com>
-	 <20120112161418.GA22360@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+	Thu, 12 Jan 2012 11:42:09 -0500
+Message-ID: <4F0F1AFA.1080900@xenotime.net>
+Date: Thu, 12 Jan 2012 09:40:10 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] menuconfig: add Home and End keys support for
+ inputbox
+References: <20120109113633.24486.69758.stgit@localhost6.localdomain6>	<20120109113641.24486.95511.stgit@localhost6.localdomain6>	<4F0B6845.4080503@xenotime.net>	<CAPiS6wCVo40tB40sXTzTt7RpVHJG_2wrYeP8L=ghin09WHftfg@mail.gmail.com>	<4F0C75A5.6000000@xenotime.net>	<CAPiS6wDYrryyPimun2N0xFCY3xCTDAS+tKKAmuZGjbSUjWpZGw@mail.gmail.com>	<4F0DDF08.1000005@xenotime.net> <CAPiS6wCzm-ReJGLDcQN9vYEeVRVzcqSN_gfMHkjUqJ5x4WpnVA@mail.gmail.com>
+In-Reply-To: <CAPiS6wCzm-ReJGLDcQN9vYEeVRVzcqSN_gfMHkjUqJ5x4WpnVA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-12 at 17:14 +0100, Oleg Nesterov wrote:
-
-> May be this needs something like LSM_UNSAFE_SECCOMP, or perhaps
-> cap_bprm_set_creds() should take seccomp.mode == 2 into account, I dunno.
+On 01/12/2012 06:24 AM, Paulius Zaleckas wrote:
+> On Wed, Jan 11, 2012 at 9:12 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> On 01/11/2012 01:21 AM, Paulius Zaleckas wrote:
+>>> On Tue, Jan 10, 2012 at 7:30 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>>>> On 01/10/2012 03:50 AM, Paulius Zaleckas wrote:
+>>>>> On Tue, Jan 10, 2012 at 12:20 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>>>>>> On 01/09/2012 03:36 AM, Paulius Zaleckas wrote:
+>>>>>>> Makes long string editing easier.
+>>>>>>>
+>>>>>>> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
+>>>>>>
+>>>>>> Hi,
+>>>>>>
+>>>>>> Does "default hostname" in the "General setup" menu use an inputbox?
+>>>>>
+>>>>> Yes, it does.
+>>>>>
+>>>>>> If so, I can't get Home and End keys to work for it.
+>>>>>
+>>>>> Strange. It works for me. Have you applied both patches?
+>>>>
+>>>> Yes, I have both patches applied.
+>>>
+>>> Ok this is really very strange, but I have made debug patch. See attachement.
+>>> It will print octal pressed key value just below the text field.
+>>>
+>>> From curses.h:
+>>> #define KEY_HOME      0406            /* home key */
+>>> #define KEY_END               0550            /* end key */
+>>>
+>>> Do you get the same values for Home and End keys? I do.
+>>
+>> All that I see in the inputbox when I use Home or End is:
+>>
+>> 033
+>>
+>> (ESCape key)
 > 
-> OTOH, currently seccomp.mode == 1 doesn't allow to exec at all.
+> Is it working with nconfig?
 
-I've never used seccomp, so I admit I'm totally ignorant on this topic.
-
-But looking at seccomp from the outside, the biggest advantage to this
-would be the ability for normal processes to be able to limit tasks it
-kicks off. If I want to run a task in a sandbox, I don't want to be root
-to do so.
-
-I guess a web browser doesn't perform an exec to run java programs. But
-it would be nice if I could execute something from the command line that
-I could run in a sand box.
-
-What's the problem with making sure that the setuid isn't set before
-doing an execv? Only fail when setuid (or some other magic) is enabled
-on the file being exec'd.
-
-Or is this a race where I can have a soft link pointing to a normal
-file, run this, and have the link change to a setuid file at just the
-right time that causes it to happen?
+When I try to edit "Default hostname" in nconfig and press Home or End keys,
+nconfig acts like I just pressed F7 and it gives me the "what config file name do I
+want to load" prompt.
 
 
--- Steve
+>> Could this have anything to do with me using xfce (xfce4)?
+> 
+> I have xfce at home. Will try it later today.
 
+Thanks.
 
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
