@@ -1,118 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab2ALJcS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:32:18 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:58810 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753103Ab2ALJcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:32:13 -0500
-From: Shubhrajyoti D <shubhrajyoti@ti.com>
-To: <linux-serial@vger.kernel.org>
-CC: <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Shubhrajyoti D <shubhrajyoti@ti.com>
-Subject: [PATCH RFC] omap-serial: Fix the error handling in the omap_serial probe
-Date: Thu, 12 Jan 2012 15:02:04 +0530
-Message-ID: <1326360724-7898-1-git-send-email-shubhrajyoti@ti.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753271Ab2ALJep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:34:45 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45224 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751715Ab2ALJej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:34:39 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 12 Jan 2012 18:33:23 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
+Message-Id: <20120112183323.1bb62f4d.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120112092314.GC1042@tiehlicka.suse.cz>
+References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
+	<alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
+	<20120111084802.GA16466@tiehlicka.suse.cz>
+	<20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120112082722.GB1042@tiehlicka.suse.cz>
+	<20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
+	<20120112092314.GC1042@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch does the following
+On Thu, 12 Jan 2012 10:23:14 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-- The pm_runtime_disable is called in the remove not in the error
-  case of probe.The patch calls the pm_runtime_disable in the error
-  case.
-- The  up is not freed in the error path. Fix the memory leak by calling
- kfree in the error path.
-- Also the iounmap is not called fix the same by calling iounmap in the
-  error case of probe and remove .
-- Make the name of the error tags more meaningful.
+> On Thu 12-01-12 17:35:36, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 12 Jan 2012 09:27:22 +0100
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > On Thu 12-01-12 11:17:02, KAMEZAWA Hiroyuki wrote:
+> > > > On Wed, 11 Jan 2012 09:48:02 +0100
+> > > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > > 
+> > > > > On Tue 10-01-12 13:31:08, David Rientjes wrote:
+> > > > > > On Tue, 10 Jan 2012, Michal Hocko wrote:
+> > > > > [...]
+> > > > > > >  mm/page_alloc.c |   11 +++++++++++
+> > > > > > >  1 files changed, 11 insertions(+), 0 deletions(-)
+> > > > > > > 
+> > > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > > > > index 2b8ba3a..485be89 100644
+> > > > > > > --- a/mm/page_alloc.c
+> > > > > > > +++ b/mm/page_alloc.c
+> > > > > > > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+> > > > > > >  bool is_pageblock_removable_nolock(struct page *page)
+> > > > > > >  {
+> > > > > > >  	struct zone *zone = page_zone(page);
+> > > > > > > +	unsigned long pfn = page_to_pfn(page);
+> > > > > > > +
+> > > > 
+> > > > Hmm, I don't like to use page_zone() when we know the page may not be initialized.
+> > > > Shouldn't we add
+> > > > 
+> > > > 	if (!node_online(page_to_nid(page))
+> > > > 		return false;
+> > > > ?
+> > > 
+> > > How is this different? The node won't be initialized in page flags as
+> > > well.
+> > > 
+> > 
+> > page_zone(page) is
+> > ==
+> > static inline struct zone *page_zone(const struct page *page)
+> > {
+> >         return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+> > }
+> > ==
+> > 
+> > Then, if the page is unitialized, 
+> > 
+> >    &(NODE_DATA(0)->node_zones[0])
+> > 
+> > If NODE_DATA(0) is NULL, node_zones[0] is NULL just because zone array is placed
+> > on the top of struct pglist_data.
+> > 
+> > I never think someone may change the layout but...Hmm, just a nitpick.
+> > please do as you like.
+> 
+> Yes, fair point. See the follow up patch bellow.
+> 
+> > > > But...hmm. I think we should return 'true' here for removing a section with a hole
+> > > > finally....(Now, false will be safe.)
+> > > 
+> > > Those pages are reserved (for BIOS I guess) in this particular case so I
+> > > do not think it is safe to claim that the block is removable. Or am I
+> > > missing something?
+> > > 
+> > 
+> > We can't know it's reserved by BIOS or it's just a memory hole by the fact
+> > the page wasn't initialized.
+> 
+> OK, so then we should return false to mark to block non removable,
+> right?
 
-Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
----
- drivers/tty/serial/omap-serial.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
+Ok.
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index eb90a01..29fe6fd 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -1369,14 +1369,14 @@ static int serial_omap_probe(struct platform_device *pdev)
- 
- 	dma_rx = platform_get_resource_byname(pdev, IORESOURCE_DMA, "rx");
- 	if (!dma_rx) {
--		ret = -EINVAL;
--		goto err;
-+		ret = -ENXIO;
-+		goto do_release_region;
- 	}
- 
- 	dma_tx = platform_get_resource_byname(pdev, IORESOURCE_DMA, "tx");
- 	if (!dma_tx) {
--		ret = -EINVAL;
--		goto err;
-+		ret = -ENXIO;
-+		goto do_release_region;
- 	}
- 
- 	up = kzalloc(sizeof(*up), GFP_KERNEL);
-@@ -1403,7 +1403,7 @@ static int serial_omap_probe(struct platform_device *pdev)
- 		dev_err(&pdev->dev, "failed to get alias/pdev id, errno %d\n",
- 								up->port.line);
- 		ret = -ENODEV;
--		goto err;
-+		goto err_port_line;
- 	}
- 
- 	sprintf(up->name, "OMAP UART%d", up->port.line);
-@@ -1412,7 +1412,7 @@ static int serial_omap_probe(struct platform_device *pdev)
- 	if (!up->port.membase) {
- 		dev_err(&pdev->dev, "can't ioremap UART\n");
- 		ret = -ENOMEM;
--		goto err;
-+		goto err_ioremap;
- 	}
- 
- 	up->port.flags = omap_up_info->flags;
-@@ -1458,16 +1458,22 @@ static int serial_omap_probe(struct platform_device *pdev)
- 
- 	ret = uart_add_one_port(&serial_omap_reg, &up->port);
- 	if (ret != 0)
--		goto do_release_region;
-+		goto err_add_port;
- 
- 	pm_runtime_put(&pdev->dev);
- 	platform_set_drvdata(pdev, up);
- 	return 0;
--err:
--	dev_err(&pdev->dev, "[UART%d]: failure [%s]: %d\n",
--				pdev->id, __func__, ret);
-+
-+err_add_port:
-+	pm_runtime_disable(&pdev->dev);
-+	iounmap(up->port.membase);
-+err_ioremap:
-+err_port_line:
-+	kfree(up);
- do_release_region:
- 	release_mem_region(mem->start, resource_size(mem));
-+	dev_err(&pdev->dev, "[UART%d]: failure [%s]: %d\n",
-+				pdev->id, __func__, ret);
- 	return ret;
- }
- 
-@@ -1476,6 +1482,7 @@ static int serial_omap_remove(struct platform_device *dev)
- 	struct uart_omap_port *up = platform_get_drvdata(dev);
- 
- 	if (up) {
-+		iounmap(up->port.membase);
- 		pm_runtime_disable(&up->pdev->dev);
- 		uart_remove_one_port(&serial_omap_reg, &up->port);
- 		pm_qos_remove_request(&up->pm_qos_request);
--- 
-1.7.1
+> --- 
+> From 04f74e6f0ebf28f61650d63f8884e8855fb21b55 Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 12 Jan 2012 10:19:04 +0100
+> Subject: [PATCH] mm: __count_immobile_pages make sure the node is online
+> 
+> page_zone requires to have an online node otherwise we are accessing
+> NULL NODE_DATA. This is not an issue at the moment because node_zones
+> are located at the structure beginning but this might change in the
+> future so better be careful about that.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/page_alloc.c |   11 +++++++++--
+>  1 files changed, 9 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 485be89..c6fb8ea 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5607,14 +5607,21 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+>  
+>  bool is_pageblock_removable_nolock(struct page *page)
+>  {
+> -	struct zone *zone = page_zone(page);
+> -	unsigned long pfn = page_to_pfn(page);
+> +	struct zone *zone;
+> +	unsigned long pfn;
+>  
+>  	/*
+>  	 * We have to be careful here because we are iterating over memory
+>  	 * sections which are not zone aware so we might end up outside of
+>  	 * the zone but still within the section.
+> +	 * We have to take care about the node as well. If the node is offline
+> +	 * its NODE_DATA will be NULL - see page_zone.
+>  	 */
+> +	if (!node_online(page_to_nid(page)))
+> +		return false;
+> +
+> +	zone = page_zone(page);
+> +	pfn = page_to_pfn(page);
+>  	if (!zone || zone->zone_start_pfn > pfn ||
+>  			zone->zone_start_pfn + zone->spanned_pages <= pfn)
+>  		return false;
+
+!zone check can be removed because of node_online() check.
+
+Thanks,
+-Kame
+
 
