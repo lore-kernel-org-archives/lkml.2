@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab2ALVjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 16:39:09 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43042 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755873Ab2ALVjE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 16:39:04 -0500
-X-Sasl-enc: 14ckSsaVNMbHPrFUJgH7ybPkxw1U8lKno7wyPXuD4utn 1326404343
-Date: Thu, 12 Jan 2012 13:38:30 -0800
-From: Greg KH <greg@kroah.com>
-To: Paul Taysom <taysom@chromium.org>
-Cc: Paul Taysom <taysom@google.com>, Mandeep Baines <msb@chromium.org>,
-        Olof Johansson <olofj@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Theodore Tso <tytso@google.com>, Andrew Morton <akpm@google.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-Message-ID: <20120112213830.GB17405@kroah.com>
-References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326402935-31002-1-git-send-email-taysom@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755909Ab2ALVtl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 16:49:41 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:54325 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755209Ab2ALVtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 16:49:36 -0500
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/5] drivers/staging: adjust double test
+Date: Thu, 12 Jan 2012 22:49:27 +0100
+Message-Id: <1326404970-1084-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1326404970-1084-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1326404970-1084-1-git-send-email-Julia.Lawall@lip6.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 01:15:35PM -0800, Paul Taysom wrote:
-> From: Paul Taysom <taysom@google.com>
-> 
-> A USB stick with a ext file system on it, would occasionally crash
-> when the stick was pulled.
-> 
-> The problem was a timer was being set on the Backing Device Interface,
-> bdi, after the USB device had been removed and the bdi had been
-> unregistered. The bdi would then be later reinitialized by zeroing
-> the timer without removing from the timer from the timer queue.
-> This would eventually result in a kernel crash (NULL ptr dereference).
-> 
-> When the bdi is unregistered, the dev field is set to NULL. This
-> indication is used by bdi_unregister to only unregister the device
-> once.
-> 
-> Fix: When the backing device is invalidated, the mapping backing_dev_info
-> should be redirected to the default_backing_dev_info.
-> 
-> Created 3 USB sticks with ext2, ext4 and one with both apple and DOS
-> file systems on it. Inserted and removed USB sticks many times in random
-> order. With out the bug fix, the kernel would soon crash. With the fix,
-> it did not. Ran on both stumpy and amd64-generic.
-> 
-> Change-Id: Icdd06cf3ced555dcd9994cfcc9478a9071a802f1
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-What is this field for?  It makes no sense for a kernel patch
-submission.
+Rewrite a duplicated test to test the correct value
 
-> Signed-off-by: Paul Taysom <taysom@chromium.org>
-> Downstream-bug-report: http://crosbug.com/24165
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Is that a regular field that we now use?
+// <smpl>
+@@
+expression E;
+@@
 
-And shouldn't this go to the stable kernel releases as well?
+(
+* E
+  || ... || E
+|
+* E
+  && ... && E
+)
+// </smpl>
 
-Third time's a charm?
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
-greg k-h
+---
+The array has 4 elements, so my guess is that the one in position 3 should
+be tested rather than testing the one in position 1 again.
+
+ drivers/staging/rtl8192e/rtllib_rx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/staging/rtl8192e/rtllib_rx.c b/drivers/staging/rtl8192e/rtllib_rx.c
+index 6c5061f..13979b5 100644
+--- a/drivers/staging/rtl8192e/rtllib_rx.c
++++ b/drivers/staging/rtl8192e/rtllib_rx.c
+@@ -2453,7 +2453,7 @@ static inline void update_network(struct rtllib_network *dst,
+ 	if (src->wmm_param[0].ac_aci_acm_aifsn ||
+ 	   src->wmm_param[1].ac_aci_acm_aifsn ||
+ 	   src->wmm_param[2].ac_aci_acm_aifsn ||
+-	   src->wmm_param[1].ac_aci_acm_aifsn)
++	   src->wmm_param[3].ac_aci_acm_aifsn)
+ 		memcpy(dst->wmm_param, src->wmm_param, WME_AC_PRAM_LEN);
+ 
+ 	dst->SignalStrength = src->SignalStrength;
