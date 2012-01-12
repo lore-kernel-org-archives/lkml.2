@@ -1,142 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755126Ab2ALT4J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:56:09 -0500
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:49497 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab2ALT4E convert rfc822-to-8bit (ORCPT
+	id S1755182Ab2ALT57 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 14:57:59 -0500
+Received: from mail-yx0-f202.google.com ([209.85.213.202]:56448 "EHLO
+	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754960Ab2ALT54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 14:56:04 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=GZn8e3lTBEeJrlGK3+GUWyR5aYe1SJcDn5uEERMe9yQ= c=1 sm=1
- a=hbQVffkJRQcA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
- a=k8hqzbHzjweV03hO1KKrVA==:17 a=VwQbUJbxAAAA:8 a=h96JMW4gjYtUGLxmhxwA:9
- a=HG5avjeKIjrJn2oOPToA:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10
- a=_B_k53uKFiexPceY:21 a=Yh4gNVjaDYFn2SnX:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
-Subject: Re: [PATCH 2/4] vfs: Protect write paths by sb_start_write - sb_end_write
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <1326331253-6497-3-git-send-email-jack@suse.cz>
-Date: Thu, 12 Jan 2012 12:56:01 -0700
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
-        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FA7A1011-4312-4050-8AD5-C6060CFF3A55@dilger.ca>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz> <1326331253-6497-3-git-send-email-jack@suse.cz>
-To: Jan Kara <jack@suse.cz>
-X-Mailer: Apple Mail (2.1084)
+	Thu, 12 Jan 2012 14:57:56 -0500
+From: Paul Taysom <taysom@chromium.org>
+Cc: Paul Taysom <taysom@google.com>, Paul Taysom <taysom@chromium.org>,
+        Mandeep Baines <msb@chromium.org>, Greg KH <greg@kroah.com>,
+        Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@google.com>,
+        Andrew Morton <akpm@google.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH] fs: Fix mod_timer crash when removing USB sticks
+Date: Thu, 12 Jan 2012 11:57:42 -0800
+Message-Id: <1326398262-26660-1-git-send-email-taysom@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-01-11, at 6:20 PM, Jan Kara wrote:
-> There are three entry points which dirty pages in a filesystem.  mmap (handled
-> by block_page_mkwrite()), buffered write (handled by
-> __generic_file_aio_write()), and truncate (it can dirty last partial page -
-> handled by do_truncate()). Protect these places with sb_start_write() and
-> sb_end_write().
-> 
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
-> fs/buffer.c  |   18 ++----------------
-> fs/open.c    |    6 ++++++
-> mm/filemap.c |    3 ++-
-> 3 files changed, 10 insertions(+), 17 deletions(-)
-> 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 19d8eb7..8519405 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -2371,18 +2371,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+From: Paul Taysom <taysom@google.com>
 
-The comment for __block_page_mkwrite() needs to be updated to reference
-sb_start_write() and sb_end_write() instead of vfs_check_frozen().
+A USB stick with a ext file system on it, would occasionally crash
+when the stick was pulled.
 
-Cheers, Andreas
+The problem was a timer was being set on the Backing Device Interface,
+bdi, after the USB device had been removed and the bdi had been
+unregistered. The bdi would then be later reinitialized by zeroing
+the timer without removing from the timer from the timer queue.
+This would eventually result in a kernel crash (NULL ptr dereference).
 
-> 	if (unlikely(ret < 0))
-> 		goto out_unlock;
-> -	/*
-> -	 * Freezing in progress? We check after the page is marked dirty and
-> -	 * with page lock held so if the test here fails, we are sure freezing
-> -	 * code will wait during syncing until the page fault is done - at that
-> -	 * point page will be dirty and unlocked so freezing code will write it
-> -	 * and writeprotect it again.
-> -	 */
-> 	set_page_dirty(page);
-> -	if (inode->i_sb->s_frozen != SB_UNFROZEN) {
-> -		ret = -EAGAIN;
-> -		goto out_unlock;
-> -	}
-> 	wait_on_page_writeback(page);
-> 	return 0;
-> out_unlock:
-> @@ -2397,12 +2386,9 @@ int block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
-> 	int ret;
-> 	struct super_block *sb = vma->vm_file->f_path.dentry->d_inode->i_sb;
-> 
-> -	/*
-> -	 * This check is racy but catches the common case. The check in
-> -	 * __block_page_mkwrite() is reliable.
-> -	 */
-> -	vfs_check_frozen(sb, SB_FREEZE_WRITE);
-> +	sb_start_write(sb);
-> 	ret = __block_page_mkwrite(vma, vmf, get_block);
-> +	sb_end_write(sb);
-> 	return block_page_mkwrite_return(ret);
-> }
-> EXPORT_SYMBOL(block_page_mkwrite);
-> diff --git a/fs/open.c b/fs/open.c
-> index 22c41b5..ee17c90 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -55,8 +55,14 @@ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
-> 	if (ret)
-> 		newattrs.ia_valid |= ret | ATTR_FORCE;
-> 
-> +	/*
-> +	 * Truncate can dirty last partial page so we need protection against
-> +	 * filesystem freezing.
-> +	 */
-> 	mutex_lock(&dentry->d_inode->i_mutex);
-> +	sb_start_write(dentry->d_sb);
-> 	ret = notify_change(dentry, &newattrs);
-> +	sb_end_write(dentry->d_sb);
-> 	mutex_unlock(&dentry->d_inode->i_mutex);
-> 	return ret;
-> }
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index c0018f2..6566c73 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -2529,7 +2529,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> 	count = ocount;
-> 	pos = *ppos;
-> 
-> -	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
-> +	sb_start_write(inode->i_sb);
-> 
-> 	/* We can write back this queue in page reclaim */
-> 	current->backing_dev_info = mapping->backing_dev_info;
-> @@ -2601,6 +2601,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
-> 				pos, ppos, count, written);
-> 	}
-> out:
-> +	sb_end_write(inode->i_sb);
-> 	current->backing_dev_info = NULL;
-> 	return written ? written : err;
-> }
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+When the bdi is unregistered, the dev field is set to NULL. This
+indication is used by bdi_unregister to only unregister the device
+once.
 
+Fix: When the backing device is invalidated, the mapping backing_dev_info
+should be redirected to the default_backing_dev_info.
+
+Created 3 USB sticks with ext2, ext4 and one with both apple and DOS
+file systems on it. Inserted and removed USB sticks many times in random
+order. With out the bug fix, the kernel would soon crash. With the fix,
+it did not. Ran on both stumpy and amd64-generic.
+
+Signed-off-by: Paul Taysom <taysom@chromium.org>
+Downstream-bug-report: http://crosbug.com/24165
+Cc: Mandeep Baines <msb@chromium.org>
+Cc: Greg KH <greg@kroah.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Theodore Tso <tytso@google.com>
+Cc: Andrew Morton <akpm@google.com>
+Cc: <linux-usb@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: <linux-fsdevel@vger.kernel.org>
+---
+ fs/block_dev.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index afe74dd..9f9b617 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1,4 +1,4 @@
+-/*
++nvalid/*
+  *  linux/fs/block_dev.c
+  *
+  *  Copyright (C) 1991, 1992  Linus Torvalds
+@@ -110,6 +110,7 @@ void invalidate_bdev(struct block_device *bdev)
+ 	 * But, for the strange corners, lets be cautious
+ 	 */
+ 	cleancache_flush_inode(mapping);
++	mapping->backing_dev_info = &default_backing_dev_info;
+ }
+ EXPORT_SYMBOL(invalidate_bdev);
+ 
+-- 
+1.7.7.3
 
