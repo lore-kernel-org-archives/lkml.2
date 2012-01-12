@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755609Ab2ALUlz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:41:55 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:56910
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1755572Ab2ALUlu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:41:50 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:41317
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755476Ab2ALUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755451Ab2ALUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 15:41:46 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         jbottomley@parallels.com, hch@infradead.org,
         linux-scsi@vger.kernel.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 11/15] Staging: hv: storvsc: Cleanup the code for generating protocol version
-Date: Thu, 12 Jan 2012 12:38:04 -0800
-Message-Id: <1326400688-13544-11-git-send-email-kys@microsoft.com>
+Subject: [PATCH 02/15] Staging: hv: storvsc: Cleanup storvsc_probe()
+Date: Thu, 12 Jan 2012 12:37:55 -0800
+Message-Id: <1326400688-13544-2-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1326400688-13544-1-git-send-email-kys@microsoft.com>
 References: <1326400637-13494-1-git-send-email-kys@microsoft.com>
@@ -24,79 +24,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup the code for generating protocol version.
+Cleanup storvsc_probe(). As part of this cleanup, get rid of
+storvsc_get_ide_info() by inlining the necessary code.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   30 ++++++++----------------------
+ 1 files changed, 8 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index da71294..629edd1 100644
+index 1633b03..7561d29 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -61,10 +61,13 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
-  * version numbers will be interpreted as "0.x" (i.e., 1 becomes 0.1).
-  */
+@@ -791,18 +791,6 @@ static int storvsc_do_io(struct hv_device *device,
+ 	return ret;
+ }
  
--#define VMSTOR_PROTOCOL_MAJOR(VERSION_)		(((VERSION_) >> 8) & 0xff)
--#define VMSTOR_PROTOCOL_MINOR(VERSION_)		(((VERSION_))      & 0xff)
--#define VMSTOR_PROTOCOL_VERSION(MAJOR_, MINOR_)	((((MAJOR_) & 0xff) << 8) | \
--						 (((MINOR_) & 0xff)))
-+static inline u16 storvsc_get_version(u8 major, u8 minor)
-+{
-+	u16 version;
-+
-+	version = ((major << 8) | minor);
-+	return version;
-+}
- 
- /*
-  * Version history:
-@@ -74,9 +77,8 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
-  * Win7: 4.2
-  */
- 
--#define VMSTOR_PROTOCOL_VERSION_CURRENT VMSTOR_PROTOCOL_VERSION(4, 2)
+-static void storvsc_get_ide_info(struct hv_device *dev, int *target, int *path)
+-{
+-	*target =
+-		dev->dev_instance.b[5] << 8 | dev->dev_instance.b[4];
+-
+-	*path =
+-		dev->dev_instance.b[3] << 24 |
+-		dev->dev_instance.b[2] << 16 |
+-		dev->dev_instance.b[1] << 8  | dev->dev_instance.b[0];
+-}
 -
 -
-+#define VMSTOR_CURRENT_MAJOR  4
-+#define VMSTOR_CURRENT_MINOR  2
+ static int storvsc_device_alloc(struct scsi_device *sdevice)
+ {
+ 	struct stor_mem_pools *memp;
+@@ -1457,7 +1445,6 @@ static int storvsc_probe(struct hv_device *device,
+ 	struct Scsi_Host *host;
+ 	struct hv_host_device *host_dev;
+ 	bool dev_is_ide = ((dev_id->driver_data == IDE_GUID) ? true : false);
+-	int path = 0;
+ 	int target = 0;
+ 	struct storvsc_device *stor_device;
  
+@@ -1490,9 +1477,6 @@ static int storvsc_probe(struct hv_device *device,
+ 	if (ret)
+ 		goto err_out1;
  
- /*
-@@ -170,7 +172,7 @@ struct vmstorage_channel_properties {
- /*  This structure is sent during the storage protocol negotiations. */
- struct vmstorage_protocol_version {
- 	/* Major (MSW) and minor (LSW) version numbers. */
--	unsigned short major_minor;
-+	u16 major_minor;
+-	if (dev_is_ide)
+-		storvsc_get_ide_info(device, &target, &path);
+-
+ 	host_dev->path = stor_device->path_id;
+ 	host_dev->target = stor_device->target_id;
  
- 	/*
- 	 * Revision number is auto-incremented whenever this file is changed
-@@ -179,7 +181,7 @@ struct vmstorage_protocol_version {
- 	 * builds.
- 	 * This is only used on the windows side. Just set it to 0.
- 	 */
--	unsigned short revision;
-+	u16 revision;
- } __packed;
+@@ -1512,12 +1496,14 @@ static int storvsc_probe(struct hv_device *device,
  
- /* Channel Property Flags */
-@@ -687,7 +689,12 @@ static int storvsc_channel_init(struct hv_device *device)
- 	vstor_packet->operation = VSTOR_OPERATION_QUERY_PROTOCOL_VERSION;
- 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
+ 	if (!dev_is_ide) {
+ 		scsi_scan_host(host);
+-		return 0;
+-	}
+-	ret = scsi_add_device(host, 0, target, 0);
+-	if (ret) {
+-		scsi_remove_host(host);
+-		goto err_out2;
++	} else {
++		target = (device->dev_instance.b[5] << 8 |
++			 device->dev_instance.b[4]);
++		ret = scsi_add_device(host, 0, target, 0);
++		if (ret) {
++			scsi_remove_host(host);
++			goto err_out2;
++		}
+ 	}
+ 	return 0;
  
--	vstor_packet->version.major_minor = VMSTOR_PROTOCOL_VERSION_CURRENT;
-+	vstor_packet->version.major_minor =
-+		storvsc_get_version(VMSTOR_CURRENT_MAJOR, VMSTOR_CURRENT_MINOR);
-+
-+	/*
-+	 * The revision number is only used in Windows; set it to 0.
-+	 */
- 	vstor_packet->version.revision = 0;
- 
- 	ret = vmbus_sendpacket(device->channel, vstor_packet,
 -- 
 1.7.4.1
 
