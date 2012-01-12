@@ -1,109 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab2ALJRi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:17:38 -0500
-Received: from zene.cmpxchg.org ([85.214.230.12]:60261 "EHLO zene.cmpxchg.org"
+	id S1753245Ab2ALJS1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:18:27 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:25741 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751715Ab2ALJRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:17:34 -0500
-Date: Thu, 12 Jan 2012 10:17:21 +0100
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Ying Han <yinghan@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] mm: memcg: per-memcg reclaim statistics
-Message-ID: <20120112091721.GH24386@cmpxchg.org>
-References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
- <1326207772-16762-2-git-send-email-hannes@cmpxchg.org>
- <CALWz4izbTw4+7zbfiED9Lx=6RwiqxE11g5-fNRHTh=mcP=vQ2Q@mail.gmail.com>
- <20120111003020.GD24386@cmpxchg.org>
- <CALWz4iy4hw9jQ++w4oiZG_hih-x9iieuEmnRBfxYKriAKSoOgw@mail.gmail.com>
+	id S1753134Ab2ALJSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:18:22 -0500
+Message-ID: <4F0EA51C.1060001@parallels.com>
+Date: Thu, 12 Jan 2012 13:17:16 +0400
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        "bfields@fieldses.org" <bfields@fieldses.org>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "devel@openvz.org" <devel@openvz.org>
+Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
+References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>	<20111214104449.3991.61989.stgit@localhost6.localdomain6>	<m1bor6rg39.fsf@fess.ebiederm.org> <4EEEFC54.10700@parallels.com>	<m18vm8g951.fsf@fess.ebiederm.org> <4EEF2C9A.8000403@parallels.com>	<m1pqfkecw0.fsf@fess.ebiederm.org> <4EEF7364.8000407@parallels.com>	<m1vcotigyb.fsf@fess.ebiederm.org> <4F0C150F.1020007@parallels.com>	<m1ehv76v2v.fsf@fess.ebiederm.org> <4F0D5A9E.5030501@parallels.com>	<m1sjjm40k8.fsf@fess.ebiederm.org> <4F0DCEA8.7040205@parallels.com> <m18vle2frv.fsf@fess.ebiederm.org>
+In-Reply-To: <m18vle2frv.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <CALWz4iy4hw9jQ++w4oiZG_hih-x9iieuEmnRBfxYKriAKSoOgw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 02:33:59PM -0800, Ying Han wrote:
-> On Tue, Jan 10, 2012 at 4:30 PM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> > On Tue, Jan 10, 2012 at 03:54:05PM -0800, Ying Han wrote:
-> >> Thank you for the patch and the stats looks reasonable to me, few
-> >> questions as below:
-> >>
-> >> On Tue, Jan 10, 2012 at 7:02 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
-> >> > With the single per-zone LRU gone and global reclaim scanning
-> >> > individual memcgs, it's straight-forward to collect meaningful and
-> >> > accurate per-memcg reclaim statistics.
-> >> >
-> >> > This adds the following items to memory.stat:
-> >>
-> >> Some of the previous discussions including patches have similar stats
-> >> in memory.vmscan_stat API, which collects all the per-memcg vmscan
-> >> stats. I would like to understand more why we add into memory.stat
-> >> instead, and do we have plan to keep extending memory.stat for those
-> >> vmstat like stats?
-> >
-> > I think they were put into an extra file in particular to be able to
-> > write to this file to reset the statistics.  But in my opinion, it's
-> > trivial to calculate a delta from before and after running a workload,
-> > so I didn't really like adding kernel code for that.
-> >
-> > Did you have another reason for a separate file in mind?
-> 
-> Another reason I had them in separate file is easier to extend. I
-> don't know if we have plan to have something like memory.vmstat, or
-> just keep adding stuff into memory.stat. In general, I wanted to keep
-> the memory.stat being reasonable size including only the basic
-> statistics. In my existing vmscan_stat path, i have breakdowns of
-> reclaim stats into file/anon which will make the memory.stat even
-> larger.
+11.01.2012 23:36, Eric W. Biederman Ð¿Ð¸ÑˆÐµÑ‚:
+>
+> Please stop and take a look at /proc/net.  If your /proc/net is not a
+> symlink please look at a modern kernel.
+>
+> /proc/<pid>/net reflects the network namespace of the task in question.
+>
 
-Do you think it's a problem of presentation, where we want to allow
-admins to figure out the memcg parameters at a glance when looking at
-memory.stat but be able to debug malfunction by looking at the more
-extensive vmstat file?
+Ok, I know that.
+I know, that if some task with pid N is in other network namespace, then 
+/proc/<N>/net contents will differ to /proc/selt/net contents.
 
-> >> > áReclaim activity from kswapd due to the memcg's own limit. áOnly
-> >> > áapplicable to the root memcg for now since kswapd is only triggered
-> >> > áby physical limits, but kswapd-style reclaim based on memcg hard
-> >> > álimits is being developped.
-> >> >
-> >> > hierarchy_pgreclaim
-> >> > hierarchy_pgscan
-> >> > hierarchy_kswapd_pgreclaim
-> >> > hierarchy_kswapd_pgscan
-> >>
-> >> "pgsteal_hierarchy"
-> >> "pgsteal_kswapd_hierarchy"
-> >> ..
-> >>
-> >> No strong option on the naming, but try to make it more consistent to
-> >> existing API.
-> >
-> > I swear I tried, but the existing naming is pretty screwed up :(
-> >
-> > For example, pgscan_direct_* and pgscan_kswapd_* allow you to compare
-> > scan rates of direct reclaim vs. kswapd reclaim.  To get the total
-> > number of pages reclaimed, you sum them up.
-> >
-> > On the other hand, pgsteal_* does not differentiate between direct
-> > reclaim and kswapd, so to get direct reclaim numbers, you add up the
-> > pgsteal_* counters and subtract kswapd_steal (notice the lack of pg?),
-> > which is in turn not available at zone granularity.
-> 
-> agree and that always confuses me.
+>> And what do you think about "conteinerization" of /proc contents in the way like
+>> "sysfs" was done?
+>
+> I think the way sysfs is done is a pain in the neck to use.  Especially
+> in the context of commands like "ip netns exec".  With the sysfs model
+> there is a lot of extra state to manage.
+>
+> I totally agree that the way sysfs is done is much better than the way
+> /proc/sys is done today.  Looking at current can be limiting in the
+> general case.
+>
+> My current preference is the way /proc/net was done.
+>
 
-I just have scripts that present it as 'Direct page reclaimed' and
-'Kswapd page reclaimed' when evaluating data so I don't have to
-remember anymore :-)
+Ok. But this approach still requires some additional data to manage in user 
+space. I.e. it's really easy to manage container's context using it's fs root, 
+because container's root is a part of initial configuration. But container's 
+processed pids numbers in parent context are unpredictable.
 
-But I think the wish for consistency is a bit misguided when we end up
-with something like pgpgin that means something completely different
-in memcg than it does on the global level.  Likewise, I don't want to
-use pgsteal_* and pgsteal_kswapd_* because of their similarity to
-/proc/vmstat while the numbers represent something different.
+>> Implementing /proc "conteinerization" in this way can give us great flexibility.
+>> For example, /proc/net (and /proc/sys/sunrpc) depends on mount owner net
+>> namespace, /proc/sysvipc depends on mount owner ipc namespace, etc.
+>> And this approach doesn't break backward compatibility as well.
+>
+> The thing is /proc/net is already done.
+>
+> All I see with making things like /proc/net depend on the context of the
+> process that called mount is a need to call mount much more often.
+>
+
+/proc/net is a part or /proc. And /proc mount is called per container. So this 
+is just like it is.
+
+I have some solution I mind, which looks quite simple to implement, doesn't 
+require significant additional state to manage and suits my needs.
+Please, consider this.
+It's based on sysfs containerization approach, but simplified a lot.
+Sysctl's (comparing to sysfs entries) entries are the same for all namespaces.
+This actually means, that we don't need any additional infrastructure for 
+managing dentries. All we need to know on read/write operations with sysctl's is 
+the namespaces /proc was mounted from.
+
+Thus if we:
+
+1) replace /proc sb->s_fsdata content from pid_namespace to nsproxy and
+2) add link to /proc sb to ctl_table and
+3) add ns tag (pid, net, else or none) to ctl_table
+
+then we will have all we need to manage sysctl's content in the way we want.
+And looks like this approach doesn't break backward compatibility.
+
+What do you think about it?
+
+-- 
+Best regards,
+Stanislav Kinsbursky
