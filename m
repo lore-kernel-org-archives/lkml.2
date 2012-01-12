@@ -1,156 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab2ALJXX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:23:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48395 "EHLO mx2.suse.de"
+	id S1753294Ab2ALJZe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:25:34 -0500
+Received: from seven.medozas.de ([188.40.89.202]:35921 "EHLO seven.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753173Ab2ALJXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:23:19 -0500
-Date: Thu, 12 Jan 2012 10:23:14 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
-Message-ID: <20120112092314.GC1042@tiehlicka.suse.cz>
-References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
- <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
- <20120111084802.GA16466@tiehlicka.suse.cz>
- <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
- <20120112082722.GB1042@tiehlicka.suse.cz>
- <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1753225Ab2ALJZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:25:31 -0500
+Date: Thu, 12 Jan 2012 10:25:23 +0100 (CET)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Josh Triplett <josh@joshtriplett.org>
+cc: paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com, manfred@colorfullife.com,
+        dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: avoid checking for constant
+In-Reply-To: <20120112071431.GA1896@leaf>
+Message-ID: <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr>
+References: <1326345104-6919-1-git-send-email-jengelh@medozas.de> <20120112071431.GA1896@leaf>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-01-12 17:35:36, KAMEZAWA Hiroyuki wrote:
-> On Thu, 12 Jan 2012 09:27:22 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 12-01-12 11:17:02, KAMEZAWA Hiroyuki wrote:
-> > > On Wed, 11 Jan 2012 09:48:02 +0100
-> > > Michal Hocko <mhocko@suse.cz> wrote:
-> > > 
-> > > > On Tue 10-01-12 13:31:08, David Rientjes wrote:
-> > > > > On Tue, 10 Jan 2012, Michal Hocko wrote:
-> > > > [...]
-> > > > > >  mm/page_alloc.c |   11 +++++++++++
-> > > > > >  1 files changed, 11 insertions(+), 0 deletions(-)
-> > > > > > 
-> > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > > > > index 2b8ba3a..485be89 100644
-> > > > > > --- a/mm/page_alloc.c
-> > > > > > +++ b/mm/page_alloc.c
-> > > > > > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
-> > > > > >  bool is_pageblock_removable_nolock(struct page *page)
-> > > > > >  {
-> > > > > >  	struct zone *zone = page_zone(page);
-> > > > > > +	unsigned long pfn = page_to_pfn(page);
-> > > > > > +
-> > > 
-> > > Hmm, I don't like to use page_zone() when we know the page may not be initialized.
-> > > Shouldn't we add
-> > > 
-> > > 	if (!node_online(page_to_nid(page))
-> > > 		return false;
-> > > ?
-> > 
-> > How is this different? The node won't be initialized in page flags as
-> > well.
-> > 
-> 
-> page_zone(page) is
-> ==
-> static inline struct zone *page_zone(const struct page *page)
-> {
->         return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
-> }
-> ==
-> 
-> Then, if the page is unitialized, 
-> 
->    &(NODE_DATA(0)->node_zones[0])
-> 
-> If NODE_DATA(0) is NULL, node_zones[0] is NULL just because zone array is placed
-> on the top of struct pglist_data.
-> 
-> I never think someone may change the layout but...Hmm, just a nitpick.
-> please do as you like.
+On Thursday 2012-01-12 08:14, Josh Triplett wrote:
 
-Yes, fair point. See the follow up patch bellow.
+>On Thu, Jan 12, 2012 at 06:11:44AM +0100, Jan Engelhardt wrote:
+>> When compiling kernel or module code with -O0, "offset" is no longer
+>> considered a constant, and therefore always triggers the build error
+>> that BUILD_BUG_ON is defined to yield.
+>[...]
+>> --- a/include/linux/rcupdate.h
+>> +++ b/include/linux/rcupdate.h
+>> @@ -805,8 +805,6 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+>>  {
+>>  	typedef void (*rcu_callback)(struct rcu_head *);
+>>  
+>> -	BUILD_BUG_ON(!__builtin_constant_p(offset));
+>> -
+>>  	/* See the kfree_rcu() header comment. */
+>>  	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
+>
+>The very next check after the one you removed will break if the
+>compiler can't check the offset at compile time.
 
-> > > But...hmm. I think we should return 'true' here for removing a section with a hole
-> > > finally....(Now, false will be safe.)
-> > 
-> > Those pages are reserved (for BIOS I guess) in this particular case so I
-> > do not think it is safe to claim that the block is removable. Or am I
-> > missing something?
-> > 
-> 
-> We can't know it's reserved by BIOS or it's just a memory hole by the fact
-> the page wasn't initialized.
+Thanks for catching that. How about the following approach? :
 
-OK, so then we should return false to mark to block non removable,
-right?
---- 
->From 04f74e6f0ebf28f61650d63f8884e8855fb21b55 Mon Sep 17 00:00:00 2001
-From: Michal Hocko <mhocko@suse.cz>
-Date: Thu, 12 Jan 2012 10:19:04 +0100
-Subject: [PATCH] mm: __count_immobile_pages make sure the node is online
+parent f9fab10bbd768b0e5254e53a4a8477a94bfc4b96 (v3.2-rc7-86-gf9fab10)
+commit a4145604f1e40ce93a25a053f0f49341324b0077
+Author: Jan Engelhardt <jengelh@medozas.de>
+Date:   Wed Jan 11 10:05:00 2012 +0100
 
-page_zone requires to have an online node otherwise we are accessing
-NULL NODE_DATA. This is not an issue at the moment because node_zones
-are located at the structure beginning but this might change in the
-future so better be careful about that.
+rcu: avoid checking for constant
 
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+When compiling kernel or module code with -O0, "offset" is no longer
+considered a constant, and therefore always triggers the build error
+that BUILD_BUG_ON is defined to yield.
+
+What is the rationale between the forced constant check,
+introduced in 9ab1544eb4196ca8d05c433b2eb56f74496b1ee3?
+
+Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
 ---
- mm/page_alloc.c |   11 +++++++++--
- 1 files changed, 9 insertions(+), 2 deletions(-)
+ include/linux/rcupdate.h |   22 ++++------------------
+ 1 files changed, 4 insertions(+), 18 deletions(-)
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 485be89..c6fb8ea 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5607,14 +5607,21 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 2cf4226..5e7286d 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -795,24 +795,6 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
+ #define RCU_INIT_POINTER(p, v) \
+ 		p = (typeof(*v) __force __rcu *)(v)
  
- bool is_pageblock_removable_nolock(struct page *page)
- {
--	struct zone *zone = page_zone(page);
--	unsigned long pfn = page_to_pfn(page);
-+	struct zone *zone;
-+	unsigned long pfn;
- 
- 	/*
- 	 * We have to be careful here because we are iterating over memory
- 	 * sections which are not zone aware so we might end up outside of
- 	 * the zone but still within the section.
-+	 * We have to take care about the node as well. If the node is offline
-+	 * its NODE_DATA will be NULL - see page_zone.
- 	 */
-+	if (!node_online(page_to_nid(page)))
-+		return false;
+-static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
+-{
+-	return offset < 4096;
+-}
+-
+-static __always_inline
+-void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+-{
+-	typedef void (*rcu_callback)(struct rcu_head *);
+-
+-	BUILD_BUG_ON(!__builtin_constant_p(offset));
+-
+-	/* See the kfree_rcu() header comment. */
+-	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
+-
+-	call_rcu(head, (rcu_callback)offset);
+-}
+-
+ /**
+  * kfree_rcu() - kfree an object after a grace period.
+  * @ptr:	pointer to kfree
+@@ -836,6 +818,10 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+  * Note that the allowable offset might decrease in the future, for example,
+  * to allow something like kmem_cache_free_rcu().
+  */
++#define __kfree_rcu(head, offset) \
++	call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset) + \
++		 BUILD_BUG_ON_ZERO((offset) >= 4096))
 +
-+	zone = page_zone(page);
-+	pfn = page_to_pfn(page);
- 	if (!zone || zone->zone_start_pfn > pfn ||
- 			zone->zone_start_pfn + zone->spanned_pages <= pfn)
- 		return false;
+ #define kfree_rcu(ptr, rcu_head)					\
+ 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
+ 
 -- 
-1.7.7.3
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+# Created with git-export-patch
