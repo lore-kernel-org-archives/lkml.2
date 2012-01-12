@@ -1,20 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab2ALJza (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:55:30 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41609 "EHLO mgw2.diku.dk"
+	id S1752381Ab2ALJz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:55:28 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41610 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751413Ab2ALJzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1750933Ab2ALJzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 04:55:25 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Liam Girdwood <lrg@ti.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing iounmap
-Date: Thu, 12 Jan 2012 10:55:03 +0100
-Message-Id: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 5/15] drivers/dio/dio.c: add missing iounmap
+Date: Thu, 12 Jan 2012 10:55:07 +0100
+Message-Id: <1326362117-29371-5-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,6 +21,8 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Add missing iounmap in error handling code, in a case where the function
 already preforms iounmap on some other execution path.
+
+Additionally return an error code on failure of kzalloc.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -49,28 +48,25 @@ iounmap(e);
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- sound/soc/mxs/mxs-saif.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/dio/dio.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
-index 049e543..5ee0adb 100644
---- a/sound/soc/mxs/mxs-saif.c
-+++ b/sound/soc/mxs/mxs-saif.c
-@@ -680,7 +680,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
- 		ret = -ENODEV;
- 		dev_err(&pdev->dev, "failed to get dma resource: %d\n",
- 			ret);
--		goto failed_ioremap;
-+		goto failed_get_resource;
- 	}
- 	saif->dma_param.chan_num = dmares->start;
+diff --git a/drivers/dio/dio.c b/drivers/dio/dio.c
+index 55dd88d..b37dcc9 100644
+--- a/drivers/dio/dio.c
++++ b/drivers/dio/dio.c
+@@ -228,8 +228,11 @@ static int __init dio_init(void)
  
-@@ -739,6 +739,7 @@ failed_register:
- failed_get_irq2:
- 	free_irq(saif->irq, saif);
- failed_get_irq1:
-+failed_get_resource:
- 	iounmap(saif->base);
- failed_ioremap:
- 	release_mem_region(iores->start, resource_size(iores));
+                 /* Found a board, allocate it an entry in the list */
+ 		dev = kzalloc(sizeof(struct dio_dev), GFP_KERNEL);
+-		if (!dev)
+-			return 0;
++		if (!dev) {
++			if (scode >= DIOII_SCBASE)
++				iounmap(va);
++			return -ENOMEM;
++		}
+ 
+ 		dev->bus = &dio_bus;
+ 		dev->dev.parent = &dio_bus.dev;
 
