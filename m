@@ -1,49 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab2ALCLX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 21:11:23 -0500
-Received: from mga02.intel.com ([134.134.136.20]:2183 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752102Ab2ALCLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 21:11:21 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="97259430"
-Message-ID: <4F0E4147.7000903@linux.intel.com>
-Date: Thu, 12 Jan 2012 10:11:19 +0800
-From: Chen Gong <gong.chen@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: "R, Durgadoss" <durgadoss.r@intel.com>
-CC: "linux-x86_64@vger.kernel.org" <linux-x86_64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: CPU clock throttled prints..
-References: <D6D887BA8C9DFF48B5233887EF04654109E855E9B4@bgsmsx502.gar.corp.intel.com>
-In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654109E855E9B4@bgsmsx502.gar.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752238Ab2ALCSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 21:18:18 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55989 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab2ALCSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 21:18:16 -0500
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 12 Jan 2012 11:17:02 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
+Message-Id: <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20120111084802.GA16466@tiehlicka.suse.cz>
+References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
+	<alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
+	<20120111084802.GA16466@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011/7/5 13:36, R, Durgadoss 写道:
-> Hi All,
->
-> I am getting these prints in my Atom based device, running 2.6.35 kernel.
->
-> [  350.084005] CPU0: Temperature above threshold, cpu clock throttled (total
-> events = 26)
-> [  350.084029] CPU1: Temperature above threshold, cpu clock throttled (total
-> events = 26)
-> [  350.085293] CPU0: Temperature/speed normal
-> [  350.085311] CPU1: Temperature/speed normal
->
-> Seems like these are from therm_throt.c and the flow for this,
-> Starts from smp_thermal_interrupt(...) method.
->
-> Can somebody tell me when this method gets called ?
-> Also, does this actually throttle the CPU ?
->
+On Wed, 11 Jan 2012 09:48:02 +0100
+Michal Hocko <mhocko@suse.cz> wrote:
 
-try to apply this patch 29e9bf1841e4f (x86, mce, therm_throt: Don't report
-power limit and package level thermal throttle events in mcelog)
+> On Tue 10-01-12 13:31:08, David Rientjes wrote:
+> > On Tue, 10 Jan 2012, Michal Hocko wrote:
+> [...]
+> > >  mm/page_alloc.c |   11 +++++++++++
+> > >  1 files changed, 11 insertions(+), 0 deletions(-)
+> > > 
+> > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > index 2b8ba3a..485be89 100644
+> > > --- a/mm/page_alloc.c
+> > > +++ b/mm/page_alloc.c
+> > > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+> > >  bool is_pageblock_removable_nolock(struct page *page)
+> > >  {
+> > >  	struct zone *zone = page_zone(page);
+> > > +	unsigned long pfn = page_to_pfn(page);
+> > > +
+
+Hmm, I don't like to use page_zone() when we know the page may not be initialized.
+Shouldn't we add
+
+	if (!node_online(page_to_nid(page))
+		return false;
+?
+
+But...hmm. I think we should return 'true' here for removing a section with a hole
+finally....(Now, false will be safe.)
+
+
+
+> > > +	/*
+> > > +	 * We have to be careful here because we are iterating over memory
+> > > +	 * sections which are not zone aware so we might end up outside of
+> > > +	 * the zone but still within the section.
+> > > +	 */
+> > > +	if (!zone || zone->zone_start_pfn > pfn ||
+> > > +			zone->zone_start_pfn + zone->spanned_pages <= pfn)
+> > > +		return false;
+> > > +
+> > >  	return __count_immobile_pages(zone, page, 0);
+> > >  }
+> > >  
+> > 
+> > This seems partially bogus, why would
+> > 
+> > 	page_zone(page)->zone_start_pfn > page_to_pfn(page) ||
+> > 	page_zone(page)->zone_start_pfn + page_zone(page)->spanned_pages <= page_to_pfn(page)
+> > 
+> > ever be true?  That would certainly mean that the struct zone is corrupted 
+> > and seems to be unnecessary to fix the problem you're addressing.
+> 
+> Not really. Consider the case when the node 0 is present. Uninitialized
+> page would lead to node=0, zone=0 and then we have to check for the zone
+> boundaries.
+> 
+
+
+
+> > I think this should be handled in is_mem_section_removable() on the pfn 
+> > rather than using the struct page in is_pageblock_removable_nolock() and 
+> > converting back and forth.  We should make sure that any page passed to 
+> > is_pageblock_removable_nolock() is valid.
+> 
+> Yes, I do not like pfn->page->pfn dance as well and in fact I do not
+> have a strong opinion which one is better. I just put it at the place
+> where we care about zone to be more obvious. If others think that I
+> should move the check one level higher I'll do that. I just think this
+> is more obvious.
+> 
+Hmm, mem_section and pageblock is a different chunk...
+And, IIUC, in some IBM machines, section may includes several zones.
+Please taking care of that if you move this to is_mem_section_removable()...
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
