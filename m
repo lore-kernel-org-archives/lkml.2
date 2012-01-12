@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752397Ab2ALCss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 21:48:48 -0500
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:36286 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751358Ab2ALCsp (ORCPT
+	id S1752480Ab2ALDAf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 22:00:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33095 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab2ALDAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 21:48:45 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAKVHDk95LbVq/2dsb2JhbABDrQqBBoFyAQEFJxMcIxAIAw4KLhQlAyETG79kE4snYwSVC5JR
-Date: Thu, 12 Jan 2012 13:48:41 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
-        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/4] Fix filesystem freezing
-Message-ID: <20120112024841.GB2806@dastard>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326331253-6497-1-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 11 Jan 2012 22:00:34 -0500
+Date: Wed, 11 Jan 2012 19:05:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Xiaotian Feng <dannyfeng@tencent.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] proc: fix null pointer deref in proc_pid_permission()
+Message-Id: <20120111190516.e1aa65ef.akpm@linux-foundation.org>
+In-Reply-To: <CAJn8CcEcy5CQHD4UhrOaBYU+yDnMQ5aTs1YGOqrOTB2JgM4=sw@mail.gmail.com>
+References: <1326307625-11561-1-git-send-email-xtfeng@gmail.com>
+	<20120111204330.GT2618@outflux.net>
+	<20120111135847.d28425c6.akpm@linux-foundation.org>
+	<CAGXu5jKNWMYnTdh-t2C9gG2PL+frRSOY=O5hyuHmN2uyQ3YFbg@mail.gmail.com>
+	<CAJn8CcEcy5CQHD4UhrOaBYU+yDnMQ5aTs1YGOqrOTB2JgM4=sw@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 02:20:49AM +0100, Jan Kara wrote:
+On Thu, 12 Jan 2012 10:45:30 +0800 Xiaotian Feng <xtfeng@gmail.com> wrote:
+
+> On Thu, Jan 12, 2012 at 6:41 AM, Kees Cook <keescook@chromium.org> wrote:
+> > On Wed, Jan 11, 2012 at 1:58 PM, Andrew Morton
+> > <akpm@linux-foundation.org> wrote:
+> >> On Wed, 11 Jan 2012 12:43:30 -0800
+> >> Kees Cook <keescook@chromium.org> wrote:
+> >>> On Wed, Jan 11, 2012 at 01:47:05PM -0500, Xiaotian Feng wrote:
+> >>> > get_proc_task() can fail to search the task and return NULL, put_task_struct()
+> >>> > will then bomb the kernel with following oops:
+> >>> >
+> >>> > [ 1870.574045] BUG: unable to handle kernel NULL pointer dereference at 0000000000000010
+> >>> > [ 1870.574065] IP: [<ffffffff81217d34>] proc_pid_permission+0x64/0xe0
+> >>> > [ 1870.574088] PGD 112075067 PUD 112814067 PMD 0
+> >>> > [ 1870.574106] Oops: 0002 [#1] PREEMPT SMP
+> >>> >
+> >>> > This is a regression introduced by commit 0499680a, kernel should
+> >>> > return -ESRCH if get_proc_task() failed.
+> >>>
+> >>> Nice catch!
+> >>>
+> >>> However since this error is returned to userspace, shouldn't this be
+> >>> -ENOENT instead?
+> >>
+> >> Failed get_proc_task() frequently results in -ESRCH. __And less
+> >> frequently results in -ENOENT.
+> >>
+> >> It seems odd that inode_operations.permission() would ever return
+> >> anything other than zero or -EPERM.
+> >
+> > Right, but won't this show up at ESRCH from open(2)? If this is used
+> > as-is, we just need to have the manpages updated.
+> >
 > 
->   Hello,
-> 
->   filesystem freezing is currently racy and thus we can end up with dirty data
-> on frozen filesystem (see changelog of the first patch for detailed race
-> description and proposed fix). This patch series aims at fixing this.
+> You're right, some of get_proc_task() returns -ENOENT.
 
-It only fixes the dirty data race (i.e. SB_FREEZE_WRITE). The same
-race conditions exist for SB_FREEZE_TRANS on XFS, and so need the
-same fix. That race has had one previous attempt at fixing it in
-XFS but that's not possible:
+More of them return -ESRCH.  I lightly checked whether these can be
+returned to open() and it seems not.
 
-b2ce397 Revert "xfs: fix filesystsem freeze race in xfs_trans_alloc"
-7a249cf xfs: fix filesystsem freeze race in xfs_trans_alloc
+>  Maybe we should
+> return -ENOENT to avoid breaking userspace tools. Andrew?
 
-It was looking at that problem earlier today that lead to the
-solution Eric proposed. Essentially the method in these patches
-needs to replace the xfs specifc m_active_trans counter and delay
-during ->fs_freeze to prevent that race condition....
+It's unclear to me that making it ENOENT will fix more than it breaks. 
+procfs accesses can return all sorts of things (ENOENT, ENOMEM, ESRCH,
+more...) and with "procfs: add hidepid= and gid= mount options" they
+can now return different errors, notably EACCESS from
+generic_permission() as well as your ESRCH.
 
-Cheers,
+We return such a random sprinkle of errors in there that hopefully
+we've trained userspace developers to not depend upon any particular
+errno!
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+ESRCH sounds better to me, because it more accurately reflects what
+went wrong.  But I'm not very confident in that...
+
+
