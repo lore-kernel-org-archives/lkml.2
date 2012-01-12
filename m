@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab2ALU2W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:28:22 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:40740 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755215Ab2ALU2T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:28:19 -0500
-Date: Thu, 12 Jan 2012 12:28:16 -0800 (PST)
-Message-Id: <20120112.122816.1727420253535508242.davem@davemloft.net>
-To: glommer@parallels.com
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [PATCH] net: decrement memcg jump label when limit, not usage,
- is changed
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1326370566-4286-1-git-send-email-glommer@parallels.com>
-References: <1326370566-4286-1-git-send-email-glommer@parallels.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Jan 2012 12:28:17 -0800 (PST)
+	id S1755358Ab2ALUel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:34:41 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:34269
+	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755175Ab2ALUek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:34:40 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 0000/0015] Staging: hv: storvsc cleanup
+Date: Thu, 12 Jan 2012 12:37:17 -0800
+Message-Id: <1326400637-13494-1-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glauber Costa <glommer@parallels.com>
-Date: Thu, 12 Jan 2012 16:16:06 +0400
+Cleanup storvsc driver  based on the latest review comments from Christoph:
 
-> The logic of the current code is that whenever we destroy
-> a cgroup that had its limit set (set meaning different than
-> maximum), we should decrement the jump_label counter.
-> Otherwise we assume it was never incremented.
-> 
-> But what the code actually does is test for RES_USAGE
-> instead of RES_LIMIT. Usage being different than maximum
-> is likely to be true most of the time.
-> 
-> The effect of this is that the key must become negative,
-> and since the jump_label test says:
-> 
->         !!atomic_read(&key->enabled);
-> 
-> we'll have jump_labels still on when no one else is
-> using this functionality.
-> 
-> Signed-off-by: Glauber Costa <glommer@parallels.com>
-> CC: David S. Miller <davem@davemloft.net>
+	1. Get rid of unnecessary comments and unused defines. Use a consistent
+	   style for comments.
 
-Applied, thanks.
+	2. Cleanup all the structure definitions used in communication with
+	   the host. Also consolidate all protocol related definitions to
+	   a single location in the file.
+
+	3. Get rid of some unnecessary indirection and consolidate the state in
+	   request structure.
+
+	4. Some general cleanup.
+
+With this, I believe I have addressed all of the review comments I have received
+on this driver. I will submit a separate patch for moving the driver out of staging
+(that includes these patches).
+
+
+Regards,
+
+K. Y
+
