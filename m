@@ -1,99 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab2ALQze (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:55:34 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50567 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443Ab2ALQza convert rfc822-to-8bit (ORCPT
+	id S1754426Ab2ALQ6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:58:16 -0500
+Received: from relay.medianet-world.de ([213.157.0.172]:63734 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754317Ab2ALQ6M convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:55:30 -0500
+	Thu, 12 Jan 2012 11:58:12 -0500
+thread-index: AczRS11Oa7BHssoiS/+K8con9ya1ig==
+Thread-Topic: [ANNOUNCE] 3.0.14-rt31
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Subject: Re: [ANNOUNCE] 3.0.14-rt31
+Date: Thu, 12 Jan 2012 17:57:25 +0100
+User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        "RT" <linux-rt-users@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Clark Williams" <williams@redhat.com>,
+        "John Kacur" <jkacur@redhat.com>
+References: <1324525237.5916.114.camel@gandalf.stny.rr.com> <201201121118.34776.tim.sander@hbm.com> <1326376484.7642.65.camel@gandalf.stny.rr.com>
+In-Reply-To: <1326376484.7642.65.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <20120112145040.GA19472@redhat.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112145040.GA19472@redhat.com>
-Date: Thu, 12 Jan 2012 10:55:27 -0600
-Message-ID: <CABqD9hZJdQxO4Z=FqiC-ZPF2rNPUG4VO76MAJOnW+LVZYvLVBw@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/Plain;
+	charset="iso-8859-15"
 Content-Transfer-Encoding: 8BIT
+Message-ID: <201201121757.25467.tim.sander@hbm.com>
+X-OriginalArrivalTime: 12 Jan 2012 16:58:10.0308 (UTC) FILETIME=[5D2FFC40:01CCD14B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 8:50 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> On 01/11, Will Drewry wrote:
->>
->> This patch adds support for seccomp mode 2.  This mode enables dynamic
->> enforcement of system call filtering policy in the kernel as specified
->> by a userland task.  The policy is expressed in terms of a BPF program,
->> as is used for userland-exposed socket filtering.  Instead of network
->> data, the BPF program is evaluated over struct user_regs_struct at the
->> time of the system call (as retrieved using regviews).
->
-> Cool ;)
->
-> I didn't really read this patch yet, just one nit.
->
->> +#define seccomp_filter_init_task(_tsk) do { \
->> +     (_tsk)->seccomp.filter = NULL; \
->> +} while (0);
->
-> Cosmetic and subjective, but imho it would be better to add inline
-> functions instead of define's.
+Hi Steven
 
-Refactoring it a bit to make that possible.  Since seccomp fork/init/free
-never needs access to the whole task_structs, I'll just pass in what's
-needed (and avoid the sched.h inclusion recursion).
+Thanks for your reply.
 
-Comments on the next round will most definitely be appreciated!
+> > I have just tested 3.0.14 with some local adaptions. Unfortunatly there
+> > we have still two errors here:
+> > Reboot ( of upstart) fails sometimes fails with the following message:
+> > "reboot: Unable to execute shutdown: Bad address"
+> 
+> What's the bad address? Was there a kernel oops?
+Well i traced it down to the error message of reboot from upstart.
+(upstart-1.3/util/reboot.c:211). Presumably it was a "bad page" error out of 
+the memory from the developer who reported that. Unfortunatly this error does 
+not happen to often. I am not aware of a kernel oops.
+(My other mail to this list: https://lkml.org/lkml/2011/12/7/657)
 
->> @@ -166,6 +167,7 @@ void free_task(struct task_struct *tsk)
->>       free_thread_info(tsk->stack);
->>       rt_mutex_debug_task_free(tsk);
->>       ftrace_graph_exit_task(tsk);
->> +     seccomp_filter_free_task(tsk);
->>       free_task_struct(tsk);
->>  }
->>  EXPORT_SYMBOL(free_task);
->> @@ -1209,6 +1211,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->>       /* Perform scheduler related setup. Assign this task to a CPU. */
->>       sched_fork(p);
->>
->> +     seccomp_filter_init_task(p);
->
-> This doesn't look right or I missed something. something seccomp_filter_init_task()
-> should be called right after dup_task_struct(), at least before copy process can
-> fail.
->
-> Otherwise copy_process()->free_fork()->seccomp_filter_free_task() can put
-> current->seccomp.filter copied by arch_dup_task_struct().
+> > This problem can probably easily worked around by catching a failed
+> > execution and retry, but i am afraid that execution fails more often in
+> > other places and leads to silent functionality failures.
+> > 
+> > and the running wild ksoftirqd0 most probably after the kernel message:
+> > "sched: RT throttling activated"
+> 
+> Hmm, that's not good. It means that an RT task is spinning too much.
+Mh, sorry i was to terse on that. This only happens after first boot on UBIFS
+update, but it shows that somehow there seems to be a corner case when
+throtteling is activated. Since this seems to be the reason for ksoftirq0 
+running as much cpu as it gets. I just patched out switch to rt throtteling
+and i will ask the mtd guys about the work they presumably do in interrupt
+context which causes this throtteling in the first place.
 
-Ah - makes sense!  I moved it under dup_task_struct before any goto's
-to bad_fork_free.
+> > It also seems as if the system looks up after running ifconfig. But it
+> > seems as if the error only shows up most of the times if i am not
+> > around.
+> 
+> s/looks/locks/ ?
+Ups yes. 
 
->> +struct seccomp_filter {
->> +     struct kref usage;
->> +     struct pid *creator;
->
-> Why? seccomp_filter->creator is never used, no?
+> If it happens after ifconfig, then obviously that looks to be something
+> to do with either the network driver or the network stack.
+Strangely top,dmesg works. We have a second avahi autoip network interface 
+(eth0:avahi). Probably there is s.t. in this codepath.
+ 
+> But there's really nothing I can do to look into this without more
+> information.
+It would be good if i could get some advice how to get useful information out 
+of the system to pinpoint these errors (e.g. special sysrequests or s.t. like 
+that). For the reboot case i will try to find the exact return value on 
+failure, but for the ksoftirq0 case i currently try to work around that 
+problem (by patching out the switch to throtteling) but currently i don't see 
+a way to tackle the root of this behaviour.
 
-Removing it. It is from a related patch I'm experimenting with (adding
-optional tracehook support), but it has no bearing here.
+Best regards
+Tim
 
-Thanks - new patch revision incoming!
-will
+Please ignore:
+
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
