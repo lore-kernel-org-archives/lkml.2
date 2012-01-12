@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab2ALHkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 02:40:46 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:53765
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752642Ab2ALHkp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 02:40:45 -0500
-X-SpamScore: -3
-X-BigFish: VS-3(zz1432Nzz1202hzzz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k)
+	id S1752784Ab2ALHph (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 02:45:37 -0500
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:19495 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752642Ab2ALHpe convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 02:45:34 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371I542M1432N98dKzz1202hzzz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k61h)
+X-Spam-TCS-SCL: 0:0
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-FB-SS: 0,
 From: Dong Aisheng-B29396 <B29396@freescale.com>
 To: Shawn Guo <shawn.guo@linaro.org>, Stephen Warren <swarren@nvidia.com>
-CC: Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+CC: Richard Zhao <richard.zhao@linaro.org>,
         "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
         "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
         "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
         "cjb@laptop.org" <cjb@laptop.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        Richard Zhao <richard.zhao@linaro.org>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Dong Aisheng <dongas86@gmail.com>
 Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
  mappings
 Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
  mappings
-Thread-Index: AQHMvzz/OIptPg50WkeChzdBCJw49JXl2BOAgAA9DlCABdN5oIASXrkAgAC9bACAAEFboIAAbmbAgAG5cQCABpLFAIAAnRCA///Ze+A=
-Date: Thu, 12 Jan 2012 07:40:40 +0000
-Message-ID: <7FE21149F4667147B645348EC605788508E6A8@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <1324402840-32451-3-git-send-email-b29396@freescale.com>
- <74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
- <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
+Thread-Index: AQHMvzz/OIptPg50WkeChzdBCJw49JXl2BOAgAA9DlCABdN5oIASXrkAgAC9bACAAEFboIAAbmbAgAG5cQCAAYDIgIAA2y2AgAQ8YgCAAFkhAIAAAMoAgABERwD//9he4A==
+Date: Thu, 12 Jan 2012 07:45:30 +0000
+Message-ID: <7FE21149F4667147B645348EC605788508E6E3@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
  <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
  <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
  <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
  <20120107135445.GI4790@S2101-09.ap.freescale.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE3A6E5@HQMAIL01.nvidia.com>
- <20120112033941.GH20968@S2101-09.ap.freescale.net>
-In-Reply-To: <20120112033941.GH20968@S2101-09.ap.freescale.net>
+ <20120108125156.GB2203@richard-laptop>
+ <20120109015625.GE1835@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE3A6FB@HQMAIL01.nvidia.com>
+ <20120111235634.GG20968@S2101-09.ap.freescale.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE3A83A@HQMAIL01.nvidia.com>
+ <20120112040345.GA21802@S2101-09.ap.freescale.net>
+In-Reply-To: <20120112040345.GA21802@S2101-09.ap.freescale.net>
 Accept-Language: zh-CN, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -57,48 +59,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-...
-> > * The enumerations above should be purely at the level the HW exposes,
-> > i.e. if a UART uses 4 signals (RX, TX, CTS, RTS), and the SoC
-> > configures muxing at a per-pin level, and 6 pins exist which can have
-> > various UART signals mux'd on to them, there should be a "muxable
-> > entity" enumeration for each of the 6 pins, not an enumeration for
-> > each possible combination of assignments of signals to pins, since in
-> > general that number could be extremely large as Richard Zao points out
-> > in his email that was sent right after yours.
+> -----Original Message-----
+> From: Shawn Guo [mailto:shawn.guo@linaro.org]
+> Sent: Thursday, January 12, 2012 12:04 PM
+> To: Stephen Warren
+> Cc: Richard Zhao; linus.walleij@stericsson.com; s.hauer@pengutronix.de; linux-
+> kernel@vger.kernel.org; rob.herring@calxeda.com; kernel@pengutronix.de; Simon
+> Glass (sjg@chromium.org); cjb@laptop.org; Dong Aisheng-B29396; devicetree-
+> discuss@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; Dong Aisheng
+> Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+> mappings
+> Importance: High
+> 
+> On Wed, Jan 11, 2012 at 03:59:26PM -0800, Stephen Warren wrote:
+> > Shawn Guo wrote at Wednesday, January 11, 2012 4:57 PM:
+> > > This is somehow overkilled to me.  Doing this will create a big
+> > > mount of .dtsi files to bloat folder arch/arm/boot/dts.  Putting the
+> > > 'combinations' in <soc>.dtsi seems perfect fine to me.
 > >
-> Speaking of the model, yes, it's true.  But coming to the practical
-> implementation, we may need compromise on whether we need to do a full
-> enumeration.
-> 
-> > * pinmux properties in device drivers should list the muxable entities
-> > that they use, and the mux function for each of them.
+> > I see a couple problems with that approach:
 > >
-> Following on the example above, we will need something below in SD node to
-> specify each pin and corresponding function selection.
+> > 1) <soc>.dtsi gets very bloated,
 > 
->         usdhc@02194000 { /* uSDHC2 */
->                 #pinmux-cells = <2>;
->                 // The second cell specify the index of the desired function of
-> given pin
->                 pinmux = < &sd2_dat1 0
->                            &sd2_dat2 0
->                            ...        >;
->                 status = "okay";
->         };
+> In theory, it's possible.  But in the real world, I do not think this will be an
+> issue.  From the experience from working on previous imx platforms, the mux
+> chosen on Freescale reference design board will likely be reused on custom
+> boards much.
 > 
-> IMO, it's not nice for pinctrl client devices.  Though it's true that the
-> muxable entity is pin, what the client device really cares is its pingroup.  We
-> should define the pingroup rather than pin for client device to refer to with a
-> phandle.  This is just like that pinctrl subsystem api pinmux_get/enable operate
-> on a pingroup as an interface to client device driver, no matter the muxable
-> entity at HW level is a pin or a group.
-> 
-+1
-It's just like what the current pinctrl subsystem does:
-the device says "I'm using this function and this pin group, please enable!"
-But no pins are specified.
+I'm don't think it's a big issue.
+If we really find it getting very bloated, we will refine it later.
 
-Regards
-Dong Aisheng
+> > and wastes space containing board-
+> > specific data for boards other than the "current" one.
+> 
+> Technically, it's not the board specific data, because what pins can be put
+> together consisting of a function is really soc specific.
+> 
+Yes, it's true.
+
+> >
+> > 2) We need to invent some more complex DT format so you can reference
+> > these canned combinations from the device drivers, rather than simply
+> > enumerating the mux value for each pin/group.
+> 
+> Sorry, I do not get that.
+> 
+> Regards,
+> Shawn
+> 
+> >
+> > You could put the combination .dtsi files in arch/arm/boot/dts/<soc>
+> > to maintain some extra order.
+
 
