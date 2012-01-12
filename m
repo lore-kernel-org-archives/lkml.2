@@ -1,206 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2ALOdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 09:33:11 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:53440 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751958Ab2ALOdH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 09:33:07 -0500
-Date: Thu, 12 Jan 2012 14:33:01 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH -mm] make swapin readahead skip over holes
-Message-ID: <20120112143301.GG3910@csn.ul.ie>
-References: <20120109181023.7c81d0be@annuminas.surriel.com>
- <20120111165123.GF3910@csn.ul.ie>
- <4F0DE1CE.5000006@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4F0DE1CE.5000006@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753666Ab2ALOi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 09:38:28 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59580 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2ALOi0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 09:38:26 -0500
+Date: Thu, 12 Jan 2012 14:39:00 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Rajanikanth H V <rajanikanth.hv@stericsson.com>
+Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@sude.de" <gregkh@sude.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: tty/serial: Need clarification on Support for 4+M Baudrate
+Message-ID: <20120112143900.27b92668@pyramind.ukuu.org.uk>
+In-Reply-To: <2B1D156D95AE9B4EAD379CB9E465FE7324AF2A630D@EXDCVYMBSTM005.EQ1STM.local>
+References: <20120111121901.GA4034@bnru05>
+	<20120111123025.244a9cf5@pyramind.ukuu.org.uk>
+	<2B1D156D95AE9B4EAD379CB9E465FE7324AF2A605A@EXDCVYMBSTM005.EQ1STM.local>
+	<20120112114913.21809bed@pyramind.ukuu.org.uk>
+	<2B1D156D95AE9B4EAD379CB9E465FE7324AF2A630D@EXDCVYMBSTM005.EQ1STM.local>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 02:23:58PM -0500, Rik van Riel wrote:
-> On 01/11/2012 11:51 AM, Mel Gorman wrote:
-> >On Mon, Jan 09, 2012 at 06:10:23PM -0500, Rik van Riel wrote:
+On Thu, 12 Jan 2012 15:20:46 +0100
+Rajanikanth H V <rajanikanth.hv@stericsson.com> wrote:
+
+> Alan,
 > 
-> >>+	get_swap_cluster(entry,&offset,&end_offset);
-> >>+
-> >>+	for (; offset<= end_offset ; offset++) {
-> >>  		/* Ok, do the async read-ahead now */
-> >>  		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
-> >>  						gfp_mask, vma, addr);
-> >>  		if (!page)
-> >>-			break;
-> >>+			continue;
-> >>  		page_cache_release(page);
-> >>  	}
-> >
-> >For a heavily fragmented swap file, this will result in more IO and
-> >the gamble is that pages nearby are needed soon. You say your virtual
-> >machines swapin faster and that does not surprise me. I also expect
-> >they need the data so it's a net win.
+> FYI: I am not using application, rather I have a Bluetooth driver invoking
+> encode_baud_rate(...), please find log below.
 > 
-> More IO operations, yes.  However, IO operations from nearby
-> blocks can often be done without incurring extra disk seeks,
-> because the disk head is already in the right place.
+> I made sure that c_ispeed = c_ospeed = 4.05M Baud, however I see 
+> tty_termios_encode_baud_rate(...) is normalizing to 4.0
 > 
-
-I understand that, the result still has to go somewhere in memory
-though. The cost in terms of IO speed might be effectively 0 but it
-still consumes memory resources.
-
-> This seems to be born out by the fact that I saw swapin
-> rates increase from maybe 200-300kB/s to 5-15MB/s...
 > 
-> Even on some SSDs it could avoid some bank switches, though
-> of course there I would expect the effect to be much less
-> pronounced.
+> manual trace log below:
+> ======================================================================================
 > 
-> >There is an possibility that under memory pressure that swapping in
-> >more pages will cause more memory pressure (increased swapin causing
-> >clean page cache discards and pageout) and be an overall loss. This may
-> >be a net loss in some cases such as where the working set size is just
-> >over physical memory and the increased swapin causes a problem. I doubt
-> >this case is common but it is worth bearing in mind if future bug
-> >reports complain about increased swap activity.
-> 
-> True, there may be workloads that benefit from a smaller
-> page-cluster. The fact that the recently swapped in pages
-> are all put on the inactive anon list should help protect
-> the working set, too.
-> 
+> 4.05M Arbitrary Baud Setting Sequence:
+> [    9.664703] alloc_set_baud_rate_cmd Setting arbitrary baudrate using BOTHER baudrate:89 c_cflag:020000016262
+> [    9.774658] XXXXXX_hci_uart_set_baudrate c_cflag:020000016262 baud:4050000
 
-True to some extent.
+4050000 seems a bit odd - you want cflag&CBAUD == BOTHER so I'd expect
+the low bits to end rather different things to 6262 ?
 
-> Another alternative may be a time based decision. If we
-> have swapped something out recently, go with a less
-> aggressive swapin readahead.
-> 
+So something like
 
-Maybe, but while I know I brought up the problem of swapin might
-increase swapout, it would be best to have an example of how that can
-happen before looking at heuristics.
+	struct ktermios new = *tty->termios;
+	new.c_cflag &= ~(CBAUD|CIBAUD);
+	new.c_cflag |= BOTHER;
+	new.c_ispeed = 4050000;
+	new.c_ospeed = 4050000;
+	tty_set_termios(tty, &new);	/* Can sleep */
 
-> That would automatically give us fast swapin readahead
-> when in "memory hog just exited, let the system recover"
-> mode, and conservative swapin readahead in your situation.
-> 
-> However, that could still hurt badly if the system is just
-> moving the working set from one part of a program to another.
-> 
-> I suspect we will be faster off by having faster swap IO,
-> which this patch seems to provide.
-> 
+	/* Returned new will now hold actual values selected */
 
-More than likely.
+should do the trick providing the low level driver supports the rate.
 
-> >>-	si = swap_info[swp_type(entry)];
-> >>-	target = swp_offset(entry);
-> >>-	base = (target>>  our_page_cluster)<<  our_page_cluster;
-> >>-	end = base + (1<<  our_page_cluster);
-> >>-	if (!base)		/* first page is swap header */
-> >>-		base++;
-> 
-> >>+	si = swap_info[swp_type(entry)];
-> >>+	/* Round the begin down to a page_cluster boundary. */
-> >>+	offset = (offset>>  page_cluster)<<  page_cluster;
-> >
-> >Minor nit but it would feel more natural to me to see
-> >
-> >offset&  ~((1<<  page_cluster) - 1)
-> >
-> >but I understand that you are reusing the existing code.
-> 
-> Sure, I can do that.
-> 
-> While I'm there, I can also add that if (!base) base++
-> thing back in :)
-> 
-
-Whoops, I missed that!
-
-> >>+	*begin = offset;
-> >>+	/* Round the end up, but not beyond the end of the swap device. */
-> >>+	offset = offset + (1<<  page_cluster);
-> >>+	if (offset>  si->max)
-> >>+		offset = si->max;
-> >>+	*end = offset;
-> >>  	spin_unlock(&swap_lock);
-> >>-
-> >>-	/*
-> >>-	 * Indicate starting offset, and return number of pages to get:
-> >>-	 * if only 1, say 0, since there's then no readahead to be done.
-> >>-	 */
-> >>-	*offset = ++toff;
-> >>-	return nr_pages? ++nr_pages: 0;
-> >>  }
-> >
-> >This section deletes code which is nice but there is a
-> >problem. Your changelog says that this is duplicating the effort of
-> >read_swap_cache_async() which is true but what it does is
-> >
-> >1. a swap cache lookup which will probably fail
-> >2. alloc_page_vma()
-> >3. radix_tree_preload()
-> >4. swapcache_prepare
-> >    - calls __swap_duplicate()
-> >    - finds the hole, bails out
-> >
-> >That's a lot of work before the hole is found. Would it be worth
-> >doing a racy check in swapin_readahead without swap lock held before
-> >calling read_swap_cache_async()?
-> 
-> The problem is that without the swap_lock held, the swap_info
-> struct may disappear completely because of the swapin_readahead
-> happening concurrently with a swapoff.
-> 
-
-hmm, I considered that when I wrote the suggestion and was making
-an assumption that the presense of swap pages on the area would
-effectively pin the swap_info struct.
-
-I did think of the race that swapoff is operating on the very last page
-that swapin is reading and removes the map at the same time. We make a
-racy check against effectively random memory and one of three results
-might happen
-
-1. DEBUG_PAGE_ALLOC was enabled and we blow up, ok, this one is bad if
-   somewhat corner case
-
-2. False positive count - we fall through and try to read the page,
-   find the swap page no longer exists and bail gracefully
-
-3. False zero count - we do not readin the swap page. It's not a big
-   deal if swapin_readahead fails to read in a page it should have
-   (swapoff has brought it in anyway).
-
-Basically, I did not see any major downside with doing a racy check. If
-1 above is a serious problem, then yes, we have to take the swap_lock
-but that's still cheaper than allocating needlessly.
-
-> I suspect that the CPU time spent doing 1-4 above will be
-> negligible compared to the amount of time spent doing disk IO,
-
-Negligible in comparison to the IO sure, but it still seems like we
-could be doing a lot of allocation work (alloc_page_vma and
-radix_tree_preload) for no good reason.
-
-> but if there turns out to be a problem it should be possible
-> to move the swap hole identification closer to the top of
-> swap_cache_read_async().
-> 
-
-There is that, it'll be tricky to spot that we're needless allocating
-pages though. Not the end of the world, what you have still improves
-things.
-
--- 
-Mel Gorman
-SUSE Labs
+Alan
