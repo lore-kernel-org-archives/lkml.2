@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753411Ab2ALJzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:55:40 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41676 "EHLO mgw2.diku.dk"
+	id S1753390Ab2ALJzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:55:38 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41675 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753355Ab2ALJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753352Ab2ALJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 04:55:33 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: kernel-janitors@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 14/15] drivers/pci/hotplug/ibmphp_ebda.c: add missing iounmap
-Date: Thu, 12 Jan 2012 10:55:16 +0100
-Message-Id: <1326362117-29371-14-git-send-email-Julia.Lawall@lip6.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 12/15] arch/powerpc/sysdev/fsl_pci.c: add missing iounmap
+Date: Thu, 12 Jan 2012 10:55:14 +0100
+Message-Id: <1326362117-29371-12-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -47,24 +49,34 @@ iounmap(e);
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/pci/hotplug/ibmphp_ebda.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/powerpc/sysdev/fsl_pci.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/pci/hotplug/ibmphp_ebda.c b/drivers/pci/hotplug/ibmphp_ebda.c
-index 2850e64..714ca5c 100644
---- a/drivers/pci/hotplug/ibmphp_ebda.c
-+++ b/drivers/pci/hotplug/ibmphp_ebda.c
-@@ -368,8 +368,10 @@ int __init ibmphp_access_ebda (void)
- 			debug ("rio blk id: %x\n", blk_id);
+diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+index 4ce547e..bb025da 100644
+--- a/arch/powerpc/sysdev/fsl_pci.c
++++ b/arch/powerpc/sysdev/fsl_pci.c
+@@ -179,12 +179,12 @@ static void __init setup_pci_atmu(struct pci_controller *hose,
  
- 			rio_table_ptr = kzalloc(sizeof(struct rio_table_hdr), GFP_KERNEL);
--			if (!rio_table_ptr)
--				return -ENOMEM; 
-+			if (!rio_table_ptr) {
-+				rc = -ENOMEM;
-+				goto out;
-+			}
- 			rio_table_ptr->ver_num = readb (io_mem + offset);
- 			rio_table_ptr->scal_count = readb (io_mem + offset + 1);
- 			rio_table_ptr->riodev_count = readb (io_mem + offset + 2);
+ 	if (paddr_hi == paddr_lo) {
+ 		pr_err("%s: No outbound window space\n", name);
+-		return ;
++		goto out;
+ 	}
+ 
+ 	if (paddr_lo == 0) {
+ 		pr_err("%s: No space for inbound window\n", name);
+-		return ;
++		goto out;
+ 	}
+ 
+ 	/* setup PCSRBAR/PEXCSRBAR */
+@@ -273,6 +273,7 @@ static void __init setup_pci_atmu(struct pci_controller *hose,
+ 			(u64)hose->dma_window_size);
+ 	}
+ 
++out:
+ 	iounmap(pci);
+ }
+ 
 
