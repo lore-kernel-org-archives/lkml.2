@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab2ALRab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:30:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:6441 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab2ALRa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:30:28 -0500
-Date: Thu, 12 Jan 2012 18:23:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+	id S1754722Ab2ALRbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:31:21 -0500
+Received: from mail2.shareable.org ([80.68.89.115]:56295 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab2ALRbT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:31:19 -0500
+X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jan 2012 12:31:18 EST
+Date: Thu, 12 Jan 2012 17:30:48 +0000
+From: Jamie Lokier <jamie@shareable.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
         john.johansen@canonical.com, serge.hallyn@canonical.com,
         coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
         djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
+        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
         borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
         eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
         daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
         linux-security-module@vger.kernel.org, olofj@chromium.org,
         mhalcrow@google.com, dlaor@redhat.com
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using
-	BPF
-Message-ID: <20120112172315.GA26295@redhat.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org> <1326302710-9427-2-git-send-email-wad@chromium.org> <20120112162231.GA23960@redhat.com> <CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+Message-ID: <20120112173048.GK7180@jl-vm1.vm.bytemark.co.uk>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+ <1326302710-9427-2-git-send-email-wad@chromium.org>
+ <1326383015.7642.77.camel@gandalf.stny.rr.com>
+ <20120112161418.GA22360@redhat.com>
+ <1326386324.7642.96.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1326386324.7642.96.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12, Will Drewry wrote:
->
-> On Thu, Jan 12, 2012 at 10:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> +      */
-> >> +     regs = seccomp_get_regs(regs_tmp, &regs_size);
-> >
-> > Stupid question. I am sure you know what are you doing ;) and I know
-> > nothing about !x86 arches.
-> >
-> > But could you explain why it is designed to use user_regs_struct ?
-> > Why we can't simply use task_pt_regs() and avoid the (costly) regsets?
->
-> So on x86 32, it would work since user_regs_struct == task_pt_regs
-> (iirc), but on x86-64
-> and others, that's not true.
+Steven Rostedt wrote:
+> On Thu, 2012-01-12 at 17:14 +0100, Oleg Nesterov wrote:
+> 
+> > May be this needs something like LSM_UNSAFE_SECCOMP, or perhaps
+> > cap_bprm_set_creds() should take seccomp.mode == 2 into account, I dunno.
+> > 
+> > OTOH, currently seccomp.mode == 1 doesn't allow to exec at all.
+> 
+> I've never used seccomp, so I admit I'm totally ignorant on this topic.
+> 
+> But looking at seccomp from the outside, the biggest advantage to this
+> would be the ability for normal processes to be able to limit tasks it
+> kicks off. If I want to run a task in a sandbox, I don't want to be root
+> to do so.
+> 
+> I guess a web browser doesn't perform an exec to run java programs.
 
-Yes sure, I meant that userpace should use pt_regs too.
+Actually it does.  Firefox on Linux forks and execs the Java VM.
+Same for Flash, using "plugin-container".
 
-> If it would be appropriate to expose pt_regs to userspace, then I'd
-> happily do so :)
+> But it would be nice if I could execute something from the command
+> line that I could run in a sand box.
 
-Ah, so that was the reason. But it is already exported? At least I see
-the "#ifndef __KERNEL__" definition in arch/x86/include/asm/ptrace.h.
+You can do this now, using ptrace().  It's horrible, but half of the
+horribleness is needing to understand machine-dependent registers,
+which this new patch doesn't address.  (The other half is a ton of
+undocumented but important ptrace() behaviours on Linux.)
 
-Once again, I am not arguing, just trying to understand. And I do not
-know if this definition is part of abi.
-
-Oleg.
-
+-- Jamie
