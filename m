@@ -1,114 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752784Ab2ALHph (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 02:45:37 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:19495 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab2ALHpe convert rfc822-to-8bit (ORCPT
+	id S1752807Ab2ALHvn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 02:51:43 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:37394 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752685Ab2ALHvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 02:45:34 -0500
-X-SpamScore: -12
-X-BigFish: VS-12(zz9371I542M1432N98dKzz1202hzzz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-FB-SS: 0,
-From: Dong Aisheng-B29396 <B29396@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>, Stephen Warren <swarren@nvidia.com>
-CC: Richard Zhao <richard.zhao@linaro.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Dong Aisheng <dongas86@gmail.com>
-Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Thread-Index: AQHMvzz/OIptPg50WkeChzdBCJw49JXl2BOAgAA9DlCABdN5oIASXrkAgAC9bACAAEFboIAAbmbAgAG5cQCAAYDIgIAA2y2AgAQ8YgCAAFkhAIAAAMoAgABERwD//9he4A==
-Date: Thu, 12 Jan 2012 07:45:30 +0000
-Message-ID: <7FE21149F4667147B645348EC605788508E6E3@039-SN2MPN1-013.039d.mgd.msft.net>
-References: <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
- <20120107135445.GI4790@S2101-09.ap.freescale.net>
- <20120108125156.GB2203@richard-laptop>
- <20120109015625.GE1835@S2101-09.ap.freescale.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE3A6FB@HQMAIL01.nvidia.com>
- <20120111235634.GG20968@S2101-09.ap.freescale.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE3A83A@HQMAIL01.nvidia.com>
- <20120112040345.GA21802@S2101-09.ap.freescale.net>
-In-Reply-To: <20120112040345.GA21802@S2101-09.ap.freescale.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.198]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	Thu, 12 Jan 2012 02:51:41 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-52-4f0e910cc42a
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: "'Rafael J. Wysocki'" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, "'Linus'" <torvalds@linux-foundation.org>,
+        linux-samsung-soc@vger.kernel.org
+References: <018a01ccce67$a6eee850$f4ccb8f0$%kim@samsung.com>
+ <201201092314.20561.rjw@sisk.pl>
+In-reply-to: <201201092314.20561.rjw@sisk.pl>
+Subject: RE: Build error at drivers/base/power/domain_governor.c when
+ PM_RUNTIME is not set
+Date: Thu, 12 Jan 2012 16:51:36 +0900
+Message-id: <02b301ccd0ff$02b8dfd0$082a9f70$%kim@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: AczPG5GOTLKlpCwdRYm+N7WOMidetwB4zvew
+Content-language: ko
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Shawn Guo [mailto:shawn.guo@linaro.org]
-> Sent: Thursday, January 12, 2012 12:04 PM
-> To: Stephen Warren
-> Cc: Richard Zhao; linus.walleij@stericsson.com; s.hauer@pengutronix.de; linux-
-> kernel@vger.kernel.org; rob.herring@calxeda.com; kernel@pengutronix.de; Simon
-> Glass (sjg@chromium.org); cjb@laptop.org; Dong Aisheng-B29396; devicetree-
-> discuss@lists.ozlabs.org; linux-arm-kernel@lists.infradead.org; Dong Aisheng
-> Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
-> mappings
-> Importance: High
+Rafael J. Wysocki wrote:
 > 
-> On Wed, Jan 11, 2012 at 03:59:26PM -0800, Stephen Warren wrote:
-> > Shawn Guo wrote at Wednesday, January 11, 2012 4:57 PM:
-> > > This is somehow overkilled to me.  Doing this will create a big
-> > > mount of .dtsi files to bloat folder arch/arm/boot/dts.  Putting the
-> > > 'combinations' in <soc>.dtsi seems perfect fine to me.
+> On Monday, January 09, 2012, Kukjin Kim wrote:
+> > Hi Rafael,
 > >
-> > I see a couple problems with that approach:
+> > This is just reporting of build error.
 > >
-> > 1) <soc>.dtsi gets very bloated,
+> > Current mainline happens build error at
+> drivers/base/power/domain_governor.c
+> > file like following when CONFIG_PM_RUNTIME is not set. For example, it
+> > happens with s3c6400_defconfig now.
+> >
+> > drivers/base/power/domain_governor.c: In function 'default_stop_ok':
+> > drivers/base/power/domain_governor.c:25: error: 'struct dev_pm_info' has
+> no
+> > member named 'max_time_suspended_ns'
+> > drivers/base/power/domain_governor.c:29: error: 'struct dev_pm_info' has
+> no
+> > member named 'max_time_suspended_ns'
+> > drivers/base/power/domain_governor.c: In function
+> 'default_power_down_ok':
+> > drivers/base/power/domain_governor.c:94: error: 'struct dev_pm_info' has
+> no
+> > member named 'max_time_suspended_ns'
+> > drivers/base/power/domain_governor.c:98: error: 'struct dev_pm_info' has
+> no
+> > member named 'max_time_suspended_ns'
+> > drivers/base/power/domain_governor.c:100: error: 'struct dev_pm_info'
+> has no
+> > member named 'suspend_time'
 > 
-> In theory, it's possible.  But in the real world, I do not think this will be an
-> issue.  From the experience from working on previous imx platforms, the mux
-> chosen on Freescale reference design board will likely be reused on custom
-> boards much.
+> The appended patch fixes the problem for me, can you please test it?
 > 
-I'm don't think it's a big issue.
-If we really find it getting very bloated, we will refine it later.
+Hi Rafael,
 
-> > and wastes space containing board-
-> > specific data for boards other than the "current" one.
-> 
-> Technically, it's not the board specific data, because what pins can be put
-> together consisting of a function is really soc specific.
-> 
-Yes, it's true.
+Looks ok to me :)
 
-> >
-> > 2) We need to invent some more complex DT format so you can reference
-> > these canned combinations from the device drivers, rather than simply
-> > enumerating the mux value for each pin/group.
-> 
-> Sorry, I do not get that.
-> 
-> Regards,
-> Shawn
-> 
-> >
-> > You could put the combination .dtsi files in arch/arm/boot/dts/<soc>
-> > to maintain some extra order.
+Thanks.
 
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
+> ---
+>  drivers/base/power/domain_governor.c |   24 +++++++++++++++++++-----
+>  1 file changed, 19 insertions(+), 5 deletions(-)
+> 
+> Index: linux/drivers/base/power/domain_governor.c
+> ===================================================================
+> --- linux.orig/drivers/base/power/domain_governor.c
+> +++ linux/drivers/base/power/domain_governor.c
+> @@ -12,6 +12,8 @@
+>  #include <linux/pm_qos.h>
+>  #include <linux/hrtimer.h>
+> 
+> +#ifdef CONFIG_PM_RUNTIME
+> +
+>  /**
+>   * default_stop_ok - Default PM domain governor routine for stopping
+> devices.
+>   * @dev: Device to check.
+> @@ -137,16 +139,28 @@ static bool default_power_down_ok(struct
+>  	return true;
+>  }
+> 
+> -struct dev_power_governor simple_qos_governor = {
+> -	.stop_ok = default_stop_ok,
+> -	.power_down_ok = default_power_down_ok,
+> -};
+> -
+>  static bool always_on_power_down_ok(struct dev_pm_domain *domain)
+>  {
+>  	return false;
+>  }
+> 
+> +#else /* !CONFIG_PM_RUNTIME */
+> +
+> +bool default_stop_ok(struct device *dev)
+> +{
+> +	return false;
+> +}
+> +
+> +#define default_power_down_ok	NULL
+> +#define always_on_power_down_ok	NULL
+> +
+> +#endif /* !CONFIG_PM_RUNTIME */
+> +
+> +struct dev_power_governor simple_qos_governor = {
+> +	.stop_ok = default_stop_ok,
+> +	.power_down_ok = default_power_down_ok,
+> +};
+> +
+>  /**
+>   * pm_genpd_gov_always_on - A governor implementing an always-on policy
+>   */
 
