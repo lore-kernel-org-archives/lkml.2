@@ -1,67 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab2ALW3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 17:29:17 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62071 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab2ALW3P (ORCPT
+	id S1755848Ab2ALWgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 17:36:10 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:47063 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754025Ab2ALWgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 17:29:15 -0500
-Date: Thu, 12 Jan 2012 14:29:10 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Pekka Enberg <penberg@kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
-        lizf@cn.fujitsu.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Dustin Kirkland <kirkland@canonical.com>, ecryptfs@vger.kernel.org
-Subject: Re: [PATCH] mm: Don't warn if memdup_user fails
-In-Reply-To: <20120112135803.1fb98fd6.akpm@linux-foundation.org>
-Message-ID: <alpine.DEB.2.00.1201121418060.1124@chino.kir.corp.google.com>
-References: <1326300636-29233-1-git-send-email-levinsasha928@gmail.com> <20120111141219.271d3a97.akpm@linux-foundation.org> <1326355594.1999.7.camel@lappy> <CAOJsxLEYY=ZO8QrxiWL6qAxPzsPpZj3RsF9cXY0Q2L44+sn7JQ@mail.gmail.com>
- <alpine.DEB.2.00.1201121309340.17287@chino.kir.corp.google.com> <20120112135803.1fb98fd6.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 12 Jan 2012 17:36:07 -0500
+Date: Thu, 12 Jan 2012 14:35:44 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Theodore Tso <tytso@google.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>, Greg KH <greg@kroah.com>,
+        Paul Taysom <taysom@chromium.org>, Paul Taysom <taysom@google.com>,
+        Olof Johansson <olofj@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@google.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
+Message-ID: <20120112223544.GC18166@google.com>
+References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
+ <20120112213830.GB17405@kroah.com>
+ <20120112215331.GB18166@google.com>
+ <CAGagf4dk4KsZSkaWTO9Yegi=_wRJsYBPgfyks1z=wMZJV8gX0w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGagf4dk4KsZSkaWTO9Yegi=_wRJsYBPgfyks1z=wMZJV8gX0w@mail.gmail.com>
+X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jan 2012, Andrew Morton wrote:
-
-> > I think it's good to fix ecryptfs like Tyler is doing and, at the same 
-> > time, ensure that the len passed to memdup_user() makes sense prior to 
-> > kmallocing memory with GFP_KERNEL.  Perhaps something like
-> > 
-> > 	if (WARN_ON(len > PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER))
-> > 		return ERR_PTR(-ENOMEM);
-> > 
-> > in which case __GFP_NOWARN is irrelevant.
+Theodore Tso (tytso@google.com) wrote:
+> On Thu, Jan 12, 2012 at 4:53 PM, Mandeep Singh Baines <msb@chromium.org>wrote:
 > 
-> If someone is passing huge size_t's into kmalloc() and getting failures
-> then that's probably a bug.  So perhaps we should add a warning to
-> kmalloc itself if the size_t is out of bounds, and !__GFP_NOWARN.
+> >
+> > Hi Greg,
+> >
+> > What is the conventional way of doing this? There is a lot of good
+> > data in the bug report which might be useful to reviewers. We
+> > couldn't find a de-facto way of referencing the downstream bug database
+> > so we just made up a new field. Sorry. We'll use the correct
+> > field name next time.
+> >
 > 
-
-That's already done.  For slub, for example, the largest object size 
-handled by the allocator itself is an order-1 page; everything else gets 
-passed through to the page allocator and its limitation is MAX_ORDER, 
-which is the warning that we're seeing in Sasha's changelog when 
-!__GFP_NOWARN.
-
-> But none of this will be very effective.  If someone is passing an
-> unchecked size_t into kmalloc then normal testing will not reveal the
-> problem because the testers won't pass stupid numbers into their
-> syscalls.
+> There isn't a "correct field name", since it hasn't been standardized.  I
+> can tell you as an the ext4 maintainer, I've put things like
+> 
+> Addresses-Redhat-Bugzilla: <Bugzilla #>
+> 
+> or
+> 
+> Addresses-Debian-Bug: <debian-bug-number>
 > 
 
-They'll get the same warning that Sasha got, which is because the page 
-allocator can't handle larger than MAX_ORDER orders.  The intention in my 
-WARN_ON() above specifically for memdup_user() is to avoid the infinite 
-loop in the page allocator for GFP_KERNEL allocations where the order 
-is less than PAGE_ALLOC_COSTLY_ORDER and avoid the oom killer.  It returns 
-immediately rather than passing __GFP_NORETRY since we don't want to incur 
-the side-effects of direct reclaim or compaction as well.
+This seems like a good convention. Its also nice in that it scales to
+the case where the bug is reported by multiple distros.
 
-The real fix would be to convert all callers to pass gfp flags into 
-memdup_user() to determine the behavior they want, though.
+For future, we'll use:
+
+Addresses-ChromiumOS-Bug: http://crosbug.com/<Bug #>
+
+I included the URL because its small and folks might not know where
+our bug database is.
+
+Regards,
+Mandeep
+
+> etc. in commit messages.  I usually put them before the signed-off-block,
+> i.e, like this:
+> 
+> --------
+> ext4: a simple commit
+> 
+> This is the longer commit description, blah, blah, blah.
+> 
+> Addresses-Redhat-Bugzilla: 12345
+> 
+> Signed-off-by: Eric Sandeen <....@redhat.com>
+> Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+> -----------
+> 
+> There is some disagreement about whether it's useful to do this for
+> bugzilla entries which are not publically available (i.e., protected
+> Enterprise Linux bugzillas which have customer information and thus are
+> restricted access, or internal Company bug numbers).
+> 
+> My personal take on this matter is that if an engineer from a particular
+> company has taken the time and effort to contribute a bug that fixes a bug
+> that they had seen internally, and they include an internal bug number,
+> it's presumably to make it easier to track when a particular commit fixing
+> a bug that they really care about has hit upstream, and it's in my interest
+> to keep the code contributions coming, and it's very little effort to
+> include an internal bug tracker reference, even if I don't have personal
+> access to said bug tracker;  it's a nice thing I can do that doesn't cost
+> much, and may be useful to the original patch submitter.
+> 
+> Others, including Greg K-H, think it's a horrible thing to do, and will
+> reject commits on that basis.
+> 
+> So it all depends on which subsystem maintainer handles your bug.....  at
+> the end, it's up to the maintainer.  I've never had Linus complain to me
+> because the commits that I ask him to pull might include "Google-Bug-Id:
+> 12345" lines in the commit description.
+> 
+> -- Ted
+> 
+> 
+> 
+> 
+> 
+> 
+> >
+> > So what is the correct field name?
+> >
+> > Regards,
+> > Mandeep
+> >
+> > > And shouldn't this go to the stable kernel releases as well?
+> > >
+> > > Third time's a charm?
+> > >
+> > > greg k-h
+> >
