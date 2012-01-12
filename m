@@ -1,137 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753848Ab2ALOwC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 09:52:02 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38496 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2ALOv5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 09:51:57 -0500
+	id S1753732Ab2ALOxf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 09:53:35 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35659 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab2ALOxe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 09:53:34 -0500
+Date: Thu, 12 Jan 2012 14:53:30 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>, akpm@linux-foundation.org,
+        mel@csn.ul.ie, minchan.kim@gmail.com
+Subject: Re: [PATCH v2 -mm] make swapin readahead skip over holes
+Message-ID: <20120112145330.GK4118@suse.de>
+References: <20120111143044.3c538d46@cuia.bos.redhat.com>
+ <20120111205041.GE24386@cmpxchg.org>
+ <4F0DFF64.4040704@redhat.com>
+ <20120111214242.GF24386@cmpxchg.org>
+ <4F0E05F6.30105@redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [212.179.42.66]
-In-Reply-To: <1326276668-19932-3-git-send-email-mgorman@suse.de>
-References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
-	<1326276668-19932-3-git-send-email-mgorman@suse.de>
-Date: Thu, 12 Jan 2012 16:51:56 +0200
-Message-ID: <CAOtvUMfmSrotCGn-51SC3eiQU=xK4C_Trh+8FEfTGOJcGUgVag@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
- IPI from page allocator context
-From: Gilad Ben-Yossef <gilad@benyossef.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Miklos Szeredi <mszeredi@novell.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
-        Gong Chen <gong.chen@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4F0E05F6.30105@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 12:11 PM, Mel Gorman <mgorman@suse.de> wrote:
-<SNIP>
-> Rather than making it safe to call get_online_cpus() from the page
-> allocator, this patch simply removes the page allocator call to
-> drain_all_pages(). To avoid impacting high-order allocation success
-> rates, it still drains the local per-cpu lists for high-order
-> allocations that failed. As a side effect, this reduces the number
-> of IPIs sent during low memory situations.
->
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/page_alloc.c |   16 ++++++++++++----
->  1 files changed, 12 insertions(+), 4 deletions(-)
->
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 2b8ba3a..b6df6fc 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -1119,7 +1119,9 @@ void drain_local_pages(void *arg)
->  */
->  void drain_all_pages(void)
->  {
-> +       get_online_cpus();
->        on_each_cpu(drain_local_pages, NULL, 1);
-> +       put_online_cpus();
->  }
->
->  #ifdef CONFIG_HIBERNATION
-> @@ -1982,11 +1984,17 @@ retry:
->                                        migratetype);
->
->        /*
-> -        * If an allocation failed after direct reclaim, it could be because
-> -        * pages are pinned on the per-cpu lists. Drain them and try again
-> +        * If a high-order allocation failed after direct reclaim, there is a
-> +        * possibility that it is because the necessary buddies have been
-> +        * freed to the per-cpu list. Drain the local list and try again.
-> +        * drain_all_pages is not used because it is unsafe to call
-> +        * get_online_cpus from this context as it is possible that kthreadd
-> +        * would block during thread creation and the cost of sending storms
-> +        * of IPIs in low memory conditions is quite high.
->         */
-> -       if (!page && !drained) {
-> -               drain_all_pages();
-> +       if (!page && order && !drained) {
-> +               drain_pages(get_cpu());
-> +               put_cpu();
->                drained = true;
->                goto retry;
->        }
-> --
-> 1.7.3.4
->
+On Wed, Jan 11, 2012 at 04:58:14PM -0500, Rik van Riel wrote:
+> On 01/11/2012 04:42 PM, Johannes Weiner wrote:
+> >On Wed, Jan 11, 2012 at 04:30:12PM -0500, Rik van Riel wrote:
+> >>On 01/11/2012 04:10 PM, Johannes Weiner wrote:
+> >>>On Wed, Jan 11, 2012 at 02:30:44PM -0500, Rik van Riel wrote:
+> >>>>Ever since abandoning the virtual scan of processes, for scalability
+> >>>>reasons, swap space has been a little more fragmented than before.
+> >>>>This can lead to the situation where a large memory user is killed,
+> >>>>swap space ends up full of "holes" and swapin readahead is totally
+> >>>>ineffective.
+> >>>>
+> >>>>On my home system, after killing a leaky firefox it took over an
+> >>>>hour to page just under 2GB of memory back in, slowing the virtual
+> >>>>machines down to a crawl.
+> >>>>
+> >>>>This patch makes swapin readahead simply skip over holes, instead
+> >>>>of stopping at them.  This allows the system to swap things back in
+> >>>>at rates of several MB/second, instead of a few hundred kB/second.
+> >>>>
+> >>>>The checks done in valid_swaphandles are already done in
+> >>>>read_swap_cache_async as well, allowing us to remove a fair amount
+> >>>>of code.
+> >>>
+> >>>__swap_duplicate() also checks for whether the offset is within the
+> >>>swap device range.  Do you think we could remove get_swap_cluster()
+> >>>altogether and just try reading the aligned page_cluster range?
+> >>
+> >>That is how I implemented it originally, but we need
+> >>to take the swap_lock so it is cleaner to implement
+> >>a helper function in swapfile.c :)
+> >
+> >AFAICS, it's only needed to validate the offset against si->max, but
+> >this too is done in __swap_duplicate().
+> >
+> >What's otherwise left is just rounding down swp_offset(entry) and
+> >adding 1<<  page_cluster to it, that shouldn't need the swap_lock?
+> >
+> >Am I missing something?
+> 
+> Good point.  I guess we could get rid of get_swap_cluster
+> afterall and let __swap_duplicate deal with everything.
+> 
+> Andrew, Mel, is that ok with you?
+> 
 
-I very much like the judo like quality of relying on the fact that in
-memory pressure conditions most
-of the cpus will end up in the direct reclaim path to drain them all
-without IPIs.
+I still think it is a bit unfortunate that we can end up allocating
+more pages than we need and the radix_preload() before __swap_duplicate
+identifies that the work was unnecessary. However, duplicate logic is
+also bad and as you say, in the context of the cost of swap IO, the cost
+is negligible and it's a corner case.
 
-What I can't figure out is why we don't need  get/put_online_cpus()
-pair around each and every call
-to on_each_cpu everywhere? and if we do, perhaps making it a part of
-on_each_cpu is the way to go?
-
-Something like:
-
-diff --git a/kernel/smp.c b/kernel/smp.c
-index f66a1b2..cfa3882 100644
---- a/kernel/smp.c
-+++ b/kernel/smp.c
-@@ -691,11 +691,15 @@ void on_each_cpu(void (*func) (void *info), void
-*info, int wait)
- {
- 	unsigned long flags;
-
-+	BUG_ON(in_atomic());
-+
-+	get_online_cpus();
- 	preempt_disable();
- 	smp_call_function(func, info, wait);
- 	local_irq_save(flags);
- 	func(info);
- 	local_irq_restore(flags);
- 	preempt_enable();
-+	put_online_cpus();
- }
- EXPORT_SYMBOL(on_each_cpu);
-
-Does that makes?
+I'm ok with it.
 
 -- 
-Gilad Ben-Yossef
-Chief Coffee Drinker
-gilad@benyossef.com
-Israel Cell: +972-52-8260388
-US Cell: +1-973-8260388
-http://benyossef.com
-
-"Unfortunately, cache misses are an equal opportunity pain provider."
--- Mike Galbraith, LKML
+Mel Gorman
+SUSE Labs
