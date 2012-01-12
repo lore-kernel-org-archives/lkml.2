@@ -1,64 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753330Ab2ALKQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 05:16:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33844 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab2ALKQn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 05:16:43 -0500
-Message-ID: <4F0EB2FF.30009@redhat.com>
-Date: Thu, 12 Jan 2012 12:16:31 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
-MIME-Version: 1.0
-To: Nadav Amit <nadav.amit@gmail.com>
-CC: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
-        Nadav Amit <namit@cs.technion.ac.il>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: Exception during emulation decode should propagate
-References: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il> <20120112071137.303628cea69b79868956d860@gmail.com> <4F0E28C7.2010409@oss.ntt.co.jp> <0C475788-593F-46AA-8BE0-274E6765D46D@gmail.com>
-In-Reply-To: <0C475788-593F-46AA-8BE0-274E6765D46D@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753357Ab2ALKSE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 05:18:04 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:8559 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab2ALKR7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 05:17:59 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [RFC 06/14] irq_domain/powerpc: Eliminate virq_is_host()
+Message-Id: <keep-irq-is-domain@mdm.bga.com>
+In-Reply-To: <1326313337-24603-7-git-send-email-grant.likely@secretlab.ca>
+References: <1326313337-24603-7-git-send-email-grant.likely@secretlab.ca>
+ <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+Date: Thu, 12 Jan 2012 04:17:58 -0600
+X-Originating-IP: 71.22.127.106
+X-HeloNotChecked: Helo response was not checked before commands sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2012 11:07 AM, Nadav Amit wrote:
-> >> 
-> >> When I cleaned up insn_fetch(), I thought that fetching the instruction
-> >> which is being executed by the guest cannot cause #PF.
-> >> 
-> >> The possibility that a meaningless userspace might similtaneously unmap
-> >> the page, noted by Avi IIRC, was ignored intentionally, so we just fail
-> >> in such a case.
-> >> 
-> >> Did you see any real problem?
->
-> Well, I run some research project for which I emulate instructions quite
-> often. I do see a real problem with Linux 3.0.0. Please note AFAIK #GP
-> might occur as well during instruction fetch. I don't think failing is the
-> right behavior in such case - there is no real reason to fail.
->
-> Please tell me whether you are OK with KVM failing in such a scenario.
+On Wed Jan 11 2012 about 15:24:34 EST, Grant Likely wrote:
+> There is only one user, and it is trivial to open-code.
 
-So long as it's just the guest who is affected (at the same privilege
-level; we don't want guest userspace to cause a host failure).
+I added virq_is_host because I had planned to change how we find the
+host (domain) from a virq.
 
-We might have issues with userspace causing such a failure, or a nested
-guest.  I see we already check for that in handle_emulation_failure()
-(but not userspace).
+Instead of storing a pointer in irq_desc (a pointer for every irq),
+I planned to use a NR_IRQ(+extra) bitmap per domain.  This should be
+a win storage-wise when the number of irq controllers is less than the
+number of bits in a long.
 
-> If not - I'll send an updated patch (in which x86_decode_insn returns
-> EMULATION_OK when rc == X86EMUL_PROPAGATE_FAULT).
+This would also convert scanning for a reverse map from walking every
+irqdesc to walking find_next_bit over the irqs assigned to the host.
 
-It guess it's better to be correct in the emulator than rely on a
-failure allowing for guest-internal DoS.
+Thus my rule was "code outside kernel/irq must not touch domain";
+both the contents and how it was associated were abstracted.
 
--- 
-error compiling committee.c: too many arguments to function
+Other planned changes included splitting the reverse lookup into
+domain dependent pieces, creating the ida for sparse map at domain
+creation time (init irq is after radix_tree_init as its used by the
+current irq code) so we never fall back to linear search.  Linear
+populated the reverse map as the irq was assigned, and changed to
+a seperate subtype if it mapped an irq above the map size.
 
+I thought some of the domains would be split into seperate files
+selected by Kconfig, at least the sparse tree.
+
+There was also a nomap varient to handle iseries (and one of the cell
+varients) where the interrupt number to use for an event is controlled
+by the guest, that led to the discussion with tlgx about how to
+disallow the extra irqs above the limit set by the arch callback.
+
+Actually making virq-is-domain a domain callback could eliminate the
+need for the bitmap on legacy (range limited) domains.
+
+
+I have my work in progress patches from 2.6.39 if you would like to
+see them.  I was trying to clean up powerpc before pushing it over,
+and didn't get all the concepts written.  So I just sent Ben what
+was ready at the time and haven't had time to get back to it.
+
+Overall, I think most of the other concepts are ok, although I would
+have chosen to remove NO_IRQ before moving the code, and probably
+the rename from host to domain.  I haven't studied the patches in
+detail since your tree is based on linux-next and my drive doesn't
+have space for that.  It took me a while to realize the code removed
+from the header file in 4/14 (powerpc use commmon host) was actually
+moved to irq-domain in 1/14 (a comment to that effect would be nice).
+
+
+milton
