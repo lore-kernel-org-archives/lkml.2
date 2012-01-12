@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab2ALKZF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 05:25:05 -0500
-Received: from imr4.ericy.com ([198.24.6.9]:39667 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752339Ab2ALKZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 05:25:03 -0500
-Date: Thu, 12 Jan 2012 02:22:51 -0800
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Jean Delvare <khali@linux-fr.org>
-CC: Zac Storer <zac.3.14159@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH] Drivers: hwmon: adm1031: fixed spacing
- coding style issues
-Message-ID: <20120112102251.GA16184@ericsson.com>
-References: <1321605413-13614-1-git-send-email-zac.3.14159@gmail.com>
- <20111118103501.3c14d106@endymion.delvare>
- <20120112090149.1acbff01@endymion.delvare>
+	id S1753419Ab2ALK0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 05:26:04 -0500
+Received: from relay.medianet-world.de ([213.157.0.172]:38683 "HELO
+	relay.medianet-world.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751518Ab2ALK0B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 05:26:01 -0500
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jan 2012 05:26:00 EST
+thread-index: AczRE6VKXRDw33E0R2+bUMVGQvuLKw==
+Thread-Topic: [ANNOUNCE] 3.0.14-rt31
+Content-Class: urn:content-classes:message
+Importance: normal
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4913
+From: "Tim Sander" <tim.sander@hbm.com>
+Organization: Hottinger Baldwin Messtechnik
+To: "Steven Rostedt" <rostedt@goodmis.org>
+Subject: Re: [ANNOUNCE] 3.0.14-rt31
+Date: Thu, 12 Jan 2012 11:18:34 +0100
+User-Agent: KMail/1.13.5 (Linux/3.0.3; KDE/4.4.5; x86_64; ; )
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+        "RT" <linux-rt-users@vger.kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Clark Williams" <williams@redhat.com>,
+        "John Kacur" <jkacur@redhat.com>
+References: <1324525237.5916.114.camel@gandalf.stny.rr.com>
+In-Reply-To: <1324525237.5916.114.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20120112090149.1acbff01@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/Plain;
+	charset="iso-8859-15"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <201201121118.34776.tim.sander@hbm.com>
+X-OriginalArrivalTime: 12 Jan 2012 10:19:19.0305 (UTC) FILETIME=[A532B790:01CCD113]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 03:01:49AM -0500, Jean Delvare wrote:
-> On Fri, 18 Nov 2011 10:35:01 +0100, Jean Delvare wrote:
-> > On Fri, 18 Nov 2011 01:36:53 -0700, Zac Storer wrote:
-> > > Fixed spacing coding style issues.
-> > > 
-> > > Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
-> > > ---
-> > >  drivers/hwmon/adm1031.c |    2 +-
-> > >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
-> > > index 0683e6b..694392b 100644
-> > > --- a/drivers/hwmon/adm1031.c
-> > > +++ b/drivers/hwmon/adm1031.c
-> > > @@ -1058,7 +1058,7 @@ static struct adm1031_data *adm1031_update_device(struct device *dev)
-> > >  			data->alarm &= 0xc0ff;
-> > >  		}
-> > >  
-> > > -		for (chan=0; chan<(data->chip_type == adm1030 ? 1 : 2); chan++) {
-> > > +		for (chan = 0; chan < (data->chip_type == adm1030 ? 1 : 2); chan++) {
-> > >  			data->fan_div[chan] =
-> > >  			    adm1031_read_value(client, ADM1031_REG_FAN_DIV(chan));
-> > >  			data->fan_min[chan] =
-> > 
-> > Err, you apparently did not understand my request. Please send _one_
-> > patch fixing all the adm1031 coding style issues at once.
-> 
-> Zac, do you have an updated patch for me?
-> 
-Just sent you one, with Zac's patches merged into one and (almost) all other checkpatch issues
-fixed as well.
+Hi Steven
 
-Guenter
+I have just tested 3.0.14 with some local adaptions. Unfortunatly there we 
+have still two errors here:
+Reboot ( of upstart) fails sometimes fails with the following message:
+"reboot: Unable to execute shutdown: Bad address"
+This problem can probably easily worked around by catching a failed execution 
+and retry, but i am afraid that execution fails more often in other places and 
+leads to silent functionality failures.
+
+and the running wild ksoftirqd0 most probably after the kernel message:
+"sched: RT throttling activated"
+It also seems as if the system looks up after running ifconfig. But it seems as 
+if the error only shows up most of the times if i am not around.
+
+Best regards
+Tim
+
+
+Hottinger Baldwin Messtechnik GmbH, Im Tiefen See 45, 64293 Darmstadt, Germany | www.hbm.com 
+
+Registered as GmbH (German limited liability corporation) in the commercial register at the local court of Darmstadt, HRB 1147  
+Company domiciled in Darmstadt | CEO: Andreas Huellhorst | Chairman of the board: James Charles Webster
+
+Als Gesellschaft mit beschraenkter Haftung eingetragen im Handelsregister des Amtsgerichts Darmstadt unter HRB 1147 
+Sitz der Gesellschaft: Darmstadt | Geschaeftsfuehrung: Andreas Huellhorst | Aufsichtsratsvorsitzender: James Charles Webster
+
+The information in this email is confidential. It is intended solely for the addressee. If you are not the intended recipient, please let me know and delete this email.
+
+Die in dieser E-Mail enthaltene Information ist vertraulich und lediglich für den Empfaenger bestimmt. Sollten Sie nicht der eigentliche Empfaenger sein, informieren Sie mich bitte kurz und loeschen diese E-Mail.
