@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913Ab2ALI0Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 03:26:24 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:46177 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab2ALI0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 03:26:22 -0500
-From: Michal Simek <monstr@monstr.eu>
-To: linux-kernel@vger.kernel.org
-Cc: Michal Simek <monstr@monstr.eu>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-usb@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH] USB: EHCI: Don't use NO_IRQ in xilinx ehci driver
-Date: Thu, 12 Jan 2012 09:26:17 +0100
-Message-Id: <1326356777-24135-1-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
+	id S1752934Ab2ALI1Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 03:27:24 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45634 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752849Ab2ALI1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 03:27:23 -0500
+Date: Thu, 12 Jan 2012 09:27:22 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
+Message-ID: <20120112082722.GB1042@tiehlicka.suse.cz>
+References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
+ <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
+ <20120111084802.GA16466@tiehlicka.suse.cz>
+ <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drivers shouldn't use NO_IRQ. This driver is used
-by Microblaze and PPC. PPC defines NO_IRQ as 0
-and Microblaze has removed it.
+On Thu 12-01-12 11:17:02, KAMEZAWA Hiroyuki wrote:
+> On Wed, 11 Jan 2012 09:48:02 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Tue 10-01-12 13:31:08, David Rientjes wrote:
+> > > On Tue, 10 Jan 2012, Michal Hocko wrote:
+> > [...]
+> > > >  mm/page_alloc.c |   11 +++++++++++
+> > > >  1 files changed, 11 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > index 2b8ba3a..485be89 100644
+> > > > --- a/mm/page_alloc.c
+> > > > +++ b/mm/page_alloc.c
+> > > > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+> > > >  bool is_pageblock_removable_nolock(struct page *page)
+> > > >  {
+> > > >  	struct zone *zone = page_zone(page);
+> > > > +	unsigned long pfn = page_to_pfn(page);
+> > > > +
+> 
+> Hmm, I don't like to use page_zone() when we know the page may not be initialized.
+> Shouldn't we add
+> 
+> 	if (!node_online(page_to_nid(page))
+> 		return false;
+> ?
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
-CC: Alan Stern <stern@rowland.harvard.edu>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-usb@vger.kernel.org
-CC: devicetree-discuss@lists.ozlabs.org
----
- drivers/usb/host/ehci-xilinx-of.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+How is this different? The node won't be initialized in page flags as
+well.
 
-diff --git a/drivers/usb/host/ehci-xilinx-of.c b/drivers/usb/host/ehci-xilinx-of.c
-index 32793ce..9c2cc46 100644
---- a/drivers/usb/host/ehci-xilinx-of.c
-+++ b/drivers/usb/host/ehci-xilinx-of.c
-@@ -183,7 +183,7 @@ static int __devinit ehci_hcd_xilinx_of_probe(struct platform_device *op)
- 	}
- 
- 	irq = irq_of_parse_and_map(dn, 0);
--	if (irq == NO_IRQ) {
-+	if (!irq) {
- 		printk(KERN_ERR "%s: irq_of_parse_and_map failed\n", __FILE__);
- 		rv = -EBUSY;
- 		goto err_irq;
+> But...hmm. I think we should return 'true' here for removing a section with a hole
+> finally....(Now, false will be safe.)
+
+Those pages are reserved (for BIOS I guess) in this particular case so I
+do not think it is safe to claim that the block is removable. Or am I
+missing something?
+
+[...]
+> > > I think this should be handled in is_mem_section_removable() on the pfn 
+> > > rather than using the struct page in is_pageblock_removable_nolock() and 
+> > > converting back and forth.  We should make sure that any page passed to 
+> > > is_pageblock_removable_nolock() is valid.
+> > 
+> > Yes, I do not like pfn->page->pfn dance as well and in fact I do not
+> > have a strong opinion which one is better. I just put it at the place
+> > where we care about zone to be more obvious. If others think that I
+> > should move the check one level higher I'll do that. I just think this
+> > is more obvious.
+> > 
+> Hmm, mem_section and pageblock is a different chunk...
+> And, IIUC, in some IBM machines, section may includes several zones.
+> Please taking care of that if you move this to is_mem_section_removable()...
+
+Thanks for pointing this out. 
+
+> 
+> Thanks,
+> -Kame
+
+Thanks for comments.
 -- 
-1.7.5.4
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
