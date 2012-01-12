@@ -1,362 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab2ALTbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:31:23 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:31859 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755031Ab2ALT3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 14:29:53 -0500
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 2/6] thp: optimize away unnecessary page table locking
-Date: Thu, 12 Jan 2012 14:34:54 -0500
-Message-Id: <1326396898-5579-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-In-Reply-To: <1326396898-5579-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1326396898-5579-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1755133Ab2ALTk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 14:40:28 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:35451 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026Ab2ALTk0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 14:40:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	<1326302710-9427-2-git-send-email-wad@chromium.org>
+	<1326383015.7642.77.camel@gandalf.stny.rr.com>
+	<CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
+	<1326385635.7642.89.camel@gandalf.stny.rr.com>
+	<CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
+	<CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com>
+	<CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
+	<CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
+Date: Thu, 12 Jan 2012 13:40:23 -0600
+Message-ID: <CABqD9hYynwP6ViTZi_7XH7OWbZ7SHskU9W6roX2yD5rwqBO96Q@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Will Drewry <wad@chromium.org>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when we check if we can handle thp as it is or we need to
-split it into regular sized pages, we hold page table lock prior to
-check whether a given pmd is mapping thp or not. Because of this,
-when it's not "huge pmd" we suffer from unnecessary lock/unlock overhead.
-To remove it, this patch introduces a optimized check function and
-replace several similar logics with it.
+On Thu, Jan 12, 2012 at 12:44 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Thu, Jan 12, 2012 at 10:32 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Thu, Jan 12, 2012 at 10:18 AM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>>
+>>> Like this?
+>>>
+>>> http://lkml.indiana.edu/hypermail/linux/kernel/1003.3/01225.html
+>>
+>> I don't know the execve_nosecurity patches, so the diff makes little
+>> sense to me, but yeah, I wouldn't expect it to be more than a couple
+>> of lines. Exactly *how* you set the bit etc is not something I care
+>> deeply about, prctl seems about as good as anything.
+>>
+>>> Note that there's a huge can of worms if execve is allowed but
+>>> suid/sgid is not: selinux may elevate privileges on exec of pretty
+>>> much anything.  (I think that this is a really awful idea, but it's in
+>>> the kernel, so we're stuck with it.)
+>>
+>> You can do any amount of crazy things with selinux, but the other side
+>> of the coin is that it would also be trivial to teach selinux about
+>> this same "restricted environment" bit, and just say that a process
+>> with that bit set doesn't get to match whatever selinux privilege
+>> escalation rules..
+>>
+>> I really don't think this is just about "execve cannot do setuid". I
+>> think it's about the process being marked as restricted.
+>>
+>> So in your patch, I think that "PR_RESTRICT_EXEC" bit is wrong. It
+>> should simply be "PR_RESTRICT_ME", and be done with it, and not try to
+>> artificially limit it to be some "execve feature", and more think of
+>> it as a "this is a process that has *no* extra privileges at all, and
+>> can never get them".
+>
+> Fair enough.  I'll submit the simpler patch tonight.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: David Rientjes <rientjes@google.com>
+This sounds cool.  Do you think you'll go for a new task_struct member
+or will it a securebit?  (Seems like securebits might be too tied to
+posix file caps, but I figured I'd ask).
 
-Changes since v2:
-  - Fix missing "return 0" in "thp under splitting" path
-  - Remove unneeded comment
-  - Change the name of check function to describe what it does
-  - Add VM_BUG_ON(mmap_sem)
----
- fs/proc/task_mmu.c      |   73 +++++++++------------------
- include/linux/huge_mm.h |    7 +++
- mm/huge_memory.c        |  127 +++++++++++++++++++++++------------------------
- mm/mremap.c             |    3 +-
- 4 files changed, 95 insertions(+), 115 deletions(-)
+I'm planning on going ahead and mocking up your potential patch so I
+can respin this series using it and make sure I understand the
+interactions.
 
-diff --git 3.2-rc5.orig/fs/proc/task_mmu.c 3.2-rc5/fs/proc/task_mmu.c
-index bd19177..5db15eb 100644
---- 3.2-rc5.orig/fs/proc/task_mmu.c
-+++ 3.2-rc5/fs/proc/task_mmu.c
-@@ -394,20 +394,12 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	pte_t *pte;
- 	spinlock_t *ptl;
- 
--	spin_lock(&walk->mm->page_table_lock);
--	if (pmd_trans_huge(*pmd)) {
--		if (pmd_trans_splitting(*pmd)) {
--			spin_unlock(&walk->mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, pmd);
--		} else {
--			smaps_pte_entry(*(pte_t *)pmd, addr,
--					HPAGE_PMD_SIZE, walk);
--			spin_unlock(&walk->mm->page_table_lock);
--			mss->anonymous_thp += HPAGE_PMD_SIZE;
--			return 0;
--		}
--	} else {
-+	if (pmd_trans_huge_stable(pmd, vma)) {
-+		smaps_pte_entry(*(pte_t *)pmd, addr,
-+				HPAGE_PMD_SIZE, walk);
- 		spin_unlock(&walk->mm->page_table_lock);
-+		mss->anonymous_thp += HPAGE_PMD_SIZE;
-+		return 0;
- 	}
- 	/*
- 	 * The mmap_sem held all the way back in m_start() is what
-@@ -694,26 +686,18 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	/* find the first VMA at or above 'addr' */
- 	vma = find_vma(walk->mm, addr);
- 
--	spin_lock(&walk->mm->page_table_lock);
--	if (pmd_trans_huge(*pmd)) {
--		if (pmd_trans_splitting(*pmd)) {
--			spin_unlock(&walk->mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, pmd);
--		} else {
--			for (; addr != end; addr += PAGE_SIZE) {
--				unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
--					>> PAGE_SHIFT;
--				pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
--							       offset);
--				err = add_to_pagemap(addr, pfn, pm);
--				if (err)
--					break;
--			}
--			spin_unlock(&walk->mm->page_table_lock);
--			return err;
-+	if (pmd_trans_huge_stable(pmd, vma)) {
-+		for (; addr != end; addr += PAGE_SIZE) {
-+			unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
-+				>> PAGE_SHIFT;
-+			pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
-+						       offset);
-+			err = add_to_pagemap(addr, pfn, pm);
-+			if (err)
-+				break;
- 		}
--	} else {
- 		spin_unlock(&walk->mm->page_table_lock);
-+		return err;
- 	}
- 
- 	for (; addr != end; addr += PAGE_SIZE) {
-@@ -980,24 +964,17 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
- 	pte_t *pte;
- 
- 	md = walk->private;
--	spin_lock(&walk->mm->page_table_lock);
--	if (pmd_trans_huge(*pmd)) {
--		if (pmd_trans_splitting(*pmd)) {
--			spin_unlock(&walk->mm->page_table_lock);
--			wait_split_huge_page(md->vma->anon_vma, pmd);
--		} else {
--			pte_t huge_pte = *(pte_t *)pmd;
--			struct page *page;
--
--			page = can_gather_numa_stats(huge_pte, md->vma, addr);
--			if (page)
--				gather_stats(page, md, pte_dirty(huge_pte),
--						HPAGE_PMD_SIZE/PAGE_SIZE);
--			spin_unlock(&walk->mm->page_table_lock);
--			return 0;
--		}
--	} else {
-+
-+	if (pmd_trans_huge_stable(pmd, md->vma)) {
-+		pte_t huge_pte = *(pte_t *)pmd;
-+		struct page *page;
-+
-+		page = can_gather_numa_stats(huge_pte, md->vma, addr);
-+		if (page)
-+			gather_stats(page, md, pte_dirty(huge_pte),
-+				     HPAGE_PMD_SIZE/PAGE_SIZE);
- 		spin_unlock(&walk->mm->page_table_lock);
-+		return 0;
- 	}
- 
- 	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-diff --git 3.2-rc5.orig/include/linux/huge_mm.h 3.2-rc5/include/linux/huge_mm.h
-index a9ace9c..bb87147 100644
---- 3.2-rc5.orig/include/linux/huge_mm.h
-+++ 3.2-rc5/include/linux/huge_mm.h
-@@ -113,6 +113,8 @@ extern void __vma_adjust_trans_huge(struct vm_area_struct *vma,
- 				    unsigned long start,
- 				    unsigned long end,
- 				    long adjust_next);
-+extern int pmd_trans_huge_stable(pmd_t *pmd,
-+				struct vm_area_struct *vma);
- static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
- 					 unsigned long start,
- 					 unsigned long end,
-@@ -176,6 +178,11 @@ static inline void vma_adjust_trans_huge(struct vm_area_struct *vma,
- 					 long adjust_next)
- {
- }
-+static inline int pmd_trans_huge_stable(pmd_t *pmd,
-+					struct vm_area_struct *vma)
-+{
-+	return 0;
-+}
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
- #endif /* _LINUX_HUGE_MM_H */
-diff --git 3.2-rc5.orig/mm/huge_memory.c 3.2-rc5/mm/huge_memory.c
-index 36b3d98..b7811df 100644
---- 3.2-rc5.orig/mm/huge_memory.c
-+++ 3.2-rc5/mm/huge_memory.c
-@@ -1001,29 +1001,21 @@ int zap_huge_pmd(struct mmu_gather *tlb, struct vm_area_struct *vma,
- {
- 	int ret = 0;
- 
--	spin_lock(&tlb->mm->page_table_lock);
--	if (likely(pmd_trans_huge(*pmd))) {
--		if (unlikely(pmd_trans_splitting(*pmd))) {
--			spin_unlock(&tlb->mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma,
--					     pmd);
--		} else {
--			struct page *page;
--			pgtable_t pgtable;
--			pgtable = get_pmd_huge_pte(tlb->mm);
--			page = pmd_page(*pmd);
--			pmd_clear(pmd);
--			page_remove_rmap(page);
--			VM_BUG_ON(page_mapcount(page) < 0);
--			add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
--			VM_BUG_ON(!PageHead(page));
--			spin_unlock(&tlb->mm->page_table_lock);
--			tlb_remove_page(tlb, page);
--			pte_free(tlb->mm, pgtable);
--			ret = 1;
--		}
--	} else
-+	if (likely(pmd_trans_huge_stable(pmd, vma))) {
-+		struct page *page;
-+		pgtable_t pgtable;
-+		pgtable = get_pmd_huge_pte(tlb->mm);
-+		page = pmd_page(*pmd);
-+		pmd_clear(pmd);
-+		page_remove_rmap(page);
-+		VM_BUG_ON(page_mapcount(page) < 0);
-+		add_mm_counter(tlb->mm, MM_ANONPAGES, -HPAGE_PMD_NR);
-+		VM_BUG_ON(!PageHead(page));
- 		spin_unlock(&tlb->mm->page_table_lock);
-+		tlb_remove_page(tlb, page);
-+		pte_free(tlb->mm, pgtable);
-+		ret = 1;
-+	}
- 
- 	return ret;
- }
-@@ -1034,21 +1026,14 @@ int mincore_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- {
- 	int ret = 0;
- 
--	spin_lock(&vma->vm_mm->page_table_lock);
--	if (likely(pmd_trans_huge(*pmd))) {
--		ret = !pmd_trans_splitting(*pmd);
--		spin_unlock(&vma->vm_mm->page_table_lock);
--		if (unlikely(!ret))
--			wait_split_huge_page(vma->anon_vma, pmd);
--		else {
--			/*
--			 * All logical pages in the range are present
--			 * if backed by a huge page.
--			 */
--			memset(vec, 1, (end - addr) >> PAGE_SHIFT);
--		}
--	} else
-+	if (likely(pmd_trans_huge_stable(pmd, vma))) {
-+		/*
-+		 * All logical pages in the range are present
-+		 * if backed by a huge page.
-+		 */
- 		spin_unlock(&vma->vm_mm->page_table_lock);
-+		memset(vec, 1, (end - addr) >> PAGE_SHIFT);
-+	}
- 
- 	return ret;
- }
-@@ -1078,21 +1063,12 @@ int move_huge_pmd(struct vm_area_struct *vma, struct vm_area_struct *new_vma,
- 		goto out;
- 	}
- 
--	spin_lock(&mm->page_table_lock);
--	if (likely(pmd_trans_huge(*old_pmd))) {
--		if (pmd_trans_splitting(*old_pmd)) {
--			spin_unlock(&mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, old_pmd);
--			ret = -1;
--		} else {
--			pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
--			VM_BUG_ON(!pmd_none(*new_pmd));
--			set_pmd_at(mm, new_addr, new_pmd, pmd);
--			spin_unlock(&mm->page_table_lock);
--			ret = 1;
--		}
--	} else {
-+	if (likely(pmd_trans_huge_stable(old_pmd, vma))) {
-+		pmd = pmdp_get_and_clear(mm, old_addr, old_pmd);
-+		VM_BUG_ON(!pmd_none(*new_pmd));
-+		set_pmd_at(mm, new_addr, new_pmd, pmd);
- 		spin_unlock(&mm->page_table_lock);
-+		ret = 1;
- 	}
- out:
- 	return ret;
-@@ -1104,27 +1080,48 @@ int change_huge_pmd(struct vm_area_struct *vma, pmd_t *pmd,
- 	struct mm_struct *mm = vma->vm_mm;
- 	int ret = 0;
- 
--	spin_lock(&mm->page_table_lock);
--	if (likely(pmd_trans_huge(*pmd))) {
--		if (unlikely(pmd_trans_splitting(*pmd))) {
--			spin_unlock(&mm->page_table_lock);
--			wait_split_huge_page(vma->anon_vma, pmd);
--		} else {
--			pmd_t entry;
-+	if (likely(pmd_trans_huge_stable(pmd, vma))) {
-+		pmd_t entry;
- 
--			entry = pmdp_get_and_clear(mm, addr, pmd);
--			entry = pmd_modify(entry, newprot);
--			set_pmd_at(mm, addr, pmd, entry);
--			spin_unlock(&vma->vm_mm->page_table_lock);
--			flush_tlb_range(vma, addr, addr + HPAGE_PMD_SIZE);
--			ret = 1;
--		}
--	} else
-+		entry = pmdp_get_and_clear(mm, addr, pmd);
-+		entry = pmd_modify(entry, newprot);
-+		set_pmd_at(mm, addr, pmd, entry);
- 		spin_unlock(&vma->vm_mm->page_table_lock);
-+		flush_tlb_range(vma, addr, addr + HPAGE_PMD_SIZE);
-+		ret = 1;
-+	}
- 
- 	return ret;
- }
- 
-+/*
-+ * Returns 1 if a given pmd is mapping a thp and stable (not under splitting.)
-+ * Returns 0 otherwise. Note that if it returns 1, this routine returns without
-+ * unlocking page table locks. So callers must unlock them.
-+ */
-+int pmd_trans_huge_stable(pmd_t *pmd, struct vm_area_struct *vma)
-+{
-+	VM_BUG_ON(!rwsem_is_locked(&vma->vm_mm->mmap_sem));
-+
-+	if (!pmd_trans_huge(*pmd))
-+		return 0;
-+
-+	spin_lock(&vma->vm_mm->page_table_lock);
-+	if (likely(pmd_trans_huge(*pmd))) {
-+		if (pmd_trans_splitting(*pmd)) {
-+			spin_unlock(&vma->vm_mm->page_table_lock);
-+			wait_split_huge_page(vma->anon_vma, pmd);
-+			return 0;
-+		} else {
-+			/* Thp mapped by 'pmd' is stable, so we can
-+			 * handle it as it is. */
-+			return 1;
-+		}
-+	}
-+	spin_unlock(&vma->vm_mm->page_table_lock);
-+	return 0;
-+}
-+
- pmd_t *page_check_address_pmd(struct page *page,
- 			      struct mm_struct *mm,
- 			      unsigned long address,
-diff --git 3.2-rc5.orig/mm/mremap.c 3.2-rc5/mm/mremap.c
-index d6959cb..d534668 100644
---- 3.2-rc5.orig/mm/mremap.c
-+++ 3.2-rc5/mm/mremap.c
-@@ -155,9 +155,8 @@ unsigned long move_page_tables(struct vm_area_struct *vma,
- 			if (err > 0) {
- 				need_flush = true;
- 				continue;
--			} else if (!err) {
--				split_huge_page_pmd(vma->vm_mm, old_pmd);
- 			}
-+			split_huge_page_pmd(vma->vm_mm, old_pmd);
- 			VM_BUG_ON(pmd_trans_huge(*old_pmd));
- 		}
- 		if (pmd_none(*new_pmd) && __pte_alloc(new_vma->vm_mm, new_vma,
--- 
-1.7.6.5
-
+thanks!
+will
