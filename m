@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab2ALVjT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 16:39:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53054 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755585Ab2ALVjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 16:39:16 -0500
-Date: Thu, 12 Jan 2012 22:39:13 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: __count_immobile_pages make sure the node is online
-Message-ID: <20120112213913.GC10389@tiehlicka.suse.cz>
-References: <20120111084802.GA16466@tiehlicka.suse.cz>
- <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
- <20120112082722.GB1042@tiehlicka.suse.cz>
- <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
- <20120112092314.GC1042@tiehlicka.suse.cz>
- <20120112183323.1bb62f4d.kamezawa.hiroyu@jp.fujitsu.com>
- <20120112100521.GD1042@tiehlicka.suse.cz>
- <20120112111415.GH4118@suse.de>
- <20120112123555.GF1042@tiehlicka.suse.cz>
- <20120112132629.345e0e37.akpm@linux-foundation.org>
+	id S1755878Ab2ALVjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 16:39:09 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:43042 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755873Ab2ALVjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 16:39:04 -0500
+X-Sasl-enc: 14ckSsaVNMbHPrFUJgH7ybPkxw1U8lKno7wyPXuD4utn 1326404343
+Date: Thu, 12 Jan 2012 13:38:30 -0800
+From: Greg KH <greg@kroah.com>
+To: Paul Taysom <taysom@chromium.org>
+Cc: Paul Taysom <taysom@google.com>, Mandeep Baines <msb@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Theodore Tso <tytso@google.com>, Andrew Morton <akpm@google.com>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
+Message-ID: <20120112213830.GB17405@kroah.com>
+References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120112132629.345e0e37.akpm@linux-foundation.org>
+In-Reply-To: <1326402935-31002-1-git-send-email-taysom@chromium.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-01-12 13:26:29, Andrew Morton wrote:
-> On Thu, 12 Jan 2012 13:35:55 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
+On Thu, Jan 12, 2012 at 01:15:35PM -0800, Paul Taysom wrote:
+> From: Paul Taysom <taysom@google.com>
 > 
-> > On Thu 12-01-12 11:14:15, Mel Gorman wrote:
-> > > On Thu, Jan 12, 2012 at 11:05:21AM +0100, Michal Hocko wrote:
-> > 
-> > > Be aware that this is not the version picked up by Andrew. It would
-> > > not hurt to resend as V2 with a changelog and a note saying it replaces
-> > > mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch in mmotm.
+> A USB stick with a ext file system on it, would occasionally crash
+> when the stick was pulled.
 > 
-> They're rather different things? According to the changelogs,
-> mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch fixes a
-> known-to-occur oops. 
-> mm-__count_immobile_pages-make-sure-the-node-is-online.patch fixes a
-> bug which might happen in the future if we change the node_zones layut?
-
-Yes, and that's the reason why I posted it as a separate patch. I could
-also have squashed both patches together and it would work the same way
-but I think that the zone issue wouldn't be that obvious.
-
+> The problem was a timer was being set on the Backing Device Interface,
+> bdi, after the USB device had been removed and the bdi had been
+> unregistered. The bdi would then be later reinitialized by zeroing
+> the timer without removing from the timer from the timer queue.
+> This would eventually result in a kernel crash (NULL ptr dereference).
 > 
-> So I'm thinking that
-> mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch is 3.3 and
-> -stable material, whereas this patch
-> (mm-__count_immobile_pages-make-sure-the-node-is-online.patch) is 3.3
-> material.  (Actually, it's 3.4 material which I shall stuff into 3.3
-> because the amount of MM material which we're putting into 3.3 is just
-> off the charts and I fear that 3.4 will be similar)
+> When the bdi is unregistered, the dev field is set to NULL. This
+> indication is used by bdi_unregister to only unregister the device
+> once.
+> 
+> Fix: When the backing device is invalidated, the mapping backing_dev_info
+> should be redirected to the default_backing_dev_info.
+> 
+> Created 3 USB sticks with ext2, ext4 and one with both apple and DOS
+> file systems on it. Inserted and removed USB sticks many times in random
+> order. With out the bug fix, the kernel would soon crash. With the fix,
+> it did not. Ran on both stumpy and amd64-generic.
+> 
+> Change-Id: Icdd06cf3ced555dcd9994cfcc9478a9071a802f1
 
-Agreed
+What is this field for?  It makes no sense for a kernel patch
+submission.
 
-Thanks
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+> Signed-off-by: Paul Taysom <taysom@chromium.org>
+> Downstream-bug-report: http://crosbug.com/24165
+
+Is that a regular field that we now use?
+
+And shouldn't this go to the stable kernel releases as well?
+
+Third time's a charm?
+
+greg k-h
