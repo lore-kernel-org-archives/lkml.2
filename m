@@ -1,106 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab2ALQm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:42:27 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:49536 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2ALQmY (ORCPT
+	id S1754291Ab2ALQpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:45:14 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42396 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab2ALQpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:42:24 -0500
-Date: Thu, 12 Jan 2012 11:40:25 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>, linux-kernel@vger.kernel.org,
-        xen-devel <xen-devel@lists.xensource.com>
-Subject: Re: linux 3.3-pre-rc1: Starting domU fails with Error: Failed to
- query current memory allocation of dom0.
-Message-ID: <20120112164025.GA22773@phenom.dumpdata.com>
-References: <498097597.20120112133832@eikelenboom.it>
- <20120112154613.GA10148@phenom.dumpdata.com>
- <CAPXgP1373C5SfzU-rfo5GG53dUE6dVzECSuKzX1c_FirpXQt2g@mail.gmail.com>
- <20120112161204.GC10269@phenom.dumpdata.com>
+	Thu, 12 Jan 2012 11:45:10 -0500
+Message-ID: <4F0F0E10.1010107@canonical.com>
+Date: Thu, 12 Jan 2012 17:45:04 +0100
+From: Tim Gardner <rtg.canonical@gmail.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120110 Thunderbird/10.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112161204.GC10269@phenom.dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4F0F0D6C.0032,ss=1,re=0.000,fgs=0
+To: Tyler Hicks <tyler.hicks@canonical.com>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, ecryptfs@vger.kernel.org
+Subject: Re: [PATCH 1/2] ecryptfs: Improve metatdata read failure logging
+References: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com> <1326301242-5817-2-git-send-email-tim.gardner@canonical.com> <20120112120044.GB4717@boyd>
+In-Reply-To: <20120112120044.GB4717@boyd>
+Content-Type: multipart/mixed;
+ boundary="------------050500060302000800060906"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 11:12:04AM -0500, Konrad Rzeszutek Wilk wrote:
-> On Thu, Jan 12, 2012 at 05:05:34PM +0100, Kay Sievers wrote:
-> > On Thu, Jan 12, 2012 at 16:46, Konrad Rzeszutek Wilk
-> > <konrad.wilk@oracle.com> wrote:
-> > > On Thu, Jan 12, 2012 at 01:38:32PM +0100, Sander Eikelenboom wrote:
-> > 
-> > >> Today i tried linuses tree of today (last commit is 4c4d285ad5665bfbd983b95fde8d7a477d24a361).
-> > >>
-> > >> It boots dom0 fine, but it fails to start any domU with: "Error: Failed to query current memory allocation of dom0."
-> > >> With my previous 3.1.5 kernel everything is fine, nothing else changed in config in between.
-> > > Your patch that converts the xen-balloon to use the regular device bus driver
-> > > (070680218379e15c1901f4bf21b98e3cbf12b527) has some not-so-happy consequences.
-> > >
-> > > The toolstack (xen-tools) use:
-> > >
-> > > /sys/devices/system/xen_memory/xen_memory0
-> > >
-> > > But with the change, it is now:
-> > >
-> > > /sys/devices/xen_memory0/target_kb
-> > 
-> > Urks, seems like a mistake on my side.
-> > 
-> > Please try if changing:
-> >   bus_unregister(&balloon_subsys);
-> > to:
-> >   subsys_system_register(&balloon_subsys, NULL);
-> > in:
-> >   drivers/xen/xen-balloon.c
-> > fixes the issue.
-> 
-> Heh. I was *just* looking at d369a5d8fc70710236ae2d06a0e42dce483712df
-> ("clocksource: convert sysdev_class to a regular subsystem") and typed up this patch
-> to try it out:
+This is a multi-part message in MIME format.
+--------------050500060302000800060906
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Kay, are you Acking this patch? (I can send it to Linus for rc0 or rc1)
+On 01/12/2012 01:00 PM, Tyler Hicks wrote:
+> On 2012-01-11 18:00:41, Tim Gardner wrote:
+>> There are 3 read failure cases in ecryptfs_read_metadata(), but only 2
+>> of them are uniquely noted by kernel log messages. This patch
+>> identifies and logs each read failure case. It also correctly interprets
+>> a negative return value from ecryptfs_read_lower().
+>
+> I'm not sure that the negative return value was incorrectly interpreted.
+> See below.
+>
+>>
+>> Removes unnecessary variable initialization.
+>>
+>> Cc: linux-kernel@vger.kernel.org
+>> Cc: stable@vger.kernel.org
+>> Cc: Tyler Hicks<tyler.hicks@canonical.com>
+>> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
+>> ---
+>>   fs/ecryptfs/crypto.c |   17 +++++++++++------
+>>   1 files changed, 11 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
+>> index d3c8776..ac063bd 100644
+>> --- a/fs/ecryptfs/crypto.c
+>> +++ b/fs/ecryptfs/crypto.c
+>> @@ -1590,8 +1590,8 @@ int ecryptfs_read_and_validate_xattr_region(struct dentry *dentry,
+>>    */
+>>   int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+>>   {
+>> -	int rc = 0;
+>> -	char *page_virt = NULL;
+>> +	int rc;
+>> +	char *page_virt;
+>>   	struct inode *ecryptfs_inode = ecryptfs_dentry->d_inode;
+>>   	struct ecryptfs_crypt_stat *crypt_stat =
+>>   	&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+>> @@ -1611,10 +1611,15 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+>>   	}
+>>   	rc = ecryptfs_read_lower(page_virt, 0, crypt_stat->extent_size,
+>>   				 ecryptfs_inode);
+>> -	if (rc>= 0)
+>> -		rc = ecryptfs_read_headers_virt(page_virt, crypt_stat,
+>> -						ecryptfs_dentry,
+>> -						ECRYPTFS_VALIDATE_HEADER_SIZE);
+>> +	if (rc<  0) {
+>> +		printk(KERN_ERR "%s: Could not read %u bytes\n",
+>> +			__func__, crypt_stat->extent_size);
+>> +		goto out;
+>> +	}
+>
+> This may break things a bit for users that use the
+> ecryptfs_xattr_metadata mount option (which stores the metadata in an
+> xattr, rather than the header of the file). A failure to read the lower
+> file here doesn't matter because the metadata is likely stored in an
+> xattr, which will be found with the ecryptfs_read_xattr_region() call
+> below.
+>
+> I've never liked that ecryptfs potentially looks in both the header and
+> the xattr for metadata, but that's how it has been since the very early
+> days of eCryptfs. I've wanted to change this but there is the potential
+> to break things for users who have a mixture of files with metadata in
+> the header and in the header.
+>
+> Maybe we just go whole hog for 3.3 and only look in either the header or
+> xattr for metadata, depending on whether or not ecryptfs_xattr_metadata
+> is used?
+>
+> I could live with that, but I would definitely not want something like
+> that to go to the stable kernel. Any thoughts?
+>
+> Tyler
+>
 
-commit 4e6f161986678a25c9e76af98df928408c734a27
-Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Date:   Thu Jan 12 11:35:50 2012 -0500
+I think you're right. Given the way the metadata checks are coded I 
+think its impossible to disambiguate the 2 failure scenarios. However, 
+its not really relevant that we know which one failed, only the inode of 
+the metadata read that _did_ fail is important.
 
-    xen/balloon: Move the registration from device to subsystem.
-    
-    With git commit 070680218379e15c1901f4bf21b98e3cbf12b527
-    "xen-balloon: convert sysdev_class to a regular subsystem" we would
-    end up with the attributes being put in:
-    
-     /sys/devices/xen_memory0/target_kb
-    instead of
-    /sys/devices/system/xen_memory/xen_memory0/target_kb
-    
-    Making the tools unable to deflate the kernel to make more space
-    for launching another guest and printing:
+How about this much simpler patch that is also suitable for stable ? 
+Tested on 3.2.
 
-    Error: Failed to query current memory allocation of dom0
-    
-    Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
-    Suggested-by:  Kay Sievers <kay.sievers@vrfy.org>
-    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
 
-diff --git a/drivers/xen/xen-balloon.c b/drivers/xen/xen-balloon.c
-index 3832e30..596e6a7 100644
---- a/drivers/xen/xen-balloon.c
-+++ b/drivers/xen/xen-balloon.c
-@@ -221,7 +221,7 @@ static int register_balloon(struct device *dev)
+--------------050500060302000800060906
+Content-Type: text/x-patch;
+ name="0001-ecryptfs-Improve-metadata-read-failure-logging.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-ecryptfs-Improve-metadata-read-failure-logging.patch"
+
+>From 48f75c409ddc00caec88162f53c3155196b17854 Mon Sep 17 00:00:00 2001
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Thu, 12 Jan 2012 16:31:55 +0100
+Subject: [PATCH 1/1 V2] ecryptfs: Improve metadata read failure logging
+
+Print inode on metadata read failure. The only real
+way of dealing with metadata read failures is to delete
+the underlying file system file. Having the inode
+allows one to 'find . -inum INODE`.
+
+Cc: stable@vger.kernel.org
+Cc: Tyler Hicks <tyler.hicks@canonical.com>
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+---
+ fs/ecryptfs/crypto.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
+index d3c8776..326d6ab 100644
+--- a/fs/ecryptfs/crypto.c
++++ b/fs/ecryptfs/crypto.c
+@@ -1590,8 +1590,8 @@ int ecryptfs_read_and_validate_xattr_region(struct dentry *dentry,
+  */
+ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
  {
- 	int i, error;
- 
--	error = bus_register(&balloon_subsys);
-+	error = subsys_system_register(&balloon_subsys, NULL);
- 	if (error)
- 		return error;
- 
+-	int rc = 0;
+-	char *page_virt = NULL;
++	int rc;
++	char *page_virt;
+ 	struct inode *ecryptfs_inode = ecryptfs_dentry->d_inode;
+ 	struct ecryptfs_crypt_stat *crypt_stat =
+ 	    &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+@@ -1616,11 +1616,13 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+ 						ecryptfs_dentry,
+ 						ECRYPTFS_VALIDATE_HEADER_SIZE);
+ 	if (rc) {
++		/* metadata is not in the file header, so try xattrs */
+ 		memset(page_virt, 0, PAGE_CACHE_SIZE);
+ 		rc = ecryptfs_read_xattr_region(page_virt, ecryptfs_inode);
+ 		if (rc) {
+ 			printk(KERN_DEBUG "Valid eCryptfs headers not found in "
+-			       "file header region or xattr region\n");
++			       "file header region or xattr region, inode %lu\n",
++				ecryptfs_inode->i_ino);
+ 			rc = -EINVAL;
+ 			goto out;
+ 		}
+@@ -1629,7 +1631,8 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+ 						ECRYPTFS_DONT_VALIDATE_HEADER_SIZE);
+ 		if (rc) {
+ 			printk(KERN_DEBUG "Valid eCryptfs headers not found in "
+-			       "file xattr region either\n");
++			       "file xattr region either, inode %lu\n",
++				ecryptfs_inode->i_ino);
+ 			rc = -EINVAL;
+ 		}
+ 		if (crypt_stat->mount_crypt_stat->flags
+@@ -1640,7 +1643,8 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+ 			       "crypto metadata only in the extended attribute "
+ 			       "region, but eCryptfs was mounted without "
+ 			       "xattr support enabled. eCryptfs will not treat "
+-			       "this like an encrypted file.\n");
++			       "this like an encrypted file, inode %lu\n",
++				ecryptfs_inode->i_ino);
+ 			rc = -EINVAL;
+ 		}
+ 	}
+-- 
+1.7.8.3
+
+
+--------------050500060302000800060906--
