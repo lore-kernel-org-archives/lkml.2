@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab2ALT57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:57:59 -0500
-Received: from mail-yx0-f202.google.com ([209.85.213.202]:56448 "EHLO
-	mail-yx0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960Ab2ALT54 (ORCPT
+	id S1755212Ab2ALUAR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:00:17 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42966 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755164Ab2ALUAN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 14:57:56 -0500
-From: Paul Taysom <taysom@chromium.org>
-Cc: Paul Taysom <taysom@google.com>, Paul Taysom <taysom@chromium.org>,
-        Mandeep Baines <msb@chromium.org>, Greg KH <greg@kroah.com>,
-        Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@google.com>,
-        Andrew Morton <akpm@google.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-Date: Thu, 12 Jan 2012 11:57:42 -0800
-Message-Id: <1326398262-26660-1-git-send-email-taysom@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-To: unlisted-recipients:; (no To-header on input)
+	Thu, 12 Jan 2012 15:00:13 -0500
+X-Sasl-enc: paCW/vpz2L/U78XE3dlICdUp3cOUBdx0CIz+hMf45FmP 1326398412
+Date: Thu, 12 Jan 2012 12:00:03 -0800
+From: Greg KH <greg@kroah.com>
+To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        devel@driverdev.osuosl.org, "Ted Ts'o" <tytso@mit.edu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [lttng-dev] Perf ABI (was: Re: [PATCH 09/11] sched: export
+ task_prio to GPL modules)
+Message-ID: <20120112200003.GC28100@kroah.com>
+References: <20111219104915.GA19861@elte.hu>
+ <20111219153053.GA21548@Krystal>
+ <20111220110813.GA19105@elte.hu>
+ <20111223164629.GA30474@Krystal>
+ <20111223172155.GA14117@thunk.org>
+ <20111223181641.GA12681@Krystal>
+ <20111225174613.GA12732@thunk.org>
+ <20120112140905.GA30377@Krystal>
+ <1326380042.7642.73.camel@gandalf.stny.rr.com>
+ <20120112153957.GA20514@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112153957.GA20514@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Taysom <taysom@google.com>
+On Thu, Jan 12, 2012 at 10:39:57AM -0500, Mathieu Desnoyers wrote:
+> > We've done this without version numbers. Just look at all the udev
+> > changes.
+> 
+> Are you seriously refering to udev as an example of how to handle
+> changes, or as one of the worse ABI breakage mess that happened in the
+> Linux kernel history ? My own experience as a Linux users (in the
+> era around 2.6.12 kernels if my memory serves me right) lead me to think
+> it's the latter. And because udev is part of the runtime support, that
+> indeed led to non-bootable systems and lots of frustrated users.
 
-A USB stick with a ext file system on it, would occasionally crash
-when the stick was pulled.
+Really?  You fail to remember the fact that we _fixed_ those
+non-bootable systems by putting the userspace bits back, and symlinks,
+and all other sorts of gyrations in order to prevent userspace from
+breaking again.
 
-The problem was a timer was being set on the Backing Device Interface,
-bdi, after the USB device had been removed and the bdi had been
-unregistered. The bdi would then be later reinitialized by zeroing
-the timer without removing from the timer from the timer queue.
-This would eventually result in a kernel crash (NULL ptr dereference).
+And it worked, and people's machines worked again, and no one since then
+has reported a problem.
 
-When the bdi is unregistered, the dev field is set to NULL. This
-indication is used by bdi_unregister to only unregister the device
-once.
+So I think udev actually is a good example of how to do it right, we
+provide proper backwards compatibility in the kernel to keep userspace
+working.
 
-Fix: When the backing device is invalidated, the mapping backing_dev_info
-should be redirected to the default_backing_dev_info.
+thanks,
 
-Created 3 USB sticks with ext2, ext4 and one with both apple and DOS
-file systems on it. Inserted and removed USB sticks many times in random
-order. With out the bug fix, the kernel would soon crash. With the fix,
-it did not. Ran on both stumpy and amd64-generic.
-
-Signed-off-by: Paul Taysom <taysom@chromium.org>
-Downstream-bug-report: http://crosbug.com/24165
-Cc: Mandeep Baines <msb@chromium.org>
-Cc: Greg KH <greg@kroah.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Theodore Tso <tytso@google.com>
-Cc: Andrew Morton <akpm@google.com>
-Cc: <linux-usb@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: <linux-fsdevel@vger.kernel.org>
----
- fs/block_dev.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index afe74dd..9f9b617 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1,4 +1,4 @@
--/*
-+nvalid/*
-  *  linux/fs/block_dev.c
-  *
-  *  Copyright (C) 1991, 1992  Linus Torvalds
-@@ -110,6 +110,7 @@ void invalidate_bdev(struct block_device *bdev)
- 	 * But, for the strange corners, lets be cautious
- 	 */
- 	cleancache_flush_inode(mapping);
-+	mapping->backing_dev_info = &default_backing_dev_info;
- }
- EXPORT_SYMBOL(invalidate_bdev);
- 
--- 
-1.7.7.3
-
+greg k-h
