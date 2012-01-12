@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab2ALAWX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 19:22:23 -0500
-Received: from na3sys009aog110.obsmtp.com ([74.125.149.203]:33273 "EHLO
-	na3sys009aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751102Ab2ALAWV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 19:22:21 -0500
+	id S1751670Ab2ALAYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 19:24:45 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:57414 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751548Ab2ALAYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 19:24:44 -0500
+X-AuditID: 9c93016f-b7c72ae000007401-d9-4f0e283333e7
+Message-ID: <4F0E282B.8060607@lge.com>
+Date: Thu, 12 Jan 2012 09:24:11 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-In-Reply-To: <1326276130-4042-2-git-send-email-myungjoo.ham@samsung.com>
-References: <1326276130-4042-1-git-send-email-myungjoo.ham@samsung.com> <1326276130-4042-2-git-send-email-myungjoo.ham@samsung.com>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Wed, 11 Jan 2012 16:21:59 -0800
-Message-ID: <CAJOA=zOX0X9M2Lqu1GQC3o37V7e-jja7KbHteJ+yDWL-JRf5YA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] PM / devfreq: fixed syntax errors.
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        myungjoo.ham@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Tejun Heo <tj@kernel.org>
+CC: Steven Rostedt <rostedt@goodmis.org>, axboe@kernel.dk, mingo@redhat.com,
+        fweisbec@gmail.com, teravest@google.com, slavapestov@google.com,
+        ctalbott@google.com, dhsharp@google.com, linux-kernel@vger.kernel.org,
+        winget@google.com, namhyung@gmail.com
+Subject: Re: [PATCH 2/9] block: block_bio_complete tracepoint was missing
+References: <1326220106-5765-1-git-send-email-tj@kernel.org> <1326220106-5765-3-git-send-email-tj@kernel.org> <1326302732.7642.57.camel@gandalf.stny.rr.com> <20120111173036.GG26832@google.com>
+In-Reply-To: <20120111173036.GG26832@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 2:02 AM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-> If devfreq.h was included without CONFIG_PM_DEVFREQ, there has been a
-> compiler error with an additional semicolon added. This patch removes
-> that errorneous semicolon.
+2012-01-12 2:30 AM, Tejun Heo wrote:
+> Hello,
+>
+> On Wed, Jan 11, 2012 at 12:25:32PM -0500, Steven Rostedt wrote:
+>> On Tue, 2012-01-10 at 10:28 -0800, Tejun Heo wrote:
+>>> block_bio_complete tracepoint was defined but not invoked anywhere.
+>>> Fix it.
+>>>
+>>> -tj: This will generate duplicate BLK_TA_COMPLETEs.  Namhyung is
+>>>       working on proper solution.
+>>>
+>>> DO_NOT_APPLY
+>>> Cc: Namhyung Kim<namhyung@gmail.com>
+>>> ---
+>>>   fs/bio.c |    3 +++
+>>>   1 files changed, 3 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/fs/bio.c b/fs/bio.c
+>>> index b1fe82c..96548da 100644
+>>> --- a/fs/bio.c
+>>> +++ b/fs/bio.c
+>>> @@ -1447,6 +1447,9 @@ void bio_endio(struct bio *bio, int error)
+>>>   	else if (!test_bit(BIO_UPTODATE,&bio->bi_flags))
+>>>   		error = -EIO;
+>>>
+>>> +	if (bio->bi_bdev)
+>>> +		trace_block_bio_complete(bdev_get_queue(bio->bi_bdev),
+>>> +					 bio, error);
+>>
+>> I thought I commented before about using TRACE_EVENT_CONDITIONAL() here.
+>> To remove that open coded branch.
+>
+> Yeah but this particular patch is dead now so it's a bit pointless.
+> ioblame:ioblame_io uses it FWIW.  Namhyung, can you please consider
+> using TRACE_EVENT_CONDITION() for you patches if applicable?
+>
+> Thanks.
+>
 
-Looks good.
+Sure, I'll apply it.
 
-Reviewed-by: Mike Turquette <mturquette@ti.com>
-
->
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
->  include/linux/devfreq.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
-> index e9385bf..5862475 100644
-> --- a/include/linux/devfreq.h
-> +++ b/include/linux/devfreq.h
-> @@ -205,12 +205,12 @@ struct devfreq_simple_ondemand_data {
->  static struct devfreq *devfreq_add_device(struct device *dev,
->                                          struct devfreq_dev_profile *profile,
->                                          struct devfreq_governor *governor,
-> -                                         void *data);
-> +                                         void *data)
->  {
->        return NULL;
->  }
->
-> -static int devfreq_remove_device(struct devfreq *devfreq);
-> +static int devfreq_remove_device(struct devfreq *devfreq)
->  {
->        return 0;
->  }
-> --
-> 1.7.4.1
->
+Thanks,
+Namhyung Kim
