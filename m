@@ -1,76 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752847Ab2ALL26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 06:28:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27643 "EHLO mx1.redhat.com"
+	id S1752462Ab2ALLag (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 06:30:36 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54019 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752306Ab2ALL2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 06:28:54 -0500
-Date: Thu, 12 Jan 2012 11:18:06 +0100
-From: Andrew Jones <drjones@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: David Rientjes <rientjes@google.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, david.woodhouse@intel.com,
-        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, holt@sgi.com,
-        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
-        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
-        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
-        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
-        yasutake.koichi@jp.panasonic.com, jonas@southpole.se, kyle@mcmartin.ca,
-        deller@gmx.de, jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
-        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
-        mchehab@infradead.org, johannes@sipsolutions.net,
-        linville@tuxdriver.com
-Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
-Message-ID: <20120112101805.GA2375@turtle.usersys.redhat.com>
-References: <1326295008-29795-1-git-send-email-drjones@redhat.com>
- <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com>
- <201201120918.53026.arnd@arndb.de>
+	id S1751153Ab2ALLae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 06:30:34 -0500
+Date: Thu, 12 Jan 2012 12:30:31 +0100
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 0/4] Fix filesystem freezing
+Message-ID: <20120112113031.GA8778@quack.suse.cz>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz>
+ <20120112024841.GB2806@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201201120918.53026.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120112024841.GB2806@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 09:18:52AM +0000, Arnd Bergmann wrote:
-> On Wednesday 11 January 2012, David Rientjes wrote:
-> > We discussed this when the patch was made to change EMBEDDED to EXPERT and 
-> > we knew that things like CONFIG_SLOB exist that would only make sense on a 
-> > platform with a very small memory footprint.  So what criteria are you 
-> > using to determine what makes sense for EMBEDDED or not and what would be 
-> > generally useful for platforms with very small memory footprints?
+On Thu 12-01-12 13:48:41, Dave Chinner wrote:
+> On Thu, Jan 12, 2012 at 02:20:49AM +0100, Jan Kara wrote:
 > > 
-> > I would think that something like CONFIG_SMALLMEM would identify those 
-> > candidates (for things like SLOB) and then you could separate the rest 
-> > based on the platform they exist for since you're essentially introducing 
-> > a new config symbol here that existed in the past but are now using it 
-> > with different semantics.
-
-No, I'm putting EMBEDDED back to work doing the same thing it did before,
-i.e. the semantics for it are the same as they were before 6a108a14fa35.
-This is not a revert of that patch though. I'm keeping EXPERT, but
-ensuring it doesn't do everything EMBEDDED used to do. I'm ensuring it
-only does what it advertises it does, which is to give a useful configmenu
-cleanup symbol to the whole kernel.
-
+> >   Hello,
+> > 
+> >   filesystem freezing is currently racy and thus we can end up with dirty data
+> > on frozen filesystem (see changelog of the first patch for detailed race
+> > description and proposed fix). This patch series aims at fixing this.
 > 
-> The CONFIG_SMALLMEM would also require people to know what they are doing,
-> beyond what we expect the average person building a kernel to, which is
-> just what CONFIG_EXPERT means, and the same reason why we ended up renaming
-> CONFIG_EMBEDDED to CONFIG_EXPERT. People have a very different understanding
-> of what "embedded" actually means, and not all of those require small
-> memory footprint or even a custom kernel. Let's just stay with CONFIG_EXPERT.
+> It only fixes the dirty data race (i.e. SB_FREEZE_WRITE). The same
+> race conditions exist for SB_FREEZE_TRANS on XFS, and so need the
+> same fix. That race has had one previous attempt at fixing it in
+> XFS but that's not possible:
+> 
+> b2ce397 Revert "xfs: fix filesystsem freeze race in xfs_trans_alloc"
+> 7a249cf xfs: fix filesystsem freeze race in xfs_trans_alloc
+> 
+> It was looking at that problem earlier today that lead to the
+> solution Eric proposed. Essentially the method in these patches
+> needs to replace the xfs specifc m_active_trans counter and delay
+> during ->fs_freeze to prevent that race condition....
+  OK, I see. I just checked ext4 to make sure and ext4 seems to get this
+right. Looking into Christoph's original patch it shouldn't be hard to fix
+it. Instead of:
+        atomic_inc(&mp->m_active_trans);
+ 
+        if (wait_for_freeze)
+              xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
 
-For the SLOB example, and everything else that is 'if EXPERT' after
-6a108a14fa35, then don't worry, they are still 'if EXPERT'. See the patch.
+we just need to do a bit more elaborate
 
-I chose EMBEDDED to handle the side effects, simply because it used to
-anyway. I think it's best that I leave any further customizing, such as
-replacing EMBEDDED with SMALLMEM for particular options, to those that are
-more familiar with those options. I can conceive of people wanting EXPERT
--> SMALLMEM -> SLOB type menus, but that's not in the scope of this patch.
+retry:
+        if (wait_for_freeze)
+              xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+        atomic_inc(&mp->m_active_trans);
+	if (wait_for_freeze && mp->m_super->s_frozen >= SB_FREEZE_TRANS) {
+        	atomic_dec(&mp->m_active_trans);
+		goto retry;
+	}
 
-Drew
+Or does XFS support nested transactions (i.e. a thread already holding a
+running transaction can call into xfs_trans_alloc() again)?
+That would make things more complicated...
+
+Using sb_start_write() instead of m_active_trans won't be that easy because
+it can create A-A deadlocks (e.g. we do sb_start_write in
+block_page_mkwrite() and then xfs_get_blocks() decides to start a
+transaction and calls sb_start_write() again which might block if
+filesystem freezing started in the mean time).
+
+So it's up to XFS maintainers to decide what's best but I'd take
+Christoph's patch with above fixup. I guess I'll put it in this series and
+see what people say.
+
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
