@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755212Ab2ALUAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:00:17 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42966 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755164Ab2ALUAN (ORCPT
+	id S1755235Ab2ALUAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:00:52 -0500
+Received: from exht1.emulex.com ([138.239.113.183]:45138 "EHLO
+	exht1.ad.emulex.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755162Ab2ALUAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:00:13 -0500
-X-Sasl-enc: paCW/vpz2L/U78XE3dlICdUp3cOUBdx0CIz+hMf45FmP 1326398412
-Date: Thu, 12 Jan 2012 12:00:03 -0800
-From: Greg KH <greg@kroah.com>
-To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        devel@driverdev.osuosl.org, "Ted Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [lttng-dev] Perf ABI (was: Re: [PATCH 09/11] sched: export
- task_prio to GPL modules)
-Message-ID: <20120112200003.GC28100@kroah.com>
-References: <20111219104915.GA19861@elte.hu>
- <20111219153053.GA21548@Krystal>
- <20111220110813.GA19105@elte.hu>
- <20111223164629.GA30474@Krystal>
- <20111223172155.GA14117@thunk.org>
- <20111223181641.GA12681@Krystal>
- <20111225174613.GA12732@thunk.org>
- <20120112140905.GA30377@Krystal>
- <1326380042.7642.73.camel@gandalf.stny.rr.com>
- <20120112153957.GA20514@Krystal>
+	Thu, 12 Jan 2012 15:00:50 -0500
+Message-ID: <4F0F3BDC.10103@emulex.com>
+Date: Thu, 12 Jan 2012 15:00:28 -0500
+From: James Smart <james.smart@emulex.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112153957.GA20514@Krystal>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] drivers/scsi/lpfc/lpfc_sli.c: convert GFP_KERNEL
+ to GFP_ATOMIC
+References: <1326102050-30265-2-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1326102050-30265-2-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 10:39:57AM -0500, Mathieu Desnoyers wrote:
-> > We've done this without version numbers. Just look at all the udev
-> > changes.
-> 
-> Are you seriously refering to udev as an example of how to handle
-> changes, or as one of the worse ABI breakage mess that happened in the
-> Linux kernel history ? My own experience as a Linux users (in the
-> era around 2.6.12 kernels if my memory serves me right) lead me to think
-> it's the latter. And because udev is part of the runtime support, that
-> indeed led to non-bootable systems and lots of frustrated users.
+Julia,
 
-Really?  You fail to remember the fact that we _fixed_ those
-non-bootable systems by putting the userspace bits back, and symlinks,
-and all other sorts of gyrations in order to prevent userspace from
-breaking again.
+We actually do not want any ATOMIC allocations if we can avoid them.  We 
+reworked the calling sequence to deal with the locks being held. The change 
+will be in the next patch set.
 
-And it worked, and people's machines worked again, and no one since then
-has reported a problem.
+As such - Nack on the patch.
 
-So I think udev actually is a good example of how to do it right, we
-provide proper backwards compatibility in the kernel to keep userspace
-working.
+-- james s
 
-thanks,
 
-greg k-h
+
+On 1/9/2012 4:40 AM, Julia Lawall wrote:
+> From: Julia Lawall<julia.lawall@lip6.fr>
+>
+> The function is called with locks held and thus should not use GFP_KERNEL.
+>
+> The semantic patch that makes this report is available
+> in scripts/coccinelle/locks/call_kern.cocci.
+>
+> More information about semantic patching is available at
+> http://coccinelle.lip6.fr/
+>
+> Signed-off-by: Julia Lawall<julia.lawall@lip6.fr>
+>
+> ---
+>   drivers/scsi/lpfc/lpfc_sli.c |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+> index 23a2759..622d24f 100644
+> --- a/drivers/scsi/lpfc/lpfc_sli.c
+> +++ b/drivers/scsi/lpfc/lpfc_sli.c
+> @@ -601,7 +601,7 @@ __lpfc_set_rrq_active(struct lpfc_hba *phba, struct lpfc_nodelist *ndlp,
+>   	if (test_and_set_bit(xritag, ndlp->active_rrqs.xri_bitmap))
+>   		goto out;
+>
+> -	rrq = mempool_alloc(phba->rrq_pool, GFP_KERNEL);
+> +	rrq = mempool_alloc(phba->rrq_pool, GFP_ATOMIC);
+>   	if (rrq) {
+>   		rrq->send_rrq = send_rrq;
+>   		rrq->xritag = xritag;
+>
+>
