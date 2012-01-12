@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab2ALKSE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 05:18:04 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:8559 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751153Ab2ALKR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 05:17:59 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [RFC 06/14] irq_domain/powerpc: Eliminate virq_is_host()
-Message-Id: <keep-irq-is-domain@mdm.bga.com>
-In-Reply-To: <1326313337-24603-7-git-send-email-grant.likely@secretlab.ca>
-References: <1326313337-24603-7-git-send-email-grant.likely@secretlab.ca>
- <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
-Date: Thu, 12 Jan 2012 04:17:58 -0600
-X-Originating-IP: 71.22.127.106
-X-HeloNotChecked: Helo response was not checked before commands sent
+	id S1753378Ab2ALKVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 05:21:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6123 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171Ab2ALKVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 05:21:15 -0500
+Message-ID: <4F0EB40C.7060201@redhat.com>
+Date: Thu, 12 Jan 2012 12:21:00 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111222 Thunderbird/9.0
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@redhat.com>
+CC: Nadav Amit <namit@cs.technion.ac.il>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Nadav Amit <nadav.amit@gmail.com>
+Subject: Re: [PATCH 2/2] KVM: Fix writeback on page boundary that propagate
+ changes in spite of #PF
+References: <1326300811-17065-1-git-send-email-namit@cs.technion.ac.il> <1326300811-17065-2-git-send-email-namit@cs.technion.ac.il> <20120112101259.GW2167@redhat.com>
+In-Reply-To: <20120112101259.GW2167@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Jan 11 2012 about 15:24:34 EST, Grant Likely wrote:
-> There is only one user, and it is trivial to open-code.
+On 01/12/2012 12:12 PM, Gleb Natapov wrote:
+> On Wed, Jan 11, 2012 at 06:53:31PM +0200, Nadav Amit wrote:
+> > Consider the case in which an instruction emulation writeback is performed on a page boundary.
+> > In such case, if a #PF occurs on the second page, the write to the first page already occurred and cannot be retracted.
+> > Therefore, validation of the second page access must be performed prior to writeback.
+> > 
+> > Signed-off-by: Nadav Amit <nadav.amit@gmail.com>
+> > ---
+> >  arch/x86/kvm/x86.c |   13 +++++++++++++
+> >  1 files changed, 13 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> > index 05fd3d7..7af3d67 100644
+> > --- a/arch/x86/kvm/x86.c
+> > +++ b/arch/x86/kvm/x86.c
+> > @@ -3626,6 +3626,8 @@ struct read_write_emulator_ops {
+> >  			       int bytes, void *val);
+> >  	int (*read_write_exit_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
+> >  				    void *val, int bytes);
+> > +	gpa_t (*read_write_validate)(struct kvm_vcpu *vcpu, gva_t gva,
+> > +				     struct x86_exception *exception);
+> >  	bool write;
+> >  };
+> >  
+> > @@ -3686,6 +3688,7 @@ static struct read_write_emulator_ops write_emultor = {
+> >  	.read_write_emulate = write_emulate,
+> >  	.read_write_mmio = write_mmio,
+> >  	.read_write_exit_mmio = write_exit_mmio,
+> > +	.read_write_validate = kvm_mmu_gva_to_gpa_write,
+> >  	.write = true,
+> >  };
+> >  
+> > @@ -3750,6 +3753,16 @@ int emulator_read_write(struct x86_emulate_ctxt *ctxt, unsigned long addr,
+> >  		int rc, now;
+> >  
+> >  		now = -addr & ~PAGE_MASK;
+> > +
+> > +		/* First check there is no page-fault on the next page */
+> > +		if (ops->read_write_validate &&
+> > +			ops->read_write_validate(vcpu, addr+now, exception) ==
+> > +			UNMAPPED_GVA) {
+> > +			/* #PF on the first page should be reported first */
+> > +			ops->read_write_validate(vcpu, addr, exception);
+> > +			return X86EMUL_PROPAGATE_FAULT;
+> > +		}
+> > +
+> This undoes optimization that vcpu_mmio_gva_to_gpa() has for handling
+> mmio. 
 
-I added virq_is_host because I had planned to change how we find the
-host (domain) from a virq.
+Right.  I suggest changing I/O to have two phases: first, translate the
+virtual address into an array of two physical addresses; check
+exceptions and report.  Then do the actual writes.
 
-Instead of storing a pointer in irq_desc (a pointer for every irq),
-I planned to use a NR_IRQ(+extra) bitmap per domain.  This should be
-a win storage-wise when the number of irq controllers is less than the
-number of bits in a long.
+> Furthermore for common (non faulting) case we will check page
+> tables twice on each write that crosses page boundary, first time here
+> and second time in emulator_read_write_onepage().
 
-This would also convert scanning for a reverse map from walking every
-irqdesc to walking find_next_bit over the irqs assigned to the host.
+Those should be very uncommon.
 
-Thus my rule was "code outside kernel/irq must not touch domain";
-both the contents and how it was associated were abstracted.
+-- 
+error compiling committee.c: too many arguments to function
 
-Other planned changes included splitting the reverse lookup into
-domain dependent pieces, creating the ida for sparse map at domain
-creation time (init irq is after radix_tree_init as its used by the
-current irq code) so we never fall back to linear search.  Linear
-populated the reverse map as the irq was assigned, and changed to
-a seperate subtype if it mapped an irq above the map size.
-
-I thought some of the domains would be split into seperate files
-selected by Kconfig, at least the sparse tree.
-
-There was also a nomap varient to handle iseries (and one of the cell
-varients) where the interrupt number to use for an event is controlled
-by the guest, that led to the discussion with tlgx about how to
-disallow the extra irqs above the limit set by the arch callback.
-
-Actually making virq-is-domain a domain callback could eliminate the
-need for the bitmap on legacy (range limited) domains.
-
-
-I have my work in progress patches from 2.6.39 if you would like to
-see them.  I was trying to clean up powerpc before pushing it over,
-and didn't get all the concepts written.  So I just sent Ben what
-was ready at the time and haven't had time to get back to it.
-
-Overall, I think most of the other concepts are ok, although I would
-have chosen to remove NO_IRQ before moving the code, and probably
-the rename from host to domain.  I haven't studied the patches in
-detail since your tree is based on linux-next and my drive doesn't
-have space for that.  It took me a while to realize the code removed
-from the header file in 4/14 (powerpc use commmon host) was actually
-moved to irq-domain in 1/14 (a comment to that effect would be nice).
-
-
-milton
