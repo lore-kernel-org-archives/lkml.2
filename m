@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab2ALPsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 10:48:14 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:35532 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab2ALPsN (ORCPT
+	id S1754154Ab2ALPwu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 10:52:50 -0500
+Received: from casper.infradead.org ([85.118.1.10]:60103 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab2ALPwq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 10:48:13 -0500
-Date: Thu, 12 Jan 2012 10:46:13 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>, kay.sievers@vrfy.org,
-        linux-kernel@vger.kernel.org
-Cc: xen-devel <xen-devel@lists.xensource.com>
-Subject: Re: linux 3.3-pre-rc1: Starting domU fails with Error: Failed to
- query current memory allocation of dom0.
-Message-ID: <20120112154613.GA10148@phenom.dumpdata.com>
-References: <498097597.20120112133832@eikelenboom.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <498097597.20120112133832@eikelenboom.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090209.4F0F00B8.00A8,ss=1,re=0.000,fgs=0
+	Thu, 12 Jan 2012 10:52:46 -0500
+Message-ID: <1326383551.2442.203.camel@twins>
+Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
+ IPI from page allocator context
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Miklos Szeredi <mszeredi@novell.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
+        Gong Chen <gong.chen@intel.com>
+Date: Thu, 12 Jan 2012 16:52:31 +0100
+In-Reply-To: <20120112153712.GL4118@suse.de>
+References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
+	 <1326276668-19932-3-git-send-email-mgorman@suse.de>
+	 <1326381492.2442.188.camel@twins> <20120112153712.GL4118@suse.de>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Evolution 3.2.1- 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 01:38:32PM +0100, Sander Eikelenboom wrote:
-> Hi Konrad,
+On Thu, 2012-01-12 at 15:37 +0000, Mel Gorman wrote:
+> On Thu, Jan 12, 2012 at 04:18:12PM +0100, Peter Zijlstra wrote:
+> > On Wed, 2012-01-11 at 10:11 +0000, Mel Gorman wrote:
+> > > At least one bug report has
+> > > been seen on ppc64 against a 3.0 era kernel that looked like a bug
+> > > receiving interrupts on a CPU being offlined. 
+> > 
+> > Got details on that Mel? The preempt_disable() in on_each_cpu() should
+> > serialize against the stop_machine() crap in unplug.
 > 
-> Today i tried linuses tree of today (last commit is 4c4d285ad5665bfbd983b95fde8d7a477d24a361).
+> I might have added 2 and 2 together and got 5.
 > 
-> It boots dom0 fine, but it fails to start any domU with: "Error: Failed to query current memory allocation of dom0."
-> With my previous 3.1.5 kernel everything is fine, nothing else changed in config in between.
+> The stack trace clearly was while sending IPIs in on_each_cpu() and
+> always when under memory pressure and stuck in direct reclaim. This was
+> on !PREEMPT kernels where preempt_disable() is a no-op. That is why I
+> thought get_online_cpu() would be necessary.
 
-Hey Kay,
-
-Your patch that converts the xen-balloon to use the regular device bus driver
-(070680218379e15c1901f4bf21b98e3cbf12b527) has some not-so-happy consequences.
-
-The toolstack (xen-tools) use:
-
-/sys/devices/system/xen_memory/xen_memory0
-
-But with the change, it is now:
-
-/sys/devices/xen_memory0/target_kb
-
-Which means that the tools can't find it now.
-
-I did not see anything in feature-removal-schedule.txt so I don't know
-exactly when the full sys_device structure is going away.
-
-Is there any work-arounds that can be inserted in the kernel so that
-the old directory still exists at least for 3.3 such that there will be
-enough time for the tool-stack to be updated?
+For non-preempt the required scheduling of stop_machine() will have to
+wait even longer. Still there might be something funny, some of the
+hotplug notifiers are ran before the stop_machine thing does its thing
+so there might be some fun interaction.
