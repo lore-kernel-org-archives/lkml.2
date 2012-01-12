@@ -1,92 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab2ALL65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 06:58:57 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:60410 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751481Ab2ALL64 (ORCPT
+	id S1753452Ab2ALMAw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 07:00:52 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58262 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab2ALMAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 06:58:56 -0500
-X-Originating-IP: 217.70.178.135
-X-Originating-IP: 50.43.15.19
-Date: Thu, 12 Jan 2012 03:58:30 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com, manfred@colorfullife.com,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: avoid checking for constant
-Message-ID: <20120112115830.GA3436@leaf>
-References: <1326345104-6919-1-git-send-email-jengelh@medozas.de>
- <20120112071431.GA1896@leaf>
- <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr>
- <20120112095257.GA2441@leaf>
- <alpine.LNX.2.01.1201121106040.17330@frira.zrqbmnf.qr>
+	Thu, 12 Jan 2012 07:00:48 -0500
+Date: Thu, 12 Jan 2012 13:00:45 +0100
+From: Tyler Hicks <tyler.hicks@canonical.com>
+To: Tim Gardner <tim.gardner@canonical.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, ecryptfs@vger.kernel.org
+Subject: Re: [PATCH 1/2] ecryptfs: Improve metatdata read failure logging
+Message-ID: <20120112120044.GB4717@boyd>
+References: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com>
+ <1326301242-5817-2-git-send-email-tim.gardner@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="eJnRUKwClWJh1Khz"
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.01.1201121106040.17330@frira.zrqbmnf.qr>
+In-Reply-To: <1326301242-5817-2-git-send-email-tim.gardner@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 11:34:23AM +0100, Jan Engelhardt wrote:
-> On Thursday 2012-01-12 10:52, Josh Triplett wrote:
-> >> +#define __kfree_rcu(head, offset) \
-> >> +	call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset) + \
-> >> +		 BUILD_BUG_ON_ZERO((offset) >= 4096))
-> >> +
-> >
-> >I had to stare at this for a while, and look up the definition of
-> >BUILD_BUG_ON_ZERO.  Naturally I assumed that BUILD_BUG_ON_ZERO(arg)
-> >meant BUILT_BUG_ON((arg) == 0), which would have made the logic
-> >backwards here.  However, per the definition it just provides a
-> >zero-returning version of BUILD_BUG_ON.  Ow.
-> 
-> Same impression here. BUILD_BUG_ON_ZERO was introduced by
-> 
-> commit 4552d5dc08b79868829b4be8951b29b07284753f
-> Author: Jan Beulich <jbeulich@novell.com>
-> Date:   Mon Jun 26 13:57:28 2006 +0200
-> 
-> while Rusty's CCAN archive calls it "BUILD_BUG_OR_ZERO" (since either 
-> it's a bug, or returning neutral zero).
 
-Sounds like a good target for a fix at some point.
+--eJnRUKwClWJh1Khz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> rcu: avoid checking for constant
-> 
-> When compiling kernel or module code with -O0, "offset" is no longer
-> considered a constant, and therefore always triggers the build error
-> that BUILD_BUG_ON is defined to yield.
-> 
-> Therefore, change the innards of kfree_rcu so that the offset is not
-> tunneled through a function argument before checking it.
+On 2012-01-11 18:00:41, Tim Gardner wrote:
+> There are 3 read failure cases in ecryptfs_read_metadata(), but only 2
+> of them are uniquely noted by kernel log messages. This patch
+> identifies and logs each read failure case. It also correctly interprets
+> a negative return value from ecryptfs_read_lower().
 
-The commit message looks good now.
+I'm not sure that the negative return value was incorrectly interpreted.
+See below.
 
-> @@ -835,7 +817,20 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
->   *
->   * Note that the allowable offset might decrease in the future, for example,
->   * to allow something like kmem_cache_free_rcu().
-> + *
-> + * The BUILD_BUG_ON check must not involve any function calls, hence the
-> + * checks are done in macros here. __is_kfree_rcu_offset is also used by
-> + * kernel/rcu.h.
+>=20
+> Removes unnecessary variable initialization.
+>=20
+> Cc: linux-kernel@vger.kernel.org
+> Cc: stable@vger.kernel.org
+> Cc: Tyler Hicks <tyler.hicks@canonical.com>
+> Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+> ---
+>  fs/ecryptfs/crypto.c |   17 +++++++++++------
+>  1 files changed, 11 insertions(+), 6 deletions(-)
+>=20
+> diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
+> index d3c8776..ac063bd 100644
+> --- a/fs/ecryptfs/crypto.c
+> +++ b/fs/ecryptfs/crypto.c
+> @@ -1590,8 +1590,8 @@ int ecryptfs_read_and_validate_xattr_region(struct =
+dentry *dentry,
+>   */
+>  int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
+>  {
+> -	int rc =3D 0;
+> -	char *page_virt =3D NULL;
+> +	int rc;
+> +	char *page_virt;
+>  	struct inode *ecryptfs_inode =3D ecryptfs_dentry->d_inode;
+>  	struct ecryptfs_crypt_stat *crypt_stat =3D
+>  	    &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
+> @@ -1611,10 +1611,15 @@ int ecryptfs_read_metadata(struct dentry *ecryptf=
+s_dentry)
+>  	}
+>  	rc =3D ecryptfs_read_lower(page_virt, 0, crypt_stat->extent_size,
+>  				 ecryptfs_inode);
+> -	if (rc >=3D 0)
+> -		rc =3D ecryptfs_read_headers_virt(page_virt, crypt_stat,
+> -						ecryptfs_dentry,
+> -						ECRYPTFS_VALIDATE_HEADER_SIZE);
+> +	if (rc < 0) {
+> +		printk(KERN_ERR "%s: Could not read %u bytes\n",
+> +			__func__, crypt_stat->extent_size);
+> +		goto out;
+> +	}
 
-The first sentence of that paragraph seems like a worthwhile addition.
-Please drop the second, though, since it'll inevitably become outdated.
+This may break things a bit for users that use the
+ecryptfs_xattr_metadata mount option (which stores the metadata in an
+xattr, rather than the header of the file). A failure to read the lower
+file here doesn't matter because the metadata is likely stored in an
+xattr, which will be found with the ecryptfs_read_xattr_region() call
+below.
 
-> +#define __is_kfree_rcu_offset(offset) ((offset) < 4096)
+I've never liked that ecryptfs potentially looks in both the header and
+the xattr for metadata, but that's how it has been since the very early
+days of eCryptfs. I've wanted to change this but there is the potential
+to break things for users who have a mixture of files with metadata in
+the header and in the header.
+
+Maybe we just go whole hog for 3.3 and only look in either the header or
+xattr for metadata, depending on whether or not ecryptfs_xattr_metadata
+is used?
+
+I could live with that, but I would definitely not want something like
+that to go to the stable kernel. Any thoughts?
+
+Tyler
+
 > +
-> +#define __kfree_rcu(head, offset) \
-> +	do { \
-> +		typedef void (*rcu_callback)(struct rcu_head *); \
-> +		BUILD_BUG_ON(!__is_kfree_rcu_offset(offset)); \
-> +		call_rcu(head, (rcu_callback)(unsigned long)(offset)); \
-> +	} while (0)
+> +	rc =3D ecryptfs_read_headers_virt(page_virt, crypt_stat,
+> +					ecryptfs_dentry,
+> +					ECRYPTFS_VALIDATE_HEADER_SIZE);
+>  	if (rc) {
+>  		memset(page_virt, 0, PAGE_CACHE_SIZE);
+>  		rc =3D ecryptfs_read_xattr_region(page_virt, ecryptfs_inode);
+> --=20
+> 1.7.8.3
+>=20
 
-No, you can't define that typedef here with that name.  Unlike in the
-inline function, in a macro you could introduce a name conflict.
+--eJnRUKwClWJh1Khz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-- Josh Triplett
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCgAGBQJPDstsAAoJENaSAD2qAscKmEAP/0bMm8SIiI14k5S+DaoYljLV
+Uv3wg2coBpa71aSbFJeK7ZY7vRQJl3zQuZ8u5OFkhSf/l5Bk/EM2dOhLJTuWhSCb
+uv9B0Smv04YM/wAywea+s/vfiTPqPM6Vnbwxg9LlN3bx+OoZx0WaFZWc+Fatl5g4
+SD+22hZLT+SVORvc/bxf778WvJ5ypxjGV+moQ87v9tTqrRWgw3cKHBi8WEY/dauG
+Mtpnu2kk3AjvWl4adTGBHyc1kRpWwV4h52B1qbamm4NheMIUM1t1UeQexX6XpT5T
+QZT9Jwqq2FYPDGnI9O4iRQ7sGhqtLWh9cUtZzOj/s6cEvUoa63K1RBMaxrnT70Yi
+cOPcfUR6egl+BAuTzItco3KHsq2j5sqfc8ui+mkiKOF2bbky5T9ZyqLn5Gl3K+C7
+meqygxvMhzLLb1IwZAo3km0vO5ZmRGTQLbAaF5KTbXA5PMOC9HaFcUa1wuhtu+1y
+7wXwyzQz+HHUtFHdbfEmRyqJzM3qQe2LSQsalsShco8qYM8Q5i5MUTw/aiULCaxN
+RknDL2A7x1uGeGkNyeIKetPTXhRUjGQFXmAQWUmhARyRYE01PKqj9FuYzYhhPbsl
+0ejFDK2bDLF2F79ZvbGprU1pJhqbi7rjyQh8CCg6/6cd5QTh+fxbUdiirEiRVThN
+aoLQ5chMRFOD4RjMrQwq
+=wEBl
+-----END PGP SIGNATURE-----
+
+--eJnRUKwClWJh1Khz--
