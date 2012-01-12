@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab2ALUBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:01:22 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:44596 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755162Ab2ALUBU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:01:20 -0500
+	id S1755253Ab2ALUH5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:07:57 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49567 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755104Ab2ALUHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:07:55 -0500
+Date: Thu, 12 Jan 2012 21:07:53 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 1/4] fs: Improve filesystem freezing handling
+Message-ID: <20120112200753.GC8778@quack.suse.cz>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz>
+ <1326331253-6497-2-git-send-email-jack@suse.cz>
+ <DB1320A4-7621-44D2-B339-78CB38FAC186@dilger.ca>
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7G7TpLL9QUmzEfjEqtg3G06O+rjO-Hy6snS5j2rmbXHXQ@mail.gmail.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
- <1326302710-9427-2-git-send-email-wad@chromium.org> <1326383015.7642.77.camel@gandalf.stny.rr.com>
- <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
- <1326385635.7642.89.camel@gandalf.stny.rr.com> <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
- <CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com>
- <CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
- <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
- <CABqD9hYynwP6ViTZi_7XH7OWbZ7SHskU9W6roX2yD5rwqBO96Q@mail.gmail.com> <CAObL_7G7TpLL9QUmzEfjEqtg3G06O+rjO-Hy6snS5j2rmbXHXQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Jan 2012 12:00:58 -0800
-X-Google-Sender-Auth: aqRUSrPtBrZGIH1-1WXS4i33D9w
-Message-ID: <CA+55aFxszOU=RzZ8Hgof+AAi+F2xW71-KX9DZqOJTT=vQ9gSnQ@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Will Drewry <wad@chromium.org>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <DB1320A4-7621-44D2-B339-78CB38FAC186@dilger.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 11:46 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->
-> I think securebits and cred didn't exist the first time I did this,
-> and sticking it in struct cred might unnecessarily prevent sharing
-> cred (assuming that even happens).  So I'd say task_struct.
+On Thu 12-01-12 12:53:35, Andreas Dilger wrote:
+> On 2012-01-11, at 6:20 PM, Jan Kara wrote:
+> > /**
+> > + * sb_start_write - drop write access to a superblock
+> > + * @sb: the super we wrote to
+> > + *
+> > + * Decrement number of writers to the filesystem and wake up possible
+> > + * waiters wanting to freeze the filesystem.
+> > + */
+> > +void sb_end_write(struct super_block *sb)
+> > +{
+> > +#ifdef CONFIG_SMP
+> > +	this_cpu_dec(sb->s_writers);
+> > +#else
+> > +	preempt_disable();
+> > +	sb->s_writers--;
+> > +	preempt_enable();
+> > +#endif
+> > +	/*
+> > +	 * Make sure s_writers are updated before we wake up waiters in
+> > +	 * freeze_super().
+> > +	 */
+> > +	smp_mb();
+> > +	if (waitqueue_active(&sb->s_writers_wait))
+> > +		wake_up(&sb->s_writers_wait);
+> > +	rwsem_release(&sb->s_writers_lock_map, 1, _RET_IP_);
+> > +}
+> 
+> Since this function is needed for calling __block_page_mkwrite(), which is
+> EXPORT_SYMBOL(), both sb_start_write() and sb_end_write() themselves need
+> to be EXPORT_SYMBOL().
+  Good point. Fixed. Thanks.
 
-I think it almost has to be task state, since we very much want to
-make sure it's trivial to see that nothing ever clears that bit, and
-that it always gets copied right over a fork/exec/whatever.
-
-Putting it in some cred or capability bit or somethin would make that
-kind of transparency pretty much totally impossible.
-
-                 Linus
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
