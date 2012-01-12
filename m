@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253Ab2ALUH5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:07:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49567 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755104Ab2ALUHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:07:55 -0500
-Date: Thu, 12 Jan 2012 21:07:53 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 1/4] fs: Improve filesystem freezing handling
-Message-ID: <20120112200753.GC8778@quack.suse.cz>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
- <1326331253-6497-2-git-send-email-jack@suse.cz>
- <DB1320A4-7621-44D2-B339-78CB38FAC186@dilger.ca>
+	id S1755263Ab2ALUI5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:08:57 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:58378 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753848Ab2ALUIz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:08:55 -0500
+X-IronPort-AV: E=Sophos;i="4.71,500,1320620400"; 
+   d="scan'208";a="139021225"
+Date: Thu, 12 Jan 2012 21:08:52 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: lawall@pl-59034.rocq.inria.fr
+To: James Smart <james.smart@emulex.com>
+cc: Julia Lawall <Julia.Lawall@lip6.fr>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] drivers/scsi/lpfc/lpfc_sli.c: convert GFP_KERNEL to
+ GFP_ATOMIC
+In-Reply-To: <4F0F3BDC.10103@emulex.com>
+Message-ID: <alpine.DEB.2.00.1201122108320.25187@pl-59034.rocq.inria.fr>
+References: <1326102050-30265-2-git-send-email-Julia.Lawall@lip6.fr> <4F0F3BDC.10103@emulex.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DB1320A4-7621-44D2-B339-78CB38FAC186@dilger.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-01-12 12:53:35, Andreas Dilger wrote:
-> On 2012-01-11, at 6:20 PM, Jan Kara wrote:
-> > /**
-> > + * sb_start_write - drop write access to a superblock
-> > + * @sb: the super we wrote to
-> > + *
-> > + * Decrement number of writers to the filesystem and wake up possible
-> > + * waiters wanting to freeze the filesystem.
-> > + */
-> > +void sb_end_write(struct super_block *sb)
-> > +{
-> > +#ifdef CONFIG_SMP
-> > +	this_cpu_dec(sb->s_writers);
-> > +#else
-> > +	preempt_disable();
-> > +	sb->s_writers--;
-> > +	preempt_enable();
-> > +#endif
-> > +	/*
-> > +	 * Make sure s_writers are updated before we wake up waiters in
-> > +	 * freeze_super().
-> > +	 */
-> > +	smp_mb();
-> > +	if (waitqueue_active(&sb->s_writers_wait))
-> > +		wake_up(&sb->s_writers_wait);
-> > +	rwsem_release(&sb->s_writers_lock_map, 1, _RET_IP_);
-> > +}
-> 
-> Since this function is needed for calling __block_page_mkwrite(), which is
-> EXPORT_SYMBOL(), both sb_start_write() and sb_end_write() themselves need
-> to be EXPORT_SYMBOL().
-  Good point. Fixed. Thanks.
+On Thu, 12 Jan 2012, James Smart wrote:
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Julia,
+>
+> We actually do not want any ATOMIC allocations if we can avoid them.  We 
+> reworked the calling sequence to deal with the locks being held. The change 
+> will be in the next patch set.
+>
+> As such - Nack on the patch.
+
+No problem.  It was more a bug report than a real patch.
+
+thanks,
+julia
+
+> -- james s
+>
+>
+>
+> On 1/9/2012 4:40 AM, Julia Lawall wrote:
+>> From: Julia Lawall<julia.lawall@lip6.fr>
+>> 
+>> The function is called with locks held and thus should not use GFP_KERNEL.
+>> 
+>> The semantic patch that makes this report is available
+>> in scripts/coccinelle/locks/call_kern.cocci.
+>> 
+>> More information about semantic patching is available at
+>> http://coccinelle.lip6.fr/
+>> 
+>> Signed-off-by: Julia Lawall<julia.lawall@lip6.fr>
+>> 
+>> ---
+>>   drivers/scsi/lpfc/lpfc_sli.c |    2 +-
+>>   1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+>> index 23a2759..622d24f 100644
+>> --- a/drivers/scsi/lpfc/lpfc_sli.c
+>> +++ b/drivers/scsi/lpfc/lpfc_sli.c
+>> @@ -601,7 +601,7 @@ __lpfc_set_rrq_active(struct lpfc_hba *phba, struct 
+>> lpfc_nodelist *ndlp,
+>>   	if (test_and_set_bit(xritag, ndlp->active_rrqs.xri_bitmap))
+>>   		goto out;
+>> 
+>> -	rrq = mempool_alloc(phba->rrq_pool, GFP_KERNEL);
+>> +	rrq = mempool_alloc(phba->rrq_pool, GFP_ATOMIC);
+>>   	if (rrq) {
+>>   		rrq->send_rrq = send_rrq;
+>>   		rrq->xritag = xritag;
+>> 
+>> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
