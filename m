@@ -1,59 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867Ab2ALBFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 20:05:44 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50183 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751734Ab2ALBFn (ORCPT
+	id S1751910Ab2ALBHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 20:07:06 -0500
+Received: from calzone.tip.net.au ([203.10.76.15]:55424 "EHLO
+	calzone.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab2ALBHD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 20:05:43 -0500
-X-AuditID: 9c93016f-b7c72ae000007401-8d-4f0e31d9e088
-Message-ID: <4F0E31D9.3080306@lge.com>
-Date: Thu, 12 Jan 2012 10:05:29 +0900
-From: Namhyung Kim <namhyung.kim@lge.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Namhyung Kim <namhyung@gmail.com>, axboe@kernel.dk, mingo@redhat.com,
-        rostedt@goodmis.org, fweisbec@gmail.com, teravest@google.com,
-        slavapestov@google.com, ctalbott@google.com, dhsharp@google.com,
-        linux-kernel@vger.kernel.org, winget@google.com,
-        Chanho Park <chanho61.park@samsung.com>
-Subject: Re: [PATCH RESEND 9/9] block, trace: implement ioblame - IO tracer
- with origin tracking
-References: <1326220106-5765-1-git-send-email-tj@kernel.org> <1326220106-5765-10-git-send-email-tj@kernel.org> <20120111013212.GA6843@dhcp-172-17-108-109.mtv.corp.google.com> <4F0D291A.8030205@lge.com> <20120111170635.GE26832@google.com>
-In-Reply-To: <20120111170635.GE26832@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 11 Jan 2012 20:07:03 -0500
+Date: Thu, 12 Jan 2012 12:06:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Donggeun Kim <dg77.kim@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, NeilBrown <neilb@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: manual merge of the mfd tree with Linus' tree
+Message-Id: <20120112120652.cdc2db032dcedfd402e61b34@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__12_Jan_2012_12_06_52_+1100_Vp5lvUZ1crmWP4C="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+--Signature=_Thu__12_Jan_2012_12_06_52_+1100_Vp5lvUZ1crmWP4C=
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-2012-01-12 2:06 AM, Tejun Heo wrote:
-> Hello,
->
-> On Wed, Jan 11, 2012 at 03:15:54PM +0900, Namhyung Kim wrote:
->> How about adding another tracepoint for intent creation to provide
->> raw data as well, somewhere in iob_get_intent() or
->> iob_intent_create() maybe? It can be useful to get those data for
->> further processing IMHO.
->
-> While I don't particularly object to that, information and
-> notification (via inotify) for that is already available via
-> ioblame/intents file which we need regardless of the new tracepoint,
-> so it's kinda redundant, isn't it?
->
-> Thanks.
->
+Hi Samuel,
 
-Yes. But that's a text-based so it might fit better to simple use cases. 
-If we need further post processing based on intents, it could be better 
-off having binary interface IMHO. And since we already use tracepoints 
-anyway, wouldn't it be good to avoid adding another layer of interface 
-or complexity?
+Today's linux-next merge of the mfd tree got a conflict in
+drivers/leds/Kconfig between commit a6d511e51554 ("leds: add driver for
+TCA6507 LED controller") from Linus' tree and commit 8584cb82f151 ("leds:
+Add suuport for MAX8997-LED driver") from the mfd tree.
 
-Thanks,
-Namhyung Kim
+Just context changes.  I fixed it up (see below) and can carry the fix as
+necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/leds/Kconfig
+index 897a77d,c0e30e8..0000000
+--- a/drivers/leds/Kconfig
++++ b/drivers/leds/Kconfig
+@@@ -388,14 -387,13 +388,21 @@@ config LEDS_RENESAS_TP
+  	  pin function. The latter to support brightness control.
+  	  Brightness control is supported but hardware blinking is not.
+ =20
+ +config LEDS_TCA6507
+ +	tristate "LED Support for TCA6507 I2C chip"
+ +	depends on LEDS_CLASS && I2C
+ +	help
+ +	  This option enables support for LEDs connected to TC6507
+ +	  LED driver chips accessed via the I2C bus.
+ +	  Driver support brightness control and hardware-assisted blinking.
+ +
++ config LEDS_MAX8997
++ 	tristate "LED support for MAX8997 PMIC"
++ 	depends on LEDS_CLASS && MFD_MAX8997
++ 	help
++ 	  This option enables support for on-chip LED drivers on
++ 	  MAXIM MAX8997 PMIC.
++=20
+  config LEDS_TRIGGERS
+  	bool "LED Trigger support"
+  	depends on LEDS_CLASS
+
+--Signature=_Thu__12_Jan_2012_12_06_52_+1100_Vp5lvUZ1crmWP4C=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBCAAGBQJPDjIsAAoJEECxmPOUX5FEXeAP+we9vN3A479KPoY416WMRkJM
+F61dOQnvxhTOWXISrAz97k5adOLI9QLKW4kJyHS56TZ59gnqXLGVOnj+OxOog2ic
+4u3NxjwmRyTp5KzzSEyKVJpOfDse4ZLTwjPqlQac0Nt8ERMrnhQ0NSY28GbMce+U
+BUjwmlpw1g+yR9Hd5Vzait7pODAfXC0cfHB9cL1mTqjKQeLR1Vy0XtVWLt1ii4wj
+ngoSJPFiEjzETFfIHKRxwLrbENvZGToKiOrIHzyQPK3oYZbj1m7/4UbzbuBTJ1q/
+LyjoYdxOfdvsudnwkhyh1hu5oiW1Pu0ioRLu5jdFIxinjew1DZP5LtrI13u2+iFO
+ZHDG+i0cB7K4GhHbhvZaYTtxze+OOQZiR6DF3YMhXZR2k+TIf6kXBAgjV2YjJ15H
+/Gl9ZsATd+IRiU0Cx28mFFLOz5rnrBOgORa6snLiom4p1C0r99XCWRk7b5yPmaEa
+B0lkuW0+EuBMHnlRCBiO83MeHated9sYr7rENJajOKBQhP9vEZU619A+fVjsJ/Az
+my7qC1XqAXNgzFbQwbTblw6GK8e/YjHrDa8If59cyxoU+JpTmHyhHvb81Xyqq6FF
+Ui7p/l4HTpY2UiF1GUP2OYaNu6OiIdcIG7q4QLml+wH11hpp+KLqr+EQINC1teTu
+tR6EjkIzakaoqexn2J9D
+=IZYp
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__12_Jan_2012_12_06_52_+1100_Vp5lvUZ1crmWP4C=--
