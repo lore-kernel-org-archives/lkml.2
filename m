@@ -1,47 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754178Ab2ALPyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 10:54:15 -0500
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42532 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab2ALPyL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 10:54:11 -0500
+	id S1754209Ab2ALPyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 10:54:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:25605 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753872Ab2ALPyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 10:54:32 -0500
+Date: Thu, 12 Jan 2012 10:53:51 -0500 (EST)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Kamal Mostafa <kamal@canonical.com>
+cc: Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Matthew Wilcox <matthew@wil.cx>, Randy Dunlap <rdunlap@xenotime.net>,
+        Theodore Tso <tytso@mit.edu>, linux-doc@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
+        Valerie Aurora <val@vaaconsulting.com>,
+        Christopher Chaltain <christopher.chaltain@canonical.com>,
+        "Peter M. Petrakis" <peter.petrakis@canonical.com>
+Subject: Re: [PATCH v2 5/7] VFS: Avoid read-write deadlock in try_to_writeback_inodes_sb
+In-Reply-To: <1326313742.25050.137.camel@fourier>
+Message-ID: <Pine.LNX.4.64.1201121037470.14474@hs20-bc2-1.build.redhat.com>
+References: <1323367477-21685-1-git-send-email-kamal@canonical.com> 
+ <1323367477-21685-6-git-send-email-kamal@canonical.com> 
+ <20120106003533.GC3790@quack.suse.cz> <1326313742.25050.137.camel@fourier>
 MIME-Version: 1.0
-In-Reply-To: <20120111011146.GA30428@oksana.dev.rtsoft.ru>
-References: <20120111011146.GA30428@oksana.dev.rtsoft.ru>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 12 Jan 2012 07:53:49 -0800
-Message-ID: <CALCETrXKg9rSqi2RTQTa4Fpze0cP76HXD9BQor4ohW587ey3XA@mail.gmail.com>
-Subject: Re: [PATCH] x86: Get rid of 'dubious one-bit signed bitfield' sprase warning
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Dan Carpenter <error27@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 10, 2012 at 5:11 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-> This very noisy sparse warning appears on almost every file in the
-> kernel:
->
->  CHECK   init/main.c
-> arch/x86/include/asm/thread_info.h:43:55: error: dubious one-bit signed bitfield
-> arch/x86/include/asm/thread_info.h:44:46: error: dubious one-bit signed bitfield
->
-> This patch changes sig_on_uaccess_error and uaccess_err flags to unsigned
-> type and thus fixes the warning.
->
-> Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-> ---
 
-Acked-by: Andy Lutomirski <luto@mit.edu>
 
-This structure isn't used by userspace (or not usefully, anyway --
-it's not at all stable across releases).
+On Wed, 11 Jan 2012, Kamal Mostafa wrote:
 
---Andy
+> On Fri, 2012-01-06 at 01:35 +0100, Jan Kara wrote:
+> > On Thu 08-12-11 10:04:35, Kamal Mostafa wrote:
+> > > From: Valerie Aurora <val@vaaconsulting.com>
+> > > 
+> > > Use trylock in try_to_writeback_inodes_sb to avoid read-write
+> > > deadlocks that could be triggered by freeze.
+> 
+> >   Christoph asked about what is the exact deadlock this patch tries to fix.
+> > I don't think you answered that. So can you elaborate please? Is it somehow
+> > connected with the fact that ext4 calls try_to_writeback_inodes_sb() with
+> > i_mutex held?
+> > 
+> > 								Honza
+> 
+> This was discussed in the thread
+> http://www.spinics.net/lists/linux-fsdevel/msg48754.html
+> Summarizing...
+> 
+> Jan>   What's exactly the deadlock trylock protects from here?
+> Jan>   Or is it just an optimization?
+> 
+> Val>   The trylock is an optimization Dave Chinner suggested.  The first
+> Val>   version I wrote acquired the lock and then checked vfs_is_frozen().
+> 
+> Dave>  It's not so much an optimisation, but the general case of avoiding
+> Dave>  read-write deadlocks such that freezing can trigger. I think remount
+> Dave>  can trigger the same deadlock as freezing, so the trylock avoids
+> Dave>  both deadlock cases rather than just working around the freeze
+> Dave>  problem....
+> 
+>  -Kamal
+
+As I wrote in 
+https://www.redhat.com/archives/dm-devel/2011-November/msg00151.html , 
+down_read_trylock doesn't fix the freeze deadlock. Think of this sequence:
+
+Process 1 (freezing)
+down_write(&sb->s_umount);
+set the filesystem to frozen state
+up_write(&sb->s_umount);
+
+Process 2 (executing the code from the patch)
+down_read_trylock(&sb->s_umount); - succeeds, because s_umount is not held
+writeback_inodes_sb(sb, reason); - waits, because the filesystem is frozen
+
+Process 1 (unfreezing)
+down_write(&sb->s_umount); - deadlock (process 1 is waiting for process 2 
+to drop the lock; process 2 is waiting for process 1 to unfreeze).
+
+See the patch at 
+https://www.redhat.com/archives/dm-devel/2011-November/msg00151.html , it 
+has a different approach and it avoids the mentined freeze deadlock.
+
+Mikulas
+
+> > > BugLink: https://bugs.launchpad.net/bugs/897421
+> > > Signed-off-by: Valerie Aurora <val@vaaconsulting.com>
+> > > Cc: Kamal Mostafa <kamal@canonical.com>
+> > > Tested-by: Peter M. Petrakis <peter.petrakis@canonical.com>
+> > > [kamal@canonical.com: patch restructure]
+> > > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> > > ---
+> > >  fs/fs-writeback.c |   13 ++++++++-----
+> > >  1 files changed, 8 insertions(+), 5 deletions(-)
+> > > 
+> > > diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+> > > index ea89b3f..3a80f1b 100644
+> > > --- a/fs/fs-writeback.c
+> > > +++ b/fs/fs-writeback.c
+> > > @@ -1274,8 +1274,9 @@ EXPORT_SYMBOL(writeback_inodes_sb);
+> > >   * try_to_writeback_inodes_sb	-	start writeback if none underway
+> > >   * @sb: the superblock
+> > >   *
+> > > - * Invoke writeback_inodes_sb if no writeback is currently underway.
+> > > - * Returns 1 if writeback was started, 0 if not.
+> > > + * Invoke writeback_inodes_sb if no writeback is currently underway
+> > > + * and no one else holds the s_umount lock.  Returns 1 if writeback
+> > > + * was started, 0 if not.
+> > >   */
+> > >  int try_to_writeback_inodes_sb(struct super_block *sb, enum wb_reason reason)
+> > >  {
+> > > @@ -1288,15 +1289,17 @@ EXPORT_SYMBOL(try_to_writeback_inodes_sb);
+> > >   * @sb: the superblock
+> > >   * @nr: the number of pages to write
+> > >   *
+> > > - * Invoke writeback_inodes_sb if no writeback is currently underway.
+> > > - * Returns 1 if writeback was started, 0 if not.
+> > > + * Invoke writeback_inodes_sb if no writeback is currently underway
+> > > + * and no one else holds the s_umount lock.  Returns 1 if writeback
+> > > + * was started, 0 if not.
+> > >   */
+> > >  int try_to_writeback_inodes_sb_nr(struct super_block *sb,
+> > >  				   unsigned long nr,
+> > >  				   enum wb_reason reason)
+> > >  {
+> > >  	if (!writeback_in_progress(sb->s_bdi)) {
+> > > -		down_read(&sb->s_umount);
+> > > +		if (!down_read_trylock(&sb->s_umount))
+> > > +		    return 0;
+> > >  		if (nr == 0)
+> > >  			writeback_inodes_sb(sb, reason);
+> > >  		else
+> > > -- 
+> > > 1.7.5.4
+
