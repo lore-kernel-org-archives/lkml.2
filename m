@@ -1,320 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab2ALCIr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 21:08:47 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:57825 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752106Ab2ALCIp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 21:08:45 -0500
+	id S1752203Ab2ALCLX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 21:11:23 -0500
+Received: from mga02.intel.com ([134.134.136.20]:2183 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752102Ab2ALCLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 21:11:21 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="97259430"
+Message-ID: <4F0E4147.7000903@linux.intel.com>
+Date: Thu, 12 Jan 2012 10:11:19 +0800
+From: Chen Gong <gong.chen@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <CAJOA=zMkRxx=PhznO5VSb3H4bSx7oTYiazesasYY_X7SzSf48A@mail.gmail.com>
-References: <1326276130-4042-1-git-send-email-myungjoo.ham@samsung.com>
-	<CAJOA=zMkRxx=PhznO5VSb3H4bSx7oTYiazesasYY_X7SzSf48A@mail.gmail.com>
-Date: Thu, 12 Jan 2012 11:08:44 +0900
-X-Google-Sender-Auth: NMfphIcZRPPFe6XYqurYcLTU8vQ
-Message-ID: <CAJ0PZbRKknwF1LwJP6M93-GPXJ9xKuzZnDjZMF8C1id026-X4A@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PM / devfreq: add min/max_freq limit requested by users.
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: "Turquette, Mike" <mturquette@ti.com>
-Cc: linux-kernel@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "R, Durgadoss" <durgadoss.r@intel.com>
+CC: "linux-x86_64@vger.kernel.org" <linux-x86_64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: CPU clock throttled prints..
+References: <D6D887BA8C9DFF48B5233887EF04654109E855E9B4@bgsmsx502.gar.corp.intel.com>
+In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654109E855E9B4@bgsmsx502.gar.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 9:20 AM, Turquette, Mike <mturquette@ti.com> wrote:
-> On Wed, Jan 11, 2012 at 2:02 AM, MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
->> The frequency requested to devfreq device driver from devfreq governors
->> is restricted by min_freq and max_freq input.
+äºŽ 2011/7/5 13:36, R, Durgadoss å†™é“:
+> Hi All,
 >
-> Hello MyungJoo,
+> I am getting these prints in my Atom based device, running 2.6.35 kernel.
 >
-> This change appears to allow userspace to set min/max limits on
-> devfreq devices via sysfs.  Not everyone likes to expose this stuff
-> (similar to the discussions around controlling clocks from debugfs).
+> [  350.084005] CPU0: Temperature above threshold, cpu clock throttled (total
+> events = 26)
+> [  350.084029] CPU1: Temperature above threshold, cpu clock throttled (total
+> events = 26)
+> [  350.085293] CPU0: Temperature/speed normal
+> [  350.085311] CPU1: Temperature/speed normal
 >
-> Should it be wrapped in some new config option?  I think a sane
-> default is that if the sysfs config option for devfreq is selected
-> then it should include all of the read-only stuff.  A second config
-> option (which depends on the option in my previous sentence) should
-> allow the read-write stuff to be enabled separately.  Thoughts?
+> Seems like these are from therm_throt.c and the flow for this,
+> Starts from smp_thermal_interrupt(...) method.
 >
-> Also, how are you using this feature in practice?  Is this just for
-> test or are you planning on more fine-grained control of device
-> frequencies from userspace?
+> Can somebody tell me when this method gets called ?
+> Also, does this actually throttle the CPU ?
 >
-> Mike
 
-Hello Mike,
-
-
-Although turning off clocks inconsiderately usually crashes the
-system, setting min/max frequencies generally affects (if not always)
-only the performance and power consumption.
-
-For the optional min/max freq, I think each device should be able to
-choose to use it or not. Thus, rather than adding a Kconfig option,
-I'll let "profile" (struct devfreq_dev_profile) include
-"expose_user_min_max_freq" option.
-
-In practice, we have been using min/max to test DVFS behaviors and its
-side effects. And we are going to use them to 1. restrict power
-consumption forcibly by the platform software if it is too hot or the
-battery is low, and to 2. guarantee the minimum performance for
-specific tasks controlled by the platform software.
-
-Anyway, the reason 2 could be tackled by pm-qos if we allow more
-options in pm-qos with 1. pm qos type to enforce DVFS response time.
-2. pm qos type to enforce graphics performance. And adding a duration
-option to pm-qos requests will be helpful (sort of a helper function):
-i.e., pm_qos_timed_request(struct pm_qos_request *req, int
-pm_qos_class, s32 value, unsigned long duration_ms);
-
-
-
-Cheers!
-MyungJoo.
-
-
->
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> ---
->>  drivers/devfreq/devfreq.c                 |   70 +++++++++++++++++++++++++++++
->>  drivers/devfreq/governor_performance.c    |    5 ++-
->>  drivers/devfreq/governor_powersave.c      |    2 +-
->>  drivers/devfreq/governor_simpleondemand.c |   12 ++++-
->>  drivers/devfreq/governor_userspace.c      |   15 +++++-
->>  include/linux/devfreq.h                   |    5 ++
->>  6 files changed, 101 insertions(+), 8 deletions(-)
->>
->> diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
->> index 59d24e9..358d129 100644
->> --- a/drivers/devfreq/devfreq.c
->> +++ b/drivers/devfreq/devfreq.c
->> @@ -502,12 +502,82 @@ static ssize_t show_central_polling(struct device *dev,
->>                       !to_devfreq(dev)->governor->no_central_polling);
->>  }
->>
->> +static ssize_t store_min_freq(struct device *dev, struct device_attribute *attr,
->> +                             const char *buf, size_t count)
->> +{
->> +       struct devfreq *df = to_devfreq(dev);
->> +       unsigned long value;
->> +       int ret;
->> +       unsigned long max;
->> +
->> +       ret = sscanf(buf, "%lu", &value);
->> +       if (ret != 1)
->> +               goto out;
->> +
->> +       mutex_lock(&df->lock);
->> +       max = df->max_freq;
->> +       if (value && max && value > max) {
->> +               ret = -EINVAL;
->> +               goto unlock;
->> +       }
->> +
->> +       df->min_freq = value;
->> +       update_devfreq(df);
->> +       ret = count;
->> +unlock:
->> +       mutex_unlock(&df->lock);
->> +out:
->> +       return ret;
->> +}
->> +
->> +static ssize_t show_min_freq(struct device *dev, struct device_attribute *attr,
->> +                            char *buf)
->> +{
->> +       return sprintf(buf, "%lu\n", to_devfreq(dev)->min_freq);
->> +}
->> +
->> +static ssize_t store_max_freq(struct device *dev, struct device_attribute *attr,
->> +                             const char *buf, size_t count)
->> +{
->> +       struct devfreq *df = to_devfreq(dev);
->> +       unsigned long value;
->> +       int ret;
->> +       unsigned long min;
->> +
->> +       ret = sscanf(buf, "%lu", &value);
->> +       if (ret != 1)
->> +               goto out;
->> +
->> +       mutex_lock(&df->lock);
->> +       min = df->min_freq;
->> +       if (value && min && value < min) {
->> +               ret = -EINVAL;
->> +               goto unlock;
->> +       }
->> +
->> +       df->max_freq = value;
->> +       update_devfreq(df);
->> +       ret = count;
->> +unlock:
->> +       mutex_unlock(&df->lock);
->> +out:
->> +       return ret;
->> +}
->> +
->> +static ssize_t show_max_freq(struct device *dev, struct device_attribute *attr,
->> +                            char *buf)
->> +{
->> +       return sprintf(buf, "%lu\n", to_devfreq(dev)->max_freq);
->> +}
->> +
->>  static struct device_attribute devfreq_attrs[] = {
->>        __ATTR(governor, S_IRUGO, show_governor, NULL),
->>        __ATTR(cur_freq, S_IRUGO, show_freq, NULL),
->>        __ATTR(central_polling, S_IRUGO, show_central_polling, NULL),
->>        __ATTR(polling_interval, S_IRUGO | S_IWUSR, show_polling_interval,
->>               store_polling_interval),
->> +       __ATTR(min_freq, S_IRUGO | S_IWUSR, show_min_freq, store_min_freq),
->> +       __ATTR(max_freq, S_IRUGO | S_IWUSR, show_max_freq, store_max_freq),
->>        { },
->>  };
->>
->> diff --git a/drivers/devfreq/governor_performance.c b/drivers/devfreq/governor_performance.c
->> index c0596b2..574a06b 100644
->> --- a/drivers/devfreq/governor_performance.c
->> +++ b/drivers/devfreq/governor_performance.c
->> @@ -18,7 +18,10 @@ static int devfreq_performance_func(struct devfreq *df,
->>         * target callback should be able to get floor value as
->>         * said in devfreq.h
->>         */
->> -       *freq = UINT_MAX;
->> +       if (!df->max_freq)
->> +               *freq = UINT_MAX;
->> +       else
->> +               *freq = df->max_freq;
->>        return 0;
->>  }
->>
->> diff --git a/drivers/devfreq/governor_powersave.c b/drivers/devfreq/governor_powersave.c
->> index 2483a85..d742d4a 100644
->> --- a/drivers/devfreq/governor_powersave.c
->> +++ b/drivers/devfreq/governor_powersave.c
->> @@ -18,7 +18,7 @@ static int devfreq_powersave_func(struct devfreq *df,
->>         * target callback should be able to get ceiling value as
->>         * said in devfreq.h
->>         */
->> -       *freq = 0;
->> +       *freq = df->min_freq;
->>        return 0;
->>  }
->>
->> diff --git a/drivers/devfreq/governor_simpleondemand.c b/drivers/devfreq/governor_simpleondemand.c
->> index efad8dc..a2e3eae 100644
->> --- a/drivers/devfreq/governor_simpleondemand.c
->> +++ b/drivers/devfreq/governor_simpleondemand.c
->> @@ -25,6 +25,7 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
->>        unsigned int dfso_upthreshold = DFSO_UPTHRESHOLD;
->>        unsigned int dfso_downdifferential = DFSO_DOWNDIFFERENCTIAL;
->>        struct devfreq_simple_ondemand_data *data = df->data;
->> +       unsigned long max = (df->max_freq) ? df->max_freq : UINT_MAX;
->>
->>        if (err)
->>                return err;
->> @@ -41,7 +42,7 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
->>
->>        /* Assume MAX if it is going to be divided by zero */
->>        if (stat.total_time == 0) {
->> -               *freq = UINT_MAX;
->> +               *freq = max;
->>                return 0;
->>        }
->>
->> @@ -54,13 +55,13 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
->>        /* Set MAX if it's busy enough */
->>        if (stat.busy_time * 100 >
->>            stat.total_time * dfso_upthreshold) {
->> -               *freq = UINT_MAX;
->> +               *freq = max;
->>                return 0;
->>        }
->>
->>        /* Set MAX if we do not know the initial frequency */
->>        if (stat.current_frequency == 0) {
->> -               *freq = UINT_MAX;
->> +               *freq = max;
->>                return 0;
->>        }
->>
->> @@ -79,6 +80,11 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
->>        b = div_u64(b, (dfso_upthreshold - dfso_downdifferential / 2));
->>        *freq = (unsigned long) b;
->>
->> +       if (df->min_freq && *freq < df->min_freq)
->> +               *freq = df->min_freq;
->> +       if (df->max_freq && *freq > df->max_freq)
->> +               *freq = df->max_freq;
->> +
->>        return 0;
->>  }
->>
->> diff --git a/drivers/devfreq/governor_userspace.c b/drivers/devfreq/governor_userspace.c
->> index 4f8b563..0681246 100644
->> --- a/drivers/devfreq/governor_userspace.c
->> +++ b/drivers/devfreq/governor_userspace.c
->> @@ -25,10 +25,19 @@ static int devfreq_userspace_func(struct devfreq *df, unsigned long *freq)
->>  {
->>        struct userspace_data *data = df->data;
->>
->> -       if (!data->valid)
->> +       if (data->valid) {
->> +               unsigned long adjusted_freq = data->user_frequency;
->> +
->> +               if (df->max_freq && adjusted_freq > df->max_freq)
->> +                       adjusted_freq = df->max_freq;
->> +
->> +               if (df->min_freq && adjusted_freq < df->min_freq)
->> +                       adjusted_freq = df->min_freq;
->> +
->> +               *freq = adjusted_freq;
->> +       } else {
->>                *freq = df->previous_freq; /* No user freq specified yet */
->> -       else
->> -               *freq = data->user_frequency;
->> +       }
->>        return 0;
->>  }
->>
->> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
->> index 98ce812..e9385bf 100644
->> --- a/include/linux/devfreq.h
->> +++ b/include/linux/devfreq.h
->> @@ -124,6 +124,8 @@ struct devfreq_governor {
->>  *             touch this.
->>  * @being_removed      a flag to mark that this object is being removed in
->>  *                     order to prevent trying to remove the object multiple times.
->> + * @min_freq   Limit minimum frequency requested by user (0: none)
->> + * @max_freq   Limit maximum frequency requested by user (0: none)
->>  *
->>  * This structure stores the devfreq information for a give device.
->>  *
->> @@ -149,6 +151,9 @@ struct devfreq {
->>        void *data; /* private data for governors */
->>
->>        bool being_removed;
->> +
->> +       unsigned long min_freq;
->> +       unsigned long max_freq;
->>  };
->>
->>  #if defined(CONFIG_PM_DEVFREQ)
->> --
->> 1.7.4.1
->>
-
-
-
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab, DMC Business, Samsung Electronics
+try to apply this patch 29e9bf1841e4f (x86, mce, therm_throt: Don't report
+power limit and package level thermal throttle events in mcelog)
