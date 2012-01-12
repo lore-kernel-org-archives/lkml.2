@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab2ALMNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 07:13:33 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:59364 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751754Ab2ALMNc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 07:13:32 -0500
-Message-ID: <4F0ECE29.3060109@mvista.com>
-Date: Thu, 12 Jan 2012 16:12:25 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com
-Subject: Re: [PATCH 1/6 v2] usb/gadget/pch_udc: Fix disconnect issue
-References: <1326335230-32469-1-git-send-email-tomoya.rohm@gmail.com>
-In-Reply-To: <1326335230-32469-1-git-send-email-tomoya.rohm@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753462Ab2ALMQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 07:16:15 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:3387 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751576Ab2ALMQO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 07:16:14 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        cgroups@vger.kernel.org, Glauber Costa <glommer@parallels.com>
+Subject: [PATCH] net: decrement memcg jump label when limit, not usage, is changed
+Date: Thu, 12 Jan 2012 16:16:06 +0400
+Message-Id: <1326370566-4286-1-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+The logic of the current code is that whenever we destroy
+a cgroup that had its limit set (set meaning different than
+maximum), we should decrement the jump_label counter.
+Otherwise we assume it was never incremented.
 
-On 12-01-2012 6:27, Tomoya MORINAGA wrote:
+But what the code actually does is test for RES_USAGE
+instead of RES_LIMIT. Usage being different than maximum
+is likely to be true most of the time.
 
-> ISSUE:
-> When the driver notifies a gadget of a disconnect event, a system rarely freezes.
+The effect of this is that the key must become negative,
+and since the jump_label test says:
 
-> CAUSE:
-> When the driver calls dev->driver->disconnect(), it is not calling spinlock().
+        !!atomic_read(&key->enabled);
 
-    spin_unlock(), you mean?
+we'll have jump_labels still on when no one else is
+using this functionality.
 
-> Signed-off-by: Tomoya MORINAGA<tomoya.rohm@gmail.com>
-> ---
-> V2: Divide into 6 patches
-> ---
->   drivers/usb/gadget/pch_udc.c |    5 ++++-
->   1 files changed, 4 insertions(+), 1 deletions(-)
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: David S. Miller <davem@davemloft.net>
+---
+ net/ipv4/tcp_memcontrol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
-> index f222659..a4f8b08 100644
-> --- a/drivers/usb/gadget/pch_udc.c
-> +++ b/drivers/usb/gadget/pch_udc.c
-> @@ -2340,8 +2340,11 @@ static void pch_udc_svc_ur_interrupt(struct pch_udc_dev *dev)
->   		/* Complete request queue */
->   		empty_req_queue(ep);
->   	}
-> -	if (dev->driver&&  dev->driver->disconnect)
-> +	if (dev->driver&&  dev->driver->disconnect) {
-> +		spin_unlock(&dev->lock);
->   		dev->driver->disconnect(&dev->gadget);
-> +		spin_lock(&dev->lock);
-> +	}
+diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
+index 7fed04f..4997878 100644
+--- a/net/ipv4/tcp_memcontrol.c
++++ b/net/ipv4/tcp_memcontrol.c
+@@ -108,7 +108,7 @@ void tcp_destroy_cgroup(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	tcp = tcp_from_cgproto(cg_proto);
+ 	percpu_counter_destroy(&tcp->tcp_sockets_allocated);
+ 
+-	val = res_counter_read_u64(&tcp->tcp_memory_allocated, RES_USAGE);
++	val = res_counter_read_u64(&tcp->tcp_memory_allocated, RES_LIMIT);
+ 
+ 	if (val != RESOURCE_MAX)
+ 		jump_label_dec(&memcg_socket_limit_enabled);
+-- 
+1.7.7.4
 
-WBR, Sergei
