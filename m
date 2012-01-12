@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab2ALP7P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 10:59:15 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:39527 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753991Ab2ALP7N (ORCPT
+	id S1754189Ab2ALQDD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:03:03 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:45519 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754132Ab2ALQDA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 10:59:13 -0500
-X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=hQRVNFTGe2sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=ybGv7rb6yeJzYK2K_FoA:9 a=PUjeQqilurYA:10 a=j7xtlU9L0s6Sd7Xy:21 a=nAbpMD_5ZEvCGmJY:21 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326383950.7642.86.camel@gandalf.stny.rr.com>
-Subject: Re: [lttng-dev] Perf ABI (was: Re: [PATCH 09/11] sched: export
- task_prio to GPL modules)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <compudj@krystal.dyndns.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        devel@driverdev.osuosl.org, "Ted Ts'o" <tytso@mit.edu>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Date: Thu, 12 Jan 2012 10:59:10 -0500
-In-Reply-To: <1326383629.7642.85.camel@gandalf.stny.rr.com>
-References: <20111208232709.GA19820@kroah.com>
-	 <20111219104915.GA19861@elte.hu> <20111219153053.GA21548@Krystal>
-	 <20111220110813.GA19105@elte.hu> <20111223164629.GA30474@Krystal>
-	 <20111223172155.GA14117@thunk.org> <20111223181641.GA12681@Krystal>
-	 <20111225174613.GA12732@thunk.org> <20120112140905.GA30377@Krystal>
-	 <1326380042.7642.73.camel@gandalf.stny.rr.com>
-	 <20120112153957.GA20514@Krystal>
-	 <1326383629.7642.85.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 12 Jan 2012 11:03:00 -0500
+Date: Thu, 12 Jan 2012 11:02:59 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 11/15] drivers/usb/host/ehci-fsl.c: add missing iounmap
+In-Reply-To: <1326362117-29371-11-git-send-email-Julia.Lawall@lip6.fr>
+Message-ID: <Pine.LNX.4.44L0.1201121102470.1384-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-12 at 10:53 -0500, Steven Rostedt wrote:
+On Thu, 12 Jan 2012, Julia Lawall wrote:
 
-> That's a stretch in calling version numbers. All but the madvise case
-> above are how many parameters it takes, not really a "version" number.
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> It's adding a new syscall, not updating a version and then deprecating
-> the old one. As I believe all the above are still supported.
+> Add missing iounmap in error handling code, in a case where the function
+> already preforms iounmap on some other execution path.
 > 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression e;
+> statement S,S1;
+> int ret;
+> @@
+> e = \(ioremap\|ioremap_nocache\)(...)
+> ... when != iounmap(e)
+> if (<+...e...+>) S
+> ... when any
+>     when != iounmap(e)
+> *if (...)
+>    { ... when != iounmap(e)
+>      return ...; }
+> ... when any
+> iounmap(e);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+>  drivers/usb/host/ehci-fsl.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+> index e90344a..b556a72 100644
+> --- a/drivers/usb/host/ehci-fsl.c
+> +++ b/drivers/usb/host/ehci-fsl.c
+> @@ -125,7 +125,7 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
+>  	 */
+>  	if (pdata->init && pdata->init(pdev)) {
+>  		retval = -ENODEV;
+> -		goto err3;
+> +		goto err4;
+>  	}
+>  
+>  	/* Enable USB controller, 83xx or 8536 */
 
-Actually, the madvise1() isn't supported. But this just shows that it
-has nothing to do with a version number. What version is madvise()?
-
--- Steve
-
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
