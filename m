@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab2ALJS1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:18:27 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:25741 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753134Ab2ALJSW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:18:22 -0500
-Message-ID: <4F0EA51C.1060001@parallels.com>
-Date: Thu, 12 Jan 2012 13:17:16 +0400
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111109 Lightning/1.0b2 Thunderbird/3.1.16
+	id S1753239Ab2ALJUE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:20:04 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:61812 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753135Ab2ALJT6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:19:58 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH] kconfig: untangle EXPERT and EMBEDDED
+Date: Thu, 12 Jan 2012 09:18:52 +0000
+User-Agent: KMail/1.12.2 (Linux/3.2.0-rc7; KDE/4.3.2; x86_64; ; )
+Cc: Andrew Jones <drjones@redhat.com>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, david.woodhouse@intel.com,
+        gregkh@suse.de, davem@davemloft.net, axboe@kernel.dk, holt@sgi.com,
+        linux-arch@vger.kernel.org, linux@arm.linux.org.uk,
+        hskinnemoen@gmail.com, egtvedt@samfundet.no, msalter@redhat.com,
+        a-jacquiot@ti.com, starvik@axis.com, jesper.nilsson@axis.com,
+        dhowells@redhat.com, takata@linux-m32r.org, geert@linux-m68k.org,
+        yasutake.koichi@jp.panasonic.com, jonas@southpole.se, kyle@mcmartin.ca,
+        deller@gmx.de, jejb@parisc-linux.org, chris@zankel.net, greg@kroah.com,
+        davej@redhat.com, airlied@linux.ie, jkosina@suse.cz,
+        mchehab@infradead.org, johannes@sipsolutions.net,
+        linville@tuxdriver.com
+References: <1326295008-29795-1-git-send-email-drjones@redhat.com> <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1201111353330.21755@chino.kir.corp.google.com>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "Trond.Myklebust@netapp.com" <Trond.Myklebust@netapp.com>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Pavel Emelianov <xemul@parallels.com>, "neilb@suse.de" <neilb@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        "bfields@fieldses.org" <bfields@fieldses.org>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "devel@openvz.org" <devel@openvz.org>
-Subject: Re: [PATCH 01/11] SYSCTL: export root and set handling routines
-References: <20111214103602.3991.20990.stgit@localhost6.localdomain6>	<20111214104449.3991.61989.stgit@localhost6.localdomain6>	<m1bor6rg39.fsf@fess.ebiederm.org> <4EEEFC54.10700@parallels.com>	<m18vm8g951.fsf@fess.ebiederm.org> <4EEF2C9A.8000403@parallels.com>	<m1pqfkecw0.fsf@fess.ebiederm.org> <4EEF7364.8000407@parallels.com>	<m1vcotigyb.fsf@fess.ebiederm.org> <4F0C150F.1020007@parallels.com>	<m1ehv76v2v.fsf@fess.ebiederm.org> <4F0D5A9E.5030501@parallels.com>	<m1sjjm40k8.fsf@fess.ebiederm.org> <4F0DCEA8.7040205@parallels.com> <m18vle2frv.fsf@fess.ebiederm.org>
-In-Reply-To: <m18vle2frv.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201120918.53026.arnd@arndb.de>
+X-Provags-ID: V02:K0:Duu5ewlmS+t4VrzNXcyx55yKdUGQMLpAaHT6P7cDZne
+ AT/odu54vPMD1NkTFU5i0qB879u5adbsPtFoSLSg02/R5mrrUk
+ MOmeaWWLF/9GYdEBJMceDpck6a5i6bl/wtrm0DcMVQ2Csoxnor
+ TdQ3LQs9KCM8qUTeIgQ42arPXTp3e5oJ8SF02hXLlnKYao2/j0
+ Y3ff4wqsT4ANpnjxOfrPc9dFh67dYZkG5DrXXpYA/cQm50zphn
+ TblpJ9qkpf5puwF0L75IgZ3juMHm2tSgVOH858+f0woCm9kPya
+ o5Y/F58HT4O6kp8kdkmvVGfft7cxJ7DvHRDr+tHibCJuUsUwhr
+ bxqgLSSzAvvpfar5RrUc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-11.01.2012 23:36, Eric W. Biederman пишет:
->
-> Please stop and take a look at /proc/net.  If your /proc/net is not a
-> symlink please look at a modern kernel.
->
-> /proc/<pid>/net reflects the network namespace of the task in question.
->
+On Wednesday 11 January 2012, David Rientjes wrote:
+> We discussed this when the patch was made to change EMBEDDED to EXPERT and 
+> we knew that things like CONFIG_SLOB exist that would only make sense on a 
+> platform with a very small memory footprint.  So what criteria are you 
+> using to determine what makes sense for EMBEDDED or not and what would be 
+> generally useful for platforms with very small memory footprints?
+> 
+> I would think that something like CONFIG_SMALLMEM would identify those 
+> candidates (for things like SLOB) and then you could separate the rest 
+> based on the platform they exist for since you're essentially introducing 
+> a new config symbol here that existed in the past but are now using it 
+> with different semantics.
 
-Ok, I know that.
-I know, that if some task with pid N is in other network namespace, then 
-/proc/<N>/net contents will differ to /proc/selt/net contents.
+The CONFIG_SMALLMEM would also require people to know what they are doing,
+beyond what we expect the average person building a kernel to, which is
+just what CONFIG_EXPERT means, and the same reason why we ended up renaming
+CONFIG_EMBEDDED to CONFIG_EXPERT. People have a very different understanding
+of what "embedded" actually means, and not all of those require small
+memory footprint or even a custom kernel. Let's just stay with CONFIG_EXPERT.
 
->> And what do you think about "conteinerization" of /proc contents in the way like
->> "sysfs" was done?
->
-> I think the way sysfs is done is a pain in the neck to use.  Especially
-> in the context of commands like "ip netns exec".  With the sysfs model
-> there is a lot of extra state to manage.
->
-> I totally agree that the way sysfs is done is much better than the way
-> /proc/sys is done today.  Looking at current can be limiting in the
-> general case.
->
-> My current preference is the way /proc/net was done.
->
-
-Ok. But this approach still requires some additional data to manage in user 
-space. I.e. it's really easy to manage container's context using it's fs root, 
-because container's root is a part of initial configuration. But container's 
-processed pids numbers in parent context are unpredictable.
-
->> Implementing /proc "conteinerization" in this way can give us great flexibility.
->> For example, /proc/net (and /proc/sys/sunrpc) depends on mount owner net
->> namespace, /proc/sysvipc depends on mount owner ipc namespace, etc.
->> And this approach doesn't break backward compatibility as well.
->
-> The thing is /proc/net is already done.
->
-> All I see with making things like /proc/net depend on the context of the
-> process that called mount is a need to call mount much more often.
->
-
-/proc/net is a part or /proc. And /proc mount is called per container. So this 
-is just like it is.
-
-I have some solution I mind, which looks quite simple to implement, doesn't 
-require significant additional state to manage and suits my needs.
-Please, consider this.
-It's based on sysfs containerization approach, but simplified a lot.
-Sysctl's (comparing to sysfs entries) entries are the same for all namespaces.
-This actually means, that we don't need any additional infrastructure for 
-managing dentries. All we need to know on read/write operations with sysctl's is 
-the namespaces /proc was mounted from.
-
-Thus if we:
-
-1) replace /proc sb->s_fsdata content from pid_namespace to nsproxy and
-2) add link to /proc sb to ctl_table and
-3) add ns tag (pid, net, else or none) to ctl_table
-
-then we will have all we need to manage sysctl's content in the way we want.
-And looks like this approach doesn't break backward compatibility.
-
-What do you think about it?
-
--- 
-Best regards,
-Stanislav Kinsbursky
+	Arnd
