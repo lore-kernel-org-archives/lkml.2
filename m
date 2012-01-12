@@ -1,106 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab2ALTIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:08:44 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:35195 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab2ALTIl convert rfc822-to-8bit (ORCPT
+	id S1754920Ab2ALTOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 14:14:46 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47593 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752873Ab2ALTOm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 14:08:41 -0500
+	Thu, 12 Jan 2012 14:14:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
- <1326302710-9427-2-git-send-email-wad@chromium.org> <1326383015.7642.77.camel@gandalf.stny.rr.com>
- <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
- <1326385635.7642.89.camel@gandalf.stny.rr.com> <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
- <CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com>
- <CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com> <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Thu, 12 Jan 2012 14:08:18 -0500
-Message-ID: <CAGZ=bq+E3PFm8aZ1eaJaLnHK2dL_nxKBJ_F6MDR-uON+6T-87A@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Content-Type: text/plain; charset=UTF-8
+X-Originating-IP: [89.138.86.114]
+In-Reply-To: <20120112171847.GN4118@suse.de>
+References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
+	<1326276668-19932-3-git-send-email-mgorman@suse.de>
+	<1326381492.2442.188.camel@twins>
+	<20120112153712.GL4118@suse.de>
+	<1326383551.2442.203.camel@twins>
+	<20120112171847.GN4118@suse.de>
+Date: Thu, 12 Jan 2012 21:14:41 +0200
+Message-ID: <CAOtvUMdOwyzcPx3rHgQq1CVVfNG7w51RPmHw+_jG7HVtX+n2ig@mail.gmail.com>
+Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
+ IPI from page allocator context
+From: Gilad Ben-Yossef <gilad@benyossef.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Miklos Szeredi <mszeredi@novell.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
+        Gong Chen <gong.chen@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 13:44, Andrew Lutomirski <luto@mit.edu> wrote:
-> On Thu, Jan 12, 2012 at 10:32 AM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
->> On Thu, Jan 12, 2012 at 10:18 AM, Andrew Lutomirski <luto@mit.edu> wrote:
->>> Like this?
->>>
->>> http://lkml.indiana.edu/hypermail/linux/kernel/1003.3/01225.html
+On Thu, Jan 12, 2012 at 7:18 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Thu, Jan 12, 2012 at 04:52:31PM +0100, Peter Zijlstra wrote:
+>> On Thu, 2012-01-12 at 15:37 +0000, Mel Gorman wrote:
+>> > On Thu, Jan 12, 2012 at 04:18:12PM +0100, Peter Zijlstra wrote:
+>> > > On Wed, 2012-01-11 at 10:11 +0000, Mel Gorman wrote:
+>> > > > At least one bug report has
+>> > > > been seen on ppc64 against a 3.0 era kernel that looked like a bug
+>> > > > receiving interrupts on a CPU being offlined.
+>> > >
+>> > > Got details on that Mel? The preempt_disable() in on_each_cpu() should
+>> > > serialize against the stop_machine() crap in unplug.
+>> >
+>> > I might have added 2 and 2 together and got 5.
+>> >
+>> > The stack trace clearly was while sending IPIs in on_each_cpu() and
+>> > always when under memory pressure and stuck in direct reclaim. This was
+>> > on !PREEMPT kernels where preempt_disable() is a no-op. That is why I
+>> > thought get_online_cpu() would be necessary.
 >>
->> I don't know the execve_nosecurity patches, so the diff makes little
->> sense to me, but yeah, I wouldn't expect it to be more than a couple
->> of lines. Exactly *how* you set the bit etc is not something I care
->> deeply about, prctl seems about as good as anything.
->>
->>> Note that there's a huge can of worms if execve is allowed but
->>> suid/sgid is not: selinux may elevate privileges on exec of pretty
->>> much anything. Â (I think that this is a really awful idea, but it's in
->>> the kernel, so we're stuck with it.)
->>
->> You can do any amount of crazy things with selinux, but the other side
->> of the coin is that it would also be trivial to teach selinux about
->> this same "restricted environment" bit, and just say that a process
->> with that bit set doesn't get to match whatever selinux privilege
->> escalation rules..
->>
->> I really don't think this is just about "execve cannot do setuid". I
->> think it's about the process being marked as restricted.
->>
->> So in your patch, I think that "PR_RESTRICT_EXEC" bit is wrong. It
->> should simply be "PR_RESTRICT_ME", and be done with it, and not try to
->> artificially limit it to be some "execve feature", and more think of
->> it as a "this is a process that has *no* extra privileges at all, and
->> can never get them".
+>> For non-preempt the required scheduling of stop_machine() will have to
+>> wait even longer. Still there might be something funny, some of the
+>> hotplug notifiers are ran before the stop_machine thing does its thing
+>> so there might be some fun interaction.
 >
-> execve_nosecurity was my attempt to sidestep selinux issues. Â It's a
-> different syscall that does all of the non-security-related things
-> that execve does but does not escalate (or even change) any
-> privileges. Â Maybe I'll try to rework that for newer kernels as well.
-> The idea is that programs that expect to run in sandboxes / chroots /
-> namespaces / whatever can use it, and older programs that might
-> malfunction dangerously if the semantics of execve change will just
-> fail instead.
+> Ok, how about this as a replacement patch?
+>
+> ---8<---
+> From: Mel Gorman <mgorman@suse.de>
+> Subject: [PATCH] mm: page allocator: Do not drain per-cpu lists via IPI from page allocator context
+>
+> While running a CPU hotplug stress test under memory pressure, it
+> was observed that the machine would halt with no messages logged
+> to console. This is difficult to trigger and required a machine
+> with 8 cores and plenty of memory. In at least one case on ppc64,
+> the warning in include/linux/cpumask.h:107 triggered implying that
+> IPIs are being sent to offline CPUs in some cases.
+>
+> A suspicious part of the problem is that the page allocator is sending
+> IPIs using on_each_cpu() without calling get_online_cpus() to prevent
+> changes to the online cpumask. It is depending on preemption being
+> disabled to protect it which is a no-op on !PREEMPT kernels. This means
+> that a thread can be reading the mask in smp_call_function_many() when
+> an attempt is made to take a CPU offline. The expectation is that this
+> is not a problem as the stop_machine() used during CPU hotplug should
+> be able to prevent any problems as the reader of the online mask will
+> prevent stop_machine making forward progress but it's unhelpful.
+>
+> On the other side, the mask can also be read while the CPU is being
+> brought online. In this case it is the responsibility of the
+> architecture that the CPU is able to receive and handle interrupts
+> before being marked active but that does not mean they always get it
+> right.
+>
+> Sending excessive IPIs from the page allocator is a bad idea. In low
+> memory situations, a large number of processes can drain the per-cpu
+> lists at the same time, in quick succession and on many CPUs which is
+> pointless. In light of this and the unspecific CPU hotplug concerns,
+> this patch removes the call drain_all_pages() after failing direct
+> reclaim. To avoid impacting high-order allocation success rates,
+> it still drains the local per-cpu lists for high-order allocations
+> that failed.
+>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/page_alloc.c |   10 ++++++----
+>  1 files changed, 6 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 2b8ba3a..63ea182 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1982,11 +1982,13 @@ retry:
+>                                        migratetype);
+>
+>        /*
+> -        * If an allocation failed after direct reclaim, it could be because
+> -        * pages are pinned on the per-cpu lists. Drain them and try again
+> +        * If a high-order allocation failed after direct reclaim, there is a
+> +        * possibility that it is because the necessary buddies have been
+> +        * freed to the per-cpu list. Drain the local list and try again.
+>         */
+> -       if (!page && !drained) {
+> -               drain_all_pages();
+> +       if (!page && order && !drained) {
+> +               drain_pages(get_cpu());
+> +               put_cpu();
+>                drained = true;
+>                goto retry;
+>        }
 
-I don't see any issues with SELinux support for this feature.
 
-Specifically, when you try to execute something in SELinux, it will
-first look at the types and try to "execute" (involving a type
-transition IE: security label change).
 
-But if that fails in many cases it may still be allowed to
-"execute_no_trans" (IE: regular non-privileged exec() without a
-transition).
+I like the patch, think it is better then current code and want it to go in.
 
-If you add this feature, it should just disable the normal "execute"
-with transition path and unconditionally fall back to
-"execute_no_trans".
+I also think there is still some problems with IPIs somewhere that
+cause some corruption when a lot of IPIs are sent and that
+ the patch simply lowered the very big number of IPIs that are sent
+via the direct reclaim code path so the problem
+is hidden, not solved by this patch.
 
-Likewise, enabling these bits should also disable the "transition" and
-"dyntransition" process access vectors, and I'm on the fence about
-whether "setfscreate", etc should be allowed.
+I've seen something related when trying to test the IPI reduction
+patches. Interesting enough it was not related to CPU hotplug at all -
+When a lot of IPIs are being sent, I sometime got an assert from low
+level platform code that I'm trying to send IPIs with an empty mask
+although the mask was NOT empty. I didn't manage to debug it then but
+I did manage to recreate it quite easily.
 
-Cheers,
-Kyle Moffett
+I will see if I can recreate it with recent master and report.
 
 -- 
-Curious about my work on the Debian powerpcspe port?
-I'm keeping a blog here: http://pureperl.blogspot.com/
+Gilad Ben-Yossef
+Chief Coffee Drinker
+gilad@benyossef.com
+Israel Cell: +972-52-8260388
+US Cell: +1-973-8260388
+http://benyossef.com
+
+"Unfortunately, cache misses are an equal opportunity pain provider."
+-- Mike Galbraith, LKML
