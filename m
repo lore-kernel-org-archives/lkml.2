@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab2ALOue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 09:50:34 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:32883 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753168Ab2ALOud (ORCPT
+	id S1753739Ab2ALOv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 09:51:56 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40729 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2ALOvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 09:50:33 -0500
-X-AuditID: b753bd60-98392ba000007b1b-5e-4f0ef33631eb
-X-AuditID: b753bd60-98392ba000007b1b-5e-4f0ef33631eb
-Message-ID: <4F0EF32F.6060001@hitachi.com>
-Date: Thu, 12 Jan 2012 23:50:23 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH v8 3.2.0-rc5 9/9] perf: perf interface for uprobes
-References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com> <20111216122951.2085.95511.sendpatchset@srdronam.in.ibm.com> <4F06D22D.9060906@hitachi.com> <20120109112427.GB10189@linux.vnet.ibm.com>
-In-Reply-To: <20120109112427.GB10189@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 12 Jan 2012 09:51:54 -0500
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH V2]drivers:staging:android Typos: fix some comments that have typos in them.
+Date: Thu, 12 Jan 2012 06:51:31 -0800
+Message-Id: <1326379891-10130-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Srikar,
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-(2012/01/09 20:24), Srikar Dronamraju wrote:
->>
->>> +
->>> +static int convert_to_perf_probe_point(struct probe_trace_point *tp,
->>> +					struct perf_probe_point *pp)
->>> +{
->>> +	pp->function = strdup(tp->symbol);
->>> +	if (pp->function == NULL)
->>> +		return -ENOMEM;
->>> +	pp->offset = tp->offset;
->>> +	pp->retprobe = tp->retprobe;
->>> +
->>> +	return 0;
->>> +}
->>
->> This function could be used in kprobe_convert_to_perf_probe() too.
->> In that case, it will be separated as a cleanup from this.
-> 
-> Do you really want this in a separate patch, since it doesnt make too
-> much sense without the uprobes code.
+Below is a patch that fixes some typos in some comments.
 
-If so, breaking this big patch into small pieces helps
-(at least) me to review/maintain the change :)
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+---
+ drivers/staging/android/TODO     |    2 +-
+ drivers/staging/android/binder.c |    2 +-
+ drivers/staging/android/pmem.c   |   10 +++++-----
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-Thank you,
-
+diff --git a/drivers/staging/android/TODO b/drivers/staging/android/TODO
+index e59c5be..b15fb0d 100644
+--- a/drivers/staging/android/TODO
++++ b/drivers/staging/android/TODO
+@@ -3,7 +3,7 @@ TODO:
+ 	- sparse fixes
+ 	- rename files to be not so "generic"
+ 	- make sure things build as modules properly
+-	- add proper arch dependancies as needed
++	- add proper arch dependencies as needed
+ 	- audit userspace interfaces to make sure they are sane
+ 
+ Please send patches to Greg Kroah-Hartman <greg@kroah.com> and Cc:
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 7491801..e748756 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -257,7 +257,7 @@ struct binder_ref {
+ };
+ 
+ struct binder_buffer {
+-	struct list_head entry; /* free and allocated entries by addesss */
++	struct list_head entry; /* free and allocated entries by address */
+ 	struct rb_node rb_node; /* free entry by size or allocated entry */
+ 				/* by address */
+ 	unsigned free:1;
+diff --git a/drivers/staging/android/pmem.c b/drivers/staging/android/pmem.c
+index 7d97032..591c49b 100644
+--- a/drivers/staging/android/pmem.c
++++ b/drivers/staging/android/pmem.c
+@@ -34,7 +34,7 @@
+ 
+ #define PMEM_DEBUG 1
+ 
+-/* indicates that a refernce to this file has been taken via get_pmem_file,
++/* indicates that a reference to this file has been taken via get_pmem_file,
+  * the file should not be released until put_pmem_file is called */
+ #define PMEM_FLAGS_BUSY 0x1
+ /* indicates that this is a suballocation of a larger master range */
+@@ -58,14 +58,14 @@ struct pmem_data {
+ 	/* see flags above for descriptions */
+ 	unsigned int flags;
+ 	/* protects this data field, if the mm_mmap sem will be held at the
+-	 * same time as this sem, the mm sem must be taken first (as this is
++	 * same time as this sem, the mm sem must be taken first as this is
+ 	 * the order for vma_open and vma_close ops */
+ 	struct rw_semaphore sem;
+ 	/* info about the mmaping process */
+ 	struct vm_area_struct *vma;
+ 	/* task struct of the mapping process */
+ 	struct task_struct *task;
+-	/* process id of teh mapping process */
++	/* process id of the mapping process */
+ 	pid_t pid;
+ 	/* file descriptor of the master */
+ 	int master_fd;
+@@ -138,7 +138,7 @@ struct pmem_info {
+ 	 * dereferencing a pointer into bitmap
+ 	 *
+ 	 * pmem_data->sem protects the pmem data of a particular file
+-	 * Many of the function that require the pmem_data->sem have a non-
++	 * Many of the functions that require the pmem_data->sem have a non-
+ 	 * locking version for when the caller is already holding that sem.
+ 	 *
+ 	 * IF YOU TAKE BOTH LOCKS TAKE THEM IN THIS ORDER:
+@@ -296,7 +296,7 @@ static int pmem_release(struct inode *inode, struct file *file)
+ 
+ 	down_write(&data->sem);
+ 
+-	/* if its not a conencted file and it has an allocation, free it */
++	/* if it's not a connected file and it has an allocation, free it */
+ 	if (!(PMEM_FLAGS_CONNECTED & data->flags) && has_allocation(file)) {
+ 		down_write(&pmem[id].bitmap_sem);
+ 		ret = pmem_free(id, data->index);
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.5.4
+
