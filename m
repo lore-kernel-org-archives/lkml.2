@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab2ALUgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:36:36 -0500
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54173
+	id S1755516Ab2ALUge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:36:34 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54195
 	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755362Ab2ALUfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755379Ab2ALUfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 15:35:23 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -13,9 +13,9 @@ To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         jbottomley@parallels.com, hch@infradead.org,
         linux-scsi@vger.kernel.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 12/15] Staging: hv: storvsc: Cleanup some protocol related constants
-Date: Thu, 12 Jan 2012 12:38:05 -0800
-Message-Id: <1326400688-13544-12-git-send-email-kys@microsoft.com>
+Subject: [PATCH 14/15] Staging: hv: storvsc: Consolidate the request structure
+Date: Thu, 12 Jan 2012 12:38:07 -0800
+Message-Id: <1326400688-13544-14-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1326400688-13544-1-git-send-email-kys@microsoft.com>
 References: <1326400637-13494-1-git-send-email-kys@microsoft.com>
@@ -24,64 +24,236 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup some protocol related constants.
+Consolidate the request structure by getting rid of struct hv_storvsc_request.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   65 ++++++++++++++++----------------------
+ 1 files changed, 27 insertions(+), 38 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 629edd1..9f07458 100644
+index d34e3ca..9ccc1c4 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -114,13 +114,9 @@ enum vstor_packet_operation {
-  * this remains the same across the write regardless of 32/64 bit
-  * note: it's patterned off the SCSI_PASS_THROUGH structure
-  */
--#define CDB16GENERIC_LENGTH			0x10
+@@ -236,17 +236,20 @@ enum storvsc_request_type {
+ #define SRB_STATUS_ERROR	0x04
+ 
+ 
++struct storvsc_cmd_request {
++	struct list_head entry;
++	struct scsi_cmnd *cmd;
++
++	unsigned int bounce_sgl_count;
++	struct scatterlist *bounce_sgl;
+ 
+-struct hv_storvsc_request {
+ 	struct hv_device *device;
+ 
+ 	/* Synchronize the request/response if needed */
+ 	struct completion wait_event;
+ 
+ 	unsigned char *sense_buffer;
+-	struct storvsc_cmd_request  *cmd;
+ 	struct hv_multipage_buffer data_buffer;
 -
--#ifndef SENSE_BUFFER_SIZE
--#define SENSE_BUFFER_SIZE			0x12
--#endif
+ 	struct vstor_packet vstor_packet;
+ };
+ 
+@@ -272,8 +275,8 @@ struct storvsc_device {
+ 	unsigned char target_id;
+ 
+ 	/* Used for vsc/vsp channel reset process */
+-	struct hv_storvsc_request init_request;
+-	struct hv_storvsc_request reset_request;
++	struct storvsc_cmd_request init_request;
++	struct storvsc_cmd_request reset_request;
+ };
+ 
+ struct stor_mem_pools {
+@@ -288,16 +291,6 @@ struct hv_host_device {
+ 	unsigned char target;
+ };
+ 
+-struct storvsc_cmd_request {
+-	struct list_head entry;
+-	struct scsi_cmnd *cmd;
 -
--#define MAX_DATA_BUF_LEN_WITH_PADDING		0x14
-+#define STORVSC_MAX_CMD_LEN			0x10
-+#define STORVSC_SENSE_BUFFER_SIZE		0x12
-+#define STORVSC_MAX_BUF_LEN_WITH_PADDING	0x14
+-	unsigned int bounce_sgl_count;
+-	struct scatterlist *bounce_sgl;
+-
+-	struct hv_storvsc_request request;
+-};
+-
+ struct storvsc_scan_work {
+ 	struct work_struct work;
+ 	struct Scsi_Host *host;
+@@ -628,7 +621,7 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
+ static int storvsc_channel_init(struct hv_device *device)
+ {
+ 	struct storvsc_device *stor_device;
+-	struct hv_storvsc_request *request;
++	struct storvsc_cmd_request *request;
+ 	struct vstor_packet *vstor_packet;
+ 	int ret, t;
  
- struct vmscsi_request {
- 	u16 length;
-@@ -140,9 +136,9 @@ struct vmscsi_request {
- 	u32 data_transfer_length;
- 
- 	union {
--		u8 cdb[CDB16GENERIC_LENGTH];
--		u8 sense_data[SENSE_BUFFER_SIZE];
--		u8 reserved_array[MAX_DATA_BUF_LEN_WITH_PADDING];
-+		u8 cdb[STORVSC_MAX_CMD_LEN];
-+		u8 sense_data[STORVSC_SENSE_BUFFER_SIZE];
-+		u8 reserved_array[STORVSC_MAX_BUF_LEN_WITH_PADDING];
- 	};
- } __attribute((packed));
- 
-@@ -234,7 +230,6 @@ struct vstor_packet {
- #define STORVSC_MAX_LUNS_PER_TARGET			64
- #define STORVSC_MAX_TARGETS				1
- #define STORVSC_MAX_CHANNELS				1
--#define STORVSC_MAX_CMD_LEN				16
- 
- /* Matches Windows-end */
- enum storvsc_request_type {
-@@ -1074,7 +1069,7 @@ static int storvsc_do_io(struct hv_device *device,
- 	vstor_packet->vm_srb.length = sizeof(struct vmscsi_request);
- 
- 
--	vstor_packet->vm_srb.sense_info_length = SENSE_BUFFER_SIZE;
-+	vstor_packet->vm_srb.sense_info_length = STORVSC_SENSE_BUFFER_SIZE;
+@@ -643,7 +636,7 @@ static int storvsc_channel_init(struct hv_device *device)
+ 	 * Now, initiate the vsc/vsp initialization protocol on the open
+ 	 * channel
+ 	 */
+-	memset(request, 0, sizeof(struct hv_storvsc_request));
++	memset(request, 0, sizeof(struct storvsc_cmd_request));
+ 	init_completion(&request->wait_event);
+ 	vstor_packet->operation = VSTOR_OPERATION_BEGIN_INITIALIZATION;
+ 	vstor_packet->flags = REQUEST_COMPLETION_FLAG;
+@@ -757,9 +750,8 @@ cleanup:
+ }
  
  
- 	vstor_packet->vm_srb.data_transfer_length =
+-static void storvsc_command_completion(struct hv_storvsc_request *request)
++static void storvsc_command_completion(struct storvsc_cmd_request *cmd_request)
+ {
+-	struct storvsc_cmd_request *cmd_request = request->cmd;
+ 	struct scsi_cmnd *scmnd = cmd_request->cmd;
+ 	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
+ 	void (*scsi_done_fn)(struct scsi_cmnd *);
+@@ -768,7 +760,7 @@ static void storvsc_command_completion(struct hv_storvsc_request *request)
+ 	struct storvsc_scan_work *wrk;
+ 	struct stor_mem_pools *memp = scmnd->device->hostdata;
+ 
+-	vm_srb = &request->vstor_packet.vm_srb;
++	vm_srb = &cmd_request->vstor_packet.vm_srb;
+ 	if (cmd_request->bounce_sgl_count) {
+ 		if (vm_srb->data_in == READ_TYPE)
+ 			copy_from_bounce_buffer(scsi_sglist(scmnd),
+@@ -819,7 +811,7 @@ static void storvsc_command_completion(struct hv_storvsc_request *request)
+ 	}
+ 
+ 	scsi_set_resid(scmnd,
+-		request->data_buffer.len -
++		cmd_request->data_buffer.len -
+ 		vm_srb->data_transfer_length);
+ 
+ 	scsi_done_fn = scmnd->scsi_done;
+@@ -834,7 +826,7 @@ static void storvsc_command_completion(struct hv_storvsc_request *request)
+ 
+ static void storvsc_on_io_completion(struct hv_device *device,
+ 				  struct vstor_packet *vstor_packet,
+-				  struct hv_storvsc_request *request)
++				  struct storvsc_cmd_request *request)
+ {
+ 	struct storvsc_device *stor_device;
+ 	struct vstor_packet *stor_pkt;
+@@ -906,7 +898,7 @@ static void storvsc_on_io_completion(struct hv_device *device,
+ 
+ static void storvsc_on_receive(struct hv_device *device,
+ 			     struct vstor_packet *vstor_packet,
+-			     struct hv_storvsc_request *request)
++			     struct storvsc_cmd_request *request)
+ {
+ 	struct storvsc_scan_work *work;
+ 	struct storvsc_device *stor_device;
+@@ -940,7 +932,7 @@ static void storvsc_on_channel_callback(void *context)
+ 	u32 bytes_recvd;
+ 	u64 request_id;
+ 	unsigned char packet[ALIGN(sizeof(struct vstor_packet), 8)];
+-	struct hv_storvsc_request *request;
++	struct storvsc_cmd_request *request;
+ 	int ret;
+ 
+ 
+@@ -954,7 +946,7 @@ static void storvsc_on_channel_callback(void *context)
+ 				       &bytes_recvd, &request_id);
+ 		if (ret == 0 && bytes_recvd > 0) {
+ 
+-			request = (struct hv_storvsc_request *)
++			request = (struct storvsc_cmd_request *)
+ 					(unsigned long)request_id;
+ 
+ 			if ((request == &stor_device->init_request) ||
+@@ -1036,7 +1028,7 @@ static int storvsc_dev_remove(struct hv_device *device)
+ }
+ 
+ static int storvsc_do_io(struct hv_device *device,
+-			      struct hv_storvsc_request *request)
++			      struct storvsc_cmd_request *request)
+ {
+ 	struct storvsc_device *stor_device;
+ 	struct vstor_packet *vstor_packet;
+@@ -1174,7 +1166,7 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
+ 	struct hv_device *device = host_dev->dev;
+ 
+ 	struct storvsc_device *stor_device;
+-	struct hv_storvsc_request *request;
++	struct storvsc_cmd_request *request;
+ 	struct vstor_packet *vstor_packet;
+ 	int ret, t;
+ 
+@@ -1238,7 +1230,6 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 	int ret;
+ 	struct hv_host_device *host_dev = shost_priv(host);
+ 	struct hv_device *dev = host_dev->dev;
+-	struct hv_storvsc_request *request;
+ 	struct storvsc_cmd_request *cmd_request;
+ 	unsigned int request_size = 0;
+ 	int i;
+@@ -1271,8 +1262,7 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 
+ 	scmnd->host_scribble = (unsigned char *)cmd_request;
+ 
+-	request = &cmd_request->request;
+-	vm_srb = &request->vstor_packet.vm_srb;
++	vm_srb = &cmd_request->vstor_packet.vm_srb;
+ 
+ 
+ 	/* Build the SRB */
+@@ -1288,7 +1278,6 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 		break;
+ 	}
+ 
+-	request->cmd = cmd_request;
+ 
+ 	vm_srb->port_number = host_dev->port;
+ 	vm_srb->path_id = scmnd->device->channel;
+@@ -1299,10 +1288,10 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 
+ 	memcpy(vm_srb->cdb, scmnd->cmnd, vm_srb->cdb_length);
+ 
+-	request->sense_buffer = scmnd->sense_buffer;
++	cmd_request->sense_buffer = scmnd->sense_buffer;
+ 
+ 
+-	request->data_buffer.len = scsi_bufflen(scmnd);
++	cmd_request->data_buffer.len = scsi_bufflen(scmnd);
+ 	if (scsi_sg_count(scmnd)) {
+ 		sgl = (struct scatterlist *)scsi_sglist(scmnd);
+ 		sg_count = scsi_sg_count(scmnd);
+@@ -1331,21 +1320,21 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 			sg_count = cmd_request->bounce_sgl_count;
+ 		}
+ 
+-		request->data_buffer.offset = sgl[0].offset;
++		cmd_request->data_buffer.offset = sgl[0].offset;
+ 
+ 		for (i = 0; i < sg_count; i++)
+-			request->data_buffer.pfn_array[i] =
++			cmd_request->data_buffer.pfn_array[i] =
+ 				page_to_pfn(sg_page((&sgl[i])));
+ 
+ 	} else if (scsi_sglist(scmnd)) {
+-		request->data_buffer.offset =
++		cmd_request->data_buffer.offset =
+ 			virt_to_phys(scsi_sglist(scmnd)) & (PAGE_SIZE-1);
+-		request->data_buffer.pfn_array[0] =
++		cmd_request->data_buffer.pfn_array[0] =
+ 			virt_to_phys(scsi_sglist(scmnd)) >> PAGE_SHIFT;
+ 	}
+ 
+ 	/* Invokes the vsc to start an IO */
+-	ret = storvsc_do_io(dev, &cmd_request->request);
++	ret = storvsc_do_io(dev, cmd_request);
+ 
+ 	if (ret == -EAGAIN) {
+ 		/* no more space */
 -- 
 1.7.4.1
 
