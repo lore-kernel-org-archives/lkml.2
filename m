@@ -1,98 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752934Ab2ALI1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 03:27:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45634 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752849Ab2ALI1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 03:27:23 -0500
-Date: Thu, 12 Jan 2012 09:27:22 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
-Message-ID: <20120112082722.GB1042@tiehlicka.suse.cz>
-References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
- <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
- <20120111084802.GA16466@tiehlicka.suse.cz>
- <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752928Ab2ALI3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 03:29:00 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:8695 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752835Ab2ALI26 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 03:28:58 -0500
+X-AuditID: cbfee61a-b7b89ae000001a15-78-4f0e99c988d5
+From: Sangbeom Kim <sbkim73@samsung.com>
+To: "'Axel Lin'" <axel.lin@gmail.com>, linux-kernel@vger.kernel.org
+Cc: "'Liam Girdwood'" <lrg@ti.com>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
+References: <1326351429.3471.0.camel@phoenix>
+In-reply-to: <1326351429.3471.0.camel@phoenix>
+Subject: RE: [PATCH 1/2] regulator: s5m8767: Add missing breaks
+Date: Thu, 12 Jan 2012 17:29:19 +0900
+Message-id: <027001ccd104$47bdb0b0$d7391210$@com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: ko
+Thread-index: AczQ924gUy49PsOsRF+yTGVpwRc0QAACx0GQ
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-01-12 11:17:02, KAMEZAWA Hiroyuki wrote:
-> On Wed, 11 Jan 2012 09:48:02 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
+On Thursday, January 12, 2012 3:57 PM, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> This patch is against Mark's regulator tree (for-next-next branch).
 > 
-> > On Tue 10-01-12 13:31:08, David Rientjes wrote:
-> > > On Tue, 10 Jan 2012, Michal Hocko wrote:
-> > [...]
-> > > >  mm/page_alloc.c |   11 +++++++++++
-> > > >  1 files changed, 11 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> > > > index 2b8ba3a..485be89 100644
-> > > > --- a/mm/page_alloc.c
-> > > > +++ b/mm/page_alloc.c
-> > > > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
-> > > >  bool is_pageblock_removable_nolock(struct page *page)
-> > > >  {
-> > > >  	struct zone *zone = page_zone(page);
-> > > > +	unsigned long pfn = page_to_pfn(page);
-> > > > +
-> 
-> Hmm, I don't like to use page_zone() when we know the page may not be initialized.
-> Shouldn't we add
-> 
-> 	if (!node_online(page_to_nid(page))
-> 		return false;
-> ?
+>  drivers/regulator/s5m8767.c |    4 ++++
 
-How is this different? The node won't be initialized in page flags as
-well.
+During normal test, I can't detect the problem.
+But It should add break to apply proper ramp slope.
 
-> But...hmm. I think we should return 'true' here for removing a section with a hole
-> finally....(Now, false will be safe.)
+Acked-by: Sangbeom Kim <sbkim73@samsung.com>
 
-Those pages are reserved (for BIOS I guess) in this particular case so I
-do not think it is safe to claim that the block is removable. Or am I
-missing something?
+Thanks,
+Sangbeom.
 
-[...]
-> > > I think this should be handled in is_mem_section_removable() on the pfn 
-> > > rather than using the struct page in is_pageblock_removable_nolock() and 
-> > > converting back and forth.  We should make sure that any page passed to 
-> > > is_pageblock_removable_nolock() is valid.
-> > 
-> > Yes, I do not like pfn->page->pfn dance as well and in fact I do not
-> > have a strong opinion which one is better. I just put it at the place
-> > where we care about zone to be more obvious. If others think that I
-> > should move the check one level higher I'll do that. I just think this
-> > is more obvious.
-> > 
-> Hmm, mem_section and pageblock is a different chunk...
-> And, IIUC, in some IBM machines, section may includes several zones.
-> Please taking care of that if you move this to is_mem_section_removable()...
-
-Thanks for pointing this out. 
-
-> 
-> Thanks,
-> -Kame
-
-Thanks for comments.
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
