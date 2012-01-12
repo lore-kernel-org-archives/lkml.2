@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab2ALRSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:18:01 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:62976 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab2ALRR6 (ORCPT
+	id S1754680Ab2ALRSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:18:49 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:60573 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754089Ab2ALRSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:17:58 -0500
-X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=CN4PQ-MNGcoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=jf1CyLSczCSKpcgWCx8A:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.80.29
-Message-ID: <1326388674.7642.103.camel@gandalf.stny.rr.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Lutomirski <luto@mit.edu>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
+	Thu, 12 Jan 2012 12:18:47 -0500
+Message-ID: <4F0F238E.7020508@xenotime.net>
+Date: Thu, 12 Jan 2012 10:16:46 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Will Drewry <wad@chromium.org>
+CC: linux-kernel@vger.kernel.org, keescook@chromium.org,
         john.johansen@canonical.com, serge.hallyn@canonical.com,
         coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
-        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
-        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
+        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
+        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
         linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Date: Thu, 12 Jan 2012 12:17:54 -0500
-In-Reply-To: <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	 <1326302710-9427-2-git-send-email-wad@chromium.org>
-	 <1326383015.7642.77.camel@gandalf.stny.rr.com>
-	 <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
-	 <1326385635.7642.89.camel@gandalf.stny.rr.com>
-	 <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.2.2-1 
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net
+Subject: Re: [PATCH v2 2/2] Documentation: prctl/seccomp_filter
+References: <CABqD9hbQRinbYqqwjqH8TfDvkOpESwiCp1uEE8d0Q7Rp4tsM0A@mail.gmail.com> <1326323983-23630-1-git-send-email-wad@chromium.org>
+In-Reply-To: <1326323983-23630-1-git-send-email-wad@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-12 at 09:09 -0800, Linus Torvalds wrote:
+On 01/11/2012 03:19 PM, Will Drewry wrote:
+> Document how system call filtering with BPF works and
+> may be used.  Includes an example for x86 (32-bit).
 
-> The whole "fail security escalations" thing goes way beyond just
-> filtering, I think we could seriously try to make it a generic
-> feature.
+Please tell some of us what "BPF" means.  wikipedia lists 15 possible
+choices, but I don't know which one to choose.
 
-After I wrote this comment I thought the same thing. It would be nice to
-have a way to just set a flag to a process that will prevent it from
-doing any escalating of privileges.
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> ---
+>  Documentation/prctl/seccomp_filter.txt |   99 ++++++++++++++++++++++++++++++++
+>  samples/Makefile                       |    2 +-
+>  samples/seccomp/Makefile               |   12 ++++
+>  samples/seccomp/bpf-example.c          |   74 ++++++++++++++++++++++++
+>  4 files changed, 186 insertions(+), 1 deletions(-)
+>  create mode 100644 Documentation/prctl/seccomp_filter.txt
+>  create mode 100644 samples/seccomp/Makefile
+>  create mode 100644 samples/seccomp/bpf-example.c
 
-I totally agree, this would solve a whole host of issues with regard to
-security issues in things that shouldn't be a problem but currently are.
 
--- Steve
-
-
-
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
