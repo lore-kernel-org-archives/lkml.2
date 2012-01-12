@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab2ALRds (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:33:48 -0500
-Received: from home.keithp.com ([63.227.221.253]:53936 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751013Ab2ALRdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:33:45 -0500
-From: Keith Packard <keithp@keithp.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
-        Michal Marek <mmarek@suse.com>,
-        "intel-gfx\@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
-        Robert Lemaire <rlemaire@suse.com>
-Subject: Re: [PATCH] drm/i915: set AUD_CONFIG N_value_index for DisplayPort
-In-Reply-To: <20120110054519.GA27257@localhost>
-References: <20120109131717.GA4713@localhost> <86y5tgx02g.fsf@sumi.keithp.com> <20120110054519.GA27257@localhost>
-User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Thu, 12 Jan 2012 09:33:34 -0800
-Message-ID: <86ty404yhd.fsf@sumi.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha256; protocol="application/pgp-signature"
+	id S1754726Ab2ALRet (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:34:49 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59221 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860Ab2ALReq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:34:46 -0500
+X-Authority-Analysis: v=2.0 cv=A5HuztqG c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=mFiD4lpLg54A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=kxTwD1JPn5JNYPxYDAgA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326389682.7642.109.camel@gandalf.stny.rr.com>
+Subject: Re: [PATCH v2 2/2] Documentation: prctl/seccomp_filter
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Drewry <wad@chromium.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net
+Date: Thu, 12 Jan 2012 12:34:42 -0500
+In-Reply-To: <CABqD9haEB8OFxKht0u7hiHoQf+_xZL=Y8nFYKUb6DxonR9w6UQ@mail.gmail.com>
+References: <CABqD9hbQRinbYqqwjqH8TfDvkOpESwiCp1uEE8d0Q7Rp4tsM0A@mail.gmail.com>
+	 <1326323983-23630-1-git-send-email-wad@chromium.org>
+	 <4F0F238E.7020508@xenotime.net>
+	 <CABqD9haEB8OFxKht0u7hiHoQf+_xZL=Y8nFYKUb6DxonR9w6UQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2012-01-12 at 11:23 -0600, Will Drewry wrote:
 
-On Tue, 10 Jan 2012 13:45:19 +0800, Wu Fengguang <fengguang.wu@intel.com> w=
-rote:
+> > Please tell some of us what "BPF" means.  wikipedia lists 15 possible
+> > choices, but I don't know which one to choose.
+> 
+> I'll make it clearer in the documentation file and update the patch description.
+> 
+> BPF == Berkeley Packet Filters which are implemented in Linux Socket
+> Filters (LSF)>
+> 
 
-> @@ -5943,6 +5947,7 @@ static void ironlake_write_eld(struct dr
->  	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
->  		DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
->  		eld[5] |=3D (1 << 2);	/* Conn_Type, 0x1 =3D DisplayPort */
-> +		I915_WRITE(aud_config, AUD_CONFIG_N_VALUE_INDEX); /* 0x1 =3D DP */
->  	}
+I admit, I was totally clueless in what it meant too ;)
 
-Do we need to clear this bit in the HDMI case? Or do we just trust the
-BIOS to either leave this bit zero or set it correctly?
+Even the LWN article didn't explain (shame on you Jon).
 
-=2D-=20
-keith.packard@intel.com
+"he has repurposed the networking layer's packet filtering mechanism
+(BPF)"
 
---=-=-=
-Content-Type: application/pgp-signature
+I didn't know what did the "B" stood for.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+-- Steve
 
-iQIVAwUBTw8ZbjYtFsjWk68qAQiRwxAApFKKEQyS5JeRpPnwnoA8C7uy/uV+WeAv
-B2mt/Sye6DruK6O2aQ8EtV4GpY3cR17muVtKSdZf8lhijgEI6RNUA9wpMxwYURx4
-A2SZq/8AkmxGRt7OaUYx5Tm1tNnTtOAtzZCGh5hba969lHQUmkdjJqTuSUdccZoz
-45aZm12ZZcQ8fMIXxglBw96XADYnpct9MXB+yG0Qp/ldjugryRcw/apFbHPgabiU
-ZXtYnPFqh+PdWtc2lXO+J9nzNl3n//x36AmJpqUg8N7+23NNkGo3tDb0N3oVENZb
-DRBTGft6aHoJhjkwxQt+N5rOazSUHhGqMRYPYlQ4a4v5rxUy6LwATVeugh7dDkGw
-tMXazkeNyWJHYNDQWVZS63aXl+l8OLE4fEEcI8+7Oe5JCUpzILuGvGceWzjU7O8q
-E3PS4XeUH2fVee9Qxxw6VmDWv+E2NH39keLV5qnRSBR9OHnawdF91onpDwvgB+Ks
-IaN3C0d+gGo1JOMHuEXgISb8kcTldvCZu2Me4wxGmSmeJO5OKygTQAgy3PxZs7ii
-7KwFJfyC0iwDmhmd2iZkgjO1XB2mq5+IEYCema1GCsydr27HqCjnNlkQxQSbufwd
-mxN19SBRqaGz58a7yw69pfP15aT/j2xYkR8WoqVobThOriTpBj9Smce8nmiHpWXD
-PuT/wCK1vYI=
-=Mhr2
------END PGP SIGNATURE-----
---=-=-=--
+
