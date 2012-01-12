@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab2ALICA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 03:02:00 -0500
-Received: from zone0.gcu-squad.org ([212.85.147.21]:48732 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752704Ab2ALIB5 (ORCPT
+	id S1752793Ab2ALIGm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 03:06:42 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:51391 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751804Ab2ALIGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 03:01:57 -0500
-Date: Thu, 12 Jan 2012 09:01:49 +0100
-From: Jean Delvare <khali@linux-fr.org>
-To: Zac Storer <zac.3.14159@gmail.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] Drivers: hwmon: adm1031: fixed spacing 
- coding style issues
-Message-ID: <20120112090149.1acbff01@endymion.delvare>
-In-Reply-To: <20111118103501.3c14d106@endymion.delvare>
-References: <1321605413-13614-1-git-send-email-zac.3.14159@gmail.com>
-	<20111118103501.3c14d106@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 12 Jan 2012 03:06:39 -0500
+Message-ID: <1326355594.1999.7.camel@lappy>
+Subject: Re: [PATCH] mm: Don't warn if memdup_user fails
+From: Sasha Levin <levinsasha928@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: lizf@cn.fujitsu.com, penberg@kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <kirkland@canonical.com>, ecryptfs@vger.kernel.org
+Date: Thu, 12 Jan 2012 10:06:34 +0200
+In-Reply-To: <20120111141219.271d3a97.akpm@linux-foundation.org>
+References: <1326300636-29233-1-git-send-email-levinsasha928@gmail.com>
+	 <20120111141219.271d3a97.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: Evolution 3.2.2 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Nov 2011 10:35:01 +0100, Jean Delvare wrote:
-> On Fri, 18 Nov 2011 01:36:53 -0700, Zac Storer wrote:
-> > Fixed spacing coding style issues.
-> > 
-> > Signed-off-by: Zac Storer <zac.3.14159@gmail.com>
-> > ---
-> >  drivers/hwmon/adm1031.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/hwmon/adm1031.c b/drivers/hwmon/adm1031.c
-> > index 0683e6b..694392b 100644
-> > --- a/drivers/hwmon/adm1031.c
-> > +++ b/drivers/hwmon/adm1031.c
-> > @@ -1058,7 +1058,7 @@ static struct adm1031_data *adm1031_update_device(struct device *dev)
-> >  			data->alarm &= 0xc0ff;
-> >  		}
-> >  
-> > -		for (chan=0; chan<(data->chip_type == adm1030 ? 1 : 2); chan++) {
-> > +		for (chan = 0; chan < (data->chip_type == adm1030 ? 1 : 2); chan++) {
-> >  			data->fan_div[chan] =
-> >  			    adm1031_read_value(client, ADM1031_REG_FAN_DIV(chan));
-> >  			data->fan_min[chan] =
+On Wed, 2012-01-11 at 14:12 -0800, Andrew Morton wrote:
+> There's nothing particularly special about memdup_user(): there are
+> many ways in which userspace can trigger GFP_KERNEL allocations.
 > 
-> Err, you apparently did not understand my request. Please send _one_
-> patch fixing all the adm1031 coding style issues at once.
+> The problem here (one which your patch carefully covers up) is that
+> ecryptfs_miscdev_write() is passing an unchecked userspace-provided
+> `count' direct into kmalloc().  This is a bit problematic for other
+> reasons: it gives userspace a way to trigger heavy reclaim activity and
+> perhaps even to trigger the oom-killer.
+> 
+> A better fix here would be to validate the incoming arg before using
+> it.  Preferably by running ecryptfs_parse_packet_length() before taking
+> a copy of the data.  That would require adding a small copy_from_user()
+> to peek at the message header. 
 
-Zac, do you have an updated patch for me?
+Let's split it to two parts: the specific ecryptfs issue I've given as
+an example here, and a general view about memdup_user().
+
+I fully agree that in the case of ecryptfs there's a missing validity
+check, and just calling memdup_user() with whatever the user has passed
+to it is wrong and dangerous. This should be fixed in the ecryptfs code
+and I'll send a patch to do that.
+
+The other part, is memdup_user() itself. Kernel warnings are usually
+reserved (AFAIK) to cases where it would be difficult to notify the user
+since it happens in a flow which the user isn't directly responsible
+for.
+
+memdup_user() is always located in path which the user has triggered,
+and is usually almost the first thing we try doing in response to the
+trigger. In those code flows it doesn't make sense to print a kernel
+warnings and taint the kernel, instead we can simply notify the user
+about that error and let him deal with it any way he wants.
+
+There are more reasons kalloc() can show warnings besides just trying to
+allocate too much, and theres no reason to dump kernel warnings when
+it's easier to notify the user.
 
 -- 
-Jean Delvare
+
+Sasha.
+
