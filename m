@@ -1,83 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab2ALTwB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:52:01 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:57672 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751467Ab2ALTwA (ORCPT
+	id S1755196Ab2ALTxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 14:53:39 -0500
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:41530 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab2ALTxh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 14:52:00 -0500
-Date: Thu, 12 Jan 2012 11:51:39 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Hillf Danton <dhillf@gmail.com>
-cc: linux-mm@kvack.org, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: vmscan: deactivate isolated pages with lru lock
- released
-In-Reply-To: <CAJd=RBC6zXtN1uQMxJJxGGHrXH5xUAeDWGzoEazbVAdRXo9F0Q@mail.gmail.com>
-Message-ID: <alpine.LSU.2.00.1201121127440.2945@eggly.anvils>
-References: <CAJd=RBAiAfyXBcn+9WO6AERthyx+C=cNP-romp9YJO3Hn7-U-g@mail.gmail.com> <alpine.LSU.2.00.1201111351080.1846@eggly.anvils> <CAJd=RBC6zXtN1uQMxJJxGGHrXH5xUAeDWGzoEazbVAdRXo9F0Q@mail.gmail.com>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323584-1299436237-1326397913=:2945"
+	Thu, 12 Jan 2012 14:53:37 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=MPNiKFfsidoaPqBs0kThsodqbsbgvPHp5CGEg9DOvhI= c=1 sm=1
+ a=bTn0QYg2QYIA:10 a=BLceEmwcHowA:10 a=kj9zAlcOel0A:10
+ a=k8hqzbHzjweV03hO1KKrVA==:17 a=VwQbUJbxAAAA:8 a=TOnYqM4CI-6A-kZnROAA:9
+ a=QFKmCifuyYduI_XtWv4A:7 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10
+ a=ioPC6dG8GIryNR3K:21 a=NS5J6Dtfjw8Xdybz:21 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+Subject: Re: [PATCH 1/4] fs: Improve filesystem freezing handling
+Mime-Version: 1.0 (Apple Message framework v1084)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <1326331253-6497-2-git-send-email-jack@suse.cz>
+Date: Thu, 12 Jan 2012 12:53:35 -0700
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
+        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DB1320A4-7621-44D2-B339-78CB38FAC186@dilger.ca>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz> <1326331253-6497-2-git-send-email-jack@suse.cz>
+To: Jan Kara <jack@suse.cz>
+X-Mailer: Apple Mail (2.1084)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 2012-01-11, at 6:20 PM, Jan Kara wrote:
+> Currently, exclusion between ->page_mkwrite() and filesystem freezing has been
+> handled by setting page dirty and then verifying s_frozen. This guaranteed that
+> either the freezing code sees the faulted page, writes it, and writeprotects it
+> again or we see s_frozen set and bail out of page fault. This works to protect
+> from page being marked writeable while filesystem freezing is running but has
+> an unpleasant artefact of leaving dirty (although unmodified and
+> writeprotected) pages on frozen filesystem. This artefact then requires
+> workarounds in writeback code and other places.
+> 
+> Also generally vfs_check_frozen() tests are racy since the filesystem can be
+> frozen just after the test is performed. Thus in other write paths we can
+> end up marking some pages or inodes dirty even though filesystem is already
+> frozen. Again this creates problems with flusher thread hanging on frozen
+> filesystem.
+> 
+> This patch aims at providing exclusion between write paths which dirty data (we
+> don't have to worry about metadata since that is handled by filesystems in
+> ->freeze_fs) and filesystem freezing. We implement a writer-freeze read-write
+> semaphore in the superblock. Write paths which dirty data such as
+> ->block_page_mkwrite() implementations, or ->aio_write() implementations hold
+> reader side of the semaphore.  Filesystem freezing code holds the writer side.
+> Only that we don't really want to bounce cachelines of the semaphore between
+> CPUs for each write happening. So we implement the reader side of the semaphore
+> as a per-cpu counter and the writer side is implemented using s_frozen
+> superblock field.
+> 
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+> fs/super.c         |  121 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+> include/linux/fs.h |   14 ++++++
+> 2 files changed, 134 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/super.c b/fs/super.c
+> index afd0f1a..c85c64c 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -32,12 +32,15 @@
+> #include <linux/backing-dev.h>
+> #include <linux/rculist_bl.h>
+> #include <linux/cleancache.h>
+> +#include <linux/lockdep.h>
+> #include "internal.h"
+> 
+> 
+> LIST_HEAD(super_blocks);
+> DEFINE_SPINLOCK(sb_lock);
+> 
+> +static struct lock_class_key sb_writers_key;
+> +
+> /*
+>  * One thing we have to be careful of with a per-sb shrinker is that we don't
+>  * drop the last active reference to the superblock from within the shrinker.
+> @@ -183,6 +186,13 @@ static struct super_block *alloc_super(struct file_system_type *type)
+> 		s->s_shrink.seeks = DEFAULT_SEEKS;
+> 		s->s_shrink.shrink = prune_super;
+> 		s->s_shrink.batch = 1024;
+> +
+> +		init_waitqueue_head(&s->s_writers_wait);
+> +#ifdef CONFIG_SMP
+> +		s->s_page_faults = alloc_percpu(int);
+> +#endif
+> +		lockdep_init_map(&s->s_writers_lock_map, "sb_writers",
+> +				 &sb_writers_key, 0);
+> 	}
+> out:
+> 	return s;
+> @@ -1126,6 +1136,84 @@ out:
+> }
+> 
+> /**
+> + * sb_start_write - drop write access to a superblock
+> + * @sb: the super we wrote to
+> + *
+> + * Decrement number of writers to the filesystem and wake up possible
+> + * waiters wanting to freeze the filesystem.
+> + */
+> +void sb_end_write(struct super_block *sb)
+> +{
+> +#ifdef CONFIG_SMP
+> +	this_cpu_dec(sb->s_writers);
+> +#else
+> +	preempt_disable();
+> +	sb->s_writers--;
+> +	preempt_enable();
+> +#endif
+> +	/*
+> +	 * Make sure s_writers are updated before we wake up waiters in
+> +	 * freeze_super().
+> +	 */
+> +	smp_mb();
+> +	if (waitqueue_active(&sb->s_writers_wait))
+> +		wake_up(&sb->s_writers_wait);
+> +	rwsem_release(&sb->s_writers_lock_map, 1, _RET_IP_);
+> +}
 
---8323584-1299436237-1326397913=:2945
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+Since this function is needed for calling __block_page_mkwrite(), which is
+EXPORT_SYMBOL(), both sb_start_write() and sb_end_write() themselves need
+to be EXPORT_SYMBOL().
 
-On Thu, 12 Jan 2012, Hillf Danton wrote:
-> On Thu, Jan 12, 2012 at 6:33 AM, Hugh Dickins <hughd@google.com> wrote:
-> > On Wed, 11 Jan 2012, Hillf Danton wrote:
->=20
-> > I suspect that your patch can be improved, to take away that worry.
-> > Why do we need to take the lock again? =C2=A0Only to update reclaim_sta=
-t:
-> > for the other stats, interrupts disabled is certainly good enough,
-> > and more research might show that preemption disabled would be enough.
-> >
-> > get_scan_count() is called at the (re)start of shrink_mem_cgroup_zone()=
-,
-> > before it goes down to do shrink_list()s: I think it would not be harme=
-d
-> > at all if we delayed updating reclaim_stat->recent_scanned until the
-> > next time we take the lock, lower down.
-> >
->=20
-> Dunno how to handle the tons of __mod_zone_page_state() or similar withou=
-t lock
-> protection 8-/ try to deffer updating reclaim_stat soon.
+> +/**
+> + * sb_start_write - get write access to a superblock
+> + * @sb: the super we write to
+> + *
+> + * When a process wants to write data to a filesystem (i.e. dirty a page),
+> + * it should embed the operation in a sb_start_write() - sb_end_write() pair
+> + * to get exclusion against filesystem freezing. This function increments
+> + * number of writers to the filesystem and waits if filesystem is frozen until
+> + * it is thawed.
+> + */
+> +void sb_start_write(struct super_block *sb)
+> +{
+> +retry:
+> +	rwsem_acquire_read(&sb->s_writers_lock_map, 0, 0, _RET_IP_);
+> +	vfs_check_frozen(sb, SB_FREEZE_WRITE);
+> +#ifdef CONFIG_SMP
+> +	this_cpu_inc(sb->s_writers);
+> +#else
+> +	preempt_disable();
+> +	sb->s_writers++;
+> +	preempt_enable();
+> +#endif
+> +	/*
+> +	 * Make sure s_writers are updated before we check s_frozen.
+> +	 * freeze_super() first sets s_frozen and then checks s_writers.
+> +	 */
+> +	smp_mb();
+> +	if (sb->s_frozen != SB_UNFROZEN) {
+> +		sb_end_write(sb);
+> +		goto retry;
+> +	}
+> +}
+> +
+> +/*
+> + * Get number of writers to the superblock
+> + */
+> +static int get_writers_count(struct super_block *sb)
+> +{
+> +	int writers;
+> +#ifdef CONFIG_SMP
+> +	int cpu;
+> +
+> +	writers = 0;
+> +	for_each_possible_cpu(cpu) {
+> +		writers += *per_cpu_ptr(sb->s_writers, cpu);
+> +	}
+> +#else
+> +	writers = sb->s_writers;
+> +#endif
+> +	return writers;
+> +}
+> +
+> +/**
+>  * freeze_super - lock the filesystem and force it into a consistent state
+>  * @sb: the super to lock
+>  *
+> @@ -1136,6 +1224,7 @@ out:
+> int freeze_super(struct super_block *sb)
+> {
+> 	int ret;
+> +	int writers;
+> 
+> 	atomic_inc(&sb->s_active);
+> 	down_write(&sb->s_umount);
+> @@ -1151,8 +1240,36 @@ int freeze_super(struct super_block *sb)
+> 		return 0;
+> 	}
+> 
+> +	rwsem_acquire(&sb->s_writers_lock_map, 0, 0, _THIS_IP_);
+> 	sb->s_frozen = SB_FREEZE_WRITE;
+> -	smp_wmb();
+> +	/*
+> +	 * Now wait for all page faults to finish. ->page_mkwrite()
+> +	 * implementations must call vfs_check_frozen() before starting
+> +	 * a fault so that we cannot livelock here. Because of that we
+> +	 * are guaranteed that from this moment on new ->page_mkwrite()
+> +	 * calls will block and we just have to wait for s_page_faults
+> +	 * to drop to zero (in a sum).
+> +	 */
+> +	do {
+> +		DEFINE_WAIT(wait);
+> +
+> +		/*
+> +		 * We use a barrier in prepare_to_wait() to separate setting
+> +		 * of s_frozen and checking of s_writers
+> +		 */
+> +		prepare_to_wait(&sb->s_writers_wait, &wait,
+> +				TASK_UNINTERRUPTIBLE);
+> +		/*
+> +		 * We must iterate over all (even offline) CPUs because of CPU
+> + 		 * hotplug their entries could still be non-zero. This is slow
+> +		 * when lots of CPUs are configured but hey, filesystem freezing
+> +		 * isn't exactly cheap anyway.
+> +		 */
+> +		writers = get_writers_count(sb);
+> +		if (writers)
+> +			schedule();
+> +		finish_wait(&sb->s_writers_wait, &wait);
+> +	} while (writers);
+> 
+> 	sync_filesystem(sb);
+> 
+> @@ -1165,6 +1282,7 @@ int freeze_super(struct super_block *sb)
+> 		if (ret) {
+> 			printk(KERN_ERR
+> 				"VFS:Filesystem freeze failed\n");
+> +			rwsem_release(&sb->s_writers_lock_map, 1, _THIS_IP_);
+> 			sb->s_frozen = SB_UNFROZEN;
+> 			deactivate_locked_super(sb);
+> 			return ret;
+> @@ -1206,6 +1324,7 @@ int thaw_super(struct super_block *sb)
+> 	}
+> 
+> out:
+> +	rwsem_release(&sb->s_writers_lock_map, 1, _THIS_IP_);
+> 	sb->s_frozen = SB_UNFROZEN;
+> 	smp_wmb();
+> 	wake_up(&sb->s_wait_unfrozen);
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index e313022..297b263 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -10,6 +10,7 @@
+> #include <linux/ioctl.h>
+> #include <linux/blk_types.h>
+> #include <linux/types.h>
+> +#include <linux/lockdep.h>
+> 
+> /*
+>  * It's silly to have NR_OPEN bigger than NR_FILE, but you can change
+> @@ -1445,6 +1446,16 @@ struct super_block {
+> 
+> 	int			s_frozen;
+> 	wait_queue_head_t	s_wait_unfrozen;
+> +#ifdef CONFIG_SMP
+> +	int __percpu 		*s_writers;	/* counter of running writes */
+> +#else
+> +	int			s_writers;	/* counter of running writes */
+> +#endif
+> +	wait_queue_head_t	s_writers_wait;	/* queue for waiting for
+> +						   writers to finish */
+> +#ifdef CONFIG_DEBUG_LOCK_ALLOC
+> +	struct lockdep_map	s_writers_lock_map;
+> +#endif
+> 
+> 	char s_id[32];				/* Informational name */
+> 	u8 s_uuid[16];				/* UUID */
+> @@ -1501,6 +1512,9 @@ enum {
+> #define vfs_check_frozen(sb, level) \
+> 	wait_event((sb)->s_wait_unfrozen, ((sb)->s_frozen < (level)))
+> 
+> +void sb_end_write(struct super_block *sb);
+> +void sb_start_write(struct super_block *sb);
+> +
+> /*
+>  * until VFS tracks user namespaces for inodes, just make all files
+>  * belong to init_user_ns
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Aren't the __mod_zone_page_state() counts per-cpu?  Although we very
-often update them while holding the zone spinlock, that's because we
-happen to be holding it already, and it prevents preemption to another
-cpu, without needing to invoke the more expensive mod_zone_page_state().
-Similarly __count_vm_events() is per-cpu (and no zone lock would help it).
 
->=20
-> > Other things that strike me, looking here again: isn't it the case that
-> > update_isolated_counts() is actually called either for file or for anon=
-,
-> > but never for both?
->=20
-> No, see the above diff please 8-)
+Cheers, Andreas
 
-I think you are obliquely reminding me that lumpy reclaim will take pages
-from wherever, so that way some anon pages will sneak into the file lru
-reclaim and some file pages into the anon lru reclaim.  Right?  Whereas
-move_active_pages_to_lru() doesn't have that problem, because
-shrink_active_list() uses a stricter setting of reclaim_mode.  Hmm,
-more simplification that can be done once lumpy reclaim is removed.
 
-(It's the 3.2 tree with its naming that I'm examining at this moment.)
 
-Hugh
---8323584-1299436237-1326397913=:2945--
+
+
