@@ -1,114 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680Ab2ALGI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 01:08:56 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44040 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab2ALGI4 (ORCPT
+	id S1752708Ab2ALGJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 01:09:28 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53799 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab2ALGJ1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 01:08:56 -0500
-From: Grant Likely <grant.likely@secretlab.ca>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] irqdesc: Consolidate irq reservation logic
-Date: Wed, 11 Jan 2012 23:08:48 -0700
-Message-Id: <1326348528-5671-1-git-send-email-grant.likely@secretlab.ca>
-X-Mailer: git-send-email 1.7.5.4
+	Thu, 12 Jan 2012 01:09:27 -0500
+MIME-Version: 1.0
+In-Reply-To: <1326302955.2442.174.camel@twins>
+References: <CADZ9YHicin2YjGm_m9B0LMv3NW1Z3cb7HSCaqwycFmVfRpvpWA@mail.gmail.com>
+	<1326302955.2442.174.camel@twins>
+Date: Thu, 12 Jan 2012 12:09:27 +0600
+Message-ID: <CADZ9YHiC8732D=D8KpkT0d+81_BNdAvj0ZJLwL5mhyq9OPLW0Q@mail.gmail.com>
+Subject: Re: [Question] sched: Should nr_uninterruptible be decremented in ttwu_do_activate()?
+From: Rakib Mullick <rakib.mullick@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-irq_reserve_irqs() and irq_alloc_descs() use largely identical code for
-finding the range of irqs to reserve.  This patch consolidates it into
-a single function
+On Wed, Jan 11, 2012 at 11:29 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2012-01-11 at 23:22 +0600, Rakib Mullick wrote:
+>> Hello all,
+>>
+>> In ttwu_do_activate(), we're decrementing nr_uninterruptible if
+>> p->sched_contributes_to_load (for SMP=y). But, we're also decrementing
+>> nr_uninterruptible from activate_task at the same path. Why we're
+>> doing it twice for a single task activation path?
+>
+> activate_task() does:
+>
+>  if (task_contributes_to_load(p))
+>   rq->nr_uninterruptible--;
+>
+> Now task_contributes_to_load() reads like:
+>
+> #define task_contributes_to_load(task)  \
+>                                ((task->state & TASK_UNINTERRUPTIBLE) != 0 && \
+>                                 (task->flags & PF_FREEZING) == 0)
+>
+> which will be false, since we've set TASK_WAKING.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/irq/irqdesc.c |   45 ++++++++++++++++++++++-----------------------
- 1 files changed, 22 insertions(+), 23 deletions(-)
+Enough confusing. TASK_WAKING will be set when called from
+try_to_wake_up(). ttwu_do_activate() gets called from other places:
+scheduler_ipi() and sched_ttwu_pending() (at the time of cpu goes
+down). TASK_WAKING will be not set at that time, moreover it is
+possible that, task has p->sched_contributes_to_load is set and latter
+on gets wake up by sched_ttwu_pending/scheduler_ipi() call.
 
-diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
-index d86e254..8a9e2ec 100644
---- a/kernel/irq/irqdesc.c
-+++ b/kernel/irq/irqdesc.c
-@@ -339,18 +339,15 @@ void irq_free_descs(unsigned int from, unsigned int cnt)
- EXPORT_SYMBOL_GPL(irq_free_descs);
- 
- /**
-- * irq_alloc_descs - allocate and initialize a range of irq descriptors
-+ * __irq_reserve_irqs() - reserve a range of irq numbers
-  * @irq:	Allocate for specific irq number if irq >= 0
-  * @from:	Start the search from this irq number
-  * @cnt:	Number of consecutive irqs to allocate.
-- * @node:	Preferred node on which the irq descriptor should be allocated
-- * @owner:	Owning module (can be NULL)
-  *
-  * Returns the first irq number or error code
-  */
--int __ref
--__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
--		  struct module *owner)
-+static int __ref
-+__irq_reserve_irqs(int irq, unsigned int from, unsigned int cnt)
- {
- 	int start, ret;
- 
-@@ -378,13 +375,28 @@ __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 	}
- 
- 	bitmap_set(allocated_irqs, start, cnt);
--	mutex_unlock(&sparse_irq_lock);
--	return alloc_descs(start, cnt, node, owner);
--
- err:
- 	mutex_unlock(&sparse_irq_lock);
- 	return ret;
- }
-+
-+/**
-+ * irq_alloc_descs - allocate and initialize a range of irq descriptors
-+ * @irq:	Allocate for specific irq number if irq >= 0
-+ * @from:	Start the search from this irq number
-+ * @cnt:	Number of consecutive irqs to allocate.
-+ * @node:	Preferred node on which the irq descriptor should be allocated
-+ * @owner:	Owning module (can be NULL)
-+ *
-+ * Returns the first irq number of the reserved range or an error code
-+ */
-+int __ref
-+__irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
-+		  struct module *owner)
-+{
-+	int start = __irq_reserve_irqs(irq, from, cnt);
-+	return start < 0 ? start : alloc_descs(start, cnt, node, owner);
-+}
- EXPORT_SYMBOL_GPL(__irq_alloc_descs);
- 
- /**
-@@ -396,20 +408,7 @@ EXPORT_SYMBOL_GPL(__irq_alloc_descs);
-  */
- int irq_reserve_irqs(unsigned int from, unsigned int cnt)
- {
--	unsigned int start;
--	int ret = 0;
--
--	if (!cnt || (from + cnt) > nr_irqs)
--		return -EINVAL;
--
--	mutex_lock(&sparse_irq_lock);
--	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
--	if (start == from)
--		bitmap_set(allocated_irqs, start, cnt);
--	else
--		ret = -EEXIST;
--	mutex_unlock(&sparse_irq_lock);
--	return ret;
-+	return __irq_reserve_irqs(from, from, cnt);
- }
- 
- /**
--- 
-1.7.5.4
-
+Thanks,
+Rakib
