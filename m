@@ -1,146 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab2ALOVu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 09:21:50 -0500
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:37669 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753574Ab2ALOVs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 09:21:48 -0500
-From: Rajanikanth H V <rajanikanth.hv@stericsson.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@sude.de" <gregkh@sude.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rajanikanth H V <rajanikanth.hv@stericsson.com>
-Date: Thu, 12 Jan 2012 15:20:46 +0100
-Subject: RE: tty/serial: Need clarification on Support for 4+M Baudrate
-Thread-Topic: tty/serial: Need clarification on Support for 4+M Baudrate
-Thread-Index: AczRIBqS6qinYB99QnGaINohe7w6kgAD9xqw
-Message-ID: <2B1D156D95AE9B4EAD379CB9E465FE7324AF2A630D@EXDCVYMBSTM005.EQ1STM.local>
-References: <20120111121901.GA4034@bnru05>
-	<20120111123025.244a9cf5@pyramind.ukuu.org.uk>
-	<2B1D156D95AE9B4EAD379CB9E465FE7324AF2A605A@EXDCVYMBSTM005.EQ1STM.local>
- <20120112114913.21809bed@pyramind.ukuu.org.uk>
-In-Reply-To: <20120112114913.21809bed@pyramind.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753784Ab2ALOW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 09:22:28 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35359 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753617Ab2ALOWZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 09:22:25 -0500
 MIME-Version: 1.0
+In-Reply-To: <20120111000051.GA28874@dztty>
+References: <20120111000051.GA28874@dztty>
+Date: Thu, 12 Jan 2012 22:22:25 +0800
+Message-ID: <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+From: Ming Lei <tom.leiming@gmail.com>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: Borislav Petkov <borislav.petkov@amd.com>, Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan,
+Hi,
 
-FYI: I am not using application, rather I have a Bluetooth driver invoking
-encode_baud_rate(...), please find log below.
+I saw the warning too during S2R.
 
-I made sure that c_ispeed = c_ospeed = 4.05M Baud, however I see 
-tty_termios_encode_baud_rate(...) is normalizing to 4.0
-
-
-manual trace log below:
-======================================================================================
-
-4.05M Arbitrary Baud Setting Sequence:
-[    9.664703] alloc_set_baud_rate_cmd Setting arbitrary baudrate using BOTHER baudrate:89 c_cflag:020000016262
-[    9.774658] XXXXXX_hci_uart_set_baudrate c_cflag:020000016262 baud:4050000
-[    9.781646] XXXXXX_hci_uart_set_baudrate arb flag set
-[    9.786956] tty_termios_encode_baud_rate c_ispeed:4050000 c_ospeed:4050000
-[    9.794006] tty_termios_encode_baud_rate checking precise weird baudrate:0x80001cb2
-[    9.802032] tty_termios_encode_baud_rate checking precise weird baudrate c_cflag:020000006260
-[    9.810943] tty_termios_encode_baud_rate did we find close match? i:31 n_baud_table31 ifound:30 ofound:30
-[    9.820739] tty_termios_encode_baud_rate BOTHER, c_cflag:020000016277
-[    9.827209] tty_termios_baud_rate c_cflag:020000016277 cbaud:010017
-[    9.833648] tty_termios_baud_rate:(Arb'ry baud BOTHER not set) c_cflag:020000016277 cbaud:010017
-[    9.842773] tty_termios_baud_rate:cbaud:036 baud_val:4000000
-[    9.848480] tty_termios_baud_rate c_cflag:020000016277 cbaud:010017
-[    9.855499] tty_termios_baud_rate:(Arb'ry baud BOTHER not set) c_cflag:020000016277 cbaud:010017
-[    9.864471] tty_termios_baud_rate:cbaud:036 baud_val:4000000
-[    9.864501] pl011_set_termios baud:4000000 uart_clk:38400000 port:0 IBRD:1 FBRD:13
-[   10.674652] XXXXXX-uart XXXXXX-uart.0: Failed to set new baud rate (4)
-[   10.681213] XXXXXX-uart XXXXXX-uart.0: Set chip power: DISABLE
-[   10.692596] tty_termios_encode_baud_rate c_ispeed:0 c_ospeed:0
-[   10.698822] tty_termios_encode_baud_rate checking precise weird baudrate:0x80001cbf
-[   10.706756] tty_termios_encode_baud_rate checking precise weird baudrate c_cflag:020000006260
-[   10.715698] tty_termios_encode_baud_rate did we find close match? i:31 n_baud_table31 ifound:0 ofound:0
-[   10.725769] tty_termios_encode_baud_rate BOTHER, c_cflag:020000006260
-[   10.732574] tty_termios_baud_rate c_cflag:020000006260 cbaud:00
-[   10.739929] tty_termios_baud_rate:(Arb'ry baud BOTHER not set) c_cflag:020000006260 cbaud:00
-[   10.749176] tty_termios_baud_rate:cbaud:00 baud_val:0
-[   10.754638] tty_termios_baud_rate c_cflag:020000006260 cbaud:00
-[   10.761505] tty_termios_baud_rate:(Arb'ry baud BOTHER not set) c_cflag:020000006260 cbaud:00
-[   10.770660] tty_termios_baud_rate:cbaud:00 baud_val:0
-
-4.05 is failing:
-
-alloc_set_baud_rate_cmd Setting arbitrary baudrate using BOTHER baudrate:89 c_cflag:020000016262
-[    9.325225] av8100_hdmi av8100_hdmi.3: HDMI display probed
-[    9.334686] XXXXXX_hci_uart_set_baudrate c_cflag:020000016262 baud:4050000, ispeed:4050000 ospeed:4050000
-[    9.345275] tty_termios_encode_baud_rate c_ispeed:4050000 c_ospeed:4050000
-[    9.352539] tty_termios_encode_baud_rate checking precise weird baudrate:0x80001cb2
-[    9.360717] tty_termios_encode_baud_rate checking precise weird baudrate c_cflag:020000006260
-[    9.369659] tty_termios_encode_baud_rate did we find close match? i:31 n_baud_table31 ifound:30 ofound:30
-[    9.380035] tty_termios_encode_baud_rate BOTHER, c_cflag:020000016277
-[    9.387237] tty_termios_baud_rate c_cflag:020000016277 cbaud:010017
-[    9.393829] pl011_set_termios i_speed:4050000 o_speed:4050000
-[    9.399993] tty_termios_baud_rate c_cflag:020000016277 cbaud:010017
+thanks,
+--
+Ming Lei
 
 
-4.8M Arbitrary BaudSetting Sequence:
+On Wed, Jan 11, 2012 at 8:00 AM, Djalal Harouni <tixxdz@opendz.org> wrote:
+> Today's pull from Linus' tree shows a warning during poweroff, the
+> message is related to the machinecheck.
+> The drivers/base/core.c:device_release() did not find the registred
+> release() function.
+>
+> This kernel is used for development and it's running under KVM/Qemu, so
+> if you need further information or tests let me know.
+>
+> Qemu is simulating 2 CPUs.
+>
+> Thanks.
+>
+>
+> [ 1879.944193] ------------[ cut here ]------------
+> [ 1879.950488] WARNING: at drivers/base/core.c:194 device_release+0x82/0x90()
+> [ 1879.959424] Hardware name: Bochs
+> [ 1879.964714] Device 'machinecheck1' does not have a release() function, it is broken and must be fixed.
+> [ 1879.977354] Modules linked in:
+> [ 1879.979704] Pid: 1738, comm: halt Not tainted 3.2.0-minimal-kvm-05692-g1c81065-dirty #41
+> [ 1879.989093] Call Trace:
+> [ 1879.992729]  [<ffffffff8103952a>] warn_slowpath_common+0x7a/0xb0
+> [ 1879.999308]  [<ffffffff81039601>] warn_slowpath_fmt+0x41/0x50
+> [ 1880.005463]  [<ffffffff8172b022>] device_release+0x82/0x90
+> [ 1880.012915]  [<ffffffff81601667>] kobject_release+0x47/0x90
+> [ 1880.019107]  [<ffffffff8160152c>] kobject_put+0x2c/0x60
+> [ 1880.024269]  [<ffffffff8172acc2>] put_device+0x12/0x20
+> [ 1880.031254]  [<ffffffff8172ba19>] device_unregister+0x19/0x20
+> [ 1880.038594]  [<ffffffff81afb49d>] mce_cpu_callback+0xea/0x18b
+> [ 1880.043389]  [<ffffffff81b08924>] notifier_call_chain+0x64/0xf0
+> [ 1880.051928]  [<ffffffff81066c89>] __raw_notifier_call_chain+0x9/0x10
+> [ 1880.059077]  [<ffffffff8103b50b>] __cpu_notify+0x1b/0x30
+> [ 1880.063894]  [<ffffffff8103b530>] cpu_notify_nofail+0x10/0x20
+> [ 1880.071952]  [<ffffffff81ae27dd>] _cpu_down+0x11d/0x2c0
+> [ 1880.078534]  [<ffffffff81b01235>] ? printk+0x3c/0x3e
+> [ 1880.082662]  [<ffffffff8103b7cb>] disable_nonboot_cpus+0x8b/0x110
+> [ 1880.091129]  [<ffffffff81053f21>] kernel_power_off+0x21/0x50
+> [ 1880.098420]  [<ffffffff81054220>] sys_reboot+0x110/0x220
+> [ 1880.104098]  [<ffffffff8108efdd>] ? trace_hardirqs_on+0xd/0x10
+> [ 1880.112006]  [<ffffffff81b04deb>] ? _raw_spin_unlock_irq+0x2b/0x50
+> [ 1880.119181]  [<ffffffff8106dc0d>] ? finish_task_switch+0x8d/0x1a0
+> [ 1880.126741]  [<ffffffff8106dbce>] ? finish_task_switch+0x4e/0x1a0
+> [ 1880.134793]  [<ffffffff81b02f0b>] ? __schedule+0x3db/0x890
+> [ 1880.140510]  [<ffffffff81b0cfc7>] ? sysret_check+0x1b/0x56
+> [ 1880.148101]  [<ffffffff8160d33e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [ 1880.156706]  [<ffffffff81b0cfa2>] system_call_fastpath+0x16/0x1b
+> [ 1880.162885] ---[ end trace d8faf9d3af9f23e8 ]---
+> [ 1880.171148] Power down.
+>
+>
+> $ cat /proc/cpuinfo
+> processor       : 0
+> vendor_id       : GenuineIntel
+> cpu family      : 6
+> model           : 2
+> model name      : QEMU Virtual CPU version 0.12.5
+> stepping        : 3
+> microcode       : 0x1
+> cpu MHz         : 2800.047
+> cache size      : 4096 KB
+> fpu             : yes
+> fpu_exception   : yes
+> cpuid level     : 4
+> wp              : yes
+> flags           : fpu de pse tsc msr pae mce cx8 apic sep mtrr pge mca
+> cmov pse36 clflush mmx fxsr sse sse2 syscall nx lm rep_good nopl pni cx16
+> tsc_deadlin _timer hypervisor lahf_lm
+> bogomips        : 5600.09
+> clflush size    : 64
+> cache_alignment : 64
+> address sizes   : 40 bits physical, 48 bits virtual
+> power management:
+>
+>
+> --
+> tixxdz
+> http://opendz.org
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-[   10.004699] alloc_set_baud_rate_cmd Setting arbitrary baudrate using BOTHER baudrate:90 c_cflag:020000016262
-[   10.114624] XXXXXX_hci_uart_set_baudrate c_cflag:020000016262 baud:4800000
-[   10.122009] XXXXXX_hci_uart_set_baudrate arb flag set
-[   10.127624] tty_termios_encode_baud_rate c_ispeed:4800000 c_ospeed:4800000
-[   10.134887] tty_termios_encode_baud_rate checking precise weird baudrate:0x80001cb2
-[   10.143218] tty_termios_encode_baud_rate checking precise weird baudrate c_cflag:020000006260
-[   10.154113] tty_termios_encode_baud_rate did we find close match? i:31 n_baud_table31 ifound:-1 ofound:-1
-[   10.172149] tty_termios_encode_baud_rate BOTHER, c_cflag:020000016260
-[   10.178833] tty_termios_baud_rate c_cflag:020000016260 cbaud:010000
-[   10.185424] tty_termios_baud_rate (Arb'ry baud set) c_cflag:020000016260 cbaud:010000
-[   10.193572] i_speed:4800000 o_speed:4800000
-[   10.197845] tty_termios_baud_rate c_cflag:020000016260 cbaud:010000
-[   10.204620] tty_termios_baud_rate (Arb'ry baud set) c_cflag:020000016260 cbaud:010000
-[   10.212799] pl011_set_termios baud:4800000 uart_clk:38400000 port:0 IBRD:1 FBRD:0
-[   10.220764] XXXXXX-uart XXXXXX-uart.0: Baud rate changed to 4800000 baud
-[   10.973632] Bluetooth: XXXXXX BT core is enabled
-[   11.101867] Bluetooth: XXXXXX BT core is disabled
 
 
-======================================================================================
-
-Thanks,
-Rajanikanth
-
-
------Original Message-----
-From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk] 
-Sent: Thursday, January 12, 2012 5:19 PM
-To: Rajanikanth H V
-Cc: linux-serial@vger.kernel.org; linux-kernel@vger.kernel.org; gregkh@sude.de; linux-arm-kernel@lists.infradead.org
-Subject: Re: tty/serial: Need clarification on Support for 4+M Baudrate
-
-On Thu, 12 Jan 2012 10:49:38 +0100
-Rajanikanth H V <rajanikanth.hv@stericsson.com> wrote:
-
-> Alan,
-> 
-> Thanks for your response, suggested modification helped to get 4.8M baud
-> but not 4.05M as this is being approximated to 4.0M baud which happens in
-> tty_termios_encode_baud_rate(...).
-
-Only if you don't have the BOTHER flag set and only for returned data to
-user space.
-
-When you do a TCSETS2 ioctl and have BOTHER set as the rate as well as a
-c_ispeed/c_ospeed the exactly value is given to the driver.
-
-Alan
+-- 
+Ming Lei
