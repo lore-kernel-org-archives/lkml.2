@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755585Ab2ALUun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:50:43 -0500
-Received: from caiajhbdcbbj.dreamhost.com ([208.97.132.119]:44588 "EHLO
-	homiemail-a61.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751981Ab2ALUum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:50:42 -0500
-Subject: Re: [PATCH] scripts:kconfig:mconf.c: let make not report error
- when not save configuration
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Wang YanQing <udknight@gmail.com>
-Cc: mmarek@suse.cz, linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        lacombar@gmail.com
-In-Reply-To: <20120112033132.GA13752@udknight>
-References: <20120112033132.GA13752@udknight>
-Content-Type: text/plain; charset="UTF-8"
-Organization: GNU
-Date: Thu, 12 Jan 2012 21:50:37 +0100
-Message-ID: <1326401437.3416.0.camel@offbook>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755651Ab2ALUwj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:52:39 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:34430
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751981Ab2ALUwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:52:36 -0500
+From: "K. Y. Srinivasan" <kys@microsoft.com>
+To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, ohering@suse.com,
+        jbottomley@parallels.com, hch@infradead.org,
+        linux-scsi@vger.kernel.org
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>
+Subject: [PATCH 09/15] Staging: hv: storvsc: Rename the context field in hv_storvsc_request
+Date: Thu, 12 Jan 2012 12:38:02 -0800
+Message-Id: <1326400688-13544-9-git-send-email-kys@microsoft.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1326400688-13544-1-git-send-email-kys@microsoft.com>
+References: <1326400637-13494-1-git-send-email-kys@microsoft.com>
+ <1326400688-13544-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-01-12 at 11:31 +0800, Wang YanQing wrote:
-> I find every time when I choice the 'NO' button at the dialog
-> which let me choice whether to save the configuration before exit
-> menuconfig, it always report the blow:
-> 
-> " GEN     /mnt/sda7/home/build/test/Makefile
->   HOSTCC  scripts/kconfig/mconf.o
->   HOSTLD  scripts/kconfig/mconf
-> scripts/kconfig/mconf Kconfig
-> 
-> Your configuration changes were NOT saved.
-> 
-> make[2]: *** [menuconfig] Error 1
-> make[1]: *** [menuconfig] Error 2
-> make: *** [sub-make] Error 2 "
-> 
-> This patch repair it.
-> 
-> Thanks!
-> 
-> Signed-off-by: Wang YanQing <udknight@gmail.com>
+Rename the context field in hv_storvsc_request. As part of this change
+fix the type of this field.
 
-Acked-by: Davidlohr Bueso <dave@gnu.org>
+Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+---
+ drivers/staging/hv/storvsc_drv.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-> ---
->  scripts/kconfig/mconf.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/scripts/kconfig/mconf.c b/scripts/kconfig/mconf.c
-> index 19e200d..86cd1ea 100644
-> --- a/scripts/kconfig/mconf.c
-> +++ b/scripts/kconfig/mconf.c
-> @@ -830,6 +830,7 @@ static int handle_exit(void)
->  		fprintf(stderr, _("\n\n"
->  				  "Your configuration changes were NOT saved."
->  				  "\n\n"));
-> +		res = 0;
->  	}
->  
->  	return res;
-
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 7c9fa19..0515707 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -275,7 +275,7 @@ struct hv_storvsc_request {
+ 	struct completion wait_event;
+ 
+ 	unsigned char *sense_buffer;
+-	void *context;
++	struct storvsc_cmd_request  *cmd;
+ 	struct hv_multipage_buffer data_buffer;
+ 
+ 	struct vstor_packet vstor_packet;
+@@ -785,8 +785,7 @@ cleanup:
+ 
+ static void storvsc_command_completion(struct hv_storvsc_request *request)
+ {
+-	struct storvsc_cmd_request *cmd_request =
+-		(struct storvsc_cmd_request *)request->context;
++	struct storvsc_cmd_request *cmd_request = request->cmd;
+ 	struct scsi_cmnd *scmnd = cmd_request->cmd;
+ 	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
+ 	void (*scsi_done_fn)(struct scsi_cmnd *);
+@@ -1315,7 +1314,7 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ 		break;
+ 	}
+ 
+-	request->context = cmd_request;/* scmnd; */
++	request->cmd = cmd_request;
+ 
+ 	vm_srb->port_number = host_dev->port;
+ 	vm_srb->path_id = scmnd->device->channel;
+-- 
+1.7.4.1
 
