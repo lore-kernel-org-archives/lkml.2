@@ -1,44 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab2ALJWJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:22:09 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:7319 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab2ALJWH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:22:07 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
-From: Milton Miller <miltonm@bga.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Denis Turischev <denis@compulab.co.il>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio/it8761e: Restrict it8761e gpio driver to x86.
-In-Reply-To: <1326309371-10757-1-git-send-email-grant.likely@secretlab.ca>
-References: <1326309371-10757-1-git-send-email-grant.likely@secretlab.ca>
-Message-Id: <document-depends-on-reason@mdm.bga.com>
-Date: Thu, 12 Jan 2012 03:22:05 -0600
-X-Originating-IP: 71.22.127.106
+	id S1753284Ab2ALJXX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:23:23 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48395 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753173Ab2ALJXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:23:19 -0500
+Date: Thu, 12 Jan 2012 10:23:14 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: Fix NULL ptr dereference in __count_immobile_pages
+Message-ID: <20120112092314.GC1042@tiehlicka.suse.cz>
+References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
+ <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
+ <20120111084802.GA16466@tiehlicka.suse.cz>
+ <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120112082722.GB1042@tiehlicka.suse.cz>
+ <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Jan 11 2012 - 14:16:36 EST, Grant Likely wrote:
-> This driver does an unconditional read of io space during module init which
-> causes a bad dereference on ARM. It looks to me like this is an x86 only
-> drivers, so restrict it to only compile on x86.
+On Thu 12-01-12 17:35:36, KAMEZAWA Hiroyuki wrote:
+> On Thu, 12 Jan 2012 09:27:22 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Thu 12-01-12 11:17:02, KAMEZAWA Hiroyuki wrote:
+> > > On Wed, 11 Jan 2012 09:48:02 +0100
+> > > Michal Hocko <mhocko@suse.cz> wrote:
+> > > 
+> > > > On Tue 10-01-12 13:31:08, David Rientjes wrote:
+> > > > > On Tue, 10 Jan 2012, Michal Hocko wrote:
+> > > > [...]
+> > > > > >  mm/page_alloc.c |   11 +++++++++++
+> > > > > >  1 files changed, 11 insertions(+), 0 deletions(-)
+> > > > > > 
+> > > > > > diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> > > > > > index 2b8ba3a..485be89 100644
+> > > > > > --- a/mm/page_alloc.c
+> > > > > > +++ b/mm/page_alloc.c
+> > > > > > @@ -5608,6 +5608,17 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+> > > > > >  bool is_pageblock_removable_nolock(struct page *page)
+> > > > > >  {
+> > > > > >  	struct zone *zone = page_zone(page);
+> > > > > > +	unsigned long pfn = page_to_pfn(page);
+> > > > > > +
+> > > 
+> > > Hmm, I don't like to use page_zone() when we know the page may not be initialized.
+> > > Shouldn't we add
+> > > 
+> > > 	if (!node_online(page_to_nid(page))
+> > > 		return false;
+> > > ?
+> > 
+> > How is this different? The node won't be initialized in page flags as
+> > well.
+> > 
+> 
+> page_zone(page) is
+> ==
+> static inline struct zone *page_zone(const struct page *page)
+> {
+>         return &NODE_DATA(page_to_nid(page))->node_zones[page_zonenum(page)];
+> }
+> ==
+> 
+> Then, if the page is unitialized, 
+> 
+>    &(NODE_DATA(0)->node_zones[0])
+> 
+> If NODE_DATA(0) is NULL, node_zones[0] is NULL just because zone array is placed
+> on the top of struct pglist_data.
+> 
+> I never think someone may change the layout but...Hmm, just a nitpick.
+> please do as you like.
 
-> config GPIO_IT8761E
->          tristate "IT8761E GPIO support"
-> +        depends on X86
->          help
->            Say yes here to support GPIO functionality of IT8761E super I/O chip.
+Yes, fair point. See the follow up patch bellow.
 
+> > > But...hmm. I think we should return 'true' here for removing a section with a hole
+> > > finally....(Now, false will be safe.)
+> > 
+> > Those pages are reserved (for BIOS I guess) in this particular case so I
+> > do not think it is safe to claim that the block is removable. Or am I
+> > missing something?
+> > 
+> 
+> We can't know it's reserved by BIOS or it's just a memory hole by the fact
+> the page wasn't initialized.
 
-Please add a comment to the Kconfig stanza with the reason for the
-dependancy so people don't have to be git blame masters to know why
-its there.
+OK, so then we should return false to mark to block non removable,
+right?
+--- 
+>From 04f74e6f0ebf28f61650d63f8884e8855fb21b55 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Thu, 12 Jan 2012 10:19:04 +0100
+Subject: [PATCH] mm: __count_immobile_pages make sure the node is online
 
-Something like
-        depends on X86 # unconditional read of io space during module init
+page_zone requires to have an online node otherwise we are accessing
+NULL NODE_DATA. This is not an issue at the moment because node_zones
+are located at the structure beginning but this might change in the
+future so better be careful about that.
 
-thanks,
-milton
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/page_alloc.c |   11 +++++++++--
+ 1 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 485be89..c6fb8ea 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -5607,14 +5607,21 @@ __count_immobile_pages(struct zone *zone, struct page *page, int count)
+ 
+ bool is_pageblock_removable_nolock(struct page *page)
+ {
+-	struct zone *zone = page_zone(page);
+-	unsigned long pfn = page_to_pfn(page);
++	struct zone *zone;
++	unsigned long pfn;
+ 
+ 	/*
+ 	 * We have to be careful here because we are iterating over memory
+ 	 * sections which are not zone aware so we might end up outside of
+ 	 * the zone but still within the section.
++	 * We have to take care about the node as well. If the node is offline
++	 * its NODE_DATA will be NULL - see page_zone.
+ 	 */
++	if (!node_online(page_to_nid(page)))
++		return false;
++
++	zone = page_zone(page);
++	pfn = page_to_pfn(page);
+ 	if (!zone || zone->zone_start_pfn > pfn ||
+ 			zone->zone_start_pfn + zone->spanned_pages <= pfn)
+ 		return false;
+-- 
+1.7.7.3
+
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
