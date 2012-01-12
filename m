@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754912Ab2ALSo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 13:44:57 -0500
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:47097 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752177Ab2ALSoz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 13:44:55 -0500
+	id S1754893Ab2ALSov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 13:44:51 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:38713 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752177Ab2ALSos convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 13:44:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <20120112100702.GM3226@page>
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
- <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
- <20120110213338.GD3226@page> <CACxGe6vqb8AZcZb5WMvfmLsUZH7=SEtBrJCSfsFmDYpKX42MzA@mail.gmail.com>
- <20120112100702.GM3226@page>
-From: "Turquette, Mike" <mturquette@ti.com>
-Date: Thu, 12 Jan 2012 10:44:29 -0800
-Message-ID: <CAJOA=zPUA56R=vt9MKyhgdyLU96aD_TweZ6BnJy2w3mCVC4Dzg@mail.gmail.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-To: Jamie Iles <jamie@jamieiles.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Sascha Hauer <kernel@pengutronix.de>
+In-Reply-To: <CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+ <1326302710-9427-2-git-send-email-wad@chromium.org> <1326383015.7642.77.camel@gandalf.stny.rr.com>
+ <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
+ <1326385635.7642.89.camel@gandalf.stny.rr.com> <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
+ <CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com> <CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Thu, 12 Jan 2012 10:44:27 -0800
+X-Google-Sender-Auth: BaD1H6_7ByYBobvU2gMoUO0CPLQ
+Message-ID: <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Will Drewry <wad@chromium.org>,
+        linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, segoon@openwall.com, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 2:07 AM, Jamie Iles <jamie@jamieiles.com> wrote:
-> On Wed, Jan 11, 2012 at 09:46:58PM -0700, Grant Likely wrote:
->> On Tue, Jan 10, 2012 at 2:33 PM, Jamie Iles <jamie@jamieiles.com> wrote:
->> > On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
->> > I'm about to start trying to get this and Mike's common struct clk
->> > patches working on picoxcell, and the one thing I'm not understanding at
->> > the moment is how to handle the tree itself.  Currently I was planning
->> > on iterating over all clocks and finding a named input clock "ref" or
->> > "input" perhaps.  This would be fine for picoxcell, but I guess more
->> > complicated chips may need something else.
+On Thu, Jan 12, 2012 at 10:32 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Jan 12, 2012 at 10:18 AM, Andrew Lutomirski <luto@mit.edu> wrote:
 >>
->> It might be useful to have something like of_irq_init() for setting up
->> initial clocks, but the solution feels inelegant to me.  I suspect
->> that there will be end up being intertwined init order dependencies
->> between clocks and irqs and other early setup stuff that could be
->> handled better.  Again, I need to think about this some more.  There
->> might need to be something like an of_early_probe() call that accepts
->> a match table of compatible values and setup functions with some logic
->> or data to resolve dependencies.  The trick will be to not end up with
->> something complex.  I'll need to think about this more...
+>> Like this?
+>>
+>> http://lkml.indiana.edu/hypermail/linux/kernel/1003.3/01225.html
 >
-> Yes, probably not an easy problem to solve, especially for the platforms
-> where the parent can change at runtime.
+> I don't know the execve_nosecurity patches, so the diff makes little
+> sense to me, but yeah, I wouldn't expect it to be more than a couple
+> of lines. Exactly *how* you set the bit etc is not something I care
+> deeply about, prctl seems about as good as anything.
 >
-> I wonder if an of_clk_init() could take a platform callback, so that
-> of_clk_init() goes of and creates a struct clk for each clk in the DT,
-> then for each registered clock calls a platform specific callback which
-> returns the parent (if any).  It feels like a fairly platform specific
-> problem to me.
+>> Note that there's a huge can of worms if execve is allowed but
+>> suid/sgid is not: selinux may elevate privileges on exec of pretty
+>> much anything.  (I think that this is a really awful idea, but it's in
+>> the kernel, so we're stuck with it.)
+>
+> You can do any amount of crazy things with selinux, but the other side
+> of the coin is that it would also be trivial to teach selinux about
+> this same "restricted environment" bit, and just say that a process
+> with that bit set doesn't get to match whatever selinux privilege
+> escalation rules..
+>
+> I really don't think this is just about "execve cannot do setuid". I
+> think it's about the process being marked as restricted.
+>
+> So in your patch, I think that "PR_RESTRICT_EXEC" bit is wrong. It
+> should simply be "PR_RESTRICT_ME", and be done with it, and not try to
+> artificially limit it to be some "execve feature", and more think of
+> it as a "this is a process that has *no* extra privileges at all, and
+> can never get them".
 
-Based on Thomas' feedback I'm removing the requirement for clocks to
-be registered in-order with clk_init().  Any clock that cannot resolve
-it's parent within clk_init() (via the .get_parent callback, or
-otherwise having .parent statically initialized) will be put into an
-orphaned clocks list, which will be walked every time a new clock is
-registered.  Hurray for n^2 solutions.
+Fair enough.  I'll submit the simpler patch tonight.
 
-Does the above help with the of_clk_init problems?
+execve_nosecurity was my attempt to sidestep selinux issues.  It's a
+different syscall that does all of the non-security-related things
+that execve does but does not escalate (or even change) any
+privileges.  Maybe I'll try to rework that for newer kernels as well.
+The idea is that programs that expect to run in sandboxes / chroots /
+namespaces / whatever can use it, and older programs that might
+malfunction dangerously if the semantics of execve change will just
+fail instead.
 
-One final data point: I certainly plan on allowing for statically
-allocated clocks to live alongside DT clocks.  In fact the clock trees
-on OMAP are so large that there is some discussion about having some
-of the clocks statically allocated and some in DT, but I don't know
-what that split looks like right now.  I don't enjoy the idea of
-packing 200+ of any entity into a .dts blob.
-
-Regards,
-Mike
+--Andy
