@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab2ALGRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 01:17:55 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:42734 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595Ab2ALGRv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 01:17:51 -0500
-Date: Wed, 11 Jan 2012 22:17:09 -0800
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-bced76aeaca03b45e3b4bdb868cada328e497847@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        eric.dumazet@gmail.com, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, schwidefsky@de.ibm.com, fweisbec@gmail.com,
-        suresh.b.siddha@intel.com, dsahern@gmail.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        eric.dumazet@gmail.com, a.p.zijlstra@chello.nl,
-        torvalds@linux-foundation.org, schwidefsky@de.ibm.com,
-        fweisbec@gmail.com, dsahern@gmail.com, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1326297936.2442.157.camel@twins>
-References: <1326297936.2442.157.camel@twins>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched:
-  Fix lockup by limiting load-balance retries on lock-break
-Git-Commit-ID: bced76aeaca03b45e3b4bdb868cada328e497847
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1751671Ab2ALGc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 01:32:56 -0500
+Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:57835 "EHLO
+	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751102Ab2ALGcz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 01:32:55 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CA+55aFxDdCUd_h2Xk3H3giO4GsAE05Y8-uN1tqRNOJiKV-mhGg@mail.gmail.com>
+References: <1326147171-13752-1-git-send-email-arnd@arndb.de>
+	<CA+55aFw15sw0PWtom88vJx1M45CLuvpZABQAxMOQ+xowz8Xq2A@mail.gmail.com>
+	<7vty438575.fsf@alter.siamese.dyndns.org>
+	<201201111812.46431.arnd@arndb.de>
+	<CAMuHMdVvQzdxw0B3ZMtJej=9Qwm7Qbd5aenSOfa=QPhX8UUt2w@mail.gmail.com>
+	<CA+55aFxDdCUd_h2Xk3H3giO4GsAE05Y8-uN1tqRNOJiKV-mhGg@mail.gmail.com>
+Date: Thu, 12 Jan 2012 07:32:54 +0100
+X-Google-Sender-Auth: jNoAMhwNzSlOYQ6rO9-4hFazlTs
+Message-ID: <CAMuHMdWnoKowa0atP0k5X4vukJTnQSNSh9gibxd1Y2e60qK3RQ@mail.gmail.com>
+Subject: Re: [GIT PULL 05/11] SoC-level changes for tegra and omap
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Junio C Hamano <gitster@pobox.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.6 (terminus.zytor.com [127.0.0.1]); Wed, 11 Jan 2012 22:17:16 -0800 (PST)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bced76aeaca03b45e3b4bdb868cada328e497847
-Gitweb:     http://git.kernel.org/tip/bced76aeaca03b45e3b4bdb868cada328e497847
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Wed, 11 Jan 2012 13:11:12 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 11 Jan 2012 17:15:12 +0100
+On Thu, Jan 12, 2012 at 00:21, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Wed, Jan 11, 2012 at 12:29 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>>
+>> And all of this would look nice if you would have done a rebase on top of the
+>> latest tagged version of Linus' tree that contains all prerequisites, right?
+>
+> Rebasing means that nobody else can depend on or work with that tree,
+> so it's a no-no.
+>
+> Sure, it works if you are the only person touching it, but then you
+> had better not export it at all, so what's the point?
 
-sched: Fix lockup by limiting load-balance retries on lock-break
+That's why you need two branches:
+  1. a non-rebasing one for development,
+  2. a rebasing one containing cherry-picked (possibly folded) commits for
+     preparing for upstream delivery.
 
-Eric and David reported dead machines and traced it to commit
-a195f004 ("sched: Fix load-balance lock-breaking"), it turns out
-there's still a scenario where we can end up re-trying forever.
+Both branches contain an identical source tree at all times, but they contain
+different commits. If you make a merge error in the first, or a rebase
+error in the
+second, you will notice as they will differ.
 
-Since there is no strict forward progress guarantee in the
-load-balance iteration we can get stuck re-retrying the same
-task-set over and over.
+The non-rebasing branch should be used by your (sub)lieutenants to
+base their work
+on.
+The rebasing branch is used for deliveries upstream. `for-next` and
+`for-linus` are subsets of it. Patches emailed out for review
+can/should come from this branch
+(appying patches is also a form of rebasing).
 
-Creating a forward progress guarantee with the existing
-structure is somewhat non-trivial, for now simply terminate the
-retry loop after a few tries.
+> We have had independent problems in another branch exactly because it
+> was rebased and people merged it, so bringing up rebasing as a
+> "solution" is wrong-headed. It just causes *more* problems of other
+> kinds, even if it may make git request-pull trivial.
 
-Reported-by: Eric Dumazet <eric.dumazet@gmail.com>
-Tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-Reported-by: David Ahern <dsahern@gmail.com>
-[ logic cleanup as suggested by Eric ]
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/1326297936.2442.157.camel@twins
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/sched/fair.c |   10 +++++++---
- 1 files changed, 7 insertions(+), 3 deletions(-)
+Other people are supposed to merge the non-rebasing branch only. Just like
+you (as in "everyone except Linus") only merge in your non-rebasing branch.
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8e42de9..84adb2d 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -3130,8 +3130,10 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
- }
- 
- #define LBF_ALL_PINNED	0x01
--#define LBF_NEED_BREAK	0x02
--#define LBF_ABORT	0x04
-+#define LBF_NEED_BREAK	0x02	/* clears into HAD_BREAK */
-+#define LBF_HAD_BREAK	0x04
-+#define LBF_HAD_BREAKS	0x0C	/* count HAD_BREAKs overflows into ABORT */
-+#define LBF_ABORT	0x10
- 
- /*
-  * can_migrate_task - may task p from runqueue rq be migrated to this_cpu?
-@@ -4508,7 +4510,9 @@ redo:
- 			goto out_balanced;
- 
- 		if (lb_flags & LBF_NEED_BREAK) {
--			lb_flags &= ~LBF_NEED_BREAK;
-+			lb_flags += LBF_HAD_BREAK - LBF_NEED_BREAK;
-+			if (lb_flags & LBF_ABORT)
-+				goto out_balanced;
- 			goto redo;
- 		}
- 
+What I like (the most?) about git is that it tracks automatically what commits
+in my rebasing branch have been applied upstream.
+
+If you pull from your sub-lieutenants instead of applying patches, or if you
+have multiple upstreams, it becomes more complicated, but I think git rebase
+can still handle it.
+
+Examples:
+http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/master
+(non-rebasing)
+http://git.kernel.org/?p=linux/kernel/git/geert/linux-m68k.git;a=shortlog;h=refs/heads/m68k-queue
+(rebasing)
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
