@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525Ab2ALQV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:21:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751664Ab2ALQV1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:21:27 -0500
-Date: Thu, 12 Jan 2012 17:14:18 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
+	id S1753637Ab2ALQ1X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:27:23 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:49590 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab2ALQ1S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 11:27:18 -0500
+X-Authority-Analysis: v=2.0 cv=Pb19d1dd c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=CN4PQ-MNGcoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=le6kbyJzu1GLOlHul-wA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326385635.7642.89.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Andrew Lutomirski <luto@mit.edu>
 Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
         keescook@chromium.org, john.johansen@canonical.com,
         serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
         pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
         torvalds@linux-foundation.org, segoon@openwall.com, jmorris@namei.org,
         scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
         gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
         linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
         olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using
-	BPF
-Message-ID: <20120112161418.GA22360@redhat.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org> <1326302710-9427-2-git-send-email-wad@chromium.org> <1326383015.7642.77.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326383015.7642.77.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Thu, 12 Jan 2012 11:27:15 -0500
+In-Reply-To: <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	 <1326302710-9427-2-git-send-email-wad@chromium.org>
+	 <1326383015.7642.77.camel@gandalf.stny.rr.com>
+	 <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12, Steven Rostedt wrote:
->
-> On Wed, 2012-01-11 at 11:25 -0600, Will Drewry wrote:
->
-> > Filter programs may _only_ cross the execve(2) barrier if last filter
-> > program was attached by a task with CAP_SYS_ADMIN capabilities in its
-> > user namespace.  Once a task-local filter program is attached from a
-> > process without privileges, execve will fail.  This ensures that only
-> > privileged parent task can affect its privileged children (e.g., setuid
-> > binary).
->
-> This means that a non privileged user can not run another program with
-> limited features? How would a process exec another program and filter
-> it? I would assume that the filter would need to be attached first and
-> then the execv() would be performed. But after the filter is attached,
-> the execv is prevented?
->
-> Maybe I don't understand this correctly.
+On Thu, 2012-01-12 at 08:14 -0800, Andrew Lutomirski wrote:
 
-May be this needs something like LSM_UNSAFE_SECCOMP, or perhaps
-cap_bprm_set_creds() should take seccomp.mode == 2 into account, I dunno.
+> The longer I linger on lists and see neat ideas like this, the more I
+> get annoyed that execve is magical.  I dream of a distribution that
+> doesn't use setuid, file capabilities, selinux transitions on exec, or
+> any other privilege changes on exec *at all*. 
 
-OTOH, currently seccomp.mode == 1 doesn't allow to exec at all.
+Is that the fear with filtering on execv? That if we have filters on an
+execv calling a setuid program that we change the behavior of that
+privileged program and might cause unexpected results?
 
-Oleg.
+In that case, just have execv fail if filtering is enabled and we are
+execing a setuid program. But I don't see why non "magical" execv's
+should be prohibited.
+
+-- Steve
+
 
