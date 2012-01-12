@@ -1,52 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab2ALRxH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:53:07 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53124 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431Ab2ALRxB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:53:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120112171145.31e84b44@pyramind.ukuu.org.uk>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112161806.21a09335@pyramind.ukuu.org.uk>
-	<CABqD9hbEzcEF3KbG4=yA2haUUaXB8rMH9JbO+ZkZHU08Nt3ydQ@mail.gmail.com>
-	<20120112171145.31e84b44@pyramind.ukuu.org.uk>
-Date: Thu, 12 Jan 2012 11:52:59 -0600
-Message-ID: <CABqD9hYAnU+3GuXG_G+ywm=vAFgYtE0qHBgHzrNUqR27NgDk=Q@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754808Ab2ALR4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:56:09 -0500
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:2769 "EHLO
+	VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751860Ab2ALR4G convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:56:06 -0500
+X-SpamScore: -12
+X-BigFish: VS-12(zz9371I542M1432Nzz1202hzz8275dhz2fhc1ahc1bh2a8h668h839h944h)
+X-Forefront-Antispam-Report: CIP:131.107.125.8;KIP:(null);UIP:(null);IPV:NLI;H:TK5EX14HUBC105.redmond.corp.microsoft.com;RD:none;EFVD:NLI
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "ohering@suse.com" <ohering@suse.com>,
+        "James.Bottomley@HansenPartnership.com" 
+	<James.Bottomley@HansenPartnership.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Subject: RE: [PATCH 1/1][RESEND] Staging: hv: storvsc: Move the storage
+ driver out of the staging area
+Thread-Topic: [PATCH 1/1][RESEND] Staging: hv: storvsc: Move the storage
+ driver out of the staging area
+Thread-Index: AQHMylXP//IhgqK4b0CwTHBovOrm+5YHi0mAgAF2etA=
+Date: Thu, 12 Jan 2012 17:55:45 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0481B6EFEF0@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1325622441-15600-1-git-send-email-kys@microsoft.com>
+ <20120111103649.GB22652@infradead.org>
+In-Reply-To: <20120111103649.GB22652@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.33]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: microsoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 11:11 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> more about).  Since setuid is privilege escalation, then perhaps it
->> makes sense to allow it as an escape hatch.
->>
->> Would it be sane to just disallow setuid exec exclusively?
->
-> I think that is a policy question. I can imagine cases where either
-> behaviour is the "right" one so it may need to be a parameter ?
+Christoph,
 
-Makes sense. I'll make it flaggable (ignoring the parallel conversation
-about having a thread-wide suidable bit).
+Let me begin by first thanking you for your detailed review. I have addressed all the issues you have
+identified - the code looks much better now; thank you! I am currently testing this code and I will post
+the patches soon - individual patches against the current code in the staging tree as well as a patch to
+move the driver out of staging (as I have done in the past). Please find my responses to your comments
+in-line.
 
-thanks!
+Regards,
+
+K. Y
+
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Wednesday, January 11, 2012 5:37 AM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; ohering@suse.com;
+> James.Bottomley@HansenPartnership.com; hch@infradead.org; linux-
+> scsi@vger.kernel.org
+> Subject: Re: [PATCH 1/1][RESEND] Staging: hv: storvsc: Move the storage driver
+> out of the staging area
+> 
+> 
+> I'd also really recommend splitting the actual protocol defintion in
+> a header separate from the driver implementation to make it clear what
+> is part of the protocol and what's internal to the driver.
+
+I have consolidated all of the protocol defines at the start of the file and
+these are properly commented. The decision to not have a separate header file
+was based on the comments I got from the community a while ago. Hopefully,
+this consolidation will address all the concerns.
+
+> 
+> > +static inline struct storvsc_device *get_out_stor_device(
+> > +					struct hv_device *device)
+> 
+> > +static inline struct storvsc_device *get_in_stor_device(
+> > +					struct hv_device *device)
+> 
+> I'm pretty sure you defended this odd reference counting scheme last
+> time the discussion came up, but please write up a long comment in
+> the code explaning it so that the question doesn't come up again
+> all the time.
+
+I don't have any reference counting anymore. I have added a comment
+explaining the protocol for managing the life-cycle.
+ 
+> 
+> > +	request_size = sizeof(struct storvsc_cmd_request);
+> > +
+> > +	cmd_request = mempool_alloc(memp->request_mempool,
+> > +				       GFP_ATOMIC);
+> > +	if (!cmd_request)
+> > +		return SCSI_MLQUEUE_DEVICE_BUSY;
+> 
+> The point of the mempool allocator is that it will never return NULL.
+
+With GFP_ATOMIC flag, the allocation I think can fail. At least that is what
+mempool_alloc() comment says.
+
+> 
+> > +	/* max # of devices per target */
+> > +	host->max_lun = STORVSC_MAX_LUNS_PER_TARGET;
+> > +	/* max # of targets per channel */
+> > +	host->max_id = STORVSC_MAX_TARGETS;
+> > +	/* max # of channels */
+> > +	host->max_channel = STORVSC_MAX_CHANNELS - 1;
+> > +	/* max cmd length */
+> > +	host->max_cmd_len = STORVSC_MAX_CMD_LEN;
+> 
+> Any reason these aren't set directly in the host template?
+
+This state is not in the scsi_host_template. What am I missing here.
+
+
