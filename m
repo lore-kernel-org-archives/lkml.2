@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263Ab2ALUI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:08:57 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:58378 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753848Ab2ALUIz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:08:55 -0500
-X-IronPort-AV: E=Sophos;i="4.71,500,1320620400"; 
-   d="scan'208";a="139021225"
-Date: Thu, 12 Jan 2012 21:08:52 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: lawall@pl-59034.rocq.inria.fr
-To: James Smart <james.smart@emulex.com>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] drivers/scsi/lpfc/lpfc_sli.c: convert GFP_KERNEL to
- GFP_ATOMIC
-In-Reply-To: <4F0F3BDC.10103@emulex.com>
-Message-ID: <alpine.DEB.2.00.1201122108320.25187@pl-59034.rocq.inria.fr>
-References: <1326102050-30265-2-git-send-email-Julia.Lawall@lip6.fr> <4F0F3BDC.10103@emulex.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755281Ab2ALUL0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:11:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49672 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755222Ab2ALULW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:11:22 -0500
+Date: Thu, 12 Jan 2012 21:11:21 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andreas Dilger <adilger@dilger.ca>
+Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
+        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 2/4] vfs: Protect write paths by sb_start_write -
+ sb_end_write
+Message-ID: <20120112201121.GD8778@quack.suse.cz>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz>
+ <1326331253-6497-3-git-send-email-jack@suse.cz>
+ <FA7A1011-4312-4050-8AD5-C6060CFF3A55@dilger.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <FA7A1011-4312-4050-8AD5-C6060CFF3A55@dilger.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jan 2012, James Smart wrote:
+On Thu 12-01-12 12:56:01, Andreas Dilger wrote:
+> On 2012-01-11, at 6:20 PM, Jan Kara wrote:
+> > There are three entry points which dirty pages in a filesystem.  mmap (handled
+> > by block_page_mkwrite()), buffered write (handled by
+> > __generic_file_aio_write()), and truncate (it can dirty last partial page -
+> > handled by do_truncate()). Protect these places with sb_start_write() and
+> > sb_end_write().
+> > 
+> > Signed-off-by: Jan Kara <jack@suse.cz>
+> > ---
+> > fs/buffer.c  |   18 ++----------------
+> > fs/open.c    |    6 ++++++
+> > mm/filemap.c |    3 ++-
+> > 3 files changed, 10 insertions(+), 17 deletions(-)
+> > 
+> > diff --git a/fs/buffer.c b/fs/buffer.c
+> > index 19d8eb7..8519405 100644
+> > --- a/fs/buffer.c
+> > +++ b/fs/buffer.c
+> > @@ -2371,18 +2371,7 @@ int __block_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf,
+> 
+> The comment for __block_page_mkwrite() needs to be updated to reference
+> sb_start_write() and sb_end_write() instead of vfs_check_frozen().
+  Thanks. Fixed.
 
-> Julia,
->
-> We actually do not want any ATOMIC allocations if we can avoid them.  We 
-> reworked the calling sequence to deal with the locks being held. The change 
-> will be in the next patch set.
->
-> As such - Nack on the patch.
-
-No problem.  It was more a bug report than a real patch.
-
-thanks,
-julia
-
-> -- james s
->
->
->
-> On 1/9/2012 4:40 AM, Julia Lawall wrote:
->> From: Julia Lawall<julia.lawall@lip6.fr>
->> 
->> The function is called with locks held and thus should not use GFP_KERNEL.
->> 
->> The semantic patch that makes this report is available
->> in scripts/coccinelle/locks/call_kern.cocci.
->> 
->> More information about semantic patching is available at
->> http://coccinelle.lip6.fr/
->> 
->> Signed-off-by: Julia Lawall<julia.lawall@lip6.fr>
->> 
->> ---
->>   drivers/scsi/lpfc/lpfc_sli.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->> 
->> diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
->> index 23a2759..622d24f 100644
->> --- a/drivers/scsi/lpfc/lpfc_sli.c
->> +++ b/drivers/scsi/lpfc/lpfc_sli.c
->> @@ -601,7 +601,7 @@ __lpfc_set_rrq_active(struct lpfc_hba *phba, struct 
->> lpfc_nodelist *ndlp,
->>   	if (test_and_set_bit(xritag, ndlp->active_rrqs.xri_bitmap))
->>   		goto out;
->> 
->> -	rrq = mempool_alloc(phba->rrq_pool, GFP_KERNEL);
->> +	rrq = mempool_alloc(phba->rrq_pool, GFP_ATOMIC);
->>   	if (rrq) {
->>   		rrq->send_rrq = send_rrq;
->>   		rrq->xritag = xritag;
->> 
->> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
