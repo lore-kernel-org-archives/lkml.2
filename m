@@ -1,194 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab2ALE5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 23:57:00 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:61540 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752507Ab2ALE45 (ORCPT
+	id S1751273Ab2ALFGx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 00:06:53 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:57369 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab2ALFGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 23:56:57 -0500
-Message-ID: <1326344195.7311.1.camel@phoenix>
-Subject: [PATCH] power_supply: charger-manager: Clean up for better
- readability
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Donggeun Kim <dg77.kim@samsung.com>
-Date: Thu, 12 Jan 2012 12:56:35 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1- 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 12 Jan 2012 00:06:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+References: <bug-41722-5003@https.bugzilla.kernel.org/>
+	<201109062222.p86MMlK9023363@demeter2.kernel.org>
+	<CAOtrxKO8+ukXovCiM+=c1EihbMFaYivmYnwDx4+41GggTEhyWg@mail.gmail.com>
+	<CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+Date: Wed, 11 Jan 2012 21:06:51 -0800
+X-Google-Sender-Auth: 5Aj0TO9Lz-MZMv6sSB2UxQoylu0
+Message-ID: <CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>
+Content-Type: multipart/mixed; boundary=bcaec548a7295a846404b64db761
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes below changes:
+--bcaec548a7295a846404b64db761
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-* Some code change for better readability.
-* Current code in probe already ensures desc->charger_regulators is not NULL.
-  No need to check if it is NULL or not before calling regulator_bulk_free().
-* Use dev_get_drvdata() in cm_suspend_prepare() and cm_suspend_complete()
+On Tue, Jan 10, 2012 at 11:04 PM, Rog=E9rio Brito <rbrito@ime.usp.br> wrote=
+:
+> Hi, Yinghai.
+>
+> On Tue, Jan 10, 2012 at 03:07, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Mon, Jan 9, 2012 at 6:41 PM, Rog=E9rio Brito <rbrito@ime.usp.br> wrot=
+e:
+>> I have some pending patches that may fix bridge resource resizing.
+>>
+>> Can you try them at
+>>
+>> =A0 =A0 =A0git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-y=
+inghai.git
+>> for-pci2
+>>
+>> also please boot with "debug ignore_loglevel"
+>
+> Grabbing it right now. Will report it after I get some sleep (5AM here).
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/power/charger-manager.c |   61 ++++++++++++++++----------------------
- 1 files changed, 26 insertions(+), 35 deletions(-)
+please try attached patch, it will fix one bios wrong setting.
 
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 88fd971..e610e6b 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -134,12 +134,11 @@ static int get_batt_uV(struct charger_manager *cm, int *uV)
- 	union power_supply_propval val;
- 	int ret;
- 
--	if (cm->fuel_gauge)
--		ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
--				POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
--	else
-+	if (!cm->fuel_gauge)
- 		return -ENODEV;
- 
-+	ret = cm->fuel_gauge->get_property(cm->fuel_gauge,
-+				POWER_SUPPLY_PROP_VOLTAGE_NOW, &val);
- 	if (ret)
- 		return ret;
- 
-@@ -245,9 +244,7 @@ static int try_charger_enable(struct charger_manager *cm, bool enable)
- 	struct charger_desc *desc = cm->desc;
- 
- 	/* Ignore if it's redundent command */
--	if (enable && cm->charger_enabled)
--		return 0;
--	if (!enable && !cm->charger_enabled)
-+	if (enable == cm->charger_enabled)
- 		return 0;
- 
- 	if (enable) {
-@@ -309,9 +306,7 @@ static void uevent_notify(struct charger_manager *cm, const char *event)
- 
- 		if (!strncmp(env_str_save, event, UEVENT_BUF_SIZE))
- 			return; /* Duplicated. */
--		else
--			strncpy(env_str_save, event, UEVENT_BUF_SIZE);
--
-+		strncpy(env_str_save, event, UEVENT_BUF_SIZE);
- 		return;
- 	}
- 
-@@ -387,8 +382,10 @@ static bool cm_monitor(void)
- 
- 	mutex_lock(&cm_list_mtx);
- 
--	list_for_each_entry(cm, &cm_list, entry)
--		stop = stop || _cm_monitor(cm);
-+	list_for_each_entry(cm, &cm_list, entry) {
-+		if (_cm_monitor(cm))
-+			stop = true;
-+	}
- 
- 	mutex_unlock(&cm_list_mtx);
- 
-@@ -697,8 +694,10 @@ bool cm_suspend_again(void)
- 	mutex_lock(&cm_list_mtx);
- 	list_for_each_entry(cm, &cm_list, entry) {
- 		if (cm->status_save_ext_pwr_inserted != is_ext_pwr_online(cm) ||
--		    cm->status_save_batt != is_batt_present(cm))
-+		    cm->status_save_batt != is_batt_present(cm)) {
- 			ret = false;
-+			break;
-+		}
- 	}
- 	mutex_unlock(&cm_list_mtx);
- 
-@@ -855,11 +854,10 @@ static int charger_manager_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, cm);
- 
--	memcpy(&cm->charger_psy, &psy_default,
--				sizeof(psy_default));
-+	memcpy(&cm->charger_psy, &psy_default, sizeof(psy_default));
-+
- 	if (!desc->psy_name) {
--		strncpy(cm->psy_name_buf, psy_default.name,
--				PSY_NAME_MAX);
-+		strncpy(cm->psy_name_buf, psy_default.name, PSY_NAME_MAX);
- 	} else {
- 		strncpy(cm->psy_name_buf, desc->psy_name, PSY_NAME_MAX);
- 	}
-@@ -894,15 +892,15 @@ static int charger_manager_probe(struct platform_device *pdev)
- 				POWER_SUPPLY_PROP_CURRENT_NOW;
- 		cm->charger_psy.num_properties++;
- 	}
--	if (!desc->measure_battery_temp) {
--		cm->charger_psy.properties[cm->charger_psy.num_properties] =
--				POWER_SUPPLY_PROP_TEMP_AMBIENT;
--		cm->charger_psy.num_properties++;
--	}
-+
- 	if (desc->measure_battery_temp) {
- 		cm->charger_psy.properties[cm->charger_psy.num_properties] =
- 				POWER_SUPPLY_PROP_TEMP;
- 		cm->charger_psy.num_properties++;
-+	} else {
-+		cm->charger_psy.properties[cm->charger_psy.num_properties] =
-+				POWER_SUPPLY_PROP_TEMP_AMBIENT;
-+		cm->charger_psy.num_properties++;
- 	}
- 
- 	ret = power_supply_register(NULL, &cm->charger_psy);
-@@ -933,9 +931,8 @@ static int charger_manager_probe(struct platform_device *pdev)
- 	return 0;
- 
- err_chg_enable:
--	if (desc->charger_regulators)
--		regulator_bulk_free(desc->num_charger_regulators,
--					desc->charger_regulators);
-+	regulator_bulk_free(desc->num_charger_regulators,
-+			    desc->charger_regulators);
- err_bulk_get:
- 	power_supply_unregister(&cm->charger_psy);
- err_register:
-@@ -961,10 +958,8 @@ static int __devexit charger_manager_remove(struct platform_device *pdev)
- 	list_del(&cm->entry);
- 	mutex_unlock(&cm_list_mtx);
- 
--	if (desc->charger_regulators)
--		regulator_bulk_free(desc->num_charger_regulators,
--					desc->charger_regulators);
--
-+	regulator_bulk_free(desc->num_charger_regulators,
-+			    desc->charger_regulators);
- 	power_supply_unregister(&cm->charger_psy);
- 	kfree(cm->charger_psy.properties);
- 	kfree(cm->charger_stat);
-@@ -982,9 +977,7 @@ MODULE_DEVICE_TABLE(platform, charger_manager_id);
- 
- static int cm_suspend_prepare(struct device *dev)
- {
--	struct platform_device *pdev = container_of(dev, struct platform_device,
--						    dev);
--	struct charger_manager *cm = platform_get_drvdata(pdev);
-+	struct charger_manager *cm = dev_get_drvdata(dev);
- 
- 	if (!cm_suspended) {
- 		if (rtc_dev) {
-@@ -1020,9 +1013,7 @@ static int cm_suspend_prepare(struct device *dev)
- 
- static void cm_suspend_complete(struct device *dev)
- {
--	struct platform_device *pdev = container_of(dev, struct platform_device,
--						    dev);
--	struct charger_manager *cm = platform_get_drvdata(pdev);
-+	struct charger_manager *cm = dev_get_drvdata(dev);
- 
- 	if (cm_suspended) {
- 		if (rtc_dev) {
--- 
-1.7.5.4
+>
+>> BTW, did you try boot with "pci=3Duse_crs" and not with "acpi=3Doff" ?
+>
+> I tried, but I got a hang (both with Linux---many versions---and with
+> FreeBSD). With Linux I get:
+>
+> =A0 http://www.ime.usp.br/~rbrito/linux/clevo/boot-without-acpi-off.jpg
+>
 
+need to work on that later.
 
+Yinghai
 
+--bcaec548a7295a846404b64db761
+Content-Type: text/x-patch; charset=US-ASCII; name="disable_cardbus_mem1_pref.patch"
+Content-Disposition: attachment; filename="disable_cardbus_mem1_pref.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gxbb8ut00
+
+U3ViamVjdDogW1BBVENIXSBQQ0k6IERpc2FibGUgY2FyZGJ1cyBicmlkZ2UgTUVNMSBwcmVmIENU
+TAoKU29tZSBCSU9TIGVuYWJsZSBib3RoIHByZWYgZm9yIE1FTTAgYW5kIE1FTTEuCgpidXQgd2Ug
+YXNzdW1lIE1FTTEgaXMgbm9uLXByZWYuLi4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlp
+bmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMgfCAgICA4ICsr
+KysrKysrCiAxIGZpbGUgY2hhbmdlZCwgOCBpbnNlcnRpb25zKCspCgpJbmRleDogbGludXgtMi42
+L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2Ry
+aXZlcnMvcGNpL3NldHVwLWJ1cy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvc2V0dXAtYnVz
+LmMKQEAgLTc3NCw2ICs3NzQsMTQgQEAgc3RhdGljIHZvaWQgcGNpX2J1c19zaXplX2NhcmRidXMo
+c3RydWN0CiAJaWYgKHJlYWxsb2NfaGVhZCkKIAkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBi
+cmlkZ2UsIGJfcmVzKzEsIHBjaV9jYXJkYnVzX2lvX3NpemUsIDAgLyogZG9udCBjYXJlICovKTsK
+IAorCS8qIE1FTTEgbXVzdCBub3QgYmUgcHJlZiBtbWlvICovCisJcGNpX3JlYWRfY29uZmlnX3dv
+cmQoYnJpZGdlLCBQQ0lfQ0JfQlJJREdFX0NPTlRST0wsICZjdHJsKTsKKwlpZiAoY3RybCAmIFBD
+SV9DQl9CUklER0VfQ1RMX1BSRUZFVENIX01FTTEpIHsKKwkJY3RybCAmPSB+UENJX0NCX0JSSURH
+RV9DVExfUFJFRkVUQ0hfTUVNMTsKKwkJcGNpX3dyaXRlX2NvbmZpZ193b3JkKGJyaWRnZSwgUENJ
+X0NCX0JSSURHRV9DT05UUk9MLCBjdHJsKTsKKwkJcGNpX3JlYWRfY29uZmlnX3dvcmQoYnJpZGdl
+LCBQQ0lfQ0JfQlJJREdFX0NPTlRST0wsICZjdHJsKTsKKwl9CisKIAkvKgogCSAqIENoZWNrIHdo
+ZXRoZXIgcHJlZmV0Y2hhYmxlIG1lbW9yeSBpcyBzdXBwb3J0ZWQKIAkgKiBieSB0aGlzIGJyaWRn
+ZS4K
+--bcaec548a7295a846404b64db761--
