@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2ALC3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 21:29:40 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40599 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974Ab2ALC3i (ORCPT
+	id S1752186Ab2ALCcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 21:32:47 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53261 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab2ALCco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 21:29:38 -0500
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 12 Jan 2012 11:28:26 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: vmscan: deactivate isolated pages with lru lock
- released
-Message-Id: <20120112112826.f4a8acea.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <CAJd=RBAiAfyXBcn+9WO6AERthyx+C=cNP-romp9YJO3Hn7-U-g@mail.gmail.com>
-References: <CAJd=RBAiAfyXBcn+9WO6AERthyx+C=cNP-romp9YJO3Hn7-U-g@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Jan 2012 21:32:44 -0500
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: [PATCH 1/6 v2] usb/gadget/pch_udc: Fix disconnect issue
+Date: Thu, 12 Jan 2012 11:27:05 +0900
+Message-Id: <1326335230-32469-1-git-send-email-tomoya.rohm@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jan 2012 20:45:07 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
+ISSUE:
+When the driver notifies a gadget of a disconnect event, a system rarely freezes.
 
-> Spinners on other CPUs, if any, could take the lru lock and do their jobs while
-> isolated pages are deactivated on the current CPU if the lock is released
-> actively. And no risk of race raised as pages are already queued on locally
-> private list.
-> 
-> 
-> Signed-off-by: Hillf Danton <dhillf@gmail.com>
+CAUSE:
+When the driver calls dev->driver->disconnect(), it is not calling spinlock().
 
-Doesn't this increase the number of lock/unlock ?
-Hmm, isn't it better to integrate clear_active_flags to isolate_pages() ?
-Then we don't need list scan.
+Signed-off-by: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+---
+V2: Divide into 6 patches
+---
+ drivers/usb/gadget/pch_udc.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-Thanks,
--Kame
+diff --git a/drivers/usb/gadget/pch_udc.c b/drivers/usb/gadget/pch_udc.c
+index f222659..a4f8b08 100644
+--- a/drivers/usb/gadget/pch_udc.c
++++ b/drivers/usb/gadget/pch_udc.c
+@@ -2340,8 +2340,11 @@ static void pch_udc_svc_ur_interrupt(struct pch_udc_dev *dev)
+ 		/* Complete request queue */
+ 		empty_req_queue(ep);
+ 	}
+-	if (dev->driver && dev->driver->disconnect)
++	if (dev->driver && dev->driver->disconnect) {
++		spin_unlock(&dev->lock);
+ 		dev->driver->disconnect(&dev->gadget);
++		spin_lock(&dev->lock);
++	}
+ }
+ 
+ /**
+-- 
+1.7.4.4
 
