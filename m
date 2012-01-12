@@ -1,82 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754237Ab2ALQmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:42:12 -0500
-Received: from oproxy3-pub.bluehost.com ([69.89.21.8]:45683 "HELO
-	oproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752948Ab2ALQmJ (ORCPT
+	id S1754297Ab2ALQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:42:27 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:49536 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab2ALQmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:42:09 -0500
-Message-ID: <4F0F1AFA.1080900@xenotime.net>
-Date: Thu, 12 Jan 2012 09:40:10 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	Thu, 12 Jan 2012 11:42:24 -0500
+Date: Thu, 12 Jan 2012 11:40:25 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>, linux-kernel@vger.kernel.org,
+        xen-devel <xen-devel@lists.xensource.com>
+Subject: Re: linux 3.3-pre-rc1: Starting domU fails with Error: Failed to
+ query current memory allocation of dom0.
+Message-ID: <20120112164025.GA22773@phenom.dumpdata.com>
+References: <498097597.20120112133832@eikelenboom.it>
+ <20120112154613.GA10148@phenom.dumpdata.com>
+ <CAPXgP1373C5SfzU-rfo5GG53dUE6dVzECSuKzX1c_FirpXQt2g@mail.gmail.com>
+ <20120112161204.GC10269@phenom.dumpdata.com>
 MIME-Version: 1.0
-To: Paulius Zaleckas <paulius.zaleckas@gmail.com>
-CC: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] menuconfig: add Home and End keys support for
- inputbox
-References: <20120109113633.24486.69758.stgit@localhost6.localdomain6>	<20120109113641.24486.95511.stgit@localhost6.localdomain6>	<4F0B6845.4080503@xenotime.net>	<CAPiS6wCVo40tB40sXTzTt7RpVHJG_2wrYeP8L=ghin09WHftfg@mail.gmail.com>	<4F0C75A5.6000000@xenotime.net>	<CAPiS6wDYrryyPimun2N0xFCY3xCTDAS+tKKAmuZGjbSUjWpZGw@mail.gmail.com>	<4F0DDF08.1000005@xenotime.net> <CAPiS6wCzm-ReJGLDcQN9vYEeVRVzcqSN_gfMHkjUqJ5x4WpnVA@mail.gmail.com>
-In-Reply-To: <CAPiS6wCzm-ReJGLDcQN9vYEeVRVzcqSN_gfMHkjUqJ5x4WpnVA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112161204.GC10269@phenom.dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4F0F0D6C.0032,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2012 06:24 AM, Paulius Zaleckas wrote:
-> On Wed, Jan 11, 2012 at 9:12 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> On 01/11/2012 01:21 AM, Paulius Zaleckas wrote:
->>> On Tue, Jan 10, 2012 at 7:30 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->>>> On 01/10/2012 03:50 AM, Paulius Zaleckas wrote:
->>>>> On Tue, Jan 10, 2012 at 12:20 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->>>>>> On 01/09/2012 03:36 AM, Paulius Zaleckas wrote:
->>>>>>> Makes long string editing easier.
->>>>>>>
->>>>>>> Signed-off-by: Paulius Zaleckas <paulius.zaleckas@gmail.com>
->>>>>>
->>>>>> Hi,
->>>>>>
->>>>>> Does "default hostname" in the "General setup" menu use an inputbox?
->>>>>
->>>>> Yes, it does.
->>>>>
->>>>>> If so, I can't get Home and End keys to work for it.
->>>>>
->>>>> Strange. It works for me. Have you applied both patches?
->>>>
->>>> Yes, I have both patches applied.
->>>
->>> Ok this is really very strange, but I have made debug patch. See attachement.
->>> It will print octal pressed key value just below the text field.
->>>
->>> From curses.h:
->>> #define KEY_HOME      0406            /* home key */
->>> #define KEY_END               0550            /* end key */
->>>
->>> Do you get the same values for Home and End keys? I do.
->>
->> All that I see in the inputbox when I use Home or End is:
->>
->> 033
->>
->> (ESCape key)
+On Thu, Jan 12, 2012 at 11:12:04AM -0500, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jan 12, 2012 at 05:05:34PM +0100, Kay Sievers wrote:
+> > On Thu, Jan 12, 2012 at 16:46, Konrad Rzeszutek Wilk
+> > <konrad.wilk@oracle.com> wrote:
+> > > On Thu, Jan 12, 2012 at 01:38:32PM +0100, Sander Eikelenboom wrote:
+> > 
+> > >> Today i tried linuses tree of today (last commit is 4c4d285ad5665bfbd983b95fde8d7a477d24a361).
+> > >>
+> > >> It boots dom0 fine, but it fails to start any domU with: "Error: Failed to query current memory allocation of dom0."
+> > >> With my previous 3.1.5 kernel everything is fine, nothing else changed in config in between.
+> > > Your patch that converts the xen-balloon to use the regular device bus driver
+> > > (070680218379e15c1901f4bf21b98e3cbf12b527) has some not-so-happy consequences.
+> > >
+> > > The toolstack (xen-tools) use:
+> > >
+> > > /sys/devices/system/xen_memory/xen_memory0
+> > >
+> > > But with the change, it is now:
+> > >
+> > > /sys/devices/xen_memory0/target_kb
+> > 
+> > Urks, seems like a mistake on my side.
+> > 
+> > Please try if changing:
+> >   bus_unregister(&balloon_subsys);
+> > to:
+> >   subsys_system_register(&balloon_subsys, NULL);
+> > in:
+> >   drivers/xen/xen-balloon.c
+> > fixes the issue.
 > 
-> Is it working with nconfig?
+> Heh. I was *just* looking at d369a5d8fc70710236ae2d06a0e42dce483712df
+> ("clocksource: convert sysdev_class to a regular subsystem") and typed up this patch
+> to try it out:
 
-When I try to edit "Default hostname" in nconfig and press Home or End keys,
-nconfig acts like I just pressed F7 and it gives me the "what config file name do I
-want to load" prompt.
+Kay, are you Acking this patch? (I can send it to Linus for rc0 or rc1)
 
+commit 4e6f161986678a25c9e76af98df928408c734a27
+Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Date:   Thu Jan 12 11:35:50 2012 -0500
 
->> Could this have anything to do with me using xfce (xfce4)?
-> 
-> I have xfce at home. Will try it later today.
+    xen/balloon: Move the registration from device to subsystem.
+    
+    With git commit 070680218379e15c1901f4bf21b98e3cbf12b527
+    "xen-balloon: convert sysdev_class to a regular subsystem" we would
+    end up with the attributes being put in:
+    
+     /sys/devices/xen_memory0/target_kb
+    instead of
+    /sys/devices/system/xen_memory/xen_memory0/target_kb
+    
+    Making the tools unable to deflate the kernel to make more space
+    for launching another guest and printing:
 
-Thanks.
+    Error: Failed to query current memory allocation of dom0
+    
+    Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+    Suggested-by:  Kay Sievers <kay.sievers@vrfy.org>
+    Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+diff --git a/drivers/xen/xen-balloon.c b/drivers/xen/xen-balloon.c
+index 3832e30..596e6a7 100644
+--- a/drivers/xen/xen-balloon.c
++++ b/drivers/xen/xen-balloon.c
+@@ -221,7 +221,7 @@ static int register_balloon(struct device *dev)
+ {
+ 	int i, error;
+ 
+-	error = bus_register(&balloon_subsys);
++	error = subsys_system_register(&balloon_subsys, NULL);
+ 	if (error)
+ 		return error;
+ 
