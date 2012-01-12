@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab2ALJz2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:55:28 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41610 "EHLO mgw2.diku.dk"
+	id S1753475Ab2ALJ6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:58:38 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41631 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750933Ab2ALJzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:55:25 -0500
+	id S1751839Ab2ALJz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:55:27 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 5/15] drivers/dio/dio.c: add missing iounmap
-Date: Thu, 12 Jan 2012 10:55:07 +0100
-Message-Id: <1326362117-29371-5-git-send-email-Julia.Lawall@lip6.fr>
+To: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/15] drivers/mtd/onenand/samsung.c: add missing iounmap
+Date: Thu, 12 Jan 2012 10:55:05 +0100
+Message-Id: <1326362117-29371-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,8 +22,6 @@ From: Julia Lawall <Julia.Lawall@lip6.fr>
 
 Add missing iounmap in error handling code, in a case where the function
 already preforms iounmap on some other execution path.
-
-Additionally return an error code on failure of kzalloc.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -48,25 +47,33 @@ iounmap(e);
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- drivers/dio/dio.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+The goto labels are perhaps not ideal, because the ahb/dma resource has not
+been allocated yet.  But keeping the labels reduces the number of changes in
+the code.
 
-diff --git a/drivers/dio/dio.c b/drivers/dio/dio.c
-index 55dd88d..b37dcc9 100644
---- a/drivers/dio/dio.c
-+++ b/drivers/dio/dio.c
-@@ -228,8 +228,11 @@ static int __init dio_init(void)
+ drivers/mtd/onenand/samsung.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mtd/onenand/samsung.c b/drivers/mtd/onenand/samsung.c
+index fa1ee43..deaf762 100644
+--- a/drivers/mtd/onenand/samsung.c
++++ b/drivers/mtd/onenand/samsung.c
+@@ -923,7 +923,7 @@ static int s3c_onenand_probe(struct platform_device *pdev)
+ 		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+ 		if (!r) {
+ 			dev_err(&pdev->dev, "no buffer memory resource defined\n");
+-			return -ENOENT;
++			err = -ENOENT;
+ 			goto ahb_resource_failed;
+ 		}
  
-                 /* Found a board, allocate it an entry in the list */
- 		dev = kzalloc(sizeof(struct dio_dev), GFP_KERNEL);
--		if (!dev)
--			return 0;
-+		if (!dev) {
-+			if (scode >= DIOII_SCBASE)
-+				iounmap(va);
-+			return -ENOMEM;
-+		}
+@@ -964,7 +964,7 @@ static int s3c_onenand_probe(struct platform_device *pdev)
+ 		r = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+ 		if (!r) {
+ 			dev_err(&pdev->dev, "no dma memory resource defined\n");
+-			return -ENOENT;
++			err = -ENOENT;
+ 			goto dma_resource_failed;
+ 		}
  
- 		dev->bus = &dio_bus;
- 		dev->dev.parent = &dio_bus.dev;
 
