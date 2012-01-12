@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab2ALVuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 16:50:04 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:54336 "EHLO mgw2.diku.dk"
+	id S1755989Ab2ALVuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 16:50:07 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:54332 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755850Ab2ALVti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755738Ab2ALVti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 16:49:38 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
 To: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: kernel-janitors@vger.kernel.org, Kamil Debski <k.debski@samsung.com>,
-        Jeongtae Park <jtp.park@samsung.com>,
+Cc: kernel-janitors@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Mauro Carvalho Chehab <mchehab@infradead.org>,
         linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] drivers/media/video/s5p-mfc/s5p_mfc.c: adjust double test
-Date: Thu, 12 Jan 2012 22:49:30 +0100
-Message-Id: <1326404970-1084-5-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH v2 2/5] drivers/media/video/s5p-fimc/fimc-capture.c: adjust double test
+Date: Thu, 12 Jan 2012 22:49:28 +0100
+Message-Id: <1326404970-1084-3-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1326404970-1084-1-git-send-email-Julia.Lawall@lip6.fr>
 References: <1326404970-1084-1-git-send-email-Julia.Lawall@lip6.fr>
@@ -47,23 +47,42 @@ expression E;
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-There is an img_height field, so it is my guess that that should be tested
-instead of testing the img_width field again.
+There is a height field, so it is my guess that that should be tested
+instead of testing the width field again.
 
- drivers/media/video/s5p-mfc/s5p_mfc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/video/s5p-fimc/fimc-capture.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/media/video/s5p-mfc/s5p_mfc.c b/drivers/media/video/s5p-mfc/s5p_mfc.c
-index 8be8b54..53126f2 100644
---- a/drivers/media/video/s5p-mfc/s5p_mfc.c
-+++ b/drivers/media/video/s5p-mfc/s5p_mfc.c
-@@ -475,7 +475,7 @@ static void s5p_mfc_handle_seq_done(struct s5p_mfc_ctx *ctx,
- 			ctx->mv_size = 0;
+diff --git a/drivers/media/video/s5p-fimc/fimc-capture.c b/drivers/media/video/s5p-fimc/fimc-capture.c
+index 2cc3b91..13dd598 100644
+--- a/drivers/media/video/s5p-fimc/fimc-capture.c
++++ b/drivers/media/video/s5p-fimc/fimc-capture.c
+@@ -689,7 +689,7 @@ static int fimc_pipeline_try_format(struct fimc_ctx *ctx,
+ 			mf->code = 0;
+ 			continue;
  		}
- 		ctx->dpb_count = s5p_mfc_get_dpb_count();
--		if (ctx->img_width == 0 || ctx->img_width == 0)
-+		if (ctx->img_width == 0 || ctx->img_height == 0)
- 			ctx->state = MFCINST_ERROR;
- 		else
- 			ctx->state = MFCINST_HEAD_PARSED;
+-		if (mf->width != tfmt->width || mf->width != tfmt->width) {
++		if (mf->width != tfmt->width || mf->height != tfmt->height) {
+ 			u32 fcc = ffmt->fourcc;
+ 			tfmt->width  = mf->width;
+ 			tfmt->height = mf->height;
+@@ -698,7 +698,8 @@ static int fimc_pipeline_try_format(struct fimc_ctx *ctx,
+ 					       NULL, &fcc, FIMC_SD_PAD_SOURCE);
+ 			if (ffmt && ffmt->mbus_code)
+ 				mf->code = ffmt->mbus_code;
+-			if (mf->width != tfmt->width || mf->width != tfmt->width)
++			if (mf->width != tfmt->width ||
++			    mf->height != tfmt->height)
+ 				continue;
+ 			tfmt->code = mf->code;
+ 		}
+@@ -706,7 +707,7 @@ static int fimc_pipeline_try_format(struct fimc_ctx *ctx,
+ 			ret = v4l2_subdev_call(csis, pad, set_fmt, NULL, &sfmt);
+ 
+ 		if (mf->code == tfmt->code &&
+-		    mf->width == tfmt->width && mf->width == tfmt->width)
++		    mf->width == tfmt->width && mf->height == tfmt->height)
+ 			break;
+ 	}
+ 
 
