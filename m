@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab2ALWkP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 17:40:15 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:50223 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630Ab2ALWkL (ORCPT
+	id S1755915Ab2ALWob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 17:44:31 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:44234 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755069Ab2ALWoa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 17:40:11 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Kexec reboot and stale/inconsistent system state
-References: <1326405521-2736-1-git-send-email-venki@google.com>
-Date: Thu, 12 Jan 2012 14:42:26 -0800
-In-Reply-To: <1326405521-2736-1-git-send-email-venki@google.com> (Venkatesh
-	Pallipadi's message of "Thu, 12 Jan 2012 13:58:41 -0800")
-Message-ID: <m14nw0wnjh.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 12 Jan 2012 17:44:30 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX1+aKRIaQjxBZLl2ILYG/BRe9fB+P8XhbAo=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <alpine.DEB.2.00.1201121242560.17287@chino.kir.corp.google.com>
+References: <CAAJw_ZvxGc8kKjLO49ONLG=AuU6-DXExwNk2PuRszF1Y0jVeog@mail.gmail.com>
+	<alpine.DEB.2.00.1201121242560.17287@chino.kir.corp.google.com>
+Date: Fri, 13 Jan 2012 06:44:29 +0800
+Message-ID: <CAAJw_Zt9Q=Wzz2426_DaCOfvjSmGQAyPVUS1GChRCSw+w6LaUw@mail.gmail.com>
+Subject: Re: how to get of the the "plus" in 3.2.0+
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Venkatesh Pallipadi <venki@google.com> writes:
+On Fri, Jan 13, 2012 at 4:46 AM, David Rientjes <rientjes@google.com> wrote:
+> On Fri, 13 Jan 2012, Jeff Chua wrote:
+>
+>> Every time I do a fresh compile of the kernel, it append the version
+>> with a "+". How can I get rid of the annoying "+" without doing
+>> another major recompile or before I even start the compiling?
+>>
+>
+> The `+´ is emitted to indicate that you have modifications to your tree
+> beyond an official release, so your tree is actually not 3.2.0 but rather
+> it has additional changes on top of 3.2.0.
+>
+> To suppress it, use "make LOCALVERSION="
+>
+> The version string is written to include/generated/utsrelease.h at the
+> beginning of the build.
 
-> Of course, kexec reboots has a lot of advantantages. There is one
-> blind spot though, in the way we handle shutdown of the old kernel in kexec.
-> The problem: there are drivers in the kernel that change
-> system state either during init or during normal operation. During a
-> hardware reboot these system states would get reset to default.
-> But, with kexec reboot this system state can stay persistent with the
-> new kernel and can lead to some inconsistencies.
->
-> More concrete x86 example:
-> * Kernel_v0 has a driver which sets a particular MSR.
-> * Kernel_v1 has a different version of the driver which does not touch the
-> MSR and assumes it to be at BIOS init state.
-> * Now we have a kexec reboot from Kernel_v0 to Kernel_v1 and the MSR will
-> stay set leading to potential inconsistent state.
->
-> One such driver I was looking at is drivers/idle/intel_idle.c, which sets
-> the MSR during init and forgets about it. There are other drivers which can
-> potentially have similar problems - like MTRR, etc. There can be other
-> state in the system like chipset state and device state etc, though
-> I expect most of it won't be a problem based on the way drivers init.
->
-> Seemingly simple solution is to do the needed cleanup in driver's module_exit
-> code path. That is not enough as module_exit for all builtin drivers are
-> all discarded.
->
-> What if we retain all the module_exits in CONFIG_KEXEC case and do a
-> cleanup before launching a new kernel. This should work, but most of the
-> module_exit code assumes that they will be only called when corresponding
-> init is successful. I couldn't find a clean and easy way of associating
-> module's init function with its exit function and to save the result of
-> init.
->
-> Alternate quick solution is to create a new module interface to register
-> kexec cleanup function as in the patch below. But, this is not generic enough
-> yet and does not handle the case where we have done the cleanup and kexec
-> fails after that and we have to do some setup again to run with old
-> kernel.
->
-> Before spending more time on this, just wanted to run this RFC along to see:
-> * How big/serious this problem really is?
-> * Has this been looked at before and any other potential solution for
-> this?
+Cool! That works!
 
-Use the drivers shutdown method.  The shutdown method is called
-at reboot and at normal kexec.  If you care about the kexec on panic
-case you need to write a paranoid driver initialization routine.
-
-Hmm.  Looking a little closer the intel idle driver is a weird thing.
-I am not seeing any operations structures.  There are kobjects so
-the intel idle driver might be properly hooked into the device tree.
-If the intel idle driver isn't properly hooked into the device
-tree you should be able to hook into the reboot notifier instead
-of implementing a device shutdown method.  Although for a lot
-of reasons implementing the standard device shutdown method is
-preferred.
-
-Eric
+Thanks,
+Jeff
