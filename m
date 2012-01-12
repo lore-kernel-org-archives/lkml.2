@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753773Ab2ALOrD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 09:47:03 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:58880 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab2ALOrA (ORCPT
+	id S1753798Ab2ALOue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 09:50:34 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:32883 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2ALOud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 09:47:00 -0500
-Message-ID: <4F0EF253.7050308@gmail.com>
-Date: Thu, 12 Jan 2012 06:46:43 -0800
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Thu, 12 Jan 2012 09:50:33 -0500
+X-AuditID: b753bd60-98392ba000007b1b-5e-4f0ef33631eb
+X-AuditID: b753bd60-98392ba000007b1b-5e-4f0ef33631eb
+Message-ID: <4F0EF32F.6060001@hitachi.com>
+Date: Thu, 12 Jan 2012 23:50:23 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: Chen Gong <gong.chen@linux.intel.com>
-CC: "R, Durgadoss" <durgadoss.r@intel.com>,
-        "linux-x86_64@vger.kernel.org" <linux-x86_64@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: CPU clock throttled prints..
-References: <D6D887BA8C9DFF48B5233887EF04654109E855E9B4@bgsmsx502.gar.corp.intel.com> <4F0E4147.7000903@linux.intel.com>
-In-Reply-To: <4F0E4147.7000903@linux.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Roland McGrath <roland@hack.frob.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Anton Arapov <anton@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [PATCH v8 3.2.0-rc5 9/9] perf: perf interface for uprobes
+References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com> <20111216122951.2085.95511.sendpatchset@srdronam.in.ibm.com> <4F06D22D.9060906@hitachi.com> <20120109112427.GB10189@linux.vnet.ibm.com>
+In-Reply-To: <20120109112427.GB10189@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 06:11 PM, Chen Gong wrote:
-> 于 2011/7/5 13:36, R, Durgadoss 写道:
->> Hi All,
->>
->> I am getting these prints in my Atom based device, running 2.6.35 kernel.
->>
->> [ 350.084005] CPU0: Temperature above threshold, cpu clock throttled
->> (total
->> events = 26)
->> [ 350.084029] CPU1: Temperature above threshold, cpu clock throttled
->> (total
->> events = 26)
->> [ 350.085293] CPU0: Temperature/speed normal
->> [ 350.085311] CPU1: Temperature/speed normal
->>
->> Seems like these are from therm_throt.c and the flow for this,
->> Starts from smp_thermal_interrupt(...) method.
->>
->> Can somebody tell me when this method gets called ?
->> Also, does this actually throttle the CPU ?
->>
->
-> try to apply this patch 29e9bf1841e4f (x86, mce, therm_throt: Don't report
-> power limit and package level thermal throttle events in mcelog)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-x86_64" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at http://vger.kernel.org/majordomo-info.html
->
+Hi Srikar,
 
-probably not the best solution, but I just ended up disabling the 
-function in the kernel: (either its below or its under a different name)
-X86_MCE_INTEL = n
+(2012/01/09 20:24), Srikar Dronamraju wrote:
+>>
+>>> +
+>>> +static int convert_to_perf_probe_point(struct probe_trace_point *tp,
+>>> +					struct perf_probe_point *pp)
+>>> +{
+>>> +	pp->function = strdup(tp->symbol);
+>>> +	if (pp->function == NULL)
+>>> +		return -ENOMEM;
+>>> +	pp->offset = tp->offset;
+>>> +	pp->retprobe = tp->retprobe;
+>>> +
+>>> +	return 0;
+>>> +}
+>>
+>> This function could be used in kprobe_convert_to_perf_probe() too.
+>> In that case, it will be separated as a cleanup from this.
+> 
+> Do you really want this in a separate patch, since it doesnt make too
+> much sense without the uprobes code.
 
-this way when I watch hulu, dmesg is not spammed with something about 
-"above threshold" by just watching a movie.
+If so, breaking this big patch into small pieces helps
+(at least) me to review/maintain the change :)
 
-Justin P. Mattock
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
