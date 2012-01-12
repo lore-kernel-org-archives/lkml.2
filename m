@@ -1,127 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754706Ab2ALRS6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:18:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42823 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754089Ab2ALRSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:18:54 -0500
-Date: Thu, 12 Jan 2012 17:18:47 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linux-MM <linux-mm@kvack.org>,
-        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Miklos Szeredi <mszeredi@novell.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
-        Gong Chen <gong.chen@intel.com>
-Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
- IPI from page allocator context
-Message-ID: <20120112171847.GN4118@suse.de>
-References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
- <1326276668-19932-3-git-send-email-mgorman@suse.de>
- <1326381492.2442.188.camel@twins>
- <20120112153712.GL4118@suse.de>
- <1326383551.2442.203.camel@twins>
+	id S1754666Ab2ALRUg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:20:36 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43107 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab2ALRUf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:20:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1326383551.2442.203.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1326383147.2950.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+References: <CAAJw_Zte4JSFeb9zK4gtptBq=H1RoqaSgaV3OpmxuXBY5cZByA@mail.gmail.com>
+	<1326383147.2950.24.camel@edumazet-HP-Compaq-6005-Pro-SFF-PC>
+Date: Fri, 13 Jan 2012 01:20:34 +0800
+Message-ID: <CAAJw_Zs8m4grXX8_YibWdsnw62yeAYXTHgiQUA9WJ09eP9XJOA@mail.gmail.com>
+Subject: Re: bnx2-mips-09-6.2.1.b still missing
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Michael Chan <mchan@broadcom.com>, "David S. Miller" <davem@davemloft.net>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 04:52:31PM +0100, Peter Zijlstra wrote:
-> On Thu, 2012-01-12 at 15:37 +0000, Mel Gorman wrote:
-> > On Thu, Jan 12, 2012 at 04:18:12PM +0100, Peter Zijlstra wrote:
-> > > On Wed, 2012-01-11 at 10:11 +0000, Mel Gorman wrote:
-> > > > At least one bug report has
-> > > > been seen on ppc64 against a 3.0 era kernel that looked like a bug
-> > > > receiving interrupts on a CPU being offlined. 
-> > > 
-> > > Got details on that Mel? The preempt_disable() in on_each_cpu() should
-> > > serialize against the stop_machine() crap in unplug.
-> > 
-> > I might have added 2 and 2 together and got 5.
-> > 
-> > The stack trace clearly was while sending IPIs in on_each_cpu() and
-> > always when under memory pressure and stuck in direct reclaim. This was
-> > on !PREEMPT kernels where preempt_disable() is a no-op. That is why I
-> > thought get_online_cpu() would be necessary.
-> 
-> For non-preempt the required scheduling of stop_machine() will have to
-> wait even longer. Still there might be something funny, some of the
-> hotplug notifiers are ran before the stop_machine thing does its thing
-> so there might be some fun interaction.
+On Thu, Jan 12, 2012 at 11:45 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 12 janvier 2012 à 23:31 +0800, Jeff Chua a écrit :
+>> commit c2c20ef43d00b1439631e603f8dcee9a803cd8b3 mentioned
+>> bnx2-mips-09-6.2.1.b, but it's still missing from the latest git.
+>> Where can I download the bnx2 firmware from?
 
-Ok, how about this as a replacement patch?
+> http://git2.kernel.org/?p=linux/kernel/git/firmware/linux-firmware.git;a=summary
 
----8<---
-From: Mel Gorman <mgorman@suse.de>
-Subject: [PATCH] mm: page allocator: Do not drain per-cpu lists via IPI from page allocator context
+Got it. Thanks!
 
-While running a CPU hotplug stress test under memory pressure, it
-was observed that the machine would halt with no messages logged
-to console. This is difficult to trigger and required a machine
-with 8 cores and plenty of memory. In at least one case on ppc64,
-the warning in include/linux/cpumask.h:107 triggered implying that
-IPIs are being sent to offline CPUs in some cases.
-
-A suspicious part of the problem is that the page allocator is sending
-IPIs using on_each_cpu() without calling get_online_cpus() to prevent
-changes to the online cpumask. It is depending on preemption being
-disabled to protect it which is a no-op on !PREEMPT kernels. This means
-that a thread can be reading the mask in smp_call_function_many() when
-an attempt is made to take a CPU offline. The expectation is that this
-is not a problem as the stop_machine() used during CPU hotplug should
-be able to prevent any problems as the reader of the online mask will
-prevent stop_machine making forward progress but it's unhelpful.
-
-On the other side, the mask can also be read while the CPU is being
-brought online. In this case it is the responsibility of the
-architecture that the CPU is able to receive and handle interrupts
-before being marked active but that does not mean they always get it
-right.
-
-Sending excessive IPIs from the page allocator is a bad idea. In low
-memory situations, a large number of processes can drain the per-cpu
-lists at the same time, in quick succession and on many CPUs which is
-pointless. In light of this and the unspecific CPU hotplug concerns,
-this patch removes the call drain_all_pages() after failing direct
-reclaim. To avoid impacting high-order allocation success rates,
-it still drains the local per-cpu lists for high-order allocations
-that failed.
-
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 2b8ba3a..63ea182 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1982,11 +1982,13 @@ retry:
- 					migratetype);
- 
- 	/*
--	 * If an allocation failed after direct reclaim, it could be because
--	 * pages are pinned on the per-cpu lists. Drain them and try again
-+	 * If a high-order allocation failed after direct reclaim, there is a
-+	 * possibility that it is because the necessary buddies have been
-+	 * freed to the per-cpu list. Drain the local list and try again.
- 	 */
--	if (!page && !drained) {
--		drain_all_pages();
-+	if (!page && order && !drained) {
-+		drain_pages(get_cpu());
-+		put_cpu();
- 		drained = true;
- 		goto retry;
- 	}
+Jeff
