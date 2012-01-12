@@ -1,79 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547Ab2ALRD1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:03:27 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:61609 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754499Ab2ALRDX convert rfc822-to-8bit (ORCPT
+	id S1754491Ab2ALRFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:05:55 -0500
+Received: from static.121.164.40.188.clients.your-server.de ([188.40.164.121]:55441
+	"EHLO smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465Ab2ALRFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:03:23 -0500
+	Thu, 12 Jan 2012 12:05:52 -0500
+Date: Thu, 12 Jan 2012 18:05:46 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <256392989.20120112180546@eikelenboom.it>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        xen-devel <xen-devel@lists.xensource.com>
+Subject: Re: linux 3.3-pre-rc1: Starting domU fails with Error: Failed to query current memory allocation of dom0.
+In-Reply-To: <20120112164025.GA22773@phenom.dumpdata.com>
+References: <498097597.20120112133832@eikelenboom.it> <20120112154613.GA10148@phenom.dumpdata.com> <CAPXgP1373C5SfzU-rfo5GG53dUE6dVzECSuKzX1c_FirpXQt2g@mail.gmail.com> <20120112161204.GC10269@phenom.dumpdata.com> <20120112164025.GA22773@phenom.dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <20120112161806.21a09335@pyramind.ukuu.org.uk>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112161806.21a09335@pyramind.ukuu.org.uk>
-Date: Thu, 12 Jan 2012 11:03:20 -0600
-Message-ID: <CABqD9hbEzcEF3KbG4=yA2haUUaXB8rMH9JbO+ZkZHU08Nt3ydQ@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 10:18 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Filter programs may _only_ cross the execve(2) barrier if last filter
->> program was attached by a task with CAP_SYS_ADMIN capabilities in its
->> user namespace.  Once a task-local filter program is attached from a
->> process without privileges, execve will fail.  This ensures that only
->> privileged parent task can affect its privileged children (e.g., setuid
->> binary).
->
-> I think this model is wrong. The rest of the policy rules all work on the
-> basis that dumpable is the decider (the same rules for not dumping, not
-> tracing, etc). A user should be able to apply filter to their own code
-> arbitarily. Any setuid app should IMHO lose the trace subject to the usual
-> uid rules and capability rules. That would seem to be more flexible and
-> also the path of least surprise.
+Hello Konrad,
 
-My line of thinking up to now has been that disallowing setuid exec
-would mean there is no risk of an errant setuid binary allowing escape
-from the system call filters (which the containers people may care
-more about).  Since setuid is privilege escalation, then perhaps it
-makes sense to allow it as an escape hatch.
+Thursday, January 12, 2012, 5:40:25 PM, you wrote:
 
-Would it be sane to just disallow setuid exec exclusively?
+> On Thu, Jan 12, 2012 at 11:12:04AM -0500, Konrad Rzeszutek Wilk wrote:
+>> On Thu, Jan 12, 2012 at 05:05:34PM +0100, Kay Sievers wrote:
+>> > On Thu, Jan 12, 2012 at 16:46, Konrad Rzeszutek Wilk
+>> > <konrad.wilk@oracle.com> wrote:
+>> > > On Thu, Jan 12, 2012 at 01:38:32PM +0100, Sander Eikelenboom wrote:
+>> > 
+>> > >> Today i tried linuses tree of today (last commit is 4c4d285ad5665bfbd983b95fde8d7a477d24a361).
+>> > >>
+>> > >> It boots dom0 fine, but it fails to start any domU with: "Error: Failed to query current memory allocation of dom0."
+>> > >> With my previous 3.1.5 kernel everything is fine, nothing else changed in config in between.
+>> > > Your patch that converts the xen-balloon to use the regular device bus driver
+>> > > (070680218379e15c1901f4bf21b98e3cbf12b527) has some not-so-happy consequences.
+>> > >
+>> > > The toolstack (xen-tools) use:
+>> > >
+>> > > /sys/devices/system/xen_memory/xen_memory0
+>> > >
+>> > > But with the change, it is now:
+>> > >
+>> > > /sys/devices/xen_memory0/target_kb
+>> > 
+>> > Urks, seems like a mistake on my side.
+>> > 
+>> > Please try if changing:
+>> >   bus_unregister(&balloon_subsys);
+>> > to:
+>> >   subsys_system_register(&balloon_subsys, NULL);
+>> > in:
+>> >   drivers/xen/xen-balloon.c
+>> > fixes the issue.
+>> 
+>> Heh. I was *just* looking at d369a5d8fc70710236ae2d06a0e42dce483712df
+>> ("clocksource: convert sysdev_class to a regular subsystem") and typed up this patch
+>> to try it out:
 
-> [plus you can implement non setuid exec entirely in userspace so it's
-> a rather meaningless distinction you propose]
+> Kay, are you Acking this patch? (I can send it to Linus for rc0 or rc1)
 
-Agreed.
+> commit 4e6f161986678a25c9e76af98df928408c734a27
+> Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Date:   Thu Jan 12 11:35:50 2012 -0500
 
->> be tackled separately via separate patchsets. (And at some point sharing
->> BPF JIT code!)
->
-> A BPF jit ought to be trivial and would be a big win.
->
-> In general I like this approach. It's simple, it's compact and it offers
-> interesting possibilities for solving some interesting problem spaces,
-> without the full weight of SELinux, SMACK etc which are still needed for
-> heavyweight security.
->
+>     xen/balloon: Move the registration from device to subsystem.
+>     
+>     With git commit 070680218379e15c1901f4bf21b98e3cbf12b527
+>     "xen-balloon: convert sysdev_class to a regular subsystem" we would
+>     end up with the attributes being put in:
+>     
+>      /sys/devices/xen_memory0/target_kb
+>     instead of
+>     /sys/devices/system/xen_memory/xen_memory0/target_kb
+>     
+>     Making the tools unable to deflate the kernel to make more space
+>     for launching another guest and printing:
 
-Thanks!  Yeah I think merging with the network stack is eminently
-doable, but I didn't want to bog down the proposal in how much
-overhead I might be adding to the network layer.
+>     Error: Failed to query current memory allocation of dom0
+>     
+>     Reported-by: Sander Eikelenboom <linux@eikelenboom.it>
+>     Suggested-by:  Kay Sievers <kay.sievers@vrfy.org>
+>     Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+> diff --git a/drivers/xen/xen-balloon.c b/drivers/xen/xen-balloon.c
+> index 3832e30..596e6a7 100644
+> --- a/drivers/xen/xen-balloon.c
+> +++ b/drivers/xen/xen-balloon.c
+> @@ -221,7 +221,7 @@ static int register_balloon(struct device *dev)
+>  {
+>         int i, error;
+>  
+> -       error = bus_register(&balloon_subsys);
+> +       error = subsys_system_register(&balloon_subsys, NULL);
+>         if (error)
+>                 return error;
+>  
+
+
+Shouldn't the
+
+if (error) {
+        bus_unregister(&balloon_subsys);
+        return error;
+}
+
+right below it also be changed ?
+
