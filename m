@@ -1,130 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab2ALRIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:08:51 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:21144 "EHLO
+	id S1754597Ab2ALRI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:08:56 -0500
+Received: from rcsinet15.oracle.com ([148.87.113.117]:21187 "EHLO
 	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab2ALRIr (ORCPT
+	with ESMTP id S1754342Ab2ALRIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:08:47 -0500
+	Thu, 12 Jan 2012 12:08:50 -0500
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: jbarnes@virtuousgeek.org, linux-pci@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 2/2] xen/pciback: Support pci_reset_function, aka FLR or D3 support.
-Date: Thu, 12 Jan 2012 12:06:47 -0500
-Message-Id: <1326388007-19178-3-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 1/2] pci: Introduce __pci_reset_function_locked to be used when holding device_lock.
+Date: Thu, 12 Jan 2012 12:06:46 -0500
+Message-Id: <1326388007-19178-2-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.7.4
 In-Reply-To: <1326388007-19178-1-git-send-email-konrad.wilk@oracle.com>
 References: <1326388007-19178-1-git-send-email-konrad.wilk@oracle.com>
 X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090208.4F0F139C.011E,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090203.4F0F139D.0066,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We use the __pci_reset_function_locked to perform the action.
-Also on attaching ("bind") and detaching ("unbind") we save and
-restore the configuration states. When the device is disconnected
-from a guest we use the "pci_reset_function" to also reset the
-device before being passed to another guest.
+The use case of this is when a driver wants to call FLR when a device
+is attached to it using the SysFS "bind" or "unbind" functionality.
+
+The call chain when a user does "bind" looks as so:
+
+ echo "0000:01.07.0" > /sys/bus/pci/drivers/XXXX/bind
+
+and ends up calling:
+  driver_bind:
+    device_lock(dev);  <=== TAKES LOCK
+    XXXX_probe:
+         .. pci_enable_device()
+         ...__pci_reset_function(), which calls
+                 pci_dev_reset(dev, 0):
+                        if (!0) {
+                                device_lock(dev) <==== DEADLOCK
+
+The __pci_reset_function_locked function allows the the drivers
+'probe' function to call the "pci_reset_function" while still holding
+the driver mutex lock.
 
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/xen-pciback/pci_stub.c |   41 +++++++++++++++++++++++++++++++++--
- drivers/xen/xen-pciback/pciback.h  |    1 +
- 2 files changed, 39 insertions(+), 3 deletions(-)
+ drivers/pci/pci.c   |   25 +++++++++++++++++++++++++
+ include/linux/pci.h |    1 +
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/xen/xen-pciback/pci_stub.c b/drivers/xen/xen-pciback/pci_stub.c
-index 7944a17..6f63b9d 100644
---- a/drivers/xen/xen-pciback/pci_stub.c
-+++ b/drivers/xen/xen-pciback/pci_stub.c
-@@ -85,19 +85,34 @@ static struct pcistub_device *pcistub_device_alloc(struct pci_dev *dev)
- static void pcistub_device_release(struct kref *kref)
- {
- 	struct pcistub_device *psdev;
-+	struct xen_pcibk_dev_data *dev_data;
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 97fff78..192be5d 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3163,6 +3163,31 @@ int __pci_reset_function(struct pci_dev *dev)
+ EXPORT_SYMBOL_GPL(__pci_reset_function);
  
- 	psdev = container_of(kref, struct pcistub_device, kref);
-+	dev_data = pci_get_drvdata(psdev->dev);
- 
- 	dev_dbg(&psdev->dev->dev, "pcistub_device_release\n");
- 
- 	xen_unregister_device_domain_owner(psdev->dev);
- 
--	/* Clean-up the device */
-+	/* Call the reset function which does not take lock as this
-+	 * is called from "unbind" which takes a device_lock mutex.
-+	 */
-+	__pci_reset_function_locked(psdev->dev);
-+	if (pci_load_and_free_saved_state(psdev->dev,
-+					  &dev_data->pci_saved_state)) {
-+		dev_dbg(&psdev->dev->dev, "Could not reload PCI state\n");
-+	} else
-+		pci_restore_state(psdev->dev);
+ /**
++ * __pci_reset_function_locked - reset a PCI device function while holding
++ * the @dev mutex lock.
++ * @dev: PCI device to reset
++ *
++ * Some devices allow an individual function to be reset without affecting
++ * other functions in the same device.  The PCI device must be responsive
++ * to PCI config space in order to use this function.
++ *
++ * The device function is presumed to be unused and the caller is holding
++ * the device mutex lock when this function is called.
++ * Resetting the device will make the contents of PCI configuration space
++ * random, so any caller of this must be prepared to reinitialise the
++ * device including MSI, bus mastering, BARs, decoding IO and memory spaces,
++ * etc.
++ *
++ * Returns 0 if the device function was successfully reset or negative if the
++ * device doesn't support resetting a single function.
++ */
++int __pci_reset_function_locked(struct pci_dev *dev)
++{
++	return pci_dev_reset(dev, 1);
++}
++EXPORT_SYMBOL_GPL(__pci_reset_function_locked);
 +
-+	/* Disable the device */
- 	xen_pcibk_reset_device(psdev->dev);
-+
-+	kfree(dev_data);
-+	pci_set_drvdata(psdev->dev, NULL);
-+
-+	/* Clean-up the device */
- 	xen_pcibk_config_free_dyn_fields(psdev->dev);
- 	xen_pcibk_config_free_dev(psdev->dev);
--	kfree(pci_get_drvdata(psdev->dev));
--	pci_set_drvdata(psdev->dev, NULL);
- 
- 	psdev->dev->dev_flags &= ~PCI_DEV_FLAGS_ASSIGNED;
- 	pci_dev_put(psdev->dev);
-@@ -231,7 +246,17 @@ void pcistub_put_pci_dev(struct pci_dev *dev)
- 	/* Cleanup our device
- 	 * (so it's ready for the next domain)
- 	 */
-+
-+	/* This is OK - we are running from workqueue context
-+	 * and want to inhibit the user from fiddling with 'reset'
-+	 */
-+	pci_reset_function(dev);
-+	pci_restore_state(psdev->dev);
-+
-+	/* This disables the device. */
- 	xen_pcibk_reset_device(found_psdev->dev);
-+
-+	/* And cleanup up our emulated fields. */
- 	xen_pcibk_config_free_dyn_fields(found_psdev->dev);
- 	xen_pcibk_config_reset_dev(found_psdev->dev);
- 
-@@ -328,6 +353,16 @@ static int __devinit pcistub_init_device(struct pci_dev *dev)
- 	if (err)
- 		goto config_release;
- 
-+	dev_dbg(&dev->dev, "reseting (FLR, D3, etc) the device\n");
-+	__pci_reset_function_locked(dev);
-+
-+	/* We need the device active to save the state. */
-+	dev_dbg(&dev->dev, "save state of device\n");
-+	pci_save_state(dev);
-+	dev_data->pci_saved_state = pci_store_saved_state(dev);
-+	if (!dev_data->pci_saved_state)
-+		dev_err(&dev->dev, "Could not store PCI conf saved state!\n");
-+
- 	/* Now disable the device (this also ensures some private device
- 	 * data is setup before we export)
- 	 */
-diff --git a/drivers/xen/xen-pciback/pciback.h b/drivers/xen/xen-pciback/pciback.h
-index e9b4011..a7def01 100644
---- a/drivers/xen/xen-pciback/pciback.h
-+++ b/drivers/xen/xen-pciback/pciback.h
-@@ -41,6 +41,7 @@ struct xen_pcibk_device {
- 
- struct xen_pcibk_dev_data {
- 	struct list_head config_fields;
-+	struct pci_saved_state *pci_saved_state;
- 	unsigned int permissive:1;
- 	unsigned int warned_on_write:1;
- 	unsigned int enable_intx:1;
++/**
+  * pci_probe_reset_function - check whether the device can be safely reset
+  * @dev: PCI device to reset
+  *
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index a16b1df..65c2d8a 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -817,6 +817,7 @@ int pcie_set_readrq(struct pci_dev *dev, int rq);
+ int pcie_get_mps(struct pci_dev *dev);
+ int pcie_set_mps(struct pci_dev *dev, int mps);
+ int __pci_reset_function(struct pci_dev *dev);
++int __pci_reset_function_locked(struct pci_dev *dev);
+ int pci_reset_function(struct pci_dev *dev);
+ void pci_update_resource(struct pci_dev *dev, int resno);
+ int __must_check pci_assign_resource(struct pci_dev *dev, int i);
 -- 
 1.7.7.4
 
