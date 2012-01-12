@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2ALJ4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:56:07 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41684 "EHLO mgw2.diku.dk"
+	id S1753440Ab2ALJ4F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:56:05 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41686 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364Ab2ALJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753373Ab2ALJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 04:55:33 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Tony Lindgren <tony@atomide.com>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+To: John Stultz <johnstul@us.ibm.com>
+Cc: kernel-janitors@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 15/15] arch/arm/mach-omap2/smartreflex.c: add missing iounmap
-Date: Thu, 12 Jan 2012 10:55:17 +0100
-Message-Id: <1326362117-29371-15-git-send-email-Julia.Lawall@lip6.fr>
+Subject: [PATCH 13/15] drivers/clocksource/cyclone.c: add missing iounmap
+Date: Thu, 12 Jan 2012 10:55:15 +0100
+Message-Id: <1326362117-29371-13-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -48,20 +47,24 @@ iounmap(e);
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/arm/mach-omap2/smartreflex.c |    2 +-
+ drivers/clocksource/cyclone.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-index 9dd9345..7e755bb 100644
---- a/arch/arm/mach-omap2/smartreflex.c
-+++ b/arch/arm/mach-omap2/smartreflex.c
-@@ -897,7 +897,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 		ret = sr_late_init(sr_info);
- 		if (ret) {
- 			pr_warning("%s: Error in SR late init\n", __func__);
--			return ret;
-+			goto err_iounmap;
- 		}
+diff --git a/drivers/clocksource/cyclone.c b/drivers/clocksource/cyclone.c
+index 72f811f..9e0998f 100644
+--- a/drivers/clocksource/cyclone.c
++++ b/drivers/clocksource/cyclone.c
+@@ -55,11 +55,11 @@ static int __init init_cyclone_clocksource(void)
  	}
+ 	/* even on 64bit systems, this is only 32bits: */
+ 	base = readl(reg);
++	iounmap(reg);
+ 	if (!base) {
+ 		printk(KERN_ERR "Summit chipset: Could not find valid CBAR value.\n");
+ 		return -ENODEV;
+ 	}
+-	iounmap(reg);
  
+ 	/* setup PMCC: */
+ 	offset = base + CYCLONE_PMCC_OFFSET;
 
