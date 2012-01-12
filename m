@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2ALXsM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 18:48:12 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:47093 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2ALXsK (ORCPT
+	id S1756205Ab2ALXvM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 18:51:12 -0500
+Received: from snt0-omc1-s27.snt0.hotmail.com ([65.55.90.38]:6180 "EHLO
+	snt0-omc1-s27.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755124Ab2ALXvL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 18:48:10 -0500
+	Thu, 12 Jan 2012 18:51:11 -0500
+Message-ID: <SNT123-W46318F430CE810154029D5DB9F0@phx.gbl>
+X-Originating-IP: [173.161.69.124]
+From: Greg White <pcguy11@live.com>
+To: <greg@kroah.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+Subject: =?windows-1256?Q?RE:_MULTIP?= =?windows-1256?Q?LE_WARNING?=
+ =?windows-1256?Q?:_at_fs/sy?= =?windows-1256?Q?sfs/dir.c:?=
+ =?windows-1256?Q?455_sysfs=5F?= =?windows-1256?B?YWRkX29uZf7+?=
+Date: Thu, 12 Jan 2012 17:51:10 -0600
+Importance: Normal
+In-Reply-To: <20120112213702.GA17405@kroah.com>
+References: <SNT123-W206618A1B501B8A491DFADDB9F0@phx.gbl>,<20120112213702.GA17405@kroah.com>
+Content-Type: text/plain; charset="windows-1256"
+Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
-In-Reply-To: <1326411506-16894-1-git-send-email-wad@chromium.org>
-References: <1326411506-16894-1-git-send-email-wad@chromium.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Jan 2012 15:47:48 -0800
-X-Google-Sender-Auth: gLF7Y8V7F5725ia8cSWBjLc0Nt8
-Message-ID: <CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
-Subject: Re: [PATCH PLACEHOLDER 1/3] fs/exec: "always_unprivileged" patch
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+X-OriginalArrivalTime: 12 Jan 2012 23:51:10.0973 (UTC) FILETIME=[0F9D62D0:01CCD185]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 3:38 PM, Will Drewry <wad@chromium.org> wrote:
-> This patch is a placeholder until Andy's (luto@mit.edu) patch arrives
-> implementing Linus's proposal for applying a "this is a process that has
-> *no* extra privileges at all, and can never get them".
 
-I think we can simplify and improve the naming/logic by just saying
-"can't change privileges".
+> On Thu, Jan 12, 2012 at 02:40:18PM -0600, Greg W wrote:
+> >
+> > Hi,
+> >
+> > I just installed Linux on my HP 6200 PC using UEFI. The Ubuntu lucid kernel caused my computer to freeze during shutdown and reboots. So I downloaded 3.1.6 from kernel.org and compiled my own kernel and it works fine except for the following messages in my dmesg:
+> >
+> > [2.295957] ------------[ cut here ]------------
+> > [2.295962] WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0xc1/0xf0()
+> > [2.295964] Hardware name: HP Compaq 6200 Pro Small Form Factor
+> > [2.295966] sysfs: cannot create duplicate filename '/firmware/efi/vars/SlotPresent-ec87d643-eba4-4bb5-a1e5-3f3e36b20da9'
+>
+> This is a BIOS problem, with EFI, go complain to your manufacturer that
+> they are creating multiple slots with the same name.
+>
+> > [2.296043] kobject_add_internal failed for
+> > SlotPresent-ec87d643-eba4-4bb5-a1e5-3f3e36b20da9 with -EEXIST, don't try to register things with the same name in the same directory.
+>
+> See, the kernel told you this :)
+>
+> best of luck,
+>
+> greg k-h
 
-I'd argue that that even includes "can't drop them", just to make it
-really clear what the rules are.
+Thank you for the clarification.  When I see WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0xc1/0xf0() I think kernel problem.  If I saw WARNING: BIOS is trying to register things with the same name in the same directory, I would have thought BIOS issue.  Maybe you could make the warning a little more clear the problem is in the BIOS and not the kernel?
 
-So the usage model would be to first simply set the privileges to
-whatever you want the sandbox to be, and then enter the restricted
-mode.
+I already have an open service request with HP to fix three other bugs in their BIOS.  I will add this to the list.  Now if I could just get someone from HP to contact me and fix the problems.....
 
-                    Linus
+Thanks,
+Greg
+
+ 		 	   		  
