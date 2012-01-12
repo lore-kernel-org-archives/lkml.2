@@ -1,61 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2ALRSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:18:49 -0500
-Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:60573 "HELO
-	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754089Ab2ALRSr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:18:47 -0500
-Message-ID: <4F0F238E.7020508@xenotime.net>
-Date: Thu, 12 Jan 2012 10:16:46 -0800
-From: Randy Dunlap <rdunlap@xenotime.net>
-Organization: YPO4
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+	id S1754706Ab2ALRS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:18:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:42823 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754089Ab2ALRSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:18:54 -0500
+Date: Thu, 12 Jan 2012 17:18:47 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Linux-MM <linux-mm@kvack.org>,
+        Linux-FSDevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Miklos Szeredi <mszeredi@novell.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>, Greg KH <gregkh@suse.de>,
+        Gong Chen <gong.chen@intel.com>
+Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
+ IPI from page allocator context
+Message-ID: <20120112171847.GN4118@suse.de>
+References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
+ <1326276668-19932-3-git-send-email-mgorman@suse.de>
+ <1326381492.2442.188.camel@twins>
+ <20120112153712.GL4118@suse.de>
+ <1326383551.2442.203.camel@twins>
 MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net
-Subject: Re: [PATCH v2 2/2] Documentation: prctl/seccomp_filter
-References: <CABqD9hbQRinbYqqwjqH8TfDvkOpESwiCp1uEE8d0Q7Rp4tsM0A@mail.gmail.com> <1326323983-23630-1-git-send-email-wad@chromium.org>
-In-Reply-To: <1326323983-23630-1-git-send-email-wad@chromium.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1326383551.2442.203.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 03:19 PM, Will Drewry wrote:
-> Document how system call filtering with BPF works and
-> may be used.  Includes an example for x86 (32-bit).
+On Thu, Jan 12, 2012 at 04:52:31PM +0100, Peter Zijlstra wrote:
+> On Thu, 2012-01-12 at 15:37 +0000, Mel Gorman wrote:
+> > On Thu, Jan 12, 2012 at 04:18:12PM +0100, Peter Zijlstra wrote:
+> > > On Wed, 2012-01-11 at 10:11 +0000, Mel Gorman wrote:
+> > > > At least one bug report has
+> > > > been seen on ppc64 against a 3.0 era kernel that looked like a bug
+> > > > receiving interrupts on a CPU being offlined. 
+> > > 
+> > > Got details on that Mel? The preempt_disable() in on_each_cpu() should
+> > > serialize against the stop_machine() crap in unplug.
+> > 
+> > I might have added 2 and 2 together and got 5.
+> > 
+> > The stack trace clearly was while sending IPIs in on_each_cpu() and
+> > always when under memory pressure and stuck in direct reclaim. This was
+> > on !PREEMPT kernels where preempt_disable() is a no-op. That is why I
+> > thought get_online_cpu() would be necessary.
+> 
+> For non-preempt the required scheduling of stop_machine() will have to
+> wait even longer. Still there might be something funny, some of the
+> hotplug notifiers are ran before the stop_machine thing does its thing
+> so there might be some fun interaction.
 
-Please tell some of us what "BPF" means.  wikipedia lists 15 possible
-choices, but I don't know which one to choose.
+Ok, how about this as a replacement patch?
 
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> ---
->  Documentation/prctl/seccomp_filter.txt |   99 ++++++++++++++++++++++++++++++++
->  samples/Makefile                       |    2 +-
->  samples/seccomp/Makefile               |   12 ++++
->  samples/seccomp/bpf-example.c          |   74 ++++++++++++++++++++++++
->  4 files changed, 186 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/prctl/seccomp_filter.txt
->  create mode 100644 samples/seccomp/Makefile
->  create mode 100644 samples/seccomp/bpf-example.c
+---8<---
+From: Mel Gorman <mgorman@suse.de>
+Subject: [PATCH] mm: page allocator: Do not drain per-cpu lists via IPI from page allocator context
 
+While running a CPU hotplug stress test under memory pressure, it
+was observed that the machine would halt with no messages logged
+to console. This is difficult to trigger and required a machine
+with 8 cores and plenty of memory. In at least one case on ppc64,
+the warning in include/linux/cpumask.h:107 triggered implying that
+IPIs are being sent to offline CPUs in some cases.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+A suspicious part of the problem is that the page allocator is sending
+IPIs using on_each_cpu() without calling get_online_cpus() to prevent
+changes to the online cpumask. It is depending on preemption being
+disabled to protect it which is a no-op on !PREEMPT kernels. This means
+that a thread can be reading the mask in smp_call_function_many() when
+an attempt is made to take a CPU offline. The expectation is that this
+is not a problem as the stop_machine() used during CPU hotplug should
+be able to prevent any problems as the reader of the online mask will
+prevent stop_machine making forward progress but it's unhelpful.
+
+On the other side, the mask can also be read while the CPU is being
+brought online. In this case it is the responsibility of the
+architecture that the CPU is able to receive and handle interrupts
+before being marked active but that does not mean they always get it
+right.
+
+Sending excessive IPIs from the page allocator is a bad idea. In low
+memory situations, a large number of processes can drain the per-cpu
+lists at the same time, in quick succession and on many CPUs which is
+pointless. In light of this and the unspecific CPU hotplug concerns,
+this patch removes the call drain_all_pages() after failing direct
+reclaim. To avoid impacting high-order allocation success rates,
+it still drains the local per-cpu lists for high-order allocations
+that failed.
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/page_alloc.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 2b8ba3a..63ea182 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1982,11 +1982,13 @@ retry:
+ 					migratetype);
+ 
+ 	/*
+-	 * If an allocation failed after direct reclaim, it could be because
+-	 * pages are pinned on the per-cpu lists. Drain them and try again
++	 * If a high-order allocation failed after direct reclaim, there is a
++	 * possibility that it is because the necessary buddies have been
++	 * freed to the per-cpu list. Drain the local list and try again.
+ 	 */
+-	if (!page && !drained) {
+-		drain_all_pages();
++	if (!page && order && !drained) {
++		drain_pages(get_cpu());
++		put_cpu();
+ 		drained = true;
+ 		goto retry;
+ 	}
