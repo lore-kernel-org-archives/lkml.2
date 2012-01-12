@@ -1,102 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab2ALL4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 06:56:08 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:40153 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751481Ab2ALL4F convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 06:56:05 -0500
+	id S1753381Ab2ALL65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 06:58:57 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:60410 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751481Ab2ALL64 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 06:58:56 -0500
+X-Originating-IP: 217.70.178.135
+X-Originating-IP: 50.43.15.19
+Date: Thu, 12 Jan 2012 03:58:30 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com, manfred@colorfullife.com,
+        dhowells@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] rcu: avoid checking for constant
+Message-ID: <20120112115830.GA3436@leaf>
+References: <1326345104-6919-1-git-send-email-jengelh@medozas.de>
+ <20120112071431.GA1896@leaf>
+ <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr>
+ <20120112095257.GA2441@leaf>
+ <alpine.LNX.2.01.1201121106040.17330@frira.zrqbmnf.qr>
 MIME-Version: 1.0
-In-Reply-To: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
-References: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
-Date: Thu, 12 Jan 2012 13:56:02 +0200
-Message-ID: <CANOLnOP_aXGw2nxRE+VnW2ii2UV4JqJaxcfMbd3oVm6qfWxsGA@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: musb: fix pm_runtime mismatch
-From: Grazvydas Ignotas <notasas@gmail.com>
-To: Felipe Contreras <felipe.contreras@nokia.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap <linux-omap@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>, stable@vger.kernel.org,
-        Hema HK <hemahk@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.01.1201121106040.17330@frira.zrqbmnf.qr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 19, 2011 at 10:01 PM, Felipe Contreras
-<felipe.contreras@nokia.com> wrote:
-> From: Felipe Contreras <felipe.contreras@gmail.com>
->
-> In musb_init_controller() there's a pm_runtime_put(), but there's no
-> pm_runtime_get(), which creates a mismatch that causes the driver to
-> sleep when it shouldn't.
+On Thu, Jan 12, 2012 at 11:34:23AM +0100, Jan Engelhardt wrote:
+> On Thursday 2012-01-12 10:52, Josh Triplett wrote:
+> >> +#define __kfree_rcu(head, offset) \
+> >> +	call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset) + \
+> >> +		 BUILD_BUG_ON_ZERO((offset) >= 4096))
+> >> +
+> >
+> >I had to stare at this for a while, and look up the definition of
+> >BUILD_BUG_ON_ZERO.  Naturally I assumed that BUILD_BUG_ON_ZERO(arg)
+> >meant BUILT_BUG_ON((arg) == 0), which would have made the logic
+> >backwards here.  However, per the definition it just provides a
+> >zero-returning version of BUILD_BUG_ON.  Ow.
+> 
+> Same impression here. BUILD_BUG_ON_ZERO was introduced by
+> 
+> commit 4552d5dc08b79868829b4be8951b29b07284753f
+> Author: Jan Beulich <jbeulich@novell.com>
+> Date:   Mon Jun 26 13:57:28 2006 +0200
+> 
+> while Rusty's CCAN archive calls it "BUILD_BUG_OR_ZERO" (since either 
+> it's a bug, or returning neutral zero).
 
-This patch is causing problems here, the device never suspends, I've
-verified musb_runtime_suspend and omap2430_runtime_suspend are never
-called in my setup, unless I revert this patch. I'm using musb with
-ethernet gadget; cable removal also doesn't suspend musb.
+Sounds like a good target for a fix at some point.
 
-It seems pm_runtime_put() that was removed was balancing out
-pm_runtime_get in musb_platform_init(), which is called at the
-beginning of musb_init_controller(). I think this pm_runtime_get()
-from musb_platform_init() should be moved to musb_init_controller() to
-stop confusing people and pm_runtime_put() needs to be brought back. I
-can do a patch if nobody objects.
+> rcu: avoid checking for constant
+> 
+> When compiling kernel or module code with -O0, "offset" is no longer
+> considered a constant, and therefore always triggers the build error
+> that BUILD_BUG_ON is defined to yield.
+> 
+> Therefore, change the innards of kfree_rcu so that the offset is not
+> tunneled through a function argument before checking it.
 
-> This was introduced in 7acc619[1], but it wasn't triggered in my setup
-> until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
-> when PM is working as it was supposed to.
->
-> However, it seems most of the time this is used in a way that keeps the
-> counter above 0, so nobody noticed. Also, it seems to depend on the
-> configuration used in versions before 3.1, but not later (or in it).
->
-> I found the problem by loading isp1704_charger before any usb gadgets:
-> http://article.gmane.org/gmane.linux.kernel/1226122
+The commit message looks good now.
 
-isp1704_charger seems to be doing otg_io_read(), and it's perfectly
-normal that musb can be suspended at the time isp1704 decides to do
-this. I think proper fix is to wake up must on musb_ulpi_read() and
-musb_ulpi_write() instead.
+> @@ -835,7 +817,20 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
+>   *
+>   * Note that the allowable offset might decrease in the future, for example,
+>   * to allow something like kmem_cache_free_rcu().
+> + *
+> + * The BUILD_BUG_ON check must not involve any function calls, hence the
+> + * checks are done in macros here. __is_kfree_rcu_offset is also used by
+> + * kernel/rcu.h.
 
->
-> All versions after 2.6.39 are affected.
->
-> [1] usb: musb: Idle path retention and offmode support for OMAP3
-> [2] OMAP2+: musb: hwmod adaptation for musb registration
-> [3] Merge branch 'omap-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6
->
-> Cc: stable@vger.kernel.org
-> Cc: Hema HK <hemahk@ti.com>
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  drivers/usb/musb/musb_core.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-> index b63ab15..920f04e 100644
-> --- a/drivers/usb/musb/musb_core.c
-> +++ b/drivers/usb/musb/musb_core.c
-> @@ -2012,8 +2012,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
->        if (status < 0)
->                goto fail3;
->
-> -       pm_runtime_put(musb->controller);
-> -
->        status = musb_init_debugfs(musb);
->        if (status < 0)
->                goto fail4;
-> --
-> 1.7.8
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The first sentence of that paragraph seems like a worthwhile addition.
+Please drop the second, though, since it'll inevitably become outdated.
 
--- 
-Gražvydas
+> +#define __is_kfree_rcu_offset(offset) ((offset) < 4096)
+> +
+> +#define __kfree_rcu(head, offset) \
+> +	do { \
+> +		typedef void (*rcu_callback)(struct rcu_head *); \
+> +		BUILD_BUG_ON(!__is_kfree_rcu_offset(offset)); \
+> +		call_rcu(head, (rcu_callback)(unsigned long)(offset)); \
+> +	} while (0)
+
+No, you can't define that typedef here with that name.  Unlike in the
+inline function, in a macro you could introduce a name conflict.
+
+- Josh Triplett
