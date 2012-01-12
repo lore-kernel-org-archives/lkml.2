@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804Ab2ALAph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 19:45:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41115 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655Ab2ALApe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 19:45:34 -0500
-Message-ID: <4F0E2D07.1010502@zytor.com>
-Date: Wed, 11 Jan 2012 16:44:55 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1751867Ab2ALBFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 20:05:44 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50183 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab2ALBFn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Jan 2012 20:05:43 -0500
+X-AuditID: 9c93016f-b7c72ae000007401-8d-4f0e31d9e088
+Message-ID: <4F0E31D9.3080306@lge.com>
+Date: Thu, 12 Jan 2012 10:05:29 +0900
+From: Namhyung Kim <namhyung.kim@lge.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
 MIME-Version: 1.0
-To: "tj@kernel.org" <tj@kernel.org>
-CC: "Alex,Shi" <alex.shi@intel.com>, Christoph Lameter <cl@gentwo.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "eric.dumazet@gmail.com" <eric.dumazet@gmail.com>,
-        "Huang, Ying" <ying.huang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "avi@redhat.com" <avi@redhat.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        "kaber@trash.net" <kaber@trash.net>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/3] Code clean up for percpu_xxx() functions
-References: <1318428673.29699.13.camel@debian> <alpine.DEB.2.00.1110120910540.26610@router.home> <1318908091.23426.52.camel@debian> <alpine.DEB.2.00.1110180932330.687@router.home> <1319016218.23426.104.camel@debian> <alpine.DEB.2.00.1110191033480.24001@router.home> <1319096139.23426.184.camel@debian> <1321866612.30341.572.camel@debian> <20111122000653.GS25776@google.com> <1326272921.5695.263.camel@debian> <20120111171951.GF26832@google.com>
-In-Reply-To: <20120111171951.GF26832@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: Namhyung Kim <namhyung@gmail.com>, axboe@kernel.dk, mingo@redhat.com,
+        rostedt@goodmis.org, fweisbec@gmail.com, teravest@google.com,
+        slavapestov@google.com, ctalbott@google.com, dhsharp@google.com,
+        linux-kernel@vger.kernel.org, winget@google.com,
+        Chanho Park <chanho61.park@samsung.com>
+Subject: Re: [PATCH RESEND 9/9] block, trace: implement ioblame - IO tracer
+ with origin tracking
+References: <1326220106-5765-1-git-send-email-tj@kernel.org> <1326220106-5765-10-git-send-email-tj@kernel.org> <20120111013212.GA6843@dhcp-172-17-108-109.mtv.corp.google.com> <4F0D291A.8030205@lge.com> <20120111170635.GE26832@google.com>
+In-Reply-To: <20120111170635.GE26832@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11/2012 09:19 AM, tj@kernel.org wrote:
+Hi,
+
+2012-01-12 2:06 AM, Tejun Heo wrote:
+> Hello,
 >
-> Alex, can you please collect all patches into a single patchset?
-> Please split it such that, usage changes are per-system so that they
-> can be routed through respective subsystems (x86 or net) and updates
-> to percpu proper which can be applied after other changes have been
-> applied.  It would probably be best to route these patches separately
-> rather than all through percpu as it touches a lot of different places
-> and is likely to cause conflicts.  I *think* the best way would be,
+> On Wed, Jan 11, 2012 at 03:15:54PM +0900, Namhyung Kim wrote:
+>> How about adding another tracepoint for intent creation to provide
+>> raw data as well, somewhere in iob_get_intent() or
+>> iob_intent_create() maybe? It can be useful to get those data for
+>> further processing IMHO.
 >
-> * Submit per-subsystem patches and get them merged to subsystem trees.
+> While I don't particularly object to that, information and
+> notification (via inotify) for that is already available via
+> ioblame/intents file which we need regardless of the new tracepoint,
+> so it's kinda redundant, isn't it?
 >
-> * (Optional) Apply a patch to mark unused interface deprecated in
->    percpu tree, so that new usages in linux-next can be detected.
->
-> * Towards the end of the next merge window, merge a patch to actually
->    kill the old interface.
+> Thanks.
 >
 
-That sounds like a good idea.
+Yes. But that's a text-based so it might fit better to simple use cases. 
+If we need further post processing based on intents, it could be better 
+off having binary interface IMHO. And since we already use tracepoints 
+anyway, wouldn't it be good to avoid adding another layer of interface 
+or complexity?
 
-	-hpa
+Thanks,
+Namhyung Kim
