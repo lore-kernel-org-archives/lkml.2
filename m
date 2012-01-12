@@ -1,111 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab2ALXeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 18:34:12 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:60956 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756038Ab2ALXeJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 18:34:09 -0500
+	id S1756128Ab2ALXgS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 18:36:18 -0500
+Received: from mailout-de.gmx.net ([213.165.64.22]:45450 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756038Ab2ALXgQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 18:36:16 -0500
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/FwyJT0RDFyw2q6uSZVHm77XCCh3Zxa21FDzmeGw
+	Nk9hGApc92s9ek
+Message-ID: <4F0F6E65.7020009@gmx.de>
+Date: Thu, 12 Jan 2012 23:36:05 +0000
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20111110 Icedove/3.0.11
 MIME-Version: 1.0
-In-Reply-To: <1326409536.9705.4.camel@localhost>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
- <1326302710-9427-2-git-send-email-wad@chromium.org> <1326383015.7642.77.camel@gandalf.stny.rr.com>
- <CAObL_7GVo8rH=Knv=t5VtJG24m7tY9MhNf9QNah+8G9oYiXo6g@mail.gmail.com>
- <1326385635.7642.89.camel@gandalf.stny.rr.com> <CA+55aFw2yigXqfiKMH4aZ9w8dOkAEB0cZ2m4ZUEhiddnrQuueg@mail.gmail.com>
- <CAObL_7HE6_NE79tKASQcAxyvCS_7L=vMqfjvZDbCe99pa2t8Wg@mail.gmail.com>
- <CA+55aFwLoOT-5oRn0k9oErAhTW4hT0_-bMXsn-mf00zcxmHheQ@mail.gmail.com>
- <CAObL_7GXw8XpVHJrBABUQt9u9pXFDnzUP3nxagS1+g7tPE1kew@mail.gmail.com>
- <CAGZ=bq+E3PFm8aZ1eaJaLnHK2dL_nxKBJ_F6MDR-uON+6T-87A@mail.gmail.com> <1326409536.9705.4.camel@localhost>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 12 Jan 2012 15:33:47 -0800
-X-Google-Sender-Auth: A-bueLs8J9-6zwNVc6crd2RSWSo
-Message-ID: <CAObL_7HbL-+613aALTb2g1RSaYqhZ6tAX-Oaj5Dhw9eZry=mew@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-To: Eric Paris <eparis@redhat.com>
-Cc: Kyle Moffett <kyle@moffetthome.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: lkml - Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Antonino Daplas <adaplas@gmail.com>, linux-fbdev@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH 3/15] i810: fix module_param bool abuse.
+References: <874nx2tu1v.fsf@rustcorp.com.au> <4EEFC5B4.9000704@gmx.de> <87sjjk34wx.fsf@rustcorp.com.au>
+In-Reply-To: <87sjjk34wx.fsf@rustcorp.com.au>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 3:05 PM, Eric Paris <eparis@redhat.com> wrote:
-> On Thu, 2012-01-12 at 14:08 -0500, Kyle Moffett wrote:
->> On Thu, Jan 12, 2012 at 13:44, Andrew Lutomirski <luto@mit.edu> wrote:
->> > On Thu, Jan 12, 2012 at 10:32 AM, Linus Torvalds <torvalds@linux-foundation.org> wrote:
->
->> >> You can do any amount of crazy things with selinux, but the other side
->> >> of the coin is that it would also be trivial to teach selinux about
->> >> this same "restricted environment" bit, and just say that a process
->> >> with that bit set doesn't get to match whatever selinux privilege
->> >> escalation rules..
->
->> I don't see any issues with SELinux support for this feature.
+Hi Rusty,
+
+On 01/12/2012 10:57 PM, Rusty Russell wrote:
+> On Mon, 19 Dec 2011 23:16:04 +0000, Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
+>> On 12/15/2011 03:03 AM, Rusty Russell wrote:
+>>> The driver says "module_param(ddc3, bool, 0);".  But it's not a used
+>>> as a bool, it's used as a count.
+>>>
+>>> Make it a bool.
+>>>
+>>> Cc: Antonino Daplas <adaplas@gmail.com>
+>>> Cc: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+>>> Cc: linux-fbdev@vger.kernel.org
+>>> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 >>
->> Specifically, when you try to execute something in SELinux, it will
->> first look at the types and try to "execute" (involving a type
->> transition IE: security label change).
->>
->> But if that fails in many cases it may still be allowed to
->> "execute_no_trans" (IE: regular non-privileged exec() without a
->> transition).
->
-> That's not true.  See specifically
-> security/selinux/hooks.c::selinux_bprm_set_creds()  We calculate a label
-> for the new task (that may or may not be the same) and then check if
-> there is permission to run the new binary with the new label.  There is
-> no fallback.
->
-> The exception would be if the binary is on a MNT_NOSUID mount point, in
-> which case we calculate the new label, then just revert to the same
-> label.
->
-> At first glance it looks to me like a reasonable way to implement this
-> at first would be to do the new checks right next to any place we
-> already do MNT_NOSUID checks and mimic their behavior.  If there are
-> other priv escalation points in the kernel we might need to consider if
-> MNT_NOSUID is adequate....
->
+>> Applied.
+> 
+> Hmm, I don't see this in Linus' tree yet, and it's a context-clash
+> pre-requisite for part of the general driver bool conversion.  I want to
+> push today since I have linux.conf.au next week, so I've split the i810
+> conversion into a separate patch, below.
 
-I don't really like the current logic.  It does:
+Sorry for the delay, but with an OMAP pull and a revert this merge window is not
+as quiet as I wished.
 
-        if (old_tsec->exec_sid) {
-                new_tsec->sid = old_tsec->exec_sid;
-                /* Reset exec SID on execve. */
-                new_tsec->exec_sid = 0;
-        } else {
-                /* Check for a default transition on this program. */
-                rc = security_transition_sid(old_tsec->sid, isec->sid,
-                                             SECCLASS_PROCESS, NULL,
-                                             &new_tsec->sid);
-                if (rc)
-                        return rc;
-        }
+> It's been over a week in linux-next, can you push this please?
 
-        COMMON_AUDIT_DATA_INIT(&ad, PATH);
-        ad.u.path = bprm->file->f_path;
+Sure, I've taken it and also fixed the subject.
 
-        if (bprm->file->f_path.mnt->mnt_flags & MNT_NOSUID)
-                new_tsec->sid = old_tsec->sid;
 
-which means that, if MNT_NOSUD, then exec_sid is silently ignored.
-I'd rather fail in that case, but it's probably too late for that.
-However, if we set the "no new privileges" flag, then we could fail,
-since there's no old ABI to be compatible with.  I'll implement it
-that way.
+Best regards,
 
---Andy
+Florian Tobias Schandinat
+
+> 
+> From: Rusty Russell <rusty@rustcorp.com.au>
+> Subject: module_param: make bool parameters really bool (drivers/vidio/i810)
+> 
+> module_param(bool) used to counter-intuitively take an int.  In
+> fddd5201 (mid-2009) we allowed bool or int/unsigned int using a messy
+> trick.
+> 
+> It's time to remove the int/unsigned int option.  For this version
+> it'll simply give a warning, but it'll break next kernel version.
+> 
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> diff --git a/drivers/video/i810/i810_main.c b/drivers/video/i810/i810_main.c
+> --- a/drivers/video/i810/i810_main.c
+> +++ b/drivers/video/i810/i810_main.c
+> @@ -135,8 +135,8 @@ static struct pci_driver i810fb_driver =
+>  static char *mode_option __devinitdata = NULL;
+>  static int vram       __devinitdata = 4;
+>  static int bpp        __devinitdata = 8;
+> -static int mtrr       __devinitdata;
+> -static int accel      __devinitdata;
+> +static bool mtrr      __devinitdata;
+> +static bool accel     __devinitdata;
+>  static int hsync1     __devinitdata;
+>  static int hsync2     __devinitdata;
+>  static int vsync1     __devinitdata;
+> @@ -144,9 +144,9 @@ static int vsync2     __devinitdata;
+>  static int xres       __devinitdata;
+>  static int yres;
+>  static int vyres      __devinitdata;
+> -static int sync       __devinitdata;
+> -static int extvga     __devinitdata;
+> -static int dcolor     __devinitdata;
+> +static bool sync      __devinitdata;
+> +static bool extvga    __devinitdata;
+> +static bool dcolor    __devinitdata;
+>  static bool ddc3      __devinitdata;
+>  
+>  /*------------------------------------------------------------*/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fbdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
