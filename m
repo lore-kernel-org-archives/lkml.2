@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390Ab2ALJzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:55:38 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41675 "EHLO mgw2.diku.dk"
+	id S1753477Ab2ALJ4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:56:09 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41683 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753352Ab2ALJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753362Ab2ALJzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 04:55:33 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: kernel-janitors@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 12/15] arch/powerpc/sysdev/fsl_pci.c: add missing iounmap
-Date: Thu, 12 Jan 2012 10:55:14 +0100
-Message-Id: <1326362117-29371-12-git-send-email-Julia.Lawall@lip6.fr>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 11/15] drivers/usb/host/ehci-fsl.c: add missing iounmap
+Date: Thu, 12 Jan 2012 10:55:13 +0100
+Message-Id: <1326362117-29371-11-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -49,34 +47,20 @@ iounmap(e);
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
- arch/powerpc/sysdev/fsl_pci.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-fsl.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
-index 4ce547e..bb025da 100644
---- a/arch/powerpc/sysdev/fsl_pci.c
-+++ b/arch/powerpc/sysdev/fsl_pci.c
-@@ -179,12 +179,12 @@ static void __init setup_pci_atmu(struct pci_controller *hose,
- 
- 	if (paddr_hi == paddr_lo) {
- 		pr_err("%s: No outbound window space\n", name);
--		return ;
-+		goto out;
+diff --git a/drivers/usb/host/ehci-fsl.c b/drivers/usb/host/ehci-fsl.c
+index e90344a..b556a72 100644
+--- a/drivers/usb/host/ehci-fsl.c
++++ b/drivers/usb/host/ehci-fsl.c
+@@ -125,7 +125,7 @@ static int usb_hcd_fsl_probe(const struct hc_driver *driver,
+ 	 */
+ 	if (pdata->init && pdata->init(pdev)) {
+ 		retval = -ENODEV;
+-		goto err3;
++		goto err4;
  	}
  
- 	if (paddr_lo == 0) {
- 		pr_err("%s: No space for inbound window\n", name);
--		return ;
-+		goto out;
- 	}
- 
- 	/* setup PCSRBAR/PEXCSRBAR */
-@@ -273,6 +273,7 @@ static void __init setup_pci_atmu(struct pci_controller *hose,
- 			(u64)hose->dma_window_size);
- 	}
- 
-+out:
- 	iounmap(pci);
- }
- 
+ 	/* Enable USB controller, 83xx or 8536 */
 
