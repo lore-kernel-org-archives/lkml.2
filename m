@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756053Ab2ALXPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 18:15:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55986 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755595Ab2ALXPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 18:15:15 -0500
-Date: Fri, 13 Jan 2012 00:15:13 +0100
-From: Jan Kara <jack@suse.cz>
-To: Eric Sandeen <sandeen@sandeen.net>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 1/4] fs: Improve filesystem freezing handling
-Message-ID: <20120112231513.GH8778@quack.suse.cz>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
- <1326331253-6497-2-git-send-email-jack@suse.cz>
- <4F0F6566.4050202@sandeen.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4F0F6566.4050202@sandeen.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756055Ab2ALXQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 18:16:13 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:42058 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755144Ab2ALXQK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 18:16:10 -0500
+Date: Thu, 12 Jan 2012 15:15:48 -0800 (PST)
+Message-Id: <20120112.151548.979442119186542472.davem@davemloft.net>
+To: greg@kroah.com
+Cc: nbowler@elliptictech.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/40] 3.0.17-stable review
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120112230133.GC3360@kroah.com>
+References: <20120110214630.GA14384@kroah.com>
+	<20120111222158.GA20915@elliptictech.com>
+	<20120112230133.GC3360@kroah.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 12 Jan 2012 15:15:52 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-01-12 16:57:42, Eric Sandeen wrote:
-> On 1/11/12 7:20 PM, Jan Kara wrote:
-> > @@ -183,6 +186,13 @@ static struct super_block *alloc_super(struct file_system_type *type)
-> >  		s->s_shrink.seeks = DEFAULT_SEEKS;
-> >  		s->s_shrink.shrink = prune_super;
-> >  		s->s_shrink.batch = 1024;
-> > +
-> > +		init_waitqueue_head(&s->s_writers_wait);
-> > +#ifdef CONFIG_SMP
-> > +		s->s_page_faults = alloc_percpu(int);
+From: Greg KH <greg@kroah.com>
+Date: Thu, 12 Jan 2012 15:01:33 -0800
+
+> On Wed, Jan 11, 2012 at 05:21:58PM -0500, Nick Bowler wrote:
+>> Hi Greg,
+>> 
+>> On 2012-01-10 13:46 -0800, Greg KH wrote:
+>> > This is the start of the stable review cycle for the 3.0.17 release.
+>> > There are 40 patches in this series, all will be posted as a response
+>> > to this one.  If anyone has any issues with these being applied, please
+>> > let us know.  If anyone is a maintainer of the proper subsystem, and
+>> > wants to add a Signed-off-by: line to the patch, please respond with it.
+>> 
+>> These upstream commits (in 3.2):
+>> 
+>>   b7ea81a58adc ("ah: Read nexthdr value before overwriting it in ahash input callback.")
+>>   069294e813ed ("ah: Correctly pass error codes in ahash output callback.")
+>> 
+>> made it into the 3.1.y series but they appear to not have made it into
+>> 3.0.y, where they're also applicable.  Also, the following one fixes a
+>> real bug so it may be 3.0.y material, although I'm not sure if any
+>> in-tree drivers can trigger it (this one requires a real ahash driver
+>> for real hardware to trigger; unlike the previous two, cryptd won't do):
+>> 
+>>   4b90a603a1b2 ("ah: Don't return NET_XMIT_DROP on input")
 > 
-> isn't this s->s_writers?  s->s_page_faults isn't defined anywhere.
-  Right. Leftover from original implementation and since I was doing
-initial testing only using UML, I didn't spot this. Thanks.
+> I rely on the networking maintainer (i.e. David) to send me network
+> patches.  If he acks these, I'll be glad to queue them up for the next
+> 3.0-stable release.
 
-> > +#endif
-> > +		lockdep_init_map(&s->s_writers_lock_map, "sb_writers",
-> > +				 &sb_writers_key, 0);
-> >  	}
-> >  out:
-> >  	return s;
-> > @@ -1126,6 +1136,84 @@ out:
-> >  }
-> >  
-> >  /**
-> > + * sb_start_write - drop write access to a superblock
->       ^^^^^^^^^^^^^^
-> 
-> s/b sb_end_write
-  Fixed.
-
-> > @@ -1136,6 +1224,7 @@ out:
-> >  int freeze_super(struct super_block *sb)
-> >  {
-> >  	int ret;
-> > +	int writers;
-> >  
-> >  	atomic_inc(&sb->s_active);
-> >  	down_write(&sb->s_umount);
-> > @@ -1151,8 +1240,36 @@ int freeze_super(struct super_block *sb)
-> >  		return 0;
-> >  	}
-> >  
-> > +	rwsem_acquire(&sb->s_writers_lock_map, 0, 0, _THIS_IP_);
-> >  	sb->s_frozen = SB_FREEZE_WRITE;
-> > -	smp_wmb();
-> > +	/*
-> > +	 * Now wait for all page faults to finish. ->page_mkwrite()
-> > +	 * implementations must call vfs_check_frozen() before starting
-> > +	 * a fault so that we cannot livelock here. Because of that we
-> > +	 * are guaranteed that from this moment on new ->page_mkwrite()
-> > +	 * calls will block and we just have to wait for s_page_faults
-> 
-> wait for s_writers, right?
-  Yes. Fixed.
-
-  Thanks for review.
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Acked-by: David S. Miller <davem@davemloft.net>
