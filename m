@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab2ALRgj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:36:39 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:35533 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751860Ab2ALRgg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:36:36 -0500
-Date: Thu, 12 Jan 2012 17:36:17 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-Message-ID: <20120112173617.GL7180@jl-vm1.vm.bytemark.co.uk>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
- <1326302710-9427-2-git-send-email-wad@chromium.org>
- <1326383015.7642.77.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326383015.7642.77.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754737Ab2ALRhs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:37:48 -0500
+Received: from smtp2.ustc.edu.cn ([202.38.64.46]:59010 "HELO ustc.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751860Ab2ALRhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:37:47 -0500
+X-Greylist: delayed 743 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jan 2012 12:37:46 EST
+Date: Fri, 13 Jan 2012 01:30:28 +0800
+From: JiSheng Zhang <jszhang3@mail.ustc.edu.cn>
+To: xfs@oss.sgi.com, elder@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] xfs: remove unecessary AIL push wakeups
+Message-ID: <20120113013028.6802d878@ustc>
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-CM-TRANSID: yia_0ZDrHQR2Fw9PgIQeAA--.9667S2
+X-Coremail-Antispam: 1Uf129KBjvdXoWruw43Xr1ftFy7GryUtF15XFb_yoWfGFb_Xa
+	1vyryxWwnxWrs2yrW8Xrs8Aryjyw4IyrZ7WayUtay5Ka4UWF4ayF98XFZ0qry7CrWYkrn3
+	Zr9I9r13Kr92yjkaLaAFLSUrUUUUUbIjqfuFe4nvWSU5nxnvy29KBjDU0xBIdaVrnRJUUU
+	6Sb7IF0VCFI7km07C26c804VAKzcIF0wAYjxAI6xZILanIXVAFwwAYjxAI6IIYrVAFwwAY
+	jsxI4VWxJwAYFVCjjxCrM7AC8VAFwI0_Jr0_Gr1l1I0E4x80FVCIwcAKzIAtM7C26IkvcI
+	IF6IxKo4kEV4yl1IIY67AEw4v_Jr0_Jr4l84ACjcxK6xIIjxv20xvE14v26r4j6ryUM28E
+	F7xvwVC0I7IYx2IY6xkF7I0E14v26r4j6F4UM28EF7xvwVC2z280aVAFwI0_GcCE3s1l84
+	ACjcxK6I8E87Iv6xkF7I0E14v26rxl6s0DM2kK67kvxFCE548m6r1fGryUXwAac4AC648E
+	w2Wl57IF6s8CjcxG0xyl5I8CrVACY4xI64kE6c02F40Ex7xfMcIj6xIIjxv20xvE14v26r
+	1Y6r17McIj6I8E87Iv67AKxVWUJVW8JwACjcxG0xvY0x0EwIxGrwCF04k20xvY0x0EwIxG
+	rwCFI7vE0wC2zVAF1VAY17CE14v26r1Y6r17MIIYrxkI7VAKI48JMIIF0xvE2Ix0cI8IcV
+	AFwI0_Jr0_JF4lIxAIcVC0I7IYx2IY6xkF7I0E14v26r1j6r4UMIIF0xvEx4A2jsIE14v2
+	6r1j6r4UMIIF0xvEx4A2jsIEc7CjxVAFwI0_Jr0_GrUvcSsGvfC2KfnxnUUI43ZEXa7IU8
+	ag4DUUUUU==
+X-CM-SenderInfo: xmv2xttqjtqzxdloh3xvwfhvlgxou0/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Wed, 2012-01-11 at 11:25 -0600, Will Drewry wrote:
-> 
-> > Filter programs may _only_ cross the execve(2) barrier if last filter
-> > program was attached by a task with CAP_SYS_ADMIN capabilities in its
-> > user namespace.  Once a task-local filter program is attached from a
-> > process without privileges, execve will fail.  This ensures that only
-> > privileged parent task can affect its privileged children (e.g., setuid
-> > binary).
-> 
-> This means that a non privileged user can not run another program with
-> limited features? How would a process exec another program and filter
-> it? I would assume that the filter would need to be attached first and
-> then the execv() would be performed. But after the filter is attached,
-> the execv is prevented?
 
-Ugly method: Using ptrace(), trap after the execve() and issue fake
-syscalls to install the filter.  I feel dirty thinking it, in a good way.
+In commit 0030807c66("xfs: revert to using a kthread for AIL pushing"),
+AIL pushing is revert back to use a kthread. But unfortunately, it
+introduced a regression: there are unnecessary AIL push wakeups during
+idle, ~20 wakeups/s. This change remove the wakeups by reverting a bit
+more: set "tout" value as zero during idle.
 
-LD_PRELOAD has been suggested.  It's not 100% reliable because not all
-executables are dynamic (on some uClinux platforms none of them are),
-but it will usually work.
+Signed-off-by: JiSheng Zhang <jszhang3@mail.ustc.edu.cn>
+---
+ fs/xfs/xfs_trans_ail.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
--- Jamie
+diff --git a/fs/xfs/xfs_trans_ail.c b/fs/xfs/xfs_trans_ail.c
+index ed9252b..2014387 100644
+--- a/fs/xfs/xfs_trans_ail.c
++++ b/fs/xfs/xfs_trans_ail.c
+@@ -508,7 +508,7 @@ out_done:
+ 		ailp->xa_last_pushed_lsn = 0;
+ 		ailp->xa_log_flush = 0;
+ 
+-		tout = 50;
++		tout = 0;
+ 	} else if (XFS_LSN_CMP(lsn, target) >= 0) {
+ 		/*
+ 		 * We reached the target so wait a bit longer for I/O to
+-- 
+1.7.8.3
+
+
