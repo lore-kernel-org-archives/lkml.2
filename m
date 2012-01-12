@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099Ab2ALPkq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 10:40:46 -0500
-Received: from mail-lpp01m010-f46.google.com ([209.85.215.46]:34031 "EHLO
-	mail-lpp01m010-f46.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754023Ab2ALPkn (ORCPT
+	id S1754082Ab2ALPnl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 10:43:41 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:45369 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753706Ab2ALPnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 10:40:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANOLnOP_aXGw2nxRE+VnW2ii2UV4JqJaxcfMbd3oVm6qfWxsGA@mail.gmail.com>
-References: <1324324914-14584-1-git-send-email-felipe.contreras@nokia.com>
-	<CANOLnOP_aXGw2nxRE+VnW2ii2UV4JqJaxcfMbd3oVm6qfWxsGA@mail.gmail.com>
-Date: Thu, 12 Jan 2012 17:40:39 +0200
-Message-ID: <CAMP44s07EnB7d+ZNHQR9RSG=+c+aXDbAOK0_wL_CCDuoWOcrCQ@mail.gmail.com>
-Subject: Re: [PATCH v2] usb: musb: fix pm_runtime mismatch
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Grazvydas Ignotas <notasas@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@nokia.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap <linux-omap@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Jarkko Nikula <jarkko.nikula@bitmer.com>, stable@vger.kernel.org,
-        Hema HK <hemahk@ti.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 12 Jan 2012 10:43:40 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=CN4PQ-MNGcoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=6-N4bbpydDtNlQQiLSgA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326383015.7642.77.camel@gandalf.stny.rr.com>
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Drewry <wad@chromium.org>
+Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
+        john.johansen@canonical.com, serge.hallyn@canonical.com,
+        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
+        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
+        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+Date: Thu, 12 Jan 2012 10:43:35 -0500
+In-Reply-To: <1326302710-9427-2-git-send-email-wad@chromium.org>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org>
+	 <1326302710-9427-2-git-send-email-wad@chromium.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 1:56 PM, Grazvydas Ignotas <notasas@gmail.com> wrote:
-> On Mon, Dec 19, 2011 at 10:01 PM, Felipe Contreras
-> <felipe.contreras@nokia.com> wrote:
->> From: Felipe Contreras <felipe.contreras@gmail.com>
->>
->> In musb_init_controller() there's a pm_runtime_put(), but there's no
->> pm_runtime_get(), which creates a mismatch that causes the driver to
->> sleep when it shouldn't.
->
-> This patch is causing problems here, the device never suspends, I've
-> verified musb_runtime_suspend and omap2430_runtime_suspend are never
-> called in my setup, unless I revert this patch. I'm using musb with
-> ethernet gadget; cable removal also doesn't suspend musb.
->
-> It seems pm_runtime_put() that was removed was balancing out
-> pm_runtime_get in musb_platform_init(), which is called at the
-> beginning of musb_init_controller(). I think this pm_runtime_get()
-> from musb_platform_init() should be moved to musb_init_controller() to
-> stop confusing people and pm_runtime_put() needs to be brought back. I
-> can do a patch if nobody objects.
+On Wed, 2012-01-11 at 11:25 -0600, Will Drewry wrote:
 
-You mean have both get and put in musb_init_controller()? That's OK,
-it would be balanced then, but you would have to remove the
-pm_runtime_put() from omap2430_remove() that presumably was balancing
-the pm_runtime_get_sync() in omap2430_musb_init().
+> Filter programs may _only_ cross the execve(2) barrier if last filter
+> program was attached by a task with CAP_SYS_ADMIN capabilities in its
+> user namespace.  Once a task-local filter program is attached from a
+> process without privileges, execve will fail.  This ensures that only
+> privileged parent task can affect its privileged children (e.g., setuid
+> binary).
 
->> This was introduced in 7acc619[1], but it wasn't triggered in my setup
->> until 18a2689[2] was merged to Linus' branch at point df0914[3]. IOW;
->> when PM is working as it was supposed to.
->>
->> However, it seems most of the time this is used in a way that keeps the
->> counter above 0, so nobody noticed. Also, it seems to depend on the
->> configuration used in versions before 3.1, but not later (or in it).
->>
->> I found the problem by loading isp1704_charger before any usb gadgets:
->> http://article.gmane.org/gmane.linux.kernel/1226122
->
-> isp1704_charger seems to be doing otg_io_read(), and it's perfectly
-> normal that musb can be suspended at the time isp1704 decides to do
-> this. I think proper fix is to wake up must on musb_ulpi_read() and
-> musb_ulpi_write() instead.
+This means that a non privileged user can not run another program with
+limited features? How would a process exec another program and filter
+it? I would assume that the filter would need to be attached first and
+then the execv() would be performed. But after the filter is attached,
+the execv is prevented?
 
-I guess so. If you send these patches I can give them a try.
+Maybe I don't understand this correctly.
 
--- 
-Felipe Contreras
+-- Steve
+ 
+
