@@ -1,88 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462Ab2ALLag (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 06:30:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54019 "EHLO mx2.suse.de"
+	id S1752906Ab2ALLlt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 06:41:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54554 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153Ab2ALLae (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 06:30:34 -0500
-Date: Thu, 12 Jan 2012 12:30:31 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/4] Fix filesystem freezing
-Message-ID: <20120112113031.GA8778@quack.suse.cz>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
- <20120112024841.GB2806@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112024841.GB2806@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752474Ab2ALLll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 06:41:41 -0500
+Message-ID: <1326368496.5195.4.camel@tucsk.pomaz.szeredi.hu>
+Subject: Re: [git pull] vfs pile 1
+From: Miklos Szeredi <mszeredi@suse.cz>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
+Date: Thu, 12 Jan 2012 12:41:36 +0100
+In-Reply-To: <20120111161934.GH23916@ZenIV.linux.org.uk>
+References: <20120105022318.GG23916@ZenIV.linux.org.uk>
+	 <CA+55aFw+7xvfP3NCr5p2Ma--UTb7zT+QQxtjCn3V2SU_g3LUdA@mail.gmail.com>
+	 <20120111115846.GA2646@infradead.org>
+	 <1326285382.13736.4.camel@tucsk.pomaz.szeredi.hu>
+	 <20120111124001.GA834@infradead.org>
+	 <1326287556.13736.12.camel@tucsk.pomaz.szeredi.hu>
+	 <20120111152337.GA4589@thunk.org>
+	 <20120111161934.GH23916@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 12-01-12 13:48:41, Dave Chinner wrote:
-> On Thu, Jan 12, 2012 at 02:20:49AM +0100, Jan Kara wrote:
-> > 
-> >   Hello,
-> > 
-> >   filesystem freezing is currently racy and thus we can end up with dirty data
-> > on frozen filesystem (see changelog of the first patch for detailed race
-> > description and proposed fix). This patch series aims at fixing this.
-> 
-> It only fixes the dirty data race (i.e. SB_FREEZE_WRITE). The same
-> race conditions exist for SB_FREEZE_TRANS on XFS, and so need the
-> same fix. That race has had one previous attempt at fixing it in
-> XFS but that's not possible:
-> 
-> b2ce397 Revert "xfs: fix filesystsem freeze race in xfs_trans_alloc"
-> 7a249cf xfs: fix filesystsem freeze race in xfs_trans_alloc
-> 
-> It was looking at that problem earlier today that lead to the
-> solution Eric proposed. Essentially the method in these patches
-> needs to replace the xfs specifc m_active_trans counter and delay
-> during ->fs_freeze to prevent that race condition....
-  OK, I see. I just checked ext4 to make sure and ext4 seems to get this
-right. Looking into Christoph's original patch it shouldn't be hard to fix
-it. Instead of:
-        atomic_inc(&mp->m_active_trans);
- 
-        if (wait_for_freeze)
-              xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
+On Wed, 2012-01-11 at 16:19 +0000, Al Viro wrote:
 
-we just need to do a bit more elaborate
+> Looking at the callers, I'm not sure we want that warning in set_nlink()
+> at all, rate-limited or not.  Note that it can trigger on the things
+> like stale NFS fhandle coming in for something that had been deleted
+> a while ago - IOW, it's neither a kernel bug nor fs corruption.
+> inc_nlink - sure, that might catch real bugs, drop_nlink - definitely,
+> but this...
 
-retry:
-        if (wait_for_freeze)
-              xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
-        atomic_inc(&mp->m_active_trans);
-	if (wait_for_freeze && mp->m_super->s_frozen >= SB_FREEZE_TRANS) {
-        	atomic_dec(&mp->m_active_trans);
-		goto retry;
-	}
+Patch follows.
 
-Or does XFS support nested transactions (i.e. a thread already holding a
-running transaction can call into xfs_trans_alloc() again)?
-That would make things more complicated...
+Thanks,
+Miklos
+----
 
-Using sb_start_write() instead of m_active_trans won't be that easy because
-it can create A-A deadlocks (e.g. we do sb_start_write in
-block_page_mkwrite() and then xfs_get_blocks() decides to start a
-transaction and calls sb_start_write() again which might block if
-filesystem freezing started in the mean time).
+Subject: vfs: remove printk from set_nlink()
 
-So it's up to XFS maintainers to decide what's best but I'd take
-Christoph's patch with above fixup. I guess I'll put it in this series and
-see what people say.
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Don't log a message for set_nlink(0).
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/inode.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+Index: linux-2.6/fs/inode.c
+===================================================================
+--- linux-2.6.orig/fs/inode.c	2012-01-11 10:55:00.000000000 +0100
++++ linux-2.6/fs/inode.c	2012-01-12 12:32:44.000000000 +0100
+@@ -322,9 +322,6 @@ EXPORT_SYMBOL(clear_nlink);
+ void set_nlink(struct inode *inode, unsigned int nlink)
+ {
+ 	if (!nlink) {
+-		printk_ratelimited(KERN_INFO
+-			"set_nlink() clearing i_nlink on %s inode %li\n",
+-			inode->i_sb->s_type->name, inode->i_ino);
+ 		clear_nlink(inode);
+ 	} else {
+ 		/* Yes, some filesystems do change nlink from zero to one */
+
+
