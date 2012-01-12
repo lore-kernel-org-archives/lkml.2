@@ -1,72 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438Ab2ALV0d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 16:26:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43568 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754520Ab2ALV0b (ORCPT
+	id S1755533Ab2ALV3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 16:29:49 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55158 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369Ab2ALV3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 16:26:31 -0500
-Date: Thu, 12 Jan 2012 13:26:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: __count_immobile_pages make sure the node is online
-Message-Id: <20120112132629.345e0e37.akpm@linux-foundation.org>
-In-Reply-To: <20120112123555.GF1042@tiehlicka.suse.cz>
-References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
-	<alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
-	<20120111084802.GA16466@tiehlicka.suse.cz>
-	<20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120112082722.GB1042@tiehlicka.suse.cz>
-	<20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120112092314.GC1042@tiehlicka.suse.cz>
-	<20120112183323.1bb62f4d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20120112100521.GD1042@tiehlicka.suse.cz>
-	<20120112111415.GH4118@suse.de>
-	<20120112123555.GF1042@tiehlicka.suse.cz>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Jan 2012 16:29:46 -0500
+Date: Thu, 12 Jan 2012 21:29:41 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
+        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
+        Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Christoph Hellwig <hch@infradead.org>, Ben Myers <bpm@sgi.com>,
+        Alex Elder <elder@kernel.org>
+Subject: Re: [PATCH 4/4] xfs: Protect xfs_file_aio_write() with
+ sb_start_write - sb_end_write
+Message-ID: <20120112212941.GI23916@ZenIV.linux.org.uk>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz>
+ <1326331253-6497-5-git-send-email-jack@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326331253-6497-5-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jan 2012 13:35:55 +0100
-Michal Hocko <mhocko@suse.cz> wrote:
-
-> On Thu 12-01-12 11:14:15, Mel Gorman wrote:
-> > On Thu, Jan 12, 2012 at 11:05:21AM +0100, Michal Hocko wrote:
+On Thu, Jan 12, 2012 at 02:20:53AM +0100, Jan Kara wrote:
+> Replace racy xfs_wait_for_freeze() check with reliable sb_start_write()
+> - sb_end_write() locking. Due to lock ranking dictated by the page fault
+> code we have to call sb_start_write() after we acquire ilock.
 > 
-> > Be aware that this is not the version picked up by Andrew. It would
-> > not hurt to resend as V2 with a changelog and a note saying it replaces
-> > mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch in mmotm.
+> CC: Ben Myers <bpm@sgi.com>
+> CC: Alex Elder <elder@kernel.org>
+> Signed-off-by: Jan Kara <jack@suse.cz>
+> ---
+>  fs/xfs/xfs_file.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_file.c b/fs/xfs/xfs_file.c
+> index 753ed9b..c5f879b 100644
+> --- a/fs/xfs/xfs_file.c
+> +++ b/fs/xfs/xfs_file.c
+> @@ -862,9 +862,11 @@ xfs_file_dio_aio_write(
+>  		*iolock = XFS_IOLOCK_SHARED;
+>  	}
+>  
+> +	sb_start_write(inode->i_sb);
+>  	trace_xfs_file_direct_write(ip, count, iocb->ki_pos, 0);
+>  	ret = generic_file_direct_write(iocb, iovp,
+>  			&nr_segs, pos, &iocb->ki_pos, count, ocount);
+> +	sb_end_write(inode->i_sb);
 
-They're rather different things? According to the changelogs,
-mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch fixes a
-known-to-occur oops. 
-mm-__count_immobile_pages-make-sure-the-node-is-online.patch fixes a
-bug which might happen in the future if we change the node_zones layut?
-
-So I'm thinking that
-mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch is 3.3 and
--stable material, whereas this patch
-(mm-__count_immobile_pages-make-sure-the-node-is-online.patch) is 3.3
-material.  (Actually, it's 3.4 material which I shall stuff into 3.3
-because the amount of MM material which we're putting into 3.3 is just
-off the charts and I fear that 3.4 will be similar)
-
-> > This is just in case the wrong one gets merged due to this thread
-> > getting lost in the noise of Andrew's inbox.
-
-It won't get lost, but there's a higher-than-usual chance of delays if
-the patch happens during the merge window: if I see a lengthy patch
-thread I'll move it into my to-apply folder for consideration later on.
-So I will look at it, but it might be after the merge window.  We can
-still apply a fix after the merge window of course, but this all might
-end up leaving buggy code in the tree for longer than we'd like.
-
+What lock ordering do you have in mind?  Explicit description in fs/super.c,
+please...
