@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753262Ab2ALJVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:21:43 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36128 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab2ALJVj (ORCPT
+	id S1753286Ab2ALJWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:22:09 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:7319 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752851Ab2ALJWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:21:39 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAFgQCTtQfVXrgS-eP0-58T+Qx4fHJ6nB6qHXKSEsHDTc2zC2nA@mail.gmail.com>
-References: <CAFgQCTtQfVXrgS-eP0-58T+Qx4fHJ6nB6qHXKSEsHDTc2zC2nA@mail.gmail.com>
-Date: Thu, 12 Jan 2012 09:21:38 +0000
-Message-ID: <CAJSP0QW1S87WD2pHZ0xUxTvxpOAxsB-LyOD4skxxziwUCWtkkQ@mail.gmail.com>
-Subject: Re: Could anybody give some description about the implement of
- hyercall in kvm?
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Liu ping fan <kernelfans@gmail.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Jan 2012 04:22:07 -0500
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.127.106;
+From: Milton Miller <miltonm@bga.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Denis Turischev <denis@compulab.co.il>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio/it8761e: Restrict it8761e gpio driver to x86.
+In-Reply-To: <1326309371-10757-1-git-send-email-grant.likely@secretlab.ca>
+References: <1326309371-10757-1-git-send-email-grant.likely@secretlab.ca>
+Message-Id: <document-depends-on-reason@mdm.bga.com>
+Date: Thu, 12 Jan 2012 03:22:05 -0600
+X-Originating-IP: 71.22.127.106
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 4:38 AM, Liu ping fan <kernelfans@gmail.com> wrote:
-> Could anybody give some description about the implement of hyercall in
-> kvm? Or give some links about it?
+On Wed Jan 11 2012 - 14:16:36 EST, Grant Likely wrote:
+> This driver does an unconditional read of io space during module init which
+> causes a bad dereference on ARM. It looks to me like this is an x86 only
+> drivers, so restrict it to only compile on x86.
 
-Try git grep hypercall arch/x86/kvm.
+> config GPIO_IT8761E
+>          tristate "IT8761E GPIO support"
+> +        depends on X86
+>          help
+>            Say yes here to support GPIO functionality of IT8761E super I/O chip.
 
-Take a look at arch/x86/kvm/x86.c kvm_set_msr_common() and
-kvm_emulate_hypercall().  Some of the KVM time-keeping, minimal HyperV
-support, and async page faults live there.  Also see
-arch/x86/include/asm/kvm_para.h.
 
-Hypercalls are architecture-specific so if you are interested in ppc
-or s390, check those arch directories.
+Please add a comment to the Kconfig stanza with the reason for the
+dependancy so people don't have to be git blame masters to know why
+its there.
 
-Stefan
+Something like
+        depends on X86 # unconditional read of io space during module init
+
+thanks,
+milton
