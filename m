@@ -1,127 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754044Ab2ALPi5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 10:38:57 -0500
-Received: from seven.medozas.de ([188.40.89.202]:38440 "EHLO seven.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753965Ab2ALPi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 10:38:56 -0500
-Date: Thu, 12 Jan 2012 16:38:52 +0100 (CET)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Josh Triplett <josh@joshtriplett.org>
-cc: paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com, manfred@colorfullife.com,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: avoid checking for constant
-In-Reply-To: <20120112115830.GA3436@leaf>
-Message-ID: <alpine.LNX.2.01.1201121625060.25848@frira.zrqbmnf.qr>
-References: <1326345104-6919-1-git-send-email-jengelh@medozas.de> <20120112071431.GA1896@leaf> <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr> <20120112095257.GA2441@leaf> <alpine.LNX.2.01.1201121106040.17330@frira.zrqbmnf.qr>
- <20120112115830.GA3436@leaf>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754078Ab2ALPkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 10:40:06 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:42553 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754024Ab2ALPkE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 10:40:04 -0500
+Date: Thu, 12 Jan 2012 10:39:57 -0500
+From: Mathieu Desnoyers <compudj@krystal.dyndns.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        devel@driverdev.osuosl.org, "Ted Ts'o" <tytso@mit.edu>,
+        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, lttng-dev@lists.lttng.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [lttng-dev] Perf ABI (was: Re: [PATCH 09/11] sched: export
+	task_prio to GPL modules)
+Message-ID: <20120112153957.GA20514@Krystal>
+References: <20111208232709.GA19820@kroah.com> <20111219104915.GA19861@elte.hu> <20111219153053.GA21548@Krystal> <20111220110813.GA19105@elte.hu> <20111223164629.GA30474@Krystal> <20111223172155.GA14117@thunk.org> <20111223181641.GA12681@Krystal> <20111225174613.GA12732@thunk.org> <20120112140905.GA30377@Krystal> <1326380042.7642.73.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1326380042.7642.73.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 10:05:31 up 645 days, 55 min,  5 users,  load average: 1.16,
+	1.14, 1.16
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Thu, 2012-01-12 at 09:09 -0500, Mathieu Desnoyers wrote:
+> 
+> 
+> > It is important to clarify that tracing is, in my opinion, not part of
+> > the runtime support, which makes it very different by nature from
+> > filesystems and kernel runtime support. So I agree with Linus' argument
+> > about not breaking userspace when applied to runtime support, because
+> > being unable to even boot a system due to an ABI breakage is very much
+> > unwanted. However, I think it should not be applied as-is to tracing,
+> > because you cannot make a system unusable due to a tracer ABI breakage:
+> > if a tracer can be packaged in a set of standalone modules, that clearly
+> > shows it is not part of the system runtime support.
+> 
+> Correct that tracing is not something that needs to make the system run,
+> but that's still no excuse to make ABI changes any different. Note, we
+> don't change things within the /proc/stat or /proc/*/stat and that's not
+> required to make the system run. We can add onto those files, but we
+> can't change what the current numbers mean.
 
-On Thursday 2012-01-12 12:58, Josh Triplett wrote:
->> Same impression here. BUILD_BUG_ON_ZERO was introduced by
->> 
->> commit 4552d5dc08b79868829b4be8951b29b07284753f
->> Author: Jan Beulich <jbeulich@novell.com>
->> Date:   Mon Jun 26 13:57:28 2006 +0200
->> 
->> while Rusty's CCAN archive calls it "BUILD_BUG_OR_ZERO" (since either 
->> it's a bug, or returning neutral zero).
->
->Sounds like a good target for a fix at some point.
+This is because this stat ABI is volountarily exposed like this. It does
+not mean that this is the case everywhere else in the kernel. And it
+might not be the right way to expose it: I bet that PeterZ would really
+like to get the thread priority value removed from /proc/*/stat, because
+it exposes something "internal" to the scheduler from his point of view,
+but this particular ABI has chosen to evolve without ever retiring a
+value previously exported.
 
-What names do you propose? I have BUILD_BUG_ON_EXPR for some of my code,
-though in the kernel, it has both _ON_ZERO and _ON_NULL.
+> 
+> > 
+> > That being said, ABI versioning could still handle ABI changes without
+> > significantly impacting the users: when an ABI breakage is needed, we
+> > can keep the old code around for a while and expose both the old and new
+> > ABIs. This would ensure that the user-level tools can query for the
+> > specific ABI major version(s) they support. That should improve the user
+> > experience by providing "deprecated" console warnings for a few kernel
+> > releases before the old code ends up being removed.
+> 
+> ABI version numbers are meaningless, and prone to be broken. The change
+> would have to be added with the commit that updates the change otherwise
+> git bisecting can get screwed up too.
 
->> Therefore, change the innards of kfree_rcu so that the offset is not
->> tunneled through a function argument before checking it.
->
->The commit message looks good now.
->
->> + * The BUILD_BUG_ON check must not involve any function calls, hence the
->> + * checks are done in macros here. __is_kfree_rcu_offset is also used by
->> + * kernel/rcu.h.
->
->The first sentence of that paragraph seems like a worthwhile addition.
->Please drop the second, though, since it'll inevitably become outdated.
->
->> +		typedef void (*rcu_callback)(struct rcu_head *); \
->
->No, you can't define that typedef here with that name.  Unlike in the
->inline function, in a macro you could introduce a name conflict.
+Of course, the commit that updates the code would "fork" to a new ABI if
+it ever need to diverge from the old one.
 
-parent f9fab10bbd768b0e5254e53a4a8477a94bfc4b96 (v3.2-rc7-86-gf9fab10)
-commit 2d6e2f3244513ec05953383886ef0556f64038b1
-Author: Jan Engelhardt <jengelh@medozas.de>
-Date:   Wed Jan 11 10:05:00 2012 +0100
+> The way ABI changes in the kernel have always been was to look at the
+> file itself and have the tool be able to determine what version of the
+> ABI is there based on what files exists, or what exists in the file.
+> I've done this with trace-cmd and ftrace. The debugfs system has changed
+> a lot, and trace-cmd can handle each change. I never had a need for a
+> version number to do this. I simply have trace-cmd look at what is
+> available and what isn't.
+> 
+> If you need to know if a syscall exists, you try it and if you get
+> -ENOSYS, then you know it doesn't exist. We have no need for an
+> arbitrary version number that is meaningless. The existence of (or lack
+> of) tells us all we need to know.
 
-rcu: avoid checking for constant
+pipe()/pipe2()
+dup()/dup2()/dup3()
+umount()/umount2()
+mmap()/mmap2()
+madvise()/madvise1()
+eventfd()/eventfd2()
 
-When compiling kernel or module code with -O0, "offset" is no longer
-considered a constant, and therefore always triggers the build error
-that BUILD_BUG_ON is defined to yield.
+Those look very much like major version numbers to me. And these are
+entirely compatible with your statement above about using -ENOSYS to
+detect if the major version number is implemented or not.
 
-Therefore, change the innards of kfree_rcu so that the offset is not
-tunneled through a function argument before checking it.
+If your only concern is that the major version number should be part of
+the ABI name (as in the examples above), that can be arranged.
 
-Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
----
- include/linux/rcupdate.h |   29 +++++++++++------------------
- 1 files changed, 11 insertions(+), 18 deletions(-)
+> 
+> > 
+> > So, in summary:
+> > 
+> >   * Old kernels vs new tools:
+> > 
+> > New tools can query for the latest ABI they know, and fall-back on older
+> > ABIs, with limited features.
+> > 
+> >   * New kernels vs old tools:
+> > 
+> > Keeping around the old ABI for a deprecation phase lets old tools work on
+> > a bleeding edge kernel while the ABI change is being introduced, which
+> > should satisfy the kernel developer use-case.
+> 
+> We've done this without version numbers. Just look at all the udev
+> changes.
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 2cf4226..c693e4a 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -795,24 +795,6 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
- #define RCU_INIT_POINTER(p, v) \
- 		p = (typeof(*v) __force __rcu *)(v)
- 
--static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
--{
--	return offset < 4096;
--}
--
--static __always_inline
--void __kfree_rcu(struct rcu_head *head, unsigned long offset)
--{
--	typedef void (*rcu_callback)(struct rcu_head *);
--
--	BUILD_BUG_ON(!__builtin_constant_p(offset));
--
--	/* See the kfree_rcu() header comment. */
--	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
--
--	call_rcu(head, (rcu_callback)offset);
--}
--
- /**
-  * kfree_rcu() - kfree an object after a grace period.
-  * @ptr:	pointer to kfree
-@@ -835,7 +817,18 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
-  *
-  * Note that the allowable offset might decrease in the future, for example,
-  * to allow something like kmem_cache_free_rcu().
-+ *
-+ * The BUILD_BUG_ON check must not involve any function calls, hence the
-+ * checks are done in macros here.
-  */
-+#define __is_kfree_rcu_offset(offset) ((offset) < 4096)
-+
-+#define __kfree_rcu(head, offset) \
-+	do { \
-+		BUILD_BUG_ON(!__is_kfree_rcu_offset(offset)); \
-+		call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset)); \
-+	} while (0)
-+
- #define kfree_rcu(ptr, rcu_head)					\
- 	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
- 
+Are you seriously refering to udev as an example of how to handle
+changes, or as one of the worse ABI breakage mess that happened in the
+Linux kernel history ? My own experience as a Linux users (in the
+era around 2.6.12 kernels if my memory serves me right) lead me to think
+it's the latter. And because udev is part of the runtime support, that
+indeed led to non-bootable systems and lots of frustrated users.
+
+Thanks,
+
+Mathieu
+
+> 
+> -- Steve
+> 
+> 
+> 
+> _______________________________________________
+> lttng-dev mailing list
+> lttng-dev@lists.lttng.org
+> http://lists.lttng.org/cgi-bin/mailman/listinfo/lttng-dev
+> 
+
 -- 
-# Created with git-export-patch
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
