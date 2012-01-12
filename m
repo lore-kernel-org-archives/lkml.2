@@ -1,76 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab2ALLlt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 06:41:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54554 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752474Ab2ALLll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 06:41:41 -0500
-Message-ID: <1326368496.5195.4.camel@tucsk.pomaz.szeredi.hu>
-Subject: Re: [git pull] vfs pile 1
-From: Miklos Szeredi <mszeredi@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Toshiyuki Okajima <toshi.okajima@jp.fujitsu.com>
-Date: Thu, 12 Jan 2012 12:41:36 +0100
-In-Reply-To: <20120111161934.GH23916@ZenIV.linux.org.uk>
-References: <20120105022318.GG23916@ZenIV.linux.org.uk>
-	 <CA+55aFw+7xvfP3NCr5p2Ma--UTb7zT+QQxtjCn3V2SU_g3LUdA@mail.gmail.com>
-	 <20120111115846.GA2646@infradead.org>
-	 <1326285382.13736.4.camel@tucsk.pomaz.szeredi.hu>
-	 <20120111124001.GA834@infradead.org>
-	 <1326287556.13736.12.camel@tucsk.pomaz.szeredi.hu>
-	 <20120111152337.GA4589@thunk.org>
-	 <20120111161934.GH23916@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.1 
+	id S1753228Ab2ALLmx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 06:42:53 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:21945 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2ALLmt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 06:42:49 -0500
+Message-ID: <4F0EC711.1080704@atmel.com>
+Date: Thu, 12 Jan 2012 12:42:09 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org
+CC: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        "Wu, Josh" <Josh.wu@atmel.com>
+Subject: [GIT PULL v3] at91: devices and boards files update for 3.3
+References: <20120111133146.990e2b7115c9fa80e8fc3234@canb.auug.org.au> <201201111450.02798.arnd@arndb.de> <4F0DB16B.3010302@atmel.com> <201201111646.24731.arnd@arndb.de>
+In-Reply-To: <201201111646.24731.arnd@arndb.de>
+X-Enigmail-Version: 1.3.4
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-01-11 at 16:19 +0000, Al Viro wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> Looking at the callers, I'm not sure we want that warning in set_nlink()
-> at all, rate-limited or not.  Note that it can trigger on the things
-> like stale NFS fhandle coming in for something that had been deleted
-> a while ago - IOW, it's neither a kernel bug nor fs corruption.
-> inc_nlink - sure, that might catch real bugs, drop_nlink - definitely,
-> but this...
+Arnd, Olof,
 
-Patch follows.
+This is the pull request about devices and boards files already
+sent for 3.3 inclusion. This pull request is *without* the ISI
+board/devices
+patches that has been discussed earlier.
 
-Thanks,
-Miklos
-----
+I have also tested the merging of those patches on top of today Linus'
+tree
+and it is going smoothly.
 
-Subject: vfs: remove printk from set_nlink()
-
-From: Miklos Szeredi <mszeredi@suse.cz>
-
-Don't log a message for set_nlink(0).
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/inode.c |    3 ---
- 1 file changed, 3 deletions(-)
-
-Index: linux-2.6/fs/inode.c
-===================================================================
---- linux-2.6.orig/fs/inode.c	2012-01-11 10:55:00.000000000 +0100
-+++ linux-2.6/fs/inode.c	2012-01-12 12:32:44.000000000 +0100
-@@ -322,9 +322,6 @@ EXPORT_SYMBOL(clear_nlink);
- void set_nlink(struct inode *inode, unsigned int nlink)
- {
- 	if (!nlink) {
--		printk_ratelimited(KERN_INFO
--			"set_nlink() clearing i_nlink on %s inode %li\n",
--			inode->i_sb->s_type->name, inode->i_ino);
- 		clear_nlink(inode);
- 	} else {
- 		/* Yes, some filesystems do change nlink from zero to one */
+Thank you for your patience and understanding.
 
 
+The following changes since commit
+805a6af8dba5dfdd35ec35dc52ec0122400b2610:
+
+  Linux 3.2 (2012-01-04 15:55:44 -0800)
+
+are available in the git repository at:
+  git://github.com/at91linux/linux-at91.git for-arnd-3.3-device_boardV3
+
+Hong Xu (1):
+      ARM: at91: Update struct atmel_nand_data to support PMECC
+
+Nicolas Ferre (2):
+      ARM: at91/dma: remove platform data from DMA controller
+      ARM: at91/dma: DMA controller registering with DT support
+
+ arch/arm/mach-at91/at91sam9g45_devices.c |   19 ++++++++++---------
+ arch/arm/mach-at91/at91sam9rl_devices.c  |    8 +-------
+ arch/arm/mach-at91/include/mach/board.h  |    2 ++
+ 3 files changed, 13 insertions(+), 16 deletions(-)
+
+Best regards,
+- -- 
+Nicolas Ferre
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iQEcBAEBAgAGBQJPDscLAAoJEAf03oE53VmQUt8H+wV6uiURUj6MXRgPYhUrE38H
+quMt9Qse/drY3MOx6UjK4fJWprl+JRsyIlHRaa564vRf9W14uPpwMoyRwtgOUbf+
+x3IYBh+SD0DJgx/4RHvMCNlD7/0dQ4HoMVxTC5J0S5McoIYXttWqxY7QC4cMaCwa
+jwLFU3mWHCNe4WWkN9j18KBI7gUfW6CVzgJCS8RFBYV/ieN6BqWbKK341cJ7Ubrp
+VfHRhXAubJV2S/RwoCSOYvbAcANv0/HnVel0AOFD77uzqq6qtoLMeDew8JbaZGDT
+AwVWZg4Lt8iInpYeTuIAieNF0Z+VxWhOkLjhZovJ6kwoXgbbNFjzEMO4WL2Xkvg=
+=C5kr
+-----END PGP SIGNATURE-----
