@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab2ALUy5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:54:57 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48477 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755088Ab2ALUyz (ORCPT
+	id S1755636Ab2ALU46 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:56:58 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:3395 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755088Ab2ALU45 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:54:55 -0500
-Date: Thu, 12 Jan 2012 12:54:50 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: leonid.moiseichuk@nokia.com
-cc: gregkh@suse.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        cesarb@cesarb.net, kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net,
-        penberg@kernel.org, aarcange@redhat.com, riel@redhat.com,
-        mel@csn.ul.ie, dima@android.com, rebecca@android.com, san@google.com,
-        akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
-Subject: RE: [PATCH 3.2.0-rc1 3/3] Used Memory Meter pseudo-device module
-In-Reply-To: <84FF21A720B0874AA94B46D76DB9826904556CB7@008-AM1MPN1-003.mgdnok.nokia.com>
-Message-ID: <alpine.DEB.2.00.1201121247480.17287@chino.kir.corp.google.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <ed78895aa673d2e5886e95c3e3eae38cc6661eda.1325696593.git.leonid.moiseichuk@nokia.com> <20120104195521.GA19181@suse.de> <84FF21A720B0874AA94B46D76DB9826904554AFD@008-AM1MPN1-003.mgdnok.nokia.com>
- <alpine.DEB.2.00.1201090203470.8480@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB9826904554B81@008-AM1MPN1-003.mgdnok.nokia.com> <alpine.DEB.2.00.1201091251300.10232@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB98269045568A1@008-AM1MPN1-003.mgdnok.nokia.com>
- <alpine.DEB.2.00.1201111338320.21755@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB9826904556CB7@008-AM1MPN1-003.mgdnok.nokia.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 12 Jan 2012 15:56:57 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Thu, 12 Jan 2012 12:56:53 -0800
+From: Stephen Warren <swarren@nvidia.com>
+To: Dong Aisheng-B29396 <B29396@freescale.com>,
+        Dong Aisheng <dongas86@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
+        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@pengutronix.de" <kernel@pengutronix.de>,
+        "cjb@laptop.org" <cjb@laptop.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>
+Date: Thu, 12 Jan 2012 12:56:52 -0800
+Subject: RE: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Thread-Topic: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
+ mappings
+Thread-Index: AQHMvzz/OIptPg50WkeChzdBCJw49JXl2BOAgAA9DlCABdN5oIASXrkAgAC9bACAAEFboIAAbmbAgAWY2cCAAmyfwIAAxD1wgADb5uA=
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF17801D1DD6@HQMAIL01.nvidia.com>
+References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
+	<1324402840-32451-3-git-send-email-b29396@freescale.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
+	<7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
+	<74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
+ <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
+ <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
+ <74CDBE0F657A3D45AFBB94109FB122FF177EE3A76A@HQMAIL01.nvidia.com>
+ <7FE21149F4667147B645348EC605788508E7B0@039-SN2MPN1-013.039d.mgd.msft.net>
+In-Reply-To: <7FE21149F4667147B645348EC605788508E7B0@039-SN2MPN1-013.039d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jan 2012, leonid.moiseichuk@nokia.com wrote:
-
-> As I wrote the proposed change is not safety belt but looking ahead 
-> radar.
-> If it detects that we are close to wall it starts to alarm and alarm 
-> volume is proportional to distance.
+Dong Aisheng wrote at Thursday, January 12, 2012 1:36 AM:
+> Stephen Warren wrote at Thursday, January 12, 2012 4:18 AM:
+> > Dong Aisheng wrote at Tuesday, January 10, 2012 1:21 AM:
+> > > Stephen Warren wrote at Saturday, January 07, 2012 2:03 AM:
+...
+> > Personally, I think I'd be OK with the sysfs pinctrl map file only containing
+> > the map entries for devices that had used the pinctrl API, and hence only
+> > parsing the pinmux properties in pinmux_get().
+>
+> Actually I already did it like that in the patch I sent:
+> https://lkml.org/lkml/2012/1/5/153
 > 
-
-Then it's fundamentally flawed since there's no guarantee that coming with 
-100MB of the min watermark, for example, means that an oom is imminent and 
-will just result in unnecessary notification to userspace that will cause 
-some action to be taken that may not be necessary.  If the setting of 
-these thresholds depends on some pattern that is guaranteed to be along 
-the path to oom for a certain workload, then that will also change 
-depending on VM implementation changes, kernel versions, other 
-applications, etc., and simply is unmaintainable.
-
-> In close-to-OOM situations device becomes very slow, which is not good 
-> for user. The performance difference depends on code size and storage 
-> performance to trash code pages but even 20% is noticeable. Practically 
-> 2x-5x times slowdown was observed.
+> Originally I'd like to do like that but I found an inconsistent issue that
+> the sysfs pinctrl map file will behave differently between dt and non-dt
+> Platform. For non-dt, it means showing all exist map entries. For dt, it means
+> Only used pinmux map entries.
 > 
+> And in current design when device calls pinmux_get, it will search a predefined
+> pinmux_maps array to find which function and group it is binded to.
+> If switch to the new way, we only dynamically create pinmux map and dynamically
+> register it when pinmux_get is called, first we need to change the code path in
+> pinmux_get in a totally different way, second for support that we may also better
+> to change pinmux_maps array to a list.
+> But after changing the pinmux_maps to a list, what about using in non-dt?
+> 
+> So without any strong reason i still think it would be better to keep consistency
+> With the non-dt pinctrl subsystem.
+> And the effort would be minimum since besides constructing the map by parsing
+> Device tree, everyting is the same as before in pinmux map and we could re-use
+> the current code.
 
-It would be much better to address the slowdown when running out of memory 
-rather than requiring userspace to react and unnecessarily send signals to 
-threads that may or may not have the ability to respond because they may 
-already be oom themselves.  You can do crazy things to reduce latency in 
-lowmem memory allocations like changing gfp_allowed_mask to be GFP_ATOMIC 
-so that direct reclaim is never called, for example, and then use the 
-proposed oom killer delay to handle the situation at the time of oom.
+OK. I think this can work out pretty easily with a bus notifier as I
+mentioned before.
 
-Regardless, you should be addressing the slowness in lowmem situations 
-rather than implementing notifiers to userspace to handle the events 
-itself, so nack on this proposal.
+But, one thought on doing this in pinmux_get(). I'd simply implement a
+Function that read a DT node's pinmux property/node, converted it to a
+pinmux mapping table, and registered it with the pinctrl core. Then,
+pinmux_get() could simply call this before doing anything else at all.
+I don't think you'd need to modify how pinmux_get() worked at all.
+
+-- 
+nvpublic
+
