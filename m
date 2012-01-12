@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab2ALHa3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 02:30:29 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:14200 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab2ALHa0 (ORCPT
+	id S1752769Ab2ALHab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 02:30:31 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:24981 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752742Ab2ALHa3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 02:30:26 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-38-4f0e8c1166b8
+	Thu, 12 Jan 2012 02:30:29 -0500
+X-AuditID: cbfee61b-b7b95ae00000198b-77-4f0e8c13e089
 From: Thomas Abraham <thomas.abraham@linaro.org>
 To: linux-kernel@vger.kernel.org
 Cc: rpurdie@rpsys.net, rob.herring@calxeda.com, grant.likely@secretlab.ca,
@@ -15,50 +15,195 @@ Cc: rpurdie@rpsys.net, rob.herring@calxeda.com, grant.likely@secretlab.ca,
         myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
         dg77.kim@samsung.com, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCH v2 0/2] Add device tree support for MAX8997
-Date: Thu, 12 Jan 2012 13:05:36 +0530
-Message-id: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
+Subject: [PATCH v2 1/2] mfd: add irq domain support for max8997 interrupts
+Date: Thu, 12 Jan 2012 13:05:37 +0530
+Message-id: <1326353738-26864-2-git-send-email-thomas.abraham@linaro.org>
 X-Mailer: git-send-email 1.6.6.rc2
+In-reply-to: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
+References: <1326353738-26864-1-git-send-email-thomas.abraham@linaro.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MAX8997 is a multi-function device which includes support for regulators, rtc,
-battery charger and other sub-blocks. This patchset adds device tree support
-for the pmic (regulators) sub-block.
+Add irq domain support for max8997 interrupts. All uses of irq_base in platform
+data and max8997 driver private data are removed.
 
-The first patch adds irq domain support for the interrupts supported by max8997
-mainly for removing the need to pass a irq_base from the platform code. The
-irq_base could not anyway be passed in case of device tree based instantiation.
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Thomas Abraham <thomas.abraham@linaro.org>
+---
+ arch/arm/mach-exynos/mach-nuri.c    |    4 ----
+ arch/arm/mach-exynos/mach-origen.c  |    1 -
+ drivers/mfd/max8997-irq.c           |   33 +++++++++++++++++++--------------
+ drivers/mfd/max8997.c               |    1 -
+ include/linux/mfd/max8997-private.h |    4 +++-
+ include/linux/mfd/max8997.h         |    1 -
+ 6 files changed, 22 insertions(+), 22 deletions(-)
 
-The second patch adds device tree support for max8997. This patch modifies both
-mfd and regulator portions of the max8997 code.
-
-This patchset is based on the following tree.
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git  for-next
-
-and depends on the following patchs.
-[1] All the regulator device tree related patches from
-    git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git topic/dt
-    (from commit 8f446e6fa1d506be2cb80f91c214f1705327c7f9).
-[2] Device tree support patches for wakeup interrupt sources on Exynos4.
-[3] [PATCH] irqdomain: export irq_domain._simple_op.s for !CONFIG_OF
-
-This patchset has been tested on Origen board.
-
-Thomas Abraham (2):
-  mfd: add irq domain support for max8997 interrupts
-  regulator: add device tree support for max8997
-
- .../devicetree/bindings/regulator/max8997-pmic.txt |  120 ++++++++++++++++
- arch/arm/mach-exynos/mach-nuri.c                   |    4 -
- arch/arm/mach-exynos/mach-origen.c                 |    1 -
- drivers/mfd/max8997-irq.c                          |   33 +++--
- drivers/mfd/max8997.c                              |   73 ++++++++++-
- drivers/regulator/max8997.c                        |  143 +++++++++++++++++++-
- include/linux/mfd/max8997-private.h                |    4 +-
- include/linux/mfd/max8997.h                        |    2 +-
- 8 files changed, 356 insertions(+), 24 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/max8997-pmic.txt
+diff --git a/arch/arm/mach-exynos/mach-nuri.c b/arch/arm/mach-exynos/mach-nuri.c
+index 3df8bf4..78f64be 100644
+--- a/arch/arm/mach-exynos/mach-nuri.c
++++ b/arch/arm/mach-exynos/mach-nuri.c
+@@ -1071,12 +1071,8 @@ static struct platform_device nuri_max8903_device = {
+ static void __init nuri_power_init(void)
+ {
+ 	int gpio;
+-	int irq_base = IRQ_GPIO_END + 1;
+ 	int ta_en = 0;
+ 
+-	nuri_max8997_pdata.irq_base = irq_base;
+-	irq_base += MAX8997_IRQ_NR;
+-
+ 	gpio = EXYNOS4_GPX0(7);
+ 	gpio_request(gpio, "AP_PMIC_IRQ");
+ 	s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
+diff --git a/arch/arm/mach-exynos/mach-origen.c b/arch/arm/mach-exynos/mach-origen.c
+index a011603..d3f3cef 100644
+--- a/arch/arm/mach-exynos/mach-origen.c
++++ b/arch/arm/mach-exynos/mach-origen.c
+@@ -422,7 +422,6 @@ struct max8997_platform_data __initdata origen_max8997_pdata = {
+ 	.buck1_gpiodvs	= false,
+ 	.buck2_gpiodvs	= false,
+ 	.buck5_gpiodvs	= false,
+-	.irq_base	= IRQ_GPIO_END + 1,
+ 
+ 	.ignore_gpiodvs_side_effect = true,
+ 	.buck125_default_idx = 0x0,
+diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
+index 09274cf..eb9cad5 100644
+--- a/drivers/mfd/max8997-irq.c
++++ b/drivers/mfd/max8997-irq.c
+@@ -142,7 +142,8 @@ static void max8997_irq_sync_unlock(struct irq_data *data)
+ static const inline struct max8997_irq_data *
+ irq_to_max8997_irq(struct max8997_dev *max8997, int irq)
+ {
+-	return &max8997_irqs[irq - max8997->irq_base];
++	struct irq_data *data = irq_get_irq_data(irq);
++	return &max8997_irqs[data->hwirq];
+ }
+ 
+ static void max8997_irq_mask(struct irq_data *data)
+@@ -179,10 +180,11 @@ static struct irq_chip max8997_irq_chip = {
+ static irqreturn_t max8997_irq_thread(int irq, void *data)
+ {
+ 	struct max8997_dev *max8997 = data;
++	struct irq_domain *domain = &max8997->irq_domain;
+ 	u8 irq_reg[MAX8997_IRQ_GROUP_NR] = {};
+ 	u8 irq_src;
+ 	int ret;
+-	int i;
++	int i, cur_irq;
+ 
+ 	ret = max8997_read_reg(max8997->i2c, MAX8997_REG_INTSRC, &irq_src);
+ 	if (ret < 0) {
+@@ -268,9 +270,9 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+ 		irq_reg[i] &= ~max8997->irq_masks_cur[i];
+ 
+ 	/* Report */
+-	for (i = 0; i < MAX8997_IRQ_NR; i++) {
++	irq_domain_for_each_irq(domain, i, cur_irq) {
+ 		if (irq_reg[max8997_irqs[i].group] & max8997_irqs[i].mask)
+-			handle_nested_irq(max8997->irq_base + i);
++			handle_nested_irq(cur_irq);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+@@ -278,13 +280,14 @@ static irqreturn_t max8997_irq_thread(int irq, void *data)
+ 
+ int max8997_irq_resume(struct max8997_dev *max8997)
+ {
+-	if (max8997->irq && max8997->irq_base)
+-		max8997_irq_thread(max8997->irq_base, max8997);
++	if (max8997->irq && max8997->irq_domain.irq_base)
++		max8997_irq_thread(max8997->irq_domain.irq_base, max8997);
+ 	return 0;
+ }
+ 
+ int max8997_irq_init(struct max8997_dev *max8997)
+ {
++	struct irq_domain *domain = &max8997->irq_domain;
+ 	int i;
+ 	int cur_irq;
+ 	int ret;
+@@ -292,12 +295,6 @@ int max8997_irq_init(struct max8997_dev *max8997)
+ 
+ 	if (!max8997->irq) {
+ 		dev_warn(max8997->dev, "No interrupt specified.\n");
+-		max8997->irq_base = 0;
+-		return 0;
+-	}
+-
+-	if (!max8997->irq_base) {
+-		dev_err(max8997->dev, "No interrupt base specified.\n");
+ 		return 0;
+ 	}
+ 
+@@ -327,9 +324,17 @@ int max8997_irq_init(struct max8997_dev *max8997)
+ 					true : false;
+ 	}
+ 
++	domain->irq_base = irq_alloc_descs(-1, 0, MAX8997_IRQ_NR, 0);
++	if (domain->irq_base < 0) {
++		dev_err(max8997->dev, "failed to alloc irq descs\n");
++		return 0;
++	}
++	domain->nr_irq = MAX8997_IRQ_NR;
++	domain->ops = &irq_domain_simple_ops;
++	irq_domain_add(domain);
++
+ 	/* Register with genirq */
+-	for (i = 0; i < MAX8997_IRQ_NR; i++) {
+-		cur_irq = i + max8997->irq_base;
++	irq_domain_for_each_irq(domain, i, cur_irq) {
+ 		irq_set_chip_data(cur_irq, max8997);
+ 		irq_set_chip_and_handler(cur_irq, &max8997_irq_chip,
+ 				handle_edge_irq);
+diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+index 5be53ae..b996c6e 100644
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -142,7 +142,6 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 	if (!pdata)
+ 		goto err;
+ 
+-	max8997->irq_base = pdata->irq_base;
+ 	max8997->ono = pdata->ono;
+ 
+ 	mutex_init(&max8997->iolock);
+diff --git a/include/linux/mfd/max8997-private.h b/include/linux/mfd/max8997-private.h
+index 3f4deb6..04c5779 100644
+--- a/include/linux/mfd/max8997-private.h
++++ b/include/linux/mfd/max8997-private.h
+@@ -23,6 +23,8 @@
+ #define __LINUX_MFD_MAX8997_PRIV_H
+ 
+ #include <linux/i2c.h>
++#include <linux/export.h>
++#include <linux/irqdomain.h>
+ 
+ #define MAX8997_REG_INVALID	(0xff)
+ 
+@@ -325,7 +327,7 @@ struct max8997_dev {
+ 
+ 	int irq;
+ 	int ono;
+-	int irq_base;
++	struct irq_domain irq_domain;
+ 	struct mutex irqlock;
+ 	int irq_masks_cur[MAX8997_IRQ_GROUP_NR];
+ 	int irq_masks_cache[MAX8997_IRQ_GROUP_NR];
+diff --git a/include/linux/mfd/max8997.h b/include/linux/mfd/max8997.h
+index 0bbd13d..1e0b9cc 100644
+--- a/include/linux/mfd/max8997.h
++++ b/include/linux/mfd/max8997.h
+@@ -79,7 +79,6 @@ struct max8997_regulator_data {
+ 
+ struct max8997_platform_data {
+ 	/* IRQ */
+-	int irq_base;
+ 	int ono;
+ 	int wakeup;
+ 
+-- 
+1.6.6.rc2
 
