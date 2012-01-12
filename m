@@ -1,114 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab2ALSmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 13:42:08 -0500
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38955 "EHLO
-	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab2ALSmE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 13:42:04 -0500
-X-Originating-IP: 217.70.178.131
-X-Originating-IP: 50.43.15.19
-Date: Thu, 12 Jan 2012 10:41:50 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com, manfred@colorfullife.com,
-        dhowells@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rcu: avoid checking for constant
-Message-ID: <20120112184150.GA8132@leaf>
-References: <1326345104-6919-1-git-send-email-jengelh@medozas.de>
- <20120112071431.GA1896@leaf>
- <alpine.LNX.2.01.1201121018430.31943@frira.zrqbmnf.qr>
- <20120112095257.GA2441@leaf>
- <alpine.LNX.2.01.1201121106040.17330@frira.zrqbmnf.qr>
- <20120112115830.GA3436@leaf>
- <alpine.LNX.2.01.1201121625060.25848@frira.zrqbmnf.qr>
+	id S1754912Ab2ALSo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 13:44:57 -0500
+Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:47097 "EHLO
+	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752177Ab2ALSoz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 13:44:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.01.1201121625060.25848@frira.zrqbmnf.qr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120112100702.GM3226@page>
+References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca>
+ <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca>
+ <20120110213338.GD3226@page> <CACxGe6vqb8AZcZb5WMvfmLsUZH7=SEtBrJCSfsFmDYpKX42MzA@mail.gmail.com>
+ <20120112100702.GM3226@page>
+From: "Turquette, Mike" <mturquette@ti.com>
+Date: Thu, 12 Jan 2012 10:44:29 -0800
+Message-ID: <CAJOA=zPUA56R=vt9MKyhgdyLU96aD_TweZ6BnJy2w3mCVC4Dzg@mail.gmail.com>
+Subject: Re: [RFC v2 4/9] of: add clock providers
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Rob Herring <rob.herring@calxeda.com>,
+        Sascha Hauer <kernel@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 04:38:52PM +0100, Jan Engelhardt wrote:
-> On Thursday 2012-01-12 12:58, Josh Triplett wrote:
-> >> Same impression here. BUILD_BUG_ON_ZERO was introduced by
-> >> 
-> >> commit 4552d5dc08b79868829b4be8951b29b07284753f
-> >> Author: Jan Beulich <jbeulich@novell.com>
-> >> Date:   Mon Jun 26 13:57:28 2006 +0200
-> >> 
-> >> while Rusty's CCAN archive calls it "BUILD_BUG_OR_ZERO" (since either 
-> >> it's a bug, or returning neutral zero).
-> >
-> >Sounds like a good target for a fix at some point.
-> 
-> What names do you propose? I have BUILD_BUG_ON_EXPR for some of my code,
-> though in the kernel, it has both _ON_ZERO and _ON_NULL.
+On Thu, Jan 12, 2012 at 2:07 AM, Jamie Iles <jamie@jamieiles.com> wrote:
+> On Wed, Jan 11, 2012 at 09:46:58PM -0700, Grant Likely wrote:
+>> On Tue, Jan 10, 2012 at 2:33 PM, Jamie Iles <jamie@jamieiles.com> wrote:
+>> > On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
+>> > I'm about to start trying to get this and Mike's common struct clk
+>> > patches working on picoxcell, and the one thing I'm not understanding at
+>> > the moment is how to handle the tree itself.  Currently I was planning
+>> > on iterating over all clocks and finding a named input clock "ref" or
+>> > "input" perhaps.  This would be fine for picoxcell, but I guess more
+>> > complicated chips may need something else.
+>>
+>> It might be useful to have something like of_irq_init() for setting up
+>> initial clocks, but the solution feels inelegant to me.  I suspect
+>> that there will be end up being intertwined init order dependencies
+>> between clocks and irqs and other early setup stuff that could be
+>> handled better.  Again, I need to think about this some more.  There
+>> might need to be something like an of_early_probe() call that accepts
+>> a match table of compatible values and setup functions with some logic
+>> or data to resolve dependencies.  The trick will be to not end up with
+>> something complex.  I'll need to think about this more...
+>
+> Yes, probably not an easy problem to solve, especially for the platforms
+> where the parent can change at runtime.
+>
+> I wonder if an of_clk_init() could take a platform callback, so that
+> of_clk_init() goes of and creates a struct clk for each clk in the DT,
+> then for each registered clock calls a platform specific callback which
+> returns the parent (if any).  It feels like a fairly platform specific
+> problem to me.
 
-BUILD_BUG_OR_ZERO (and BUILD_BUG_OR_NULL) seem like improvements over
-_ON_ZERO and _ON_NULL; that would remove the ambiguity we both tripped
-over.
+Based on Thomas' feedback I'm removing the requirement for clocks to
+be registered in-order with clk_init().  Any clock that cannot resolve
+it's parent within clk_init() (via the .get_parent callback, or
+otherwise having .parent statically initialized) will be put into an
+orphaned clocks list, which will be walked every time a new clock is
+registered.  Hurray for n^2 solutions.
 
-> rcu: avoid checking for constant
-> 
-> When compiling kernel or module code with -O0, "offset" is no longer
-> considered a constant, and therefore always triggers the build error
-> that BUILD_BUG_ON is defined to yield.
-> 
-> Therefore, change the innards of kfree_rcu so that the offset is not
-> tunneled through a function argument before checking it.
-> 
-> Signed-off-by: Jan Engelhardt <jengelh@medozas.de>
+Does the above help with the of_clk_init problems?
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+One final data point: I certainly plan on allowing for statically
+allocated clocks to live alongside DT clocks.  In fact the clock trees
+on OMAP are so large that there is some discussion about having some
+of the clocks statically allocated and some in DT, but I don't know
+what that split looks like right now.  I don't enjoy the idea of
+packing 200+ of any entity into a .dts blob.
 
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -795,24 +795,6 @@ static inline notrace void rcu_read_unlock_sched_notrace(void)
->  #define RCU_INIT_POINTER(p, v) \
->  		p = (typeof(*v) __force __rcu *)(v)
->  
-> -static __always_inline bool __is_kfree_rcu_offset(unsigned long offset)
-> -{
-> -	return offset < 4096;
-> -}
-> -
-> -static __always_inline
-> -void __kfree_rcu(struct rcu_head *head, unsigned long offset)
-> -{
-> -	typedef void (*rcu_callback)(struct rcu_head *);
-> -
-> -	BUILD_BUG_ON(!__builtin_constant_p(offset));
-> -
-> -	/* See the kfree_rcu() header comment. */
-> -	BUILD_BUG_ON(!__is_kfree_rcu_offset(offset));
-> -
-> -	call_rcu(head, (rcu_callback)offset);
-> -}
-> -
->  /**
->   * kfree_rcu() - kfree an object after a grace period.
->   * @ptr:	pointer to kfree
-> @@ -835,7 +817,18 @@ void __kfree_rcu(struct rcu_head *head, unsigned long offset)
->   *
->   * Note that the allowable offset might decrease in the future, for example,
->   * to allow something like kmem_cache_free_rcu().
-> + *
-> + * The BUILD_BUG_ON check must not involve any function calls, hence the
-> + * checks are done in macros here.
->   */
-> +#define __is_kfree_rcu_offset(offset) ((offset) < 4096)
-> +
-> +#define __kfree_rcu(head, offset) \
-> +	do { \
-> +		BUILD_BUG_ON(!__is_kfree_rcu_offset(offset)); \
-> +		call_rcu(head, (void (*)(struct rcu_head *))(unsigned long)(offset)); \
-> +	} while (0)
-> +
->  #define kfree_rcu(ptr, rcu_head)					\
->  	__kfree_rcu(&((ptr)->rcu_head), offsetof(typeof(*(ptr)), rcu_head))
-
-- Josh Triplett
+Regards,
+Mike
