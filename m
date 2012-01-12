@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752452Ab2ALMdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 07:33:06 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:63233 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab2ALMdD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 07:33:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
-References: <1326301493-28760-1-git-send-email-fenghua.yu@intel.com>
-	<1326301493-28760-11-git-send-email-fenghua.yu@intel.com>
-Date: Thu, 12 Jan 2012 07:33:01 -0500
-Message-ID: <CAMzpN2hfCCarbn+CDGrQuUaXYT29HpRd+9n0EKWvZdgLdqdAhA@mail.gmail.com>
-Subject: Re: [PATCH v5 10/12] x86/mtrr/main.c: Ask the first online CPU to
- save mtrr
-From: Brian Gerst <brgerst@gmail.com>
-To: Fenghua Yu <fenghua.yu@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        H Peter Anvin <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1753084Ab2ALMf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 07:35:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:56683 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556Ab2ALMf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 07:35:57 -0500
+Date: Thu, 12 Jan 2012 13:35:55 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Mel Gorman <mgorman@suse.de>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Suresh B Siddha <suresh.b.siddha@intel.com>,
-        Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pm <linux-pm@vger.kernel.org>, x86 <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: __count_immobile_pages make sure the node is online
+Message-ID: <20120112123555.GF1042@tiehlicka.suse.cz>
+References: <1326213022-11761-1-git-send-email-mhocko@suse.cz>
+ <alpine.DEB.2.00.1201101326080.10821@chino.kir.corp.google.com>
+ <20120111084802.GA16466@tiehlicka.suse.cz>
+ <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120112082722.GB1042@tiehlicka.suse.cz>
+ <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120112092314.GC1042@tiehlicka.suse.cz>
+ <20120112183323.1bb62f4d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120112100521.GD1042@tiehlicka.suse.cz>
+ <20120112111415.GH4118@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112111415.GH4118@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 11, 2012 at 12:04 PM, Fenghua Yu <fenghua.yu@intel.com> wrote:
-> From: Fenghua Yu <fenghua.yu@intel.com>
->
-> Ask the first online CPU to save mtrr instead of asking BSP. BSP could be
-> offline when mtrr_save_state() is called.
+On Thu 12-01-12 11:14:15, Mel Gorman wrote:
+> On Thu, Jan 12, 2012 at 11:05:21AM +0100, Michal Hocko wrote:
+> > From 39de8df13532150fc4518dad0cb3f6fd88745b8a Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Thu, 12 Jan 2012 10:19:04 +0100
+> > Subject: [PATCH] mm: __count_immobile_pages make sure the node is online
+> > 
+> > page_zone requires to have an online node otherwise we are accessing
+> > NULL NODE_DATA. This is not an issue at the moment because node_zones
+> > are located at the structure beginning but this might change in the
+> > future so better be careful about that.
+> > 
+> > Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Acked-by: Mel Gorman <mgorman@suse.de>
 
-If you can use any non-boot cpu to save the MTRRs why not just use the
-current cpu?  They should all be in sync anyways.
+Thanks
 
---
-Brian Gerst
+> Be aware that this is not the version picked up by Andrew. It would
+> not hurt to resend as V2 with a changelog and a note saying it replaces
+> mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch in mmotm.
+> This is just in case the wrong one gets merged due to this thread
+> getting lost in the noise of Andrew's inbox.
+
+I guess that both of them should be merged. This one as a follow up fix.
+That's why I made it separate and didn't repost the whole patch.
+The original patch is much more obvious why it fixes the issue this one
+is to have everything clear.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
