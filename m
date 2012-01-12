@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab2ALRbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:31:21 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:56295 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752751Ab2ALRbT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:31:19 -0500
-X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Thu, 12 Jan 2012 12:31:18 EST
-Date: Thu, 12 Jan 2012 17:30:48 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-Message-ID: <20120112173048.GK7180@jl-vm1.vm.bytemark.co.uk>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
- <1326302710-9427-2-git-send-email-wad@chromium.org>
- <1326383015.7642.77.camel@gandalf.stny.rr.com>
- <20120112161418.GA22360@redhat.com>
- <1326386324.7642.96.camel@gandalf.stny.rr.com>
+	id S1754622Ab2ALRds (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:33:48 -0500
+Received: from home.keithp.com ([63.227.221.253]:53936 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013Ab2ALRdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 12:33:45 -0500
+From: Keith Packard <keithp@keithp.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Takashi Iwai <tiwai@suse.de>,
+        Michal Marek <mmarek@suse.com>,
+        "intel-gfx\@lists.freedesktop..." <intel-gfx@lists.freedesktop.org>,
+        Robert Lemaire <rlemaire@suse.com>
+Subject: Re: [PATCH] drm/i915: set AUD_CONFIG N_value_index for DisplayPort
+In-Reply-To: <20120110054519.GA27257@localhost>
+References: <20120109131717.GA4713@localhost> <86y5tgx02g.fsf@sumi.keithp.com> <20120110054519.GA27257@localhost>
+User-Agent: Notmuch/0.10.2 (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Thu, 12 Jan 2012 09:33:34 -0800
+Message-ID: <86ty404yhd.fsf@sumi.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326386324.7642.96.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha256; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Thu, 2012-01-12 at 17:14 +0100, Oleg Nesterov wrote:
-> 
-> > May be this needs something like LSM_UNSAFE_SECCOMP, or perhaps
-> > cap_bprm_set_creds() should take seccomp.mode == 2 into account, I dunno.
-> > 
-> > OTOH, currently seccomp.mode == 1 doesn't allow to exec at all.
-> 
-> I've never used seccomp, so I admit I'm totally ignorant on this topic.
-> 
-> But looking at seccomp from the outside, the biggest advantage to this
-> would be the ability for normal processes to be able to limit tasks it
-> kicks off. If I want to run a task in a sandbox, I don't want to be root
-> to do so.
-> 
-> I guess a web browser doesn't perform an exec to run java programs.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Actually it does.  Firefox on Linux forks and execs the Java VM.
-Same for Flash, using "plugin-container".
+On Tue, 10 Jan 2012 13:45:19 +0800, Wu Fengguang <fengguang.wu@intel.com> w=
+rote:
 
-> But it would be nice if I could execute something from the command
-> line that I could run in a sand box.
+> @@ -5943,6 +5947,7 @@ static void ironlake_write_eld(struct dr
+>  	if (intel_pipe_has_type(crtc, INTEL_OUTPUT_DISPLAYPORT)) {
+>  		DRM_DEBUG_DRIVER("ELD: DisplayPort detected\n");
+>  		eld[5] |=3D (1 << 2);	/* Conn_Type, 0x1 =3D DisplayPort */
+> +		I915_WRITE(aud_config, AUD_CONFIG_N_VALUE_INDEX); /* 0x1 =3D DP */
+>  	}
 
-You can do this now, using ptrace().  It's horrible, but half of the
-horribleness is needing to understand machine-dependent registers,
-which this new patch doesn't address.  (The other half is a ton of
-undocumented but important ptrace() behaviours on Linux.)
+Do we need to clear this bit in the HDMI case? Or do we just trust the
+BIOS to either leave this bit zero or set it correctly?
 
--- Jamie
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIVAwUBTw8ZbjYtFsjWk68qAQiRwxAApFKKEQyS5JeRpPnwnoA8C7uy/uV+WeAv
+B2mt/Sye6DruK6O2aQ8EtV4GpY3cR17muVtKSdZf8lhijgEI6RNUA9wpMxwYURx4
+A2SZq/8AkmxGRt7OaUYx5Tm1tNnTtOAtzZCGh5hba969lHQUmkdjJqTuSUdccZoz
+45aZm12ZZcQ8fMIXxglBw96XADYnpct9MXB+yG0Qp/ldjugryRcw/apFbHPgabiU
+ZXtYnPFqh+PdWtc2lXO+J9nzNl3n//x36AmJpqUg8N7+23NNkGo3tDb0N3oVENZb
+DRBTGft6aHoJhjkwxQt+N5rOazSUHhGqMRYPYlQ4a4v5rxUy6LwATVeugh7dDkGw
+tMXazkeNyWJHYNDQWVZS63aXl+l8OLE4fEEcI8+7Oe5JCUpzILuGvGceWzjU7O8q
+E3PS4XeUH2fVee9Qxxw6VmDWv+E2NH39keLV5qnRSBR9OHnawdF91onpDwvgB+Ks
+IaN3C0d+gGo1JOMHuEXgISb8kcTldvCZu2Me4wxGmSmeJO5OKygTQAgy3PxZs7ii
+7KwFJfyC0iwDmhmd2iZkgjO1XB2mq5+IEYCema1GCsydr27HqCjnNlkQxQSbufwd
+mxN19SBRqaGz58a7yw69pfP15aT/j2xYkR8WoqVobThOriTpBj9Smce8nmiHpWXD
+PuT/wCK1vYI=
+=Mhr2
+-----END PGP SIGNATURE-----
+--=-=-=--
