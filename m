@@ -1,275 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751752Ab2ALA3g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Jan 2012 19:29:36 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:47213 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751508Ab2ALA3b convert rfc822-to-8bit (ORCPT
+	id S1751793Ab2ALAbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Jan 2012 19:31:19 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:37290 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663Ab2ALAbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Jan 2012 19:29:31 -0500
+	Wed, 11 Jan 2012 19:31:17 -0500
+Date: Wed, 11 Jan 2012 16:31:02 -0800
+From: Mandeep Singh Baines <msb@chromium.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20120112003102.GB9511@google.com>
+References: <20111221175632.GF17668@somewhere>
+ <20111221190102.GE13529@google.com>
+ <20111221190817.GI17668@somewhere>
+ <20111221192413.GF13529@google.com>
+ <20111221200422.GJ17668@somewhere>
+ <20111222153004.GA30522@redhat.com>
+ <20120104193614.GF9511@google.com>
+ <20120106152356.GA23995@redhat.com>
+ <20120106182535.GJ9511@google.com>
+ <20120111160730.GA24556@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1326323983-23630-1-git-send-email-wad@chromium.org>
-References: <CABqD9hbQRinbYqqwjqH8TfDvkOpESwiCp1uEE8d0Q7Rp4tsM0A@mail.gmail.com>
-	<1326323983-23630-1-git-send-email-wad@chromium.org>
-Date: Wed, 11 Jan 2012 18:29:29 -0600
-Message-ID: <CABqD9hag4f1Kd=LCq2O5vVWHgcx=N4A=cBWQsjU67KozFPrS0g@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] Documentation: prctl/seccomp_filter
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        wad@chromium.org, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120111160730.GA24556@redhat.com>
+X-Operating-System: Linux/2.6.38.8-gg621 (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hrm, I may need to guard sample compilation based on host arch and not
-just target arch. Documentation v3 will be on the way once I have that
-behaving properly. :/
+Hi Oleg,
 
-Sorry!
-will
+Oleg Nesterov (oleg@redhat.com) wrote:
+> On 01/06, Mandeep Singh Baines wrote:
+> >
+> > Oleg Nesterov (oleg@redhat.com) wrote:
+> > >
+> > > > > in particular, http://marc.info/?l=linux-kernel&m=127714242731448
+> > > > > I think this should work, but then we should do something with the
+> > > > > users like zap_threads().
+> > > > >
+> > > >
+> > > > With that patch, won't you potentially miss the exec thread if an exec
+> > > > occurs while you're iterating over the list? Is that OK?
+> > >
+> > > Of course it is not OK ;) Note the "we should do something with" above.
+> > >
+> >
+> > So requirements should be something like this:
+> 
+> (I assume, you mean the lockless case)
+> 
 
-On Wed, Jan 11, 2012 at 5:19 PM, Will Drewry <wad@chromium.org> wrote:
-> Document how system call filtering with BPF works and
-> may be used.  Includes an example for x86 (32-bit).
->
-> Signed-off-by: Will Drewry <wad@chromium.org>
-> ---
->  Documentation/prctl/seccomp_filter.txt |   99 ++++++++++++++++++++++++++++++++
->  samples/Makefile                       |    2 +-
->  samples/seccomp/Makefile               |   12 ++++
->  samples/seccomp/bpf-example.c          |   74 ++++++++++++++++++++++++
->  4 files changed, 186 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/prctl/seccomp_filter.txt
->  create mode 100644 samples/seccomp/Makefile
->  create mode 100644 samples/seccomp/bpf-example.c
->
-> diff --git a/Documentation/prctl/seccomp_filter.txt b/Documentation/prctl/seccomp_filter.txt
-> new file mode 100644
-> index 0000000..15d4645
-> --- /dev/null
-> +++ b/Documentation/prctl/seccomp_filter.txt
-> @@ -0,0 +1,99 @@
-> +               Seccomp filtering
-> +               =================
-> +
-> +Introduction
-> +------------
-> +
-> +A large number of system calls are exposed to every userland process
-> +with many of them going unused for the entire lifetime of the process.
-> +As system calls change and mature, bugs are found and eradicated.  A
-> +certain subset of userland applications benefit by having a reduced set
-> +of available system calls.  The resulting set reduces the total kernel
-> +surface exposed to the application.  System call filtering is meant for
-> +use with those applications.
-> +
-> +Seccomp filtering provides a means for a process to specify a filter
-> +for incoming system calls.  The filter is expressed as a Berkeley Packet
-> +Filter program, as with socket filters, except that the data operated on
-> +is the current user_regs_struct.  This allows for expressive filtering
-> +of system calls using the pre-existing system call ABI and using a filter
-> +program language with a long history of being exposed to userland.
-> +Additionally, BPF makes it impossible for users of seccomp to fall prey to
-> +time-of-check-time-of-use (TOCTOU) attacks that are common in system call
-> +interposition frameworks because the evaluated data is solely register state
-> +just after system call entry.
-> +
-> +What it isn't
-> +-------------
-> +
-> +System call filtering isn't a sandbox.  It provides a clearly defined
-> +mechanism for minimizing the exposed kernel surface.  Beyond that,
-> +policy for logical behavior and information flow should be managed with
-> +a combinations of other system hardening techniques and, potentially, a
-> +LSM of your choosing.  Expressive, dynamic filters provide further options down
-> +this path (avoiding pathological sizes or selecting which of the multiplexed
-> +system calls in socketcall() is allowed, for instance) which could be
-> +construed, incorrectly, as a more complete sandboxing solution.
-> +
-> +Usage
-> +-----
-> +
-> +An additional seccomp mode is added, but they are not directly set by the
-> +consuming process.  The new mode, '2', is only available if
-> +CONFIG_SECCOMP_FILTER is set and enabled using prctl with the
-> +PR_ATTACH_SECCOMP_FILTER argument.
-> +
-> +Interacting with seccomp filters is done using one prctl(2) call.
-> +
-> +PR_ATTACH_SECCOMP_FILTER:
-> +       Allows the specification of a new filter using a BPF program.
-> +       The BPF program will be executed over a user_regs_struct data
-> +       reflecting system call time except with the system call number
-> +       resident in orig_[register].  To allow a system call, the size
-> +       of the data must be returned.  At present, all other return values
-> +       result in the system call being blocked, but it is recommended to
-> +       return 0 in those cases.  This will allow for future custom return
-> +       values to be introduced, if ever desired.
-> +
-> +       Usage:
-> +               prctl(PR_ATTACH_SECCOMP_FILTER, prog);
-> +
-> +       The 'prog' argument is a pointer to a struct sock_fprog which will
-> +       contain the filter program.  If the program is invalid, the call
-> +       will return -1 and set errno to -EINVAL.
-> +
-> +       The struct user_regs_struct the @prog will see is based on the
-> +       personality of the task at the time of this prctl call.  Additionally,
-> +       is_compat_task is also tracked for the @prog.  This means that once set
-> +       the calling task will have all of its system calls blocked if it
-> +       switches its system call ABI (via personality or other means).
-> +
-> +       If the @prog is installed while the task has CAP_SYS_ADMIN in its user
-> +       namespace, the @prog will be marked as inheritable across execve.  Any
-> +       inherited filters are still subject to the system call ABI constraints
-> +       above and any ABI mismatched system calls will result in process death.
-> +
-> +       Additionally, if prctl(2) is allowed by the attached filter,
-> +       additional filters may be layered on which will increase evaluation
-> +       time, but allow for further decreasing the attack surface during
-> +       execution of a process.
-> +
-> +The above call returns 0 on success and non-zero on error.
-> +
-> +Example
-> +-------
-> +
-> +samples/seccomp-bpf-example.c shows an example process that allows read from stdin,
-> +write to stdout/err, exit and signal returns for 32-bit x86.
-> +
-> +Caveats
-> +-------
-> +
-> +- execve will fail unless the most recently attached filter was installed by
-> +  a process with CAP_SYS_ADMIN (in its namespace).
-> +
-> +Adding architecture support
-> +-----------------------
-> +
-> +Any platform with seccomp support will support seccomp filters
-> +as long as CONFIG_SECCOMP_FILTER is enabled.
-> diff --git a/samples/Makefile b/samples/Makefile
-> index 6280817..f29b19c 100644
-> --- a/samples/Makefile
-> +++ b/samples/Makefile
-> @@ -1,4 +1,4 @@
->  # Makefile for Linux samples code
->
->  obj-$(CONFIG_SAMPLES)  += kobject/ kprobes/ tracepoints/ trace_events/ \
-> -                          hw_breakpoint/ kfifo/ kdb/ hidraw/
-> +                          hw_breakpoint/ kfifo/ kdb/ hidraw/ seccomp/
-> diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
-> new file mode 100644
-> index 0000000..80dc8e4
-> --- /dev/null
-> +++ b/samples/seccomp/Makefile
-> @@ -0,0 +1,12 @@
-> +# kbuild trick to avoid linker error. Can be omitted if a module is built.
-> +obj- := dummy.o
-> +
-> +# List of programs to build
-> +hostprogs-$(CONFIG_X86_32) := bpf-example
-> +bpf-example-objs := bpf-example.o
-> +
-> +# Tell kbuild to always build the programs
-> +always := $(hostprogs-y)
-> +
-> +HOSTCFLAGS_bpf-example.o += -I$(objtree)/usr/include -m32
-> +HOSTLOADLIBES_bpf-example += -m32
-> diff --git a/samples/seccomp/bpf-example.c b/samples/seccomp/bpf-example.c
-> new file mode 100644
-> index 0000000..f98b70a
-> --- /dev/null
-> +++ b/samples/seccomp/bpf-example.c
-> @@ -0,0 +1,74 @@
-> +/*
-> + * Seccomp BPF example
-> + *
-> + * Copyright (c) 2012 The Chromium OS Authors <chromium-os-dev@chromium.org>
-> + * Author: Will Drewry <wad@chromium.org>
-> + *
-> + * The code may be used by anyone for any purpose,
-> + * and can serve as a starting point for developing
-> + * applications using prctl(PR_ATTACH_SECCOMP_FILTER).
-> + */
-> +
-> +#include <asm/unistd.h>
-> +#include <linux/filter.h>
-> +#include <stdio.h>
-> +#include <stddef.h>
-> +#include <sys/prctl.h>
-> +#include <sys/user.h>
-> +#include <unistd.h>
-> +
-> +#ifndef PR_ATTACH_SECCOMP_FILTER
-> +#      define PR_ATTACH_SECCOMP_FILTER 36
-> +#endif
-> +
-> +#define regoffset(_reg) (offsetof(struct user_regs_struct, _reg))
-> +static int install_filter(void)
-> +{
-> +       struct sock_filter filter[] = {
-> +               /* Grab the system call number */
-> +               BPF_STMT(BPF_LD+BPF_W+BPF_IND, regoffset(orig_eax)),
-> +               /* Jump table for the allowed syscalls */
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_rt_sigreturn, 10, 0),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_sigreturn, 9, 0),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_exit_group, 8, 0),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_exit, 7, 0),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_read, 1, 0),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, __NR_write, 2, 6),
-> +
-> +               /* Check that read is only using stdin. */
-> +               BPF_STMT(BPF_LD+BPF_W+BPF_IND, regoffset(ebx)),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, STDIN_FILENO, 3, 4),
-> +
-> +               /* Check that write is only using stdout/stderr */
-> +               BPF_STMT(BPF_LD+BPF_W+BPF_IND, regoffset(ebx)),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, STDOUT_FILENO, 1, 0),
-> +               BPF_JUMP(BPF_JMP+BPF_JEQ+BPF_K, STDERR_FILENO, 0, 1),
-> +
-> +               /* Put the "accept" value in A */
-> +               BPF_STMT(BPF_LD+BPF_W+BPF_LEN, 0),
-> +
-> +               BPF_STMT(BPF_RET+BPF_A,0),
-> +       };
-> +       struct sock_fprog prog = {
-> +               .len = (unsigned short)(sizeof(filter)/sizeof(filter[0])),
-> +               .filter = filter,
-> +       };
-> +       if (prctl(PR_ATTACH_SECCOMP_FILTER, &prog)) {
-> +               perror("prctl");
-> +               return 1;
-> +       }
-> +       return 0;
-> +}
-> +
-> +#define payload(_c) _c, sizeof(_c)
-> +int main(int argc, char **argv) {
-> +       char buf[4096];
-> +       ssize_t bytes = 0;
-> +       if (install_filter())
-> +               return 1;
-> +       syscall(__NR_write, STDOUT_FILENO, payload("OHAI! WHAT IS YOUR NAME? "));
-> +       bytes = syscall(__NR_read, STDIN_FILENO, buf, sizeof(buf));
-> +       syscall(__NR_write, STDOUT_FILENO, payload("HELLO, "));
-> +       syscall(__NR_write, STDOUT_FILENO, buf, bytes);
-> +       return 0;
-> +}
-> --
-> 1.7.5.4
->
+Correct.
+
+> > * Any task alive for the duration of the iteration MUST be visited
+> > * No task should be visited more than once
+> > * Any task born or exiting after starting the iteration MAY be skipped
+> > * You can start at any task in the thread group
+> 
+> Well yes, but it is not easy to exactly define what after/before
+> means in this case.
+> 
+> > Would something like this work:
+> >
+> > #define while_each_thread(g, t, o) \
+> > 	while (t->group_leader == o && (t = next_thread(t)) != g)
+> >
+> > Where o should have the value of g->group_leader.
+> 
+> I don't understand how this helps... and how this can work even
+> ignoring the barriers.
+> 
+> OK, we have the main thream M and the sub-thread T, we are doing
+> 
+> 	do {
+> 		do_something(t);
+> 	} while_each_thread(M, t, M);
+> 
+> why we can't miss T if it does exec?
+> 
+
+So for:
+
+struct task *M; /* assuming this is passed in to us */
+struct task *L = M->group_leader;
+struct task *I = M;
+
+do {
+	do_something(T);
+} while_each_thread(M, T, L);
+
+Here is my thinking.
+
+If some thread K does exec, you won't miss it because:
+
+1) Ignoring the group_leader check, you'll visit K just by following
+   next_thread(). That's the case today and is what you except
+   when iterating over an rcu_list.
+2) (t->group_leader == o) will fail iff t is the exec thread.
+   Since we test t->group_leader before re-assigning it (t=next_thread()),
+   the test will fail only after visiting the exec thread. So you'll
+   visit the exec thread and then terminate the loop.
+
+I realize its a klutzy interface (requires 3 variables) but it seems
+correct (ignoring barriers) and meets all the requirements. I'm hoping
+it inspires a solution which is less klutzy and meet its all the
+requirements.
+
+Regards,
+Mandeep
+
+> Oleg.
+> 
