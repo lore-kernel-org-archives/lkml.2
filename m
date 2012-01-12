@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754768Ab2ALRpF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 12:45:05 -0500
-Received: from mail2.shareable.org ([80.68.89.115]:54644 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab2ALRpD (ORCPT
+	id S1754781Ab2ALRsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 12:48:50 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60921 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752525Ab2ALRst convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 12:45:03 -0500
-Date: Thu, 12 Jan 2012 17:44:33 +0000
-From: Jamie Lokier <jamie@shareable.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Will Drewry <wad@chromium.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
-        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-Message-ID: <20120112174433.GM7180@jl-vm1.vm.bytemark.co.uk>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
- <1326302710-9427-2-git-send-email-wad@chromium.org>
- <1326383015.7642.77.camel@gandalf.stny.rr.com>
- <20120112161418.GA22360@redhat.com>
- <1326386324.7642.96.camel@gandalf.stny.rr.com>
- <20120112173048.GK7180@jl-vm1.vm.bytemark.co.uk>
- <1326390006.7642.114.camel@gandalf.stny.rr.com>
+	Thu, 12 Jan 2012 12:48:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326390006.7642.114.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120112171019.GA19771@phenom.dumpdata.com>
+References: <498097597.20120112133832@eikelenboom.it> <20120112154613.GA10148@phenom.dumpdata.com>
+ <CAPXgP1373C5SfzU-rfo5GG53dUE6dVzECSuKzX1c_FirpXQt2g@mail.gmail.com>
+ <20120112161204.GC10269@phenom.dumpdata.com> <20120112164025.GA22773@phenom.dumpdata.com>
+ <256392989.20120112180546@eikelenboom.it> <20120112171019.GA19771@phenom.dumpdata.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 12 Jan 2012 18:48:28 +0100
+Message-ID: <CAPXgP11GwHuA3e=xYUpKgvDTEwYb1Q9FH=aV8wvivUXhOaXBVg@mail.gmail.com>
+Subject: Re: linux 3.3-pre-rc1: Starting domU fails with Error: Failed to
+ query current memory allocation of dom0.
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Sander Eikelenboom <linux@eikelenboom.it>, linux-kernel@vger.kernel.org,
+        xen-devel <xen-devel@lists.xensource.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Thu, 2012-01-12 at 17:30 +0000, Jamie Lokier wrote:
-> 
-> > You can do this now, using ptrace().  It's horrible, but half of the
-> > horribleness is needing to understand machine-dependent registers,
-> > which this new patch doesn't address.  (The other half is a ton of
-> > undocumented but important ptrace() behaviours on Linux.)
-> 
-> Yeah I know the horrid use of ptrace, I've implemented programs that use
-> it :-p
+On Thu, Jan 12, 2012 at 18:10, Konrad Rzeszutek Wilk
+<konrad.wilk@oracle.com> wrote:
+> On Thu, Jan 12, 2012 at 06:05:46PM +0100, Sander Eikelenboom wrote:
 
-That warm fuzzy feeling :-)
-
-> I guess ptrace can capture the execv and determine if it is OK or not to
-> run it. But again, this doesn't stop the possible attacks that could
-> happen, with having the execv on a symlink file, having the ptrace check
-> say its OK, and then switching the symlink to a setuid file.
+>> Shouldn't the
+>>
+>> if (error) {
+>>         bus_unregister(&balloon_subsys);
+>>         return error;
+>> }
+>>
+>> right below it also be changed ?
 >
-> When the new execv executed, the parent process would lose all control
-> over it. The idea is to prevent this.
+> I thought so too, but looking at how the subsys_system_register it looks
+> to be OK. Kay, thoughts?
 
-fexecve() exists to solve the problem.
-Also known as execve("/proc/self/fd/...") on Linux.
+No, it's fine, there is nothing else.
 
-> I like Alan's suggestion. Have userspace decide to allow execv or not,
-> and even let it decide if it should allow setuid execv's or not, but
-> still allow non-setuid execvs. If you allow the setuid execv, once that
-> happens, the same behavior will occur as with ptrace. A setuid execv
-> will lose all its filtering.
+The subsys_system_register() fucrtion is a new function (for compat
+with old sysdev rules only) that registers a bus. The counterpart is
+the bus_unregister.
 
-I like the idea of letting the tracer decide what it wants.
+The long-term picture is that 'struct bus_type' and 'struct class'
+will be merged and everything will be called 'subsys'.
 
--- Jamie
+Kay
