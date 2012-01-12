@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab2ALJ5s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 04:57:48 -0500
-Received: from mgw2.diku.dk ([130.225.96.92]:41639 "EHLO mgw2.diku.dk"
+	id S1752860Ab2ALJza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 04:55:30 -0500
+Received: from mgw2.diku.dk ([130.225.96.92]:41609 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753298Ab2ALJzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 04:55:31 -0500
+	id S1751413Ab2ALJzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 04:55:25 -0500
 From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 7/15] drivers/scsi/mvsas/mv_init.c: add missing iounmap
-Date: Thu, 12 Jan 2012 10:55:09 +0100
-Message-Id: <1326362117-29371-7-git-send-email-Julia.Lawall@lip6.fr>
+To: Liam Girdwood <lrg@ti.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/15] sound/soc/mxs/mxs-saif.c: add missing iounmap
+Date: Thu, 12 Jan 2012 10:55:03 +0100
+Message-Id: <1326362117-29371-1-git-send-email-Julia.Lawall@lip6.fr>
 X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -47,49 +49,28 @@ iounmap(e);
 Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
 ---
-This changes the semantics at the point of the first change, as it
-introduces the setting of mvi->regs_ex to NULL.  I do not know if this is
-correct.
+ sound/soc/mxs/mxs-saif.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-It also assumes that if mvi->regs_ex is non-null, then bar_ex != -1.
-This seems to be already assumed in the second block of error handling code.
-
- drivers/scsi/mvsas/mv_init.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
-index 6f58919..adfd11f 100644
---- a/drivers/scsi/mvsas/mv_init.c
-+++ b/drivers/scsi/mvsas/mv_init.c
-@@ -350,7 +350,7 @@ int mvs_ioremap(struct mvs_info *mvi, int bar, int bar_ex)
- 	res_start = pci_resource_start(pdev, bar);
- 	res_len = pci_resource_len(pdev, bar);
- 	if (!res_start || !res_len)
--		goto err_out;
-+		goto err_unmap;
+diff --git a/sound/soc/mxs/mxs-saif.c b/sound/soc/mxs/mxs-saif.c
+index 049e543..5ee0adb 100644
+--- a/sound/soc/mxs/mxs-saif.c
++++ b/sound/soc/mxs/mxs-saif.c
+@@ -680,7 +680,7 @@ static int mxs_saif_probe(struct platform_device *pdev)
+ 		ret = -ENODEV;
+ 		dev_err(&pdev->dev, "failed to get dma resource: %d\n",
+ 			ret);
+-		goto failed_ioremap;
++		goto failed_get_resource;
+ 	}
+ 	saif->dma_param.chan_num = dmares->start;
  
- 	res_flag = pci_resource_flags(pdev, bar);
- 	if (res_flag & IORESOURCE_CACHEABLE)
-@@ -358,14 +358,15 @@ int mvs_ioremap(struct mvs_info *mvi, int bar, int bar_ex)
- 	else
- 		mvi->regs = ioremap_nocache(res_start, res_len);
- 
--	if (!mvi->regs) {
--		if (mvi->regs_ex && (res_flag_ex & IORESOURCE_MEM))
--			iounmap(mvi->regs_ex);
--		mvi->regs_ex = NULL;
--		goto err_out;
--	}
-+	if (!mvi->regs)
-+		goto err_unmap;
- 
- 	return 0;
-+err_unmap:
-+	if (mvi->regs_ex && (res_flag_ex & IORESOURCE_MEM))
-+		iounmap(mvi->regs_ex);
-+	mvi->regs_ex = NULL;
-+
- err_out:
- 	return -1;
- }
+@@ -739,6 +739,7 @@ failed_register:
+ failed_get_irq2:
+ 	free_irq(saif->irq, saif);
+ failed_get_irq1:
++failed_get_resource:
+ 	iounmap(saif->base);
+ failed_ioremap:
+ 	release_mem_region(iores->start, resource_size(iores));
 
