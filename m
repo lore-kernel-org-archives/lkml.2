@@ -1,80 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755474Ab2ALUls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:41:48 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:56859
-	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
+	id S1755589Ab2ALUlx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:41:53 -0500
+Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:47910
+	"HELO p3plsmtps2ded01-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755338Ab2ALUlp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:41:45 -0500
+	id S1755465Ab2ALUlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:41:46 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org, ohering@suse.com,
         jbottomley@parallels.com, hch@infradead.org,
         linux-scsi@vger.kernel.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 06/15] Staging: hv: storvsc: Move and cleanup storvsc_remove()
-Date: Thu, 12 Jan 2012 12:37:59 -0800
-Message-Id: <1326400688-13544-6-git-send-email-kys@microsoft.com>
+Subject: [PATCH 01/15] Staging: hv: storvsc: Cleanup some comments
+Date: Thu, 12 Jan 2012 12:37:54 -0800
+Message-Id: <1326400688-13544-1-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1326400688-13544-1-git-send-email-kys@microsoft.com>
+In-Reply-To: <1326400637-13494-1-git-send-email-kys@microsoft.com>
 References: <1326400637-13494-1-git-send-email-kys@microsoft.com>
- <1326400688-13544-1-git-send-email-kys@microsoft.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Relocate the storvsc_remove() function to a different location in the file
-and invoke scsi_host_put() only after all the cleanup. 
+Use consistent format for comments and get rid of some unnecessary
+comments.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   28 ++++++++++++----------------
- 1 files changed, 12 insertions(+), 16 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   57 +++++++++++++++++--------------------
+ 1 files changed, 26 insertions(+), 31 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 8340387..e0e471c 100644
+index eb853f7..1633b03 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -1083,22 +1083,6 @@ static unsigned int copy_to_bounce_buffer(struct scatterlist *orig_sgl,
- 	return total_copied;
+@@ -50,8 +50,10 @@ static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
+ module_param(storvsc_ringbuffer_size, int, S_IRUGO);
+ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+ 
+-/* to alert the user that structure sizes may be mismatched even though the */
+-/* protocol versions match. */
++/*
++ * To alert the user that structure sizes may be mismatched even though the
++ * protocol versions match.
++ */
+ 
+ 
+ #define REVISION_STRING(REVISION_) #REVISION_
+@@ -68,26 +70,36 @@ MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
+ 		}							\
+ 	} while (0)
+ 
+-/* Major/minor macros.  Minor version is in LSB, meaning that earlier flat */
+-/* version numbers will be interpreted as "0.x" (i.e., 1 becomes 0.1). */
++/*
++ * Major/minor macros.  Minor version is in LSB, meaning that earlier flat
++ * version numbers will be interpreted as "0.x" (i.e., 1 becomes 0.1).
++ */
++
+ #define VMSTOR_PROTOCOL_MAJOR(VERSION_)		(((VERSION_) >> 8) & 0xff)
+ #define VMSTOR_PROTOCOL_MINOR(VERSION_)		(((VERSION_))      & 0xff)
+ #define VMSTOR_PROTOCOL_VERSION(MAJOR_, MINOR_)	((((MAJOR_) & 0xff) << 8) | \
+ 						 (((MINOR_) & 0xff)))
+ #define VMSTOR_INVALID_PROTOCOL_VERSION		(-1)
+ 
+-/* Version history: */
+-/* V1 Beta                    0.1 */
+-/* V1 RC < 2008/1/31          1.0 */
+-/* V1 RC > 2008/1/31          2.0 */
++/*
++ * Version history:
++ * V1 Beta: 0.1
++ * V1 RC < 2008/1/31: 1.0
++ * V1 RC > 2008/1/31:  2.0
++ * Win7: 4.2
++ */
++
+ #define VMSTOR_PROTOCOL_VERSION_CURRENT VMSTOR_PROTOCOL_VERSION(4, 2)
+ 
+ 
+ 
+ 
+-/*  This will get replaced with the max transfer length that is possible on */
+-/*  the host adapter. */
+-/*  The max transfer length will be published when we offer a vmbus channel. */
++/*
++ * This will get replaced with the max transfer length that is possible on
++ * the host adapter.
++ * The max transfer length will be published when we offer a vmbus channel.
++ */
++
+ #define MAX_TRANSFER_LENGTH	0x40000
+ #define DEFAULT_PACKET_SIZE (sizeof(struct vmdata_gpa_direct) +	\
+ 			sizeof(struct vstor_packet) +		\
+@@ -211,18 +223,19 @@ struct vstor_packet {
+ 	};
+ } __packed;
+ 
+-/* Packet flags */
+ /*
++ * Packet Flags:
++ *
+  * This flag indicates that the server should send back a completion for this
+  * packet.
+  */
++
+ #define REQUEST_COMPLETION_FLAG	0x1
+ 
+ /*  This is the set of flags that the vsc can set in any packets it sends */
+ #define VSC_LEGAL_FLAGS		(REQUEST_COMPLETION_FLAG)
+ 
+ 
+-/* Defines */
+ 
+ #define STORVSC_MAX_IO_REQUESTS				128
+ 
+@@ -674,7 +687,6 @@ static int storvsc_connect_to_vsp(struct hv_device *device, u32 ring_size)
+ 
+ 	memset(&props, 0, sizeof(struct vmstorage_channel_properties));
+ 
+-	/* Open the channel */
+ 	ret = vmbus_open(device->channel,
+ 			 ring_size,
+ 			 ring_size,
+@@ -1154,9 +1166,6 @@ static int storvsc_host_reset(struct hv_device *device)
  }
  
--
--static int storvsc_remove(struct hv_device *dev)
--{
--	struct storvsc_device *stor_device = hv_get_drvdata(dev);
--	struct Scsi_Host *host = stor_device->host;
--
--	scsi_remove_host(host);
--
--	scsi_host_put(host);
--
--	storvsc_dev_remove(dev);
--
--	return 0;
--}
--
--
- static int storvsc_get_chs(struct scsi_device *sdev, struct block_device * bdev,
- 			   sector_t capacity, int *info)
+ 
+-/*
+- * storvsc_host_reset_handler - Reset the scsi HBA
+- */
+ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
  {
-@@ -1526,6 +1510,18 @@ err_out0:
+ 	struct hv_host_device *host_dev = shost_priv(scmnd->device->host);
+@@ -1166,9 +1175,6 @@ static int storvsc_host_reset_handler(struct scsi_cmnd *scmnd)
+ }
+ 
+ 
+-/*
+- * storvsc_command_completion - Command completion processing
+- */
+ static void storvsc_command_completion(struct hv_storvsc_request *request)
+ {
+ 	struct storvsc_cmd_request *cmd_request =
+@@ -1262,9 +1268,6 @@ static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
+ 	return allowed;
+ }
+ 
+-/*
+- * storvsc_queuecommand - Initiate command processing
+- */
+ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
+ {
+ 	int ret;
+@@ -1407,7 +1410,6 @@ retry_request:
  	return ret;
  }
  
-+static int storvsc_remove(struct hv_device *dev)
-+{
-+	struct storvsc_device *stor_device = hv_get_drvdata(dev);
-+	struct Scsi_Host *host = stor_device->host;
-+
-+	scsi_remove_host(host);
-+	storvsc_dev_remove(dev);
-+	scsi_host_put(host);
-+
-+	return 0;
-+}
-+
+-/* Scsi driver */
+ static struct scsi_host_template scsi_driver = {
+ 	.module	=		THIS_MODULE,
+ 	.name =			"storvsc_host_t",
+@@ -1448,11 +1450,6 @@ static const struct hv_vmbus_device_id id_table[] = {
+ 
+ MODULE_DEVICE_TABLE(vmbus, id_table);
+ 
+-
+-/*
+- * storvsc_probe - Add a new device for this driver
+- */
+-
+ static int storvsc_probe(struct hv_device *device,
+ 			const struct hv_vmbus_device_id *dev_id)
+ {
+@@ -1542,8 +1539,6 @@ err_out0:
+ 	return ret;
+ }
+ 
+-/* The one and only one */
+-
  static struct hv_driver storvsc_drv = {
  	.name = KBUILD_MODNAME,
  	.id_table = id_table,
