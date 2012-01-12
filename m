@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150Ab2ALTah (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 14:30:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9869 "EHLO mx1.redhat.com"
+	id S1755177Ab2ALTan (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 14:30:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52322 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755062Ab2ALT3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755046Ab2ALT3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 12 Jan 2012 14:29:54 -0500
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
@@ -16,94 +16,189 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         linux-kernel@vger.kernel.org,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: [PATCH 5/6] introduce thp_ptep_get()
-Date: Thu, 12 Jan 2012 14:34:57 -0500
-Message-Id: <1326396898-5579-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 6/6] pagemap: introduce data structure for pagemap entry
+Date: Thu, 12 Jan 2012 14:34:58 -0500
+Message-Id: <1326396898-5579-7-git-send-email-n-horiguchi@ah.jp.nec.com>
 In-Reply-To: <1326396898-5579-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1326396898-5579-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casting pmd into pte_t to handle thp is strongly architecture dependent.
-This patch introduces a new function to separate this dependency from
-independent part.
+Currently a local variable of pagemap entry in pagemap_pte_range()
+is named pfn and typed with u64, but it's not correct (pfn should
+be unsigned long.)
+This patch introduces special type for pagemap entry and replace
+code with it.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/x86/include/asm/pgtable.h |    5 +++++
- fs/proc/task_mmu.c             |    8 ++++----
- include/asm-generic/pgtable.h  |    4 ++++
- 3 files changed, 13 insertions(+), 4 deletions(-)
+ fs/proc/task_mmu.c |   66 +++++++++++++++++++++++++++------------------------
+ 1 files changed, 35 insertions(+), 31 deletions(-)
 
-diff --git 3.2-rc5.orig/arch/x86/include/asm/pgtable.h 3.2-rc5/arch/x86/include/asm/pgtable.h
-index 18601c8..24e4ae1 100644
---- 3.2-rc5.orig/arch/x86/include/asm/pgtable.h
-+++ 3.2-rc5/arch/x86/include/asm/pgtable.h
-@@ -165,6 +165,11 @@ static inline int has_transparent_hugepage(void)
- {
- 	return cpu_has_pse;
- }
-+
-+static inline pte_t thp_ptep_get(pmd_t *pmd)
-+{
-+	return *(pte_t *)pmd;
-+}
- #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
- 
- static inline pte_t pte_set_flags(pte_t pte, pteval_t set)
 diff --git 3.2-rc5.orig/fs/proc/task_mmu.c 3.2-rc5/fs/proc/task_mmu.c
-index 5db15eb..5bf4ccf 100644
+index 5bf4ccf..1fa6c81 100644
 --- 3.2-rc5.orig/fs/proc/task_mmu.c
 +++ 3.2-rc5/fs/proc/task_mmu.c
-@@ -395,7 +395,7 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
- 	spinlock_t *ptl;
+@@ -587,9 +587,13 @@ const struct file_operations proc_clear_refs_operations = {
+ 	.llseek		= noop_llseek,
+ };
  
- 	if (pmd_trans_huge_stable(pmd, vma)) {
--		smaps_pte_entry(*(pte_t *)pmd, addr,
-+		smaps_pte_entry(thp_ptep_get(pmd), addr,
- 				HPAGE_PMD_SIZE, walk);
- 		spin_unlock(&walk->mm->page_table_lock);
- 		mss->anonymous_thp += HPAGE_PMD_SIZE;
-@@ -687,11 +687,11 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
++typedef struct {
++	u64 pme;
++} pme_t;
++
+ struct pagemapread {
+ 	int pos, len;
+-	u64 *buffer;
++	pme_t *buffer;
+ };
+ 
+ #define PAGEMAP_WALK_SIZE	(PMD_SIZE)
+@@ -612,10 +616,15 @@ struct pagemapread {
+ #define PM_NOT_PRESENT      PM_PSHIFT(PAGE_SHIFT)
+ #define PM_END_OF_BUFFER    1
+ 
+-static int add_to_pagemap(unsigned long addr, u64 pfn,
++static inline pme_t make_pme(u64 val)
++{
++	return (pme_t) { .pme = val };
++}
++
++static int add_to_pagemap(unsigned long addr, pme_t *pme,
+ 			  struct pagemapread *pm)
+ {
+-	pm->buffer[pm->pos++] = pfn;
++	pm->buffer[pm->pos++] = *pme;
+ 	if (pm->pos >= pm->len)
+ 		return PM_END_OF_BUFFER;
+ 	return 0;
+@@ -627,8 +636,10 @@ static int pagemap_pte_hole(unsigned long start, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	unsigned long addr;
+ 	int err = 0;
++	pme_t pme = make_pme(PM_NOT_PRESENT);
++
+ 	for (addr = start; addr < end; addr += PAGE_SIZE) {
+-		err = add_to_pagemap(addr, PM_NOT_PRESENT, pm);
++		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			break;
+ 	}
+@@ -641,36 +652,31 @@ static u64 swap_pte_to_pagemap_entry(pte_t pte)
+ 	return swp_type(e) | (swp_offset(e) << MAX_SWAPFILES_SHIFT);
+ }
+ 
+-static u64 pte_to_pagemap_entry(pte_t pte)
++static void pte_to_pagemap_entry(pme_t *pme, pte_t pte)
+ {
+-	u64 pme = 0;
+ 	if (is_swap_pte(pte))
+-		pme = PM_PFRAME(swap_pte_to_pagemap_entry(pte))
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_SWAP;
++		*pme = make_pme(PM_PFRAME(swap_pte_to_pagemap_entry(pte))
++				| PM_PSHIFT(PAGE_SHIFT) | PM_SWAP);
+ 	else if (pte_present(pte))
+-		pme = PM_PFRAME(pte_pfn(pte))
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+-	return pme;
++		*pme = make_pme(PM_PFRAME(pte_pfn(pte))
++				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
+ }
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+-static u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
++static void thp_pte_to_pagemap_entry(pme_t *pme, pte_t pte, int offset)
+ {
+-	u64 pme = 0;
+ 	/*
+ 	 * Currently pte for thp is always present because thp can not be
+ 	 * swapped-out, migrated, or HWPOISONed (split in such cases instead.)
+ 	 * This if-check is just to prepare for future implementation.
+ 	 */
+ 	if (pte_present(pte))
+-		pme = PM_PFRAME(pte_pfn(pte) + offset)
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+-	return pme;
++		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
++				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
+ }
+ #else
+-static inline u64 thp_pte_to_pagemap_entry(pte_t pte, int offset)
++static inline void thp_pte_to_pagemap_entry(pme_t *pme, pte_t pte, int offset)
+ {
+-	return 0;
+ }
+ #endif
+ 
+@@ -681,7 +687,7 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 	struct pagemapread *pm = walk->private;
+ 	pte_t *pte;
+ 	int err = 0;
+-	u64 pfn = PM_NOT_PRESENT;
++	pme_t pme = make_pme(PM_NOT_PRESENT);
+ 
+ 	/* find the first VMA at or above 'addr' */
  	vma = find_vma(walk->mm, addr);
- 
- 	if (pmd_trans_huge_stable(pmd, vma)) {
-+		pte_t huge_pte = thp_ptep_get(pmd);
+@@ -691,8 +697,8 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
  		for (; addr != end; addr += PAGE_SIZE) {
  			unsigned long offset = (addr & ~PAGEMAP_WALK_MASK)
  				>> PAGE_SHIFT;
--			pfn = thp_pte_to_pagemap_entry(*(pte_t *)pmd,
--						       offset);
-+			pfn = thp_pte_to_pagemap_entry(huge_pte, offset);
- 			err = add_to_pagemap(addr, pfn, pm);
+-			pfn = thp_pte_to_pagemap_entry(huge_pte, offset);
+-			err = add_to_pagemap(addr, pfn, pm);
++			thp_pte_to_pagemap_entry(&pme, huge_pte, offset);
++			err = add_to_pagemap(addr, &pme, pm);
  			if (err)
  				break;
-@@ -966,7 +966,7 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
- 	md = walk->private;
- 
- 	if (pmd_trans_huge_stable(pmd, md->vma)) {
--		pte_t huge_pte = *(pte_t *)pmd;
-+		pte_t huge_pte = thp_ptep_get(pmd);
- 		struct page *page;
- 
- 		page = can_gather_numa_stats(huge_pte, md->vma, addr);
-diff --git 3.2-rc5.orig/include/asm-generic/pgtable.h 3.2-rc5/include/asm-generic/pgtable.h
-index 76bff2b..f346bdc 100644
---- 3.2-rc5.orig/include/asm-generic/pgtable.h
-+++ 3.2-rc5/include/asm-generic/pgtable.h
-@@ -434,6 +434,10 @@ static inline int pmd_trans_splitting(pmd_t pmd)
- {
- 	return 0;
+ 		}
+@@ -711,11 +717,11 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
+ 		if (vma && (vma->vm_start <= addr) &&
+ 		    !is_vm_hugetlb_page(vma)) {
+ 			pte = pte_offset_map(pmd, addr);
+-			pfn = pte_to_pagemap_entry(*pte);
++			pte_to_pagemap_entry(&pme, *pte);
+ 			/* unmap before userspace copy */
+ 			pte_unmap(pte);
+ 		}
+-		err = add_to_pagemap(addr, pfn, pm);
++		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			return err;
+ 	}
+@@ -726,13 +732,11 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
  }
-+static inline pte_t thp_ptep_get(pmd_t *pmd)
-+{
-+	return 0;
-+}
- #ifndef __HAVE_ARCH_PMD_WRITE
- static inline int pmd_write(pmd_t pmd)
+ 
+ #ifdef CONFIG_HUGETLB_PAGE
+-static u64 huge_pte_to_pagemap_entry(pte_t pte, int offset)
++static void huge_pte_to_pagemap_entry(pme_t *pme, pte_t pte, int offset)
  {
+-	u64 pme = 0;
+ 	if (pte_present(pte))
+-		pme = PM_PFRAME(pte_pfn(pte) + offset)
+-			| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT;
+-	return pme;
++		*pme = make_pme(PM_PFRAME(pte_pfn(pte) + offset)
++				| PM_PSHIFT(PAGE_SHIFT) | PM_PRESENT);
+ }
+ 
+ /* This function walks within one hugetlb entry in the single call */
+@@ -742,12 +746,12 @@ static int pagemap_hugetlb_range(pte_t *pte, unsigned long hmask,
+ {
+ 	struct pagemapread *pm = walk->private;
+ 	int err = 0;
+-	u64 pfn;
++	pme_t pme = make_pme(PM_NOT_PRESENT);
+ 
+ 	for (; addr != end; addr += PAGE_SIZE) {
+ 		int offset = (addr & ~hmask) >> PAGE_SHIFT;
+-		pfn = huge_pte_to_pagemap_entry(*pte, offset);
+-		err = add_to_pagemap(addr, pfn, pm);
++		huge_pte_to_pagemap_entry(&pme, *pte, offset);
++		err = add_to_pagemap(addr, &pme, pm);
+ 		if (err)
+ 			return err;
+ 	}
 -- 
 1.7.6.5
 
