@@ -1,150 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab2ALPqY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 10:46:24 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:54175 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754061Ab2ALPqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 10:46:21 -0500
-Date: Thu, 12 Jan 2012 15:46:17 +0000
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, hughd@google.com,
-        aarcange@redhat.com
-Subject: Re: [PATCH -mm 1/2] mm: kswapd test order 0 watermarks when
- compaction is enabled
-Message-ID: <20120112154617.GH3910@csn.ul.ie>
-References: <20120109213156.0ff47ee5@annuminas.surriel.com>
- <20120109213313.22841ef5@annuminas.surriel.com>
+	id S1754146Ab2ALPsO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 10:48:14 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:35532 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab2ALPsN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 10:48:13 -0500
+Date: Thu, 12 Jan 2012 10:46:13 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Sander Eikelenboom <linux@eikelenboom.it>, kay.sievers@vrfy.org,
+        linux-kernel@vger.kernel.org
+Cc: xen-devel <xen-devel@lists.xensource.com>
+Subject: Re: linux 3.3-pre-rc1: Starting domU fails with Error: Failed to
+ query current memory allocation of dom0.
+Message-ID: <20120112154613.GA10148@phenom.dumpdata.com>
+References: <498097597.20120112133832@eikelenboom.it>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120109213313.22841ef5@annuminas.surriel.com>
+In-Reply-To: <498097597.20120112133832@eikelenboom.it>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-CT-RefId: str=0001.0A090209.4F0F00B8.00A8,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 09:33:13PM -0500, Rik van Riel wrote:
-> When built with CONFIG_COMPACTION, kswapd does not try to free
-> contiguous pages.  Because it is not trying, it should also not
-> test whether it succeeded, because that can result in continuous
-> page reclaim, until a large fraction of memory is free and large
-> fractions of the working set have been evicted.
+On Thu, Jan 12, 2012 at 01:38:32PM +0100, Sander Eikelenboom wrote:
+> Hi Konrad,
 > 
-
-hmm, I'm missing something about your explanation.
-
-1. wakeup_kswapd passes requested order to kswapd_max_order. Bear in
-   mind that this does *not* happen for THP.
-2. kswapd reads this and passes it to balance_pgdat
-3. balance_pgdat puts that in scan_control
-4. shrink_zone gets that scan_control and so on
-
-kswapd does try to free contiguous pages.
-
-What is the source of the contiguous allocations of concern? The
-mm_vmscan_wakeup_kswapd tracepoint should be able to get you a stack
-trace to identify the source of high-order allocations.
-
-To confirm I was not on crazy pills I fired up a systemtap script
-that did a burst of order-8 allocations (ok, some crazy pills) and
-observed this with tracepoints
-
-          <idle>-0     [002] 236009.284803: mm_vmscan_wakeup_kswapd: nid=0 zid=2 order=8
-         kswapd0-53    [002] 236009.285028: mm_vmscan_kswapd_wake: nid=0 order=8
-         kswapd0-53    [002] 236009.285034: mm_vmscan_lru_isolate: isolate_mode=1 order=8 nr_requested=9 nr_scanned=0 nr_taken=0 contig_taken=0 contig_dirty=0 contig_failed=0
-         kswapd0-53    [002] 236009.285035: mm_vmscan_lru_isolate: isolate_mode=1 order=8 nr_requested=22 nr_scanned=0 nr_taken=0 contig_taken=0 contig_dirty=0 contig_failed=0
-         kswapd0-53    [002] 236009.285038: mm_vmscan_lru_isolate: isolate_mode=1 order=8 nr_requested=1 nr_scanned=1 nr_taken=1 contig_taken=0 contig_dirty=0 contig_failed=1
-         kswapd0-53    [002] 236009.285049: mm_vmscan_lru_isolate: isolate_mode=1 order=8 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=12 contig_dirty=0 contig_failed=20
-         kswapd0-53    [002] 236009.285080: mm_vmscan_lru_isolate: isolate_mode=2 order=8 nr_requested=32 nr_scanned=38 nr_taken=38 contig_taken=24 contig_dirty=0 contig_failed=14
-         kswapd0-53    [002] 236009.285090: mm_vmscan_lru_isolate: isolate_mode=1 order=8 nr_requested=23 nr_scanned=24 nr_taken=24 contig_taken=4 contig_dirty=0 contig_failed=20
-
-This is with CONFIG_COMPACTION.
-
-You're still in the right area though. kswapd does contiguous-aware
-reclaim it does not do any compaction and so potentially it is doing
-excessive reclaim while depending on another process to do the
-compaction for it. That is a problem.
-
-> Also remove a line of code that increments balanced right before
-> exiting the function.
+> Today i tried linuses tree of today (last commit is 4c4d285ad5665bfbd983b95fde8d7a477d24a361).
 > 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
->  mm/vmscan.c |   22 +++++++++++++++++-----
->  1 files changed, 17 insertions(+), 5 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index f54a05b..c3eec6b 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2608,7 +2608,7 @@ loop_again:
->  		 */
->  		for (i = 0; i <= end_zone; i++) {
->  			struct zone *zone = pgdat->node_zones + i;
-> -			int nr_slab;
-> +			int nr_slab, testorder;
->  			unsigned long balance_gap;
->  
->  			if (!populated_zone(zone))
-> @@ -2637,11 +2637,25 @@ loop_again:
->  			 * gap is either the low watermark or 1%
->  			 * of the zone, whichever is smaller.
->  			 */
-> +			testorder = order;
->  			balance_gap = min(low_wmark_pages(zone),
->  				(zone->present_pages +
->  					KSWAPD_ZONE_BALANCE_GAP_RATIO-1) /
->  				KSWAPD_ZONE_BALANCE_GAP_RATIO);
-> -			if (!zone_watermark_ok_safe(zone, order,
-> +			/*
-> +			 * Kswapd reclaims only single pages when
-> +			 * COMPACTION_BUILD. Trying too hard to get
-> +			 * contiguous free pages can result in excessive
-> +			 * amounts of free memory, and useful things
-> +			 * getting kicked out of memory.
-> +			 * Limit the amount of reclaim to something sane,
-> +			 * plus space for compaction to do its thing.
-> +			 */
-> +			if (COMPACTION_BUILD) {
-> +				testorder = 0;
-> +				balance_gap += 2<<order;
-> +			}
-> +			if (!zone_watermark_ok_safe(zone, testorder,
->  					high_wmark_pages(zone) + balance_gap,
->  					end_zone, 0)) {
+> It boots dom0 fine, but it fails to start any domU with: "Error: Failed to query current memory allocation of dom0."
+> With my previous 3.1.5 kernel everything is fine, nothing else changed in config in between.
 
-kswapd does reclaim high-order pages so this comment is misleading.
-However I see the type of problem you are talking about.
+Hey Kay,
 
-Direct reclaim in shrink_zones() does a check for compaction_suitable()
-when deciding whether to abort reclaim or not. How about doing the same
-for kswapd and if compaction can go ahead, goto out?
+Your patch that converts the xen-balloon to use the regular device bus driver
+(070680218379e15c1901f4bf21b98e3cbf12b527) has some not-so-happy consequences.
 
->  				shrink_zone(priority, zone, &sc);
-> @@ -2670,7 +2684,7 @@ loop_again:
->  				continue;
->  			}
->  
-> -			if (!zone_watermark_ok_safe(zone, order,
-> +			if (!zone_watermark_ok_safe(zone, testorder,
->  					high_wmark_pages(zone), end_zone, 0)) {
->  				all_zones_ok = 0;
->  				/*
-> @@ -2776,8 +2790,6 @@ out:
->  
->  			/* If balanced, clear the congested flag */
->  			zone_clear_flag(zone, ZONE_CONGESTED);
-> -			if (i <= *classzone_idx)
-> -				balanced += zone->present_pages;
->  		}
->  	}
->  
-> 
+The toolstack (xen-tools) use:
 
--- 
-Mel Gorman
-SUSE Labs
+/sys/devices/system/xen_memory/xen_memory0
+
+But with the change, it is now:
+
+/sys/devices/xen_memory0/target_kb
+
+Which means that the tools can't find it now.
+
+I did not see anything in feature-removal-schedule.txt so I don't know
+exactly when the full sys_device structure is going away.
+
+Is there any work-arounds that can be inserted in the kernel so that
+the old directory still exists at least for 3.3 such that there will be
+enough time for the tool-stack to be updated?
