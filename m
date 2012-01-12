@@ -1,84 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754358Ab2ALQwu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:52:50 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:42157 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753870Ab2ALQwr (ORCPT
+	id S1754364Ab2ALQx1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:53:27 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:47888 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753870Ab2ALQx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:52:47 -0500
+	Thu, 12 Jan 2012 11:53:26 -0500
+MIME-Version: 1.0
+Message-ID: <1326387026-25142-1-git-send-email-konrad.wilk@oracle.com>
+Date: Thu, 12 Jan 2012 08:50:25 -0800 (PST)
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: airlied@redhat.com, airlied@linux.ie, dri-devel@lists.freedesktop.org,
         linux-kernel@vger.kernel.org
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] ttm/dma: Remove the WARN() which is not useful.
-Date: Thu, 12 Jan 2012 11:50:26 -0500
-Message-Id: <1326387026-25142-2-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH] minor fix for 3.3-rc0 in TTM DMA code.
 X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1326387026-25142-1-git-send-email-konrad.wilk@oracle.com>
-References: <1326387026-25142-1-git-send-email-konrad.wilk@oracle.com>
+Content-Type: text/plain; charset=ascii
+Content-Transfer-Encoding: 7bit
 X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
-X-CT-RefId: str=0001.0A090201.4F0F0FDC.006C,ss=1,re=0.000,fgs=0
+X-CT-RefId: str=0001.0A090207.4F0F1003.0022,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-. It was useful during development, but now on a production system
-we can get this (if the user forgot to upload the firmware):
+Please put 
+ [PATCH] ttm/dma: Remove the WARN() which is not useful.
 
-[drm] radeon: irq initialized.
-[drm] GART: num cpu pages 131072, num gpu pages 131072
-[drm] radeon: ib pool ready.
-[drm] Loading SUMO Microcode
-r600_cp: Failed to load firmware "radeon/SUMO_pfp.bin"
-atl1c 0000:03:00.0: version 1.0.1.0-NAPI.213057] [drm:evergreen_startup] *ERROR* Failed to load firmware!
-radeon 0000:00:01.0: disabling GPU acceleration
-88] radeon 0000:00:01.0: ffff8801bb782400 unpin not necessary
-------------[ cut here ]------------
-WARNING: at /home/konrad/linux-linus/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c:956 ttm_dma_unpopulate+0x79/0x300 [ttm]()
-Hardware name: System Product Name
-Modules linked in: e1000e atl1c radeon(+) ahci libahci libata scsi_mod fbcon tileblit font ttm bitblit softcursor drm_kms_helper wmi xen_blkfront xen_netfront fb_sys_fops sysimgblt sysfillrect syscopyarea xenfs xen_privcmd
-Pid: 1600, comm: modprobe Not tainted 3.2.0-06100-ge343a89 #1
-Call Trace:
- [<ffffffff8108973a>] warn_slowpath_common+0x7a/0xb0
- [<ffffffff81089785>] warn_slowpath_null+0x15/0x20
- [<ffffffffa0060309>] ttm_dma_unpopulate+0x79/0x300 [ttm]
- [<ffffffffa01341c0>] radeon_ttm_tt_unpopulate+0x120/0x130 [radeon]
- [<ffffffffa0056e0c>] ttm_tt_destroy+0x2c/0x70 [ttm]
- [<ffffffffa0057a4e>] ttm_bo_cleanup_memtype_use+0x3e/0x80 [ttm]
- [<ffffffffa00595a1>] ttm_bo_release+0x251/0x280 [ttm]
- [<ffffffffa0059610>] ttm_bo_unref+0x40/0x60 [ttm]
- [<ffffffffa0134d02>] radeon_bo_unref+0x42/0x80 [radeon]
- [<ffffffffa0186dfb>] radeon_sa_bo_manager_fini+0x6b/0x80 [radeon]
- [<ffffffffa0146b8f>] radeon_ib_pool_fini+0x6f/0x90 [radeon]
- [<ffffffffa014be49>] r100_ib_fini+0x19/0x20 [radeon]
- [<ffffffffa017b47e>] evergreen_init+0x1ee/0x2d0 [radeon]
+in your 3.3-rc0 branch. It is a minor fix, but quite .. um annoying
+and it masks the real issue.
 
-The big WARN() has nothing to do with the culprit - which is that
-the firmware was not loaded. So lets remove the WARN() from the TTM DMA code.
-
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-index 37ead69..0c46d8c 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc_dma.c
-@@ -952,10 +952,9 @@ void ttm_dma_unpopulate(struct ttm_dma_tt *ttm_dma, struct device *dev)
- 
- 	type = ttm_to_type(ttm->page_flags, ttm->caching_state);
- 	pool = ttm_dma_find_pool(dev, type);
--	if (!pool) {
--		WARN_ON(!pool);
-+	if (!pool)
- 		return;
--	}
-+
- 	is_cached = (ttm_dma_find_pool(pool->dev,
- 		     ttm_to_type(ttm->page_flags, tt_cached)) == pool);
- 
--- 
-1.7.7.4
-
+Thanks!
