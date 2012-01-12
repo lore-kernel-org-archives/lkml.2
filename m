@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab2ALUgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 15:36:00 -0500
-Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:51471
-	"HELO p3plsmtps2ded02-02.prod.phx3.secureserver.net"
+	id S1755533Ab2ALUgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 15:36:36 -0500
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:54173
+	"HELO p3plsmtps2ded03-02.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755220Ab2ALUfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 15:35:24 -0500
+	id S1755362Ab2ALUfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 15:35:23 -0500
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org, ohering@suse.com,
         jbottomley@parallels.com, hch@infradead.org,
         linux-scsi@vger.kernel.org
 Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 03/15] Staging: hv: storvsc: Cleanup storvsc_queuecommand()
-Date: Thu, 12 Jan 2012 12:37:56 -0800
-Message-Id: <1326400688-13544-3-git-send-email-kys@microsoft.com>
+Subject: [PATCH 12/15] Staging: hv: storvsc: Cleanup some protocol related constants
+Date: Thu, 12 Jan 2012 12:38:05 -0800
+Message-Id: <1326400688-13544-12-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1326400688-13544-1-git-send-email-kys@microsoft.com>
 References: <1326400637-13494-1-git-send-email-kys@microsoft.com>
@@ -24,125 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup storvsc_queuecommand(). As part of this cleanup, rename the function to
-check if the scsi command can be sent to the host, consolidate error recovery
-and get rid of some dead code.
+Cleanup some protocol related constants.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |   48 +++++++++++++++++--------------------
- 1 files changed, 22 insertions(+), 26 deletions(-)
+ drivers/staging/hv/storvsc_drv.c |   19 +++++++------------
+ 1 files changed, 7 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 7561d29..71e50c3 100644
+index 629edd1..9f07458 100644
 --- a/drivers/staging/hv/storvsc_drv.c
 +++ b/drivers/staging/hv/storvsc_drv.c
-@@ -1239,13 +1239,16 @@ static void storvsc_command_completion(struct hv_storvsc_request *request)
- 	mempool_free(cmd_request, memp->request_mempool);
- }
- 
--static bool storvsc_check_scsi_cmd(struct scsi_cmnd *scmnd)
-+static bool storvsc_scsi_cmd_ok(struct scsi_cmnd *scmnd)
- {
- 	bool allowed = true;
- 	u8 scsi_op = scmnd->cmnd[0];
- 
- 	switch (scsi_op) {
--	/* smartd sends this command, which will offline the device */
-+	/*
-+	 * smartd sends this command and the host does not handle
-+	 * this. So, don't send it.
-+	 */
- 	case SET_WINDOW:
- 		scmnd->result = ILLEGAL_REQUEST << 16;
- 		allowed = false;
-@@ -1270,32 +1273,26 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
- 	struct vmscsi_request *vm_srb;
- 	struct stor_mem_pools *memp = scmnd->device->hostdata;
- 
--	if (storvsc_check_scsi_cmd(scmnd) == false) {
-+	if (!storvsc_scsi_cmd_ok(scmnd)) {
- 		scmnd->scsi_done(scmnd);
- 		return 0;
- 	}
- 
--	/* If retrying, no need to prep the cmd */
--	if (scmnd->host_scribble) {
+@@ -114,13 +114,9 @@ enum vstor_packet_operation {
+  * this remains the same across the write regardless of 32/64 bit
+  * note: it's patterned off the SCSI_PASS_THROUGH structure
+  */
+-#define CDB16GENERIC_LENGTH			0x10
 -
--		cmd_request =
--			(struct storvsc_cmd_request *)scmnd->host_scribble;
+-#ifndef SENSE_BUFFER_SIZE
+-#define SENSE_BUFFER_SIZE			0x12
+-#endif
 -
--		goto retry_request;
--	}
--
- 	request_size = sizeof(struct storvsc_cmd_request);
+-#define MAX_DATA_BUF_LEN_WITH_PADDING		0x14
++#define STORVSC_MAX_CMD_LEN			0x10
++#define STORVSC_SENSE_BUFFER_SIZE		0x12
++#define STORVSC_MAX_BUF_LEN_WITH_PADDING	0x14
  
- 	cmd_request = mempool_alloc(memp->request_mempool,
- 				       GFP_ATOMIC);
-+
-+	/*
-+	 * We might be invoked in an interrupt context; hence
-+	 * mempool_alloc() can fail.
-+	 */
- 	if (!cmd_request)
- 		return SCSI_MLQUEUE_DEVICE_BUSY;
+ struct vmscsi_request {
+ 	u16 length;
+@@ -140,9 +136,9 @@ struct vmscsi_request {
+ 	u32 data_transfer_length;
  
- 	memset(cmd_request, 0, sizeof(struct storvsc_cmd_request));
+ 	union {
+-		u8 cdb[CDB16GENERIC_LENGTH];
+-		u8 sense_data[SENSE_BUFFER_SIZE];
+-		u8 reserved_array[MAX_DATA_BUF_LEN_WITH_PADDING];
++		u8 cdb[STORVSC_MAX_CMD_LEN];
++		u8 sense_data[STORVSC_SENSE_BUFFER_SIZE];
++		u8 reserved_array[STORVSC_MAX_BUF_LEN_WITH_PADDING];
+ 	};
+ } __attribute((packed));
  
- 	/* Setup the cmd request */
--	cmd_request->bounce_sgl_count = 0;
--	cmd_request->bounce_sgl = NULL;
- 	cmd_request->cmd = scmnd;
+@@ -234,7 +230,6 @@ struct vstor_packet {
+ #define STORVSC_MAX_LUNS_PER_TARGET			64
+ #define STORVSC_MAX_TARGETS				1
+ #define STORVSC_MAX_CHANNELS				1
+-#define STORVSC_MAX_CMD_LEN				16
  
- 	scmnd->host_scribble = (unsigned char *)cmd_request;
-@@ -1344,11 +1341,8 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
- 						     scsi_bufflen(scmnd),
- 						     vm_srb->data_in);
- 			if (!cmd_request->bounce_sgl) {
--				scmnd->host_scribble = NULL;
--				mempool_free(cmd_request,
--						memp->request_mempool);
--
--				return SCSI_MLQUEUE_HOST_BUSY;
-+				ret = SCSI_MLQUEUE_HOST_BUSY;
-+				goto queue_error;
- 			}
+ /* Matches Windows-end */
+ enum storvsc_request_type {
+@@ -1074,7 +1069,7 @@ static int storvsc_do_io(struct hv_device *device,
+ 	vstor_packet->vm_srb.length = sizeof(struct vmscsi_request);
  
- 			cmd_request->bounce_sgl_count =
-@@ -1377,24 +1371,26 @@ static int storvsc_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *scmnd)
- 			virt_to_phys(scsi_sglist(scmnd)) >> PAGE_SHIFT;
- 	}
  
--retry_request:
- 	/* Invokes the vsc to start an IO */
- 	ret = storvsc_do_io(dev, &cmd_request->request);
+-	vstor_packet->vm_srb.sense_info_length = SENSE_BUFFER_SIZE;
++	vstor_packet->vm_srb.sense_info_length = STORVSC_SENSE_BUFFER_SIZE;
  
- 	if (ret == -EAGAIN) {
- 		/* no more space */
  
--		if (cmd_request->bounce_sgl_count)
-+		if (cmd_request->bounce_sgl_count) {
- 			destroy_bounce_buffer(cmd_request->bounce_sgl,
- 					cmd_request->bounce_sgl_count);
- 
--		mempool_free(cmd_request, memp->request_mempool);
--
--		scmnd->host_scribble = NULL;
--
--		ret = SCSI_MLQUEUE_DEVICE_BUSY;
-+			ret = SCSI_MLQUEUE_DEVICE_BUSY;
-+			goto queue_error;
-+		}
- 	}
- 
-+	return 0;
-+
-+queue_error:
-+	mempool_free(cmd_request, memp->request_mempool);
-+	scmnd->host_scribble = NULL;
- 	return ret;
- }
- 
+ 	vstor_packet->vm_srb.data_transfer_length =
 -- 
 1.7.4.1
 
