@@ -1,196 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab2ALQpO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 11:45:14 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:42396 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514Ab2ALQpK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 11:45:10 -0500
-Message-ID: <4F0F0E10.1010107@canonical.com>
-Date: Thu, 12 Jan 2012 17:45:04 +0100
-From: Tim Gardner <rtg.canonical@gmail.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20120110 Thunderbird/10.0
+	id S1754333Ab2ALQpp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 11:45:45 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:33419 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754247Ab2ALQpl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 11:45:41 -0500
+Date: Thu, 12 Jan 2012 11:45:32 -0500
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] sh updates for 3.3-rc1
+Message-ID: <20120112164532.GB6626@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20120112065144.GA24051@linux-sh.org>
+ <CA+55aFzTJe_VwDxiBKyB3dNCJfm=HXxib4Y4fGihhoBFvXiOTw@mail.gmail.com>
+ <CA+55aFxjHamzRteKAXLGuBt4LH-ZkJ+PJxZS5kWST-umhK8Zow@mail.gmail.com>
 MIME-Version: 1.0
-To: Tyler Hicks <tyler.hicks@canonical.com>
-CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, ecryptfs@vger.kernel.org
-Subject: Re: [PATCH 1/2] ecryptfs: Improve metatdata read failure logging
-References: <1326301242-5817-1-git-send-email-tim.gardner@canonical.com> <1326301242-5817-2-git-send-email-tim.gardner@canonical.com> <20120112120044.GB4717@boyd>
-In-Reply-To: <20120112120044.GB4717@boyd>
-Content-Type: multipart/mixed;
- boundary="------------050500060302000800060906"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFxjHamzRteKAXLGuBt4LH-ZkJ+PJxZS5kWST-umhK8Zow@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050500060302000800060906
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Wed, Jan 11, 2012 at 11:35:32PM -0800, Linus Torvalds wrote:
+> 
+> Looking good. Pushed out, and if you have current git and want to see
+> what it all looks like when I pull your signed tag, you can use "git
+> log --show-signature" to see it revalidate your signature ;)
 
-On 01/12/2012 01:00 PM, Tyler Hicks wrote:
-> On 2012-01-11 18:00:41, Tim Gardner wrote:
->> There are 3 read failure cases in ecryptfs_read_metadata(), but only 2
->> of them are uniquely noted by kernel log messages. This patch
->> identifies and logs each read failure case. It also correctly interprets
->> a negative return value from ecryptfs_read_lower().
->
-> I'm not sure that the negative return value was incorrectly interpreted.
-> See below.
->
->>
->> Removes unnecessary variable initialization.
->>
->> Cc: linux-kernel@vger.kernel.org
->> Cc: stable@vger.kernel.org
->> Cc: Tyler Hicks<tyler.hicks@canonical.com>
->> Signed-off-by: Tim Gardner<tim.gardner@canonical.com>
->> ---
->>   fs/ecryptfs/crypto.c |   17 +++++++++++------
->>   1 files changed, 11 insertions(+), 6 deletions(-)
->>
->> diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
->> index d3c8776..ac063bd 100644
->> --- a/fs/ecryptfs/crypto.c
->> +++ b/fs/ecryptfs/crypto.c
->> @@ -1590,8 +1590,8 @@ int ecryptfs_read_and_validate_xattr_region(struct dentry *dentry,
->>    */
->>   int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
->>   {
->> -	int rc = 0;
->> -	char *page_virt = NULL;
->> +	int rc;
->> +	char *page_virt;
->>   	struct inode *ecryptfs_inode = ecryptfs_dentry->d_inode;
->>   	struct ecryptfs_crypt_stat *crypt_stat =
->>   	&ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
->> @@ -1611,10 +1611,15 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
->>   	}
->>   	rc = ecryptfs_read_lower(page_virt, 0, crypt_stat->extent_size,
->>   				 ecryptfs_inode);
->> -	if (rc>= 0)
->> -		rc = ecryptfs_read_headers_virt(page_virt, crypt_stat,
->> -						ecryptfs_dentry,
->> -						ECRYPTFS_VALIDATE_HEADER_SIZE);
->> +	if (rc<  0) {
->> +		printk(KERN_ERR "%s: Could not read %u bytes\n",
->> +			__func__, crypt_stat->extent_size);
->> +		goto out;
->> +	}
->
-> This may break things a bit for users that use the
-> ecryptfs_xattr_metadata mount option (which stores the metadata in an
-> xattr, rather than the header of the file). A failure to read the lower
-> file here doesn't matter because the metadata is likely stored in an
-> xattr, which will be found with the ecryptfs_read_xattr_region() call
-> below.
->
-> I've never liked that ecryptfs potentially looks in both the header and
-> the xattr for metadata, but that's how it has been since the very early
-> days of eCryptfs. I've wanted to change this but there is the potential
-> to break things for users who have a mixture of files with metadata in
-> the header and in the header.
->
-> Maybe we just go whole hog for 3.3 and only look in either the header or
-> xattr for metadata, depending on whether or not ecryptfs_xattr_metadata
-> is used?
->
-> I could live with that, but I would definitely not want something like
-> that to go to the stable kernel. Any thoughts?
->
-> Tyler
->
+Public service announcement --- note that you need to update to git
+1.7.9-rc0 or lateer for git log --show-signature to work.
 
-I think you're right. Given the way the metadata checks are coded I 
-think its impossible to disambiguate the 2 failure scenarios. However, 
-its not really relevant that we know which one failed, only the inode of 
-the metadata read that _did_ fail is important.
-
-How about this much simpler patch that is also suitable for stable ? 
-Tested on 3.2.
-
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
-
---------------050500060302000800060906
-Content-Type: text/x-patch;
- name="0001-ecryptfs-Improve-metadata-read-failure-logging.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-ecryptfs-Improve-metadata-read-failure-logging.patch"
-
->From 48f75c409ddc00caec88162f53c3155196b17854 Mon Sep 17 00:00:00 2001
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Thu, 12 Jan 2012 16:31:55 +0100
-Subject: [PATCH 1/1 V2] ecryptfs: Improve metadata read failure logging
-
-Print inode on metadata read failure. The only real
-way of dealing with metadata read failures is to delete
-the underlying file system file. Having the inode
-allows one to 'find . -inum INODE`.
-
-Cc: stable@vger.kernel.org
-Cc: Tyler Hicks <tyler.hicks@canonical.com>
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- fs/ecryptfs/crypto.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
-
-diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-index d3c8776..326d6ab 100644
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -1590,8 +1590,8 @@ int ecryptfs_read_and_validate_xattr_region(struct dentry *dentry,
-  */
- int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- {
--	int rc = 0;
--	char *page_virt = NULL;
-+	int rc;
-+	char *page_virt;
- 	struct inode *ecryptfs_inode = ecryptfs_dentry->d_inode;
- 	struct ecryptfs_crypt_stat *crypt_stat =
- 	    &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
-@@ -1616,11 +1616,13 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- 						ecryptfs_dentry,
- 						ECRYPTFS_VALIDATE_HEADER_SIZE);
- 	if (rc) {
-+		/* metadata is not in the file header, so try xattrs */
- 		memset(page_virt, 0, PAGE_CACHE_SIZE);
- 		rc = ecryptfs_read_xattr_region(page_virt, ecryptfs_inode);
- 		if (rc) {
- 			printk(KERN_DEBUG "Valid eCryptfs headers not found in "
--			       "file header region or xattr region\n");
-+			       "file header region or xattr region, inode %lu\n",
-+				ecryptfs_inode->i_ino);
- 			rc = -EINVAL;
- 			goto out;
- 		}
-@@ -1629,7 +1631,8 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- 						ECRYPTFS_DONT_VALIDATE_HEADER_SIZE);
- 		if (rc) {
- 			printk(KERN_DEBUG "Valid eCryptfs headers not found in "
--			       "file xattr region either\n");
-+			       "file xattr region either, inode %lu\n",
-+				ecryptfs_inode->i_ino);
- 			rc = -EINVAL;
- 		}
- 		if (crypt_stat->mount_crypt_stat->flags
-@@ -1640,7 +1643,8 @@ int ecryptfs_read_metadata(struct dentry *ecryptfs_dentry)
- 			       "crypto metadata only in the extended attribute "
- 			       "region, but eCryptfs was mounted without "
- 			       "xattr support enabled. eCryptfs will not treat "
--			       "this like an encrypted file.\n");
-+			       "this like an encrypted file, inode %lu\n",
-+				ecryptfs_inode->i_ino);
- 			rc = -EINVAL;
- 		}
- 	}
--- 
-1.7.8.3
-
-
---------------050500060302000800060906--
+	     	    	    			    - Ted
