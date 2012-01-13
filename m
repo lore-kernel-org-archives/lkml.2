@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab2AMI7D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 03:59:03 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46058 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049Ab2AMI7B (ORCPT
+	id S1755664Ab2AMJBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 04:01:06 -0500
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63238 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752049Ab2AMJBB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 03:59:01 -0500
-Message-ID: <4F0FF251.70509@gmail.com>
-Date: Fri, 13 Jan 2012 09:58:57 +0100
-From: Chase Douglas <chasedouglas@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: Use accessor for MT events
-References: <1326396065-2448-1-git-send-email-rydberg@euromail.se>
-In-Reply-To: <1326396065-2448-1-git-send-email-rydberg@euromail.se>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jan 2012 04:01:01 -0500
+Message-ID: <1326445253.12667.1.camel@phoenix>
+Subject: [PATCH] backlight: Return proper error in l4f00242t03_probe if
+ regulator_get fails
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 13 Jan 2012 17:00:53 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2012 08:21 PM, Henrik Rydberg wrote:
-> Add an accessor function for the actual MT event types, and use
-> it everywhere.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/video/backlight/l4f00242t03.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Just to double check, it's only used in two places as you have below?
-Your comment made me think it's used all over, and maybe you forgot to
-git add files.
+diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
+index fae421a..6022b67 100644
+--- a/drivers/video/backlight/l4f00242t03.c
++++ b/drivers/video/backlight/l4f00242t03.c
+@@ -190,6 +190,7 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
+ 
+ 	priv->io_reg = regulator_get(&spi->dev, "vdd");
+ 	if (IS_ERR(priv->io_reg)) {
++		ret = PTR_ERR(priv->io_reg);
+ 		dev_err(&spi->dev, "%s: Unable to get the IO regulator\n",
+ 		       __func__);
+ 		goto err3;
+@@ -197,6 +198,7 @@ static int __devinit l4f00242t03_probe(struct spi_device *spi)
+ 
+ 	priv->core_reg = regulator_get(&spi->dev, "vcore");
+ 	if (IS_ERR(priv->core_reg)) {
++		ret = PTR_ERR(priv->core_reg);
+ 		dev_err(&spi->dev, "%s: Unable to get the core regulator\n",
+ 		       __func__);
+ 		goto err4;
+-- 
+1.7.5.4
 
-If everything is correct,
 
-Reviewed-by: Chase Douglas <chase.douglas@canonical.com>
+
