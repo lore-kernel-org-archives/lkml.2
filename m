@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab2AMBW6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:22:58 -0500
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:48377 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755707Ab2AMBW5 (ORCPT
+	id S1756840Ab2AMB0t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:26:49 -0500
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:40589 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756792Ab2AMB0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:22:57 -0500
-Message-ID: <4F0F87BE.2020202@oss.ntt.co.jp>
-Date: Fri, 13 Jan 2012 10:24:14 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
+	Thu, 12 Jan 2012 20:26:47 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAKCGD095LbVq/2dsb2JhbABDrQ6BBoFyAQEFJxMcIxAIAw4KLhQlAyETvxoTiydjBJUNklE
+Date: Fri, 13 Jan 2012 12:26:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
+        Kamal Mostafa <kamal@canonical.com>,
+        Eric Sandeen <sandeen@sandeen.net>,
+        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <dchinner@redhat.com>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/4] fs: Improve filesystem freezing handling
+Message-ID: <20120113012643.GF2806@dastard>
+References: <1326331253-6497-1-git-send-email-jack@suse.cz>
+ <1326331253-6497-2-git-send-email-jack@suse.cz>
 MIME-Version: 1.0
-To: dave@gnu.org
-CC: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        lkml <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-Subject: Re: [PATCH] KVM: MMU: increment stats after event occurrence
-References: <1326416880.3416.2.camel@offbook>
-In-Reply-To: <1326416880.3416.2.camel@offbook>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326331253-6497-2-git-send-email-jack@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/01/13 10:08), Davidlohr Bueso wrote:
-> From: Davidlohr Bueso<dave@gnu.org>
->
-> It makes more sense to actually increment statistics for tlb flushes and page table entry updates after such _events_ occur, instead of before.
+On Thu, Jan 12, 2012 at 02:20:50AM +0100, Jan Kara wrote:
+> + *
+> + * Decrement number of writers to the filesystem and wake up possible
+> + * waiters wanting to freeze the filesystem.
+> + */
+> +void sb_end_write(struct super_block *sb)
+> +{
+> +#ifdef CONFIG_SMP
+> +	this_cpu_dec(sb->s_writers);
+> +#else
+> +	preempt_disable();
+> +	sb->s_writers--;
+> +	preempt_enable();
+> +#endif
 
-Why?
+I really dislike this type of open coded per-cpu counter
+implementation. I can't see that there is no good reason to use it
+over percpu_counters here which abstract all this mess away.
 
-	Takuya
+i.e. it is relatively rare that the per-cpu count will nest
+greater than the percpu_counter batch size (needs more than 32
+concurrent blocked active writes per CPU), so there is no
+significant overhead to using the percpu_counters here.
 
->
-> Signed-off-by: Davidlohr Bueso<dave@gnu.org>
-> ---
->   arch/x86/kvm/mmu.c |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 2a2a9b4..0b7008e 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -3130,8 +3130,8 @@ static int nonpaging_init_context(struct kvm_vcpu *vcpu,
->
->   void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu)
->   {
-> -	++vcpu->stat.tlb_flush;
->   	kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
-> +	++vcpu->stat.tlb_flush;
->   }
->
->   static void paging_new_cr3(struct kvm_vcpu *vcpu)
-> @@ -3486,8 +3486,8 @@ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
->   		return;
->           }
->
-> -	++vcpu->kvm->stat.mmu_pte_updated;
->   	vcpu->arch.mmu.update_pte(vcpu, sp, spte, new);
-> +	++vcpu->kvm->stat.mmu_pte_updated;
->   }
->
->   static bool need_remote_flush(u64 old, u64 new)
+Indeed, if there are that many blocked writes per CPU, then the
+overhead of an occasional global counter update is going to be lost
+in the noise of everything else that is going on.
 
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
