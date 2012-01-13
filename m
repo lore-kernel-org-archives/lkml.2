@@ -1,112 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758414Ab2AMP47 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:56:59 -0500
-Received: from mga14.intel.com ([143.182.124.37]:1497 "EHLO mga14.intel.com"
+	id S1758435Ab2AMP73 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:59:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34883 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932584Ab2AMPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:55:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95530497"
-From: Alex Shi <alex.shi@intel.com>
-To: linux-kernel@vger.kernel.org, cl@gentwo.org, eric.dumazet@gmail.com,
-        tglx@linutronix.de, avi@redhat.com, akpm@linux-foundation.org,
-        davem@davemloft.net, kaber@trash.net, a.p.zijlstra@chello.nl,
-        ying.huang@intel.com, konrad.wilk@oracle.com, hpa@zytor.com,
-        jeremy@goop.org
-Subject: [PATCH v2 1/5] net: use this_cpu_xxx replace percpu_xxx funcs
-Date: Fri, 13 Jan 2012 23:53:34 +0800
-Message-Id: <1326470018-22342-2-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1326470018-22342-1-git-send-email-alex.shi@intel.com>
-References: <1326470018-22342-1-git-send-email-alex.shi@intel.com>
+	id S1758399Ab2AMP7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 10:59:24 -0500
+Date: Fri, 13 Jan 2012 16:59:22 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcg: update the correct soft limit tree during
+ migration
+Message-ID: <20120113155922.GE17060@tiehlicka.suse.cz>
+References: <1326469291-5642-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1326469291-5642-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-for further code clean up.
+On Fri 13-01-12 16:41:31, Johannes Weiner wrote:
+> end_migration() passes the old page instead of the new page to commit
+> the charge.  This page descriptor is not used for committing itself,
+> though, since we also pass the (correct) page_cgroup descriptor.  But
+> it's used to find the soft limit tree through the page's zone, so the
+> soft limit tree of the old page's zone is updated instead of that of
+> the new page's, which might get slightly out of date until the next
+> charge reaches the ratelimit point.
+> 
+> This glitch has been present since '5564e88 memcg: condense
+> page_cgroup-to-page lookup points'.
+> 
+> Reported-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-performance since __this_cpu_xxx has no redundant preempt_disable()
+Well spotted.
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
----
- net/netfilter/xt_TEE.c |   12 ++++++------
- net/socket.c           |    4 ++--
- 2 files changed, 8 insertions(+), 8 deletions(-)
+Thanks
+> ---
+>  mm/memcontrol.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> This fixes a bug that I introduced in 2.6.38.  It's benign enough (to
+> my knowledge) that we probably don't want this for stable.
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 602207b..7a292a5 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3247,7 +3247,7 @@ int mem_cgroup_prepare_migration(struct page *page,
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
+>  	else
+>  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
+> -	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype);
+> +	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype);
+>  	return ret;
+>  }
+>  
+> -- 
+> 1.7.7.5
+> 
 
-diff --git a/net/netfilter/xt_TEE.c b/net/netfilter/xt_TEE.c
-index 3aae66f..f81eba4 100644
---- a/net/netfilter/xt_TEE.c
-+++ b/net/netfilter/xt_TEE.c
-@@ -87,7 +87,7 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- 	const struct xt_tee_tginfo *info = par->targinfo;
- 	struct iphdr *iph;
- 
--	if (percpu_read(tee_active))
-+	if (__this_cpu_read(tee_active))
- 		return XT_CONTINUE;
- 	/*
- 	 * Copy the skb, and route the copy. Will later return %XT_CONTINUE for
-@@ -124,9 +124,9 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- 	ip_send_check(iph);
- 
- 	if (tee_tg_route4(skb, info)) {
--		percpu_write(tee_active, true);
-+		__this_cpu_write(tee_active, true);
- 		ip_local_out(skb);
--		percpu_write(tee_active, false);
-+		__this_cpu_write(tee_active, false);
- 	} else {
- 		kfree_skb(skb);
- 	}
-@@ -167,7 +167,7 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- {
- 	const struct xt_tee_tginfo *info = par->targinfo;
- 
--	if (percpu_read(tee_active))
-+	if (__this_cpu_read(tee_active))
- 		return XT_CONTINUE;
- 	skb = pskb_copy(skb, GFP_ATOMIC);
- 	if (skb == NULL)
-@@ -185,9 +185,9 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- 		--iph->hop_limit;
- 	}
- 	if (tee_tg_route6(skb, info)) {
--		percpu_write(tee_active, true);
-+		__this_cpu_write(tee_active, true);
- 		ip6_local_out(skb);
--		percpu_write(tee_active, false);
-+		__this_cpu_write(tee_active, false);
- 	} else {
- 		kfree_skb(skb);
- 	}
-diff --git a/net/socket.c b/net/socket.c
-index 28a96af..784d93a 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -479,7 +479,7 @@ static struct socket *sock_alloc(void)
- 	inode->i_uid = current_fsuid();
- 	inode->i_gid = current_fsgid();
- 
--	percpu_add(sockets_in_use, 1);
-+	this_cpu_add(sockets_in_use, 1);
- 	return sock;
- }
- 
-@@ -522,7 +522,7 @@ void sock_release(struct socket *sock)
- 	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
- 		printk(KERN_ERR "sock_release: fasync list not empty!\n");
- 
--	percpu_sub(sockets_in_use, 1);
-+	this_cpu_sub(sockets_in_use, 1);
- 	if (!sock->file) {
- 		iput(SOCK_INODE(sock));
- 		return;
 -- 
-1.6.3.3
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
