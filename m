@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab2AMNCX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 08:02:23 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:43068 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab2AMNCW (ORCPT
+	id S1758128Ab2AMNCy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 08:02:54 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44141 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753187Ab2AMNCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 08:02:22 -0500
-Date: Fri, 13 Jan 2012 13:02:18 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Ian Kent <raven@themaw.net>
-Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ftp.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: autofs4 hung task
-Message-ID: <20120113130218.GJ23916@ZenIV.linux.org.uk>
-References: <CAPM=9tzbgk=O6iTAM1Vp3SuZLkt7NnaMx0=+wbpW1x+sXk-3zA@mail.gmail.com>
- <1326458657.2219.24.camel@perseus.themaw.net>
+	Fri, 13 Jan 2012 08:02:53 -0500
+Date: Fri, 13 Jan 2012 13:02:22 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mans Rullgard <mans.rullgard@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Jassi Brar <jaswinder.singh@linaro.org>,
+        Javi Merino <javi.merino@arm.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: pl330: fix null pointer dereference in
+	pl330_chan_ctrl()
+Message-ID: <20120113130222.GU1068@n2100.arm.linux.org.uk>
+References: <1326458191-23492-1-git-send-email-mans.rullgard@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326458657.2219.24.camel@perseus.themaw.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1326458191-23492-1-git-send-email-mans.rullgard@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 08:44:17PM +0800, Ian Kent wrote:
-> On Fri, 2012-01-13 at 10:26 +0000, Dave Airlie wrote:
-> > Hi guys,
-> > 
-> > I booted Linus master kernel this morning (I was being brave and
-> > basing some fixes on it), however it hung on boot and the stuck task
-> > timer went off in autofs4 waiting on a mutex.
-> > 
-> > I got a picture with my phone attached.
+On Fri, Jan 13, 2012 at 12:36:31PM +0000, Mans Rullgard wrote:
+> This fixes the thrd->req_running field being accessed before thrd
+> is checked for null.  The error was introduced in abb959f.
 > 
-> Thanks Dave, an obvious mistake I missed in a recent commit by the look
-> of it.
-> 
-> Ian
+> Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
 
-Grr...  Note to self: do git status *and* git stash show -p before git push.
-Nothing like "WTF?  I'd fixed that braino" feeling ;-/
-
-mutex_lock misspelled as mutex_unlock
-
-Buggered-in: commit d668dc56631da067540b2494d2a1f29ff7b5f15a
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
----
-diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
-index 9ef5b29..da8876d 100644
---- a/fs/autofs4/waitq.c
-+++ b/fs/autofs4/waitq.c
-@@ -76,7 +76,7 @@ static int autofs4_write(struct autofs_sb_info *sbi,
- 		data += wr;
- 		bytes -= wr;
- 	}
--	mutex_lock(&sbi->pipe_mutex);
-+	mutex_unlock(&sbi->pipe_mutex);
- 
- 	set_fs(fs);
- 
+I don't know what's happening with the PL330 driver, but there's patches
+around to remove this file and merge it with the DMA engine driver.
