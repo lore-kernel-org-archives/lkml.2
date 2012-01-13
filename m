@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757840Ab2AMKEl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 05:04:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44735 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757773Ab2AMKEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 05:04:37 -0500
-Date: Fri, 13 Jan 2012 10:04:32 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Michal Hocko <mhocko@suse.cz>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: __count_immobile_pages make sure the node is online
-Message-ID: <20120113100432.GO4118@suse.de>
-References: <20120111084802.GA16466@tiehlicka.suse.cz>
- <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
- <20120112082722.GB1042@tiehlicka.suse.cz>
- <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
- <20120112092314.GC1042@tiehlicka.suse.cz>
- <20120112183323.1bb62f4d.kamezawa.hiroyu@jp.fujitsu.com>
- <20120112100521.GD1042@tiehlicka.suse.cz>
- <20120112111415.GH4118@suse.de>
- <20120112123555.GF1042@tiehlicka.suse.cz>
- <20120112132629.345e0e37.akpm@linux-foundation.org>
+	id S1757611Ab2AMKLq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 05:11:46 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:52733 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658Ab2AMKLm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 05:11:42 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20120112132629.345e0e37.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFgQCTvtkSxXq_v6X6VW+k83rDHBiHC0HwupXBg+fSMJ-VdoSA@mail.gmail.com>
+References: <CAFgQCTtQfVXrgS-eP0-58T+Qx4fHJ6nB6qHXKSEsHDTc2zC2nA@mail.gmail.com>
+	<CAJSP0QW1S87WD2pHZ0xUxTvxpOAxsB-LyOD4skxxziwUCWtkkQ@mail.gmail.com>
+	<CAFgQCTvtkSxXq_v6X6VW+k83rDHBiHC0HwupXBg+fSMJ-VdoSA@mail.gmail.com>
+Date: Fri, 13 Jan 2012 10:11:40 +0000
+Message-ID: <CAJSP0QWhkgot=42NVW7ra7MBJt1pDSo11mT+jcuiBLoeuaPHCA@mail.gmail.com>
+Subject: Re: Could anybody give some description about the implement of
+ hyercall in kvm?
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: Liu ping fan <kernelfans@gmail.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 01:26:29PM -0800, Andrew Morton wrote:
-> On Thu, 12 Jan 2012 13:35:55 +0100
-> Michal Hocko <mhocko@suse.cz> wrote:
-> 
-> > On Thu 12-01-12 11:14:15, Mel Gorman wrote:
-> > > On Thu, Jan 12, 2012 at 11:05:21AM +0100, Michal Hocko wrote:
-> > 
-> > > Be aware that this is not the version picked up by Andrew. It would
-> > > not hurt to resend as V2 with a changelog and a note saying it replaces
-> > > mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch in mmotm.
-> 
-> They're rather different things? According to the changelogs,
-> mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch fixes a
-> known-to-occur oops. 
-> mm-__count_immobile_pages-make-sure-the-node-is-online.patch fixes a
-> bug which might happen in the future if we change the node_zones layut?
-> 
+On Fri, Jan 13, 2012 at 7:45 AM, Liu ping fan <kernelfans@gmail.com> wrote:
+> On Thu, Jan 12, 2012 at 5:21 PM, Stefan Hajnoczi <stefanha@gmail.com> wrote:
+>> On Thu, Jan 12, 2012 at 4:38 AM, Liu ping fan <kernelfans@gmail.com> wrote:
+>>> Could anybody give some description about the implement of hyercall in
+>>> kvm? Or give some links about it?
+>>
+>> Try git grep hypercall arch/x86/kvm.
+>>
+>> Take a look at arch/x86/kvm/x86.c kvm_set_msr_common() and
+>> kvm_emulate_hypercall().  Some of the KVM time-keeping, minimal HyperV
+>> support, and async page faults live there.  Also see
+>> arch/x86/include/asm/kvm_para.h.
+>>
+>> Hypercalls are architecture-specific so if you are interested in ppc
+>> or s390, check those arch directories.
+>>
+> Thanks, but when I tried to start from the macro "____PVOP_VCALL", but
+> lost in it. If there is some document like the hypercall in Xen, this
+> will be appreciated. (And I guest Hypercall in kvm is the same as Xen
+> which is very similar to syscall, right?)
 
-That's fine. I thought the second patch was so closely related that
-they would be collapsed together and both sent to stable. There is no
-particular advantage to doing this and keeping them separate is fine.
+You can read about paravirt_ops to understand why that layer of
+indirection is present:
+http://lwn.net/Articles/194543/
 
-FWIW, my ack applied to both patches in that case.
+But that macro is not the actual hypercall instructions, just a
+mechanism for runtime-patching the kernel depending on whether it's
+running on bare metal, KVM, Xen, etc.
 
-> So I'm thinking that
-> mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch is 3.3 and
-> -stable material, whereas this patch
-> (mm-__count_immobile_pages-make-sure-the-node-is-online.patch) is 3.3
-> material.  (Actually, it's 3.4 material which I shall stuff into 3.3
-> because the amount of MM material which we're putting into 3.3 is just
-> off the charts and I fear that 3.4 will be similar)
-> 
+What you really should look at if you're interested in specific
+paravirt features that you are interested in.  For example,
+arch/x86/kernel/kvmclock.c implements a paravirt clock using
+"paravirt" Model Specific Registers and a shared memory region as the
+guest<->host interface.  So I guess you could say KVM paravirt uses
+several mechanisms for host<->guest interaction.
 
-Ok, sounds good. Thanks.
-
-> > > This is just in case the wrong one gets merged due to this thread
-> > > getting lost in the noise of Andrew's inbox.
-> 
-> It won't get lost, but there's a higher-than-usual chance of delays if
-> the patch happens during the merge window: if I see a lengthy patch
-> thread I'll move it into my to-apply folder for consideration later on.
-> So I will look at it, but it might be after the merge window.  We can
-> still apply a fix after the merge window of course, but this all might
-> end up leaving buggy code in the tree for longer than we'd like.
-> 
-
-Understood.
-
--- 
-Mel Gorman
-SUSE Labs
+Stefan
