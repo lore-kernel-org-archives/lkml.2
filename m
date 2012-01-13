@@ -1,281 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758635Ab2AMSCB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:02:01 -0500
-Received: from mga11.intel.com ([192.55.52.93]:39567 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758606Ab2AMSB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:01:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="106848496"
-Date: Fri, 13 Jan 2012 19:07:59 +0100
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Afzal Mohammed <afzal@ti.com>,
-        Axel Lin <axel.lin@gmail.com>, Benoit Cousson <b-cousson@ti.com>,
-        Christian Gmeiner <christian.gmeiner@gmail.com>,
-        Christoph Fritz <chf.fritz@googlemail.com>,
-        Donggeun Kim <dg77.kim@samsung.com>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        "Jett.Zhou" <jtzhou@marvell.com>, Jochen Friedrich <jochen@scram.de>,
-        Jonghwan Choi <jhbird.choi@samsung.com>, Julia Lawall <julia@diku.dk>,
-        Kevin Liu <kliu5@marvell.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        NeilBrown <neilb@suse.de>, Robin van der Gracht <robin@protonic.nl>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sangbeom Kim <sbkim73@samsung.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [GIT] [3.3] MFD pull request
-Message-ID: <20120113180759.GN4925@sortiz-mobl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758637Ab2AMSGy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:06:54 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:58401 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab2AMSGv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 13:06:51 -0500
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Subject: [PATCH] ehea: make some functions and variables static
+Date: Fri, 13 Jan 2012 16:06:32 -0200
+Message-Id: <1326477992-16229-1-git-send-email-cascardo@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.4.4
+x-cbid: 12011318-9254-0000-0000-000007CFF39A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Some functions and variables in ehea are only used in their own file, so
+they should be static. One particular function had a very generic name,
+print_error_data.
 
-This is the MFD pull request for the Linux 3.3 merge window.
-With this one we get a new MFD driver for Samsung's S5M PMIC. We also get a
-LED driver and a MUIC one for Samsung's MFD MAX8997.
-Besides that, STMPE can now be reached through SPI, and gained support for the
-610 and 801 variants. mc13xx and twl got their initial device tree support,
-and Mark sent his regular wm8xxx updates.
+Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+---
+ drivers/net/ethernet/ibm/ehea/ehea_ethtool.c |    2 +-
+ drivers/net/ethernet/ibm/ehea/ehea_main.c    |   32 +++++++++++++-------------
+ drivers/net/ethernet/ibm/ehea/ehea_qmr.c     |   14 +++++------
+ 3 files changed, 23 insertions(+), 25 deletions(-)
 
-Thanks in advance for pulling those in.
-
-The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
-
-  Linux 3.2 (2012-01-04 15:55:44 -0800)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-next
-
-Afzal Mohammed (1):
-      mfd: Make TPS65910 usable without interrupts
-
-Axel Lin (7):
-      mfd: Don't declare jz4740_adc_cells const
-      mfd: Convert to DEFINE_PCI_DEVICE_TABLE
-      mfd: Use gpio_request_one from aat2870-core
-      mfd: Use gpio_request_one from dm355evm_msp
-      mfd: Use gpio_request_one from omap-usb-host
-      mfd: Use gpio_request_one from twl6040-core
-      mfd: Constify aat2870-core i2c_device_id table
-
-Benoit Cousson (1):
-      mfd: twl-core: Add initial DT support for twl4030/twl6030
-
-Christian Gmeiner (1):
-      mfd: Fix cs5535 section mismatch
-
-Christoph Fritz (1):
-      mfd: Add a dependency on HAVE_CLK for tc6393xb
-
-Donggeun Kim (5):
-      mfd: Add platform data for MAX8997 MUIC driver
-      misc: Add driver support for MAX8997 MUIC
-      mfd: Add platform data and devices for MAX8997 LED control
-      leds: Add suuport for MAX8997-LED driver
-      misc: Remove max8997-muic sysfs attributes
-
-Igor Grinberg (1):
-      mfd: Add power off functionality to TWL
-
-Jett.Zhou (2):
-      mfd: Fix 88pm860x test bank i2c interface bug
-      mfd: Convert 88pm860x to use regmap api
-
-Jochen Friedrich (2):
-      ARM: sa11x0: Implement autoloading of codec and codec pdata for mcp bus.
-      ARM: sa1100: Refactor mcp-sa11x0 to use platform resources.
-
-Jonghwan Choi (1):
-      mfd: Use standard device wakeup for handling max8998 wakeup device
-
-Julia Lawall (1):
-      mfd: Introduce missing kfree in 88pm860x probe routine
-
-Kevin Liu (2):
-      mfd: Add pm ops to max8925
-      rtc: max8925: Add function to work as wakeup source
-
-Lars-Peter Clausen (1):
-      mfd: Remove redundant spi driver bus initialization
-
-Linus Walleij (1):
-      mfd: Unify abx500 headers in mfd/abx500
-
-Mark Brown (15):
-      mfd: Convert wm831x core driver to devm_kzalloc()
-      mfd: Convert wm8994 to devm_kzalloc()
-      mfd: Disable more pulls on WM8994
-      mfd: Add basic device tree binding for wm8994
-      mfd: Convert MFD drivers to use module_platform_driver
-      mfd: Store wm8350 struct in core device driver data
-      mfd: Convert WM8350 to devm_kzalloc()
-      mfd: Constify WM8994 regulator_init_data
-      mfd: Add WM1811A device ID to wm8994 driver
-      mfd: Add missing mutex.h inclusion to WM8994 core.h
-      mfd: Convert WM8400 to devm_kzalloc()
-      mfd: Return an error on failed wm831x register writes
-      mfd: Remove unused wm831x_irq_data_to_mask_reg()
-      mfd: Still check other interrupts if we get a wm831x touchscreen IRQ
-      mfd: Convert aat2870 to dev_pm_ops
-
-NeilBrown (2):
-      mfd: Set twl4030-irq tertiary interrupts to be nested/threaded.
-      mfd: Fix twl4030-irq typo
-
-Robin van der Gracht (1):
-      mfd: Fixed unconditional reset of the mc13xxx ADC reading enable bits
-
-Samuel Ortiz (3):
-      mfd: Fix STMPE I2c build failure
-      mfd: Fix stmpe build warning
-      mfd: Fix stmpe section mismatch
-
-Sangbeom Kim (3):
-      mfd: Add S5M core driver
-      mfd: Add s5m series irq driver
-      mfd: Add S5M series configuration
-
-Shawn Guo (2):
-      mfd: Add device tree probe support for mc13xxx
-      mfd: Improve mc13xxx dt binding document
-
-Viresh Kumar (6):
-      mfd: Add support for irq over gpio pin to stmpe
-      mfd: Separate out STMPE controller and interface specific code
-      mfd: Add support for STMPE SPI interface
-      mfd: Add support for stmpe variant 610
-      mfd: Add support for stmpe variant 801
-      gpio: Add support for stmpe variant 801
-
- Documentation/devicetree/bindings/mfd/mc13xxx.txt  |   78 +++
- .../devicetree/bindings/mfd/twl-familly.txt        |   47 ++
- Documentation/devicetree/bindings/sound/wm8994.txt |   18 +
- arch/arm/mach-sa1100/assabet.c                     |   12 +
- arch/arm/mach-sa1100/cerf.c                        |   11 +
- arch/arm/mach-sa1100/collie.c                      |   18 +-
- arch/arm/mach-sa1100/generic.c                     |    7 +-
- arch/arm/mach-sa1100/include/mach/mcp.h            |    2 +
- arch/arm/mach-sa1100/lart.c                        |   10 +
- arch/arm/mach-sa1100/shannon.c                     |   11 +
- arch/arm/mach-sa1100/simpad.c                      |   18 +-
- arch/arm/mach-ux500/board-mop500.c                 |    4 +-
- arch/arm/mach-ux500/board-u5500.c                  |    2 +-
- .../mach-ux500/include/mach/irqs-board-mop500.h    |    2 +-
- drivers/gpio/gpio-stmpe.c                          |   25 +-
- drivers/input/misc/ab8500-ponkey.c                 |    2 +-
- drivers/leds/Kconfig                               |    7 +
- drivers/leds/Makefile                              |    1 +
- drivers/leds/leds-max8997.c                        |  372 ++++++++++++++
- drivers/mfd/88pm860x-i2c.c                         |  241 ++++++----
- drivers/mfd/Kconfig                                |   35 ++-
- drivers/mfd/Makefile                               |    3 +
- drivers/mfd/aat2870-core.c                         |   25 +-
- drivers/mfd/ab5500-core.c                          |    2 +-
- drivers/mfd/ab5500-debugfs.c                       |    2 +-
- drivers/mfd/ab8500-core.c                          |    2 +-
- drivers/mfd/ab8500-debugfs.c                       |    2 +-
- drivers/mfd/ab8500-gpadc.c                         |    4 +-
- drivers/mfd/ab8500-i2c.c                           |    2 +-
- drivers/mfd/ab8500-sysctrl.c                       |    4 +-
- drivers/mfd/cs5535-mfd.c                           |    8 +-
- drivers/mfd/dm355evm_msp.c                         |    3 +-
- drivers/mfd/intel_msic.c                           |   12 +-
- drivers/mfd/jz4740-adc.c                           |   14 +-
- drivers/mfd/lpc_sch.c                              |    2 +-
- drivers/mfd/max8925-i2c.c                          |   27 +
- drivers/mfd/max8997.c                              |    3 +-
- drivers/mfd/max8998.c                              |    6 +-
- drivers/mfd/mc13xxx-core.c                         |  111 +++--
- drivers/mfd/mcp-core.c                             |   44 ++-
- drivers/mfd/mcp-sa11x0.c                           |  182 +++++---
- drivers/mfd/omap-usb-host.c                        |   18 +-
- drivers/mfd/pcf50633-adc.c                         |   12 +-
- drivers/mfd/s5m-core.c                             |  176 +++++++
- drivers/mfd/s5m-irq.c                              |  487 +++++++++++++++++++
- drivers/mfd/sm501.c                                |    2 +-
- drivers/mfd/stmpe-i2c.c                            |  109 +++++
- drivers/mfd/stmpe-spi.c                            |  150 ++++++
- drivers/mfd/stmpe.c                                |  277 +++++++----
- drivers/mfd/stmpe.h                                |   53 ++
- drivers/mfd/t7l66xb.c                              |   16 +-
- drivers/mfd/tc6387xb.c                             |   14 +-
- drivers/mfd/ti-ssp.c                               |   12 +-
- drivers/mfd/timberdale.c                           |    2 +-
- drivers/mfd/tps65910-irq.c                         |    3 +-
- drivers/mfd/tps65910.c                             |    7 +-
- drivers/mfd/tps65912-spi.c                         |    1 -
- drivers/mfd/twl-core.c                             |   51 ++-
- drivers/mfd/twl4030-audio.c                        |   12 +-
- drivers/mfd/twl4030-irq.c                          |    3 +-
- drivers/mfd/twl4030-madc.c                         |   14 +-
- drivers/mfd/twl4030-power.c                        |   42 ++-
- drivers/mfd/twl6040-core.c                         |   20 +-
- drivers/mfd/ucb1x00-core.c                         |   48 ++-
- drivers/mfd/ucb1x00-ts.c                           |    2 +-
- drivers/mfd/vx855.c                                |    2 +-
- drivers/mfd/wm831x-core.c                          |    4 +-
- drivers/mfd/wm831x-i2c.c                           |    3 +-
- drivers/mfd/wm831x-irq.c                           |    8 +-
- drivers/mfd/wm831x-spi.c                           |    4 +-
- drivers/mfd/wm8350-core.c                          |    2 +
- drivers/mfd/wm8350-i2c.c                           |    4 +-
- drivers/mfd/wm8400-core.c                          |    7 +-
- drivers/mfd/wm8994-core.c                          |   37 +-
- drivers/misc/Kconfig                               |    8 +
- drivers/misc/Makefile                              |    1 +
- drivers/misc/ab8500-pwm.c                          |    2 +-
- drivers/misc/max8997-muic.c                        |  505 ++++++++++++++++++++
- drivers/regulator/ab8500.c                         |    2 +-
- drivers/rtc/rtc-ab8500.c                           |    2 +-
- drivers/rtc/rtc-max8925.c                          |   26 +
- drivers/usb/otg/ab8500-usb.c                       |    2 +-
- include/linux/i2c/twl.h                            |    2 +
- include/linux/mfd/88pm860x.h                       |    3 +-
- include/linux/mfd/{ab5500 => abx500}/ab5500.h      |    0
- .../mfd/{ab8500/gpadc.h => abx500/ab8500-gpadc.h}  |    0
- .../mfd/{ab8500/gpio.h => abx500/ab8500-gpio.h}    |    0
- .../{ab8500/sysctrl.h => abx500/ab8500-sysctrl.h}  |    0
- include/linux/mfd/{ => abx500}/ab8500.h            |    0
- include/linux/mfd/max8925.h                        |    2 +
- include/linux/mfd/max8997.h                        |   83 ++++-
- include/linux/mfd/mc13xxx.h                        |    8 +
- include/linux/mfd/mcp.h                            |    7 +-
- include/linux/mfd/s5m87xx/s5m-core.h               |  373 +++++++++++++++
- include/linux/mfd/s5m87xx/s5m-pmic.h               |  100 ++++
- include/linux/mfd/s5m87xx/s5m-rtc.h                |   84 ++++
- include/linux/mfd/stmpe.h                          |   16 +-
- include/linux/mfd/ucb1x00.h                        |    5 +-
- include/linux/mfd/wm8994/core.h                    |    1 +
- include/linux/mfd/wm8994/pdata.h                   |    8 +-
- include/linux/mod_devicetable.h                    |   11 +
- scripts/mod/file2alias.c                           |   13 +
- 102 files changed, 3685 insertions(+), 562 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mfd/mc13xxx.txt
- create mode 100644 Documentation/devicetree/bindings/mfd/twl-familly.txt
- create mode 100644 Documentation/devicetree/bindings/sound/wm8994.txt
- create mode 100644 drivers/leds/leds-max8997.c
- create mode 100644 drivers/mfd/s5m-core.c
- create mode 100644 drivers/mfd/s5m-irq.c
- create mode 100644 drivers/mfd/stmpe-i2c.c
- create mode 100644 drivers/mfd/stmpe-spi.c
- create mode 100644 drivers/misc/max8997-muic.c
- rename include/linux/mfd/{ab5500 => abx500}/ab5500.h (100%)
- rename include/linux/mfd/{ab8500/gpadc.h => abx500/ab8500-gpadc.h} (100%)
- rename include/linux/mfd/{ab8500/gpio.h => abx500/ab8500-gpio.h} (100%)
- rename include/linux/mfd/{ab8500/sysctrl.h => abx500/ab8500-sysctrl.h} (100%)
- rename include/linux/mfd/{ => abx500}/ab8500.h (100%)
- create mode 100644 include/linux/mfd/s5m87xx/s5m-core.h
- create mode 100644 include/linux/mfd/s5m87xx/s5m-pmic.h
- create mode 100644 include/linux/mfd/s5m87xx/s5m-rtc.h
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_ethtool.c b/drivers/net/ethernet/ibm/ehea/ehea_ethtool.c
+index 05b7359..6bdd8e3 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_ethtool.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_ethtool.c
+@@ -263,7 +263,7 @@ static void ehea_get_ethtool_stats(struct net_device *dev,
+ 		data[i++] = atomic_read(&port->port_res[k].swqe_avail);
+ }
+ 
+-const struct ethtool_ops ehea_ethtool_ops = {
++static const struct ethtool_ops ehea_ethtool_ops = {
+ 	.get_settings = ehea_get_settings,
+ 	.get_drvinfo = ehea_get_drvinfo,
+ 	.get_msglevel = ehea_get_msglevel,
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_main.c b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+index 3554414..5d5fb26 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_main.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_main.c
+@@ -94,8 +94,8 @@ static int port_name_cnt;
+ static LIST_HEAD(adapter_list);
+ static unsigned long ehea_driver_flags;
+ static DEFINE_MUTEX(dlpar_mem_lock);
+-struct ehea_fw_handle_array ehea_fw_handles;
+-struct ehea_bcmc_reg_array ehea_bcmc_regs;
++static struct ehea_fw_handle_array ehea_fw_handles;
++static struct ehea_bcmc_reg_array ehea_bcmc_regs;
+ 
+ 
+ static int __devinit ehea_probe_adapter(struct platform_device *dev,
+@@ -133,7 +133,7 @@ void ehea_dump(void *adr, int len, char *msg)
+ 	}
+ }
+ 
+-void ehea_schedule_port_reset(struct ehea_port *port)
++static void ehea_schedule_port_reset(struct ehea_port *port)
+ {
+ 	if (!test_bit(__EHEA_DISABLE_PORT_RESET, &port->flags))
+ 		schedule_work(&port->reset_task);
+@@ -1404,7 +1404,7 @@ out:
+ 	return ret;
+ }
+ 
+-int ehea_gen_smrs(struct ehea_port_res *pr)
++static int ehea_gen_smrs(struct ehea_port_res *pr)
+ {
+ 	int ret;
+ 	struct ehea_adapter *adapter = pr->port->adapter;
+@@ -1426,7 +1426,7 @@ out:
+ 	return -EIO;
+ }
+ 
+-int ehea_rem_smrs(struct ehea_port_res *pr)
++static int ehea_rem_smrs(struct ehea_port_res *pr)
+ {
+ 	if ((ehea_rem_mr(&pr->send_mr)) ||
+ 	    (ehea_rem_mr(&pr->recv_mr)))
+@@ -2190,7 +2190,7 @@ out:
+ 	return err;
+ }
+ 
+-int ehea_activate_qp(struct ehea_adapter *adapter, struct ehea_qp *qp)
++static int ehea_activate_qp(struct ehea_adapter *adapter, struct ehea_qp *qp)
+ {
+ 	int ret = -EIO;
+ 	u64 hret;
+@@ -2531,7 +2531,7 @@ static void ehea_flush_sq(struct ehea_port *port)
+ 	}
+ }
+ 
+-int ehea_stop_qps(struct net_device *dev)
++static int ehea_stop_qps(struct net_device *dev)
+ {
+ 	struct ehea_port *port = netdev_priv(dev);
+ 	struct ehea_adapter *adapter = port->adapter;
+@@ -2600,7 +2600,7 @@ out:
+ 	return ret;
+ }
+ 
+-void ehea_update_rqs(struct ehea_qp *orig_qp, struct ehea_port_res *pr)
++static void ehea_update_rqs(struct ehea_qp *orig_qp, struct ehea_port_res *pr)
+ {
+ 	struct ehea_qp qp = *orig_qp;
+ 	struct ehea_qp_init_attr *init_attr = &qp.init_attr;
+@@ -2633,7 +2633,7 @@ void ehea_update_rqs(struct ehea_qp *orig_qp, struct ehea_port_res *pr)
+ 	}
+ }
+ 
+-int ehea_restart_qps(struct net_device *dev)
++static int ehea_restart_qps(struct net_device *dev)
+ {
+ 	struct ehea_port *port = netdev_priv(dev);
+ 	struct ehea_adapter *adapter = port->adapter;
+@@ -2824,7 +2824,7 @@ static void ehea_tx_watchdog(struct net_device *dev)
+ 		ehea_schedule_port_reset(port);
+ }
+ 
+-int ehea_sense_adapter_attr(struct ehea_adapter *adapter)
++static int ehea_sense_adapter_attr(struct ehea_adapter *adapter)
+ {
+ 	struct hcp_query_ehea *cb;
+ 	u64 hret;
+@@ -2852,7 +2852,7 @@ out:
+ 	return ret;
+ }
+ 
+-int ehea_get_jumboframe_status(struct ehea_port *port, int *jumbo)
++static int ehea_get_jumboframe_status(struct ehea_port *port, int *jumbo)
+ {
+ 	struct hcp_ehea_port_cb4 *cb4;
+ 	u64 hret;
+@@ -2966,7 +2966,7 @@ static const struct net_device_ops ehea_netdev_ops = {
+ 	.ndo_tx_timeout		= ehea_tx_watchdog,
+ };
+ 
+-struct ehea_port *ehea_setup_single_port(struct ehea_adapter *adapter,
++static struct ehea_port *ehea_setup_single_port(struct ehea_adapter *adapter,
+ 					 u32 logical_port_id,
+ 					 struct device_node *dn)
+ {
+@@ -3237,7 +3237,7 @@ static ssize_t ehea_remove_port(struct device *dev,
+ static DEVICE_ATTR(probe_port, S_IWUSR, NULL, ehea_probe_port);
+ static DEVICE_ATTR(remove_port, S_IWUSR, NULL, ehea_remove_port);
+ 
+-int ehea_create_device_sysfs(struct platform_device *dev)
++static int ehea_create_device_sysfs(struct platform_device *dev)
+ {
+ 	int ret = device_create_file(&dev->dev, &dev_attr_probe_port);
+ 	if (ret)
+@@ -3248,7 +3248,7 @@ out:
+ 	return ret;
+ }
+ 
+-void ehea_remove_device_sysfs(struct platform_device *dev)
++static void ehea_remove_device_sysfs(struct platform_device *dev)
+ {
+ 	device_remove_file(&dev->dev, &dev_attr_probe_port);
+ 	device_remove_file(&dev->dev, &dev_attr_remove_port);
+@@ -3379,7 +3379,7 @@ static int __devexit ehea_remove(struct platform_device *dev)
+ 	return 0;
+ }
+ 
+-void ehea_crash_handler(void)
++static void ehea_crash_handler(void)
+ {
+ 	int i;
+ 
+@@ -3491,7 +3491,7 @@ static ssize_t ehea_show_capabilities(struct device_driver *drv,
+ static DRIVER_ATTR(capabilities, S_IRUSR | S_IRGRP | S_IROTH,
+ 		   ehea_show_capabilities, NULL);
+ 
+-int __init ehea_module_init(void)
++static int __init ehea_module_init(void)
+ {
+ 	int ret;
+ 
+diff --git a/drivers/net/ethernet/ibm/ehea/ehea_qmr.c b/drivers/net/ethernet/ibm/ehea/ehea_qmr.c
+index 95b9f4f..c25b05b 100644
+--- a/drivers/net/ethernet/ibm/ehea/ehea_qmr.c
++++ b/drivers/net/ethernet/ibm/ehea/ehea_qmr.c
+@@ -34,9 +34,7 @@
+ #include "ehea_phyp.h"
+ #include "ehea_qmr.h"
+ 
+-struct ehea_bmap *ehea_bmap = NULL;
+-
+-
++static struct ehea_bmap *ehea_bmap;
+ 
+ static void *hw_qpageit_get_inc(struct hw_queue *queue)
+ {
+@@ -212,7 +210,7 @@ out_nomem:
+ 	return NULL;
+ }
+ 
+-u64 ehea_destroy_cq_res(struct ehea_cq *cq, u64 force)
++static u64 ehea_destroy_cq_res(struct ehea_cq *cq, u64 force)
+ {
+ 	u64 hret;
+ 	u64 adapter_handle = cq->adapter->handle;
+@@ -337,7 +335,7 @@ struct ehea_eqe *ehea_poll_eq(struct ehea_eq *eq)
+ 	return eqe;
+ }
+ 
+-u64 ehea_destroy_eq_res(struct ehea_eq *eq, u64 force)
++static u64 ehea_destroy_eq_res(struct ehea_eq *eq, u64 force)
+ {
+ 	u64 hret;
+ 	unsigned long flags;
+@@ -381,7 +379,7 @@ int ehea_destroy_eq(struct ehea_eq *eq)
+ /**
+  * allocates memory for a queue and registers pages in phyp
+  */
+-int ehea_qp_alloc_register(struct ehea_qp *qp, struct hw_queue *hw_queue,
++static int ehea_qp_alloc_register(struct ehea_qp *qp, struct hw_queue *hw_queue,
+ 			   int nr_pages, int wqe_size, int act_nr_sges,
+ 			   struct ehea_adapter *adapter, int h_call_q_selector)
+ {
+@@ -516,7 +514,7 @@ out_freemem:
+ 	return NULL;
+ }
+ 
+-u64 ehea_destroy_qp_res(struct ehea_qp *qp, u64 force)
++static u64 ehea_destroy_qp_res(struct ehea_qp *qp, u64 force)
+ {
+ 	u64 hret;
+ 	struct ehea_qp_init_attr *qp_attr = &qp->init_attr;
+@@ -976,7 +974,7 @@ int ehea_gen_smr(struct ehea_adapter *adapter, struct ehea_mr *old_mr,
+ 	return 0;
+ }
+ 
+-void print_error_data(u64 *data)
++static void print_error_data(u64 *data)
+ {
+ 	int length;
+ 	u64 type = EHEA_BMASK_GET(ERROR_DATA_TYPE, data[2]);
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.7.4.4
+
