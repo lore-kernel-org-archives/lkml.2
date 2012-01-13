@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab2AMTmV (ORCPT <rfc822;w@1wt.eu>);
+	id S1758952Ab2AMTmb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 14:42:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:34459 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932383Ab2AMTmV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Jan 2012 14:42:21 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:59060 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758893Ab2AMTmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 14:42:18 -0500
-Date: Fri, 13 Jan 2012 13:42:18 -0600
-From: Ben Myers <bpm@sgi.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Christoph Hellwig <hch@lst.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [41/42] xfs: validate acl count
-Message-ID: <20120113194218.GB14857@sgi.com>
-References: <20120110215031.GA19398@kroah.com> <20120110215024.482323323@clark.kroah.org> <20120111074135.GA30829@lst.de> <20120111150021.GB23608@suse.de> <20120111150532.GL20739@sgi.com> <20120113161727.GB6519@sgi.com> <20120113181952.GA30393@suse.de>
+Message-ID: <4F1096E9.4020501@mvista.com>
+Date: Fri, 13 Jan 2012 23:41:13 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:6.0) Gecko/20110812 Thunderbird/6.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120113181952.GA30393@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
+CC: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: RFC: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
+References: <201201120753.00667.oneukum@suse.de> <Pine.LNX.4.44L0.1201121037340.1384-100000@iolanthe.rowland.org> <20120112215014.GC5735@xanatos> <20120112215459.GA1161@kroah.com> <20120112222947.GD5735@xanatos> <20120112223513.GA2925@kroah.com> <20120113061144.GA30569@suse.cz> <47CEF8C4B26E8C44B22B028A650E0EA9317A6B8B@DBDE01.ent.ti.com>
+In-Reply-To: <47CEF8C4B26E8C44B22B028A650E0EA9317A6B8B@DBDE01.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 10:19:52AM -0800, Greg KH wrote:
-> On Fri, Jan 13, 2012 at 10:17:27AM -0600, Ben Myers wrote:
-> > Hey Greg,
-> > 
-> > On Wed, Jan 11, 2012 at 09:05:32AM -0600, Ben Myers wrote:
-> > > Hi Christoph & Greg,
-> > > 
-> > > On Wed, Jan 11, 2012 at 07:00:21AM -0800, Greg KH wrote:
-> > > > On Wed, Jan 11, 2012 at 08:41:35AM +0100, Christoph Hellwig wrote:
-> > > > > On Tue, Jan 10, 2012 at 01:48:51PM -0800, Greg KH wrote:
-> > > > > > 3.1-stable review patch.  If anyone has any objections, please let me know.
-> > > > > 
-> > > > > Just curious, how well tested are all the patches on 2.6.32 and 3.1 hat I only
-> > > > > submitted for 3.0?  I'd really prefer if they at least get an xfstest run
-> > > > > before they get sent out to the world.
-> > > > 
-> > > > I took these patches on my own as they were reported to fix a public
-> > > > vulnerability which was assigned a CVE.  They applied with no fuzz and
-> > > > "looked correct" so I applied them on my own.
-> > > > 
-> > > > If I shouldn't have, please let me know and I'll drop them.
-> > > > 
-> > > > Otherwise, a nice run of xfstest by someone would be appreciated.
-> > > 
-> > > I have a 3.1 test rig and will get this done today, then I'll go after
-> > > 2.6.32.
-> > 
-> > I ran xfstests with 'xfs: validate acl count' and 'xfs: fix acl count
-> > validation in xfs_acl_from_disk()' applied to 3.1-stable.  It came out
-> > ok.  I'll get started on 2.6.32.
-> 
-> Thanks, how about the 3.0 release?
+Hello.
 
-HCH would have given them a spin before he sent them to stable@.
+On 01/13/2012 01:40 PM, Gupta, Ajay Kumar wrote:
 
--Ben
+> CPPI4.1 (Communication Port Programming Interface) is a TI specific DMA
+> controller used in multiple TI platform such as AM33x, DA8x, AM35x, TI81x.
+> The DMA engine is mainly used by musb controller on above platform.
+
+    There are (at least out of tree) platforms using CPPI 4.1 for Ethernet.
+
+> Earlier version of the driver was submitted by Sergei Shtylyov at [1] but
+> was not merged due to disagreement on the location of driver in kernel.
+
+    To be precise, TI requested pulling out already queued (to arch/arm/common/) 
+CPPI 4.1 driver from RMK's patch system without even notifying me. At least that 
+was RMK's version...
+
+> Refer the discussions at [1] for more details.
+
+> [1] http://marc.info/?l=linux-usb&m=125087318308323
+
+    Unfortunately, that's not all of the discussion of interest.
+
+> The new implementation of the CPPI4.1 DMA slave driver will be in the
+> drivers/dma folder, complying to dmaengine framework.
+
+    Has there been any work in this direction done yet?
+
+> It would involve changes in existing musb driver also for which current
+> plan is to maintain the compatibility of non-CPPI4.1 DMA in musb driver.
+
+    I didn't quite understand this part...
+
+> The task is planned to be spitted into below subtasks.
+
+> (1) Post RFC on the API details, changes envisaged in musb driver and other
+> challenges
+
+    First of all, I foresee changes in drivers/dma/ to cope with the entity in 
+CPPI 4.1 called the queue manager (there's also buffer manager but it wasn't 
+implemented on DA8xx, so I didn't design any API for it).
+
+> (2) Implement and post RFC for the CPPI4.1 DMA driver and changes needed in
+> musb driver.
+
+> Let me know if you have any thoughts/comments on this.
+
+> Regards,
+> Ajay
+
+WBR, Sergei
+
