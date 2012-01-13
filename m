@@ -1,66 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757607Ab2AMKED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 05:04:03 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61575 "EHLO mx1.redhat.com"
+	id S1757840Ab2AMKEl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 05:04:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44735 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932080Ab2AMKD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 05:03:57 -0500
-Subject: GFS2: Pull request #2 (merge window)
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Fri, 13 Jan 2012 10:04:35 +0000
-Message-ID: <1326449075.2685.9.camel@menhir>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757773Ab2AMKEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 05:04:37 -0500
+Date: Fri, 13 Jan 2012 10:04:32 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: __count_immobile_pages make sure the node is online
+Message-ID: <20120113100432.GO4118@suse.de>
+References: <20120111084802.GA16466@tiehlicka.suse.cz>
+ <20120112111702.3b7f2fa2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120112082722.GB1042@tiehlicka.suse.cz>
+ <20120112173536.db529713.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120112092314.GC1042@tiehlicka.suse.cz>
+ <20120112183323.1bb62f4d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20120112100521.GD1042@tiehlicka.suse.cz>
+ <20120112111415.GH4118@suse.de>
+ <20120112123555.GF1042@tiehlicka.suse.cz>
+ <20120112132629.345e0e37.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20120112132629.345e0e37.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 12, 2012 at 01:26:29PM -0800, Andrew Morton wrote:
+> On Thu, 12 Jan 2012 13:35:55 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > On Thu 12-01-12 11:14:15, Mel Gorman wrote:
+> > > On Thu, Jan 12, 2012 at 11:05:21AM +0100, Michal Hocko wrote:
+> > 
+> > > Be aware that this is not the version picked up by Andrew. It would
+> > > not hurt to resend as V2 with a changelog and a note saying it replaces
+> > > mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch in mmotm.
+> 
+> They're rather different things? According to the changelogs,
+> mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch fixes a
+> known-to-occur oops. 
+> mm-__count_immobile_pages-make-sure-the-node-is-online.patch fixes a
+> bug which might happen in the future if we change the node_zones layut?
+> 
 
-Please consider pulling the following changes. All except one of these
-patches is actually a bug fix rather than specifically merge window
-material. That remaining patch applies on top of the DLM patches which
-were merged in the current window,
+That's fine. I thought the second patch was so closely related that
+they would be collapsed together and both sent to stable. There is no
+particular advantage to doing this and keeping them separate is fine.
 
-Steve.
+FWIW, my ack applied to both patches in that case.
 
-----------------------------------------------------------------------------
-The following changes since commit e343a895a9f342f239c5e3c5ffc6c0b1707e6244:
+> So I'm thinking that
+> mm-fix-null-ptr-dereference-in-__count_immobile_pages.patch is 3.3 and
+> -stable material, whereas this patch
+> (mm-__count_immobile_pages-make-sure-the-node-is-online.patch) is 3.3
+> material.  (Actually, it's 3.4 material which I shall stuff into 3.3
+> because the amount of MM material which we're putting into 3.3 is just
+> off the charts and I fear that 3.4 will be similar)
+> 
 
-  Merge tag 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost (2012-01-10 18:04:27 -0800)
+Ok, sounds good. Thanks.
 
-are available in the git repository at:
+> > > This is just in case the wrong one gets merged due to this thread
+> > > getting lost in the noise of Andrew's inbox.
+> 
+> It won't get lost, but there's a higher-than-usual chance of delays if
+> the patch happens during the merge window: if I see a lengthy patch
+> thread I'll move it into my to-apply folder for consideration later on.
+> So I will look at it, but it might be after the merge window.  We can
+> still apply a fix after the merge window of course, but this all might
+> end up leaving buggy code in the tree for longer than we'd like.
+> 
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/steve/gfs2-3.0-nmw.git master
+Understood.
 
-Bob Peterson (1):
-      GFS2: Fix a use-after-free that coverity spotted
-
-David Teigland (3):
-      GFS2: dlm based recovery coordination
-      GFS2: let spectator mount do read only recovery
-      GFS2: fail mount if journal recovery fails
-
-Steven Whitehouse (1):
-      GFS2: Fix nlink setting on inode creation
-
- fs/gfs2/glock.c             |    2 +-
- fs/gfs2/glock.h             |    7 +-
- fs/gfs2/incore.h            |   60 +++-
- fs/gfs2/inode.c             |    4 +-
- fs/gfs2/lock_dlm.c          |  993 ++++++++++++++++++++++++++++++++++++++++++-
- fs/gfs2/main.c              |   10 +
- fs/gfs2/ops_fstype.c        |   31 +-
- fs/gfs2/recovery.c          |   11 +-
- fs/gfs2/rgrp.c              |    2 +-
- fs/gfs2/sys.c               |   33 +-
- fs/gfs2/sys.h               |    2 +
- include/linux/gfs2_ondisk.h |    2 +
- 12 files changed, 1108 insertions(+), 49 deletions(-)
-
-
+-- 
+Mel Gorman
+SUSE Labs
