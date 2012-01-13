@@ -1,131 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260Ab2AMAJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 19:09:39 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:40126 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756128Ab2AMAJg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 19:09:36 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av4EAPV0D095LbVq/2dsb2JhbABDrQ6BBoFyAQEEAScTHCMFCwgDDgouFCUDIRMbh1+3IROLJ2MElQ2SUQ
-Date: Fri, 13 Jan 2012 11:09:32 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, xfs@oss.sgi.com,
-        Eric Sandeen <sandeen@sandeen.net>, Dave Chinner <dchinner@redhat.com>,
-        Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/4] Fix filesystem freezing
-Message-ID: <20120113000932.GD2806@dastard>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
- <20120112024841.GB2806@dastard>
- <20120112113031.GA8778@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120112113031.GA8778@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756284Ab2AMA3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 19:29:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:48441 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753153Ab2AMA25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 19:28:57 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="95924775"
+From: Andi Kleen <andi@firstfloor.org>
+To: chris.mason@oracle.com
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Updated btrfs/crypto snappy interface ready for merging
+Date: Thu, 12 Jan 2012 16:28:47 -0800
+Message-Id: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.7.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 12:30:31PM +0100, Jan Kara wrote:
-> On Thu 12-01-12 13:48:41, Dave Chinner wrote:
-> > On Thu, Jan 12, 2012 at 02:20:49AM +0100, Jan Kara wrote:
-> > > 
-> > >   Hello,
-> > > 
-> > >   filesystem freezing is currently racy and thus we can end up with dirty data
-> > > on frozen filesystem (see changelog of the first patch for detailed race
-> > > description and proposed fix). This patch series aims at fixing this.
-> > 
-> > It only fixes the dirty data race (i.e. SB_FREEZE_WRITE). The same
-> > race conditions exist for SB_FREEZE_TRANS on XFS, and so need the
-> > same fix. That race has had one previous attempt at fixing it in
-> > XFS but that's not possible:
-> > 
-> > b2ce397 Revert "xfs: fix filesystsem freeze race in xfs_trans_alloc"
-> > 7a249cf xfs: fix filesystsem freeze race in xfs_trans_alloc
-> > 
-> > It was looking at that problem earlier today that lead to the
-> > solution Eric proposed. Essentially the method in these patches
-> > needs to replace the xfs specifc m_active_trans counter and delay
-> > during ->fs_freeze to prevent that race condition....
->   OK, I see. I just checked ext4 to make sure and ext4 seems to get this
-> right. Looking into Christoph's original patch it shouldn't be hard to fix
-> it. Instead of:
->         atomic_inc(&mp->m_active_trans);
->  
->         if (wait_for_freeze)
->               xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
-> 
-> we just need to do a bit more elaborate
-> 
-> retry:
->         if (wait_for_freeze)
->               xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
->         atomic_inc(&mp->m_active_trans);
-> 	if (wait_for_freeze && mp->m_super->s_frozen >= SB_FREEZE_TRANS) {
->         	atomic_dec(&mp->m_active_trans);
-> 		goto retry;
-> 	}
-> 
-> Or does XFS support nested transactions (i.e. a thread already holding a
-> running transaction can call into xfs_trans_alloc() again)?
-> That would make things more complicated...
+Here's a slightly updated version of the BTRFS snappy interface.
+snappy is a faster compression algorithm that provides similar
+compression as LZO, but generally better performance.
 
-You're still missing the point - that this isn't an XFS specific
-problem or that the write problem is a ext4 specific problem. The
-problem is that these are freeze state transition problems -
-something that can affect every filesystem because the freeze code
-is generic.  Quite frankly, I'm not interested in having a generic
-solution for SB_FREEZE_WRITE and a custom, per filesystem solution
-for SB_FREEZE_TRANS when the solution is exactly the same.
+This version has:
 
-> Using sb_start_write() instead of m_active_trans won't be that easy because
-> it can create A-A deadlocks (e.g. we do sb_start_write in
-> block_page_mkwrite() and then xfs_get_blocks() decides to start a
-> transaction and calls sb_start_write() again which might block if
-> filesystem freezing started in the mean time).
+- Ported to latest tree
+- Extensive testing and benchmarking (in its 3.0 based incarnation)
+- A few cleanups
+- Adds a minor performance improvement
 
-So, like Eric said in his first email, it's not a "write start/end"
-interface that is needed, the interface has to work with different
-freeze levels (e.g "sb_freeze_ref(sb, level)/sb_freeze_drop(sb,
-level)").  Sure, internally it would have to map to two counters and
-different level checks, but it solves the same problem for all
-levels of freeze for all filesystems.
+Should be ready for pulling into the btrfs tree now.
+The crypto parts have been acked by Herbert.
 
-Let's fix this freeze problem once and for all in the generic code,
-and not have to keep coming back to it to add more functioanlity for
-different situations the most recent fix didn't handle for random
-filesystem X....
+The following changes since commit 2485a4b610171f4e1c4ab0d053569747795c1bbe:
 
-> So it's up to XFS maintainers to decide what's best but I'd take
-> Christoph's patch with above fixup. I guess I'll put it in this series and
-> see what people say.
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input (2012-01-12 12:40:41 -0800)
 
-Eric and I have already discussed and agreed to replacing the XFS
-sepcific code with the fixed VFS level API where other XFS
-developers including the "XFS Maintainers" (*) can see. Nobody has
-objected so I doubt there's any problem with doing so.
+are available in the git repository at:
 
-Besides, anything that replaces custom XFS code with a better
-generic solution is pretty much guaranteed to be done. And given
-that this is not an XFS specifc problem and it needs be fixed at
-the VFS level.....
+  git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-misc snappy
 
-Cheers,
+Andi Kleen (3):
+      Add the snappy-c compressor to lib v2
+      BTRFS: Add snappy support v2
+      Add snappy interface to crypto API
 
-Dave.
+ crypto/Kconfig         |    9 +
+ crypto/Makefile        |    1 +
+ crypto/snappy.c        |   99 ++++
+ fs/btrfs/Kconfig       |    1 +
+ fs/btrfs/Makefile      |    2 +-
+ fs/btrfs/compression.c |    1 +
+ fs/btrfs/compression.h |    1 +
+ fs/btrfs/ctree.h       |    9 +-
+ fs/btrfs/disk-io.c     |    2 +
+ fs/btrfs/ioctl.c       |    4 +
+ fs/btrfs/snappy.c      |  432 ++++++++++++++++
+ fs/btrfs/super.c       |    9 +-
+ include/linux/snappy.h |   26 +
+ lib/Kconfig            |    6 +
+ lib/Makefile           |    4 +
+ lib/snappy.c           | 1300 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 16 files changed, 1901 insertions(+), 5 deletions(-)
+ create mode 100644 crypto/snappy.c
+ create mode 100644 fs/btrfs/snappy.c
+ create mode 100644 include/linux/snappy.h
+ create mode 100644 lib/snappy.c
 
-[*] keep in mind that "XFS Maintainer" is just a figurehead who
-maintains the tree that is sent to Linus, not the person with final
-say over what changes are made. That decision is made by the
-reviewers of the code...
+-Andi
 
--- 
-Dave Chinner
-david@fromorbit.com
