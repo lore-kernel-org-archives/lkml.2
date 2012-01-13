@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab2AMWSq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 17:18:46 -0500
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:40847 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754094Ab2AMWSn (ORCPT
+	id S1759348Ab2AMWTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 17:19:50 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:47642 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab2AMWTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 17:18:43 -0500
-Message-ID: <4F10ADB3.7080409@linux.vnet.ibm.com>
-Date: Sat, 14 Jan 2012 03:48:27 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:7.0) Gecko/20110927 Thunderbird/7.0
+	Fri, 13 Jan 2012 17:19:49 -0500
+Message-ID: <4F10AE01.4090707@gmail.com>
+Date: Fri, 13 Jan 2012 23:19:45 +0100
+From: Enrico Mattea <ocirne94@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Andi Kleen <ak@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        Jeff Chua <jeff.chua.linux@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: x86/mce: machine check warning during poweroff
-References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com> <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFwcOgEbnYhs7z+jc-Jq+fWxV3vfSRdfLXBEUC_40BRK0w@mail.gmail.com> <4F1099CA.7090209@linux.vnet.ibm.com> <CA+55aFw9SkNPoMmad6sOAsY-jtJtes12pBFGr9sipGadS8+VJg@mail.gmail.com> <4F10A0FD.9040504@linux.intel.com> <4F10A464.8080603@gmail.com> <4F10AB02.1010305@linux.vnet.ibm.com>
-In-Reply-To: <4F10AB02.1010305@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011322-4790-0000-0000-000000D6425F
+To: el es <el.es.cr@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: HID device calibration - how to override mapping?
+References: <4F1051CA.4090007@gmail.com> <loom.20120113T175122-168@post.gmane.org>
+In-Reply-To: <loom.20120113T175122-168@post.gmane.org>
+Content-Type: multipart/mixed;
+ boundary="------------050907030002050203060901"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2012 03:36 AM, Srivatsa S. Bhat wrote:
+This is a multi-part message in MIME format.
+--------------050907030002050203060901
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> On 01/14/2012 03:08 AM, Justin P. Mattock wrote:
-> 
->>>
->>
->> this showed up using no_console_suspend
->>
->>
->>   131.875143] usb 5-1: device descriptor read/64, error -110
->> [  140.599340] PM: Syncing filesystems ... done.
->> [  140.815981] PM: Preparing system for mem sleep
->> [  140.829117] Freezing user space processes ... (elapsed 0.01 seconds)
->> done.
->> [  140.840150] Freezing remaining freezable tasks ...
->> [  147.079160] usb 5-1: device descriptor read/64, error -110
->> [  147.282166] usb 5-1: new full-speed USB device number 6 using uhci_hcd
->> [  157.686165] usb 5-1: device not accepting address 6, error -110
->> [  157.788183] usb 5-1: new full-speed USB device number 7 using uhci_hcd
->> [  160.849310]
->> [  160.849320] Freezing of tasks failed after 20.00 seconds (1 tasks
->> refusing to freeze, wq_busy=0):
-> 
->> [  160.849460] khubd           D f5d90020     0    20      2 0x00000000
->> [  160.849471]  f5d95d50 00000046 f5d095d0 f5d90020 00000000 c16ec3c0
->> bce8e78a 00000024
->> [  160.849488]  c16ec3c0 bce7b7f6 00000024 f60063c0 f5d09170 f5d95d20
->> c120490b c1039aa6
->> [  160.849505]  00000000 00000046 c1721180 00000296 f5d95d70 f5d95d40
->> c1465208 00000000
->> [  160.849521] Call Trace:
->> [  160.849538]  [<c120490b>] ? do_raw_spin_lock+0x3b/0xf0
->> [  160.849548]  [<c1039aa6>] ? lock_timer_base.isra.24+0x26/0x50
->> [  160.849558]  [<c1465208>] ? _raw_spin_lock_irqsave+0x58/0x70
->> [  160.849567]  [<c1204a4e>] ? do_raw_spin_unlock+0x4e/0x90
->> [  160.849574]  [<c1463c30>] schedule+0x30/0x50
->> [  160.849582]  [<c1461b7f>] schedule_timeout+0x10f/0x1f0
->> [  160.849589]  [<c10396f0>] ? usleep_range+0x40/0x40
->> [  160.849597]  [<c1463ae0>] wait_for_common+0xb0/0x120
->> [  160.849605]  [<c1053bb0>] ? try_to_wake_up+0x260/0x260
->> [  160.849614]  [<c1463bdd>] wait_for_completion_timeout+0xd/0x10
->> [  160.849624]  [<c13250e1>] usb_start_wait_urb+0xb1/0xe0
->> [  160.849632]  [<c10e0101>] ? sys_swapon+0xab1/0xc50
->> [  160.849640]  [<c1325308>] usb_control_msg+0xb8/0xf0
->> [  160.849648]  [<c12ad1e8>] ? _dev_info+0x28/0x30
->> [  160.849656]  [<c131e627>] hub_port_init+0x627/0x710
->> [  160.849664]  [<c131d396>] ? usb_set_device_state+0x76/0x130
->> [  160.849672]  [<c1320906>] hub_thread+0x626/0x1080
->> [  160.849681]  [<c10515a1>] ? finish_task_switch+0x31/0xf0
->> [  160.849688]  [<c14635c0>] ? __schedule+0x3b0/0x7b0
->> [  160.849698]  [<c10490c0>] ? __init_waitqueue_head+0x50/0x50
->> [  160.849705]  [<c1050ef9>] ? complete+0x49/0x60
->> [  160.849713]  [<c13202e0>] ? usb_remote_wakeup+0x40/0x40
->> [  160.849720]  [<c1048928>] kthread+0x78/0x80
->> [  160.849728]  [<c10488b0>] ? __init_kthread_worker+0x60/0x60
->> [  160.849736]  [<c146b0fe>] kernel_thread_helper+0x6/0xd
->> [  160.849755]
->> [  160.849759] Restarting tasks ... done.
->> [  160.865733] power_supply BAT0: uevent
->> [  160.865737] power_supply BAT0: POWER_SUPPLY_NAME=BAT0
->> [  160.886551] power_supply BAT0: prop STATUS=Full
->> [  160.886562] power_supply BAT0: prop PRESENT=1
->> [  160.886570] power_supply BAT0: prop TECHNOLOGY=Unknown
->> [  160.886577] power_supply BAT0: prop CYCLE_COUNT=0
->>
->> I can supply full dmesg if needed.
->> a bisect on this should not take too long, just need the time to do so.
->>
->> last good kernel I have here is: 3.2.0-06541-gf33180c
->>
-> 
-> Freezing failure is a totally different problem. Freezing happens much
-> before CPUs are taken offline and even before devices are suspended.
-> But yes, if freezing fails, suspend fails too (it is aborted rather).
-> And freezing failures are typically a bit harder to trigger since they
-> occur due to some race conditions. But the suspend failure problem
-> discussed earlier in this thread (while discussing the MCE warnings) is a
-> deterministic thing and very easily reproducible.
-> 
+Hi el es, thank you for your answer.
 
+Il 13/01/2012 18:09, el es ha scritto:
+>
+> released - halfway - pressed
+> 0 - (-32767)<->  (32767) - 0
+> but does it happen in reverse order when releasing pedal ?
 
-So, looks like we have got 2 problems: a)freezing failure apparently due to
-usb related code b) suspend failure due to MCE overhaul.
+Yes, it does - perfect reverse order.
+> seems the interpretation of this is up to the application really,
+> but /if/ the -32767 to 32767 change happens all around the 'halfway'
+> spot, maybe it is (in the app. engine) interpreted as 'change'
+> and it's effect applied to 'car engine' not directly, but integrated
+> (time-integral function applied) first ?
+I don't think that the change is interpreted, because the clutch value 
+seems to be computed directly, i.e. applying the app. calibration value 
+on the the axis value received from the kernel;
+even if I'm not completely familiar with the app.'s code, the attached 
+code snippet is the interested part of the clutch handler of the app, 
+and it doesn't seem to have any other function applied.
+> I'd say, for the clutch simulation it's the /change-in-time/ that
+> matters, not the /exact/ value; so no 'static' calibration is
+> ever going to be relevant (bar maybe the device telling us when the
+> pedal is fully pressed or fully released - in case app is not tracking
+> it)
+I agree, but trying to calibrate the axis produces the 'jump' effect 
+also on the clutch value, so that either the first half of the axis 
+isn't taken into account, or it produces full clutch already at halfway, 
+and then value 0 after the halfway spot.
 
-Adding Tejun and Alan Stern to Cc.
+Thank you for your support,
+Ocirne
 
-Regards,
-Srivatsa S. Bhat
+--------------050907030002050203060901
+Content-Type: text/x-c++src;
+ name="clutch.cpp"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="clutch.cpp"
 
+CQljYXNlIEdGQ1RSTF9UWVBFX0pPWV9BWElTOgoJCQljbHV0Y2ggPSBqb3lJbmZvLT5heFtj
+bWRbQ01EX0NMVVRDSF0udmFsXTsKCQkJaWYgKGNsdXRjaCA+IGNtZFtDTURfQ0xVVENIXS5t
+YXgpIHsKCQkJCWNsdXRjaCA9IGNtZFtDTURfQ0xVVENIXS5tYXg7CgkJCX0gZWxzZSBpZiAo
+Y2x1dGNoIDwgY21kW0NNRF9DTFVUQ0hdLm1pbikgewoJCQkJY2x1dGNoID0gY21kW0NNRF9D
+TFVUQ0hdLm1pbjsKCQkJfQoJCQljYXItPl9jbHV0Y2hDbWQgPSBmYWJzKGNtZFtDTURfQ0xV
+VENIXS5wb3cgKgoJCQkJCQlwb3coZmFicygoY2x1dGNoIC0gY21kW0NNRF9DTFVUQ0hdLm1p
+blZhbCkgLwoJCQkJCQkJKGNtZFtDTURfQ0xVVENIXS5tYXggLSBjbWRbQ01EX0NMVVRDSF0u
+bWluKSksCgkJCQkJCTEuMGYgLyBjbWRbQ01EX0NMVVRDSF0uc2VucykpOwoJCQlicmVhazs=
+--------------050907030002050203060901--
