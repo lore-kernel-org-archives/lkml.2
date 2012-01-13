@@ -1,52 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab2AMQ36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 11:29:58 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:10741 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319Ab2AMQ3z convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:2:1>);
-	Fri, 13 Jan 2012 11:29:55 -0500
-Message-Id: <4F106A4A020000780006C90E@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.0 
-Date: Fri, 13 Jan 2012 16:30:50 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <npiggin@kernel.dk>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: ticket spin locks vs. interrupt re-enabling during spin loops
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S932350Ab2AMQe2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 11:34:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:36780 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758486Ab2AMQe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 11:34:26 -0500
+Date: Fri, 13 Jan 2012 17:34:23 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
+Message-ID: <20120113163423.GG17060@tiehlicka.suse.cz>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+ <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
+ <20120113120406.GC17060@tiehlicka.suse.cz>
+ <20120113155001.GB1653@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20120113155001.GB1653@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nick,
+On Fri 13-01-12 16:50:01, Johannes Weiner wrote:
+> On Fri, Jan 13, 2012 at 01:04:06PM +0100, Michal Hocko wrote:
+> > On Tue 10-01-12 16:02:52, Johannes Weiner wrote:
+[...]
+> > > +bool mem_cgroup_over_softlimit(struct mem_cgroup *root,
+> > > +			       struct mem_cgroup *memcg)
+> > > +{
+> > > +	if (mem_cgroup_disabled())
+> > > +		return false;
+> > > +
+> > > +	if (!root)
+> > > +		root = root_mem_cgroup;
+> > > +
+> > > +	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
+> > > +		/* root_mem_cgroup does not have a soft limit */
+> > > +		if (memcg == root_mem_cgroup)
+> > > +			break;
+> > > +		if (res_counter_soft_limit_excess(&memcg->res))
+> > > +			return true;
+> > > +		if (memcg == root)
+> > > +			break;
+> > > +	}
+> > > +	return false;
+> > > +}
+> > 
+> > Well, this might be little bit tricky. We do not check whether memcg and
+> > root are in a hierarchy (in terms of use_hierarchy) relation. 
+> > 
+> > If we are under global reclaim then we iterate over all memcgs and so
+> > there is no guarantee that there is a hierarchical relation between the
+> > given memcg and its parent. While, on the other hand, if we are doing
+> > memcg reclaim then we have this guarantee.
+> > 
+> > Why should we punish a group (subtree) which is perfectly under its soft
+> > limit just because some other subtree contributes to the common parent's
+> > usage and makes it over its limit?
+> > Should we check memcg->use_hierarchy here?
+> 
+> We do, actually.  parent_mem_cgroup() checks the res_counter parent,
+> which is only set when ->use_hierarchy is also set.  
 
-prior to your introduction of ticket locks on x86 interrupts would get
-re-enabled in what was then called __raw_spin_lock_flags(). While I
-realize that this is tricky with ticket locks, have you ever thought
-through what it would take to implement this correctly?
+Of course I am blind.. We do not setup res_counter parent for
+!use_hierarchy case. Sorry for noise...
+Now it makes much better sense. I was wondering how !use_hierarchy could
+ever work, this should be a signal that I am overlooking something
+terribly.
 
-We had this working well in our Xen kernels up to 2.6.39, but the
-changes to try_to_wake_up() in 3.0 uncovered a problem with the
-original implementation, and so I'm now struggling with finding a
-solution that can cover both this problem as well as to another
-possible scenario I meanwhile thought of that would break with
-the original code (an open coded spinning loop over spin_trylock()
-continuing until success in a scenario similar to that in the new
-try_to_wake_up()). A draft implementation that I had put
-together today isn't working quite right yet (and hence I can't
-quantify its performance impact at all).
+[...]
+> > > @@ -2121,8 +2121,16 @@ static void shrink_zone(int priority, struct zone *zone,
+> > >  			.mem_cgroup = memcg,
+> > >  			.zone = zone,
+> > >  		};
+> > > +		int epriority = priority;
+> > > +		/*
+> > > +		 * Put more pressure on hierarchies that exceed their
+> > > +		 * soft limit, to push them back harder than their
+> > > +		 * well-behaving siblings.
+> > > +		 */
+> > > +		if (mem_cgroup_over_softlimit(root, memcg))
+> > > +			epriority = 0;
+> > 
+> > This sounds too aggressive to me. Shouldn't we just double the pressure
+> > or something like that?
+> 
+> That's the historical value.  When I tried priority - 1, it was not
+> aggressive enough.
 
-One fundamental question of course is whether this really is worth
-it at all, since re-enabling interrupts here inherently implies that
-tickets may need to be dropped, and hence the fairness they are
-intended to guarantee is being undermined. But keeping interrupts
-frequently disabled for virtually indefinite periods of time (as can
-happen in a CPU over-committed virtualized environment) is
-certainly a problem that's worth considering solutions for.
-
-Jan
-
+Probably because we want to reclaim too much. Maybe we should do
+reduce nr_to_reclaim (ugly) or reclaim only overlimit groups until certain
+priority level as Ying suggested in her patchset.
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
