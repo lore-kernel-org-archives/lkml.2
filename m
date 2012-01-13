@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab2AMXNz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 18:13:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:55372 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756145Ab2AMXNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 18:13:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="98292684"
-Message-ID: <4F10BAB0.70308@linux.intel.com>
-Date: Fri, 13 Jan 2012 15:13:52 -0800
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+	id S1759459Ab2AMXOo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 18:14:44 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:59689 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756145Ab2AMXOn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 18:14:43 -0500
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        gouders@et.bocholt.fh-gelsenkirchen.de,
-        Marcos Souza <marcos.mage@gmail.com>,
-        Linux PM mailing list <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
-        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>
-Subject: Re: x86/mce: machine check warning during poweroff
-References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com> <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFwcOgEbnYhs7z+jc-Jq+fWxV3vfSRdfLXBEUC_40BRK0w@mail.gmail.com> <4F1099CA.7090209@linux.vnet.ibm.com> <CA+55aFw9SkNPoMmad6sOAsY-jtJtes12pBFGr9sipGadS8+VJg@mail.gmail.com> <4F10A0FD.9040504@linux.intel.com>
-In-Reply-To: <4F10A0FD.9040504@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20120113212409.GA27671@srcf.ucam.org>
+References: <20120111103408.30cfa338@jbarnes-desktop> <CA+55aFwDVEH1NwEgKCQSv9ee3P2ma1aqtjOo-s2BeURyeTGo8g@mail.gmail.com>
+ <20120113212409.GA27671@srcf.ucam.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jan 2012 15:14:21 -0800
+X-Google-Sender-Auth: HKqrHWCqu8CBGonbAWc8HgbtuDA
+Message-ID: <CA+55aFwJvvrNyqNStjM9iYcRa+t4FuuJW48SixXN+6H6sJ9e8w@mail.gmail.com>
+Subject: Re: [git pull] PCI changes
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Assuming the problem is with the multiple devices (not fully sure):
+On Fri, Jan 13, 2012 at 1:24 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>>
+>> So why is acpi_pci_root_add() special? Cna you explain that part to me?
 >
-> The redundant devices don't make much sense anyways, they are all 
-> mirrors of each other
-> (state changes always affect all CPUs)  Could just collapse down to a 
-> single device and symlink
-> the others.
+> pcie_no_aspm() means "Do not permit ASPM to be enabled" - it doesn't
+> alter the existing state. pcie_clear_aspm() does that.
 
-Checking again it seems like the AMD threshold code reports per CPU 
-counters so it would
-still need per CPU devices.
+I *know*.
 
-All the other code is just a single instance I believe and doesn't 
-actually need all the
-complicated per CPU code.
+So look again.
 
--Andi
+Why is acpi_pci_root_add() special?
 
+Because dammit, it does exactly that pcie_clear_aspm() for the
+ACPI_FADT_NO_ASPM case.
 
+That was my question.  Why does it do that, when the commit log (and
+the other users) say that ACPI_FADT_NO_ASPM means "don't touch".
+
+It touches.
+
+               Linus
