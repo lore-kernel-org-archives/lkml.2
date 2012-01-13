@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab2AMVWC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 16:22:02 -0500
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:39926 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759191Ab2AMVV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 16:21:58 -0500
-Date: Fri, 13 Jan 2012 19:21:48 -0200
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: roland@purestorage.com, venkat.x.venkatsubra@oracle.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
-Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
-Message-ID: <20120113212148.GD3904@oc1711230544.ibm.com>
-References: <20120113181706.GA3904@oc1711230544.ibm.com>
- <20120113.102518.924916400773191073.davem@davemloft.net>
- <20120113185258.GB3904@oc1711230544.ibm.com>
- <20120113.131248.447541680022014759.davem@davemloft.net>
+	id S1759203Ab2AMVYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 16:24:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:2846 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753732Ab2AMVYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 16:24:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="96274610"
+Message-ID: <4F10A0FD.9040504@linux.intel.com>
+Date: Fri, 13 Jan 2012 13:24:13 -0800
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120113.131248.447541680022014759.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-x-cbid: 12011321-2362-0000-0000-0000060114A4
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com> <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFwcOgEbnYhs7z+jc-Jq+fWxV3vfSRdfLXBEUC_40BRK0w@mail.gmail.com> <4F1099CA.7090209@linux.vnet.ibm.com> <CA+55aFw9SkNPoMmad6sOAsY-jtJtes12pBFGr9sipGadS8+VJg@mail.gmail.com>
+In-Reply-To: <CA+55aFw9SkNPoMmad6sOAsY-jtJtes12pBFGr9sipGadS8+VJg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 01:12:48PM -0800, David Miller wrote:
-> From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-> Date: Fri, 13 Jan 2012 16:52:58 -0200
-> 
-> > On Fri, Jan 13, 2012 at 10:25:18AM -0800, David Miller wrote:
-> >> From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-> >> Date: Fri, 13 Jan 2012 16:17:06 -0200
-> >> 
-> >> > Is this going through your tree? In patchwork, its state is "Not
-> >> > Applicable".
-> >> 
-> >> There was an active RDS maintainer, though I haven't seen patches
-> >> from that person in a while.
-> >> 
-> > 
-> > Hi, David.
-> > 
-> > Venkat is the current RDS maintainer and he has Acked the patch.
-> 
-> Not according to patchwork.  I don't see him reply at all to the
-> patch posting and give his explicit "Acked-by: "
-> 
 
-Venkat,
+> Yes, I think you're hitting the exact same thing.
+>
+> I *think* that what is going on is that we free some data structure
+> too early, and we didn't use to free them before.
 
-Care to send an Acked-by using a different MUA? Yours sends no
-In-Reply-To or References header field.
+Assuming the problem is with the multiple devices (not fully sure):
 
-David,
+The redundant devices don't make much sense anyways, they are all 
+mirrors of each other
+(state changes always affect all CPUs)  Could just collapse down to a 
+single device and symlink
+the others.
 
-This is the message Venkat has sent.
-
-http://marc.info/?l=linux-netdev&m=132587819932339&w=2
-
-Thanks.
-Cascardo.
+-Andi
 
