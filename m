@@ -1,152 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757017Ab2AMB4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:56:54 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:54124 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab2AMB4x (ORCPT
+	id S1757125Ab2AMCJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 21:09:44 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:53922 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757060Ab2AMCJn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:56:53 -0500
-X-AuditID: b753bd60-96e5dba00000359c-01-4f0f8f611eb0
-X-AuditID: b753bd60-96e5dba00000359c-01-4f0f8f611eb0
-Message-ID: <4F0F8F41.3060806@hitachi.com>
-Date: Fri, 13 Jan 2012 10:56:17 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
+	Thu, 12 Jan 2012 21:09:43 -0500
 MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
+In-Reply-To: <CAObL_7Fr-yV33jobSa3g_WqVJar-5x5oQM0t8GJxcLFsuBhLtg@mail.gmail.com>
+References: <1326411506-16894-1-git-send-email-wad@chromium.org>
+	<CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
+	<CAObL_7FErN5CHmfSehJYcM0_Lz-WTywG7cHe2jZyQbf-GkOQjg@mail.gmail.com>
+	<CA+55aFzzRNHfSo-1DyzsAwYvj1Da-vyhMQP-OdrA-rWywsebcg@mail.gmail.com>
+	<CAObL_7F8aYPDQ1xTFjOxWgoZfrtGNFVgMe2Ld61_=D+YY427qA@mail.gmail.com>
+	<CABqD9hZCpFM4fN9p3vmnGeLVbvoDtTgbiovz=RsSkjH6sv=xBQ@mail.gmail.com>
+	<CAObL_7Fr-yV33jobSa3g_WqVJar-5x5oQM0t8GJxcLFsuBhLtg@mail.gmail.com>
+Date: Thu, 12 Jan 2012 18:09:38 -0800
+X-Google-Sender-Auth: ryzQPMwj3KtMjbBIAcAErU7eHg8
+Message-ID: <CAGXu5jLwXgB=Fc=v=iZ=yH+ngwivF5mdK+5LFoS8fCqNAXHvNA@mail.gmail.com>
+Subject: Re: [PATCH PLACEHOLDER 1/3] fs/exec: "always_unprivileged" patch
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Will Drewry <wad@chromium.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH v8 3.2.0-rc5 9/9] perf: perf interface for uprobes
-References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com> <20111216122951.2085.95511.sendpatchset@srdronam.in.ibm.com> <4F06D22D.9060906@hitachi.com> <20120109112236.GA10189@linux.vnet.ibm.com>
-In-Reply-To: <20120109112236.GA10189@linux.vnet.ibm.com>
+        linux-kernel@vger.kernel.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, mingo@elte.hu, akpm@linux-foundation.org,
+        khilman@ti.com, borislav.petkov@amd.com, amwang@redhat.com,
+        oleg@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/01/09 20:22), Srikar Dronamraju wrote:
->>>  		return true;
->>>
->>>  	for (i = 0; i < pev->nargs; i++)
->>> @@ -1344,11 +1389,17 @@ char *synthesize_probe_trace_command(struct
-probe_trace_event *tev)
->>>  	if (buf == NULL)
->>>  		return NULL;
->>>
->>> -	len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s%s%s+%lu",
->>> -			 tp->retprobe ? 'r' : 'p',
->>> -			 tev->group, tev->event,
->>> -			 tp->module ?: "", tp->module ? ":" : "",
->>> -			 tp->symbol, tp->offset);
->>> +	if (tev->uprobes)
->>> +		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s",
->>> +				 tp->retprobe ? 'r' : 'p',
->>> +				 tev->group, tev->event, tp->symbol);
->>> +	else
->>> +		len = e_snprintf(buf, MAX_CMDLEN, "%c:%s/%s %s%s%s+%lu",
->>> +				 tp->retprobe ? 'r' : 'p',
->>> +				 tev->group, tev->event,
->>> +				 tp->module ?: "", tp->module ? ":" : "",
->>> +				 tp->symbol, tp->offset);
+On Thu, Jan 12, 2012 at 5:41 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+> On Thu, Jan 12, 2012 at 5:37 PM, Will Drewry <wad@chromium.org> wrote:
+>> On Thu, Jan 12, 2012 at 7:11 PM, Andrew Lutomirski <luto@mit.edu> wrote:
+>>> (Also, preventing dropping of privileges will probably make a patch
+>>> more complicted -- I'll have to find and update all the places that
+>>> allow dropping privileges.)
 >>
->> I think tp->module should be the executable file even when
->> tp is a user space probe, because when parsing the uprobes list
->> in tracing/trace_uprobes, exec file will be stored in tp->module.
+>> An alternative approach might be that the restricted bit drops all
+>> privileges that allows privilege changes in either direction.  E.g.,
+>> - set restricted bit
+>> -- adds a check anywhere MNT_NOSUID is
+>> -- sets securebit to SECURE_NOROOT|..LOCKED
+>> -- drops CAP_SETUID, CAP_DAC_OVERRIDE, ...
+>> -- set the caps bounding set to the minimum the restricted bit allows
+>>
+>> That may deviate from the intent (by re-using caps), but it could keep some
+>> of the privilege transition checking code the same.
 >
-> can be done. What I used to do is overload the tp->symbol with the
-> real-name as well as the offset.  Now I will just keep the offset in the
-> symbol and use the target that the user has requested.
-
-I mean that tp->module always !NULL if uprobe, then, we don't need
-to change the code. (thus we can reduce the patch size :))
-
-
->>> +int show_available_funcs(const char *target, struct strfilter *_filter,
->>> +					bool user)
->>> +{
->>> +	struct map *map;
->>> +	int ret;
->>> +
->>> +	setup_pager();
->>>  	available_func_filter = _filter;
->>> +
->>> +	if (!user)
->>> +		return available_kernel_funcs(target);
->>> +
->>> +	symbol_conf.try_vmlinux_path = false;
->>> +	symbol_conf.sort_by_name = true;
->>> +	ret = symbol__init();
->>> +	if (ret < 0) {
->>> +		pr_err("Failed to init symbol map.\n");
->>> +		return ret;
->>> +	}
->>> +	map = dso__new_map(target);
->>> +	ret = __show_available_funcs(map);
->>> +	dso__delete(map->dso);
->>> +	map__delete(map);
->>> +	return ret;
->>> +}
->>> +
->>> +#define DEFAULT_FUNC_FILTER "!_*"
->>
->> This is a hidden rule for users ... please remove it.
->> (or, is there any reason why we need to have it?)
->>
+> I'm not sure it'll be much of a simplification.  The entire patch is
+> 45 lines right now :)  I'll test it and send it out.
 >
-> This is to be in sync with your commit
-> 3c42258c9a4db70133fa6946a275b62a16792bb5
+> FWIW, though, it breaks apparmor (intentionally).  Can any of you
+> either explain what *should* happen or (better) volunteer to fix it?
+> It should be about three lines of code for someone who understands
+> what's going on.  I don't have an apparmor system, so I can't really
+> test it.
 
-I see, but that commit also provides filter option for changing
-the function filter. Here, user can not change the filter rule.
-
-I think, currently, we don't need to filter any function by name
-here, since the user obviously intends to probe given function :)
-
->>> +
->>> +/*
->>> + * uprobe_events only accepts address:
->>> + * Convert function and any offset to address
->>> + */
->>> +static int convert_name_to_addr(struct perf_probe_event *pev, const char *exec)
->>> +{
->>
->> I'm not sure why wouldn't you convert function to "vaddr",
->> instead of "exec:vaddr"?
->>
->
-> If the user provides a symbolic link, convert_name_to_addr would get the
-> target executable for the given executable. This would handy if we were
-> to compare existing probes registered on the same application using a
-> different name (symbolic links). Since you seem to like that we register
-> with the name the user has provided, I will just feed address here.
-
-Hmm, why do we need to compare the probe points? Of course, event-name
-conflict should be solved, but I think it is acceptable that user puts
-several probes on the same exec:vaddr. Since different users may want
-to use it concurrently bit different ways.
-
-Thank you,
-
+I'm happy to take a look at the AppArmor breakage. What's happening
+with it at the moment?
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Kees Cook
+ChromeOS Security
