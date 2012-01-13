@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab2AMB0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:26:49 -0500
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:40589 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756792Ab2AMB0r (ORCPT
+	id S1756846Ab2AMB1x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:27:53 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:43136 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab2AMB1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:26:47 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAKCGD095LbVq/2dsb2JhbABDrQ6BBoFyAQEFJxMcIxAIAw4KLhQlAyETvxoTiydjBJUNklE
-Date: Fri, 13 Jan 2012 12:26:43 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-fsdevel@vger.kernel.org, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Eric Sandeen <sandeen@sandeen.net>,
-        LKML <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <dchinner@redhat.com>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 1/4] fs: Improve filesystem freezing handling
-Message-ID: <20120113012643.GF2806@dastard>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
- <1326331253-6497-2-git-send-email-jack@suse.cz>
+	Thu, 12 Jan 2012 20:27:51 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326331253-6497-2-git-send-email-jack@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 13 Jan 2012 10:27:50 +0900
+Message-ID: <CANKRQnj64Ch--qctHMYYfGC5erkb_gctznpru8iGPOaioDGcDw@mail.gmail.com>
+Subject: [RESEND] i2c-eg20t: some patches are not reviewed yet
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Qi Wang <qi.wang@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: joel.clark@intel.com, kok.howg.ewe@intel.com, yong.y.wang@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 02:20:50AM +0100, Jan Kara wrote:
-> + *
-> + * Decrement number of writers to the filesystem and wake up possible
-> + * waiters wanting to freeze the filesystem.
-> + */
-> +void sb_end_write(struct super_block *sb)
-> +{
-> +#ifdef CONFIG_SMP
-> +	this_cpu_dec(sb->s_writers);
-> +#else
-> +	preempt_disable();
-> +	sb->s_writers--;
-> +	preempt_enable();
-> +#endif
+Hi
 
-I really dislike this type of open coded per-cpu counter
-implementation. I can't see that there is no good reason to use it
-over percpu_counters here which abstract all this mess away.
+The following 3 patches are still not reviewed yet for 2~3 months.
+Could you review and accept these patches ?
 
-i.e. it is relatively rare that the per-cpu count will nest
-greater than the percpu_counter batch size (needs more than 32
-concurrent blocked active writes per CPU), so there is no
-significant overhead to using the percpu_counters here.
+Subject:    [PATCH] i2c-eg20t: modified the setting of transfer rate.
+From:       Toshiharu Okada <toshiharu-linux () dsn ! okisemi ! com>
+Date:       2011-09-26 7:16:23
+http://marc.info/?l=linux-i2c&m=131702145913299&w=2
 
-Indeed, if there are that many blocked writes per CPU, then the
-overhead of an occasional global counter update is going to be lost
-in the noise of everything else that is going on.
 
-Cheers,
+Subject:    [PATCH 2/2] i2c-eg20t:
+Change-company-name-OKI-SEMICONDUCTOR to LAPIS Semiconductor
+From:       Tomoya MORINAGA <tomoya-linux () dsn ! lapis-semi ! com>
+Date:       2011-10-28 0:40:11
+http://marc.info/?l=linux-kernel&m=131976246906496&w=2
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Subject:    [PATCH 1/2] i2c-eg20t: Support new device LAPIS
+Semiconductor ML7831 IOH
+From:       Tomoya MORINAGA <tomoya-linux () dsn ! lapis-semi ! com>
+Date:       2011-10-28 0:40:10
+http://marc.info/?l=linux-i2c&m=131976245206491&w=2
+
+thanks in advance.
+tomoya
