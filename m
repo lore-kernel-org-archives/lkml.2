@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab2AMPSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:18:07 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41442 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758276Ab2AMPSB (ORCPT
+	id S1758318Ab2AMPUQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:20:16 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:49069 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758297Ab2AMPUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:18:01 -0500
-Message-ID: <4F104AD1.2080607@linux.vnet.ibm.com>
-Date: Fri, 13 Jan 2012 09:16:33 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Fri, 13 Jan 2012 10:20:13 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
+        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
+        Daniel Willerud <daniel.willerud@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 0/8] DB8500 PRCMU update
+Date: Fri, 13 Jan 2012 16:19:46 +0100
+Message-ID: <1326467986-11648-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.8
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Beulich <JBeulich@novell.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nitin Gupta <ngupta@vflare.org>,
-        Matthew Wilcox <matthew@wil.cx>, Chris Mason <chris.mason@oracle.com>,
-        Rik Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/4] mm: cleancache: s/flush/invalidate/
-References: <1326400580-16853-1-git-send-email-konrad.wilk@oracle.com> <1326400580-16853-2-git-send-email-konrad.wilk@oracle.com>
-In-Reply-To: <1326400580-16853-2-git-send-email-konrad.wilk@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011315-7282-0000-0000-00000599A0EB
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Konrad,
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On 01/12/2012 02:36 PM, Konrad Rzeszutek Wilk wrote:
-> From: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> Per akpm suggestions alter the use of the term flush to be
-> invalidate. The next patch will do this across all MM.
-> 
-> This change is completely cosmetic.
-> 
-> [v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 3]
-> 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
-> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Jan Beulich <JBeulich@novell.com>
-> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: Hugh Dickins <hughd@google.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Nitin Gupta <ngupta@vflare.org>
-> Cc: Matthew Wilcox <matthew@wil.cx>
-> Cc: Chris Mason <chris.mason@oracle.com>
-> Cc: Rik Riel <riel@redhat.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> [v10: Fixed  fs: move code out of buffer.c conflict change]
-> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  Documentation/vm/cleancache.txt |   37 +++++++++++++++++++------------------
->  fs/block_dev.c                  |    2 +-
->  fs/super.c                      |    2 +-
->  include/linux/cleancache.h      |   23 ++++++++++++++---------
->  mm/cleancache.c                 |   19 ++++++++++---------
->  mm/filemap.c                    |    2 +-
->  mm/truncate.c                   |   10 +++++-----
->  7 files changed, 51 insertions(+), 44 deletions(-)
-snip
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index 69a5b6f..d6d5f29 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -110,7 +110,7 @@ void invalidate_bdev(struct block_device *bdev)
->  	/* 99% of the time, we don't need to flush the cleancache on the bdev.
->  	 * But, for the strange corners, lets be cautious
->  	 */
-> -	cleancache_flush_inode(mapping);
-> +	cleancache_invalidate_inode(mapping);
->  }
->  EXPORT_SYMBOL(invalidate_bdev);
+This is a set of updates to the DB8500 driver that mainly expand
+clock handling and tries to get a more clean approach to the
+various register access. This is targeted at next (v3.4) merge
+window, but we'd like to see it mature in linux-next as soon as
+possible so I'm sending it early.
 
-This hunk doesn't merge cleanly because there is no existing
-cleancache code in fs/block_dev.c in v3.2 or any previous version.
+Yours,
+Linus Walleij
 
-Looking at the git log, doesn't look like any cleancache code was
-ever merged into this file.
+Bengt Jonsson (1):
+  mfd/db8500-prcmu: spawned regulators update
 
---
-Seth
+Daniel Willerud (1):
+  mfd/db8500-prcmu: remove U8400 legacy
 
+Jonas Aaberg (1):
+  mfd/db8500-prcmu: remove check for firmware bug
+
+Mattias Nilsson (5):
+  mfd/db8500-prcmu: function for obtaining the prcmu firmware version
+  mfd/db8500-prcmu: update abstract dbx500 interface
+  mfd/db8500-prcmu: clock handling update
+  mfd/db8500-prcmu: OPP and sleep handling update
+  mfd/db8500-prcmu: add initial prcmu register access api
+
+ drivers/cpufreq/db8500-cpufreq.c |   13 +-
+ drivers/mfd/db8500-prcmu.c       |  927 ++++++++++++++++++++++++++++++--------
+ drivers/mfd/dbx500-prcmu-regs.h  |  128 ++++--
+ include/linux/mfd/db8500-prcmu.h |  142 ++++--
+ include/linux/mfd/dbx500-prcmu.h |  359 ++++++++++++++-
+ 5 files changed, 1272 insertions(+), 297 deletions(-)
+
+-- 
+1.7.8
 
