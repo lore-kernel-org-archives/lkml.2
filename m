@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932915Ab2AMWmR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 17:42:17 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:56065 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab2AMWmO (ORCPT
+	id S1759392Ab2AMWna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 17:43:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55100 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759365Ab2AMWn3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 17:42:14 -0500
-Date: Fri, 13 Jan 2012 22:42:11 +0000
-From: Matthew Garrett <mjg@redhat.com>
-To: Corentin Chary <corentin.chary@gmail.com>
-Cc: platform-driver-x86@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org
-Subject: Re: Handling special keys in platform drivers
-Message-ID: <20120113224211.GB29022@srcf.ucam.org>
-References: <CAHR064jAJkQCd_Tsrx7NHe_RbaBbNcX4sMwy=zkZCZNUNo=fAw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHR064jAJkQCd_Tsrx7NHe_RbaBbNcX4sMwy=zkZCZNUNo=fAw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 13 Jan 2012 17:43:29 -0500
+Date: Fri, 13 Jan 2012 14:43:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nico@fluxnic.net>, moussaba@micron.com,
+        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>
+Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
+Message-Id: <20120113144328.564cb50e.akpm@linux-foundation.org>
+In-Reply-To: <20120113153556.GY1068@n2100.arm.linux.org.uk>
+References: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
+	<20120113153556.GY1068@n2100.arm.linux.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 07:24:14AM +0100, Corentin Chary wrote:
+On Fri, 13 Jan 2012 15:35:56 +0000
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-> The real problem is that for keyboard backlight to work, it needs DE
-> cooperation, and only gnome as implemented that right now, and other
-> (except KDE) will probably neither have the resources to handle all
-> the possible keys correctly. And of course, who should handle the keys
-> when there is no DE running at all ?
+> On Fri, Jan 13, 2012 at 03:13:07PM +0000, Will Deacon wrote:
+> > /proc/pid/clear_refs is used to clear the Referenced and YOUNG bits for
+> > pages and corresponding page table entries of the task with PID pid,
+> > which includes any special mappings inserted into the page tables in
+> > order to provide things like vDSOs and user helper functions.
+> > 
+> > On ARM this causes a problem because the vectors page is mapped as a
+> > global mapping and since ec706dab ("ARM: add a vma entry for the user
+> > accessible vector page"), a VMA is also inserted into each task for this
+> > page to aid unwinding through signals and syscall restarts. Since the
+> > vectors page is required for handling faults, clearing the YOUNG bit
+> > (and subsequently writing a faulting pte) means that we lose the vectors
+> > page *globally* and cannot fault it back in. This results in a system
+> > deadlock on the next exception.
+> > 
+> > This patch avoids clearing the aforementioned bits for reserved pages,
+> > therefore leaving the vectors page intact on ARM. Since reserved pages
+> > are not candidates for swap, this change should not have any impact on
+> > the usefulness of clear_refs.
+> 
+> Having just looked at mm/swapfile.c, what ensures that we don't try to swap
+> the vectors page out?
 
-The problem with handling this in kernel is that there isn't an 
-obviously correct policy. ACPI will typically only expose 16 or so 
-backlight levels so the behaviour is easy enough, but (depending on how 
-the hardware is wired up) i915 may expose around 20,000. Further, one 
-machine may expose different backlight controls for different displays, 
-and in that situation you need to know which one the input event is 
-expected to correspond to.
+Scanning and swapout access the page via the vm's page LRU lists. 
+These magical pages shouldn't be on the LRU, so the VM won't pester
+them.  If those pages did get added to the LRU somwhoe then yes,
+there's a problem.
 
-Doing backlight control properly involves a lot of policy work, and I'm 
-reluctant to argue that that ought to be in the kernel.
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> I thought that VM_IO or VM_RESERVED once guaranteed that the vma wouldn't
+> be scanned, but I don't see anything in there which tests these flags.
+> As a result, it seems to me that the original patch is wrong, and we need
+> to keep the vectors page completely out of the vma list to prevent it
+> ever being made old.
+> 
+> Maybe the MM gurus can comment?
+
+The MM guru is Hugh.
