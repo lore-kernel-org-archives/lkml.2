@@ -1,47 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758344Ab2AMPqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:46:24 -0500
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63376 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab2AMPqX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:46:23 -0500
-Message-ID: <4F1051CA.4090007@gmail.com>
-Date: Fri, 13 Jan 2012 16:46:18 +0100
-From: Enrico Mattea <ocirne94@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: HID device calibration - how to override mapping?
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932236Ab2AMPrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:47:13 -0500
+Received: from mga02.intel.com ([134.134.136.20]:62653 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758292Ab2AMPrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 10:47:09 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
+   d="scan'208";a="96168446"
+From: Alex Shi <alex.shi@intel.com>
+To: linux-kernel@vger.kernel.org, cl@gentwo.org, eric.dumazet@gmail.com,
+        tglx@linutronix.de, avi@redhat.com, akpm@linux-foundation.org,
+        davem@davemloft.net, kaber@trash.net, a.p.zijlstra@chello.nl,
+        ying.huang@intel.com, honrad.wilk@oracle.com, hpa@zytor.com,
+        jeremy@goop.org
+Subject: [PATCH v2 1/5] net: use this_cpu_xxx replace percpu_xxx funcs
+Date: Fri, 13 Jan 2012 23:45:16 +0800
+Message-Id: <1326469520-21239-2-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1326469520-21239-1-git-send-email-alex.shi@intel.com>
+References: <1326469520-21239-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
+for further code clean up.
 
-I have a HID device (racing pedals) and a problem with it.
+And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
+performance since __this_cpu_xxx has no redundant preempt_disable()
 
-In short, one of the three axes of the device (the clutch pedal) sends 
-raw values differently from the other two; in the sense that gas and 
-brake pedal return +32767 to 0 to -32767 (from released to halfway to 
-fully pressed), while the clutch pedal sends 0 to -32767 to +32767 to 0 
-(from released (0) to halfway (-32767), then the value jumps to +32767, 
-then decreases again to 0 when fully pressed).
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+---
+ net/netfilter/xt_TEE.c |   12 ++++++------
+ net/socket.c           |    4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
-This obviously makes it impossible to properly calibrate the axis for 
-anything, because of the "jump" at halfway and of the equality of min 
-and max returned values.
+diff --git a/net/netfilter/xt_TEE.c b/net/netfilter/xt_TEE.c
+index 3aae66f..f81eba4 100644
+--- a/net/netfilter/xt_TEE.c
++++ b/net/netfilter/xt_TEE.c
+@@ -87,7 +87,7 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 	struct iphdr *iph;
+ 
+-	if (percpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	/*
+ 	 * Copy the skb, and route the copy. Will later return %XT_CONTINUE for
+@@ -124,9 +124,9 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	ip_send_check(iph);
+ 
+ 	if (tee_tg_route4(skb, info)) {
+-		percpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip_local_out(skb);
+-		percpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+@@ -167,7 +167,7 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ {
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 
+-	if (percpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	skb = pskb_copy(skb, GFP_ATOMIC);
+ 	if (skb == NULL)
+@@ -185,9 +185,9 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ 		--iph->hop_limit;
+ 	}
+ 	if (tee_tg_route6(skb, info)) {
+-		percpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip6_local_out(skb);
+-		percpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+diff --git a/net/socket.c b/net/socket.c
+index 28a96af..784d93a 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -479,7 +479,7 @@ static struct socket *sock_alloc(void)
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
+ 
+-	percpu_add(sockets_in_use, 1);
++	this_cpu_add(sockets_in_use, 1);
+ 	return sock;
+ }
+ 
+@@ -522,7 +522,7 @@ void sock_release(struct socket *sock)
+ 	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
+ 		printk(KERN_ERR "sock_release: fasync list not empty!\n");
+ 
+-	percpu_sub(sockets_in_use, 1);
++	this_cpu_sub(sockets_in_use, 1);
+ 	if (!sock->file) {
+ 		iput(SOCK_INODE(sock));
+ 		return;
+-- 
+1.6.3.3
 
-As nobody seems to be complaining about this anywhere, I think that the 
-(windows only) pedals' driver acts on the clutch value in some way at 
-kernel level, "interpreting" it correctly.
-
-So please, is there a way to do something similar - what I'm thinking 
-about is remapping the values (at HID kernel driver level) - so that the 
-values are interpreted correctly by the kernel?
-
-Thank you very much in advance,
-Ocirne
