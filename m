@@ -1,25 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932616Ab2AMSPs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:15:48 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33512 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758731Ab2AMSPo (ORCPT
+	id S1758749Ab2AMSQF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:16:05 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:58301 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758747Ab2AMSPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:15:44 -0500
+	Fri, 13 Jan 2012 13:15:41 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Daniel J Walsh <dwalsh@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Max Kellermann <mk@cm4all.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
         Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
-        Tejun Heo <tj@kernel.org>, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Tejun Heo <tj@kernel.org>,
         Containers <containers@lists.linux-foundation.org>
 Subject: [PATCH 8/8] cgroups: Add a task counter subsystem
-Date: Fri, 13 Jan 2012 19:14:01 +0100
-Message-Id: <1326478441-3048-18-git-send-email-fweisbec@gmail.com>
+Date: Fri, 13 Jan 2012 19:14:00 +0100
+Message-Id: <1326478441-3048-17-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1326478441-3048-1-git-send-email-fweisbec@gmail.com>
 References: <1326478441-3048-1-git-send-email-fweisbec@gmail.com>
