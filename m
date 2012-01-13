@@ -1,104 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759214Ab2AMVSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 16:18:20 -0500
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:33218 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830Ab2AMVST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 16:18:19 -0500
-Message-ID: <4F109E50.5010104@linux.vnet.ibm.com>
-Date: Fri, 13 Jan 2012 15:12:48 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1759228Ab2AMVWC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 16:22:02 -0500
+Received: from e24smtp05.br.ibm.com ([32.104.18.26]:39926 "EHLO
+	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759191Ab2AMVV6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 16:21:58 -0500
+Date: Fri, 13 Jan 2012 19:21:48 -0200
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: roland@purestorage.com, venkat.x.venkatsubra@oracle.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
+Message-ID: <20120113212148.GD3904@oc1711230544.ibm.com>
+References: <20120113181706.GA3904@oc1711230544.ibm.com>
+ <20120113.102518.924916400773191073.davem@davemloft.net>
+ <20120113185258.GB3904@oc1711230544.ibm.com>
+ <20120113.131248.447541680022014759.davem@davemloft.net>
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Beulich <JBeulich@novell.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Hugh Dickins <hughd@google.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Nitin Gupta <ngupta@vflare.org>,
-        Matthew Wilcox <matthew@wil.cx>, Chris Mason <chris.mason@oracle.com>,
-        Rik Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/4] mm: cleancache: s/flush/invalidate/
-References: <1326400580-16853-1-git-send-email-konrad.wilk@oracle.com> <1326400580-16853-2-git-send-email-konrad.wilk@oracle.com> <4F104AD1.2080607@linux.vnet.ibm.com> <20120113174306.GB16182@phenom.dumpdata.com>
-In-Reply-To: <20120113174306.GB16182@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-x-cbid: 12011321-1976-0000-0000-0000097A8659
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120113.131248.447541680022014759.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12011321-2362-0000-0000-0000060114A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 11:43 AM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jan 13, 2012 at 09:16:33AM -0600, Seth Jennings wrote:
->> Hey Konrad,
->>
->> On 01/12/2012 02:36 PM, Konrad Rzeszutek Wilk wrote:
->>> From: Dan Magenheimer <dan.magenheimer@oracle.com>
->>>
->>> Per akpm suggestions alter the use of the term flush to be
->>> invalidate. The next patch will do this across all MM.
->>>
->>> This change is completely cosmetic.
->>>
->>> [v9: akpm@linux-foundation.org: change "flush" to "invalidate", part 3]
->>>
->>> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
->>> Reviewed-by: Konrad Wilk <konrad.wilk@oracle.com>
->>> Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>> Cc: Jan Beulich <JBeulich@novell.com>
->>> Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>
->>> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
->>> Cc: Hugh Dickins <hughd@google.com>
->>> Cc: Johannes Weiner <hannes@cmpxchg.org>
->>> Cc: Nitin Gupta <ngupta@vflare.org>
->>> Cc: Matthew Wilcox <matthew@wil.cx>
->>> Cc: Chris Mason <chris.mason@oracle.com>
->>> Cc: Rik Riel <riel@redhat.com>
->>> Cc: Andrew Morton <akpm@linux-foundation.org>
->>> [v10: Fixed  fs: move code out of buffer.c conflict change]
->>> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
->>> ---
->>>  Documentation/vm/cleancache.txt |   37 +++++++++++++++++++------------------
->>>  fs/block_dev.c                  |    2 +-
->>>  fs/super.c                      |    2 +-
->>>  include/linux/cleancache.h      |   23 ++++++++++++++---------
->>>  mm/cleancache.c                 |   19 ++++++++++---------
->>>  mm/filemap.c                    |    2 +-
->>>  mm/truncate.c                   |   10 +++++-----
->>>  7 files changed, 51 insertions(+), 44 deletions(-)
->> snip
->>> diff --git a/fs/block_dev.c b/fs/block_dev.c
->>> index 69a5b6f..d6d5f29 100644
->>> --- a/fs/block_dev.c
->>> +++ b/fs/block_dev.c
->>> @@ -110,7 +110,7 @@ void invalidate_bdev(struct block_device *bdev)
->>>  	/* 99% of the time, we don't need to flush the cleancache on the bdev.
->>>  	 * But, for the strange corners, lets be cautious
->>>  	 */
->>> -	cleancache_flush_inode(mapping);
->>> +	cleancache_invalidate_inode(mapping);
->>>  }
->>>  EXPORT_SYMBOL(invalidate_bdev);
->>
->> This hunk doesn't merge cleanly because there is no existing
->> cleancache code in fs/block_dev.c in v3.2 or any previous version.
+On Fri, Jan 13, 2012 at 01:12:48PM -0800, David Miller wrote:
+> From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> Date: Fri, 13 Jan 2012 16:52:58 -0200
 > 
-> Hm, I am at 099469502f62fbe0d7e4f0b83a2f22538367f734 and I see
-> that file with "cleancache_flush_inode" ?
+> > On Fri, Jan 13, 2012 at 10:25:18AM -0800, David Miller wrote:
+> >> From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> >> Date: Fri, 13 Jan 2012 16:17:06 -0200
+> >> 
+> >> > Is this going through your tree? In patchwork, its state is "Not
+> >> > Applicable".
+> >> 
+> >> There was an active RDS maintainer, though I haven't seen patches
+> >> from that person in a while.
+> >> 
+> > 
+> > Hi, David.
+> > 
+> > Venkat is the current RDS maintainer and he has Acked the patch.
 > 
-> This is against v3.3-rc0, not 3.2.
+> Not according to patchwork.  I don't see him reply at all to the
+> patch posting and give his explicit "Acked-by: "
+> 
 
-Ah yes.  Since no v3.3-rcX release has been tagged yet, I didn't
-think to apply it there.
+Venkat,
 
-checkpatch clean, applies clean, builds clean
+Care to send an Acked-by using a different MUA? Yours sends no
+In-Reply-To or References header field.
 
-Consider all the patches in this set
+David,
 
-Acked-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+This is the message Venkat has sent.
 
---
-Seth
+http://marc.info/?l=linux-netdev&m=132587819932339&w=2
+
+Thanks.
+Cascardo.
 
