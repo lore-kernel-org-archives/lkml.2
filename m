@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759445Ab2AMXMQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 18:12:16 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38411 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab2AMXMN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 18:12:13 -0500
+	id S1759453Ab2AMXNz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 18:13:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:55372 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756145Ab2AMXNx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 18:13:53 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
+   d="scan'208";a="98292684"
+Message-ID: <4F10BAB0.70308@linux.intel.com>
+Date: Fri, 13 Jan 2012 15:13:52 -0800
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
-References: <1326302710-9427-1-git-send-email-wad@chromium.org>
-	<1326302710-9427-2-git-send-email-wad@chromium.org>
-	<20120112162231.GA23960@redhat.com>
-	<CABqD9hbjGYA-jAOe-3CZEUV3MG2Qgs6SJ2irN7N+JMB2wj-mzA@mail.gmail.com>
-	<20120112172315.GA26295@redhat.com>
-	<CABqD9hZg4sKiVMS-g5ed7-HKOaiUb06y05TL=QkfBkm9kVmquA@mail.gmail.com>
-	<20120113173153.GA24273@redhat.com>
-	<CABqD9hYYJMNtupTiD48sE5wz6RKaFi9J3DpVRyV4X2FpnT3Mnw@mail.gmail.com>
-	<CABqD9hbhcEr0idfBVb9sXiAP1rBVUtzWmORq0WL1MF-eWW-nvQ@mail.gmail.com>
-Date: Fri, 13 Jan 2012 17:12:11 -0600
-Message-ID: <CABqD9haTiq7it6xdz-ny-gOJo_=EJ5kiTYasVZau+=yz2wNF_Q@mail.gmail.com>
-Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using BPF
-From: Will Drewry <wad@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com,
-        Roland McGrath <mcgrathr@chromium.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com> <4F10929E.8070007@linux.vnet.ibm.com> <CA+55aFwcOgEbnYhs7z+jc-Jq+fWxV3vfSRdfLXBEUC_40BRK0w@mail.gmail.com> <4F1099CA.7090209@linux.vnet.ibm.com> <CA+55aFw9SkNPoMmad6sOAsY-jtJtes12pBFGr9sipGadS8+VJg@mail.gmail.com> <4F10A0FD.9040504@linux.intel.com>
+In-Reply-To: <4F10A0FD.9040504@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 5:10 PM, Will Drewry <wad@chromium.org> wrote:
-> On Fri, Jan 13, 2012 at 1:01 PM, Will Drewry <wad@chromium.org> wrote:
->> On Fri, Jan 13, 2012 at 11:31 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>> On 01/12, Will Drewry wrote:
->>>>
->>>> On Thu, Jan 12, 2012 at 11:23 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> > On 01/12, Will Drewry wrote:
->>>> >>
->>>> >> On Thu, Jan 12, 2012 at 10:22 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->>>> >> >> +      */
->>>> >> >> +     regs = seccomp_get_regs(regs_tmp, &regs_size);
->>>> >> >
->>>> >> > Stupid question. I am sure you know what are you doing ;) and I know
->>>> >> > nothing about !x86 arches.
->>>> >> >
->>>> >> > But could you explain why it is designed to use user_regs_struct ?
->>>> >> > Why we can't simply use task_pt_regs() and avoid the (costly) regsets?
->>>> >>
->>>> >> So on x86 32, it would work since user_regs_struct == task_pt_regs
->>>> >> (iirc), but on x86-64
->>>> >> and others, that's not true.
->>>> >
->>>> > Yes sure, I meant that userpace should use pt_regs too.
->>>> >
->>>> >> If it would be appropriate to expose pt_regs to userspace, then I'd
->>>> >> happily do so :)
->>>> >
->>>> > Ah, so that was the reason. But it is already exported? At least I see
->>>> > the "#ifndef __KERNEL__" definition in arch/x86/include/asm/ptrace.h.
->>>> >
->>>> > Once again, I am not arguing, just trying to understand. And I do not
->>>> > know if this definition is part of abi.
->>>>
->>>> I don't either :/  My original idea was to operate on task_pt_regs(current),
->>>> but I noticed that PTRACE_GETREGS/SETREGS only uses the
->>>> user_regs_struct. So I went that route.
->>>
->>> Well, I don't know where user_regs_struct come from initially. But
->>> probably it is needed to allow to access the "artificial" things like
->>> fs_base. Or perhaps this struct mimics the layout in the coredump.
->>
->> Not sure - added Roland whose name was on many of the files :)
->>
->> I just noticed that ptrace ABI allows pt_regs access using the register
->> macros (PTRACE_PEEKUSR) and user_regs_struct access (PTRACE_GETREGS).
->>
->> But I think the latter is guaranteed to have a certain layout while the macros
->> for PEEKUSR can do post-processing fixup.  (Which could be done in the
->> bpf evaluator load_pointer() helper if needed.)
->>
->>>> I'd love for pt_regs to be fair game to cut down on the copying!
->>>
->>> Me too. I see no point in using user_regs_struct.
->>
->> I'll rev the change to use pt_regs and drop all the helper code.  If
->> no one says otherwise, that certainly seems ideal from a performance
->> perspective, and I see pt_regs exported to userland along with ptrace
->> abi register offset macros.
->
-> On second thought, pt_regs is scary :)
->
-> From looking at
->  http://lxr.linux.no/linux+v3.2.1/arch/x86/include/asm/syscall.h#L97
-> and ia32syscall enty code, it appears that for x86, at least, the
-> pt_regs for compat processes will be 8 bytes wide per register on the
-> stack.  This means if a self-filtering 32-bit program runs on a 64-bit host in
-> IA32_EMU, its filters will always index into pt_regs incorrectly.
->
-> I'm not 100% that I am reading the code right, but it means that I can either
-> keep using user_regs_struct or fork the code behavior based on compat. That
-> would need to be arch dependent then which is pretty rough.
->
-> Any thoughts?
->
-> I'll do a v5 rev for Eric's comments soon, but I'm not quite sure
-> about the pt_regs
-> change yet.  If the performance boost is worth the effort of having a
-> per-arch fixup,
-> I can go that route.  Otherwise, I could look at some alternate approach for a
-> faster-than-regview payload.
 
-Ugh. Sorry about the formatting. (The other option is to disallow compat ;).
+> Assuming the problem is with the multiple devices (not fully sure):
+>
+> The redundant devices don't make much sense anyways, they are all 
+> mirrors of each other
+> (state changes always affect all CPUs)  Could just collapse down to a 
+> single device and symlink
+> the others.
 
-cheers!
-will
+Checking again it seems like the AMD threshold code reports per CPU 
+counters so it would
+still need per CPU devices.
+
+All the other code is just a single instance I believe and doesn't 
+actually need all the
+complicated per CPU code.
+
+-Andi
+
+
