@@ -1,73 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757592Ab2AMJ5l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 04:57:41 -0500
-Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:5337
-	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752627Ab2AMJ5j convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 04:57:39 -0500
-X-SpamScore: -3
-X-BigFish: VS-3(zz9371I1432N98dKzz1202hzz8275bh8275dha509lz2dhc1ahc1bh2a8h668h839h8e2h8e3h944hbe9k)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Liu Qiang-B32616 <B32616@freescale.com>
-To: Li Yang-R58472 <r58472@freescale.com>
-CC: "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: RE: [PATCH][SDK v1.2] sata: I/O load balancing
-Thread-Topic: [PATCH][SDK v1.2] sata: I/O load balancing
-Thread-Index: AQHM0dK3wsXQniayrkSVvMYo0/YyaZYKbrIA//+dy5Q=
-Date: Fri, 13 Jan 2012 09:57:35 +0000
-Message-ID: <BCB48C05FCE8BC4D9E61E841ECBE6DB701320C@039-SN2MPN1-011.039d.mgd.msft.net>
-References: <1326443147-26645-1-git-send-email-qiang.liu@freescale.com>,<CADRPPNQsVB-2jR0UaX6RB_4PCf9kt4UXvAXnxaVk=LsBcwGowg@mail.gmail.com>
-In-Reply-To: <CADRPPNQsVB-2jR0UaX6RB_4PCf9kt4UXvAXnxaVk=LsBcwGowg@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.216]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1757598Ab2AMJ6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 04:58:09 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:38739 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab2AMJ6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 04:58:05 -0500
+Subject: Re: [PATCH 2/2] backlight: Convert backlight spi drivers to
+ module_spi_driver
+From: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Donghwa Lee <dh09.lee@samsung.com>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        InKi Dae <inki.dae@samsung.com>,
+        Dmitry Baryshkov <dbaryshkov@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1326443892.5482.6.camel@phoenix>
+References: <1326443748.5482.3.camel@phoenix>
+	 <1326443892.5482.6.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Jan 2012 10:57:59 +0100
+Message-ID: <1326448679.3123.0.camel@realization>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Axel,
 
-________________________________________
-> From: linux-ide-owner@vger.kernel.org [linux-ide-owner@vger.kernel.org] on behalf of Li Yang [leoli@freescale.com]
-> Sent: Friday, January 13, 2012 3:36 AM
-> To: Liu Qiang-B32616
-> Cc: jgarzik@pobox.com; linux-ide@vger.kernel.org; linux-kernel@vger.kernel.org; linuxppc-dev@lists.ozlabs.org; Liu Qiang-B32616
-> Subject: Re: [PATCH][SDK v1.2] sata: I/O load balancing
+On Fri, 2012-01-13 at 16:38 +0800, Axel Lin wrote:
+> Factor out some boilerplate code for spi driver registration into
+> module_spi_driver.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Alberto Panizzo <maramaopercheseimorto@gmail.com>
 
-> On Fri, Jan 13, 2012 at 4:25 PM, Qiang Liu <qiang.liu@freescale.com> wrote:
-> > From: Qiang Liu <b32616@freescale.com>
-> >
-> > Reduce interrupt singnals through reset Interrupt Coalescing Control Reg.
-> > Increase the threshold value of interrupt and timer will reduce the number
-> > of complete interrupt sharply. Improve the system performance effectively.
+Acked-by: Alberto Panizzo <alberto@amarulasolutions.com>
 
-> There is always a trade off of throughput and latency by using
-> interrupt coalescing.  It's not reasonable to assume that the
-> throughput is the only factor to be considered and set the coalescing
-> threshold and timeout to the max value by default.  Have you carried
-> out other benchmark like copying many small files?
-No, I didn't test small file. I think this won't affect system load. I can have a test
-and describe the result in next patch.
+Thank you.
 
-> It will be safer to make the coalescing runtime configurable like the
-> sata_mv driver, IMO.
-Ok, I will do it like this in next patch.
+> Cc: Donghwa Lee <dh09.lee@samsung.com>
+> Cc: Marek Vasut <marek.vasut@gmail.com>
+> Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>
+> Cc: InKi Dae <inki.dae@samsung.com>
+> Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> ---
+>  drivers/video/backlight/ams369fg06.c  |   13 +------------
+>  drivers/video/backlight/corgi_lcd.c   |   12 +-----------
+>  drivers/video/backlight/l4f00242t03.c |   13 +------------
+>  drivers/video/backlight/ld9040.c      |   13 +------------
+>  drivers/video/backlight/lms283gf05.c  |   13 +------------
+>  drivers/video/backlight/ltv350qv.c    |   12 +-----------
+>  drivers/video/backlight/s6e63m0.c     |   13 +------------
+>  drivers/video/backlight/tdo24m.c      |   12 +-----------
+>  drivers/video/backlight/tosa_lcd.c    |   13 +------------
+>  drivers/video/backlight/vgg2432a4.c   |   15 +--------------
+>  10 files changed, 10 insertions(+), 119 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
+> index 7838a23..7bdadc7 100644
+> --- a/drivers/video/backlight/ams369fg06.c
+> +++ b/drivers/video/backlight/ams369fg06.c
+> @@ -629,18 +629,7 @@ static struct spi_driver ams369fg06_driver = {
+>  	.resume		= ams369fg06_resume,
+>  };
+>  
+> -static int __init ams369fg06_init(void)
+> -{
+> -	return spi_register_driver(&ams369fg06_driver);
+> -}
+> -
+> -static void __exit ams369fg06_exit(void)
+> -{
+> -	spi_unregister_driver(&ams369fg06_driver);
+> -}
+> -
+> -module_init(ams369fg06_init);
+> -module_exit(ams369fg06_exit);
+> +module_spi_driver(ams369fg06_driver);
+>  
+>  MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
+>  MODULE_DESCRIPTION("ams369fg06 LCD Driver");
+> diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
+> index c6533ba..6dab13f 100644
+> --- a/drivers/video/backlight/corgi_lcd.c
+> +++ b/drivers/video/backlight/corgi_lcd.c
+> @@ -629,17 +629,7 @@ static struct spi_driver corgi_lcd_driver = {
+>  	.resume		= corgi_lcd_resume,
+>  };
+>  
+> -static int __init corgi_lcd_init(void)
+> -{
+> -	return spi_register_driver(&corgi_lcd_driver);
+> -}
+> -module_init(corgi_lcd_init);
+> -
+> -static void __exit corgi_lcd_exit(void)
+> -{
+> -	spi_unregister_driver(&corgi_lcd_driver);
+> -}
+> -module_exit(corgi_lcd_exit);
+> +module_spi_driver(corgi_lcd_driver);
+>  
+>  MODULE_DESCRIPTION("LCD and backlight driver for SHARP C7x0/Cxx00");
+>  MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
+> diff --git a/drivers/video/backlight/l4f00242t03.c b/drivers/video/backlight/l4f00242t03.c
+> index 4f5d1c4..fae421a 100644
+> --- a/drivers/video/backlight/l4f00242t03.c
+> +++ b/drivers/video/backlight/l4f00242t03.c
+> @@ -272,18 +272,7 @@ static struct spi_driver l4f00242t03_driver = {
+>  	.shutdown	= l4f00242t03_shutdown,
+>  };
+>  
+> -static __init int l4f00242t03_init(void)
+> -{
+> -	return spi_register_driver(&l4f00242t03_driver);
+> -}
+> -
+> -static __exit void l4f00242t03_exit(void)
+> -{
+> -	spi_unregister_driver(&l4f00242t03_driver);
+> -}
+> -
+> -module_init(l4f00242t03_init);
+> -module_exit(l4f00242t03_exit);
+> +module_spi_driver(l4f00242t03_driver);
+>  
+>  MODULE_AUTHOR("Alberto Panizzo <maramaopercheseimorto@gmail.com>");
+>  MODULE_DESCRIPTION("EPSON L4F00242T03 LCD");
+> diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
+> index 78dafc0..efd352b 100644
+> --- a/drivers/video/backlight/ld9040.c
+> +++ b/drivers/video/backlight/ld9040.c
+> @@ -856,18 +856,7 @@ static struct spi_driver ld9040_driver = {
+>  	.resume		= ld9040_resume,
+>  };
+>  
+> -static int __init ld9040_init(void)
+> -{
+> -	return spi_register_driver(&ld9040_driver);
+> -}
+> -
+> -static void __exit ld9040_exit(void)
+> -{
+> -	spi_unregister_driver(&ld9040_driver);
+> -}
+> -
+> -module_init(ld9040_init);
+> -module_exit(ld9040_exit);
+> +module_spi_driver(ld9040_driver);
+>  
+>  MODULE_AUTHOR("Donghwa Lee <dh09.lee@samsung.com>");
+>  MODULE_DESCRIPTION("ld9040 LCD Driver");
+> diff --git a/drivers/video/backlight/lms283gf05.c b/drivers/video/backlight/lms283gf05.c
+> index 4ec78cf..4161f9e 100644
+> --- a/drivers/video/backlight/lms283gf05.c
+> +++ b/drivers/video/backlight/lms283gf05.c
+> @@ -226,18 +226,7 @@ static struct spi_driver lms283gf05_driver = {
+>  	.remove		= __devexit_p(lms283gf05_remove),
+>  };
+>  
+> -static __init int lms283gf05_init(void)
+> -{
+> -	return spi_register_driver(&lms283gf05_driver);
+> -}
+> -
+> -static __exit void lms283gf05_exit(void)
+> -{
+> -	spi_unregister_driver(&lms283gf05_driver);
+> -}
+> -
+> -module_init(lms283gf05_init);
+> -module_exit(lms283gf05_exit);
+> +module_spi_driver(lms283gf05_driver);
+>  
+>  MODULE_AUTHOR("Marek Vasut <marek.vasut@gmail.com>");
+>  MODULE_DESCRIPTION("LCD283GF05 LCD");
+> diff --git a/drivers/video/backlight/ltv350qv.c b/drivers/video/backlight/ltv350qv.c
+> index cca43c0..333949f 100644
+> --- a/drivers/video/backlight/ltv350qv.c
+> +++ b/drivers/video/backlight/ltv350qv.c
+> @@ -321,17 +321,7 @@ static struct spi_driver ltv350qv_driver = {
+>  	.resume		= ltv350qv_resume,
+>  };
+>  
+> -static int __init ltv350qv_init(void)
+> -{
+> -	return spi_register_driver(&ltv350qv_driver);
+> -}
+> -
+> -static void __exit ltv350qv_exit(void)
+> -{
+> -	spi_unregister_driver(&ltv350qv_driver);
+> -}
+> -module_init(ltv350qv_init);
+> -module_exit(ltv350qv_exit);
+> +module_spi_driver(ltv350qv_driver);
+>  
+>  MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_DESCRIPTION("Samsung LTV350QV LCD Driver");
+> diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
+> index e132157..9b0092e 100644
+> --- a/drivers/video/backlight/s6e63m0.c
+> +++ b/drivers/video/backlight/s6e63m0.c
+> @@ -909,18 +909,7 @@ static struct spi_driver s6e63m0_driver = {
+>  	.resume		= s6e63m0_resume,
+>  };
+>  
+> -static int __init s6e63m0_init(void)
+> -{
+> -	return spi_register_driver(&s6e63m0_driver);
+> -}
+> -
+> -static void __exit s6e63m0_exit(void)
+> -{
+> -	spi_unregister_driver(&s6e63m0_driver);
+> -}
+> -
+> -module_init(s6e63m0_init);
+> -module_exit(s6e63m0_exit);
+> +module_spi_driver(s6e63m0_driver);
+>  
+>  MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
+>  MODULE_DESCRIPTION("S6E63M0 LCD Driver");
+> diff --git a/drivers/video/backlight/tdo24m.c b/drivers/video/backlight/tdo24m.c
+> index 1997e12..2368b8e 100644
+> --- a/drivers/video/backlight/tdo24m.c
+> +++ b/drivers/video/backlight/tdo24m.c
+> @@ -459,17 +459,7 @@ static struct spi_driver tdo24m_driver = {
+>  	.resume		= tdo24m_resume,
+>  };
+>  
+> -static int __init tdo24m_init(void)
+> -{
+> -	return spi_register_driver(&tdo24m_driver);
+> -}
+> -module_init(tdo24m_init);
+> -
+> -static void __exit tdo24m_exit(void)
+> -{
+> -	spi_unregister_driver(&tdo24m_driver);
+> -}
+> -module_exit(tdo24m_exit);
+> +module_spi_driver(tdo24m_driver);
+>  
+>  MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
+>  MODULE_DESCRIPTION("Driver for Toppoly TDO24M LCD Panel");
+> diff --git a/drivers/video/backlight/tosa_lcd.c b/drivers/video/backlight/tosa_lcd.c
+> index 772f601..a2161f6 100644
+> --- a/drivers/video/backlight/tosa_lcd.c
+> +++ b/drivers/video/backlight/tosa_lcd.c
+> @@ -285,18 +285,7 @@ static struct spi_driver tosa_lcd_driver = {
+>  	.resume		= tosa_lcd_resume,
+>  };
+>  
+> -static int __init tosa_lcd_init(void)
+> -{
+> -	return spi_register_driver(&tosa_lcd_driver);
+> -}
+> -
+> -static void __exit tosa_lcd_exit(void)
+> -{
+> -	spi_unregister_driver(&tosa_lcd_driver);
+> -}
+> -
+> -module_init(tosa_lcd_init);
+> -module_exit(tosa_lcd_exit);
+> +module_spi_driver(tosa_lcd_driver);
+>  
+>  MODULE_AUTHOR("Dmitry Baryshkov");
+>  MODULE_LICENSE("GPL v2");
+> diff --git a/drivers/video/backlight/vgg2432a4.c b/drivers/video/backlight/vgg2432a4.c
+> index b49063c..b617fae 100644
+> --- a/drivers/video/backlight/vgg2432a4.c
+> +++ b/drivers/video/backlight/vgg2432a4.c
+> @@ -262,20 +262,7 @@ static struct spi_driver vgg2432a4_driver = {
+>  	.resume		= vgg2432a4_resume,
+>  };
+>  
+> -/* Device driver initialisation */
+> -
+> -static int __init vgg2432a4_init(void)
+> -{
+> -	return spi_register_driver(&vgg2432a4_driver);
+> -}
+> -
+> -static void __exit vgg2432a4_exit(void)
+> -{
+> -	spi_unregister_driver(&vgg2432a4_driver);
+> -}
+> -
+> -module_init(vgg2432a4_init);
+> -module_exit(vgg2432a4_exit);
+> +module_spi_driver(vgg2432a4_driver);
+>  
+>  MODULE_AUTHOR("Ben Dooks <ben-linux@fluff.org>");
+>  MODULE_DESCRIPTION("VGG2432A4 LCD Driver");
 
+-- 
+Alberto!
 
-- Leo
---
-To unsubscribe from this list: send the line "unsubscribe linux-ide" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+        Be Persistent!
+                - Greg Kroah-Hartman (FOSDEM 2010)
 
