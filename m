@@ -1,112 +1,403 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab2AMPrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:47:13 -0500
+	id S932300Ab2AMPrT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:47:19 -0500
 Received: from mga02.intel.com ([134.134.136.20]:62653 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758292Ab2AMPrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:47:09 -0500
+	id S1758396Ab2AMPrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 10:47:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="96168446"
+   d="scan'208";a="96168468"
 From: Alex Shi <alex.shi@intel.com>
 To: linux-kernel@vger.kernel.org, cl@gentwo.org, eric.dumazet@gmail.com,
         tglx@linutronix.de, avi@redhat.com, akpm@linux-foundation.org,
         davem@davemloft.net, kaber@trash.net, a.p.zijlstra@chello.nl,
         ying.huang@intel.com, honrad.wilk@oracle.com, hpa@zytor.com,
         jeremy@goop.org
-Subject: [PATCH v2 1/5] net: use this_cpu_xxx replace percpu_xxx funcs
-Date: Fri, 13 Jan 2012 23:45:16 +0800
-Message-Id: <1326469520-21239-2-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v2 3/5] x86: use this_cpu_xxx replace percpu_xxx funcs
+Date: Fri, 13 Jan 2012 23:45:18 +0800
+Message-Id: <1326469520-21239-4-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1326469520-21239-1-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1326469520-21239-3-git-send-email-alex.shi@intel.com>
 References: <1326469520-21239-1-git-send-email-alex.shi@intel.com>
+ <1326469520-21239-2-git-send-email-alex.shi@intel.com>
+ <1326469520-21239-3-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-for further code clean up.
+Since percpu_xxx() serial functions are duplicate with this_cpu_xxx().
+Removing percpu_xxx() definition and replacing them by this_cpu_xxx() in
+code.
 
-And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
-performance since __this_cpu_xxx has no redundant preempt_disable()
+And further more, as Christoph Lameter's requirement, I try to use
+__this_cpu_xx to replace this_cpu_xxx if it is in preempt safe scenario.
+The preempt safe scenarios include:
+1, in irq/softirq/nmi handler
+2, protected by preempt_disable
+3, protected by spin_lock
+4, if the code context imply that it is preempt safe, like the code is
+follows or be followed a preempt safe code.
+
+BTW, In fact, this_cpu_xxx are same as __this_cpu_xxx since all funcs
+implement in a single instruction for x86 machine. But it maybe
+different for other platforms, so, doing this distinguish is helpful for
+other platforms' performance.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+Acked-by: Christoph Lameter <cl@gentwo.org>
+Acked-by: Tejun Heo <tj@kernel.org>
 ---
- net/netfilter/xt_TEE.c |   12 ++++++------
- net/socket.c           |    4 ++--
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/hardirq.h        |    9 +++++----
+ arch/x86/include/asm/irq_regs.h       |    4 ++--
+ arch/x86/include/asm/mmu_context.h    |   12 ++++++------
+ arch/x86/include/asm/percpu.h         |    2 +-
+ arch/x86/include/asm/smp.h            |    4 ++--
+ arch/x86/include/asm/stackprotector.h |    4 ++--
+ arch/x86/include/asm/tlbflush.h       |    4 ++--
+ arch/x86/kernel/cpu/common.c          |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce.c      |    4 ++--
+ arch/x86/kernel/paravirt.c            |   12 ++++++------
+ arch/x86/kernel/process_32.c          |    2 +-
+ arch/x86/kernel/process_64.c          |   12 ++++++------
+ arch/x86/mm/tlb.c                     |   10 +++++-----
+ include/linux/topology.h              |    4 ++--
+ 14 files changed, 43 insertions(+), 42 deletions(-)
 
-diff --git a/net/netfilter/xt_TEE.c b/net/netfilter/xt_TEE.c
-index 3aae66f..f81eba4 100644
---- a/net/netfilter/xt_TEE.c
-+++ b/net/netfilter/xt_TEE.c
-@@ -87,7 +87,7 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- 	const struct xt_tee_tginfo *info = par->targinfo;
- 	struct iphdr *iph;
+diff --git a/arch/x86/include/asm/hardirq.h b/arch/x86/include/asm/hardirq.h
+index da0b3ca..b6e5c83 100644
+--- a/arch/x86/include/asm/hardirq.h
++++ b/arch/x86/include/asm/hardirq.h
+@@ -36,14 +36,15 @@ DECLARE_PER_CPU_SHARED_ALIGNED(irq_cpustat_t, irq_stat);
  
--	if (percpu_read(tee_active))
-+	if (__this_cpu_read(tee_active))
- 		return XT_CONTINUE;
- 	/*
- 	 * Copy the skb, and route the copy. Will later return %XT_CONTINUE for
-@@ -124,9 +124,9 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
- 	ip_send_check(iph);
+ #define __ARCH_IRQ_STAT
  
- 	if (tee_tg_route4(skb, info)) {
--		percpu_write(tee_active, true);
-+		__this_cpu_write(tee_active, true);
- 		ip_local_out(skb);
--		percpu_write(tee_active, false);
-+		__this_cpu_write(tee_active, false);
- 	} else {
- 		kfree_skb(skb);
- 	}
-@@ -167,7 +167,7 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+-#define inc_irq_stat(member)	percpu_inc(irq_stat.member)
++#define inc_irq_stat(member)	__this_cpu_inc(irq_stat.member)
+ 
+-#define local_softirq_pending()	percpu_read(irq_stat.__softirq_pending)
++#define local_softirq_pending()	__this_cpu_read(irq_stat.__softirq_pending)
+ 
+ #define __ARCH_SET_SOFTIRQ_PENDING
+ 
+-#define set_softirq_pending(x)	percpu_write(irq_stat.__softirq_pending, (x))
+-#define or_softirq_pending(x)	percpu_or(irq_stat.__softirq_pending, (x))
++#define set_softirq_pending(x)	\
++		__this_cpu_write(irq_stat.__softirq_pending, (x))
++#define or_softirq_pending(x)	__this_cpu_or(irq_stat.__softirq_pending, (x))
+ 
+ extern void ack_bad_irq(unsigned int irq);
+ 
+diff --git a/arch/x86/include/asm/irq_regs.h b/arch/x86/include/asm/irq_regs.h
+index 7784322..15639ed 100644
+--- a/arch/x86/include/asm/irq_regs.h
++++ b/arch/x86/include/asm/irq_regs.h
+@@ -15,7 +15,7 @@ DECLARE_PER_CPU(struct pt_regs *, irq_regs);
+ 
+ static inline struct pt_regs *get_irq_regs(void)
  {
- 	const struct xt_tee_tginfo *info = par->targinfo;
- 
--	if (percpu_read(tee_active))
-+	if (__this_cpu_read(tee_active))
- 		return XT_CONTINUE;
- 	skb = pskb_copy(skb, GFP_ATOMIC);
- 	if (skb == NULL)
-@@ -185,9 +185,9 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- 		--iph->hop_limit;
- 	}
- 	if (tee_tg_route6(skb, info)) {
--		percpu_write(tee_active, true);
-+		__this_cpu_write(tee_active, true);
- 		ip6_local_out(skb);
--		percpu_write(tee_active, false);
-+		__this_cpu_write(tee_active, false);
- 	} else {
- 		kfree_skb(skb);
- 	}
-diff --git a/net/socket.c b/net/socket.c
-index 28a96af..784d93a 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -479,7 +479,7 @@ static struct socket *sock_alloc(void)
- 	inode->i_uid = current_fsuid();
- 	inode->i_gid = current_fsgid();
- 
--	percpu_add(sockets_in_use, 1);
-+	this_cpu_add(sockets_in_use, 1);
- 	return sock;
+-	return percpu_read(irq_regs);
++	return __this_cpu_read(irq_regs);
  }
  
-@@ -522,7 +522,7 @@ void sock_release(struct socket *sock)
- 	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
- 		printk(KERN_ERR "sock_release: fasync list not empty!\n");
+ static inline struct pt_regs *set_irq_regs(struct pt_regs *new_regs)
+@@ -23,7 +23,7 @@ static inline struct pt_regs *set_irq_regs(struct pt_regs *new_regs)
+ 	struct pt_regs *old_regs;
  
--	percpu_sub(sockets_in_use, 1);
-+	this_cpu_sub(sockets_in_use, 1);
- 	if (!sock->file) {
- 		iput(SOCK_INODE(sock));
- 		return;
+ 	old_regs = get_irq_regs();
+-	percpu_write(irq_regs, new_regs);
++	__this_cpu_write(irq_regs, new_regs);
+ 
+ 	return old_regs;
+ }
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 6902152..02ca533 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -25,8 +25,8 @@ void destroy_context(struct mm_struct *mm);
+ static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
+ {
+ #ifdef CONFIG_SMP
+-	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
+-		percpu_write(cpu_tlbstate.state, TLBSTATE_LAZY);
++	if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
++		__this_cpu_write(cpu_tlbstate.state, TLBSTATE_LAZY);
+ #endif
+ }
+ 
+@@ -37,8 +37,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 
+ 	if (likely(prev != next)) {
+ #ifdef CONFIG_SMP
+-		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+-		percpu_write(cpu_tlbstate.active_mm, next);
++		__this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
++		__this_cpu_write(cpu_tlbstate.active_mm, next);
+ #endif
+ 		cpumask_set_cpu(cpu, mm_cpumask(next));
+ 
+@@ -56,8 +56,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 	}
+ #ifdef CONFIG_SMP
+ 	else {
+-		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+-		BUG_ON(percpu_read(cpu_tlbstate.active_mm) != next);
++		__this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
++		BUG_ON(__this_cpu_read(cpu_tlbstate.active_mm) != next);
+ 
+ 		if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next))) {
+ 			/* We were in lazy tlb mode and leave_mm disabled
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 7a11910..276bbc0 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -46,7 +46,7 @@
+ 
+ #ifdef CONFIG_SMP
+ #define __percpu_prefix		"%%"__stringify(__percpu_seg)":"
+-#define __my_cpu_offset		percpu_read(this_cpu_off)
++#define __my_cpu_offset		__this_cpu_read(this_cpu_off)
+ 
+ /*
+  * Compared to the generic __my_cpu_offset version, the following
+diff --git a/arch/x86/include/asm/smp.h b/arch/x86/include/asm/smp.h
+index 0434c40..e276f6b 100644
+--- a/arch/x86/include/asm/smp.h
++++ b/arch/x86/include/asm/smp.h
+@@ -188,11 +188,11 @@ extern unsigned disabled_cpus __cpuinitdata;
+  * from the initial startup. We map APIC_BASE very early in page_setup(),
+  * so this is correct in the x86 case.
+  */
+-#define raw_smp_processor_id() (percpu_read(cpu_number))
++#define raw_smp_processor_id() (this_cpu_read(cpu_number))
+ extern int safe_smp_processor_id(void);
+ 
+ #elif defined(CONFIG_X86_64_SMP)
+-#define raw_smp_processor_id() (percpu_read(cpu_number))
++#define raw_smp_processor_id() (this_cpu_read(cpu_number))
+ 
+ #define stack_smp_processor_id()					\
+ ({								\
+diff --git a/arch/x86/include/asm/stackprotector.h b/arch/x86/include/asm/stackprotector.h
+index 1575177..e8a60c9 100644
+--- a/arch/x86/include/asm/stackprotector.h
++++ b/arch/x86/include/asm/stackprotector.h
+@@ -76,9 +76,9 @@ static __always_inline void boot_init_stack_canary(void)
+ 
+ 	current->stack_canary = canary;
+ #ifdef CONFIG_X86_64
+-	percpu_write(irq_stack_union.stack_canary, canary);
++	__this_cpu_write(irq_stack_union.stack_canary, canary);
+ #else
+-	percpu_write(stack_canary.canary, canary);
++	__this_cpu_write(stack_canary.canary, canary);
+ #endif
+ }
+ 
+diff --git a/arch/x86/include/asm/tlbflush.h b/arch/x86/include/asm/tlbflush.h
+index 169be89..e90eec0 100644
+--- a/arch/x86/include/asm/tlbflush.h
++++ b/arch/x86/include/asm/tlbflush.h
+@@ -156,8 +156,8 @@ DECLARE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate);
+ 
+ static inline void reset_lazy_tlbstate(void)
+ {
+-	percpu_write(cpu_tlbstate.state, 0);
+-	percpu_write(cpu_tlbstate.active_mm, &init_mm);
++	__this_cpu_write(cpu_tlbstate.state, 0);
++	__this_cpu_write(cpu_tlbstate.active_mm, &init_mm);
+ }
+ 
+ #endif	/* SMP */
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 850f296..6fbd2b4 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1167,7 +1167,7 @@ void __cpuinit cpu_init(void)
+ 	oist = &per_cpu(orig_ist, cpu);
+ 
+ #ifdef CONFIG_NUMA
+-	if (cpu != 0 && percpu_read(numa_node) == 0 &&
++	if (cpu != 0 && __this_cpu_read(numa_node) == 0 &&
+ 	    early_cpu_to_node(cpu) != NUMA_NO_NODE)
+ 		set_numa_node(early_cpu_to_node(cpu));
+ #endif
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index f22a9f7..78f8900 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -562,7 +562,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 	struct mce m;
+ 	int i;
+ 
+-	percpu_inc(mce_poll_count);
++	__this_cpu_inc(mce_poll_count);
+ 
+ 	mce_gather_info(&m, NULL);
+ 
+@@ -954,7 +954,7 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+ 
+ 	atomic_inc(&mce_entry);
+ 
+-	percpu_inc(mce_exception_count);
++	__this_cpu_inc(mce_exception_count);
+ 
+ 	if (!banks)
+ 		goto out;
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index d90272e..2f0c1d1 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -239,16 +239,16 @@ static DEFINE_PER_CPU(enum paravirt_lazy_mode, paravirt_lazy_mode) = PARAVIRT_LA
+ 
+ static inline void enter_lazy(enum paravirt_lazy_mode mode)
+ {
+-	BUG_ON(percpu_read(paravirt_lazy_mode) != PARAVIRT_LAZY_NONE);
++	BUG_ON(__this_cpu_read(paravirt_lazy_mode) != PARAVIRT_LAZY_NONE);
+ 
+-	percpu_write(paravirt_lazy_mode, mode);
++	__this_cpu_write(paravirt_lazy_mode, mode);
+ }
+ 
+ static void leave_lazy(enum paravirt_lazy_mode mode)
+ {
+-	BUG_ON(percpu_read(paravirt_lazy_mode) != mode);
++	BUG_ON(__this_cpu_read(paravirt_lazy_mode) != mode);
+ 
+-	percpu_write(paravirt_lazy_mode, PARAVIRT_LAZY_NONE);
++	__this_cpu_write(paravirt_lazy_mode, PARAVIRT_LAZY_NONE);
+ }
+ 
+ void paravirt_enter_lazy_mmu(void)
+@@ -265,7 +265,7 @@ void paravirt_start_context_switch(struct task_struct *prev)
+ {
+ 	BUG_ON(preemptible());
+ 
+-	if (percpu_read(paravirt_lazy_mode) == PARAVIRT_LAZY_MMU) {
++	if (__this_cpu_read(paravirt_lazy_mode) == PARAVIRT_LAZY_MMU) {
+ 		arch_leave_lazy_mmu_mode();
+ 		set_ti_thread_flag(task_thread_info(prev), TIF_LAZY_MMU_UPDATES);
+ 	}
+@@ -287,7 +287,7 @@ enum paravirt_lazy_mode paravirt_get_lazy_mode(void)
+ 	if (in_interrupt())
+ 		return PARAVIRT_LAZY_NONE;
+ 
+-	return percpu_read(paravirt_lazy_mode);
++	return __this_cpu_read(paravirt_lazy_mode);
+ }
+ 
+ void arch_flush_lazy_mmu_mode(void)
+diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
+index 485204f..6acfb80 100644
+--- a/arch/x86/kernel/process_32.c
++++ b/arch/x86/kernel/process_32.c
+@@ -377,7 +377,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	if (prev->gs | next->gs)
+ 		lazy_load_gs(next->gs);
+ 
+-	percpu_write(current_task, next_p);
++	__this_cpu_write(current_task, next_p);
+ 
+ 	return prev_p;
+ }
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 9b9fe4a..1b434d3 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -74,7 +74,7 @@ EXPORT_SYMBOL_GPL(idle_notifier_unregister);
+ 
+ void enter_idle(void)
+ {
+-	percpu_write(is_idle, 1);
++	__this_cpu_write(is_idle, 1);
+ 	atomic_notifier_call_chain(&idle_notifier, IDLE_START, NULL);
+ }
+ 
+@@ -343,7 +343,7 @@ start_thread_common(struct pt_regs *regs, unsigned long new_ip,
+ 	load_gs_index(0);
+ 	regs->ip		= new_ip;
+ 	regs->sp		= new_sp;
+-	percpu_write(old_rsp, new_sp);
++	this_cpu_write(old_rsp, new_sp);
+ 	regs->cs		= _cs;
+ 	regs->ss		= _ss;
+ 	regs->flags		= X86_EFLAGS_IF;
+@@ -477,11 +477,11 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
+ 	/*
+ 	 * Switch the PDA and FPU contexts.
+ 	 */
+-	prev->usersp = percpu_read(old_rsp);
+-	percpu_write(old_rsp, next->usersp);
+-	percpu_write(current_task, next_p);
++	prev->usersp = __this_cpu_read(old_rsp);
++	__this_cpu_write(old_rsp, next->usersp);
++	__this_cpu_write(current_task, next_p);
+ 
+-	percpu_write(kernel_stack,
++	__this_cpu_write(kernel_stack,
+ 		  (unsigned long)task_stack_page(next_p) +
+ 		  THREAD_SIZE - KERNEL_STACK_OFFSET);
+ 
+diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
+index d6c0418..e931db0 100644
+--- a/arch/x86/mm/tlb.c
++++ b/arch/x86/mm/tlb.c
+@@ -61,10 +61,10 @@ static DEFINE_PER_CPU_READ_MOSTLY(int, tlb_vector_offset);
+  */
+ void leave_mm(int cpu)
+ {
+-	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
++	if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK)
+ 		BUG();
+ 	cpumask_clear_cpu(cpu,
+-			  mm_cpumask(percpu_read(cpu_tlbstate.active_mm)));
++			  mm_cpumask(__this_cpu_read(cpu_tlbstate.active_mm)));
+ 	load_cr3(swapper_pg_dir);
+ }
+ EXPORT_SYMBOL_GPL(leave_mm);
+@@ -152,8 +152,8 @@ void smp_invalidate_interrupt(struct pt_regs *regs)
+ 		 * BUG();
+ 		 */
+ 
+-	if (f->flush_mm == percpu_read(cpu_tlbstate.active_mm)) {
+-		if (percpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
++	if (f->flush_mm == __this_cpu_read(cpu_tlbstate.active_mm)) {
++		if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
+ 			if (f->flush_va == TLB_FLUSH_ALL)
+ 				local_flush_tlb();
+ 			else
+@@ -322,7 +322,7 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
+ static void do_flush_tlb_all(void *info)
+ {
+ 	__flush_tlb_all();
+-	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
++	if (__this_cpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
+ 		leave_mm(smp_processor_id());
+ }
+ 
+diff --git a/include/linux/topology.h b/include/linux/topology.h
+index e26db03..b480403 100644
+--- a/include/linux/topology.h
++++ b/include/linux/topology.h
+@@ -239,7 +239,7 @@ static inline int cpu_to_node(int cpu)
+ #ifndef set_numa_node
+ static inline void set_numa_node(int node)
+ {
+-	percpu_write(numa_node, node);
++	__this_cpu_write(numa_node, node);
+ }
+ #endif
+ 
+@@ -274,7 +274,7 @@ DECLARE_PER_CPU(int, _numa_mem_);
+ #ifndef set_numa_mem
+ static inline void set_numa_mem(int node)
+ {
+-	percpu_write(_numa_mem_, node);
++	__this_cpu_write(_numa_mem_, node);
+ }
+ #endif
+ 
 -- 
 1.6.3.3
 
