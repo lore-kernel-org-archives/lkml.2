@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757424Ab2AMDLA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 22:11:00 -0500
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:40367 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751496Ab2AMDKP (ORCPT
+	id S1757498Ab2AMDLE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 22:11:04 -0500
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:39370
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757277Ab2AMDK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 22:10:15 -0500
+	Thu, 12 Jan 2012 22:10:28 -0500
 X-SpamScore: 0
-X-BigFish: VS0(zzzz1202hzz8275dhz2dhc1ahc1bh87h2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VS0(zzzz1202hzz8275dhz2dhc1ahc1bh87h2a8h668h839h)
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
 X-FB-DOMAIN-IP-MATCH: fail
 From: Richard Zhao <richard.zhao@linaro.org>
@@ -17,9 +16,9 @@ To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
 CC: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <shawn.guo@linaro.org>,
         <kernel@pengutronix.de>, <eric.miao@linaro.org>, <patches@linaro.org>,
         Richard Zhao <richard.zhao@linaro.org>
-Subject: [PATCH v2 2/6] dma/imx-sdma: use readl_relaxed/writel_relaxed and use writel when necessary
-Date: Fri, 13 Jan 2012 11:09:57 +0800
-Message-ID: <1326424201-20056-3-git-send-email-richard.zhao@linaro.org>
+Subject: [PATCH v2 6/6] dma/imx-sdma: convernt to use bit ops
+Date: Fri, 13 Jan 2012 11:10:01 +0800
+Message-ID: <1326424201-20056-7-git-send-email-richard.zhao@linaro.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1326424201-20056-1-git-send-email-richard.zhao@linaro.org>
 References: <1326424201-20056-1-git-send-email-richard.zhao@linaro.org>
@@ -30,149 +29,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use readl_relaxed/writel_relaxed in most places, and use writel when
-enable channel, because it needs memory barrier.
+We don't need extra lock, so we use non-atomic bit ops to set/clear bits,
+
+merge event_mask0 and event_mask1 into an array, it helps use bit ops.
+
+It also fixs the issue:
+
+sdmac->event_mask0 = 1 << sdmac->event_id0;
+sdmac->event_mask1 = 1 << (sdmac->event_id0 - 32);
+
+It event_id0 < 32, it shifts negative number. If event_id0 >= 32, it
+shifts number >= sizeof(int). Both the cases behavior is undefined.
 
 Signed-off-by: Richard Zhao <richard.zhao@linaro.org>
 ---
- drivers/dma/imx-sdma.c |   44 ++++++++++++++++++++++----------------------
- 1 files changed, 22 insertions(+), 22 deletions(-)
+ drivers/dma/imx-sdma.c |   68 ++++++++++++++++++++++++------------------------
+ 1 files changed, 34 insertions(+), 34 deletions(-)
 
 diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
-index c2bc4f1..63f4752 100644
+index 22fd561..984c0f7 100644
 --- a/drivers/dma/imx-sdma.c
 +++ b/drivers/dma/imx-sdma.c
-@@ -368,9 +368,9 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+@@ -20,6 +20,7 @@
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
++#include <linux/bitops.h>
+ #include <linux/mm.h>
+ #include <linux/interrupt.h>
+ #include <linux/clk.h>
+@@ -260,8 +261,8 @@ struct sdma_channel {
+ 	unsigned int			pc_from_device, pc_to_device;
+ 	unsigned long			flags;
+ 	dma_addr_t			per_address;
+-	u32				event_mask0, event_mask1;
+-	u32				watermark_level;
++	unsigned long			event_mask[2];
++	unsigned long			watermark_level;
+ 	u32				shp_addr, per_addr;
+ 	struct dma_chan			chan;
+ 	spinlock_t			lock;
+@@ -272,7 +273,7 @@ struct sdma_channel {
+ 	unsigned int			chn_real_count;
+ };
+ 
+-#define IMX_DMA_SG_LOOP		(1 << 0)
++#define IMX_DMA_SG_LOOP		BIT(0)
+ 
+ #define MAX_DMA_CHANNELS 32
+ #define MXC_SDMA_DEFAULT_PRIORITY 1
+@@ -346,9 +347,9 @@ static const struct of_device_id sdma_dt_ids[] = {
+ };
+ MODULE_DEVICE_TABLE(of, sdma_dt_ids);
+ 
+-#define SDMA_H_CONFIG_DSPDMA	(1 << 12) /* indicates if the DSPDMA is used */
+-#define SDMA_H_CONFIG_RTD_PINS	(1 << 11) /* indicates if Real-Time Debug pins are enabled */
+-#define SDMA_H_CONFIG_ACR	(1 << 4)  /* indicates if AHB freq /core freq = 2 or 1 */
++#define SDMA_H_CONFIG_DSPDMA	BIT(12) /* indicates if the DSPDMA is used */
++#define SDMA_H_CONFIG_RTD_PINS	BIT(11) /* indicates if Real-Time Debug pins are enabled */
++#define SDMA_H_CONFIG_ACR	BIT(4)  /* indicates if AHB freq /core freq = 2 or 1 */
+ #define SDMA_H_CONFIG_CSM	(3)       /* indicates which context switch mode is selected*/
+ 
+ static inline u32 chnenbl_ofs(struct sdma_engine *sdma, unsigned int event)
+@@ -363,7 +364,7 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+ {
+ 	struct sdma_engine *sdma = sdmac->sdma;
+ 	int channel = sdmac->channel;
+-	u32 evt, mcu, dsp;
++	unsigned long evt, mcu, dsp;
+ 
  	if (event_override && mcu_override && dsp_override)
  		return -EINVAL;
- 
--	evt = __raw_readl(sdma->regs + SDMA_H_EVTOVR);
--	mcu = __raw_readl(sdma->regs + SDMA_H_HOSTOVR);
--	dsp = __raw_readl(sdma->regs + SDMA_H_DSPOVR);
-+	evt = readl_relaxed(sdma->regs + SDMA_H_EVTOVR);
-+	mcu = readl_relaxed(sdma->regs + SDMA_H_HOSTOVR);
-+	dsp = readl_relaxed(sdma->regs + SDMA_H_DSPOVR);
+@@ -373,19 +374,19 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+ 	dsp = readl_relaxed(sdma->regs + SDMA_H_DSPOVR);
  
  	if (dsp_override)
- 		dsp &= ~(1 << channel);
-@@ -387,16 +387,16 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
+-		dsp &= ~(1 << channel);
++		__clear_bit(channel, &dsp);
  	else
- 		mcu |= (1 << channel);
+-		dsp |= (1 << channel);
++		__set_bit(channel, &dsp);
  
--	__raw_writel(evt, sdma->regs + SDMA_H_EVTOVR);
--	__raw_writel(mcu, sdma->regs + SDMA_H_HOSTOVR);
--	__raw_writel(dsp, sdma->regs + SDMA_H_DSPOVR);
-+	writel_relaxed(evt, sdma->regs + SDMA_H_EVTOVR);
-+	writel_relaxed(mcu, sdma->regs + SDMA_H_HOSTOVR);
-+	writel_relaxed(dsp, sdma->regs + SDMA_H_DSPOVR);
+ 	if (event_override)
+-		evt &= ~(1 << channel);
++		__clear_bit(channel, &evt);
+ 	else
+-		evt |= (1 << channel);
++		__set_bit(channel, &evt);
  
- 	return 0;
- }
+ 	if (mcu_override)
+-		mcu &= ~(1 << channel);
++		__clear_bit(channel, &mcu);
+ 	else
+-		mcu |= (1 << channel);
++		__set_bit(channel, &mcu);
+ 
+ 	writel_relaxed(evt, sdma->regs + SDMA_H_EVTOVR);
+ 	writel_relaxed(mcu, sdma->regs + SDMA_H_HOSTOVR);
+@@ -396,7 +397,7 @@ static int sdma_config_ownership(struct sdma_channel *sdmac,
  
  static void sdma_enable_channel(struct sdma_engine *sdma, int channel)
  {
--	__raw_writel(1 << channel, sdma->regs + SDMA_H_START);
-+	writel(1 << channel, sdma->regs + SDMA_H_START);
+-	writel(1 << channel, sdma->regs + SDMA_H_START);
++	writel(BIT(channel), sdma->regs + SDMA_H_START);
  }
  
  /*
-@@ -460,9 +460,9 @@ static void sdma_event_enable(struct sdma_channel *sdmac, unsigned int event)
- 	u32 val;
+@@ -457,11 +458,11 @@ static void sdma_event_enable(struct sdma_channel *sdmac, unsigned int event)
+ {
+ 	struct sdma_engine *sdma = sdmac->sdma;
+ 	int channel = sdmac->channel;
+-	u32 val;
++	unsigned long val;
  	u32 chnenbl = chnenbl_ofs(sdma, event);
  
--	val = __raw_readl(sdma->regs + chnenbl);
-+	val = readl_relaxed(sdma->regs + chnenbl);
- 	val |= (1 << channel);
--	__raw_writel(val, sdma->regs + chnenbl);
-+	writel_relaxed(val, sdma->regs + chnenbl);
+ 	val = readl_relaxed(sdma->regs + chnenbl);
+-	val |= (1 << channel);
++	__set_bit(channel, &val);
+ 	writel_relaxed(val, sdma->regs + chnenbl);
  }
  
- static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
-@@ -472,9 +472,9 @@ static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
+@@ -470,10 +471,10 @@ static void sdma_event_disable(struct sdma_channel *sdmac, unsigned int event)
+ 	struct sdma_engine *sdma = sdmac->sdma;
+ 	int channel = sdmac->channel;
  	u32 chnenbl = chnenbl_ofs(sdma, event);
- 	u32 val;
+-	u32 val;
++	unsigned long val;
  
--	val = __raw_readl(sdma->regs + chnenbl);
-+	val = readl_relaxed(sdma->regs + chnenbl);
- 	val &= ~(1 << channel);
--	__raw_writel(val, sdma->regs + chnenbl);
-+	writel_relaxed(val, sdma->regs + chnenbl);
+ 	val = readl_relaxed(sdma->regs + chnenbl);
+-	val &= ~(1 << channel);
++	__clear_bit(channel, &val);
+ 	writel_relaxed(val, sdma->regs + chnenbl);
  }
  
- static void sdma_handle_channel_loop(struct sdma_channel *sdmac)
-@@ -552,8 +552,8 @@ static irqreturn_t sdma_int_handler(int irq, void *dev_id)
+@@ -550,7 +551,7 @@ static void mxc_sdma_handle_channel(struct sdma_channel *sdmac)
+ static irqreturn_t sdma_int_handler(int irq, void *dev_id)
+ {
  	struct sdma_engine *sdma = dev_id;
- 	u32 stat;
+-	u32 stat;
++	unsigned long stat;
  
--	stat = __raw_readl(sdma->regs + SDMA_H_INTR);
--	__raw_writel(stat, sdma->regs + SDMA_H_INTR);
-+	stat = readl_relaxed(sdma->regs + SDMA_H_INTR);
-+	writel_relaxed(stat, sdma->regs + SDMA_H_INTR);
+ 	stat = readl_relaxed(sdma->regs + SDMA_H_INTR);
+ 	writel_relaxed(stat, sdma->regs + SDMA_H_INTR);
+@@ -561,7 +562,7 @@ static irqreturn_t sdma_int_handler(int irq, void *dev_id)
  
- 	while (stat) {
- 		int channel = fls(stat) - 1;
-@@ -707,7 +707,7 @@ static void sdma_disable_channel(struct sdma_channel *sdmac)
+ 		mxc_sdma_handle_channel(sdmac);
+ 
+-		stat &= ~(1 << channel);
++		__clear_bit(channel, &stat);
+ 	}
+ 
+ 	return IRQ_HANDLED;
+@@ -669,11 +670,11 @@ static int sdma_load_context(struct sdma_channel *sdmac)
+ 		return load_address;
+ 
+ 	dev_dbg(sdma->dev, "load_address = %d\n", load_address);
+-	dev_dbg(sdma->dev, "wml = 0x%08x\n", sdmac->watermark_level);
++	dev_dbg(sdma->dev, "wml = 0x%08x\n", (u32)sdmac->watermark_level);
+ 	dev_dbg(sdma->dev, "shp_addr = 0x%08x\n", sdmac->shp_addr);
+ 	dev_dbg(sdma->dev, "per_addr = 0x%08x\n", sdmac->per_addr);
+-	dev_dbg(sdma->dev, "event_mask0 = 0x%08x\n", sdmac->event_mask0);
+-	dev_dbg(sdma->dev, "event_mask1 = 0x%08x\n", sdmac->event_mask1);
++	dev_dbg(sdma->dev, "event_mask0 = 0x%08x\n", (u32)sdmac->event_mask[0]);
++	dev_dbg(sdma->dev, "event_mask1 = 0x%08x\n", (u32)sdmac->event_mask[1]);
+ 
+ 	mutex_lock(&sdma->channel_0_lock);
+ 
+@@ -683,8 +684,8 @@ static int sdma_load_context(struct sdma_channel *sdmac)
+ 	/* Send by context the event mask,base address for peripheral
+ 	 * and watermark level
+ 	 */
+-	context->gReg[0] = sdmac->event_mask1;
+-	context->gReg[1] = sdmac->event_mask0;
++	context->gReg[0] = sdmac->event_mask[1];
++	context->gReg[1] = sdmac->event_mask[0];
+ 	context->gReg[2] = sdmac->per_addr;
+ 	context->gReg[6] = sdmac->shp_addr;
+ 	context->gReg[7] = sdmac->watermark_level;
+@@ -707,7 +708,7 @@ static void sdma_disable_channel(struct sdma_channel *sdmac)
  	struct sdma_engine *sdma = sdmac->sdma;
  	int channel = sdmac->channel;
  
--	__raw_writel(1 << channel, sdma->regs + SDMA_H_STATSTOP);
-+	writel_relaxed(1 << channel, sdma->regs + SDMA_H_STATSTOP);
+-	writel_relaxed(1 << channel, sdma->regs + SDMA_H_STATSTOP);
++	writel_relaxed(BIT(channel), sdma->regs + SDMA_H_STATSTOP);
  	sdmac->status = DMA_ERROR;
  }
  
-@@ -780,7 +780,7 @@ static int sdma_set_channel_priority(struct sdma_channel *sdmac,
- 		return -EINVAL;
- 	}
+@@ -717,8 +718,8 @@ static int sdma_config_channel(struct sdma_channel *sdmac)
  
--	__raw_writel(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
-+	writel_relaxed(priority, sdma->regs + SDMA_CHNPRI_0 + 4 * channel);
+ 	sdma_disable_channel(sdmac);
  
- 	return 0;
- }
-@@ -1228,7 +1228,7 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 	clk_enable(sdma->clk);
+-	sdmac->event_mask0 = 0;
+-	sdmac->event_mask1 = 0;
++	sdmac->event_mask[0] = 0;
++	sdmac->event_mask[1] = 0;
+ 	sdmac->shp_addr = 0;
+ 	sdmac->per_addr = 0;
  
- 	/* Be sure SDMA has not started yet */
--	__raw_writel(0, sdma->regs + SDMA_H_C0PTR);
-+	writel_relaxed(0, sdma->regs + SDMA_H_C0PTR);
- 
- 	sdma->channel_control = dma_alloc_coherent(NULL,
- 			MAX_DMA_CHANNELS * sizeof (struct sdma_channel_control) +
-@@ -1251,11 +1251,11 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 
- 	/* disable all channels */
- 	for (i = 0; i < sdma->num_events; i++)
--		__raw_writel(0, sdma->regs + chnenbl_ofs(sdma, i));
-+		writel_relaxed(0, sdma->regs + chnenbl_ofs(sdma, i));
- 
- 	/* All channels have priority 0 */
- 	for (i = 0; i < MAX_DMA_CHANNELS; i++)
--		__raw_writel(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
-+		writel_relaxed(0, sdma->regs + SDMA_CHNPRI_0 + i * 4);
- 
- 	ret = sdma_request_channel(&sdma->channel[0]);
- 	if (ret)
-@@ -1264,16 +1264,16 @@ static int __init sdma_init(struct sdma_engine *sdma)
- 	sdma_config_ownership(&sdma->channel[0], false, true, false);
- 
- 	/* Set Command Channel (Channel Zero) */
--	__raw_writel(0x4050, sdma->regs + SDMA_CHN0ADDR);
-+	writel_relaxed(0x4050, sdma->regs + SDMA_CHN0ADDR);
- 
- 	/* Set bits of CONFIG register but with static context switching */
- 	/* FIXME: Check whether to set ACR bit depending on clock ratios */
--	__raw_writel(0, sdma->regs + SDMA_H_CONFIG);
-+	writel_relaxed(0, sdma->regs + SDMA_H_CONFIG);
- 
--	__raw_writel(ccb_phys, sdma->regs + SDMA_H_C0PTR);
-+	writel_relaxed(ccb_phys, sdma->regs + SDMA_H_C0PTR);
- 
- 	/* Set bits of CONFIG register with given context switching mode */
--	__raw_writel(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
-+	writel_relaxed(SDMA_H_CONFIG_CSM, sdma->regs + SDMA_H_CONFIG);
- 
- 	/* Initializes channel's priorities */
- 	sdma_set_channel_priority(&sdma->channel[0], 7);
+@@ -746,15 +747,14 @@ static int sdma_config_channel(struct sdma_channel *sdmac)
+ 			(sdmac->peripheral_type != IMX_DMATYPE_DSP)) {
+ 		/* Handle multiple event channels differently */
+ 		if (sdmac->event_id1) {
+-			sdmac->event_mask1 = 1 << (sdmac->event_id1 % 32);
++			sdmac->event_mask[1] = BIT(sdmac->event_id1 % 32);
+ 			if (sdmac->event_id1 > 31)
+-				sdmac->watermark_level |= 1 << 31;
+-			sdmac->event_mask0 = 1 << (sdmac->event_id0 % 32);
++				__set_bit(31, &sdmac->watermark_level);
++			sdmac->event_mask[0] = BIT(sdmac->event_id0 % 32);
+ 			if (sdmac->event_id0 > 31)
+-				sdmac->watermark_level |= 1 << 30;
++				__set_bit(30, &sdmac->watermark_level);
+ 		} else {
+-			sdmac->event_mask0 = 1 << sdmac->event_id0;
+-			sdmac->event_mask1 = 1 << (sdmac->event_id0 - 32);
++			__set_bit(sdmac->event_id0, sdmac->event_mask);
+ 		}
+ 		/* Watermark Level */
+ 		sdmac->watermark_level |= sdmac->watermark_level;
 -- 
 1.7.5.4
 
