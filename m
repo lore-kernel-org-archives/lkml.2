@@ -1,49 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab2AMB1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:27:53 -0500
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:43136 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755316Ab2AMB1v (ORCPT
+	id S1756863Ab2AMBcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:32:13 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52736 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab2AMBcM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:27:51 -0500
+	Thu, 12 Jan 2012 20:32:12 -0500
 MIME-Version: 1.0
-Date: Fri, 13 Jan 2012 10:27:50 +0900
-Message-ID: <CANKRQnj64Ch--qctHMYYfGC5erkb_gctznpru8iGPOaioDGcDw@mail.gmail.com>
-Subject: [RESEND] i2c-eg20t: some patches are not reviewed yet
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
-        Wolfram Sang <w.sang@pengutronix.de>, Qi Wang <qi.wang@intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: joel.clark@intel.com, kok.howg.ewe@intel.com, yong.y.wang@intel.com
+In-Reply-To: <m14nw0wnjh.fsf@fess.ebiederm.org>
+References: <1326405521-2736-1-git-send-email-venki@google.com>
+	<m14nw0wnjh.fsf@fess.ebiederm.org>
+Date: Thu, 12 Jan 2012 17:32:11 -0800
+Message-ID: <CABeCy1YjRjUBSqZndAZ9N6P9NM7=J6JOCQ11PkQZSr2c3Ud0cg@mail.gmail.com>
+Subject: Re: [PATCH] Kexec reboot and stale/inconsistent system state
+From: Venki Pallipadi <venki@google.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Thu, Jan 12, 2012 at 2:42 PM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Venkatesh Pallipadi <venki@google.com> writes:
+>
+>> Of course, kexec reboots has a lot of advantantages. There is one
+>> blind spot though, in the way we handle shutdown of the old kernel in kexec.
+>> The problem: there are drivers in the kernel that change
+>> system state either during init or during normal operation. During a
+>> hardware reboot these system states would get reset to default.
+>> But, with kexec reboot this system state can stay persistent with the
+>> new kernel and can lead to some inconsistencies.
+>>
+>> More concrete x86 example:
+>> * Kernel_v0 has a driver which sets a particular MSR.
+>> * Kernel_v1 has a different version of the driver which does not touch the
+>> MSR and assumes it to be at BIOS init state.
+>> * Now we have a kexec reboot from Kernel_v0 to Kernel_v1 and the MSR will
+>> stay set leading to potential inconsistent state.
+>>
+>> One such driver I was looking at is drivers/idle/intel_idle.c, which sets
+>> the MSR during init and forgets about it. There are other drivers which can
+>> potentially have similar problems - like MTRR, etc. There can be other
+>> state in the system like chipset state and device state etc, though
+>> I expect most of it won't be a problem based on the way drivers init.
+>>
+>> Seemingly simple solution is to do the needed cleanup in driver's module_exit
+>> code path. That is not enough as module_exit for all builtin drivers are
+>> all discarded.
+>>
+>> What if we retain all the module_exits in CONFIG_KEXEC case and do a
+>> cleanup before launching a new kernel. This should work, but most of the
+>> module_exit code assumes that they will be only called when corresponding
+>> init is successful. I couldn't find a clean and easy way of associating
+>> module's init function with its exit function and to save the result of
+>> init.
+>>
+>> Alternate quick solution is to create a new module interface to register
+>> kexec cleanup function as in the patch below. But, this is not generic enough
+>> yet and does not handle the case where we have done the cleanup and kexec
+>> fails after that and we have to do some setup again to run with old
+>> kernel.
+>>
+>> Before spending more time on this, just wanted to run this RFC along to see:
+>> * How big/serious this problem really is?
+>> * Has this been looked at before and any other potential solution for
+>> this?
+>
+> Use the drivers shutdown method.  The shutdown method is called
+> at reboot and at normal kexec.  If you care about the kexec on panic
+> case you need to write a paranoid driver initialization routine.
+>
+> Hmm.  Looking a little closer the intel idle driver is a weird thing.
+> I am not seeing any operations structures.  There are kobjects so
+> the intel idle driver might be properly hooked into the device tree.
+> If the intel idle driver isn't properly hooked into the device
+> tree you should be able to hook into the reboot notifier instead
+> of implementing a device shutdown method.  Although for a lot
+> of reasons implementing the standard device shutdown method is
+> preferred.
+>
 
-The following 3 patches are still not reviewed yet for 2~3 months.
-Could you review and accept these patches ?
+Yes. Doing in device shutdown is much cleaner. I need to figure out
+how to hook that into intel_idle.
 
-Subject:    [PATCH] i2c-eg20t: modified the setting of transfer rate.
-From:       Toshiharu Okada <toshiharu-linux () dsn ! okisemi ! com>
-Date:       2011-09-26 7:16:23
-http://marc.info/?l=linux-i2c&m=131702145913299&w=2
+One other problem case I see is in mtrr. 'cat <something> >
+/proc/mtrr' gets carried over after a kexec reboot. So, we need some
+change to restore the boot time state there.
+Do you guys see any other place where we will need similar special
+handling for kexec reboots?
 
-
-Subject:    [PATCH 2/2] i2c-eg20t:
-Change-company-name-OKI-SEMICONDUCTOR to LAPIS Semiconductor
-From:       Tomoya MORINAGA <tomoya-linux () dsn ! lapis-semi ! com>
-Date:       2011-10-28 0:40:11
-http://marc.info/?l=linux-kernel&m=131976246906496&w=2
-
-Subject:    [PATCH 1/2] i2c-eg20t: Support new device LAPIS
-Semiconductor ML7831 IOH
-From:       Tomoya MORINAGA <tomoya-linux () dsn ! lapis-semi ! com>
-Date:       2011-10-28 0:40:10
-http://marc.info/?l=linux-i2c&m=131976245206491&w=2
-
-thanks in advance.
-tomoya
+Thanks,
+Venki
