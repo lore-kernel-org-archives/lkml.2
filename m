@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757767Ab2AMKef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 05:34:35 -0500
-Received: from gir.skynet.ie ([193.1.99.77]:37947 "EHLO gir.skynet.ie"
+	id S1757657Ab2AMKkz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 05:40:55 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:46848 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752625Ab2AMKed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 05:34:33 -0500
-Date: Fri, 13 Jan 2012 10:34:32 +0000 (GMT)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] some fixes for -rc1
-Message-ID: <alpine.DEB.2.00.1201131032290.5736@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751804Ab2AMKky convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 05:40:54 -0500
+From: "Gupta, Ajay Kumar" <ajay.gupta@ti.com>
+To: "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RFC: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
+Thread-Topic: usb: musb: Adding CPPI4.1 DMA driver under drivers/dma
+Thread-Index: AQHM0bzZ3HvTVi65q0q5jVepkBzZG5YKErvg
+Date: Fri, 13 Jan 2012 10:40:50 +0000
+Message-ID: <47CEF8C4B26E8C44B22B028A650E0EA9317A6B8B@DBDE01.ent.ti.com>
+References: <201201120753.00667.oneukum@suse.de>
+ <Pine.LNX.4.44L0.1201121037340.1384-100000@iolanthe.rowland.org>
+ <20120112215014.GC5735@xanatos> <20120112215459.GA1161@kroah.com>
+ <20120112222947.GD5735@xanatos> <20120112223513.GA2925@kroah.com>
+ <20120113061144.GA30569@suse.cz>
+In-Reply-To: <20120113061144.GA30569@suse.cz>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-259696568-1326450872=:5736"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---29444707-259696568-1326450872=:5736
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+CPPI4.1 (Communication Port Programming Interface) is a TI specific DMA
+controller used in multiple TI platform such as AM33x, DA8x, AM35x, TI81x.
+The DMA engine is mainly used by musb controller on above platform.
 
+Earlier version of the driver was submitted by Sergei Shtylyov at [1] but
+was not merged due to disagreement on the location of driver in kernel.
+Refer the discussions at [1] for more details.
 
-Hi Linus,
+[1] http://marc.info/?l=linux-usb&m=125087318308323
 
-misc fixes for -rc1, fix the dma-buf Kconfig, two nouveau fixes I've 
-tested locally on optimus laptop and they seem to fix the problem off 
-turning the GPU off properly when asked.
+The new implementation of the CPPI4.1 DMA slave driver will be in the
+drivers/dma folder, complying to dmaengine framework.
+It would involve changes in existing musb driver also for which current
+plan is to maintain the compatibility of non-CPPI4.1 DMA in musb driver. 
 
-I've booted this specifc tree only as far as the autofs hang I've 
-mentioned, but the gpu driver comes up fine, and there is nothing really 
-scary in this lot.
+The task is planned to be spitted into below subtasks.
 
-Dave.
+(1) Post RFC on the API details, changes envisaged in musb driver and other
+challenges
 
-The following changes since commit 099469502f62fbe0d7e4f0b83a2f22538367f734:
+(2) Implement and post RFC for the CPPI4.1 DMA driver and changes needed in
+musb driver.
 
-  Merge branch 'akpm' (aka "Andrew's patch-bomb, take two") (2012-01-12 20:42:54 -0800)
+Let me know if you have any thoughts/comments on this.
 
-are available in the git repository at:
+Regards,
+Ajay
 
-  git://people.freedesktop.org/~airlied/linux drm-fixes
-
-Alan Cox (1):
-      gma500: Discard modes that don't fit in stolen memory
-
-Alex Deucher (1):
-      drm/radeon/kms/ni: fix packet2 handling for VM IB parser
-
-Ben Skeggs (1):
-      drm: bump DRM_CONNECTOR_MAX_ENCODER from 2 to 3
-
-Dave Airlie (1):
-      dma-buf: drop option text so users don't select it.
-
-Jean Delvare (1):
-      drm/radeon/kms: Fix module parameter description format
-
-Konrad Rzeszutek Wilk (1):
-      ttm/dma: Remove the WARN() which is not useful.
-
-Michel Dänzer (1):
-      radeon: Call pci_clear_master() instead of open-coding it.
-
-Peter Lekensteyn (2):
-      nouveau: properly check for _DSM function support
-      nouveau: Support Optimus models for vga_switcheroo
-
-Sumit Semwal (1):
-      dma-buf: Documentation update for Kconfig select
-
- Documentation/dma-buf-sharing.txt        |    4 ++
- drivers/base/Kconfig                     |    2 +-
- drivers/gpu/drm/gma500/cdv_intel_crt.c   |    6 ++
- drivers/gpu/drm/gma500/cdv_intel_hdmi.c  |   14 ++---
- drivers/gpu/drm/gma500/oaktrail_hdmi.c   |    6 ++
- drivers/gpu/drm/gma500/psb_intel_sdvo.c  |    6 ++
- drivers/gpu/drm/nouveau/nouveau_acpi.c   |   79 +++++++++++++++++++++++-------
- drivers/gpu/drm/nouveau/nouveau_drv.h    |    2 +
- drivers/gpu/drm/nouveau/nouveau_state.c  |    1 +
- drivers/gpu/drm/radeon/evergreen_cs.c    |    3 +-
- drivers/gpu/drm/radeon/r100.c            |    4 +-
- drivers/gpu/drm/radeon/radeon_drv.c      |    2 +-
- drivers/gpu/drm/radeon/rs600.c           |   13 +----
- drivers/gpu/drm/ttm/ttm_page_alloc_dma.c |    5 +-
- include/drm/drm_crtc.h                   |    2 +-
- 15 files changed, 102 insertions(+), 47 deletions(-)
---29444707-259696568-1326450872=:5736--
