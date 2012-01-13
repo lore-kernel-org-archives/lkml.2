@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab2AMNZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 08:25:06 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55462 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970Ab2AMNZB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 08:25:01 -0500
-Date: Fri, 13 Jan 2012 21:35:54 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Dong Aisheng-B29396 <B29396@freescale.com>
-Cc: Stephen Warren <swarren@nvidia.com>, Dong Aisheng <dongas86@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>
-Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux
- mappings
-Message-ID: <20120113133552.GB17029@S2101-09.ap.freescale.net>
-References: <CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
- <74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF177EE3A76A@HQMAIL01.nvidia.com>
- <7FE21149F4667147B645348EC605788508E7B0@039-SN2MPN1-013.039d.mgd.msft.net>
- <74CDBE0F657A3D45AFBB94109FB122FF17801D1DD6@HQMAIL01.nvidia.com>
- <20120113035506.GB12184@S2101-09.ap.freescale.net>
- <7FE21149F4667147B645348EC605788508FD9C@039-SN2MPN1-013.039d.mgd.msft.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7FE21149F4667147B645348EC605788508FD9C@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932148Ab2AMN1F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 08:27:05 -0500
+Received: from smtp.nokia.com ([147.243.1.48]:62478 "EHLO mgw-sa02.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751970Ab2AMN1E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 08:27:04 -0500
+Message-ID: <1326461140.32183.40.camel@groo>
+Subject: [GIT PULL] HSI framework
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        ext Linus Walleij <linus.walleij@linaro.org>,
+        "peter_henn@gmx.de" <peter_henn@gmx.de>,
+        "sjur.brandeland@stericsson.com" <sjur.brandeland@stericsson.com>,
+        "govindraj.ti@gmail.com" <govindraj.ti@gmail.com>,
+        "pawel.szyszuk@stericsson.com" <pawel.szyszuk@stericsson.com>,
+        Sebastian Reichel <sre@debian.org>, artem.bityutskiy@linux.intel.com,
+        Andras Domokos <andras.domokos@nokia.com>,
+        ext Shubhrajyoti <shubhrajyoti@ti.com>,
+        ext Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        ext Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Fri, 13 Jan 2012 15:25:40 +0200
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.2- 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 08:07:35AM +0000, Dong Aisheng-B29396 wrote:
-> > > But, one thought on doing this in pinmux_get(). I'd simply implement a
-> > > Function that read a DT node's pinmux property/node, converted it to a
-> > > pinmux mapping table, and registered it with the pinctrl core. Then,
-> > > pinmux_get() could simply call this before doing anything else at all.
-> > > I don't think you'd need to modify how pinmux_get() worked at all.
-> > >
-> > This sounds like a pretty good idea to me.
-> > 
-> This does not fix the inconsistency issue.
-> Additionally as I said before, for better support dynamically register pinmux
-> Map, it looks we'd better change the pinmux_maps array to a list.
-> However this is for dt case.
-> But for non-dt case, the static array is just ok.
-> So there's conflict.
-> Not sure if any better idea to fix this.
-> 
-My guess is that Linus.W did not get any chance to take the dt case
-into account with his first design of pinctrl core.  But I guess he
-is open to any reasonable change to pinctrl core for dt adoption.
-Linus?
+Hi Linus,
 
--- 
-Regards,
-Shawn
+I have been working in an HSI framework. The High Speed Synchronous Serial Interface (HSI) is a serial interface mainly used for connecting application engines (APE) with cellular modem engines (CMT) in cellular handsets.
+
+The framework is currently being used for some people and we would like to see it integrated into the kernel for 3.3. There is no HW controller drivers in this pull, but some people have already some of them pending which they would like to push as soon as this integrated. I am also working on the acceptance for an TI OMAP one, based on a compatible legacy version of the interface called SSI.
+
+Please see the latest discussion thread about the framework patches here:
+
+https://lkml.org/lkml/2011/6/10/280
+
+Here thread discussion for integration:
+
+https://lkml.org/lkml/2011/10/20/177
+
+Here, the thread discussion to add the hsi repository to linux-next:
+
+https://lkml.org/lkml/2011/10/28/69
+
+The patches have been sitting for a while in linux-next without issues.
+
+The signed tag covering those commits: hsi_for_3.3 
+
+Thanks & Br,
+Carlos Chinea
+
+The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610:
+
+  Linux 3.2 (2012-01-04 15:55:44 -0800)
+
+are available in the git repository at:
+  git://gitorious.org/kernel-hsi/kernel-hsi.git for-next
+
+Andras Domokos (3):
+      HSI: hsi_char: Add HSI char device driver
+      HSI: hsi_char: Add HSI char device kernel configuration
+      HSI: hsi_char: Update ioctl-number.txt
+
+Carlos Chinea (2):
+      HSI: hsi: Introducing HSI framework
+      HSI: Add HSI API documentation
+
+ Documentation/DocBook/device-drivers.tmpl |   17 +
+ Documentation/ioctl/ioctl-number.txt      |    1 +
+ drivers/Kconfig                           |    2 +
+ drivers/Makefile                          |    1 +
+ drivers/hsi/Kconfig                       |   19 +
+ drivers/hsi/Makefile                      |    6 +
+ drivers/hsi/clients/Kconfig               |   13 +
+ drivers/hsi/clients/Makefile              |    5 +
+ drivers/hsi/clients/hsi_char.c            |  802 +++++++++++++++++++++++++++++
+ drivers/hsi/hsi.c                         |  494 ++++++++++++++++++
+ drivers/hsi/hsi_boardinfo.c               |   62 +++
+ drivers/hsi/hsi_core.h                    |   35 ++
+ include/linux/Kbuild                      |    1 +
+ include/linux/hsi/Kbuild                  |    1 +
+ include/linux/hsi/hsi.h                   |  410 +++++++++++++++
+ include/linux/hsi/hsi_char.h              |   63 +++
+ 16 files changed, 1932 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hsi/Kconfig
+ create mode 100644 drivers/hsi/Makefile
+ create mode 100644 drivers/hsi/clients/Kconfig
+ create mode 100644 drivers/hsi/clients/Makefile
+ create mode 100644 drivers/hsi/clients/hsi_char.c
+ create mode 100644 drivers/hsi/hsi.c
+ create mode 100644 drivers/hsi/hsi_boardinfo.c
+ create mode 100644 drivers/hsi/hsi_core.h
+ create mode 100644 include/linux/hsi/Kbuild
+ create mode 100644 include/linux/hsi/hsi.h
+ create mode 100644 include/linux/hsi/hsi_char.h
+
+
