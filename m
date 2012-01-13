@@ -1,29 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758326Ab2AMPZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:25:52 -0500
-Received: from mail-tul01m020-f174.google.com ([209.85.214.174]:37106 "EHLO
-	mail-tul01m020-f174.google.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752879Ab2AMPZv (ORCPT
+	id S932271Ab2AMP1y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:27:54 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:53817 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932164Ab2AMP1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:25:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20120113144113.GA25667@elgon.mountain>
-References: <20120113144113.GA25667@elgon.mountain>
-Date: Fri, 13 Jan 2012 17:25:50 +0200
-Message-ID: <CAJL_dMvBycLdpbvOowcLjcjM3CZp=j+i6_mvLzZiTTGONuD_pA@mail.gmail.com>
-Subject: Re: [patch -next] autofs4: double lock typo in autofs4_write()
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Ian Kent <raven@themaw.net>,
-        autofs@linux.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jan 2012 10:27:53 -0500
+From: Giorgos Kyprianidis <elapoueis@gmail.com>
+To: johannes@sipsolutions.net
+Cc: linux-kernel@vger.kernel.org, p3100225@dias.aueb.gr
+Subject: [PATCH 2/2] wireless:core fixed 2 spacing errors
+Date: Fri, 13 Jan 2012 17:27:44 +0200
+Message-Id: <1326468464-450-1-git-send-email-p3100225@dias.aueb.gr>
+X-Mailer: git-send-email 1.7.8.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, this is already reported:
-https://lkml.org/lkml/2012/1/13/104
+fixed 2 spacing errors
+---
+ net/wireless/core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-and tested by Dave.
+diff --git a/net/wireless/core.c b/net/wireless/core.c
+index ccdfed8..a9df335 100644
+--- a/net/wireless/core.c
++++ b/net/wireless/core.c
+@@ -668,7 +668,7 @@ void wiphy_unregister(struct wiphy *wiphy)
+ 		mutex_lock(&rdev->devlist_mtx);
+ 		__count = rdev->opencount;
+ 		mutex_unlock(&rdev->devlist_mtx);
+-		__count == 0;}));
++		__count == 0; }));
+ 
+ 	mutex_lock(&rdev->devlist_mtx);
+ 	BUG_ON(!list_empty(&rdev->netdev_list));
+@@ -777,7 +777,7 @@ static struct device_type wiphy_type = {
+ 	.name	= "wlan",
+ };
+ 
+-static int cfg80211_netdev_notifier_call(struct notifier_block * nb,
++static int cfg80211_netdev_notifier_call(struct notifier_block *nb,
+ 					 unsigned long state,
+ 					 void *ndev)
+ {
+-- 
+1.7.8.3
+
