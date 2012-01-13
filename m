@@ -1,37 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab2AMBrP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:47:15 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:51211 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2AMBrO (ORCPT
+	id S1757111Ab2AMByF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:54:05 -0500
+Received: from alcazar.beanwood.com ([70.85.129.230]:39747 "EHLO
+	alcazar.beanwood.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756992Ab2AMBxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:47:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAPXgP120MoEUK9vSiELx4nzkL9X3w=YBgXGs3Q-VPm-4ZjgvZQ@mail.gmail.com>
-References: <20120106201126.GA7239@kroah.com> <CA+55aFzH1cqoxr5RR8yqPdjf4XphKHk9YmcDozPn_z7Aq3nDcg@mail.gmail.com>
- <CAPXgP120MoEUK9vSiELx4nzkL9X3w=YBgXGs3Q-VPm-4ZjgvZQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Jan 2012 17:46:53 -0800
-X-Google-Sender-Auth: bAlPq8xLg_rBLW_rGpmv0OMlplU
-Message-ID: <CA+55aFyOcdCyo3y5vJ-3uL2BLLH5ubA81Ns-xLWBZkLf=JDzBQ@mail.gmail.com>
-Subject: Re: [GIT PATCH] driver core merge for 3.3
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Jan 2012 20:53:55 -0500
+From: Andrew Ayer <agwa@andrewayer.name>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] vfs: Add fchmodat4 syscall: fchmodat with flag argument
+Date: Thu, 12 Jan 2012 17:53:45 -0800
+Message-Id: <1326419626-22568-2-git-send-email-agwa@andrewayer.name>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1326419626-22568-1-git-send-email-agwa@andrewayer.name>
+References: <1326419626-22568-1-git-send-email-agwa@andrewayer.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 5:39 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->
-> Maybe you can check if the suspend problem goes away if you disable
-> CONFIG_X86_MCE?
+This adds a 4 argument version of fchmodat (fchmodat4) that
+supports a flag argument, as specified by POSIX.  It supports
+the same two flags as fchownat: AT_SYMLINK_NOFOLLOW and AT_EMPTY_PATH.
 
-It does. So there is something wrong with MCE. It causes the second
-suspend to hang for me. Disabling X86_MCE makes it work.
+Signed-off-by: Andrew Ayer <agwa@andrewayer.name>
+---
+ fs/open.c                |   21 +++++++++++++++++++--
+ include/linux/syscalls.h |    2 ++
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
-(I have other problems on that machine too, but they are unrelated)
+diff --git a/fs/open.c b/fs/open.c
+index 77becc0..4f087e7 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -452,6 +452,9 @@ static int chmod_common(struct path *path, umode_t mode)
+ 	struct iattr newattrs;
+ 	int error;
+ 
++	if (S_ISLNK(inode->i_mode))
++		return -EOPNOTSUPP;
++
+ 	error = mnt_want_write(path->mnt);
+ 	if (error)
+ 		return error;
+@@ -484,10 +487,24 @@ SYSCALL_DEFINE2(fchmod, unsigned int, fd, umode_t, mode)
+ 
+ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, umode_t, mode)
+ {
++	return sys_fchmodat4(dfd, filename, mode, 0);
++}
++
++SYSCALL_DEFINE4(fchmodat4, int, dfd, const char __user *, filename,
++		umode_t, mode, int, flag)
++{
+ 	struct path path;
+ 	int error;
++	int lookup_flags;
++
++	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) != 0)
++		return -EINVAL;
+ 
+-	error = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++	lookup_flags = (flag & AT_SYMLINK_NOFOLLOW) ? 0 : LOOKUP_FOLLOW;
++	if (flag & AT_EMPTY_PATH)
++		lookup_flags |= LOOKUP_EMPTY;
++
++	error = user_path_at(dfd, filename, lookup_flags, &path);
+ 	if (!error) {
+ 		error = chmod_common(&path, mode);
+ 		path_put(&path);
+@@ -497,7 +514,7 @@ SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, umode_t, mode
+ 
+ SYSCALL_DEFINE2(chmod, const char __user *, filename, umode_t, mode)
+ {
+-	return sys_fchmodat(AT_FDCWD, filename, mode);
++	return sys_fchmodat4(AT_FDCWD, filename, mode, 0);
+ }
+ 
+ static int chown_common(struct path *path, uid_t user, gid_t group)
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 515669f..4834904 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -770,6 +770,8 @@ asmlinkage long sys_futimesat(int dfd, const char __user *filename,
+ asmlinkage long sys_faccessat(int dfd, const char __user *filename, int mode);
+ asmlinkage long sys_fchmodat(int dfd, const char __user * filename,
+ 			     umode_t mode);
++asmlinkage long sys_fchmodat4(int dfd, const char __user * filename,
++			     umode_t mode, int flag);
+ asmlinkage long sys_fchownat(int dfd, const char __user *filename, uid_t user,
+ 			     gid_t group, int flag);
+ asmlinkage long sys_openat(int dfd, const char __user *filename, int flags,
+-- 
+1.7.1
 
-                Linus
