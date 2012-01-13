@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758591Ab2AMRLp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 12:11:45 -0500
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63020 "EHLO
+	id S1758569Ab2AMR3f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 12:29:35 -0500
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:55448 "EHLO
 	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752998Ab2AMRLl (ORCPT
+	with ESMTP id S1751499Ab2AMR3c convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 12:11:41 -0500
+	Fri, 13 Jan 2012 12:29:32 -0500
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF177EE3A76A@HQMAIL01.nvidia.com>
-References: <1324402840-32451-1-git-send-email-b29396@freescale.com>
-	<1324402840-32451-3-git-send-email-b29396@freescale.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF176BE92F00@HQMAIL01.nvidia.com>
-	<7FE21149F4667147B645348EC6057885075542@039-SN2MPN1-013.039d.mgd.msft.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF176CC743EF@HQMAIL01.nvidia.com>
-	<CAA+hA=RBqpSmntS2h+6xMQuRvSRHenmDgrYSSzMXHtOCpU+HCQ@mail.gmail.com>
-	<74CDBE0F657A3D45AFBB94109FB122FF17761F18F8@HQMAIL01.nvidia.com>
-	<7FE21149F4667147B645348EC605788507F698@039-SN2MPN1-013.039d.mgd.msft.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF177EE39E6B@HQMAIL01.nvidia.com>
-	<7FE21149F4667147B645348EC605788508AC65@039-SN2MPN1-013.039d.mgd.msft.net>
-	<74CDBE0F657A3D45AFBB94109FB122FF177EE3A76A@HQMAIL01.nvidia.com>
-Date: Sat, 14 Jan 2012 01:11:41 +0800
-Message-ID: <CAA+hA=RCmctmQJU4-k7YhzQDMi8KuyisBqOFhuMd3RV4_E=gCA@mail.gmail.com>
-Subject: Re: [RFC PATCH v3 2/5] pinctrl: add dt binding support for pinmux mappings
-From: Dong Aisheng <dongas86@gmail.com>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: Dong Aisheng-B29396 <B29396@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linus.walleij@stericsson.com" <linus.walleij@stericsson.com>,
-        "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@pengutronix.de" <kernel@pengutronix.de>,
-        "cjb@laptop.org" <cjb@laptop.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Simon Glass (sjg@chromium.org)" <sjg@chromium.org>
+In-Reply-To: <20120113115946.GA10615@ime.usp.br>
+References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
+	<20120108221342.GA7058@ime.usp.br>
+	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
+	<20120109112207.7f993845@jbarnes-desktop>
+	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
+	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
+	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
+	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
+	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
+	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	<20120113115946.GA10615@ime.usp.br>
+Date: Fri, 13 Jan 2012 09:29:31 -0800
+X-Google-Sender-Auth: x6S2yiGH6PYuVBEB0VoMw6076UE
+Message-ID: <CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
+Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
+From: Yinghai Lu <yinghai@kernel.org>
+To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Edward Donovan <edward.donovan@numble.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
+        Ram Pai <linuxram@us.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 4:17 AM, Stephen Warren <swarren@nvidia.com> wrote:
-...
->> To keep consistency as the currently design of pinctrl subsystem and also meet
->> the dt design philosophy, we still do not introduce a pinmux map in dt.
->> Instead, we choose to scan all the device node with a 'pinmux' phandle to construct
->> a pinmux map table before register the pin controller device(here we may also scan
->> the hog_on_boot node) and I guess it's easy to do that.
-> ...
->> (Without scan the device node to construct the pinmux map table, we can only get the map
->> Information when we run the pinmux_get.
->> See: https://lkml.org/lkml/2012/1/5/153
->> So no pinmux map table exists and we surely do not want to see that the sysfs exporting
->> pinmux map information works in dt but unwork in non-dt)
+On Fri, Jan 13, 2012 at 3:59 AM, Rogério Brito <rbrito@ime.usp.br> wrote:
+> Dear Yinghai,
 >
-> Hmmm. I'm not sure that the pinctrl code should actively scan all nodes
-> in the device tree for pin mux properties. That seems a little invasive;
-> how does pinctrl know which nodes it really should be looking at, and
-> which nodes are random internal parts of some device's custom binding?
+> On Jan 11 2012, Yinghai Lu wrote:
+>> On Tue, Jan 10, 2012 at 11:04 PM, Rogério Brito <rbrito@ime.usp.br> wrote:
+>> > On Tue, Jan 10, 2012 at 03:07, Yinghai Lu <yinghai@kernel.org> wrote:
+>> >>   git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>> >> for-pci2
+>> >>
+>> >> also please boot with "debug ignore_loglevel"
+>> >
+>> > Grabbing it right now. Will report it after I get some sleep (5AM here).
+>>
+>> please try attached patch, it will fix one bios wrong setting.
 >
-> Personally, I think I'd be OK with the sysfs pinctrl map file only
-> containing the map entries for devices that had used the pinctrl API,
-> and hence only parsing the pinmux properties in pinmux_get().
+> Should I use this patch agains which tree?
 >
-> However, we could perhaps do better by registering a bus notifier, and
-> pro-actively parsing the top-level DT node (if there is one) for every
-> device that is created. That way, the mapping would be parsed as soon
-> as the device was created (or perhaps after probe?).
+> Right now, I have Linus's tree, yours (cited above) and I am, up to now,
+> I had been compiling everything from Linus's v3.2 tag: both a vanilla
+> kernel, as asked by Bjorn and with the patch that I mentioned to Linus ("the
+> one that makes things boot").
 >
-After refer to usb bus notifier, usb core will register a bus notifier.
-When a new usb bus is registered, it will notify the usb core for a
-new bus added.
+> If it applies (and newer kernels don't have things which your patch needs),
+> I will keep working with Linus's v3.2 tag.
 
-So i guess you mean pinctrl core provides a notifier to handle the map
-creation when new map is found during parsing each device node, right?
-But it seems parsing of device node and creation of device is at the very early
-stage when call of_platform_populate in .init_machine code and pinctrl subsystem
-may still have not change to run to register a bus notifier.
-And i'm not sure it's the right place for of_platform.c to handle
-pinmux things when create new devices.
-I wonder it may not work for pinmux map case.
-If pinctrl core does not provide notifier, who else can be the right
-one to privide it?
+No problem, I will put that patch into for-pci2 for your conveniences.
 
-> The only case this
-> might not cover is DT nodes for which the kernel doesn't actually have
-> a driver, and hence no device is created.
 >
-Per my understanding, the device creation should be independent on the driver.
-I don't know why no device is created if not have a driver.
-Did i miss something?
+> When I compiled from your branch for-pci2 from linux-yinghai.git (without
+> any extra patches), it *did* boot, but noticed one thing weird: using htop
+> and in single user mode, it reported 100% of CPU in use. With regular top, a
+> more fine grained output revealed that no processes were using the CPU, but
+> that almost all of the time was spent in kernel mode.
+>
+> Anyway, as you asked, I put the log of what I see at
+>
+>    http://www.ime.usp.br/~rbrito/linux/clevo/2012-01-13-0951-yanghai-for-pci2-branch/
 
-Regards
-Dong Aisheng
+[    0.165615] pci 0000:05:07.0: CardBus bridge to [bus 06-09]
+[    0.165682] pci 0000:05:07.0:   bridge window [io  0x0001-0x0000]
+[    0.165751] pci 0000:05:07.0:   bridge window [io  0x0001-0x0000]
+[    0.165821] pci 0000:05:07.0:   bridge window [mem
+0x00000001-0x00000000 pref]
+[    0.165904] pci 0000:05:07.0:   bridge window [mem 0x00000001-0x00000000]
+[    0.165975] pci 0000:00:10.0: PCI bridge to [bus 05-06]
+[    0.166043] pci 0000:00:10.0:   bridge window [mem 0xb3200000-0xb32fffff]
+[    0.166259] pci 0000:00:10.0: setting latency timer to 64
+[    0.166329] pci 0000:05:07.0: device not available (can't reserve
+[io  0x0001-0x0000])
+[    0.166412] pci 0000:05:07.0: Error enabling bridge (-22), continuing
+
+We have some problems with handling cardbus bridge as optional resources.
+
+will produce some patches and update for-pci2 branch for your test.
+
+Thanks
+
+Yinghai
