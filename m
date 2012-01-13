@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab2AMTpk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 14:45:40 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33061 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab2AMTpg convert rfc822-to-8bit (ORCPT
+	id S1758945Ab2AMTrb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 14:47:31 -0500
+Received: from unicorn.mansr.com ([78.86.181.103]:52232 "EHLO
+	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758910Ab2AMTra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 14:45:36 -0500
-MIME-Version: 1.0
-In-Reply-To: <CALCETrWOdEnTLhjdgjSc0d=8j4q3JeRz1g_wYR9_uwJP=iimcw@mail.gmail.com>
-References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
- <20120113164547.GA22061@redhat.com> <20120113182422.28e648fb@pyramind.ukuu.org.uk>
- <CALCETrX_nA4MtjDCKdfwJBOO6QEyzk_6nbr5Ou6QqkXcq2rTPQ@mail.gmail.com>
- <CA+55aFyCKAY97zK=4u-AHvQyh2U1ryYybQEmgaRR+kc-d2fLhA@mail.gmail.com> <CALCETrWOdEnTLhjdgjSc0d=8j4q3JeRz1g_wYR9_uwJP=iimcw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jan 2012 11:45:12 -0800
-X-Google-Sender-Auth: gSA5tctjAMNPg8W5VhqRLkrMO7Y
-Message-ID: <CA+55aFyZTp2-3Pb+NvVbq2jddJjhNO3RcKsBJiu1k8HayNy-oA@mail.gmail.com>
-Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
- granting privs
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Jan 2012 14:47:30 -0500
+From: Mans Rullgard <mans.rullgard@linaro.org>
+To: Javi Merino <javi.merino@arm.com>
+Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
+        patches@linaro.org, Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jaswinder.singh@linaro.org>, linux-kernel@vger.kernel.org,
+        Boojin Kim <boojin.kim@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH] ARM: pl330: fix null pointer dereference in pl330_chan_ctrl()
+Date: Fri, 13 Jan 2012 19:46:22 +0000
+Message-Id: <1326483982-13610-1-git-send-email-mans.rullgard@linaro.org>
+X-Mailer: git-send-email 1.7.8.3
+In-Reply-To: <4F103620.8070504@arm.com>
+References: <4F103620.8070504@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 11:39 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> Is the current exec_no_trans check enough for you?  With my patch,
-> selinux can already block the execve if it wants.
+This fixes the thrd->req_running field being accessed before thrd
+is checked for null.  The error was introduced in abb959f.
 
-If this feature has "selinux can do xyz if it wants", it is broken.
+Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
+---
+ drivers/dma/pl330.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-The *whole* point is to get the f*^%ing crazy "security managers can
-do xyz" things away from it.
+diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
+index 3a6e042..cb3e597 100644
+--- a/drivers/dma/pl330.c
++++ b/drivers/dma/pl330.c
+@@ -1568,12 +1568,13 @@ static int pl330_chan_ctrl(void *ch_id, enum pl330_chan_op op)
+ 	struct pl330_thread *thrd = ch_id;
+ 	struct pl330_dmac *pl330;
+ 	unsigned long flags;
+-	int ret = 0, active = thrd->req_running;
++	int ret = 0, active;
+ 
+ 	if (!thrd || thrd->free || thrd->dmac->state == DYING)
+ 		return -EINVAL;
+ 
+ 	pl330 = thrd->dmac;
++	active = thrd->req_running;
+ 
+ 	spin_lock_irqsave(&pl330->lock, flags);
+ 
+-- 
+1.7.8.3
 
-The flag - when set - should give a 100% guarantee that security
-context doesn't change, and an operation that would change it would
-error out.
-
-Not a "selinux can block it if it wants". None of that "wants" crap.
-None of the "you can configure security rules to do xyz" crap.
-
-One simple rule: no security changes from the context that set the flag.
-
-Any other rule will inevitably cause random gray areas where some
-random security manager does something stupid. We have enough of those
-already. No more.
-
-                     Linus
