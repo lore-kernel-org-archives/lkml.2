@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab2AMMqG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 07:46:06 -0500
-Received: from mx3.schottelius.org ([77.109.138.221]:32801 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab2AMMqC (ORCPT
+	id S1758115Ab2AMM4I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 07:56:08 -0500
+Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:41618 "EHLO
+	homiemail-a38.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753170Ab2AMM4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 07:46:02 -0500
-Date: Fri, 13 Jan 2012 13:45:59 +0100
-From: Nico Schottelius <nico-linux-20120113@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>, b43-dev@lists.infradead.org,
-        netdev@vger.kernel.org
-Cc: Nico Schottelius <nico-linux-20120113@schottelius.org>
-Subject: brcmsmac: 3.2.0-06100: no device shown (and hangs in 3.2.0-rc7)
-Message-ID: <20120113124559.GA2260@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20120113@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>, b43-dev@lists.infradead.org,
-	netdev@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: brief (Linux 3.2.0-06100-ge343a89 x86_64)
+	Fri, 13 Jan 2012 07:56:05 -0500
+X-Greylist: delayed 42481 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Jan 2012 07:56:05 EST
+Subject: Re: [PATCH] KVM: MMU: increment stats after event occurrence
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
+        lkml <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+In-Reply-To: <4F0F87BE.2020202@oss.ntt.co.jp>
+References: <1326416880.3416.2.camel@offbook>
+	 <4F0F87BE.2020202@oss.ntt.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Organization: GNU
+Date: Fri, 13 Jan 2012 13:56:00 +0100
+Message-ID: <1326459360.3231.3.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 2012-01-13 at 10:24 +0900, Takuya Yoshikawa wrote:
+> (2012/01/13 10:08), Davidlohr Bueso wrote:
+> > From: Davidlohr Bueso<dave@gnu.org>
+> >
+> > It makes more sense to actually increment statistics for tlb flushes and page table entry updates after such _events_ occur, instead of before.
+> 
+> Why?
+> 
+>From a logical point of view its better to increase stats once the event
+is processed - usually because it can fail and therefore the stats would
+be incorrect. 
 
-with 3.2.0-06100-ge343a89 brcmsmac does not get autoloaded anymore
-from udev. Loading it manually returns in dmesg:
+> 	Takuya
+> 
+> >
+> > Signed-off-by: Davidlohr Bueso<dave@gnu.org>
+> > ---
+> >   arch/x86/kvm/mmu.c |    4 ++--
+> >   1 files changed, 2 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> > index 2a2a9b4..0b7008e 100644
+> > --- a/arch/x86/kvm/mmu.c
+> > +++ b/arch/x86/kvm/mmu.c
+> > @@ -3130,8 +3130,8 @@ static int nonpaging_init_context(struct kvm_vcpu *vcpu,
+> >
+> >   void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu)
+> >   {
+> > -	++vcpu->stat.tlb_flush;
+> >   	kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+> > +	++vcpu->stat.tlb_flush;
+> >   }
+> >
+> >   static void paging_new_cr3(struct kvm_vcpu *vcpu)
+> > @@ -3486,8 +3486,8 @@ static void mmu_pte_write_new_pte(struct kvm_vcpu *vcpu,
+> >   		return;
+> >           }
+> >
+> > -	++vcpu->kvm->stat.mmu_pte_updated;
+> >   	vcpu->arch.mmu.update_pte(vcpu, sp, spte, new);
+> > +	++vcpu->kvm->stat.mmu_pte_updated;
+> >   }
+> >
+> >   static bool need_remote_flush(u64 old, u64 new)
+> 
+> 
 
---------------------------------------------------------------------------------
-[  247.495705] bcma: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800,
-rev 0x22, class 0x0)
-[  247.495749] bcma: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812,
-rev 0x17, class 0x0)
-[  247.495832] bcma: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev
-0x0F, class 0x0)
-[  247.560553] bcma: Unsupported SPROM revision: 255
-[  247.560563] bcma: No SPROM available
-[  247.560852] bcma: Bus registered
-[  247.611789] brcmsmac bcma0:0: mfg 4bf core 812 rev 23 class 0 irq 17
-[  247.634051] ieee80211 phy0: wl0: brcms_b_attach: si_attach failed
-[  247.634062] ieee80211 phy0: wl0: brcms_b_attach: failed with err 11
-[  247.634069] ieee80211 phy0: wl0: brcms_c_attach: failed with err 11
-[  247.634111] ieee80211 phy0: brcmsmac: attach() failed with code 11
-[  247.634128] brcmsmac: brcms_bcma_probe: brcms_attach failed!
---------------------------------------------------------------------------------
 
-And ip does not show any device:
-
---------------------------------------------------------------------------------
-[13:37] brief:~% ip l
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436 qdisc noqueue state UNKNOWN 
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
---------------------------------------------------------------------------------
-
-With 3.2.0-rc7 the device works, until it begins to hang. As reported
-many times before.  As I've switched the environment, it is very good
-probable that an AP on channel 13 is in range.
-
-Attached both dmesg/lsmod/configs.
-
-Cheers,
-
-Nico
-
--- 
-PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
