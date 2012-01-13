@@ -1,85 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595Ab2AMRdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 12:33:38 -0500
-Received: from mga09.intel.com ([134.134.136.24]:24463 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753472Ab2AMRdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 12:33:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,351,1309762800"; 
-   d="scan'208";a="98187338"
-Message-ID: <4F106ADB.4040000@intel.com>
-Date: Fri, 13 Jan 2012 09:33:15 -0800
-From: Darren Hart <darren.hart@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111115 Thunderbird/8.0
+	id S1758579Ab2AMRet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 12:34:49 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40283 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab2AMRer convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 12:34:47 -0500
 MIME-Version: 1.0
-To: "lkml, " <linux-kernel@vger.kernel.org>
-CC: Wang Qi <qi.wang@intel.com>, Tomoya MORINAGA <tomoya.rohm@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: Porting pch_pcieqos to 3.2 for Intel EG20T with no MAC
-References: <4F0CECC8.7010203@linux.intel.com>
-In-Reply-To: <4F0CECC8.7010203@linux.intel.com>
+In-Reply-To: <m162ggqa8x.fsf@fess.ebiederm.org>
+References: <1326405521-2736-1-git-send-email-venki@google.com>
+	<m14nw0wnjh.fsf@fess.ebiederm.org>
+	<CABeCy1YjRjUBSqZndAZ9N6P9NM7=J6JOCQ11PkQZSr2c3Ud0cg@mail.gmail.com>
+	<m162ggqa8x.fsf@fess.ebiederm.org>
+Date: Fri, 13 Jan 2012 09:34:46 -0800
+Message-ID: <CABeCy1bTKTPn-VUorC0rVmvrhDomDX3QcQdHapwxqsJvE6D5uw@mail.gmail.com>
+Subject: Re: [PATCH] Kexec reboot and stale/inconsistent system state
+From: Venki Pallipadi <venki@google.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org
+X-System-Of-Record: true
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2012 05:58 PM, Darren Hart wrote:
-> I find myself with a development board with no MAC address for the pch_gbe in
-> the Platform Controller Hub EG20T. I've dusted off an old patch and am trying
-> to get it working so it can be included upstream.
-> 
-> I found the phub_util_mac utility on sourceforge which appears to require the
-> following patch:
-> 
-> http://git.yoctoproject.org/cgit/cgit.cgi/meta-extras/plain/recipes-kernel/linux/linux-netbook-2.6.33.2/linux-2.6.34-pch-pcieqos.patch
-> 
-> I've made the obvious changes to the driver to use unlocked_ioctl as ioctl has
-> been removed upstream. With this driver built and installed, the
-> topcliff_mac_util command reports no errors and reads the MAC address as:
-> 
-> 00:00:00:00:00:00
-> 
-> Trying to set it reports no errors either, and the instrumentation suggests it
-> is at least trying to write the correct data. Reading back still results in all
-> zeros.
-> 
-> During boot, the pch_gbe driver reports:
-> [    2.211233] pch_gbe 0000:02:00.1: enabling device (0000 -> 0003)
-> [    2.217271] pch_gbe 0000:02:00.1: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-> [    2.224349] pch_gbe 0000:02:00.1: setting latency timer to 64
-> [    2.233388] pch_gbe 0000:02:00.1: Invalid MAC Address
-> [    2.238821] pch_gbe 0000:02:00.1: PCI INT A disabled
-> [    2.243809] pch_gbe: probe of 0000:02:00.1 failed with error -5
-> 
-> The patch itself follows, I have attached a rather lengthy log which includes a
-> read/write/read cycle demonstrating the write not taking effect.
-> 
-> Can you shed some light on why this might be the case?
+On Fri, Jan 13, 2012 at 12:26 AM, Eric W. Biederman
+<ebiederm@xmission.com> wrote:
+> Venki Pallipadi <venki@google.com> writes:
+>
+>> On Thu, Jan 12, 2012 at 2:42 PM, Eric W. Biederman
+>> <ebiederm@xmission.com> wrote:
+>>> Venkatesh Pallipadi <venki@google.com> writes:
+>>>
+>>>> Of course, kexec reboots has a lot of advantantages. There is one
+>>>> blind spot though, in the way we handle shutdown of the old kernel in kexec.
+>>>> The problem: there are drivers in the kernel that change
+>>>> system state either during init or during normal operation. During a
+>>>> hardware reboot these system states would get reset to default.
+>>>> But, with kexec reboot this system state can stay persistent with the
+>>>> new kernel and can lead to some inconsistencies.
+>>>>
+>>>> More concrete x86 example:
+>>>> * Kernel_v0 has a driver which sets a particular MSR.
+>>>> * Kernel_v1 has a different version of the driver which does not touch the
+>>>> MSR and assumes it to be at BIOS init state.
+>>>> * Now we have a kexec reboot from Kernel_v0 to Kernel_v1 and the MSR will
+>>>> stay set leading to potential inconsistent state.
+>>>>
+>>>> One such driver I was looking at is drivers/idle/intel_idle.c, which sets
+>>>> the MSR during init and forgets about it. There are other drivers which can
+>>>> potentially have similar problems - like MTRR, etc. There can be other
+>>>> state in the system like chipset state and device state etc, though
+>>>> I expect most of it won't be a problem based on the way drivers init.
+>>>>
+>>>> Seemingly simple solution is to do the needed cleanup in driver's module_exit
+>>>> code path. That is not enough as module_exit for all builtin drivers are
+>>>> all discarded.
+>>>>
+>>>> What if we retain all the module_exits in CONFIG_KEXEC case and do a
+>>>> cleanup before launching a new kernel. This should work, but most of the
+>>>> module_exit code assumes that they will be only called when corresponding
+>>>> init is successful. I couldn't find a clean and easy way of associating
+>>>> module's init function with its exit function and to save the result of
+>>>> init.
+>>>>
+>>>> Alternate quick solution is to create a new module interface to register
+>>>> kexec cleanup function as in the patch below. But, this is not generic enough
+>>>> yet and does not handle the case where we have done the cleanup and kexec
+>>>> fails after that and we have to do some setup again to run with old
+>>>> kernel.
+>>>>
+>>>> Before spending more time on this, just wanted to run this RFC along to see:
+>>>> * How big/serious this problem really is?
+>>>> * Has this been looked at before and any other potential solution for
+>>>> this?
+>>>
+>>> Use the drivers shutdown method.  The shutdown method is called
+>>> at reboot and at normal kexec.  If you care about the kexec on panic
+>>> case you need to write a paranoid driver initialization routine.
+>>>
+>>> Hmm.  Looking a little closer the intel idle driver is a weird thing.
+>>> I am not seeing any operations structures.  There are kobjects so
+>>> the intel idle driver might be properly hooked into the device tree.
+>>> If the intel idle driver isn't properly hooked into the device
+>>> tree you should be able to hook into the reboot notifier instead
+>>> of implementing a device shutdown method.  Although for a lot
+>>> of reasons implementing the standard device shutdown method is
+>>> preferred.
+>>>
+>>
+>> Yes. Doing in device shutdown is much cleaner. I need to figure out
+>> how to hook that into intel_idle.
+>>
+>> One other problem case I see is in mtrr. 'cat <something> >
+>> /proc/mtrr' gets carried over after a kexec reboot.
+>> So, we need some change to restore the boot time state there.
+>
+> Assuming userspace changes /proc/mtrr and userspace calls reboot
+> that instance looks like a userspace problem.
+>
+> Any time I have changed /proc/mtrr the change has happened because the
+> BIOS got it wrong and I needed to fix those values.
+>
+> The other usecase for changning /proc/mtrr is to make video
+> frame-buffers write-combining, and with PAT support in the kernel
+> using /proc/mtrr for that should now be obsolete.
+>
+> So in practice if not in theory I think we should be good.
 
-After stumbling around blindly for a bit longer, I ran across the pch_phub
-driver, which appears to be intended for the same purpose, but uses a sysfs
-interface rather than an ioctl interface with a separate userpsace utility.
-Do I have this right?
+Agree. This should be fine in normal operation. I was thinking more in
+terms of inconsistency between BIOS reboot and kexec reboot in case of
+a crash (where needed cleanup may not happen) and also in case of
+userspace and driver bugs (which likely does mtrr_add and mtrr_del
+only in driver_exit path instead of shutdown). There are quite a few
+users of mtrr_add in drivers for example. No idea how many of it are
+still in use.
 
-Enabling this driver doesn't change the above pch_gbe messages which still
-include the failed probe of 0000:02:00.1. pch_phub has entries in /sys:
+>
+>> Do you guys see any other place where we will need similar special
+>> handling for kexec reboots?
+>
+> The rule is every driver needs to put the device back in a state where
+> the drivers init/probe routine can get the device out of that state.
+> Frequently people when the care chose to fix kdump.
+>
+> Perhaps I am dense but I don't get the impression that you have
+> uncovered any new kinds of issues.  My impression is that you have
+> found another case where kexec isn't on the top of the list of the
+> driver developer and so a bug is found on the kexec path.
+>
 
-root@(none):/# find /sys/bus/pci/drivers/pch_phub
-/sys/bus/pci/drivers/pch_phub
-/sys/bus/pci/drivers/pch_phub/uevent
-/sys/bus/pci/drivers/pch_phub/unbind
-/sys/bus/pci/drivers/pch_phub/bind
-/sys/bus/pci/drivers/pch_phub/new_id
-/sys/bus/pci/drivers/pch_phub/remove_id
+Sorry, if I came across as saying this is a big problem. This is more
+of a niggle with drivers and kexec. kexec being relatively new and
+driver writes assuming reboot implies clean hardware state.
+The thing I am more concerned about is that I found these particular
+issues by accident, as I happen to be looking at the code with kexec
+at the back of my mind. I am wondering what is the best way to
+proactively look for other drivers in the kernel that may have similar
+problems, instead of looking at them when we see some weird
+manifestation of the problem. For MSRs its probably easy to audit all
+wrmsrs or to dump all the readable ones on regular boot and kexec boot
+and compare them. But no idea about any other areas if any and a
+systematic way to identify them...
 
-but no "pch_mac" as I was expecting after reviewing pch_phub.c.
-
-Am I still barking up the wrong tree here?
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+Thanks,
+Venki
