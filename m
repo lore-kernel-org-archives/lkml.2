@@ -1,182 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759332Ab2AMWQY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 17:16:24 -0500
-Received: from mail-yw0-f74.google.com ([209.85.213.74]:33442 "EHLO
-	mail-yw0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754142Ab2AMWQV (ORCPT
+	id S1759336Ab2AMWRT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 17:17:19 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:51166 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754142Ab2AMWRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 17:16:21 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org,
-        Doug Anderson <dianders@chromium.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH v2] of: Support CONFIG_CMDLINE_EXTEND config option
-Date: Fri, 13 Jan 2012 14:15:48 -0800
-Message-Id: <1326492948-26160-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1326156853-24840-1-git-send-email-dianders@chromium.org>
-References: <1326156853-24840-1-git-send-email-dianders@chromium.org>
+	Fri, 13 Jan 2012 17:17:16 -0500
+Date: Fri, 13 Jan 2012 17:17:15 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        <gouders@et.bocholt.fh-gelsenkirchen.de>,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, <prasad@linux.vnet.ibm.com>,
+        Jeff Chua <jeff.chua.linux@gmail.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+In-Reply-To: <4F10AB02.1010305@linux.vnet.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1201131714200.1351-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old logic assumes CMDLINE_FROM_BOOTLOADER vs. CMDLINE_FORCE and
-ignores CMDLINE_EXTEND.  Here's the old logic:
+On Sat, 14 Jan 2012, Srivatsa S. Bhat wrote:
 
-- CONFIG_CMDLINE_FORCE=true
-    CONFIG_CMDLINE
-- dt bootargs=non-empty:
-    dt bootargs
-- dt bootargs=empty, @data is non-empty string
-    @data is left unchanged
-- dt bootargs=empty, @data is empty string
-    CONFIG_CMDLINE (or "" if that's not defined)
+> On 01/14/2012 03:08 AM, Justin P. Mattock wrote:
+> 
+> >>
+> > 
+> > this showed up using no_console_suspend
+> > 
+> > 
+> >   131.875143] usb 5-1: device descriptor read/64, error -110
+> > [  140.599340] PM: Syncing filesystems ... done.
+> > [  140.815981] PM: Preparing system for mem sleep
+> > [  140.829117] Freezing user space processes ... (elapsed 0.01 seconds)
+> > done.
+> > [  140.840150] Freezing remaining freezable tasks ...
+> > [  147.079160] usb 5-1: device descriptor read/64, error -110
+> > [  147.282166] usb 5-1: new full-speed USB device number 6 using uhci_hcd
+> > [  157.686165] usb 5-1: device not accepting address 6, error -110
+> > [  157.788183] usb 5-1: new full-speed USB device number 7 using uhci_hcd
+> > [  160.849310]
+> > [  160.849320] Freezing of tasks failed after 20.00 seconds (1 tasks
+> > refusing to freeze, wq_busy=0):
+> 
+> > [  160.849460] khubd           D f5d90020     0    20      2 0x00000000
+> > [  160.849471]  f5d95d50 00000046 f5d095d0 f5d90020 00000000 c16ec3c0
+> > bce8e78a 00000024
+> > [  160.849488]  c16ec3c0 bce7b7f6 00000024 f60063c0 f5d09170 f5d95d20
+> > c120490b c1039aa6
+> > [  160.849505]  00000000 00000046 c1721180 00000296 f5d95d70 f5d95d40
+> > c1465208 00000000
+> > [  160.849521] Call Trace:
+> > [  160.849538]  [<c120490b>] ? do_raw_spin_lock+0x3b/0xf0
+> > [  160.849548]  [<c1039aa6>] ? lock_timer_base.isra.24+0x26/0x50
+> > [  160.849558]  [<c1465208>] ? _raw_spin_lock_irqsave+0x58/0x70
+> > [  160.849567]  [<c1204a4e>] ? do_raw_spin_unlock+0x4e/0x90
+> > [  160.849574]  [<c1463c30>] schedule+0x30/0x50
+> > [  160.849582]  [<c1461b7f>] schedule_timeout+0x10f/0x1f0
+> > [  160.849589]  [<c10396f0>] ? usleep_range+0x40/0x40
+> > [  160.849597]  [<c1463ae0>] wait_for_common+0xb0/0x120
+> > [  160.849605]  [<c1053bb0>] ? try_to_wake_up+0x260/0x260
+> > [  160.849614]  [<c1463bdd>] wait_for_completion_timeout+0xd/0x10
+> > [  160.849624]  [<c13250e1>] usb_start_wait_urb+0xb1/0xe0
+> > [  160.849632]  [<c10e0101>] ? sys_swapon+0xab1/0xc50
+> > [  160.849640]  [<c1325308>] usb_control_msg+0xb8/0xf0
+> > [  160.849648]  [<c12ad1e8>] ? _dev_info+0x28/0x30
+> > [  160.849656]  [<c131e627>] hub_port_init+0x627/0x710
+> > [  160.849664]  [<c131d396>] ? usb_set_device_state+0x76/0x130
+> > [  160.849672]  [<c1320906>] hub_thread+0x626/0x1080
+> > [  160.849681]  [<c10515a1>] ? finish_task_switch+0x31/0xf0
+> > [  160.849688]  [<c14635c0>] ? __schedule+0x3b0/0x7b0
+> > [  160.849698]  [<c10490c0>] ? __init_waitqueue_head+0x50/0x50
+> > [  160.849705]  [<c1050ef9>] ? complete+0x49/0x60
+> > [  160.849713]  [<c13202e0>] ? usb_remote_wakeup+0x40/0x40
+> > [  160.849720]  [<c1048928>] kthread+0x78/0x80
+> > [  160.849728]  [<c10488b0>] ? __init_kthread_worker+0x60/0x60
+> > [  160.849736]  [<c146b0fe>] kernel_thread_helper+0x6/0xd
+> > [  160.849755]
+> > [  160.849759] Restarting tasks ... done.
+> > [  160.865733] power_supply BAT0: uevent
+> > [  160.865737] power_supply BAT0: POWER_SUPPLY_NAME=BAT0
+> > [  160.886551] power_supply BAT0: prop STATUS=Full
+> > [  160.886562] power_supply BAT0: prop PRESENT=1
+> > [  160.886570] power_supply BAT0: prop TECHNOLOGY=Unknown
+> > [  160.886577] power_supply BAT0: prop CYCLE_COUNT=0
+> > 
+> > I can supply full dmesg if needed.
+> > a bisect on this should not take too long, just need the time to do so.
+> > 
+> > last good kernel I have here is: 3.2.0-06541-gf33180c
+> > 
+> 
+> Freezing failure is a totally different problem. Freezing happens much
+> before CPUs are taken offline and even before devices are suspended.
+> But yes, if freezing fails, suspend fails too (it is aborted rather).
+> And freezing failures are typically a bit harder to trigger since they
+> occur due to some race conditions. But the suspend failure problem
+> discussed earlier in this thread (while discussing the MCE warnings) is a
+> deterministic thing and very easily reproducible.
 
-The new logic is now documented in of_fdt.h and is copied here for
-reference:
+The freezing failure is easy to debug.  The khubd thread was busy 
+trying to initialize a non-working USB device.  It doesn't check for 
+freezes while doing this, and it has a lot of (probably too many) 
+nested retry loops with long delays.
 
-- CONFIG_CMDLINE_FORCE=true
-    CONFIG_CMDLINE
-- CONFIG_CMDLINE_EXTEND=true, @data is non-empty string
-    @data + dt bootargs (even if dt bootargs are empty)
-- CONFIG_CMDLINE_EXTEND=true, @data is empty string
-    CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
-- CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
-    dt bootargs
-- CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
-    @data is left unchanged
-- CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
-    CONFIG_CMDLINE (or "" if that's not defined)
+If the non-working USB device were unplugged, the problem would go 
+away.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-CC: devicetree-discuss@lists.ozlabs.org
-CC: Grant Likely <grant.likely@secretlab.ca>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Rob Herring <rob.herring@calxeda.com>
----
-I didn't hear a response from Ben about whether he was OK with
-my proposal for how CONFIG_CMDLINE_EXTEND should behave with
-a non-empty @data, so sending out code that implements my
-interpretation.  Hopefully this looks OK.
-
-Changes in v2:
-- Removed broken fix for the case when there is no "chosen" attribute.
-- Changed CONFIG_CMDLINE_EXTEND behavior when @data is a non-empty string.
-
- drivers/of/fdt.c       |   56 ++++++++++++++++++++++++++++++++++-------------
- include/linux/of_fdt.h |   21 ++++++++++++++++++
- 2 files changed, 61 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index ea2bd1b..740efa2 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -664,6 +664,29 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
- 	return 0;
- }
- 
-+/*
-+ * Convert configs to something easy to use in C code
-+ */
-+#if defined(CONFIG_CMDLINE_FORCE)
-+static const int overwrite_incoming_cmdline = 1;
-+static const int read_dt_cmdline;
-+static const int concat_cmdline;
-+#elif defined(CONFIG_CMDLINE_EXTEND)
-+static const int overwrite_incoming_cmdline;
-+static const int read_dt_cmdline = 1;
-+static const int concat_cmdline = 1;
-+#else /* CMDLINE_FROM_BOOTLOADER */
-+static const int overwrite_incoming_cmdline;
-+static const int read_dt_cmdline = 1;
-+static const int concat_cmdline;
-+#endif
-+
-+#ifdef CONFIG_CMDLINE
-+static const char *config_cmdline = CONFIG_CMDLINE;
-+#else
-+static const char *config_cmdline = "";
-+#endif
-+
- int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
- 				     int depth, void *data)
- {
-@@ -678,22 +701,23 @@ int __init early_init_dt_scan_chosen(unsigned long node, const char *uname,
- 
- 	early_init_dt_check_for_initrd(node);
- 
--	/* Retrieve command line */
--	p = of_get_flat_dt_prop(node, "bootargs", &l);
--	if (p != NULL && l > 0)
--		strlcpy(data, p, min((int)l, COMMAND_LINE_SIZE));
--
--	/*
--	 * CONFIG_CMDLINE is meant to be a default in case nothing else
--	 * managed to set the command line, unless CONFIG_CMDLINE_FORCE
--	 * is set in which case we override whatever was found earlier.
--	 */
--#ifdef CONFIG_CMDLINE
--#ifndef CONFIG_CMDLINE_FORCE
--	if (!((char *)data)[0])
--#endif
--		strlcpy(data, CONFIG_CMDLINE, COMMAND_LINE_SIZE);
--#endif /* CONFIG_CMDLINE */
-+	/* Put CONFIG_CMDLINE in if forced or if data had nothing in it to start */
-+	if (overwrite_incoming_cmdline || !((char *)data)[0])
-+		strlcpy(data, config_cmdline, COMMAND_LINE_SIZE);
-+
-+	/* Retrieve command line unless forcing */
-+	if (read_dt_cmdline) {
-+		p = of_get_flat_dt_prop(node, "bootargs", &l);
-+		if (p != NULL && l > 0) {
-+			if (concat_cmdline) {
-+				strlcat(data, " ", COMMAND_LINE_SIZE);
-+				strlcat(data, p, min_t(int, (int)l,
-+						       COMMAND_LINE_SIZE));
-+			} else
-+				strlcpy(data, p, min_t(int, (int)l,
-+						       COMMAND_LINE_SIZE));
-+		}
-+	}
- 
- 	pr_debug("Command line is: %s\n", (char*)data);
- 
-diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-index ed136ad..7e190a9 100644
---- a/include/linux/of_fdt.h
-+++ b/include/linux/of_fdt.h
-@@ -91,6 +91,27 @@ extern int of_flat_dt_is_compatible(unsigned long node, const char *name);
- extern int of_flat_dt_match(unsigned long node, const char *const *matches);
- extern unsigned long of_get_flat_dt_root(void);
- 
-+/*
-+ * early_init_dt_scan_chosen - scan the device tree for ramdisk and bootargs
-+ *
-+ * The boot arguments will be placed into the memory pointed to by @data.
-+ * That memory should be COMMAND_LINE_SIZE big and initialized to be a valid
-+ * (possibly empty) string.  Logic for what will be in @data after this
-+ * function finishes:
-+ *
-+ * - CONFIG_CMDLINE_FORCE=true
-+ *     CONFIG_CMDLINE
-+ * - CONFIG_CMDLINE_EXTEND=true, @data is non-empty string
-+ *     @data + dt bootargs (even if dt bootargs are empty)
-+ * - CONFIG_CMDLINE_EXTEND=true, @data is empty string
-+ *     CONFIG_CMDLINE + dt bootargs (even if dt bootargs are empty)
-+ * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=non-empty:
-+ *     dt bootargs
-+ * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is non-empty string
-+ *     @data is left unchanged
-+ * - CMDLINE_FROM_BOOTLOADER=true, dt bootargs=empty, @data is empty string
-+ *     CONFIG_CMDLINE (or "" if that's not defined)
-+ */
- extern int early_init_dt_scan_chosen(unsigned long node, const char *uname,
- 				     int depth, void *data);
- extern void early_init_dt_check_for_initrd(unsigned long node);
--- 
-1.7.7.3
+Alan Stern
 
