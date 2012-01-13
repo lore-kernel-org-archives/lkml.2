@@ -1,124 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758033Ab2AMMMl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 07:12:41 -0500
-Received: from mga14.intel.com ([143.182.124.37]:63581 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753099Ab2AMMMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 07:12:39 -0500
-Content-Type: multipart/mixed; boundary="===============1977854356=="
+	id S1758029Ab2AMMPp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 07:15:45 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:41107 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752869Ab2AMMPm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 07:15:42 -0500
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Axel Lin <axel.lin@gmail.com>
+Subject: Re: [PATCH 2/2] backlight: Convert backlight spi drivers to module_spi_driver
+Date: Fri, 13 Jan 2012 13:15:39 +0100
+User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+        Donghwa Lee <dh09.lee@samsung.com>,
+        Haavard Skinnemoen <hskinnemoen@atmel.com>,
+        InKi Dae <inki.dae@samsung.com>,
+        Dmitry Baryshkov <dbaryshkov@gmail.com>,
+        Ben Dooks <ben-linux@fluff.org>, Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <1326443748.5482.3.camel@phoenix> <1326443892.5482.6.camel@phoenix>
+In-Reply-To: <1326443892.5482.6.camel@phoenix>
 MIME-Version: 1.0
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="asc'?scan'208";a="95475564"
-From: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PULL REQUEST] More UBI/UBIFS changes for 3.3
-Thread-Topic: [PULL REQUEST] More UBI/UBIFS changes for 3.3
-Thread-Index: AQHM0eyLmjDHXfaxFESuzsVG9vPDdw==
-Date: Fri, 13 Jan 2012 12:11:57 +0000
-Message-ID: <1326456812.18165.0.camel@sauron.fi.intel.com>
-Reply-To: "Bityutskiy, Artem" <artem.bityutskiy@intel.com>
-Accept-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.160]
-MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201201131315.39386.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---===============1977854356==
-MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="=-bKr6ZVI3l4XOSW23UXVA"
+> Factor out some boilerplate code for spi driver registration into
+> module_spi_driver.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> Cc: Eric Miao <eric.y.miao@gmail.com>
+> Cc: Alberto Panizzo <maramaopercheseimorto@gmail.com>
+> Cc: Donghwa Lee <dh09.lee@samsung.com>
+> Cc: Marek Vasut <marek.vasut@gmail.com>
+> Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>
+> Cc: InKi Dae <inki.dae@samsung.com>
+> Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> ---
+>  drivers/video/backlight/ams369fg06.c  |   13 +------------
+>  drivers/video/backlight/corgi_lcd.c   |   12 +-----------
+>  drivers/video/backlight/l4f00242t03.c |   13 +------------
+>  drivers/video/backlight/ld9040.c      |   13 +------------
+>  drivers/video/backlight/lms283gf05.c  |   13 +------------
 
---=-bKr6ZVI3l4XOSW23UXVA
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Marek Vasut <marek.vasut@gmail.com>
 
-Hi Linus,
-
-please pull more UBI/UBIFS changes for 3.3, thanks!
-
-The following changes since commit 805a6af8dba5dfdd35ec35dc52ec0122400b2610=
-:
-
-  Linux 3.2 (2012-01-04 15:55:44 -0800)
-
-are available in the git repository at:
-  git://git.infradead.org/ubifs-2.6.git linux-next
-
-Artem Bityutskiy (5):
-      UBI: fix debugging messages
-      UBIFS: make debugging messages light again
-      UBIFS: fix debugging messages
-      UBIFS: use snprintf instead of sprintf when printing keys
-      UBIFS: fix key printing
-
-Richard Weinberger (1):
-      UBI: make vid_hdr non-static
-
- drivers/mtd/ubi/debug.h |    5 ++-
- drivers/mtd/ubi/vtbl.c  |    2 +-
- fs/ubifs/debug.c        |   90 ++++++++++++++++++++++++-------------------=
-----
- fs/ubifs/debug.h        |   44 +++++++++++++----------
- fs/ubifs/journal.c      |    7 ++--
- fs/ubifs/replay.c       |    8 ++--
- fs/ubifs/tnc.c          |   55 ++++++++++++++--------------
- fs/ubifs/tnc_misc.c     |   10 +++---
- 8 files changed, 115 insertions(+), 106 deletions(-)
-
---=20
-Best Regards,
-Artem Bityutskiy
-
-
---=-bKr6ZVI3l4XOSW23UXVA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAABAgAGBQJPEB/sAAoJECmIfjd9wqK0tnQP/i7C/WjlU9Qxelx2C+uKdodM
-vY9HASc/gOXXMxl/bSoKxTSNT2580uKGUB3G6q0UXVVVhyoRU60RhDM+AgzOUv+5
-EKMeHVlLPt6ejVZNmDuWxB4msc5b4sw49ND6Ejc+6rKNDE+s7UhZK+BEG85GjAJv
-jLLYvio9J9foIJ/y9dBGEz3PbyJvKSCICkv10/Cci5bcG4joT0kNnnphsh5iD0My
-A+1xjrE4XgXGaGOHDP/gKgDhPgU/JHFR1cPdMCr7PM5b0Cm3/B07j2rFwOaa+9U0
-NdPE5R0K1asPcqOxosxDaN3MrYFUM527TiNgxmLcW+fzlrRYjKKZ34Pu34IGfhi0
-gKP334Pbnd6s606KjQIHGl8Yh4ELofEr0kuvQXmN+qyz+AMO4WrcG5mqEn2CPlrj
-53xyxbfcxz094Lf5V6hpz5JWmUChYoP2wWvVrLWIHG+jtFJct/GRacHM3sTh32pc
-qJA1YcREBiVkoUkFS7pPPH37VwjLpZconi6ThpT0aIysX9tkpH4F+aiC+dzWgsXQ
-CMFc9vg1h48S+3HAnP9d3bH2iif8VHJe3YpqucJWfi0UkoMz6D92DUt9kpxRADR7
-e7WU/OVoow8eQ6ch95QHjZ6/qpgXW+xGDmUukbhfdlHcqgaXuONpr2ePXayeAazQ
-LidqYWhCnSvuASgj7HVo
-=ZR0Y
------END PGP SIGNATURE-----
-
---=-bKr6ZVI3l4XOSW23UXVA--
---===============1977854356==
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki =
-
-Business Identity Code: 0357606 - 4 =
-
-Domiciled in Helsinki =
-
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-
---===============1977854356==--
+>  drivers/video/backlight/ltv350qv.c    |   12 +-----------
+>  drivers/video/backlight/s6e63m0.c     |   13 +------------
+>  drivers/video/backlight/tdo24m.c      |   12 +-----------
+>  drivers/video/backlight/tosa_lcd.c    |   13 +------------
+>  drivers/video/backlight/vgg2432a4.c   |   15 +--------------
+>  10 files changed, 10 insertions(+), 119 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/ams369fg06.c
+> b/drivers/video/backlight/ams369fg06.c index 7838a23..7bdadc7 100644
+> --- a/drivers/video/backlight/ams369fg06.c
+> +++ b/drivers/video/backlight/ams369fg06.c
+> @@ -629,18 +629,7 @@ static struct spi_driver ams369fg06_driver = {
+>  	.resume		= ams369fg06_resume,
+>  };
+> 
+> -static int __init ams369fg06_init(void)
+> -{
+> -	return spi_register_driver(&ams369fg06_driver);
+> -}
+> -
+> -static void __exit ams369fg06_exit(void)
+> -{
+> -	spi_unregister_driver(&ams369fg06_driver);
+> -}
+> -
+> -module_init(ams369fg06_init);
+> -module_exit(ams369fg06_exit);
+> +module_spi_driver(ams369fg06_driver);
+> 
+>  MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
+>  MODULE_DESCRIPTION("ams369fg06 LCD Driver");
+> diff --git a/drivers/video/backlight/corgi_lcd.c
+> b/drivers/video/backlight/corgi_lcd.c index c6533ba..6dab13f 100644
+> --- a/drivers/video/backlight/corgi_lcd.c
+> +++ b/drivers/video/backlight/corgi_lcd.c
+> @@ -629,17 +629,7 @@ static struct spi_driver corgi_lcd_driver = {
+>  	.resume		= corgi_lcd_resume,
+>  };
+> 
+> -static int __init corgi_lcd_init(void)
+> -{
+> -	return spi_register_driver(&corgi_lcd_driver);
+> -}
+> -module_init(corgi_lcd_init);
+> -
+> -static void __exit corgi_lcd_exit(void)
+> -{
+> -	spi_unregister_driver(&corgi_lcd_driver);
+> -}
+> -module_exit(corgi_lcd_exit);
+> +module_spi_driver(corgi_lcd_driver);
+> 
+>  MODULE_DESCRIPTION("LCD and backlight driver for SHARP C7x0/Cxx00");
+>  MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
+> diff --git a/drivers/video/backlight/l4f00242t03.c
+> b/drivers/video/backlight/l4f00242t03.c index 4f5d1c4..fae421a 100644
+> --- a/drivers/video/backlight/l4f00242t03.c
+> +++ b/drivers/video/backlight/l4f00242t03.c
+> @@ -272,18 +272,7 @@ static struct spi_driver l4f00242t03_driver = {
+>  	.shutdown	= l4f00242t03_shutdown,
+>  };
+> 
+> -static __init int l4f00242t03_init(void)
+> -{
+> -	return spi_register_driver(&l4f00242t03_driver);
+> -}
+> -
+> -static __exit void l4f00242t03_exit(void)
+> -{
+> -	spi_unregister_driver(&l4f00242t03_driver);
+> -}
+> -
+> -module_init(l4f00242t03_init);
+> -module_exit(l4f00242t03_exit);
+> +module_spi_driver(l4f00242t03_driver);
+> 
+>  MODULE_AUTHOR("Alberto Panizzo <maramaopercheseimorto@gmail.com>");
+>  MODULE_DESCRIPTION("EPSON L4F00242T03 LCD");
+> diff --git a/drivers/video/backlight/ld9040.c
+> b/drivers/video/backlight/ld9040.c index 78dafc0..efd352b 100644
+> --- a/drivers/video/backlight/ld9040.c
+> +++ b/drivers/video/backlight/ld9040.c
+> @@ -856,18 +856,7 @@ static struct spi_driver ld9040_driver = {
+>  	.resume		= ld9040_resume,
+>  };
+> 
+> -static int __init ld9040_init(void)
+> -{
+> -	return spi_register_driver(&ld9040_driver);
+> -}
+> -
+> -static void __exit ld9040_exit(void)
+> -{
+> -	spi_unregister_driver(&ld9040_driver);
+> -}
+> -
+> -module_init(ld9040_init);
+> -module_exit(ld9040_exit);
+> +module_spi_driver(ld9040_driver);
+> 
+>  MODULE_AUTHOR("Donghwa Lee <dh09.lee@samsung.com>");
+>  MODULE_DESCRIPTION("ld9040 LCD Driver");
+> diff --git a/drivers/video/backlight/lms283gf05.c
+> b/drivers/video/backlight/lms283gf05.c index 4ec78cf..4161f9e 100644
+> --- a/drivers/video/backlight/lms283gf05.c
+> +++ b/drivers/video/backlight/lms283gf05.c
+> @@ -226,18 +226,7 @@ static struct spi_driver lms283gf05_driver = {
+>  	.remove		= __devexit_p(lms283gf05_remove),
+>  };
+> 
+> -static __init int lms283gf05_init(void)
+> -{
+> -	return spi_register_driver(&lms283gf05_driver);
+> -}
+> -
+> -static __exit void lms283gf05_exit(void)
+> -{
+> -	spi_unregister_driver(&lms283gf05_driver);
+> -}
+> -
+> -module_init(lms283gf05_init);
+> -module_exit(lms283gf05_exit);
+> +module_spi_driver(lms283gf05_driver);
+> 
+>  MODULE_AUTHOR("Marek Vasut <marek.vasut@gmail.com>");
+>  MODULE_DESCRIPTION("LCD283GF05 LCD");
+> diff --git a/drivers/video/backlight/ltv350qv.c
+> b/drivers/video/backlight/ltv350qv.c index cca43c0..333949f 100644
+> --- a/drivers/video/backlight/ltv350qv.c
+> +++ b/drivers/video/backlight/ltv350qv.c
+> @@ -321,17 +321,7 @@ static struct spi_driver ltv350qv_driver = {
+>  	.resume		= ltv350qv_resume,
+>  };
+> 
+> -static int __init ltv350qv_init(void)
+> -{
+> -	return spi_register_driver(&ltv350qv_driver);
+> -}
+> -
+> -static void __exit ltv350qv_exit(void)
+> -{
+> -	spi_unregister_driver(&ltv350qv_driver);
+> -}
+> -module_init(ltv350qv_init);
+> -module_exit(ltv350qv_exit);
+> +module_spi_driver(ltv350qv_driver);
+> 
+>  MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
+>  MODULE_DESCRIPTION("Samsung LTV350QV LCD Driver");
+> diff --git a/drivers/video/backlight/s6e63m0.c
+> b/drivers/video/backlight/s6e63m0.c index e132157..9b0092e 100644
+> --- a/drivers/video/backlight/s6e63m0.c
+> +++ b/drivers/video/backlight/s6e63m0.c
+> @@ -909,18 +909,7 @@ static struct spi_driver s6e63m0_driver = {
+>  	.resume		= s6e63m0_resume,
+>  };
+> 
+> -static int __init s6e63m0_init(void)
+> -{
+> -	return spi_register_driver(&s6e63m0_driver);
+> -}
+> -
+> -static void __exit s6e63m0_exit(void)
+> -{
+> -	spi_unregister_driver(&s6e63m0_driver);
+> -}
+> -
+> -module_init(s6e63m0_init);
+> -module_exit(s6e63m0_exit);
+> +module_spi_driver(s6e63m0_driver);
+> 
+>  MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
+>  MODULE_DESCRIPTION("S6E63M0 LCD Driver");
+> diff --git a/drivers/video/backlight/tdo24m.c
+> b/drivers/video/backlight/tdo24m.c index 1997e12..2368b8e 100644
+> --- a/drivers/video/backlight/tdo24m.c
+> +++ b/drivers/video/backlight/tdo24m.c
+> @@ -459,17 +459,7 @@ static struct spi_driver tdo24m_driver = {
+>  	.resume		= tdo24m_resume,
+>  };
+> 
+> -static int __init tdo24m_init(void)
+> -{
+> -	return spi_register_driver(&tdo24m_driver);
+> -}
+> -module_init(tdo24m_init);
+> -
+> -static void __exit tdo24m_exit(void)
+> -{
+> -	spi_unregister_driver(&tdo24m_driver);
+> -}
+> -module_exit(tdo24m_exit);
+> +module_spi_driver(tdo24m_driver);
+> 
+>  MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
+>  MODULE_DESCRIPTION("Driver for Toppoly TDO24M LCD Panel");
+> diff --git a/drivers/video/backlight/tosa_lcd.c
+> b/drivers/video/backlight/tosa_lcd.c index 772f601..a2161f6 100644
+> --- a/drivers/video/backlight/tosa_lcd.c
+> +++ b/drivers/video/backlight/tosa_lcd.c
+> @@ -285,18 +285,7 @@ static struct spi_driver tosa_lcd_driver = {
+>  	.resume		= tosa_lcd_resume,
+>  };
+> 
+> -static int __init tosa_lcd_init(void)
+> -{
+> -	return spi_register_driver(&tosa_lcd_driver);
+> -}
+> -
+> -static void __exit tosa_lcd_exit(void)
+> -{
+> -	spi_unregister_driver(&tosa_lcd_driver);
+> -}
+> -
+> -module_init(tosa_lcd_init);
+> -module_exit(tosa_lcd_exit);
+> +module_spi_driver(tosa_lcd_driver);
+> 
+>  MODULE_AUTHOR("Dmitry Baryshkov");
+>  MODULE_LICENSE("GPL v2");
+> diff --git a/drivers/video/backlight/vgg2432a4.c
+> b/drivers/video/backlight/vgg2432a4.c index b49063c..b617fae 100644
+> --- a/drivers/video/backlight/vgg2432a4.c
+> +++ b/drivers/video/backlight/vgg2432a4.c
+> @@ -262,20 +262,7 @@ static struct spi_driver vgg2432a4_driver = {
+>  	.resume		= vgg2432a4_resume,
+>  };
+> 
+> -/* Device driver initialisation */
+> -
+> -static int __init vgg2432a4_init(void)
+> -{
+> -	return spi_register_driver(&vgg2432a4_driver);
+> -}
+> -
+> -static void __exit vgg2432a4_exit(void)
+> -{
+> -	spi_unregister_driver(&vgg2432a4_driver);
+> -}
+> -
+> -module_init(vgg2432a4_init);
+> -module_exit(vgg2432a4_exit);
+> +module_spi_driver(vgg2432a4_driver);
+> 
+>  MODULE_AUTHOR("Ben Dooks <ben-linux@fluff.org>");
+>  MODULE_DESCRIPTION("VGG2432A4 LCD Driver");
