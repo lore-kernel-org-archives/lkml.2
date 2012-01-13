@@ -1,218 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab2AMPzs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:55:48 -0500
+	id S932714Ab2AMPz7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:55:59 -0500
 Received: from mga14.intel.com ([143.182.124.37]:1497 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932652Ab2AMPzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:55:39 -0500
+	id S932674Ab2AMPzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 10:55:47 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
-   d="scan'208";a="95530511"
+   d="scan'208";a="95530551"
 From: Alex Shi <alex.shi@intel.com>
 To: linux-kernel@vger.kernel.org, cl@gentwo.org, eric.dumazet@gmail.com,
         tglx@linutronix.de, avi@redhat.com, akpm@linux-foundation.org,
         davem@davemloft.net, kaber@trash.net, a.p.zijlstra@chello.nl,
         ying.huang@intel.com, konrad.wilk@oracle.com, hpa@zytor.com,
         jeremy@goop.org
-Subject: [PATCH v2 2/5] xen: use this_cpu_xxx replace percpu_xxx funcs
-Date: Fri, 13 Jan 2012 23:53:35 +0800
-Message-Id: <1326470018-22342-3-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v2 5/5] x86: Code clean up for percpu_xxx() functions
+Date: Fri, 13 Jan 2012 23:53:38 +0800
+Message-Id: <1326470018-22342-6-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1326470018-22342-2-git-send-email-alex.shi@intel.com>
+In-Reply-To: <1326470018-22342-5-git-send-email-alex.shi@intel.com>
 References: <1326470018-22342-1-git-send-email-alex.shi@intel.com>
  <1326470018-22342-2-git-send-email-alex.shi@intel.com>
+ <1326470018-22342-3-git-send-email-alex.shi@intel.com>
+ <1326470018-22342-4-git-send-email-alex.shi@intel.com>
+ <1326470018-22342-5-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
-for further code clean up.
-
-I don't know much of xen code. But, since the code is in x86 architecture,
-the percpu_xxx is exactly same as this_cpu_xxx serials functions. So, the
-change is safe.
+There is no percpu_xxx serial code in kerenl, so safly remove them.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 Acked-by: Christoph Lameter <cl@gentwo.org>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- arch/x86/xen/enlighten.c  |    6 +++---
- arch/x86/xen/irq.c        |    8 ++++----
- arch/x86/xen/mmu.c        |   20 ++++++++++----------
- arch/x86/xen/multicalls.h |    2 +-
- arch/x86/xen/smp.c        |    2 +-
- 5 files changed, 19 insertions(+), 19 deletions(-)
+ arch/x86/include/asm/percpu.h |   16 ++++-------
+ include/linux/percpu.h        |   54 -----------------------------------------
+ 2 files changed, 6 insertions(+), 64 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 12eb07b..312c9e3 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -777,11 +777,11 @@ static DEFINE_PER_CPU(unsigned long, xen_cr0_value);
+diff --git a/arch/x86/include/asm/percpu.h b/arch/x86/include/asm/percpu.h
+index 8d256ad..ed3e18a 100644
+--- a/arch/x86/include/asm/percpu.h
++++ b/arch/x86/include/asm/percpu.h
+@@ -351,7 +351,7 @@ do {									\
+ })
  
- static unsigned long xen_read_cr0(void)
+ /*
+- * percpu_read() makes gcc load the percpu variable every time it is
++ * this_cpu_read() makes gcc load the percpu variable every time it is
+  * accessed while this_cpu_read_stable() allows the value to be cached.
+  * this_cpu_read_stable() is more efficient and can be used if its value
+  * is guaranteed to be valid across cpus.  The current users include
+@@ -359,15 +359,7 @@ do {									\
+  * per-thread variables implemented as per-cpu variables and thus
+  * stable for the duration of the respective task.
+  */
+-#define percpu_read(var)		percpu_from_op("mov", var, "m" (var))
+ #define this_cpu_read_stable(var)	percpu_from_op("mov", var, "p" (&(var)))
+-#define percpu_write(var, val)		percpu_to_op("mov", var, val)
+-#define percpu_add(var, val)		percpu_add_op(var, val)
+-#define percpu_sub(var, val)		percpu_add_op(var, -(val))
+-#define percpu_and(var, val)		percpu_to_op("and", var, val)
+-#define percpu_or(var, val)		percpu_to_op("or", var, val)
+-#define percpu_xor(var, val)		percpu_to_op("xor", var, val)
+-#define percpu_inc(var)		percpu_unary_op("inc", var)
+ 
+ #define __this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+ #define __this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+@@ -512,7 +504,11 @@ static __always_inline int x86_this_cpu_constant_test_bit(unsigned int nr,
  {
--	unsigned long cr0 = percpu_read(xen_cr0_value);
-+	unsigned long cr0 = this_cpu_read(xen_cr0_value);
+ 	unsigned long __percpu *a = (unsigned long *)addr + nr / BITS_PER_LONG;
  
- 	if (unlikely(cr0 == 0)) {
- 		cr0 = native_read_cr0();
--		percpu_write(xen_cr0_value, cr0);
-+		this_cpu_write(xen_cr0_value, cr0);
- 	}
- 
- 	return cr0;
-@@ -791,7 +791,7 @@ static void xen_write_cr0(unsigned long cr0)
- {
- 	struct multicall_space mcs;
- 
--	percpu_write(xen_cr0_value, cr0);
-+	this_cpu_write(xen_cr0_value, cr0);
- 
- 	/* Only pay attention to cr0.TS; everything else is
- 	   ignored. */
-diff --git a/arch/x86/xen/irq.c b/arch/x86/xen/irq.c
-index 8bbb465..1573376 100644
---- a/arch/x86/xen/irq.c
-+++ b/arch/x86/xen/irq.c
-@@ -26,7 +26,7 @@ static unsigned long xen_save_fl(void)
- 	struct vcpu_info *vcpu;
- 	unsigned long flags;
- 
--	vcpu = percpu_read(xen_vcpu);
-+	vcpu = this_cpu_read(xen_vcpu);
- 
- 	/* flag has opposite sense of mask */
- 	flags = !vcpu->evtchn_upcall_mask;
-@@ -50,7 +50,7 @@ static void xen_restore_fl(unsigned long flags)
- 	   make sure we're don't switch CPUs between getting the vcpu
- 	   pointer and updating the mask. */
- 	preempt_disable();
--	vcpu = percpu_read(xen_vcpu);
-+	vcpu = this_cpu_read(xen_vcpu);
- 	vcpu->evtchn_upcall_mask = flags;
- 	preempt_enable_no_resched();
- 
-@@ -72,7 +72,7 @@ static void xen_irq_disable(void)
- 	   make sure we're don't switch CPUs between getting the vcpu
- 	   pointer and updating the mask. */
- 	preempt_disable();
--	percpu_read(xen_vcpu)->evtchn_upcall_mask = 1;
-+	this_cpu_read(xen_vcpu)->evtchn_upcall_mask = 1;
- 	preempt_enable_no_resched();
- }
- PV_CALLEE_SAVE_REGS_THUNK(xen_irq_disable);
-@@ -86,7 +86,7 @@ static void xen_irq_enable(void)
- 	   the caller is confused and is trying to re-enable interrupts
- 	   on an indeterminate processor. */
- 
--	vcpu = percpu_read(xen_vcpu);
-+	vcpu = this_cpu_read(xen_vcpu);
- 	vcpu->evtchn_upcall_mask = 0;
- 
- 	/* Doesn't matter if we get preempted here, because any
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index 58a0e46..1a309ee 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1071,14 +1071,14 @@ static void drop_other_mm_ref(void *info)
- 	struct mm_struct *mm = info;
- 	struct mm_struct *active_mm;
- 
--	active_mm = percpu_read(cpu_tlbstate.active_mm);
-+	active_mm = this_cpu_read(cpu_tlbstate.active_mm);
- 
--	if (active_mm == mm && percpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
-+	if (active_mm == mm && this_cpu_read(cpu_tlbstate.state) != TLBSTATE_OK)
- 		leave_mm(smp_processor_id());
- 
- 	/* If this cpu still has a stale cr3 reference, then make sure
- 	   it has been flushed. */
--	if (percpu_read(xen_current_cr3) == __pa(mm->pgd))
-+	if (this_cpu_read(xen_current_cr3) == __pa(mm->pgd))
- 		load_cr3(swapper_pg_dir);
+-	return ((1UL << (nr % BITS_PER_LONG)) & percpu_read(*a)) != 0;
++#ifdef CONFIG_X86_64
++	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_8(*a)) != 0;
++#else
++	return ((1UL << (nr % BITS_PER_LONG)) & __this_cpu_read_4(*a)) != 0;
++#endif
  }
  
-@@ -1185,17 +1185,17 @@ static void __init xen_pagetable_setup_done(pgd_t *base)
+ static inline int x86_this_cpu_variable_test_bit(int nr,
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index 32cd1f6..6e68d05 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -166,60 +166,6 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
+ 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type), __alignof__(type))
  
- static void xen_write_cr2(unsigned long cr2)
- {
--	percpu_read(xen_vcpu)->arch.cr2 = cr2;
-+	this_cpu_read(xen_vcpu)->arch.cr2 = cr2;
- }
- 
- static unsigned long xen_read_cr2(void)
- {
--	return percpu_read(xen_vcpu)->arch.cr2;
-+	return this_cpu_read(xen_vcpu)->arch.cr2;
- }
- 
- unsigned long xen_read_cr2_direct(void)
- {
--	return percpu_read(xen_vcpu_info.arch.cr2);
-+	return this_cpu_read(xen_vcpu_info.arch.cr2);
- }
- 
- static void xen_flush_tlb(void)
-@@ -1278,12 +1278,12 @@ static void xen_flush_tlb_others(const struct cpumask *cpus,
- 
- static unsigned long xen_read_cr3(void)
- {
--	return percpu_read(xen_cr3);
-+	return this_cpu_read(xen_cr3);
- }
- 
- static void set_current_cr3(void *v)
- {
--	percpu_write(xen_current_cr3, (unsigned long)v);
-+	this_cpu_write(xen_current_cr3, (unsigned long)v);
- }
- 
- static void __xen_write_cr3(bool kernel, unsigned long cr3)
-@@ -1306,7 +1306,7 @@ static void __xen_write_cr3(bool kernel, unsigned long cr3)
- 	xen_extend_mmuext_op(&op);
- 
- 	if (kernel) {
--		percpu_write(xen_cr3, cr3);
-+		this_cpu_write(xen_cr3, cr3);
- 
- 		/* Update xen_current_cr3 once the batch has actually
- 		   been submitted. */
-@@ -1322,7 +1322,7 @@ static void xen_write_cr3(unsigned long cr3)
- 
- 	/* Update while interrupts are disabled, so its atomic with
- 	   respect to ipis */
--	percpu_write(xen_cr3, cr3);
-+	this_cpu_write(xen_cr3, cr3);
- 
- 	__xen_write_cr3(true, cr3);
- 
-diff --git a/arch/x86/xen/multicalls.h b/arch/x86/xen/multicalls.h
-index dee79b7..9c2e74f 100644
---- a/arch/x86/xen/multicalls.h
-+++ b/arch/x86/xen/multicalls.h
-@@ -47,7 +47,7 @@ static inline void xen_mc_issue(unsigned mode)
- 		xen_mc_flush();
- 
- 	/* restore flags saved in xen_mc_batch */
--	local_irq_restore(percpu_read(xen_mc_irq_flags));
-+	local_irq_restore(this_cpu_read(xen_mc_irq_flags));
- }
- 
- /* Set up a callback to be called when the current batch is flushed */
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 041d4fe..449f868 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -76,7 +76,7 @@ static void __cpuinit cpu_bringup(void)
- 	xen_setup_cpu_clockevents();
- 
- 	set_cpu_online(cpu, true);
--	percpu_write(cpu_state, CPU_ONLINE);
-+	this_cpu_write(cpu_state, CPU_ONLINE);
- 	wmb();
- 
- 	/* We can take interrupts now: we're officially "up". */
+ /*
+- * Optional methods for optimized non-lvalue per-cpu variable access.
+- *
+- * @var can be a percpu variable or a field of it and its size should
+- * equal char, int or long.  percpu_read() evaluates to a lvalue and
+- * all others to void.
+- *
+- * These operations are guaranteed to be atomic.
+- * The generic versions disable interrupts.  Archs are
+- * encouraged to implement single-instruction alternatives which don't
+- * require protection.
+- */
+-#ifndef percpu_read
+-# define percpu_read(var)						\
+-  ({									\
+-	typeof(var) *pr_ptr__ = &(var);					\
+-	typeof(var) pr_ret__;						\
+-	pr_ret__ = get_cpu_var(*pr_ptr__);				\
+-	put_cpu_var(*pr_ptr__);						\
+-	pr_ret__;							\
+-  })
+-#endif
+-
+-#define __percpu_generic_to_op(var, val, op)				\
+-do {									\
+-	typeof(var) *pgto_ptr__ = &(var);				\
+-	get_cpu_var(*pgto_ptr__) op val;				\
+-	put_cpu_var(*pgto_ptr__);					\
+-} while (0)
+-
+-#ifndef percpu_write
+-# define percpu_write(var, val)		__percpu_generic_to_op(var, (val), =)
+-#endif
+-
+-#ifndef percpu_add
+-# define percpu_add(var, val)		__percpu_generic_to_op(var, (val), +=)
+-#endif
+-
+-#ifndef percpu_sub
+-# define percpu_sub(var, val)		__percpu_generic_to_op(var, (val), -=)
+-#endif
+-
+-#ifndef percpu_and
+-# define percpu_and(var, val)		__percpu_generic_to_op(var, (val), &=)
+-#endif
+-
+-#ifndef percpu_or
+-# define percpu_or(var, val)		__percpu_generic_to_op(var, (val), |=)
+-#endif
+-
+-#ifndef percpu_xor
+-# define percpu_xor(var, val)		__percpu_generic_to_op(var, (val), ^=)
+-#endif
+-
+-/*
+  * Branching function to split up a function into a set of functions that
+  * are called for different scalar sizes of the objects handled.
+  */
 -- 
 1.6.3.3
 
