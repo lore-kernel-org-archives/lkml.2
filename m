@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758739Ab2AMSQq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:16:46 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:33512 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758681Ab2AMSPg (ORCPT
+	id S1758733Ab2AMSPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:15:34 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63931 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758681Ab2AMSPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:15:36 -0500
+	Fri, 13 Jan 2012 13:15:23 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
         Glauber Costa <glommer@gmail.com>, Cgroups <cgroups@vger.kernel.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
         Daniel J Walsh <dwalsh@redhat.com>,
         "Daniel P. Berrange" <berrange@redhat.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Max Kellermann <mk@cm4all.com>,
         Mandeep Singh Baines <msb@chromium.org>,
-        Paul Menage <paul@paulmenage.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Paul Menage <paul@paulmenage.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
         Aditya Kali <adityakali@google.com>, Oleg Nesterov <oleg@redhat.com>,
         Kay Sievers <kay.sievers@vrfy.org>, Tim Hockin <thockin@hockin.org>,
         Tejun Heo <htejun@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 7/8] cgroups: allow subsystems to cancel a fork
-Date: Fri, 13 Jan 2012 19:13:58 +0100
-Message-Id: <1326478441-3048-15-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 4/8] cgroups: add res counter common ancestor searching
+Date: Fri, 13 Jan 2012 19:13:52 +0100
+Message-Id: <1326478441-3048-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1326478441-3048-1-git-send-email-fweisbec@gmail.com>
 References: <1326478441-3048-1-git-send-email-fweisbec@gmail.com>
@@ -33,222 +33,86 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Let the subsystem's fork callback return an error value so that they can
-cancel a fork.  This is going to be used by the task counter subsystem to
-implement the limit.
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
+Add a new API to find the common ancestor between two resource counters.
+This includes the passed resource counter themselves.
+
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Menage <paul@paulmenage.org>
 Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Paul Menage <paul@paulmenage.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>
 Cc: Aditya Kali <adityakali@google.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Kay Sievers <kay.sievers@vrfy.org>
 Cc: Tim Hockin <thockin@hockin.org>
 Cc: Tejun Heo <htejun@gmail.com>
-Acked-by: Kirill A. Shutemov <kirill@shutemov.name>
+Cc: Kirill A. Shutemov <kirill@shutemov.name>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/cgroup.h  |   20 ++++++++++++++------
- kernel/cgroup.c         |   23 +++++++++++++++++++----
- kernel/cgroup_freezer.c |    6 ++++--
- kernel/exit.c           |    2 +-
- kernel/fork.c           |    7 +++++--
- 5 files changed, 43 insertions(+), 15 deletions(-)
+ include/linux/res_counter.h |    3 +++
+ kernel/res_counter.c        |   33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7ad5e40..095e66d 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -17,10 +17,11 @@
- #include <linux/rwsem.h>
- #include <linux/idr.h>
- 
-+struct cgroup_subsys;
-+
- #ifdef CONFIG_CGROUPS
- 
- struct cgroupfs_root;
--struct cgroup_subsys;
- struct inode;
- struct cgroup;
- struct css_id;
-@@ -32,9 +33,11 @@ extern int cgroup_lock_is_held(void);
- extern bool cgroup_lock_live_group(struct cgroup *cgrp);
- extern void cgroup_unlock(void);
- extern void cgroup_fork(struct task_struct *p);
--extern void cgroup_fork_callbacks(struct task_struct *p);
-+extern int cgroup_fork_callbacks(struct task_struct *p,
-+				 struct cgroup_subsys **failed_ss);
- extern void cgroup_post_fork(struct task_struct *p);
--extern void cgroup_exit(struct task_struct *p, int run_callbacks);
-+extern void cgroup_exit(struct task_struct *p, int run_callbacks,
-+			struct cgroup_subsys *failed_ss);
- extern int cgroupstats_build(struct cgroupstats *stats,
- 				struct dentry *dentry);
- extern int cgroup_load_subsys(struct cgroup_subsys *ss);
-@@ -494,7 +497,7 @@ struct cgroup_subsys {
- 			      struct cgroup_taskset *tset);
- 	void (*attach)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 		       struct cgroup_taskset *tset);
--	void (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
-+	int (*fork)(struct cgroup_subsys *ss, struct task_struct *task);
- 	void (*exit)(struct cgroup_subsys *ss, struct cgroup *cgrp,
- 			struct cgroup *old_cgrp, struct task_struct *task);
- 	int (*populate)(struct cgroup_subsys *ss,
-@@ -651,9 +654,14 @@ struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
- static inline int cgroup_init_early(void) { return 0; }
- static inline int cgroup_init(void) { return 0; }
- static inline void cgroup_fork(struct task_struct *p) {}
--static inline void cgroup_fork_callbacks(struct task_struct *p) {}
-+static inline int cgroup_fork_callbacks(struct task_struct *p,
-+					struct cgroup_subsys **failed_ss)
-+{
-+	return 0;
-+}
- static inline void cgroup_post_fork(struct task_struct *p) {}
--static inline void cgroup_exit(struct task_struct *p, int callbacks) {}
-+static inline void cgroup_exit(struct task_struct *p, int callbacks,
-+			       struct cgroup_subsys *failed_ss) {}
- 
- static inline void cgroup_lock(void) {}
- static inline void cgroup_unlock(void) {}
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 39c7cae..109530a 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4568,8 +4568,11 @@ void cgroup_fork(struct task_struct *child)
-  * tasklist. No need to take any locks since no-one can
-  * be operating on this task.
-  */
--void cgroup_fork_callbacks(struct task_struct *child)
-+int cgroup_fork_callbacks(struct task_struct *child,
-+			  struct cgroup_subsys **failed_ss)
- {
-+	int err;
-+
- 	if (need_forkexit_callback) {
- 		int i;
- 		/*
-@@ -4579,10 +4582,17 @@ void cgroup_fork_callbacks(struct task_struct *child)
- 		 */
- 		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
--			if (ss->fork)
--				ss->fork(ss, child);
-+			if (ss->fork) {
-+				err = ss->fork(ss, child);
-+				if (err) {
-+					*failed_ss = ss;
-+					return err;
-+				}
-+			}
- 		}
- 	}
-+
-+	return 0;
+diff --git a/include/linux/res_counter.h b/include/linux/res_counter.h
+index de4ba29..558f39b 100644
+--- a/include/linux/res_counter.h
++++ b/include/linux/res_counter.h
+@@ -147,6 +147,9 @@ static inline void res_counter_uncharge(struct res_counter *counter,
+ 	res_counter_uncharge_until(counter, NULL, val);
  }
  
++struct res_counter *res_counter_common_ancestor(struct res_counter *l,
++						struct res_counter *r);
++
  /**
-@@ -4649,7 +4659,8 @@ void cgroup_post_fork(struct task_struct *child)
-  *    which wards off any cgroup_attach_task() attempts, or task is a failed
-  *    fork, never visible to cgroup_attach_task.
-  */
--void cgroup_exit(struct task_struct *tsk, int run_callbacks)
-+void cgroup_exit(struct task_struct *tsk, int run_callbacks,
-+		 struct cgroup_subsys *failed_ss)
- {
- 	struct css_set *cg;
- 	int i;
-@@ -4678,6 +4689,10 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- 		 */
- 		for (i = 0; i < CGROUP_BUILTIN_SUBSYS_COUNT; i++) {
- 			struct cgroup_subsys *ss = subsys[i];
-+
-+			if (ss == failed_ss)
-+				break;
-+
- 			if (ss->exit) {
- 				struct cgroup *old_cgrp =
- 					rcu_dereference_raw(cg->subsys[i])->cgroup;
-diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-index 0e74805..6cdce8f 100644
---- a/kernel/cgroup_freezer.c
-+++ b/kernel/cgroup_freezer.c
-@@ -178,7 +178,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
- 	return 0;
+  * res_counter_margin - calculate chargeable space of a counter
+  * @cnt: the counter
+diff --git a/kernel/res_counter.c b/kernel/res_counter.c
+index 8ef09a4..86d72b8 100644
+--- a/kernel/res_counter.c
++++ b/kernel/res_counter.c
+@@ -91,6 +91,39 @@ void res_counter_uncharge_until(struct res_counter *counter,
+ 	local_irq_restore(flags);
  }
  
--static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
-+static int freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- {
- 	struct freezer *freezer;
- 
-@@ -198,7 +198,7 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	 * following check.
- 	 */
- 	if (!freezer->css.cgroup->parent)
--		return;
-+		return 0;
- 
- 	spin_lock_irq(&freezer->lock);
- 	BUG_ON(freezer->state == CGROUP_FROZEN);
-@@ -207,6 +207,8 @@ static void freezer_fork(struct cgroup_subsys *ss, struct task_struct *task)
- 	if (freezer->state == CGROUP_FREEZING)
- 		freeze_task(task);
- 	spin_unlock_irq(&freezer->lock);
++/*
++ * Walk through r1 and r2 parents and try to find the closest common one
++ * between both. If none is found, it returns NULL.
++ */
++struct res_counter *
++res_counter_common_ancestor(struct res_counter *r1, struct res_counter *r2)
++{
++	struct res_counter *iter;
++	int r1_depth = 0, r2_depth = 0;
 +
-+	return 0;
- }
++	for (iter = r1; iter; iter = iter->parent)
++		r1_depth++;
++
++	for (iter = r2; iter; iter = iter->parent)
++		r2_depth++;
++
++	while (r1_depth > r2_depth) {
++		r1 = r1->parent;
++		r1_depth--;
++	}
++
++	while (r2_depth > r1_depth) {
++		r2 = r2->parent;
++		r2_depth--;
++	}
++
++	while (r1 != r2) {
++		r1 = r1->parent;
++		r2 = r2->parent;
++	}
++
++	return r1;
++}
  
- /*
-diff --git a/kernel/exit.c b/kernel/exit.c
-index 95a4141..b9728d9 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -990,7 +990,7 @@ NORET_TYPE void do_exit(long code)
- 	 */
- 	perf_event_exit_task(tsk);
- 
--	cgroup_exit(tsk, 1);
-+	cgroup_exit(tsk, 1, NULL);
- 
- 	if (group_dead)
- 		disassociate_ctty(1);
-diff --git a/kernel/fork.c b/kernel/fork.c
-index d4ac9e3..097c597 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1049,6 +1049,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	int retval;
- 	struct task_struct *p;
- 	int cgroup_callbacks_done = 0;
-+	struct cgroup_subsys *cgroup_failed_ss = NULL;
- 
- 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
- 		return ERR_PTR(-EINVAL);
-@@ -1306,8 +1307,10 @@ static struct task_struct *copy_process(unsigned long clone_flags,
- 	/* Now that the task is set up, run cgroup callbacks if
- 	 * necessary. We need to run them before the task is visible
- 	 * on the tasklist. */
--	cgroup_fork_callbacks(p);
-+	retval = cgroup_fork_callbacks(p, &cgroup_failed_ss);
- 	cgroup_callbacks_done = 1;
-+	if (retval)
-+		goto bad_fork_free_pid;
- 
- 	/* Need tasklist lock for parent etc handling! */
- 	write_lock_irq(&tasklist_lock);
-@@ -1408,7 +1411,7 @@ bad_fork_cleanup_cgroup:
- #endif
- 	if (clone_flags & CLONE_THREAD)
- 		threadgroup_change_end(current);
--	cgroup_exit(p, cgroup_callbacks_done);
-+	cgroup_exit(p, cgroup_callbacks_done, cgroup_failed_ss);
- 	delayacct_tsk_free(p);
- 	module_put(task_thread_info(p)->exec_domain->module);
- bad_fork_cleanup_count:
+ static inline unsigned long long *
+ res_counter_member(struct res_counter *counter, int member)
 -- 
 1.7.5.4
 
