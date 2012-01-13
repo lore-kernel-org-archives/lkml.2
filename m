@@ -1,142 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932535Ab2AMPUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:20:49 -0500
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:39710 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932522Ab2AMPUo (ORCPT
+	id S932520Ab2AMPUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:20:43 -0500
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47091 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932445Ab2AMPUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:20:44 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Mattias Nilsson <mattias.i.nilsson@stericsson.com>,
-        Bengt Jonsson <bengt.g.jonsson@stericsson.com>,
-        Daniel Willerud <daniel.willerud@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 5/8] mfd/db8500-prcmu: spawned regulators update
-Date: Fri, 13 Jan 2012 16:20:36 +0100
-Message-ID: <1326468036-11828-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.8
+	Fri, 13 Jan 2012 10:20:39 -0500
+Message-ID: <4F104A51.2000701@ah.jp.nec.com>
+Date: Fri, 13 Jan 2012 10:14:25 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Organization: NEC Corporation
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.25) Gecko/20111213 Thunderbird/3.1.17
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Hillf Danton <dhillf@gmail.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>, Andi Kleen <andi@firstfloor.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/6] thp: optimize away unnecessary page table locking
+References: <1326396898-5579-1-git-send-email-n-horiguchi@ah.jp.nec.com>	<1326396898-5579-3-git-send-email-n-horiguchi@ah.jp.nec.com> <CAJd=RBB6azf9nin5tjqTtHakxy896rCxr6ErK4p2KDrke_goEA@mail.gmail.com>
+In-Reply-To: <CAJd=RBB6azf9nin5tjqTtHakxy896rCxr6ErK4p2KDrke_goEA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
+Hi Hillf,
 
-As drivers have progressed and got some more review we have
-consequently moved things around:
+(1/13/2012 7:04), Hillf Danton wrote:
+[...]
+>> +/*
+>> + * Returns 1 if a given pmd is mapping a thp and stable (not under splitting.)
+>> + * Returns 0 otherwise. Note that if it returns 1, this routine returns without
+>> + * unlocking page table locks. So callers must unlock them.
+>> + */
+>> +int pmd_trans_huge_stable(pmd_t *pmd, struct vm_area_struct *vma)
+>> +{
+>> +       VM_BUG_ON(!rwsem_is_locked(&vma->vm_mm->mmap_sem));
+>> +
+>> +       if (!pmd_trans_huge(*pmd))
+>> +               return 0;
+>> +
+>> +       spin_lock(&vma->vm_mm->page_table_lock);
+>> +       if (likely(pmd_trans_huge(*pmd))) {
+>> +               if (pmd_trans_splitting(*pmd)) {
+>> +                       spin_unlock(&vma->vm_mm->page_table_lock);
+>> +                       wait_split_huge_page(vma->anon_vma, pmd);
+>> +                       return 0;
+>> +               } else {
+> 
+>                             spin_unlock(&vma->vm_mm->page_table_lock);     yes?
 
-- Some device drivers have changed name and some were wrong
-  from the beginning.
-- We removed the dependency from some domains to the VAPE
-  domain -  SIA MMDSP, SIA PIPE, SVA MMDSP and SVA PIPE power
-  domains are handled outside the framework while ESRAM12
-  and ESRAM34 are actually handled inside the PRCMU.
+No. Unlocking is supposed to be done by the caller as commented.
 
-Reviewed-by: Rickard Andersson <rickard.andersson@stericsson.com>
-Reviewed-by: Jonas Aberg <jonas.aberg@stericsson.com>
-Signed-off-by: Bengt Jonsson <bengt.g.jonsson@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/db8500-prcmu.c |   25 +++++++++++++++----------
- 1 files changed, 15 insertions(+), 10 deletions(-)
+Thanks,
+Naoya
 
-diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
-index 9459327..1385639 100644
---- a/drivers/mfd/db8500-prcmu.c
-+++ b/drivers/mfd/db8500-prcmu.c
-@@ -2687,19 +2687,17 @@ static struct regulator_consumer_supply db8500_vape_consumers[] = {
- 	REGULATOR_SUPPLY("vcore", "uart1"),
- 	REGULATOR_SUPPLY("vcore", "uart2"),
- 	REGULATOR_SUPPLY("v-ape", "nmk-ske-keypad.0"),
-+	REGULATOR_SUPPLY("v-hsi", "ste_hsi.0"),
- };
- 
- static struct regulator_consumer_supply db8500_vsmps2_consumers[] = {
--	/* CG2900 and CW1200 power to off-chip peripherals */
--	REGULATOR_SUPPLY("gbf_1v8", "cg2900-uart.0"),
--	REGULATOR_SUPPLY("wlan_1v8", "cw1200.0"),
- 	REGULATOR_SUPPLY("musb_1v8", "ab8500-usb.0"),
- 	/* AV8100 regulator */
- 	REGULATOR_SUPPLY("hdmi_1v8", "0-0070"),
- };
- 
- static struct regulator_consumer_supply db8500_b2r2_mcde_consumers[] = {
--	REGULATOR_SUPPLY("vsupply", "b2r2.0"),
-+	REGULATOR_SUPPLY("vsupply", "b2r2_bus"),
- 	REGULATOR_SUPPLY("vsupply", "mcde"),
- };
- 
-@@ -2736,6 +2734,7 @@ static struct regulator_consumer_supply db8500_esram12_consumers[] = {
- static struct regulator_consumer_supply db8500_esram34_consumers[] = {
- 	REGULATOR_SUPPLY("v-esram34", "mcde"),
- 	REGULATOR_SUPPLY("esram34", "cm_control"),
-+	REGULATOR_SUPPLY("lcla_esram", "dma40.0"),
- };
- 
- static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
-@@ -2792,7 +2791,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 		},
- 	},
- 	[DB8500_REGULATOR_SWITCH_SVAMMDSP] = {
--		.supply_regulator = "db8500-vape",
-+		/* dependency to u8500-vape is handled outside regulator framework */
- 		.constraints = {
- 			.name = "db8500-sva-mmdsp",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -2808,7 +2807,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 		},
- 	},
- 	[DB8500_REGULATOR_SWITCH_SVAPIPE] = {
--		.supply_regulator = "db8500-vape",
-+		/* dependency to u8500-vape is handled outside regulator framework */
- 		.constraints = {
- 			.name = "db8500-sva-pipe",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -2817,7 +2816,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 		.num_consumer_supplies = ARRAY_SIZE(db8500_svapipe_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_SIAMMDSP] = {
--		.supply_regulator = "db8500-vape",
-+		/* dependency to u8500-vape is handled outside regulator framework */
- 		.constraints = {
- 			.name = "db8500-sia-mmdsp",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -2832,7 +2831,7 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 		},
- 	},
- 	[DB8500_REGULATOR_SWITCH_SIAPIPE] = {
--		.supply_regulator = "db8500-vape",
-+		/* dependency to u8500-vape is handled outside regulator framework */
- 		.constraints = {
- 			.name = "db8500-sia-pipe",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -2860,7 +2859,10 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 		.num_consumer_supplies = ARRAY_SIZE(db8500_b2r2_mcde_consumers),
- 	},
- 	[DB8500_REGULATOR_SWITCH_ESRAM12] = {
--		.supply_regulator = "db8500-vape",
-+		/*
-+		 * esram12 is set in retention and supplied by Vsafe when Vape is off,
-+		 * no need to hold Vape
-+		 */
- 		.constraints = {
- 			.name = "db8500-esram12",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-@@ -2875,7 +2877,10 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
- 		},
- 	},
- 	[DB8500_REGULATOR_SWITCH_ESRAM34] = {
--		.supply_regulator = "db8500-vape",
-+		/*
-+		 * esram34 is set in retention and supplied by Vsafe when Vape is off,
-+		 * no need to hold Vape
-+		 */
- 		.constraints = {
- 			.name = "db8500-esram34",
- 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
--- 
-1.7.8
+> 
+>> +                       /* Thp mapped by 'pmd' is stable, so we can
+>> +                        * handle it as it is. */
+>> +                       return 1;
+>> +               }
+>> +       }
+>> +       spin_unlock(&vma->vm_mm->page_table_lock);
+>> +       return 0;
+>> +}
+>> +
 
