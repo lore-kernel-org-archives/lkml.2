@@ -1,98 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab2AMMAa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 07:00:30 -0500
-Received: from a2-smtpout1.uol.com.br ([200.147.33.239]:34812 "EHLO
-	smtps.uol.com.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753081Ab2AMMA2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 07:00:28 -0500
-X-UOL-SMTP: SMTPS25
-Date: Fri, 13 Jan 2012 09:59:46 -0200
-From: =?utf-8?Q?Rog=C3=A9rio?= Brito <rbrito@ime.usp.br>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?utf-8?Q?M=C3=A1rcia?= Coutinho de Brito <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-Message-ID: <20120113115946.GA10615@ime.usp.br>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
- <20120108221342.GA7058@ime.usp.br>
- <CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
- <20120109112207.7f993845@jbarnes-desktop>
- <CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
- <CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
- <CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
- <CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
- <CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
- <CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+	id S1758014Ab2AMMEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 07:04:12 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50334 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752643Ab2AMMEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 07:04:09 -0500
+Date: Fri, 13 Jan 2012 13:04:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
+Message-ID: <20120113120406.GC17060@tiehlicka.suse.cz>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+ <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
+In-Reply-To: <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SIG5: b186cbbbac82ea032215e64a5186bf83
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Yinghai,
-
-On Jan 11 2012, Yinghai Lu wrote:
-> On Tue, Jan 10, 2012 at 11:04 PM, Rogério Brito <rbrito@ime.usp.br> wrote:
-> > On Tue, Jan 10, 2012 at 03:07, Yinghai Lu <yinghai@kernel.org> wrote:
-> >>   git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-> >> for-pci2
-> >>
-> >> also please boot with "debug ignore_loglevel"
-> >
-> > Grabbing it right now. Will report it after I get some sleep (5AM here).
+On Tue 10-01-12 16:02:52, Johannes Weiner wrote:
+> Right now, memcg soft limits are implemented by having a sorted tree
+> of memcgs that are in excess of their limits.  Under global memory
+> pressure, kswapd first reclaims from the biggest excessor and then
+> proceeds to do regular global reclaim.  The result of this is that
+> pages are reclaimed from all memcgs, but more scanning happens against
+> those above their soft limit.
 > 
-> please try attached patch, it will fix one bios wrong setting.
-
-Should I use this patch agains which tree?
-
-Right now, I have Linus's tree, yours (cited above) and I am, up to now,
-I had been compiling everything from Linus's v3.2 tag: both a vanilla
-kernel, as asked by Bjorn and with the patch that I mentioned to Linus ("the
-one that makes things boot").
-
-If it applies (and newer kernels don't have things which your patch needs),
-I will keep working with Linus's v3.2 tag.
-
-When I compiled from your branch for-pci2 from linux-yinghai.git (without
-any extra patches), it *did* boot, but noticed one thing weird: using htop
-and in single user mode, it reported 100% of CPU in use. With regular top, a
-more fine grained output revealed that no processes were using the CPU, but
-that almost all of the time was spent in kernel mode.
-
-Anyway, as you asked, I put the log of what I see at
-
-    http://www.ime.usp.br/~rbrito/linux/clevo/2012-01-13-0951-yanghai-for-pci2-branch/
-
-> >> BTW, did you try boot with "pci=use_crs" and not with "acpi=off" ?
-> >
-> > I tried, but I got a hang (both with Linux---many versions---and with
-> > FreeBSD). With Linux I get:
-> >
-> >  http://www.ime.usp.br/~rbrito/linux/clevo/boot-without-acpi-off.jpg
-> >
+> With global reclaim doing memcg-aware hierarchical reclaim by default,
+> this is a lot easier to implement: everytime a memcg is reclaimed
+> from, scan more aggressively (per tradition with a priority of 0) if
+> it's above its soft limit.  With the same end result of scanning
+> everybody, but soft limit excessors a bit more.
 > 
-> need to work on that later.
+> Advantages:
+> 
+>   o smoother reclaim: soft limit reclaim is a separate stage before
+>     global reclaim, whose result is not communicated down the line and
+>     so overreclaim of the groups in excess is very likely.  After this
+>     patch, soft limit reclaim is fully integrated into regular reclaim
+>     and each memcg is considered exactly once per cycle.
+> 
+>   o true hierarchy support: soft limits are only considered when
+>     kswapd does global reclaim, but after this patch, targetted
+>     reclaim of a memcg will mind the soft limit settings of its child
+>     groups.
 
-Thanks for your (everybody else's) kindness/helpfulness with these multiple
-issues.
+Yes it makes sense. At first I was thinking that soft limit should be
+considered only under global mem. pressure (at least documentation says
+so) but now it makes sense.
+We can push on over-soft limit groups more because they told us they
+could sacrifice something...  Anyway documentation needs an update as
+well.
 
+But we have to be little bit careful here. I am still quite confuses how
+we should handle hierarchies vs. subtrees. See bellow.
 
-Thanks,
+> 
+>   o code size: soft limit reclaim requires a lot of code to maintain
+>     the per-node per-zone rb-trees to quickly find the biggest
+>     offender, dedicated paths for soft limit reclaim etc. while this
+>     new implementation gets away without all that.
+
+on my i386 pae setup (including swap extension enabled):
+Before
+   text    data     bss     dec     hex filename
+    310086   29970   35372  375428   5ba84 mm/built-in.o
+After
+size mm/built-in.o 
+   text    data     bss     dec     hex filename
+    309048   30030   35372  374450   5b6b2 mm/built-in.o
+
+I would expect a bigger difference but still good.
+
+> Test:
+
+Will look into results later.
+[...]
+
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> ---
+>  include/linux/memcontrol.h |   18 +--
+>  mm/memcontrol.c            |  412 ++++----------------------------------------
+>  mm/vmscan.c                |   80 +--------
+>  3 files changed, 48 insertions(+), 462 deletions(-)
+
+Really nice to see
+
+[...]
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 170dff4..d4f7ae5 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+[...]
+> @@ -1318,6 +1123,36 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
+>  	return margin >> PAGE_SHIFT;
+>  }
+>  
+> +/**
+> + * mem_cgroup_over_softlimit
+> + * @root: hierarchy root
+> + * @memcg: child of @root to test
+> + *
+> + * Returns %true if @memcg exceeds its own soft limit or contributes
+> + * to the soft limit excess of one of its parents up to and including
+> + * @root.
+> + */
+> +bool mem_cgroup_over_softlimit(struct mem_cgroup *root,
+> +			       struct mem_cgroup *memcg)
+> +{
+> +	if (mem_cgroup_disabled())
+> +		return false;
+> +
+> +	if (!root)
+> +		root = root_mem_cgroup;
+> +
+> +	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
+> +		/* root_mem_cgroup does not have a soft limit */
+> +		if (memcg == root_mem_cgroup)
+> +			break;
+> +		if (res_counter_soft_limit_excess(&memcg->res))
+> +			return true;
+> +		if (memcg == root)
+> +			break;
+> +	}
+> +	return false;
+> +}
+
+Well, this might be little bit tricky. We do not check whether memcg and
+root are in a hierarchy (in terms of use_hierarchy) relation. 
+
+If we are under global reclaim then we iterate over all memcgs and so
+there is no guarantee that there is a hierarchical relation between the
+given memcg and its parent. While, on the other hand, if we are doing
+memcg reclaim then we have this guarantee.
+
+Why should we punish a group (subtree) which is perfectly under its soft
+limit just because some other subtree contributes to the common parent's
+usage and makes it over its limit?
+Should we check memcg->use_hierarchy here?
+
+Does it even makes sense to setup soft limit on a parent group without
+hierarchies?
+Well I have to admit that hierarchies makes me headache.
+
+> +
+>  int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+>  {
+>  	struct cgroup *cgrp = memcg->css.cgroup;
+[...]
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index e3fd8a7..4279549 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2121,8 +2121,16 @@ static void shrink_zone(int priority, struct zone *zone,
+>  			.mem_cgroup = memcg,
+>  			.zone = zone,
+>  		};
+> +		int epriority = priority;
+> +		/*
+> +		 * Put more pressure on hierarchies that exceed their
+> +		 * soft limit, to push them back harder than their
+> +		 * well-behaving siblings.
+> +		 */
+> +		if (mem_cgroup_over_softlimit(root, memcg))
+> +			epriority = 0;
+
+This sounds too aggressive to me. Shouldn't we just double the pressure
+or something like that?
+Previously we always had nr_to_reclaim == SWAP_CLUSTER_MAX when we did
+memcg reclaim but this is not the case now. For the kswapd we have
+nr_to_reclaim == ULONG_MAX so we will not break out of the reclaim early
+and we have to scan a lot.
+Direct reclaim (shrink or hard limit) shouldn't be affected here.
+
+>  
+> -		shrink_mem_cgroup_zone(priority, &mz, sc);
+> +		shrink_mem_cgroup_zone(epriority, &mz, sc);
+>  
+>  		mem_cgroup_account_reclaim(root, memcg,
+>  					   sc->nr_reclaimed - nr_reclaimed,
 
 -- 
-Rogério Brito : rbrito@{ime.usp.br,gmail.com} : GPG key 4096R/BCFCAAAA
-http://rb.doesntexist.org : Packages for LaTeX : algorithms.berlios.de
-DebianQA: http://qa.debian.org/developer.php?login=rbrito%40ime.usp.br
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
