@@ -1,144 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab2AMS2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:28:08 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:45623 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932483Ab2AMS2G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:28:06 -0500
-Date: Fri, 13 Jan 2012 10:27:50 -0800
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Tejun Heo <tj@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Containers <containers@lists.linux-foundation.org>,
-        Cgroups <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Paul Menage <paul@paulmenage.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
-Message-ID: <20120113182750.GD18166@google.com>
-References: <20111221200422.GJ17668@somewhere>
- <20111222153004.GA30522@redhat.com>
- <20120104193614.GF9511@google.com>
- <20120106152356.GA23995@redhat.com>
- <20120106182535.GJ9511@google.com>
- <20120111160730.GA24556@redhat.com>
- <20120112003102.GB9511@google.com>
- <20120112170728.GA25717@redhat.com>
- <20120112175725.GD9511@google.com>
- <20120113152010.GA19215@redhat.com>
+	id S932702Ab2AMS20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:28:26 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44872 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932458Ab2AMS2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 13:28:21 -0500
+Date: Fri, 13 Jan 2012 10:16:37 -0800
+From: Greg KH <gregkh@suse.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux@arm.linux.org.uk, plagnioj@jcrosoft.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, patrice.vilchez@atmel.com
+Subject: Re: [PATCH RFC] ARM: at91: removal of CAP9 SoC family
+Message-ID: <20120113181637.GA30300@suse.de>
+References: <1325864033-20012-1-git-send-email-nicolas.ferre@atmel.com>
+ <4F101137.1020804@atmel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120113152010.GA19215@redhat.com>
-X-Operating-System: Linux/2.6.38.8-gg683 (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4F101137.1020804@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov (oleg@redhat.com) wrote:
-> On 01/12, Mandeep Singh Baines wrote:
-> >
-> > Oleg Nesterov (oleg@redhat.com) wrote:
-> > >
-> > > Still can't understand... Lets look at this trivial example again.
-> > >
-> > > We start from the main thread M, it is ->group_leader. There is
-> > > another thread T in this thread group. We are doing
-> > >
-> > > 	OLD = M;
-> > >
-> > > 	t = M;
-> > > 	do {
-> > > 		do_smth(t);
-> > > 	}
-> > > 	while (t->group_leader == OLD && ((t = next_thread(t)) != M);
-> > >
-> > > The first iteration does do_smth(M).
-> > >
-> > > T calls de_thread() and, in particular, it does M->group_leader = T
-> > > (see "leader->group_leader = tsk" in de_thread).
-> > >
-> > > after that t->group_leader == OLD fails. t == M, its group_leader == T.
-> > > do_smth(T) won't be called.
-> > >
-> > > No?
-> > >
-> >
-> > I think we can handle this by removing the assignment. So in de_thread():
-> >
-> > -		leader->group_leader = tsk;
+On Fri, Jan 13, 2012 at 12:10:47PM +0100, Nicolas Ferre wrote:
+> On 01/06/2012 04:33 PM, Nicolas Ferre :
+> > Atmel CAP9 family is not maintained well and products may be
+> > difficult to find now. It will allow to save workforce and
+> > remove LOC during current cleanup process.
+> > 
+> > Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> > ---
+> >  Documentation/feature-removal-schedule.txt |   14 ++++++++++++++
+> >  1 files changed, 14 insertions(+), 0 deletions(-)
 > 
-> Ah, so that was you plan. I was confused by the 3rd argument, why
-> it is needed?
+> Hi Andrew, Greg,
 > 
+> Can you please take this patch or is somebody else in charge of this file?
 
-Good question. On second thought, I don't think its needed as shown
-in you're solution below.
+Why wouldn't the maintainers of the feature you are saying is going away
+be the ones responsible for submitting this?
 
-> Yes, I thought about this too. Suppose we remove this assignment,
-> then we can simply do
+> It it is going to mainline through you, can you add also:
 > 
-> 	#define while_each_thread(g, t) \
-> 		while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
+> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 > 
-> with the same effect. (to remind, currently I ignore the barriers/etc).
+> Or tell me to resend a complete patch.
 > 
-
-Nice! I think this works.
-
-> But this can _only_ help if we start at the group leader!
-
-But I don't think this solution requires we start at the group leader.
-
-My thinking:
-
-Case 1: g is the exec thread
-
-The only condition under which g->group_leader would change is if g is the
-exec thread. If you are the exec the only requirement is that you visit the
-exec thread. Visiting any other threads is optional. Since g is the exec
-thread, you've already visited it and can safely stop once
-g->group_leader is re-assigned to g.
-
-Case 2: g is the group leader
-
-If g is the group leader and a subthread execs, you'll terminate just
-after visiting the exec thread.
-
-Case 3: g is some other thread
-
-In this case, g MUST be current so you don't really need to worry
-about de_thread() since current can't be de_threaded.
-
+> Thanks for your help, best regards,
 > 
-> May be we should enforce this rule (for the lockless case), I dunno...
-> In that case I'd prefer to add the new while_each_thread_rcu() helper.
-> But! in this case we do not need to change de_thread(), we can simply do
 > 
-> 	#define while_each_thread_rcu(t) \
-> 		while (({ t = next_thread(t); !thread_group_leader(t); }))
-> 
+> > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> > index 3d84912..23dfea5 100644
+> > --- a/Documentation/feature-removal-schedule.txt
+> > +++ b/Documentation/feature-removal-schedule.txt
+> > @@ -551,3 +551,17 @@ When:	3.5
+> >  Why:	The iwlagn module has been renamed iwlwifi.  The alias will be around
+> >  	for backward compatibility for several cycles and then dropped.
+> >  Who:	Don Fry <donald.h.fry@intel.com>
+> > +
+> > +----------------------------
+> > +
+> > +What:	The CAP9 SoC family will be removed
+> > +When:	3.4
+> > +Files:	arch/arm/mach-at91/at91cap9.c
+> > +	arch/arm/mach-at91/at91cap9_devices.c
+> > +	arch/arm/mach-at91/include/mach/at91cap9.h
+> > +	arch/arm/mach-at91/include/mach/at91cap9_matrix.h
+> > +	arch/arm/mach-at91/include/mach/at91cap9_ddrsdr.h
+> > +	arch/arm/mach-at91/board-cap9adk.c
+> > +Why:	The code is not actively maintained and platforms are now hard to find.
+> > +Who:	Nicolas Ferre <nicolas.ferre@atmel.com>
+> > +	Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Won't this terminate just before visiting the exec thread?
+Ok, why not send this through the ARM tree?  Why need me and Andrew?
 
-> The definition above was one of the possibilities I considered, but
-> I wasn't able to convince myself this is the best option.
-> 
-> See? Or do you think I missed something?
-> 
-> Just in case... note that while_each_thread_rcu() doesn't use 'g'
-> at all. May be it makes sense to keep the old "t != g &&", but this
-> is minor.
-> 
-> Oleg.
-> 
+confused,
 
-Regards,
-Mandeep
+greg k-h
