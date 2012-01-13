@@ -1,38 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab2AMSZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:25:31 -0500
-Received: from shards.monkeyblade.net ([198.137.202.13]:49469 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755947Ab2AMSZ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:25:29 -0500
-Date: Fri, 13 Jan 2012 10:25:18 -0800 (PST)
-Message-Id: <20120113.102518.924916400773191073.davem@davemloft.net>
-To: cascardo@linux.vnet.ibm.com
-Cc: roland@purestorage.com, venkat.x.venkatsubra@oracle.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
-Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20120113181706.GA3904@oc1711230544.ibm.com>
-References: <CAL1RGDWOitrKp31RuWLCV3ifUa=CKvZ2qZaRQJMcxdU6_eubww@mail.gmail.com>
-	<CAL1RGDVEqr9XzzcpG6wK49e209JtrhXGayFa5Qnz_NziLinR-g@mail.gmail.com>
-	<20120113181706.GA3904@oc1711230544.ibm.com>
-X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Jan 2012 10:25:22 -0800 (PST)
+	id S1758673Ab2AMS0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:26:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8213 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab2AMS0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 13:26:12 -0500
+Date: Fri, 13 Jan 2012 19:20:15 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Seiji Aguchi <saguchi@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] tracing: make signal tracepoints more useful
+Message-ID: <20120113182015.GA3902@redhat.com>
+References: <20120110174509.GA30802@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120110174509.GA30802@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Date: Fri, 13 Jan 2012 16:17:06 -0200
+Hello,
 
-> Is this going through your tree? In patchwork, its state is "Not
-> Applicable".
+Please pull from
 
-There was an active RDS maintainer, though I haven't seen patches
-from that person in a while.
+	git://github.com/utrace/linux sigtrace
+
+
+Another (4th) attempt to push these simple changes, now in the form
+of a pull request (yes, github, I still can't restore my korg account).
+
+2/2 looks like a bugfix to me, but 1/2 changes the output from
+trace_signal_generate() and removes trace_signal_overflow_fail.
+In essence the change is:
+
+	-       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d",
+	+       TP_printk("sig=%d errno=%d code=%d comm=%s pid=%d grp=%d res=%d",
+
+where
+	- grp=0/1 means private or shared
+
+	- res is enum {
+			TRACE_SIGNAL_DELIVERED,
+			TRACE_SIGNAL_IGNORED,
+			TRACE_SIGNAL_ALREADY_PENDING,
+			TRACE_SIGNAL_OVERFLOW_FAIL,
+			TRACE_SIGNAL_LOSE_INFO,
+		};
+
+Obviously this is the user visible change. But personally I do
+agree with Seiji who requested this feature. Currently
+trace_signal_generate() just records the fact that __send_signal()
+was called, you can't know whether the signal was actually sent
+or not.
+
+Steven Rostedt says:
+
+	Adding more to a tracepoint is never an issue, even without a library to
+	parse the data correctly (which we still need in the distros). Thus this
+	change should have no issues.
+
+
+
+Oleg Nesterov (2):
+      tracing: let trace_signal_generate() report more info, kill overflow_fail/lose_info
+      tracing: send_sigqueue() needs trace_signal_generate() too
+
+ include/trace/events/signal.h |   85 +++++++++++------------------------------
+ kernel/signal.c               |   28 +++++++++----
+ 2 files changed, 41 insertions(+), 72 deletions(-)
+
