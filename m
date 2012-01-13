@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab2AMH2C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 02:28:02 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33187 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab2AMH16 (ORCPT
+	id S1753833Ab2AMHbQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 02:31:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48941 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752151Ab2AMHbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 02:27:58 -0500
-Message-ID: <4F0FDCF2.6090100@canonical.com>
-Date: Fri, 13 Jan 2012 08:27:46 +0100
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20111223 Thunderbird/10.0
-MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
- granting privs
-References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net> <CAGXu5j+TwmsE9qEb0YLT6o8ZRs7OCWdFviiTW2Q_QdbodK==1Q@mail.gmail.com> <CALCETrVCv=v2Ria4u3xDQYcv881_-X1aZwH0y-rkZjhGRddKOg@mail.gmail.com> <CAGXu5jJyBFX07XFOZJ5qgSwGu7KEz4ZK3whFk7RG3G=Pq6To1g@mail.gmail.com>
-In-Reply-To: <CAGXu5jJyBFX07XFOZJ5qgSwGu7KEz4ZK3whFk7RG3G=Pq6To1g@mail.gmail.com>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jan 2012 02:31:12 -0500
+Date: Thu, 12 Jan 2012 23:36:00 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Sasha Levin <levinsasha928@gmail.com>, lizf@cn.fujitsu.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Tyler Hicks <tyhicks@canonical.com>,
+        Dustin Kirkland <kirkland@canonical.com>, ecryptfs@vger.kernel.org
+Subject: Re: [PATCH] mm: Don't warn if memdup_user fails
+Message-Id: <20120112233600.33805bfc.akpm@linux-foundation.org>
+In-Reply-To: <20120113071752.GA3802@mwanda>
+References: <1326300636-29233-1-git-send-email-levinsasha928@gmail.com>
+	<20120111141219.271d3a97.akpm@linux-foundation.org>
+	<1326355594.1999.7.camel@lappy>
+	<CAOJsxLEYY=ZO8QrxiWL6qAxPzsPpZj3RsF9cXY0Q2L44+sn7JQ@mail.gmail.com>
+	<alpine.DEB.2.00.1201121309340.17287@chino.kir.corp.google.com>
+	<20120112135803.1fb98fd6.akpm@linux-foundation.org>
+	<20120113071752.GA3802@mwanda>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 07:09 AM, Kees Cook wrote:
-> On Thu, Jan 12, 2012 at 10:02 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Thu, Jan 12, 2012 at 9:58 PM, Kees Cook <keescook@chromium.org> wrote:
->>> On Thu, Jan 12, 2012 at 6:12 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> With this set, a lot of dangerous operations (chroot, unshare, etc)
->>>> become a lot less dangerous because there is no possibility of
->>>> subverting privileged binaries.
->>>>
->>>> This patch completely breaks apparmor.  Someone who understands (and
->>>> uses) apparmor should fix it or at least give me a hint.
->>>>
->>>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>>> [....]
->>>> diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
->>>> index c1e18ba..7f480b7 100644
->>>> --- a/security/apparmor/domain.c
->>>> +++ b/security/apparmor/domain.c
->>>> @@ -360,6 +360,9 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
->>>>        if (bprm->cred_prepared)
->>>>                return 0;
->>>>
->>>> +       /* XXX: someone who understands apparmor needs to fix this. */
->>>> +       BUG_ON(bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS);
->>>> +
->>>>        cxt = bprm->cred->security;
->>>>        BUG_ON(!cxt);
->>>>
->>>
->>> Since apparmor_bprm_set_creds() calls cap_bprm_set_creds() already[1],
->>> I think AppArmor needs no changes at all, but John will know better.
->>> :)
->>
->> I think that AppArmor determines what a program is allowed to do by
->> looking at the path of the executable.  We don't want newly-executed
->> programs to gain permissions because they're a different executable
->> when we're in no_new_privs mode, so (if I'm right) something different
->> needs to happen.
+On Fri, 13 Jan 2012 10:17:52 +0300 Dan Carpenter <dan.carpenter@oracle.com> wrote:
+
+> On Thu, Jan 12, 2012 at 01:58:03PM -0800, Andrew Morton wrote:
+> > On Thu, 12 Jan 2012 13:19:54 -0800 (PST)
+> > David Rientjes <rientjes@google.com> wrote:
+> > 
+> > > On Thu, 12 Jan 2012, Pekka Enberg wrote:
+> > > 
+> > > > I think you missed Andrew's point. We absolutely want to issue a
+> > > > kernel warning here because ecryptfs is misusing the memdup_user()
+> > > > API. We must not let userspace processes allocate large amounts of
+> > > > memory arbitrarily.
+> > > > 
+> > > 
+> > > I think it's good to fix ecryptfs like Tyler is doing and, at the same 
+> > > time, ensure that the len passed to memdup_user() makes sense prior to 
+> > > kmallocing memory with GFP_KERNEL.  Perhaps something like
+> > > 
+> > > 	if (WARN_ON(len > PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER))
+> > > 		return ERR_PTR(-ENOMEM);
+> > > 
+> > > in which case __GFP_NOWARN is irrelevant.
+> > 
+> > If someone is passing huge size_t's into kmalloc() and getting failures
+> > then that's probably a bug.
 > 
-> I'll have to go look more closely. I thought cap_bprm_set_creds() was
-> already evaluating the new privs and blocking any gained privs with
-> the changes you were making.
+> It's pretty common to pass high values to kmalloc().  We've added
+> a bunch of integer overflow checks recently where we do:
 > 
-We do want to do something more.  A first pass at it would be to allow execs
-that inherit the current context, and we will also want to reject apparmor's
-equiv of setcon, and setexeccon, at the interface.
+> 	if (n > ULONG_MAX / size)
+> 		return -EINVAL;
+
+It would be cleaner to use kcalloc().  Except kcalloc() zeroes the memory
+and we still don't have a non-zeroing kcalloc().
+
+> The problem is that we didn't set a maximum bound before and we
+> can't know which maximum will break compatibility.
+
+Except for special cases (what are they?), code shouldn't be checking
+for maximum kmalloc() size.  It should be checking the size against the
+upper value which makes sense in the context of whatever it is doing at
+the time.  This ecryptfs callsite is an example.
+
+wrt any compatibility issues: the maximum amount of memory which can be
+allocated by kmalloc() depends on the kernel config (see
+kmalloc_sizes.h) so any code which is relying on any particular upper
+bound is already busted.
+
+
