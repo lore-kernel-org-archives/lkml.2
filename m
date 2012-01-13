@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932968Ab2AMWza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 17:55:30 -0500
-Received: from relais.videotron.ca ([24.201.245.36]:24937 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143Ab2AMWz2 (ORCPT
+	id S1759422Ab2AMXCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 18:02:25 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:56876 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759389Ab2AMXCX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 17:55:28 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; CHARSET=US-ASCII
-Date: Fri, 13 Jan 2012 17:55:27 -0500 (EST)
-From: Nicolas Pitre <nico@fluxnic.net>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org, moussaba@micron.com,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
-In-reply-to: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
-Message-id: <alpine.LFD.2.02.1201131748380.2722@xanadu.home>
-References: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
+	Fri, 13 Jan 2012 18:02:23 -0500
+MIME-Version: 1.0
+In-Reply-To: <4F10929E.8070007@linux.vnet.ibm.com>
+References: <20120111000051.GA28874@dztty> <CACVXFVMZhVFZajbZxng9dJqicy1XCK5n_QZLoefvkLkXvMsSZg@mail.gmail.com>
+ <4F10929E.8070007@linux.vnet.ibm.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jan 2012 15:02:01 -0800
+X-Google-Sender-Auth: iLZw-bBHaRehgwKWJ48TJ_sIlRI
+Message-ID: <CA+55aFzGZ_eSTChemYczKr3-0zQ3J3MJ3TfGtxh9wkhSKrrfCA@mail.gmail.com>
+Subject: Re: x86/mce: machine check warning during poweroff
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Ming Lei <tom.leiming@gmail.com>, Djalal Harouni <tixxdz@opendz.org>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
+        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        gouders@et.bocholt.fh-gelsenkirchen.de,
+        Marcos Souza <marcos.mage@gmail.com>,
+        Linux PM mailing list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "tglx@linutronix.de" <tglx@linutronix.de>, prasad@linux.vnet.ibm.com,
+        justinmattock@gmail.com, Jeff Chua <jeff.chua.linux@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012, Will Deacon wrote:
+On Fri, Jan 13, 2012 at 12:22 PM, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>
+> Fundamentally, this warning is triggered during CPU Offline, which is done
+> during poweroff, suspend, hibernate etc. IOW, even a simple
+> # echo 0 > /sys/devices/system/cpu/cpuX/online will trigger it.
 
-> /proc/pid/clear_refs is used to clear the Referenced and YOUNG bits for
-> pages and corresponding page table entries of the task with PID pid,
-> which includes any special mappings inserted into the page tables in
-> order to provide things like vDSOs and user helper functions.
-> 
-> On ARM this causes a problem because the vectors page is mapped as a
-> global mapping and since ec706dab ("ARM: add a vma entry for the user
-> accessible vector page"), a VMA is also inserted into each task for this
-> page to aid unwinding through signals and syscall restarts. Since the
-> vectors page is required for handling faults, clearing the YOUNG bit
-> (and subsequently writing a faulting pte) means that we lose the vectors
-> page *globally* and cannot fault it back in. This results in a system
-> deadlock on the next exception.
-> 
-> This patch avoids clearing the aforementioned bits for reserved pages,
-> therefore leaving the vectors page intact on ARM. Since reserved pages
-> are not candidates for swap, this change should not have any impact on
-> the usefulness of clear_refs.
-> 
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Nicolas Pitre <nico@fluxnic.net>
-> Reported-by: Moussa Ba <moussaba@micron.com>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
+There is definitely something wrong with CPU hotplug and MCE.
 
-Given Andrew's answer, this should be fine wrt Russell's concern.
+I seem to be able to trigger not only warnings, but some oopses, by doing:
 
-Acked-by: Nicolas Pitre <nico@linaro.org>
+ - enable list debugging, slab debugging, and kobject debugging in the
+kernel (I've got some other things enabled too, but I think those are
+the main ones)
 
-> An aside: if you want to see this problem in action, just run:
-> 
-> $ echo 1 > /proc/self/clear_refs
-> 
-> on an ARM platform (as any user) and watch your system hang. I think this
-> has been the case since 2.6.37, so I'll CC stable once people are happy
-> with the fix.
-> 
->  fs/proc/task_mmu.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index e418c5a..7dcd2a2 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -518,6 +518,9 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
->  		if (!page)
->  			continue;
->  
-> +		if (PageReserved(page))
-> +			continue;
-> +
->  		/* Clear accessed and referenced bits. */
->  		ptep_test_and_clear_young(vma, addr, pte);
->  		ClearPageReferenced(page);
-> -- 
-> 1.7.4.1
-> 
+ - do
+
+     echo 0 > /sys/devices/system/cpu/cpuX/online
+
+   this gets a few warnings
+
+ - then do
+
+     echo 1 > /sys/devices/system/cpu/cpuX/online
+
+where bringing it up again will crash the machine entirely.
+
+The oops scrolled off the screen an ddidn't get caught anywhere, but
+the call trace seems to be (warning: hand-entered, so some of this may
+be bogus):
+
+Oops in:
+  kobject_get+0x10/0x40
+
+Code:
+  55 48 89 f8 48 89 e5 48 83 ec 10 48 85 ff 74 0b <8b> 57 38 85 d2 74 06 f0 ff
+
+Call trace:
+  get_device
+  klist_device_get
+  klist_add_tail
+  bus_add_device
+  device_add
+  device_register
+  mce_device_create
+  notifier_call_chain
+  __raw_notifier_call_chain
+  __cpu_notify
+  _cpu_up
+  store_online
+  dev_attr_change
+  sysfs_write_file
+
+so it's definitely something bad in MCE device handling, and probably
+something to do with reusing a 'struct device' after freeign it, or
+after not having completely cleaned it up.
+
+I didn't see if I could spot the problem, but I think this is entirely
+reproducible, so hopefully somebody who knows the MCE code can
+trivially see this and fix it.
+
+                   Linus
