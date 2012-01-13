@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759187Ab2AMU6u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 15:58:50 -0500
-Received: from mail4.comsite.net ([205.238.176.238]:15487 "EHLO
+	id S932910Ab2AMU6s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 15:58:48 -0500
+Received: from mail4.comsite.net ([205.238.176.238]:48740 "EHLO
 	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753739Ab2AMU6p (ORCPT
+	with ESMTP id S1753981Ab2AMU6p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Jan 2012 15:58:45 -0500
 X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=70.249.75.62;
 From: Milton Miller <miltonm@bga.com>
 Subject: Re: [PATCH 2/2] mm: page allocator: Do not drain per-cpu lists via
   IPI from page allocator context
-To: "Gilad Ben-Yossef" <gilad@benyossef.com>, Mel Gorman <mgorman@suse.de>
+To: Mel Gorman <mgorman@suse.de>, Gilad Ben-Yossef <gilad@benyossef.com>
 Cc: <linux-kernel@vger.kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-Id: <why-arch-ipi-list-empty-ok@mdm.bga.com>
-In-Reply-To: <CAOtvUMdOwyzcPx3rHgQq1CVVfNG7w51RPmHw+_jG7HVtX+n2ig@mail.gmail.com>
-References: <CAOtvUMdOwyzcPx3rHgQq1CVVfNG7w51RPmHw+_jG7HVtX+n2ig@mail.gmail.com>
-	<1326276668-19932-1-git-send-email-mgorman@suse.de>
+Message-Id: <no-drain-reply@mdm.bga.com>
+In-Reply-To: <20120112171847.GN4118@suse.de>
+References: <1326276668-19932-1-git-send-email-mgorman@suse.de>
 	<1326276668-19932-3-git-send-email-mgorman@suse.de>
 	<1326381492.2442.188.camel@twins>
 	<20120112153712.GL4118@suse.de>
@@ -28,117 +27,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Jan 2012 about 14:14:57 -0500 (EST), Gilad Ben-Yossef wrote:
-> I also think there is still some problems with IPIs somewhere that
-> cause some corruption when a lot of IPIs are sent and that
-> the patch simply lowered the very big number of IPIs that are sent
-> via the direct reclaim code path so the problem
-> is hidden, not solved by this patch.
+On Thu Jan 12 2012 about 12:18:59 EST, Mel Gorman wrote:
+> On Thu, Jan 12, 2012 at 04:52:31PM +0100, Peter Zijlstra wrote:
+> > On Thu, 2012-01-12 at 15:37 +0000, Mel Gorman wrote:
+> > > On Thu, Jan 12, 2012 at 04:18:12PM +0100, Peter Zijlstra wrote:
+> > > > On Wed, 2012-01-11 at 10:11 +0000, Mel Gorman wrote:
+> > > > > At least one bug report has
+> > > > > been seen on ppc64 against a 3.0 era kernel that looked like a bug
+> > > > > receiving interrupts on a CPU being offlined.
+> > > >
+> > > > Got details on that Mel? The preempt_disable() in on_each_cpu() should
+> > > > serialize against the stop_machine() crap in unplug.
+> > >
+> > > I might have added 2 and 2 together and got 5.
+> > >
+> > > The stack trace clearly was while sending IPIs in on_each_cpu() and
+> > > always when under memory pressure and stuck in direct reclaim. This was
+> > > on !PREEMPT kernels where preempt_disable() is a no-op. That is why I
+> > > thought get_online_cpu() would be necessary.
+
+Well, stop_machine has to be selected by the scheduler, so we have to
+get back and call schedule() at some point to switch to that thread.
+.. unless it is the one allocating memory.
+
+> >
+> > For non-preempt the required scheduling of stop_machine() will have to
+> > wait even longer. Still there might be something funny, some of the
+> > hotplug notifiers are ran before the stop_machine thing does its thing
+> > so there might be some fun interaction.
 > 
-> I've seen something related when trying to test the IPI reduction
-> patches. Interesting enough it was not related to CPU hotplug at all -
+> Ok, how about this as a replacement patch?
+> 
+> ---8<---
+> From: Mel Gorman <mgorman@xxxxxxx>
+> Subject: [PATCH] mm: page allocator: Do not drain per-cpu lists via IPI from page allocator context
+> 
+> While running a CPU hotplug stress test under memory pressure, it
+> was observed that the machine would halt with no messages logged
+> to console. This is difficult to trigger and required a machine
+> with 8 cores and plenty of memory. In at least one case on ppc64,
+> the warning in include/linux/cpumask.h:107 triggered implying that
+> IPIs are being sent to offline CPUs in some cases.
 
-> When a lot of IPIs are being sent, I sometime got an assert from low
-> level platform code that I'm trying to send IPIs with an empty mask
-> although the mask was NOT empty. I didn't manage to debug it then but
-> I did manage to recreate it quite easily.
+That is
+        WARN_ON_ONCE(cpu >= nr_cpumask_bits);
 
-That is a known scenario and expected race, the check must be removed
-from the platform code.
+That has nothing to do with cpus going offline!
+
+nr_cpumask_bits is set during boot based on cpu_possible_mask.  If you
+see that triggered its a direct bug in the caller.  Either its looking
+at random memory in a NR_CPUS loop or its assuming that there is
+another cpu in a mask and not checking for a cpu_mask_next returning
+nr_cpumask_bits.
+
+Again it has nothing to do with hotplug (unless its assuming there are
+n online cpus in a loop instead of looking at the return value of
+the function).
+
 
 > 
-> I will see if I can recreate it with recent master and report.
+> A suspicious part of the problem is that the page allocator is sending
+> IPIs using on_each_cpu() without calling get_online_cpus() to prevent
+> changes to the online cpumask. It is depending on preemption being
+> disabled to protect it which is a no-op on !PREEMPT kernels. This means
+> that a thread can be reading the mask in smp_call_function_many() when
+> an attempt is made to take a CPU offline. The expectation is that this
+> is not a problem as the stop_machine() used during CPU hotplug should
+> be able to prevent any problems as the reader of the online mask will
+> prevent stop_machine making forward progress but it's unhelpful.
+
+And without CONFIG_PREEMPT, we won't be able to schedule away from the
+current task over to the stop_machine (migration/NN) thread.
+
 > 
+> On the other side, the mask can also be read while the CPU is being
+> brought online. In this case it is the responsibility of the
+> architecture that the CPU is able to receive and handle interrupts
+> before being marked active but that does not mean they always get it
+> right.
 
-The code in kernel/smp checks the mask, and looks for opportunities to
-convert smp_call_function_many to call_function_single.  But it now
-tolerates callers passing a mask that other cpus are changing.  So
-while it tries to make sure the mask has > 1 cpu, its not guaranteed.
-But that is not what causes the assert to fire.  
+yes.  See my other reply for some things we can to to help find bugs
+with smp_call_function_many (and on_each_cpu).
 
-There are a few opportunities for the architecture code to detect an
-empty mask.  The first case is a cpu started processing the list due
-to an interrupt generated by a cpu other than the requester between
-the time the requester put its work element in the list and when it
-executed the architecture code to send the interrupt.  A second
-case is a work element is deleted by a third cpu as its ref count
-goes to zero and then that element gets reused by the owning cpu,
-so we process part of the request list twice.
+> 
+> Sending excessive IPIs from the page allocator is a bad idea. In low
+> memory situations, a large number of processes can drain the per-cpu
+> lists at the same time, in quick succession and on many CPUs which is
+> pointless. In light of this and the unspecific CPU hotplug concerns,
+> this patch removes the call drain_all_pages() after failing direct
+> reclaim. To avoid impacting high-order allocation success rates,
+> it still drains the local per-cpu lists for high-order allocations
+> that failed.
 
-The solution is to tell the architecture code its not an error for
-the mask to be empty.
+"There is some bug somewhere.  This seems like a big slow pain I
+don't think this is likely to have much impact but if I am wrong we
+will just OOM early."  vs Gilad's "Lets reduce the pain of this slow
+path by doing just the required work".
 
-Here is a walk though of how smp_call_function_many works.  Each cpu
-has a queue element in per-cpu space that can be placed on the queue.
-When a cpu calls smp_call_function_many, it does a quick check to see
-if it could be converted to smp_call_function_single, but at this point
-other cpus can still be changing the mask (we only guarantee cpus that
-remain in the mask from the start of the call through the list copy
-will be called).   Once it decides multiple cpus are needed, it first
-waits for its per-cpu data to become free (if the previous caller said
-not to wait, it could still be in use).  After its free it copies
-the mask supplied by the caller to its per-cpu data work element.
-At that point it removes itself from the list then counts the bits.
-If the count is 0 it is done, but otherwise it obtains the lock,
-adds its work to the front of the global list, and stores the count
-of cpus.  Starting at this point other cpus could start doing the
-work requested, even though they have not received an interrupt yet,
-nor have we unlocked the list manipulation lock).  The requesting
-cpu proceeds to unlock the list and then calls the architecture code
-to request all cpus in the mask be notified there is work for them.
-The low level code does its processing and then iterates over the
-list sending IPIs to each cpu that is still in the mask in the work
-element.  If the caller requested to wait for all (other) cpus to
-perform the work before returning, then the requesting cpu waits for
-its per-cpu-data work request element be unlocked by the last cpu
-who does the work, after it has removed it from the list.
-
-Whenever a cpu gets an IPI for generic_call_function_interrupt, it
-starts at the top of the list and works its way down.  If a given
-element has the cpu's bit set in the cpu mask in the work element,
-then there will be work to do in the future.  It then proceeds to check
-references, to make sure the element has been placed on the list and is
-allowed to be processed.  If not, we are guaranteed the requester has
-not unlocked the list and therefore has not called the architecture
-notifier, so the cpu will get another interrupt in the future and
-proceeds to the next element.   If the bit is set and references
-are set, then the code will execute the requested function with the
-supplied data argument.  This function must not enable interrupts!
-(There is a defensive check, but that will only trigger if we take
-another call to smp_call_function_interrupt.)  After the call, the
-cpu removes itself from the cpu mask and decrements the ref count.
-If it removes the last reference, it grabs the list manipulation lock,
-removes the element with list_del_rcu, unlock the list (flushing the
-list manipulation writes), and then unlocks the element, allowing
-the requesting cpu to reuse the element.  It then goes on to the
-next element.
-
-If the cpu suddenly becomes slow here and the element owning cpu
-see the unlock and is able to reuse the element, our traversal of
-next will lead us to the start of the list and we will check some
-entries an additional time.  This means we can see entries that were
-added to the list after we started processing the list before we get
-the interrupt.  Eventually we wrap back to the head of the list and
-return from the interrupt.
-
-It would be easy to write some debugging assertions for the list,
-for instance:  After grabbing the list walk it and mark which cpus
-per_cpu data is in the list.  Then still under the lock verify
-(1) if refs is set the element is on the list (2) refs is <= the
-number of cpus in the cpumask (3) any element with refs set is
-under csd_lock.   Things that are valid tranisent states: (1)
-refs < bits in mask (short transient), (2) refs = 0 but on list
-(waiting for lock to remove) (3) off list but csd_lock (either
-short trasnient or owning cpu preparing or waiting to put it
-on the list).
-
-For added saftey under the lock we could count the traversals it should
-never take more than one above nr_cpu_ids (or num_possible_cpus()
-for that matter) to get back to the list head.
-
-We could also put an assert type check before taking a cpu
-dead that would check all per_cpu copies that our cpu bit
-is not set in any cpus element.  It should never be set
-even transiently if we are offline.
+Lets find the real bug.
 
 milton
