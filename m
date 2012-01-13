@@ -1,56 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab2AMTrb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 14:47:31 -0500
-Received: from unicorn.mansr.com ([78.86.181.103]:52232 "EHLO
-	unicorn.mansr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758910Ab2AMTra (ORCPT
+	id S1758944Ab2AMTt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 14:49:58 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:43774 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab2AMTt4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 14:47:30 -0500
-From: Mans Rullgard <mans.rullgard@linaro.org>
-To: Javi Merino <javi.merino@arm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        patches@linaro.org, Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jaswinder.singh@linaro.org>, linux-kernel@vger.kernel.org,
-        Boojin Kim <boojin.kim@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH] ARM: pl330: fix null pointer dereference in pl330_chan_ctrl()
-Date: Fri, 13 Jan 2012 19:46:22 +0000
-Message-Id: <1326483982-13610-1-git-send-email-mans.rullgard@linaro.org>
-X-Mailer: git-send-email 1.7.8.3
-In-Reply-To: <4F103620.8070504@arm.com>
-References: <4F103620.8070504@arm.com>
+	Fri, 13 Jan 2012 14:49:56 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACsJy8BmFgssTAh=1U7JgBsGG-tSaWXQzZeODND3icXY3QUxug@mail.gmail.com>
+References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
+ <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
+ <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
+ <20120110222711.GK7164@opensource.wolfsonmicro.com> <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
+ <20120111184026.GA23952@windriver.com> <7vaa5rzaax.fsf_-_@alter.siamese.dyndns.org>
+ <CACsJy8BmFgssTAh=1U7JgBsGG-tSaWXQzZeODND3icXY3QUxug@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 13 Jan 2012 11:49:34 -0800
+X-Google-Sender-Auth: jnLFKSvZBggjDLhAE5PAoAWZBhY
+Message-ID: <CA+55aFxw_-0h1FDmPRVif3LM03Qh3-6haA7=KYbae8pSFbpW2w@mail.gmail.com>
+Subject: Re: [PATCH] merge: Make merge strategy message follow the diffstat
+To: Nguyen Thai Ngoc Duy <pclouds@gmail.com>
+Cc: Junio C Hamano <gitster@pobox.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
+        Git Mailing List <git@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes the thrd->req_running field being accessed before thrd
-is checked for null.  The error was introduced in abb959f.
+On Fri, Jan 13, 2012 at 11:27 AM, Nguyen Thai Ngoc Duy
+<pclouds@gmail.com> wrote:
+>
+> Still, diffstat from a fetch/pull is sometimes too verbose. It'd be
+> better if we have something that fit in one screen (dirstat or maybe
+> just a first few lines from diffstat then ellipsis) then refer users
+> to "git diff --stat HEAD@{1}" for more detail stat.
 
-Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
----
- drivers/dma/pl330.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Yeah, I've wanted that. Show the beginning, the end, and the summary
+line of the diffstat would be lovely.
 
-diff --git a/drivers/dma/pl330.c b/drivers/dma/pl330.c
-index 3a6e042..cb3e597 100644
---- a/drivers/dma/pl330.c
-+++ b/drivers/dma/pl330.c
-@@ -1568,12 +1568,13 @@ static int pl330_chan_ctrl(void *ch_id, enum pl330_chan_op op)
- 	struct pl330_thread *thrd = ch_id;
- 	struct pl330_dmac *pl330;
- 	unsigned long flags;
--	int ret = 0, active = thrd->req_running;
-+	int ret = 0, active;
- 
- 	if (!thrd || thrd->free || thrd->dmac->state == DYING)
- 		return -EINVAL;
- 
- 	pl330 = thrd->dmac;
-+	active = thrd->req_running;
- 
- 	spin_lock_irqsave(&pl330->lock, flags);
- 
--- 
-1.7.8.3
+It would be lovely in "git commit" too. Not just
 
+    Modified: filename
+
+but a diffstat that shows now many lines.
+
+And what I've *really* wanted is to actually see the diff itself if it
+is small. So some kind of "dynamic summary": for one-liners (or
+ten-liners), show the whole diff. For medium-sized changes, show the
+whole diffstat. And for really big changes, show an outline and the
+"768 files changed, 179851 lines added, 7630 lines removed" stats.
+
+IOW, whatever fits in, say, 50 lines or less.
+
+That would be absolutely lovely if somebody were to do it.
+
+                  Linus
