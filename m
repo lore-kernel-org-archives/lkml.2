@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756941Ab2AMBl5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:41:57 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:44077 "EHLO
+	id S1756954Ab2AMBqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:46:40 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38356 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2AMBlz convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752413Ab2AMBqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:41:55 -0500
+	Thu, 12 Jan 2012 20:46:36 -0500
 MIME-Version: 1.0
-In-Reply-To: <CABqD9hZCpFM4fN9p3vmnGeLVbvoDtTgbiovz=RsSkjH6sv=xBQ@mail.gmail.com>
-References: <1326411506-16894-1-git-send-email-wad@chromium.org>
- <CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
- <CAObL_7FErN5CHmfSehJYcM0_Lz-WTywG7cHe2jZyQbf-GkOQjg@mail.gmail.com>
- <CA+55aFzzRNHfSo-1DyzsAwYvj1Da-vyhMQP-OdrA-rWywsebcg@mail.gmail.com>
- <CAObL_7F8aYPDQ1xTFjOxWgoZfrtGNFVgMe2Ld61_=D+YY427qA@mail.gmail.com> <CABqD9hZCpFM4fN9p3vmnGeLVbvoDtTgbiovz=RsSkjH6sv=xBQ@mail.gmail.com>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 12 Jan 2012 17:41:33 -0800
-X-Google-Sender-Auth: -jINoJ7CMaozEmc6KPVJ1eADej4
-Message-ID: <CAObL_7Fr-yV33jobSa3g_WqVJar-5x5oQM0t8GJxcLFsuBhLtg@mail.gmail.com>
-Subject: Re: [PATCH PLACEHOLDER 1/3] fs/exec: "always_unprivileged" patch
-To: Will Drewry <wad@chromium.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        john.johansen@canonical.com, serge.hallyn@canonical.com,
-        coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
-        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
-        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk
+In-Reply-To: <1326415001-2145-1-git-send-email-ying.huang@intel.com>
+References: <1326415001-2145-1-git-send-email-ying.huang@intel.com>
+Date: Thu, 12 Jan 2012 17:46:36 -0800
+X-Google-Sender-Auth: BtCY5teWxYFepwFo9zL_FxkRbkU
+Message-ID: <CA+8MBbJHsOHb-COG_y36VYDA9EeTs3KpLc86kw1OhVF9Z_p7Jw@mail.gmail.com>
+Subject: Re: x86, mce, Use user return notifier in mce
+From: Tony Luck <tony.luck@intel.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Borislav Petkov <bp@amd64.org>, Chen Gong <gong.chen@linux.intel.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 5:37 PM, Will Drewry <wad@chromium.org> wrote:
-> On Thu, Jan 12, 2012 at 7:11 PM, Andrew Lutomirski <luto@mit.edu> wrote:
->> (Also, preventing dropping of privileges will probably make a patch
->> more complicted -- I'll have to find and update all the places that
->> allow dropping privileges.)
->
-> An alternative approach might be that the restricted bit drops all
-> privileges that allows privilege changes in either direction.  E.g.,
-> - set restricted bit
-> -- adds a check anywhere MNT_NOSUID is
-> -- sets securebit to SECURE_NOROOT|..LOCKED
-> -- drops CAP_SETUID, CAP_DAC_OVERRIDE, ...
-> -- set the caps bounding set to the minimum the restricted bit allows
->
-> That may deviate from the intent (by re-using caps), but it could keep some
-> of the privilege transition checking code the same.
+On Thu, Jan 12, 2012 at 4:36 PM, Huang Ying <ying.huang@intel.com> wrote:
+> Replace the home-made TIF_MCE_NOTIFY based code in MCE with user
+> return notifier.
 
-I'm not sure it'll be much of a simplification.  The entire patch is
-45 lines right now :)  I'll test it and send it out.
+When I looked at this before, I found that the existing user return notifier had
+the meaning "call a function before THIS CPU returns to user space". Use in KVM
+was to update some MSR that needed adjustment before a cpu ran another user
+process.
 
-FWIW, though, it breaks apparmor (intentionally).  Can any of you
-either explain what *should* happen or (better) volunteer to fix it?
-It should be about three lines of code for someone who understands
-what's going on.  I don't have an apparmor system, so I can't really
-test it.
+The MCE code wanted something slightly different: "call a function before THIS
+PROCESS returns to user space". So my prototype code from last year made a
+whole new set of interfaces - similar in style to the user return
+notifier, but with
+the MCE semantics.
 
---Andy
+At first glance it looks like you are just using the user return
+notifier code (perhaps
+I'm mis-reading the diff?). This won't work - it's possible for a
+context switch, and
+then the process that hit the MCE may get moved to another cpu, when it will
+be run. Meanwhile we'll execute our function in the context of some
+other process.
 
->
-> Just a thought,
-> will
+-Tony
