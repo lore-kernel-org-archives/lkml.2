@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759392Ab2AMWna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 17:43:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55100 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759365Ab2AMWn3 (ORCPT
+	id S932930Ab2AMWnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 17:43:45 -0500
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:23355
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759396Ab2AMWnl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 17:43:29 -0500
-Date: Fri, 13 Jan 2012 14:43:28 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nico@fluxnic.net>, moussaba@micron.com,
-        David Rientjes <rientjes@google.com>, Hugh Dickins <hughd@google.com>
-Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
-Message-Id: <20120113144328.564cb50e.akpm@linux-foundation.org>
-In-Reply-To: <20120113153556.GY1068@n2100.arm.linux.org.uk>
-References: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
-	<20120113153556.GY1068@n2100.arm.linux.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Jan 2012 17:43:41 -0500
+X-SpamScore: -10
+X-BigFish: VS-10(zz1432N98dK4015Lzz1202hzzz2dhc1ahc1bh87h2a8h668h839h8e2h8e3h944hbe9k61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:160.36.179.113;KIP:(null);UIP:(null);IPV:NLI;H:kedge4.utk.tennessee.edu;RD:kedge4.utk.tennessee.edu;EFVD:NLI
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 13 Jan 2012 17:43:33 -0500
+From: Vince Weaver <vweaver1@eecs.utk.edu>
+To: <linux-kernel@vger.kernel.org>
+CC: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@gmail.com>
+Subject: Re: perf_event hard locks 3.1.x
+In-Reply-To: <alpine.DEB.2.00.1112161804280.8779@cl320.eecs.utk.edu>
+Message-ID: <alpine.DEB.2.00.1201131735480.11102@cl320.eecs.utk.edu>
+References: <alpine.DEB.2.00.1112161804280.8779@cl320.eecs.utk.edu>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012 15:35:56 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-> On Fri, Jan 13, 2012 at 03:13:07PM +0000, Will Deacon wrote:
-> > /proc/pid/clear_refs is used to clear the Referenced and YOUNG bits for
-> > pages and corresponding page table entries of the task with PID pid,
-> > which includes any special mappings inserted into the page tables in
-> > order to provide things like vDSOs and user helper functions.
-> > 
-> > On ARM this causes a problem because the vectors page is mapped as a
-> > global mapping and since ec706dab ("ARM: add a vma entry for the user
-> > accessible vector page"), a VMA is also inserted into each task for this
-> > page to aid unwinding through signals and syscall restarts. Since the
-> > vectors page is required for handling faults, clearing the YOUNG bit
-> > (and subsequently writing a faulting pte) means that we lose the vectors
-> > page *globally* and cannot fault it back in. This results in a system
-> > deadlock on the next exception.
-> > 
-> > This patch avoids clearing the aforementioned bits for reserved pages,
-> > therefore leaving the vectors page intact on ARM. Since reserved pages
-> > are not candidates for swap, this change should not have any impact on
-> > the usefulness of clear_refs.
+On Fri, 16 Dec 2011, Vince Weaver wrote:
+
+> I had a PAPI user report that perf_event usage (such as running
+> the PAPI tests) would cause hard lockups on his 3.1.x kernel
+> (from ARCH linux).
 > 
-> Having just looked at mm/swapfile.c, what ensures that we don't try to swap
-> the vectors page out?
+> After some tedious bisection of the .config file, I found that the issue
+> happens when 
+>   CONFIG_SLUB=y
+>   CONFIG_SLUB_DEBUG=y
+> is enabled.  Having a kernel with that enabled and stressing the 
+> perf_event subsystem will eventually cause lockups or hard crashes.
 
-Scanning and swapout access the page via the vm's page LRU lists. 
-These magical pages shouldn't be on the LRU, so the VM won't pester
-them.  If those pages did get added to the LRU somwhoe then yes,
-there's a problem.
+I spent a lot of time trying to track this down, though the problem does 
+not appear with stock 3.2.
 
-> I thought that VM_IO or VM_RESERVED once guaranteed that the vma wouldn't
-> be scanned, but I don't see anything in there which tests these flags.
-> As a result, it seems to me that the original patch is wrong, and we need
-> to keep the vectors page completely out of the vma list to prevent it
-> ever being made old.
-> 
-> Maybe the MM gurus can comment?
+The problem is still there with 3.1.9, but since that might be the last 
+3.1.x kernel it might not matter anymore.
 
-The MM guru is Hugh.
+Summary of what I found:
+  you need to have CONFIG_SLUB=y
+  you can cause the crash by running the PAPI ctests 1-3 times
+    (the program that causes the crash is different each time, so 
+     no good workaround.  Probably a race condition).
+
+I reverse-bisected the fix between 3.1 and  3.2 (that is to say, I 
+bisected to find when the kernels stopped crashing) to this commit:
+
+   commit a33caeb118198286309859f014c0662f3ed54ed4
+   lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
+
+but that fix is already in 3.1.9 and doesn't seem to fix things.
+
+It might also be the next commit 
+
+   commit ddf6e0e50723b62ac76ed18eb53e9417c6eefba7
+   ftrace: Fix hash record accounting bug
+
+as the panics in that report look similar to what I see before the 
+machine quickly and massively dies, but when I apply this on top of 
+3.1.9 it doesn't avoid the crash.
+
+I suspect maybe I was chasing two separate problems, which is why the 
+bisect didn't give the proper results.
+
+In any case, I'm abandoning the search for now unless anyone has some 
+other ideas I could try.
+
+Thanks,
+
+Vince
+
