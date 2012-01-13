@@ -1,145 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758166Ab2AMNpX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 08:45:23 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34620 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752905Ab2AMNpR (ORCPT
+	id S1758170Ab2AMNsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 08:48:38 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:35947 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab2AMNsg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 08:45:17 -0500
-Message-ID: <4F10355F.5000805@canonical.com>
-Date: Fri, 13 Jan 2012 14:45:03 +0100
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20111223 Thunderbird/10.0
+	Fri, 13 Jan 2012 08:48:36 -0500
+Message-ID: <4F103620.8070504@arm.com>
+Date: Fri, 13 Jan 2012 13:48:16 +0000
+From: Javi Merino <javi.merino@arm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.24) Gecko/20111108 Lightning/1.0b2 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Will Drewry <wad@chromium.org>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, keescook@chromium.org,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@MIT.EDU, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
-        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
-        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, olofj@chromium.org,
-        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
- granting privs
-References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
-In-Reply-To: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
-X-Enigmail-Version: 1.3.4
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Mans Rullgard <mans.rullgard@linaro.org>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Boojin Kim <boojin.kim@samsung.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Subject: Re: [PATCH] ARM: pl330: fix null pointer dereference in pl330_chan_ctrl()
+References: <1326458191-23492-1-git-send-email-mans.rullgard@linaro.org>
+In-Reply-To: <1326458191-23492-1-git-send-email-mans.rullgard@linaro.org>
+X-OriginalArrivalTime: 13 Jan 2012 13:48:27.0055 (UTC) FILETIME=[06A72BF0:01CCD1FA]
+X-MC-Unique: 112011313482904701
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 03:12 AM, Andy Lutomirski wrote:
-> With this set, a lot of dangerous operations (chroot, unshare, etc)
-> become a lot less dangerous because there is no possibility of
-> subverting privileged binaries.
+On 13/01/12 12:36, Mans Rullgard wrote:
+> This fixes the thrd->req_running field being accessed before thrd
+> is checked for null.  The error was introduced in abb959f.
 > 
-> This patch completely breaks apparmor.  Someone who understands (and
-> uses) apparmor should fix it or at least give me a hint.
+> Signed-off-by: Mans Rullgard <mans.rullgard@linaro.org>
+> ---
+>  arch/arm/common/pl330.c |    3 ++-
+
+As Russell points out, the s5p tree has merged this file with
+drivers/dma/pl330.c so this bug is now in that file.  Please rebase the
+patch on top of linux-next.
+
+Other than that, yes, that's my fault.
+
+Acked-by: Javi Merino <javi.merino@arm.com>
+
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-
-This should fix apparmor
-
----
-
->From b4d142f1a81d252ac2a72587841e7b430190a889 Mon Sep 17 00:00:00 2001
-From: John Johansen <john.johansen@canonical.com>
-Date: Fri, 13 Jan 2012 14:20:47 +0100
-Subject: [PATCH] Fix apparmor for PR_{GET,SET}_NO_NEW_PRIV
-
-Signed-off-by: John Johansen <john.johansen@canonical.com>
----
- security/apparmor/domain.c |   38 +++++++++++++++++++++++++++++++++++---
- 1 files changed, 35 insertions(+), 3 deletions(-)
-
-diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
-index 7f480b7..7316d77 100644
---- a/security/apparmor/domain.c
-+++ b/security/apparmor/domain.c
-@@ -360,9 +360,6 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 	if (bprm->cred_prepared)
- 		return 0;
- 
--	/* XXX: someone who understands apparmor needs to fix this. */
--	BUG_ON(bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS);
--
- 	cxt = bprm->cred->security;
- 	BUG_ON(!cxt);
- 
-@@ -398,6 +395,11 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 			new_profile = find_attach(ns, &ns->base.profiles, name);
- 		if (!new_profile)
- 			goto cleanup;
-+		/*
-+		 * NOTE: Domain transitions from unconfined are allowed
-+		 * even when no_new_privs is set because this aways results
-+		 * in a further reduction of permissions.
-+		 */
- 		goto apply;
- 	}
- 
-@@ -458,6 +460,16 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
- 		/* fail exec */
- 		error = -EACCES;
- 
-+	/*
-+	 * Policy has specified a domain transition, if no_new_privs then
-+	 * fail the exec.
-+	 */
-+	if (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS) {
-+		aa_put_profile(new_profile);
-+		error = -EPERM;
-+		goto cleanup;
-+	}
-+
- 	if (!new_profile)
- 		goto audit;
- 
-@@ -612,6 +624,14 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
- 	const char *target = NULL, *info = NULL;
- 	int error = 0;
- 
-+	/*
-+	 * Fail explicitly requested domain transitions if no_new_privs.
-+	 * There is no exception for unconfined as change_hat is not
-+	 * available.
-+	 */
-+	if (current->no_new_privs)
-+		return -EPERM;
-+
- 	/* released below */
- 	cred = get_current_cred();
- 	cxt = cred->security;
-@@ -753,6 +773,18 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
- 	cxt = cred->security;
- 	profile = aa_cred_profile(cred);
- 
-+	/*
-+	 * Fail explicitly requested domain transitions if no_new_privs
-+	 * and not unconfined.
-+	 * Domain transitions from unconfined are allowed even when
-+	 * no_new_privs is set because this aways results in a reduction
-+	 * of permissions.
-+	 */
-+	if (current->no_new_privs && !unconfined(profile)) {
-+		put_cred(cred);
-+		return -EPERM;
-+	}
-+
- 	if (ns_name) {
- 		/* released below */
- 		ns = aa_find_namespace(profile->ns, ns_name);
--- 
-1.7.7.3
+> diff --git a/arch/arm/common/pl330.c b/arch/arm/common/pl330.c
+> index 8d8df74..67abef5 100644
+> --- a/arch/arm/common/pl330.c
+> +++ b/arch/arm/common/pl330.c
+> @@ -1496,12 +1496,13 @@ int pl330_chan_ctrl(void *ch_id, enum pl330_chan_op op)
+>  	struct pl330_thread *thrd = ch_id;
+>  	struct pl330_dmac *pl330;
+>  	unsigned long flags;
+> -	int ret = 0, active = thrd->req_running;
+> +	int ret = 0, active;
+>  
+>  	if (!thrd || thrd->free || thrd->dmac->state == DYING)
+>  		return -EINVAL;
+>  
+>  	pl330 = thrd->dmac;
+> +	active = thrd->req_running;
+>  
+>  	spin_lock_irqsave(&pl330->lock, flags);
+>  
 
 
