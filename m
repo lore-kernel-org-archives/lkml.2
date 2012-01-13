@@ -1,71 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932628Ab2AMPzh (ORCPT <rfc822;w@1wt.eu>);
+	id S1758414Ab2AMP47 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:56:59 -0500
+Received: from mga14.intel.com ([143.182.124.37]:1497 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932584Ab2AMPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Jan 2012 10:55:37 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43115 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932220Ab2AMPxc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:53:32 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [PATCH 0/7] bitops: introduce for_each_clear_bit()
-Date: Sat, 14 Jan 2012 00:53:17 +0900
-Message-Id: <1326470004-10096-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.71,315,1320652800"; 
+   d="scan'208";a="95530497"
+From: Alex Shi <alex.shi@intel.com>
+To: linux-kernel@vger.kernel.org, cl@gentwo.org, eric.dumazet@gmail.com,
+        tglx@linutronix.de, avi@redhat.com, akpm@linux-foundation.org,
+        davem@davemloft.net, kaber@trash.net, a.p.zijlstra@chello.nl,
+        ying.huang@intel.com, konrad.wilk@oracle.com, hpa@zytor.com,
+        jeremy@goop.org
+Subject: [PATCH v2 1/5] net: use this_cpu_xxx replace percpu_xxx funcs
+Date: Fri, 13 Jan 2012 23:53:34 +0800
+Message-Id: <1326470018-22342-2-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1326470018-22342-1-git-send-email-alex.shi@intel.com>
+References: <1326470018-22342-1-git-send-email-alex.shi@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set introduces for_each_clear_bit() which is similar to
-for_each_set_bit(), but it iterates over all the cleared bits in a
-memory region.
+percpu_xxx funcs are duplicated with this_cpu_xxx funcs, so replace them
+for further code clean up.
 
-This also renames for_each_set_bit_cont() to for_each_set_bit_from()
-because it is anologous to list_for_each_entry_from() in list.h
-rather than list_for_each_entry_continue(), and then introduces
-for_each_clear_bit_from(), too.
+And in preempt safe scenario, __this_cpu_xxx funcs has a bit better
+performance since __this_cpu_xxx has no redundant preempt_disable()
 
-Akinobu Mita (7):
-  bitops: rename for_each_set_bit_cont in favor of anologous to list.h
-    function
-  bitops: remove for_each_set_bit_cont
-  bitops: introduce list_for_each_clear_bit
-  mtd: use for_each_clear_bit
-  s390/char: use for_each_clear_bit
-  uwb: use for_each_clear_bit
-  x86: use for_each_clear_bit_from
+Signed-off-by: Alex Shi <alex.shi@intel.com>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+---
+ net/netfilter/xt_TEE.c |   12 ++++++------
+ net/socket.c           |    4 ++--
+ 2 files changed, 8 insertions(+), 8 deletions(-)
 
- arch/x86/kernel/cpu/perf_event.c       |    4 ++--
- arch/x86/kernel/irqinit.c              |    6 +++---
- drivers/mtd/chips/cfi_cmdset_0001.c    |    6 ++----
- drivers/s390/char/sclp_cmd.c           |    5 ++---
- drivers/uwb/allocator.c                |    6 ++----
- include/linux/bitops.h                 |   13 ++++++++++++-
- tools/perf/util/include/linux/bitops.h |    2 +-
- 7 files changed, 24 insertions(+), 18 deletions(-)
-
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org
-Cc: linux-usb@vger.kernel.org
-
+diff --git a/net/netfilter/xt_TEE.c b/net/netfilter/xt_TEE.c
+index 3aae66f..f81eba4 100644
+--- a/net/netfilter/xt_TEE.c
++++ b/net/netfilter/xt_TEE.c
+@@ -87,7 +87,7 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 	struct iphdr *iph;
+ 
+-	if (percpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	/*
+ 	 * Copy the skb, and route the copy. Will later return %XT_CONTINUE for
+@@ -124,9 +124,9 @@ tee_tg4(struct sk_buff *skb, const struct xt_action_param *par)
+ 	ip_send_check(iph);
+ 
+ 	if (tee_tg_route4(skb, info)) {
+-		percpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip_local_out(skb);
+-		percpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+@@ -167,7 +167,7 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ {
+ 	const struct xt_tee_tginfo *info = par->targinfo;
+ 
+-	if (percpu_read(tee_active))
++	if (__this_cpu_read(tee_active))
+ 		return XT_CONTINUE;
+ 	skb = pskb_copy(skb, GFP_ATOMIC);
+ 	if (skb == NULL)
+@@ -185,9 +185,9 @@ tee_tg6(struct sk_buff *skb, const struct xt_action_param *par)
+ 		--iph->hop_limit;
+ 	}
+ 	if (tee_tg_route6(skb, info)) {
+-		percpu_write(tee_active, true);
++		__this_cpu_write(tee_active, true);
+ 		ip6_local_out(skb);
+-		percpu_write(tee_active, false);
++		__this_cpu_write(tee_active, false);
+ 	} else {
+ 		kfree_skb(skb);
+ 	}
+diff --git a/net/socket.c b/net/socket.c
+index 28a96af..784d93a 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -479,7 +479,7 @@ static struct socket *sock_alloc(void)
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
+ 
+-	percpu_add(sockets_in_use, 1);
++	this_cpu_add(sockets_in_use, 1);
+ 	return sock;
+ }
+ 
+@@ -522,7 +522,7 @@ void sock_release(struct socket *sock)
+ 	if (rcu_dereference_protected(sock->wq, 1)->fasync_list)
+ 		printk(KERN_ERR "sock_release: fasync list not empty!\n");
+ 
+-	percpu_sub(sockets_in_use, 1);
++	this_cpu_sub(sockets_in_use, 1);
+ 	if (!sock->file) {
+ 		iput(SOCK_INODE(sock));
+ 		return;
 -- 
-1.7.4.4
+1.6.3.3
 
