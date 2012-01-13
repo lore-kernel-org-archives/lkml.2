@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759469Ab2AMX07 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 18:26:59 -0500
-Received: from cavan.codon.org.uk ([93.93.128.6]:34045 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753535Ab2AMX05 (ORCPT
+	id S1759491Ab2AMX1D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 18:27:03 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:50979 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753535Ab2AMX1A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 18:26:57 -0500
-Date: Fri, 13 Jan 2012 23:26:53 +0000
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] PCI changes
-Message-ID: <20120113232653.GA29533@srcf.ucam.org>
-References: <20120111103408.30cfa338@jbarnes-desktop>
- <CA+55aFwDVEH1NwEgKCQSv9ee3P2ma1aqtjOo-s2BeURyeTGo8g@mail.gmail.com>
- <20120113212409.GA27671@srcf.ucam.org>
- <CA+55aFwJvvrNyqNStjM9iYcRa+t4FuuJW48SixXN+6H6sJ9e8w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwJvvrNyqNStjM9iYcRa+t4FuuJW48SixXN+6H6sJ9e8w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 13 Jan 2012 18:27:00 -0500
+Date: Sat, 14 Jan 2012 09:56:33 +1030
+From: Christopher Yeoh <cyeoh@au1.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] Fix race in process_vm_rw_core
+Message-ID: <20120114095633.139119b2@Gantu.yeoh.info>
+In-Reply-To: <20120113160442.GA20137@redhat.com>
+References: <20120113220028.4ba7cead@Gantu.yeoh.info>
+	<20120113160442.GA20137@redhat.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 12011313-6102-0000-0000-000000A2E4D2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 03:14:21PM -0800, Linus Torvalds wrote:
-> On Fri, Jan 13, 2012 at 1:24 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> >>
-> >> So why is acpi_pci_root_add() special? Cna you explain that part to me?
+On Fri, 13 Jan 2012 17:04:42 +0100
+Oleg Nesterov <oleg@redhat.com> wrote:
+> On 01/13, Christopher Yeoh wrote:
+> > ...
+> > +struct mm_struct *get_check_task_mm(struct task_struct *task,
+> > unsigned int mode) +{
+> > +	struct mm_struct *mm;
+> > +	int err;
+> > +
+> > +	err =
+> > mutex_lock_killable(&task->signal->cred_guard_mutex);
+> > +	if (err)
+> > +		return ERR_PTR(err);
+> > +
+> > +	task_lock(task);
+> > +	if (__ptrace_may_access(task, mode)) {
+> > +		mm = ERR_PTR(-EACCES);
+> > +		goto out;
+> > +	}
+> 
+> Probably you should check "mm != current->mm" before
+> __ptrace_may_access(), otherwise this changes the rules for,
+> say, /proc/pid/maps.
+
+__ptrace_may_access has a check for task == current already - 
+Is that sufficient?
+
+	/* Don't let security modules deny introspection */
+	if (task == current)
+		return 0;
+
+> > @@ -298,23 +298,15 @@ static ssize_t process_vm_rw_core(pid_t pid,
+> > const struct iovec *lvec, goto free_proc_pages;
+> >  	}
 > >
-> > pcie_no_aspm() means "Do not permit ASPM to be enabled" - it doesn't
-> > alter the existing state. pcie_clear_aspm() does that.
+> > -	task_lock(task);
+> > -	if (__ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
+> > -		task_unlock(task);
+> > -		rc = -EPERM;
+> > -		goto put_task_struct;
+> > -	}
+> > -	mm = task->mm;
+> > -
+> > -	if (!mm || (task->flags & PF_KTHREAD)) {
+> > -		task_unlock(task);
+> > -		rc = -EINVAL;
+> > +	mm = get_check_task_mm(task, PTRACE_MODE_ATTACH);
+> > +	if (!mm || IS_ERR(mm)) {
+> > +		if (!mm)
+> > +			rc = -EINVAL;
+> > +		else
+> > +			rc = -EPERM;
 > 
-> I *know*.
-> 
-> So look again.
-> 
-> Why is acpi_pci_root_add() special?
-> 
-> Because dammit, it does exactly that pcie_clear_aspm() for the
-> ACPI_FADT_NO_ASPM case.
+> Cosmetic nit. I won't insist, but why -EPERM is better than -EACCES
+> returned by get_check_task_mm()? IOW, why not rc = PTR_ERR() ?
 
-I'm sorry, I thought you were referring to the status quo rather than 
-the patch - I see what you mean now. The intent here is to clear ASPM 
-state if the FADT bit has been set *and* we've got _OSC control, whereas 
-previously we'd clear ASPM state any time the FADT bit was set. There 
-are some machines which (a) set the FADT bit, (b) hand over _OSC 
-control, (c) program the device and (d) crash under certain 
-circumstances if you then try to use it. My assumption here is that the 
-FADT bit *does* mean "clear ASPM state", but only if we've been granted 
-_OSC control. That's the behaviour described in the changelog.
+Maybe I should just convert EACCES to EPERM for process_vm_rw_core. I
+left get_check_task_mm with EACCESS to preserve existing behaviour
+for mm_for_maps.
 
+SUSv3 defines EACCES and EPERM as 
+
+[EACCES]
+Permission denied. An attempt was made to access a file in a way
+forbidden by its file access permissions.
+
+[EPERM]
+Operation not permitted. An attempt was made to perform an operation
+limited to processes with appropriate privileges or to the owner of a
+file or other resource.
+
+So EPERM is more appropriate for process_vm_readv/writev
+
+Chris
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+cyeoh@au.ibm.com
+
