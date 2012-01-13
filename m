@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756863Ab2AMBcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:32:13 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:52736 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2AMBcM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:32:12 -0500
+	id S1756879Ab2AMBe5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:34:57 -0500
+Received: from tundra.namei.org ([65.99.196.166]:44099 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752413Ab2AMBez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 20:34:55 -0500
+Date: Fri, 13 Jan 2012 12:31:53 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        torvalds@linux-foundation.org, segoon@openwall.com,
+        rostedt@goodmis.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, luto@mit.edu,
+        mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
+        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
+        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
+        dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com
+Subject: Re: [RFC,PATCH 1/2] seccomp_filters: system call filtering using
+ BPF
+In-Reply-To: <20120112161806.21a09335@pyramind.ukuu.org.uk>
+Message-ID: <alpine.LRH.2.00.1201131231140.19186@tundra.namei.org>
+References: <1326302710-9427-1-git-send-email-wad@chromium.org> <1326302710-9427-2-git-send-email-wad@chromium.org> <20120112161806.21a09335@pyramind.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <m14nw0wnjh.fsf@fess.ebiederm.org>
-References: <1326405521-2736-1-git-send-email-venki@google.com>
-	<m14nw0wnjh.fsf@fess.ebiederm.org>
-Date: Thu, 12 Jan 2012 17:32:11 -0800
-Message-ID: <CABeCy1YjRjUBSqZndAZ9N6P9NM7=J6JOCQ11PkQZSr2c3Ud0cg@mail.gmail.com>
-Subject: Re: [PATCH] Kexec reboot and stale/inconsistent system state
-From: Venki Pallipadi <venki@google.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org
-X-System-Of-Record: true
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 2:42 PM, Eric W. Biederman
-<ebiederm@xmission.com> wrote:
-> Venkatesh Pallipadi <venki@google.com> writes:
->
->> Of course, kexec reboots has a lot of advantantages. There is one
->> blind spot though, in the way we handle shutdown of the old kernel in kexec.
->> The problem: there are drivers in the kernel that change
->> system state either during init or during normal operation. During a
->> hardware reboot these system states would get reset to default.
->> But, with kexec reboot this system state can stay persistent with the
->> new kernel and can lead to some inconsistencies.
->>
->> More concrete x86 example:
->> * Kernel_v0 has a driver which sets a particular MSR.
->> * Kernel_v1 has a different version of the driver which does not touch the
->> MSR and assumes it to be at BIOS init state.
->> * Now we have a kexec reboot from Kernel_v0 to Kernel_v1 and the MSR will
->> stay set leading to potential inconsistent state.
->>
->> One such driver I was looking at is drivers/idle/intel_idle.c, which sets
->> the MSR during init and forgets about it. There are other drivers which can
->> potentially have similar problems - like MTRR, etc. There can be other
->> state in the system like chipset state and device state etc, though
->> I expect most of it won't be a problem based on the way drivers init.
->>
->> Seemingly simple solution is to do the needed cleanup in driver's module_exit
->> code path. That is not enough as module_exit for all builtin drivers are
->> all discarded.
->>
->> What if we retain all the module_exits in CONFIG_KEXEC case and do a
->> cleanup before launching a new kernel. This should work, but most of the
->> module_exit code assumes that they will be only called when corresponding
->> init is successful. I couldn't find a clean and easy way of associating
->> module's init function with its exit function and to save the result of
->> init.
->>
->> Alternate quick solution is to create a new module interface to register
->> kexec cleanup function as in the patch below. But, this is not generic enough
->> yet and does not handle the case where we have done the cleanup and kexec
->> fails after that and we have to do some setup again to run with old
->> kernel.
->>
->> Before spending more time on this, just wanted to run this RFC along to see:
->> * How big/serious this problem really is?
->> * Has this been looked at before and any other potential solution for
->> this?
->
-> Use the drivers shutdown method.  The shutdown method is called
-> at reboot and at normal kexec.  If you care about the kexec on panic
-> case you need to write a paranoid driver initialization routine.
->
-> Hmm.  Looking a little closer the intel idle driver is a weird thing.
-> I am not seeing any operations structures.  There are kobjects so
-> the intel idle driver might be properly hooked into the device tree.
-> If the intel idle driver isn't properly hooked into the device
-> tree you should be able to hook into the reboot notifier instead
-> of implementing a device shutdown method.  Although for a lot
-> of reasons implementing the standard device shutdown method is
-> preferred.
->
+On Thu, 12 Jan 2012, Alan Cox wrote:
 
-Yes. Doing in device shutdown is much cleaner. I need to figure out
-how to hook that into intel_idle.
+> In general I like this approach. It's simple, it's compact and it offers
+> interesting possibilities for solving some interesting problem spaces,
+> without the full weight of SELinux, SMACK etc which are still needed for
+> heavyweight security.
 
-One other problem case I see is in mtrr. 'cat <something> >
-/proc/mtrr' gets carried over after a kexec reboot. So, we need some
-change to restore the boot time state there.
-Do you guys see any other place where we will need similar special
-handling for kexec reboots?
+Yes, I can see potential to vastly simplify MAC policy in some cases.
 
-Thanks,
-Venki
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
