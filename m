@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab2AMJJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 04:09:44 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:28969 "EHLO relay.sw.ru"
+	id S1757254Ab2AMJJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 04:09:29 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:12715 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755555Ab2AMJJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 04:09:36 -0500
-Subject: [PATCH v2 4/4] SUNRPC: parametrize rpc_uaddr2sockaddr() by network
+	id S1756277Ab2AMJJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 04:09:11 -0500
+Subject: [PATCH v2 1/4] SUNRPC: parametrize rpc_parse_scope_id() by network
  context
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
@@ -14,8 +14,8 @@ Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Fri, 13 Jan 2012 13:09:27 +0400
-Message-ID: <20120113090927.1598.31109.stgit@localhost6.localdomain6>
+Date: Fri, 13 Jan 2012 13:09:03 +0400
+Message-ID: <20120113090903.1598.30645.stgit@localhost6.localdomain6>
 In-Reply-To: <20120113090520.1598.73772.stgit@localhost6.localdomain6>
 References: <20120113090520.1598.73772.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -26,88 +26,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parametrize rpc_uaddr2sockaddr() by network context and thus force it's callers to pass
-in network context instead of using hard-coded "init_net".
+Parametrize rpc_parse_scope_id() by network context and thus force it's caller
+to pass in network context instead of using hard-coded "init_net".
 
 Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
- fs/nfsd/nfs4state.c         |    2 +-
- include/linux/sunrpc/clnt.h |    2 +-
- net/sunrpc/addr.c           |    8 +++++---
- net/sunrpc/rpcb_clnt.c      |    2 +-
- 4 files changed, 8 insertions(+), 6 deletions(-)
+ net/sunrpc/addr.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 9ca16dc..56ad8ca 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -1301,7 +1301,7 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_r
- 	else
- 		goto out_err;
- 
--	conn->cb_addrlen = rpc_uaddr2sockaddr(se->se_callback_addr_val,
-+	conn->cb_addrlen = rpc_uaddr2sockaddr(&init_net, se->se_callback_addr_val,
- 					    se->se_callback_addr_len,
- 					    (struct sockaddr *)&conn->cb_addr,
- 					    sizeof(conn->cb_addr));
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index 7bd114f..9e754e3 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -166,7 +166,7 @@ size_t		rpc_ntop(const struct sockaddr *, char *, const size_t);
- size_t		rpc_pton(struct net *, const char *, const size_t,
- 			 struct sockaddr *, const size_t);
- char *		rpc_sockaddr2uaddr(const struct sockaddr *, gfp_t);
--size_t		rpc_uaddr2sockaddr(const char *, const size_t,
-+size_t		rpc_uaddr2sockaddr(struct net *, const char *, const size_t,
- 				   struct sockaddr *, const size_t);
- 
- static inline unsigned short rpc_get_port(const struct sockaddr *sap)
 diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
-index 82b06b7..d11418f 100644
+index ee77742..cc83de1 100644
 --- a/net/sunrpc/addr.c
 +++ b/net/sunrpc/addr.c
-@@ -297,6 +297,7 @@ char *rpc_sockaddr2uaddr(const struct sockaddr *sap, gfp_t gfp_flags)
+@@ -156,8 +156,9 @@ static size_t rpc_pton4(const char *buf, const size_t buflen,
+ }
  
- /**
-  * rpc_uaddr2sockaddr - convert a universal address to a socket address.
-+ * @net: applicable network namespace
-  * @uaddr: C string containing universal address to convert
-  * @uaddr_len: length of universal address string
-  * @sap: buffer into which to plant socket address
-@@ -308,8 +309,9 @@ char *rpc_sockaddr2uaddr(const struct sockaddr *sap, gfp_t gfp_flags)
-  * Returns the size of the socket address if successful; otherwise
-  * zero is returned.
-  */
--size_t rpc_uaddr2sockaddr(const char *uaddr, const size_t uaddr_len,
--			  struct sockaddr *sap, const size_t salen)
-+size_t rpc_uaddr2sockaddr(struct net *net, const char *uaddr,
-+			  const size_t uaddr_len, struct sockaddr *sap,
-+			  const size_t salen)
+ #if IS_ENABLED(CONFIG_IPV6)
+-static int rpc_parse_scope_id(const char *buf, const size_t buflen,
+-			      const char *delim, struct sockaddr_in6 *sin6)
++static int rpc_parse_scope_id(struct net *net, const char *buf,
++			      const size_t buflen, const char *delim,
++			      struct sockaddr_in6 *sin6)
  {
- 	char *c, buf[RPCBIND_MAXUADDRLEN + sizeof('\0')];
- 	unsigned long portlo, porthi;
-@@ -341,7 +343,7 @@ size_t rpc_uaddr2sockaddr(const char *uaddr, const size_t uaddr_len,
- 	port = (unsigned short)((porthi << 8) | portlo);
+ 	char *p;
+ 	size_t len;
+@@ -177,7 +178,7 @@ static int rpc_parse_scope_id(const char *buf, const size_t buflen,
+ 		unsigned long scope_id = 0;
+ 		struct net_device *dev;
  
- 	*c = '\0';
--	if (rpc_pton(&init_net, buf, strlen(buf), sap, salen) == 0)
-+	if (rpc_pton(net, buf, strlen(buf), sap, salen) == 0)
+-		dev = dev_get_by_name(&init_net, p);
++		dev = dev_get_by_name(net, p);
+ 		if (dev != NULL) {
+ 			scope_id = dev->ifindex;
+ 			dev_put(dev);
+@@ -213,7 +214,7 @@ static size_t rpc_pton6(const char *buf, const size_t buflen,
+ 	if (in6_pton(buf, buflen, addr, IPV6_SCOPE_DELIMITER, &delim) == 0)
  		return 0;
  
- 	switch (sap->sa_family) {
-diff --git a/net/sunrpc/rpcb_clnt.c b/net/sunrpc/rpcb_clnt.c
-index 6d6a84f..7c6fac0 100644
---- a/net/sunrpc/rpcb_clnt.c
-+++ b/net/sunrpc/rpcb_clnt.c
-@@ -934,7 +934,7 @@ static int rpcb_dec_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
- 	dprintk("RPC: %5u RPCB_%s reply: %s\n", task->tk_pid,
- 			task->tk_msg.rpc_proc->p_name, (char *)p);
+-	if (!rpc_parse_scope_id(buf, buflen, delim, sin6))
++	if (!rpc_parse_scope_id(&init_net, buf, buflen, delim, sin6))
+ 		return 0;
  
--	if (rpc_uaddr2sockaddr((char *)p, len, sap, sizeof(address)) == 0)
-+	if (rpc_uaddr2sockaddr(&init_net, (char *)p, len, sap, sizeof(address)) == 0)
- 		goto out_fail;
- 	rpcb->r_port = rpc_get_port(sap);
- 
+ 	sin6->sin6_family = AF_INET6;
 
