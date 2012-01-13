@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab2AMSXV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:23:21 -0500
-Received: from rcsinet15.oracle.com ([148.87.113.117]:60509 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932611Ab2AMSXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:23:15 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: sjenning@linux.vnet.ibm.com, ngupta@vflare.org
-Cc: linux-kernel@vger.kernel.org, Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH] zcache: Set SWIZ_BITS to 8 to reduce tmem bucket lock contention.
-Date: Fri, 13 Jan 2012 09:44:34 -0500
-Message-Id: <1326465874-11791-2-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1326465874-11791-1-git-send-email-konrad.wilk@oracle.com>
-References: <1326465874-11791-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4F10768D.003A,ss=1,re=0.000,fgs=0
+	id S932433Ab2AMSYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:24:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57499 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932428Ab2AMSYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 13:24:04 -0500
+Date: Fri, 13 Jan 2012 13:24:01 -0500
+From: Dave Jones <davej@redhat.com>
+To: netdev@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: recvmsg sleeping from invalid context
+Message-ID: <20120113182401.GA25885@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>, netdev@vger.kernel.org,
+	Linux Kernel <linux-kernel@vger.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
+getting a ton of these on the latest head (099469502f62fbe0d7e4f0b83a2f22538367f734)
 
-SWIZ_BITS > 8 results in a much larger number of "tmem_obj"
-allocations, likely one per page-placed-in-frontswap.  The
-tmem_obj is not huge (roughly 100 bytes), but it is large
-enough to add a not-insignificant memory overhead to zcache.
+BUG: sleeping function called from invalid context at mm/memory.c:3905
+in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
+INFO: lockdep is turned off.
+Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
+Call Trace:
+ [<ffffffff81099415>] __might_sleep+0x145/0x200
+ [<ffffffff811752a4>] might_fault+0x34/0xb0
+ [<ffffffff81551555>] ? sock_def_readable+0x25/0x1a0
+ [<ffffffff8155c387>] put_cmsg+0x77/0x120
+ [<ffffffff8159379c>] netlink_recvmsg+0x35c/0x480
+ [<ffffffff8155201a>] ? sock_update_classid+0x9a/0x260
+ [<ffffffff81552052>] ? sock_update_classid+0xd2/0x260
+ [<ffffffff81549fbd>] sock_recvmsg+0x11d/0x140
+ [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+ [<ffffffff8117530c>] ? might_fault+0x9c/0xb0
+ [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+ [<ffffffff8154b1b3>] __sys_recvmsg+0x153/0x2d0
+ [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+ [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
+ [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
+ [<ffffffff811bc43b>] ? fget_light+0xfb/0x470
+ [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+ [<ffffffff8154e2e9>] sys_recvmsg+0x49/0x90
+ [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
 
-The SWIZ_BITS=8  will get roughly the same lock contention
-without the space wastage.
 
-The effect of SWIZ_BITS can be thought of as "2^SWIZ_BITS is
-the number of unique oids that be generated" (This concept is
-limited to frontswap's use of tmem).
-
-CC: Seth Jennings <sjenning@linux.vnet.ibm.com>
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- drivers/staging/zcache/zcache-main.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
-index 642840c..9c011b7 100644
---- a/drivers/staging/zcache/zcache-main.c
-+++ b/drivers/staging/zcache/zcache-main.c
-@@ -1782,9 +1782,9 @@ static int zcache_frontswap_poolid = -1;
-  * Swizzling increases objects per swaptype, increasing tmem concurrency
-  * for heavy swaploads.  Later, larger nr_cpus -> larger SWIZ_BITS
-  * Setting SWIZ_BITS to 27 basically reconstructs the swap entry from
-- * frontswap_get_page()
-+ * frontswap_get_page(), but has side-effects. Hence using 8.
-  */
--#define SWIZ_BITS		27
-+#define SWIZ_BITS		8
- #define SWIZ_MASK		((1 << SWIZ_BITS) - 1)
- #define _oswiz(_type, _ind)	((_type << SWIZ_BITS) | (_ind & SWIZ_MASK))
- #define iswiz(_ind)		(_ind >> SWIZ_BITS)
--- 
-1.7.7.4
+BUG: sleeping function called from invalid context at kernel/mutex.c:271
+in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
+INFO: lockdep is turned off.
+Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
+Call Trace:
+ [<ffffffff81099415>] __might_sleep+0x145/0x200
+ [<ffffffff816a529e>] mutex_lock_nested+0x2e/0x50
+ [<ffffffff812022d0>] inotify_poll+0x30/0x60
+ [<ffffffff811d16f0>] do_sys_poll+0x280/0x500
+ [<ffffffff811d01b0>] ? poll_freewait+0xe0/0xe0
+ [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+ [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+ [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+ [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+ [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+ [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+ [<ffffffff811d02a0>] ? __pollwait+0xf0/0xf0
+ [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
+ [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
+ [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+ [<ffffffff8154dc2b>] ? sys_sendto+0x15b/0x190
+ [<ffffffff810b776d>] ? ktime_get_ts+0xad/0xe0
+ [<ffffffff811d049a>] ? poll_select_set_timeout+0x7a/0x90
+ [<ffffffff811d1a56>] sys_poll+0x76/0x110
+ [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
 
