@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab2AMPx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:53:56 -0500
+	id S932657Ab2AMPyD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:54:03 -0500
 Received: from mail-gx0-f174.google.com ([209.85.161.174]:43115 "EHLO
 	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932583Ab2AMPxu (ORCPT
+	with ESMTP id S932583Ab2AMPx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:53:50 -0500
+	Fri, 13 Jan 2012 10:53:58 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 4/7] mtd: use for_each_clear_bit
-Date: Sat, 14 Jan 2012 00:53:21 +0900
-Message-Id: <1326470004-10096-5-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-usb@vger.kernel.org
+Subject: [PATCH 6/7] uwb: use for_each_clear_bit
+Date: Sat, 14 Jan 2012 00:53:23 +0900
+Message-Id: <1326470004-10096-7-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1326470004-10096-1-git-send-email-akinobu.mita@gmail.com>
 References: <1326470004-10096-1-git-send-email-akinobu.mita@gmail.com>
@@ -25,31 +24,28 @@ Use for_each_clear_bit() to iterate over all the cleared bit in a
 memory region.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
+Cc: linux-usb@vger.kernel.org
 ---
- drivers/mtd/chips/cfi_cmdset_0001.c |    6 ++----
+ drivers/uwb/allocator.c |    6 ++----
  1 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
-index e1e122f..9bcd1f4 100644
---- a/drivers/mtd/chips/cfi_cmdset_0001.c
-+++ b/drivers/mtd/chips/cfi_cmdset_0001.c
-@@ -2526,12 +2526,10 @@ static void cfi_intelext_restore_locks(struct mtd_info *mtd)
- 		if (!region->lockmap)
- 			continue;
+diff --git a/drivers/uwb/allocator.c b/drivers/uwb/allocator.c
+index e45e673..6e3e713 100644
+--- a/drivers/uwb/allocator.c
++++ b/drivers/uwb/allocator.c
+@@ -334,10 +334,8 @@ int uwb_rsv_find_best_allocation(struct uwb_rsv *rsv, struct uwb_mas_bm *availab
  
--		for (block = 0; block < region->numblocks; block++) {
-+		for_each_clear_bit(block, region->lockmap, region->numblocks) {
- 			len = region->erasesize;
- 			adr = region->offset + block * len;
--
--			if (!test_bit(block, region->lockmap))
--				cfi_intelext_unlock(mtd, adr, len);
-+			cfi_intelext_unlock(mtd, adr, len);
- 		}
- 	}
- }
+ 
+ 	/* fill the not available vector from the available bm */
+-	for (bit_index = 0; bit_index < UWB_NUM_MAS; bit_index++) {
+-		if (!test_bit(bit_index, available->bm))
+-			ai->bm[bit_index] = UWB_RSV_MAS_NOT_AVAIL;
+-	}
++	for_each_clear_bit(bit_index, available->bm, UWB_NUM_MAS)
++		ai->bm[bit_index] = UWB_RSV_MAS_NOT_AVAIL;
+ 
+ 	if (ai->max_interval == 1) {
+ 		get_row_descriptors(ai);
 -- 
 1.7.4.4
 
