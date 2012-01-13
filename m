@@ -1,90 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab2AML3a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 06:29:30 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:65428 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756170Ab2AML3Y (ORCPT
+	id S1757980Ab2AMLbS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 06:31:18 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:49492 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752866Ab2AMLbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 06:29:24 -0500
-Message-ID: <4F10154F.7000605@mvista.com>
-Date: Fri, 13 Jan 2012 15:28:15 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:9.0) Gecko/20111222 Thunderbird/9.0.1
-MIME-Version: 1.0
-To: Paul Taysom <taysom@chromium.org>
-CC: unlisted-recipients:"; Paul Taysom" <taysom@google.com>,
-        Mandeep Baines <msb@chromium.org>, Greg KH <greg@kroah.com>,
-        Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@google.com>,
-        Andrew Morton <akpm@google.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	unlisted-recipients:;Paul Taysom <taysom@google.com>
-					     ^-missing end of address
-Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
-References: <1326398262-26660-1-git-send-email-taysom@chromium.org>
-In-Reply-To: <1326398262-26660-1-git-send-email-taysom@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 13 Jan 2012 06:31:17 -0500
+Date: Fri, 13 Jan 2012 22:00:28 +1030
+From: Christopher Yeoh <cyeoh@au1.ibm.com>
+To: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>
+Subject: [PATCH] Fix race in process_vm_rw_core
+Message-ID: <20120113220028.4ba7cead@Gantu.yeoh.info>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.6; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+x-cbid: 12011301-1618-0000-0000-0000008887D5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Linus,
 
-On 12-01-2012 23:57, Paul Taysom wrote:
+Below is a patch which fixes the race in process_vm_core found by
+Oleg (http://article.gmane.org/gmane.linux.kernel/1235667/).
+It consolidates some code with mm_for_maps since what they do is almost
+identical.
 
-> From: Paul Taysom<taysom@google.com>
+Oleg - I've kept the breakout of ptrace_may_attach and get_task_mm to
+preserve only having to take the task lock once. I see some performance
+difference with a microbenchmark but haven't had a chance to test with
+some HPC benchmarks yet so for the moment I'd like to leave it in. At
+this stage I think its more important to get the race fixed and I'm at
+Linux.conf.au all next week. I'll send a patch out for the 
+rw_copy_check_uvector cleanup after I get back from LCA.
 
-> A USB stick with a ext file system on it, would occasionally crash
-> when the stick was pulled.
+Regards,
 
-> The problem was a timer was being set on the Backing Device Interface,
-> bdi, after the USB device had been removed and the bdi had been
-> unregistered. The bdi would then be later reinitialized by zeroing
-> the timer without removing from the timer from the timer queue.
-> This would eventually result in a kernel crash (NULL ptr dereference).
+Chris
+-- 
+cyeoh@au.ibm.com
+Signed-off-by: Chris Yeoh <yeohc@au1.ibm.com>
+Cc: stable@vger.kernel.org
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 851ba3d..094d650 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -254,22 +254,7 @@ static struct mm_struct *check_mem_permission(struct task_struct *task)
+ 
+ struct mm_struct *mm_for_maps(struct task_struct *task)
+ {
+-	struct mm_struct *mm;
+-	int err;
+-
+-	err =  mutex_lock_killable(&task->signal->cred_guard_mutex);
+-	if (err)
+-		return ERR_PTR(err);
+-
+-	mm = get_task_mm(task);
+-	if (mm && mm != current->mm &&
+-			!ptrace_may_access(task, PTRACE_MODE_READ)) {
+-		mmput(mm);
+-		mm = ERR_PTR(-EACCES);
+-	}
+-	mutex_unlock(&task->signal->cred_guard_mutex);
+-
+-	return mm;
++	return get_check_task_mm(task, PTRACE_MODE_READ);
+ }
+ 
+ static int proc_pid_cmdline(struct task_struct *task, char * buffer)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1c4f3e9..8a64cae 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2235,6 +2235,10 @@ static inline void mmdrop(struct mm_struct * mm)
+ extern void mmput(struct mm_struct *);
+ /* Grab a reference to a task's mm, if it is not already going away */
+ extern struct mm_struct *get_task_mm(struct task_struct *task);
++/* Grab a reference to a task's mm, if it is not already going away
++   and ptrace_may_access with the mode parameter passed to it succeeds */
++extern struct mm_struct *get_check_task_mm(struct task_struct *task,
++					   unsigned int mode);
+ /* Remove the current tasks stale references to the old mm_struct */
+ extern void mm_release(struct task_struct *, struct mm_struct *);
+ /* Allocate a new mm structure and copy contents from tsk->mm */
+diff --git a/kernel/fork.c b/kernel/fork.c
+index da4a6a1..9688fb0 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -644,6 +644,37 @@ struct mm_struct *get_task_mm(struct task_struct *task)
+ }
+ EXPORT_SYMBOL_GPL(get_task_mm);
+ 
++struct mm_struct *get_check_task_mm(struct task_struct *task, unsigned int mode)
++{
++	struct mm_struct *mm;
++	int err;
++
++	err =  mutex_lock_killable(&task->signal->cred_guard_mutex);
++	if (err)
++		return ERR_PTR(err);
++
++	task_lock(task);
++	if (__ptrace_may_access(task, mode)) {
++		mm = ERR_PTR(-EACCES);
++		goto out;
++	}
++
++	mm = task->mm;
++	if (mm) {
++		if (task->flags & PF_KTHREAD)
++			mm = NULL;
++		else
++			atomic_inc(&mm->mm_users);
++	}
++
++out:
++	task_unlock(task);
++	mutex_unlock(&task->signal->cred_guard_mutex);
++
++	return mm;
++}
++EXPORT_SYMBOL_GPL(get_check_task_mm);
++
+ /* Please note the differences between mmput and mm_release.
+  * mmput is called whenever we stop holding onto a mm_struct,
+  * error success whatever.
+diff --git a/mm/process_vm_access.c b/mm/process_vm_access.c
+index e920aa3..aa8009d 100644
+--- a/mm/process_vm_access.c
++++ b/mm/process_vm_access.c
+@@ -298,23 +298,15 @@ static ssize_t process_vm_rw_core(pid_t pid, const struct iovec *lvec,
+ 		goto free_proc_pages;
+ 	}
+ 
+-	task_lock(task);
+-	if (__ptrace_may_access(task, PTRACE_MODE_ATTACH)) {
+-		task_unlock(task);
+-		rc = -EPERM;
+-		goto put_task_struct;
+-	}
+-	mm = task->mm;
+-
+-	if (!mm || (task->flags & PF_KTHREAD)) {
+-		task_unlock(task);
+-		rc = -EINVAL;
++	mm = get_check_task_mm(task, PTRACE_MODE_ATTACH);
++	if (!mm || IS_ERR(mm)) {
++		if (!mm)
++			rc = -EINVAL;
++		else
++			rc = -EPERM;
+ 		goto put_task_struct;
+ 	}
+ 
+-	atomic_inc(&mm->mm_users);
+-	task_unlock(task);
+-
+ 	for (i = 0; i < riovcnt && iov_l_curr_idx < liovcnt; i++) {
+ 		rc = process_vm_rw_single_vec(
+ 			(unsigned long)rvec[i].iov_base, rvec[i].iov_len,
 
-> When the bdi is unregistered, the dev field is set to NULL. This
-> indication is used by bdi_unregister to only unregister the device
-> once.
-
-> Fix: When the backing device is invalidated, the mapping backing_dev_info
-> should be redirected to the default_backing_dev_info.
-
-> Created 3 USB sticks with ext2, ext4 and one with both apple and DOS
-> file systems on it. Inserted and removed USB sticks many times in random
-> order. With out the bug fix, the kernel would soon crash. With the fix,
-> it did not. Ran on both stumpy and amd64-generic.
-
-> Signed-off-by: Paul Taysom <taysom@chromium.org>
-> Downstream-bug-report: http://crosbug.com/24165
-> Cc: Mandeep Baines <msb@chromium.org>
-> Cc: Greg KH <greg@kroah.com>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Theodore Tso <tytso@google.com>
-> Cc: Andrew Morton <akpm@google.com>
-> Cc: <linux-usb@vger.kernel.org>
-> Cc: <linux-kernel@vger.kernel.org>
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: <linux-fsdevel@vger.kernel.org>
-> ---
->   fs/block_dev.c |    3 ++-
->   1 files changed, 2 insertions(+), 1 deletions(-)
-
-> diff --git a/fs/block_dev.c b/fs/block_dev.c
-> index afe74dd..9f9b617 100644
-> --- a/fs/block_dev.c
-> +++ b/fs/block_dev.c
-> @@ -1,4 +1,4 @@
-> -/*
-> +nvalid/*
-
-    Huh?
-
->    *  linux/fs/block_dev.c
->    *
->    *  Copyright (C) 1991, 1992  Linus Torvalds
-
-WBR, Sergei
