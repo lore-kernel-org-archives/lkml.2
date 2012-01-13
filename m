@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755518Ab2AMIrB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 03:47:01 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:19445 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab2AMIq5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 03:46:57 -0500
-X-AuditID: cbfee61a-b7b89ae000001a15-c8-4f0fef7f7a03
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Russell King'" <rmk@arm.linux.org.uk>
-Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "'Arnd Bergmann'" <arnd@arndb.de>
-References: <20120113114951.7b7f131514437454e5682aa8@canb.auug.org.au>
- <033201ccd18e$a6bd5950$f4380bf0$%kim@samsung.com>
- <20120113084042.GB22472@flint.arm.linux.org.uk>
-In-reply-to: <20120113084042.GB22472@flint.arm.linux.org.uk>
-Subject: RE: linux-next: manual merge of the arm-current tree with Linus'	tree
-Date: Fri, 13 Jan 2012 17:46:47 +0900
-Message-id: <001501ccd1cf$e60451e0$b20cf5a0$%kim@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AczRzw8tGy71mOljRcy5JVp4sC058QAABcbQ
-Content-language: ko
-X-Brightmail-Tracker: AAAAAA==
+	id S1755545Ab2AMIwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 03:52:12 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:39598 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751982Ab2AMIwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 03:52:11 -0500
+Subject: [PATCH v5 0/6] SUNRPC: rcbind clients virtualization
+To: Trond.Myklebust@netapp.com
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
+        devel@openvz.org
+Date: Fri, 13 Jan 2012 12:52:01 +0400
+Message-ID: <20120113084545.31750.83655.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King wrote:
-> 
-> On Fri, Jan 13, 2012 at 09:59:49AM +0900, Kukjin Kim wrote:
-> > Stephen Rothwell wrote:
-> > >
-> > > Hi Russell,
-> > >
-> > > Today's linux-next merge of the arm-current tree got a conflict in
-> > > arch/arm/mach-exynos/common.c between (I think) commit 237c78beb8a9
-> > > ("Merge branch 'depends/rmk/for-linus' into samsung/dt") from Linus'
-> tree
-> > > and commit 588ac27d3419 ("ARM: 7273/1: EXYNOS: Fix build error which
-> was
-> > > from common.c and old cpu.c") from the arm-current tree.
-> > >
-> > > So this arm-current fi is superceded by the merge above that is now in
-> > > Linus' tree.
-> > >
-> > Oh, right. Now we don't need the commit 588ac27d3419.
-> >
-> > Russell, could you please remove it in your tree?
-> 
-> What the bloody hell is going on with this Samsung crap?  You send me
-> fixes, you put them in the patch system, then you decide you don't want
-> them?
-> 
-Russell,
+This patch-set was created in context of clone of git branch:
+git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
+head: devel
 
-It breaks exynos in mainline when I submitted that and sent to patch system.
-Then seems to be fixed after merging arm-soc tree into mainline by Arnd's
-conflict resolution.
+v5:
+1) Rebased on up-to-date state ("devel" head).
+2) Added two more patches from latter series ("SUNRPC: register services with
+per-net rpcbind"), because logically this series is the more suitable place for
+them.
 
-Then you moved that into your git-curr.
+v4:
+1) Rebased of current repo state (i.e. all commits pulled before apply)
 
-> What the hell are you doing?
-> 
-Hmm :(
+v3:
+1) First two patches from previous version were squashed.
 
-Actually, it is required when I submitted that.
-But as a result, sorry for bothering...
+This patch-set virtualizes rpcbind clients per network namespace context. IOW,
+each network namespace will have its own pair of rpcbind clients (if they would
+be created by request).
 
-Thanks.
+The following series consists of:
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+---
+
+Stanislav Kinsbursky (6):
+      SUNRPC: move rpcbind internals to sunrpc part of network namespace context
+      SUNRPC: optimize net_ns dereferencing in rpcbind creation calls
+      SUNRPC: optimize net_ns dereferencing in rpcbind registering calls
+      SUNRPC: create rpcbind client in passed network namespace context
+      SUNRPC: register rpcbind programs in passed network namespase context
+      SUNRPC: parametrize local rpcbind clients creation with net ns
+
+
+ include/linux/sunrpc/clnt.h |    9 ++-
+ net/sunrpc/netns.h          |    5 ++
+ net/sunrpc/rpcb_clnt.c      |  121 +++++++++++++++++++++++--------------------
+ net/sunrpc/svc.c            |   14 ++---
+ 4 files changed, 82 insertions(+), 67 deletions(-)
 
