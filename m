@@ -1,45 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752091Ab2AMFjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 00:39:17 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:37292 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab2AMFjQ (ORCPT
+	id S1752214Ab2AMFlW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 00:41:22 -0500
+Received: from acsinet15.oracle.com ([141.146.126.227]:34123 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab2AMFlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 00:39:16 -0500
-Date: Fri, 13 Jan 2012 16:39:07 +1100
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] drivers/crypto/ixp4xx_crypto.c: convert GFP_KERNEL
-	to GFP_ATOMIC
-Message-ID: <20120113053907.GF13918@gondor.apana.org.au>
-References: <1326102050-30265-3-git-send-email-Julia.Lawall@lip6.fr>
+	Fri, 13 Jan 2012 00:41:20 -0500
+To: Jens Axboe <axboe@kernel.dk>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: Re: [PATCH] blockdev: convert some macros to static inlines
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20120112144215.595112f06f35d0072d5a334e@canb.auug.org.au>
+	<yq1y5tdh8bu.fsf@sermon.lab.mkp.net> <4F0E96C6.9060404@kernel.dk>
+Date: Fri, 13 Jan 2012 00:41:07 -0500
+In-Reply-To: <4F0E96C6.9060404@kernel.dk> (Jens Axboe's message of "Thu, 12
+	Jan 2012 09:16:06 +0100")
+Message-ID: <yq1y5tcf9cc.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.110017 (No Gnus v0.17) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326102050-30265-3-git-send-email-Julia.Lawall@lip6.fr>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A020204.4F0FC3F8.0006,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 09, 2012 at 10:40:49AM +0100, Julia Lawall wrote:
-> From: Julia Lawall <julia.lawall@lip6.fr>
-> 
-> The function is called with locks held and thus should not use GFP_KERNEL.
-> 
-> The semantic patch that makes this report is available
-> in scripts/coccinelle/locks/call_kern.cocci.
-> 
-> More information about semantic patching is available at
-> http://coccinelle.lip6.fr/
-> 
-> Signed-off-by: Julia Lawall <julia.lawall@lip6.fr>
+>>>>> "Jens" == Jens Axboe <axboe@kernel.dk> writes:
+\
+Jens> I'll take Stephens if you don't mind, I prefer the simplicity of
+Jens> just typing out the functions.
 
-Also applied.
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Stephen's patch only converted half the stubs. Here's the rest...
+
+
+block: Stop using macro stubs for the bio data integrity calls
+
+Replace preprocessor macro stubs with real function declarations to
+prevent warnings when CONFIG_BLK_DEV_INTEGRITY is disabled.
+
+Signed-off-by: Martin K. Petersen <martin.petersen@oracle.com>
+
+diff --git a/include/linux/bio.h b/include/linux/bio.h
+index 847994a..129a9c0 100644
+--- a/include/linux/bio.h
++++ b/include/linux/bio.h
+@@ -515,24 +515,64 @@ extern void bio_integrity_init(void);
+ 
+ #else /* CONFIG_BLK_DEV_INTEGRITY */
+ 
+-#define bio_integrity(a)		(0)
+-#define bioset_integrity_create(a, b)	(0)
+-#define bio_integrity_prep(a)		(0)
+-#define bio_integrity_enabled(a)	(0)
++static inline int bio_integrity(struct bio *bio)
++{
++	return 0;
++}
++
++static inline int bio_integrity_enabled(struct bio *bio)
++{
++	return 0;
++}
++
++static inline int bioset_integrity_create(struct bio_set *bs, int pool_size)
++{
++	return 0;
++}
++
++static inline void bioset_integrity_free (struct bio_set *bs)
++{
++	return;
++}
++
++static inline int bio_integrity_prep(struct bio *bio)
++{
++	return 0;
++}
++
++static inline void bio_integrity_free(struct bio *bio, struct bio_set *bs)
++{
++	return;
++}
++
+ static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
+ 				      gfp_t gfp_mask, struct bio_set *bs)
+ {
+ 	return 0;
+ }
+-#define bioset_integrity_free(a)	do { } while (0)
+-#define bio_integrity_free(a, b)	do { } while (0)
+-#define bio_integrity_endio(a, b)	do { } while (0)
+-#define bio_integrity_advance(a, b)	do { } while (0)
+-#define bio_integrity_trim(a, b, c)	do { } while (0)
+-#define bio_integrity_split(a, b, c)	do { } while (0)
+-#define bio_integrity_set_tag(a, b, c)	do { } while (0)
+-#define bio_integrity_get_tag(a, b, c)	do { } while (0)
+-#define bio_integrity_init(a)		do { } while (0)
++
++static inline void bio_integrity_split(struct bio *bio, struct bio_pair *bp,
++				       int sectors)
++{
++	return;
++}
++
++static inline void bio_integrity_advance(struct bio *bio,
++					 unsigned int bytes_done)
++{
++	return;
++}
++
++static inline void bio_integrity_trim(struct bio *bio, unsigned int offset,
++				      unsigned int sectors)
++{
++	return;
++}
++
++static inline void bio_integrity_init(void)
++{
++	return;
++}
+ 
+ #endif /* CONFIG_BLK_DEV_INTEGRITY */
+ 
