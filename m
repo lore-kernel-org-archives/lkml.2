@@ -1,131 +1,593 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170Ab2AMIXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 03:23:51 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:53095 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab2AMIXt convert rfc822-to-8bit (ORCPT
+	id S1755229Ab2AMI35 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 03:29:57 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33359 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437Ab2AMI3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 03:23:49 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Venki Pallipadi <venki@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Len Brown <lenb@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Aaron Durbin <adurbin@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Kexec reboot and stale/inconsistent system state
-References: <1326405521-2736-1-git-send-email-venki@google.com>
-	<m14nw0wnjh.fsf@fess.ebiederm.org>
-	<CABeCy1YjRjUBSqZndAZ9N6P9NM7=J6JOCQ11PkQZSr2c3Ud0cg@mail.gmail.com>
-Date: Fri, 13 Jan 2012 00:26:06 -0800
-In-Reply-To: <CABeCy1YjRjUBSqZndAZ9N6P9NM7=J6JOCQ11PkQZSr2c3Ud0cg@mail.gmail.com>
-	(Venki Pallipadi's message of "Thu, 12 Jan 2012 17:32:11 -0800")
-Message-ID: <m162ggqa8x.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-XM-AID: U2FsdGVkX19T7C/XrwnlyBJ+9oST3ohK29K9CW5TYpk=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	Fri, 13 Jan 2012 03:29:53 -0500
+From: Stefan Bader <stefan.bader@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Subject: [2.6.32+drm33-longterm] Linux 2.6.32.54+drm33.21
+Date: Fri, 13 Jan 2012 09:29:50 +0100
+Message-Id: <1326443390-3313-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Venki Pallipadi <venki@google.com> writes:
+I am announcing the release of the 2.6.32.54+drm33.21 longterm tree.
 
-> On Thu, Jan 12, 2012 at 2:42 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Venkatesh Pallipadi <venki@google.com> writes:
->>
->>> Of course, kexec reboots has a lot of advantantages. There is one
->>> blind spot though, in the way we handle shutdown of the old kernel in kexec.
->>> The problem: there are drivers in the kernel that change
->>> system state either during init or during normal operation. During a
->>> hardware reboot these system states would get reset to default.
->>> But, with kexec reboot this system state can stay persistent with the
->>> new kernel and can lead to some inconsistencies.
->>>
->>> More concrete x86 example:
->>> * Kernel_v0 has a driver which sets a particular MSR.
->>> * Kernel_v1 has a different version of the driver which does not touch the
->>> MSR and assumes it to be at BIOS init state.
->>> * Now we have a kexec reboot from Kernel_v0 to Kernel_v1 and the MSR will
->>> stay set leading to potential inconsistent state.
->>>
->>> One such driver I was looking at is drivers/idle/intel_idle.c, which sets
->>> the MSR during init and forgets about it. There are other drivers which can
->>> potentially have similar problems - like MTRR, etc. There can be other
->>> state in the system like chipset state and device state etc, though
->>> I expect most of it won't be a problem based on the way drivers init.
->>>
->>> Seemingly simple solution is to do the needed cleanup in driver's module_exit
->>> code path. That is not enough as module_exit for all builtin drivers are
->>> all discarded.
->>>
->>> What if we retain all the module_exits in CONFIG_KEXEC case and do a
->>> cleanup before launching a new kernel. This should work, but most of the
->>> module_exit code assumes that they will be only called when corresponding
->>> init is successful. I couldn't find a clean and easy way of associating
->>> module's init function with its exit function and to save the result of
->>> init.
->>>
->>> Alternate quick solution is to create a new module interface to register
->>> kexec cleanup function as in the patch below. But, this is not generic enough
->>> yet and does not handle the case where we have done the cleanup and kexec
->>> fails after that and we have to do some setup again to run with old
->>> kernel.
->>>
->>> Before spending more time on this, just wanted to run this RFC along to see:
->>> * How big/serious this problem really is?
->>> * Has this been looked at before and any other potential solution for
->>> this?
->>
->> Use the drivers shutdown method.  The shutdown method is called
->> at reboot and at normal kexec.  If you care about the kexec on panic
->> case you need to write a paranoid driver initialization routine.
->>
->> Hmm.  Looking a little closer the intel idle driver is a weird thing.
->> I am not seeing any operations structures.  There are kobjects so
->> the intel idle driver might be properly hooked into the device tree.
->> If the intel idle driver isn't properly hooked into the device
->> tree you should be able to hook into the reboot notifier instead
->> of implementing a device shutdown method.  Although for a lot
->> of reasons implementing the standard device shutdown method is
->> preferred.
->>
->
-> Yes. Doing in device shutdown is much cleaner. I need to figure out
-> how to hook that into intel_idle.
->
-> One other problem case I see is in mtrr. 'cat <something> >
-> /proc/mtrr' gets carried over after a kexec reboot.
-> So, we need some change to restore the boot time state there.
+This tree is based on 2.6.32 and generally has all of the stable updates
+applied. Except those to the DRM subsystem, which was based on 2.6.33 and
+took updates from that upstream stable as long as that existed. It will
+continue to add patches to the DRM subsystem as long as they are valid
+according to the stable update rules (Documentation/stable_kernel_rules.txt).
+DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
 
-Assuming userspace changes /proc/mtrr and userspace calls reboot
-that instance looks like a userspace problem.
+This release contains patches from upstream 2.6.32.54, but dropped any patches
+to the DRM subsystem.
 
-Any time I have changed /proc/mtrr the change has happened because the
-BIOS got it wrong and I needed to fix those values.
+The updated 2.6.32.y-drm33.z tree can be found at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
+or
+  git://kernel.ubuntu.com/smb/linux-2.6.32.y-drm33.z.git
 
-The other usecase for changning /proc/mtrr is to make video
-frame-buffers write-combining, and with PAT support in the kernel
-using /proc/mtrr for that should now be obsolete.  
+and can be browsed through git web via:
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
+or
+  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=summary
 
-So in practice if not in theory I think we should be good.
+-Stefan
 
-> Do you guys see any other place where we will need similar special
-> handling for kexec reboots?
+------
 
-The rule is every driver needs to put the device back in a state where
-the drivers init/probe routine can get the device out of that state.
-Frequently people when the care chose to fix kdump.
+* MAINTAINERS: stable: Update address
+* Documentation: Update stable address
+* firmware: Fix an oops on reading fw_priv->fw in sysfs loading file
+* offb: Fix setting of the pseudo-palette for >8bpp
+* offb: Fix bug in calculating requested vram size
+* asix: new device id
+* reiserfs: Fix quota mount option parsing
+* reiserfs: Force inode evictions before umount to avoid crash
+* USB: update documentation for usbmon
+* drivers/usb/class/cdc-acm.c: clear dangling pointer
+* USB: isight: fix kernel bug when loading firmware
+* usb: usb-storage doesn't support dynamic id currently, the patch disables the feature to fix an oops
+* USB: add quirk for another camera
+* USB: omninet: fix write_room
+* USB: Add USB-ID for Multiplex RC serial adapter to cp210x.c
+* asix: fix infinite loop in rx_fixup()
+* PM / Sleep: Fix race between CPU hotplug and freezer
+* SCSI: scsi_dh: check queuedata pointer before proceeding further
+* xfs: validate acl count
+* xfs: fix acl count validation in xfs_acl_from_disk()
+* Linux 2.6.32.54
 
-Perhaps I am dense but I don't get the impression that you have
-uncovered any new kinds of issues.  My impression is that you have
-found another case where kexec isn't on the top of the list of the
-driver developer and so a bug is found on the kexec path.
+ Documentation/HOWTO                         |    4 +-
+ Documentation/development-process/5.Posting |    8 ++--
+ Documentation/usb/usbmon.txt                |   14 +++--
+ MAINTAINERS                                 |    2 +-
+ Makefile                                    |    2 +-
+ drivers/base/firmware_class.c               |   14 +++---
+ drivers/net/usb/asix.c                      |    6 ++-
+ drivers/scsi/device_handler/scsi_dh.c       |    7 ++-
+ drivers/usb/class/cdc-acm.c                 |    4 ++
+ drivers/usb/core/quirks.c                   |    5 ++-
+ drivers/usb/misc/isight_firmware.c          |    6 ++-
+ drivers/usb/serial/cp210x.c                 |    1 +
+ drivers/usb/serial/omninet.c                |    2 +-
+ drivers/usb/storage/usb.c                   |    1 +
+ drivers/video/offb.c                        |   52 +++++++++----------
+ fs/reiserfs/super.c                         |   27 ++++++----
+ fs/xfs/linux-2.6/xfs_acl.c                  |    4 +-
+ kernel/cpu.c                                |   74 +++++++++++++++++++++++++++
+ 18 files changed, 167 insertions(+), 66 deletions(-)
 
-Eric
+diff --git a/Documentation/HOWTO b/Documentation/HOWTO
+index 8495fc9..cb0863e 100644
+--- a/Documentation/HOWTO
++++ b/Documentation/HOWTO
+@@ -275,8 +275,8 @@ versions.
+ If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
+ kernel is the current stable kernel.
+
+-2.6.x.y are maintained by the "stable" team <stable@kernel.org>, and are
+-released as needs dictate.  The normal release period is approximately
++2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
++are released as needs dictate.  The normal release period is approximately
+ two weeks, but it can be longer if there are no pressing problems.  A
+ security-related problem, instead, can cause a release to happen almost
+ instantly.
+diff --git a/Documentation/development-process/5.Posting b/Documentation/development-process/5.Posting
+index f622c1e..73c36ac 100644
+--- a/Documentation/development-process/5.Posting
++++ b/Documentation/development-process/5.Posting
+@@ -267,10 +267,10 @@ copies should go to:
+    the linux-kernel list.
+
+  - If you are fixing a bug, think about whether the fix should go into the
+-   next stable update.  If so, stable@kernel.org should get a copy of the
+-   patch.  Also add a "Cc: stable@kernel.org" to the tags within the patch
+-   itself; that will cause the stable team to get a notification when your
+-   fix goes into the mainline.
++   next stable update.  If so, stable@vger.kernel.org should get a copy of
++   the patch.  Also add a "Cc: stable@vger.kernel.org" to the tags within
++   the patch itself; that will cause the stable team to get a notification
++   when your fix goes into the mainline.
+
+ When selecting recipients for a patch, it is good to have an idea of who
+ you think will eventually accept the patch and get it merged.  While it
+diff --git a/Documentation/usb/usbmon.txt b/Documentation/usb/usbmon.txt
+index 66f92d1..40818ff 100644
+--- a/Documentation/usb/usbmon.txt
++++ b/Documentation/usb/usbmon.txt
+@@ -43,10 +43,11 @@ This allows to filter away annoying devices that talk continuously.
+
+ 2. Find which bus connects to the desired device
+
+-Run "cat /proc/bus/usb/devices", and find the T-line which corresponds to
+-the device. Usually you do it by looking for the vendor string. If you have
+-many similar devices, unplug one and compare two /proc/bus/usb/devices outputs.
+-The T-line will have a bus number. Example:
++Run "cat /sys/kernel/debug/usb/devices", and find the T-line which corresponds
++to the device. Usually you do it by looking for the vendor string. If you have
++many similar devices, unplug one and compare the two
++/sys/kernel/debug/usb/devices outputs. The T-line will have a bus number.
++Example:
+
+ T:  Bus=03 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12  MxCh= 0
+ D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
+@@ -54,7 +55,10 @@ P:  Vendor=0557 ProdID=2004 Rev= 1.00
+ S:  Manufacturer=ATEN
+ S:  Product=UC100KM V2.00
+
+-Bus=03 means it's bus 3.
++"Bus=03" means it's bus 3. Alternatively, you can look at the output from
++"lsusb" and get the bus number from the appropriate line. Example:
++
++Bus 003 Device 002: ID 0557:2004 ATEN UC100KM V2.00
+
+ 3. Start 'cat'
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index ea3302f..613da5d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5010,7 +5010,7 @@ F:	arch/alpha/kernel/srm_env.c
+
+ STABLE BRANCH
+ M:	Greg Kroah-Hartman <greg@kroah.com>
+-L:	stable@kernel.org
++L:	stable@vger.kernel.org
+ S:	Maintained
+
+ STAGING SUBSYSTEM
+diff --git a/Makefile b/Makefile
+index c9803a7..3491ced 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ VERSION = 2
+ PATCHLEVEL = 6
+ SUBLEVEL = 32
+-EXTRAVERSION = .53+drm33.21
++EXTRAVERSION = .54+drm33.21
+ NAME = Man-Eating Seals of Antiquity
+
+ # *DOCUMENTATION*
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index e0e6570..f6872f9 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -161,13 +161,13 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 	int loading = simple_strtol(buf, NULL, 10);
+ 	int i;
+
++	mutex_lock(&fw_lock);
++
++	if (!fw_priv->fw)
++		goto out;
++
+ 	switch (loading) {
+ 	case 1:
+-		mutex_lock(&fw_lock);
+-		if (!fw_priv->fw) {
+-			mutex_unlock(&fw_lock);
+-			break;
+-		}
+ 		firmware_free_data(fw_priv->fw);
+ 		memset(fw_priv->fw, 0, sizeof(struct firmware));
+ 		/* If the pages are not owned by 'struct firmware' */
+@@ -178,7 +178,6 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 		fw_priv->page_array_size = 0;
+ 		fw_priv->nr_pages = 0;
+ 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
+-		mutex_unlock(&fw_lock);
+ 		break;
+ 	case 0:
+ 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
+@@ -209,7 +208,8 @@ static ssize_t firmware_loading_store(struct device *dev,
+ 		fw_load_abort(fw_priv);
+ 		break;
+ 	}
+-
++out:
++	mutex_unlock(&fw_lock);
+ 	return count;
+ }
+
+diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+index 73123486..e794b39 100644
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -339,7 +339,7 @@ static int asix_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
+
+ 		skb_pull(skb, (size + 1) & 0xfffe);
+
+-		if (skb->len == 0)
++		if (skb->len < sizeof(header))
+ 			break;
+
+ 		head = (u8 *) skb->data;
+@@ -1522,6 +1522,10 @@ static const struct usb_device_id	products [] = {
+ 	// ASIX 88772a
+ 	USB_DEVICE(0x0db0, 0xa877),
+ 	.driver_info = (unsigned long) &ax88772_info,
++}, {
++	// Asus USB Ethernet Adapter
++	USB_DEVICE (0x0b95, 0x7e2b),
++	.driver_info = (unsigned long) &ax88772_info,
+ },
+ 	{ },		// END
+ };
+diff --git a/drivers/scsi/device_handler/scsi_dh.c b/drivers/scsi/device_handler/scsi_dh.c
+index bfec4fa..2d04d61 100644
+--- a/drivers/scsi/device_handler/scsi_dh.c
++++ b/drivers/scsi/device_handler/scsi_dh.c
+@@ -432,7 +432,12 @@ int scsi_dh_activate(struct request_queue *q)
+
+ 	spin_lock_irqsave(q->queue_lock, flags);
+ 	sdev = q->queuedata;
+-	if (sdev && sdev->scsi_dh_data)
++	if (!sdev) {
++		spin_unlock_irqrestore(q->queue_lock, flags);
++		return SCSI_DH_NOSYS;
++	}
++
++	if (sdev->scsi_dh_data)
+ 		scsi_dh = sdev->scsi_dh_data->scsi_dh;
+ 	if (!scsi_dh || !get_device(&sdev->sdev_gendev))
+ 		err = SCSI_DH_NOSYS;
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index cec9bff..653f853 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1264,6 +1264,8 @@ made_compressed_probe:
+ 		i = device_create_file(&intf->dev, &dev_attr_wCountryCodes);
+ 		if (i < 0) {
+ 			kfree(acm->country_codes);
++			acm->country_codes = NULL;
++			acm->country_code_size = 0;
+ 			goto skip_countries;
+ 		}
+
+@@ -1272,6 +1274,8 @@ made_compressed_probe:
+ 		if (i < 0) {
+ 			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
+ 			kfree(acm->country_codes);
++			acm->country_codes = NULL;
++			acm->country_code_size = 0;
+ 			goto skip_countries;
+ 		}
+ 	}
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index e163df9..4923702 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -114,9 +114,12 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
+
+-	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	/* Guillemot Webcam Hercules Dualpix Exchange (2nd ID) */
+ 	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
+
++	/* Guillemot Webcam Hercules Dualpix Exchange*/
++	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
++
+ 	/* M-Systems Flash Disk Pioneers */
+ 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
+
+diff --git a/drivers/usb/misc/isight_firmware.c b/drivers/usb/misc/isight_firmware.c
+index b897f65..6199f12 100644
+--- a/drivers/usb/misc/isight_firmware.c
++++ b/drivers/usb/misc/isight_firmware.c
+@@ -54,8 +54,9 @@ static int isight_firmware_load(struct usb_interface *intf,
+
+ 	ptr = firmware->data;
+
++	buf[0] = 0x01;
+ 	if (usb_control_msg
+-	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, "\1", 1,
++	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, buf, 1,
+ 	     300) != 1) {
+ 		printk(KERN_ERR
+ 		       "Failed to initialise isight firmware loader\n");
+@@ -99,8 +100,9 @@ static int isight_firmware_load(struct usb_interface *intf,
+ 		}
+ 	}
+
++	buf[0] = 0x00;
+ 	if (usb_control_msg
+-	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, "\0", 1,
++	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, buf, 1,
+ 	     300) != 1) {
+ 		printk(KERN_ERR "isight firmware loading completion failed\n");
+ 		ret = -ENODEV;
+diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
+index f77908b..8dcaf42 100644
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -94,6 +94,7 @@ static struct usb_device_id id_table [] = {
+ 	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
+ 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
+ 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
++	{ USB_DEVICE(0x10C4, 0x81A9) }, /* Multiplex RC Interface */
+ 	{ USB_DEVICE(0x10C4, 0x81AC) }, /* MSD Dash Hawk */
+ 	{ USB_DEVICE(0x10C4, 0x81AD) }, /* INSYS USB Modem */
+ 	{ USB_DEVICE(0x10C4, 0x81C8) }, /* Lipowsky Industrie Elektronik GmbH, Baby-JTAG */
+diff --git a/drivers/usb/serial/omninet.c b/drivers/usb/serial/omninet.c
+index 0622650..c116bd9 100644
+--- a/drivers/usb/serial/omninet.c
++++ b/drivers/usb/serial/omninet.c
+@@ -317,7 +317,7 @@ static int omninet_write_room(struct tty_struct *tty)
+ 	int room = 0; /* Default: no room */
+
+ 	/* FIXME: no consistent locking for write_urb_busy */
+-	if (wport->write_urb_busy)
++	if (!wport->write_urb_busy)
+ 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
+
+ 	dbg("%s - returns %d", __func__, room);
+diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
+index 33197fa..6ce1095 100644
+--- a/drivers/usb/storage/usb.c
++++ b/drivers/usb/storage/usb.c
+@@ -1025,6 +1025,7 @@ static struct usb_driver usb_storage_driver = {
+ 	.post_reset =	usb_stor_post_reset,
+ 	.id_table =	usb_storage_usb_ids,
+ 	.soft_unbind =	1,
++	.no_dynamic_id = 1,
+ };
+
+ static int __init usb_stor_init(void)
+diff --git a/drivers/video/offb.c b/drivers/video/offb.c
+index b043ac8..dbc8274 100644
+--- a/drivers/video/offb.c
++++ b/drivers/video/offb.c
+@@ -100,36 +100,32 @@ static int offb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
+ 			  u_int transp, struct fb_info *info)
+ {
+ 	struct offb_par *par = (struct offb_par *) info->par;
+-	int i, depth;
+-	u32 *pal = info->pseudo_palette;
+-
+-	depth = info->var.bits_per_pixel;
+-	if (depth == 16)
+-		depth = (info->var.green.length == 5) ? 15 : 16;
+-
+-	if (regno > 255 ||
+-	    (depth == 16 && regno > 63) ||
+-	    (depth == 15 && regno > 31))
+-		return 1;
+-
+-	if (regno < 16) {
+-		switch (depth) {
+-		case 15:
+-			pal[regno] = (regno << 10) | (regno << 5) | regno;
+-			break;
+-		case 16:
+-			pal[regno] = (regno << 11) | (regno << 5) | regno;
+-			break;
+-		case 24:
+-			pal[regno] = (regno << 16) | (regno << 8) | regno;
+-			break;
+-		case 32:
+-			i = (regno << 8) | regno;
+-			pal[regno] = (i << 16) | i;
+-			break;
++
++	if (info->fix.visual == FB_VISUAL_TRUECOLOR) {
++		u32 *pal = info->pseudo_palette;
++		u32 cr = red >> (16 - info->var.red.length);
++		u32 cg = green >> (16 - info->var.green.length);
++		u32 cb = blue >> (16 - info->var.blue.length);
++		u32 value;
++
++		if (regno >= 16)
++			return -EINVAL;
++
++		value = (cr << info->var.red.offset) |
++			(cg << info->var.green.offset) |
++			(cb << info->var.blue.offset);
++		if (info->var.transp.length > 0) {
++			u32 mask = (1 << info->var.transp.length) - 1;
++			mask <<= info->var.transp.offset;
++			value |= mask;
+ 		}
++		pal[regno] = value;
++		return 0;
+ 	}
+
++	if (regno > 255)
++		return -EINVAL;
++
+ 	red >>= 8;
+ 	green >>= 8;
+ 	blue >>= 8;
+@@ -381,7 +377,7 @@ static void __init offb_init_fb(const char *name, const char *full_name,
+ 				int pitch, unsigned long address,
+ 				int foreign_endian, struct device_node *dp)
+ {
+-	unsigned long res_size = pitch * height * (depth + 7) / 8;
++	unsigned long res_size = pitch * height;
+ 	struct offb_par *par = &default_par;
+ 	unsigned long res_start = address;
+ 	struct fb_fix_screeninfo *fix;
+diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+index f0ad05f..7cb1285 100644
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -445,16 +445,20 @@ int remove_save_link(struct inode *inode, int truncate)
+ static void reiserfs_kill_sb(struct super_block *s)
+ {
+ 	if (REISERFS_SB(s)) {
+-		if (REISERFS_SB(s)->xattr_root) {
+-			d_invalidate(REISERFS_SB(s)->xattr_root);
+-			dput(REISERFS_SB(s)->xattr_root);
+-			REISERFS_SB(s)->xattr_root = NULL;
+-		}
+-		if (REISERFS_SB(s)->priv_root) {
+-			d_invalidate(REISERFS_SB(s)->priv_root);
+-			dput(REISERFS_SB(s)->priv_root);
+-			REISERFS_SB(s)->priv_root = NULL;
+-		}
++		/*
++		 * Force any pending inode evictions to occur now. Any
++		 * inodes to be removed that have extended attributes
++		 * associated with them need to clean them up before
++		 * we can release the extended attribute root dentries.
++		 * shrink_dcache_for_umount will BUG if we don't release
++		 * those before it's called so ->put_super is too late.
++		 */
++		shrink_dcache_sb(s);
++
++		dput(REISERFS_SB(s)->xattr_root);
++		REISERFS_SB(s)->xattr_root = NULL;
++		dput(REISERFS_SB(s)->priv_root);
++		REISERFS_SB(s)->priv_root = NULL;
+ 	}
+
+ 	kill_block_super(s);
+@@ -1149,7 +1153,8 @@ static void handle_quota_files(struct super_block *s, char **qf_names,
+ 			kfree(REISERFS_SB(s)->s_qf_names[i]);
+ 		REISERFS_SB(s)->s_qf_names[i] = qf_names[i];
+ 	}
+-	REISERFS_SB(s)->s_jquota_fmt = *qfmt;
++	if (*qfmt)
++		REISERFS_SB(s)->s_jquota_fmt = *qfmt;
+ }
+ #endif
+
+diff --git a/fs/xfs/linux-2.6/xfs_acl.c b/fs/xfs/linux-2.6/xfs_acl.c
+index 4c7b145..ad60d61 100644
+--- a/fs/xfs/linux-2.6/xfs_acl.c
++++ b/fs/xfs/linux-2.6/xfs_acl.c
+@@ -37,9 +37,11 @@ xfs_acl_from_disk(struct xfs_acl *aclp)
+ 	struct posix_acl_entry *acl_e;
+ 	struct posix_acl *acl;
+ 	struct xfs_acl_entry *ace;
+-	int count, i;
++	unsigned int count, i;
+
+ 	count = be32_to_cpu(aclp->acl_cnt);
++	if (count > XFS_ACL_MAX_ENTRIES)
++		return ERR_PTR(-EFSCORRUPTED);
+
+ 	acl = posix_acl_alloc(count, GFP_KERNEL);
+ 	if (!acl)
+diff --git a/kernel/cpu.c b/kernel/cpu.c
+index 7e8b6ac..3f2f04f 100644
+--- a/kernel/cpu.c
++++ b/kernel/cpu.c
+@@ -14,6 +14,7 @@
+ #include <linux/kthread.h>
+ #include <linux/stop_machine.h>
+ #include <linux/mutex.h>
++#include <linux/suspend.h>
+
+ #ifdef CONFIG_SMP
+ /* Serializes the updates to cpu_online_mask, cpu_present_mask */
+@@ -442,6 +443,79 @@ static int alloc_frozen_cpus(void)
+ 	return 0;
+ }
+ core_initcall(alloc_frozen_cpus);
++
++/*
++ * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
++ * hotplug when tasks are about to be frozen. Also, don't allow the freezer
++ * to continue until any currently running CPU hotplug operation gets
++ * completed.
++ * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
++ * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
++ * CPU hotplug path and released only after it is complete. Thus, we
++ * (and hence the freezer) will block here until any currently running CPU
++ * hotplug operation gets completed.
++ */
++void cpu_hotplug_disable_before_freeze(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 1;
++	cpu_maps_update_done();
++}
++
++
++/*
++ * When tasks have been thawed, re-enable regular CPU hotplug (which had been
++ * disabled while beginning to freeze tasks).
++ */
++void cpu_hotplug_enable_after_thaw(void)
++{
++	cpu_maps_update_begin();
++	cpu_hotplug_disabled = 0;
++	cpu_maps_update_done();
++}
++
++/*
++ * When callbacks for CPU hotplug notifications are being executed, we must
++ * ensure that the state of the system with respect to the tasks being frozen
++ * or not, as reported by the notification, remains unchanged *throughout the
++ * duration* of the execution of the callbacks.
++ * Hence we need to prevent the freezer from racing with regular CPU hotplug.
++ *
++ * This synchronization is implemented by mutually excluding regular CPU
++ * hotplug and Suspend/Hibernate call paths by hooking onto the Suspend/
++ * Hibernate notifications.
++ */
++static int
++cpu_hotplug_pm_callback(struct notifier_block *nb,
++			unsigned long action, void *ptr)
++{
++	switch (action) {
++
++	case PM_SUSPEND_PREPARE:
++	case PM_HIBERNATION_PREPARE:
++		cpu_hotplug_disable_before_freeze();
++		break;
++
++	case PM_POST_SUSPEND:
++	case PM_POST_HIBERNATION:
++		cpu_hotplug_enable_after_thaw();
++		break;
++
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return NOTIFY_OK;
++}
++
++
++int cpu_hotplug_pm_sync_init(void)
++{
++	pm_notifier(cpu_hotplug_pm_callback, 0);
++	return 0;
++}
++core_initcall(cpu_hotplug_pm_sync_init);
++
+ #endif /* CONFIG_PM_SLEEP_SMP */
+
+ /**
