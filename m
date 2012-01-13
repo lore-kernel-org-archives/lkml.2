@@ -1,116 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab2AMODA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 09:03:00 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58366 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750730Ab2AMOC6 (ORCPT
+	id S1758211Ab2AMOFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 09:05:34 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63099 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757860Ab2AMOF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 09:02:58 -0500
-X-AuditID: b753bd60-98c60ba00000359c-c7-4f10398e4247
-X-AuditID: b753bd60-98c60ba00000359c-c7-4f10398e4247
-Message-ID: <4F103975.8070505@hitachi.com>
-Date: Fri, 13 Jan 2012 23:02:29 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20111105 Thunderbird/8.0
-MIME-Version: 1.0
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Linux-mm <linux-mm@kvack.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Roland McGrath <roland@hack.frob.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Anton Arapov <anton@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [PATCH v8 3.2.0-rc5 9/9] perf: perf interface for uprobes
-References: <20111216122756.2085.95791.sendpatchset@srdronam.in.ibm.com> <20111216122951.2085.95511.sendpatchset@srdronam.in.ibm.com> <4F06D22D.9060906@hitachi.com> <20120109112236.GA10189@linux.vnet.ibm.com> <4F0F8F41.3060806@hitachi.com> <20120113051447.GD10189@linux.vnet.ibm.com>
-In-Reply-To: <20120113051447.GD10189@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Fri, 13 Jan 2012 09:05:29 -0500
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers: usb: update Michal Nazarewicz's email address
+Date: Fri, 13 Jan 2012 15:05:16 +0100
+Message-Id: <c29768d070313ce590395418442a346c91fe41f8.1326463041.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/01/13 14:14), Srikar Dronamraju wrote:
->>>>> +#define DEFAULT_FUNC_FILTER "!_*"
->>>>
->>>> This is a hidden rule for users ... please remove it.
->>>> (or, is there any reason why we need to have it?)
->>>>
->>>
->>> This is to be in sync with your commit
->>> 3c42258c9a4db70133fa6946a275b62a16792bb5
->>
->> I see, but that commit also provides filter option for changing
->> the function filter. Here, user can not change the filter rule.
->>
->> I think, currently, we don't need to filter any function by name
->> here, since the user obviously intends to probe given function :)
-> 
-> Actually this was discussed in LKML here
-> https://lkml.org/lkml/2010/7/20/5, please refer the sub-thread.
-> 
-> Basically without this filter, the list of functions is too large
-> including labels, weak, and local binding function which arent traced.
+The m.nazarewicz@samsung.com email address is no longer valid,
+so this commit replaces it with mina86@mina86.com which is
+employer-agnostic and thus should be valid for foreseeable
+feature.
 
-If you mean that this function is used for listing
-function (perf probe -F), that's true. But it seems
-this convert_name_to_addr() is used just for converting
-given function.
-
-As far as I can understand, this means that the user
-specifies an actual and single function for the probe point.
-
-If so, there is no need to list up all functions - just
-find a function which has the given symbol. I guess, it
-is enough to set given function name to
-available_func_filter as below. :)
-
-available_func_filter = function
-
-then, map__load() loads only the function which has the
-given function name, doesn't it? :)
-
->>>
->>> If the user provides a symbolic link, convert_name_to_addr would get the
->>> target executable for the given executable. This would handy if we were
->>> to compare existing probes registered on the same application using a
->>> different name (symbolic links). Since you seem to like that we register
->>> with the name the user has provided, I will just feed address here.
->>
->> Hmm, why do we need to compare the probe points? Of course, event-name
->> conflict should be solved, but I think it is acceptable that user puts
->> several probes on the same exec:vaddr. Since different users may want
->> to use it concurrently bit different ways.
->>
-> 
-> The event-names themselves are generated from the probe points. There is
-> no problem as such if two or more people use a different symlinks to
-> create probes. I was just trying to see if we could solve the
-> inconsitency where we warn a person if he is trying to place a probe on
-> a existing probe but allow the same if he is trying to place a probe on
-> a existing probe using a different symlink.
-> 
-> This again I have changed as you suggested in the latest patches that I
-> sent this week.
-
-Yeah, I've checked out it. Thanks:)
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+---
+I probably should have sent it year ago...  This is based on v3.2.
 
 
-Thank you,
+ drivers/usb/gadget/f_acm.c          |    2 +-
+ drivers/usb/gadget/f_fs.c           |    2 +-
+ drivers/usb/gadget/f_mass_storage.c |    2 +-
+ drivers/usb/gadget/f_rndis.c        |    2 +-
+ drivers/usb/gadget/g_ffs.c          |    2 +-
+ drivers/usb/gadget/mass_storage.c   |    2 +-
+ drivers/usb/gadget/multi.c          |    2 +-
+ drivers/usb/gadget/storage_common.c |    2 +-
+ tools/usb/ffs-test.c                |    2 +-
+ tools/usb/testusb.c                 |    2 +-
+ 10 files changed, 10 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/usb/gadget/f_acm.c b/drivers/usb/gadget/f_acm.c
+index 3f88493..e482121 100644
+--- a/drivers/usb/gadget/f_acm.c
++++ b/drivers/usb/gadget/f_acm.c
+@@ -5,7 +5,7 @@
+  * Copyright (C) 2008 by David Brownell
+  * Copyright (C) 2008 by Nokia Corporation
+  * Copyright (C) 2009 by Samsung Electronics
+- * Author: Michal Nazarewicz (m.nazarewicz@samsung.com)
++ * Author: Michal Nazarewicz (mina86@mina86.com)
+  *
+  * This software is distributed under the terms of the GNU General
+  * Public License ("GPL") as published by the Free Software Foundation,
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index acb3800..371e974 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -2,7 +2,7 @@
+  * f_fs.c -- user mode file system API for USB composite function controllers
+  *
+  * Copyright (C) 2010 Samsung Electronics
+- * Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
++ * Author: Michal Nazarewicz <mina86@mina86.com>
+  *
+  * Based on inode.c (GadgetFS) which was:
+  * Copyright (C) 2003-2004 David Brownell
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 1a6f415..61a4650 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -3,7 +3,7 @@
+  *
+  * Copyright (C) 2003-2008 Alan Stern
+  * Copyright (C) 2009 Samsung Electronics
+- *                    Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
++ *                    Author: Michal Nazarewicz <mina86@mina86.com>
+  * All rights reserved.
+  *
+  * Redistribution and use in source and binary forms, with or without
+diff --git a/drivers/usb/gadget/f_rndis.c b/drivers/usb/gadget/f_rndis.c
+index 704d1d9..7b1cf18 100644
+--- a/drivers/usb/gadget/f_rndis.c
++++ b/drivers/usb/gadget/f_rndis.c
+@@ -5,7 +5,7 @@
+  * Copyright (C) 2003-2004 Robert Schwebel, Benedikt Spranger
+  * Copyright (C) 2008 Nokia Corporation
+  * Copyright (C) 2009 Samsung Electronics
+- *                    Author: Michal Nazarewicz (m.nazarewicz@samsung.com)
++ *                    Author: Michal Nazarewicz (mina86@mina86.com)
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
+index 0519d77..331cd67 100644
+--- a/drivers/usb/gadget/g_ffs.c
++++ b/drivers/usb/gadget/g_ffs.c
+@@ -2,7 +2,7 @@
+  * g_ffs.c -- user mode file system API for USB composite function controllers
+  *
+  * Copyright (C) 2010 Samsung Electronics
+- * Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
++ * Author: Michal Nazarewicz <mina86@mina86.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index e24f72f..1f376eb 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -3,7 +3,7 @@
+  *
+  * Copyright (C) 2003-2008 Alan Stern
+  * Copyright (C) 2009 Samsung Electronics
+- *                    Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
++ *                    Author: Michal Nazarewicz <mina86@mina86.com>
+  * All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or modify
+diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
+index 7e7f515..c37fb33 100644
+--- a/drivers/usb/gadget/multi.c
++++ b/drivers/usb/gadget/multi.c
+@@ -4,7 +4,7 @@
+  * Copyright (C) 2008 David Brownell
+  * Copyright (C) 2008 Nokia Corporation
+  * Copyright (C) 2009 Samsung Electronics
+- * Author: Michal Nazarewicz (m.nazarewicz@samsung.com)
++ * Author: Michal Nazarewicz (mina86@mina86.com)
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index c7f291a..9d450fe 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -3,7 +3,7 @@
+  *
+  * Copyright (C) 2003-2008 Alan Stern
+  * Copyeight (C) 2009 Samsung Electronics
+- * Author: Michal Nazarewicz (m.nazarewicz@samsung.com)
++ * Author: Michal Nazarewicz (mina86@mina86.com)
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/tools/usb/ffs-test.c b/tools/usb/ffs-test.c
+index b9c7986..53452c3 100644
+--- a/tools/usb/ffs-test.c
++++ b/tools/usb/ffs-test.c
+@@ -2,7 +2,7 @@
+  * ffs-test.c.c -- user mode filesystem api for usb composite function
+  *
+  * Copyright (C) 2010 Samsung Electronics
+- *                    Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
++ *                    Author: Michal Nazarewicz <mina86@mina86.com>
+  *
+  * This program is free software; you can redistribute it and/or modify
+  * it under the terms of the GNU General Public License as published by
+diff --git a/tools/usb/testusb.c b/tools/usb/testusb.c
+index f08e894..6e0f567 100644
+--- a/tools/usb/testusb.c
++++ b/tools/usb/testusb.c
+@@ -3,7 +3,7 @@
+ /*
+  * Copyright (c) 2002 by David Brownell
+  * Copyright (c) 2010 by Samsung Electronics
+- * Author: Michal Nazarewicz <m.nazarewicz@samsung.com>
++ * Author: Michal Nazarewicz <mina86@mina86.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+1.7.7.3
+
