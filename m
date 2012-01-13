@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab2AMQgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 11:36:49 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:40834 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751778Ab2AMQgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 11:36:46 -0500
-Date: Fri, 13 Jan 2012 10:36:42 -0600
+	id S1758522Ab2AMQjf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 11:39:35 -0500
+Received: from relay1.sgi.com ([192.48.179.29]:34933 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758499Ab2AMQja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 11:39:30 -0500
+Date: Fri, 13 Jan 2012 10:39:27 -0600
 From: Dimitri Sivanich <sivanich@sgi.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+To: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
         Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
         James Morris <jmorris@namei.org>,
         Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
@@ -21,59 +21,76 @@ Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
         linux-fsdevel@vger.kernel.org, netdev@vger.kernel.org
 Subject: Re: [PATCH] Fix panic in __d_lookup with high dentry hashtable
  counts
-Message-ID: <20120113163642.GB25788@sgi.com>
+Message-ID: <20120113163927.GB26353@sgi.com>
 References: <20120113155237.GA25103@sgi.com>
  <20120113162236.GK23916@ZenIV.linux.org.uk>
+ <20120113163642.GB25788@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20120113162236.GK23916@ZenIV.linux.org.uk>
+In-Reply-To: <20120113163642.GB25788@sgi.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 04:22:36PM +0000, Al Viro wrote:
-> On Fri, Jan 13, 2012 at 09:52:37AM -0600, Dimitri Sivanich wrote:
-> > When the number of dentry cache hash table entries gets too high
-> > (2147483648 entries), use of a signed integer in the initialization
-> > loop prevents the dentry_hashtable from getting initialized, resulting
-> > in a panic in __d_lookup.  Fixing this in dcache_init and a few other
-> > spots for consistency.
+On Fri, Jan 13, 2012 at 10:36:42AM -0600, Dimitri Sivanich wrote:
+> On Fri, Jan 13, 2012 at 04:22:36PM +0000, Al Viro wrote:
+> > On Fri, Jan 13, 2012 at 09:52:37AM -0600, Dimitri Sivanich wrote:
+> > > When the number of dentry cache hash table entries gets too high
+> > > (2147483648 entries), use of a signed integer in the initialization
+> > > loop prevents the dentry_hashtable from getting initialized, resulting
+> > > in a panic in __d_lookup.  Fixing this in dcache_init and a few other
+> > > spots for consistency.
+> > 
+> > >  static void __init dcache_init(void)
+> > >  {
+> > > -	int loop;
+> > > +	long loop;
+> > 
+> > You've got to be kidding.  Note that D_HASHMASK is at most 32bit.  Use
+> > of long here is an overkill and so's 2^31 hash buckets (that's what,
+> > 16Gb in hash list heads alone?  What kind of average chain length do
+> > you expect, BTW?)
 > 
-> >  static void __init dcache_init(void)
-> >  {
-> > -	int loop;
-> > +	long loop;
+> Yes, long might be overkill right now, but the code is all __init time code.
+> I don't have numbers showing average chain length at this point, I was
+> simply fixing this one end case
 > 
-> You've got to be kidding.  Note that D_HASHMASK is at most 32bit.  Use
-> of long here is an overkill and so's 2^31 hash buckets (that's what,
-> 16Gb in hash list heads alone?  What kind of average chain length do
-> you expect, BTW?)
-
-Yes, long might be overkill right now, but the code is all __init time code.
-I don't have numbers showing average chain length at this point, I was
-simply fixing this one end case
-
+> > 
+> > Can alloc_large_system_hash() produce the horrors that large, anyway?
 > 
-> Can alloc_large_system_hash() produce the horrors that large, anyway?
+> On a 16TB system, alloc_large_system_hash() produces 2^31 hash buckets, yes.
+> 
+> Would simply capping the value in alloc_large_system_hash() be more palatable?
+> 
+> Something like the following?
+> 
+> Index: linux/mm/page_alloc.c
+> ===================================================================
+> --- linux.orig/mm/page_alloc.c
+> +++ linux/mm/page_alloc.c
+> @@ -5257,6 +5257,7 @@ void *__init alloc_large_system_hash(con
+>         if (max == 0) {
+>                 max = ((unsigned long long)nr_all_pages << PAGE_SHIFT) >> 4;
+>                 do_div(max, bucketsize);
+> +               max = min(max, 1ULL << 30);
+>         }
+>  
+>         if (numentries > max)
 
-On a 16TB system, alloc_large_system_hash() produces 2^31 hash buckets, yes.
-
-Would simply capping the value in alloc_large_system_hash() be more palatable?
-
-Something like the following?
+Sorry, you'd probably want something more like this:
 
 Index: linux/mm/page_alloc.c
 ===================================================================
 --- linux.orig/mm/page_alloc.c
 +++ linux/mm/page_alloc.c
-@@ -5257,6 +5257,7 @@ void *__init alloc_large_system_hash(con
-        if (max == 0) {
+@@ -5258,6 +5258,7 @@ void *__init alloc_large_system_hash(con
                 max = ((unsigned long long)nr_all_pages << PAGE_SHIFT) >> 4;
                 do_div(max, bucketsize);
-+               max = min(max, 1ULL << 30);
         }
++       max = min(max, 1ULL << 30);
  
         if (numentries > max)
+                numentries = max;
 
