@@ -1,191 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab2AMJK0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 04:10:26 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:34525 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756922Ab2AMJJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 04:09:28 -0500
-Subject: [PATCH v2 3/4] SUNRPC: parametrize rpc_pton() by network context
-To: Trond.Myklebust@netapp.com
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
-        devel@openvz.org
-Date: Fri, 13 Jan 2012 13:09:19 +0400
-Message-ID: <20120113090919.1598.95630.stgit@localhost6.localdomain6>
-In-Reply-To: <20120113090520.1598.73772.stgit@localhost6.localdomain6>
-References: <20120113090520.1598.73772.stgit@localhost6.localdomain6>
-User-Agent: StGit/0.15
+	id S1757002Ab2AMJQG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 04:16:06 -0500
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:39499 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276Ab2AMJQD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 04:16:03 -0500
+Date: Fri, 13 Jan 2012 01:15:56 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: Add EVIOC mechanism for MT slots
+Message-ID: <20120113091556.GA21749@core.coreip.homeip.net>
+References: <1326396275-2492-1-git-send-email-rydberg@euromail.se>
+ <4F0FEC84.7020605@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4F0FEC84.7020605@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Parametrize rpc_pton() by network context and thus force it's callers to pass
-in network context instead of using hard-coded "init_net".
+On Fri, Jan 13, 2012 at 09:34:12AM +0100, Chase Douglas wrote:
+> On 01/12/2012 08:24 PM, Henrik Rydberg wrote:
+> > This patch adds the ability to extract MT slot data via a new ioctl,
+> > EVIOCGMTSLOTS. The function returns an array of slot values for the
+> > specified ABS_MT event type.
+> > 
+> > Example of user space usage:
+> > 
+> > struct { struct input_mt_request req; int values[64]; } data;
+> > data.req.code = ABS_MT_POSITION_X;
+> > if (ioctl(fd, EVIOCGMTSLOTS(sizeof(data)), &data) < 0)
+> > 	return -1;
+> > for (i = 0; i < data.req.num_values; i++)
+> > 	printf("slot %d: %d\n", i, data.values[i]);
+> 
+> If input_mt_request is:
+> 
+> struct input_mt_request {
+> 	__u32 code;
+> 	__u32 num_values;
+> 	__s32 values[];
+> };
+> 
+> then how passing in the data struct above work? The passed in data would be:
+> 
+> __u32 code;
+> __u32 num_values; /* BTW, this isn't set in the example above */
+> __s32 *values; /* This is left uninitialized in the example above */
+> int values[0]
+> int values[1]
+> int values[2]
+> ...
+> int values[63]
+> 
+> I'm not too familiar with ioctl interfaces, but I don't see how this
+> example could work.
 
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+There isn't a separate __s32 *values pointer, the actual memory layout
+from kernel's POV would be:
 
----
- fs/nfs/dns_resolve.c        |    4 ++--
- fs/nfs/nfs4filelayoutdev.c  |    2 +-
- fs/nfs/nfs4namespace.c      |    2 +-
- fs/nfs/super.c              |    4 ++--
- fs/nfsd/nfsctl.c            |    2 +-
- include/linux/sunrpc/clnt.h |    2 +-
- net/sunrpc/addr.c           |    7 ++++---
- net/sunrpc/svcauth_unix.c   |    2 +-
- 8 files changed, 13 insertions(+), 12 deletions(-)
+__u32 code;
+__u32 num_values;
+__s32 values[0];
+__s32 values[1];
+...
+__s32 values[63];
 
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index 200eb67..7edc62a 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -20,7 +20,7 @@ ssize_t nfs_dns_resolve_name(struct net *net, char *name, size_t namelen,
- 
- 	ip_len = dns_query(NULL, name, namelen, NULL, &ip_addr, NULL);
- 	if (ip_len > 0)
--		ret = rpc_pton(ip_addr, ip_len, sa, salen);
-+		ret = rpc_pton(&init_net, ip_addr, ip_len, sa, salen);
- 	else
- 		ret = -ESRCH;
- 	kfree(ip_addr);
-@@ -224,7 +224,7 @@ static int nfs_dns_parse(struct cache_detail *cd, char *buf, int buflen)
- 	len = qword_get(&buf, buf1, sizeof(buf1));
- 	if (len <= 0)
- 		goto out;
--	key.addrlen = rpc_pton(buf1, len,
-+	key.addrlen = rpc_pton(&init_net, buf1, len,
- 			(struct sockaddr *)&key.addr,
- 			sizeof(key.addr));
- 
-diff --git a/fs/nfs/nfs4filelayoutdev.c b/fs/nfs/nfs4filelayoutdev.c
-index 8ae9190..0d8b952 100644
---- a/fs/nfs/nfs4filelayoutdev.c
-+++ b/fs/nfs/nfs4filelayoutdev.c
-@@ -457,7 +457,7 @@ decode_ds_addr(struct xdr_stream *streamp, gfp_t gfp_flags)
- 
- 	INIT_LIST_HEAD(&da->da_node);
- 
--	if (!rpc_pton(buf, portstr-buf, (struct sockaddr *)&da->da_addr,
-+	if (!rpc_pton(&init_net, buf, portstr-buf, (struct sockaddr *)&da->da_addr,
- 		      sizeof(da->da_addr))) {
- 		dprintk("%s: error parsing address %s\n", __func__, buf);
- 		goto out_free_da;
-diff --git a/fs/nfs/nfs4namespace.c b/fs/nfs/nfs4namespace.c
-index 919a369..48a9acd 100644
---- a/fs/nfs/nfs4namespace.c
-+++ b/fs/nfs/nfs4namespace.c
-@@ -98,7 +98,7 @@ static size_t nfs_parse_server_name(char *string, size_t len,
- {
- 	ssize_t ret;
- 
--	ret = rpc_pton(string, len, sa, salen);
-+	ret = rpc_pton(&init_net, string, len, sa, salen);
- 	if (ret == 0) {
- 		ret = nfs_dns_resolve_name(server->client->cl_xprt->xprt_net,
- 					   string, len, sa, salen);
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index e45feb0..b79f2a1 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1408,7 +1408,7 @@ static int nfs_parse_mount_options(char *raw,
- 			if (string == NULL)
- 				goto out_nomem;
- 			mnt->nfs_server.addrlen =
--				rpc_pton(string, strlen(string),
-+				rpc_pton(&init_net, string, strlen(string),
- 					(struct sockaddr *)
- 					&mnt->nfs_server.address,
- 					sizeof(mnt->nfs_server.address));
-@@ -1430,7 +1430,7 @@ static int nfs_parse_mount_options(char *raw,
- 			if (string == NULL)
- 				goto out_nomem;
- 			mnt->mount_server.addrlen =
--				rpc_pton(string, strlen(string),
-+				rpc_pton(&init_net, string, strlen(string),
- 					(struct sockaddr *)
- 					&mnt->mount_server.address,
- 					sizeof(mnt->mount_server.address));
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index bb4a11d..3bc8242 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -222,7 +222,7 @@ static ssize_t write_unlock_ip(struct file *file, char *buf, size_t size)
- 	if (qword_get(&buf, fo_path, size) < 0)
- 		return -EINVAL;
- 
--	if (rpc_pton(fo_path, size, sap, salen) == 0)
-+	if (rpc_pton(&init_net, fo_path, size, sap, salen) == 0)
- 		return -EINVAL;
- 
- 	return nlmsvc_unlock_all_by_ip(sap);
-diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-index e891a8a..7bd114f 100644
---- a/include/linux/sunrpc/clnt.h
-+++ b/include/linux/sunrpc/clnt.h
-@@ -163,7 +163,7 @@ size_t		rpc_peeraddr(struct rpc_clnt *, struct sockaddr *, size_t);
- const char	*rpc_peeraddr2str(struct rpc_clnt *, enum rpc_display_format_t);
- 
- size_t		rpc_ntop(const struct sockaddr *, char *, const size_t);
--size_t		rpc_pton(const char *, const size_t,
-+size_t		rpc_pton(struct net *, const char *, const size_t,
- 			 struct sockaddr *, const size_t);
- char *		rpc_sockaddr2uaddr(const struct sockaddr *, gfp_t);
- size_t		rpc_uaddr2sockaddr(const char *, const size_t,
-diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
-index 18c40a2..82b06b7 100644
---- a/net/sunrpc/addr.c
-+++ b/net/sunrpc/addr.c
-@@ -230,6 +230,7 @@ static size_t rpc_pton6(struct net *net, const char *buf, const size_t buflen,
- 
- /**
-  * rpc_pton - Construct a sockaddr in @sap
-+ * @net: applicable network namespace
-  * @buf: C string containing presentation format IP address
-  * @buflen: length of presentation address in bytes
-  * @sap: buffer into which to plant socket address
-@@ -242,14 +243,14 @@ static size_t rpc_pton6(struct net *net, const char *buf, const size_t buflen,
-  * socket address, if successful.  Returns zero if an error
-  * occurred.
-  */
--size_t rpc_pton(const char *buf, const size_t buflen,
-+size_t rpc_pton(struct net *net, const char *buf, const size_t buflen,
- 		struct sockaddr *sap, const size_t salen)
- {
- 	unsigned int i;
- 
- 	for (i = 0; i < buflen; i++)
- 		if (buf[i] == ':')
--			return rpc_pton6(&init_net, buf, buflen, sap, salen);
-+			return rpc_pton6(net, buf, buflen, sap, salen);
- 	return rpc_pton4(buf, buflen, sap, salen);
- }
- EXPORT_SYMBOL_GPL(rpc_pton);
-@@ -340,7 +341,7 @@ size_t rpc_uaddr2sockaddr(const char *uaddr, const size_t uaddr_len,
- 	port = (unsigned short)((porthi << 8) | portlo);
- 
- 	*c = '\0';
--	if (rpc_pton(buf, strlen(buf), sap, salen) == 0)
-+	if (rpc_pton(&init_net, buf, strlen(buf), sap, salen) == 0)
- 		return 0;
- 
- 	switch (sap->sa_family) {
-diff --git a/net/sunrpc/svcauth_unix.c b/net/sunrpc/svcauth_unix.c
-index 01153ea..2f8c426 100644
---- a/net/sunrpc/svcauth_unix.c
-+++ b/net/sunrpc/svcauth_unix.c
-@@ -211,7 +211,7 @@ static int ip_map_parse(struct cache_detail *cd,
- 	len = qword_get(&mesg, buf, mlen);
- 	if (len <= 0) return -EINVAL;
- 
--	if (rpc_pton(buf, len, &address.sa, sizeof(address)) == 0)
-+	if (rpc_pton(&init_net, buf, len, &address.sa, sizeof(address)) == 0)
- 		return -EINVAL;
- 	switch (address.sa.sa_family) {
- 	case AF_INET:
+> 
+> > 
+> > Cc: Chase Douglas <chase.douglas@canonical.com>
+> > Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> > ---
+> > Hi Dmitry,
+> > 
+> > This is a new take on the MT slot ioctl patch. A new ioctl is added,
+> > which takes a request structure and returns a (variable) array of slot
+> > values. The patch seems to work, but testing has not been extensive (yet).
+> > 
+> > Cheers,
+> > Henrik
+> > 
+> >  drivers/input/evdev.c |   30 +++++++++++++++++++++++++++++-
+> >  include/linux/input.h |   25 +++++++++++++++++++++++++
+> >  2 files changed, 54 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> > index 4cf2534..8bf45d4 100644
+> > --- a/drivers/input/evdev.c
+> > +++ b/drivers/input/evdev.c
+> > @@ -20,7 +20,7 @@
+> >  #include <linux/slab.h>
+> >  #include <linux/module.h>
+> >  #include <linux/init.h>
+> > -#include <linux/input.h>
+> > +#include <linux/input/mt.h>
+> >  #include <linux/major.h>
+> >  #include <linux/device.h>
+> >  #include "input-compat.h"
+> > @@ -621,6 +621,31 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
+> >  	return input_set_keycode(dev, &ke);
+> >  }
+> >  
+> > +static int evdev_handle_mt_request(struct input_dev *dev,
+> > +				   unsigned int size,
+> > +				   int __user *ip)
+> > +{
+> > +	const struct input_mt_slot *mt = dev->mt;
+> > +	unsigned int code;
+> > +	int i;
+> > +
+> > +	if (get_user(code, &ip[0]))
+> > +		return -EFAULT;
+> > +	if (!input_is_mt_value(code))
+> > +		return -EINVAL;
+> > +
+> > +	if (size < sizeof(struct input_mt_request) + dev->mtsize * sizeof(int))
+> > +		return -EINVAL;
+> 
+> Why not fill in up to the size of the array provided?
 
+Yes, I think we do the same with other ioctls as well.
+
+> 
+> > +	if (put_user(dev->mtsize, &ip[1]))
+> > +		return -EFAULT;
+> > +	for (i = 0; i < dev->mtsize; i++)
+> > +		if (put_user(input_mt_get_value(&mt[i], code), &ip[2 + i]))
+> > +			return -EFAULT;
+> 
+> This would be easier to understand if you did:
+> 
+> struct input_mt_request *req = (struct input_mt_request *)ip;
+> 
+> Then modify the stuff in a straightforward way.
+
+This is a user pointer, you can't really do it in straightforward way...
+
+> 
+> > +	return 0;
+> > +}
+> > +
+> >  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+> >  			   void __user *p, int compat_mode)
+> >  {
+> > @@ -706,6 +731,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+> >  		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
+> >  				    size, p, compat_mode);
+> >  
+> > +	case EVIOCGMTSLOTS(0):
+> > +		return evdev_handle_mt_request(dev, size, ip);
+> > +
+> >  	case EVIOCGKEY(0):
+> >  		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
+> >  
+> > diff --git a/include/linux/input.h b/include/linux/input.h
+> > index a637e78..9a73f18 100644
+> > --- a/include/linux/input.h
+> > +++ b/include/linux/input.h
+> > @@ -99,6 +99,30 @@ struct input_keymap_entry {
+> >  	__u8  scancode[32];
+> >  };
+> >  
+> > +/**
+> > + * struct input_mt_request - used by EVIOCGMTSLOTS ioctl
+> > + * @code: ABS_MT code to read
+> > + * @num_values: number of values written to the value array
+> > + * @values: value array, one value per slot
+> > + *
+> > + * The structure is used to retrieve MT slot data. Before the call,
+> > + * code is set to the wanted ABS_MT event type. On return, the value
+> > + * array is filled with the slot values for the specified ABS_MT code,
+> > + * and num_values is set to the actual number of slots.
+> > + *
+> > + * The call argument (len) is the size of the return buffer, satisfying
+> > + *
+> > + * len >= sizeof(input_mt_request) + sizeof(__s32) * number_of_slots
+> > + *
+> > + * If the request code is not an ABS_MT value, or if len is too small,
+> > + * -EINVAL is returned.
+> > + */
+> > +struct input_mt_request {
+> > +	__u32 code;
+> > +	__u32 num_values;
+
+Hmm, might avoid this one... Userspace can do EVIOCGABS to get number of
+slots and then it will know how much data EVIOCGMTSLOTS will return...
+
+> > +	__s32 values[];
+> > +};
+> > +
+> >  #define EVIOCGVERSION		_IOR('E', 0x01, int)			/* get driver version */
+> >  #define EVIOCGID		_IOR('E', 0x02, struct input_id)	/* get device ID */
+> >  #define EVIOCGREP		_IOR('E', 0x03, unsigned int[2])	/* get repeat settings */
+> > @@ -113,6 +137,7 @@ struct input_keymap_entry {
+> >  #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
+> >  #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
+> >  #define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
+> > +#define EVIOCGMTSLOTS(len)	_IOC(_IOC_READ, 'E', 0x0a, len)		/* get MT slot values */
+> >  
+> >  #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
+> >  #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
+> 
+
+Thanks.
+
+-- 
+Dmitry
