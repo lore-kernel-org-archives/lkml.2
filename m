@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab2AMVf3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 16:35:29 -0500
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37746 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab2AMVf2 (ORCPT
+	id S1759267Ab2AMVgQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 16:36:16 -0500
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:45631 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753875Ab2AMVgO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 16:35:28 -0500
-Date: Fri, 13 Jan 2012 13:35:23 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: leonid.moiseichuk@nokia.com
-cc: gregkh@suse.de, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        cesarb@cesarb.net, kamezawa.hiroyu@jp.fujitsu.com, emunson@mgebm.net,
-        penberg@kernel.org, aarcange@redhat.com, riel@redhat.com,
-        mel@csn.ul.ie, dima@android.com, rebecca@android.com, san@google.com,
-        akpm@linux-foundation.org, vesa.jaaskelainen@nokia.com
-Subject: RE: [PATCH 3.2.0-rc1 3/3] Used Memory Meter pseudo-device module
-In-Reply-To: <84FF21A720B0874AA94B46D76DB982690455759C@008-AM1MPN1-003.mgdnok.nokia.com>
-Message-ID: <alpine.DEB.2.00.1201131328540.24089@chino.kir.corp.google.com>
-References: <cover.1325696593.git.leonid.moiseichuk@nokia.com> <ed78895aa673d2e5886e95c3e3eae38cc6661eda.1325696593.git.leonid.moiseichuk@nokia.com> <20120104195521.GA19181@suse.de> <84FF21A720B0874AA94B46D76DB9826904554AFD@008-AM1MPN1-003.mgdnok.nokia.com>
- <alpine.DEB.2.00.1201090203470.8480@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB9826904554B81@008-AM1MPN1-003.mgdnok.nokia.com> <alpine.DEB.2.00.1201091251300.10232@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB98269045568A1@008-AM1MPN1-003.mgdnok.nokia.com>
- <alpine.DEB.2.00.1201111338320.21755@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB9826904556CB7@008-AM1MPN1-003.mgdnok.nokia.com> <alpine.DEB.2.00.1201121247480.17287@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB9826904557417@008-AM1MPN1-003.mgdnok.nokia.com>
- <alpine.DEB.2.00.1201130253560.15417@chino.kir.corp.google.com> <84FF21A720B0874AA94B46D76DB982690455759C@008-AM1MPN1-003.mgdnok.nokia.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 13 Jan 2012 16:36:14 -0500
+Message-ID: <4F10B169.4070807@xenotime.net>
+Date: Fri, 13 Jan 2012 14:34:17 -0800
+From: Randy Dunlap <rdunlap@xenotime.net>
+Organization: YPO4
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        x86 maintainers <x86@kernel.org>, Andres Salomon <dilinger@queued.net>,
+        Chris Ball <cjb@laptop.org>, Jon Nettleton <jon.nettleton@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] olpc: fix olpc-xo1-sci.c build when INPUT=m
+References: <20120110164454.b595335a42321c80fba56ea7@canb.auug.org.au> <4F0CADDB.5010303@xenotime.net>
+In-Reply-To: <4F0CADDB.5010303@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012, leonid.moiseichuk@nokia.com wrote:
-
-> > Your memory threshold, as proposed, will have values that are tied directly to the
-> > implementation of the VM in the kernel when its under memory pressure
-> > and that implementation evolves at a constant rate.
+On 01/10/2012 01:30 PM, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@xenotime.net>
 > 
-> Not sure that I understand this statement. Free/Used/Active page sets 
-> are properties of any VM.
+> Fix build errors when CONFIG_INPUT=m.
+> This is not pretty, but all of the OLPC kconfig options
+> are bool instead of tristate.
 
-The point at which the latency is deemed to be unacceptable in your 
-trail-and-error is tied directly to the implementation of the VM and must 
-be recalibrated with each userspace change or kernel upgrade.  I assume 
-here that some reclaim is allowed in the VM for your usecase; if not, then 
-I already gave a solution for how to disable that entirely.
 
->  The thresholds are set by user-space and individual for applications 
-> which likes to be informed.
+ping.
+
+This patch is still needed in linux-next (20120113).
+
+
+> arch/x86/built-in.o: In function `send_lid_state':
+> olpc-xo1-sci.c:(.text+0x1d323): undefined reference to `input_event'
+> olpc-xo1-sci.c:(.text+0x1d338): undefined reference to `input_event'
+> arch/x86/built-in.o: In function `free_ebook_switch':
+> olpc-xo1-sci.c:(.text+0x1d529): undefined reference to `input_unregister_device'
+> olpc-xo1-sci.c:(.text+0x1d533): undefined reference to `input_free_device'
+> arch/x86/built-in.o: In function `free_power_button':
+> olpc-xo1-sci.c:(.text+0x1d549): undefined reference to `input_unregister_device'
+> olpc-xo1-sci.c:(.text+0x1d553): undefined reference to `input_free_device'
+> arch/x86/built-in.o: In function `send_ebook_state':
+> olpc-xo1-sci.c:(.text+0x1d632): undefined reference to `input_event'
+> olpc-xo1-sci.c:(.text+0x1d647): undefined reference to `input_event'
+> arch/x86/built-in.o: In function `xo1_sci_intr':
+> olpc-xo1-sci.c:(.text+0x1d78e): undefined reference to `input_event'
+> olpc-xo1-sci.c:(.text+0x1d7a3): undefined reference to `input_event'
+> olpc-xo1-sci.c:(.text+0x1d7be): undefined reference to `input_event'
+> arch/x86/built-in.o:olpc-xo1-sci.c:(.text+0x1d7d3): more undefined references to `input_event' follow
+> arch/x86/built-in.o: In function `free_lid_switch':
+> olpc-xo1-sci.c:(.text+0x1d7fd): undefined reference to `input_unregister_device'
+> olpc-xo1-sci.c:(.text+0x1d807): undefined reference to `input_free_device'
+> arch/x86/built-in.o: In function `setup_lid_switch':
+> olpc-xo1-sci.c:(.devinit.text+0x155): undefined reference to `input_allocate_device'
+> olpc-xo1-sci.c:(.devinit.text+0x1a4): undefined reference to `input_register_device'
+> olpc-xo1-sci.c:(.devinit.text+0x1ce): undefined reference to `input_unregister_device'
+> olpc-xo1-sci.c:(.devinit.text+0x1d8): undefined reference to `input_free_device'
+> arch/x86/built-in.o: In function `xo1_sci_probe':
+> olpc-xo1-sci.c:(.devinit.text+0x235): undefined reference to `input_allocate_device'
+> olpc-xo1-sci.c:(.devinit.text+0x285): undefined reference to `input_register_device'
+> olpc-xo1-sci.c:(.devinit.text+0x299): undefined reference to `input_free_device'
+> olpc-xo1-sci.c:(.devinit.text+0x2e1): undefined reference to `input_register_device'
+> olpc-xo1-sci.c:(.devinit.text+0x2f5): undefined reference to `input_free_device'
+> olpc-xo1-sci.c:(.devinit.text+0x54c): undefined reference to `input_allocate_device'
+> 
+> Signed-off-by: Randy Dunlap <rdunlap@xenotime.net>
+> Cc:	Andres Salomon <dilinger@queued.net>
+> Cc:	Chris Ball <cjb@laptop.org>
+> Cc:	Jon Nettleton <jon.nettleton@gmail.com>
+> ---
+>  arch/x86/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-next-20120110.orig/arch/x86/Kconfig
+> +++ linux-next-20120110/arch/x86/Kconfig
+> @@ -2132,6 +2132,7 @@ config OLPC_XO1_RTC
+>  config OLPC_XO1_SCI
+>  	bool "OLPC XO-1 SCI extras"
+>  	depends on OLPC && OLPC_XO1_PM
+> +	depends on INPUT=y
+>  	select POWER_SUPPLY
+>  	select GPIO_CS5535
+>  	select MFD_CORE
 > 
 
-You haven't given a usecase for the thresholds for anything other than 
-when you're just about oom, and I think it's much simpler if you actually 
-get to the point of oom and your userspace notifier is guaranteed to be 
-able to respond over a preconfigured delay.  It works pretty well for us 
-internally, you should consider it.
 
-> > mlock() the memory that your userspace monitoring needs to send signals to
-> > applications, whether those signals are handled to free memory internally or
-> > its SIGTERM or SIGKILL.
-> 
-> Mlocked memory should be avoid as much as possible because efficiency 
-> rate is lowest possible and makes situation for non-mlocked pages even 
-> worse.
-
-It's used only to protect the thread that is notified right before the oom 
-killer is triggered so that it can send the appropriate signals.  If it 
-can't do that, the oom killer delay will expire on subsequent memory 
-allocation attempts and kill something itself.  This thread should have a 
-minimal memory footprint, be mlock()'d into memory, and have an 
-oom_score_adj of OOM_SCORE_ADJ_MIN.
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
