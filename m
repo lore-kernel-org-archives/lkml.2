@@ -1,77 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435Ab2AMP73 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:59:29 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34883 "EHLO mx2.suse.de"
+	id S932337Ab2AMP7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:59:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60664 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758399Ab2AMP7Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:59:24 -0500
-Date: Fri, 13 Jan 2012 16:59:22 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Hugh Dickins <hughd@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcg: update the correct soft limit tree during
- migration
-Message-ID: <20120113155922.GE17060@tiehlicka.suse.cz>
-References: <1326469291-5642-1-git-send-email-hannes@cmpxchg.org>
+	id S1758403Ab2AMP7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 10:59:37 -0500
+Date: Fri, 13 Jan 2012 16:20:10 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mandeep Singh Baines <msb@chromium.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>,
+        Cgroups <cgroups@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Paul Menage <paul@paulmenage.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: Q: cgroup: Questions about possible issues in cgroup locking
+Message-ID: <20120113152010.GA19215@redhat.com>
+References: <20111221192413.GF13529@google.com> <20111221200422.GJ17668@somewhere> <20111222153004.GA30522@redhat.com> <20120104193614.GF9511@google.com> <20120106152356.GA23995@redhat.com> <20120106182535.GJ9511@google.com> <20120111160730.GA24556@redhat.com> <20120112003102.GB9511@google.com> <20120112170728.GA25717@redhat.com> <20120112175725.GD9511@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1326469291-5642-1-git-send-email-hannes@cmpxchg.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20120112175725.GD9511@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 13-01-12 16:41:31, Johannes Weiner wrote:
-> end_migration() passes the old page instead of the new page to commit
-> the charge.  This page descriptor is not used for committing itself,
-> though, since we also pass the (correct) page_cgroup descriptor.  But
-> it's used to find the soft limit tree through the page's zone, so the
-> soft limit tree of the old page's zone is updated instead of that of
-> the new page's, which might get slightly out of date until the next
-> charge reaches the ratelimit point.
-> 
-> This glitch has been present since '5564e88 memcg: condense
-> page_cgroup-to-page lookup points'.
-> 
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+On 01/12, Mandeep Singh Baines wrote:
+>
+> Oleg Nesterov (oleg@redhat.com) wrote:
+> >
+> > Still can't understand... Lets look at this trivial example again.
+> >
+> > We start from the main thread M, it is ->group_leader. There is
+> > another thread T in this thread group. We are doing
+> >
+> > 	OLD = M;
+> >
+> > 	t = M;
+> > 	do {
+> > 		do_smth(t);
+> > 	}
+> > 	while (t->group_leader == OLD && ((t = next_thread(t)) != M);
+> >
+> > The first iteration does do_smth(M).
+> >
+> > T calls de_thread() and, in particular, it does M->group_leader = T
+> > (see "leader->group_leader = tsk" in de_thread).
+> >
+> > after that t->group_leader == OLD fails. t == M, its group_leader == T.
+> > do_smth(T) won't be called.
+> >
+> > No?
+> >
+>
+> I think we can handle this by removing the assignment. So in de_thread():
+>
+> -		leader->group_leader = tsk;
 
-Well spotted.
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Ah, so that was you plan. I was confused by the 3rd argument, why
+it is needed?
 
-Thanks
-> ---
->  mm/memcontrol.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> This fixes a bug that I introduced in 2.6.38.  It's benign enough (to
-> my knowledge) that we probably don't want this for stable.
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 602207b..7a292a5 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3247,7 +3247,7 @@ int mem_cgroup_prepare_migration(struct page *page,
->  		ctype = MEM_CGROUP_CHARGE_TYPE_CACHE;
->  	else
->  		ctype = MEM_CGROUP_CHARGE_TYPE_SHMEM;
-> -	__mem_cgroup_commit_charge(memcg, page, 1, pc, ctype);
-> +	__mem_cgroup_commit_charge(memcg, newpage, 1, pc, ctype);
->  	return ret;
->  }
->  
-> -- 
-> 1.7.7.5
-> 
+Yes, I thought about this too. Suppose we remove this assignment,
+then we can simply do
 
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+	#define while_each_thread(g, t) \
+		while (t->group_leader == g->group_leader && (t = next_thread(t)) != g)
+
+with the same effect. (to remind, currently I ignore the barriers/etc).
+
+But this can _only_ help if we start at the group leader!
+
+May be we should enforce this rule (for the lockless case), I dunno...
+In that case I'd prefer to add the new while_each_thread_rcu() helper.
+But! in this case we do not need to change de_thread(), we can simply do
+
+	#define while_each_thread_rcu(t) \
+		while (({ t = next_thread(t); !thread_group_leader(t); }))
+
+The definition above was one of the possibilities I considered, but
+I wasn't able to convince myself this is the best option.
+
+See? Or do you think I missed something?
+
+Just in case... note that while_each_thread_rcu() doesn't use 'g'
+at all. May be it makes sense to keep the old "t != g &&", but this
+is minor.
+
+Oleg.
+
