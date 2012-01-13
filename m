@@ -1,593 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755229Ab2AMI35 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 03:29:57 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33359 "EHLO
+	id S1755323Ab2AMIeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 03:34:15 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:33379 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437Ab2AMI3x (ORCPT
+	with ESMTP id S1755218Ab2AMIeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 03:29:53 -0500
-From: Stefan Bader <stefan.bader@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Subject: [2.6.32+drm33-longterm] Linux 2.6.32.54+drm33.21
-Date: Fri, 13 Jan 2012 09:29:50 +0100
-Message-Id: <1326443390-3313-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.5.4
+	Fri, 13 Jan 2012 03:34:14 -0500
+Message-ID: <4F0FEC84.7020605@canonical.com>
+Date: Fri, 13 Jan 2012 09:34:12 +0100
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: Add EVIOC mechanism for MT slots
+References: <1326396275-2492-1-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1326396275-2492-1-git-send-email-rydberg@euromail.se>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am announcing the release of the 2.6.32.54+drm33.21 longterm tree.
+On 01/12/2012 08:24 PM, Henrik Rydberg wrote:
+> This patch adds the ability to extract MT slot data via a new ioctl,
+> EVIOCGMTSLOTS. The function returns an array of slot values for the
+> specified ABS_MT event type.
+> 
+> Example of user space usage:
+> 
+> struct { struct input_mt_request req; int values[64]; } data;
+> data.req.code = ABS_MT_POSITION_X;
+> if (ioctl(fd, EVIOCGMTSLOTS(sizeof(data)), &data) < 0)
+> 	return -1;
+> for (i = 0; i < data.req.num_values; i++)
+> 	printf("slot %d: %d\n", i, data.values[i]);
 
-This tree is based on 2.6.32 and generally has all of the stable updates
-applied. Except those to the DRM subsystem, which was based on 2.6.33 and
-took updates from that upstream stable as long as that existed. It will
-continue to add patches to the DRM subsystem as long as they are valid
-according to the stable update rules (Documentation/stable_kernel_rules.txt).
-DRM patches for this tree should be sent to kernel-team@lists.ubuntu.com.
+If input_mt_request is:
 
-This release contains patches from upstream 2.6.32.54, but dropped any patches
-to the DRM subsystem.
+struct input_mt_request {
+	__u32 code;
+	__u32 num_values;
+	__s32 values[];
+};
 
-The updated 2.6.32.y-drm33.z tree can be found at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git
-or
-  git://kernel.ubuntu.com/smb/linux-2.6.32.y-drm33.z.git
+then how passing in the data struct above work? The passed in data would be:
 
-and can be browsed through git web via:
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=summary
-or
-  http://kernel.ubuntu.com/git?p=smb/linux-2.6.32.y-drm33.z.git;a=summary
+__u32 code;
+__u32 num_values; /* BTW, this isn't set in the example above */
+__s32 *values; /* This is left uninitialized in the example above */
+int values[0]
+int values[1]
+int values[2]
+...
+int values[63]
 
--Stefan
+I'm not too familiar with ioctl interfaces, but I don't see how this
+example could work.
 
-------
+> 
+> Cc: Chase Douglas <chase.douglas@canonical.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Hi Dmitry,
+> 
+> This is a new take on the MT slot ioctl patch. A new ioctl is added,
+> which takes a request structure and returns a (variable) array of slot
+> values. The patch seems to work, but testing has not been extensive (yet).
+> 
+> Cheers,
+> Henrik
+> 
+>  drivers/input/evdev.c |   30 +++++++++++++++++++++++++++++-
+>  include/linux/input.h |   25 +++++++++++++++++++++++++
+>  2 files changed, 54 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index 4cf2534..8bf45d4 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -20,7 +20,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+> -#include <linux/input.h>
+> +#include <linux/input/mt.h>
+>  #include <linux/major.h>
+>  #include <linux/device.h>
+>  #include "input-compat.h"
+> @@ -621,6 +621,31 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
+>  	return input_set_keycode(dev, &ke);
+>  }
+>  
+> +static int evdev_handle_mt_request(struct input_dev *dev,
+> +				   unsigned int size,
+> +				   int __user *ip)
+> +{
+> +	const struct input_mt_slot *mt = dev->mt;
+> +	unsigned int code;
+> +	int i;
+> +
+> +	if (get_user(code, &ip[0]))
+> +		return -EFAULT;
+> +	if (!input_is_mt_value(code))
+> +		return -EINVAL;
+> +
+> +	if (size < sizeof(struct input_mt_request) + dev->mtsize * sizeof(int))
+> +		return -EINVAL;
 
-* MAINTAINERS: stable: Update address
-* Documentation: Update stable address
-* firmware: Fix an oops on reading fw_priv->fw in sysfs loading file
-* offb: Fix setting of the pseudo-palette for >8bpp
-* offb: Fix bug in calculating requested vram size
-* asix: new device id
-* reiserfs: Fix quota mount option parsing
-* reiserfs: Force inode evictions before umount to avoid crash
-* USB: update documentation for usbmon
-* drivers/usb/class/cdc-acm.c: clear dangling pointer
-* USB: isight: fix kernel bug when loading firmware
-* usb: usb-storage doesn't support dynamic id currently, the patch disables the feature to fix an oops
-* USB: add quirk for another camera
-* USB: omninet: fix write_room
-* USB: Add USB-ID for Multiplex RC serial adapter to cp210x.c
-* asix: fix infinite loop in rx_fixup()
-* PM / Sleep: Fix race between CPU hotplug and freezer
-* SCSI: scsi_dh: check queuedata pointer before proceeding further
-* xfs: validate acl count
-* xfs: fix acl count validation in xfs_acl_from_disk()
-* Linux 2.6.32.54
+Why not fill in up to the size of the array provided?
 
- Documentation/HOWTO                         |    4 +-
- Documentation/development-process/5.Posting |    8 ++--
- Documentation/usb/usbmon.txt                |   14 +++--
- MAINTAINERS                                 |    2 +-
- Makefile                                    |    2 +-
- drivers/base/firmware_class.c               |   14 +++---
- drivers/net/usb/asix.c                      |    6 ++-
- drivers/scsi/device_handler/scsi_dh.c       |    7 ++-
- drivers/usb/class/cdc-acm.c                 |    4 ++
- drivers/usb/core/quirks.c                   |    5 ++-
- drivers/usb/misc/isight_firmware.c          |    6 ++-
- drivers/usb/serial/cp210x.c                 |    1 +
- drivers/usb/serial/omninet.c                |    2 +-
- drivers/usb/storage/usb.c                   |    1 +
- drivers/video/offb.c                        |   52 +++++++++----------
- fs/reiserfs/super.c                         |   27 ++++++----
- fs/xfs/linux-2.6/xfs_acl.c                  |    4 +-
- kernel/cpu.c                                |   74 +++++++++++++++++++++++++++
- 18 files changed, 167 insertions(+), 66 deletions(-)
+> +	if (put_user(dev->mtsize, &ip[1]))
+> +		return -EFAULT;
+> +	for (i = 0; i < dev->mtsize; i++)
+> +		if (put_user(input_mt_get_value(&mt[i], code), &ip[2 + i]))
+> +			return -EFAULT;
 
-diff --git a/Documentation/HOWTO b/Documentation/HOWTO
-index 8495fc9..cb0863e 100644
---- a/Documentation/HOWTO
-+++ b/Documentation/HOWTO
-@@ -275,8 +275,8 @@ versions.
- If no 2.6.x.y kernel is available, then the highest numbered 2.6.x
- kernel is the current stable kernel.
+This would be easier to understand if you did:
 
--2.6.x.y are maintained by the "stable" team <stable@kernel.org>, and are
--released as needs dictate.  The normal release period is approximately
-+2.6.x.y are maintained by the "stable" team <stable@vger.kernel.org>, and
-+are released as needs dictate.  The normal release period is approximately
- two weeks, but it can be longer if there are no pressing problems.  A
- security-related problem, instead, can cause a release to happen almost
- instantly.
-diff --git a/Documentation/development-process/5.Posting b/Documentation/development-process/5.Posting
-index f622c1e..73c36ac 100644
---- a/Documentation/development-process/5.Posting
-+++ b/Documentation/development-process/5.Posting
-@@ -267,10 +267,10 @@ copies should go to:
-    the linux-kernel list.
+struct input_mt_request *req = (struct input_mt_request *)ip;
 
-  - If you are fixing a bug, think about whether the fix should go into the
--   next stable update.  If so, stable@kernel.org should get a copy of the
--   patch.  Also add a "Cc: stable@kernel.org" to the tags within the patch
--   itself; that will cause the stable team to get a notification when your
--   fix goes into the mainline.
-+   next stable update.  If so, stable@vger.kernel.org should get a copy of
-+   the patch.  Also add a "Cc: stable@vger.kernel.org" to the tags within
-+   the patch itself; that will cause the stable team to get a notification
-+   when your fix goes into the mainline.
+Then modify the stuff in a straightforward way.
 
- When selecting recipients for a patch, it is good to have an idea of who
- you think will eventually accept the patch and get it merged.  While it
-diff --git a/Documentation/usb/usbmon.txt b/Documentation/usb/usbmon.txt
-index 66f92d1..40818ff 100644
---- a/Documentation/usb/usbmon.txt
-+++ b/Documentation/usb/usbmon.txt
-@@ -43,10 +43,11 @@ This allows to filter away annoying devices that talk continuously.
+> +	return 0;
+> +}
+> +
+>  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+>  			   void __user *p, int compat_mode)
+>  {
+> @@ -706,6 +731,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+>  		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
+>  				    size, p, compat_mode);
+>  
+> +	case EVIOCGMTSLOTS(0):
+> +		return evdev_handle_mt_request(dev, size, ip);
+> +
+>  	case EVIOCGKEY(0):
+>  		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
+>  
+> diff --git a/include/linux/input.h b/include/linux/input.h
+> index a637e78..9a73f18 100644
+> --- a/include/linux/input.h
+> +++ b/include/linux/input.h
+> @@ -99,6 +99,30 @@ struct input_keymap_entry {
+>  	__u8  scancode[32];
+>  };
+>  
+> +/**
+> + * struct input_mt_request - used by EVIOCGMTSLOTS ioctl
+> + * @code: ABS_MT code to read
+> + * @num_values: number of values written to the value array
+> + * @values: value array, one value per slot
+> + *
+> + * The structure is used to retrieve MT slot data. Before the call,
+> + * code is set to the wanted ABS_MT event type. On return, the value
+> + * array is filled with the slot values for the specified ABS_MT code,
+> + * and num_values is set to the actual number of slots.
+> + *
+> + * The call argument (len) is the size of the return buffer, satisfying
+> + *
+> + * len >= sizeof(input_mt_request) + sizeof(__s32) * number_of_slots
+> + *
+> + * If the request code is not an ABS_MT value, or if len is too small,
+> + * -EINVAL is returned.
+> + */
+> +struct input_mt_request {
+> +	__u32 code;
+> +	__u32 num_values;
+> +	__s32 values[];
+> +};
+> +
+>  #define EVIOCGVERSION		_IOR('E', 0x01, int)			/* get driver version */
+>  #define EVIOCGID		_IOR('E', 0x02, struct input_id)	/* get device ID */
+>  #define EVIOCGREP		_IOR('E', 0x03, unsigned int[2])	/* get repeat settings */
+> @@ -113,6 +137,7 @@ struct input_keymap_entry {
+>  #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
+>  #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
+>  #define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
+> +#define EVIOCGMTSLOTS(len)	_IOC(_IOC_READ, 'E', 0x0a, len)		/* get MT slot values */
+>  
+>  #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
+>  #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
 
- 2. Find which bus connects to the desired device
-
--Run "cat /proc/bus/usb/devices", and find the T-line which corresponds to
--the device. Usually you do it by looking for the vendor string. If you have
--many similar devices, unplug one and compare two /proc/bus/usb/devices outputs.
--The T-line will have a bus number. Example:
-+Run "cat /sys/kernel/debug/usb/devices", and find the T-line which corresponds
-+to the device. Usually you do it by looking for the vendor string. If you have
-+many similar devices, unplug one and compare the two
-+/sys/kernel/debug/usb/devices outputs. The T-line will have a bus number.
-+Example:
-
- T:  Bus=03 Lev=01 Prnt=01 Port=00 Cnt=01 Dev#=  2 Spd=12  MxCh= 0
- D:  Ver= 1.10 Cls=00(>ifc ) Sub=00 Prot=00 MxPS= 8 #Cfgs=  1
-@@ -54,7 +55,10 @@ P:  Vendor=0557 ProdID=2004 Rev= 1.00
- S:  Manufacturer=ATEN
- S:  Product=UC100KM V2.00
-
--Bus=03 means it's bus 3.
-+"Bus=03" means it's bus 3. Alternatively, you can look at the output from
-+"lsusb" and get the bus number from the appropriate line. Example:
-+
-+Bus 003 Device 002: ID 0557:2004 ATEN UC100KM V2.00
-
- 3. Start 'cat'
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index ea3302f..613da5d 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5010,7 +5010,7 @@ F:	arch/alpha/kernel/srm_env.c
-
- STABLE BRANCH
- M:	Greg Kroah-Hartman <greg@kroah.com>
--L:	stable@kernel.org
-+L:	stable@vger.kernel.org
- S:	Maintained
-
- STAGING SUBSYSTEM
-diff --git a/Makefile b/Makefile
-index c9803a7..3491ced 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 32
--EXTRAVERSION = .53+drm33.21
-+EXTRAVERSION = .54+drm33.21
- NAME = Man-Eating Seals of Antiquity
-
- # *DOCUMENTATION*
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index e0e6570..f6872f9 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -161,13 +161,13 @@ static ssize_t firmware_loading_store(struct device *dev,
- 	int loading = simple_strtol(buf, NULL, 10);
- 	int i;
-
-+	mutex_lock(&fw_lock);
-+
-+	if (!fw_priv->fw)
-+		goto out;
-+
- 	switch (loading) {
- 	case 1:
--		mutex_lock(&fw_lock);
--		if (!fw_priv->fw) {
--			mutex_unlock(&fw_lock);
--			break;
--		}
- 		firmware_free_data(fw_priv->fw);
- 		memset(fw_priv->fw, 0, sizeof(struct firmware));
- 		/* If the pages are not owned by 'struct firmware' */
-@@ -178,7 +178,6 @@ static ssize_t firmware_loading_store(struct device *dev,
- 		fw_priv->page_array_size = 0;
- 		fw_priv->nr_pages = 0;
- 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
--		mutex_unlock(&fw_lock);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
-@@ -209,7 +208,8 @@ static ssize_t firmware_loading_store(struct device *dev,
- 		fw_load_abort(fw_priv);
- 		break;
- 	}
--
-+out:
-+	mutex_unlock(&fw_lock);
- 	return count;
- }
-
-diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-index 73123486..e794b39 100644
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -339,7 +339,7 @@ static int asix_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
-
- 		skb_pull(skb, (size + 1) & 0xfffe);
-
--		if (skb->len == 0)
-+		if (skb->len < sizeof(header))
- 			break;
-
- 		head = (u8 *) skb->data;
-@@ -1522,6 +1522,10 @@ static const struct usb_device_id	products [] = {
- 	// ASIX 88772a
- 	USB_DEVICE(0x0db0, 0xa877),
- 	.driver_info = (unsigned long) &ax88772_info,
-+}, {
-+	// Asus USB Ethernet Adapter
-+	USB_DEVICE (0x0b95, 0x7e2b),
-+	.driver_info = (unsigned long) &ax88772_info,
- },
- 	{ },		// END
- };
-diff --git a/drivers/scsi/device_handler/scsi_dh.c b/drivers/scsi/device_handler/scsi_dh.c
-index bfec4fa..2d04d61 100644
---- a/drivers/scsi/device_handler/scsi_dh.c
-+++ b/drivers/scsi/device_handler/scsi_dh.c
-@@ -432,7 +432,12 @@ int scsi_dh_activate(struct request_queue *q)
-
- 	spin_lock_irqsave(q->queue_lock, flags);
- 	sdev = q->queuedata;
--	if (sdev && sdev->scsi_dh_data)
-+	if (!sdev) {
-+		spin_unlock_irqrestore(q->queue_lock, flags);
-+		return SCSI_DH_NOSYS;
-+	}
-+
-+	if (sdev->scsi_dh_data)
- 		scsi_dh = sdev->scsi_dh_data->scsi_dh;
- 	if (!scsi_dh || !get_device(&sdev->sdev_gendev))
- 		err = SCSI_DH_NOSYS;
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index cec9bff..653f853 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1264,6 +1264,8 @@ made_compressed_probe:
- 		i = device_create_file(&intf->dev, &dev_attr_wCountryCodes);
- 		if (i < 0) {
- 			kfree(acm->country_codes);
-+			acm->country_codes = NULL;
-+			acm->country_code_size = 0;
- 			goto skip_countries;
- 		}
-
-@@ -1272,6 +1274,8 @@ made_compressed_probe:
- 		if (i < 0) {
- 			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
- 			kfree(acm->country_codes);
-+			acm->country_codes = NULL;
-+			acm->country_code_size = 0;
- 			goto skip_countries;
- 		}
- 	}
-diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index e163df9..4923702 100644
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -114,9 +114,12 @@ static const struct usb_device_id usb_quirk_list[] = {
- 	{ USB_DEVICE(0x06a3, 0x0006), .driver_info =
- 			USB_QUIRK_CONFIG_INTF_STRINGS },
-
--	/* Guillemot Webcam Hercules Dualpix Exchange*/
-+	/* Guillemot Webcam Hercules Dualpix Exchange (2nd ID) */
- 	{ USB_DEVICE(0x06f8, 0x0804), .driver_info = USB_QUIRK_RESET_RESUME },
-
-+	/* Guillemot Webcam Hercules Dualpix Exchange*/
-+	{ USB_DEVICE(0x06f8, 0x3005), .driver_info = USB_QUIRK_RESET_RESUME },
-+
- 	/* M-Systems Flash Disk Pioneers */
- 	{ USB_DEVICE(0x08ec, 0x1000), .driver_info = USB_QUIRK_RESET_RESUME },
-
-diff --git a/drivers/usb/misc/isight_firmware.c b/drivers/usb/misc/isight_firmware.c
-index b897f65..6199f12 100644
---- a/drivers/usb/misc/isight_firmware.c
-+++ b/drivers/usb/misc/isight_firmware.c
-@@ -54,8 +54,9 @@ static int isight_firmware_load(struct usb_interface *intf,
-
- 	ptr = firmware->data;
-
-+	buf[0] = 0x01;
- 	if (usb_control_msg
--	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, "\1", 1,
-+	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, buf, 1,
- 	     300) != 1) {
- 		printk(KERN_ERR
- 		       "Failed to initialise isight firmware loader\n");
-@@ -99,8 +100,9 @@ static int isight_firmware_load(struct usb_interface *intf,
- 		}
- 	}
-
-+	buf[0] = 0x00;
- 	if (usb_control_msg
--	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, "\0", 1,
-+	    (dev, usb_sndctrlpipe(dev, 0), 0xa0, 0x40, 0xe600, 0, buf, 1,
- 	     300) != 1) {
- 		printk(KERN_ERR "isight firmware loading completion failed\n");
- 		ret = -ENODEV;
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index f77908b..8dcaf42 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -94,6 +94,7 @@ static struct usb_device_id id_table [] = {
- 	{ USB_DEVICE(0x10C4, 0x818B) }, /* AVIT Research USB to TTL */
- 	{ USB_DEVICE(0x10C4, 0x819F) }, /* MJS USB Toslink Switcher */
- 	{ USB_DEVICE(0x10C4, 0x81A6) }, /* ThinkOptics WavIt */
-+	{ USB_DEVICE(0x10C4, 0x81A9) }, /* Multiplex RC Interface */
- 	{ USB_DEVICE(0x10C4, 0x81AC) }, /* MSD Dash Hawk */
- 	{ USB_DEVICE(0x10C4, 0x81AD) }, /* INSYS USB Modem */
- 	{ USB_DEVICE(0x10C4, 0x81C8) }, /* Lipowsky Industrie Elektronik GmbH, Baby-JTAG */
-diff --git a/drivers/usb/serial/omninet.c b/drivers/usb/serial/omninet.c
-index 0622650..c116bd9 100644
---- a/drivers/usb/serial/omninet.c
-+++ b/drivers/usb/serial/omninet.c
-@@ -317,7 +317,7 @@ static int omninet_write_room(struct tty_struct *tty)
- 	int room = 0; /* Default: no room */
-
- 	/* FIXME: no consistent locking for write_urb_busy */
--	if (wport->write_urb_busy)
-+	if (!wport->write_urb_busy)
- 		room = wport->bulk_out_size - OMNINET_HEADERLEN;
-
- 	dbg("%s - returns %d", __func__, room);
-diff --git a/drivers/usb/storage/usb.c b/drivers/usb/storage/usb.c
-index 33197fa..6ce1095 100644
---- a/drivers/usb/storage/usb.c
-+++ b/drivers/usb/storage/usb.c
-@@ -1025,6 +1025,7 @@ static struct usb_driver usb_storage_driver = {
- 	.post_reset =	usb_stor_post_reset,
- 	.id_table =	usb_storage_usb_ids,
- 	.soft_unbind =	1,
-+	.no_dynamic_id = 1,
- };
-
- static int __init usb_stor_init(void)
-diff --git a/drivers/video/offb.c b/drivers/video/offb.c
-index b043ac8..dbc8274 100644
---- a/drivers/video/offb.c
-+++ b/drivers/video/offb.c
-@@ -100,36 +100,32 @@ static int offb_setcolreg(u_int regno, u_int red, u_int green, u_int blue,
- 			  u_int transp, struct fb_info *info)
- {
- 	struct offb_par *par = (struct offb_par *) info->par;
--	int i, depth;
--	u32 *pal = info->pseudo_palette;
--
--	depth = info->var.bits_per_pixel;
--	if (depth == 16)
--		depth = (info->var.green.length == 5) ? 15 : 16;
--
--	if (regno > 255 ||
--	    (depth == 16 && regno > 63) ||
--	    (depth == 15 && regno > 31))
--		return 1;
--
--	if (regno < 16) {
--		switch (depth) {
--		case 15:
--			pal[regno] = (regno << 10) | (regno << 5) | regno;
--			break;
--		case 16:
--			pal[regno] = (regno << 11) | (regno << 5) | regno;
--			break;
--		case 24:
--			pal[regno] = (regno << 16) | (regno << 8) | regno;
--			break;
--		case 32:
--			i = (regno << 8) | regno;
--			pal[regno] = (i << 16) | i;
--			break;
-+
-+	if (info->fix.visual == FB_VISUAL_TRUECOLOR) {
-+		u32 *pal = info->pseudo_palette;
-+		u32 cr = red >> (16 - info->var.red.length);
-+		u32 cg = green >> (16 - info->var.green.length);
-+		u32 cb = blue >> (16 - info->var.blue.length);
-+		u32 value;
-+
-+		if (regno >= 16)
-+			return -EINVAL;
-+
-+		value = (cr << info->var.red.offset) |
-+			(cg << info->var.green.offset) |
-+			(cb << info->var.blue.offset);
-+		if (info->var.transp.length > 0) {
-+			u32 mask = (1 << info->var.transp.length) - 1;
-+			mask <<= info->var.transp.offset;
-+			value |= mask;
- 		}
-+		pal[regno] = value;
-+		return 0;
- 	}
-
-+	if (regno > 255)
-+		return -EINVAL;
-+
- 	red >>= 8;
- 	green >>= 8;
- 	blue >>= 8;
-@@ -381,7 +377,7 @@ static void __init offb_init_fb(const char *name, const char *full_name,
- 				int pitch, unsigned long address,
- 				int foreign_endian, struct device_node *dp)
- {
--	unsigned long res_size = pitch * height * (depth + 7) / 8;
-+	unsigned long res_size = pitch * height;
- 	struct offb_par *par = &default_par;
- 	unsigned long res_start = address;
- 	struct fb_fix_screeninfo *fix;
-diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
-index f0ad05f..7cb1285 100644
---- a/fs/reiserfs/super.c
-+++ b/fs/reiserfs/super.c
-@@ -445,16 +445,20 @@ int remove_save_link(struct inode *inode, int truncate)
- static void reiserfs_kill_sb(struct super_block *s)
- {
- 	if (REISERFS_SB(s)) {
--		if (REISERFS_SB(s)->xattr_root) {
--			d_invalidate(REISERFS_SB(s)->xattr_root);
--			dput(REISERFS_SB(s)->xattr_root);
--			REISERFS_SB(s)->xattr_root = NULL;
--		}
--		if (REISERFS_SB(s)->priv_root) {
--			d_invalidate(REISERFS_SB(s)->priv_root);
--			dput(REISERFS_SB(s)->priv_root);
--			REISERFS_SB(s)->priv_root = NULL;
--		}
-+		/*
-+		 * Force any pending inode evictions to occur now. Any
-+		 * inodes to be removed that have extended attributes
-+		 * associated with them need to clean them up before
-+		 * we can release the extended attribute root dentries.
-+		 * shrink_dcache_for_umount will BUG if we don't release
-+		 * those before it's called so ->put_super is too late.
-+		 */
-+		shrink_dcache_sb(s);
-+
-+		dput(REISERFS_SB(s)->xattr_root);
-+		REISERFS_SB(s)->xattr_root = NULL;
-+		dput(REISERFS_SB(s)->priv_root);
-+		REISERFS_SB(s)->priv_root = NULL;
- 	}
-
- 	kill_block_super(s);
-@@ -1149,7 +1153,8 @@ static void handle_quota_files(struct super_block *s, char **qf_names,
- 			kfree(REISERFS_SB(s)->s_qf_names[i]);
- 		REISERFS_SB(s)->s_qf_names[i] = qf_names[i];
- 	}
--	REISERFS_SB(s)->s_jquota_fmt = *qfmt;
-+	if (*qfmt)
-+		REISERFS_SB(s)->s_jquota_fmt = *qfmt;
- }
- #endif
-
-diff --git a/fs/xfs/linux-2.6/xfs_acl.c b/fs/xfs/linux-2.6/xfs_acl.c
-index 4c7b145..ad60d61 100644
---- a/fs/xfs/linux-2.6/xfs_acl.c
-+++ b/fs/xfs/linux-2.6/xfs_acl.c
-@@ -37,9 +37,11 @@ xfs_acl_from_disk(struct xfs_acl *aclp)
- 	struct posix_acl_entry *acl_e;
- 	struct posix_acl *acl;
- 	struct xfs_acl_entry *ace;
--	int count, i;
-+	unsigned int count, i;
-
- 	count = be32_to_cpu(aclp->acl_cnt);
-+	if (count > XFS_ACL_MAX_ENTRIES)
-+		return ERR_PTR(-EFSCORRUPTED);
-
- 	acl = posix_acl_alloc(count, GFP_KERNEL);
- 	if (!acl)
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 7e8b6ac..3f2f04f 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -14,6 +14,7 @@
- #include <linux/kthread.h>
- #include <linux/stop_machine.h>
- #include <linux/mutex.h>
-+#include <linux/suspend.h>
-
- #ifdef CONFIG_SMP
- /* Serializes the updates to cpu_online_mask, cpu_present_mask */
-@@ -442,6 +443,79 @@ static int alloc_frozen_cpus(void)
- 	return 0;
- }
- core_initcall(alloc_frozen_cpus);
-+
-+/*
-+ * Prevent regular CPU hotplug from racing with the freezer, by disabling CPU
-+ * hotplug when tasks are about to be frozen. Also, don't allow the freezer
-+ * to continue until any currently running CPU hotplug operation gets
-+ * completed.
-+ * To modify the 'cpu_hotplug_disabled' flag, we need to acquire the
-+ * 'cpu_add_remove_lock'. And this same lock is also taken by the regular
-+ * CPU hotplug path and released only after it is complete. Thus, we
-+ * (and hence the freezer) will block here until any currently running CPU
-+ * hotplug operation gets completed.
-+ */
-+void cpu_hotplug_disable_before_freeze(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 1;
-+	cpu_maps_update_done();
-+}
-+
-+
-+/*
-+ * When tasks have been thawed, re-enable regular CPU hotplug (which had been
-+ * disabled while beginning to freeze tasks).
-+ */
-+void cpu_hotplug_enable_after_thaw(void)
-+{
-+	cpu_maps_update_begin();
-+	cpu_hotplug_disabled = 0;
-+	cpu_maps_update_done();
-+}
-+
-+/*
-+ * When callbacks for CPU hotplug notifications are being executed, we must
-+ * ensure that the state of the system with respect to the tasks being frozen
-+ * or not, as reported by the notification, remains unchanged *throughout the
-+ * duration* of the execution of the callbacks.
-+ * Hence we need to prevent the freezer from racing with regular CPU hotplug.
-+ *
-+ * This synchronization is implemented by mutually excluding regular CPU
-+ * hotplug and Suspend/Hibernate call paths by hooking onto the Suspend/
-+ * Hibernate notifications.
-+ */
-+static int
-+cpu_hotplug_pm_callback(struct notifier_block *nb,
-+			unsigned long action, void *ptr)
-+{
-+	switch (action) {
-+
-+	case PM_SUSPEND_PREPARE:
-+	case PM_HIBERNATION_PREPARE:
-+		cpu_hotplug_disable_before_freeze();
-+		break;
-+
-+	case PM_POST_SUSPEND:
-+	case PM_POST_HIBERNATION:
-+		cpu_hotplug_enable_after_thaw();
-+		break;
-+
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+
-+int cpu_hotplug_pm_sync_init(void)
-+{
-+	pm_notifier(cpu_hotplug_pm_callback, 0);
-+	return 0;
-+}
-+core_initcall(cpu_hotplug_pm_sync_init);
-+
- #endif /* CONFIG_PM_SLEEP_SMP */
-
- /**
