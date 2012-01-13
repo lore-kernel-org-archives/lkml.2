@@ -1,111 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758253Ab2AMPAn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:00:43 -0500
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:39208 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932425Ab2AMPAc (ORCPT
+	id S932501Ab2AMPIx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:08:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:42186 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215Ab2AMPIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:00:32 -0500
-MIME-Version: 1.0
-Date: Fri, 13 Jan 2012 23:00:31 +0800
-Message-ID: <CAJd=RBANeF+TTTtn=F_Yx3N5KkVb5vFPY6FNYEjVntB1pPSLBA@mail.gmail.com>
-Subject: [PATCH] mm: vmscan: handle isolated pages with lru lock released
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-mm@kvack.org
-Cc: Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 13 Jan 2012 10:08:50 -0500
+From: Dmitry Antipov <dmitry.antipov@linaro.org>
+To: Chris Ball <cjb@laptop.org>
+Cc: patches@linaro.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Dmitry Antipov <dmitry.antipov@linaro.org>
+Subject: [PATCH] mmc: change mmc_delay() to use usleep_range()
+Date: Fri, 13 Jan 2012 19:09:30 +0400
+Message-Id: <1326467370-21026-1-git-send-email-dmitry.antipov@linaro.org>
+X-Mailer: git-send-email 1.7.7.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When shrinking inactive lru list, isolated pages are queued on locally private
-list, which opens a window for pulling update_isolated_counts() out of the lock
-protection to reduce the lock-hold time.
+Use the usleep_range() to simplify mmc_delay() and give some more
+accuracy to it - but with an exception of mmc_card_sleepawake():
+since sleep/awake timeout varies in a wide range, different
+delay methods should be used.
 
-To achive that, firstly we have to delay updating reclaim stat, which is pointed
-out by Hugh, but not over the deadline where fresh data is used for setting up
-scan budget for shrinking zone in get_scan_count(). The delay is terminated in
-the putback stage after reacquiring lru lock.
-
-Secondly operations related to vm and zone stats, namely __count_vm_events() and
-__mod_zone_page_state(), are proteced with preemption disabled as they
-are per-cpu
-operations.
-
-Thanks for comments and ideas recieved.
-
-
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+Signed-off-by: Dmitry Antipov <dmitry.antipov@linaro.org>
 ---
+ drivers/mmc/core/core.h    |    8 ++------
+ drivers/mmc/core/mmc_ops.c |   12 +++++++++---
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
---- a/mm/vmscan.c	Fri Jan 13 21:30:58 2012
-+++ b/mm/vmscan.c	Fri Jan 13 22:07:14 2012
-@@ -1408,6 +1408,13 @@ putback_lru_pages(struct mem_cgroup_zone
- 	 * Put back any unfreeable pages.
- 	 */
- 	spin_lock(&zone->lru_lock);
-+	/*
-+	 * Here we finish updating reclaim stat that is delayed in
-+	 * update_isolated_counts()
-+	 */
-+	reclaim_stat->recent_scanned[0] += nr_anon;
-+	reclaim_stat->recent_scanned[1] += nr_file;
-+
- 	while (!list_empty(page_list)) {
- 		int lru;
- 		page = lru_to_page(page_list);
-@@ -1461,9 +1468,19 @@ update_isolated_counts(struct mem_cgroup
- 	unsigned long nr_active;
- 	struct zone *zone = mz->zone;
- 	unsigned int count[NR_LRU_LISTS] = { 0, };
--	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
-
- 	nr_active = clear_active_flags(isolated_list, count);
-+	/*
-+	 * Without lru lock held,
-+	 * 1, we have to delay updating zone reclaim stat, and the deadline is
-+	 *    when fresh data is used for setting up scan budget for another
-+	 *    round shrinking, see get_scan_count(). It is actually updated in
-+	 *    the putback stage after reacquiring the lock.
-+	 *
-+	 * 2, __count_vm_events() and __mod_zone_page_state() are protected
-+	 *    with preempt disabled as they are per-cpu operations.
-+	 */
-+	preempt_disable();
- 	__count_vm_events(PGDEACTIVATE, nr_active);
-
- 	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
-@@ -1479,9 +1496,7 @@ update_isolated_counts(struct mem_cgroup
- 	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
- 	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
- 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
--
--	reclaim_stat->recent_scanned[0] += *nr_anon;
--	reclaim_stat->recent_scanned[1] += *nr_file;
-+	preempt_enable();
- }
-
- /*
-@@ -1577,15 +1592,12 @@ shrink_inactive_list(unsigned long nr_to
- 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
- 					       nr_scanned);
- 	}
-+	spin_unlock_irq(&zone->lru_lock);
-
--	if (nr_taken == 0) {
--		spin_unlock_irq(&zone->lru_lock);
-+	if (nr_taken == 0)
- 		return 0;
+diff --git a/drivers/mmc/core/core.h b/drivers/mmc/core/core.h
+index 14664f1..a77851e 100644
+--- a/drivers/mmc/core/core.h
++++ b/drivers/mmc/core/core.h
+@@ -47,12 +47,8 @@ void mmc_power_off(struct mmc_host *host);
+ 
+ static inline void mmc_delay(unsigned int ms)
+ {
+-	if (ms < 1000 / HZ) {
+-		cond_resched();
+-		mdelay(ms);
+-	} else {
+-		msleep(ms);
 -	}
-
- 	update_isolated_counts(mz, sc, &nr_anon, &nr_file, &page_list);
++	unsigned long us = ms * USEC_PER_MSEC;
++	usleep_range(us, us + 1000);
+ }
+ 
+ void mmc_rescan(struct work_struct *work);
+diff --git a/drivers/mmc/core/mmc_ops.c b/drivers/mmc/core/mmc_ops.c
+index 4d41fa9..38d53ac 100644
+--- a/drivers/mmc/core/mmc_ops.c
++++ b/drivers/mmc/core/mmc_ops.c
+@@ -82,9 +82,15 @@ int mmc_card_sleepawake(struct mmc_host *host, int sleep)
+ 	 * SEND_STATUS command to poll the status because that command (and most
+ 	 * others) is invalid while the card sleeps.
+ 	 */
+-	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY))
+-		mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000));
 -
--	spin_unlock_irq(&zone->lru_lock);
++	if (!(host->caps & MMC_CAP_WAIT_WHILE_BUSY)) {
++		/* JEDEC MMCA 4.41 specifies the timeout value is in 200ns..838.86ms
++		   range. Round it up to 1us and use an appropriate delay method. */
++		unsigned long us = DIV_ROUND_UP(card->ext_csd.sa_timeout, 10);
++		if (us < 10)
++			udelay(us);
++		else
++			usleep_range(us, us + 100);
++	}
+ 	if (!sleep)
+ 		err = mmc_select_card(card);
+ 
+-- 
+1.7.7.5
 
- 	nr_reclaimed = shrink_page_list(&page_list, mz, sc, priority,
- 						&nr_dirty, &nr_writeback);
