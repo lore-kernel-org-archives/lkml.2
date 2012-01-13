@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759512Ab2AMXjx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 18:39:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55431 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759463Ab2AMXjw (ORCPT
+	id S1759517Ab2AMXvw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 18:51:52 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:37221 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751195Ab2AMXvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 18:39:52 -0500
-Date: Fri, 13 Jan 2012 15:39:50 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Michal Hocko <mhocko@suse.cz>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] mm: hugetlb: undo change to page mapcount in fault
- handler
-Message-Id: <20120113153950.7426eee2.akpm@linux-foundation.org>
-In-Reply-To: <CAJd=RBDOn22=CAFcEx9try8onsaHsweny_B1ZvnGJO-0h7eZAQ@mail.gmail.com>
-References: <CAJd=RBBF=K5hHvEwb6uwZJwS4=jHKBCNYBTJq-pSbJ9j_ZaiaA@mail.gmail.com>
-	<20111222163604.GB14983@tiehlicka.suse.cz>
-	<CAJd=RBBY0sKdtdx9d8KXTchjaN6au0_hvMfE2+9JkdhvJe7eAw@mail.gmail.com>
-	<20120104151632.05e6b3b0.akpm@linux-foundation.org>
-	<CAJd=RBDOn22=CAFcEx9try8onsaHsweny_B1ZvnGJO-0h7eZAQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 13 Jan 2012 18:51:51 -0500
+X-Authority-Analysis: v=2.0 cv=SqgSGYy0 c=1 sm=0 a=ZycB6UtQUfgMyuk2+PxD7w==:17 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=0tqiLhzIOFI2S6QjZdEA:9 a=PUjeQqilurYA:10 a=ZycB6UtQUfgMyuk2+PxD7w==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.80.29
+Message-ID: <1326498708.7642.128.camel@gandalf.stny.rr.com>
+Subject: Re: [ANNOUNCE] 3.0.14-rt31
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Bernardo Barros <bernardobarros2@gmail.com>
+Cc: Tim Sander <tim.sander@hbm.com>, LKML <linux-kernel@vger.kernel.org>,
+        RT <linux-rt-users@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Clark Williams <williams@redhat.com>, John Kacur <jkacur@redhat.com>
+Date: Fri, 13 Jan 2012 18:51:48 -0500
+In-Reply-To: <CAOEEKGXUJC9Mmu7azKSvQNkoB3Z_aLPTCDWABOE5WpHRKR=YNg@mail.gmail.com>
+References: <1324525237.5916.114.camel@gandalf.stny.rr.com>
+	 <1326376484.7642.65.camel@gandalf.stny.rr.com>
+	 <201201121757.25467.tim.sander@hbm.com>
+	 <201201131042.08323.tim.sander@hbm.com>
+	 <CAOEEKGXUJC9Mmu7azKSvQNkoB3Z_aLPTCDWABOE5WpHRKR=YNg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.2.2-1 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Jan 2012 20:06:30 +0800
-Hillf Danton <dhillf@gmail.com> wrote:
+On Fri, 2012-01-13 at 10:45 -0800, Bernardo Barros wrote:
+> Will 3.0-rt continue to receive bugfixes in parallel with 3.2-rt? Will
+> it be a LTS kernel as 3.0 is?
 
-> On Thu, Jan 5, 2012 at 7:16 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Fri, 23 Dec 2011 21:00:41 +0800
-> > Hillf Danton <dhillf@gmail.com> wrote:
-> >
-> >> Page mapcount should be updated only if we are sure that the page ends
-> >> up in the page table otherwise we would leak if we couldn't COW due to
-> >> reservations or if idx is out of bounds.
-> >
-> > It would be much nicer if we could run vma_needs_reservation() before
-> > even looking up or allocating the page.
-> >
-> > And afaict the interface is set up to do that: you run
-> > vma_needs_reservation() before allocating the page and then
-> > vma_commit_reservation() afterwards.
-> >
-> > But hugetlb_no_page() and hugetlb_fault() appear to have forgotten to
-> > run vma_commit_reservation() altogether. __Why isn't this as busted as
-> > it appears to be?
-> 
-> Hi Andrew
-> 
-> IIUC the two operations, vma_{needs, commit}_reservation, are folded in
-> alloc_huge_page(), need to break the pair?
 
-Looking at it again, it appears that the vma_needs_reservation() calls
-are used to predict whether a subsequent COW attempt is going to fail.
+Yes, I will still be maintaining it.
 
-If that's correct then things aren't as bad as I first thought. 
-However I suspect the code in hugetlb_no_page() is a bit racy: the
-vma_needs_reservation() call should happen after we've taken
-page_table_lock.  As things stand, another thread could sneak in there
-and steal the reservation which this thread thought was safe.
+But as with mainline stable, there's some rules I follow. I do not add
+any patch that is not yet in 3.2-rt (or whatever is the latest rt),
+Linux mainline, or Linux stable. A patch must be in one of the above
+before I add it.
 
-What do you think?
+With the exception if the patch only pertains to fix a bug in 3.0-rt and
+that code no longer exists in 3.2-rt.
+
+-- Steve
+
 
