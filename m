@@ -1,303 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758029Ab2AMMPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 07:15:45 -0500
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:41107 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869Ab2AMMPm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 07:15:42 -0500
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Subject: Re: [PATCH 2/2] backlight: Convert backlight spi drivers to module_spi_driver
-Date: Fri, 13 Jan 2012 13:15:39 +0100
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.6.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Jingoo Han <jg1.han@samsung.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Donghwa Lee <dh09.lee@samsung.com>,
-        Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        InKi Dae <inki.dae@samsung.com>,
-        Dmitry Baryshkov <dbaryshkov@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1326443748.5482.3.camel@phoenix> <1326443892.5482.6.camel@phoenix>
-In-Reply-To: <1326443892.5482.6.camel@phoenix>
+	id S1758044Ab2AMMRO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 07:17:14 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:47501 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753099Ab2AMMRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 07:17:09 -0500
+Date: Fri, 13 Jan 2012 13:16:56 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>, Ying Han <yinghan@google.com>,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
+Message-ID: <20120113121645.GA1653@cmpxchg.org>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+ <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
+ <20120112105427.4b80437b.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201131315.39386.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120112105427.4b80437b.kamezawa.hiroyu@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Factor out some boilerplate code for spi driver registration into
-> module_spi_driver.
+On Thu, Jan 12, 2012 at 10:54:27AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 10 Jan 2012 16:02:52 +0100
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> Cc: Jingoo Han <jg1.han@samsung.com>
-> Cc: Eric Miao <eric.y.miao@gmail.com>
-> Cc: Alberto Panizzo <maramaopercheseimorto@gmail.com>
-> Cc: Donghwa Lee <dh09.lee@samsung.com>
-> Cc: Marek Vasut <marek.vasut@gmail.com>
-> Cc: Haavard Skinnemoen <hskinnemoen@atmel.com>
-> Cc: InKi Dae <inki.dae@samsung.com>
-> Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> ---
->  drivers/video/backlight/ams369fg06.c  |   13 +------------
->  drivers/video/backlight/corgi_lcd.c   |   12 +-----------
->  drivers/video/backlight/l4f00242t03.c |   13 +------------
->  drivers/video/backlight/ld9040.c      |   13 +------------
->  drivers/video/backlight/lms283gf05.c  |   13 +------------
+> > Right now, memcg soft limits are implemented by having a sorted tree
+> > of memcgs that are in excess of their limits.  Under global memory
+> > pressure, kswapd first reclaims from the biggest excessor and then
+> > proceeds to do regular global reclaim.  The result of this is that
+> > pages are reclaimed from all memcgs, but more scanning happens against
+> > those above their soft limit.
+> > 
+> > With global reclaim doing memcg-aware hierarchical reclaim by default,
+> > this is a lot easier to implement: everytime a memcg is reclaimed
+> > from, scan more aggressively (per tradition with a priority of 0) if
+> > it's above its soft limit.  With the same end result of scanning
+> > everybody, but soft limit excessors a bit more.
+> > 
+> > Advantages:
+> > 
+> >   o smoother reclaim: soft limit reclaim is a separate stage before
+> >     global reclaim, whose result is not communicated down the line and
+> >     so overreclaim of the groups in excess is very likely.  After this
+> >     patch, soft limit reclaim is fully integrated into regular reclaim
+> >     and each memcg is considered exactly once per cycle.
+> > 
+> >   o true hierarchy support: soft limits are only considered when
+> >     kswapd does global reclaim, but after this patch, targetted
+> >     reclaim of a memcg will mind the soft limit settings of its child
+> >     groups.
+> > 
+> >   o code size: soft limit reclaim requires a lot of code to maintain
+> >     the per-node per-zone rb-trees to quickly find the biggest
+> >     offender, dedicated paths for soft limit reclaim etc. while this
+> >     new implementation gets away without all that.
+> > 
+> > Test:
+> > 
+> > The test consists of two concurrent kernel build jobs in separate
+> > source trees, the master and the slave.  The two jobs get along nicely
+> > on 600MB of available memory, so this is the zero overcommit control
+> > case.  When available memory is decreased, the overcommit is
+> > compensated by decreasing the soft limit of the slave by the same
+> > amount, in the hope that the slave takes the hit and the master stays
+> > unaffected.
+> > 
+> >                                     600M-0M-vanilla         600M-0M-patched
+> > Master walltime (s)               552.65 (  +0.00%)       552.38 (  -0.05%)
+> > Master walltime (stddev)            1.25 (  +0.00%)         0.92 ( -14.66%)
+> > Master major faults               204.38 (  +0.00%)       205.38 (  +0.49%)
+> > Master major faults (stddev)       27.16 (  +0.00%)        13.80 ( -47.43%)
+> > Master reclaim                     31.88 (  +0.00%)        37.75 ( +17.87%)
+> > Master reclaim (stddev)            34.01 (  +0.00%)        75.88 (+119.59%)
+> > Master scan                        31.88 (  +0.00%)        37.75 ( +17.87%)
+> > Master scan (stddev)               34.01 (  +0.00%)        75.88 (+119.59%)
+> > Master kswapd reclaim           33922.12 (  +0.00%)     33887.12 (  -0.10%)
+> > Master kswapd reclaim (stddev)    969.08 (  +0.00%)       492.22 ( -49.16%)
+> > Master kswapd scan              34085.75 (  +0.00%)     33985.75 (  -0.29%)
+> > Master kswapd scan (stddev)      1101.07 (  +0.00%)       563.33 ( -48.79%)
+> > Slave walltime (s)                552.68 (  +0.00%)       552.12 (  -0.10%)
+> > Slave walltime (stddev)             0.79 (  +0.00%)         1.05 ( +14.76%)
+> > Slave major faults                212.50 (  +0.00%)       204.50 (  -3.75%)
+> > Slave major faults (stddev)        26.90 (  +0.00%)        13.17 ( -49.20%)
+> > Slave reclaim                      26.12 (  +0.00%)        35.00 ( +32.72%)
+> > Slave reclaim (stddev)             29.42 (  +0.00%)        74.91 (+149.55%)
+> > Slave scan                         31.38 (  +0.00%)        35.00 ( +11.20%)
+> > Slave scan (stddev)                33.31 (  +0.00%)        74.91 (+121.24%)
+> > Slave kswapd reclaim            34259.00 (  +0.00%)     33469.88 (  -2.30%)
+> > Slave kswapd reclaim (stddev)     925.15 (  +0.00%)       565.07 ( -38.88%)
+> > Slave kswapd scan               34354.62 (  +0.00%)     33555.75 (  -2.33%)
+> > Slave kswapd scan (stddev)        969.62 (  +0.00%)       581.70 ( -39.97%)
+> > 
+> > In the control case, the differences in elapsed time, number of major
+> > faults taken, and reclaim statistics are within the noise for both the
+> > master and the slave job.
+> > 
+> >                                      600M-280M-vanilla      600M-280M-patched
+> > Master walltime (s)                  595.13 (  +0.00%)      553.19 (  -7.04%)
+> > Master walltime (stddev)               8.31 (  +0.00%)        2.57 ( -61.64%)
+> > Master major faults                 3729.75 (  +0.00%)      783.25 ( -78.98%)
+> > Master major faults (stddev)         258.79 (  +0.00%)      226.68 ( -12.36%)
+> > Master reclaim                       705.00 (  +0.00%)       29.50 ( -95.68%)
+> > Master reclaim (stddev)              232.87 (  +0.00%)       44.72 ( -80.45%)
+> > Master scan                          714.88 (  +0.00%)       30.00 ( -95.67%)
+> > Master scan (stddev)                 237.44 (  +0.00%)       45.39 ( -80.54%)
+> > Master kswapd reclaim                114.75 (  +0.00%)       50.00 ( -55.94%)
+> > Master kswapd reclaim (stddev)       128.51 (  +0.00%)        9.45 ( -91.93%)
+> > Master kswapd scan                   115.75 (  +0.00%)       50.00 ( -56.32%)
+> > Master kswapd scan (stddev)          130.31 (  +0.00%)        9.45 ( -92.04%)
+> > Slave walltime (s)                   631.18 (  +0.00%)      577.68 (  -8.46%)
+> > Slave walltime (stddev)                9.89 (  +0.00%)        3.63 ( -57.47%)
+> > Slave major faults                 28401.75 (  +0.00%)    14656.75 ( -48.39%)
+> > Slave major faults (stddev)         2629.97 (  +0.00%)     1911.81 ( -27.30%)
+> > Slave reclaim                      65400.62 (  +0.00%)     1479.62 ( -97.74%)
+> > Slave reclaim (stddev)             11623.02 (  +0.00%)     1482.13 ( -87.24%)
+> > Slave scan                       9050047.88 (  +0.00%)    95968.25 ( -98.94%)
+> > Slave scan (stddev)              1912786.94 (  +0.00%)    93390.71 ( -95.12%)
+> > Slave kswapd reclaim              327894.50 (  +0.00%)   227099.88 ( -30.74%)
+> > Slave kswapd reclaim (stddev)      22289.43 (  +0.00%)    16113.14 ( -27.71%)
+> > Slave kswapd scan               34987335.75 (  +0.00%)  1362367.12 ( -96.11%)
+> > Slave kswapd scan (stddev)       2523642.98 (  +0.00%)   156754.74 ( -93.79%)
+> > 
+> > Here, the available memory is limited to 320 MB, the machine is
+> > overcommitted by 280 MB.  The soft limit of the master is 300 MB, that
+> > of the slave merely 20 MB.
+> > 
+> > Looking at the slave job first, it is much better off with the patched
+> > kernel: direct reclaim is almost gone, kswapd reclaim is decreased by
+> > a third.  The result is much fewer major faults taken, which in turn
+> > lets the job finish quicker.
+> > 
+> > It would be a zero-sum game if the improvement happened at the cost of
+> > the master but looking at the numbers, even the master performs better
+> > with the patched kernel.  In fact, the master job is almost unaffected
+> > on the patched kernel compared to the control case.
+> > 
+> > This is an odd phenomenon, as the patch does not directly change how
+> > the master is reclaimed.  An explanation for this is that the severe
+> > overreclaim of the slave in the unpatched kernel results in the master
+> > growing bigger than in the patched case.  Combining the fact that
+> > memcgs are scanned according to their size with the increased refault
+> > rate of the overreclaimed slave triggering global reclaim more often
+> > means that overall pressure on the master job is higher in the
+> > unpatched kernel.
+> > 
+> > At any rate, the patched kernel seems to do a much better job at both
+> > overall resource allocation under soft limit overcommit as well as the
+> > requested prioritization of the master job.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> 
+> Thank you for your work and the result seems atractive and code is much
+> simpler. My small concerns are..
+> 
+> 1. This approach may increase latency of direct-reclaim because of priority=0.
 
-Acked-by: Marek Vasut <marek.vasut@gmail.com>
+I think strictly speaking yes, but note that with kswapd being less
+likely to get stuck in hammering on one group, the need for allocators
+to enter direct reclaim itself is reduced.
 
->  drivers/video/backlight/ltv350qv.c    |   12 +-----------
->  drivers/video/backlight/s6e63m0.c     |   13 +------------
->  drivers/video/backlight/tdo24m.c      |   12 +-----------
->  drivers/video/backlight/tosa_lcd.c    |   13 +------------
->  drivers/video/backlight/vgg2432a4.c   |   15 +--------------
->  10 files changed, 10 insertions(+), 119 deletions(-)
-> 
-> diff --git a/drivers/video/backlight/ams369fg06.c
-> b/drivers/video/backlight/ams369fg06.c index 7838a23..7bdadc7 100644
-> --- a/drivers/video/backlight/ams369fg06.c
-> +++ b/drivers/video/backlight/ams369fg06.c
-> @@ -629,18 +629,7 @@ static struct spi_driver ams369fg06_driver = {
->  	.resume		= ams369fg06_resume,
->  };
-> 
-> -static int __init ams369fg06_init(void)
-> -{
-> -	return spi_register_driver(&ams369fg06_driver);
-> -}
-> -
-> -static void __exit ams369fg06_exit(void)
-> -{
-> -	spi_unregister_driver(&ams369fg06_driver);
-> -}
-> -
-> -module_init(ams369fg06_init);
-> -module_exit(ams369fg06_exit);
-> +module_spi_driver(ams369fg06_driver);
-> 
->  MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
->  MODULE_DESCRIPTION("ams369fg06 LCD Driver");
-> diff --git a/drivers/video/backlight/corgi_lcd.c
-> b/drivers/video/backlight/corgi_lcd.c index c6533ba..6dab13f 100644
-> --- a/drivers/video/backlight/corgi_lcd.c
-> +++ b/drivers/video/backlight/corgi_lcd.c
-> @@ -629,17 +629,7 @@ static struct spi_driver corgi_lcd_driver = {
->  	.resume		= corgi_lcd_resume,
->  };
-> 
-> -static int __init corgi_lcd_init(void)
-> -{
-> -	return spi_register_driver(&corgi_lcd_driver);
-> -}
-> -module_init(corgi_lcd_init);
-> -
-> -static void __exit corgi_lcd_exit(void)
-> -{
-> -	spi_unregister_driver(&corgi_lcd_driver);
-> -}
-> -module_exit(corgi_lcd_exit);
-> +module_spi_driver(corgi_lcd_driver);
-> 
->  MODULE_DESCRIPTION("LCD and backlight driver for SHARP C7x0/Cxx00");
->  MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
-> diff --git a/drivers/video/backlight/l4f00242t03.c
-> b/drivers/video/backlight/l4f00242t03.c index 4f5d1c4..fae421a 100644
-> --- a/drivers/video/backlight/l4f00242t03.c
-> +++ b/drivers/video/backlight/l4f00242t03.c
-> @@ -272,18 +272,7 @@ static struct spi_driver l4f00242t03_driver = {
->  	.shutdown	= l4f00242t03_shutdown,
->  };
-> 
-> -static __init int l4f00242t03_init(void)
-> -{
-> -	return spi_register_driver(&l4f00242t03_driver);
-> -}
-> -
-> -static __exit void l4f00242t03_exit(void)
-> -{
-> -	spi_unregister_driver(&l4f00242t03_driver);
-> -}
-> -
-> -module_init(l4f00242t03_init);
-> -module_exit(l4f00242t03_exit);
-> +module_spi_driver(l4f00242t03_driver);
-> 
->  MODULE_AUTHOR("Alberto Panizzo <maramaopercheseimorto@gmail.com>");
->  MODULE_DESCRIPTION("EPSON L4F00242T03 LCD");
-> diff --git a/drivers/video/backlight/ld9040.c
-> b/drivers/video/backlight/ld9040.c index 78dafc0..efd352b 100644
-> --- a/drivers/video/backlight/ld9040.c
-> +++ b/drivers/video/backlight/ld9040.c
-> @@ -856,18 +856,7 @@ static struct spi_driver ld9040_driver = {
->  	.resume		= ld9040_resume,
->  };
-> 
-> -static int __init ld9040_init(void)
-> -{
-> -	return spi_register_driver(&ld9040_driver);
-> -}
-> -
-> -static void __exit ld9040_exit(void)
-> -{
-> -	spi_unregister_driver(&ld9040_driver);
-> -}
-> -
-> -module_init(ld9040_init);
-> -module_exit(ld9040_exit);
-> +module_spi_driver(ld9040_driver);
-> 
->  MODULE_AUTHOR("Donghwa Lee <dh09.lee@samsung.com>");
->  MODULE_DESCRIPTION("ld9040 LCD Driver");
-> diff --git a/drivers/video/backlight/lms283gf05.c
-> b/drivers/video/backlight/lms283gf05.c index 4ec78cf..4161f9e 100644
-> --- a/drivers/video/backlight/lms283gf05.c
-> +++ b/drivers/video/backlight/lms283gf05.c
-> @@ -226,18 +226,7 @@ static struct spi_driver lms283gf05_driver = {
->  	.remove		= __devexit_p(lms283gf05_remove),
->  };
-> 
-> -static __init int lms283gf05_init(void)
-> -{
-> -	return spi_register_driver(&lms283gf05_driver);
-> -}
-> -
-> -static __exit void lms283gf05_exit(void)
-> -{
-> -	spi_unregister_driver(&lms283gf05_driver);
-> -}
-> -
-> -module_init(lms283gf05_init);
-> -module_exit(lms283gf05_exit);
-> +module_spi_driver(lms283gf05_driver);
-> 
->  MODULE_AUTHOR("Marek Vasut <marek.vasut@gmail.com>");
->  MODULE_DESCRIPTION("LCD283GF05 LCD");
-> diff --git a/drivers/video/backlight/ltv350qv.c
-> b/drivers/video/backlight/ltv350qv.c index cca43c0..333949f 100644
-> --- a/drivers/video/backlight/ltv350qv.c
-> +++ b/drivers/video/backlight/ltv350qv.c
-> @@ -321,17 +321,7 @@ static struct spi_driver ltv350qv_driver = {
->  	.resume		= ltv350qv_resume,
->  };
-> 
-> -static int __init ltv350qv_init(void)
-> -{
-> -	return spi_register_driver(&ltv350qv_driver);
-> -}
-> -
-> -static void __exit ltv350qv_exit(void)
-> -{
-> -	spi_unregister_driver(&ltv350qv_driver);
-> -}
-> -module_init(ltv350qv_init);
-> -module_exit(ltv350qv_exit);
-> +module_spi_driver(ltv350qv_driver);
-> 
->  MODULE_AUTHOR("Haavard Skinnemoen (Atmel)");
->  MODULE_DESCRIPTION("Samsung LTV350QV LCD Driver");
-> diff --git a/drivers/video/backlight/s6e63m0.c
-> b/drivers/video/backlight/s6e63m0.c index e132157..9b0092e 100644
-> --- a/drivers/video/backlight/s6e63m0.c
-> +++ b/drivers/video/backlight/s6e63m0.c
-> @@ -909,18 +909,7 @@ static struct spi_driver s6e63m0_driver = {
->  	.resume		= s6e63m0_resume,
->  };
-> 
-> -static int __init s6e63m0_init(void)
-> -{
-> -	return spi_register_driver(&s6e63m0_driver);
-> -}
-> -
-> -static void __exit s6e63m0_exit(void)
-> -{
-> -	spi_unregister_driver(&s6e63m0_driver);
-> -}
-> -
-> -module_init(s6e63m0_init);
-> -module_exit(s6e63m0_exit);
-> +module_spi_driver(s6e63m0_driver);
-> 
->  MODULE_AUTHOR("InKi Dae <inki.dae@samsung.com>");
->  MODULE_DESCRIPTION("S6E63M0 LCD Driver");
-> diff --git a/drivers/video/backlight/tdo24m.c
-> b/drivers/video/backlight/tdo24m.c index 1997e12..2368b8e 100644
-> --- a/drivers/video/backlight/tdo24m.c
-> +++ b/drivers/video/backlight/tdo24m.c
-> @@ -459,17 +459,7 @@ static struct spi_driver tdo24m_driver = {
->  	.resume		= tdo24m_resume,
->  };
-> 
-> -static int __init tdo24m_init(void)
-> -{
-> -	return spi_register_driver(&tdo24m_driver);
-> -}
-> -module_init(tdo24m_init);
-> -
-> -static void __exit tdo24m_exit(void)
-> -{
-> -	spi_unregister_driver(&tdo24m_driver);
-> -}
-> -module_exit(tdo24m_exit);
-> +module_spi_driver(tdo24m_driver);
-> 
->  MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>");
->  MODULE_DESCRIPTION("Driver for Toppoly TDO24M LCD Panel");
-> diff --git a/drivers/video/backlight/tosa_lcd.c
-> b/drivers/video/backlight/tosa_lcd.c index 772f601..a2161f6 100644
-> --- a/drivers/video/backlight/tosa_lcd.c
-> +++ b/drivers/video/backlight/tosa_lcd.c
-> @@ -285,18 +285,7 @@ static struct spi_driver tosa_lcd_driver = {
->  	.resume		= tosa_lcd_resume,
->  };
-> 
-> -static int __init tosa_lcd_init(void)
-> -{
-> -	return spi_register_driver(&tosa_lcd_driver);
-> -}
-> -
-> -static void __exit tosa_lcd_exit(void)
-> -{
-> -	spi_unregister_driver(&tosa_lcd_driver);
-> -}
-> -
-> -module_init(tosa_lcd_init);
-> -module_exit(tosa_lcd_exit);
-> +module_spi_driver(tosa_lcd_driver);
-> 
->  MODULE_AUTHOR("Dmitry Baryshkov");
->  MODULE_LICENSE("GPL v2");
-> diff --git a/drivers/video/backlight/vgg2432a4.c
-> b/drivers/video/backlight/vgg2432a4.c index b49063c..b617fae 100644
-> --- a/drivers/video/backlight/vgg2432a4.c
-> +++ b/drivers/video/backlight/vgg2432a4.c
-> @@ -262,20 +262,7 @@ static struct spi_driver vgg2432a4_driver = {
->  	.resume		= vgg2432a4_resume,
->  };
-> 
-> -/* Device driver initialisation */
-> -
-> -static int __init vgg2432a4_init(void)
-> -{
-> -	return spi_register_driver(&vgg2432a4_driver);
-> -}
-> -
-> -static void __exit vgg2432a4_exit(void)
-> -{
-> -	spi_unregister_driver(&vgg2432a4_driver);
-> -}
-> -
-> -module_init(vgg2432a4_init);
-> -module_exit(vgg2432a4_exit);
-> +module_spi_driver(vgg2432a4_driver);
-> 
->  MODULE_AUTHOR("Ben Dooks <ben-linux@fluff.org>");
->  MODULE_DESCRIPTION("VGG2432A4 LCD Driver");
+However, if this really becomes a problem in real world loads, the fix
+is pretty easy: just ignore the soft limit for direct reclaim.  We can
+still consider it from hard limit reclaim and kswapd.
+
+> 2. In a case numa-spread/interleave application run in its own container, 
+>    pages on a node may paged-out again and again becasue of priority=0
+>    if some other application runs in the node.
+>    It seems difficult to use soft-limit with numa-aware applications.
+>    Do you have suggestions ?
+
+This is a question about soft limits in general rather than about this
+particular patch, right?
+
+And if I understand correctly, the problem you are referring to is
+this: an application and parts of a soft-limited container share a
+node, the soft limit setting means that the container's pages on that
+node are reclaimed harder.  At that point, the container's share on
+that node becomes tiny, but since the soft limit is oblivious to
+nodes, the expansion of the other application pushes the soft-limited
+container off that node completely as long as the container stays
+above its soft limit with the usage on other nodes.
+
+What would you think about having node-local soft limits that take the
+node size into account?
+
+	local_soft_limit = soft_limit * node_size / memcg_size
+
+The soft limit can be exceeded globally, but the container is no
+longer pushed off a node on which it's only occupying a small share of
+memory.
+
+Putting it into proportion of the memcg size, not overall memory size
+has the following advantages:
+
+  1. if the container is sitting on only one of several available
+  nodes without exceeding the limit globally, the memcg will not be
+  reclaimed harder just because it has a relatively large share of the
+  node.
+
+  2. if the soft limit excess is ridiculously high, the local soft
+  limits will be pushed down, so the tolerance for smaller shares on
+  nodes goes down in proportion to the global soft limit excess.
+
+Example:
+
+	4G soft limit * 2G node / 4G container = 2G node-local limit
+
+The container is globally within its soft limit, so the local limit is
+at least the size of the node.  It's never reclaimed harder compared
+to other applications on the node.
+
+	4G soft limit * 2G node / 5G container = ~1.6G node-local limit
+
+Here, it will experience more pressure initially, but it will level
+off when the shrinking usage and the thereby increasing node-local
+soft limit meet.  From that point on, the container and the competing
+application will be treated equally during reclaim.
+
+Finally, if the container is 16G in size, i.e. 300% in excess, the
+per-node tolerance is at 512M node-local soft limit, which IMO strikes
+a good balance between zero tolerance and still applying some stress
+to the hugely oversized container when other applications (with
+virtually unlimited soft limits) want to run on the same node.
+
+What do you think?
