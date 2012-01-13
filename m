@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756954Ab2AMBqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 20:46:40 -0500
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38356 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab2AMBqg (ORCPT
+	id S1756985Ab2AMBrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 20:47:15 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51211 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab2AMBrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 20:46:36 -0500
+	Thu, 12 Jan 2012 20:47:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <1326415001-2145-1-git-send-email-ying.huang@intel.com>
-References: <1326415001-2145-1-git-send-email-ying.huang@intel.com>
-Date: Thu, 12 Jan 2012 17:46:36 -0800
-X-Google-Sender-Auth: BtCY5teWxYFepwFo9zL_FxkRbkU
-Message-ID: <CA+8MBbJHsOHb-COG_y36VYDA9EeTs3KpLc86kw1OhVF9Z_p7Jw@mail.gmail.com>
-Subject: Re: x86, mce, Use user return notifier in mce
-From: Tony Luck <tony.luck@intel.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Borislav Petkov <bp@amd64.org>, Chen Gong <gong.chen@linux.intel.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+In-Reply-To: <CAPXgP120MoEUK9vSiELx4nzkL9X3w=YBgXGs3Q-VPm-4ZjgvZQ@mail.gmail.com>
+References: <20120106201126.GA7239@kroah.com> <CA+55aFzH1cqoxr5RR8yqPdjf4XphKHk9YmcDozPn_z7Aq3nDcg@mail.gmail.com>
+ <CAPXgP120MoEUK9vSiELx4nzkL9X3w=YBgXGs3Q-VPm-4ZjgvZQ@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 12 Jan 2012 17:46:53 -0800
+X-Google-Sender-Auth: bAlPq8xLg_rBLW_rGpmv0OMlplU
+Message-ID: <CA+55aFyOcdCyo3y5vJ-3uL2BLLH5ubA81Ns-xLWBZkLf=JDzBQ@mail.gmail.com>
+Subject: Re: [GIT PATCH] driver core merge for 3.3
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 4:36 PM, Huang Ying <ying.huang@intel.com> wrote:
-> Replace the home-made TIF_MCE_NOTIFY based code in MCE with user
-> return notifier.
+On Thu, Jan 12, 2012 at 5:39 PM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>
+> Maybe you can check if the suspend problem goes away if you disable
+> CONFIG_X86_MCE?
 
-When I looked at this before, I found that the existing user return notifier had
-the meaning "call a function before THIS CPU returns to user space". Use in KVM
-was to update some MSR that needed adjustment before a cpu ran another user
-process.
+It does. So there is something wrong with MCE. It causes the second
+suspend to hang for me. Disabling X86_MCE makes it work.
 
-The MCE code wanted something slightly different: "call a function before THIS
-PROCESS returns to user space". So my prototype code from last year made a
-whole new set of interfaces - similar in style to the user return
-notifier, but with
-the MCE semantics.
+(I have other problems on that machine too, but they are unrelated)
 
-At first glance it looks like you are just using the user return
-notifier code (perhaps
-I'm mis-reading the diff?). This won't work - it's possible for a
-context switch, and
-then the process that hit the MCE may get moved to another cpu, when it will
-be run. Meanwhile we'll execute our function in the context of some
-other process.
-
--Tony
+                Linus
