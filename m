@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172Ab2AMOFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 09:05:38 -0500
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:52572 "EHLO
+	id S932186Ab2AMOGQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 09:06:16 -0500
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63658 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758216Ab2AMOFe (ORCPT
+	with ESMTP id S1753250Ab2AMOGP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 09:05:34 -0500
-Message-ID: <4F103A21.1050403@gmail.com>
-Date: Fri, 13 Jan 2012 08:05:21 -0600
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	Fri, 13 Jan 2012 09:06:15 -0500
 MIME-Version: 1.0
-To: Shawn Guo <shawn.guo@linaro.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Mike Turquette <mturquette@ti.com>
-Subject: Re: [RFC v2 4/9] of: add clock providers
-References: <1323727329-4989-1-git-send-email-grant.likely@secretlab.ca> <1323727329-4989-4-git-send-email-grant.likely@secretlab.ca> <20120113135036.GC17029@S2101-09.ap.freescale.net>
-In-Reply-To: <20120113135036.GC17029@S2101-09.ap.freescale.net>
+In-Reply-To: <20120113130218.GJ23916@ZenIV.linux.org.uk>
+References: <CAPM=9tzbgk=O6iTAM1Vp3SuZLkt7NnaMx0=+wbpW1x+sXk-3zA@mail.gmail.com>
+	<1326458657.2219.24.camel@perseus.themaw.net>
+	<20120113130218.GJ23916@ZenIV.linux.org.uk>
+Date: Fri, 13 Jan 2012 14:06:15 +0000
+Message-ID: <CAPM=9txLPv2q+T_KioLYuQv21RAeaphEGm-W+LYtXHYoubbwww@mail.gmail.com>
+Subject: Re: autofs4 hung task
+From: Dave Airlie <airlied@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Ian Kent <raven@themaw.net>, LKML <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@ftp.linux.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 07:50 AM, Shawn Guo wrote:
-> On Mon, Dec 12, 2011 at 03:02:04PM -0700, Grant Likely wrote:
->> +==Clock providers==
->> +
->> +Required properties:
->> +#clock-cells:	   Number of cells in a clock specifier; typically will be
->> +		   set to 1
-> 
-> Shouldn't it be 0 typically, which means it represents only one clock
-> in the node?
-> 
+>> Thanks Dave, an obvious mistake I missed in a recent commit by the look
+>> of it.
+>>
+>> Ian
+>
+> Grr...  Note to self: do git status *and* git stash show -p before git push.
+> Nothing like "WTF?  I'd fixed that braino" feeling ;-/
+>
+> mutex_lock misspelled as mutex_unlock
+>
+> Buggered-in: commit d668dc56631da067540b2494d2a1f29ff7b5f15a
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 
-We have no idea what will be typical. I would say: Typically 0 for nodes
-with a single clock output and 1 for nodes with multiple clock outputs.
+Thanks guys, up and running with Linus master with this patch.
 
-Rob
+Tested-by: Dave Airlie <airlied@redhat.com>
+
+> ---
+> diff --git a/fs/autofs4/waitq.c b/fs/autofs4/waitq.c
+> index 9ef5b29..da8876d 100644
+> --- a/fs/autofs4/waitq.c
+> +++ b/fs/autofs4/waitq.c
+> @@ -76,7 +76,7 @@ static int autofs4_write(struct autofs_sb_info *sbi,
+>                data += wr;
+>                bytes -= wr;
+>        }
+> -       mutex_lock(&sbi->pipe_mutex);
+> +       mutex_unlock(&sbi->pipe_mutex);
+>
+>        set_fs(fs);
+>
