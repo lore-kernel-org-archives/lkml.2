@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab2AMLKQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 06:10:16 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:34026 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab2AMLKN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 06:10:13 -0500
-Message-ID: <4F101113.4090500@canonical.com>
-Date: Fri, 13 Jan 2012 12:10:11 +0100
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+	id S1757907Ab2AMLL2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 06:11:28 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:2715 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752854Ab2AMLL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 06:11:27 -0500
+Message-ID: <4F101137.1020804@atmel.com>
+Date: Fri, 13 Jan 2012 12:10:47 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Input: Add EVIOC mechanism for MT slots
-References: <1326396275-2492-1-git-send-email-rydberg@euromail.se> <4F0FEC84.7020605@canonical.com> <20120113091556.GA21749@core.coreip.homeip.net>
-In-Reply-To: <20120113091556.GA21749@core.coreip.homeip.net>
-X-Enigmail-Version: 1.4a1pre
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        plagnioj@jcrosoft.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, patrice.vilchez@atmel.com
+Subject: Re: [PATCH RFC] ARM: at91: removal of CAP9 SoC family
+References: <1325864033-20012-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1325864033-20012-1-git-send-email-nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2012 10:15 AM, Dmitry Torokhov wrote:
-> On Fri, Jan 13, 2012 at 09:34:12AM +0100, Chase Douglas wrote:
->> On 01/12/2012 08:24 PM, Henrik Rydberg wrote:
->>> +	if (put_user(dev->mtsize, &ip[1]))
->>> +		return -EFAULT;
->>> +	for (i = 0; i < dev->mtsize; i++)
->>> +		if (put_user(input_mt_get_value(&mt[i], code), &ip[2 + i]))
->>> +			return -EFAULT;
->>
->> This would be easier to understand if you did:
->>
->> struct input_mt_request *req = (struct input_mt_request *)ip;
->>
->> Then modify the stuff in a straightforward way.
+On 01/06/2012 04:33 PM, Nicolas Ferre :
+> Atmel CAP9 family is not maintained well and products may be
+> difficult to find now. It will allow to save workforce and
+> remove LOC during current cleanup process.
 > 
-> This is a user pointer, you can't really do it in straightforward way...
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  Documentation/feature-removal-schedule.txt |   14 ++++++++++++++
+>  1 files changed, 14 insertions(+), 0 deletions(-)
 
-I don't know why that is, but as a thought could you do:
+Hi Andrew, Greg,
 
-struct input_mt_request __user *req =
-	(struct input_mt_request __user *)ip;
+Can you please take this patch or is somebody else in charge of this file?
 
-?
+It it is going to mainline through you, can you add also:
 
->>
->>> +	return 0;
->>> +}
->>> +
->>>  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->>>  			   void __user *p, int compat_mode)
->>>  {
->>> @@ -706,6 +731,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->>>  		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
->>>  				    size, p, compat_mode);
->>>  
->>> +	case EVIOCGMTSLOTS(0):
->>> +		return evdev_handle_mt_request(dev, size, ip);
->>> +
->>>  	case EVIOCGKEY(0):
->>>  		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
->>>  
->>> diff --git a/include/linux/input.h b/include/linux/input.h
->>> index a637e78..9a73f18 100644
->>> --- a/include/linux/input.h
->>> +++ b/include/linux/input.h
->>> @@ -99,6 +99,30 @@ struct input_keymap_entry {
->>>  	__u8  scancode[32];
->>>  };
->>>  
->>> +/**
->>> + * struct input_mt_request - used by EVIOCGMTSLOTS ioctl
->>> + * @code: ABS_MT code to read
->>> + * @num_values: number of values written to the value array
->>> + * @values: value array, one value per slot
->>> + *
->>> + * The structure is used to retrieve MT slot data. Before the call,
->>> + * code is set to the wanted ABS_MT event type. On return, the value
->>> + * array is filled with the slot values for the specified ABS_MT code,
->>> + * and num_values is set to the actual number of slots.
->>> + *
->>> + * The call argument (len) is the size of the return buffer, satisfying
->>> + *
->>> + * len >= sizeof(input_mt_request) + sizeof(__s32) * number_of_slots
->>> + *
->>> + * If the request code is not an ABS_MT value, or if len is too small,
->>> + * -EINVAL is returned.
->>> + */
->>> +struct input_mt_request {
->>> +	__u32 code;
->>> +	__u32 num_values;
-> 
-> Hmm, might avoid this one... Userspace can do EVIOCGABS to get number of
-> slots and then it will know how much data EVIOCGMTSLOTS will return...
+Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
 
-Is it ever possible that a driver could change the number of slots after
-initialization? I can't imagine why that would occur, but if we ever
-come across a need for it, this would be broken.
+Or tell me to resend a complete patch.
 
--- Chase
+Thanks for your help, best regards,
+
+
+> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> index 3d84912..23dfea5 100644
+> --- a/Documentation/feature-removal-schedule.txt
+> +++ b/Documentation/feature-removal-schedule.txt
+> @@ -551,3 +551,17 @@ When:	3.5
+>  Why:	The iwlagn module has been renamed iwlwifi.  The alias will be around
+>  	for backward compatibility for several cycles and then dropped.
+>  Who:	Don Fry <donald.h.fry@intel.com>
+> +
+> +----------------------------
+> +
+> +What:	The CAP9 SoC family will be removed
+> +When:	3.4
+> +Files:	arch/arm/mach-at91/at91cap9.c
+> +	arch/arm/mach-at91/at91cap9_devices.c
+> +	arch/arm/mach-at91/include/mach/at91cap9.h
+> +	arch/arm/mach-at91/include/mach/at91cap9_matrix.h
+> +	arch/arm/mach-at91/include/mach/at91cap9_ddrsdr.h
+> +	arch/arm/mach-at91/board-cap9adk.c
+> +Why:	The code is not actively maintained and platforms are now hard to find.
+> +Who:	Nicolas Ferre <nicolas.ferre@atmel.com>
+> +	Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+
+
+-- 
+Nicolas Ferre
