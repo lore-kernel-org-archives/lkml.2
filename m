@@ -1,178 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab2AMA3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 19:29:38 -0500
-Received: from mga02.intel.com ([134.134.136.20]:48441 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755897Ab2AMA26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 19:28:58 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.67,352,1309762800"; 
-   d="scan'208";a="95924776"
-From: Andi Kleen <andi@firstfloor.org>
-To: chris.mason@oracle.com
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/3] Add snappy interface to crypto API
-Date: Thu, 12 Jan 2012 16:28:50 -0800
-Message-Id: <1326414530-10789-4-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.7.4
-In-Reply-To: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
-References: <1326414530-10789-1-git-send-email-andi@firstfloor.org>
+	id S1756322Ab2AMAbf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 19:31:35 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51484 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756250Ab2AMAbb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Jan 2012 19:31:31 -0500
+Message-ID: <4F0F7B60.5040701@gmail.com>
+Date: Thu, 12 Jan 2012 18:31:28 -0600
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [RFC 13/14] irq_domain: Remove 'new' irq_domain in favour of
+ the ppc one
+References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca> <1326313337-24603-14-git-send-email-grant.likely@secretlab.ca> <4F0DFC0F.2090005@gmail.com> <CACxGe6vVSO0cTgPurr6jFoo9QF_W02UaABOFYadCTQGU9dcwmg@mail.gmail.com>
+In-Reply-To: <CACxGe6vVSO0cTgPurr6jFoo9QF_W02UaABOFYadCTQGU9dcwmg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Adding lakml...
 
-Mainly so that ubifs can use it.
+On 01/11/2012 03:27 PM, Grant Likely wrote:
+> On Wed, Jan 11, 2012 at 2:15 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> Grant,
+>>
+>> On 01/11/2012 02:22 PM, Grant Likely wrote:
+>>> This patch removes the simplistic implementation of irq_domains and enables
+>>> the powerpc infrastructure for all irq_domain users.  The powerpc
+>>> infrastructure includes support for complex mappings between Linux and
+>>> hardware irq numbers, and can manage allocation of irq_descs.
+>>>
+>>> This patch also converts the few users of irq_domain_add()/irq_domain_del()
+>>> to call irq_domain_add_legacy() instead.
+>>
+>> So what is the non-legacy way? Legacy implies we don't want to do it
+>> that way. I guess until we remove all non-DT platforms with GIC we are
+>> stuck with legacy. That seems like it could be a ways out until we get
+>> there.
+> 
+> Non-legacy is letting the irq_domain manage the irq_desc allocations.
+> Some of the controllers will be easy to convert, some will be more
+> difficult.  The primary thing that really blocks getting away from the
+> legacy method is anything that expects hardcoded #defined irq numbers.
+>  The goal is to convert all users over to the linear revmap method.
+> 
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- crypto/Kconfig  |    9 +++++
- crypto/Makefile |    1 +
- crypto/snappy.c |   99 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 109 insertions(+), 0 deletions(-)
- create mode 100644 crypto/snappy.c
+So I gave this a spin on highbank. I ran into a couple problems.
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index e6cfe1a..768943dc 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -924,6 +924,15 @@ config CRYPTO_LZO
- 	help
- 	  This is the LZO algorithm.
- 
-+config CRYPTO_SNAPPY
-+	tristate "Snappy compression algorithm"
-+	select CRYPTO_ALGAPI
-+	select SNAPPY
-+	help
-+	  snappy is a faster alternative to the lzo compression algorithm
-+	  with comparable compression. It is very fast on 64bit systems, but also
-+	  good on 32bit systems. It especially excels at already compressed data.
-+
- comment "Random Number Generation"
- 
- config CRYPTO_ANSI_CPRNG
-diff --git a/crypto/Makefile b/crypto/Makefile
-index f638063..8a0e6c6 100644
---- a/crypto/Makefile
-+++ b/crypto/Makefile
-@@ -82,6 +82,7 @@ obj-$(CONFIG_CRYPTO_MICHAEL_MIC) += michael_mic.o
- obj-$(CONFIG_CRYPTO_CRC32C) += crc32c.o
- obj-$(CONFIG_CRYPTO_AUTHENC) += authenc.o authencesn.o
- obj-$(CONFIG_CRYPTO_LZO) += lzo.o
-+obj-$(CONFIG_CRYPTO_SNAPPY) += snappy.o
- obj-$(CONFIG_CRYPTO_RNG2) += rng.o
- obj-$(CONFIG_CRYPTO_RNG2) += krng.o
- obj-$(CONFIG_CRYPTO_ANSI_CPRNG) += ansi_cprng.o
-diff --git a/crypto/snappy.c b/crypto/snappy.c
-new file mode 100644
-index 0000000..43a64b9
---- /dev/null
-+++ b/crypto/snappy.c
-@@ -0,0 +1,99 @@
-+/*
-+ * Cryptographic API.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc., 51
-+ * Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/crypto.h>
-+#include <linux/vmalloc.h>
-+#include <linux/snappy.h>
-+
-+struct snappy_ctx {
-+	struct snappy_env env;
-+};
-+
-+/* Only needed for compression actually */
-+static int snappy_init(struct crypto_tfm *tfm)
-+{
-+	struct snappy_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	return snappy_init_env(&ctx->env);
-+}
-+
-+static void snappy_exit(struct crypto_tfm *tfm)
-+{
-+	struct snappy_ctx *ctx = crypto_tfm_ctx(tfm);
-+
-+	snappy_free_env(&ctx->env);
-+}
-+
-+static int snp_compress(struct crypto_tfm *tfm, const u8 *src,
-+			    unsigned int slen, u8 *dst, unsigned int *dlen)
-+{
-+	struct snappy_ctx *ctx = crypto_tfm_ctx(tfm);
-+	size_t olen;
-+	int err;
-+
-+	/* XXXX very pessimistic. check in snappy? */
-+	if (*dlen < snappy_max_compressed_length(*dlen))
-+		return -EINVAL;
-+	err = snappy_compress(&ctx->env, src, slen, dst, &olen);
-+	*dlen = olen;
-+	return err;
-+}
-+
-+static int snp_decompress(struct crypto_tfm *tfm, const u8 *src,
-+			      unsigned int slen, u8 *dst, unsigned int *dlen)
-+{
-+	size_t ulen;
-+
-+	if (!snappy_uncompressed_length(src, slen, &ulen))
-+		return -EIO;
-+	if (*dlen < ulen)
-+		return -EINVAL;
-+	*dlen = ulen;
-+	return snappy_uncompress(src, slen, dst) ? 0 : -EIO;
-+}
-+
-+static struct crypto_alg alg = {
-+	.cra_name		= "snappy",
-+	.cra_flags		= CRYPTO_ALG_TYPE_COMPRESS,
-+	.cra_ctxsize		= sizeof(struct snappy_ctx),
-+	.cra_module		= THIS_MODULE,
-+	.cra_list		= LIST_HEAD_INIT(alg.cra_list),
-+	.cra_init		= snappy_init,
-+	.cra_exit		= snappy_exit,
-+	.cra_u			= { .compress = {
-+	.coa_compress 		= snp_compress,
-+	.coa_decompress  	= snp_decompress } }
-+};
-+
-+static int __init snappy_mod_init(void)
-+{
-+	return crypto_register_alg(&alg);
-+}
-+
-+static void __exit snappy_mod_fini(void)
-+{
-+	crypto_unregister_alg(&alg);
-+}
-+
-+module_init(snappy_mod_init);
-+module_exit(snappy_mod_fini);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("Snappy Compression Algorithm");
--- 
-1.7.7.4
+I had to revert "irqdesc: Consolidate irq reservation logic" which is in
+your branch, but not this series. irq_alloc_desc_from was returning -EEXIST.
 
+The GIC code did not work which I think is specific to using gic_of_init
+which makes irq_start = -1. With that it still doesn't work. It dies in
+gic_set_type... I've found one problem which I'll reply inline to, but I
+think this is a dead end path anyway.
+
+You have removed the irq_alloc_descs call from the GIC which is a step
+backwards. Several of the ARM DT enabled platforms are at the point they
+can fully support dynamic virq base for each irqchip. I changed the
+domain from legacy to linear and got things working. The issue with
+linear is for SPARSE_IRQ. The default behavior on ARM for SPARSE_IRQ is
+all nr_irqs are allocated at boot time before any controller is
+initialized. The only platform with a GIC and requiring SPARSE_IRQ is
+shmobile, but it is also the only one that calls irq_alloc_desc
+functions for it's interrupts. So I think we are okay there. The problem
+occurs when enabling SPARSE_IRQ for a non-DT platform with a GIC and
+with irqchips that don't call irq_alloc_desc for their irqs. IMHO, this
+should be an okay trade-off. There's no advantage to enabling SPARSE_IRQ
+on ARM for platforms that don't require it. All the platforms with a GIC
+have active work to convert to DT (except shmobile which I think is
+okay), so it's a temporary issue.
+
+Rob
