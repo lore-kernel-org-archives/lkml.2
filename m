@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758824Ab2AMSvx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:51:53 -0500
-Received: from mail.tomasu.net ([64.85.170.232]:58320 "EHLO mail.tomasu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab2AMSvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:51:51 -0500
-From: Thomas Fjellstrom <thomas@fjellstrom.ca>
-Reply-To: thomas@fjellstrom.ca
-To: linux-kernel@vger.kernel.org
-Subject: mvsas with 3.1
-Date: Fri, 13 Jan 2012 11:44:57 -0700
-User-Agent: KMail/1.13.7 (Linux/3.1.0-1-amd64; KDE/4.7.4; x86_64; ; )
-Cc: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        ayan@marvell.com, andy yan <andyysj@gmail.com>,
-        "linux-raid" <linux-raid@vger.kernel.org>
+	id S1758832Ab2AMSxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:53:55 -0500
+Received: from e24smtp04.br.ibm.com ([32.104.18.25]:48866 "EHLO
+	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753541Ab2AMSxw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 13:53:52 -0500
+Date: Fri, 13 Jan 2012 16:52:58 -0200
+From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: roland@purestorage.com, venkat.x.venkatsubra@oracle.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dledford@redhat.com, Jes.Sorensen@redhat.com, rds-devel@oss.oracle.com
+Subject: Re: [PATCH] rds_rdma: don't assume infiniband device is PCI
+Message-ID: <20120113185258.GB3904@oc1711230544.ibm.com>
+References: <CAL1RGDWOitrKp31RuWLCV3ifUa=CKvZ2qZaRQJMcxdU6_eubww@mail.gmail.com>
+ <CAL1RGDVEqr9XzzcpG6wK49e209JtrhXGayFa5Qnz_NziLinR-g@mail.gmail.com>
+ <20120113181706.GA3904@oc1711230544.ibm.com>
+ <20120113.102518.924916400773191073.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201201131144.58044.thomas@fjellstrom.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20120113.102518.924916400773191073.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 12011318-8936-0000-0000-0000059F55B0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is there chance this driver will ever be stable? After more than two years I'm 
-starting to get extremely frustrated. I don't really have the option at the 
-moment to get a new card, otherwise I would, likely a non marvell based 
-device.
+On Fri, Jan 13, 2012 at 10:25:18AM -0800, David Miller wrote:
+> From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+> Date: Fri, 13 Jan 2012 16:17:06 -0200
+> 
+> > Is this going through your tree? In patchwork, its state is "Not
+> > Applicable".
+> 
+> There was an active RDS maintainer, though I haven't seen patches
+> from that person in a while.
+> 
 
-It actually managed to last 10 days this time though. Which is a record. The 
-interesting thing is there are no warnings or errors in dmesg coming from the 
-mvsas driver or scsi code. All that's happened is processes lock up when 
-trying to write. Reading seems to be fine.
+Hi, David.
 
-Just to refresh everyone's memory, it's a AOC-SASLP-MV8 card, has a 
-MV64460/64461/64462 chipset. And I have 7 (seagate 7200.12 SATA drives hooked 
-up).
+Venkat is the current RDS maintainer and he has Acked the patch.
 
--- 
-Thomas Fjellstrom
-thomas@fjellstrom.ca
+Thanks.
+Cascardo.
+
