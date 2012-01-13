@@ -1,296 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab2ALX7o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 18:59:44 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:34006 "EHLO
+	id S1756236Ab2AMADx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 19:03:53 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:60814 "EHLO
 	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab2ALX7l convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756073Ab2AMADt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 18:59:41 -0500
+	Thu, 12 Jan 2012 19:03:49 -0500
 MIME-Version: 1.0
-In-Reply-To: <4F0F8029.9030508@xenotime.net>
+In-Reply-To: <CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
 References: <1326411506-16894-1-git-send-email-wad@chromium.org>
-	<1326411506-16894-2-git-send-email-wad@chromium.org>
-	<4F0F8029.9030508@xenotime.net>
-Date: Thu, 12 Jan 2012 17:59:39 -0600
-Message-ID: <CABqD9hZtOGa72RVsaur-t+UJRN0sd92Vj8yZDsu1FsPK7jQbGg@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] seccomp_filters: system call filtering using BPF
+	<CA+55aFz4mJU2E2BPzZyVQ52V_ytg_8fyAH+BV_uYHVXBM2wqDw@mail.gmail.com>
+Date: Thu, 12 Jan 2012 18:03:47 -0600
+Message-ID: <CABqD9hZFBY-S4ke1swtcYuuLKsgz73hx755niPirTivWBt9kuw@mail.gmail.com>
+Subject: Re: [PATCH PLACEHOLDER 1/3] fs/exec: "always_unprivileged" patch
 From: Will Drewry <wad@chromium.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>, luto@mit.edu
 Cc: linux-kernel@vger.kernel.org, keescook@chromium.org,
         john.johansen@canonical.com, serge.hallyn@canonical.com,
         coreyb@linux.vnet.ibm.com, pmoore@redhat.com, eparis@redhat.com,
-        djm@mindrot.org, torvalds@linux-foundation.org, segoon@openwall.com,
-        rostedt@goodmis.org, jmorris@namei.org, scarybeasts@gmail.com,
-        avi@redhat.com, penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk,
-        luto@mit.edu, mingo@elte.hu, akpm@linux-foundation.org, khilman@ti.com,
-        borislav.petkov@amd.com, amwang@redhat.com, oleg@redhat.com,
-        ak@linux.intel.com, eric.dumazet@gmail.com, gregkh@suse.de,
-        dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net, alan@lxorguk.ukuu.org.uk
+        djm@mindrot.org, segoon@openwall.com, rostedt@goodmis.org,
+        jmorris@namei.org, scarybeasts@gmail.com, avi@redhat.com,
+        penberg@cs.helsinki.fi, viro@zeniv.linux.org.uk, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, oleg@redhat.com, ak@linux.intel.com,
+        eric.dumazet@gmail.com, gregkh@suse.de, dhowells@redhat.com,
+        daniel.lezcano@free.fr, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, olofj@chromium.org,
+        mhalcrow@google.com, dlaor@redhat.com, corbet@lwn.net,
+        alan@lxorguk.ukuu.org.uk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 6:51 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On 01/12/2012 03:38 PM, Will Drewry wrote:
->>  include/linux/prctl.h   |    3 +
->>  include/linux/seccomp.h |   68 +++++-
->>  kernel/Makefile         |    1 +
->>  kernel/fork.c           |    4 +
->>  kernel/seccomp.c        |    8 +
->>  kernel/seccomp_filter.c |  620 +++++++++++++++++++++++++++++++++++++++++++++++
->>  kernel/sys.c            |    4 +
->>  security/Kconfig        |   12 +
->>  8 files changed, 717 insertions(+), 3 deletions(-)
->>  create mode 100644 kernel/seccomp_filter.c
->>
->> diff --git a/include/linux/seccomp.h b/include/linux/seccomp.h
->> index cc7a4e9..0296871 100644
->> --- a/include/linux/seccomp.h
->> +++ b/include/linux/seccomp.h
->> @@ -5,9 +5,28 @@
->>  #ifdef CONFIG_SECCOMP
->>
->>  #include <linux/thread_info.h>
->> +#include <linux/types.h>
->>  #include <asm/seccomp.h>
->>
->> -typedef struct { int mode; } seccomp_t;
->> +struct seccomp_filter;
->> +/**
->> + * struct seccomp_struct - the state of a seccomp'ed process
->> + *
->> + * @mode:
->> + *     if this is 0, seccomp is not in use.
->> + *             is 1, the process is under standard seccomp rules.
->> + *             is 2, the process is only allowed to make system calls where
->> + *                   associated filters evaluate successfully.
->> + * @filter: Metadata for filter if using CONFIG_SECCOMP_FILTER.
->> + *          @filter must only be accessed from the context of current as there
->> + *          is no guard.
->> + */
->> +typedef struct seccomp_struct {
->> +     int mode;
->> +#ifdef CONFIG_SECCOMP_FILTER
->> +     struct seccomp_filter *filter;
->> +#endif
->> +} seccomp_t;
->>
->>  extern void __secure_computing(int);
->>  static inline void secure_computing(int this_syscall)
->> @@ -28,8 +47,7 @@ static inline int seccomp_mode(seccomp_t *s)
->>
->>  #include <linux/errno.h>
->>
->> -typedef struct { } seccomp_t;
->> -
->> +typedef struct seccomp_struct { } seccomp_t;
->>  #define secure_computing(x) do { } while (0)
->>
->>  static inline long prctl_get_seccomp(void)
->> @@ -49,4 +67,48 @@ static inline int seccomp_mode(seccomp_t *s)
->>
->>  #endif /* CONFIG_SECCOMP */
->>
->> +#ifdef CONFIG_SECCOMP_FILTER
->> +
->> +
->> +extern long prctl_attach_seccomp_filter(char __user *);
->> +
->> +extern struct seccomp_filter *get_seccomp_filter(struct seccomp_filter *);
->> +extern void put_seccomp_filter(struct seccomp_filter *);
->> +
->> +extern int seccomp_test_filters(int);
->> +extern void seccomp_filter_log_failure(int);
->> +extern void seccomp_struct_fork(struct seccomp_struct *child,
->> +                             const struct seccomp_struct *parent);
->> +
->> +static inline void seccomp_struct_init_task(struct seccomp_struct *seccomp)
->> +{
->> +     seccomp->mode = 0;
->> +     seccomp->filter = NULL;
->> +}
->> +
->> +/* No locking is needed here because the task_struct will
->> + * have no parallel consumers.
->> + */
+On Thu, Jan 12, 2012 at 5:47 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Jan 12, 2012 at 3:38 PM, Will Drewry <wad@chromium.org> wrote:
+>> This patch is a placeholder until Andy's (luto@mit.edu) patch arrives
+>> implementing Linus's proposal for applying a "this is a process that has
+>> *no* extra privileges at all, and can never get them".
 >
-> (in multiple places:) Kernel multi-line comment style is:
+> I think we can simplify and improve the naming/logic by just saying
+> "can't change privileges".
 >
-> /*
->  * first line of text
->  * more stuff
->  */
-
-Thanks! I'll roll through and clean them all up.  My apologies!
-
->> +static inline void seccomp_struct_free_task(struct seccomp_struct *seccomp)
->> +{
->> +     put_seccomp_filter(seccomp->filter);
->> +     seccomp->filter = NULL;
->> +}
->> +
->> +#else  /* CONFIG_SECCOMP_FILTER */
->> +
->> +#include <linux/errno.h>
->> +
->> +struct seccomp_filter { };
->> +/* Macros consume the unused dereference by the caller. */
->> +#define seccomp_struct_init_task(_seccomp) do { } while (0);
->> +#define seccomp_struct_fork(_tsk, _orig) do { } while (0);
->> +#define seccomp_struct_free_task(_seccomp) do { } while (0);
->> +
->> +static inline long prctl_attach_seccomp_filter(char __user *a2)
->> +{
->> +     return -ENOSYS;
->> +}
->> +
->> +#endif  /* CONFIG_SECCOMP_FILTER */
->>  #endif /* _LINUX_SECCOMP_H */
+> I'd argue that that even includes "can't drop them", just to make it
+> really clear what the rules are.
 >
->
->> diff --git a/kernel/seccomp.c b/kernel/seccomp.c
->> index 57d4b13..78719be 100644
->> --- a/kernel/seccomp.c
->> +++ b/kernel/seccomp.c
->> @@ -47,6 +47,14 @@ void __secure_computing(int this_syscall)
->>                               return;
->>               } while (*++syscall);
->>               break;
->> +#ifdef CONFIG_SECCOMP_FILTER
->> +     case 2:
->
-> Can we get macros (defines) for these @modes instead of using
-> inline constants?
+> So the usage model would be to first simply set the privileges to
+> whatever you want the sandbox to be, and then enter the restricted
+> mode.
 
-Certainly!
+That sounds ideal to me.  This placeholder is certainly insufficient
+then. I'll keep tweaking this patch then until its successor emerges.
 
->> +             if (seccomp_test_filters(this_syscall) == 0)
->> +                     return;
->> +
->> +             seccomp_filter_log_failure(this_syscall);
->> +             break;
->> +#endif
->>       default:
->>               BUG();
->>       }
->> diff --git a/kernel/seccomp_filter.c b/kernel/seccomp_filter.c
->> new file mode 100644
->> index 0000000..108a3f3
->> --- /dev/null
->> +++ b/kernel/seccomp_filter.c
->> @@ -0,0 +1,620 @@
->> +/* bpf program-based system call filtering
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License as published by
->> + * the Free Software Foundation; either version 2 of the License, or
->> + * (at your option) any later version.
->> + *
->> + * This program is distributed in the hope that it will be useful,
->> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
->> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
->> + * GNU General Public License for more details.
->> + *
->> + * You should have received a copy of the GNU General Public License
->> + * along with this program; if not, write to the Free Software
->> + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
->> + *
->> + * Copyright (C) 2011 The Chromium OS Authors <chromium-os-dev@chromium.org>
->> + */
->> +
-
-Aside from being a year off, is there a current style?  I just went
-off of an existing file.
-
->
->> +/* seccomp_struct_fork: manages inheritance on fork
->
-> /**
->  * seccomp_struct_fork - manages inheritance on fork
-
-Thanks - sorry!
-
->> + * @child: forkee's seccomp_struct
->> + * @parent: forker's seccomp_struct
->> + * Ensures that @child inherit a seccomp_filter iff seccomp is enabled
->> + * and the set of filters is marked as 'enabled'.
->> + */
->> +void seccomp_struct_fork(struct seccomp_struct *child,
->> +                      const struct seccomp_struct *parent)
->> +{
->> +     if (!parent->mode)
->> +             return;
->> +     child->mode = parent->mode;
->> +     child->filter = get_seccomp_filter(parent->filter);
->> +}
->> +
->> +/* Returns a pointer to the BPF evaluator after checking the offset and size
->> + * boundaries.  The signature almost matches the signature from
->> + * net/core/filter.c with the hopes of sharing code in the future.
->
-> Use kernel multi-line comment style.
-
-Of course.
-
->> + */
->> +static const void *load_pointer(const u8 *buf, size_t buflen,
->> +                             int offset, size_t size,
->> +                             void *unused)
->> +{
->> +     if (offset >= buflen)
->> +             goto fail;
->> +     if (offset < 0)
->> +             goto fail;
->> +     if (size > buflen - offset)
->> +             goto fail;
->> +     return buf + offset;
->> +fail:
->> +     return NULL;
->> +}
->> +
->
->> diff --git a/security/Kconfig b/security/Kconfig
->> index 51bd5a0..77b1106 100644
->> --- a/security/Kconfig
->> +++ b/security/Kconfig
->> @@ -84,6 +84,18 @@ config SECURITY_DMESG_RESTRICT
->>
->>         If you are unsure how to answer this question, answer N.
->>
->> +config SECCOMP_FILTER
->> +     bool "Enable seccomp-based system call filtering"
->> +     select SECCOMP
->> +     depends on EXPERIMENTAL
->> +     help
->> +       This kernel feature expands CONFIG_SECCOMP to allow computing
->> +       in environments with reduced kernel access dictated by a system
->> +       call filter, expressed in BPF, installed by the application itself
->> +       through prctl(2).
->
-> This help text is only useful to someone who already knows what it does/means
-> IMO.
-
-I'll attempt to clean that up so it makes actual sense to those without context!
-
->> +
->> +       See Documentation/prctl/seccomp_filter.txt for more detail.
->
-> Yes, I'll look at that..
-
-Awesome - thanks!
-
->> +
->>  config SECURITY
->>       bool "Enable different security models"
->>       depends on SYSFS
->
->
-> --
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks!
+will
