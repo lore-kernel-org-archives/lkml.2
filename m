@@ -1,47 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758919Ab2AMT1h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 14:27:37 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:53124 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753585Ab2AMT1d (ORCPT
+	id S1758936Ab2AMTjc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 14:39:32 -0500
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:51472 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753649Ab2AMTj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 14:27:33 -0500
+	Fri, 13 Jan 2012 14:39:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <7vaa5rzaax.fsf_-_@alter.siamese.dyndns.org>
-References: <20120109073727.GF22134@opensource.wolfsonmicro.com>
- <CA+55aFyhoh0rT_ujuE1w3RpuR7kqivYFwPpm66VC-xtq1PiGUQ@mail.gmail.com>
- <20120110184530.GE7164@opensource.wolfsonmicro.com> <CA+55aFxXb7wqfrpozS6iH0k25y-+Uy8_Tavv59JXMhaWrjXLaw@mail.gmail.com>
- <20120110222711.GK7164@opensource.wolfsonmicro.com> <CA+55aFxvQF=Bm4ae6euB_UO8otMCuN9Lv37Zn3TpE-L7JH3Kzw@mail.gmail.com>
- <20120111184026.GA23952@windriver.com> <7vaa5rzaax.fsf_-_@alter.siamese.dyndns.org>
-From: Nguyen Thai Ngoc Duy <pclouds@gmail.com>
-Date: Sat, 14 Jan 2012 02:27:01 +0700
-Message-ID: <CACsJy8BmFgssTAh=1U7JgBsGG-tSaWXQzZeODND3icXY3QUxug@mail.gmail.com>
-Subject: Re: [PATCH] merge: Make merge strategy message follow the diffstat
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org,
-        Git Mailing List <git@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CA+55aFyCKAY97zK=4u-AHvQyh2U1ryYybQEmgaRR+kc-d2fLhA@mail.gmail.com>
+References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
+ <20120113164547.GA22061@redhat.com> <20120113182422.28e648fb@pyramind.ukuu.org.uk>
+ <CALCETrX_nA4MtjDCKdfwJBOO6QEyzk_6nbr5Ou6QqkXcq2rTPQ@mail.gmail.com> <CA+55aFyCKAY97zK=4u-AHvQyh2U1ryYybQEmgaRR+kc-d2fLhA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 13 Jan 2012 11:39:06 -0800
+Message-ID: <CALCETrWOdEnTLhjdgjSc0d=8j4q3JeRz1g_wYR9_uwJP=iimcw@mail.gmail.com>
+Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
+ granting privs
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Oleg Nesterov <oleg@redhat.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        keescook@chromium.org, john.johansen@canonical.com,
+        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
+        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
+        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
+        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
+        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
+        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
+        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
+        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
+        corbet@lwn.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 14, 2012 at 2:12 AM, Junio C Hamano <gitster@pobox.com> wrote:
-> Paul Gortmaker <paul.gortmaker@windriver.com> writes:
->
->> By moving the message after the diffstat, there is a better chance that
->> people will be aware they've done a pointless merge commit.
+On Fri, Jan 13, 2012 at 11:12 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Fri, Jan 13, 2012 at 11:00 AM, Andy Lutomirski <luto@amacapital.net> wrote:
 >>
->> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> Changing it to fail the exec when a transition would occur will make
+>> seccomp considerably less useful to selinux users -- the presence of
+>> MAC policy on a program (regardless of what that policy is) will make
+>> it unusable inside a sandbox.
 >
-> I think the goal of the change may be worthy
+> I don't agree. I think that's exactly what we want sandboxing for, to
+> avoid any kind of subtle security issues.
+>
+> And in 99.99% of all sandboxes, you would never ever want to execute
+> something with a different MAC policy on it. In fact, most of the
+> whole point of the sandboxing tends to be to make sure that the user
+> stays inside the exact *small* environment that was provided just for
+> that thing.
 
-Still, diffstat from a fetch/pull is sometimes too verbose. It'd be
-better if we have something that fit in one screen (dirstat or maybe
-just a first few lines from diffstat then ellipsis) then refer users
-to "git diff --stat HEAD@{1}" for more detail stat.
--- 
-Duy
+Some day I want to run entire fancy desktop apps inside
+non-root-controlled sandboxes.  We're not there yet, but we're not
+*that* far.  Also, running things like MATLAB inside a chroot or mount
+namespace is very useful (I've done it -- there are MATLAB programs
+with remarkable dependencies on very particular versions of system
+libraries), and being able to do it without custom setuid wrappers to
+set everything up would be nice.
+
+>
+> So I bet the google chrome people are not at all interested in
+> "running random binaries", and might want execve() very much for
+> "running some specific binaries that we ship with or install from the
+> browser".
+
+I want to be able to run "magic_seccomp_sandbox gv somefile.ps".  And
+I want that to still work even if my distro gets fancy and uses
+selinux policy to prevent gv from accessing the network (which would
+not be an unreasonable thing to do).  The chromium project already has
+a little seccomp wrapper that can (sort of) do this.
+
+>
+> So I really think that the *only* valid model is the "fail the execve
+> on any changes", not the "mnt-nosuid" approach of trying to run things
+> with the wrong permissions and get perhaps odd results. And I think it
+> works even - and perhaps *especially* - in models like selinux or
+> apparmor that do have a lot of "implicit MAC knowledge" on specific
+> binaries.
+
+Is the current exec_no_trans check enough for you?  With my patch,
+selinux can already block the execve if it wants.  (The policy is the
+same as it would be if a program explicitly asked to run the new
+executable with an unchanged security context.)  I'd be happy to fail
+the exec in AppArmor, and then maybe AppArmor will change its mind
+if/when users get annoyed :)
+
+--Andy
