@@ -1,67 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753517Ab2AMGdd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 01:33:33 -0500
-Received: from acsinet15.oracle.com ([141.146.126.227]:45201 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab2AMGda (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 01:33:30 -0500
-Date: Fri, 13 Jan 2012 09:33:15 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Richard Purdie <rpurdie@rpsys.net>, NeilBrown <neilb@suse.de>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] leds: cleanup error handling in tca6507_probe()
-Message-ID: <20120113063315.GB23737@elgon.mountain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4F0FD02E.00E3,ss=1,re=0.000,fgs=0
+	id S1752778Ab2AMG6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 01:58:33 -0500
+Received: from victor.provo.novell.com ([137.65.250.26]:55213 "EHLO
+	victor.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab2AMG6c (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Fri, 13 Jan 2012 01:58:32 -0500
+Subject: Re: high speed cams are not working on usbip
+From: joeyli <jlee@suse.com>
+To: David Chang <dchang@suse.com>
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de, devel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org,
+        nagarjun kommineni <nagarjunkommineni@gmail.com>
+In-Reply-To: <CAKPZvrY_Bh95+bZX52yrM2+ODFm_U40i3E461xW-ho=Z-xPM4g@mail.gmail.com>
+References: <CAKPZvrbFV5oR8tHJEYUzBhC7Z4pSaCXdG_3BGD0jK-6_A3nmiw@mail.gmail.com>
+	 <1326192547.11926.5.camel@linux-s257.site>
+	 <CAL-cBk011b4QbSRRuKxbZhNKxQQ-DkRHvq34Ua881h+AKXY_NQ@mail.gmail.com>
+	 <CAKPZvrZdw_n_JRw=WvUXEwO6E8HtE=tgQo0G5MCERbwjOY+Fgw@mail.gmail.com>
+	 <CAKPZvrY_Bh95+bZX52yrM2+ODFm_U40i3E461xW-ho=Z-xPM4g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Jan 2012 14:54:47 +0800
+Message-ID: <1326437687.12400.45.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just a small tidy-up.
+Hi David, 
 
-1) There is a NULL dereference if the tca allocation fails.
-2) The call to cancel_work_sync() isn't needed because we haven't
-   scheduled any work.
-3) The call to i2c_set_clientdata() isn't needed because the core
-   handles that automatically if probe() fails.
-4) I added some curly braces for style reasons.
+Per your experience, what is the limit resolution for playing smoothly.
+Do you think this is relate to the protocol of usbip?
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-diff --git a/drivers/leds/leds-tca6507.c b/drivers/leds/leds-tca6507.c
-index 133f89f..ec06a81 100644
---- a/drivers/leds/leds-tca6507.c
-+++ b/drivers/leds/leds-tca6507.c
-@@ -687,10 +687,9 @@ static int __devinit tca6507_probe(struct i2c_client *client,
- 			NUM_LEDS);
- 		return -ENODEV;
- 	}
--	err = -ENOMEM;
- 	tca = kzalloc(sizeof(*tca), GFP_KERNEL);
- 	if (!tca)
--		goto exit;
-+		return -ENOMEM;
- 
- 	tca->client = client;
- 	INIT_WORK(&tca->work, tca6507_work);
-@@ -724,11 +723,10 @@ static int __devinit tca6507_probe(struct i2c_client *client,
- 
- 	return 0;
- exit:
--	while (i--)
-+	while (i--) {
- 		if (tca->leds[i].led_cdev.name)
- 			led_classdev_unregister(&tca->leds[i].led_cdev);
--	cancel_work_sync(&tca->work);
--	i2c_set_clientdata(client, NULL);
-+	}
- 	kfree(tca);
- 	return err;
- }
+Thanks
+Joey Lee
+
+於 三，2012-01-11 於 18:05 +0530，nagarjun kommineni 提到：
+> 
+> Hi,
+> I tested it on 3.1.4
+> 
+> 2012/1/11 nagarjun kommineni <nagarjunkommineni@gmail.com>
+>         hi,
+>         these are the my test specifications.
+>         
+>         OS:            Scientific Linux 6.1 (default kernel 2.6.32)
+>         Kernel:       3.1.4 (I have built it)
+>         Web Cam:  Logitech Pro 9000
+>         Test App:   Gstreamer
+>         
+>         To see the web cam output I have used the Gstreamer  with the
+>         following command.
+>         gst-launch v4l2src !
+>         video/x-raw-yuv,width=160,height=120,framerate=15/1 !
+>         ffmpegcolorspace ! autovideosink
+>         
+>         my cam supported resloutions are 160*120, 176*144, 320*240,
+>         352*288, 640*480, 800*600, 960*720, 1600*1200.
+>         
+>         it works fine upto 320*240, beyond this it doesn't work.
+>         
+>         
+>         2012/1/10 David Chang <dchang@suse.com>
+>                 Hi Joey,
+>                 
+>                 2012/1/10 joeyli <jlee@suse.com>:
+>                 > 於 二，2012-01-10 於 13:46 +0530，nagarjun kommineni
+>                 提到：
+>                 >> Hi,
+>                 >>
+>                 >> problem with usbip in drivers/staging/usbip
+>                 >>
+>                 >>  I have configured one pc as server and one as
+>                 client, with this
+>                 >> configuration high speed web cams are not working
+>                 for higher
+>                 >> resolutions.
+>                 >>
+>                 >
+>                 > How "high" does this web's speed?
+>                 >
+>                 >> please have a look at this problem.
+>                 >>
+>                 >
+>                 > David,
+>                 > as I remember you test webcam in old kernel before?
+>                 looks works fine.
+>                 
+>                 
+>                 Yes, but I would suggest using lower resolution.
+>                 
+>                 Regards,
+>                 David
+>                 >
+>                 >
+>                 > Thanks
+>                 > Joey Lee
+>                 >
+>                 >
+>                 > --
+>                 > To unsubscribe from this list: send the line
+>                 "unsubscribe linux-kernel" in
+>                 > the body of a message to majordomo@vger.kernel.org
+>                 > More majordomo info at
+>                  http://vger.kernel.org/majordomo-info.html
+>                 > Please read the FAQ at  http://www.tux.org/lkml/
+>         
+>         
+>         
+>         
+>         -- 
+>         Regards,
+>         Nagarjuna Kommineni.
+>         
+>         
+> 
+> 
+> 
+> -- 
+> Regards,
+> Nagarjuna Kommineni.
+> 
+> 
+
+
