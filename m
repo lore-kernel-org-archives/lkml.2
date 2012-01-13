@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892Ab2AMTNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 14:13:04 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:51648 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753652Ab2AMTNA (ORCPT
+	id S1758900Ab2AMTNl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 14:13:41 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:55280 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758822Ab2AMTNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 14:13:00 -0500
+	Fri, 13 Jan 2012 14:13:39 -0500
+Message-ID: <4F108235.80104@atmel.com>
+Date: Fri, 13 Jan 2012 20:12:53 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:9.0) Gecko/20111229 Thunderbird/9.0
 MIME-Version: 1.0
-In-Reply-To: <CALCETrX_nA4MtjDCKdfwJBOO6QEyzk_6nbr5Ou6QqkXcq2rTPQ@mail.gmail.com>
-References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
- <20120113164547.GA22061@redhat.com> <20120113182422.28e648fb@pyramind.ukuu.org.uk>
- <CALCETrX_nA4MtjDCKdfwJBOO6QEyzk_6nbr5Ou6QqkXcq2rTPQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 13 Jan 2012 11:12:37 -0800
-X-Google-Sender-Auth: P6A3afl6033_uin_8CbmcUrvZww
-Message-ID: <CA+55aFyCKAY97zK=4u-AHvQyh2U1ryYybQEmgaRR+kc-d2fLhA@mail.gmail.com>
-Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
- granting privs
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Oleg Nesterov <oleg@redhat.com>,
-        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@mit.edu, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net
+To: Greg KH <gregkh@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        plagnioj@jcrosoft.com, linux@maxim.org.za,
+        linux-arm-kernel@lists.infradead.org, patrice.vilchez@atmel.com
+Subject: Re: [PATCH RFC] ARM: at91: removal of CAP9 SoC family
+References: <1325864033-20012-1-git-send-email-nicolas.ferre@atmel.com> <4F101137.1020804@atmel.com> <20120113181637.GA30300@suse.de>
+In-Reply-To: <20120113181637.GA30300@suse.de>
+X-Enigmail-Version: 1.3.4
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 11:00 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->
-> Changing it to fail the exec when a transition would occur will make
-> seccomp considerably less useful to selinux users -- the presence of
-> MAC policy on a program (regardless of what that policy is) will make
-> it unusable inside a sandbox.
+On 01/13/2012 07:16 PM, Greg KH :
+> On Fri, Jan 13, 2012 at 12:10:47PM +0100, Nicolas Ferre wrote:
+>> On 01/06/2012 04:33 PM, Nicolas Ferre :
+>>> Atmel CAP9 family is not maintained well and products may be
+>>> difficult to find now. It will allow to save workforce and
+>>> remove LOC during current cleanup process.
+>>>
+>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> ---
+>>>  Documentation/feature-removal-schedule.txt |   14 ++++++++++++++
+>>>  1 files changed, 14 insertions(+), 0 deletions(-)
+>>
+>> Hi Andrew, Greg,
+>>
+>> Can you please take this patch or is somebody else in charge of this file?
+> 
+> Why wouldn't the maintainers of the feature you are saying is going away
+> be the ones responsible for submitting this?
 
-I don't agree. I think that's exactly what we want sandboxing for, to
-avoid any kind of subtle security issues.
+Actually, I am the guy ;-)
 
-And in 99.99% of all sandboxes, you would never ever want to execute
-something with a different MAC policy on it. In fact, most of the
-whole point of the sandboxing tends to be to make sure that the user
-stays inside the exact *small* environment that was provided just for
-that thing.
+>> It it is going to mainline through you, can you add also:
+>>
+>> Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+>>
+>> Or tell me to resend a complete patch.
+>>
+>> Thanks for your help, best regards,
+>>
+>>
+>>> diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+>>> index 3d84912..23dfea5 100644
+>>> --- a/Documentation/feature-removal-schedule.txt
+>>> +++ b/Documentation/feature-removal-schedule.txt
+>>> @@ -551,3 +551,17 @@ When:	3.5
+>>>  Why:	The iwlagn module has been renamed iwlwifi.  The alias will be around
+>>>  	for backward compatibility for several cycles and then dropped.
+>>>  Who:	Don Fry <donald.h.fry@intel.com>
+>>> +
+>>> +----------------------------
+>>> +
+>>> +What:	The CAP9 SoC family will be removed
+>>> +When:	3.4
+>>> +Files:	arch/arm/mach-at91/at91cap9.c
+>>> +	arch/arm/mach-at91/at91cap9_devices.c
+>>> +	arch/arm/mach-at91/include/mach/at91cap9.h
+>>> +	arch/arm/mach-at91/include/mach/at91cap9_matrix.h
+>>> +	arch/arm/mach-at91/include/mach/at91cap9_ddrsdr.h
+>>> +	arch/arm/mach-at91/board-cap9adk.c
+>>> +Why:	The code is not actively maintained and platforms are now hard to find.
+>>> +Who:	Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> +	Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+> 
+> Ok, why not send this through the ARM tree?  Why need me and Andrew?
 
-So I bet the google chrome people are not at all interested in
-"running random binaries", and might want execve() very much for
-"running some specific binaries that we ship with or install from the
-browser".
+Ok, I though there was a special procedure for this file. I will queue
+this one in arm-soc tree.
 
-So I really think that the *only* valid model is the "fail the execve
-on any changes", not the "mnt-nosuid" approach of trying to run things
-with the wrong permissions and get perhaps odd results. And I think it
-works even - and perhaps *especially* - in models like selinux or
-apparmor that do have a lot of "implicit MAC knowledge" on specific
-binaries.
-
-                    Linus
+Thanks, best regards,
+-- 
+Nicolas Ferre
