@@ -1,67 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab2AMAmj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Jan 2012 19:42:39 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:51707 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756472Ab2AMAmh (ORCPT
+	id S1756710Ab2AMAsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Jan 2012 19:48:04 -0500
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39304 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755057Ab2AMAr7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Jan 2012 19:42:37 -0500
-X-Sasl-enc: rEMD0b/AsOqrJKD6koH+5OCV2Yx6+nh1GFVCsYdnHPQ0 1326415356
-Date: Thu, 12 Jan 2012 16:39:29 -0800
-From: Greg KH <greg@kroah.com>
-To: Greg White <pcguy11@live.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: MULTIPLE WARNING: at =?utf-8?Q?fs=2Fsy?=
- =?utf-8?B?c2ZzL2Rpci5jOjQ1NSBzeXNmc19hZGRfb25l4oCP4oCP?=
-Message-ID: <20120113003929.GB16942@kroah.com>
-References: <SNT123-W206618A1B501B8A491DFADDB9F0@phx.gbl>
- <20120112213702.GA17405@kroah.com>
- <SNT123-W46318F430CE810154029D5DB9F0@phx.gbl>
+	Thu, 12 Jan 2012 19:47:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <SNT123-W46318F430CE810154029D5DB9F0@phx.gbl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4F0F7B60.5040701@gmail.com>
+References: <1326313337-24603-1-git-send-email-grant.likely@secretlab.ca>
+ <1326313337-24603-14-git-send-email-grant.likely@secretlab.ca>
+ <4F0DFC0F.2090005@gmail.com> <CACxGe6vVSO0cTgPurr6jFoo9QF_W02UaABOFYadCTQGU9dcwmg@mail.gmail.com>
+ <4F0F7B60.5040701@gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 12 Jan 2012 17:47:38 -0700
+X-Google-Sender-Auth: _D4rVma6c5UGwh_kJ9SaE84Zwas
+Message-ID: <CACxGe6vER6hTr0ez9_=bTL+F1n3DZHCa9Yc9fVGQ36i=X62sVQ@mail.gmail.com>
+Subject: Re: [RFC 13/14] irq_domain: Remove 'new' irq_domain in favour of the
+ ppc one
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
+        Russell King <linux@arm.linux.org.uk>, sfr@canb.auug.org.au,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 12, 2012 at 05:51:10PM -0600, Greg White wrote:
-> 
-> > On Thu, Jan 12, 2012 at 02:40:18PM -0600, Greg W wrote:
-> > >
-> > > Hi,
-> > >
-> > > I just installed Linux on my HP 6200 PC using UEFI. The Ubuntu lucid kernel caused my computer to freeze during shutdown and reboots. So I downloaded 3.1.6 from kernel.org and compiled my own kernel and it works fine except for the following messages in my dmesg:
-> > >
-> > > [2.295957] ------------[ cut here ]------------
-> > > [2.295962] WARNING: at fs/sysfs/dir.c:455 sysfs_add_one+0xc1/0xf0()
-> > > [2.295964] Hardware name: HP Compaq 6200 Pro Small Form Factor
-> > > [2.295966] sysfs: cannot create duplicate filename '/firmware/efi/vars/SlotPresent-ec87d643-eba4-4bb5-a1e5-3f3e36b20da9'
-> >
-> > This is a BIOS problem, with EFI, go complain to your manufacturer that
-> > they are creating multiple slots with the same name.
-> >
-> > > [2.296043] kobject_add_internal failed for
-> > > SlotPresent-ec87d643-eba4-4bb5-a1e5-3f3e36b20da9 with -EEXIST, don't try to register things with the same name in the same directory.
-> >
-> > See, the kernel told you this :)
-> >
-> > best of luck,
-> >
-> > greg k-h
-> 
-> Thank you for the clarification.  When I see WARNING: at
-> fs/sysfs/dir.c:455 sysfs_add_one+0xc1/0xf0() I think kernel problem. 
-> If I saw WARNING: BIOS is trying to register things with the same name
-> in the same directory, I would have thought BIOS issue.  Maybe you
-> could make the warning a little more clear the problem is in the BIOS
-> and not the kernel?
+On Thu, Jan 12, 2012 at 5:31 PM, Rob Herring <robherring2@gmail.com> wrote:
+> Adding lakml...
+>
+> On 01/11/2012 03:27 PM, Grant Likely wrote:
+>> On Wed, Jan 11, 2012 at 2:15 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>> Grant,
+>>>
+>>> On 01/11/2012 02:22 PM, Grant Likely wrote:
+>>>> This patch removes the simplistic implementation of irq_domains and enables
+>>>> the powerpc infrastructure for all irq_domain users.  The powerpc
+>>>> infrastructure includes support for complex mappings between Linux and
+>>>> hardware irq numbers, and can manage allocation of irq_descs.
+>>>>
+>>>> This patch also converts the few users of irq_domain_add()/irq_domain_del()
+>>>> to call irq_domain_add_legacy() instead.
+>>>
+>>> So what is the non-legacy way? Legacy implies we don't want to do it
+>>> that way. I guess until we remove all non-DT platforms with GIC we are
+>>> stuck with legacy. That seems like it could be a ways out until we get
+>>> there.
+>>
+>> Non-legacy is letting the irq_domain manage the irq_desc allocations.
+>> Some of the controllers will be easy to convert, some will be more
+>> difficult.  The primary thing that really blocks getting away from the
+>> legacy method is anything that expects hardcoded #defined irq numbers.
+>>  The goal is to convert all users over to the linear revmap method.
+>>
+>
+> So I gave this a spin on highbank. I ran into a couple problems.
+>
+> I had to revert "irqdesc: Consolidate irq reservation logic" which is in
+> your branch, but not this series. irq_alloc_desc_from was returning -EEXIST.
 
-Patches are always welcome :)
+Hmmm... I thought I sorted that out.  Thanks for letting me know.
 
-thanks,
+>
+> The GIC code did not work which I think is specific to using gic_of_init
+> which makes irq_start = -1. With that it still doesn't work. It dies in
+> gic_set_type... I've found one problem which I'll reply inline to, but I
+> think this is a dead end path anyway.
 
-greg k-h
+Haha, I'm not surprised.  That last patch was only compile tested on
+platforms using the gic.  I'm not surprised that I flubbed it.
+
+> You have removed the irq_alloc_descs call from the GIC which is a step
+> backwards. Several of the ARM DT enabled platforms are at the point they
+> can fully support dynamic virq base for each irqchip. I changed the
+> domain from legacy to linear and got things working.
+> The issue with
+
+I hadn't actually intended to remove the irq_alloc_descs in this
+patch.  That was a leftover hunk from when I was playing with going
+straight to irq_domain_add_linear().  For this specific patch, I'll
+put the alloc back in and test it that way.  A follow-on patch can do
+a proper conversion to the linear revmap.
+
+> linear is for SPARSE_IRQ. The default behavior on ARM for SPARSE_IRQ is
+> all nr_irqs are allocated at boot time before any controller is
+> initialized. The only platform with a GIC and requiring SPARSE_IRQ is
+> shmobile, but it is also the only one that calls irq_alloc_desc
+> functions for it's interrupts. So I think we are okay there. The problem
+> occurs when enabling SPARSE_IRQ for a non-DT platform with a GIC and
+> with irqchips that don't call irq_alloc_desc for their irqs. IMHO, this
+> should be an okay trade-off. There's no advantage to enabling SPARSE_IRQ
+> on ARM for platforms that don't require it. All the platforms with a GIC
+> have active work to convert to DT (except shmobile which I think is
+> okay), so it's a temporary issue.
+
+Actually, I believe Thomas' long term goal is to always enable
+SPARSE_IRQ and remove the option entirely, so it should still be
+properly resolved. I'll take a look next week if I don't get to it
+tomorrow.  I need to resurrect my vexpress qemu test environment so I
+can test the permutations.
+
+g.
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
