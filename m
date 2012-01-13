@@ -1,175 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759353Ab2AMWYV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 17:24:21 -0500
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55578 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754101Ab2AMWYT (ORCPT
+	id S1759371Ab2AMWYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 17:24:34 -0500
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37585 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754101Ab2AMWY3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 17:24:19 -0500
+	Fri, 13 Jan 2012 17:24:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
-References: <CA+55aFxP-Xhz2Yb+g6VsTAPs704oC_DhbuxSqbCGmmr_CCHoPg@mail.gmail.com>
-	<20120108221342.GA7058@ime.usp.br>
-	<CA+55aFxmj_+0eLYqKZb6qWb_Zc4E4R8WrmbsVgv5BbNwvnqouQ@mail.gmail.com>
-	<20120109112207.7f993845@jbarnes-desktop>
-	<CA+55aFzmL0FTp_w7RWA0+mqS7YBL5HoNS1WY=2zxURgnvkOcjw@mail.gmail.com>
-	<CAE9FiQVwbkxXbi4yFR4CCdpNr-bm2Bn13Jxap7mX6OrYbM+_kg@mail.gmail.com>
-	<CAOtrxKMH2iyWOOtYTYCsK5eH_ZZm9zrJyh30H_7HG-36+8k_iA@mail.gmail.com>
-	<CAE9FiQWg8k-_eHH-Erwn+iZgs-rDfPcSc7uPcF_h+1+mXVEVXQ@mail.gmail.com>
-	<CAOtrxKOZ1yuWaAYxjPLE2obwTkCfRytRFyQc3VuK9JmJLYVrqw@mail.gmail.com>
-	<CAE9FiQXCJobMuFWbyoWQpVup_pvKMuGpu7eotF0EJAx2_Ee7OQ@mail.gmail.com>
-	<20120113115946.GA10615@ime.usp.br>
-	<CAE9FiQX_koTHsjP8w=FyiSaBgY6QnzyWD43AVUW1d4MzViJXCg@mail.gmail.com>
-Date: Fri, 13 Jan 2012 14:24:19 -0800
-X-Google-Sender-Auth: s_H5RM6tdrKpLTjH5q-yVwKokfc
-Message-ID: <CAE9FiQW=fNrB4wL+iBY8MS07+=TqJRVEU=2Bm2eY6Y+p+60wKw@mail.gmail.com>
-Subject: Re: [Bug 41722] Clevo M5X0JE hangs in ACPI init
-From: Yinghai Lu <yinghai@kernel.org>
-To: =?ISO-8859-1?Q?Rog=E9rio_Brito?= <rbrito@ime.usp.br>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Edward Donovan <edward.donovan@numble.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?M=E1rcia_Coutinho_de_Brito?= <mcbrito@gmail.com>,
-        Ram Pai <linuxram@us.ibm.com>
-Content-Type: multipart/mixed; boundary=20cf303b431b6eb14804b67053df
+From: Ulrich Drepper <drepper@gmail.com>
+Date: Fri, 13 Jan 2012 17:24:07 -0500
+Message-ID: <CAOPLpQc_TfvtfJ0NL+4fsi2r_eW+4qWX+WbXrZ9BjGn44nAmBw@mail.gmail.com>
+Subject: Typo transferred from Intel manual
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf303b431b6eb14804b67053df
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+The arch/x86/lib/x86-opcode-map.txt file contains the line
 
-On Fri, Jan 13, 2012 at 9:29 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Jan 13, 2012 at 3:59 AM, Rog=E9rio Brito <rbrito@ime.usp.br> wrot=
-e:
->> Right now, I have Linus's tree, yours (cited above) and I am, up to now,
->> I had been compiling everything from Linus's v3.2 tag: both a vanilla
->> kernel, as asked by Bjorn and with the patch that I mentioned to Linus (=
-"the
->> one that makes things boot").
->>
->> If it applies (and newer kernels don't have things which your patch need=
-s),
->> I will keep working with Linus's v3.2 tag.
->
-> No problem, I will put that patch into for-pci2 for your conveniences.
+af: SCAS/W/D/Q rAX,Xv
 
-please check for-pci2 again, i put two cardbus related fixes there.
 
-or you can apply attached two patches.
+This is what the Intel manuals show, but it's not correct.  The 'X' stands for
 
-Thanks
+Memory addressed by the DS:rSI register pair (for example, MOVS, CMPS,
+OUTS, or LODS).
 
-Yinghai
 
---20cf303b431b6eb14804b67053df
-Content-Type: text/x-patch; charset=US-ASCII; name="disable_cardbus_mem1_pref.patch"
-Content-Disposition: attachment; filename="disable_cardbus_mem1_pref.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gxdrwuxv0
+On the other hand 'Y' means (also see the ae byte entry for SCASB):
 
-U3ViamVjdDogW1BBVENIXSBQQ0k6IERpc2FibGUgY2FyZGJ1cyBicmlkZ2UgTUVNMSBwcmVmIENU
-TAoKU29tZSBCSU9TIGVuYWJsZSBib3RoIHByZWYgZm9yIE1FTTAgYW5kIE1FTTEuCgpidXQgd2Ug
-YXNzdW1lIE1FTTEgaXMgbm9uLXByZWYuLi4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlp
-bmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJpdmVycy9wY2kvc2V0dXAtYnVzLmMgfCAgICA4ICsr
-KysrKysrCiAxIGZpbGUgY2hhbmdlZCwgOCBpbnNlcnRpb25zKCspCgpJbmRleDogbGludXgtMi42
-L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2Ry
-aXZlcnMvcGNpL3NldHVwLWJ1cy5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9wY2kvc2V0dXAtYnVz
-LmMKQEAgLTc3NCw2ICs3NzQsMTQgQEAgc3RhdGljIHZvaWQgcGNpX2J1c19zaXplX2NhcmRidXMo
-c3RydWN0CiAJaWYgKHJlYWxsb2NfaGVhZCkKIAkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBi
-cmlkZ2UsIGJfcmVzKzEsIHBjaV9jYXJkYnVzX2lvX3NpemUsIDAgLyogZG9udCBjYXJlICovKTsK
-IAorCS8qIE1FTTEgbXVzdCBub3QgYmUgcHJlZiBtbWlvICovCisJcGNpX3JlYWRfY29uZmlnX3dv
-cmQoYnJpZGdlLCBQQ0lfQ0JfQlJJREdFX0NPTlRST0wsICZjdHJsKTsKKwlpZiAoY3RybCAmIFBD
-SV9DQl9CUklER0VfQ1RMX1BSRUZFVENIX01FTTEpIHsKKwkJY3RybCAmPSB+UENJX0NCX0JSSURH
-RV9DVExfUFJFRkVUQ0hfTUVNMTsKKwkJcGNpX3dyaXRlX2NvbmZpZ193b3JkKGJyaWRnZSwgUENJ
-X0NCX0JSSURHRV9DT05UUk9MLCBjdHJsKTsKKwkJcGNpX3JlYWRfY29uZmlnX3dvcmQoYnJpZGdl
-LCBQQ0lfQ0JfQlJJREdFX0NPTlRST0wsICZjdHJsKTsKKwl9CisKIAkvKgogCSAqIENoZWNrIHdo
-ZXRoZXIgcHJlZmV0Y2hhYmxlIG1lbW9yeSBpcyBzdXBwb3J0ZWQKIAkgKiBieSB0aGlzIGJyaWRn
-ZS4K
---20cf303b431b6eb14804b67053df
-Content-Type: text/x-patch; charset=US-ASCII; name="fix_cardbus_optional_res.patch"
-Content-Disposition: attachment; filename="fix_cardbus_optional_res.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gxdrxkf71
+Memory addressed by the ES:rDI register pair (for example, MOVS, CMPS,
+INS, STOS, or SCAS).
 
-U3ViamVjdDogW1BBVENIXSBQQ0k6IEZpeCBjYXJkYnVzIGJyaWRnZSByZXNvdXJjZXMgYXMgb3B0
-aW9uYWwgc2l6ZSBoYW5kbGluZwoKV2Ugc2hvdWxkIG5vdCBzZXQgdGhlIHJlcXVlc3RlZCBzaXpl
-IHRvIC0yLgoKdGhhdCB3aWxsIGNvbmZ1c2UgdGhlIHJlc291cmNlIGxpc3Qgc29ydGluZyB3aXRo
-IGFsaWduIHdoZW4gU0laRUFMSUdOIGlzIHVzZWQuCgpDaGFuZ2UgdG8gU1RBUlRBTElHTiBhbmQg
-cGFzcyBhbGlnbiBmcm9tIHN0YXJ0LgoKV2UgYXJlIHNhZmUgdG8gZG8gdGhhdCBqdXN0IGFzIHdl
-IGRvIHRoYXQgcmVndWxhciBwY2kgYnJpZGdlLgoKSW4gdGhlIGxvbmcgcnVuLCB3ZSBzaG91bGQg
-anVzdCB0cmVhdCBjYXJkYnVzIGxpa2UgcmVndWxhciBwY2kgYnJpZGdlLgoKQWxzbyBmaXggd2hl
-biByZWFsbG9jIGlzIG5vdCBwYXNzZWQsIHNob3VsZCBrZWVwIHRoZSByZXF1ZXN0ZWQgc2l6ZS4K
-ClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogZHJp
-dmVycy9wY2kvc2V0dXAtYnVzLmMgfCAgIDcxICsrKysrKysrKysrKysrKysrKysrKysrKysrKy0t
-LS0tLS0tLS0tLS0tLS0tLS0tLQogMSBmaWxlIGNoYW5nZWQsIDQwIGluc2VydGlvbnMoKyksIDMx
-IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL3BjaS9zZXR1cC1idXMuYwo9
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9kcml2ZXJzL3BjaS9zZXR1cC1idXMuYworKysg
-bGludXgtMi42L2RyaXZlcnMvcGNpL3NldHVwLWJ1cy5jCkBAIC04OTEsMjEgKzg5MSwzMCBAQCBz
-dGF0aWMgdm9pZCBwY2lfYnVzX3NpemVfY2FyZGJ1cyhzdHJ1Y3QKIHsKIAlzdHJ1Y3QgcGNpX2Rl
-diAqYnJpZGdlID0gYnVzLT5zZWxmOwogCXN0cnVjdCByZXNvdXJjZSAqYl9yZXMgPSAmYnJpZGdl
-LT5yZXNvdXJjZVtQQ0lfQlJJREdFX1JFU09VUkNFU107CisJcmVzb3VyY2Vfc2l6ZV90IGJfcmVz
-XzNfc2l6ZSA9IHBjaV9jYXJkYnVzX21lbV9zaXplICogMjsKIAl1MTYgY3RybDsKIAogCS8qCiAJ
-ICogUmVzZXJ2ZSBzb21lIHJlc291cmNlcyBmb3IgQ2FyZEJ1cy4gIFdlIHJlc2VydmUKIAkgKiBh
-IGZpeGVkIGFtb3VudCBvZiBidXMgc3BhY2UgZm9yIENhcmRCdXMgYnJpZGdlcy4KIAkgKi8KLQli
-X3Jlc1swXS5zdGFydCA9IDA7Ci0JYl9yZXNbMF0uZmxhZ3MgfD0gSU9SRVNPVVJDRV9JTyB8IElP
-UkVTT1VSQ0VfU0laRUFMSUdOOwotCWlmIChyZWFsbG9jX2hlYWQpCi0JCWFkZF90b19saXN0KHJl
-YWxsb2NfaGVhZCwgYnJpZGdlLCBiX3JlcywgcGNpX2NhcmRidXNfaW9fc2l6ZSwgMCAvKiBkb250
-IGNhcmUgKi8pOwotCi0JYl9yZXNbMV0uc3RhcnQgPSAwOwotCWJfcmVzWzFdLmZsYWdzIHw9IElP
-UkVTT1VSQ0VfSU8gfCBJT1JFU09VUkNFX1NJWkVBTElHTjsKLQlpZiAocmVhbGxvY19oZWFkKQot
-CQlhZGRfdG9fbGlzdChyZWFsbG9jX2hlYWQsIGJyaWRnZSwgYl9yZXMrMSwgcGNpX2NhcmRidXNf
-aW9fc2l6ZSwgMCAvKiBkb250IGNhcmUgKi8pOworCWJfcmVzWzBdLnN0YXJ0ID0gcGNpX2NhcmRi
-dXNfaW9fc2l6ZTsKKwliX3Jlc1swXS5lbmQgPSBiX3Jlc1swXS5zdGFydCArIHBjaV9jYXJkYnVz
-X2lvX3NpemUgLSAxOworCWJfcmVzWzBdLmZsYWdzIHw9IElPUkVTT1VSQ0VfSU8gfCBJT1JFU09V
-UkNFX1NUQVJUQUxJR047CisJaWYgKHJlYWxsb2NfaGVhZCkgeworCQliX3Jlc1swXS5lbmQgLT0g
-cGNpX2NhcmRidXNfaW9fc2l6ZTsKKwkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBicmlkZ2Us
-IGJfcmVzLCBwY2lfY2FyZGJ1c19pb19zaXplLAorCQkJCXBjaV9jYXJkYnVzX2lvX3NpemUpOwor
-CX0KKworCWJfcmVzWzFdLnN0YXJ0ID0gcGNpX2NhcmRidXNfaW9fc2l6ZTsKKwliX3Jlc1sxXS5l
-bmQgPSBiX3Jlc1sxXS5zdGFydCArIHBjaV9jYXJkYnVzX2lvX3NpemUgLSAxOworCWJfcmVzWzFd
-LmZsYWdzIHw9IElPUkVTT1VSQ0VfSU8gfCBJT1JFU09VUkNFX1NUQVJUQUxJR047CisJaWYgKHJl
-YWxsb2NfaGVhZCkgeworCQliX3Jlc1sxXS5lbmQgLT0gcGNpX2NhcmRidXNfaW9fc2l6ZTsKKwkJ
-YWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBicmlkZ2UsIGJfcmVzKzEsIHBjaV9jYXJkYnVzX2lv
-X3NpemUsCisJCQkJIHBjaV9jYXJkYnVzX2lvX3NpemUpOworCX0KIAogCS8qIE1FTTEgbXVzdCBu
-b3QgYmUgcHJlZiBtbWlvICovCiAJcGNpX3JlYWRfY29uZmlnX3dvcmQoYnJpZGdlLCBQQ0lfQ0Jf
-QlJJREdFX0NPTlRST0wsICZjdHJsKTsKQEAgLTkzMiwyOCArOTQxLDI4IEBAIHN0YXRpYyB2b2lk
-IHBjaV9idXNfc2l6ZV9jYXJkYnVzKHN0cnVjdAogCSAqIHR3aWNlIHRoZSBzaXplLgogCSAqLwog
-CWlmIChjdHJsICYgUENJX0NCX0JSSURHRV9DVExfUFJFRkVUQ0hfTUVNMCkgewotCQliX3Jlc1sy
-XS5zdGFydCA9IDA7Ci0JCWJfcmVzWzJdLmZsYWdzIHw9IElPUkVTT1VSQ0VfTUVNIHwgSU9SRVNP
-VVJDRV9QUkVGRVRDSCB8IElPUkVTT1VSQ0VfU0laRUFMSUdOOwotCQlpZiAocmVhbGxvY19oZWFk
-KQotCQkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBicmlkZ2UsIGJfcmVzKzIsIHBjaV9jYXJk
-YnVzX21lbV9zaXplLCAwIC8qIGRvbnQgY2FyZSAqLyk7Ci0KLQkJYl9yZXNbM10uc3RhcnQgPSAw
-OwotCQliX3Jlc1szXS5mbGFncyB8PSBJT1JFU09VUkNFX01FTSB8IElPUkVTT1VSQ0VfU0laRUFM
-SUdOOwotCQlpZiAocmVhbGxvY19oZWFkKQotCQkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBi
-cmlkZ2UsIGJfcmVzKzMsIHBjaV9jYXJkYnVzX21lbV9zaXplLCAwIC8qIGRvbnQgY2FyZSAqLyk7
-Ci0JfSBlbHNlIHsKLQkJYl9yZXNbM10uc3RhcnQgPSAwOwotCQliX3Jlc1szXS5mbGFncyB8PSBJ
-T1JFU09VUkNFX01FTSB8IElPUkVTT1VSQ0VfU0laRUFMSUdOOwotCQlpZiAocmVhbGxvY19oZWFk
-KQotCQkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBicmlkZ2UsIGJfcmVzKzMsIHBjaV9jYXJk
-YnVzX21lbV9zaXplICogMiwgMCAvKiBkb250IGNhcmUgKi8pOwotCX0KLQotCS8qIHNldCB0aGUg
-c2l6ZSBvZiB0aGUgcmVzb3VyY2UgdG8gemVybywgc28gdGhhdCB0aGUgcmVzb3VyY2UgZG9lcyBu
-b3QKLQkgKiBnZXQgYXNzaWduZWQgZHVyaW5nIHJlcXVpcmVkLXJlc291cmNlIGFsbG9jYXRpb24g
-Y3ljbGUgYnV0IGdldHMgYXNzaWduZWQKLQkgKiBkdXJpbmcgdGhlIG9wdGlvbmFsLXJlc291cmNl
-IGFsbG9jYXRpb24gY3ljbGUuCi0gCSAqLwotCWJfcmVzWzBdLnN0YXJ0ID0gYl9yZXNbMV0uc3Rh
-cnQgPSBiX3Jlc1syXS5zdGFydCA9IGJfcmVzWzNdLnN0YXJ0ID0gMTsKLQliX3Jlc1swXS5lbmQg
-PSBiX3Jlc1sxXS5lbmQgPSBiX3Jlc1syXS5lbmQgPSBiX3Jlc1szXS5lbmQgPSAwOworCQliX3Jl
-c1syXS5zdGFydCA9IHBjaV9jYXJkYnVzX21lbV9zaXplOworCQliX3Jlc1syXS5lbmQgPSBiX3Jl
-c1syXS5zdGFydCArIHBjaV9jYXJkYnVzX21lbV9zaXplIC0gMTsKKwkJYl9yZXNbMl0uZmxhZ3Mg
-fD0gSU9SRVNPVVJDRV9NRU0gfCBJT1JFU09VUkNFX1BSRUZFVENIIHwKKwkJCQkgIElPUkVTT1VS
-Q0VfU1RBUlRBTElHTjsKKwkJaWYgKHJlYWxsb2NfaGVhZCkgeworCQkJYl9yZXNbMl0uZW5kIC09
-IHBjaV9jYXJkYnVzX21lbV9zaXplOworCQkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBicmlk
-Z2UsIGJfcmVzKzIsCisJCQkJIHBjaV9jYXJkYnVzX21lbV9zaXplLCBwY2lfY2FyZGJ1c19tZW1f
-c2l6ZSk7CisJCX0KKworCQkvKiByZWR1Y2UgdGhhdCB0byBoYWxmICovCisJCWJfcmVzXzNfc2l6
-ZSA9IHBjaV9jYXJkYnVzX21lbV9zaXplOworCX0KKworCWJfcmVzWzNdLnN0YXJ0ID0gcGNpX2Nh
-cmRidXNfbWVtX3NpemU7CisJYl9yZXNbM10uZW5kID0gYl9yZXNbM10uc3RhcnQgKyBiX3Jlc18z
-X3NpemUgLSAxOworCWJfcmVzWzNdLmZsYWdzIHw9IElPUkVTT1VSQ0VfTUVNIHwgSU9SRVNPVVJD
-RV9TVEFSVEFMSUdOOworCWlmIChyZWFsbG9jX2hlYWQpIHsKKwkJYl9yZXNbM10uZW5kIC09IGJf
-cmVzXzNfc2l6ZTsKKwkJYWRkX3RvX2xpc3QocmVhbGxvY19oZWFkLCBicmlkZ2UsIGJfcmVzKzMs
-IGJfcmVzXzNfc2l6ZSwKKwkJCQkgcGNpX2NhcmRidXNfbWVtX3NpemUpOworCX0KIH0KIAogdm9p
-ZCBfX3JlZiBfX3BjaV9idXNfc2l6ZV9icmlkZ2VzKHN0cnVjdCBwY2lfYnVzICpidXMsCg==
---20cf303b431b6eb14804b67053df--
+
+Hence the following patch should be applied:
+
+
+
+Signed-off-by: Ulrich Drepper <drepper@gmail.com>
+
+diff --git a/arch/x86/lib/x86-opcode-map.txt b/arch/x86/lib/x86-opcode-map.txt
+index 5b83c51..c292885 100644
+--- a/arch/x86/lib/x86-opcode-map.txt
++++ b/arch/x86/lib/x86-opcode-map.txt
+@@ -219,7 +219,7 @@ ab: STOS/W/D/Q Yv,rAX
+ ac: LODS/B AL,Xb
+ ad: LODS/W/D/Q rAX,Xv
+ ae: SCAS/B AL,Yb
+-af: SCAS/W/D/Q rAX,Xv
++af: SCAS/W/D/Q rAX,Yv
+ # 0xb0 - 0xbf
+ b0: MOV AL/R8L,Ib
+ b1: MOV CL/R9L,Ib
