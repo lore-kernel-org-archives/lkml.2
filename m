@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758367Ab2AMPgP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 10:36:15 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43359 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753019Ab2AMPgO (ORCPT
+	id S1758369Ab2AMPj1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:39:27 -0500
+Received: from mail-qw0-f53.google.com ([209.85.216.53]:58512 "EHLO
+	mail-qw0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752983Ab2AMPjZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 10:36:14 -0500
-Date: Fri, 13 Jan 2012 15:35:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-arm-kernel@lists.infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nicolas Pitre <nico@fluxnic.net>, moussaba@micron.com,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [RFC PATCH] proc: clear_refs: do not clear reserved pages
-Message-ID: <20120113153556.GY1068@n2100.arm.linux.org.uk>
-References: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
+	Fri, 13 Jan 2012 10:39:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1326467587-22218-1-git-send-email-will.deacon@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CA+5PVA7Yffs3-qdq6pSqDKLLngU7kBsdE92e31NnAM0=wrwp4w@mail.gmail.com>
+References: <1326402935-31002-1-git-send-email-taysom@chromium.org>
+	<CA+5PVA7Yffs3-qdq6pSqDKLLngU7kBsdE92e31NnAM0=wrwp4w@mail.gmail.com>
+Date: Fri, 13 Jan 2012 07:39:25 -0800
+Message-ID: <CAKwO_5EjZCOKLYu2eZz8guTSRJw6-A5SHp23dEhW3cSo6P3KLQ@mail.gmail.com>
+Subject: Re: [PATCH] fs: Fix mod_timer crash when removing USB sticks
+From: Paul Taysom <taysom@google.com>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Paul Taysom <taysom@chromium.org>, Mandeep Baines <msb@chromium.org>,
+        Olof Johansson <olofj@chromium.org>, Greg KH <greg@kroah.com>,
+        Jens Axboe <axboe@kernel.dk>, Theodore Tso <tytso@google.com>,
+        Andrew Morton <akpm@google.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+X-System-Of-Record: true
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 13, 2012 at 03:13:07PM +0000, Will Deacon wrote:
-> /proc/pid/clear_refs is used to clear the Referenced and YOUNG bits for
-> pages and corresponding page table entries of the task with PID pid,
-> which includes any special mappings inserted into the page tables in
-> order to provide things like vDSOs and user helper functions.
-> 
-> On ARM this causes a problem because the vectors page is mapped as a
-> global mapping and since ec706dab ("ARM: add a vma entry for the user
-> accessible vector page"), a VMA is also inserted into each task for this
-> page to aid unwinding through signals and syscall restarts. Since the
-> vectors page is required for handling faults, clearing the YOUNG bit
-> (and subsequently writing a faulting pte) means that we lose the vectors
-> page *globally* and cannot fault it back in. This results in a system
-> deadlock on the next exception.
-> 
-> This patch avoids clearing the aforementioned bits for reserved pages,
-> therefore leaving the vectors page intact on ARM. Since reserved pages
-> are not candidates for swap, this change should not have any impact on
-> the usefulness of clear_refs.
+On Thu, Jan 12, 2012 at 9:42 PM, Josh Boyer <jwboyer@gmail.com> wrote:
+> On Thu, Jan 12, 2012 at 4:15 PM, Paul Taysom <taysom@chromium.org> wrote:
+>> From: Paul Taysom <taysom@google.com>
+>>
+>> A USB stick with a ext file system on it, would occasionally crash
+>> when the stick was pulled.
+>>
+>> The problem was a timer was being set on the Backing Device Interface,
+>> bdi, after the USB device had been removed and the bdi had been
+>> unregistered. The bdi would then be later reinitialized by zeroing
+>> the timer without removing from the timer from the timer queue.
+>> This would eventually result in a kernel crash (NULL ptr dereference).
+>
+> What backtrace did you see when it crashed?  There have been a number of
+> reports where sd_revalidate_disk is at the top of the backtrace and this sounds
+> like it might be related.
+>
+> josh
 
-Having just looked at mm/swapfile.c, what ensures that we don't try to swap
-the vectors page out?
+I had several different crash traces some can be seen in
+http://crosbug.com/24165
 
-I thought that VM_IO or VM_RESERVED once guaranteed that the vma wouldn't
-be scanned, but I don't see anything in there which tests these flags.
-As a result, it seems to me that the original patch is wrong, and we need
-to keep the vectors page completely out of the vma list to prevent it
-ever being made old.
-
-Maybe the MM gurus can comment?
+The reason that there are different crash traces is that the code path
+to crash would just be the victim of the memory corruption caused
+earlier. However, most of them had to do with setting or clearing
+timers. There are additional problems related to lost I/O requests
+that I'm still looking at.
+-Paul
