@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab2AMJJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 04:09:09 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:24730 "EHLO relay.sw.ru"
+	id S1757386Ab2AMJJb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 04:09:31 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:11779 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab2AMJJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 04:09:03 -0500
-Subject: [PATCH v2 0/4] SUNRPC: pass network namespace context to sockaddr
- construction routines
+	id S1756904Ab2AMJJU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 04:09:20 -0500
+Subject: [PATCH v2 2/4] SUNRPC: parametrize rpc_pton6() by network context
 To: Trond.Myklebust@netapp.com
 From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 Cc: linux-nfs@vger.kernel.org, xemul@parallels.com, neilb@suse.de,
         netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         jbottomley@parallels.com, bfields@fieldses.org, davem@davemloft.net,
         devel@openvz.org
-Date: Fri, 13 Jan 2012 13:08:54 +0400
-Message-ID: <20120113090520.1598.73772.stgit@localhost6.localdomain6>
+Date: Fri, 13 Jan 2012 13:09:11 +0400
+Message-ID: <20120113090911.1598.7934.stgit@localhost6.localdomain6>
+In-Reply-To: <20120113090520.1598.73772.stgit@localhost6.localdomain6>
+References: <20120113090520.1598.73772.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,39 +25,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set was created in context of clone of git branch:
-git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git.
-head: devel
+Parametrize rpc_pton6() by network context and thus force it's caller
+to pass in network context instead of using hard-coded "init_net".
 
-v2:
-1) Rebased on up-to-date state ("devel" head).
-2) patches change logs updated
-
-This is another precursor patch set aimed to remove hard-coded "init_net"
-reference from SUNRPC sockaddr convertion and construction routines.
-
-The following series consists of:
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
 ---
+ net/sunrpc/addr.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Stanislav Kinsbursky (4):
-      SUNRPC: parametrize rpc_parse_scope_id() by network context
-      SUNRPC: parametrize rpc_pton6() by network context
-      SUNRPC: parametrize rpc_pton() by network context
-      SUNRPC: parametrize rpc_uaddr2sockaddr() by network context
+diff --git a/net/sunrpc/addr.c b/net/sunrpc/addr.c
+index cc83de1..18c40a2 100644
+--- a/net/sunrpc/addr.c
++++ b/net/sunrpc/addr.c
+@@ -198,7 +198,7 @@ static int rpc_parse_scope_id(struct net *net, const char *buf,
+ 	return 0;
+ }
+ 
+-static size_t rpc_pton6(const char *buf, const size_t buflen,
++static size_t rpc_pton6(struct net *net, const char *buf, const size_t buflen,
+ 			struct sockaddr *sap, const size_t salen)
+ {
+ 	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sap;
+@@ -214,14 +214,14 @@ static size_t rpc_pton6(const char *buf, const size_t buflen,
+ 	if (in6_pton(buf, buflen, addr, IPV6_SCOPE_DELIMITER, &delim) == 0)
+ 		return 0;
+ 
+-	if (!rpc_parse_scope_id(&init_net, buf, buflen, delim, sin6))
++	if (!rpc_parse_scope_id(net, buf, buflen, delim, sin6))
+ 		return 0;
+ 
+ 	sin6->sin6_family = AF_INET6;
+ 	return sizeof(struct sockaddr_in6);
+ }
+ #else
+-static size_t rpc_pton6(const char *buf, const size_t buflen,
++static size_t rpc_pton6(struct net *net, const char *buf, const size_t buflen,
+ 			struct sockaddr *sap, const size_t salen)
+ {
+ 	return 0;
+@@ -249,7 +249,7 @@ size_t rpc_pton(const char *buf, const size_t buflen,
+ 
+ 	for (i = 0; i < buflen; i++)
+ 		if (buf[i] == ':')
+-			return rpc_pton6(buf, buflen, sap, salen);
++			return rpc_pton6(&init_net, buf, buflen, sap, salen);
+ 	return rpc_pton4(buf, buflen, sap, salen);
+ }
+ EXPORT_SYMBOL_GPL(rpc_pton);
 
-
- fs/nfs/dns_resolve.c        |    4 ++--
- fs/nfs/nfs4filelayoutdev.c  |    2 +-
- fs/nfs/nfs4namespace.c      |    2 +-
- fs/nfs/super.c              |    4 ++--
- fs/nfsd/nfs4state.c         |    2 +-
- fs/nfsd/nfsctl.c            |    2 +-
- include/linux/sunrpc/clnt.h |    4 ++--
- net/sunrpc/addr.c           |   26 +++++++++++++++-----------
- net/sunrpc/rpcb_clnt.c      |    2 +-
- net/sunrpc/svcauth_unix.c   |    2 +-
- 10 files changed, 27 insertions(+), 23 deletions(-)
-
--- 
-Signature
