@@ -1,187 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab2AMIeP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 03:34:15 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:33379 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755218Ab2AMIeO (ORCPT
+	id S1755337Ab2AMIf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 03:35:57 -0500
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41064 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218Ab2AMIfz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 03:34:14 -0500
-Message-ID: <4F0FEC84.7020605@canonical.com>
-Date: Fri, 13 Jan 2012 09:34:12 +0100
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
-MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Input: Add EVIOC mechanism for MT slots
-References: <1326396275-2492-1-git-send-email-rydberg@euromail.se>
-In-Reply-To: <1326396275-2492-1-git-send-email-rydberg@euromail.se>
-X-Enigmail-Version: 1.4a1pre
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Jan 2012 03:35:55 -0500
+Message-ID: <1326443748.5482.3.camel@phoenix>
+Subject: [PATCH 1/2] backlight: Convert backlight i2c drivers to
+ module_i2c_driver
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>,
+        Dmitry Baryshkov <dbaryshkov@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Fri, 13 Jan 2012 16:35:48 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.1- 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2012 08:24 PM, Henrik Rydberg wrote:
-> This patch adds the ability to extract MT slot data via a new ioctl,
-> EVIOCGMTSLOTS. The function returns an array of slot values for the
-> specified ABS_MT event type.
-> 
-> Example of user space usage:
-> 
-> struct { struct input_mt_request req; int values[64]; } data;
-> data.req.code = ABS_MT_POSITION_X;
-> if (ioctl(fd, EVIOCGMTSLOTS(sizeof(data)), &data) < 0)
-> 	return -1;
-> for (i = 0; i < data.req.num_values; i++)
-> 	printf("slot %d: %d\n", i, data.values[i]);
+Factor out some boilerplate code for i2c driver registration into
+module_i2c_driver.
 
-If input_mt_request is:
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Cc: Michael Hennerich <hennerich@blackfin.uclinux.org>
+Cc: Dmitry Baryshkov <dbaryshkov@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+---
+ drivers/video/backlight/adp8860_bl.c |   12 +-----------
+ drivers/video/backlight/adp8870_bl.c |   12 +-----------
+ drivers/video/backlight/tosa_bl.c    |   13 +------------
+ 3 files changed, 3 insertions(+), 34 deletions(-)
 
-struct input_mt_request {
-	__u32 code;
-	__u32 num_values;
-	__s32 values[];
-};
+diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
+index 378276c..550dbf0 100644
+--- a/drivers/video/backlight/adp8860_bl.c
++++ b/drivers/video/backlight/adp8860_bl.c
+@@ -819,17 +819,7 @@ static struct i2c_driver adp8860_driver = {
+ 	.id_table = adp8860_id,
+ };
+ 
+-static int __init adp8860_init(void)
+-{
+-	return i2c_add_driver(&adp8860_driver);
+-}
+-module_init(adp8860_init);
+-
+-static void __exit adp8860_exit(void)
+-{
+-	i2c_del_driver(&adp8860_driver);
+-}
+-module_exit(adp8860_exit);
++module_i2c_driver(adp8860_driver);
+ 
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
+diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
+index 6735059..9be58c6 100644
+--- a/drivers/video/backlight/adp8870_bl.c
++++ b/drivers/video/backlight/adp8870_bl.c
+@@ -991,17 +991,7 @@ static struct i2c_driver adp8870_driver = {
+ 	.id_table = adp8870_id,
+ };
+ 
+-static int __init adp8870_init(void)
+-{
+-	return i2c_add_driver(&adp8870_driver);
+-}
+-module_init(adp8870_init);
+-
+-static void __exit adp8870_exit(void)
+-{
+-	i2c_del_driver(&adp8870_driver);
+-}
+-module_exit(adp8870_exit);
++module_i2c_driver(adp8870_driver);
+ 
+ MODULE_LICENSE("GPL v2");
+ MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
+diff --git a/drivers/video/backlight/tosa_bl.c b/drivers/video/backlight/tosa_bl.c
+index 425a736..2b241ab 100644
+--- a/drivers/video/backlight/tosa_bl.c
++++ b/drivers/video/backlight/tosa_bl.c
+@@ -181,18 +181,7 @@ static struct i2c_driver tosa_bl_driver = {
+ 	.id_table	= tosa_bl_id,
+ };
+ 
+-static int __init tosa_bl_init(void)
+-{
+-	return i2c_add_driver(&tosa_bl_driver);
+-}
+-
+-static void __exit tosa_bl_exit(void)
+-{
+-	i2c_del_driver(&tosa_bl_driver);
+-}
+-
+-module_init(tosa_bl_init);
+-module_exit(tosa_bl_exit);
++module_i2c_driver(tosa_bl_driver);
+ 
+ MODULE_AUTHOR("Dmitry Baryshkov");
+ MODULE_LICENSE("GPL v2");
+-- 
+1.7.5.4
 
-then how passing in the data struct above work? The passed in data would be:
 
-__u32 code;
-__u32 num_values; /* BTW, this isn't set in the example above */
-__s32 *values; /* This is left uninitialized in the example above */
-int values[0]
-int values[1]
-int values[2]
-...
-int values[63]
-
-I'm not too familiar with ioctl interfaces, but I don't see how this
-example could work.
-
-> 
-> Cc: Chase Douglas <chase.douglas@canonical.com>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Hi Dmitry,
-> 
-> This is a new take on the MT slot ioctl patch. A new ioctl is added,
-> which takes a request structure and returns a (variable) array of slot
-> values. The patch seems to work, but testing has not been extensive (yet).
-> 
-> Cheers,
-> Henrik
-> 
->  drivers/input/evdev.c |   30 +++++++++++++++++++++++++++++-
->  include/linux/input.h |   25 +++++++++++++++++++++++++
->  2 files changed, 54 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index 4cf2534..8bf45d4 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -20,7 +20,7 @@
->  #include <linux/slab.h>
->  #include <linux/module.h>
->  #include <linux/init.h>
-> -#include <linux/input.h>
-> +#include <linux/input/mt.h>
->  #include <linux/major.h>
->  #include <linux/device.h>
->  #include "input-compat.h"
-> @@ -621,6 +621,31 @@ static int evdev_handle_set_keycode_v2(struct input_dev *dev, void __user *p)
->  	return input_set_keycode(dev, &ke);
->  }
->  
-> +static int evdev_handle_mt_request(struct input_dev *dev,
-> +				   unsigned int size,
-> +				   int __user *ip)
-> +{
-> +	const struct input_mt_slot *mt = dev->mt;
-> +	unsigned int code;
-> +	int i;
-> +
-> +	if (get_user(code, &ip[0]))
-> +		return -EFAULT;
-> +	if (!input_is_mt_value(code))
-> +		return -EINVAL;
-> +
-> +	if (size < sizeof(struct input_mt_request) + dev->mtsize * sizeof(int))
-> +		return -EINVAL;
-
-Why not fill in up to the size of the array provided?
-
-> +	if (put_user(dev->mtsize, &ip[1]))
-> +		return -EFAULT;
-> +	for (i = 0; i < dev->mtsize; i++)
-> +		if (put_user(input_mt_get_value(&mt[i], code), &ip[2 + i]))
-> +			return -EFAULT;
-
-This would be easier to understand if you did:
-
-struct input_mt_request *req = (struct input_mt_request *)ip;
-
-Then modify the stuff in a straightforward way.
-
-> +	return 0;
-> +}
-> +
->  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->  			   void __user *p, int compat_mode)
->  {
-> @@ -706,6 +731,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
->  		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
->  				    size, p, compat_mode);
->  
-> +	case EVIOCGMTSLOTS(0):
-> +		return evdev_handle_mt_request(dev, size, ip);
-> +
->  	case EVIOCGKEY(0):
->  		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
->  
-> diff --git a/include/linux/input.h b/include/linux/input.h
-> index a637e78..9a73f18 100644
-> --- a/include/linux/input.h
-> +++ b/include/linux/input.h
-> @@ -99,6 +99,30 @@ struct input_keymap_entry {
->  	__u8  scancode[32];
->  };
->  
-> +/**
-> + * struct input_mt_request - used by EVIOCGMTSLOTS ioctl
-> + * @code: ABS_MT code to read
-> + * @num_values: number of values written to the value array
-> + * @values: value array, one value per slot
-> + *
-> + * The structure is used to retrieve MT slot data. Before the call,
-> + * code is set to the wanted ABS_MT event type. On return, the value
-> + * array is filled with the slot values for the specified ABS_MT code,
-> + * and num_values is set to the actual number of slots.
-> + *
-> + * The call argument (len) is the size of the return buffer, satisfying
-> + *
-> + * len >= sizeof(input_mt_request) + sizeof(__s32) * number_of_slots
-> + *
-> + * If the request code is not an ABS_MT value, or if len is too small,
-> + * -EINVAL is returned.
-> + */
-> +struct input_mt_request {
-> +	__u32 code;
-> +	__u32 num_values;
-> +	__s32 values[];
-> +};
-> +
->  #define EVIOCGVERSION		_IOR('E', 0x01, int)			/* get driver version */
->  #define EVIOCGID		_IOR('E', 0x02, struct input_id)	/* get device ID */
->  #define EVIOCGREP		_IOR('E', 0x03, unsigned int[2])	/* get repeat settings */
-> @@ -113,6 +137,7 @@ struct input_keymap_entry {
->  #define EVIOCGPHYS(len)		_IOC(_IOC_READ, 'E', 0x07, len)		/* get physical location */
->  #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
->  #define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
-> +#define EVIOCGMTSLOTS(len)	_IOC(_IOC_READ, 'E', 0x0a, len)		/* get MT slot values */
->  
->  #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
->  #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
 
