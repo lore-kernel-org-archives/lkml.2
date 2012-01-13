@@ -1,85 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab2AMWnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 17:43:45 -0500
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:23355
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759396Ab2AMWnl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 17:43:41 -0500
-X-SpamScore: -10
-X-BigFish: VS-10(zz1432N98dK4015Lzz1202hzzz2dhc1ahc1bh87h2a8h668h839h8e2h8e3h944hbe9k61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:160.36.179.113;KIP:(null);UIP:(null);IPV:NLI;H:kedge4.utk.tennessee.edu;RD:kedge4.utk.tennessee.edu;EFVD:NLI
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 13 Jan 2012 17:43:33 -0500
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: <linux-kernel@vger.kernel.org>
-CC: <mingo@elte.hu>, <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@gmail.com>
-Subject: Re: perf_event hard locks 3.1.x
-In-Reply-To: <alpine.DEB.2.00.1112161804280.8779@cl320.eecs.utk.edu>
-Message-ID: <alpine.DEB.2.00.1201131735480.11102@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1112161804280.8779@cl320.eecs.utk.edu>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932939Ab2AMWok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 17:44:40 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:33264 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932798Ab2AMWoj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 17:44:39 -0500
+Date: Fri, 13 Jan 2012 23:44:24 +0100
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Ying Han <yinghan@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Hocko <mhocko@suse.cz>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, cgroups@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcg: hierarchical soft limit reclaim
+Message-ID: <20120113224424.GC1653@cmpxchg.org>
+References: <1326207772-16762-1-git-send-email-hannes@cmpxchg.org>
+ <1326207772-16762-3-git-send-email-hannes@cmpxchg.org>
+ <CALWz4izwNBN_qcSsqg-qYw-Esc9vBL3=4cv3Wsg1jf6001_fWQ@mail.gmail.com>
+ <20120112085904.GG24386@cmpxchg.org>
+ <CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CALWz4iz3sQX+pCr19rE3_SwV+pRFhDJ7Lq-uJuYBq6u3mRU3AQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Fri, 16 Dec 2011, Vince Weaver wrote:
-
-> I had a PAPI user report that perf_event usage (such as running
-> the PAPI tests) would cause hard lockups on his 3.1.x kernel
-> (from ARCH linux).
+On Fri, Jan 13, 2012 at 01:31:16PM -0800, Ying Han wrote:
+> On Thu, Jan 12, 2012 at 12:59 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> > On Wed, Jan 11, 2012 at 01:42:31PM -0800, Ying Han wrote:
+> >> On Tue, Jan 10, 2012 at 7:02 AM, Johannes Weiner <hannes@cmpxchg.org> wrote:
+> >> > @@ -1318,6 +1123,36 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *memcg)
+> >> >        return margin >> PAGE_SHIFT;
+> >> >  }
+> >> >
+> >> > +/**
+> >> > + * mem_cgroup_over_softlimit
+> >> > + * @root: hierarchy root
+> >> > + * @memcg: child of @root to test
+> >> > + *
+> >> > + * Returns %true if @memcg exceeds its own soft limit or contributes
+> >> > + * to the soft limit excess of one of its parents up to and including
+> >> > + * @root.
+> >> > + */
+> >> > +bool mem_cgroup_over_softlimit(struct mem_cgroup *root,
+> >> > +                              struct mem_cgroup *memcg)
+> >> > +{
+> >> > +       if (mem_cgroup_disabled())
+> >> > +               return false;
+> >> > +
+> >> > +       if (!root)
+> >> > +               root = root_mem_cgroup;
+> >> > +
+> >> > +       for (; memcg; memcg = parent_mem_cgroup(memcg)) {
+> >> > +               /* root_mem_cgroup does not have a soft limit */
+> >> > +               if (memcg == root_mem_cgroup)
+> >> > +                       break;
+> >> > +               if (res_counter_soft_limit_excess(&memcg->res))
+> >> > +                       return true;
+> >> > +               if (memcg == root)
+> >> > +                       break;
+> >> > +       }
+> >>
+> >> Here it adds pressure on a cgroup if one of its parents exceeds soft
+> >> limit, although the cgroup itself is under soft limit. It does change
+> >> my understanding of soft limit, and might introduce regression of our
+> >> existing use cases.
+> >>
+> >> Here is an example:
+> >>
+> >> Machine capacity 32G and we over-commit by 8G.
+> >>
+> >> root
+> >>   -> A (hard limit 20G, soft limit 15G, usage 16G)
+> >>        -> A1 (soft limit 5G, usage 4G)
+> >>        -> A2 (soft limit 10G, usage 12G)
+> >>   -> B (hard limit 20G, soft limit 10G, usage 16G)
+> >>
+> >> under global reclaim, we don't want to add pressure on A1 although its
+> >> parent A exceeds its soft limit. Assume that if we set the soft limit
+> >> corresponding to each cgroup's working set size (hot memory), and it
+> >> will introduce regression to A1 in that case.
+> >>
+> >> In my existing implementation, i am checking the cgroup's soft limit
+> >> standalone w/o looking its ancestors.
+> >
+> > Why do you set the soft limit of A in the first place if you don't
+> > want it to be enforced?
 > 
-> After some tedious bisection of the .config file, I found that the issue
-> happens when 
->   CONFIG_SLUB=y
->   CONFIG_SLUB_DEBUG=y
-> is enabled.  Having a kernel with that enabled and stressing the 
-> perf_event subsystem will eventually cause lockups or hard crashes.
+> The soft limit should be enforced under certain condition, not always.
+> The soft limit of A is set to be enforced when the parent of A and B
+> is under memory pressure. For example:
+> 
+> Machine capacity 32G and we over-commit by 8G
+> 
+> root
+> -> A (hard limit 20G, soft limit 12G, usage 20G)
+>        -> A1 (soft limit 2G, usage 1G)
+>        -> A2 (soft limit 10G, usage 19G)
+> -> B (hard limit 20G, soft limit 10G, usage 0G)
+> 
+> Now, A is under memory pressure since the total usage is hitting its
+> hard limit. Then we start hierarchical reclaim under A, and each
+> cgroup under A also takes consideration of soft limit. In this case,
+> we should only set priority = 0 to A2 since it contributes to A's
+> charge as well as exceeding its own soft limit. Why punishing A1 (set
+> priority = 0) also which has usage under its soft limit ? I can
+> imagine it will introduce regression to existing environment which the
+> soft limit is set based on the working set size of the cgroup.
+>
+> To answer the question why we set soft limit to A, it is used to
+> over-commit the host while sharing the resource with its sibling (B in
+> this case). If the machine is under memory contention, we would like
+> to push down memory to A or B depends on their usage and soft limit.
 
-I spent a lot of time trying to track this down, though the problem does 
-not appear with stock 3.2.
+D'oh, I think the problem is just that we walk up the hierarchy one
+too many when checking whether a group exceeds a soft limit.  The soft
+limit is a signal to distribute pressure that comes from above, it's
+meaningless and should indeed be ignored on the level the pressure
+originates from.
 
-The problem is still there with 3.1.9, but since that might be the last 
-3.1.x kernel it might not matter anymore.
+Say mem_cgroup_over_soft_limit(root, memcg) would check everyone up to
+but not including root, wouldn't that do exactly what we both want?
 
-Summary of what I found:
-  you need to have CONFIG_SLUB=y
-  you can cause the crash by running the PAPI ctests 1-3 times
-    (the program that causes the crash is different each time, so 
-     no good workaround.  Probably a race condition).
+Example:
 
-I reverse-bisected the fix between 3.1 and  3.2 (that is to say, I 
-bisected to find when the kernels stopped crashing) to this commit:
+1. If global memory is short, we reclaim with root=root_mem_cgroup.
+   A1 and A2 get soft limit reclaimed because of A's soft limit
+   excess, just like the current kernel would do.
 
-   commit a33caeb118198286309859f014c0662f3ed54ed4
-   lockdep, kmemcheck: Annotate ->lock in lockdep_init_map()
+2. If A hits its hard limit, we reclaim with root=A, so we only mind
+   the soft limits of A1 and A2.  A1 is below its soft limit, all
+   good.  A2 is above its soft limit, gets treated accordingly.  This
+   is new behaviour, the current kernel would just reclaim them
+   equally.
 
-but that fix is already in 3.1.9 and doesn't seem to fix things.
+Code:
 
-It might also be the next commit 
+bool mem_cgroup_over_soft_limit(struct mem_cgroup *root,
+			        struct mem_cgroup *memcg)
+{
+	if (mem_cgroup_disabled())
+		return false;
 
-   commit ddf6e0e50723b62ac76ed18eb53e9417c6eefba7
-   ftrace: Fix hash record accounting bug
+	if (!root)
+		root = root_mem_cgroup;
 
-as the panics in that report look similar to what I see before the 
-machine quickly and massively dies, but when I apply this on top of 
-3.1.9 it doesn't avoid the crash.
-
-I suspect maybe I was chasing two separate problems, which is why the 
-bisect didn't give the proper results.
-
-In any case, I'm abandoning the search for now unless anyone has some 
-other ideas I could try.
-
-Thanks,
-
-Vince
-
+	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
+		if (memcg == root)
+			break;
+		if (res_counter_soft_limit_excess(&memcg->res))
+			return true;
+	}
+	return false;
+}
