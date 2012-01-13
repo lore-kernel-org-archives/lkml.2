@@ -1,84 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab2AMHbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 02:31:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48941 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab2AMHbM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 02:31:12 -0500
-Date: Thu, 12 Jan 2012 23:36:00 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Sasha Levin <levinsasha928@gmail.com>, lizf@cn.fujitsu.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Tyler Hicks <tyhicks@canonical.com>,
-        Dustin Kirkland <kirkland@canonical.com>, ecryptfs@vger.kernel.org
-Subject: Re: [PATCH] mm: Don't warn if memdup_user fails
-Message-Id: <20120112233600.33805bfc.akpm@linux-foundation.org>
-In-Reply-To: <20120113071752.GA3802@mwanda>
-References: <1326300636-29233-1-git-send-email-levinsasha928@gmail.com>
-	<20120111141219.271d3a97.akpm@linux-foundation.org>
-	<1326355594.1999.7.camel@lappy>
-	<CAOJsxLEYY=ZO8QrxiWL6qAxPzsPpZj3RsF9cXY0Q2L44+sn7JQ@mail.gmail.com>
-	<alpine.DEB.2.00.1201121309340.17287@chino.kir.corp.google.com>
-	<20120112135803.1fb98fd6.akpm@linux-foundation.org>
-	<20120113071752.GA3802@mwanda>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753794Ab2AMHfs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 02:35:48 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752151Ab2AMHfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 02:35:47 -0500
+Message-ID: <4F0FDF5C.70405@redhat.com>
+Date: Fri, 13 Jan 2012 15:38:04 +0800
+From: Dave Young <dyoung@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110323 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] loop: zero fill bio instead of return -EIO for partial
+ read
+References: <20120106033555.GA27916@darkstar.nay.redhat.com> <x49hb08prfn.fsf@segfault.boston.devel.redhat.com> <4F09A006.8080104@redhat.com>
+In-Reply-To: <4F09A006.8080104@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Jan 2012 10:17:52 +0300 Dan Carpenter <dan.carpenter@oracle.com> wrote:
+On 01/08/2012 09:54 PM, Dave Young wrote:
 
-> On Thu, Jan 12, 2012 at 01:58:03PM -0800, Andrew Morton wrote:
-> > On Thu, 12 Jan 2012 13:19:54 -0800 (PST)
-> > David Rientjes <rientjes@google.com> wrote:
-> > 
-> > > On Thu, 12 Jan 2012, Pekka Enberg wrote:
-> > > 
-> > > > I think you missed Andrew's point. We absolutely want to issue a
-> > > > kernel warning here because ecryptfs is misusing the memdup_user()
-> > > > API. We must not let userspace processes allocate large amounts of
-> > > > memory arbitrarily.
-> > > > 
-> > > 
-> > > I think it's good to fix ecryptfs like Tyler is doing and, at the same 
-> > > time, ensure that the len passed to memdup_user() makes sense prior to 
-> > > kmallocing memory with GFP_KERNEL.  Perhaps something like
-> > > 
-> > > 	if (WARN_ON(len > PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER))
-> > > 		return ERR_PTR(-ENOMEM);
-> > > 
-> > > in which case __GFP_NOWARN is irrelevant.
-> > 
-> > If someone is passing huge size_t's into kmalloc() and getting failures
-> > then that's probably a bug.
+> On 01/07/2012 03:22 AM, Jeff Moyer wrote:
 > 
-> It's pretty common to pass high values to kmalloc().  We've added
-> a bunch of integer overflow checks recently where we do:
+>> Dave Young <dyoung@redhat.com> writes:
+>>
+>>> commit 8268f5a7415d914fc855a86aa2284ac819dc6b2e trying to fix the loop device
+>>> partial read information leak problem. But it changed the semantics of read
+>>> behavior. When we read beyond the end of the device we should get 0 bytes,
+>>> which is normal behavior, we should not just return -EIO
+>>>
+>>> Instead of return -EIO, zero out the bio to avoid information leak in case of
+>>> partail read. 
+>>
+>> I tested the patch with a program which patterns the loop device,
+>> truncates the backing file, and then performs preads from various
+>> offsets within the loop device, validates the return values and inspects
+>> the contents.  With this patch, everything works as expected.
 > 
-> 	if (n > ULONG_MAX / size)
-> 		return -EINVAL;
+> 
+> Many thanks for review and test
+> 
+>>
+>> By the way, truncating the backing file for a loop device is insane.
+>> Why would you do that?  Also, if you really want all of the data gone,
+>> you'll have to flush the contents of the buffer cache for the loop
+>> device first.  It's quite the head scratcher the first time you truncate
+>> a file, wait a few seconds, and then witness the file size grow.  ;-)
+> 
+> 
+> I think nobody will intend to do that, but random operations could cause
+> this happen..
+> 
+>>
+>> Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+>>
+>>>
+>>> Signed-off-by: Dave Young <dyoung@redhat.com>
+>>> ---
+>>>  drivers/block/loop.c |   24 +++++++++++++-----------
+>>>  1 file changed, 13 insertions(+), 11 deletions(-)
+>>>
+>>> --- linux-2.6.orig/drivers/block/loop.c	2012-01-06 11:19:48.000000000 +0800
+>>> +++ linux-2.6/drivers/block/loop.c	2012-01-06 11:20:18.842630580 +0800
+>>> @@ -357,14 +357,14 @@ lo_direct_splice_actor(struct pipe_inode
+>>>  	return __splice_from_pipe(pipe, sd, lo_splice_actor);
+>>>  }
+>>>  
+>>> -static int
+>>> +static ssize_t
+>>>  do_lo_receive(struct loop_device *lo,
+>>>  	      struct bio_vec *bvec, int bsize, loff_t pos)
+>>>  {
+>>>  	struct lo_read_data cookie;
+>>>  	struct splice_desc sd;
+>>>  	struct file *file;
+>>> -	long retval;
+>>> +	ssize_t retval;
+>>>  
+>>>  	cookie.lo = lo;
+>>>  	cookie.page = bvec->bv_page;
+>>> @@ -380,26 +380,28 @@ do_lo_receive(struct loop_device *lo,
+>>>  	file = lo->lo_backing_file;
+>>>  	retval = splice_direct_to_actor(file, &sd, lo_direct_splice_actor);
+>>>  
+>>> -	if (retval < 0)
+>>> -		return retval;
+>>> -	if (retval != bvec->bv_len)
+>>> -		return -EIO;
+>>> -	return 0;
+>>> +	return retval;
+>>>  }
+>>>  
+>>>  static int
+>>>  lo_receive(struct loop_device *lo, struct bio *bio, int bsize, loff_t pos)
+>>>  {
+>>>  	struct bio_vec *bvec;
+>>> -	int i, ret = 0;
+>>> +	ssize_t s;
+>>> +	int i;
+>>>  
+>>>  	bio_for_each_segment(bvec, bio, i) {
+>>> -		ret = do_lo_receive(lo, bvec, bsize, pos);
+>>> -		if (ret < 0)
+>>> +		s = do_lo_receive(lo, bvec, bsize, pos);
+>>> +		if (s < 0)
+>>> +			return s;
+>>> +
+>>> +		if (s != bvec->bv_len) {
+>>> +			zero_fill_bio(bio);
+>>>  			break;
+>>> +		}
+>>>  		pos += bvec->bv_len;
+>>>  	}
+>>> -	return ret;
+>>> +	return 0;
+>>>  }
+>>>  
+>>>  static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
+> 
+> 
+> 
 
-It would be cleaner to use kcalloc().  Except kcalloc() zeroes the memory
-and we still don't have a non-zeroing kcalloc().
 
-> The problem is that we didn't set a maximum bound before and we
-> can't know which maximum will break compatibility.
+Jens, what do you think about this patch? Could you take this?
 
-Except for special cases (what are they?), code shouldn't be checking
-for maximum kmalloc() size.  It should be checking the size against the
-upper value which makes sense in the context of whatever it is doing at
-the time.  This ecryptfs callsite is an example.
-
-wrt any compatibility issues: the maximum amount of memory which can be
-allocated by kmalloc() depends on the kernel config (see
-kmalloc_sizes.h) so any code which is relying on any particular upper
-bound is already busted.
-
-
+-- 
+Thanks
+Dave
