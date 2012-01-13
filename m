@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932631Ab2AMS0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 13:26:54 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43375 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753499Ab2AMS0w (ORCPT
+	id S932652Ab2AMS1S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 13:27:18 -0500
+Received: from shards.monkeyblade.net ([198.137.202.13]:49488 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753528Ab2AMS1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 13:26:52 -0500
-Date: Fri, 13 Jan 2012 18:24:22 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Will Drewry <wad@chromium.org>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        keescook@chromium.org, john.johansen@canonical.com,
-        serge.hallyn@canonical.com, coreyb@linux.vnet.ibm.com,
-        pmoore@redhat.com, eparis@redhat.com, djm@mindrot.org,
-        segoon@openwall.com, rostedt@goodmis.org, jmorris@namei.org,
-        scarybeasts@gmail.com, avi@redhat.com, penberg@cs.helsinki.fi,
-        viro@zeniv.linux.org.uk, luto@MIT.EDU, mingo@elte.hu,
-        akpm@linux-foundation.org, khilman@ti.com, borislav.petkov@amd.com,
-        amwang@redhat.com, ak@linux.intel.com, eric.dumazet@gmail.com,
-        gregkh@suse.de, dhowells@redhat.com, daniel.lezcano@free.fr,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        olofj@chromium.org, mhalcrow@google.com, dlaor@redhat.com,
-        corbet@lwn.net
-Subject: Re: [PATCH] Add PR_{GET,SET}_NO_NEW_PRIVS to prevent execve from
- granting privs
-Message-ID: <20120113182422.28e648fb@pyramind.ukuu.org.uk>
-In-Reply-To: <20120113164547.GA22061@redhat.com>
-References: <e2f7f5ab9f24294a6b4ef8b6a7eaa760e414d777.1326420331.git.luto@amacapital.net>
-	<20120113164547.GA22061@redhat.com>
-X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Fri, 13 Jan 2012 13:27:16 -0500
+Date: Fri, 13 Jan 2012 10:27:12 -0800 (PST)
+Message-Id: <20120113.102712.600185688659703015.davem@davemloft.net>
+To: davej@redhat.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        glommer@parallels.com
+Subject: Re: recvmsg sleeping from invalid context
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20120113182401.GA25885@redhat.com>
+References: <20120113182401.GA25885@redhat.com>
+X-Mailer: Mew version 6.4 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 13 Jan 2012 10:27:14 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This still appears to be a bit broken
+From: Dave Jones <davej@redhat.com>
+Date: Fri, 13 Jan 2012 13:24:01 -0500
 
-There are three problems here
+> getting a ton of these on the latest head (099469502f62fbe0d7e4f0b83a2f22538367f734)
+> 
+> BUG: sleeping function called from invalid context at mm/memory.c:3905
+> in_atomic(): 0, irqs_disabled(): 0, pid: 1067, name: NetworkManager
+> INFO: lockdep is turned off.
+> Pid: 1067, comm: NetworkManager Not tainted 3.2.0+ #22
+> Call Trace:
+>  [<ffffffff81099415>] __might_sleep+0x145/0x200
+>  [<ffffffff811752a4>] might_fault+0x34/0xb0
+>  [<ffffffff81551555>] ? sock_def_readable+0x25/0x1a0
+>  [<ffffffff8155c387>] put_cmsg+0x77/0x120
+>  [<ffffffff8159379c>] netlink_recvmsg+0x35c/0x480
+>  [<ffffffff8155201a>] ? sock_update_classid+0x9a/0x260
+>  [<ffffffff81552052>] ? sock_update_classid+0xd2/0x260
+>  [<ffffffff81549fbd>] sock_recvmsg+0x11d/0x140
+>  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+>  [<ffffffff8117530c>] ? might_fault+0x9c/0xb0
+>  [<ffffffff811752c3>] ? might_fault+0x53/0xb0
+>  [<ffffffff8154b1b3>] __sys_recvmsg+0x153/0x2d0
+>  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+>  [<ffffffff8109fd11>] ? get_parent_ip+0x11/0x50
+>  [<ffffffff816ac23d>] ? sub_preempt_count+0x9d/0xd0
+>  [<ffffffff811bc43b>] ? fget_light+0xfb/0x470
+>  [<ffffffff811bc39a>] ? fget_light+0x5a/0x470
+>  [<ffffffff8154e2e9>] sys_recvmsg+0x49/0x90
+>  [<ffffffff816b00e9>] system_call_fastpath+0x16/0x1b
 
-1. I can stop an app changing privs which in some SELinux or APParmour
-cases might mean I prevent it being dropped into a less privileged
-position. That's something only the security policy knows.
+Sigh, I suspect the new socket memcg code, which I didn't want to
+even apply in the first place. :-/
 
-So for SELinux and Apparmour and the like in some situations you are
-potentially adding a security hole. That one seems hard to fix unless you
-fail the exec if it causes a security transition, as opposed to just
-keeping the old one. For non change cases we can however still pass the
-filter on, which is the usual sane case.
-
-2. ptrace
-
-You neeed to also stop ptrace otherwise the locked down process can use
-ptrace to proxy its activity via another task with the same uid. That's
-easy enough to add fortunately.
-
-3. file access
-
-You have the same attacks via patching files of running apps etc. In the
-intended circumstances I'm not sure this matters or is cleanly fixable.
-It's the point at which you need a real system wide policy and SELinux
-etc anyway.
-
-Alan
+Glauber, please fix this.
