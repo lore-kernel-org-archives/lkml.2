@@ -1,119 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085Ab2AMLIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 06:08:04 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48309 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757864Ab2AMLIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 06:08:01 -0500
-Date: Fri, 13 Jan 2012 12:07:59 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jan Kara <jack@suse.cz>, linux-fsdevel@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        xfs@oss.sgi.com, Eric Sandeen <sandeen@sandeen.net>,
-        Dave Chinner <dchinner@redhat.com>, Surbhi Palande <csurbhi@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH 0/4] Fix filesystem freezing
-Message-ID: <20120113110759.GB13641@quack.suse.cz>
-References: <1326331253-6497-1-git-send-email-jack@suse.cz>
- <20120112024841.GB2806@dastard>
- <20120112113031.GA8778@quack.suse.cz>
- <20120113000932.GD2806@dastard>
+	id S1757905Ab2AMLKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 06:10:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:34026 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab2AMLKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 06:10:13 -0500
+Message-ID: <4F101113.4090500@canonical.com>
+Date: Fri, 13 Jan 2012 12:10:11 +0100
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:8.0) Gecko/20111124 Thunderbird/8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20120113000932.GD2806@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] Input: Add EVIOC mechanism for MT slots
+References: <1326396275-2492-1-git-send-email-rydberg@euromail.se> <4F0FEC84.7020605@canonical.com> <20120113091556.GA21749@core.coreip.homeip.net>
+In-Reply-To: <20120113091556.GA21749@core.coreip.homeip.net>
+X-Enigmail-Version: 1.4a1pre
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 13-01-12 11:09:32, Dave Chinner wrote:
-> On Thu, Jan 12, 2012 at 12:30:31PM +0100, Jan Kara wrote:
-> > On Thu 12-01-12 13:48:41, Dave Chinner wrote:
-> > > On Thu, Jan 12, 2012 at 02:20:49AM +0100, Jan Kara wrote:
-> > > > 
-> > > >   Hello,
-> > > > 
-> > > >   filesystem freezing is currently racy and thus we can end up with dirty data
-> > > > on frozen filesystem (see changelog of the first patch for detailed race
-> > > > description and proposed fix). This patch series aims at fixing this.
-> > > 
-> > > It only fixes the dirty data race (i.e. SB_FREEZE_WRITE). The same
-> > > race conditions exist for SB_FREEZE_TRANS on XFS, and so need the
-> > > same fix. That race has had one previous attempt at fixing it in
-> > > XFS but that's not possible:
-> > > 
-> > > b2ce397 Revert "xfs: fix filesystsem freeze race in xfs_trans_alloc"
-> > > 7a249cf xfs: fix filesystsem freeze race in xfs_trans_alloc
-> > > 
-> > > It was looking at that problem earlier today that lead to the
-> > > solution Eric proposed. Essentially the method in these patches
-> > > needs to replace the xfs specifc m_active_trans counter and delay
-> > > during ->fs_freeze to prevent that race condition....
-> >   OK, I see. I just checked ext4 to make sure and ext4 seems to get this
-> > right. Looking into Christoph's original patch it shouldn't be hard to fix
-> > it. Instead of:
-> >         atomic_inc(&mp->m_active_trans);
-> >  
-> >         if (wait_for_freeze)
-> >               xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
-> > 
-> > we just need to do a bit more elaborate
-> > 
-> > retry:
-> >         if (wait_for_freeze)
-> >               xfs_wait_for_freeze(mp, SB_FREEZE_TRANS);
-> >         atomic_inc(&mp->m_active_trans);
-> > 	if (wait_for_freeze && mp->m_super->s_frozen >= SB_FREEZE_TRANS) {
-> >         	atomic_dec(&mp->m_active_trans);
-> > 		goto retry;
-> > 	}
-> > 
-> > Or does XFS support nested transactions (i.e. a thread already holding a
-> > running transaction can call into xfs_trans_alloc() again)?
-> > That would make things more complicated...
+On 01/13/2012 10:15 AM, Dmitry Torokhov wrote:
+> On Fri, Jan 13, 2012 at 09:34:12AM +0100, Chase Douglas wrote:
+>> On 01/12/2012 08:24 PM, Henrik Rydberg wrote:
+>>> +	if (put_user(dev->mtsize, &ip[1]))
+>>> +		return -EFAULT;
+>>> +	for (i = 0; i < dev->mtsize; i++)
+>>> +		if (put_user(input_mt_get_value(&mt[i], code), &ip[2 + i]))
+>>> +			return -EFAULT;
+>>
+>> This would be easier to understand if you did:
+>>
+>> struct input_mt_request *req = (struct input_mt_request *)ip;
+>>
+>> Then modify the stuff in a straightforward way.
 > 
-> You're still missing the point - that this isn't an XFS specific
-> problem or that the write problem is a ext4 specific problem. The
-> problem is that these are freeze state transition problems -
-> something that can affect every filesystem because the freeze code
-> is generic.  Quite frankly, I'm not interested in having a generic
-> solution for SB_FREEZE_WRITE and a custom, per filesystem solution
-> for SB_FREEZE_TRANS when the solution is exactly the same.
-  I understand that both state transitions are currently racy. Just ext3,
-ext4, reiserfs, gfs2, or btrfs do not really care about SB_FREEZE_TRANS
-transition because they all grew their own synchronization mechanisms for
-that. XFS is the only filesystem I know of which really relies on this
-transition. That's why I originally decided to fixup SB_FREEZE_TRANS
-transition only in XFS and not in VFS. But on a second thought I tend to
-agree with you that VFS should provide a way to do race-free transition to
-both states so that filesystems that want to use it can use it. So I'll add
-a second counter for that.
- 
-> > Using sb_start_write() instead of m_active_trans won't be that easy because
-> > it can create A-A deadlocks (e.g. we do sb_start_write in
-> > block_page_mkwrite() and then xfs_get_blocks() decides to start a
-> > transaction and calls sb_start_write() again which might block if
-> > filesystem freezing started in the mean time).
+> This is a user pointer, you can't really do it in straightforward way...
+
+I don't know why that is, but as a thought could you do:
+
+struct input_mt_request __user *req =
+	(struct input_mt_request __user *)ip;
+
+?
+
+>>
+>>> +	return 0;
+>>> +}
+>>> +
+>>>  static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+>>>  			   void __user *p, int compat_mode)
+>>>  {
+>>> @@ -706,6 +731,9 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
+>>>  		return bits_to_user(dev->propbit, INPUT_PROP_MAX,
+>>>  				    size, p, compat_mode);
+>>>  
+>>> +	case EVIOCGMTSLOTS(0):
+>>> +		return evdev_handle_mt_request(dev, size, ip);
+>>> +
+>>>  	case EVIOCGKEY(0):
+>>>  		return bits_to_user(dev->key, KEY_MAX, size, p, compat_mode);
+>>>  
+>>> diff --git a/include/linux/input.h b/include/linux/input.h
+>>> index a637e78..9a73f18 100644
+>>> --- a/include/linux/input.h
+>>> +++ b/include/linux/input.h
+>>> @@ -99,6 +99,30 @@ struct input_keymap_entry {
+>>>  	__u8  scancode[32];
+>>>  };
+>>>  
+>>> +/**
+>>> + * struct input_mt_request - used by EVIOCGMTSLOTS ioctl
+>>> + * @code: ABS_MT code to read
+>>> + * @num_values: number of values written to the value array
+>>> + * @values: value array, one value per slot
+>>> + *
+>>> + * The structure is used to retrieve MT slot data. Before the call,
+>>> + * code is set to the wanted ABS_MT event type. On return, the value
+>>> + * array is filled with the slot values for the specified ABS_MT code,
+>>> + * and num_values is set to the actual number of slots.
+>>> + *
+>>> + * The call argument (len) is the size of the return buffer, satisfying
+>>> + *
+>>> + * len >= sizeof(input_mt_request) + sizeof(__s32) * number_of_slots
+>>> + *
+>>> + * If the request code is not an ABS_MT value, or if len is too small,
+>>> + * -EINVAL is returned.
+>>> + */
+>>> +struct input_mt_request {
+>>> +	__u32 code;
+>>> +	__u32 num_values;
 > 
-> So, like Eric said in his first email, it's not a "write start/end"
-> interface that is needed, the interface has to work with different
-> freeze levels (e.g "sb_freeze_ref(sb, level)/sb_freeze_drop(sb,
-> level)").  Sure, internally it would have to map to two counters and
-> different level checks, but it solves the same problem for all
-> levels of freeze for all filesystems.
-> 
-> Let's fix this freeze problem once and for all in the generic code,
-> and not have to keep coming back to it to add more functioanlity for
-> different situations the most recent fix didn't handle for random
-> filesystem X....
-  Yeah. I think ext3/4 could be converted to the generic mechanism
-(although it won't be completely trivial since it uses the internal
-mechanism also for other things than filesystem freezing).
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> Hmm, might avoid this one... Userspace can do EVIOCGABS to get number of
+> slots and then it will know how much data EVIOCGMTSLOTS will return...
+
+Is it ever possible that a driver could change the number of slots after
+initialization? I can't imagine why that would occur, but if we ever
+come across a need for it, this would be broken.
+
+-- Chase
