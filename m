@@ -1,45 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab2AMOzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Jan 2012 09:55:07 -0500
-Received: from smtp.nokia.com ([147.243.128.26]:61323 "EHLO mgw-da02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab2AMOzF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Jan 2012 09:55:05 -0500
-Date: Fri, 13 Jan 2012 16:52:16 +0200 (EET)
-From: Aaro Koskinen <aaro.koskinen@nokia.com>
-X-X-Sender: aakoskin@kernel.research.nokia.com
-To: Dmitry Antipov <dmitry.antipov@linaro.org>
-cc: linaro-dev@lists.linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mmc: use usleep_range() in mmc_delay()
-In-Reply-To: <4F1036CD.3090608@linaro.org>
-Message-ID: <alpine.DEB.2.00.1201131633580.31704@kernel.research.nokia.com>
-References: <4EF18310.6080801@linaro.org> <alpine.DEB.2.00.1201131514490.31704@kernel.research.nokia.com> <4F1036CD.3090608@linaro.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758253Ab2AMPAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Jan 2012 10:00:43 -0500
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39208 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932425Ab2AMPAc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Jan 2012 10:00:32 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
-X-Nokia-AV: Clean
+Date: Fri, 13 Jan 2012 23:00:31 +0800
+Message-ID: <CAJd=RBANeF+TTTtn=F_Yx3N5KkVb5vFPY6FNYEjVntB1pPSLBA@mail.gmail.com>
+Subject: [PATCH] mm: vmscan: handle isolated pages with lru lock released
+From: Hillf Danton <dhillf@gmail.com>
+To: linux-mm@kvack.org
+Cc: Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hillf Danton <dhillf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When shrinking inactive lru list, isolated pages are queued on locally private
+list, which opens a window for pulling update_isolated_counts() out of the lock
+protection to reduce the lock-hold time.
 
-On Fri, 13 Jan 2012, Dmitry Antipov wrote:
-> On 01/13/2012 05:22 PM, Aaro Koskinen wrote:
->
->> Anyway, I think the change is good. On systems with multiple MMC devices
->> the boot/probe can spend 100-200 ms alone just doing busylooping delays. I
->> think e.g. in mmc_rescan() the code uses frequently mmc_delay(10).
->
-> I'm worrying about this:
->
-> mmc_delay(DIV_ROUND_UP(card->ext_csd.sa_timeout, 10000))
->
-> since I have no ideas about typical values for this timeout.
-> If it may be too small (<=10 us), using usleep_range() makes no sense.
+To achive that, firstly we have to delay updating reclaim stat, which is pointed
+out by Hugh, but not over the deadline where fresh data is used for setting up
+scan budget for shrinking zone in get_scan_count(). The delay is terminated in
+the putback stage after reacquiring lru lock.
 
-Hmm, but the code above is rounding it up to at least 1 ms?
+Secondly operations related to vm and zone stats, namely __count_vm_events() and
+__mod_zone_page_state(), are proteced with preemption disabled as they
+are per-cpu
+operations.
 
-A.
+Thanks for comments and ideas recieved.
+
+
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
+
+--- a/mm/vmscan.c	Fri Jan 13 21:30:58 2012
++++ b/mm/vmscan.c	Fri Jan 13 22:07:14 2012
+@@ -1408,6 +1408,13 @@ putback_lru_pages(struct mem_cgroup_zone
+ 	 * Put back any unfreeable pages.
+ 	 */
+ 	spin_lock(&zone->lru_lock);
++	/*
++	 * Here we finish updating reclaim stat that is delayed in
++	 * update_isolated_counts()
++	 */
++	reclaim_stat->recent_scanned[0] += nr_anon;
++	reclaim_stat->recent_scanned[1] += nr_file;
++
+ 	while (!list_empty(page_list)) {
+ 		int lru;
+ 		page = lru_to_page(page_list);
+@@ -1461,9 +1468,19 @@ update_isolated_counts(struct mem_cgroup
+ 	unsigned long nr_active;
+ 	struct zone *zone = mz->zone;
+ 	unsigned int count[NR_LRU_LISTS] = { 0, };
+-	struct zone_reclaim_stat *reclaim_stat = get_reclaim_stat(mz);
+
+ 	nr_active = clear_active_flags(isolated_list, count);
++	/*
++	 * Without lru lock held,
++	 * 1, we have to delay updating zone reclaim stat, and the deadline is
++	 *    when fresh data is used for setting up scan budget for another
++	 *    round shrinking, see get_scan_count(). It is actually updated in
++	 *    the putback stage after reacquiring the lock.
++	 *
++	 * 2, __count_vm_events() and __mod_zone_page_state() are protected
++	 *    with preempt disabled as they are per-cpu operations.
++	 */
++	preempt_disable();
+ 	__count_vm_events(PGDEACTIVATE, nr_active);
+
+ 	__mod_zone_page_state(zone, NR_ACTIVE_FILE,
+@@ -1479,9 +1496,7 @@ update_isolated_counts(struct mem_cgroup
+ 	*nr_file = count[LRU_ACTIVE_FILE] + count[LRU_INACTIVE_FILE];
+ 	__mod_zone_page_state(zone, NR_ISOLATED_ANON, *nr_anon);
+ 	__mod_zone_page_state(zone, NR_ISOLATED_FILE, *nr_file);
+-
+-	reclaim_stat->recent_scanned[0] += *nr_anon;
+-	reclaim_stat->recent_scanned[1] += *nr_file;
++	preempt_enable();
+ }
+
+ /*
+@@ -1577,15 +1592,12 @@ shrink_inactive_list(unsigned long nr_to
+ 			__count_zone_vm_events(PGSCAN_DIRECT, zone,
+ 					       nr_scanned);
+ 	}
++	spin_unlock_irq(&zone->lru_lock);
+
+-	if (nr_taken == 0) {
+-		spin_unlock_irq(&zone->lru_lock);
++	if (nr_taken == 0)
+ 		return 0;
+-	}
+
+ 	update_isolated_counts(mz, sc, &nr_anon, &nr_file, &page_list);
+-
+-	spin_unlock_irq(&zone->lru_lock);
+
+ 	nr_reclaimed = shrink_page_list(&page_list, mz, sc, priority,
+ 						&nr_dirty, &nr_writeback);
